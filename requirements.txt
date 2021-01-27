@@ -1,0 +1,13 @@
+tqdm
+pymdown-extensions
+anyconfig
+pluggy
+pillow
+more-itertools
+beautifulsoup4
+python-frontmatter
+pytz
+toml
+jinja2
+feedgen
+
