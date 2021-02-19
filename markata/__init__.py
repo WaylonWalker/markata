@@ -178,5 +178,13 @@ class Markata:
 
 
 def cli() -> None:
+    try:
+        from rich import pretty, traceback
+
+        pretty.install()
+        traceback.install()
+    except ImportError:
+        pass
+
     m = Markata()
     m.run()
