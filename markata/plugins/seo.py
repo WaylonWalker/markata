@@ -32,7 +32,7 @@ def render(markata):
 
         if article.metadata["long_description"] == "":
             article.metadata["long_description"] = " ".join(
-                [p.text for p in soup.find_all("p")]
+                [p.text for p in soup.find(id="post-body").find_all("p")]
             ).strip()[:250]
 
         seo = [
