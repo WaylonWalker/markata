@@ -24,7 +24,7 @@ def render(markata):
         soup = BeautifulSoup(article.html, features="lxml")
         if article.metadata["description"] == "":
             article.metadata["description"] = " ".join(
-                [p.text for p in soup.find_all("p")]
+                [p.text for p in soup.find(id="post-body").find_all("p")]
             ).strip()[:120]
 
         if "long_description" not in article.metadata:
