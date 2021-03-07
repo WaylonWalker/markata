@@ -3,6 +3,7 @@
 # annotations needed to return self
 from __future__ import annotations
 
+import hashlib
 import pluggy
 from markata import standard_config
 from markata import hookspec
@@ -12,13 +13,33 @@ import os
 import sys
 from typing import TYPE_CHECKING, List
 
+from pathlib import Path
+from diskcache import Cache
+import markdown
+
 
 __version__ = "0.0.1"
 
 if TYPE_CHECKING:
-    from pathlib import Path
     from markdown import Markdown
 
+DEFAULT_MD_EXTENSIONS = [
+    "markdown.extensions.toc",
+    "markdown.extensions.admonition",
+    "markdown.extensions.tables",
+    "markdown.extensions.md_in_html",
+    "pymdownx.magiclink",
+    "pymdownx.betterem",
+    "pymdownx.tilde",
+    "pymdownx.emoji",
+    "pymdownx.tasklist",
+    "pymdownx.superfences",
+    "pymdownx.highlight",
+    "pymdownx.inlinehilite",
+    "pymdownx.keys",
+    "pymdownx.saneheaders",
+    # "codehilite",
+]
 DEFAULT_HOOKS = [
     "markata.plugins.glob",
     "markata.plugins.load",
@@ -48,6 +69,9 @@ DEFUALT_CONFIG = {
 class Markata:
     def __init__(self) -> None:
         self.configure()
+        self.MARKATA_CACHE_DIR = Path(".") / ".markata.cache"
+        self.MARKATA_CACHE_DIR.mkdir(exist_ok=True)
+        self.cache = Cache(self.MARKATA_CACHE_DIR)
 
     def configure(self) -> None:
         sys.path.append(os.getcwd())
@@ -74,7 +98,15 @@ class Markata:
         self._pm = pluggy.PluginManager("markata")
         self._pm.add_hookspecs(hookspec.MarkataSpecs)
         self._register_hooks()
+
+        extensions = self.config["markdown_extensions"]
+        self.config["md_extensions"] = [*DEFAULT_MD_EXTENSIONS, *extensions]
+        self.md = markdown.Markdown(extensions=self.config["md_extensions"])
+
         return self
+
+    def make_hash(self, *keys: str):
+        return hashlib.md5("".join(keys).encode("utf-8")).hexdigest()
 
     @property
     def phase(self) -> str:

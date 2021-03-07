@@ -14,6 +14,6 @@ def render(markata):
             body=article.html,
             title=article.metadata["title"],
             slug=article.metadata["slug"],
-            toc=article.md.toc,
+            toc=markata.md.toc,
             date=article.metadata["date"],
         )
