@@ -125,7 +125,12 @@ def render(markata):
             str(markata.config["seo"]),
         )
         html_from_cache = markata.cache.get(key)
-        soup = BeautifulSoup(article.html, features="lxml")
-        seo = _create_seo(markata, soup, article)
-        _add_seo_tags(seo, article, soup)
-        article.html = soup.prettify()
+
+        if html_from_cache is None:
+            soup = BeautifulSoup(article.html, features="lxml")
+            seo = _create_seo(markata, soup, article)
+            _add_seo_tags(seo, article, soup)
+            html = soup.prettify()
+        else:
+            html = html_from_cache
+        article.html = html
