@@ -11,3 +11,4 @@ toml
 jinja2
 feedgen
 
+diskcache

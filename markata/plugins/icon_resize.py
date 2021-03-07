@@ -1,7 +1,9 @@
 """Icon Resize Plugin"""
-from markata.hookspec import hook_impl
 from pathlib import Path
+
 from PIL import Image
+
+from markata.hookspec import hook_impl
 
 
 @hook_impl

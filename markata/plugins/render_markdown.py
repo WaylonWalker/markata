@@ -1,9 +1,10 @@
-from markata.hookspec import hook_impl
-from tqdm import tqdm
-from diskcache import Cache
 from pathlib import Path
 
+from diskcache import Cache
 from pymdownx import emoji
+from tqdm import tqdm
+
+from markata.hookspec import hook_impl
 
 MARKATA_CACHE_DIR = Path(".") / ".markata.cache"
 MARKATA_CACHE_DIR.mkdir(exist_ok=True)

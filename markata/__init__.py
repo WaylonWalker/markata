@@ -4,19 +4,18 @@
 from __future__ import annotations
 
 import hashlib
-import pluggy
-from markata import standard_config
-from markata import hookspec
 import importlib
-from tqdm import tqdm
 import os
 import sys
+from pathlib import Path
 from typing import TYPE_CHECKING, List
 
-from pathlib import Path
-from diskcache import Cache
 import markdown
+import pluggy
+from diskcache import Cache
+from tqdm import tqdm
 
+from markata import hookspec, standard_config
 
 __version__ = "0.0.1"
 

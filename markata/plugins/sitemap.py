@@ -1,7 +1,9 @@
-from markata.hookspec import hook_impl
-from markata import Markata
-import anyconfig
 from pathlib import Path
+
+import anyconfig
+
+from markata import Markata
+from markata.hookspec import hook_impl
 
 
 @hook_impl

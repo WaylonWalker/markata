@@ -1,9 +1,9 @@
-from markata.hookspec import hook_impl
+import shutil
 from pathlib import Path
 
-import shutil
-
 from tqdm import tqdm
+
+from markata.hookspec import hook_impl
 
 
 @hook_impl

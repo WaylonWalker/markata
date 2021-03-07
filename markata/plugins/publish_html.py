@@ -1,8 +1,9 @@
-from markata.hookspec import hook_impl
 from pathlib import Path
-from more_itertools import flatten
 
+from more_itertools import flatten
 from tqdm import tqdm
+
+from markata.hookspec import hook_impl
 
 
 @hook_impl
