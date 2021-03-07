@@ -1,14 +1,14 @@
 """Default load plugin."""
-from markata.hookspec import hook_impl
-from markata.background import task
-from pathlib import Path
-from more_itertools import flatten
-
-from yaml.parser import ParserError
 import time
-import frontmatter
+from pathlib import Path
 
+import frontmatter
+from more_itertools import flatten
 from tqdm import tqdm
+from yaml.parser import ParserError
+
+from markata.background import task
+from markata.hookspec import hook_impl
 
 
 @hook_impl

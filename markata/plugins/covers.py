@@ -1,12 +1,12 @@
-from markata.hookspec import hook_impl
-from PIL import Image, ImageDraw, ImageFont
-from markata import background
+import time
+from functools import lru_cache
 from pathlib import Path
 
-import time
-
-from functools import lru_cache
+from PIL import Image, ImageDraw, ImageFont
 from tqdm import tqdm
+
+from markata import background
+from markata.hookspec import hook_impl
 
 
 @lru_cache(maxsize=64)

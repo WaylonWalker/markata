@@ -1,9 +1,11 @@
 """Default glob plugin"""
-import pytz
-from markata.hookspec import hook_impl
 from pathlib import Path
-from more_itertools import flatten
+
+import pytz
 from feedgen.feed import FeedGenerator
+from more_itertools import flatten
+
+from markata.hookspec import hook_impl
 
 
 @hook_impl(trylast=True)

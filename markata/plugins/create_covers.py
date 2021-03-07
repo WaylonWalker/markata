@@ -1,7 +1,9 @@
-from markata.hookspec import hook_impl
-from PIL import Image, ImageDraw, ImageFont
-from markata import background
 from pathlib import Path
+
+from PIL import Image, ImageDraw, ImageFont
+
+from markata import background
+from markata.hookspec import hook_impl
 
 
 def get_font(path, draw, title, size=250):

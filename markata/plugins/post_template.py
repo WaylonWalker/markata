@@ -1,6 +1,7 @@
-from markata.hookspec import hook_impl
-from tqdm import tqdm
 from jinja2 import Template
+from tqdm import tqdm
+
+from markata.hookspec import hook_impl
 
 
 @hook_impl

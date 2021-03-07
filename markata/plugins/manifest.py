@@ -1,8 +1,10 @@
 """manifest plugin"""
-from markata.hookspec import hook_impl
-from pathlib import Path
 import json
+from pathlib import Path
+
 from bs4 import BeautifulSoup
+
+from markata.hookspec import hook_impl
 
 
 @hook_impl
