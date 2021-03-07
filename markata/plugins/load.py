@@ -15,7 +15,7 @@ from tqdm import tqdm
 def load(markata):
     # print("loading articles")
 
-    futures = [get_post(article) for article in markata.files]
+    futures = [get_post(article, markata) for article in markata.files]
     with tqdm(
         total=len(futures), desc="loading markdown", leave=False, colour="yellow"
     ) as pbar:
@@ -33,7 +33,7 @@ def load(markata):
 
 
 @task
-def get_post(path: Path):
+def get_post(path: Path, markata):
     default = {
         "cover": "",
         "title": "",
@@ -54,4 +54,5 @@ def get_post(path: Path):
         return
         post = default
     post.metadata["path"] = str(path)
+    post["content_hash"] = markata.make_hash(post.content)
     return post

@@ -1,26 +1,21 @@
 from markata.hookspec import hook_impl
-import markdown
 from tqdm import tqdm
+from diskcache import Cache
+from pathlib import Path
 
 from pymdownx import emoji
 
-default_extensions = [
-    "markdown.extensions.toc",
-    "markdown.extensions.admonition",
-    "markdown.extensions.tables",
-    "markdown.extensions.md_in_html",
-    "pymdownx.magiclink",
-    "pymdownx.betterem",
-    "pymdownx.tilde",
-    "pymdownx.emoji",
-    "pymdownx.tasklist",
-    "pymdownx.superfences",
-    "pymdownx.highlight",
-    "pymdownx.inlinehilite",
-    "pymdownx.keys",
-    "pymdownx.saneheaders",
-    # "codehilite",
-]
+MARKATA_CACHE_DIR = Path(".") / ".markata.cache"
+MARKATA_CACHE_DIR.mkdir(exist_ok=True)
+cache = Cache(MARKATA_CACHE_DIR)
+
+
+def make_renderer(md):
+    @cache.memoize(tag="markata.render_markdown.render_article", expire=15 * 24 * 60)
+    def render_article(content):
+        return md.convert(content)
+
+    return render_article
 
 
 @hook_impl(tryfirst=True)
@@ -28,9 +23,12 @@ def render(markata):
     for article in tqdm(
         markata.articles, desc="rendering markdown", leave=False, colour="yellow"
     ):
-        extensions = markata.config["markdown_extensions"]
-        md = markdown.Markdown(extensions=[*default_extensions, *extensions])
-        html = md.convert(article.content)
+        key = markata.make_hash("render_markdown", "render", article["content_hash"])
+        html_from_cache = markata.cache.get(key)
+        if html_from_cache is None:
+            html = markata.md.convert(article.content)
+            markata.cache.add(key, html, expire=15 * 24 * 60)
+        else:
+            html = html_from_cache
         article.html = html
-        article.md = md
         article.article_html = html
