@@ -11,14 +11,6 @@ MARKATA_CACHE_DIR.mkdir(exist_ok=True)
 cache = Cache(MARKATA_CACHE_DIR)
 
 
-def make_renderer(md):
-    @cache.memoize(tag="markata.render_markdown.render_article", expire=15 * 24 * 60)
-    def render_article(content):
-        return md.convert(content)
-
-    return render_article
-
-
 @hook_impl(tryfirst=True)
 def render(markata):
     for article in tqdm(
