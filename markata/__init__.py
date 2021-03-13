@@ -219,10 +219,11 @@ class Markata:
         self.render()
         self.save()
 
-        self.console.log(
-            f"cache hit rate {round(self.cache.hits/ (self.cache.hits + self.cache.misses)*100, 2)}%"
-        )
-        self.console.log(f"cache hits/misses {self.cache.hits}/{self.cache.misses}")
+        if self.cache.hits + self.cache.misses > 0:
+            self.console.log(
+                f"cache hit rate {round(self.cache.hits/ (self.cache.hits + self.cache.misses)*100, 2)}%"
+            )
+            self.console.log(f"cache hits/misses {self.cache.hits}/{self.cache.misses}")
 
         return self
 
