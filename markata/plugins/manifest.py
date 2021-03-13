@@ -25,10 +25,22 @@ def render(markata):
     with open(filepath, "w+") as f:
         json.dump(manifest, f, ensure_ascii=True, indent=4)
     for article in markata.iter_articles("add manifest link"):
-        soup = BeautifulSoup(article.html, features="lxml")
-        link = soup.new_tag("link")
-        link.attrs["rel"] = "manifest"
-        link.attrs["href"] = "/manifest.json"
-        soup.head.append(link)
+        key = markata.make_hash(
+            "seo",
+            "manifest",
+            article["content_hash"],
+        )
+        html_from_cache = markata.cache.get(key)
 
-        article.html = soup.prettify()
+        if html_from_cache is None:
+            soup = BeautifulSoup(article.html, features="lxml")
+            link = soup.new_tag("link")
+            link.attrs["rel"] = "manifest"
+            link.attrs["href"] = "/manifest.json"
+            soup.head.append(link)
+
+            html = soup.prettify()
+            markata.cache.add(key, html, expire=15 * 24 * 60)
+        else:
+            html = html_from_cache
+        article.html = html

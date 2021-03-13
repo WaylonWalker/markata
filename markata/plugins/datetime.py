@@ -4,15 +4,17 @@ from pathlib import Path
 
 import dateutil
 import pytz
-from feedgen.feed import FeedGenerator
-from more_itertools import flatten
-from tqdm import tqdm
 
 from markata.hookspec import hook_impl
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from markata import Markata
+
 
 @hook_impl(trylast=True)
-def load(markata):
+def load(markata: "Markata") -> None:
     for article in markata.iter_articles("datetime"):
         try:
             date = article.metadata["date"]

@@ -5,21 +5,22 @@ from pathlib import Path
 from bs4 import BeautifulSoup
 
 from markata.hookspec import hook_impl
+from markata import Markata, __version__
 
 
-def _create_seo(markata, soup, article):
+def _create_seo(markata: Markata, soup, article):
     if article.metadata["description"] == "":
         article.metadata["description"] = " ".join(
             [p.text for p in soup.find(id="post-body").find_all("p")]
         ).strip()[:120]
 
-    if "long_description" not in article.metadata:
-        article.metadata["long_description"] = ""
+    # if "long_description" not in article.metadata:
+    #     article.metadata["long_description"] = ""
 
-    if article.metadata["long_description"] == "":
-        article.metadata["long_description"] = " ".join(
-            [p.text for p in soup.find(id="post-body").find_all("p")]
-        ).strip()[:250]
+    # if article.metadata["long_description"] == "":
+    #     article.metadata["long_description"] = " ".join(
+    #         [p.text for p in soup.find(id="post-body").find_all("p")]
+    #     ).strip()[:250]
 
     seo = [
         *markata.config["seo"],
@@ -92,6 +93,11 @@ def _create_seo(markata, soup, article):
             "property": "title",
             "content": article.metadata["title"],
         },
+        {
+            "name": "generator",
+            "property": "generator",
+            "content": f"markata {__version__}",
+        },
     ]
     return seo
 
@@ -110,8 +116,8 @@ def _create_seo_tag(meta: dict, soup):
 
 
 @hook_impl
-def render(markata):
-    for article in markata.iter_articles("add seo tags"):
+def render(markata: Markata):
+    for article in markata.iter_articles("add seo tags from seo.py"):
         key = markata.make_hash(
             "seo",
             "render",
@@ -131,6 +137,7 @@ def render(markata):
             seo = _create_seo(markata, soup, article)
             _add_seo_tags(seo, article, soup)
             html = soup.prettify()
+            markata.cache.add(key, html, expire=15 * 24 * 60)
         else:
             html = html_from_cache
         article.html = html

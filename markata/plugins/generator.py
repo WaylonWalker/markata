@@ -7,7 +7,7 @@ from markata.hookspec import hook_impl
 
 @hook_impl(trylast=True)
 def render(markata: Markata) -> None:
-    for article in markata.iter_articles("add seo tags"):
+    for article in markata.iter_articles("add ssg tag"):
         soup = BeautifulSoup(article.html, features="lxml")
         tag = soup.new_tag("meta")
         tag.attrs["content"] = f"markata {__version__}"

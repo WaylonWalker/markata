@@ -1,21 +1,16 @@
 from pathlib import Path
 
-from diskcache import Cache
-from pymdownx import emoji
-from tqdm import tqdm
-
 from markata.hookspec import hook_impl
 
-MARKATA_CACHE_DIR = Path(".") / ".markata.cache"
-MARKATA_CACHE_DIR.mkdir(exist_ok=True)
-cache = Cache(MARKATA_CACHE_DIR)
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from markata import Markata
 
 
 @hook_impl(tryfirst=True)
-def render(markata):
-    for article in tqdm(
-        markata.articles, desc="rendering markdown", leave=False, colour="yellow"
-    ):
+def render(markata: "Markata") -> None:
+    for article in markata.iter_articles("rendering markdown"):
         key = markata.make_hash("render_markdown", "render", article["content_hash"])
         html_from_cache = markata.cache.get(key)
         if html_from_cache is None:

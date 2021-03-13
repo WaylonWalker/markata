@@ -9,5 +9,5 @@ pluggy
 pymdown-extensions
 python-frontmatter
 pytz
+rich
 toml
-tqdm

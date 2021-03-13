@@ -13,7 +13,8 @@ from typing import TYPE_CHECKING, List
 import markdown
 import pluggy
 from diskcache import Cache
-from tqdm import tqdm
+from rich.progress import track
+from rich.console import Console
 
 from markata import hookspec, standard_config
 
@@ -37,14 +38,15 @@ DEFAULT_MD_EXTENSIONS = [
     "pymdownx.inlinehilite",
     "pymdownx.keys",
     "pymdownx.saneheaders",
-    # "codehilite",
+    "codehilite",
 ]
 DEFAULT_HOOKS = [
     "markata.plugins.glob",
     "markata.plugins.load",
     "markata.plugins.render_markdown",
     "markata.plugins.manifest",
-    "markata.plugins.generator",
+    # "markata.plugins.generator",
+    "markata.plugins.long_description",
     "markata.plugins.seo",
     "markata.plugins.post_template",
     "markata.plugins.covers",
@@ -70,7 +72,7 @@ class Markata:
         self.configure()
         self.MARKATA_CACHE_DIR = Path(".") / ".markata.cache"
         self.MARKATA_CACHE_DIR.mkdir(exist_ok=True)
-        self.cache = Cache(self.MARKATA_CACHE_DIR)
+        self.cache = Cache(self.MARKATA_CACHE_DIR, statistics=True)
 
     def configure(self) -> None:
         sys.path.append(os.getcwd())
@@ -137,6 +139,14 @@ class Markata:
         else:
             raise RuntimeWarning("cannot set articles outside of load phase")
 
+    @property
+    def console(self) -> Console:
+        try:
+            return self._console
+        except AttributeError:
+            self._console: Console = Console()
+            return self._console
+
     # @property
     # def html(self) -> List[str]:
     #     return self._html
@@ -167,8 +177,11 @@ class Markata:
 
         # self._pm.register
 
-    def iter_articles(self, description: str) -> tqdm:
-        return tqdm(self.articles, desc=description, leave=False, colour="yellow")
+    def __iter__(self, description="working..."):
+        return track(self.articles, description=description, transient=True)
+
+    def iter_articles(self, description: str) -> track:
+        return track(self.articles, description=description, transient=True)
 
     def glob(self) -> Markata:
         """run glob hooks
@@ -205,6 +218,12 @@ class Markata:
         self.load()
         self.render()
         self.save()
+
+        self.console.log(
+            f"cache hit rate {round(self.cache.hits/ (self.cache.hits + self.cache.misses)*100, 2)}%"
+        )
+        self.console.log(f"cache hits/misses {self.cache.hits}/{self.cache.misses}")
+
         return self
 
 
