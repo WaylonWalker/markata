@@ -119,7 +119,11 @@ class Markata:
 
     @property
     def files(self) -> List["Path"]:
-        return self._files
+        try:
+            return self._files
+        except AttributeError:
+            self.glob()
+            return self._files
 
     @files.setter
     def files(self, files: List["Path"]) -> None:
