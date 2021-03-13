@@ -3,7 +3,6 @@ from functools import lru_cache
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
-from tqdm import tqdm
 
 from markata import background
 from markata.hookspec import hook_impl

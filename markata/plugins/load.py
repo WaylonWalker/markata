@@ -4,36 +4,38 @@ from pathlib import Path
 
 import frontmatter
 from more_itertools import flatten
-from tqdm import tqdm
+from rich.progress import Progress, BarColumn
+
 from yaml.parser import ParserError
 
 from markata.background import task
 from markata.hookspec import hook_impl
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from markata import Markata
+
+progress = Progress(BarColumn(bar_width=None), transient=True)
+
 
 @hook_impl
-def load(markata):
-    # print("loading articles")
+def load(markata: "Markata") -> None:
 
     futures = [get_post(article, markata) for article in markata.files]
-    with tqdm(
-        total=len(futures), desc="loading markdown", leave=False, colour="yellow"
-    ) as pbar:
+    task_id = progress.add_task("loading markdown")
+    progress.update(task_id, total=len(futures))
+    with progress:
         while not all([f.done() for f in futures]):
             time.sleep(0.1)
-            for _ in range(len([f for f in futures if f.done()]) - pbar.n):
-                pbar.update()
+            progress.update(task_id, total=len([f for f in futures if f.done()]))
     articles = [f.result() for f in futures]
     articles = [a for a in articles if a]
-    # print(f"loaded {len(articles)}")
-
-    # articles.sort(key=lambda post: int(post["date"].strftime("%Y%m%d")))
-    # sorted(articles, key=lambda x: x["date"])
     markata.articles = articles
 
 
 @task
-def get_post(path: Path, markata):
+def get_post(path: Path, markata: "Markata") -> None:
     default = {
         "cover": "",
         "title": "",
