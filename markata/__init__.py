@@ -252,14 +252,16 @@ class Markata:
 def cli() -> None:
     from rich import pretty, traceback
 
-    pretty.install()
-    traceback.install()
+    import sys
+
+    if "--no-rich" not in sys.argv
+        pretty.install()
+        traceback.install()
 
     m = Markata()
 
     print("console options:", m.console.options)
 
-    import sys
 
     if "--quiet" in sys.argv or "-q" in sys.argv:
         m.console.quiet = True
