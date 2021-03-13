@@ -157,6 +157,18 @@ class Markata:
     #         self._html = html
     #     else:
     #         raise RuntimeWarning("cannot set html outside of render phase")
+    def _to_dict(self) -> dict:
+        return {"config": self.config, "articles": [a.to_dict() for a in self.articles]}
+
+    def to_dict(self) -> list:
+        try:
+            return self._to_dict()
+        except AttributeError:
+            self.configure()
+            self.glob()
+            self.load()
+            self.render()
+            return self._to_dict()
 
     def _register_hooks(self) -> None:
         for hook in self.config["hooks"]:
@@ -178,10 +190,14 @@ class Markata:
         # self._pm.register
 
     def __iter__(self, description="working..."):
-        return track(self.articles, description=description, transient=True)
+        return track(
+            self.articles, description=description, transient=True, console=self.console
+        )
 
     def iter_articles(self, description: str) -> track:
-        return track(self.articles, description=description, transient=True)
+        return track(
+            self.articles, description=description, transient=True, console=self.console
+        )
 
     def glob(self) -> Markata:
         """run glob hooks
@@ -234,13 +250,25 @@ class Markata:
 
 
 def cli() -> None:
-    try:
-        from rich import pretty, traceback
+    from rich import pretty, traceback
 
-        pretty.install()
-        traceback.install()
-    except ImportError:
-        pass
+    pretty.install()
+    traceback.install()
 
     m = Markata()
+
+    print("console options:", m.console.options)
+
+    import sys
+
+    if "--quiet" in sys.argv or "-q" in sys.argv:
+        m.console.quiet = True
+
+    if "--to-dict" in sys.argv:
+        m.console.quiet = True
+        data = m.to_dict()
+        m.console.quiet = False
+        m.console.print(data)
+        return
+
     m.run()
