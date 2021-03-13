@@ -214,10 +214,15 @@ class Markata:
         self,
     ) -> Markata:
         self.configure()
+        self.console.log("configure complete")
         self.glob()
+        self.console.log("glob complete")
         self.load()
+        self.console.log("load complete")
         self.render()
+        self.console.log("render complete")
         self.save()
+        self.console.log("save complete")
 
         if self.cache.hits + self.cache.misses > 0:
             self.console.log(
