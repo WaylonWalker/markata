@@ -16,11 +16,12 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from markata import Markata
 
-progress = Progress(BarColumn(bar_width=None), transient=True)
-
 
 @hook_impl
 def load(markata: "Markata") -> None:
+    progress = Progress(
+        BarColumn(bar_width=None), transient=True, console=markata.console
+    )
 
     futures = [get_post(article, markata) for article in markata.files]
     task_id = progress.add_task("loading markdown")
