@@ -8,15 +8,21 @@ import importlib
 import os
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, List, Iterable, Callable
 
 import markdown
+import frontmatter
 import pluggy
 from diskcache import Cache
 from rich.progress import track
 from rich.console import Console
+import shutil
 
 from markata import hookspec, standard_config
+from markata.hookspec import MarkataSpecs
+
+
+from checksumdir import dirhash
 
 __version__ = "0.0.1"
 
@@ -74,24 +80,39 @@ class Markata:
         self.MARKATA_CACHE_DIR.mkdir(exist_ok=True)
         self.cache = Cache(self.MARKATA_CACHE_DIR, statistics=True)
 
-    def configure(self) -> None:
+    def bust_cache(self) -> Markata:
+        self.cache.clear()
+        # self = Markata()
+        return self
+
+    def configure(self) -> Markata:
         sys.path.append(os.getcwd())
         self.config = {**DEFUALT_CONFIG, **standard_config.load("markata")}
         if isinstance(self.config["glob_patterns"], str):
             self.config["glob_patterns"] = self.config["glob_patterns"].split(",")
+
+        if "hooks" not in self.config:
+            self.hooks = [""]
         if isinstance(self.config["hooks"], str):
-            self.config["hooks"] = self.config["hooks"].split(",")
+            self.hooks = self.config["hooks"].split(",")
+        if isinstance(self.config["hooks"], list):
+            self.hooks = self.config["hooks"]
+
+        if "disabled_hooks" not in self.config:
+            self.disabled_hooks = [""]
+        if isinstance(self.config["disabled_hooks"], str):
+            self.disabled_hooks = self.config["disabled_hooks"].split(",")
+        if isinstance(self.config["disabled_hooks"], list):
+            self.disabled_hooks = self.config["disabled_hooks"]
 
         try:
-            default_index = self.config["hooks"].index("default")
+            default_index = self.hooks.index("default")
             hooks = [
-                *self.config["hooks"][:default_index],
+                *self.hooks[:default_index],
                 *DEFAULT_HOOKS,
-                *self.config["hooks"][default_index + 1 :],
+                *self.hooks[default_index + 1 :],
             ]
-            self.config["hooks"] = [
-                hook for hook in hooks if hook not in self.config["disabled_hooks"]
-            ]
+            self.hooks = [hook for hook in hooks if hook not in self.disabled_hooks]
         except ValueError:
             # 'default' is not in hooks , do not replace with default_hooks
             pass
@@ -100,13 +121,21 @@ class Markata:
         self._pm.add_hookspecs(hookspec.MarkataSpecs)
         self._register_hooks()
 
-        extensions = self.config["markdown_extensions"]
-        self.config["md_extensions"] = [*DEFAULT_MD_EXTENSIONS, *extensions]
-        self.md = markdown.Markdown(extensions=self.config["md_extensions"])
+        if "markdown_extensions" not in self.config:
+            markdown_extensions = [""]
+        if isinstance(self.config["markdown_extensions"], str):
+            markdown_extensions = [self.config["markdown_extensions"]]
+        if isinstance(self.config["markdown_extensions"], list):
+            markdown_extensions = self.config["markdown_extensions"]
+        else:
+            raise TypeError("markdown_extensions should be List[str]")
+
+        self.markdown_extensions = [*DEFAULT_MD_EXTENSIONS, *markdown_extensions]
+        self.md = markdown.Markdown(extensions=self.markdown_extensions)
 
         return self
 
-    def make_hash(self, *keys: str):
+    def make_hash(self, *keys: str) -> str:
         return hashlib.md5("".join(keys).encode("utf-8")).hexdigest()
 
     @property
@@ -118,6 +147,22 @@ class Markata:
         self._phase = phase
 
     @property
+    def hooks(self) -> List[str]:
+        return self._hooks
+
+    @hooks.setter
+    def hooks(self, hooks: List[str]) -> None:
+        self._hooks = hooks
+
+    @property
+    def disabled_hooks(self) -> List[str]:
+        return self._disabled_hooks
+
+    @disabled_hooks.setter
+    def disabled_hooks(self, hooks: List[str]) -> None:
+        self._disabled_hooks = hooks
+
+    @property
     def files(self) -> List["Path"]:
         try:
             return self._files
@@ -127,17 +172,38 @@ class Markata:
 
     @files.setter
     def files(self, files: List["Path"]) -> None:
-        if self.phase == "glob":
-            self._files = files
-        else:
-            raise RuntimeWarning("cannot set files outside of glob phase")
+        self._files = files
+        # if self.phase == "glob":
+        #     self._files = files
+        # else:
+        #     raise RuntimeWarning("cannot set files outside of glob phase")
 
     @property
-    def articles(self) -> List[Markdown]:
+    def content_directories(self) -> List["Path"]:
+        try:
+            return self._content_directories
+        except AttributeError:
+            self.glob()
+            return self._content_directories
+
+    @content_directories.setter
+    def content_directories(self, files: List["Path"]) -> None:
+        if self.phase == "glob":
+            self._content_directories = files
+        else:
+            raise RuntimeWarning("cannot set content_directories outside of glob phase")
+
+    @property
+    def content_dir_hash(self) -> str:
+        hashes = [dirhash(dir) for dir in self.content_directories]
+        return self.make_hash(*hashes)
+
+    @property
+    def articles(self) -> List[frontmatter.Post]:
         return self._articles
 
     @articles.setter
-    def articles(self, articles: List[Markdown]) -> None:
+    def articles(self, articles: List[frontmatter.Post]) -> None:
         if self.phase == "load":
             self._articles = articles
         else:
@@ -161,28 +227,23 @@ class Markata:
     #         self._html = html
     #     else:
     #         raise RuntimeWarning("cannot set html outside of render phase")
-    def _to_dict(self) -> dict:
+    def _to_dict(self) -> dict[str, Iterable]:
         return {"config": self.config, "articles": [a.to_dict() for a in self.articles]}
 
-    def to_dict(self) -> list:
+    def to_dict(self) -> dict:
         try:
             return self._to_dict()
         except AttributeError:
-            self.configure()
-            self.glob()
-            self.load()
             self.render()
             return self._to_dict()
 
     def _register_hooks(self) -> None:
-        for hook in self.config["hooks"]:
+        for hook in self.hooks:
             try:
                 # module style plugins
-                # print(f"importing hook as module style: {hook}")
                 plugin = importlib.import_module(hook)
             except ModuleNotFoundError as e:
                 # class style plugins
-                # print(f"importing hook as class style: {hook}")
                 if "." in hook:
                     mod = importlib.import_module(".".join(hook.split(".")[:-1]))
                     plugin = getattr(mod, hook.split(".")[-1])
@@ -191,14 +252,12 @@ class Markata:
 
             self._pm.register(plugin)
 
-        # self._pm.register
-
-    def __iter__(self, description="working..."):
+    def __iter__(self, description: str = "working...") -> Iterable:
         return track(
             self.articles, description=description, transient=True, console=self.console
         )
 
-    def iter_articles(self, description: str) -> track:
+    def iter_articles(self, description: str) -> Iterable[frontmatter.Post]:
         return track(
             self.articles, description=description, transient=True, console=self.console
         )
@@ -212,22 +271,42 @@ class Markata:
         """
 
         self.phase = "glob"
-        self._pm.hook.glob(markata=self)
+        try:
+            self._pm.hook.glob(markata=self)
+        except AttributeError:
+            self.configure()
+            self._pm.hook.glob(markata=self)
+
         return self
 
     def load(self) -> Markata:
         self.phase = "load"
-        self._pm.hook.load(markata=self)
+        try:
+            self._pm.hook.load(markata=self)
+        except AttributeError:
+            print("missed glob")
+            self.glob()
+            self._pm.hook.load(markata=self)
         return self
 
     def render(self) -> Markata:
         self.phase = "render"
-        self._pm.hook.render(markata=self)
+        try:
+            self._pm.hook.render(markata=self)
+        except AttributeError:
+            print("missed load")
+            self.load()
+            self._pm.hook.render(markata=self)
         return self
 
     def save(self) -> Markata:
         self.phase = "save"
-        self._pm.hook.save(markata=self)
+        try:
+            self._pm.hook.save(markata=self)
+        except AttributeError:
+            print("missed render")
+            self.render()
+            self._pm.hook.save(markata=self)
         return self
 
     def run(
@@ -257,6 +336,7 @@ def cli() -> None:
     from rich import pretty, traceback
 
     import sys
+    import time
 
     if "--no-rich" not in sys.argv:
         pretty.install()
@@ -274,6 +354,18 @@ def cli() -> None:
         data = m.to_dict()
         m.console.quiet = False
         m.console.print(data)
+        return
+    if "--watch" in sys.argv:
+
+        hash = m.content_dir_hash
+        m.run()
+        console = Console()
+        with console.status("waiting for change", spinner="aesthetic", speed=0.2):
+            while True:
+                if m.content_dir_hash != hash:
+                    hash = m.content_dir_hash
+                    m.run()
+                time.sleep(0.1)
         return
 
     m.run()
