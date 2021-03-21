@@ -1,5 +1,6 @@
 anyconfig
 beautifulsoup4
+checksumdir
 diskcache
 feedgen
 jinja2
