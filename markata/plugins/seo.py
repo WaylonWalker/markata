@@ -14,14 +14,6 @@ def _create_seo(markata: Markata, soup, article):
             [p.text for p in soup.find(id="post-body").find_all("p")]
         ).strip()[:120]
 
-    # if "long_description" not in article.metadata:
-    #     article.metadata["long_description"] = ""
-
-    # if article.metadata["long_description"] == "":
-    #     article.metadata["long_description"] = " ".join(
-    #         [p.text for p in soup.find(id="post-body").find_all("p")]
-    #     ).strip()[:250]
-
     seo = [
         *markata.config["seo"],
         {
