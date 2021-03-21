@@ -8,7 +8,7 @@ import importlib
 import os
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Iterable, Callable
+from typing import List, Iterable, Any
 
 import markdown
 import frontmatter
@@ -16,18 +16,15 @@ import pluggy
 from diskcache import Cache
 from rich.progress import track
 from rich.console import Console
-import shutil
 
 from markata import hookspec, standard_config
-from markata.hookspec import MarkataSpecs
-
+from markata.errors import MarkataConfigError
 
 from checksumdir import dirhash
 
+
 __version__ = "0.0.1"
 
-if TYPE_CHECKING:
-    from markdown import Markdown
 
 DEFAULT_MD_EXTENSIONS = [
     "markdown.extensions.toc",
@@ -46,6 +43,7 @@ DEFAULT_MD_EXTENSIONS = [
     "pymdownx.saneheaders",
     "codehilite",
 ]
+
 DEFAULT_HOOKS = [
     "markata.plugins.glob",
     "markata.plugins.load",
@@ -79,6 +77,9 @@ class Markata:
         self.MARKATA_CACHE_DIR = Path(".") / ".markata.cache"
         self.MARKATA_CACHE_DIR.mkdir(exist_ok=True)
         self.cache = Cache(self.MARKATA_CACHE_DIR, statistics=True)
+
+    # def __setattr__(self, name, value):
+    #     self.
 
     def bust_cache(self) -> Markata:
         self.cache.clear()
@@ -132,6 +133,16 @@ class Markata:
 
         self.markdown_extensions = [*DEFAULT_MD_EXTENSIONS, *markdown_extensions]
         self.md = markdown.Markdown(extensions=self.markdown_extensions)
+
+        if "url" not in self.config:
+            self.url = ""
+        else:
+            self.url = str(self.config["url"])
+
+        if "output_dir" not in self.config:
+            raise MarkataConfigError("output_dir must be specified in markata config")
+        else:
+            self.output_dir = Path(str(self.config["output_dir"]))
 
         return self
 
@@ -252,15 +263,17 @@ class Markata:
 
             self._pm.register(plugin)
 
-    def __iter__(self, description: str = "working...") -> Iterable:
-        return track(
+    def __iter__(self, description: str = "working...") -> Iterable[frontmatter.Post]:
+        articles: Iterable[frontmatter.Post] = track(
             self.articles, description=description, transient=True, console=self.console
         )
+        return articles
 
     def iter_articles(self, description: str) -> Iterable[frontmatter.Post]:
-        return track(
+        articles: Iterable[frontmatter.Post] = track(
             self.articles, description=description, transient=True, console=self.console
         )
+        return articles
 
     def glob(self) -> Markata:
         """run glob hooks
