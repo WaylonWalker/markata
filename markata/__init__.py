@@ -106,6 +106,13 @@ class Markata:
         if isinstance(self.config["disabled_hooks"], list):
             self.disabled_hooks = self.config["disabled_hooks"]
 
+        if "seo" not in self.config:
+            self.seo = [""]
+        if isinstance(self.seo, str):
+            self.seo = self.config["seo"].split(",")
+        if isinstance(self.config["seo"], list):
+            self.seo = self.config["seo"]
+
         try:
             default_index = self.hooks.index("default")
             hooks = [
@@ -143,6 +150,21 @@ class Markata:
             raise MarkataConfigError("output_dir must be specified in markata config")
         else:
             self.output_dir = Path(str(self.config["output_dir"]))
+
+        if "site_name" not in self.config:
+            self.site_name = ""
+        else:
+            self.site_name = str(self.config["site_name"])
+
+        if "twitter_card" not in self.config:
+            self.twitter_card = ""
+        else:
+            self.twitter_card = str(self.config["twitter_card"])
+
+        if "site_name" not in self.config:
+            self.site_name = ""
+        else:
+            self.site_name = str(self.config["site_name"])
 
         return self
 
@@ -211,14 +233,19 @@ class Markata:
 
     @property
     def articles(self) -> List[frontmatter.Post]:
-        return self._articles
+        try:
+            return self._articles
+        except AttributeError:
+            self.load()
+            return self._articles
 
     @articles.setter
     def articles(self, articles: List[frontmatter.Post]) -> None:
-        if self.phase == "load":
-            self._articles = articles
-        else:
-            raise RuntimeWarning("cannot set articles outside of load phase")
+        self._articles = articles
+        # if self.phase == "load":
+        #     self._articles = articles
+        # else:
+        #     raise RuntimeWarning("cannot set articles outside of load phase")
 
     @property
     def console(self) -> Console:

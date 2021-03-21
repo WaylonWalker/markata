@@ -7,15 +7,23 @@ from bs4 import BeautifulSoup
 from markata.hookspec import hook_impl
 from markata import Markata, __version__
 
+from typing import List, TYPE_CHECKING
 
-def _create_seo(markata: Markata, soup, article):
+if TYPE_CHECKING:
+    import frontmatter
+    from bs4.element import Tag
+
+
+def _create_seo(
+    markata: Markata, soup: BeautifulSoup, article: "frontmatter.Post"
+) -> List:
     if article.metadata["description"] == "":
         article.metadata["description"] = " ".join(
             [p.text for p in soup.find(id="post-body").find_all("p")]
         ).strip()[:120]
 
     seo = [
-        *markata.config["seo"],
+        *markata.seo,
         {
             "name": "description",
             "property": "description",
@@ -94,13 +102,12 @@ def _create_seo(markata: Markata, soup, article):
     return seo
 
 
-def _add_seo_tags(seo, article, soup):
+def _add_seo_tags(seo: List, article: "frontmatter.Post", soup: BeautifulSoup) -> None:
     for meta in seo:
         soup.head.append(_create_seo_tag(meta, soup))
-    return
 
 
-def _create_seo_tag(meta: dict, soup):
+def _create_seo_tag(meta: dict, soup: BeautifulSoup) -> "Tag":
     tag = soup.new_tag("meta")
     for k in meta:
         tag.attrs[k] = meta[k]
@@ -108,19 +115,19 @@ def _create_seo_tag(meta: dict, soup):
 
 
 @hook_impl
-def render(markata: Markata):
+def render(markata: Markata) -> None:
     for article in markata.iter_articles("add seo tags from seo.py"):
         key = markata.make_hash(
             "seo",
             "render",
             article["content_hash"],
-            markata.config["site_name"],
-            markata.config["url"],
+            markata.site_name,
+            markata.url,
             article.metadata["slug"],
-            markata.config["twitter_card"],
+            markata.twitter_card,
             article.metadata["title"],
-            markata.config["site_name"],
-            str(markata.config["seo"]),
+            markata.site_name,
+            str(markata.seo),
         )
         html_from_cache = markata.cache.get(key)
 
