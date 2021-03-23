@@ -2,7 +2,7 @@
 import datetime
 from pathlib import Path
 
-import dateutil
+import dateutil.parser
 import pytz
 
 from markata.hookspec import hook_impl
