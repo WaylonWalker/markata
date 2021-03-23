@@ -9,11 +9,11 @@ from markata.hookspec import hook_impl
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from markata import Markata
+    from markata.plugins.icon_resize import MarkataIcons
 
 
 @hook_impl
-def render(markata: "Markata") -> None:
+def render(markata: "MarkataIcons") -> None:
     manifest = {
         "name": markata.config["site_name"],
         "short_name": markata.config["short_name"],
