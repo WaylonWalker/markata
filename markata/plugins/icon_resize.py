@@ -8,11 +8,16 @@ from markata.hookspec import hook_impl
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+
+    from typing import List, Dict
     from markata import Markata
+
+    class MarkataIcons(Markata):
+        icons: List[Dict[str, str]]
 
 
 @hook_impl
-def render(markata: "Markata") -> None:
+def render(markata: "MarkataIcons") -> None:
     base_out_file = Path(markata.output_dir) / markata.icon
     img = Image.open(Path(markata.assets_dir) / markata.icon)
     ratio = img.size[1] / img.size[0]
@@ -31,7 +36,7 @@ def render(markata: "Markata") -> None:
 
 
 @hook_impl
-def save(markata: "Markata") -> None:
+def save(markata: "MarkataIcons") -> None:
     base_out_file = Path(markata.output_dir) / markata.icon
     for width in [48, 72, 96, 144, 192, 256, 384, 512]:
         img = Image.open(Path(markata.assets_dir) / markata.icon)
