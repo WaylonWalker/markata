@@ -14,7 +14,7 @@ from markata.hookspec import hook_impl
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from markata import Markata
+    from markata import Markata, Post
 
 
 @hook_impl
@@ -48,7 +48,7 @@ def get_post(path: Path, markata: "Markata") -> None:
         "content": "",
     }
     try:
-        post = frontmatter.load(path)
+        post: "Post" = frontmatter.load(path)
         post.metadata = {**default, **post.metadata}
     except ParserError:
         return
