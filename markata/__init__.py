@@ -74,6 +74,10 @@ DEFUALT_CONFIG = {
 }
 
 
+class Post(frontmatter.Post):
+    html: str
+
+
 class Markata:
     fg: "FeedGenerator"
     rss: str
@@ -83,9 +87,6 @@ class Markata:
         self.MARKATA_CACHE_DIR = Path(".") / ".markata.cache"
         self.MARKATA_CACHE_DIR.mkdir(exist_ok=True)
         self.cache = Cache(self.MARKATA_CACHE_DIR, statistics=True)
-
-    # def __setattr__(self, name, value):
-    #     self.
 
     def bust_cache(self) -> Markata:
         self.cache.clear()
@@ -325,12 +326,6 @@ class Markata:
                     raise e
 
             self._pm.register(plugin)
-
-    # def __setattr__(self, name: str, value: Any) -> None:
-    #     setattr(self, name, value)
-
-    # def __getattr__(self, name: str) -> Any:
-    #     return getattr(self, name)
 
     def __iter__(self, description: str = "working...") -> Iterable[frontmatter.Post]:
         articles: Iterable[frontmatter.Post] = track(
