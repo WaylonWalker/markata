@@ -13,6 +13,6 @@ if TYPE_CHECKING:
 
 @hook_impl
 def glob(markata: "Markata") -> None:
-    patterns = list(markata.config["glob_patterns"])
+    patterns = list(markata.glob_patterns)
     markata.files = list(flatten([Path().glob(str(pattern)) for pattern in patterns]))
     markata.content_directories = list(set([f.parent for f in markata.files]))
