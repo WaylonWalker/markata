@@ -1,10 +1,14 @@
 from markata.hookspec import hook_impl
-from markata import Markata, __version__
 from bs4 import BeautifulSoup
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from markata import Markata
 
 
 @hook_impl
-def render(markata: Markata):
+def render(markata: "Markata") -> None:
     for article in markata.iter_articles("setting long description"):
 
         key = markata.make_hash(

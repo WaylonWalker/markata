@@ -8,7 +8,7 @@ import importlib
 import os
 import sys
 from pathlib import Path
-from typing import List, Iterable, Any, TYPE_CHECKING
+from typing import List, Iterable, Any, TYPE_CHECKING, Dict
 
 import markdown
 import frontmatter
@@ -81,6 +81,7 @@ class Post(frontmatter.Post):
 class Markata:
     fg: "FeedGenerator"
     rss: str
+    icons: List[Dict[str, str]]
 
     def __init__(self) -> None:
         self.configure()
@@ -202,6 +203,11 @@ class Markata:
             self.lang = ""
         else:
             self.lang = str(self.config["lang"])
+
+        if "post_template" not in self.config:
+            self.post_template = ""
+        else:
+            self.post_template = str(self.config["post_template"])
 
         return self
 
