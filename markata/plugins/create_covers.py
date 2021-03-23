@@ -5,16 +5,26 @@ from PIL import Image, ImageDraw, ImageFont
 from markata import background
 from markata.hookspec import hook_impl
 
+from typing import TYPE_CHECKING
 
-def get_font(path, draw, title, size=250):
+
+if TYPE_CHECKING:
+    from markata import Markata
+
+
+def get_font(
+    path: Path, draw: ImageDraw.Draw, title: str, size: int = 250
+) -> ImageFont.FreeTypeFont:
     font = ImageFont.truetype(path, size=size)
     if draw.textsize(title, font=font)[0] > 800:
-        return get_font(draw, title, size - 10)
+        return get_font(path, draw, title, size - 10)
     return font
 
 
 @background.task
-def make_cover(title, color, output_path, template_path, font_path):
+def make_cover(
+    title: str, color: str, output_path: Path, template_path: Path, font_path: Path
+) -> None:
     image = Image.open(template_path)
 
     draw = ImageDraw.Draw(image)
@@ -33,9 +43,9 @@ def make_cover(title, color, output_path, template_path, font_path):
 
 
 @hook_impl
-def save(markata):
+def save(markata: "Markata") -> None:
     for article in markata.articles:
-        output_path = Path(markata.config["output_dir"]) / (
+        output_path = Path(markata.output_dir) / (
             Path(article.metadata["path"]).stem + ".png"
         )
 
