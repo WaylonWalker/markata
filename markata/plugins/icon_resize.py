@@ -5,11 +5,16 @@ from PIL import Image
 
 from markata.hookspec import hook_impl
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from markata import Markata
+
 
 @hook_impl
-def render(markata):
-    base_out_file = Path(markata.config["output_dir"]) / markata.config["icon"]
-    img = Image.open(Path(markata.config["assets_dir"]) / markata.config["icon"])
+def render(markata: "Markata") -> None:
+    base_out_file = Path(markata.output_dir) / markata.icon
+    img = Image.open(Path(markata.assets_dir) / markata.icon)
     ratio = img.size[1] / img.size[0]
     markata.icons = []
     for width in [48, 72, 96, 144, 192, 256, 384, 512]:
@@ -26,12 +31,12 @@ def render(markata):
 
 
 @hook_impl
-def save(markata):
-    base_out_file = Path(markata.config["output_dir"]) / markata.config["icon"]
+def save(markata: "Markata") -> None:
+    base_out_file = Path(markata.output_dir) / markata.icon
     for width in [48, 72, 96, 144, 192, 256, 384, 512]:
-        img = Image.open(Path(markata.config["assets_dir"]) / markata.config["icon"])
+        img = Image.open(Path(markata.assets_dir) / markata.icon)
         height = int(float(img.size[1]) * float(width / float(img.size[0])))
         img = img.resize((width, height), Image.ANTIALIAS)
         filename = Path(f"{base_out_file.stem}_{width}x{height}{base_out_file.suffix}")
-        out_file = Path(markata.config["output_dir"]) / filename
+        out_file = Path(markata.output_dir) / filename
         img.save(out_file)
