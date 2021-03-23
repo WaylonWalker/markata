@@ -32,17 +32,15 @@ def render(markata: "Markata") -> None:
         fe.description(article.metadata["description"])
         fe.link(href=markata.url + "/" + article["slug"])
         fe.content(article.article_html.translate(dict.fromkeys(range(32))))
-        # fe.published(str(article["datetime"]))
 
     markata.fg = fg
     markata.rss = fg.rss_str(pretty=True)
-    # markata.atom = fg.atom_str(pretty=True)
 
 
 from typing import cast
 from markata import Markata
 
-# MTYPE =
+
 @hook_impl
 def save(markata: "Markata") -> None:
     output_dir = Path(markata.output_dir)
