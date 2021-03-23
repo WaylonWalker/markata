@@ -99,6 +99,7 @@ class Markata:
         self.config = {**DEFUALT_CONFIG, **standard_config.load("markata")}
         if isinstance(self.config["glob_patterns"], str):
             self.config["glob_patterns"] = self.config["glob_patterns"].split(",")
+        self.glob_patterns = str(self.config["glob_patterns"])
 
         if "hooks" not in self.config:
             self.hooks = [""]
