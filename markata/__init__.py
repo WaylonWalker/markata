@@ -159,6 +159,11 @@ class Markata:
         else:
             self.output_dir = Path(str(self.config["output_dir"]))
 
+        if "assets_dir" not in self.config:
+            raise MarkataConfigError("assets_dir must be specified in markata config")
+        else:
+            self.assets_dir = Path(str(self.config["assets_dir"]))
+
         if "site_name" not in self.config:
             self.site_name = ""
         else:
