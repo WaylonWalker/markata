@@ -3,7 +3,6 @@ import time
 from pathlib import Path
 
 import frontmatter
-from more_itertools import flatten
 from rich.progress import Progress, BarColumn
 
 from yaml.parser import ParserError
