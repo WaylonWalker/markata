@@ -79,10 +79,6 @@ class Post(frontmatter.Post):
 
 
 class Markata:
-    fg: "FeedGenerator"
-    rss: str
-    icons: List[Dict[str, str]]
-
     def __init__(self) -> None:
         self.configure()
         self.MARKATA_CACHE_DIR = Path(".") / ".markata.cache"

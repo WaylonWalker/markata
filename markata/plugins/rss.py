@@ -12,9 +12,13 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from markata import Markata
 
+    class MarkataRss(Markata):
+        fg: "FeedGenerator"
+        rss: str
+
 
 @hook_impl(trylast=True)
-def render(markata: "Markata") -> None:
+def render(markata: "MarkataRss") -> None:
     fg = FeedGenerator()
     fg.id(markata.url + "/rss.xml")
     fg.title(markata.title)
@@ -42,6 +46,6 @@ from markata import Markata
 
 
 @hook_impl
-def save(markata: "Markata") -> None:
+def save(markata: "MarkataRss") -> None:
     output_dir = Path(markata.output_dir)
     markata.fg.rss_file(str(output_dir / "rss.xml"))
