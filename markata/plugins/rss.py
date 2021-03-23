@@ -7,27 +7,30 @@ from more_itertools import flatten
 
 from markata.hookspec import hook_impl
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from markata import Markata
+
 
 @hook_impl(trylast=True)
-def render(markata):
+def render(markata: "Markata") -> None:
     fg = FeedGenerator()
-    fg.id(markata.config["url"] + "/rss.xml")
-    fg.title(markata.config["title"])
-    fg.author(
-        {"name": markata.config["author_name"], "email": markata.config["author_email"]}
-    )
-    fg.link(href=markata.config["url"], rel="alternate")
-    fg.logo(markata.config["icon"])
-    fg.subtitle(markata.config["rss_description"])
-    fg.link(href=markata.config["url"] + "/rss.xml", rel="self")
-    fg.language(markata.config["lang"])
+    fg.id(markata.url + "/rss.xml")
+    fg.title(markata.title)
+    fg.author({"name": markata.author_name, "email": markata.author_email})
+    fg.link(href=markata.url, rel="alternate")
+    fg.logo(markata.icon)
+    fg.subtitle(markata.rss_description)
+    fg.link(href=markata.url + "/rss.xml", rel="self")
+    fg.language(markata.lang)
 
     for article in markata.articles:
         fe = fg.add_entry()
-        fe.id(markata.config["url"] + "/" + article["slug"])
+        fe.id(markata.url + "/" + article["slug"])
         fe.title(article.metadata["title"])
         fe.description(article.metadata["description"])
-        fe.link(href=markata.config["url"] + "/" + article["slug"])
+        fe.link(href=markata.url + "/" + article["slug"])
         fe.content(article.article_html.translate(dict.fromkeys(range(32))))
         # fe.published(str(article["datetime"]))
 
@@ -36,7 +39,11 @@ def render(markata):
     # markata.atom = fg.atom_str(pretty=True)
 
 
+from typing import cast
+from markata import Markata
+
+# MTYPE =
 @hook_impl
-def save(markata):
-    output_dir = Path(markata.config["output_dir"])
+def save(markata: "Markata") -> None:
+    output_dir = Path(markata.output_dir)
     markata.fg.rss_file(str(output_dir / "rss.xml"))

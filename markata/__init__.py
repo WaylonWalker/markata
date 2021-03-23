@@ -8,7 +8,7 @@ import importlib
 import os
 import sys
 from pathlib import Path
-from typing import List, Iterable, Any
+from typing import List, Iterable, Any, TYPE_CHECKING
 
 import markdown
 import frontmatter
@@ -21,6 +21,9 @@ from markata import hookspec, standard_config
 from markata.errors import MarkataConfigError
 
 from checksumdir import dirhash
+
+if TYPE_CHECKING:
+    from feedgen.feed import FeedGenerator
 
 
 __version__ = "0.0.1"
@@ -72,6 +75,9 @@ DEFUALT_CONFIG = {
 
 
 class Markata:
+    fg: "FeedGenerator"
+    rss: str
+
     def __init__(self) -> None:
         self.configure()
         self.MARKATA_CACHE_DIR = Path(".") / ".markata.cache"
@@ -108,7 +114,7 @@ class Markata:
 
         if "seo" not in self.config:
             self.seo = [""]
-        if isinstance(self.seo, str):
+        if isinstance(self.config["seo"], str):
             self.seo = self.config["seo"].split(",")
         if isinstance(self.config["seo"], list):
             self.seo = self.config["seo"]
@@ -165,6 +171,36 @@ class Markata:
             self.site_name = ""
         else:
             self.site_name = str(self.config["site_name"])
+
+        if "title" not in self.config:
+            self.title = ""
+        else:
+            self.title = str(self.config["title"])
+
+        if "author_name" not in self.config:
+            self.author_name = ""
+        else:
+            self.author_name = str(self.config["author_name"])
+
+        if "author_email" not in self.config:
+            self.author_email = ""
+        else:
+            self.author_email = str(self.config["author_email"])
+
+        if "icon" not in self.config:
+            self.icon = ""
+        else:
+            self.icon = str(self.config["icon"])
+
+        if "rss_description" not in self.config:
+            self.rss_description = ""
+        else:
+            self.rss_description = str(self.config["rss_description"])
+
+        if "lang" not in self.config:
+            self.lang = ""
+        else:
+            self.lang = str(self.config["lang"])
 
         return self
 
@@ -289,6 +325,12 @@ class Markata:
                     raise e
 
             self._pm.register(plugin)
+
+    # def __setattr__(self, name: str, value: Any) -> None:
+    #     setattr(self, name, value)
+
+    # def __getattr__(self, name: str) -> Any:
+    #     return getattr(self, name)
 
     def __iter__(self, description: str = "working...") -> Iterable[frontmatter.Post]:
         articles: Iterable[frontmatter.Post] = track(
