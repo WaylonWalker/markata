@@ -6,9 +6,14 @@ from bs4 import BeautifulSoup
 
 from markata.hookspec import hook_impl
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from markata import Markata
+
 
 @hook_impl
-def render(markata):
+def render(markata: "Markata") -> None:
     manifest = {
         "name": markata.config["site_name"],
         "short_name": markata.config["short_name"],
@@ -19,7 +24,7 @@ def render(markata):
         "description": markata.config["description"],
         "icons": markata.icons,
     }
-    filepath = Path(markata.config["output_dir"]) / "manifest.json"
+    filepath = Path(markata.output_dir) / "manifest.json"
     filepath.parent.mkdir(parents=True, exist_ok=True)
     filepath.touch(exist_ok=True)
     with open(filepath, "w+") as f:
