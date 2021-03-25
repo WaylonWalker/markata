@@ -7,13 +7,24 @@ from PIL import Image, ImageDraw, ImageFont
 from markata import background
 from markata.hookspec import hook_impl
 
+from typing import Tuple, Union, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from markata import Markata
+
 
 @lru_cache(maxsize=64)
-def _load_font(path, size):
+def _load_font(path: Path, size: int) -> ImageFont.FreeTypeFont:
     return ImageFont.truetype(path, size=size)
 
 
-def get_font(path, draw, title, size=250, max_size=(800, 220)):
+def get_font(
+    path: Path,
+    draw: ImageDraw.Draw,
+    title: str,
+    size: int = 250,
+    max_size: tuple = (800, 220),
+) -> ImageFont.ImageFont.FreeTypeFont:
     font = _load_font(path, size)
     # font = ImageFont.truetype(path, size=size)
     current_size = draw.textsize(title, font=font)
@@ -25,18 +36,20 @@ def get_font(path, draw, title, size=250, max_size=(800, 220)):
 class PaddingError(BaseException):
     def __init__(
         self,
-        msg="",
-        *args,
-        **kwargs,
-    ):
+        msg: str = "",
+    ) -> None:
         super().__init__(
             "Padding must be an iterable of length 1, 2, 3, or 4.\n" + msg,
-            *args,
-            **kwargs,
         )
 
 
-def draw_text(image, font_path, text, color, padding):
+def draw_text(
+    image: Image,
+    font_path: Path,
+    text: str,
+    color: Union[str, None],
+    padding: Tuple[int, ...],
+) -> None:
     draw = ImageDraw.Draw(image)
     font = get_font(font_path, draw, text)
     padding = resolve_padding(padding)
@@ -50,7 +63,7 @@ def draw_text(image, font_path, text, color, padding):
     draw.text((x, y), text, fill=color, font=font, align="center")
 
 
-def resolve_padding(padding):
+def resolve_padding(padding: Tuple[int, ...]) -> Tuple[int, ...]:
     """Convert padding to a len 4 tuple"""
     if len(padding) == 4:
         return padding
@@ -65,17 +78,17 @@ def resolve_padding(padding):
 
 @background.task
 def make_cover(
-    title,
-    color,
-    output_path,
-    template_path,
-    font_path,
-    padding,
-    text=None,
-    text_font=None,
-    text_font_color=None,
-    text_padding=None,
-):
+    title: str,
+    color: str,
+    output_path: Path,
+    template_path: Path,
+    font_path: Path,
+    padding: Tuple[int, ...],
+    text_font: Path,
+    text: str = None,
+    text_font_color: str = None,
+    text_padding: Tuple[int, ...] = None,
+) -> None:
     # image = Image.open(template_path)
     image = Image.open(template_path)
     draw_text(image, font_path, title, color, padding)
@@ -112,7 +125,7 @@ def make_cover(
 
 
 @hook_impl
-def save(markata):
+def save(markata: "Markata") -> None:
     futures = []
     for article in markata.articles:
         for cover in markata.config["covers"]:
@@ -140,8 +153,8 @@ def save(markata):
                     cover["template"],
                     cover["font"],
                     padding,
-                    text,
                     text_font,
+                    text,
                     text_font_color,
                 )
             )
