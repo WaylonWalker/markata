@@ -35,7 +35,7 @@ def load(markata: "Markata") -> None:
 
 
 @task
-def get_post(path: Path, markata: "Markata") -> None:
+def get_post(path: Path, markata: "Markata") -> "Post":
     default = {
         "cover": "",
         "title": "",
@@ -47,7 +47,7 @@ def get_post(path: Path, markata: "Markata") -> None:
         "content": "",
     }
     try:
-        post: "Post" = frontmatter.load(path)
+        post = frontmatter.load(path)
         post.metadata = {**default, **post.metadata}
     except ParserError:
         return
@@ -57,3 +57,4 @@ def get_post(path: Path, markata: "Markata") -> None:
         post = default
     post.metadata["path"] = str(path)
     post["content_hash"] = markata.make_hash(post.content)
+    return post
