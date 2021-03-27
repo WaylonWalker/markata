@@ -1,13 +1,12 @@
 """manifest plugin"""
 import json
 from pathlib import Path
+from typing import TYPE_CHECKING, List
 
 from bs4 import BeautifulSoup
 
-from markata.hookspec import hook_impl
 from markata import Markata, __version__
-
-from typing import List, TYPE_CHECKING
+from markata.hookspec import hook_impl
 
 if TYPE_CHECKING:
     import frontmatter

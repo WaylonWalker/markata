@@ -1,15 +1,15 @@
 """Icon Resize Plugin"""
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from PIL import Image
 
 from markata.hookspec import hook_impl
 
-from typing import TYPE_CHECKING
-
 if TYPE_CHECKING:
 
-    from typing import List, Dict
+    from typing import Dict, List
+
     from markata import Markata
 
     class MarkataIcons(Markata):

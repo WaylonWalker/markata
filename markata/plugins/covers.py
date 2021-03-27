@@ -1,13 +1,12 @@
 import time
 from functools import lru_cache
 from pathlib import Path
+from typing import TYPE_CHECKING, Tuple, Union
 
 from PIL import Image, ImageDraw, ImageFont
 
 from markata import background
 from markata.hookspec import hook_impl
-
-from typing import Tuple, Union, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from markata import Markata

@@ -1,12 +1,11 @@
 """manifest plugin"""
 import json
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from bs4 import BeautifulSoup
 
 from markata.hookspec import hook_impl
-
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from markata.plugins.icon_resize import MarkataIcons
