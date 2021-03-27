@@ -1,7 +1,7 @@
 """Default load plugin."""
 import time
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import frontmatter
 from rich.progress import BarColumn, Progress
@@ -33,7 +33,7 @@ def load(markata: "Markata") -> None:
 
 
 @task
-def get_post(path: Path, markata: "Markata") -> "Post":
+def get_post(path: Path, markata: "Markata") -> Optional["Post"]:
     default = {
         "cover": "",
         "title": "",
@@ -45,13 +45,13 @@ def get_post(path: Path, markata: "Markata") -> "Post":
         "content": "",
     }
     try:
-        post = frontmatter.load(path)
+        post: "Post" = frontmatter.load(path)
         post.metadata = {**default, **post.metadata}
     except ParserError:
-        return
+        return None
         post = default
     except ValueError:
-        return
+        return None
         post = default
     post.metadata["path"] = str(path)
     post["content_hash"] = markata.make_hash(post.content)
