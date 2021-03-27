@@ -1,5 +1,6 @@
 from datetime import datetime
 
+import time
 from checksumdir import dirhash
 from rich import box
 from rich.align import Align
@@ -31,6 +32,7 @@ def make_layout() -> Layout:
     )
     layout["main"].split(
         Layout(name="side"),
+        Layout(name="server"),
         Layout(name="body", ratio=2, minimum_size=60),
         direction="horizontal",
     )
@@ -86,11 +88,73 @@ class Plugins(RichM):
         return Panel(plugin_table)
 
 
+def find_port(port=8000):
+    """Find a port not in ues starting at given port"""
+    import socket, errno
+
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        if s.connect_ex(("localhost", port)) == 0:
+            return find_port(port=port + 1)
+        else:
+            return port
+
+
+from rich import box
+
+
+class Server:
+    def __init__(
+        self, auto_restart: bool = True, directory: str = ".", port: int = 8000
+    ):
+
+        self.auto_restart = auto_restart
+        self.directory = directory
+        self.port = find_port(port=port)
+        self.start_server()
+
+    def start_server(self):
+        import subprocess
+
+        self.proc = subprocess.Popen(
+            [
+                "python",
+                "-m",
+                "http.server",
+                str(self.port),
+                "--directory",
+                self.directory,
+            ],
+            stderr=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+        )
+        self.start_time = time.time()
+
+    @property
+    def uptime(self):
+        return round(time.time() - self.start_time)
+
+    def __rich__(self) -> Panel:
+        if not self.proc.poll():
+            return Panel(
+                f"[green]serving on port: [gold1]{self.port} [green]using pid: [gold1]{self.proc.pid} [green]uptime: [gold1]{self.uptime}[/]",
+                border_style="blue",
+                title="server",
+            )
+
+        else:
+            if self.auto_restart:
+                self.start_server()
+
+            return Panel(f"[red]server died", title="server", border_style="red")
+
+
 def run() -> None:
     layout = make_layout()
     layout["header"].update(Header())
 
     m = MarkataCli()
+    server = Server(directory=m.output_dir)
+    layout["server"].update(server)
 
     layout["plugins"].update(Plugins(m))
     m.count = 0
