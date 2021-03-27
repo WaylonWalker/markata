@@ -16,6 +16,7 @@ import pluggy
 from checksumdir import dirhash
 from diskcache import Cache
 from rich.console import Console
+from rich.panel import Panel
 from rich.progress import track
 
 from markata import hookspec, standard_config
@@ -85,7 +86,6 @@ class Markata:
         self.cache = Cache(self.MARKATA_CACHE_DIR, statistics=True)
 
     def __rich__(self) -> Panel:
-        from rich.panel import Panel
 
         return Panel("markata")
 
