@@ -15,6 +15,11 @@ from rich.text import Text
 from markata import Markata
 
 
+class MarkataCli(Markata):
+    count: int = 0
+    _dirhash: str = ""
+
+
 def make_layout() -> Layout:
     """Define the layout."""
     layout = Layout(name="root")
@@ -50,7 +55,7 @@ class Header:
 
 
 class RichM:
-    def __init__(self, markata: Markata):
+    def __init__(self, markata: MarkataCli):
         self.m = markata
 
 
@@ -78,7 +83,7 @@ class Plugins(RichM):
                     ]
                 )
             )
-        return plugin_table
+        return Panel(plugin_table)
 
 
 # import logging
@@ -110,11 +115,11 @@ class Plugins(RichM):
 # log.addHandler(tail)
 
 
-def run():
+def run() -> None:
     layout = make_layout()
     layout["header"].update(Header())
 
-    m = Markata()
+    m = MarkataCli()
 
     layout["plugins"].update(Plugins(m))
     m.count = 0
