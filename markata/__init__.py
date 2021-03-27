@@ -85,6 +85,11 @@ class Markata:
         self.MARKATA_CACHE_DIR.mkdir(exist_ok=True)
         self.cache = Cache(self.MARKATA_CACHE_DIR, statistics=True)
 
+    def __rich__(self) -> Panel:
+        from rich.panel import Panel
+
+        return Panel("markata")
+
     def bust_cache(self) -> Markata:
         self.cache.clear()
         # self = Markata()
