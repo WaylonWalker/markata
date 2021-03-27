@@ -86,35 +86,6 @@ class Plugins(RichM):
         return Panel(plugin_table)
 
 
-# import logging
-# from rich.logging import RichHandler
-# from markata.tail_logger import TailLogger
-
-# import io
-
-# tail = TailLogger(10)
-# log_capture_string = io.StringIO()
-# ch = logging.StreamHandler(log_capture_string)
-# ch.setLevel(logging.DEBUG)
-
-
-# FORMAT = "%(message)s"
-# logging.basicConfig(
-#     level="INFO",
-#     format=FORMAT,
-#     datefmt="[%X]",
-#     handlers=[RichHandler()],
-# )
-
-# ch.setFormatter(FORMAT)
-# # tail.setFormatter(FORMAT)
-
-# log = logging.getLogger(__name__)
-# log.info("Hello, World!")
-# log.addHandler(ch)
-# log.addHandler(tail)
-
-
 def run() -> None:
     layout = make_layout()
     layout["header"].update(Header())
@@ -130,13 +101,10 @@ def run() -> None:
         m._dirhash = m.content_dir_hash
 
         while m._dirhash == m.content_dir_hash:
-            # layout["footer"].update(f"watching: {m.output_dir} - {_dirhash} - {count}")
             m.count += 1
     print("files changed")
     run()
 
 
 if __name__ == "__main__":
-    # console = Console()
-    # console.log("here")
     run()
