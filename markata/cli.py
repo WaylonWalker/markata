@@ -1,19 +1,18 @@
 from datetime import datetime
-from markata import Markata
-from checksumdir import dirhash
 
+from checksumdir import dirhash
 from rich import box
 from rich.align import Align
 from rich.console import Console, RenderGroup
 from rich.layout import Layout
+from rich.live import Live
 from rich.panel import Panel
-from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn
+from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn
 from rich.syntax import Syntax
 from rich.table import Table
 from rich.text import Text
 
-
-from rich.live import Live
+from markata import Markata
 
 
 def make_layout() -> Layout:

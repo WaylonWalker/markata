@@ -1,16 +1,14 @@
 """Default load plugin."""
 import time
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import frontmatter
-from rich.progress import Progress, BarColumn
-
+from rich.progress import BarColumn, Progress
 from yaml.parser import ParserError
 
 from markata.background import task
 from markata.hookspec import hook_impl
-
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from markata import Markata, Post

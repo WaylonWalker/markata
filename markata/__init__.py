@@ -8,19 +8,18 @@ import importlib
 import os
 import sys
 from pathlib import Path
-from typing import List, Iterable, Any, TYPE_CHECKING, Dict
+from typing import TYPE_CHECKING, Any, Dict, Iterable, List
 
-import markdown
 import frontmatter
+import markdown
 import pluggy
+from checksumdir import dirhash
 from diskcache import Cache
-from rich.progress import track
 from rich.console import Console
+from rich.progress import track
 
 from markata import hookspec, standard_config
 from markata.errors import MarkataConfigError
-
-from checksumdir import dirhash
 
 if TYPE_CHECKING:
     from feedgen.feed import FeedGenerator
@@ -423,10 +422,10 @@ class Markata:
 
 
 def cli() -> None:
-    from rich import pretty, traceback
-
     import sys
     import time
+
+    from rich import pretty, traceback
 
     if "--no-rich" not in sys.argv:
         pretty.install()
