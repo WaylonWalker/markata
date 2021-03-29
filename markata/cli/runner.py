@@ -1,19 +1,10 @@
 import time
-from checksumdir import dirhash
 from multiprocessing import Process
+
 from rich.panel import Panel
-from rich.live import Live
 from rich.text import Text
-from rich.layout import Layout
+
 from markata import Markata
-
-
-def run_until_keyboard_interrupt():
-    try:
-        while True:
-            time.sleep(0.2)
-    except KeyboardInterrupt:
-        pass
 
 
 class Runner:
@@ -79,14 +70,10 @@ class Runner:
         return Panel(Text(s), border_style=self.color)
 
 
-def main():
-    layout = Layout()
-    layout.update(Runner())
-
-    with Live(layout, refresh_per_second=4, screen=True):
-        # time.sleep(9999)
-        run_until_keyboard_interrupt()
-
-
 if __name__ == "__main__":
-    main()
+    from rich.live import Live
+
+    from .cli import run_until_keyboard_interrupt
+
+    with Live(Runner(), refresh_per_second=1, screen=True):
+        run_until_keyboard_interrupt()
