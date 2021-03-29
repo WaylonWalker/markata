@@ -1,0 +1,77 @@
+import time
+from rich.panel import Panel
+from typing import Union, TYPE_CHECKING
+
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+
+def find_port(port=8000):
+    """Find a port not in ues starting at given port"""
+    import socket
+
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        if s.connect_ex(("localhost", port)) == 0:
+            return find_port(port=port + 1)
+        else:
+            return port
+
+
+class Server:
+    def __init__(
+        self,
+        auto_restart: bool = True,
+        directory: Union[str, "Path"] = ".",
+        port: int = 8000,
+    ):
+
+        self.auto_restart = auto_restart
+        self.directory = directory
+        self.port = find_port(port=port)
+        self.start_server()
+
+    def start_server(self):
+        import subprocess
+
+        # self.cmd = [
+        #         "python",
+        #         "-m",
+        #         "http.server",
+        #         str(self.port),
+        #         "--directory",
+        #         self.directory,
+        #     ]
+        self.cmd = [
+            "livereload",
+            "-p",
+            str(self.port),
+            "-w",
+            ".1",
+            self.directory,
+        ]
+
+        self.proc = subprocess.Popen(
+            self.cmd,
+            stderr=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+        )
+        self.start_time = time.time()
+
+    @property
+    def uptime(self):
+        return round(time.time() - self.start_time)
+
+    def __rich__(self) -> Panel:
+        if not self.proc.poll():
+            return Panel(
+                f"[green]serving on port: [gold1]{self.port} [green]using pid: [gold1]{self.proc.pid} [green]uptime: [gold1]{self.uptime}[/]",
+                border_style="blue",
+                title="server",
+            )
+
+        else:
+            if self.auto_restart:
+                self.start_server()
+
+            return Panel(f"[red]server died", title="server", border_style="red")
