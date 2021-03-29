@@ -19,6 +19,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.progress import track
 
+from rich.table import Table
 from markata import hookspec, standard_config
 from markata.errors import MarkataConfigError
 
@@ -78,22 +79,41 @@ class Post(frontmatter.Post):
     html: str
 
 
+def set_phase(function):
+    def wrapper(self, *args, **kwargs):
+        self.phase = function.__name__
+        result = function(self, *args, **kwargs)
+        self.phase = function.__name__
+        return result
+
+    return wrapper
+
+
 class Markata:
     def __init__(self) -> None:
+        self.phase = "starting"
         self.configure()
         self.MARKATA_CACHE_DIR = Path(".") / ".markata.cache"
         self.MARKATA_CACHE_DIR.mkdir(exist_ok=True)
         self.cache = Cache(self.MARKATA_CACHE_DIR, statistics=True)
 
-    def __rich__(self) -> Panel:
+    def __rich__(self) -> Table:
 
-        return Panel("markata")
+        grid = Table.grid()
+        grid.add_column("label")
+        grid.add_column("value")
+
+        for label, value in self.describe().items():
+            grid.add_row(label, value)
+
+        return grid
 
     def bust_cache(self) -> Markata:
         self.cache.clear()
         # self = Markata()
         return self
 
+    @set_phase
     def configure(self) -> Markata:
         sys.path.append(os.getcwd())
         self.config = {**DEFUALT_CONFIG, **standard_config.load("markata")}
@@ -125,6 +145,15 @@ class Markata:
             self.seo = self.config["seo"].split(",")
         if isinstance(self.config["seo"], list):
             self.seo = self.config["seo"]
+
+        if "covers" not in self.config:
+            self.covers = [""]
+        if isinstance(self.config["covers"], str):
+            self.covers = self.config["covers"].split(",")
+        if isinstance(self.config["covers"], list):
+            self.covers = self.config["covers"]
+        else:
+            raise TypeError("covers must be a string or list of dicts")
 
         try:
             default_index = self.hooks.index("default")
@@ -229,8 +258,8 @@ class Markata:
         return self._phase
 
     @phase.setter
-    def phase(self, phase: str) -> None:
-        self._phase = phase
+    def phase(self, value: str) -> None:
+        self._phase = value
 
     @property
     def hooks(self) -> List[str]:
@@ -318,6 +347,9 @@ class Markata:
     #         self._html = html
     #     else:
     #         raise RuntimeWarning("cannot set html outside of render phase")
+    def describe(self) -> dict[str, str]:
+        return {"version": __version__, "phase": self.phase}
+
     def _to_dict(self) -> dict[str, Iterable]:
         return {"config": self.config, "articles": [a.to_dict() for a in self.articles]}
 
@@ -355,6 +387,7 @@ class Markata:
         )
         return articles
 
+    @set_phase
     def glob(self) -> Markata:
         """run glob hooks
 
@@ -363,7 +396,6 @@ class Markata:
         attribute for loading.
         """
 
-        self.phase = "glob"
         try:
             self._pm.hook.glob(markata=self)
         except AttributeError:
@@ -372,32 +404,29 @@ class Markata:
 
         return self
 
+    @set_phase
     def load(self) -> Markata:
-        self.phase = "load"
         try:
             self._pm.hook.load(markata=self)
         except AttributeError:
-            print("missed glob")
             self.glob()
             self._pm.hook.load(markata=self)
         return self
 
+    @set_phase
     def render(self) -> Markata:
-        self.phase = "render"
         try:
             self._pm.hook.render(markata=self)
         except AttributeError:
-            print("missed load")
             self.load()
             self._pm.hook.render(markata=self)
         return self
 
+    @set_phase
     def save(self) -> Markata:
-        self.phase = "save"
         try:
             self._pm.hook.save(markata=self)
         except AttributeError:
-            print("missed render")
             self.render()
             self._pm.hook.save(markata=self)
         return self
@@ -437,7 +466,7 @@ def cli() -> None:
 
     m = Markata()
 
-    print("console options:", m.console.options)
+    m.console.print("console options:", m.console.options)
 
     if "--quiet" in sys.argv or "-q" in sys.argv:
         m.console.quiet = True
