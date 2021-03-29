@@ -1,7 +1,7 @@
 import time
-from rich.panel import Panel
-from typing import Union, TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
+from rich.panel import Panel
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -75,3 +75,16 @@ class Server:
                 self.start_server()
 
             return Panel(f"[red]server died", title="server", border_style="red")
+
+
+if __name__ == "__main__":
+
+    from rich.live import Live
+
+    from markata import Markata
+
+    from .cli import run_until_keyboard_interrupt
+
+    m = Markata()
+    with Live(Server(), refresh_per_second=1, screen=True):
+        run_until_keyboard_interrupt()
