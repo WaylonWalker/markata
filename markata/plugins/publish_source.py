@@ -14,5 +14,7 @@ def save(markata: "Markata") -> None:
     output_dir = Path(str(markata.config["output_dir"]))
     output_dir.mkdir(parents=True, exist_ok=True)
     for article in markata.iter_articles(description="saving source documents"):
-        with open(output_dir / Path(article["path"]).name, "w+") as f:
+        with open(
+            output_dir / Path(article["slug"]).parent / Path(article["path"]).name, "w+"
+        ) as f:
             f.write(frontmatter.dumps(article))
