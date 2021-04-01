@@ -7,6 +7,7 @@ import hashlib
 import importlib
 import os
 import sys
+from contextlib import contextmanager
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, Iterable, List
 
@@ -14,12 +15,12 @@ import frontmatter
 import markdown
 import pluggy
 from checksumdir import dirhash
-from diskcache import Cache
+from diskcache import FanoutCache
 from rich.console import Console
 from rich.panel import Panel
 from rich.progress import track
-
 from rich.table import Table
+
 from markata import hookspec, standard_config
 from markata.errors import MarkataConfigError
 
@@ -95,7 +96,7 @@ class Markata:
         self.configure()
         self.MARKATA_CACHE_DIR = Path(".") / ".markata.cache"
         self.MARKATA_CACHE_DIR.mkdir(exist_ok=True)
-        self.cache = Cache(self.MARKATA_CACHE_DIR, statistics=True)
+        self.cache = FanoutCache(self.MARKATA_CACHE_DIR, statistics=True)
 
     def __rich__(self) -> Table:
 
@@ -108,8 +109,20 @@ class Markata:
 
         return grid
 
+    # @property
+    # def _cache(self):
+    #     return
+
+    # @property
+    # @contextmanager
+    # def cache(self):
+    #     cache = self._cache
+    #     yield cache
+    #     cache.close()
+
     def bust_cache(self) -> Markata:
-        self.cache.clear()
+        with self.cache as cache:
+            cache.clear()
         # self = Markata()
         return self
 
@@ -445,11 +458,11 @@ class Markata:
         self.save()
         self.console.log("save complete")
 
-        if self.cache.hits + self.cache.misses > 0:
-            self.console.log(
-                f"cache hit rate {round(self.cache.hits/ (self.cache.hits + self.cache.misses)*100, 2)}%"
-            )
-        self.console.log(f"cache hits/misses {self.cache.hits}/{self.cache.misses}")
+        # with self.cache as cache:
+        hits, misses = self.cache.stats()
+        if hits + misses > 0:
+            self.console.log(f"cache hit rate {round(hits/ (hits + misses)*100, 2)}%")
+        self.console.log(f"cache hits/misses {hits}/{misses}")
 
         return self
 
