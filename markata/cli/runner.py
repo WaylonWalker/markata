@@ -1,3 +1,4 @@
+import subprocess
 import time
 from multiprocessing import Process
 
@@ -16,22 +17,37 @@ class Runner:
     m.console.quiet = True
     _dirhash = ""
     time = time.time()
+    std = ""
 
-    def _run(self) -> None:
-        self.m.run()
-        # time.sleep(1)
+    # def _run(self) -> None:
+    #     self.m.run()
+    # time.sleep(1)
 
     def run(self) -> None:
-        if not self.is_running:
-            self.p = Process(target=self._run)
-            self.p.start()
+        self.cmd = ["markata"]
+        import os
+
+        self.time = time.time()
+
+        self.proc = subprocess.Popen(
+            self.cmd,
+            cwd=os.getcwd(),
+            stderr=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+        )
+
+        # if not self.is_running:
+        #     self.p = Process(target=self._run)
+        #     self.p.start()
 
     @property
     def is_running(self):
-        try:
-            return self.p.is_alive()
-        except AttributeError:
-            return False
+        return self.proc.poll() == None
+
+        # try:
+        #     return self.p.is_alive()
+        # except AttributeError:
+        #     return False
 
     @property
     def status(self):
@@ -39,6 +55,12 @@ class Runner:
             if not self.is_running:
                 self.status = "waiting"
                 self.time = time.time()
+
+                s = "\n\nstdout\n"
+                s += str(self.proc.stdout.readlines())
+                s += "\n\nstderr\n"
+                s += str(self.proc.stdout.readlines())
+                self.std = s
         elif self.is_running:
             self.status = "running"
         return self._status
@@ -63,11 +85,11 @@ class Runner:
             self._dirhash = self.m.content_dir_hash
 
         if self.status == "running":
-            s = f"{self.status} {self.p.pid} {self.m.phase} {round(time.time() - self.time)}"
+            s = f"{self.status} {self.proc.pid} {self.m.phase} {round(time.time() - self.time)}"
 
         else:
             s = f"{self.status} {self.m.phase} {round(time.time() - self.time)}"
-        return Panel(Text(s), border_style=self.color)
+        return Panel(Text(s + self.std), border_style=self.color)
 
 
 if __name__ == "__main__":
