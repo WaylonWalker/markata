@@ -39,22 +39,22 @@ class Server:
     def start_server(self):
         import subprocess
 
-        # self.cmd = [
-        #         "python",
-        #         "-m",
-        #         "http.server",
-        #         str(self.port),
-        #         "--directory",
-        #         self.directory,
-        #     ]
         self.cmd = [
-            "livereload",
-            "-p",
+            "python",
+            "-m",
+            "http.server",
             str(self.port),
-            "-w",
-            ".1",
+            "--directory",
             self.directory,
         ]
+        # self.cmd = [
+        #     "livereload",
+        #     "-p",
+        #     str(self.port),
+        #     "-w",
+        #     ".1",
+        #     self.directory,
+        # ]
 
         self.proc = subprocess.Popen(
             self.cmd,
