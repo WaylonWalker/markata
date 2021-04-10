@@ -22,9 +22,14 @@ class Server:
     def __init__(
         self,
         auto_restart: bool = True,
-        directory: Union[str, "Path"] = ".",
+        directory: Union[str, "Path"] = None,
         port: int = 8000,
     ):
+        if directory is None:
+            from markata import Markata
+
+            m = Markata()
+            directory = m.output_dir
 
         self.auto_restart = auto_restart
         self.directory = directory
