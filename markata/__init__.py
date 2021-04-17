@@ -66,6 +66,7 @@ DEFAULT_HOOKS = [
     "markata.plugins.rss",
     "markata.plugins.icon_resize",
     "markata.plugins.sitemap",
+    "markata.plugins.to_json",
 ]
 
 DEFUALT_CONFIG = {
