@@ -32,7 +32,9 @@ def render(markata: "MarkataRss") -> None:
         fe = fg.add_entry()
         fe.id(markata.url + "/" + article["slug"])
         fe.title(article.metadata["title"])
+        fe.published(article.metadata["datetime"])
         fe.description(article.metadata["description"])
+        fe.summary(article.metadata["long_description"])
         fe.link(href=markata.url + "/" + article["slug"])
         fe.content(article.article_html.translate(dict.fromkeys(range(32))))
 
