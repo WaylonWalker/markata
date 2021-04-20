@@ -247,6 +247,11 @@ class Markata:
         else:
             self.icon = str(self.config["icon"])
 
+        if "description" not in self.config:
+            self.description = ""
+        else:
+            self.description = str(self.config["description"])
+
         if "rss_description" not in self.config:
             self.rss_description = ""
         else:
