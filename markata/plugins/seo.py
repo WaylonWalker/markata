@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 def _create_seo(
     markata: Markata, soup: BeautifulSoup, article: "frontmatter.Post"
 ) -> List:
-    if article.metadata["description"] == "":
+    if article.metadata["description"] == "" or None:
         article.metadata["description"] = " ".join(
             [p.text for p in soup.find(id="post-body").find_all("p")]
         ).strip()[:120]
