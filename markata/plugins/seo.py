@@ -134,6 +134,11 @@ def render(markata: Markata) -> None:
             soup = BeautifulSoup(article.html, features="lxml")
             seo = _create_seo(markata, soup, article)
             _add_seo_tags(seo, article, soup)
+            canonical_link = soup.new_tag("link")
+            canonical_link.attrs["rel"] = "canonical"
+            canonical_link.attrs["href"] = f'{markata.url}/{article.metadata["slug"]}/'
+            soup.head.append(canonical_link)
+
             html = soup.prettify()
             markata.cache.add(key, html, expire=15 * 24 * 60)
         else:
