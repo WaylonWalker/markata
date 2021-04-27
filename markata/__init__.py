@@ -460,6 +460,7 @@ class Markata:
 
         # with self.cache as cache:
         hits, misses = self.cache.stats()
+
         if hits + misses > 0:
             self.console.log(f"cache hit rate {round(hits/ (hits + misses)*100, 2)}%")
         self.console.log(f"cache hits/misses {hits}/{misses}")
@@ -501,6 +502,5 @@ def cli() -> None:
                     hash = m.content_dir_hash
                     m.run()
                 time.sleep(0.1)
-        return
 
     m.run()
