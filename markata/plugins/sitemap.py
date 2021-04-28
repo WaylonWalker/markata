@@ -12,7 +12,7 @@ def render(markata: Markata) -> None:
         "urlset": [
             {
                 "url": {
-                    "loc": markata.url + "/" + article["slug"],
+                    "loc": markata.url + "/" + article["slug"] + "/",
                     "changefreq": "daily",
                     "priority": "0.7",
                 }
