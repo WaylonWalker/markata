@@ -24,6 +24,21 @@ def _create_seo(
     seo = [
         *markata.seo,
         {
+            "name": "og:author",
+            "property": "og:author",
+            "content": markata.config["author"],
+        },
+        {
+            "name": "og:author_email",
+            "property": "og:author_email",
+            "content": markata.config["author"],
+        },
+        {
+            "name": "og:type",
+            "property": "og:type",
+            "content": "website",
+        },
+        {
             "name": "description",
             "property": "description",
             "content": article.metadata["description"],
