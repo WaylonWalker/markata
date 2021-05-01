@@ -26,12 +26,12 @@ def _create_seo(
         {
             "name": "og:author",
             "property": "og:author",
-            "content": markata.config["author"],
+            "content": markata.config["author_name"],
         },
         {
             "name": "og:author_email",
             "property": "og:author_email",
-            "content": markata.config["author"],
+            "content": markata.config["author_email"],
         },
         {
             "name": "og:type",
