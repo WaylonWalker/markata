@@ -156,10 +156,14 @@ def save(markata: "Markata") -> None:
                     text = article.metadata[cover["text_key"]]
                 except AttributeError:
                     text = article[cover["text_key"]]
-                text = text.replace("\n", "")
-                from more_itertools import chunked
+                try:
+                    text = text.replace("\n", "")
+                    from more_itertools import chunked
 
-                text = "\n".join(["".join(c) for c in chunked(text, 60)])
+                    text = "\n".join(["".join(c) for c in chunked(text, 60)])
+                except AttributeError:
+                    # text is likely None
+                    pass
 
                 text_font = cover["text_font"]
                 text_font_color = cover["text_font_color"]
