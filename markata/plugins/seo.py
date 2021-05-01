@@ -70,12 +70,12 @@ def _create_seo(
         {
             "name": "og:image",
             "property": "og:image",
-            "content": f'{markata.config["url"]}/{article.metadata["slug"]}-og.png',
+            "content": f'{markata.config["images_url"]}/{article.metadata["slug"]}-og.png',
         },
         {
             "name": "twitter:image",
             "property": "twitter:image",
-            "content": f'{markata.config["url"]}/{article.metadata["slug"]}-og.png',
+            "content": f'{markata.config["images_url"]}/{article.metadata["slug"]}-og.png',
         },
         {
             "name": "og:image:width",
