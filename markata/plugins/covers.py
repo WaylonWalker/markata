@@ -28,8 +28,6 @@ def get_font(
     font = _load_font(path, size)
     # font = ImageFont.truetype(path, size=size)
     current_size = draw.textsize(title, font=font)
-    print("max_size")
-    print(max_size)
 
     if current_size[0] > max_size[0] or current_size[1] > max_size[1]:
         return get_font(path, draw, title, size - 10, max_size=max_size)
@@ -61,9 +59,6 @@ def draw_text(
     bounding_box = [padding[0], padding[1], width - padding[2], height - padding[3]]
     max_size = (bounding_box[2] - bounding_box[0], bounding_box[3] - bounding_box[1])
     x1, y1, x2, y2 = bounding_box
-    print(f"drawing {text[:30]}")
-    print(f"with padding {padding}")
-    print(f"with bounding_box {bounding_box}")
     font = get_font(font_path, draw, text, max_size=max_size)
     w, h = draw.textsize(text, font=font)
     x = (x2 - x1 - w) / 2 + x1
