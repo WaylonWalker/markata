@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Tuple, Union
 
 from PIL import Image, ImageDraw, ImageFont
+from rich.progress import BarColumn, Progress
 
 from markata import background
 from markata.hookspec import hook_impl
@@ -23,12 +24,15 @@ def get_font(
     title: str,
     size: int = 250,
     max_size: tuple = (800, 220),
-) -> ImageFont.ImageFont.FreeTypeFont:
+) -> ImageFont.FreeTypeFont:
     font = _load_font(path, size)
     # font = ImageFont.truetype(path, size=size)
     current_size = draw.textsize(title, font=font)
+    print("max_size")
+    print(max_size)
+
     if current_size[0] > max_size[0] or current_size[1] > max_size[1]:
-        return get_font(path, draw, title, size - 10)
+        return get_font(path, draw, title, size - 10, max_size=max_size)
     return font
 
 
@@ -50,12 +54,17 @@ def draw_text(
     padding: Tuple[int, ...],
 ) -> None:
     draw = ImageDraw.Draw(image)
-    font = get_font(font_path, draw, text)
     padding = resolve_padding(padding)
     width = image.size[0]
     height = image.size[1]
     bounding_box = [padding[0], padding[1], width - padding[0], height - padding[1]]
+    bounding_box = [padding[0], padding[1], width - padding[2], height - padding[3]]
+    max_size = (bounding_box[2] - bounding_box[0], bounding_box[3] - bounding_box[1])
     x1, y1, x2, y2 = bounding_box
+    print(f"drawing {text[:30]}")
+    print(f"with padding {padding}")
+    print(f"with bounding_box {bounding_box}")
+    font = get_font(font_path, draw, text, max_size=max_size)
     w, h = draw.textsize(text, font=font)
     x = (x2 - x1 - w) / 2 + x1
     y = (y2 - y1 - h) / 2 + y1
@@ -88,18 +97,18 @@ def make_cover(
     text_font_color: str = None,
     text_padding: Tuple[int, ...] = None,
 ) -> None:
-    # image = Image.open(template_path)
     image = Image.open(template_path)
     draw_text(image, font_path, title, color, padding)
     if text is not None:
         if text_padding is None:
             text_padding = (
-                image.size[1] / 2,
-                image.size[0] / 5,
                 image.size[1] - image.size[1] / 5,
+                image.size[0] / 5,
+                image.size[1] - image.size[1] / 10,
             )
         draw_text(image, text_font, text, text_font_color, text_padding)
 
+    output_path.parent.mkdir(exist_ok=True)
     image.save(output_path)
     # image.save(output_path.with_suffix(".webp"), quality=80, optimize=True)
     ratio = image.size[1] / image.size[0]
@@ -135,33 +144,62 @@ def save(markata: "Markata") -> None:
                     200,
                     100,
                 )
+            try:
+                text_padding = cover["text_padding"]
+            except KeyError:
+                text_padding = (
+                    200,
+                    100,
+                )
             if "text_key" in cover:
-                text = article.metadata[cover["text_key"]]
+                try:
+                    text = article.metadata[cover["text_key"]]
+                except AttributeError:
+                    text = article[cover["text_key"]]
+                text = text.replace("\n", "")
+                from more_itertools import chunked
+
+                text = "\n".join(["".join(c) for c in chunked(text, 60)])
+
                 text_font = cover["text_font"]
                 text_font_color = cover["text_font_color"]
             else:
                 text = None
                 text_font = None
                 text_font_color = None
+            try:
+                title = article.metadata["title"]
+            except AttributeError:
+                title = article["title"]
             futures.append(
                 make_cover(
-                    article.metadata["title"],
-                    cover["font_color"],
-                    Path(markata.config["output_dir"])
+                    title=title,
+                    color=cover["font_color"],
+                    output_path=Path(markata.config["output_dir"])
                     / (article["slug"] + cover["name"] + ".png"),
-                    cover["template"],
-                    cover["font"],
-                    padding,
-                    text_font,
-                    text,
-                    text_font_color,
+                    template_path=cover["template"],
+                    font_path=cover["font"],
+                    padding=padding,
+                    text_font=text_font,
+                    text=text,
+                    text_font_color=text_font_color,
+                    text_padding=text_padding,
                 )
             )
 
-    with markata.iter_articles("creating cover images") as pbar:
+    progress = Progress(
+        BarColumn(bar_width=None), transient=True, console=markata.console
+    )
+    task_id = progress.add_task("loading markdown")
+    progress.update(task_id, total=len(futures))
+    with progress:
         while not all([f.done() for f in futures]):
             time.sleep(0.1)
-            for _ in range(len([f for f in futures if f.done()]) - pbar.n):
-                pbar.update()
+            progress.update(task_id, total=len([f for f in futures if f.done()]))
+    # with markata.iter_articles("creating cover images") as pbar:
+    #     while not all([f.done() for f in futures]):
+    #         time.sleep(0.1)
+    #         for _ in range(len([f for f in futures if f.done()]) - pbar.n):
+    #             pbar.update()
     # necessary  to not fail silently
     [f.result() for f in futures]
