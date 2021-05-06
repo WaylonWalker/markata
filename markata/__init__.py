@@ -104,21 +104,9 @@ class Markata:
 
         return grid
 
-    # @property
-    # def _cache(self):
-    #     return
-
-    # @property
-    # @contextmanager
-    # def cache(self):
-    #     cache = self._cache
-    #     yield cache
-    #     cache.close()
-
     def bust_cache(self) -> Markata:
         with self.cache as cache:
             cache.clear()
-        # self = Markata()
         return self
 
     @set_phase
@@ -301,10 +289,6 @@ class Markata:
     @files.setter
     def files(self, files: List["Path"]) -> None:
         self._files = files
-        # if self.phase == "glob":
-        #     self._files = files
-        # else:
-        #     raise RuntimeWarning("cannot set files outside of glob phase")
 
     @property
     def content_directories(self) -> List["Path"]:
@@ -337,10 +321,6 @@ class Markata:
     @articles.setter
     def articles(self, articles: List[frontmatter.Post]) -> None:
         self._articles = articles
-        # if self.phase == "load":
-        #     self._articles = articles
-        # else:
-        #     raise RuntimeWarning("cannot set articles outside of load phase")
 
     @property
     def console(self) -> Console:
@@ -350,16 +330,6 @@ class Markata:
             self._console: Console = Console()
             return self._console
 
-    # @property
-    # def html(self) -> List[str]:
-    #     return self._html
-
-    # @html.setter
-    # def html(self, html):
-    #     if self.phase == "load":
-    #         self._html = html
-    #     else:
-    #         raise RuntimeWarning("cannot set html outside of render phase")
     def describe(self) -> dict[str, str]:
         return {"version": __version__, "phase": self.phase}
 
