@@ -26,7 +26,6 @@ def get_font(
     max_size: tuple = (800, 220),
 ) -> ImageFont.FreeTypeFont:
     font = _load_font(path, size)
-    # font = ImageFont.truetype(path, size=size)
     current_size = draw.textsize(title, font=font)
 
     if current_size[0] > max_size[0] or current_size[1] > max_size[1]:
@@ -105,7 +104,6 @@ def make_cover(
 
     output_path.parent.mkdir(exist_ok=True)
     image.save(output_path)
-    # image.save(output_path.with_suffix(".webp"), quality=80, optimize=True)
     ratio = image.size[1] / image.size[0]
 
     covers = []
@@ -121,10 +119,6 @@ def make_cover(
 
         filepath = Path(output_path.parent / filename)
         re_img.save(filepath)
-        # filename = f"{output_path.stem}_{width}x{int(width*ratio)}.webp"
-        # covers.append(filename)
-        # filepath = Path(output_path.parent / filename)
-        # re_img.save(filepath)
 
 
 @hook_impl
@@ -195,10 +189,4 @@ def save(markata: "Markata") -> None:
         while not all([f.done() for f in futures]):
             time.sleep(0.1)
             progress.update(task_id, total=len([f for f in futures if f.done()]))
-    # with markata.iter_articles("creating cover images") as pbar:
-    #     while not all([f.done() for f in futures]):
-    #         time.sleep(0.1)
-    #         for _ in range(len([f for f in futures if f.done()]) - pbar.n):
-    #             pbar.update()
-    # necessary  to not fail silently
     [f.result() for f in futures]
