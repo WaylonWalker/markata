@@ -8,7 +8,7 @@ import importlib
 import os
 import sys
 from pathlib import Path
-from typing import Iterable, List
+from typing import Iterable, List, Callable, Any, Tuple, Dict
 
 import frontmatter
 import markdown
@@ -75,8 +75,8 @@ class Post(frontmatter.Post):
     html: str
 
 
-def set_phase(function):
-    def wrapper(self, *args, **kwargs):
+def set_phase(function: Callable) -> Any:
+    def wrapper(self: Markata, *args: Tuple, **kwargs: Dict) -> Any:
         self.phase = function.__name__
         result = function(self, *args, **kwargs)
         self.phase = function.__name__
