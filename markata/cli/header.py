@@ -15,4 +15,4 @@ class Header:
             "[magenta][b]Markata[/b][/] [bright_black]Live Server[/]",
             datetime.now().ctime(),
         )
-        return Panel(grid, style="yellow on black")
+        return Panel(grid, style="yellow")
