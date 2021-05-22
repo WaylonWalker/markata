@@ -1,7 +1,7 @@
 """Default load plugin."""
 import time
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Callable
 
 import frontmatter
 from rich.progress import BarColumn, Progress
@@ -33,7 +33,8 @@ def load(markata: "Markata") -> None:
 
 
 @task
-def get_post(path: Path, markata: "Markata") -> Optional["Post"]:
+def get_post(path: Path, markata: "Markata") -> Optional[Callable]:
+    # -> Optional["Post"]:
     default = {
         "cover": "",
         "title": "",
