@@ -28,7 +28,13 @@ def render(markata: "MarkataRss") -> None:
     fg.link(href=markata.url + "/rss.xml", rel="self")
     fg.language(markata.lang)
 
-    for article in markata.articles:
+    try:
+        all_posts = reversed(sorted(markata.articles, key=lambda x: x["date"]))
+        posts = [post for post in all_posts if post["status"] == status]
+    except BaseException:
+        posts = markata.articles
+
+    for article in posts:
         fe = fg.add_entry()
         fe.id(markata.url + "/" + article["slug"])
         fe.title(article.metadata["title"])
