@@ -10,30 +10,31 @@ if TYPE_CHECKING:
 
 @hook_impl
 def render(markata: "Markata") -> None:
-    for article in markata.iter_articles("setting long description"):
+    with markata.cache as cache:
+        for article in markata.iter_articles("setting long description"):
 
-        key = markata.make_hash(
-            "long_description",
-            "render",
-            article["content_hash"],
-        )
+            key = markata.make_hash(
+                "long_description",
+                "render",
+                article["content_hash"],
+            )
 
-        description_from_cache = markata.cache.get(key)
+            description_from_cache = cache.get(key)
 
-        if description_from_cache is None:
+            if description_from_cache is None:
 
-            if "long_description" in article.metadata:
-                description = article.metadata["long_description"]
+                if "long_description" in article.metadata:
+                    description = article.metadata["long_description"]
+
+                else:
+                    soup = BeautifulSoup(article.html, features="lxml")
+                    description = " ".join(
+                        [p.text for p in soup.find(id="post-body").find_all("p")]
+                    ).strip()[:250]
+
+                markata.cache.add(key, description, expire=15 * 24 * 60)
 
             else:
-                soup = BeautifulSoup(article.html, features="lxml")
-                description = " ".join(
-                    [p.text for p in soup.find(id="post-body").find_all("p")]
-                ).strip()[:250]
+                description = description_from_cache
 
-            markata.cache.add(key, description, expire=15 * 24 * 60)
-
-        else:
-            description = description_from_cache
-
-        article.metadata["long_description"] = description
+            article.metadata["long_description"] = description
