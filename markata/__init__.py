@@ -80,6 +80,7 @@ def set_phase(function: Callable) -> Any:
         self.phase = function.__name__
         result = function(self, *args, **kwargs)
         self.phase = function.__name__
+        self.phase_file.write_text(self.phase)
         return result
 
     return wrapper
@@ -88,10 +89,14 @@ def set_phase(function: Callable) -> Any:
 class Markata:
     def __init__(self) -> None:
         self.phase = "starting"
-        self.configure()
         self.MARKATA_CACHE_DIR = Path(".") / ".markata.cache"
         self.MARKATA_CACHE_DIR.mkdir(exist_ok=True)
-        self.cache = FanoutCache(self.MARKATA_CACHE_DIR, statistics=True)
+        self.phase_file = self.MARKATA_CACHE_DIR / "phase.txt"
+        self.configure()
+
+    @property
+    def cache(self):
+        return FanoutCache(self.MARKATA_CACHE_DIR, statistics=True)
 
     def __rich__(self) -> Table:
 
@@ -428,8 +433,8 @@ class Markata:
         self.save()
         self.console.log("save complete")
 
-        # with self.cache as cache:
-        hits, misses = self.cache.stats()
+        with self.cache as cache:
+            hits, misses = cache.stats()
 
         if hits + misses > 0:
             self.console.log(f"cache hit rate {round(hits/ (hits + misses)*100, 2)}%")

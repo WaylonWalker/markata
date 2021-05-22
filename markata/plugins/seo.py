@@ -130,32 +130,35 @@ def _create_seo_tag(meta: dict, soup: BeautifulSoup) -> "Tag":
 
 @hook_impl
 def render(markata: Markata) -> None:
-    for article in markata.iter_articles("add seo tags from seo.py"):
-        key = markata.make_hash(
-            "seo",
-            "render",
-            article["content_hash"],
-            markata.site_name,
-            markata.url,
-            article.metadata["slug"],
-            markata.twitter_card,
-            article.metadata["title"],
-            markata.site_name,
-            str(markata.seo),
-        )
-        html_from_cache = markata.cache.get(key)
+    with markata.cache as cache:
+        for article in markata.iter_articles("add seo tags from seo.py"):
+            key = markata.make_hash(
+                "seo",
+                "render",
+                article["content_hash"],
+                markata.site_name,
+                markata.url,
+                article.metadata["slug"],
+                markata.twitter_card,
+                article.metadata["title"],
+                markata.site_name,
+                str(markata.seo),
+            )
+            html_from_cache = cache.get(key)
 
-        if html_from_cache is None:
-            soup = BeautifulSoup(article.html, features="lxml")
-            seo = _create_seo(markata, soup, article)
-            _add_seo_tags(seo, article, soup)
-            canonical_link = soup.new_tag("link")
-            canonical_link.attrs["rel"] = "canonical"
-            canonical_link.attrs["href"] = f'{markata.url}/{article.metadata["slug"]}/'
-            soup.head.append(canonical_link)
+            if html_from_cache is None:
+                soup = BeautifulSoup(article.html, features="lxml")
+                seo = _create_seo(markata, soup, article)
+                _add_seo_tags(seo, article, soup)
+                canonical_link = soup.new_tag("link")
+                canonical_link.attrs["rel"] = "canonical"
+                canonical_link.attrs[
+                    "href"
+                ] = f'{markata.url}/{article.metadata["slug"]}/'
+                soup.head.append(canonical_link)
 
-            html = soup.prettify()
-            markata.cache.add(key, html, expire=15 * 24 * 60)
-        else:
-            html = html_from_cache
-        article.html = html
+                html = soup.prettify()
+                cache.add(key, html, expire=15 * 24 * 60)
+            else:
+                html = html_from_cache
+            article.html = html
