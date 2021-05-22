@@ -29,12 +29,14 @@ class Runner:
 
         self.time = time.time()
 
-        self.proc = subprocess.Popen(
-            self.cmd,
-            cwd=os.getcwd(),
-            stderr=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-        )
+        with open("markata.log", "w", 1) as f:
+            self.proc = subprocess.Popen(
+                self.cmd,
+                cwd=os.getcwd(),
+                stderr=subprocess.PIPE,
+                # stdout=subprocess.PIPE,
+                stdout=f,
+            )
 
         # if not self.is_running:
         #     self.p = Process(target=self._run)
@@ -56,11 +58,17 @@ class Runner:
                 self.status = "waiting"
                 self.time = time.time()
 
-                s = "\n\nstdout\n"
-                s += str(self.proc.stdout.readlines())
-                s += "\n\nstderr\n"
-                s += str(self.proc.stdout.readlines())
-                self.std = s
+                # s = "\n\nstdout\n"
+                # try:
+                #     s += str(self.proc.stdout.readlines())
+                # except AttributeError:
+                #     pass
+                # s += "\n\nstderr\n"
+                # try:
+                #     s += str(self.proc.stdout.readlines())
+                # except AttributeError:
+                #     pass
+                # self.std = s
         elif self.is_running:
             self.status = "running"
         return self._status
@@ -77,18 +85,21 @@ class Runner:
             return "green"
         return "white"
 
+    @property
+    def phase(self):
+        return self.m.phase_file.read_text()
+
     def __rich__(self) -> Panel:
-        from random import choice
 
         if self._dirhash != self.m.content_dir_hash:
             self.run()
             self._dirhash = self.m.content_dir_hash
 
         if self.status == "running":
-            s = f"{self.status} {self.proc.pid} {self.m.phase} {round(time.time() - self.time)}"
+            s = f"{self.status} {self.proc.pid} {self.phase} {round(time.time() - self.time)}"
 
         else:
-            s = f"{self.status} {self.m.phase} {round(time.time() - self.time)}"
+            s = f"{self.status} {self.phase} {round(time.time() - self.time)}"
         return Panel(Text(s + self.std), border_style=self.color)
 
 
@@ -97,5 +108,5 @@ if __name__ == "__main__":
 
     from .cli import run_until_keyboard_interrupt
 
-    with Live(Runner(), refresh_per_second=1, screen=True):
+    with Live(Runner(), refresh_per_second=0.1, screen=True):
         run_until_keyboard_interrupt()
