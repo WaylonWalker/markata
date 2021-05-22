@@ -1,7 +1,15 @@
 from rich.live import Live
 
-from . import (Describe, Header, MarkataCli, Plugins, Runner, Server,
-               make_layout, run_until_keyboard_interrupt)
+from . import (
+    Describe,
+    Header,
+    MarkataCli,
+    Plugins,
+    Runner,
+    Server,
+    make_layout,
+    run_until_keyboard_interrupt,
+)
 
 
 def run() -> None:
