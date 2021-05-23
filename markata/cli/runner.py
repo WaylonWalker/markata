@@ -19,10 +19,6 @@ class Runner:
     time = time.time()
     std = ""
 
-    # def _run(self) -> None:
-    #     self.m.run()
-    # time.sleep(1)
-
     def run(self) -> None:
         self.cmd = ["markata"]
         import os
@@ -34,22 +30,12 @@ class Runner:
                 self.cmd,
                 cwd=os.getcwd(),
                 stderr=subprocess.PIPE,
-                # stdout=subprocess.PIPE,
                 stdout=f,
             )
-
-        # if not self.is_running:
-        #     self.p = Process(target=self._run)
-        #     self.p.start()
 
     @property
     def is_running(self):
         return self.proc.poll() == None
-
-        # try:
-        #     return self.p.is_alive()
-        # except AttributeError:
-        #     return False
 
     @property
     def status(self):
@@ -58,17 +44,6 @@ class Runner:
                 self.status = "waiting"
                 self.time = time.time()
 
-                # s = "\n\nstdout\n"
-                # try:
-                #     s += str(self.proc.stdout.readlines())
-                # except AttributeError:
-                #     pass
-                # s += "\n\nstderr\n"
-                # try:
-                #     s += str(self.proc.stdout.readlines())
-                # except AttributeError:
-                #     pass
-                # self.std = s
         elif self.is_running:
             self.status = "running"
         return self._status
