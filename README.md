@@ -1,7 +1,7 @@
 
 <h1 align=center>
   <br>
-  <a href="https://github.com/WaylonWalker/markata"><img src="https://user-images.githubusercontent.com/22648375/116882688-5879b400-abea-11eb-8bd2-70fa29522a35.png" alt="Markata" width="200"></a>
+  <a href="https://github.com/WaylonWalker/markata"><img src="https://user-images.githubusercontent.com/22648375/120665701-a126c600-c451-11eb-9dc5-1e0ac4eeeb2f.png" alt="Markata" width="200"></a>
 </h1>
 
 <p align=center>
