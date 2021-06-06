@@ -404,10 +404,14 @@ class Markata:
     @set_phase
     def render(self) -> Markata:
         try:
+            self._pm.hook.pre_render(markata=self)
             self._pm.hook.render(markata=self)
+            self._pm.hook.post_render(markata=self)
         except AttributeError:
             self.load()
+            self._pm.hook.pre_render(markata=self)
             self._pm.hook.render(markata=self)
+            self._pm.hook.post_render(markata=self)
         return self
 
     @set_phase
