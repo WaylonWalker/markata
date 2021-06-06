@@ -157,6 +157,12 @@ def render(markata: Markata) -> None:
                 ] = f'{markata.url}/{article.metadata["slug"]}/'
                 soup.head.append(canonical_link)
 
+                meta_url = soup.new_tag("meta")
+                meta_url.attrs["name"] = "url"
+                meta_url.attrs["property"] = "url"
+                meta_url.attrs["content"] = f'{markata.url}/{article.metadata["slug"]}/'
+                soup.head.append(meta_url)
+
                 html = soup.prettify()
                 cache.add(key, html, expire=15 * 24 * 60)
             else:
