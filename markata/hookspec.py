@@ -30,8 +30,18 @@ class MarkataSpecs:
         pass
 
     @hook_spec
+    def pre_render(self, markata: "Markata") -> None:
+        """Pre render content from loaded data."""
+        pass
+
+    @hook_spec
     def render(self, markata: "Markata") -> None:
         """Render content from loaded data."""
+        pass
+
+    @hook_spec
+    def post_render(self, markata: "Markata") -> None:
+        """Post render content from loaded data."""
         pass
 
     @hook_spec
