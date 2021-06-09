@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 
 @hook_impl(tryfirst=True)
-def render(markata: "Markata") -> None:
+def pre_render(markata: "Markata") -> None:
     for article in markata.iter_articles(description="creating slugs"):
         try:
             article["slug"] = article.metadata["slug"]
