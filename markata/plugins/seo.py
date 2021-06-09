@@ -158,8 +158,8 @@ def render(markata: Markata) -> None:
                 soup.head.append(canonical_link)
 
                 meta_url = soup.new_tag("meta")
-                meta_url.attrs["name"] = "url"
-                meta_url.attrs["property"] = "url"
+                meta_url.attrs["name"] = "og:url"
+                meta_url.attrs["property"] = "og:url"
                 meta_url.attrs["content"] = f'{markata.url}/{article.metadata["slug"]}/'
                 soup.head.append(meta_url)
 
