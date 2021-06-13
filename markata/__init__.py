@@ -257,7 +257,8 @@ class Markata:
         return self
 
     def make_hash(self, *keys: str) -> str:
-        return hashlib.md5("".join(keys).encode("utf-8")).hexdigest()
+        str_keys = [str(key) for key in keys]
+        return hashlib.md5("".join(str_keys).encode("utf-8")).hexdigest()
 
     @property
     def phase(self) -> str:
