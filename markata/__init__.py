@@ -8,7 +8,7 @@ import importlib
 import os
 import sys
 from pathlib import Path
-from typing import Iterable, List, Callable, Any, Tuple, Dict
+from typing import Any, Callable, Dict, Iterable, List, Tuple
 
 import frontmatter
 import markdown

@@ -1,15 +1,13 @@
 """Default glob plugin"""
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import pytz
 from feedgen.feed import FeedGenerator
 from more_itertools import flatten
 
-from markata.hookspec import hook_impl
-from typing import cast
-
 from markata import Markata
+from markata.hookspec import hook_impl
 
 if TYPE_CHECKING:
     from markata import Markata
@@ -49,8 +47,6 @@ def render(markata: "MarkataRss") -> None:
 
     markata.fg = fg
     markata.rss = fg.rss_str(pretty=True)
-
-
 
 
 @hook_impl
