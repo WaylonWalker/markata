@@ -7,6 +7,9 @@ from feedgen.feed import FeedGenerator
 from more_itertools import flatten
 
 from markata.hookspec import hook_impl
+from typing import cast
+
+from markata import Markata
 
 if TYPE_CHECKING:
     from markata import Markata
@@ -48,9 +51,6 @@ def render(markata: "MarkataRss") -> None:
     markata.rss = fg.rss_str(pretty=True)
 
 
-from typing import cast
-
-from markata import Markata
 
 
 @hook_impl
