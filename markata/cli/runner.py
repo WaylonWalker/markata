@@ -83,5 +83,5 @@ if __name__ == "__main__":
 
     from .cli import run_until_keyboard_interrupt
 
-    with Live(Runner(), refresh_per_second=0.1, screen=True):
+    with Live(Runner(), refresh_per_second=30, screen=True):
         run_until_keyboard_interrupt()
