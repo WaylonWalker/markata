@@ -193,10 +193,10 @@ def _load_files(config_path_specs: path_spec_type) -> Dict:
     """
     for file in config_path_specs:
 
-        try:
+        
+        if file['path_specs'].exists():
             config = anyconfig.load(**file)
-
-        except FileNotFoundError:
+        else:
             # ignore missing files
             continue
 
