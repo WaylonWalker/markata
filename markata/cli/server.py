@@ -47,14 +47,14 @@ class Server:
             "--directory",
             self.directory,
         ]
-        # self.cmd = [
-        #     "livereload",
-        #     "-p",
-        #     str(self.port),
-        #     "-w",
-        #     ".1",
-        #     self.directory,
-        # ]
+        self.cmd = [
+            "livereload",
+            "-p",
+            str(self.port),
+            "-w",
+            ".1",
+            self.directory,
+        ]
 
         self.proc = subprocess.Popen(
             self.cmd,
