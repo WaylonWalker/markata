@@ -30,3 +30,4 @@ def load(markata: "Markata") -> None:
         article["datetime"] = date
         article["date"] = date.date()
         article["today"] = datetime.date.today()
+        article["today"] = datetime.datetime.now()
