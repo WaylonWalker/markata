@@ -1,6 +1,5 @@
 """Default datetime plugin"""
 import datetime
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 import dateutil.parser
@@ -30,3 +29,4 @@ def load(markata: "Markata") -> None:
             )
         article["datetime"] = date
         article["date"] = date.date()
+        article["today"] = datetime.date.today()
