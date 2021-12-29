@@ -1,5 +1,7 @@
+from markata import Markata
 from markata.hookspec import hook_impl
 
+from rich.console import Console
 import typer
 from typing import Optional
 
@@ -29,3 +31,47 @@ def cli(app, markata):
 
         for a in filtered:
             typer.echo(a)
+
+    @app.command()
+    def build(
+        rich: bool = False,
+        quiet: bool = False,
+        to_dict: bool = False,
+        watch: bool = False,
+    ) -> None:
+        import time
+
+        from rich import pretty, traceback
+
+        if not rich:
+            pretty.install()
+            traceback.install()
+
+        m = Markata()
+
+        if quiet:
+            m.console.quiet = True
+
+        else:
+            m.console.print("console options:", m.console.options)
+
+        if to_dict:
+            m.console.quiet = True
+            data = m.to_dict()
+            m.console.quiet = False
+            m.console.print(data)
+            return
+
+        if watch:
+
+            hash = m.content_dir_hash
+            m.run()
+            console = Console()
+            with console.status("waiting for change", spinner="aesthetic", speed=0.2):
+                while True:
+                    if m.content_dir_hash != hash:
+                        hash = m.content_dir_hash
+                        m.run()
+                    time.sleep(0.1)
+
+        m.run()
