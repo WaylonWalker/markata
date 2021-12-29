@@ -1,4 +1,4 @@
-from .cli import MarkataCli, make_layout, run_until_keyboard_interrupt
+from .cli import MarkataCli, app, make_layout, run_until_keyboard_interrupt
 from .describe import Describe
 from .header import Header
 from .plugins import Plugins
@@ -14,4 +14,5 @@ __all__ = [
     "Server",
     "make_layout",
     "run_until_keyboard_interrupt",
+    "app",
 ]

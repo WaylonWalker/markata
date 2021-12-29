@@ -32,7 +32,7 @@ setup(
     name=NAME,
     version="0.1.0",
     packages=find_packages(),
-    entry_points={"console_scripts": ["markata=markata:cli"]},
+    entry_points={"console_scripts": ["markata=markata.cli.cli:cli"]},
     platforms="any",
     license="MIT",
     install_requires=requires,

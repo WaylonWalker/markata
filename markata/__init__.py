@@ -6,21 +6,23 @@ from __future__ import annotations
 import hashlib
 import importlib
 import os
-import sys
 from pathlib import Path
+import sys
 from typing import Any, Callable, Dict, Iterable, List, Tuple
 
+from checksumdir import dirhash
+from diskcache import FanoutCache
 import frontmatter
 import markdown
 import pluggy
-from checksumdir import dirhash
-from diskcache import FanoutCache
 from rich.console import Console
 from rich.progress import track
 from rich.table import Table
 
+from datetime import timedelta
 from markata import hookspec, standard_config
 from markata.errors import MarkataConfigError
+
 
 __version__ = "0.0.1"
 
@@ -61,6 +63,7 @@ DEFAULT_HOOKS = [
     "markata.plugins.icon_resize",
     "markata.plugins.sitemap",
     "markata.plugins.to_json",
+    "markata.plugins.base_cli",
 ]
 
 DEFUALT_CONFIG = {
@@ -465,7 +468,8 @@ class Markata:
             if eval(filter, {**a.to_dict(), "timedelta": timedelta}, {})
         ]
 
-def cli() -> None:
+
+def clif() -> None:
     import sys
     import time
 
@@ -477,10 +481,10 @@ def cli() -> None:
 
     m = Markata()
 
-    m.console.print("console options:", m.console.options)
-
     if "--quiet" in sys.argv or "-q" in sys.argv:
         m.console.quiet = True
+    else:
+        m.console.print("console options:", m.console.options)
 
     if "--to-dict" in sys.argv:
         m.console.quiet = True
@@ -488,6 +492,24 @@ def cli() -> None:
         m.console.quiet = False
         m.console.print(data)
         return
+
+    if "--draft" in sys.argv:
+        print("\n".join([a["path"] for a in m.articles if a["status"] == "draft"]))
+
+        return
+
+    if "--today" in sys.argv:
+        print("\n".join([a["path"] for a in m.articles if a["date"] == a["today"]]))
+        return
+
+    if "--scheduled" in sys.argv:
+        print("\n".join([a["path"] for a in m.articles if a["date"] > a["today"]]))
+        return
+
+    if "--back-days" in sys.argv:
+        print("\n".join([a["path"] for a in m.articles if a["date"] > a["today"]]))
+        return
+
     if "--watch" in sys.argv:
 
         hash = m.content_dir_hash

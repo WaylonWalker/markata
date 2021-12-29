@@ -48,3 +48,8 @@ class MarkataSpecs:
     def save(self, markata: "Markata") -> None:
         """Save content from data."""
         pass
+
+    @hook_spec
+    def cli(self, markata: "Markata", app) -> None:
+        """cli"""
+        pass
