@@ -447,6 +447,23 @@ class Markata:
 
         return self
 
+    def filter(self, filter: str):
+        return [
+            a
+            for a in self.articles
+            if eval(filter, {**a.to_dict(), "timedelta": timedelta}, {})
+        ]
+
+    def map(self, func: str = "title", filter: str = "True", sort: str = "True"):
+        import copy
+
+        articles = copy.copy(self.articles)
+        articles.sort(key=lambda a: eval(sort, a.to_dict(), {}))
+        return [
+            eval(func, {**a.to_dict(), "timedelta": timedelta}, {})
+            for a in articles
+            if eval(filter, {**a.to_dict(), "timedelta": timedelta}, {})
+        ]
 
 def cli() -> None:
     import sys
