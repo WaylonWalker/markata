@@ -28,6 +28,7 @@ def render(markata: "MarkataIcons") -> None:
     filepath.touch(exist_ok=True)
     with open(filepath, "w+") as f:
         json.dump(manifest, f, ensure_ascii=True, indent=4)
+    config = markata.get_plugin_config(__file__)
     with markata.cache as cache:
         for article in markata.iter_articles("add manifest link"):
             key = markata.make_hash(
@@ -45,7 +46,7 @@ def render(markata: "MarkataIcons") -> None:
                 soup.head.append(link)
 
                 html = soup.prettify()
-                cache.add(key, html, expire=15 * 24 * 60)
+                cache.add(key, html, expire=config["cache_expire"])
             else:
                 html = html_from_cache
             article.html = html

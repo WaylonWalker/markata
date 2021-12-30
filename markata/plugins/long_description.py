@@ -10,6 +10,7 @@ if TYPE_CHECKING:
 
 @hook_impl
 def render(markata: "Markata") -> None:
+    config = markata.get_plugin_config(__file__)
     with markata.cache as cache:
         for article in markata.iter_articles("setting long description"):
 
@@ -32,7 +33,7 @@ def render(markata: "Markata") -> None:
                         [p.text for p in soup.find(id="post-body").find_all("p")]
                     ).strip()[:250]
 
-                markata.cache.add(key, description, expire=15 * 24 * 60)
+                markata.cache.add(key, description, expire=config["cache_expire"])
 
             else:
                 description = description_from_cache
