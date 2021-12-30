@@ -128,7 +128,6 @@ def _create_seo_tag(meta: dict, soup: BeautifulSoup) -> "Tag":
 
 @hook_impl
 def render(markata: Markata) -> None:
-    config = markata.get_plugin_config(__file__)
     with markata.cache as cache:
         for article in markata.iter_articles("add seo tags from seo.py"):
             key = markata.make_hash(
@@ -163,7 +162,7 @@ def render(markata: Markata) -> None:
                 soup.head.append(meta_url)
 
                 html = soup.prettify()
-                cache.add(key, html, expire=config["cache_expire"])
+                cache.add(key, html, expire=markata.config["default_cache_expire"])
 
             else:
                 html = html_from_cache
