@@ -71,6 +71,7 @@ DEFUALT_CONFIG = {
     "hooks": ["default"],
     "markdown_extensions": [],
     "disabled_hooks": "",
+    "default_cache_expire": 3600,
 }
 
 
@@ -258,6 +259,19 @@ class Markata:
             self.post_template = str(self.config["post_template"])
 
         return self
+
+    def get_plugin_config(self, plugin_path: str):
+
+        key = Path(plugin_path).stem
+        try:
+            config = self.config[key]
+        except KeyError:
+            config = {}
+        if "cache_expire" not in config.keys():
+            config["cache_expire"] = self.config["default_cache_expire"]
+        if "config_key" not in config.keys():
+            config["config_key"] = key
+        return config
 
     def make_hash(self, *keys: str) -> str:
         str_keys = [str(key) for key in keys]
