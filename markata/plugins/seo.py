@@ -166,5 +166,4 @@ def render(markata: Markata) -> None:
 
             else:
                 html = html_from_cache
-                article.cache_hits.append(__file__)
             article.html = html
