@@ -46,6 +46,7 @@ DEFAULT_MD_EXTENSIONS = [
 ]
 
 DEFAULT_HOOKS = [
+    "markata.plugins.pyinstrument",
     "markata.plugins.glob",
     "markata.plugins.load",
     "markata.plugins.render_markdown",
