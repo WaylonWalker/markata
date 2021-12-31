@@ -133,7 +133,7 @@ def render(markata: Markata) -> None:
             key = markata.make_hash(
                 "seo",
                 "render",
-                article["content_hash"],
+                article.html,
                 markata.site_name,
                 markata.url,
                 article.metadata["slug"],

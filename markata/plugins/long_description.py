@@ -18,6 +18,7 @@ def render(markata: "Markata") -> None:
                 "long_description",
                 "render",
                 article["content_hash"],
+                article.html,
             )
 
             description_from_cache = cache.get(key)
