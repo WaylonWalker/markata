@@ -17,8 +17,6 @@ def render(markata: "Markata") -> None:
 
         article.html = template.render(
             body=article.html,
-            title=article.metadata["title"],
-            slug=article.metadata["slug"],
             toc=markata.md.toc,  # type: ignore
-            date=article.metadata["date"],
+            **article,
         )
