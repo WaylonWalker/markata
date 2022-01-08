@@ -1,7 +1,9 @@
+import rich
 from rich.panel import Panel
 from rich.table import Table
 
 from .cli import RichM
+from markata import Markata
 
 
 class Plugins(RichM):
@@ -20,3 +22,9 @@ class Plugins(RichM):
                 )
             )
         return Panel(grid, title="plugins", border_style="gold1")
+
+
+if __name__ == "__main__":
+
+    plugins = Plugins(Markata())
+    rich.print(plugins)
