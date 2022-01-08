@@ -29,7 +29,7 @@ class Server:
             from markata import Markata
 
             m = Markata()
-            directory = m.output_dir
+            directory = m.config["output_dir"]
 
         self.auto_restart = auto_restart
         self.directory = directory
@@ -47,14 +47,16 @@ class Server:
             "--directory",
             self.directory,
         ]
-        self.cmd = [
-            "livereload",
-            "-p",
-            str(self.port),
-            "-w",
-            ".1",
-            self.directory,
-        ]
+        # self.cmd = [
+        #     "pipx",
+        #     "run",
+        #     "livereload",
+        #     "-p",
+        #     str(self.port),
+        #     # "-w",
+        #     # ".1",
+        #     self.directory,
+        # ]
 
         self.proc = subprocess.Popen(
             self.cmd,
@@ -70,7 +72,7 @@ class Server:
     def __rich__(self) -> Panel:
         if not self.proc.poll():
             return Panel(
-                f"[green]serving on port: [gold1]{self.port} [green]using pid: [gold1]{self.proc.pid} [green]uptime: [gold1]{self.uptime}[/]",
+                f"[green]serving on port: [gold1]{self.port} [green]using pid: [gold1]{self.proc.pid} [green]uptime: [gold1]{self.uptime} [green]link: [gold1] http://localhost:{self.port}[/]",
                 border_style="blue",
                 title="server",
             )
