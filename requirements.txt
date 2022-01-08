@@ -13,3 +13,4 @@ python-frontmatter
 pytz
 rich
 toml
+textual
