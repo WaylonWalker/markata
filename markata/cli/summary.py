@@ -7,7 +7,7 @@ if TYPE_CHECKING:
     from markata import Markata
 
 
-class Describe:
+class Summary:
     def __init__(self, m: "Markata", simple: bool = False) -> None:
         self.m = m
         self.simple = simple
@@ -40,7 +40,7 @@ class Describe:
         if self.simple:
             return grid
         else:
-            return Panel(grid, title="[gold1]describe[/]", border_style="magenta")
+            return Panel(grid, title="[gold1]summary[/]", border_style="magenta")
 
 
 if __name__ == "__main__":
@@ -49,4 +49,4 @@ if __name__ == "__main__":
     from markata import Markata
 
     m = Markata()
-    print(Describe(m, simple=True))
+    print(Summary(m, simple=True))
