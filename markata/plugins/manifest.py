@@ -23,7 +23,7 @@ def render(markata: "MarkataIcons") -> None:
         "description": markata.config["description"],
         "icons": markata.icons,
     }
-    filepath = Path(markata.output_dir) / "manifest.json"
+    filepath = Path(markata.config["output_dir"]) / "manifest.json"
     filepath.parent.mkdir(parents=True, exist_ok=True)
     filepath.touch(exist_ok=True)
     with open(filepath, "w+") as f:
