@@ -5,6 +5,7 @@ HOOK_NAMESPACE = "markata"
 
 hook_spec = pluggy.HookspecMarker(HOOK_NAMESPACE)
 hook_impl = pluggy.HookimplMarker(HOOK_NAMESPACE)
+from markata.lifecycle import LifeCycle
 
 from typing import TYPE_CHECKING
 
@@ -58,3 +59,27 @@ class MarkataSpecs:
     def cli(self, markata: "Markata", app) -> None:
         """cli"""
         pass
+
+
+registered_attrs = {}
+
+
+import functools
+
+
+def register_attr(attr):
+    def decorator_register(func):
+
+        if attr not in registered_attrs:
+            registered_attrs[attr] = []
+        registered_attrs[attr].append(
+            {"func": func, "lifecycle": getattr(LifeCycle, func.__code__.co_name)}
+        )
+
+        @functools.wraps(func)
+        def wrapper_register(markata, *args, **kwargs):
+            return func(markata, *args, **kwargs)
+
+        return wrapper_register
+
+    return decorator_register
