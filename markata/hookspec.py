@@ -16,8 +16,13 @@ class MarkataSpecs:
     """
     Namespace that defines all specifications for Load hooks.
 
-    glob -> load -> render -> save
+    configure -> glob -> load -> render -> save
     """
+
+    @hook_spec
+    def configure(self, markata: "Markata") -> None:
+        """Glob for files to load."""
+        pass
 
     @hook_spec
     def glob(self, markata: "Markata") -> None:
