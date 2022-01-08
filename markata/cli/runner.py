@@ -1,11 +1,10 @@
-import subprocess
 import time
-from multiprocessing import Process
 
 from rich.panel import Panel
 from rich.text import Text
 
 from markata import Markata
+import subprocess
 
 
 class Runner:
@@ -20,10 +19,11 @@ class Runner:
     std = ""
 
     def run(self) -> None:
-        self.cmd = ["markata"]
+        # self.m.run()
+        self.cmd = ["markata", "build"]
         import os
 
-        self.time = time.time()
+        # self.time = time.time()
 
         with open("markata.log", "w", 1) as f:
             self.proc = subprocess.Popen(
@@ -74,8 +74,8 @@ class Runner:
             s = f"{self.status} {self.proc.pid} {self.phase} {round(time.time() - self.time)}"
 
         else:
-            s = f"{self.status} {self.phase} {round(time.time() - self.time)}"
-        return Panel(Text(s + self.std), border_style=self.color)
+            s = f"{self.status} {self.phase} {round(time.time() - self.time)}\n {self.m.content_dir_hash}"
+        return Panel(Text(s + self.std), border_style=self.color, title="runner")
 
 
 if __name__ == "__main__":
