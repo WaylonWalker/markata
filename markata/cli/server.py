@@ -6,6 +6,8 @@ from rich.panel import Panel
 if TYPE_CHECKING:
     from pathlib import Path
 
+import atexit
+
 
 def find_port(port=8000):
     """Find a port not in ues starting at given port"""
@@ -35,6 +37,7 @@ class Server:
         self.directory = directory
         self.port = find_port(port=port)
         self.start_server()
+        atexit.register(self.kill)
 
     def start_server(self):
         import subprocess
@@ -68,6 +71,10 @@ class Server:
     @property
     def uptime(self):
         return round(time.time() - self.start_time)
+
+    def kill(self):
+        self.auto_restart = False
+        self.proc.kill()
 
     def __rich__(self) -> Panel:
         if not self.proc.poll():
