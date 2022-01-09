@@ -9,10 +9,9 @@ import os
 import sys
 from datetime import timedelta
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterable, List, Tuple
+from typing import Any, Callable, Dict, Iterable, Tuple
 
 import frontmatter
-import markdown
 import pluggy
 from checksumdir import dirhash
 from diskcache import FanoutCache
@@ -21,7 +20,6 @@ from rich.progress import track
 from rich.table import Table
 
 from markata import hookspec, standard_config
-from markata.errors import MarkataConfigError
 from markata.lifecycle import LifeCycle
 
 __version__ = "0.0.1"
