@@ -39,6 +39,11 @@ def cli(app, markata):
         quiet: bool = False,
         to_dict: bool = False,
         watch: bool = False,
+        verbose: bool = typer.Option(
+            False,
+            "--verbose",
+            "-v",
+        ),
     ) -> None:
         import time
 
@@ -53,7 +58,7 @@ def cli(app, markata):
         if quiet:
             m.console.quiet = True
 
-        else:
+        if verbose:
             m.console.print("console options:", m.console.options)
 
         if to_dict:
