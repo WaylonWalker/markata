@@ -20,6 +20,7 @@ from rich.progress import track
 from rich.table import Table
 
 from markata import hookspec, standard_config
+from markata.cli.runner import Runner
 from markata.cli.server import Server
 from markata.lifecycle import LifeCycle
 
@@ -129,13 +130,12 @@ class Markata:
             return self.server
 
     @property
-    def runner(self):
+    def runner(self) -> Runner:
         try:
             return self._runner
         except AttributeError:
-            from markata.cli.runner import Runner
 
-            self._runner = Runner()
+            self._runner: Runner = Runner()
             return self.runner
 
     @property
