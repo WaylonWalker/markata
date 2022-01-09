@@ -17,6 +17,7 @@ def cli(app, markata):
         tail: Optional[int] = None,
         include_empty: bool = False,
         reverse: bool = False,
+        use_pager: bool = typer.Option(True, "--pager", "--no-pager"),
     ):
         """
         list posts
