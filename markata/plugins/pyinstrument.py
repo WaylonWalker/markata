@@ -4,8 +4,12 @@ Markata plugin to create a pyinstrument profile if pyinstrument is installed.
 The profile will be saved to <output_dir>/_profile/index.html
 """
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from markata.hookspec import hook_impl
+
+if TYPE_CHECKING:
+    from markata import Markata
 
 try:
     from pyinstrument import Profiler
