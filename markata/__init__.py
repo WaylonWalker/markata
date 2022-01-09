@@ -6,23 +6,23 @@ from __future__ import annotations
 import hashlib
 import importlib
 import os
-from pathlib import Path
 import sys
+from datetime import timedelta
+from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Tuple
 
-from checksumdir import dirhash
-from diskcache import FanoutCache
 import frontmatter
 import markdown
 import pluggy
+from checksumdir import dirhash
+from diskcache import FanoutCache
 from rich.console import Console
 from rich.progress import track
 from rich.table import Table
 
-from datetime import timedelta
 from markata import hookspec, standard_config
 from markata.errors import MarkataConfigError
-
+from markata.lifecycle import LifeCycle
 
 __version__ = "0.0.1"
 
@@ -65,14 +65,17 @@ DEFAULT_HOOKS = [
     "markata.plugins.sitemap",
     "markata.plugins.to_json",
     "markata.plugins.base_cli",
+    "markata.plugins.tui",
 ]
 
 DEFUALT_CONFIG = {
     "glob_patterns": ["**/*.md"],
     "hooks": ["default"],
+    "disabled_hooks": [""],
     "markdown_extensions": [],
-    "disabled_hooks": "",
     "default_cache_expire": 3600,
+    "output_dir": "markout",
+    "assets_dir": "static",
 }
 
 
@@ -215,11 +218,13 @@ class Markata:
         self._pm.add_hookspecs(hookspec.MarkataSpecs)
         self._register_hooks()
 
+        self._pm.hook.configure(markata=self)
         return self
 
-    def get_plugin_config(self, plugin_path: str):
+    def get_plugin_config(self, path_or_name: str):
 
-        key = Path(plugin_path).stem
+        key = Path(path_or_name).stem
+
         try:
             config = self.config[key]
         except KeyError:
@@ -243,64 +248,9 @@ class Markata:
         self._phase = value
 
     @property
-    def hooks(self) -> List[str]:
-        return self._hooks
-
-    @hooks.setter
-    def hooks(self, hooks: List[str]) -> None:
-        self._hooks = hooks
-
-    @property
-    def disabled_hooks(self) -> List[str]:
-        return self._disabled_hooks
-
-    @disabled_hooks.setter
-    def disabled_hooks(self, hooks: List[str]) -> None:
-        self._disabled_hooks = hooks
-
-    @property
-    def files(self) -> List["Path"]:
-        try:
-            return self._files
-        except AttributeError:
-            self.glob()
-            return self._files
-
-    @files.setter
-    def files(self, files: List["Path"]) -> None:
-        self._files = files
-
-    @property
-    def content_directories(self) -> List["Path"]:
-        try:
-            return self._content_directories
-        except AttributeError:
-            self.glob()
-            return self._content_directories
-
-    @content_directories.setter
-    def content_directories(self, files: List["Path"]) -> None:
-        if self.phase == "glob":
-            self._content_directories = files
-        else:
-            raise RuntimeWarning("cannot set content_directories outside of glob phase")
-
-    @property
     def content_dir_hash(self) -> str:
         hashes = [dirhash(dir) for dir in self.content_directories]
         return self.make_hash(*hashes)
-
-    @property
-    def articles(self) -> List[frontmatter.Post]:
-        try:
-            return self._articles
-        except AttributeError:
-            self.load()
-            return self._articles
-
-    @articles.setter
-    def articles(self, articles: List[frontmatter.Post]) -> None:
-        self._articles = articles
 
     @property
     def console(self) -> Console:
@@ -381,7 +331,12 @@ class Markata:
             self._pm.hook.load(markata=self)
         return self
 
-    @set_phase
+    # @set_phase
+    def pre_render(self) -> Markata:
+        self._pm.hook.pre_render(markata=self)
+        return self
+
+    # @set_phase
     def render(self) -> Markata:
         try:
             self._pm.hook.pre_render(markata=self)
@@ -394,8 +349,14 @@ class Markata:
             self._pm.hook.post_render(markata=self)
         return self
 
-    @set_phase
+    # @set_phase
+    def post_render(self) -> Markata:
+        self._pm.hook.post_render(markata=self)
+        return self
+
+    # @set_phase
     def save(self) -> Markata:
+        breakpoint()
         try:
             self._pm.hook.save(markata=self)
         except AttributeError:
@@ -403,19 +364,20 @@ class Markata:
             self._pm.hook.save(markata=self)
         return self
 
-    def run(
-        self,
-    ) -> Markata:
-        self.configure()
-        self.console.log("configure complete")
-        self.glob()
-        self.console.log("glob complete")
-        self.load()
-        self.console.log("load complete")
-        self.render()
-        self.console.log("render complete")
-        self.save()
-        self.console.log("save complete")
+    def run(self, lifecycle=None) -> Markata:
+        if lifecycle is None:
+            lifecycle = getattr(LifeCycle, max(LifeCycle._member_map_))
+
+        if isinstance(lifecycle, str):
+            lifecycle = LifeCycle[lifecycle]
+
+        stages_to_run = [m for m in LifeCycle._member_map_ if LifeCycle[m] <= lifecycle]
+
+        self.console.log(f"running {stages_to_run}")
+        for stage in stages_to_run:
+            self.console.log(f"{stage} running")
+            getattr(self, stage)()
+            self.console.log(f"{stage} complete")
 
         with self.cache as cache:
             hits, misses = cache.stats()
@@ -427,11 +389,13 @@ class Markata:
         return self
 
     def filter(self, filter: str):
-        return [
-            a
-            for a in self.articles
-            if eval(filter, {**a.to_dict(), "timedelta": timedelta}, {})
-        ]
+        def evalr(a):
+            try:
+                return eval(filter, {**a.to_dict(), "timedelta": timedelta}, {})
+            except AttributeError:
+                return eval(filter, {**a, "timedelta": timedelta}, {})
+
+        return [a for a in self.articles if evalr(a)]
 
     def map(self, func: str = "title", filter: str = "True", sort: str = "True"):
         import copy
