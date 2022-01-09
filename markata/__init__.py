@@ -20,6 +20,7 @@ from rich.progress import track
 from rich.table import Table
 
 from markata import hookspec, standard_config
+from markata.cli.server import Server
 from markata.lifecycle import LifeCycle
 
 __version__ = "0.0.1"
@@ -97,15 +98,15 @@ class Markata:
         self.phase = "starting"
         self.MARKATA_CACHE_DIR = Path(".") / ".markata.cache"
         self.MARKATA_CACHE_DIR.mkdir(exist_ok=True)
-        self.phase_file = self.MARKATA_CACHE_DIR / "phase.txt"
+        self.phase_file: Path = self.MARKATA_CACHE_DIR / "phase.txt"
         self.registered_attrs = hookspec.registered_attrs
         self.configure()
 
     @property
-    def cache(self):
+    def cache(self) -> FanoutCache:
         return FanoutCache(self.MARKATA_CACHE_DIR, statistics=True)
 
-    def __getattr__(self, item):
+    def __getattr__(self, item: str) -> Any:
         if item in self.__dict__.keys():
             return self.__getitem__(item)
         elif item in self.registered_attrs.keys():
@@ -119,13 +120,12 @@ class Markata:
             raise AttributeError(item)
 
     @property
-    def server(self):
+    def server(self) -> Server:
         try:
             return self._server
         except AttributeError:
-            from markata.cli.server import Server
 
-            self._server = Server()
+            self._server: Server = Server()
             return self.server
 
     @property
