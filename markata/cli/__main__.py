@@ -5,8 +5,16 @@ from textual.widget import Widget
 
 from markata import Markata
 
-from . import (Describe, Header, MarkataCli, Plugins, Runner, Server,
-               make_layout, run_until_keyboard_interrupt)
+from . import (
+    Describe,
+    Header,
+    MarkataCli,
+    Plugins,
+    Runner,
+    Server,
+    make_layout,
+    run_until_keyboard_interrupt,
+)
 
 
 class MarkataWidget(Widget):
