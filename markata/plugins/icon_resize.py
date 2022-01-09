@@ -23,7 +23,6 @@ def render(markata: "MarkataIcons") -> None:
         return
     base_out_file = Path(markata.config["output_dir"]) / markata.config["icon"]
     img = Image.open(Path(markata.config["assets_dir"]) / markata.config["icon"])
-    ratio = img.size[1] / img.size[0]
     markata.icons = []
     for width in [48, 72, 96, 144, 192, 256, 384, 512]:
         height = int(float(img.size[1]) * float(width / float(img.size[0])))
