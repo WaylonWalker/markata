@@ -35,7 +35,7 @@ class Runner:
 
     @property
     def is_running(self):
-        return self.proc.poll() == None
+        return self.proc.poll() is None
 
     @property
     def status(self):
