@@ -3,8 +3,9 @@ Markata plugin to create a pyinstrument profile if pyinstrument is installed.
 
 The profile will be saved to <output_dir>/_profile/index.html
 """
-from markata.hookspec import hook_impl
 from pathlib import Path
+
+from markata.hookspec import hook_impl
 
 try:
     from pyinstrument import Profiler

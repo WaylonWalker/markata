@@ -1,10 +1,10 @@
+import subprocess
 import time
 
 from rich.panel import Panel
 from rich.text import Text
 
 from markata import Markata
-import subprocess
 
 
 class Runner:

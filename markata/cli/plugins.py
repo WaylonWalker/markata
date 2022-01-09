@@ -2,8 +2,9 @@ import rich
 from rich.panel import Panel
 from rich.table import Table
 
-from .cli import RichM
 from markata import Markata
+
+from .cli import RichM
 
 
 class Plugins(RichM):

@@ -1,5 +1,5 @@
 """manifest plugin"""
-from typing import List, TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 from bs4 import BeautifulSoup
 

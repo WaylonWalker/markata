@@ -1,13 +1,11 @@
-from markata.hookspec import hook_impl
-from rich.live import Live
-from markata import Markata
-from textual.widget import Widget
 from rich.console import RenderableType
-
-from textual.widgets import Header, Footer
-
-
+from rich.live import Live
 from textual.app import App
+from textual.widget import Widget
+from textual.widgets import Footer, Header
+
+from markata import Markata
+from markata.hookspec import hook_impl
 
 
 class MarkataWidget(Widget):

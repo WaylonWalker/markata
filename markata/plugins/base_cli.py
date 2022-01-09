@@ -1,9 +1,10 @@
+from typing import Optional
+
+import typer
+from rich.console import Console
+
 from markata import Markata
 from markata.hookspec import hook_impl
-
-from rich.console import Console
-import typer
-from typing import Optional
 
 
 @hook_impl()

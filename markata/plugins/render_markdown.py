@@ -1,8 +1,9 @@
 from typing import TYPE_CHECKING
 
-from markata.hookspec import hook_impl, register_attr
-from markata import DEFAULT_MD_EXTENSIONS
 import markdown
+
+from markata import DEFAULT_MD_EXTENSIONS
+from markata.hookspec import hook_impl, register_attr
 
 if TYPE_CHECKING:
     from markata import Markata

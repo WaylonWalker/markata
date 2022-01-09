@@ -1,21 +1,12 @@
-from rich.live import Live
-from markata import Markata
-from textual.widget import Widget
 from rich.console import RenderableType
-
-from . import (
-    Describe,
-    Header,
-    MarkataCli,
-    Plugins,
-    Runner,
-    Server,
-    make_layout,
-    run_until_keyboard_interrupt,
-)
-
-
+from rich.live import Live
 from textual.app import App
+from textual.widget import Widget
+
+from markata import Markata
+
+from . import (Describe, Header, MarkataCli, Plugins, Runner, Server,
+               make_layout, run_until_keyboard_interrupt)
 
 
 class MarkataWidget(Widget):

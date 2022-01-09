@@ -1,7 +1,7 @@
 """Default load plugin."""
-from pathlib import Path
 import time
-from typing import Callable, Optional, TYPE_CHECKING
+from pathlib import Path
+from typing import TYPE_CHECKING, Callable, Optional
 
 import frontmatter
 from rich.progress import BarColumn, Progress

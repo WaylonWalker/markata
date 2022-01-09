@@ -1,12 +1,9 @@
 """Default glob plugin"""
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
-import pytz
 from feedgen.feed import FeedGenerator
-from more_itertools import flatten
 
-from markata import Markata
 from markata.hookspec import hook_impl
 
 if TYPE_CHECKING:
