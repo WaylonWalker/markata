@@ -30,8 +30,20 @@ def cli(app, markata):
         if reverse:
             filtered = reversed(filtered)
 
-        for a in filtered:
-            typer.echo(a)
+        if markata.console.is_terminal and use_pager:
+            with markata.console.pager():
+                for a in filtered:
+                    markata.console.print(a, style="purple")
+        else:
+            for a in filtered:
+                markata.console.print(a)
+
+    @app.command()
+    def console():
+        if markata.console.is_terminal:
+            markata.console.print("console options:", markata.console.options)
+        else:
+            print("here")
 
     @app.command()
     def build(
