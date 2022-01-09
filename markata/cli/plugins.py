@@ -4,10 +4,11 @@ from rich.table import Table
 
 from markata import Markata
 
-from .cli import RichM
 
+class Plugins:
+    def __init__(self, markata: Markata):
+        self.m = markata
 
-class Plugins(RichM):
     def __rich__(self) -> Panel:
         grid = Table.grid(expand=True)
         grid.add_row(f"[bright_blue]{len(self.m._pm.get_plugins())}[/] plugins")

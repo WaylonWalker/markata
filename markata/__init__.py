@@ -20,6 +20,7 @@ from rich.progress import track
 from rich.table import Table
 
 from markata import hookspec, standard_config
+from markata.cli.plugins import Plugins
 from markata.cli.runner import Runner
 from markata.cli.server import Server
 from markata.lifecycle import LifeCycle
@@ -139,13 +140,12 @@ class Markata:
             return self.runner
 
     @property
-    def plugins(self):
+    def plugins(self) -> Plugins:
         try:
             return self._plugins
         except AttributeError:
-            from markata.cli.plugins import Plugins
 
-            self._plugins = Plugins(self)
+            self._plugins: Plugins = Plugins(self)
         return self.plugins
 
     @property
