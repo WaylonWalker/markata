@@ -67,14 +67,19 @@ registered_attrs = {}
 import functools
 
 
-def register_attr(attr):
+def register_attr(*attrs):
     def decorator_register(func):
 
-        if attr not in registered_attrs:
-            registered_attrs[attr] = []
-        registered_attrs[attr].append(
-            {"func": func, "lifecycle": getattr(LifeCycle, func.__code__.co_name)}
-        )
+        for attr in attrs:
+            if attr not in registered_attrs:
+                registered_attrs[attr] = []
+            registered_attrs[attr].append(
+                {
+                    "func": func,
+                    "funcname": func.__code__.co_name,
+                    "lifecycle": getattr(LifeCycle, func.__code__.co_name),
+                }
+            )
 
         @functools.wraps(func)
         def wrapper_register(markata, *args, **kwargs):

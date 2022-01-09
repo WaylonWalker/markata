@@ -3,10 +3,11 @@ from pathlib import Path
 import anyconfig
 
 from markata import Markata
-from markata.hookspec import hook_impl
+from markata.hookspec import hook_impl, register_attr
 
 
 @hook_impl
+@register_attr("sitemap")
 def render(markata: Markata) -> None:
     sitemap = {
         "urlset": [

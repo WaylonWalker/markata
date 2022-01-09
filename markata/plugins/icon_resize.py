@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 from PIL import Image
 
-from markata.hookspec import hook_impl
+from markata.hookspec import hook_impl, register_attr
 
 if TYPE_CHECKING:
 
@@ -17,6 +17,7 @@ if TYPE_CHECKING:
 
 
 @hook_impl
+@register_attr("icons")
 def render(markata: "MarkataIcons") -> None:
     if "icon" not in markata.config:
         return

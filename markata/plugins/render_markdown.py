@@ -1,9 +1,27 @@
 from typing import TYPE_CHECKING
 
-from markata.hookspec import hook_impl
+from markata.hookspec import hook_impl, register_attr
+from markata import DEFAULT_MD_EXTENSIONS
+import markdown
 
 if TYPE_CHECKING:
     from markata import Markata
+
+
+@hook_impl(tryfirst=True)
+@register_attr("md", "markdown_extensions")
+def configure(markata: "Markata") -> None:
+    if "markdown_extensions" not in markata.config:
+        markdown_extensions = [""]
+    if isinstance(markata.config["markdown_extensions"], str):
+        markdown_extensions = [markata.config["markdown_extensions"]]
+    if isinstance(markata.config["markdown_extensions"], list):
+        markdown_extensions = markata.config["markdown_extensions"]
+    else:
+        raise TypeError("markdown_extensions should be List[str]")
+
+    markata.markdown_extensions = [*DEFAULT_MD_EXTENSIONS, *markdown_extensions]
+    markata.md = markdown.Markdown(extensions=markata.markdown_extensions)
 
 
 @hook_impl(tryfirst=True)

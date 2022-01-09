@@ -8,13 +8,14 @@ from rich.progress import BarColumn, Progress
 from yaml.parser import ParserError
 
 from markata.background import task
-from markata.hookspec import hook_impl
+from markata.hookspec import hook_impl, register_attr
 
 if TYPE_CHECKING:
     from markata import Markata, Post
 
 
 @hook_impl
+@register_attr("articles")
 def load(markata: "Markata") -> None:
     progress = Progress(
         BarColumn(bar_width=None), transient=True, console=markata.console
