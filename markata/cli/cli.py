@@ -76,7 +76,6 @@ def main(
 
 def cli():
     m = Markata()
-    m.configure()
     m._pm.hook.cli(markata=m, app=app)
     app()
 
