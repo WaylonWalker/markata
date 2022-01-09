@@ -12,7 +12,7 @@ def render(markata: Markata) -> None:
         "urlset": [
             {
                 "url": {
-                    "loc": markata.url + "/" + article["slug"] + "/",
+                    "loc": markata.config["url"] + "/" + article["slug"] + "/",
                     "changefreq": "daily",
                     "priority": "0.7",
                 }
@@ -36,5 +36,5 @@ def render(markata: Markata) -> None:
 
 @hook_impl
 def save(markata: Markata) -> None:
-    with open(markata.output_dir / "sitemap.xml", "w") as f:
+    with open(Path(markata.config["output_dir"]) / "sitemap.xml", "w") as f:
         f.write(markata.sitemap)  # type: ignore
