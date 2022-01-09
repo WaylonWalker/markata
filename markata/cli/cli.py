@@ -1,6 +1,6 @@
 import time
-import typer
 
+import typer
 from rich.layout import Layout
 
 from markata import Markata, __version__
@@ -58,6 +58,12 @@ def version_callback(value: bool):
         raise typer.Exit()
 
 
+def json_callback(value: bool):
+    if value:
+        typer.echo(Markata().to_json())
+        raise typer.Exit()
+
+
 app = typer.Typer(
     name="Markata",
     help="Awesome CLI user manager.",
@@ -68,6 +74,9 @@ app = typer.Typer(
 def main(
     version: bool = typer.Option(
         None, "--version", callback=version_callback, is_eager=True
+    ),
+    to_json: bool = typer.Option(
+        None, "--to-json", callback=json_callback, is_eager=True
     ),
 ):
     # Do other global stuff, handle other global options here

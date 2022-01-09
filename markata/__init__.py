@@ -199,22 +199,6 @@ class Markata:
         if isinstance(self.config["disabled_hooks"], list):
             self.disabled_hooks = self.config["disabled_hooks"]
 
-        if "seo" not in self.config:
-            self.seo = [""]
-        if isinstance(self.config["seo"], str):
-            self.seo = self.config["seo"].split(",")
-        if isinstance(self.config["seo"], list):
-            self.seo = self.config["seo"]
-
-        if "covers" not in self.config:
-            self.covers = [""]
-        if isinstance(self.config["covers"], str):
-            self.covers = self.config["covers"].split(",")
-        if isinstance(self.config["covers"], list):
-            self.covers = self.config["covers"]
-        else:
-            raise TypeError("covers must be a string or list of dicts")
-
         try:
             default_index = self.hooks.index("default")
             hooks = [
@@ -420,6 +404,11 @@ class Markata:
         except AttributeError:
             self.render()
             return self._to_dict()
+
+    def to_json(self) -> str:
+        import json
+
+        return json.dumps(self.to_dict(), indent=4, sort_keys=True, default=str)
 
     def _register_hooks(self) -> None:
         for hook in self.hooks:
