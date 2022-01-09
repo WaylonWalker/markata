@@ -23,6 +23,7 @@ from markata import hookspec, standard_config
 from markata.cli.plugins import Plugins
 from markata.cli.runner import Runner
 from markata.cli.server import Server
+from markata.cli.summary import Summary
 from markata.lifecycle import LifeCycle
 
 __version__ = "0.0.1"
@@ -149,13 +150,12 @@ class Markata:
         return self.plugins
 
     @property
-    def summary(self):
+    def summary(self) -> Summary:
         try:
             return self._summary
         except AttributeError:
-            from markata.cli.summary import Summary
 
-            self._summary = Summary(self)
+            self._summary: Summary = Summary(self)
             return self.summary
 
     def __rich__(self) -> Table:
