@@ -1,11 +1,8 @@
 """Define hook specs."""
-import pluggy
-
-HOOK_NAMESPACE = "markata"
-
-hook_spec = pluggy.HookspecMarker(HOOK_NAMESPACE)
-hook_impl = pluggy.HookimplMarker(HOOK_NAMESPACE)
+import functools
 from typing import TYPE_CHECKING
+
+import pluggy
 
 from markata.lifecycle import LifeCycle
 
@@ -13,6 +10,10 @@ if TYPE_CHECKING:
     import typer
 
     from markata import Markata
+
+HOOK_NAMESPACE = "markata"
+hook_spec = pluggy.HookspecMarker(HOOK_NAMESPACE)
+hook_impl = pluggy.HookimplMarker(HOOK_NAMESPACE)
 
 
 class MarkataSpecs:
@@ -42,9 +43,6 @@ for method in LifeCycle._member_map_:
         setattr(MarkataSpecs, method, generic_lifecycle_method)
 
 registered_attrs = {}
-
-
-import functools
 
 
 def register_attr(*attrs):
