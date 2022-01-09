@@ -1,8 +1,7 @@
 from rich.console import RenderableType
-from rich.live import Live
 from textual.app import App
 from textual.widget import Widget
-from textual.widgets import Footer, Header
+from textual.widgets import Footer
 
 from markata import Markata
 from markata.hookspec import hook_impl
