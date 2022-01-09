@@ -97,11 +97,65 @@ class Markata:
         self.MARKATA_CACHE_DIR = Path(".") / ".markata.cache"
         self.MARKATA_CACHE_DIR.mkdir(exist_ok=True)
         self.phase_file = self.MARKATA_CACHE_DIR / "phase.txt"
+        self.registered_attrs = hookspec.registered_attrs
         self.configure()
 
     @property
     def cache(self):
         return FanoutCache(self.MARKATA_CACHE_DIR, statistics=True)
+
+    def __getattr__(self, item):
+        if item in self.__dict__.keys():
+            return self.__getitem__(item)
+        elif item in self.registered_attrs.keys():
+            stage_to_run_to = max(
+                [attr["lifecycle"] for attr in self.registered_attrs[item]]
+            ).name
+            runner = getattr(self, stage_to_run_to)
+            runner()
+            return getattr(self, item)
+        else:
+            raise AttributeError(item)
+
+    @property
+    def server(self):
+        try:
+            return self._server
+        except AttributeError:
+            from markata.cli.server import Server
+
+            self._server = Server()
+            return self.server
+
+    @property
+    def runner(self):
+        try:
+            return self._runner
+        except AttributeError:
+            from markata.cli.runner import Runner
+
+            self._runner = Runner()
+            return self.runner
+
+    @property
+    def plugins(self):
+        try:
+            return self._plugins
+        except AttributeError:
+            from markata.cli.plugins import Plugins
+
+            self._plugins = Plugins(self)
+        return self.plugins
+
+    @property
+    def summary(self):
+        try:
+            return self._summary
+        except AttributeError:
+            from markata.cli.summary import Summary
+
+            self._summary = Summary(self)
+            return self.summary
 
     def __rich__(self) -> Table:
 
