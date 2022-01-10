@@ -9,7 +9,7 @@ import os
 import sys
 from datetime import timedelta
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterable, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Tuple
 
 import frontmatter
 import pluggy
@@ -363,7 +363,7 @@ class Markata:
             self._pm.hook.save(markata=self)
         return self
 
-    def run(self, lifecycle=None) -> Markata:
+    def run(self, lifecycle: LifeCycle = None) -> Markata:
         if lifecycle is None:
             lifecycle = getattr(LifeCycle, max(LifeCycle._member_map_))
 
@@ -387,8 +387,8 @@ class Markata:
 
         return self
 
-    def filter(self, filter: str):
-        def evalr(a):
+    def filter(self, filter: str) -> List:
+        def evalr(a: Post) -> Any:
             try:
                 return eval(filter, {**a.to_dict(), "timedelta": timedelta}, {})
             except AttributeError:
@@ -396,7 +396,9 @@ class Markata:
 
         return [a for a in self.articles if evalr(a)]
 
-    def map(self, func: str = "title", filter: str = "True", sort: str = "True"):
+    def map(
+        self, func: str = "title", filter: str = "True", sort: str = "True"
+    ) -> List:
         import copy
 
         articles = copy.copy(self.articles)
