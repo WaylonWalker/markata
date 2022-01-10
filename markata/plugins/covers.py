@@ -25,6 +25,7 @@ def get_font(
     size: int = 250,
     max_size: tuple = (800, 220),
 ) -> ImageFont.FreeTypeFont:
+    title = title or ""
     font = _load_font(path, size)
     current_size = draw.textsize(title, font=font)
 
@@ -50,6 +51,7 @@ def draw_text(
     color: Union[str, None],
     padding: Tuple[int, ...],
 ) -> None:
+    text = text or ""
     draw = ImageDraw.Draw(image)
     padding = resolve_padding(padding)
     width = image.size[0]
