@@ -1,11 +1,7 @@
 import time
-from typing import TYPE_CHECKING
 
 import typer
 from rich.layout import Layout
-
-if TYPE_CHECKING:
-    from markata import Markata
 
 
 def make_layout() -> Layout:
@@ -31,17 +27,7 @@ def make_layout() -> Layout:
     return layout
 
 
-class RichM:
-    def __init__(self, markata: "Markata"):
-        self.m = markata
-        self.layout = make_layout()
-
-    def __rich__(self):
-
-        return self.layout
-
-
-def run_until_keyboard_interrupt():
+def run_until_keyboard_interrupt() -> None:
     try:
         while True:
             time.sleep(0.2)
@@ -49,7 +35,7 @@ def run_until_keyboard_interrupt():
         pass
 
 
-def version_callback(value: bool):
+def version_callback(value: bool) -> None:
     if value:
         from markata import __version__
 
@@ -57,7 +43,7 @@ def version_callback(value: bool):
         raise typer.Exit()
 
 
-def json_callback(value: bool):
+def json_callback(value: bool) -> None:
     if value:
         from markata import Markata
 
@@ -79,12 +65,12 @@ def main(
     to_json: bool = typer.Option(
         None, "--to-json", callback=json_callback, is_eager=True
     ),
-):
+) -> None:
     # Do other global stuff, handle other global options here
     return
 
 
-def cli():
+def cli() -> None:
     from markata import Markata
 
     m = Markata()
