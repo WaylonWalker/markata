@@ -50,15 +50,11 @@ def join_lines(article):
 
 
 @hook_impl
-def save(markata: "Markata") -> None:
-    output_dir = Path(str(markata.config["output_dir"]))
-    output_dir.mkdir(parents=True, exist_ok=True)
+def post_render(markata: "Markata") -> None:
+    for post in markata.iter_articles(description="saving source documents"):
+        from copy import copy, deepcopy
 
-    for real_article in markata.iter_articles(description="saving source documents"):
-        from copy import copy
-        from copy import deepcopy
-
-        article = deepcopy(real_article)
+        article = deepcopy(post)
 
         before_keys = copy(list(article.keys()))
         for key in before_keys:
@@ -69,7 +65,7 @@ def save(markata: "Markata") -> None:
         article.content = join_lines(article.content)
 
         if "canonical_url" not in article:
-            article["canonical_url"] = f'{markata.url}/{real_article["slug"]}/'
+            article["canonical_url"] = f'{markata.config["url"]}/{post["slug"]}/'
 
         if "published" not in article:
             article["published"] = True
@@ -77,7 +73,15 @@ def save(markata: "Markata") -> None:
         if "cover_image" not in article:
             article[
                 "cover_image"
-            ] = f"{markata.config['images_url']}/{real_article['slug']}.png"
+            ] = f"{markata.config['images_url']}/{post['slug']}.png"
+        post.dev_to = article
 
-        with open(output_dir / Path(real_article["slug"]) / "dev.md", "w+") as f:
-            f.write(frontmatter.dumps(article))
+
+@hook_impl
+def save(markata: "Markata") -> None:
+    output_dir = Path(str(markata.config["output_dir"]))
+    output_dir.mkdir(parents=True, exist_ok=True)
+    for post in markata.iter_articles(description="saving source documents"):
+
+        with open(output_dir / Path(post["slug"]) / "dev.md", "w+") as f:
+            f.write(frontmatter.dumps(post.dev_to))
