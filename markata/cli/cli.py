@@ -51,6 +51,8 @@ def run_until_keyboard_interrupt():
 
 def version_callback(value: bool):
     if value:
+        from markata import __version__
+
         typer.echo(f"Markata CLI Version: {__version__}")
         raise typer.Exit()
 
