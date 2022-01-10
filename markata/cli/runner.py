@@ -4,7 +4,7 @@ import time
 from rich.panel import Panel
 from rich.text import Text
 
-from markata import Markata
+# from markata import Markata
 
 
 class Runner:
@@ -12,11 +12,14 @@ class Runner:
 
     _status = "waiting"
 
-    m = Markata()
-    m.console.quiet = True
+    # m = Markata()
+    # m.console.quiet = True
     _dirhash = ""
     time = time.time()
     std = ""
+
+    def __init__(self, markata: "Markata"):
+        self.m = markata
 
     def run(self) -> None:
         # self.m.run()

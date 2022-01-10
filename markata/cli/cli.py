@@ -1,14 +1,11 @@
 import time
+from typing import TYPE_CHECKING
 
 import typer
 from rich.layout import Layout
 
-from markata import Markata, __version__
-
-
-class MarkataCli(Markata):
-    count: int = 0
-    _dirhash: str = ""
+if TYPE_CHECKING:
+    from markata import Markata
 
 
 def make_layout() -> Layout:
@@ -35,7 +32,7 @@ def make_layout() -> Layout:
 
 
 class RichM:
-    def __init__(self, markata: MarkataCli):
+    def __init__(self, markata: "Markata"):
         self.m = markata
         self.layout = make_layout()
 
@@ -60,6 +57,8 @@ def version_callback(value: bool):
 
 def json_callback(value: bool):
     if value:
+        from markata import Markata
+
         typer.echo(Markata().to_json())
         raise typer.Exit()
 
@@ -84,6 +83,8 @@ def main(
 
 
 def cli():
+    from markata import Markata
+
     m = Markata()
     m._pm.hook.cli(markata=m, app=app)
     app()

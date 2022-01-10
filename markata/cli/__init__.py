@@ -1,4 +1,4 @@
-from .cli import MarkataCli, app, make_layout, run_until_keyboard_interrupt
+from .cli import app, make_layout, run_until_keyboard_interrupt
 from .header import Header
 from .plugins import Plugins
 from .runner import Runner
@@ -6,13 +6,12 @@ from .server import Server
 from .summary import Summary
 
 __all__ = [
-    "Summary",
     "Header",
-    "MarkataCli",
     "Plugins",
     "Runner",
     "Server",
+    "Summary",
+    "app",
     "make_layout",
     "run_until_keyboard_interrupt",
-    "app",
 ]

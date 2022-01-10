@@ -1,4 +1,7 @@
-from typing import Optional
+import pdb
+import sys
+import traceback
+from typing import Callable, Optional
 
 import typer
 from rich.console import Console
@@ -50,12 +53,16 @@ def cli(app, markata):
     def build(
         rich: bool = False,
         quiet: bool = False,
-        to_dict: bool = False,
+        # to_dict: bool = False,
         watch: bool = False,
         verbose: bool = typer.Option(
             False,
             "--verbose",
             "-v",
+        ),
+        should_pdb: bool = typer.Option(
+            False,
+            "--pdb",
         ),
     ) -> None:
         import time
@@ -74,12 +81,12 @@ def cli(app, markata):
         if verbose:
             m.console.print("console options:", m.console.options)
 
-        if to_dict:
-            m.console.quiet = True
-            data = m.to_dict()
-            m.console.quiet = False
-            m.console.print(data)
-            return
+        # if to_dict:
+        #     m.console.quiet = True
+        #     data = m.to_dict()
+        #     m.console.quiet = False
+        #     m.console.print(data)
+        #     return
 
         if watch:
 
@@ -93,4 +100,16 @@ def cli(app, markata):
                         m.run()
                     time.sleep(0.1)
 
-        m.run()
+        if should_pdb:
+            pdb_run(m.run)
+        else:
+            m.run()
+
+
+def pdb_run(func: Callable) -> None:
+    try:
+        func()
+    except:
+        extype, value, tb = sys.exc_info()
+        traceback.print_exc()
+        pdb.post_mortem(tb)

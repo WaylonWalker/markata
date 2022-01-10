@@ -137,7 +137,7 @@ class Markata:
             return self._runner
         except AttributeError:
 
-            self._runner: Runner = Runner()
+            self._runner: Runner = Runner(self)
             return self.runner
 
     @property
@@ -219,7 +219,7 @@ class Markata:
         self._pm.hook.configure(markata=self)
         return self
 
-    def get_plugin_config(self, path_or_name: str):
+    def get_plugin_config(self, path_or_name: str) -> Dict:
 
         key = Path(path_or_name).stem
 
@@ -227,6 +227,8 @@ class Markata:
             config = self.config[key]
         except KeyError:
             config = {}
+        if not isinstance(config, dict):
+            raise TypeError("must use dict")
         if "cache_expire" not in config.keys():
             config["cache_expire"] = self.config["default_cache_expire"]
         if "config_key" not in config.keys():
@@ -354,7 +356,6 @@ class Markata:
 
     # @set_phase
     def save(self) -> Markata:
-        breakpoint()
         try:
             self._pm.hook.save(markata=self)
         except AttributeError:

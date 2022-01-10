@@ -1,12 +1,15 @@
+from typing import TYPE_CHECKING
+
 import rich
 from rich.panel import Panel
 from rich.table import Table
 
-from markata import Markata
+if TYPE_CHECKING:
+    from markata import Markata
 
 
 class Plugins:
-    def __init__(self, markata: Markata):
+    def __init__(self, markata: "Markata"):
         self.m = markata
 
     def __rich__(self) -> Panel:
@@ -27,6 +30,8 @@ class Plugins:
 
 
 if __name__ == "__main__":
+
+    from markata import Markata
 
     plugins = Plugins(Markata())
     rich.print(plugins)
