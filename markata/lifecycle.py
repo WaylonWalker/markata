@@ -13,14 +13,16 @@ class LifeCycle(Enum):
     post_render = auto()
     save = auto()
 
-    def __lt__(self, other):
-        try:
+    def __lt__(self, other: object) -> bool:
+        if isinstance(other, LifeCycle):
             return self.value < other.value
-        except AttributeError:
+        if isinstance(other, int):
             return self.value < other
+        return NotImplemented
 
-    def __eq__(self, other):
-        try:
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, LifeCycle):
             return self.value == other.value
-        except AttributeError:
+        if isinstance(other, int):
             return self.value == other
+        return NotImplemented
