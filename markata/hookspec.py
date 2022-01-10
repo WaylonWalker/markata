@@ -63,7 +63,7 @@ def register_attr(*attrs: Any) -> Callable:
             )
 
         @functools.wraps(func)
-        def wrapper_register(markata: Markata, *args: Any, **kwargs: Any) -> Any:
+        def wrapper_register(markata: "Markata", *args: Any, **kwargs: Any) -> Any:
             return func(markata, *args, **kwargs)
 
         return wrapper_register
