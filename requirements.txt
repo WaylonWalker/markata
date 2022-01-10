@@ -1,4 +1,3 @@
-typer
 anyconfig
 beautifulsoup4
 checksumdir
@@ -6,11 +5,13 @@ diskcache
 feedgen
 jinja2
 more-itertools
+pathspec
 pillow
 pluggy
 pymdown-extensions
 python-frontmatter
 pytz
 rich
-toml
 textual
+toml
+typer
