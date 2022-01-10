@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 from rich.panel import Panel
 from rich.table import Table
@@ -12,7 +12,7 @@ class Summary:
         self.m = m
         self.simple = simple
 
-    def __rich__(self) -> Panel:
+    def __rich__(self) -> Union[Panel, Table]:
         grid = Table.grid(expand=True)
         grid.add_row(f"[bright_blue]{len(self.m.articles)}[/] articles")
         grid.add_row(
