@@ -1,12 +1,13 @@
 """Define hook specs."""
 import functools
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Callable, Dict, List
 
 import pluggy
 
 from markata.lifecycle import LifeCycle
 
 if TYPE_CHECKING:
+
     import typer
 
     from markata import Markata
@@ -27,12 +28,12 @@ class MarkataSpecs:
 @hook_spec
 def generic_lifecycle_method(
     markata: "Markata",
-):
+) -> Any:
     ...
 
 
 @hook_spec
-def cli_lifecycle_method(markata: "Markata", app: "typer.Typer"):
+def cli_lifecycle_method(markata: "Markata", app: "typer.Typer") -> Any:
     "A Markata lifecycle methos that includes a typer app used for cli's"
 
 
@@ -42,11 +43,13 @@ for method in LifeCycle._member_map_:
     else:
         setattr(MarkataSpecs, method, generic_lifecycle_method)
 
-registered_attrs = {}
+registered_attrs: Dict[str, List[Dict[str, Any]]] = {}
 
 
-def register_attr(*attrs):
-    def decorator_register(func):
+def register_attr(*attrs: Any) -> Callable:
+    def decorator_register(
+        func: Callable,
+    ) -> Callable:
 
         for attr in attrs:
             if attr not in registered_attrs:
@@ -60,7 +63,7 @@ def register_attr(*attrs):
             )
 
         @functools.wraps(func)
-        def wrapper_register(markata, *args, **kwargs):
+        def wrapper_register(markata: Markata, *args: Any, **kwargs: Any) -> Any:
             return func(markata, *args, **kwargs)
 
         return wrapper_register
