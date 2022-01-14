@@ -4,8 +4,9 @@ Markata plugin to create a pyinstrument profile if pyinstrument is installed.
 The profile will be saved to <output_dir>/_profile/index.html
 """
 from pathlib import Path
-import typer
 from typing import TYPE_CHECKING
+
+import typer
 
 from markata.hookspec import hook_impl, register_attr
 
@@ -19,9 +20,14 @@ except ModuleNotFoundError:
     ...
 
 
+class MarkataInstrument(Markata):
+    should_profile = False
+    profiler = None
+
+
 @hook_impl(tryfirst=True)
-def cli(app, markata: "Markata") -> None:
-    def should_profile_callback(value: bool):
+def cli(app: typer.Typer, markata: MarkataInstrument) -> None:
+    def should_profile_callback(value: bool) -> None:
         if value:
             markata.should_profile = True
 
@@ -30,18 +36,17 @@ def cli(app, markata: "Markata") -> None:
         version: bool = typer.Option(
             None, "--profile", callback=should_profile_callback, is_eager=True
         ),
-    ):
-        # Do other global stuff, handle other global options here
-        return
+    ) -> None:
+        ...
 
     @app.command()
-    def profile():
+    def profile() -> None:
         ...
 
 
 @hook_impl(tryfirst=True)
 @register_attr("should_profile")
-def configure(markata: "Markata") -> None:
+def configure(markata: MarkataInstrument) -> None:
     "set the should_profile variable"
 
     try:
@@ -52,7 +57,7 @@ def configure(markata: "Markata") -> None:
 
 @hook_impl(tryfirst=True)
 @register_attr("profiler")
-def glob(markata: "Markata") -> None:
+def glob(markata: MarkataInstrument) -> None:
     "start the profiler as soon as possible"
     if markata.should_profile:
         try:
@@ -64,15 +69,16 @@ def glob(markata: "Markata") -> None:
 
 
 @hook_impl(trylast=True)
-def save(markata: "Markata") -> None:
+def save(markata: MarkataInstrument) -> None:
     "stop the profiler and save as late as possible"
-    try:
-        output_file = Path(markata.output_dir) / "_profile" / "index.html"
-        output_file.parent.mkdir(parents=True, exist_ok=True)
-        markata.profiler.stop()
-        html = markata.profiler.output_html()
-        output_file.write_text(html)
-        markata.console.print(markata.profiler.output_text())
+    if markata.should_profile:
+        try:
+            output_file = Path(markata.output_dir) / "_profile" / "index.html"
+            output_file.parent.mkdir(parents=True, exist_ok=True)
+            markata.profiler.stop()
+            html = markata.profiler.output_html()
+            output_file.write_text(html)
+            markata.console.print(markata.profiler.output_text())
 
     except AttributeError:
         "ignore if markata does not have a profiler attribute"
