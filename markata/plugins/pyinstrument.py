@@ -46,13 +46,10 @@ def cli(app: typer.Typer, markata: MarkataInstrument) -> None:
 def configure(markata: MarkataInstrument) -> None:
     "set the should_profile variable"
 
-    # if its not already set by the cli look in config or use False as
-    # the default
-    if not hasattr(markata, "should_profile"):
-        try:
-            markata.should_profile = markata.config["pyinstrument"]["should_profile"]
-        except KeyError:
-            markata.should_profile = False
+    try:
+        markata.should_profile = markata.config["pyinstrument"]["should_profile"]
+    except KeyError:
+        markata.should_profile = False
 
 
 @hook_impl(tryfirst=True)
