@@ -26,6 +26,7 @@ class MarkataInstrument(Markata):
 def cli(app: typer.Typer, markata: MarkataInstrument) -> None:
     def should_profile_callback(value: bool) -> None:
         if value:
+            markata.should_profile_cli = True
             markata.should_profile = True
 
     @app.callback()
@@ -46,10 +47,11 @@ def cli(app: typer.Typer, markata: MarkataInstrument) -> None:
 def configure(markata: MarkataInstrument) -> None:
     "set the should_profile variable"
 
-    try:
-        markata.should_profile = markata.config["pyinstrument"]["should_profile"]
-    except KeyError:
-        markata.should_profile = False
+    if "should_profile" not in markata.__dict__.keys():
+        try:
+            markata.should_profile = markata.config["pyinstrument"]["should_profile"]
+        except KeyError:
+            markata.should_profile = False
 
 
 @hook_impl(tryfirst=True)
@@ -70,12 +72,15 @@ def save(markata: MarkataInstrument) -> None:
     "stop the profiler and save as late as possible"
     if markata.should_profile:
         try:
-            output_file = Path(markata.output_dir) / "_profile" / "index.html"
+            breakpoint()
+            output_file = Path(markata.config["output_dir"]) / "_profile" / "index.html"
             output_file.parent.mkdir(parents=True, exist_ok=True)
-            markata.profiler.stop()
-            html = markata.profiler.output_html()
-            output_file.write_text(html)
-            markata.console.print(markata.profiler.output_text())
+
+            if "profiler" in markata.__dict__.keys():
+                markata.profiler.stop()
+                html = markata.profiler.output_html()
+                output_file.write_text(html)
+                markata.console.print(markata.profiler.output_text())
 
         except AttributeError:
             "ignore if markata does not have a profiler attribute"
