@@ -6,7 +6,6 @@ from typing import Callable, Optional
 import typer
 from rich.console import Console
 
-from markata import Markata
 from markata.hookspec import hook_impl
 
 
@@ -73,13 +72,11 @@ def cli(app, markata):
             pretty.install()
             traceback.install()
 
-        m = Markata()
-
         if quiet:
-            m.console.quiet = True
+            markata.console.quiet = True
 
         if verbose:
-            m.console.print("console options:", m.console.options)
+            markata.console.print("console options:", morerename.console.options)
 
         # if to_dict:
         #     m.console.quiet = True
@@ -90,20 +87,20 @@ def cli(app, markata):
 
         if watch:
 
-            hash = m.content_dir_hash
-            m.run()
+            hash = markata.content_dir_hash
+            markata.run()
             console = Console()
             with console.status("waiting for change", spinner="aesthetic", speed=0.2):
                 while True:
-                    if m.content_dir_hash != hash:
-                        hash = m.content_dir_hash
-                        m.run()
+                    if markata.content_dir_hash != hash:
+                        hash = markata.content_dir_hash
+                        markata.run()
                     time.sleep(0.1)
 
         if should_pdb:
-            pdb_run(m.run)
+            pdb_run(markata.run)
         else:
-            m.run()
+            markata.run()
 
 
 def pdb_run(func: Callable) -> None:
