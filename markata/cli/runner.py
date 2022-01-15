@@ -1,3 +1,4 @@
+import os
 import subprocess
 import time
 from typing import TYPE_CHECKING
@@ -14,21 +15,15 @@ class Runner:
 
     _status = "waiting"
 
-    # m = Markata()
-    # m.console.quiet = True
     _dirhash = ""
     time = time.time()
     std = ""
 
-    def __init__(self, markata: "Markata"):
+    def __init__(self, markata: "Markata") -> None:
         self.m = markata
 
     def run(self) -> None:
-        # self.m.run()
         self.cmd = ["markata", "build"]
-        import os
-
-        # self.time = time.time()
 
         with open("markata.log", "w", 1) as f:
             self.proc = subprocess.Popen(
@@ -39,11 +34,11 @@ class Runner:
             )
 
     @property
-    def is_running(self):
+    def is_running(self) -> bool:
         return self.proc.poll() is None
 
     @property
-    def status(self):
+    def status(self) -> str:
         if self._status == "running":
             if not self.is_running:
                 self.status = "waiting"
@@ -54,19 +49,19 @@ class Runner:
         return self._status
 
     @status.setter
-    def status(self, value):
+    def status(self, value) -> None:
         if value not in ["running", "waiting"]:
             raise ValueError(f"{value} is not a valid state")
         self._status = value
 
     @property
-    def color(self):
+    def color(self) -> str:
         if self.status == "running":
             return "green"
         return "white"
 
     @property
-    def phase(self):
+    def phase(self) -> str:
         return self.m.phase_file.read_text()
 
     def __rich__(self) -> Panel:
