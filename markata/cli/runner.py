@@ -1,10 +1,12 @@
 import subprocess
 import time
+from typing import TYPE_CHECKING
 
 from rich.panel import Panel
 from rich.text import Text
 
-# from markata import Markata
+if TYPE_CHECKING:
+    from markata import Markata
 
 
 class Runner:
@@ -84,7 +86,9 @@ class Runner:
 if __name__ == "__main__":
     from rich.live import Live
 
+    from markata import Markata
+
     from .cli import run_until_keyboard_interrupt
 
-    with Live(Runner(), refresh_per_second=30, screen=True):
+    with Live(Runner(Markata()), refresh_per_second=30, screen=True):
         run_until_keyboard_interrupt()
