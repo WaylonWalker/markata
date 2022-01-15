@@ -1,7 +1,7 @@
 """Default load plugin."""
 import time
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable, Optional
+from typing import TYPE_CHECKING, Callable, List, Optional
 
 import frontmatter
 from rich.progress import BarColumn, Progress
@@ -13,10 +13,13 @@ from markata.hookspec import hook_impl, register_attr
 if TYPE_CHECKING:
     from markata import Markata, Post
 
+    class MarkataMarkdown(Markata):
+        articles: List = []
+
 
 @hook_impl
 @register_attr("articles")
-def load(markata: "Markata") -> None:
+def load(markata: "MarkataMarkdown") -> None:
     progress = Progress(
         BarColumn(bar_width=None), transient=True, console=markata.console
     )
