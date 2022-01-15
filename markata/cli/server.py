@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 import atexit
 
 
-def find_port(port=8000):
+def find_port(port: int = 8000) -> int:
     """Find a port not in ues starting at given port"""
     import socket
 
@@ -31,7 +31,7 @@ class Server:
             from markata import Markata
 
             m = Markata()
-            directory = m.config["output_dir"]
+            directory = Path(str(m.config["output_dir"]))
 
         self.auto_restart = auto_restart
         self.directory = directory
@@ -39,7 +39,7 @@ class Server:
         self.start_server()
         atexit.register(self.kill)
 
-    def start_server(self):
+    def start_server(self) -> None:
         import subprocess
 
         self.cmd = [
@@ -69,10 +69,10 @@ class Server:
         self.start_time = time.time()
 
     @property
-    def uptime(self):
+    def uptime(self) -> int:
         return round(time.time() - self.start_time)
 
-    def kill(self):
+    def kill(self) -> None:
         self.auto_restart = False
         self.proc.kill()
 
