@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 import markdown
 
@@ -8,10 +8,15 @@ from markata.hookspec import hook_impl, register_attr
 if TYPE_CHECKING:
     from markata import Markata
 
+    class MarkataMarkdown(Markata):
+        articles: List = []
+        md: markdown.Markdown = markdown.Markdown()
+        markdown_extensions: List = []
+
 
 @hook_impl(tryfirst=True)
 @register_attr("md", "markdown_extensions")
-def configure(markata: "Markata") -> None:
+def configure(markata: "MarkataMarkdown") -> None:
     if "markdown_extensions" not in markata.config:
         markdown_extensions = [""]
     if isinstance(markata.config["markdown_extensions"], str):
