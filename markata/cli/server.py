@@ -1,12 +1,9 @@
+import atexit
 import time
-from typing import TYPE_CHECKING, Union
+from pathlib import Path
+from typing import Union
 
 from rich.panel import Panel
-
-if TYPE_CHECKING:
-    from pathlib import Path
-
-import atexit
 
 
 def find_port(port: int = 8000) -> int:
@@ -50,16 +47,6 @@ class Server:
             "--directory",
             self.directory,
         ]
-        # self.cmd = [
-        #     "pipx",
-        #     "run",
-        #     "livereload",
-        #     "-p",
-        #     str(self.port),
-        #     # "-w",
-        #     # ".1",
-        #     self.directory,
-        # ]
 
         self.proc = subprocess.Popen(
             self.cmd,
@@ -85,8 +72,6 @@ class Server:
             )
 
         else:
-            if self.auto_restart:
-                self.start_server()
 
             return Panel(f"[red]server died", title="server", border_style="red")
 
