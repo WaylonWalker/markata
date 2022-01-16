@@ -51,7 +51,11 @@ def cli(app, markata):
     @app.command()
     def build(
         rich: bool = False,
-        quiet: bool = False,
+        quiet: bool = typer.Option(
+            False,
+            "--quiet",
+            "-q",
+        ),
         # to_dict: bool = False,
         watch: bool = False,
         verbose: bool = typer.Option(
