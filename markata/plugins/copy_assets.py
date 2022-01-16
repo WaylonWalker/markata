@@ -17,4 +17,5 @@ def save(markata: "Markata") -> None:
         return
 
     with markata.console.status("copying assets", spinner="aesthetic", speed=0.2):
-        shutil.copytree(assets_dir, output_dir, dirs_exist_ok=True)
+        if assets_dir.exists():
+            shutil.copytree(assets_dir, output_dir, dirs_exist_ok=True)
