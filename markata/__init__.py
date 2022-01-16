@@ -7,9 +7,10 @@ import hashlib
 import importlib
 import os
 import sys
+import textwrap
 from datetime import timedelta
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterable, List, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
 
 import frontmatter
 import pluggy
@@ -97,13 +98,15 @@ def set_phase(function: Callable) -> Any:
 
 
 class Markata:
-    def __init__(self) -> None:
+    def __init__(self, console: Console = None) -> None:
         self.phase = "starting"
         self.MARKATA_CACHE_DIR = Path(".") / ".markata.cache"
         self.MARKATA_CACHE_DIR.mkdir(exist_ok=True)
         self.phase_file: Path = self.MARKATA_CACHE_DIR / "phase.txt"
         self.registered_attrs = hookspec.registered_attrs
         self.configure()
+        if console is not None:
+            self._console = console
 
     @property
     def cache(self) -> FanoutCache:
@@ -128,7 +131,7 @@ class Markata:
             return self._server
         except AttributeError:
 
-            self._server: Server = Server()
+            self._server: Server = Server(directory=self.config["output_dir"])
             return self.server
 
     @property
@@ -235,6 +238,35 @@ class Markata:
             config["config_key"] = key
         return config
 
+    def get_config(
+        self, key: str, warn: bool = True, suggested: Optional[str] = None
+    ) -> Any:
+        if hasattr(self.config, key):
+            return self.config[key]
+        else:
+
+            if suggested is None:
+                suggested = textwrap.dedent(
+                    f"""
+                        \[markata]
+                        {key} = value
+                    """
+                )
+            if warn:
+                self.console.log(
+                    textwrap.dedent(
+                        f"""
+                        Warning site_name is not set in markata config, sitemap will
+                        be missing root site_name
+                        to resolve this open your markata.toml and add
+
+                        {suggested}
+
+                        """
+                    ),
+                    style="yellow",
+                )
+
     def make_hash(self, *keys: str) -> str:
         str_keys = [str(key) for key in keys]
         return hashlib.md5("".join(str_keys).encode("utf-8")).hexdigest()
@@ -257,7 +289,7 @@ class Markata:
         try:
             return self._console
         except AttributeError:
-            self._console: Console = Console()
+            self._console = Console()
             return self._console
 
     def describe(self) -> dict[str, str]:
