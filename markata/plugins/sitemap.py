@@ -1,3 +1,4 @@
+import textwrap
 from pathlib import Path
 
 import anyconfig
@@ -9,11 +10,13 @@ from markata.hookspec import hook_impl, register_attr
 @hook_impl
 @register_attr("sitemap")
 def render(markata: Markata) -> None:
+    url = markata.get_config("url") or ""
+
     sitemap = {
         "urlset": [
             {
                 "url": {
-                    "loc": markata.config["url"] + "/" + article["slug"] + "/",
+                    "loc": url + "/" + article["slug"] + "/",
                     "changefreq": "daily",
                     "priority": "0.7",
                 }
