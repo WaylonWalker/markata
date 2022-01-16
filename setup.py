@@ -37,4 +37,5 @@ setup(
     license="MIT",
     install_requires=requires,
     extras_require={"dev": dev_requires},
+    include_package_data=True,
 )
