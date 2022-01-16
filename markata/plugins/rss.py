@@ -17,16 +17,27 @@ if TYPE_CHECKING:
 @hook_impl(trylast=True)
 def render(markata: "MarkataRss") -> None:
     fg = FeedGenerator()
-    fg.id(markata.config["url"] + "/rss.xml")
-    fg.title(markata.config["title"])
+    url = markata.get_config("url") or ""
+    title = markata.get_config("title") or "rss_feed"
+    name = markata.get_config("author_name") or ""
+    email = markata.get_config("author_email") or ""
+    icon = markata.get_config("icon") or ""
+    lang = markata.get_config("lang") or ""
+    rss_description = markata.get_config("rss_description") or "rss_feed"
+
+    fg.id(url + "/rss.xml")
+    fg.title(title)
     fg.author(
-        {"name": markata.config["author_name"], "email": markata.config["author_email"]}
+        {
+            "name": name,
+            "email": email,
+        }
     )
-    fg.link(href=markata.config["url"], rel="alternate")
-    fg.logo(markata.config["icon"])
-    fg.subtitle(markata.config["rss_description"])
-    fg.link(href=markata.config["url"] + "/rss.xml", rel="self")
-    fg.language(markata.config["lang"])
+    fg.link(href=url, rel="alternate")
+    fg.logo(icon)
+    fg.subtitle(rss_description)
+    fg.link(href=url + "/rss.xml", rel="self")
+    fg.language(lang)
 
     try:
         all_posts = reversed(sorted(markata.articles, key=lambda x: x["date"]))
@@ -36,12 +47,12 @@ def render(markata: "MarkataRss") -> None:
 
     for article in posts:
         fe = fg.add_entry()
-        fe.id(markata.config["url"] + "/" + article["slug"])
+        fe.id(url + "/" + article["slug"])
         fe.title(article.metadata["title"])
         fe.published(article.metadata["datetime"])
         fe.description(article.metadata["description"])
         fe.summary(article.metadata["long_description"])
-        fe.link(href=markata.config["url"] + "/" + article["slug"])
+        fe.link(href=url + "/" + article["slug"])
         fe.content(article.article_html.translate(dict.fromkeys(range(32))))
 
     markata.fg = fg
