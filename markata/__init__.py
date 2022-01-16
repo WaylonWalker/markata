@@ -54,6 +54,7 @@ DEFAULT_HOOKS = [
     "markata.plugins.load",
     "markata.plugins.render_markdown",
     "markata.plugins.manifest",
+    "markata.plugins.feeds",
     # "markata.plugins.generator",
     "markata.plugins.long_description",
     "markata.plugins.seo",
