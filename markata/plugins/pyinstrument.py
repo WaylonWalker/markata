@@ -72,7 +72,6 @@ def save(markata: MarkataInstrument) -> None:
     "stop the profiler and save as late as possible"
     if markata.should_profile:
         try:
-            breakpoint()
             output_file = Path(markata.config["output_dir"]) / "_profile" / "index.html"
             output_file.parent.mkdir(parents=True, exist_ok=True)
 
