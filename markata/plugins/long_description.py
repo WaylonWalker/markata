@@ -17,7 +17,7 @@ def render(markata: "Markata") -> None:
             key = markata.make_hash(
                 "long_description",
                 "render",
-                article["content_hash"],
+                article.content,
                 article.html,
             )
 
@@ -29,10 +29,13 @@ def render(markata: "Markata") -> None:
                     description = article.metadata["long_description"]
 
                 else:
-                    soup = BeautifulSoup(article.html, features="lxml")
-                    description = " ".join(
-                        [p.text for p in soup.find(id="post-body").find_all("p")]
-                    ).strip()[:250]
+                    try:
+                        soup = BeautifulSoup(article.html, features="lxml")
+                        description = " ".join(
+                            [p.text for p in soup.find(id="post-body").find_all("p")]
+                        ).strip()[:250]
+                    except AttributeError:
+                        description = ""
 
                 markata.cache.add(key, description, expire=config["cache_expire"])
 
