@@ -1,5 +1,5 @@
 """manifest plugin"""
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, Dict, List
 
 from bs4 import BeautifulSoup
 
@@ -12,24 +12,36 @@ if TYPE_CHECKING:
 
 
 def _create_seo(
-    markata: Markata, soup: BeautifulSoup, article: "frontmatter.Post"
+    markata: Markata,
+    soup: BeautifulSoup,
+    article: "frontmatter.Post",
+    site_name: str,
+    author_name: str,
+    author_email: str,
+    twitter_card: str,
+    twitter_creator: str,
+    config_seo: Dict,
+    images_url: str,
 ) -> List:
     if article.metadata["description"] == "" or None:
-        article.metadata["description"] = " ".join(
-            [p.text for p in soup.find(id="post-body").find_all("p")]
-        ).strip()[:120]
+        try:
+            article.metadata["description"] = " ".join(
+                [p.text for p in soup.find(id="post-body").find_all("p")]
+            ).strip()[:120]
+        except AttributeError:
+            article.metadata["description"] = ""
 
     seo = [
-        *markata.config["seo"],
+        *config_seo,
         {
             "name": "og:author",
             "property": "og:author",
-            "content": markata.config["author_name"],
+            "content": author_name,
         },
         {
             "name": "og:author_email",
             "property": "og:author_email",
-            "content": markata.config["author_email"],
+            "content": author_email,
         },
         {
             "name": "og:type",
@@ -54,26 +66,22 @@ def _create_seo(
         {
             "name": "og:title",
             "property": "og:title",
-            "content": f'{article.metadata["title"]} | {markata.config["site_name"]}'[
-                :60
-            ],
+            "content": f'{article.metadata["title"]} | {site_name}'[:60],
         },
         {
             "name": "twitter:title",
             "property": "twitter:title",
-            "content": f'{article.metadata["title"]} | {markata.config["site_name"]}'[
-                :60
-            ],
+            "content": f'{article.metadata["title"]} | {site_name}'[:60],
         },
         {
             "name": "og:image",
             "property": "og:image",
-            "content": f'{markata.config["images_url"]}/{article.metadata["slug"]}-og.png',
+            "content": f'{images_url}/{article.metadata["slug"]}-og.png',
         },
         {
             "name": "twitter:image",
             "property": "twitter:image",
-            "content": f'{markata.config["images_url"]}/{article.metadata["slug"]}-og.png',
+            "content": f'{images_url}/{article.metadata["slug"]}-og.png',
         },
         {
             "name": "og:image:width",
@@ -88,17 +96,17 @@ def _create_seo(
         {
             "name": "twitter:card",
             "property": "twitter:card",
-            "content": markata.config["twitter_card"],
+            "content": twitter_card,
         },
         {
             "name": "og:site_name",
             "property": "og:site_name",
-            "content": markata.config["site_name"],
+            "content": site_name,
         },
         {
             "name": "twitter:creator",
             "property": "twitter:creator",
-            "content": markata.config["twitter_creator"],
+            "content": twitter_creator,
         },
         {
             "name": "title",
@@ -128,40 +136,56 @@ def _create_seo_tag(meta: dict, soup: BeautifulSoup) -> "Tag":
 
 @hook_impl
 def render(markata: Markata) -> None:
+
+    url = markata.get_config("url") or ""
+    images_url = markata.get_config("images_url") or url or ""
+    site_name = markata.get_config("site_name") or ""
+    author_name = markata.get_config("author_name") or ""
+    author_email = markata.get_config("author_email") or ""
+    twitter_creator = markata.get_config("twitter_creator") or ""
+    twitter_card = markata.get_config("twitter_card") or "summary_large_image"
+    config_seo = markata.get_config("seo", warn=False) or dict()
+
     with markata.cache as cache:
         for article in markata.iter_articles("add seo tags from seo.py"):
             key = markata.make_hash(
                 "seo",
                 "render",
                 article.html,
-                markata.config["site_name"],
-                markata.config["url"],
+                site_name,
+                url,
                 article.metadata["slug"],
-                markata.config["twitter_card"],
+                twitter_card,
                 article.metadata["title"],
-                markata.config["site_name"],
-                str(markata.config["seo"]),
+                str(config_seo),
             )
 
             html_from_cache = cache.get(key)
 
             if html_from_cache is None:
                 soup = BeautifulSoup(article.html, features="lxml")
-                seo = _create_seo(markata, soup, article)
+                seo = _create_seo(
+                    markata=markata,
+                    soup=soup,
+                    article=article,
+                    site_name=site_name,
+                    author_name=author_name,
+                    author_email=author_email,
+                    twitter_card=twitter_card,
+                    twitter_creator=twitter_creator,
+                    config_seo=config_seo,
+                    images_url=images_url,
+                )
                 _add_seo_tags(seo, article, soup)
                 canonical_link = soup.new_tag("link")
                 canonical_link.attrs["rel"] = "canonical"
-                canonical_link.attrs[
-                    "href"
-                ] = f'{markata.config["url"]}/{article.metadata["slug"]}/'
+                canonical_link.attrs["href"] = f'{url}/{article.metadata["slug"]}/'
                 soup.head.append(canonical_link)
 
                 meta_url = soup.new_tag("meta")
                 meta_url.attrs["name"] = "og:url"
                 meta_url.attrs["property"] = "og:url"
-                meta_url.attrs[
-                    "content"
-                ] = f'{markata.config["url"]}/{article.metadata["slug"]}/'
+                meta_url.attrs["content"] = f'{url}/{article.metadata["slug"]}/'
                 soup.head.append(meta_url)
 
                 html = soup.prettify()
