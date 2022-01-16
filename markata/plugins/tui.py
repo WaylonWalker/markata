@@ -25,16 +25,16 @@ class MarkataWidget(Widget):
 class MarkataApp(App):
     async def on_mount(self) -> None:
         self.m = Markata()
+        self.m.console.quiet = True
         self.server = MarkataWidget(self.m, "server")
         self.runner = MarkataWidget(self.m, "runner")
         self.plugins = MarkataWidget(self.m, "plugins")
         self.summary = MarkataWidget(self.m, "summary")
-        await self.view.dock(Footer(), edge="right", size=30)
+        await self.view.dock(Footer(), edge="bottom")
         await self.view.dock(self.plugins, edge="left", size=30, name="plugins")
         await self.view.dock(self.summary, edge="right", size=30, name="summary")
         await self.view.dock(self.server, self.runner, edge="top")
-        self.set_interval(1, self.runner.refresh)
-        self.set_interval(10, self.action_refresh)
+        self.set_interval(1, self.action_refresh)
 
     async def on_load(self, event):
         await self.bind("q", "quit", "quit")
