@@ -126,6 +126,10 @@ def make_cover(
 @hook_impl
 def save(markata: "Markata") -> None:
     futures = []
+
+    if not hasattr(markata.config, "covers"):
+        return
+
     for article in markata.articles:
         for cover in markata.config["covers"]:
             try:
