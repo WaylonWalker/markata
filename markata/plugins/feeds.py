@@ -1,4 +1,5 @@
 import datetime
+import shutil
 import textwrap
 from pathlib import Path
 
@@ -20,16 +21,11 @@ def save(markata):
         config["feeds"]["archive"] = dict()
         config["feeds"]["archive"][
             "filter"
-        ] = "date<=today and templateKey=='blog-post' and status.lower()=='published'"
-    # if "feed_template" not in config["feeds"].keys():
-    #     config["feeds"]["feed_template"] = (
-    #         Path(__file__).parent / "default_post_template.html"
-    #     )
+        ] = "date<=today and status.lower()=='published'"
 
     description = markata.get_config("description") or ""
     url = markata.get_config("url") or ""
     title = markata.get_config("title") or ""
-    # template = config["feeds"]["feed_template"]
 
     template = Path(__file__).parent / "default_post_template.html"
 
@@ -43,6 +39,11 @@ def save(markata):
             template=template,
             **page_conf,
         )
+
+    home = Path(markata.config["output_dir"]) / "index.html"
+    archive = Path(markata.config["output_dir"]) / "archive" / "index.html"
+    if not home.exists() and archive.exists():
+        shutil.copy(str(archive), str(home))
 
 
 def create_page(
