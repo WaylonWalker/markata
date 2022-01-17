@@ -31,22 +31,25 @@ __version__ = "0.0.1"
 
 
 DEFAULT_MD_EXTENSIONS = [
-    "markdown.extensions.toc",
+    "codehilite",
     "markdown.extensions.admonition",
-    "markdown.extensions.tables",
     "markdown.extensions.md_in_html",
-    "pymdownx.magiclink",
+    "markdown.extensions.tables",
+    "markdown.extensions.toc",
     "pymdownx.betterem",
-    "pymdownx.tilde",
+    "pymdownx.details",
     "pymdownx.emoji",
-    "pymdownx.tabbed",
-    "pymdownx.tasklist",
-    "pymdownx.superfences",
+    "pymdownx.extra",
     "pymdownx.highlight",
     "pymdownx.inlinehilite",
     "pymdownx.keys",
+    "pymdownx.magiclink",
     "pymdownx.saneheaders",
-    "codehilite",
+    "pymdownx.superfences",
+    "pymdownx.tabbed",
+    "pymdownx.tabbed",
+    "pymdownx.tasklist",
+    "pymdownx.tilde",
 ]
 
 DEFAULT_HOOKS = [
