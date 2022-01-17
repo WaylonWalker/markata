@@ -34,7 +34,11 @@ jobs:
       - name: run markata
         run: markata --profile build --no-rich
 
-      - uses: stefanzweifel/git-auto-commit-action@v4
+      - name: GitHub Pages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: crazy-max/ghaction-github-pages@v2.6.0
         with:
-          branch: docs
-          file_pattern: markout/*
+          target_branch: docs
+          build_dir: markout
+          jekyll: false
