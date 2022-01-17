@@ -25,7 +25,7 @@ def save(markata):
 
     description = markata.get_config("description") or ""
     url = markata.get_config("url") or ""
-    title = markata.get_config("title") or ""
+    title = markata.get_config("title") or "feed"
 
     template = Path(__file__).parent / "default_post_template.html"
 
@@ -75,6 +75,8 @@ def create_page(
             raise MarkataFilterError(msg)
 
     cards = [create_card(post, card_template) for post in posts]
+    cards.insert(0, "<ul>")
+    cards.append("</ul>")
 
     with open(template) as f:
         template = Template(f.read())
