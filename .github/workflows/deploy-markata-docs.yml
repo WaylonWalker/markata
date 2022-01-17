@@ -1,0 +1,42 @@
+name: Deploy Markata Docs
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - develop
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Get current date
+        id: date
+        run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
+
+      - name: Cache
+        uses: actions/cache@v2
+        with:
+          path: .markata.cache
+          key: ${{ runner.os }}-${{ hashfiles('markata.toml') }}-${{ steps.date.outputs.date }}-markata
+          restore-keys: |
+            ${{ runner.os }}-${{ hashfiles('markata.toml') }}-markata
+
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.8
+
+      - name: install markata
+        run: pip install -e .
+
+      - name: run markata
+        run: markata --profile build --no-rich
+
+      - name: GitHub Pages
+        uses: crazy-max/ghaction-github-pages@v2.6.0
+        with:
+          target_branch: docs
+          build_dir: markout
+          jekyll: false
