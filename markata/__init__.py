@@ -39,6 +39,7 @@ DEFAULT_MD_EXTENSIONS = [
     "pymdownx.betterem",
     "pymdownx.tilde",
     "pymdownx.emoji",
+    "pymdownx.tabbed",
     "pymdownx.tasklist",
     "pymdownx.superfences",
     "pymdownx.highlight",

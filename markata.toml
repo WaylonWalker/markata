@@ -1,0 +1,51 @@
+#
+#  __  __            _         _         _                  _
+# |  \/  | __ _ _ __| | ____ _| |_ __ _ | |_ ___  _ __ ___ | |
+# | |\/| |/ _` | '__| |/ / _` | __/ _` || __/ _ \| '_ ` _ \| |
+# | |  | | (_| | |  |   < (_| | || (_| || || (_) | | | | | | |
+# |_|  |_|\__,_|_|  |_|\_\__,_|\__\__,_(_)__\___/|_| |_| |_|_|
+#
+#                                                  markata.dev
+
+[markata]
+# bump site version to bust GitHub actions cache
+site_version = 13
+
+# 2 weeks in seconds
+default_cache_expire = 1209600
+
+## Markata Setup
+glob_patterns = "pages/**/*.md"
+## glob_patterns = "pages/**/*spaceflights*.md"
+output_dir = "markout"
+assets_dir = "static"
+hooks = [
+   "markata.plugins.publish_source",
+   "markata.plugins.docs",
+   "default",
+   ]
+disabled_hooks = ["markata.plugins.covers", 'markata.plugins.flat_slug',
+'markata.plugins.seo', 'markata.plugins.icon_resize',
+'markata.plugins.manifest', 'markata.plugins.rss']
+
+## Site Config
+url = "https://markta.dev"
+title = "Markata's Docs"
+description = "Documentation for using the Markata static site generator"
+rss_description = "Markata docs"
+author_name = "Waylon Walker"
+author_email = "waylon@waylonwalaker.com"
+# icon = "8bitcc.png"
+lang = "en"
+# post_template = "pages/templates/post_template.html"
+# amp_template = "pages/templates/post_template.amp.html"
+theme_color = "#322D39"
+background_color = "#B73CF6"
+start_url = "/"
+site_name = "Markata"
+short_name = "ww"
+display = "minimal-ui"
+twitter_card = "summary_large_image"
+twitter_creator = "@_waylonwalker"
+twitter_site = "@_waylonwalker"
+
