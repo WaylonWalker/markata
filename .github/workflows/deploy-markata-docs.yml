@@ -7,7 +7,7 @@ on:
       - develop
 
 jobs:
-  build:
+  build-deploy-docs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -37,4 +37,4 @@ jobs:
       - uses: stefanzweifel/git-auto-commit-action@v4
         with:
           branch: docs
-          file_pattern: markout
+          file_pattern: markout/*
