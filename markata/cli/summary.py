@@ -27,16 +27,22 @@ class Summary:
 
         from more_itertools import flatten
 
-        for tag, count in Counter(
-            list(flatten([a["tags"] for a in self.m.articles]))
-        ).most_common():
-            grid.add_row(f'{count} {" "*(3-len(str(count)))} {tag}')
+        try:
+            for tag, count in Counter(
+                list(flatten([a["tags"] for a in self.m.articles]))
+            ).most_common():
+                grid.add_row(f'{count} {" "*(3-len(str(count)))} {tag}')
+        except KeyError:
+            ...
 
-        grid.add_row("[bold gold1]Series[/]")
-        for series, count in Counter(
-            [a["templateKey"] for a in self.m.articles]
-        ).most_common():
-            grid.add_row(f'{count} {" "*(3-len(str(count)))} {series}')
+        try:
+            grid.add_row("[bold gold1]Series[/]")
+            for series, count in Counter(
+                [a["templateKey"] for a in self.m.articles]
+            ).most_common():
+                grid.add_row(f'{count} {" "*(3-len(str(count)))} {series}')
+        except KeyError:
+            ...
         if self.simple:
             return grid
         else:
