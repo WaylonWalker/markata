@@ -3,7 +3,10 @@ title: Getting Started with Markata
 description: Guide to get going with Markata
 
 ---
+
 ## QuickStart
+
+
 
 ### Create Some Content
 
