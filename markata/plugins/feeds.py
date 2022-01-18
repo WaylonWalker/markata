@@ -15,30 +15,27 @@ class MarkataFilterError(RuntimeError):
 @hook_impl
 def save(markata):
     config = markata.get_plugin_config("feeds")
-    if "feeds" not in config.keys():
+    if config is None:
         config["feeds"] = dict()
-    if "archive" not in config["feeds"].keys():
-        config["feeds"]["archive"] = dict()
-        config["feeds"]["archive"][
-            "filter"
-        ] = "date<=today and status.lower()=='published'"
+    if "archive" not in config.keys():
+        config["archive"] = dict()
+        config["archive"]["filter"] = "True"
 
     description = markata.get_config("description") or ""
     url = markata.get_config("url") or ""
-    title = markata.get_config("title") or "feed"
 
     template = Path(__file__).parent / "default_post_template.html"
 
-    for page, page_conf in config["feeds"].items():
-        create_page(
-            markata,
-            page,
-            description=description,
-            url=url,
-            title=title,
-            template=template,
-            **page_conf,
-        )
+    for page, page_conf in config.items():
+        if page not in ["cache_expire", "config_key"]:
+            create_page(
+                markata,
+                page,
+                description=description,
+                url=url,
+                template=template,
+                **page_conf,
+            )
 
     home = Path(markata.config["output_dir"]) / "index.html"
     archive = Path(markata.config["output_dir"]) / "archive" / "index.html"
@@ -56,7 +53,7 @@ def create_page(
     filter=None,
     description=None,
     url=None,
-    title=None,
+    title="feed",
 ):
     all_posts = reversed(sorted(markata.articles, key=lambda x: x["date"]))
 
@@ -108,8 +105,11 @@ def create_card(post, template=None):
             </li>
             """
         )
-    with open(template) as f:
-        template = Template(f.read())
+    try:
+        with open(template) as f:
+            template = Template(f.read())
+    except FileNotFoundError:
+        template = Template(template)
     post["article_html"] = post.article_html
 
-    return template.safe_substitute(**post.to_dict())
+    return template.render(**post.to_dict())
