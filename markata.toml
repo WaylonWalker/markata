@@ -15,7 +15,7 @@ site_version = 13
 default_cache_expire = 1209600
 
 ## Markata Setup
-glob_patterns = "pages/**/*.md"
+glob_patterns = "docs/**/*.md"
 ## glob_patterns = "pages/**/*spaceflights*.md"
 output_dir = "markout"
 assets_dir = "static"
@@ -24,12 +24,17 @@ hooks = [
    "markata.plugins.docs",
    "default",
    ]
-disabled_hooks = ["markata.plugins.covers", 'markata.plugins.flat_slug',
-'markata.plugins.seo', 'markata.plugins.icon_resize',
-'markata.plugins.manifest', 'markata.plugins.rss']
+disabled_hooks = [
+# "markata.plugins.covers",
+# 'markata.plugins.flat_slug',
+# 'markata.plugins.seo',
+# 'markata.plugins.icon_resize',
+'markata.plugins.manifest',
+'markata.plugins.rss'
+]
 
 ## Site Config
-url = "https://markta.dev"
+url = "https://markata.dev"
 title = "Markata's Docs"
 description = "Documentation for using the Markata static site generator"
 rss_description = "Markata docs"
@@ -49,3 +54,17 @@ twitter_card = "summary_large_image"
 twitter_creator = "@_waylonwalker"
 twitter_site = "@_waylonwalker"
 
+[markata.feeds.autodoc]
+title="All Markata Modules"
+filter="True"
+card_template="<li class='post'><a href='/{{ slug }}/'>{{ slug }}</a></li>"
+
+[markata.feeds.core_modules]
+title="Markata Core Modules"
+filter="'plugin' not in slug"
+card_template="<li class='post'><a href='/{{ slug }}/'>{{ slug }}</a></li>"
+
+[markata.feeds.plugins]
+title="Markata Plugins"
+filter="'plugin' in slug"
+card_template="<li class='post'><a href='/{{ slug }}/'>{{ slug }}</a></li>"
