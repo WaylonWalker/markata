@@ -12,7 +12,7 @@
       */
       html  { background: #1f2022; color: #eefbfe }
       a { color: #47cbff; }
-      body { max-width: 800px; margin: auto;}
+      body { max-width: 800px; margin: auto; font-size: 1rem; line-height: 1.56;}
       blockquote {
         border-left: 5px solid #e1bd00c9;
         padding-left: 1rem;
@@ -133,9 +133,96 @@
   position: absolute;
   opacity: 0;
 }
+
+/* fonts */
+h1 {
+    font-weight: 700;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    font-family: "Space Mono", monospace;
+}
+
+h1 {
+    font-size: 2.5em;
+}
+
+h2 {
+    font-size: 1.63rem;
+}
+
+
+p {
+    font-family: "Space Mono", monospace;
+    font-size: 21px;
+    font-style: normal;
+    font-variant: normal;
+    font-weight: 400;
+    line-height: 1.5;
+}
+
+@media only screen and (max-width: 700px) {
+    p {
+        font-size: 18px;
+    }
+}
+
+@media only screen and (max-width: 600px) {
+    p {
+        font-size: 16px;
+    }
+}
+
+@media only screen and (max-width: 500px) {
+    p {
+        font-size: 14px;
+    }
+}
+
+@media only screen and (max-width: 400px) {
+    p {
+        font-size: 12px;
+    }
+}
+
+blockquote {
+    font-family: "Space Mono", monospace;
+}
+
+code {
+    font-family: "Space Mono", monospace;
+}
+
+pre {
+    font-family: "Segoe UI", Frutiger, "Frutiger Linotype", "Dejavu Sans", "Helvetica Neue", Arial, sans-serif;
+    font-family: "Space Mono", monospace;
+    font-family: "Space Mono", monospace;
+    /* font-size: 13px;
+    font-style: normal;
+    font-variant: normal;
+    font-weight: 400;
+    line-height: 18.5714px; */
+}
+
+a {
+    text-decoration-color: goldenrod;
+    color: #6ab1cd;
+    padding: .3rem .5rem;
+    display: inline-block;
+}
+
+
     </style>
   </head>
   <body>
+    <h1>
+      {{ title }}
+    </h1>
     {{ body }}
     <footer>
       © {{ today.year }}
