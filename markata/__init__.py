@@ -246,7 +246,7 @@ class Markata:
     def get_config(
         self, key: str, warn: bool = True, suggested: Optional[str] = None
     ) -> Any:
-        if hasattr(self.config, key):
+        if key in self.config.keys():
             return self.config[key]
         else:
 
