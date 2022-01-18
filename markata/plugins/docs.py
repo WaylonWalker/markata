@@ -74,6 +74,8 @@ def make_article(file: Path) -> frontmatter.Post:
     slug: {file.parent}/{file.stem}
     path: index.html
     today: {datetime.datetime.today()}
+    description: Docs for {file.stem}
+
     ---
     # {file.name}
     """
