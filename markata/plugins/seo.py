@@ -179,13 +179,19 @@ def render(markata: Markata) -> None:
                 _add_seo_tags(seo, article, soup)
                 canonical_link = soup.new_tag("link")
                 canonical_link.attrs["rel"] = "canonical"
-                canonical_link.attrs["href"] = f'{url}/{article.metadata["slug"]}/'
+                if article.metadata["slug"] == "index":
+                    canonical_link.attrs["href"] = f"{url}/"
+                else:
+                    canonical_link.attrs["href"] = f'{url}/{article.metadata["slug"]}/'
                 soup.head.append(canonical_link)
 
                 meta_url = soup.new_tag("meta")
                 meta_url.attrs["name"] = "og:url"
                 meta_url.attrs["property"] = "og:url"
-                meta_url.attrs["content"] = f'{url}/{article.metadata["slug"]}/'
+                if article.metadata["slug"] == "index":
+                    meta_url.attrs["content"] = f"{url}/"
+                else:
+                    meta_url.attrs["content"] = f'{url}/{article.metadata["slug"]}/'
                 soup.head.append(meta_url)
 
                 html = soup.prettify()
