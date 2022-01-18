@@ -4,9 +4,12 @@ description: Guide to get going with Markata
 
 ---
 
+Markata is a fully plugins all the way down static site generator for
+folks who just want their site to get started quickly and build great
+content, with the ability to tinker with everything under the hood if
+they want to.
+
 ## QuickStart
-
-
 
 ### Create Some Content
 
