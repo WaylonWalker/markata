@@ -8,5 +8,5 @@ from markata.hookspec import hook_impl
 def pre_render(markata) -> None:
     for article in markata.filter('title==""'):
         article["title"] = (
-            Path(article["path"]).stem.replace("-", " ").replace("_", "").title()
+            Path(article["path"]).stem.replace("-", " ").replace("_", " ").title()
         )
