@@ -56,6 +56,7 @@ DEFAULT_HOOKS = [
     "markata.plugins.pyinstrument",
     "markata.plugins.glob",
     "markata.plugins.load",
+    "markata.plugins.auto_title",
     "markata.plugins.render_markdown",
     "markata.plugins.manifest",
     "markata.plugins.feeds",
