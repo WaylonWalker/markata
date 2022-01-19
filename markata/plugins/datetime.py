@@ -14,10 +14,11 @@ if TYPE_CHECKING:
 @hook_impl(trylast=True)
 def load(markata: "Markata") -> None:
     for article in markata.iter_articles("datetime"):
+
         try:
             date = article.metadata["date"]
         except KeyError:
-            date = "1970-01-01"
+            date = None
         if isinstance(date, str):
             date = dateutil.parser.parse(date)
         if isinstance(date, datetime.date):
@@ -27,7 +28,9 @@ def load(markata: "Markata") -> None:
                 day=date.day,
                 tzinfo=pytz.utc,
             )
-        article["datetime"] = date
-        article["date"] = date.date()
+
         article["today"] = datetime.date.today()
         article["now"] = datetime.datetime.now()
+        article["datetime"] = date
+        if date is not None:
+            article["date"] = date.date()

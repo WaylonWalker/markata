@@ -55,10 +55,14 @@ def create_page(
     url=None,
     title="feed",
 ):
-    all_posts = reversed(sorted(markata.articles, key=lambda x: x["date"]))
+    def try_filter_date(x):
+        try:
+            return x["date"]
+        except KeyError:
+            return -1
 
     if filter is not None:
-        posts = reversed(sorted(markata.articles, key=lambda x: x["date"]))
+        posts = reversed(sorted(markata.articles, key=try_filter_date))
         try:
             posts = [post for post in posts if eval(filter, post.to_dict(), {})]
         except BaseException as e:
@@ -96,15 +100,26 @@ def create_page(
 
 def create_card(post, template=None):
     if template is None:
-        return textwrap.dedent(
-            f"""
-            <li class='post'>
-            <a href="/{post['slug']}/">
-                {post['title']} {post['date'].year}-{post['date'].month}-{post['date'].day}
-            </a>
-            </li>
-            """
-        )
+        if "date" in post.keys():
+            return textwrap.dedent(
+                f"""
+                <li class='post'>
+                <a href="/{post['slug']}/">
+                    {post['title']} {post['date'].year}-{post['date'].month}-{post['date'].day}
+                </a>
+                </li>
+                """
+            )
+        else:
+            return textwrap.dedent(
+                f"""
+                <li class='post'>
+                <a href="/{post['slug']}/">
+                    {post['title']}
+                </a>
+                </li>
+                """
+            )
     try:
         with open(template) as f:
             template = Template(f.read())
