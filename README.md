@@ -82,4 +82,3 @@ Waylonwalker.com currently has the built in cover image pluugin disabled for qui
 <p align=center>
   <img src='https://user-images.githubusercontent.com/22648375/116886610-e6f03480-abee-11eb-92c8-f883314fd09a.png' width=400px>
 </p>
-
