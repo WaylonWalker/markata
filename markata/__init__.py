@@ -3,6 +3,7 @@
 # annotations needed to return self
 from __future__ import annotations
 
+import datetime
 import hashlib
 import importlib
 import os
@@ -125,8 +126,7 @@ class Markata:
             stage_to_run_to = max(
                 [attr["lifecycle"] for attr in self.registered_attrs[item]]
             ).name
-            runner = getattr(self, stage_to_run_to)
-            runner()
+            self.run(stage_to_run_to)
             return getattr(self, item)
         else:
             raise AttributeError(item)
