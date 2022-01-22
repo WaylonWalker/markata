@@ -19,6 +19,16 @@ if TYPE_CHECKING:
         content_directories: List = []
 
 
+def add_parents(tree: ast.AST) -> None:
+    for node in ast.walk(tree):
+        for child in ast.iter_child_nodes(node):
+            # print("here")
+            child.parent = node
+            if not hasattr(child, "parents"):
+                child.parents = [node]
+            child.parents.append(node)
+
+
 @hook_impl
 @register_attr("content_directories", "py_files")
 def glob(markata: "MarkataDocs") -> None:
