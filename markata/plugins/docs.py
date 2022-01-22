@@ -3,9 +3,9 @@ leading docstring
 """
 import ast
 import datetime
-from pathlib import Path
 import textwrap
-from typing import List, TYPE_CHECKING
+from pathlib import Path
+from typing import TYPE_CHECKING, List
 
 import frontmatter
 
@@ -22,11 +22,16 @@ if TYPE_CHECKING:
 def add_parents(tree: ast.AST) -> None:
     for node in ast.walk(tree):
         for child in ast.iter_child_nodes(node):
-            # print("here")
             child.parent = node
             if not hasattr(child, "parents"):
                 child.parents = [node]
             child.parents.append(node)
+            if isinstance(node, ast.ClassDef) and isinstance(child, ast.FunctionDef):
+                child.type = "method"
+            elif isinstance(child, ast.FunctionDef):
+                child.type = "function"
+            elif isinstance(child, ast.ClassDef):
+                child.type = "class"
 
 
 @hook_impl
@@ -75,6 +80,7 @@ def glob(markata: "MarkataDocs") -> None:
 def make_article(file: Path) -> frontmatter.Post:
     raw_source = file.read_text()
     tree = ast.parse(raw_source)
+    add_parents(tree)
     nodes = [
         n
         for n in ast.walk(tree)
@@ -86,7 +92,7 @@ def make_article(file: Path) -> frontmatter.Post:
     title: {file.name}
     status: published
     slug: {file.parent}/{file.stem}
-    path: index.html
+    path: {file.stem}.md
     today: {datetime.datetime.today()}
     description: Docs for {file.stem}
 
@@ -94,13 +100,19 @@ def make_article(file: Path) -> frontmatter.Post:
 
     """
     )
-    article += textwrap.dedent(ast.get_docstring(tree) or "")
+    article += textwrap.dedent(
+        f"""
+            {ast.get_docstring(tree) or ""}
+            """
+    )
     for node in nodes:
         article += textwrap.dedent(
             f"""
+
 ---
 
-## {node.name} _{'class' if isinstance(node, ast.ClassDef) else ''}{'function' if isinstance(node, ast.FunctionDef) else ''}_
+## {node.name} `{node.type}`
+
 {ast.get_docstring(node)}
 
 ??? "{node.name} source"
