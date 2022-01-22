@@ -84,14 +84,7 @@ def cli(app, markata):
             markata.console.quiet = True
 
         if verbose:
-            markata.console.print("console options:", morerename.console.options)
-
-        # if to_dict:
-        #     m.console.quiet = True
-        #     data = m.to_dict()
-        #     m.console.quiet = False
-        #     m.console.print(data)
-        #     return
+            markata.console.print("console options:", markata.console.options)
 
         if watch:
 
@@ -114,7 +107,7 @@ def cli(app, markata):
 def pdb_run(func: Callable) -> None:
     try:
         func()
-    except:
+    except Exception:
         extype, value, tb = sys.exc_info()
         traceback.print_exc()
         pdb.post_mortem(tb)
