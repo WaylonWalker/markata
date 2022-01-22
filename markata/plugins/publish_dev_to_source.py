@@ -34,7 +34,6 @@ def should_join(line):
 
 
 def join_lines(article):
-    joined = []
     lines = article.split("\n")
     line_number = 0
     while line_number + 1 < len(lines):
