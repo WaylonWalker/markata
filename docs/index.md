@@ -11,6 +11,9 @@ they want to.
 
 ## QuickStart
 
+Markata is fully configurable through a `markata.toml` file, but the defaults
+allow to build your site right out of the box with nothing more than markdown.
+
 ### Create Some Content
 
 ```
@@ -29,7 +32,26 @@ markata build
 pix run markata build
 ```
 
-### 
+### Frontmatter
+
+You will likely want to set things like `title`, `date`, `description`,
+`status`, or `template` per post, this can all be done inside yaml frontmatter.
+
+``` markdown
+---
+templateKey: blog-post
+tags: ['python',]
+title:  My Awesome Post
+date: 2022-01-21T16:40:34}
+status: draft
+
+---
+
+This is my awesome post.
+
+```
+
+> Frontmatter is not required, but definitely gives you more control over your site.
 
 ## Markata Docs
 
