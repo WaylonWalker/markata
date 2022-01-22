@@ -25,6 +25,9 @@ def cli(app, markata):
         """
         list posts
         """
+
+        markata.console.quiet = True
+
         tail = -tail if tail else tail
         filtered = markata.map(map, filter, sort)
         if not include_empty:
@@ -33,6 +36,7 @@ def cli(app, markata):
         if reverse:
             filtered = reversed(filtered)
 
+        markata.console.quiet = False
         if markata.console.is_terminal and use_pager:
             with markata.console.pager():
                 for a in filtered:
