@@ -1,0 +1,52 @@
+name: Release Markata
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-deploy-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Get current date
+        id: date
+        run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
+
+      - name: Cache
+        uses: actions/cache@v2
+        with:
+          path: .markata.cache
+          key: ${{ runner.os }}-${{ hashfiles('markata.toml') }}-${{ steps.date.outputs.date }}-markata
+          restore-keys: |
+            ${{ runner.os }}-${{ hashfiles('markata.toml') }}-markata
+
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.8
+
+      - name: install markata
+        run: pip install -e ".[dev]"
+
+      - run: black --check
+      - run: flake8 markata
+
+      - name: build
+        run: |
+          pip install wheel
+          python setup.py sdist bdist_wheel
+      - name: pypi-publish
+        # if: github.ref == 'refs/heads/master'
+        uses: pypa/gh-action-pypi-publish@v1.1.0
+        with:
+          # PyPI user
+          # Password for your PyPI user or an access token
+          password: ${{ secrets.pypi_password }}
+          # The repository URL to use
+          # repository_url: # optional
+          # The target directory for distribution
+          # packages_dir: # optional, default is dist
+
