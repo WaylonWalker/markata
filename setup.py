@@ -31,11 +31,16 @@ with open("requirements_dev.txt", "r", encoding="utf-8") as f:
 setup(
     name=NAME,
     version="0.0.1",
+    url="https://markata.dev",
+    author="Waylon Walker",
+    author_email="waylon@waylonwalker.com",
+    description="finds nodes for your kedro pipeline",
     packages=find_packages(),
-    entry_points={"console_scripts": ["markata=markata.cli.cli:cli"]},
+    entry_points={"console_scripts": ["markata=markata.cli:cli"]},
     platforms="any",
     license="MIT",
     install_requires=requires,
     extras_require={"dev": dev_requires},
+    zip_safe=False,
     include_package_data=True,
 )

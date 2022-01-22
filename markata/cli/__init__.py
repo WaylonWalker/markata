@@ -1,4 +1,4 @@
-from .cli import app, make_layout, run_until_keyboard_interrupt
+from .cli import app, cli, make_layout, run_until_keyboard_interrupt
 from .header import Header
 from .plugins import Plugins
 from .runner import Runner
@@ -12,6 +12,7 @@ __all__ = [
     "Server",
     "Summary",
     "app",
+    "cli",
     "make_layout",
     "run_until_keyboard_interrupt",
 ]
