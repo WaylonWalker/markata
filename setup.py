@@ -34,7 +34,7 @@ setup(
     url="https://markata.dev",
     author="Waylon Walker",
     author_email="waylon@waylonwalker.com",
-    description="finds nodes for your kedro pipeline",
+    description="Static site generator plugins all the way down.",
     packages=find_packages(),
     entry_points={"console_scripts": ["markata=markata.cli:cli"]},
     platforms="any",
