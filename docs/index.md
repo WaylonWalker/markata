@@ -55,6 +55,11 @@ This is my awesome post.
 
 ## Markata Docs
 
+Not much is documented yet, lots of work to do on the docs.  Checkout
+[LifeCycle](https://markata.dev/markata/lifecycle/) to see what a more
+finished one looks like.
+
+> **Yes** this library generates it's own docs
 
 * [All Modules](/autodoc)
 * [Core Modules](/core_modules)
