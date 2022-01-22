@@ -31,7 +31,5 @@ class Plugins:
 
 if __name__ == "__main__":
 
-    from markata import Markata
-
     plugins = Plugins(Markata())
     rich.print(plugins)
