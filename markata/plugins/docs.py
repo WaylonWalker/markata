@@ -3,9 +3,9 @@ leading docstring
 """
 import ast
 import datetime
-import textwrap
 from pathlib import Path
-from typing import TYPE_CHECKING, List
+import textwrap
+from typing import List, TYPE_CHECKING
 
 import frontmatter
 
@@ -75,7 +75,11 @@ def glob(markata: "MarkataDocs") -> None:
 def make_article(file: Path) -> frontmatter.Post:
     raw_source = file.read_text()
     tree = ast.parse(raw_source)
-    nodes = [n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef)]
+    nodes = [
+        n
+        for n in ast.walk(tree)
+        if isinstance(n, ast.FunctionDef) or isinstance(n, ast.ClassDef)
+    ]
     article = textwrap.dedent(
         f"""
     ---
@@ -87,15 +91,16 @@ def make_article(file: Path) -> frontmatter.Post:
     description: Docs for {file.stem}
 
     ---
-    # {file.name}
+
     """
     )
+    article += textwrap.dedent(ast.get_docstring(tree) or "")
     for node in nodes:
         article += textwrap.dedent(
             f"""
 ---
 
-## {node.name}
+## {node.name} _{'class' if isinstance(node, ast.ClassDef) else ''}{'function' if isinstance(node, ast.FunctionDef) else ''}_
 {ast.get_docstring(node)}
 
 ??? "{node.name} source"
