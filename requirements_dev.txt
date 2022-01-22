@@ -1,0 +1,10 @@
+black
+bump2version
+flake8
+interrogate
+mypy
+pytest
+pytest-cov
+pytest-mock
+setuptools
+wheel

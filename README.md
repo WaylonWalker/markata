@@ -1,4 +1,3 @@
-
 <h1 align=center>
   <br>
   <a href="https://github.com/WaylonWalker/markata"><img src="https://user-images.githubusercontent.com/22648375/120665701-a126c600-c451-11eb-9dc5-1e0ac4eeeb2f.png" alt="Markata" width="200"></a>
@@ -83,6 +82,3 @@ Waylonwalker.com currently has the built in cover image pluugin disabled for qui
 <p align=center>
   <img src='https://user-images.githubusercontent.com/22648375/116886610-e6f03480-abee-11eb-92c8-f883314fd09a.png' width=400px>
 </p>
-
-
-
