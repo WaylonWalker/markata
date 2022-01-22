@@ -28,6 +28,8 @@ with open("requirements.txt", "r", encoding="utf-8") as f:
 with open("requirements_dev.txt", "r", encoding="utf-8") as f:
     dev_requires = [x.strip() for x in f if x.strip()]
 
+README = (Path(__file__).parent / "README.md").read_text(encoding="utf-8")
+
 setup(
     name=NAME,
     version="0.0.1",
@@ -35,6 +37,8 @@ setup(
     author="Waylon Walker",
     author_email="waylon@waylonwalker.com",
     description="Static site generator plugins all the way down.",
+    long_description=README,
+    long_description_content_type="text/markdown",
     packages=find_packages(),
     entry_points={"console_scripts": ["markata=markata.cli:cli"]},
     platforms="any",
