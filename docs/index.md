@@ -42,7 +42,7 @@ You will likely want to set things like `title`, `date`, `description`,
 templateKey: blog-post
 tags: ['python',]
 title:  My Awesome Post
-date: 2022-01-21T16:40:34}
+date: 2022-01-21T16:40:34
 status: draft
 
 ---
