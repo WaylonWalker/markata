@@ -137,7 +137,7 @@ class Markata:
             return self._server
         except AttributeError:
 
-            self._server: Server = Server(directory=self.config["output_dir"])
+            self._server: Server = Server(directory=str(self.config["output_dir"]))
             return self.server
 
     @property
@@ -439,7 +439,7 @@ class Markata:
     ) -> List:
         import copy
 
-        def try_sort(a):
+        def try_sort(a: Any) -> int:
 
             try:
                 value = eval(sort, a.to_dict(), {})
@@ -452,10 +452,11 @@ class Markata:
                     return int(value.timestamp())
                 except Exception:
                     try:
-                        # breakpoint()
-                        return datetime.datetime.combine(
-                            value, datetime.datetime.min.time()
-                        ).timestamp()
+                        return int(
+                            datetime.datetime.combine(
+                                value, datetime.datetime.min.time()
+                            ).timestamp()
+                        )
                     except Exception:
                         try:
                             return sum([ord(c) for c in str(value)])
