@@ -439,8 +439,31 @@ class Markata:
     ) -> List:
         import copy
 
+        def try_sort(a):
+
+            try:
+                value = eval(sort, a.to_dict(), {})
+            except NameError:
+                return -1
+            try:
+                return int(value)
+            except TypeError:
+                try:
+                    return int(value.timestamp())
+                except Exception:
+                    try:
+                        # breakpoint()
+                        return datetime.datetime.combine(
+                            value, datetime.datetime.min.time()
+                        ).timestamp()
+                    except Exception:
+                        try:
+                            return sum([ord(c) for c in str(value)])
+                        except Exception:
+                            return -1
+
         articles = copy.copy(self.articles)
-        articles.sort(key=lambda a: eval(sort, a.to_dict(), {}))
+        articles.sort(key=try_sort)
         return [
             eval(func, {**a.to_dict(), "timedelta": timedelta}, {})
             for a in articles
