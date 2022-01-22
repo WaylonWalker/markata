@@ -30,7 +30,7 @@ with open("requirements_dev.txt", "r", encoding="utf-8") as f:
 
 setup(
     name=NAME,
-    version="0.1.0",
+    version="0.0.1",
     packages=find_packages(),
     entry_points={"console_scripts": ["markata=markata.cli.cli:cli"]},
     platforms="any",
