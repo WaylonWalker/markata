@@ -256,7 +256,7 @@ class Markata:
                     f"""
                         \[markata]
                         {key} = value
-                    """
+                    """  # noqa: W605
                 )
             if warn:
                 self.console.log(
