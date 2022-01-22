@@ -4,25 +4,12 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - main
+      - '*'
 
 jobs:
   build-deploy-docs:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - name: Get current date
-        id: date
-        run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
-
-      - name: Cache
-        uses: actions/cache@v2
-        with:
-          path: .markata.cache
-          key: ${{ runner.os }}-${{ hashfiles('markata.toml') }}-${{ steps.date.outputs.date }}-markata
-          restore-keys: |
-            ${{ runner.os }}-${{ hashfiles('markata.toml') }}-markata
-
       - name: Set up Python 3.8
         uses: actions/setup-python@v1
         with:
@@ -39,7 +26,7 @@ jobs:
           pip install wheel
           python setup.py sdist bdist_wheel
       - name: pypi-publish
-        # if: github.ref == 'refs/heads/master'
+        if: github.ref == 'refs/heads/main'
         uses: pypa/gh-action-pypi-publish@v1.1.0
         with:
           # PyPI user
