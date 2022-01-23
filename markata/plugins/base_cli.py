@@ -1,16 +1,37 @@
 import pdb
 import sys
 import traceback
-from typing import Callable, Optional
+from typing import TYPE_CHECKING, Callable, Optional
 
 import typer
 from rich.console import Console
 
 from markata.hookspec import hook_impl
 
+if TYPE_CHECKING:
+    from markata import Markata
+
+
+def make_pretty() -> None:
+    import click
+    import pluggy
+    import typer
+    from rich import pretty as _pretty
+    from rich import traceback
+
+    _pretty.install()
+    traceback.install(
+        show_locals=True,
+        suppress=[
+            pluggy,
+            click,
+            typer,
+        ],
+    )
+
 
 @hook_impl()
-def cli(app, markata):
+def cli(app: typer.Typer, markata: "Markata") -> None:
     @app.command()
     def list(
         map: str = "title",
@@ -21,7 +42,7 @@ def cli(app, markata):
         include_empty: bool = False,
         reverse: bool = False,
         use_pager: bool = typer.Option(True, "--pager", "--no-pager"),
-    ):
+    ) -> None:
         """
         list posts
         """
@@ -54,7 +75,7 @@ def cli(app, markata):
 
     @app.command()
     def build(
-        rich: bool = False,
+        pretty: bool = True,
         quiet: bool = typer.Option(
             False,
             "--quiet",
@@ -71,15 +92,12 @@ def cli(app, markata):
             False,
             "--pdb",
         ),
-        profile: bool = False,
+        profile: bool = True,
     ) -> None:
         import time
 
-        from rich import pretty, traceback
-
-        if not rich:
-            pretty.install()
-            traceback.install()
+        if pretty:
+            make_pretty()
 
         if quiet:
             markata.console.quiet = True
