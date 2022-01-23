@@ -1,7 +1,41 @@
 """
 Markata's base command line commands.
 
-This plugin enables `build` and `list` list commands.
+This plugin enables
+[`build`](https://markata.dev/markata/plugins/base_cli/#build-function)
+and
+[`list`](https://markata.dev/markata/plugins/base_cli/#list-function)
+commands as part of the main markata cli.
+
+## Building Your Site with the Cli
+
+Your Markata Site can be build completely from the command line.
+
+``` bash
+markata build
+
+# or if you prefer pipx
+pipx run markata build
+```
+
+see the
+[`build`](https://markata.dev/markata/plugins/base_cli/#build-function)
+section for more examples.
+
+## Listing your articles
+
+Markata list is a tool to help list out artile attributes right to your
+terminal.  This is very helpful to find articles on larger sites, or
+debug what is getting picked up by markata.
+
+``` bash
+markata list --map 'str(date.year) + "," + title'
+```
+
+see the 
+[`list`](https://markata.dev/markata/plugins/base_cli/#list-function)
+section for more examples.
+
 
 """
 import pdb
@@ -19,8 +53,10 @@ if TYPE_CHECKING:
 
 def make_pretty() -> None:
     """
-    Enables `rich.pretty` and `rich.traceback`, which is configured to
-    suppress tracebacks from framework code.
+    This is a helper function that enables suppresses tracebacks from
+    frameworks like `click` that can make your traceback long and hard
+    to follow.  It also makes evrerything more colorful and easier to
+    follow.
     """
     import click
     import pluggy
