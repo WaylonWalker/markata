@@ -5,6 +5,7 @@
 * fix: pyinstument plugin no longer overrides the main cli callback
 * feat: default is to run the profiler if pyinstrument is installed
 * fix: --profile is now under the build command
+* feat: --pretty/--no-pretty will make pretty tracebacks, and skip over framework code
 
 ### New cli help
 
