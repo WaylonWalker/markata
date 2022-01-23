@@ -61,6 +61,6 @@ finished one looks like.
 
 > **Yes** this library generates it's own docs
 
-* [All Modules](/autodoc)
-* [Core Modules](/core_modules)
-* [Plugins](/plugins)
+* [All Modules](https://markata.dev/autodoc/)
+* [Core Modules](https://markata.dev/core_modules/)
+* [Plugins](https://markata.dev/plugins/)
