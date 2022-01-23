@@ -32,7 +32,7 @@ jobs:
         run: pip install -e .
 
       - name: run markata
-        run: markata --profile build --no-rich
+        run: markata build --no-pretty
 
       - name: GitHub Pages
         env:
