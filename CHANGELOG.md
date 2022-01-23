@@ -6,6 +6,7 @@
 * feat: default is to run the profiler if pyinstrument is installed
 * fix: --profile is now under the build command
 * feat: --pretty/--no-pretty will make pretty tracebacks, and skip over framework code
+* fix: links are now absolute so they work from github, thanks [MR Destructive](https://github.com/Mr-Destructive)
 
 ### New cli help
 

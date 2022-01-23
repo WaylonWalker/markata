@@ -1,3 +1,11 @@
+"""
+Markata's base command line commands.
+
+This plugin enables `build` and `list` list commands.
+
+
+
+"""
 import pdb
 import sys
 import traceback
@@ -13,6 +21,10 @@ if TYPE_CHECKING:
 
 
 def make_pretty() -> None:
+    """
+    Enables `rich.pretty` and `rich.traceback`, which is configured to
+    suppress tracebacks from framework code.
+    """
     import click
     import pluggy
     import typer
@@ -94,6 +106,36 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
         ),
         profile: bool = True,
     ) -> None:
+        """
+        Markata's primary way of building your site for production.
+        By default, running `markta build` will render your markdown to
+        the `./markout` directory.
+
+        ``` bash
+        markata build
+        ```
+
+        If you are having an issue and want to pop immediately into a debugger
+        upon failure you can pass the `--pdb` flag to the build command.
+
+        ``` bash
+        markata build  --pdb
+        ```
+
+        If you do not like the way rich looks, or its suppressing tracebaks you
+        would like to remain visible you can use `--no-pretty`
+
+        ``` bash
+        markata build --no-pretty
+        ```
+
+        If you need to run without any console logging pass in the
+        `--quiet` flag.
+
+        ``` bash
+        markata build --quiet
+        ```
+        """
         import time
 
         if pretty:
