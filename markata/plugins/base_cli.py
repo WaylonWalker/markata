@@ -317,13 +317,6 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
             for a in filtered:
                 markata.console.print(a)
 
-    @app.command()
-    def console() -> None:
-        if markata.console.is_terminal:
-            markata.console.print("console options:", markata.console.options)
-        else:
-            print("here")
-
 
 def pdb_run(func: Callable) -> None:
     """
