@@ -71,6 +71,7 @@ def cli(app, markata):
             False,
             "--pdb",
         ),
+        profile: bool = False,
     ) -> None:
         import time
 
@@ -98,8 +99,14 @@ def cli(app, markata):
                         markata.run()
                     time.sleep(0.1)
 
+        if profile:
+            markata.should_profile_cli = True
+            markata.should_profile = True
+            markata.configure()
+
         if should_pdb:
             pdb_run(markata.run)
+
         else:
             markata.run()
 
