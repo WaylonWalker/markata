@@ -59,5 +59,4 @@ def get_post(path: Path, markata: "Markata") -> Optional[Callable]:
         return None
         post = default
     post.metadata["path"] = str(path)
-    post["content_hash"] = markata.make_hash(post.content)
     return post

@@ -7,6 +7,7 @@
 * fix: --profile is now under the build command
 * feat: --pretty/--no-pretty will make pretty tracebacks, and skip over framework code
 * fix: links are now absolute so they work from github, thanks [MR Destructive](https://github.com/Mr-Destructive)
+* deprecate: `article['content_hash']` has been removed with preference for simply hashing on `article['content']`
 
 ### New cli help
 

@@ -38,7 +38,7 @@ def render(markata: "MarkataIcons") -> None:
             key = markata.make_hash(
                 "seo",
                 "manifest",
-                article["content_hash"],
+                article["content"],
                 article.html,
             )
             html_from_cache = cache.get(key)
