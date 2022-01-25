@@ -53,6 +53,12 @@ This is my awesome post.
 
 > Frontmatter is not required, but definitely gives you more control over your site.
 
+## Source Code
+
+If you have comments, questions, issues, or like it enough to give a ⭐
+check out
+[waylonwalker/markata](https://github.com/WaylonWalker/markata)
+
 ## Markata Docs
 
 Not much is documented yet, lots of work to do on the docs.  Checkout
