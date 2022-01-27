@@ -32,11 +32,9 @@ debug what is getting picked up by markata.
 markata list --map 'str(date.year) + "," + title'
 ```
 
-see the 
+see the
 [`list`](https://markata.dev/markata/plugins/base_cli/#list-function)
 section for more examples.
-
-
 """
 import pdb
 import sys
