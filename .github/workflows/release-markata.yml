@@ -21,6 +21,7 @@ jobs:
 
       - run: black --check
       - run: flake8 markata
+      - run: pytest
 
       - name: build
         run: |
