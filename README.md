@@ -59,19 +59,36 @@ Currently everything is on the [develop](https://github.com/WaylonWalker/markata
 
 ## Examples Gallary
 
+### [Markata.dev](https://markata.dev)
+
+Yes, markata builds its own docs
+
+<p align=center>
+  <img src='https://user-images.githubusercontent.com/22648375/151674260-d5b1a073-ba68-4274-aac1-3b891a31e3ed.png' width=400px>
+</p>
+
+> Home page, created with index.md
+
+<p align=center>
+  <img src='https://user-images.githubusercontent.com/22648375/151674334-a5fb0205-2631-4057-8ecb-f8ba1e7ebaf9.png' width=400px>
+</p>
+
+> [base_cli plugin](https://markata.dev/markata/plugins/base_cli/) documentation generated with the [docs plugin](https://markata.dev/markata/plugins/docs/)
+
 ### [WaylonWalker.com](https://waylonwalker.com)
 
 Waylonwalker.com is created completely through markata
 
 <p align=center>
-  <img src='https://user-images.githubusercontent.com/22648375/116886137-4f8ae180-abee-11eb-8fcd-40667e38e4b9.png' width=400px>
+  <img src='https://user-images.githubusercontent.com/22648375/151674183-8c36cab2-bccd-4733-b78b-99384e257b00.png' width=400px>
 </p>
+
 > Post Page
 
-
 <p align=center>
-  <img src='https://user-images.githubusercontent.com/22648375/116885964-1f434300-abee-11eb-8f31-3d8143f199d1.png' width=400px>
+  <img src='https://user-images.githubusercontent.com/22648375/151674204-264d549a-fc33-4373-a675-4f5a31daaf9f.png' width=400px>
 </p>
+
 > archive page created through custom plugin
 
 ### [images.WaylonWalker.com](https://images.waylonwalker.com)
