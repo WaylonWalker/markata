@@ -66,7 +66,7 @@ Not much is documented yet, lots of work to do on the docs.  Checkout
 finished one looks like.
 
 UPDATE - the 
-`[base_cli](https://markata.dev/markata/plugins/base_cli/)` is also up to
+[`base_cli`](https://markata.dev/markata/plugins/base_cli/) is also up to
 date and includes a lot of examples of how to use the markata cli.
 
 > **Yes** this library generates it's own docs
