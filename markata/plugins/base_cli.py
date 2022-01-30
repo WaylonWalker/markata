@@ -1,16 +1,166 @@
+"""
+Markata's base command line commands.
+
+This plugin enables
+[`build`](https://markata.dev/markata/plugins/base_cli/#build-function)
+and
+[`list`](https://markata.dev/markata/plugins/base_cli/#list-function)
+commands as part of the main markata cli.
+
+## Building Your Site with the Cli
+
+Your Markata Site can be build completely from the command line.
+
+``` bash
+markata build
+
+# or if you prefer pipx
+pipx run markata build
+```
+
+see the
+[`build`](https://markata.dev/markata/plugins/base_cli/#build-function)
+section for more examples.
+
+## Listing your articles
+
+Markata list is a tool to help list out artile attributes right to your
+terminal.  This is very helpful to find articles on larger sites, or
+debug what is getting picked up by markata.
+
+``` bash
+markata list --map 'str(date.year) + "," + title'
+```
+
+see the
+[`list`](https://markata.dev/markata/plugins/base_cli/#list-function)
+section for more examples.
+"""
 import pdb
 import sys
 import traceback
-from typing import Callable, Optional
+from typing import TYPE_CHECKING, Callable, Optional
 
 import typer
-from rich.console import Console
 
 from markata.hookspec import hook_impl
 
+if TYPE_CHECKING:
+    from markata import Markata
+
+
+def make_pretty() -> None:
+    """
+    This is a helper function that enables suppresses tracebacks from
+    frameworks like `click` that can make your traceback long and hard
+    to follow.  It also makes evrerything more colorful and easier to
+    follow.
+    """
+    import click
+    import pluggy
+    import typer
+    from rich import pretty as _pretty
+    from rich import traceback
+
+    _pretty.install()
+    traceback.install(
+        show_locals=True,
+        suppress=[
+            pluggy,
+            click,
+            typer,
+        ],
+    )
+
 
 @hook_impl()
-def cli(app, markata):
+def cli(app: typer.Typer, markata: "Markata") -> None:
+    """
+    Markata hook to implement base cli commands.
+    """
+
+    @app.command()
+    def build(
+        pretty: bool = True,
+        quiet: bool = typer.Option(
+            False,
+            "--quiet",
+            "-q",
+        ),
+        # to_dict: bool = False,
+        verbose: bool = typer.Option(
+            False,
+            "--verbose",
+            "-v",
+        ),
+        should_pdb: bool = typer.Option(
+            False,
+            "--pdb",
+        ),
+        profile: bool = True,
+    ) -> None:
+        """
+        Markata's primary way of building your site for production.
+        By default, running `markta build` will render your markdown to
+        the `./markout` directory.
+
+        ``` bash
+        markata build
+        ```
+
+        If you are having an issue and want to pop immediately into a debugger
+        upon failure you can pass the `--pdb` flag to the build command.
+
+        ``` bash
+        markata build  --pdb
+        ```
+
+        If you do not like the way rich looks, or its suppressing tracebaks you
+        would like to remain visible you can use `--no-pretty`
+
+        ``` bash
+        markata build --no-pretty
+        ```
+
+        If you need to run without any console logging pass in the
+        `--quiet` flag.
+
+        ``` bash
+        markata build --quiet
+        ```
+
+        `markta build` will automatically run the pyinstrument profiler
+        while building your site if you have pyinstrument installed.  It
+        will echo out your profile in the console as well as write it to
+        `/_profile` on your built site. If you prefer not to run
+        pyinstrument profiling, even when it is installed you can pass
+        in `--no-profile`
+
+        ``` bash
+        markata build --no-profile
+        ```
+        """
+
+        if pretty:
+            make_pretty()
+
+        if quiet:
+            markata.console.quiet = True
+
+        if verbose:
+            markata.console.print("console options:", markata.console.options)
+
+        if profile:
+            markata.should_profile_cli = True
+            markata.should_profile = True
+            markata.configure()
+
+        if should_pdb:
+            pdb_run(markata.run)
+
+        else:
+            markata.run()
+
     @app.command()
     def list(
         map: str = "title",
@@ -21,9 +171,165 @@ def cli(app, markata):
         include_empty: bool = False,
         reverse: bool = False,
         use_pager: bool = typer.Option(True, "--pager", "--no-pager"),
-    ):
+    ) -> None:
         """
-        list posts
+        Provides a way run markatas, map, filter, and sort from the
+        command line.  I personally use this more often than the build
+        command while I am writing on a site with a large number of
+        posts on it.  It makes slicing in by `templatekey`, `tag`, or
+        `date` much easier.
+
+        ### default list
+
+        By default `markata list` will list all titles in a pager, for all posts
+        being loaded by markata.
+
+        ``` bash
+        markata list
+        ```
+
+        ### Skip the pager
+
+        Markata uses rich for its pager, it's pretty smart about when to
+        use the pager or pass text to the next thing in the pipeline,
+        but if you don't want to run a pager you can pass  `--no-pager`
+
+        ``` bash
+        markata list --no-pager
+        ```
+
+        ### List other attributes
+
+        You can list any other attribute tied to your posts.  These are
+        added through either your yaml frontmatter at the start of your
+        post, or through the use of a plugin.
+
+
+        ``` bash
+        # the filepath of the post
+        markata list --map path
+
+        # the slug of the post (where it will show up on the site)
+        markata list --map slug
+
+        # the date of the post
+        markata list --map date
+
+        # the full raw content of the post
+        markata list --map content
+        ```
+
+        ### List more than one attribute
+
+        You can create new attributes as you map to echo out by
+        combining existing attributes.
+
+        ``` bash
+        markata list --map 'title + " , " + slug'
+        ```
+
+        ### Using Python objects as map
+
+        You can access attributes of each post attribute that you map
+        over.  For instance on my blog, each post has a date that is a
+        datetime object.  I can ask each post for its `date.year`
+
+        ``` bash
+        markata list --map date.year
+
+        # combining this with title
+        markata list --map 'str(date.year) + "," + title'
+        ```
+
+        ### Filtering posts
+
+        Posts are filtered with python syntax, you will have all
+        attributes tied to your posts available to filter with.
+
+        ``` bash
+        markata list --filter "'__' not in title"
+        ```
+
+        ### Filtering by dates
+
+        If your site has dates tied to your posts you can filter by
+        date.  On my blog this makes a ton of sense and is quite useful.
+        On the Markata docs though it doesn't really make much sense,
+        since there really isn't the idea of a post date there.
+
+        ``` bash
+        # listing today's posts
+        markata list --filter "date==today"
+
+        # listing this year's posts
+        markata list --filter "date.year==today.year"
+        ```
+
+        ### Full Content Search
+
+        You can also search the full content of each post for specific
+        words.
+        ``` bash
+
+        markata list --filter "'python' in content"
+        ```
+
+        ### Filtering by frontmatter data
+
+        I use a templateKey on my personal blog to determine which
+        template to render the page with.  I can fitler my posts by a
+        `til` (today i learned) key.
+
+        ``` bash
+        markata list --filter "templateKey=='til'"
+        ```
+
+        ### Combining filters
+
+        Filters can be combined together quite like maps can, it's all
+        just python syntax.
+
+        ``` bash
+        markata list --filter "templateKey=='til' and date == today"
+        ```
+
+        ### Sorting posts
+
+        Posts can be sorted by attributes on your post, and they can
+        even be reversed.
+
+        ``` bash
+        markta list --sort date
+        markta list --sort date --reverse
+        ```
+
+        ### Putting it all together
+
+        The real power of all this comes when you combine them all into
+        lists that work for you and your workflow.  This really makes
+        working on larger projects so much easier to find things.
+
+
+        ### Making a fuzzy picker for your posts
+
+        Here is a bash command to open an fzf picker for todays posts,
+        then open it in your `$EDITOR`
+
+        ``` bash
+        markata list --map path --filter 'date==today' --sort date --reverse | fzf --preview 'bat --color always {}' | xargs -I {} $EDITOR {}
+        ```
+
+        ### Combining wtih nvim Telescope
+
+        Here is the same command setup as a Telescope picker for neovim.
+
+        ``` vim
+        nnoremap <leader>et <cmd>Telescope find_files find_command=markata,list,--map,path,--filter,date==today<cr>
+        ```
+
+        If you have another way to open posts in your editor with
+        `markata list` I would love to accept a PR to add it to the
+        examples here.
         """
 
         markata.console.quiet = True
@@ -45,66 +351,11 @@ def cli(app, markata):
             for a in filtered:
                 markata.console.print(a)
 
-    @app.command()
-    def console():
-        if markata.console.is_terminal:
-            markata.console.print("console options:", markata.console.options)
-        else:
-            print("here")
-
-    @app.command()
-    def build(
-        rich: bool = False,
-        quiet: bool = typer.Option(
-            False,
-            "--quiet",
-            "-q",
-        ),
-        # to_dict: bool = False,
-        watch: bool = False,
-        verbose: bool = typer.Option(
-            False,
-            "--verbose",
-            "-v",
-        ),
-        should_pdb: bool = typer.Option(
-            False,
-            "--pdb",
-        ),
-    ) -> None:
-        import time
-
-        from rich import pretty, traceback
-
-        if not rich:
-            pretty.install()
-            traceback.install()
-
-        if quiet:
-            markata.console.quiet = True
-
-        if verbose:
-            markata.console.print("console options:", markata.console.options)
-
-        if watch:
-
-            hash = markata.content_dir_hash
-            markata.run()
-            console = Console()
-            with console.status("waiting for change", spinner="aesthetic", speed=0.2):
-                while True:
-                    if markata.content_dir_hash != hash:
-                        hash = markata.content_dir_hash
-                        markata.run()
-                    time.sleep(0.1)
-
-        if should_pdb:
-            pdb_run(markata.run)
-        else:
-            markata.run()
-
 
 def pdb_run(func: Callable) -> None:
+    """
+    Wraps a function call with a post_mortem pdb debugger.
+    """
     try:
         func()
     except Exception:

@@ -49,6 +49,16 @@ I want a simple static site generator built off of plugins that are super easy t
 
 🎯 SEO out of the box
 
+## Using Markata
+
+The docs are still a work in progress, but the 
+`[base_cli](https://markata.dev/markata/plugins/base_cli/)` walks
+through how to effectively use the `markata build command`. At this
+point Markata is far from stable and **will change quite a bit**, should
+you choose to use it on  real site make sure you pin to the version that
+you want to build from.  I will let you know as it becomes more stable
+and ready to use without diligence of pinning to the version you want.
+
 
 **Honestly**  A big motivation for me was wanting to learn and understand how to create a project that is completely plugin driven.  This is highly a learning project for me, and it has grown into something I use each and every day.
 

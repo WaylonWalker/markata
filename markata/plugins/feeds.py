@@ -68,8 +68,8 @@ def create_page(
         except BaseException as e:
             msg = textwrap.dedent(
                 f"""
-                    While processing {page =} markata hit the following exception
-                    during {filter =}
+                    While processing page='{page}' markata hit the following exception
+                    during filter='{filter}'
                     {e}
                     """
             )

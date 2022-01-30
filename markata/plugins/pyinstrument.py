@@ -5,8 +5,6 @@ The profile will be saved to <output_dir>/_profile/index.html
 """
 from pathlib import Path
 
-import typer
-
 from markata import Markata
 from markata.hookspec import hook_impl, register_attr
 
@@ -20,26 +18,6 @@ except ModuleNotFoundError:
 class MarkataInstrument(Markata):
     should_profile = False
     profiler = None
-
-
-@hook_impl(tryfirst=True)
-def cli(app: typer.Typer, markata: MarkataInstrument) -> None:
-    def should_profile_callback(value: bool) -> None:
-        if value:
-            markata.should_profile_cli = True
-            markata.should_profile = True
-
-    @app.callback()
-    def should_profile(
-        version: bool = typer.Option(
-            None, "--profile", callback=should_profile_callback, is_eager=True
-        ),
-    ) -> None:
-        ...
-
-    @app.command()
-    def profile() -> None:
-        ...
 
 
 @hook_impl(tryfirst=True)
@@ -72,10 +50,12 @@ def save(markata: MarkataInstrument) -> None:
     "stop the profiler and save as late as possible"
     if markata.should_profile:
         try:
-            output_file = Path(markata.config["output_dir"]) / "_profile" / "index.html"
-            output_file.parent.mkdir(parents=True, exist_ok=True)
 
             if "profiler" in markata.__dict__.keys():
+                output_file = (
+                    Path(markata.config["output_dir"]) / "_profile" / "index.html"
+                )
+                output_file.parent.mkdir(parents=True, exist_ok=True)
                 markata.profiler.stop()
                 html = markata.profiler.output_html()
                 output_file.write_text(html)

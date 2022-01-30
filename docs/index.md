@@ -53,11 +53,25 @@ This is my awesome post.
 
 > Frontmatter is not required, but definitely gives you more control over your site.
 
+## Next steps
+
+* [create your home page](https://markata.dev/home-page/)
+
+## Source Code
+
+If you have comments, questions, issues, or like it enough to give a ⭐
+check out
+[waylonwalker/markata](https://github.com/WaylonWalker/markata)
+
 ## Markata Docs
 
 Not much is documented yet, lots of work to do on the docs.  Checkout
 [LifeCycle](https://markata.dev/markata/lifecycle/) to see what a more
 finished one looks like.
+
+UPDATE - the 
+[`base_cli`](https://markata.dev/markata/plugins/base_cli/) is also up to
+date and includes a lot of examples of how to use the markata cli.
 
 > **Yes** this library generates it's own docs
 
