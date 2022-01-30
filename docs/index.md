@@ -53,6 +53,10 @@ This is my awesome post.
 
 > Frontmatter is not required, but definitely gives you more control over your site.
 
+## Next steps
+
+* [create your home page](https://markata.dev/home-page/)
+
 ## Source Code
 
 If you have comments, questions, issues, or like it enough to give a ⭐
