@@ -1,3 +1,7 @@
+"""
+Creates links next to all heading tags to make it easier for users to share a
+specific heading.
+"""
 import re
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -14,6 +18,9 @@ if TYPE_CHECKING:
 
 @hook_impl(trylast=True)
 def post_render(markata: Markata) -> None:
+    """
+    This plugin creates a link svg next to all headings.
+    """
 
     config = markata.get_plugin_config(__file__)
     with markata.cache as cache:
@@ -38,6 +45,9 @@ def post_render(markata: Markata) -> None:
 
 
 def link_headings(article: "Post") -> Any:
+    """
+    Use BeautifulSoup to find all headings and run link_heading on them.
+    """
     soup = BeautifulSoup(article.html, features="lxml")
     for heading in soup.find_all(re.compile("^h[1-6]$")):
         if not heading.find("a", {"class": "heading-permalink"}):
@@ -47,6 +57,9 @@ def link_headings(article: "Post") -> Any:
 
 
 def link_heading(soup: "bs4.BeautifulSoup", heading: "bs4.element.Tag") -> None:
+    """
+    Mutate soup to include an svg link at the heading passed in.
+    """
     id = heading.get("id")
 
     link = soup.new_tag("a", href=f"#{id}", **{"class": "heading-permalink"})
