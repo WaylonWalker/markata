@@ -19,7 +19,7 @@ jobs:
       - name: install markata
         run: pip install -e ".[dev]"
 
-      - run: black --check
+      - run: black --check markata
       - run: flake8 markata
       - run: pytest
 
