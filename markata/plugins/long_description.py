@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from bs4 import BeautifulSoup
@@ -17,6 +18,7 @@ def render(markata: "Markata") -> None:
             key = markata.make_hash(
                 "long_description",
                 "render",
+                Path(__file__).read_text(),
                 article.content,
                 article.html,
             )
