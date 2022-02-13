@@ -18,6 +18,7 @@ allow to build your site right out of the box with nothing more than markdown.
 
 ```
 mkdir pages
+cd pages
 echo '# My First Post' > first-post.md
 echo '# Hello World' > hello-world.md
 ```
@@ -29,7 +30,7 @@ pip install markata
 markata build
 
 # or if pipx is your thing
-pix run markata build
+pipx run markata build
 ```
 
 ### Frontmatter
