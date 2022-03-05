@@ -27,7 +27,7 @@ len=500
 !!! note
    Make sure that you have the auto_description plugin in your configured hooks.
 
-In the above we will end up with three different descritpions, 
+In the above we will end up with three different descritpions,
 (`description`, `long_description`, and `super_description`) each will be the
 first number of characters from the document as specified in the config.
 
