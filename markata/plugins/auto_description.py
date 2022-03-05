@@ -11,13 +11,14 @@ after the key you give it in your config.
 
 ``` toml
 [markata]
+
+# make sure its in your lse of hooks
 hooks=[
    "markata.plugins.auto_description",
    ]
 
 [markata.auto_description.description]
-len=160
-[markata.auto_description.long_description]
+len=160 [markata.auto_description.long_description]
 len=250
 [markata.auto_description.super_description]
 len=500
@@ -97,7 +98,9 @@ def set_description(
 
     for description_key in config:
         if description_key not in ["cache_expire", "config_key"]:
-            if description_key not in article.metadata.keys():
+
+            # overwrites missing (None) and empty ('')
+            if not article.metadata.get(description_key):
                 article.metadata[description_key] = description[
                     : config[description_key]["len"]
                 ]
