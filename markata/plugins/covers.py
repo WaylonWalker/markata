@@ -127,10 +127,10 @@ def make_cover(
 def save(markata: "Markata") -> None:
     futures = []
 
-    if not hasattr(markata.config, "covers"):
+    if not "covers" in markata.config.keys():
         return
 
-    for article in markata.articles:
+    for article in markata.iter_articles("making covers"):
         for cover in markata.config["covers"]:
             try:
                 padding = cover["padding"]
