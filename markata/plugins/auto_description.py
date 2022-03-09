@@ -18,7 +18,7 @@ hooks=[
    ]
 
 [markata.auto_description.description]
-len=160 
+len=160
 [markata.auto_description.long_description]
 len=250
 [markata.auto_description.super_description]
@@ -31,7 +31,7 @@ len=500
 In the above we will end up with three different descritpions,
 (`description`, `long_description`, and `super_description`) each will be the
 first number of characters from the document as specified in the config.
- 
+
 ### Defaults
 
 By default markata will set `description` to 160 and `long_description` to 250,
