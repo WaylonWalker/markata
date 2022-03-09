@@ -95,7 +95,7 @@ boolean.  The variables available to this expression are every key in your
 frontmatter, plus the `timedelta` function, and `parse` function to more easily
 work with dates.
 
-### Examples to organize
+## Feed Examples
 
 True can be passed in to make a feed of all the posts you have.
 
@@ -127,28 +127,27 @@ filter="date>today"
 filter="date==today"
 ```
 
-## More examples
+If you have list of items in your frontmatter for something like `tags`, you
+can check for the existence of a tag in the list.
 
-TODO
+``` toml
+[markata.feeds.python]
+filter="date<=today and 'python' in tags"
+```
+
+And of course you can combine all the things into larger expressions.  Here is one example of the main feed on my blog.
 
 ``` toml
 [markata.feeds.blog]
 filter="date<=today and templateKey in ['blog-post'] and status.lower()=='published'"
 ```
 
+Here is another example that shows my drafts for a particular tag.
+
 ``` toml
-
-[markata.feeds.scheduled]
-filter="date>today"
-
-[markata.feeds.today]
-filter="date==today"
-
-[markata.feeds.python]
-filter="date<=today and 'python' in tags"
-
 [markata.feeds.python-draft]
 filter="date<=today and 'python' in tags and status=='draft'"
+```
 
 ## Defaults
 
@@ -158,7 +157,6 @@ posts.
 [markata.feeds.archive]
 filter="True"
 
-```
 """
 import datetime
 import shutil
