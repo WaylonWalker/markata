@@ -1,7 +1,7 @@
 import time
 from functools import lru_cache
 from pathlib import Path
-from typing import TYPE_CHECKING, Tuple, Union
+from typing import TYPE_CHECKING, List, Tuple, Union
 
 from PIL import Image, ImageDraw, ImageFont
 from rich.progress import BarColumn, Progress
@@ -92,7 +92,10 @@ def make_cover(
     text: str = None,
     text_font_color: str = None,
     text_padding: Tuple[int, ...] = None,
+    resizes: List[int] = None,
 ) -> None:
+    if output_path.exists():
+        return
     image = Image.open(template_path)
     draw_text(image, font_path, title, color, padding)
     if text is not None:
@@ -109,25 +112,24 @@ def make_cover(
     ratio = image.size[1] / image.size[0]
 
     covers = []
-    for width in [
-        # 32,
-        250,
-        # 500,
-    ]:
+    if resizes:
+        for width in resizes:
 
-        re_img = image.resize((width, int(width * ratio)), Image.ANTIALIAS)
-        filename = f"{output_path.stem}_{width}x{int(width*ratio)}{output_path.suffix}"
-        covers.append(filename)
+            re_img = image.resize((width, int(width * ratio)), Image.ANTIALIAS)
+            filename = (
+                f"{output_path.stem}_{width}x{int(width*ratio)}{output_path.suffix}"
+            )
+            covers.append(filename)
 
-        filepath = Path(output_path.parent / filename)
-        re_img.save(filepath)
+            filepath = Path(output_path.parent / filename)
+            re_img.save(filepath)
 
 
 @hook_impl
 def save(markata: "Markata") -> None:
     futures = []
 
-    if not "covers" in markata.config.keys():
+    if "covers" not in markata.config.keys():
         return
 
     for article in markata.iter_articles("making covers"):
@@ -183,6 +185,7 @@ def save(markata: "Markata") -> None:
                     text=text,
                     text_font_color=text_font_color,
                     text_padding=text_padding,
+                    resizes=cover.get("resizes"),
                 )
             )
 
