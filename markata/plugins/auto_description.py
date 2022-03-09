@@ -83,7 +83,7 @@ def set_description(
     the configured descriptions for the article.
     """
     key = markata.make_hash(
-        "long_description",
+        "auto_description",
         "render",
         Path(__file__).read_text(),
         article.content,
