@@ -51,7 +51,7 @@ m = Markata()
 
 """
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict
+from typing import TYPE_CHECKING, Any, Dict
 
 import commonmark
 
@@ -82,16 +82,18 @@ def get_description(article: "Post") -> str:
 
 
 def set_description(
-    markata: "Markata", article: "Post", cache: "FanoutCache", config: Dict
+    markata: "Markata",
+    article: "Post",
+    cache: "FanoutCache",
+    config: Dict,
+    max_description: int = 500,
+    plugin_text: None = "",
 ) -> None:
     """
     For a given `article`, find the description, put it in the cache, and set
     the configured descriptions for the article.
     """
     key = markata.make_hash(
-        "auto_description",
-        "render",
-        Path(__file__).read_text(),
         article.content,
     )
 
@@ -127,11 +129,27 @@ def pre_render(markata: "Markata") -> None:
         config["long_description"] = {}
         config["long_description"]["len"] = 250
 
+    def try_config_get(key: str) -> Any:
+        try:
+            return config.get(key).get("len") or None
+        except AttributeError:
+            return None
+
+    max_description = max(
+        [
+            value
+            for description_key in config
+            if (value := try_config_get(description_key))
+        ]
+    )
+
     with markata.cache as cache:
         for article in markata.iter_articles("setting auto description"):
             set_description(
-                markata,
-                article,
-                cache,
-                config,
+                markata=markata,
+                article=article,
+                cache=cache,
+                config=config,
+                max_description=max_description,
+                plugin_text=Path(__file__).read_text(),
             )
