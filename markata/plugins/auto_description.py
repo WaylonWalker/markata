@@ -97,7 +97,7 @@ def set_description(
 
     description_from_cache = cache.get(key)
     if description_from_cache is None:
-        description = get_description(article)
+        description = get_description(article)[:max_description]
         markata.cache.add(key, description, expire=config["cache_expire"])
     else:
         description = description_from_cache
