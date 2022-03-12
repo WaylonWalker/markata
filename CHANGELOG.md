@@ -4,6 +4,8 @@
 
 * feat: auto_description plugin is all new
 * deprecated: long_description has been deprecated by auto_description
+* fix covers plugin which would previously skip every time.
+* feat: `markata clean` cleans up your cache and output from the command line
 
 ### All New auto_description plugin
 
