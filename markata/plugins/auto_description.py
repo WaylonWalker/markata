@@ -95,6 +95,8 @@ def set_description(
     """
     key = markata.make_hash(
         article.content,
+        plugin_text,
+        config,
     )
 
     description_from_cache = cache.get(key)
