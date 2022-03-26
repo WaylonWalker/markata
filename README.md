@@ -1,53 +1,59 @@
 <h1 align=center>
   <br>
-  <a href="https://github.com/WaylonWalker/markata"><img src="https://user-images.githubusercontent.com/22648375/120665701-a126c600-c451-11eb-9dc5-1e0ac4eeeb2f.png" alt="Markata" width="200"></a>
+  <a href="https://github.com/WaylonWalker/markata"><img src="https://user-images.githubusercontent.com/22648375/160218849-1f0dcd49-249b-40b5-84f7-db0c7d469bc6.png" alt="Markata" width="200"></a>
 </h1>
+
+
+<!-- ![M](https://user-images.githubusercontent.com/22648375/160218696-594eb5c4-54fe-4270-96d0-4915b89b41ef.png)
+![M](https://user-images.githubusercontent.com/22648375/160218805-df4c4680-6415-4f44-80cf-701fcab359d7.png)
+![M](https://user-images.githubusercontent.com/22648375/160218833-b88cd443-68ce-4cd4-b9bf-1af325ab106f.png)
+![M](https://user-images.githubusercontent.com/22648375/160218849-1f0dcd49-249b-40b5-84f7-db0c7d469bc6.png)
+ -->
 
 <p align=center>
   <em>
-    Markdown and Data, plugins all the way down
+    Markdown to site, plugins all the way down
   </em>
 </p>
 
 
-## Example
+## QuickStart
 
-Here is markata creating my personal site of several hundred pages in ~16s.
+Markata is fully configurable through a `markata.toml` file, but the defaults
+allow to build your site right out of the box with nothing more than markdown.
 
-<p align="center">
-<a href='https://user-images.githubusercontent.com/22648375/116888181-c32dee00-abf0-11eb-9eba-8c6997d3c888.mp4' >
-   <img src='https://user-images.githubusercontent.com/22648375/116888173-c1642a80-abf0-11eb-8647-25a47aacc1fc.gif' align=center>
-</a>
-</p>
+### Create Some Content
 
+Make some `.md` files in 
 
-Here is markata doing a near instant with a fresh cache.
+```
+mkdir pages
+echo '# My First Post' > first-post.md
+echo '# Hello World' > hello-world.md
+```
 
-<p align="center">
-<a href='https://user-images.githubusercontent.com/22648375/116885339-654bd700-abed-11eb-8e65-3202bcce1773.mp4' >
-   <img src='https://user-images.githubusercontent.com/22648375/116885394-7563b680-abed-11eb-8649-b8d3fbc728b9.gif' align=center>
-</a>
-</p>
+### Build your site
 
+Install markata into your virtual environment and run `markata build`.  It will create your site in `./markout`, and will leave its cache in `./.markata.cache`, and will copy all assets from  `./static` by default.
 
+``` bash
+python -m pip install markata
+markata build
 
-I am still learning what this will be.  Code is completely in develop branch and likely to change significantly.
+# or if pipx is your thing
+pix run markata build
+```
 
 ## Motivation
 
-I want a simple static site generator built off of plugins that are super easy to create, and intuitive to use.  I want to create content in markdown and not have to put much thought into seo meta tags or generating og images.  The final site should be lightweight, and not weighed down heavily with MB's of unused css/js.
+Markata is able to build your site purely from markdown, allowing you to get started creating your own content quickly.  Out of the box it will cover your seo tags, rss feeds, sitemap, and og images.  Since it is built completely from plugins you are able to remove, modify, or add to any of its behavior.
 
-⚡ Fast enough site generation
-
-🔌 Pluggable
-
-🧠 Intuitive
-
-🐍 Familiar language
-
-🖼 OG:image out of the box
-
-🎯 SEO out of the box
+* configurable
+* plugins
+* seo
+* rss
+* sitemap
+* og-image
 
 ## Using Markata
 
