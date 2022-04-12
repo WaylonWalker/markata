@@ -24,7 +24,7 @@ allow to build your site right out of the box with nothing more than markdown.
 
 ### Create Some Content
 
-Make some `.md` files in 
+Make some `.md` files in your current working directory.  By default `markata` will recursively look in all subdirectories for markdown files `**/*.md`.
 
 ```
 mkdir pages
@@ -34,7 +34,7 @@ echo '# Hello World' > hello-world.md
 
 ### Build your site
 
-Install markata into your virtual environment and run `markata build`.  It will create your site in `./markout`, and will leave its cache in `./.markata.cache`, and will copy all assets from  `./static` by default.
+Install markata into your virtual environment and run `markata build`.  It will create your site in `./markout`, leave its cache in `./.markata.cache`, and copy all assets from  `./static` into `./markdo by default.
 
 ``` bash
 python -m pip install markata
@@ -67,11 +67,6 @@ and ready to use without diligence of pinning to the version you want.
 
 
 **Honestly**  A big motivation for me was wanting to learn and understand how to create a project that is completely plugin driven.  This is highly a learning project for me, and it has grown into something I use each and every day.
-
-## Development
-
-Currently everything is on the [develop](https://github.com/WaylonWalker/markata/tree/develop) branch.  As its still a heavy work in progress and likely to change significantly.
-
 
 ## Examples Gallary
 
