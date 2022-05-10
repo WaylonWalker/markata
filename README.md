@@ -3,6 +3,11 @@
   <a href="https://github.com/WaylonWalker/markata"><img src="https://user-images.githubusercontent.com/22648375/160218849-1f0dcd49-249b-40b5-84f7-db0c7d469bc6.png" alt="Markata" width="200"></a>
 </h1>
 
+<h1 align=center>
+  <br>
+  <a href="https://github.com/WaylonWalker/markata"><img src="https://user-images.githubusercontent.com/22648375/167527193-4e66d537-e78f-44dd-be65-2c1c109adf34.png" alt="Markata" width="400"></a>
+</h1>
+
 
 <!-- ![M](https://user-images.githubusercontent.com/22648375/160218696-594eb5c4-54fe-4270-96d0-4915b89b41ef.png)
 ![M](https://user-images.githubusercontent.com/22648375/160218805-df4c4680-6415-4f44-80cf-701fcab359d7.png)
