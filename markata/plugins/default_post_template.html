@@ -6,20 +6,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
       :root {
-        --color-bg: #1f2022;
-        --color-text: #eefbfe;
-        --color-link: #47cbff; 
-        --color-accent: #e1bd00c9;
-        --overlay-brightness: .85;
+        --color-bg: {{ config.get('color_bg', '#1f2022') }};
+        --color-bg-code: {{ config.get('color_bg_code', '#1f2022') }};
+        --color-text: {{ config.get('color_text', '#eefbfe') }};
+        --color-link: {{ config.get('color_link', '#47cbff') }}; 
+        --color-accent: {{ config.get('color_accent', '#e1bd00c9') }};
+        --overlay-brightness: {{ config.get('overlay_brightness', '.85') }};
+        --body-width: {{ config.get('body_width', '800px') }};
       }
       @media (prefers-color-scheme: light) {
         :root {
-          --color-bg: #eefbfe;
-          --color-text: #1f2022;
-          --color-bg-code: #eefbfe;
-          --color-link: #47cbff; 
-          --color-accent: #ffeb00;
-          --overlay-brightness: .95;
+        --color-bg: {{ config.get('color_bg_light', '#eefbfe') }};
+        --color-bg-code: {{ config.get('color_bg_code_light', '#eefbfe') }};
+        --color-text: {{ config.get('color_text_light', '#1f2022') }};
+        --color-link: {{ config.get('color_link_light', '#47cbff') }}; 
+        --color-accent: {{ config.get('color_accent_light', '#ffeb00') }};
+        --overlay-brightness: {{ config.get('overlay_brightness_light', '.95') }};
         }
       }
 
@@ -31,7 +33,7 @@
         color: var(--color-link);
       }
       body {
-        max-width: 800px;
+        max-width: var(--body-width);
         margin: auto;
         font-size: 1rem;
         line-height: 1.56;
