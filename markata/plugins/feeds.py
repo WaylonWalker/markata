@@ -264,6 +264,7 @@ def create_page(
                 title=title,
                 canonical_url=canonical_url,
                 today=datetime.datetime.today(),
+                config=markata.config,
             )
         )
 
