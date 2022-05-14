@@ -399,29 +399,32 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
         markata clean --quiet
         ```
         """
+        _clean(markata=markata, quiet=quiet, dry_run=dry_run)
 
-        if quiet:
-            markata.console.quiet = True
 
-        markata.console.log(
-            f'{"[DRYRUN]" if dry_run else ""} removing outptut directory: {markata.config.get("output_dir")}'
-        )
-        if not dry_run:
-            try:
-                shutil.rmtree(str(markata.config.get("output_dir")))
-            except FileNotFoundError:
-                warnings.warn(
-                    f'output directory: {markata.config.get("output_dir")} does not exist'
-                )
+def _clean(markata, quiet: bool = False, dry_run: bool = False):
+    if quiet:
+        markata.console.quiet = True
 
-        markata.console.log(
-            f'{"[DRYRUN]" if dry_run else ""} removing cache directory: .markata.cache'
-        )
-        if not dry_run:
-            try:
-                shutil.rmtree(".markata.cache")
-            except FileNotFoundError:
-                warnings.warn("cache directory: .markata.cache does not exist")
+    markata.console.log(
+        f'{"[DRYRUN]" if dry_run else ""} removing outptut directory: {markata.config.get("output_dir")}'
+    )
+    if not dry_run:
+        try:
+            shutil.rmtree(str(markata.config.get("output_dir")))
+        except FileNotFoundError:
+            warnings.warn(
+                f'output directory: {markata.config.get("output_dir")} does not exist'
+            )
+
+    markata.console.log(
+        f'{"[DRYRUN]" if dry_run else ""} removing cache directory: .markata.cache'
+    )
+    if not dry_run:
+        try:
+            shutil.rmtree(".markata.cache")
+        except FileNotFoundError:
+            warnings.warn("cache directory: .markata.cache does not exist")
 
 
 def pdb_run(func: Callable) -> None:
