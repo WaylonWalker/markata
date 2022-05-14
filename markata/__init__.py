@@ -63,7 +63,7 @@ DEFAULT_HOOKS = [
     "markata.plugins.manifest",
     "markata.plugins.feeds",
     # "markata.plugins.generator",
-    "markata.plugins.long_description",
+    "markata.plugins.auto_description",
     "markata.plugins.seo",
     "markata.plugins.post_template",
     "markata.plugins.covers",

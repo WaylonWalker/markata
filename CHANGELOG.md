@@ -1,5 +1,42 @@
 # Markata Changelog
 
+## 0.2.0
+
+* feat: auto_description plugin is all new
+* deprecated: long_description has been deprecated by auto_description
+* fix covers plugin which would previously skip every time.
+* feat: `markata clean` cleans up your cache and output from the command line
+
+### All New auto_description plugin
+
+* Cache is busted on plugin change 
+* plugin is configurable
+* plugin now has docs
+
+## Configuration
+
+Open up your `markata.toml` file and add new entries for your
+auto_descriptions.  You can have multiple desriptions, each one will be named
+after the key you give it in your config.
+
+``` toml
+[markata]
+hooks=[
+   "markata.plugins.auto_description",
+   ]
+
+[markata.auto_description.description]
+len=160
+[markata.auto_description.long_description]
+len=250
+[markata.auto_description.super_description]
+len=500
+```
+
+In the above we will end up with three different descritpions, 
+(`description`, `long_description`, and `super_description`) each will be the
+first number of characters from the document as specified in the config.
+
 ## 0.1.0
 
 * fix: pyinstument plugin no longer overrides the main cli callback
