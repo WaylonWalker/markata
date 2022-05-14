@@ -22,5 +22,6 @@ def render(markata: "Markata") -> None:
         article.html = template.render(
             body=article.html,
             toc=markata.md.toc,  # type: ignore
+            config=markata.config,
             **article,
         )

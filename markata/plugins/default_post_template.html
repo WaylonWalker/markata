@@ -5,16 +5,43 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
-      /* 
-      #c678dd -> #c678dd
-      #c678dd ->
-      #a6e22e -> #61afef
-      */
-      html  { background: #1f2022; color: #eefbfe; font-family: monospace}
-      a { color: #47cbff; }
-      body { max-width: 800px; margin: auto; font-size: 1rem; line-height: 1.56;}
+      :root {
+        --color-bg: {{ config.get('color_bg', '#1f2022') }};
+        --color-bg-code: {{ config.get('color_bg_code', '#1f2022') }};
+        --color-text: {{ config.get('color_text', '#eefbfe') }};
+        --color-link: {{ config.get('color_link', '#47cbff') }}; 
+        --color-accent: {{ config.get('color_accent', '#e1bd00c9') }};
+        --overlay-brightness: {{ config.get('overlay_brightness', '.85') }};
+        --body-width: {{ config.get('body_width', '800px') }};
+      }
+      @media (prefers-color-scheme: light) {
+        :root {
+        --color-bg: {{ config.get('color_bg_light', '#eefbfe') }};
+        --color-bg-code: {{ config.get('color_bg_code_light', '#eefbfe') }};
+        --color-text: {{ config.get('color_text_light', '#1f2022') }};
+        --color-link: {{ config.get('color_link_light', '#47cbff') }}; 
+        --color-accent: {{ config.get('color_accent_light', '#ffeb00') }};
+        --overlay-brightness: {{ config.get('overlay_brightness_light', '.95') }};
+        }
+      }
+
+      html  { 
+        background: var(--color-bg);
+        color: var(--color-text);
+      }
+      a { 
+        color: var(--color-link);
+      }
+      body {
+        max-width: var(--body-width);
+        margin: auto;
+        font-size: 1rem;
+        line-height: 1.56;
+      }
       blockquote {
-        border-left: 5px solid #e1bd00c9;
+        background: var(--color-bg);
+        filter: brightness(var(--overlay-brightness));
+        border-left: 5px solid var(--color-accent);
         padding-left: 1rem;
         margin: 1rem;
         }
@@ -22,23 +49,17 @@
         list-style-type: None;
         padding: .2rem 0;
       }
-      pre {padding: 1rem}
-      code {color: #e672e6; 
-        background-color: rgba(255,255,255, .05);
-        background-color: #1b1c1e;
-      }
       pre {
         padding: 1rem;
         max-width: fit-content;
         overflow-x: auto;
       }
-        padding: .15rem .3rem;
-      }
 
-      .highlight .hll { background-color: #49483e }
-      .highlight  { background: #272822; color: #abb2bf;
-        background-color: #1b1c1e;
 
+      .highlight  {
+        background: var(--color-bg-code);
+        color: var(--color-text);
+        filter: brightness(var(--overlay-brightness));
       }
       .highlight .c { color: #8b8b8b } /* Comment */
       .highlight .err { color: #960050; background-color: #1e0010 } /* Error */
@@ -226,8 +247,8 @@ a {
 
     font-family: "Space Mono", monospace;
     font-weight: 600;
-    text-decoration-color: goldenrod;
-    color: #6ab1cd;
+    text-decoration-color: var(--color-accent);
+    color: var(--color-link);
     padding: .3rem .5rem;
     display: inline-block;
 }
@@ -274,13 +295,13 @@ table {
     white-space: nowrap;
 }
 table thead th {
-    border: solid 1px #ffffff42;
+    border: solid 1px var(--color-text);
     padding: 10px;
     text-align: left;
 }
 
 table tbody td {
-    border: solid 1px #ffffff42;
+    border: solid 1px var(--color-text);
     padding: 10px;
 }
 
