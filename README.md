@@ -1,30 +1,20 @@
 <h1 align=center>
   <br>
-  <a href="https://github.com/WaylonWalker/markata"><img src="https://user-images.githubusercontent.com/22648375/160218849-1f0dcd49-249b-40b5-84f7-db0c7d469bc6.png" alt="Markata" width="200"></a>
-</h1>
-
-<h1 align=center>
-  <br>
   <a href="https://github.com/WaylonWalker/markata"><img src="https://user-images.githubusercontent.com/22648375/167527193-4e66d537-e78f-44dd-be65-2c1c109adf34.png" alt="Markata" width="400"></a>
 </h1>
-
-<h1 align=center>
-  <br>
-  <a href="https://github.com/WaylonWalker/markata"><img src="https://user-images.githubusercontent.com/22648375/167527716-d506f555-f897-4aa5-a384-479d2858060b.png" alt="Markata" width="400"></a>
-</h1>
-
-
-<!-- ![M](https://user-images.githubusercontent.com/22648375/160218696-594eb5c4-54fe-4270-96d0-4915b89b41ef.png)
-![M](https://user-images.githubusercontent.com/22648375/160218805-df4c4680-6415-4f44-80cf-701fcab359d7.png)
-![M](https://user-images.githubusercontent.com/22648375/160218833-b88cd443-68ce-4cd4-b9bf-1af325ab106f.png)
-![M](https://user-images.githubusercontent.com/22648375/160218849-1f0dcd49-249b-40b5-84f7-db0c7d469bc6.png)
- -->
 
 <p align=center>
   <em>
     Markdown to site, plugins all the way down
   </em>
 </p>
+
+A static site generator that will give you a great site with many standard web
+features like rss, sitemaps, and seo tags, out of the box.  Running `markata
+build` will get you a that only requires you to write markdown.  If you have
+additional features that you want, don't worry, since markata is built
+completely on plugins you can develop and install your own plugins to add the
+features you want.
 
 
 ## QuickStart
@@ -34,7 +24,8 @@ allow to build your site right out of the box with nothing more than markdown.
 
 ### Create Some Content
 
-Make some `.md` files in your current working directory.  By default `markata` will recursively look in all subdirectories for markdown files `**/*.md`.
+Make some `.md` files in your current working directory.  By default `markata`
+will recursively look in all subdirectories for markdown files `**/*.md`.
 
 ```
 mkdir pages
@@ -44,7 +35,9 @@ echo '# Hello World' > hello-world.md
 
 ### Build your site
 
-Install markata into your virtual environment and run `markata build`.  It will create your site in `./markout`, leave its cache in `./.markata.cache`, and copy all assets from  `./static` into `./markdo by default.
+Install markata into your virtual environment and run `markata build`.  It will
+create your site in `./markout`, leave its cache in `./.markata.cache`, and
+copy all assets from  `./static` into `./markdo by default.
 
 ``` bash
 python -m pip install markata
@@ -56,7 +49,10 @@ pix run markata build
 
 ## Motivation
 
-Markata is able to build your site purely from markdown, allowing you to get started creating your own content quickly.  Out of the box it will cover your seo tags, rss feeds, sitemap, and og images.  Since it is built completely from plugins you are able to remove, modify, or add to any of its behavior.
+Markata is able to build your site purely from markdown, allowing you to get
+started creating your own content quickly.  Out of the box it will cover your
+seo tags, rss feeds, sitemap, and og images.  Since it is built completely from
+plugins you are able to remove, modify, or add to any of its behavior.
 
 * configurable
 * plugins
