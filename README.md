@@ -130,3 +130,12 @@ Waylonwalker.com currently has the built in cover image pluugin disabled for qui
 <p align=center>
   <img src='https://user-images.githubusercontent.com/22648375/116886610-e6f03480-abee-11eb-92c8-f883314fd09a.png' width=400px>
 </p>
+
+### [pype.dev](https://pype.dev)
+
+Pype.dev is a menta data lake of all things python, linux, and homelab.
+
+<p align=center>
+  <img src='https://user-images.githubusercontent.com/22648375/168611555-b7c918fa-836e-4334-9cbd-cbb07b8ac350.png' width=400px>
+</p>
+
