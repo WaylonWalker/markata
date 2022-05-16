@@ -233,10 +233,8 @@ class Markata:
 
         key = Path(path_or_name).stem
 
-        try:
-            config = self.config[key]
-        except KeyError:
-            config = {}
+        config = self.config.get(key, {})
+
         if not isinstance(config, dict):
             raise TypeError("must use dict")
         if "cache_expire" not in config.keys():
@@ -446,6 +444,7 @@ class Markata:
                 value = eval(sort, a.to_dict(), {})
             except NameError:
                 return -1
+            return value
             try:
                 return int(value)
             except TypeError:
@@ -467,9 +466,9 @@ class Markata:
         articles = copy.copy(self.articles)
         articles.sort(key=try_sort)
         return [
-            eval(func, {**a.to_dict(), "timedelta": timedelta}, {})
+            eval(func, {**a.to_dict(), "timedelta": timedelta, "post": a}, {})
             for a in articles
-            if eval(filter, {**a.to_dict(), "timedelta": timedelta}, {})
+            if eval(filter, {**a.to_dict(), "timedelta": timedelta, "post": a}, {})
         ]
 
 
