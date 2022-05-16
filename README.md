@@ -108,6 +108,20 @@ Waylonwalker.com is created completely through markata
 
 > archive page created through custom plugin
 
+### [techstructive Blog](https://mr-destructive.github.io/techstructive-blog/series/)
+
+The very first adopter of markata, [meet gor](https://twitter.com/MeetGor21) writes about golang, Django, and Bash Scripting.
+
+<p align=center>
+  <img src='https://user-images.githubusercontent.com/22648375/168610225-9a125354-56c9-4d30-8d5d-6d45a8bb6ac1.png' width=400px>
+</p>
+
+He has even created a custom plugin for dynamically adding series's to his site!
+
+<p align=center>
+  <img src='https://user-images.githubusercontent.com/22648375/168610778-be626d3b-100d-44e0-af46-10ab0255da07.png' width=400px>
+</p>
+
 ### [images.WaylonWalker.com](https://images.waylonwalker.com)
 
 Waylonwalker.com currently has the built in cover image pluugin disabled for quick builds as it it a constantly evolving site with a lot of posts.  The cover images are generated in a second repo by loading article data in from [markata.json](https://waylonwalker.com/markata.json) and running the covers plugin.
