@@ -164,13 +164,18 @@ import textwrap
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, List, Optional, Union
 
-from jinja2 import Template
+from jinja2 import Template, Undefined
 
 from markata import Markata
 from markata.hookspec import hook_impl
 
 if TYPE_CHECKING:
     from frontmatter import Post
+
+
+class SilentUndefined(Undefined):
+    def _fail_with_undefined_error(self, *args, **kwargs):
+        return ""
 
 
 class MarkataFilterError(RuntimeError):
@@ -250,7 +255,7 @@ def create_page(
     cards.append("</ul>")
 
     with open(template) as f:
-        template = Template(f.read())
+        template = Template(f.read(), undefined=SilentUndefined)
     output_file = Path(markata.config["output_dir"]) / page / "index.html"
     canonical_url = f"{url}/{page}/"
     output_file.parent.mkdir(exist_ok=True, parents=True)
