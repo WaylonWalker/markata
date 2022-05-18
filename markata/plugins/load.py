@@ -48,10 +48,15 @@ def get_post(path: Path, markata: "Markata") -> Optional[Callable]:
         "path": str(path),
         "description": "",
         "content": "",
+        "edit_link": (markata.get_config("blog_github_link") or "https://github.com/")
+        + "edit/"
+        + (markata.get_config("blog_branch") or "main")
+        + "/",
     }
     try:
         post: "Post" = frontmatter.load(path)
         post.metadata = {**default, **post.metadata}
+
     except ParserError:
         return None
         post = default
@@ -59,4 +64,5 @@ def get_post(path: Path, markata: "Markata") -> Optional[Callable]:
         return None
         post = default
     post.metadata["path"] = str(path)
+    post["edit_link"] += post["path"]
     return post
