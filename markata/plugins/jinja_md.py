@@ -104,8 +104,6 @@ class IncludeRawExtension(Extension):
 
 
 if TYPE_CHECKING:
-    from frontmatter import Post
-
     from markata import Markata
 
 
