@@ -50,6 +50,7 @@ m = Markata()
 ```
 
 """
+from itertools import compress
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict
 
@@ -72,13 +73,20 @@ def get_description(article: "Post") -> str:
     parser.  Only paragraph nodes will count as text towards the description.
     """
     ast = _parser.parse(article.content)
-    return " ".join(
-        [
-            node[0].first_child.literal
-            for node in ast.walker()
-            if node[0].t == "paragraph" and node[0].first_child.literal is not None
-        ]
-    )
+
+    # find all paragraph nodes
+    paragraph_nodes = [
+        n[0]
+        for n in ast.walker()
+        if n[0].t == "paragraph" and n[0].first_child.literal is not None
+    ]
+    # for reasons unknown to me commonmark duplicates nodes, dedupe based on sourcepos
+    sourcepos = [p.sourcepos for p in paragraph_nodes]
+    # find first occurence of node based on source position
+    unique_mask = [sourcepos.index(s) == i for i, s in enumerate(sourcepos)]
+    # deduplicate paragraph_nodes based on unique source position
+    paragraphs = " ".join(list(compress(paragraph_nodes, unique_mask)))
+    return paragraphs
 
 
 def set_description(
