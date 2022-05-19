@@ -22,6 +22,7 @@ assets_dir = "static"
 hooks = [
    "markata.plugins.publish_source",
    "markata.plugins.docs",
+   "markata.plugins.prevnext",
    "default",
    ]
 disabled_hooks = [
@@ -73,5 +74,15 @@ card_template="<li class='post'><a href='/{{ slug }}/'>{{ slug }}</a></li>"
 ignore=[
 'jinja_md.md',
 ]
+
+[markata.prevnext.maps.main]
+filter='"markata" not in slug and "tests" not in slug'
+sort='slug'
+
+[markata.prevnext.maps.markata]
+filter='"markata" in slug and "tests" not in slug'
+sort='slug'
+
+
 
 
