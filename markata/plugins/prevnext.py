@@ -22,7 +22,7 @@ class PrevNext:
 def prevnext(markata: "Markata", post: "Post", conf: List[Dict[str, str]]):
     posts = []
     for name, map_conf in conf.items():
-        posts.extend(markata.map("post", "True", "slug"))
+        posts.extend(markata.map("post", **map_conf))
     # make sure the last post has a next
     if posts:
         posts.append(posts[0])
@@ -90,7 +90,12 @@ TEMPLATE = """
     font-size: 1rem;
     }
     </style>
+    {% if prevnext.prev['slug'] == 'index' %}
+    <a class='prev' href='/'>
+    {% else %}
     <a class='prev' href='/{{ prevnext.prev['slug'] }}'>
+    {% endif %}
+
         <svg width="50px" height="50px" viewbox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M13.5 8.25L9.75 12L13.5 15.75" stroke="var(--prevnext-color-angle)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"> </path>
         </svg>
@@ -99,7 +104,11 @@ TEMPLATE = """
             <p class='prevnext-title'>{{ prevnext.prev['title'] }}</p>
         </div>
     </a> 
+    {% if prevnext.next['slug'] == 'index' %}
+    <a class='next' href='/'>
+    {% else %}
     <a class='next' href='/{{ prevnext.next['slug'] }}'>
+    {% endif %}
         <div>
             <p class='prevnext-subtitle'>next</p>
             <p class='prevnext-title'>{{ prevnext.next['title'] }}</p>
