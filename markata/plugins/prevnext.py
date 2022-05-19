@@ -19,14 +19,22 @@ class PrevNext:
     next: str
 
 
-def prevnext(markata: "Markata", post: "Post", conf: List[Dict[str, str]]):
+def prevnext(
+    markata: "Markata",
+    post: "Post",
+    conf: List[Dict[str, str]],
+    strategy="first",
+):
     posts = []
     for name, map_conf in conf.items():
         _posts = markata.map("post", **map_conf)
-        # make sure the last post has a next
-        if _posts:
+        # if the strategy is first, cycle back to the beginning after each map
+        if strategy == "first" and _posts:
             _posts.append(_posts[0])
         posts.extend(_posts)
+    # if the strategy is 'all', cycle back to the beginning after all of the maps.
+    if strategy == "all":
+        posts.append(posts[0])
 
     try:
         post_idx = posts.index(post)
@@ -118,12 +126,18 @@ TEMPLATE = """
 def pre_render(markata: "Markata") -> None:
 
     config = markata.get_plugin_config("prevnext")
+    strategy = config.get("strategy", "first")
     template = config.get("template", None)
     if template is None:
         template = Template(TEMPLATE)
     else:
         template = Template(Path(template).read_text())
     for article in set(markata.articles):
-        article["prevnext"] = prevnext(markata, article, config.get("maps", {}))
+        article["prevnext"] = prevnext(
+            markata,
+            article,
+            config.get("maps", {}),
+            strategy="first",
+        )
         if "prevnext" not in article.content and article["prevnext"]:
             article.content += template.render(config=config, **article)
