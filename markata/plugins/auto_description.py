@@ -85,7 +85,8 @@ def get_description(article: "Post") -> str:
     # find first occurence of node based on source position
     unique_mask = [sourcepos.index(s) == i for i, s in enumerate(sourcepos)]
     # deduplicate paragraph_nodes based on unique source position
-    paragraphs = " ".join(list(compress(paragraph_nodes, unique_mask)))
+    unique_paragraph_nodes = list(compress(paragraph_nodes, unique_mask))
+    paragraphs = " ".join([p.first_child.literal for p in unique_paragraph_nodes])
     return paragraphs
 
 
