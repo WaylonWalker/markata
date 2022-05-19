@@ -1,4 +1,50 @@
-"""prevnext plugin"""
+"""
+The prevnext plugin, creates previous and next links inside each post.
+
+## Example config
+
+In this example we have two maps of posts to look through.  prevnext will look
+through each of these lists of posts for the current post, then return the post
+before and after this post as the prevnext posts.
+
+``` toml
+[markata.prevnext]
+# strategy can be 'first' or 'all'
+# 'first' will cycle through the first map the post is found in.
+# 'all' will cycle through all of the maps
+strategy='first'
+
+# you can have multiple maps, the name does not matter much, but the order does
+[markata.prevnext.maps.main]
+filter='"python" in tags'
+sort='slug'
+
+[markata.prevnext.maps.markata]
+filter='"python" not in tags'
+sort='slug'
+```
+
+The configuration below will setup two maps, one where "python" is in the list
+of tags, and another where it is not.  This will link all python posts together
+with a prevnext cycle, and all non-python posts in a separate prevnext cycle.
+
+## strategy
+
+There are currently two supported strategies.
+
+* first
+* all
+
+### first
+
+`first` will cycle through only the posts contained within the first map that
+contains the post.
+
+### all
+
+`all` will cycle through all of the posts aggregated from any prevnext map.
+
+"""
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Dict, List
