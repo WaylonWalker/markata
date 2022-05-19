@@ -22,10 +22,11 @@ class PrevNext:
 def prevnext(markata: "Markata", post: "Post", conf: List[Dict[str, str]]):
     posts = []
     for name, map_conf in conf.items():
-        posts.extend(markata.map("post", **map_conf))
-    # make sure the last post has a next
-    if posts:
-        posts.append(posts[0])
+        _posts = markata.map("post", **map_conf)
+        # make sure the last post has a next
+        if _posts:
+            _posts.append(_posts[0])
+        posts.extend(_posts)
 
     try:
         post_idx = posts.index(post)
