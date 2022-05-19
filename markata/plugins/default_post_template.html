@@ -431,11 +431,14 @@
   </style>
 </head>
 <body>
-  <label id="theme-switch" class="theme-switch" for="checkbox-theme"><input type="checkbox" id="checkbox-theme"></label>
-  <div class="slider round">
-    <label id="theme-switch" class="theme-switch" for="checkbox-theme"></label>
+
+  <div>
+    <label id="theme-switch" class="theme-switch" for="checkbox-theme">
+      <input type="checkbox" id="checkbox-theme">
+      <div class="slider round"> </div>
+    </label>
   </div>
-  <h1>{{ title }}</h1>{{ body }}
+  <h1 id='title'>{{ title }}</h1>{{ body }}
   <footer>
     © {{ today.year }}
   </footer>
