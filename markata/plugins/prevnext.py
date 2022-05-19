@@ -36,15 +36,6 @@ def prevnext(markata: "Markata", post: "Post", conf: List[Dict[str, str]]):
         return None
 
 
-#     _prev = posts[-1]
-#     _post = next(iposts)
-#     try:
-#         while _post is not post:
-#             if post is _post:
-#             next(iposts)
-#     except StopIteration:
-#         return PrevNext(prev=posts[-1], next=posts[1])
-
 TEMPLATE = """
 <div class='nextprev'>
 
