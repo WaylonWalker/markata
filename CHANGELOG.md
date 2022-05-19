@@ -7,6 +7,49 @@
 * fix: covers plugin which would previously skip every time.
 * feat: `markata clean` cleans up your cache and output from the command line
 * fix: `publish_source` plugin will now ignore any non yaml serializable values 
+* feat: Default template colors are now customizable
+* feat: Default template now has light and dark theme
+* feat: map now has the ability to map entire posts
+
+### map entire posts
+
+`post` is now exposed to the `markata.map` object, allowing you to return a
+list of posts.
+
+``` python
+m = Markata()
+# 'post' will return the entire post
+m.map('post', filter='"git" in tags')
+```
+
+### Customizable colors
+
+``` toml 
+[markata]
+# default dark theme
+color_bg = '#1f2022'
+color_bg_code = '#1f2022'
+color_text = '#eefbfe'
+color_link = '#47cbff' 
+color_accent = '#e1bd00c9'
+overlay_brightness = '.85'
+
+# pink and purple
+color_bg = 'deeppink'
+color_bg_code = 'rebeccapurple'
+color_text = 'white'
+color_link = 'aqua' 
+color_accent = 'peachpuff'
+overlay_brightness = '1.2'
+
+# default light theme
+color_bg_light = '#eefbfe'
+color_bg_code_light = '#eefbfe'
+color_text_light = '#1f2022'
+color_link_light = '#47cbff' 
+color_accent_light = '#ffeb00'
+overlay_brightness_light = '.95'
+```
 
 ### All New auto_description plugin
 
