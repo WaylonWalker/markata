@@ -104,7 +104,7 @@ TEMPLATE = """
             <p class='prevnext-subtitle'>prev</p>
             <p class='prevnext-title'>{{ prevnext.prev['title'] }}</p>
         </div>
-    </a> 
+    </a>
     {% if prevnext.next['slug'] == 'index' %}
     <a class='next' href='/'>
     {% else %}
