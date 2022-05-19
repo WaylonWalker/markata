@@ -4,8 +4,9 @@
 
 * feat: auto_description plugin is all new
 * deprecated: long_description has been deprecated by auto_description
-* fix covers plugin which would previously skip every time.
+* fix: covers plugin which would previously skip every time.
 * feat: `markata clean` cleans up your cache and output from the command line
+* fix: `publish_source` plugin will now ignore any non yaml serializable values 
 
 ### All New auto_description plugin
 
