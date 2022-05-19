@@ -57,6 +57,6 @@ def save(markata: "Markata") -> None:
         try:
             _save(output_dir, article)
         except RepresenterError:
-            _article = __strip_unserializable_values(article)
+            _article = _strip_unserializable_values(article)
 
             _save(output_dir, _article)
