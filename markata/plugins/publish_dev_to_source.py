@@ -50,7 +50,6 @@ def join_lines(article):
 
 @hook_impl
 def post_render(markata: "Markata") -> None:
-    from copy import copy, deepcopy
 
     for post in markata.iter_articles(description="saving source documents"):
 
