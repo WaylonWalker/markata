@@ -48,9 +48,9 @@ def get_post(path: Path, markata: "Markata") -> Optional[Callable]:
         "path": str(path),
         "description": "",
         "content": "",
-        "edit_link": (markata.get_config("blog_github_link") or "https://github.com/")
+        "edit_link": (markata.get_config("repo_url") or "https://github.com/")
         + "edit/"
-        + (markata.get_config("blog_branch") or "main")
+        + (markata.get_config("repo_branch") or "main")
         + "/",
     }
     try:
