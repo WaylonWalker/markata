@@ -1,3 +1,35 @@
+"""
+
+### Configuration
+
+Example configuration.  Covers supports multiple covers to be configured.  Here
+is an example from my blog where we have a template sized for dev.to and one
+sized for open graph.  Each image takes it's own configuration.
+
+``` toml
+[[markata.covers]]
+name='-dev'
+template = "static/cover-template.png"
+font = "./static/JosefinSans-Regular.ttf"
+text_font = "./static/JosefinSans-Regular.ttf"
+font_color = "rgb(185,155,165)"
+text_font_color = "rgb(255,255,255)"
+text_key = 'description'
+padding = [0, 40, 100, 300]
+text_padding = [0,0]
+
+[[markata.covers]]
+name=''
+template = "static/og-template.png"
+font = "./static/JosefinSans-Regular.ttf"
+font_color = "rgb(255,255,255)"
+text_font = "./static/JosefinSans-Regular.ttf"
+text_font_color = "rgb(200,200,200)"
+text_key = 'description'
+padding = [10, 10, 100, 300]
+text_padding = [0,0]
+```
+"""
 import time
 from functools import lru_cache
 from pathlib import Path
