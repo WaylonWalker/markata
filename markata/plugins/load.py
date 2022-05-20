@@ -48,6 +48,10 @@ def get_post(path: Path, markata: "Markata") -> Optional[Callable]:
         "path": str(path),
         "description": "",
         "content": "",
+        "edit_link": (markata.get_config("repo_url") or "https://github.com/")
+        + "edit/"
+        + (markata.get_config("repo_branch") or "main")
+        + "/",
     }
     try:
         post: "Post" = frontmatter.load(path)
@@ -59,4 +63,5 @@ def get_post(path: Path, markata: "Markata") -> Optional[Callable]:
         return None
         post = default
     post.metadata["path"] = str(path)
+    post["edit_link"] += post["path"]
     return post
