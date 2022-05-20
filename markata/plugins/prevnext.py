@@ -58,6 +58,15 @@ if TYPE_CHECKING:
 
     from markata import Markata
 
+SUPPORTED_STRATEGIES = ["first", "all"]
+
+
+class UnsupportedPrevNextStrategy(NotImplemented):
+    """
+    A custom error class to raise when an unsupporte prevnext strategy is
+    defined.
+    """
+
 
 @dataclass
 class PrevNext:
@@ -178,6 +187,13 @@ def pre_render(markata: "Markata") -> None:
 
     config = markata.get_plugin_config("prevnext")
     strategy = config.get("strategy", "first")
+    if strategy not in SUPPORTED_STRATEGIES:
+        msg = f"""
+        "{strategy}" is not a supported prevnext strategy
+
+        configure prevnext in your markata.toml to use one of {SUPPORTED_STRATEGIES}
+        """
+        raise UnsupportedPrevNextStrategy()
     template = config.get("template", None)
     if template is None:
         template = Template(TEMPLATE)
@@ -188,7 +204,7 @@ def pre_render(markata: "Markata") -> None:
             markata,
             article,
             config.get("maps", {}),
-            strategy="first",
+            strategy=strategy,
         )
         if "prevnext" not in article.content and article["prevnext"]:
             article.content += template.render(config=config, **article)
