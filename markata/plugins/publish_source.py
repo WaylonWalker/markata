@@ -1,5 +1,25 @@
 """
 Writes the final modified markdown and frontmatter to the output directory.
+Replacing the trailing slash if its there and adding .md will bring up the raw
+source.
+
+## Configuration
+
+The only configuration for the publish_source plugin is to make sure its in
+your list of hooks.
+
+
+``` toml
+[markata]
+
+# make sure its in your list of hooks
+hooks=[
+   "markata.plugins.publish_source",
+   ]
+
+!! note
+    publish_source is included by default, but if you have not included the
+    default set of hooks you will need to explicitly add it.
 """
 from copy import deepcopy
 from pathlib import Path
