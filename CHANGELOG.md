@@ -2,14 +2,16 @@
 
 ## 0.2.0
 
-* feat: auto_description plugin is all new
+* feat: [auto_description](https://markata.dev/markata/plugins/auto_description/) plugin is all new
 * deprecated: long_description has been deprecated by auto_description
-* fix: covers plugin which would previously skip every time.
-* feat: `markata clean` cleans up your cache and output from the command line
-* fix: `publish_source` plugin will now ignore any non yaml serializable values 
+* fix: [covers](https://markata.dev/markata/plugins/covers/) plugin which would previously skip every time.
+* feat: [`markata clean`](https://markata.dev/markata/plugins/base_cli/#clean-function) cleans up your cache and output from the command line
+* fix: [`publish_source`](https://markata.dev/markata/plugins/publish_source/) plugin will now ignore any non yaml serializable values 
 * feat: Default template colors are now customizable
 * feat: Default template now has light and dark theme
 * feat: map now has the ability to map entire posts
+* feat: [prevnext](https://markata.dev/markata/plugins/prevnext/) plugin was added to link between posts
+* feat: [jinja_md](https://markata.dev/markata/plugins/jinja_md/) plugins was added to incorporate jinja into all the markdown
 
 ### map entire posts
 
