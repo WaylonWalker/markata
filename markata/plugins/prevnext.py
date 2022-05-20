@@ -91,7 +91,7 @@ def prevnext(
 
 
 TEMPLATE = """
-<div class='nextprev'>
+<div class='prevnext'>
 
     <style type='text/css'>
 
@@ -110,11 +110,11 @@ TEMPLATE = """
         --prevnext-color-angle: {{ config.get('prevnext_color_angle', 'white') }};
         --prevnext-subtitle-brightness: 3;
     }
-    .nextprev {
+    .prevnext {
     display: flex;
     justify-content: space-around;
     }
-    .nextprev a {
+    .prevnext a {
     display: flex;
     align-items: center;
     width: 100%;
@@ -123,7 +123,7 @@ TEMPLATE = """
     a.next {
     justify-content: flex-end;
     }
-    .nextprev a:hover {
+    .prevnext a:hover {
     background: #00000006;
     }
     .prevnext-subtitle {
