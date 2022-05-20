@@ -61,7 +61,7 @@ if TYPE_CHECKING:
 SUPPORTED_STRATEGIES = ["first", "all"]
 
 
-class UnsupportedPrevNextStrategy(NotImplemented):
+class UnsupportedPrevNextStrategy(NotImplementedError):
     """
     A custom error class to raise when an unsupporte prevnext strategy is
     defined.
