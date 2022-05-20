@@ -96,19 +96,19 @@ TEMPLATE = """
     <style type='text/css'>
 
     :root {
-        --prevnext-color-text: {{ config.get('prevnext_color_text', 'white') }};
-        --prevnext-color-angle: {{ config.get('prevnext_color_angle', 'white') }};
-        --prevnext-subtitle-brightness: 3;
+      --prevnext-color-text: {{ config.get('prevnext_color_text', 'white') }};
+      --prevnext-color-angle: {{ config.get('prevnext_color_angle', 'white') }};
+      --prevnext-subtitle-brightness: 3;
     }
     [data-theme="light"] {
-        --prevnext-color-text: {{ config.get('prevnext_color_text_light', '#343434') }};
-        --prevnext-color-angle: {{ config.get('prevnext_color_angle_light', '#343434') }};
-        --prevnext-subtitle-brightness: 3;
+      --prevnext-color-text: {{ config.get('prevnext_color_text_light', '#343434') }};
+      --prevnext-color-angle: {{ config.get('prevnext_color_angle_light', '#343434') }};
+      --prevnext-subtitle-brightness: 3;
     }
     [data-theme="dark"] {
-        --prevnext-color-text: {{ config.get('prevnext_color_text', 'white') }};
-        --prevnext-color-angle: {{ config.get('prevnext_color_angle', 'white') }};
-        --prevnext-subtitle-brightness: 3;
+      --prevnext-color-text: {{ config.get('prevnext_color_text', 'white') }};
+      --prevnext-color-angle: {{ config.get('prevnext_color_angle', 'white') }};
+      --prevnext-subtitle-brightness: 3;
     }
     .prevnext {
       display: flex;
