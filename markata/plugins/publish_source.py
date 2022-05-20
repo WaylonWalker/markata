@@ -21,7 +21,6 @@ hooks=[
     publish_source is included by default, but if you have not included the
     default set of hooks you will need to explicitly add it.
 """
-from copy import deepcopy
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -49,7 +48,9 @@ def _strip_unserializable_values(article: frontmatter.Post) -> frontmatter.Post:
     """
     Returns an article with only yaml serializable frontmatter.
     """
-    _article = deepcopy(article)
+    _article = frontmatter.Post(
+        article.content, **{k: v for k, v in article.metadata.items() if k != "content"}
+    )
     kwargs = {
         "Dumper": yaml.cyaml.CSafeDumper,
         "default_flow_style": False,

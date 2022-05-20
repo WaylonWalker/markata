@@ -50,15 +50,14 @@ def join_lines(article):
 
 @hook_impl
 def post_render(markata: "Markata") -> None:
+    from copy import copy, deepcopy
+
     for post in markata.iter_articles(description="saving source documents"):
-        from copy import copy, deepcopy
 
-        article = deepcopy(post)
-
-        before_keys = copy(list(article.keys()))
-        for key in before_keys:
-            if key not in DEV_TO_FRONTMATTER:
-                del article[key]
+        article = frontmatter.Post(
+            post.content,
+            **{k: v for k, v in post.metadata.items() if k in DEV_TO_FRONTMATTER},
+        )
 
         article.content = join_lines(article.content)
         article.content = join_lines(article.content)
