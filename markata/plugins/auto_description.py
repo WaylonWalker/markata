@@ -12,7 +12,7 @@ after the key you give it in your config.
 ``` toml
 [markata]
 
-# make sure its in your lse of hooks
+# make sure its in your list of hooks
 hooks=[
    "markata.plugins.auto_description",
    ]
