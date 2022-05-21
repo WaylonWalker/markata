@@ -65,7 +65,13 @@ def link_heading(soup: "bs4.BeautifulSoup", heading: "bs4.element.Tag") -> None:
     """
     id = heading.get("id")
 
-    link = soup.new_tag("a", href=f"#{id}", **{"class": "heading-permalink"})
+    link = soup.new_tag(
+        "a",
+        alt="id",
+        title=f"link to #{id}",
+        href=f"#{id}",
+        **{"class": "heading-permalink"},
+    )
     span = soup.new_tag("span", **{"class": "visually-hidden"})
     svg = soup.new_tag(
         "svg",
