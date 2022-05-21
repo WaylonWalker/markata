@@ -77,11 +77,11 @@ ignore=[
 'jinja_md.md',
 ]
 
-[markata.prevnext.maps.main]
+[[markata.prevnext.maps]]
 filter='"markata" not in slug and "tests" not in slug'
 sort='slug'
 
-[markata.prevnext.maps.markata]
+[[markata.prevnext.maps]]
 filter='"markata" in slug and "tests" not in slug'
 sort='slug'
 

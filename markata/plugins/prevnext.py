@@ -32,12 +32,12 @@ prevnext_color_angle=white
 prevnext_color_angle_light=black
 
 
-# you can have multiple maps, the name does not matter much, but the order does
-[markata.prevnext.maps.main]
+# you can have multiple maps, the order they appear will determine their preference
+[[markata.prevnext.maps]]
 filter='"python" in tags'
 sort='slug'
 
-[markata.prevnext.maps.markata]
+[[markata.prevnext.maps]]
 filter='"python" not in tags'
 sort='slug'
 ```
@@ -99,7 +99,7 @@ def prevnext(
     strategy: str = "first",
 ) -> Optional[PrevNext]:
     posts = []
-    for name, map_conf in conf.items():
+    for map_conf in conf:
         _posts = markata.map("post", **map_conf)
         # if the strategy is first, cycle back to the beginning after each map
         if strategy == "first" and _posts:
