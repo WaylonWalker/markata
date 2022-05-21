@@ -38,7 +38,6 @@ def load(markata: "MarkataMarkdown") -> None:
 
 @task
 def get_post(path: Path, markata: "Markata") -> Optional[Callable]:
-    # -> Optional["Post"]:
     default = {
         "cover": "",
         "title": "",
