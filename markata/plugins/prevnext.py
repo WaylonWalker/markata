@@ -105,18 +105,18 @@ TEMPLATE = """
     <style type='text/css'>
 
     :root {
-      --prevnext-color-text: {{ config.get('prevnext_color_text', 'white') }};
-      --prevnext-color-angle: {{ config.get('prevnext_color_angle', 'white') }};
+      --prevnext-color-text: {{ config.get('prevnext_color_text', config.get('color_text', '#eefbfe')) }};
+      --prevnext-color-angle: {{ config.get('prevnext_color_angle', config.get('color_accent', '#e1bd00c9')) }};
       --prevnext-subtitle-brightness: 3;
     }
     [data-theme="light"] {
-      --prevnext-color-text: {{ config.get('prevnext_color_text_light', '#343434') }};
-      --prevnext-color-angle: {{ config.get('prevnext_color_angle_light', '#343434') }};
+      --prevnext-color-text: {{ config.get('prevnext_color_text_light', config.get('color_text_light', '#1f2022')) }};
+      --prevnext-color-angle: {{ config.get('prevnext_color_angle_light', config.get('color_accent_light', '#ffeb00')) }};
       --prevnext-subtitle-brightness: 3;
     }
     [data-theme="dark"] {
-      --prevnext-color-text: {{ config.get('prevnext_color_text', 'white') }};
-      --prevnext-color-angle: {{ config.get('prevnext_color_angle', 'white') }};
+      --prevnext-color-text: {{ config.get('prevnext_color_text', config.get('color_text', '#eefbfe')) }};
+      --prevnext-color-angle: {{ config.get('prevnext_color_angle', config.get('color_accent', '#e1bd00c9')) }};
       --prevnext-subtitle-brightness: 3;
     }
     .prevnext {
