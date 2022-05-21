@@ -183,16 +183,21 @@ class MarkataFilterError(RuntimeError):
 
 
 @hook_impl
-def save(markata: Markata) -> None:
-    """
-    Creates a new feed page for each page in the config.
-    """
+def configure(markata: Markata) -> None:
     config = markata.get_plugin_config("feeds")
     if config is None:
         config["feeds"] = dict()
     if "archive" not in config.keys():
         config["archive"] = dict()
         config["archive"]["filter"] = "True"
+
+
+@hook_impl
+def save(markata: Markata) -> None:
+    """
+    Creates a new feed page for each page in the config.
+    """
+    config = markata.get_plugin_config("feeds")
 
     description = markata.get_config("description") or ""
     url = markata.get_config("url") or ""
