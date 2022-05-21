@@ -1,53 +1,65 @@
 <h1 align=center>
   <br>
-  <a href="https://github.com/WaylonWalker/markata"><img src="https://user-images.githubusercontent.com/22648375/120665701-a126c600-c451-11eb-9dc5-1e0ac4eeeb2f.png" alt="Markata" width="200"></a>
+  <a href="https://github.com/WaylonWalker/markata"><img src="https://user-images.githubusercontent.com/22648375/167527193-4e66d537-e78f-44dd-be65-2c1c109adf34.png" alt="Markata" width="400"></a>
 </h1>
 
 <p align=center>
   <em>
-    Markdown and Data, plugins all the way down
+    Markdown to site, plugins all the way down
   </em>
 </p>
 
-
-## Example
-
-Here is markata creating my personal site of several hundred pages in ~16s.
-
-<p align="center">
-<a href='https://user-images.githubusercontent.com/22648375/116888181-c32dee00-abf0-11eb-9eba-8c6997d3c888.mp4' >
-   <img src='https://user-images.githubusercontent.com/22648375/116888173-c1642a80-abf0-11eb-8647-25a47aacc1fc.gif' align=center>
-</a>
-</p>
+A static site generator that will give you a great site with many standard web
+features like rss, sitemaps, and seo tags, out of the box.  Running `markata
+build` will get you a that only requires you to write markdown.  If you have
+additional features that you want, don't worry, since markata is built
+completely on plugins you can develop and install your own plugins to add the
+features you want.
 
 
-Here is markata doing a near instant with a fresh cache.
+## QuickStart
 
-<p align="center">
-<a href='https://user-images.githubusercontent.com/22648375/116885339-654bd700-abed-11eb-8e65-3202bcce1773.mp4' >
-   <img src='https://user-images.githubusercontent.com/22648375/116885394-7563b680-abed-11eb-8649-b8d3fbc728b9.gif' align=center>
-</a>
-</p>
+Markata is fully configurable through a `markata.toml` file, but the defaults
+allow to build your site right out of the box with nothing more than markdown.
 
+### Create Some Content
 
+Make some `.md` files in your current working directory.  By default `markata`
+will recursively look in all subdirectories for markdown files `**/*.md`.
 
-I am still learning what this will be.  Code is completely in develop branch and likely to change significantly.
+```
+mkdir pages
+echo '# My First Post' > first-post.md
+echo '# Hello World' > hello-world.md
+```
+
+### Build your site
+
+Install markata into your virtual environment and run `markata build`.  It will
+create your site in `./markout`, leave its cache in `./.markata.cache`, and
+copy all assets from  `./static` into `./markdo by default.
+
+``` bash
+python -m pip install markata
+markata build
+
+# or if pipx is your thing
+pix run markata build
+```
 
 ## Motivation
 
-I want a simple static site generator built off of plugins that are super easy to create, and intuitive to use.  I want to create content in markdown and not have to put much thought into seo meta tags or generating og images.  The final site should be lightweight, and not weighed down heavily with MB's of unused css/js.
+Markata is able to build your site purely from markdown, allowing you to get
+started creating your own content quickly.  Out of the box it will cover your
+seo tags, rss feeds, sitemap, and og images.  Since it is built completely from
+plugins you are able to remove, modify, or add to any of its behavior.
 
-⚡ Fast enough site generation
-
-🔌 Pluggable
-
-🧠 Intuitive
-
-🐍 Familiar language
-
-🖼 OG:image out of the box
-
-🎯 SEO out of the box
+* configurable
+* plugins
+* seo
+* rss
+* sitemap
+* og-image
 
 ## Using Markata
 
@@ -61,11 +73,6 @@ and ready to use without diligence of pinning to the version you want.
 
 
 **Honestly**  A big motivation for me was wanting to learn and understand how to create a project that is completely plugin driven.  This is highly a learning project for me, and it has grown into something I use each and every day.
-
-## Development
-
-Currently everything is on the [develop](https://github.com/WaylonWalker/markata/tree/develop) branch.  As its still a heavy work in progress and likely to change significantly.
-
 
 ## Examples Gallary
 
@@ -101,6 +108,20 @@ Waylonwalker.com is created completely through markata
 
 > archive page created through custom plugin
 
+### [techstructive Blog](https://mr-destructive.github.io/techstructive-blog/series/)
+
+The very first adopter of markata, [meet gor](https://twitter.com/MeetGor21) writes about golang, Django, and Bash Scripting.
+
+<p align=center>
+  <img src='https://user-images.githubusercontent.com/22648375/168610225-9a125354-56c9-4d30-8d5d-6d45a8bb6ac1.png' width=400px>
+</p>
+
+He has even created a custom plugin for dynamically adding series's to his site!
+
+<p align=center>
+  <img src='https://user-images.githubusercontent.com/22648375/168610778-be626d3b-100d-44e0-af46-10ab0255da07.png' width=400px>
+</p>
+
 ### [images.WaylonWalker.com](https://images.waylonwalker.com)
 
 Waylonwalker.com currently has the built in cover image pluugin disabled for quick builds as it it a constantly evolving site with a lot of posts.  The cover images are generated in a second repo by loading article data in from [markata.json](https://waylonwalker.com/markata.json) and running the covers plugin.
@@ -109,3 +130,12 @@ Waylonwalker.com currently has the built in cover image pluugin disabled for qui
 <p align=center>
   <img src='https://user-images.githubusercontent.com/22648375/116886610-e6f03480-abee-11eb-92c8-f883314fd09a.png' width=400px>
 </p>
+
+### [pype.dev](https://pype.dev)
+
+Pype.dev is a menta data lake of all things python, linux, and homelab.
+
+<p align=center>
+  <img src='https://user-images.githubusercontent.com/22648375/168611555-b7c918fa-836e-4334-9cbd-cbb07b8ac350.png' width=400px>
+</p>
+
