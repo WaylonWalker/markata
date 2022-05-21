@@ -65,7 +65,7 @@ contains the post.
 """
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, List
+from typing import TYPE_CHECKING, Dict, List, Optional
 
 from jinja2 import Template
 
@@ -96,8 +96,8 @@ def prevnext(
     markata: "Markata",
     post: "Post",
     conf: List[Dict[str, str]],
-    strategy="first",
-):
+    strategy: str = "first",
+) -> Optional[PrevNext]:
     posts = []
     for name, map_conf in conf.items():
         _posts = markata.map("post", **map_conf)
