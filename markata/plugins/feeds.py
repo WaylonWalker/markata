@@ -26,7 +26,7 @@ designed to work for a variety of use cases, but are not likely the best for
 all.
 
 ``` toml
-[markata.feeds]
+[markata.feeds_config]
 template="pages/templates/archive_template.html"
 card_template="plugins/feed_card_template.html"
 ```
@@ -184,12 +184,23 @@ class MarkataFilterError(RuntimeError):
 
 @hook_impl
 def configure(markata: Markata) -> None:
-    config = markata.get_plugin_config("feeds")
+    """
+    configure the default values for the feeds plugin
+    """
+    config = markata.config.get("feeds", {})
     if config is None:
-        config["feeds"] = dict()
+        markata.config["feeds"] = dict()
+        config = markata.config.get("feeds", {})
     if "archive" not in config.keys():
         config["archive"] = dict()
         config["archive"]["filter"] = "True"
+
+    default_post_template = config.get(
+        "template", Path(__file__).parent / "default_post_template.html"
+    )
+    for page, page_conf in config.items():
+        if "template" not in page_conf.keys():
+            page_conf["template"] = default_post_template
 
 
 @hook_impl
@@ -197,26 +208,21 @@ def save(markata: Markata) -> None:
     """
     Creates a new feed page for each page in the config.
     """
-    config = markata.get_plugin_config("feeds")
+    feeds = markata.config.get("feeds", {})
+    feeds_config = markata.config.get("feeds_config", {})
 
     description = markata.get_config("description") or ""
     url = markata.get_config("url") or ""
-    default_post_template = (
-        config.get("template") or Path(__file__).parent / "default_post_template.html"
-    )
 
-    for page, page_conf in config.items():
-        if page not in ["cache_expire", "config_key", "template", "card_template"]:
-            if "template" not in page_conf.keys():
-                page_conf["template"] = default_post_template
+    for page, page_conf in feeds.items():
 
-            create_page(
-                markata,
-                page,
-                description=description,
-                url=url,
-                **page_conf,
-            )
+        create_page(
+            markata,
+            page,
+            description=description,
+            url=url,
+            **page_conf,
+        )
 
     home = Path(str(markata.config["output_dir"])) / "index.html"
     archive = Path(str(markata.config["output_dir"])) / "archive" / "index.html"
@@ -235,25 +241,31 @@ def create_page(
     description: Optional[str] = None,
     url: Optional[str] = None,
     title: Optional[str] = "feed",
+    sort: str = "True",
+    reverse: bool = False,
 ) -> None:
+    """
+    create an html unorderd list of posts.
+    """
 
-    if filter is not None:
-        posts = reversed(
-            sorted(
-                markata.articles, key=lambda x: x.get("date", datetime.date(1970, 1, 1))
-            )
-        )
-        try:
-            posts = [post for post in posts if eval(filter, post.to_dict(), {})]
-        except Exception as e:
-            msg = textwrap.dedent(
-                f"""
-                    While processing feed page='{page}' markata hit the following exception
-                    during filter='{filter}'
-                    {e}
-                    """
-            )
-            raise MarkataFilterError(msg)
+    posts = markata.map("post", filter=filter, sort=sort, reverse=reverse)
+    # if filter is not None:
+    #     posts = reversed(
+    #         sorted(
+    #             markata.articles, key=lambda x: x.get("date", datetime.date(1970, 1, 1))
+    #         )
+    #     )
+    #     try:
+    #         posts = [post for post in posts if eval(filter, post.to_dict(), {})]
+    #     except Exception as e:
+    #         msg = textwrap.dedent(
+    #             f"""
+    #                 While processing feed page='{page}' markata hit the following exception
+    #                 during filter='{filter}'
+    #                 {e}
+    #                 """
+    #         )
+    #         raise MarkataFilterError(msg)
 
     cards = [create_card(post, card_template) for post in posts]
     cards.insert(0, "<ul>")
