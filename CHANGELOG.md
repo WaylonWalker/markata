@@ -12,6 +12,25 @@
 * feat: map now has the ability to map entire posts
 * feat: [prevnext](https://markata.dev/markata/plugins/prevnext/) plugin was added to link between posts
 * feat: [jinja_md](https://markata.dev/markata/plugins/jinja_md/) plugins was added to incorporate jinja into all the markdown
+* breaking: [feeds]() config now has feeds and feeds_config
+
+### breaking feeds config
+
+If you are using the 0.1.0 version of feeds, and have configured custom
+templates in `markata.feeds.template` and `markata.feeds.card_template` they
+will need to be moved to `markata.feeds_config`.
+
+``` diff
++ [markata.feeds_config]
++ template="pages/templates/archive_template.html"
++ card_template="plugins/feed_card_template.html"
+- [markata.feeds]
+- template="pages/templates/archive_template.html"
+- card_template="plugins/feed_card_template.html"
+```
+
+`markata.feeds` will only be used to configure feeds pages.
+
 
 ### map entire posts
 
@@ -59,7 +78,7 @@ overlay_brightness_light = '.95'
 * plugin is configurable
 * plugin now has docs
 
-## Configuration
+### auto_description Configuration
 
 Open up your `markata.toml` file and add new entries for your
 auto_descriptions.  You can have multiple desriptions, each one will be named
