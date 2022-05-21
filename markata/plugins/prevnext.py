@@ -8,11 +8,29 @@ through each of these lists of posts for the current post, then return the post
 before and after this post as the prevnext posts.
 
 ``` toml
+
+[markata]
+# default colors will be taken from markata's color_text and color_accent
+color_text=white
+color_text_light=black
+color_accent=white
+color_accent_light=black
+
 [markata.prevnext]
 # strategy can be 'first' or 'all'
 # 'first' will cycle through the first map the post is found in.
 # 'all' will cycle through all of the maps
 strategy='first'
+
+# if you want different colors than your main color_text and color_accent, then
+# you can override it here
+# colors can be any valid css color format
+
+prevnext_color_text=white
+prevnext_color_text_light=black
+prevnext_color_angle=white
+prevnext_color_angle_light=black
+
 
 # you can have multiple maps, the name does not matter much, but the order does
 [markata.prevnext.maps.main]
