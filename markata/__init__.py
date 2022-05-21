@@ -435,11 +435,18 @@ class Markata:
         return [a for a in self.articles if evalr(a)]
 
     def map(
-        self, func: str = "title", filter: str = "True", sort: str = "True"
+        self
+        func: str = "title",
+        filter: str = "True",
+        sort: str = "True",
+        reverse: bool = True,
     ) -> List:
         import copy
 
         def try_sort(a: Any) -> int:
+
+            if "date" in sort.lower():
+                return a.get(sort, datetime.date(1970, 1, 1))
 
             try:
                 value = eval(sort, a.to_dict(), {})
@@ -466,6 +473,9 @@ class Markata:
 
         articles = copy.copy(self.articles)
         articles.sort(key=try_sort)
+        if reverse:
+            articles.sort(key=try_sort).reverse()
+
         return [
             eval(func, {**a.to_dict(), "timedelta": timedelta, "post": a}, {})
             for a in articles
