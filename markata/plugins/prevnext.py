@@ -204,6 +204,7 @@ TEMPLATE = """
 def pre_render(markata: "Markata") -> None:
 
     config = markata.get_plugin_config("prevnext")
+    feed_config = markata.get_plugin_config("feeds")
     strategy = config.get("strategy", "first")
     if strategy not in SUPPORTED_STRATEGIES:
         msg = f"""
@@ -211,7 +212,7 @@ def pre_render(markata: "Markata") -> None:
 
         configure prevnext in your markata.toml to use one of {SUPPORTED_STRATEGIES}
         """
-        raise UnsupportedPrevNextStrategy()
+        raise UnsupportedPrevNextStrategy(msg)
     template = config.get("template", None)
     if template is None:
         template = Template(TEMPLATE)
