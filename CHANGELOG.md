@@ -13,6 +13,7 @@
 * feat: [prevnext](https://markata.dev/markata/plugins/prevnext/) plugin was added to link between posts
 * feat: [jinja_md](https://markata.dev/markata/plugins/jinja_md/) plugins was added to incorporate jinja into all the markdown
 * breaking: [feeds]() config now has feeds and feeds_config
+* feat: `output_html` can now be specified in the frontmatter [see example](http://localhost:8000/markata/plugins/publish_html/#explicityly-set-the-output)
 
 ### breaking change to feeds config
 
