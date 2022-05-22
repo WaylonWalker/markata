@@ -209,7 +209,6 @@ def save(markata: Markata) -> None:
     Creates a new feed page for each page in the config.
     """
     feeds = markata.config.get("feeds", {})
-    feeds_config = markata.config.get("feeds_config", {})
 
     description = markata.get_config("description") or ""
     url = markata.get_config("url") or ""
