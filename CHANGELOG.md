@@ -14,11 +14,13 @@
 * feat: [jinja_md](https://markata.dev/markata/plugins/jinja_md/) plugins was added to incorporate jinja into all the markdown
 * breaking: [feeds]() config now has feeds and feeds_config
 
-### breaking feeds config
+### breaking change to feeds config
 
 If you are using the 0.1.0 version of feeds, and have configured custom
 templates in `markata.feeds.template` and `markata.feeds.card_template` they
 will need to be moved to `markata.feeds_config`.
+
+Here is what you need to do to update your feeds_config.
 
 ``` diff
 + [markata.feeds_config]
