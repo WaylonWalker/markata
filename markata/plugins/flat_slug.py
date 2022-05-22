@@ -39,8 +39,8 @@ if TYPE_CHECKING:
 
 @hook_impl(tryfirst=True)
 def pre_render(markata: "Markata") -> None:
+    """
+    Sets the article slug if one is not already set in the frontmatter.
+    """
     for article in markata.iter_articles(description="creating slugs"):
-        try:
-            article["slug"] = article.metadata["slug"]
-        except KeyError:
-            article["slug"] = Path(article["path"]).stem
+        article["slug"] = article.get("slug", Path(article["path"]).stem)
