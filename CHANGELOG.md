@@ -2,18 +2,18 @@
 
 ## 0.2.0
 
-* feat: [auto_description](https://markata.dev/markata/plugins/auto_description/) plugin is all new
+* feat: [auto_description](/markata/plugins/auto_description/) plugin is all new
 * deprecated: long_description has been deprecated by auto_description
-* fix: [covers](https://markata.dev/markata/plugins/covers/) plugin which would previously skip every time.
-* feat: [`markata clean`](https://markata.dev/markata/plugins/base_cli/#clean-function) cleans up your cache and output from the command line
-* fix: [`publish_source`](https://markata.dev/markata/plugins/publish_source/) plugin will now ignore any non yaml serializable values 
+* fix: [covers](/markata/plugins/covers/) plugin which would previously skip every time.
+* feat: [`markata clean`](/markata/plugins/base_cli/#clean-function) cleans up your cache and output from the command line
+* fix: [`publish_source`](/markata/plugins/publish_source/) plugin will now ignore any non yaml serializable values 
 * feat: Default template colors are now customizable
 * feat: Default template now has light and dark theme
 * feat: map now has the ability to map entire posts
-* feat: [prevnext](https://markata.dev/markata/plugins/prevnext/) plugin was added to link between posts
-* feat: [jinja_md](https://markata.dev/markata/plugins/jinja_md/) plugins was added to incorporate jinja into all the markdown
-* breaking: [feeds]() config now has feeds and feeds_config
-* feat: `output_html` can now be specified in the frontmatter [see example](http://localhost:8000/markata/plugins/publish_html/#explicityly-set-the-output)
+* feat: [prevnext](/markata/plugins/prevnext/) plugin was added to link between posts
+* feat: [jinja_md](/markata/plugins/jinja_md/) plugins was added to incorporate jinja into all the markdown
+* breaking: [feeds](/markata/plugins/feeds) config now has feeds and feeds_config
+* feat: `output_html` can now be specified in the frontmatter [see example](/markata/plugins/publish_html/#explicityly-set-the-output)
 
 ### breaking change to feeds config
 
@@ -114,7 +114,7 @@ first number of characters from the document as specified in the config.
 * fix: links are now absolute so they work from github, thanks [MR Destructive](https://github.com/Mr-Destructive)
 * deprecate: `article['content_hash']` has been removed with preference for simply hashing on `article['content']`
 * create `heading_link` plugin
-* doc: How to create your home page. https://markata.dev/home-page/
+* doc: How to create your home page. [docs](/home-page/)
 
 ### New cli help
 
