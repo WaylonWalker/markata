@@ -203,8 +203,8 @@ TEMPLATE = """
 @register_attr("prevnext")
 def pre_render(markata: "Markata") -> None:
 
-    config = markata.get_plugin_config("prevnext")
-    feed_config = markata.get_plugin_config("feeds")
+    config = markata.config.get("prevnext", {})
+    feed_config = markata.config.get("feeds", {})
     strategy = config.get("strategy", "first")
     if strategy not in SUPPORTED_STRATEGIES:
         msg = f"""
