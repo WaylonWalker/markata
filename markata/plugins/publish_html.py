@@ -59,6 +59,14 @@ if TYPE_CHECKING:
     from markata import Markata
 
 
+def _is_relative_to(output_dir: Path, output_html: Path):
+    try:
+        output_html.relative_to(output_dir)
+        return True
+    except ValueError:
+        return False
+
+
 @hook_impl
 def pre_render(markata: "Markata") -> None:
     """
@@ -71,7 +79,8 @@ def pre_render(markata: "Markata") -> None:
 
     for article in markata.articles:
         if "output_html" in article.metadata:
-            if not Path(article.get("output_html")).is_relative_to(output_dir):
+            article_path = Path(article["output_html"])
+            if not _is_relative_to(output_dir, article_path):
                 article["output_html"] = output_dir / article["output_html"]
         elif article["slug"] == "index":
             article["output_html"] = output_dir / "index.html"
@@ -90,7 +99,7 @@ def save(markata: "Markata") -> None:
 
     for article in markata.articles:
         article_path = Path(article["output_html"])
-        if Path(article_path).is_relative_to(output_dir):
+        if _is_relative_to(output_dir, article_path):
             article_path.parent.mkdir(parents=True, exist_ok=True)
             with open(article_path, "w+") as f:
                 f.write(article.html)
