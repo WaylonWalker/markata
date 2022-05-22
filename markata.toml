@@ -57,6 +57,13 @@ twitter_card = "summary_large_image"
 twitter_creator = "@_waylonwalker"
 twitter_site = "@_waylonwalker"
 
+[markata.feeds_config]
+
+[markata.feeds.docs]
+filter='"markata" not in slug and "tests" not in slug'
+sort='slug'
+card_template="<li class='post'><a href='/{{ slug }}/'>{{ slug }}</a></li>"
+
 [markata.feeds.autodoc]
 title="All Markata Modules"
 filter="True"
@@ -76,15 +83,5 @@ card_template="<li class='post'><a href='/{{ slug }}/'>{{ slug }}</a></li>"
 ignore=[
 'jinja_md.md',
 ]
-
-[[markata.prevnext.maps]]
-filter='"markata" not in slug and "tests" not in slug'
-sort='slug'
-
-[[markata.prevnext.maps]]
-filter='"markata" in slug and "tests" not in slug'
-sort='slug'
-
-
 
 

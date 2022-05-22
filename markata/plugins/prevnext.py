@@ -33,11 +33,11 @@ prevnext_color_angle_light=black
 
 
 # you can have multiple maps, the order they appear will determine their preference
-[[markata.prevnext.maps]]
+[markata.feeds.python]
 filter='"python" in tags'
 sort='slug'
 
-[[markata.prevnext.maps]]
+[markata.feeds.others]
 filter='"python" not in tags'
 sort='slug'
 ```
@@ -99,7 +99,7 @@ def prevnext(
     strategy: str = "first",
 ) -> Optional[PrevNext]:
     posts = []
-    for map_conf in conf:
+    for map_conf in conf.values():
         _posts = markata.map("post", **map_conf)
         # if the strategy is first, cycle back to the beginning after each map
         if strategy == "first" and _posts:
@@ -222,7 +222,7 @@ def pre_render(markata: "Markata") -> None:
         article["prevnext"] = prevnext(
             markata,
             article,
-            config.get("maps", {}),
+            feed_config,
             strategy=strategy,
         )
         if "prevnext" not in article.content and article["prevnext"]:
