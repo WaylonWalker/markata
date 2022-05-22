@@ -82,6 +82,7 @@ card_template="<li class='post'><a href='/{{ slug }}/'>{{ slug }}</a></li>"
 [markata.jinja_md]
 ignore=[
 'jinja_md.md',
+'publish_html.md',
 ]
 
 
