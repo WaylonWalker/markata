@@ -440,6 +440,8 @@ class Markata:
         filter: str = "True",
         sort: str = "True",
         reverse: bool = True,
+        *args: Tuple,
+        **kwargs: Dict,
     ) -> List:
         import copy
 
