@@ -13,11 +13,30 @@ first we can grab a few things out of the frontmatter of this post.
 {{ post.description }}
 ```
 
-### oneliner list of links
+### one-liner list of links
 
+This one-liner will render a list of markdown links into your markdown at build
+time.  It's quite handy to pop into posts.
+
+``` markdown
 {{ '\\n'.join(markata.map('f"* [{title}]({slug})"', sort='slug')) }}
+```
+
+### jinja for to markdown list of links
+
+Sometimes quoting things like your filters are hard to do in a one line without
+running out of quote variants.  Jinja for loops can make this much easier.
+
+``` markdown
+{% for post in markata.map('post', filter='"git" in tags') %}
+* [{{ post.title }}]({{ post.slug }})
+{% endfor %}
+```
 
 ### jinja for to html list of links
+
+Since markdown is a superset of html, you can just render out html into your
+post and it is still valid.
 
 ``` markdown
 <ul>
@@ -26,15 +45,6 @@ first we can grab a few things out of the frontmatter of this post.
 {% endfor %}
 </ul>
 ```
-
-!!note
-  If you want to list all of the post
-
-### jinja for to markdown list of links
-
-{% for post in markata.map('post', filter='"git" in tags') %}
-* [{{ post.title }}]({{ post.slug }})
-{% endfor %}
 
 ## Ignoring files
 
@@ -66,8 +76,9 @@ jinja: false
 
 ## Escaping
 
-If you want to explicityly have jinja templates in your posts see the jinja
-docs for
+Sometimes you want the ability to have jinja templates in a post, but also the
+ability to keep a raw jinja template.  There are a couple of techniques that
+are covered mroe in the jinja docs for
 [escaping](https://jinja.palletsprojects.com/en/3.1.x/templates/#escaping)
 
 ```markdown
