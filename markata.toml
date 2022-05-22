@@ -15,7 +15,7 @@ site_version = 13
 default_cache_expire = 1209600
 
 ## Markata Setup
-glob_patterns = "docs/**/*.md"
+glob_patterns = "docs/**/*.md,CHANGELOG.md"
 ## glob_patterns = "pages/**/*spaceflights*.md"
 output_dir = "markout"
 assets_dir = "static"
