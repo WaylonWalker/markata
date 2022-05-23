@@ -44,7 +44,6 @@ def make_project(tmp_path_factory: Any) -> Any:
                 "markata.plugins.docs",
                 "default",
                 ]
-                
             """
         )
     )
@@ -73,7 +72,7 @@ def test_markout_exists(test_run: Any) -> Any:
 
 def test_index_exists(test_run: Any) -> Any:
     markout = test_run / "markout"
-    index = markout / "index.html"
+    index = markout / "my_module" / "index.html"
     assert index.exists()
 
 
