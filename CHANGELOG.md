@@ -105,6 +105,10 @@ In the above we will end up with three different descritpions,
 (`description`, `long_description`, and `super_description`) each will be the
 first number of characters from the document as specified in the config.
 
+### auto_descriptions are no longer duplicated
+
+4e299d6 fixes the dedupe issue that was in develop for awhile and closes #24
+
 ## 0.1.0
 
 * fix: pyinstument plugin no longer overrides the main cli callback
