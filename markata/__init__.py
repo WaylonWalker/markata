@@ -63,7 +63,7 @@ DEFAULT_HOOKS = [
     "markata.plugins.manifest",
     "markata.plugins.feeds",
     # "markata.plugins.generator",
-    "markata.plugins.long_description",
+    "markata.plugins.auto_description",
     "markata.plugins.seo",
     "markata.plugins.post_template",
     "markata.plugins.covers",
@@ -77,6 +77,7 @@ DEFAULT_HOOKS = [
     "markata.plugins.to_json",
     "markata.plugins.base_cli",
     "markata.plugins.tui",
+    "markata.plugins.jinja_md",
 ]
 
 DEFUALT_CONFIG = {
@@ -233,10 +234,8 @@ class Markata:
 
         key = Path(path_or_name).stem
 
-        try:
-            config = self.config[key]
-        except KeyError:
-            config = {}
+        config = self.config.get(key, {})
+
         if not isinstance(config, dict):
             raise TypeError("must use dict")
         if "cache_expire" not in config.keys():
@@ -436,16 +435,29 @@ class Markata:
         return [a for a in self.articles if evalr(a)]
 
     def map(
-        self, func: str = "title", filter: str = "True", sort: str = "True"
+        self,
+        func: str = "title",
+        filter: str = "True",
+        sort: str = "True",
+        reverse: bool = True,
+        *args: Tuple,
+        **kwargs: Dict,
     ) -> List:
         import copy
 
         def try_sort(a: Any) -> int:
 
+            if "datetime" in sort.lower():
+                return a.get(sort, datetime.datetime(1970, 1, 1))
+
+            if "date" in sort.lower():
+                return a.get(sort, datetime.date(1970, 1, 1))
+
             try:
                 value = eval(sort, a.to_dict(), {})
             except NameError:
                 return -1
+            return value
             try:
                 return int(value)
             except TypeError:
@@ -466,10 +478,13 @@ class Markata:
 
         articles = copy.copy(self.articles)
         articles.sort(key=try_sort)
+        if reverse:
+            articles.reverse()
+
         return [
-            eval(func, {**a.to_dict(), "timedelta": timedelta}, {})
+            eval(func, {**a.to_dict(), "timedelta": timedelta, "post": a}, {})
             for a in articles
-            if eval(filter, {**a.to_dict(), "timedelta": timedelta}, {})
+            if eval(filter, {**a.to_dict(), "timedelta": timedelta, "post": a}, {})
         ]
 
 

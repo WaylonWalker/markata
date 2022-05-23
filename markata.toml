@@ -15,13 +15,14 @@ site_version = 13
 default_cache_expire = 1209600
 
 ## Markata Setup
-glob_patterns = "docs/**/*.md"
+glob_patterns = "docs/**/*.md,CHANGELOG.md"
 ## glob_patterns = "pages/**/*spaceflights*.md"
 output_dir = "markout"
 assets_dir = "static"
 hooks = [
    "markata.plugins.publish_source",
    "markata.plugins.docs",
+   "markata.plugins.prevnext",
    "default",
    ]
 disabled_hooks = [
@@ -44,6 +45,8 @@ icon = "favicon.ico"
 lang = "en"
 # post_template = "pages/templates/post_template.html"
 # amp_template = "pages/templates/post_template.amp.html"
+repo_url = "https://github.com/waylonwalker/markata"
+repo_branch = "main"
 theme_color = "#322D39"
 background_color = "#B73CF6"
 start_url = "/"
@@ -53,6 +56,13 @@ display = "minimal-ui"
 twitter_card = "summary_large_image"
 twitter_creator = "@_waylonwalker"
 twitter_site = "@_waylonwalker"
+
+[markata.feeds_config]
+
+[markata.feeds.docs]
+filter='"markata" not in slug and "tests" not in slug'
+sort='slug'
+card_template="<li class='post'><a href='/{{ slug }}/'>{{ slug }}</a></li>"
 
 [markata.feeds.autodoc]
 title="All Markata Modules"
@@ -68,3 +78,11 @@ card_template="<li class='post'><a href='/{{ slug }}/'>{{ slug }}</a></li>"
 title="Markata Plugins"
 filter="'plugin' in slug"
 card_template="<li class='post'><a href='/{{ slug }}/'>{{ slug }}</a></li>"
+
+[markata.jinja_md]
+ignore=[
+'jinja_md.md',
+'publish_html.md',
+]
+
+
