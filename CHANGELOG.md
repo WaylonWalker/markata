@@ -2,7 +2,7 @@
 
 ## 0.2.0
 
-* feat: [auto_description](/markata/plugins/auto_description/) plugin is all new
+* feat: [auto_description](/markata/plugins/auto_description/) plugin is all new closes #13
 * deprecated: long_description has been deprecated by auto_description
 * fix: [covers](/markata/plugins/covers/) plugin which would previously skip every time.
 * feat: [`markata clean`](/markata/plugins/base_cli/#clean-function) cleans up your cache and output from the command line
