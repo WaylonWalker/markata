@@ -14,9 +14,8 @@ output_dir = "markout"
 
 ## Explicityly set the output
 
-
 markata will save the articles `html` to the `output_html` specified in the
-articles metadata, loaded from frontmatter.  
+articles metadata, loaded from frontmatter.
 
 ### 404 example use case
 
