@@ -14,6 +14,7 @@
 * feat: [jinja_md](/markata/plugins/jinja_md/) plugins was added to incorporate jinja into all the markdown
 * breaking: [feeds](/markata/plugins/feeds) config now has feeds and feeds_config
 * feat: `output_html` can now be specified in the frontmatter [see example](/markata/plugins/publish_html/#explicityly-set-the-output)
+* feat: edit link is now included in the default page template closes #21
 
 ### breaking change to feeds config
 
