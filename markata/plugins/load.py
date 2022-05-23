@@ -23,6 +23,10 @@ def load(markata: "MarkataMarkdown") -> None:
     progress = Progress(
         BarColumn(bar_width=None), transient=True, console=markata.console
     )
+    if not markata.config.get("repo_url", "https://github.com/").endswith("/"):
+        markata.config["repo_url"] = (
+            markata.config.get("repo_url", "https://github.com/") + "/"
+        )
 
     futures = [get_post(article, markata) for article in markata.files]
     task_id = progress.add_task("loading markdown")
@@ -38,7 +42,6 @@ def load(markata: "MarkataMarkdown") -> None:
 
 @task
 def get_post(path: Path, markata: "Markata") -> Optional[Callable]:
-    # -> Optional["Post"]:
     default = {
         "cover": "",
         "title": "",
@@ -59,4 +62,11 @@ def get_post(path: Path, markata: "Markata") -> Optional[Callable]:
         return None
         post = default
     post.metadata["path"] = str(path)
+    post["edit_link"] = (
+        str(markata.config.get("repo_url", "https://github.com/"))
+        + "edit/"
+        + str(markata.config.get("repo_branch", "main"))
+        + "/"
+        + str(post["path"])
+    )
     return post

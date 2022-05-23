@@ -77,7 +77,7 @@ def glob(markata: "MarkataDocs") -> None:
         ]
 
 
-def make_article(file: Path) -> frontmatter.Post:
+def make_article(markata: "Markata", file: Path) -> frontmatter.Post:
     raw_source = file.read_text()
     tree = ast.parse(raw_source)
     add_parents(tree)
@@ -86,12 +86,21 @@ def make_article(file: Path) -> frontmatter.Post:
         for n in ast.walk(tree)
         if isinstance(n, ast.FunctionDef) or isinstance(n, ast.ClassDef)
     ]
+
+    edit_link = (
+        str(markata.config.get("repo_url", "https://github.com/"))
+        + "edit/"
+        + str(markata.config.get("repo_branch", "main"))
+        + "/"
+        + str(file)
+    )
     article = textwrap.dedent(
         f"""
     ---
     title: {file.name}
     status: published
     slug: {file.parent}/{file.stem}
+    edit_link: {edit_link}
     path: {file.stem}.md
     today: {datetime.datetime.today()}
     description: Docs for {file.stem}
@@ -134,4 +143,4 @@ def load(markata: "MarkataDocs") -> None:
     if "articles" not in markata.__dict__:
         markata.articles = []
     for py_file in markata.py_files:
-        markata.articles.append(make_article(py_file))
+        markata.articles.append(make_article(markata, py_file))

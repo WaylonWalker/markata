@@ -79,3 +79,4 @@ date and includes a lot of examples of how to use the markata cli.
 * [All Modules](https://markata.dev/autodoc/)
 * [Core Modules](https://markata.dev/core_modules/)
 * [Plugins](https://markata.dev/plugins/)
+* [color theme](https://markata.dev/color-theme/)

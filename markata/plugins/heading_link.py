@@ -48,9 +48,12 @@ def link_headings(article: "Post") -> Any:
     """
     Use BeautifulSoup to find all headings and run link_heading on them.
     """
-    soup = BeautifulSoup(article.html, features="lxml")
+    soup = BeautifulSoup(article.html, "html.parser")
     for heading in soup.find_all(re.compile("^h[1-6]$")):
-        if not heading.find("a", {"class": "heading-permalink"}):
+        if (
+            not heading.find("a", {"class": "heading-permalink"})
+            and heading.get("id", "") != "title"
+        ):
             link_heading(soup, heading)
     html = soup.prettify()
     return html
@@ -62,7 +65,13 @@ def link_heading(soup: "bs4.BeautifulSoup", heading: "bs4.element.Tag") -> None:
     """
     id = heading.get("id")
 
-    link = soup.new_tag("a", href=f"#{id}", **{"class": "heading-permalink"})
+    link = soup.new_tag(
+        "a",
+        alt="id",
+        title=f"link to #{id}",
+        href=f"#{id}",
+        **{"class": "heading-permalink"},
+    )
     span = soup.new_tag("span", **{"class": "visually-hidden"})
     svg = soup.new_tag(
         "svg",

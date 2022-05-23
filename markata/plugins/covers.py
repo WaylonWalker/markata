@@ -1,7 +1,39 @@
+"""
+
+### Configuration
+
+Example configuration.  Covers supports multiple covers to be configured.  Here
+is an example from my blog where we have a template sized for dev.to and one
+sized for open graph.  Each image takes it's own configuration.
+
+``` toml
+[[markata.covers]]
+name='-dev'
+template = "static/cover-template.png"
+font = "./static/JosefinSans-Regular.ttf"
+text_font = "./static/JosefinSans-Regular.ttf"
+font_color = "rgb(185,155,165)"
+text_font_color = "rgb(255,255,255)"
+text_key = 'description'
+padding = [0, 40, 100, 300]
+text_padding = [0,0]
+
+[[markata.covers]]
+name=''
+template = "static/og-template.png"
+font = "./static/JosefinSans-Regular.ttf"
+font_color = "rgb(255,255,255)"
+text_font = "./static/JosefinSans-Regular.ttf"
+text_font_color = "rgb(200,200,200)"
+text_key = 'description'
+padding = [10, 10, 100, 300]
+text_padding = [0,0]
+```
+"""
 import time
 from functools import lru_cache
 from pathlib import Path
-from typing import TYPE_CHECKING, Tuple, Union
+from typing import TYPE_CHECKING, List, Tuple, Union
 
 from PIL import Image, ImageDraw, ImageFont
 from rich.progress import BarColumn, Progress
@@ -92,7 +124,10 @@ def make_cover(
     text: str = None,
     text_font_color: str = None,
     text_padding: Tuple[int, ...] = None,
+    resizes: List[int] = None,
 ) -> None:
+    if output_path.exists():
+        return
     image = Image.open(template_path)
     draw_text(image, font_path, title, color, padding)
     if text is not None:
@@ -109,28 +144,27 @@ def make_cover(
     ratio = image.size[1] / image.size[0]
 
     covers = []
-    for width in [
-        # 32,
-        250,
-        # 500,
-    ]:
+    if resizes:
+        for width in resizes:
 
-        re_img = image.resize((width, int(width * ratio)), Image.ANTIALIAS)
-        filename = f"{output_path.stem}_{width}x{int(width*ratio)}{output_path.suffix}"
-        covers.append(filename)
+            re_img = image.resize((width, int(width * ratio)), Image.ANTIALIAS)
+            filename = (
+                f"{output_path.stem}_{width}x{int(width*ratio)}{output_path.suffix}"
+            )
+            covers.append(filename)
 
-        filepath = Path(output_path.parent / filename)
-        re_img.save(filepath)
+            filepath = Path(output_path.parent / filename)
+            re_img.save(filepath)
 
 
 @hook_impl
 def save(markata: "Markata") -> None:
     futures = []
 
-    if not hasattr(markata.config, "covers"):
+    if "covers" not in markata.config.keys():
         return
 
-    for article in markata.articles:
+    for article in markata.iter_articles("making covers"):
         for cover in markata.config["covers"]:
             try:
                 padding = cover["padding"]
@@ -183,6 +217,7 @@ def save(markata: "Markata") -> None:
                     text=text,
                     text_font_color=text_font_color,
                     text_padding=text_padding,
+                    resizes=cover.get("resizes"),
                 )
             )
 
