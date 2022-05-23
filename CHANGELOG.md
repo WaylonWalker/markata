@@ -10,7 +10,7 @@
 * feat: Default template colors are now customizable
 * feat: Default template now has light and dark theme
 * feat: map now has the ability to map entire posts
-* feat: [prevnext](/markata/plugins/prevnext/) plugin was added to link between posts
+* feat: [prevnext](/markata/plugins/prevnext/) plugin was added to link between posts closes #20
 * feat: [jinja_md](/markata/plugins/jinja_md/) plugins was added to incorporate jinja into all the markdown
 * breaking: [feeds](/markata/plugins/feeds) config now has feeds and feeds_config
 * feat: `output_html` can now be specified in the frontmatter [see example](/markata/plugins/publish_html/#explicityly-set-the-output)
