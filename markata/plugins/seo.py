@@ -1,5 +1,6 @@
 """manifest plugin"""
-from typing import TYPE_CHECKING, Dict, List
+import logging
+from typing import TYPE_CHECKING, Any, Dict, List
 
 from bs4 import BeautifulSoup
 
@@ -9,6 +10,8 @@ from markata.hookspec import hook_impl
 if TYPE_CHECKING:
     import frontmatter
     from bs4.element import Tag
+
+logger = logging.getLogger(__file__)
 
 
 def _create_seo(
@@ -134,17 +137,26 @@ def _create_seo_tag(meta: dict, soup: BeautifulSoup) -> "Tag":
     return tag
 
 
+def _get_or_warn(config: Dict, key: str, default: str) -> Any:
+
+    if key not in config.keys():
+        logger.warn(
+            f"{key} is missing from markata.toml config, using default value {default}"
+        )
+    return config.get(key, default)
+
+
 @hook_impl
 def render(markata: Markata) -> None:
 
-    url = markata.get_config("url") or ""
-    images_url = markata.get_config("images_url") or url or ""
-    site_name = markata.get_config("site_name") or ""
-    author_name = markata.get_config("author_name") or ""
-    author_email = markata.get_config("author_email") or ""
-    twitter_creator = markata.get_config("twitter_creator") or ""
-    twitter_card = markata.get_config("twitter_card") or "summary_large_image"
-    config_seo = markata.get_config("seo", warn=False) or dict()
+    url = _get_or_warn(markata.config, "url", "")
+    images_url = _get_or_warn(markata.config, "images_url", "")
+    site_name = _get_or_warn(markata.config, "site_name", "")
+    author_name = _get_or_warn(markata.config, "author_name", "")
+    author_email = _get_or_warn(markata.config, "author_email", "")
+    twitter_creator = _get_or_warn(markata.config, "twitter_creator", "")
+    twitter_card = _get_or_warn(markata.config, "twitter_card", "summary_large_image")
+    config_seo = markata.config.get("seo", {})
 
     with markata.cache as cache:
         for article in markata.iter_articles("add seo tags from seo.py"):
