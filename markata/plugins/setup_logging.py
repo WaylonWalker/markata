@@ -36,6 +36,21 @@ hooks=[
    ]
 ```
 
+## Log Template
+``` toml
+[markata]
+
+# make sure its in your list of hooks
+hooks=[
+   "markata.plugins.setup_logging",
+   ]
+
+# point log template to the path of your logging template
+log_template='templates/log_template.html'
+```
+
+You can see the latest default `log_template` on
+[GitHub](https://github.com/WaylonWalker/markata/blob/main/markata/plugins/default_log_template.html)
 
 ## Disable Logging
 
@@ -189,25 +204,6 @@ def setup_html_log(markata: "Markata", level: int = logging.INFO) -> Path:
 
 @hook_impl(tryfirst=True)
 def configure(markata: "Markata") -> None:
-
-    # log_file = Path(
-    #     str(
-    #         markata.config.get(
-    #             "log_dir",
-    #             Path(str(markata.config.get("output_dir", "markout")))
-    #             / "_logs"
-    #             / "debug.log",
-    #         )
-    #     )
-    # )
-
-    # logging.basicConfig(
-    #     level=logging.DEBUG,
-    #     format="%(asctime)s %(name)-12s %(levelname)-8s %(message)s",
-    #     datefmt="%m-%d %H:%M",
-    #     filemode="w",
-    # )
-
     setup_log(markata, logging.DEBUG)
     setup_log(markata, logging.INFO)
     setup_log(markata, logging.WARNING)
