@@ -248,7 +248,11 @@ class Markata:
         return config
 
     def get_config(
-        self, key: str, warn: bool = True, suggested: Optional[str] = None
+        self,
+        key: str,
+        default: str = "",
+        warn: bool = True,
+        suggested: Optional[str] = None,
     ) -> Any:
         if key in self.config.keys():
             return self.config[key]
@@ -257,15 +261,15 @@ class Markata:
             if suggested is None:
                 suggested = textwrap.dedent(
                     f"""
-                        \[markata]
-                        {key} = value
-                    """  # noqa: W605
+                    [markata]
+                    {key} = '{default}'
+                    """
                 )
             if warn:
-                self.console.log(
+                logger.warning(
                     textwrap.dedent(
                         f"""
-                        Warning site_name is not set in markata config, sitemap will
+                        Warning {key} is not set in markata config, sitemap will
                         be missing root site_name
                         to resolve this open your markata.toml and add
 
@@ -273,8 +277,8 @@ class Markata:
 
                         """
                     ),
-                    style="yellow",
                 )
+        return default
 
     def make_hash(self, *keys: str) -> str:
         str_keys = [str(key) for key in keys]
