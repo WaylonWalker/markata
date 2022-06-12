@@ -6,6 +6,7 @@ from __future__ import annotations
 import datetime
 import hashlib
 import importlib
+import logging
 import os
 import sys
 import textwrap
@@ -31,6 +32,8 @@ from markata.lifecycle import LifeCycle
 
 __version__ = "0.3.0.b8"
 
+
+logger = logging.getLogger("markata")
 
 DEFAULT_MD_EXTENSIONS = [
     "codehilite",
