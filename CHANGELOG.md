@@ -1,19 +1,32 @@
 # Markata Changelog
 
+## dev
+
+* feat: add html logging with [setup_logging](/markata/plugins/setup_logging/)
+  plugin is all new closes #37
+
 ## 0.2.0
 
-* feat: [auto_description](/markata/plugins/auto_description/) plugin is all new closes #13
+* feat: [auto_description](/markata/plugins/auto_description/) plugin is all
+  new closes #13
 * deprecated: long_description has been deprecated by auto_description
-* fix: [covers](/markata/plugins/covers/) plugin which would previously skip every time.
-* feat: [`markata clean`](/markata/plugins/base_cli/#clean-function) cleans up your cache and output from the command line
-* fix: [`publish_source`](/markata/plugins/publish_source/) plugin will now ignore any non yaml serializable values 
+* fix: [covers](/markata/plugins/covers/) plugin which would previously skip
+  every time.
+* feat: [`markata clean`](/markata/plugins/base_cli/#clean-function) cleans up
+  your cache and output from the command line
+* fix: [`publish_source`](/markata/plugins/publish_source/) plugin will now
+  ignore any non yaml serializable values 
 * feat: Default template colors are now customizable
 * feat: Default template now has light and dark theme
 * feat: map now has the ability to map entire posts
-* feat: [prevnext](/markata/plugins/prevnext/) plugin was added to link between posts closes #20
-* feat: [jinja_md](/markata/plugins/jinja_md/) plugins was added to incorporate jinja into all the markdown
-* breaking: [feeds](/markata/plugins/feeds) config now has feeds and feeds_config
-* feat: `output_html` can now be specified in the frontmatter [see example](/markata/plugins/publish_html/#explicityly-set-the-output)
+* feat: [prevnext](/markata/plugins/prevnext/) plugin was added to link between
+  posts closes #20
+* feat: [jinja_md](/markata/plugins/jinja_md/) plugins was added to incorporate
+  jinja into all the markdown
+* breaking: [feeds](/markata/plugins/feeds) config now has feeds and
+  feeds_config
+* feat: `output_html` can now be specified in the frontmatter [see
+  example](/markata/plugins/publish_html/#explicityly-set-the-output)
 * feat: edit link is now included in the default page template closes #21
 
 ### breaking change to feeds config

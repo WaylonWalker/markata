@@ -81,6 +81,7 @@ DEFAULT_HOOKS = [
     "markata.plugins.base_cli",
     "markata.plugins.tui",
     "markata.plugins.jinja_md",
+    "markata.plugins.setup_logging",
 ]
 
 DEFUALT_CONFIG = {
