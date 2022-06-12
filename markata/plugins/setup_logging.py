@@ -100,14 +100,17 @@ def has_rich_handler() -> bool:
 def has_file_handler(log_file: Path) -> bool:
     logger = logging.getLogger()
     existing_logger_files = [
-        l.baseFilename for l in logger.handlers if isinstance(l, logging.FileHandler)
+        handler.baseFilename
+        for handler in logger.handlers
+        if isinstance(handler, logging.FileHandler)
     ]
     return str(log_file.absolute()) in existing_logger_files
 
 
 def setup_log(markata: "Markata", level: int = logging.INFO) -> Path:
-    setup_html_log(markata, level)
+    path = setup_html_log(markata, level)
     setup_text_log(markata, level)
+    return path
 
 
 def setup_text_log(markata: "Markata", level: int = logging.INFO) -> Path:
