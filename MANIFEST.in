@@ -1,1 +1,2 @@
 include markata/plugins/default_post_template.html
+include markata/plugins/default_log_template.html
