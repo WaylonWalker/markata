@@ -5,6 +5,7 @@
 * feat: add html logging with [setup_logging](/markata/plugins/setup_logging/)
   plugin is all new closes #37
 * fix: remove HTML tidy as the site generator tag
+* feat: create configurable navbar
 
 ## 0.2.0
 
