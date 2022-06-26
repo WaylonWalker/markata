@@ -426,7 +426,7 @@
 </head>
 
   <nav>
-    {% for link, text in config.get('nav', {}).items() %}
+    {% for text, link in config.get('nav', {}).items() %}
       <a href='{{link}}'>{{text}}</a>
     {% endfor %}
   </nav>
