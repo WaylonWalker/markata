@@ -421,10 +421,17 @@
   .slider.round:before {
   border-radius: 50%;
   }
+
   </style>
 </head>
-<body>
 
+  <nav>
+    {% for link, text in config.get('nav', {}).items() %}
+      <a href='{{link}}'>{{text}}</a>
+    {% endfor %}
+  </nav>
+
+<body>
   <div>
     <label id="theme-switch" class="theme-switch" for="checkbox-theme" title='light/dark mode toggle'>
       <input type="checkbox" id="checkbox-theme">
