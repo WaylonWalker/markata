@@ -23,15 +23,17 @@ jobs:
       - run: flake8 markata
       - run: pytest
 
-      - run: pip install bump2version && bump2version pre
-        if: github.ref == 'refs/heads/develop'
-
-      - name: Commit report
+      - name: automatically pre-release develop branch
         run: |
           git config --global user.name 'autobump'
           git config --global user.email 'autobump@markata.dev'
+          pip install bump2version
+          bump2version pre
           git push
           git push --tags
+        if: github.ref == 'refs/heads/develop'
+
+      - name: Commit report
 
       - name: build
         run: |
