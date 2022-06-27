@@ -71,17 +71,17 @@ card_template="<li class='post'><a href='/{{ slug }}/'>{{ title }}<p style='colo
 [markata.feeds.autodoc]
 title="All Markata Modules"
 filter="True"
-card_template="<li class='post'><a href='/{{ slug }}/'>{{ slug }}</a></li>"
+card_template="<li class='post'><a href='/{{ slug }}/'>{{ title }}</a></li>"
 
 [markata.feeds.core_modules]
 title="Markata Core Modules"
 filter="'plugin' not in slug"
-card_template="<li class='post'><a href='/{{ slug }}/'>{{ slug }}</a></li>"
+card_template="<li class='post'><a href='/{{ slug }}/'>{{ title }}</a></li>"
 
 [markata.feeds.plugins]
 title="Markata Plugins"
 filter="'plugin' in slug"
-card_template="<li class='post'><a href='/{{ slug }}/'>{{ slug }}</a></li>"
+card_template="<li class='post'><a href='/{{ slug }}/'>{{ title }}</a></li>"
 
 [markata.jinja_md]
 ignore=[
