@@ -66,7 +66,7 @@ twitter_site = "@_waylonwalker"
 [markata.feeds.docs]
 filter='"markata" not in slug and "tests" not in slug and "404" not in slug'
 sort='slug'
-card_template="<li class='post'><a href='/{{ slug }}/'>{{ slug }}<p style='color: white; text-decoration: none;'>{{ description }}</p></a> </li>"
+card_template="<li class='post'><a href='/{{ slug }}/'>{{ title }}<p style='color: white; text-decoration: none;'>{{ description }}</p></a> </li>"
 
 [markata.feeds.autodoc]
 title="All Markata Modules"
