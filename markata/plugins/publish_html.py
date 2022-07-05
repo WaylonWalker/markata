@@ -49,6 +49,7 @@ than `markout/index/inject.html` This is one of the primary ways that markata
 lets you [make your home page](https://markata.dev/home-page/)
 
 """
+import hashlib
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -98,7 +99,14 @@ def save(markata: "Markata") -> None:
 
     for article in markata.articles:
         article_path = Path(article["output_html"])
-        if _is_relative_to(output_dir, article_path):
+
+        if (
+            article_path.exists()
+            and hashlib.sha256(article.html.encode("utf-8")).hexdigest()
+            == hashlib.sha256(article_path.read_bytes()).hexdigest()
+        ):
+            ...
+        elif _is_relative_to(output_dir, article_path):
             article_path.parent.mkdir(parents=True, exist_ok=True)
             with open(article_path, "w+") as f:
                 f.write(article.html)

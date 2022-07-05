@@ -21,6 +21,7 @@ hooks=[
     publish_source is included by default, but if you have not included the
     default set of hooks you will need to explicitly add it.
 """
+import hashlib
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -28,20 +29,11 @@ import frontmatter
 import yaml
 from yaml.representer import RepresenterError
 
+from markata import background
 from markata.hookspec import hook_impl
 
 if TYPE_CHECKING:
     from markata import Markata
-
-
-def _save(output_dir: Path, article: frontmatter.Post) -> None:
-    """
-    saves the article to the output directory at its specified slug.
-    """
-    with open(
-        output_dir / Path(article["slug"]).parent / Path(article["path"]).name, "w+"
-    ) as f:
-        f.write(frontmatter.dumps(article))
 
 
 def _strip_unserializable_values(article: frontmatter.Post) -> frontmatter.Post:
@@ -64,6 +56,41 @@ def _strip_unserializable_values(article: frontmatter.Post) -> frontmatter.Post:
     return _article
 
 
+def _is_relative_to(output_dir: Path, output_html: Path) -> bool:
+    try:
+        output_html.relative_to(output_dir)
+        return True
+    except ValueError:
+        return False
+
+
+@background.task
+def _save(markata: "Markata", article: "Post"):
+    article_path = (
+        output_dir / Path(article["slug"]).parent / Path(article["path"]).name
+    )
+
+    try:
+        content = frontmatter.dumps(article)
+    except RepresenterError:
+        article = _strip_unserializable_values(article)
+        content = frontmatter.dumps(article)
+
+    if (
+        article_path.exists()
+        and hashlib.sha256(content.encode("utf-8")).hexdigest()
+        == hashlib.sha256(article_path.read_bytes()).hexdigest()
+    ):
+        ...
+    elif _is_relative_to(output_dir, article_path):
+        try:
+            Path(article_path).write_text(content)
+        except RepresenterError:
+            _article = _strip_unserializable_values(article)
+
+            _save(output_dir, _article)
+
+
 @hook_impl
 def save(markata: "Markata") -> None:
     """
@@ -74,10 +101,6 @@ def save(markata: "Markata") -> None:
     """
     output_dir = Path(str(markata.config["output_dir"]))
     output_dir.mkdir(parents=True, exist_ok=True)
-    for article in markata.iter_articles(description="saving source documents"):
-        try:
-            _save(output_dir, article)
-        except RepresenterError:
-            _article = _strip_unserializable_values(article)
-
-            _save(output_dir, _article)
+    futures = [_save(markata, article) for article in markata.articles]
+    while not all([f.done() for f in futures]):
+        ...
