@@ -6,7 +6,7 @@
   plugin is all new closes #37
 * fix: remove HTML tidy as the site generator tag
 * feat: create configurable [navbar](https://markata.dev/nav)
-* perf: prevent double runs on pre-render and post-render
+* perf: prevent double runs on pre-render and post-render #39
 
 ### Double Runs
 
