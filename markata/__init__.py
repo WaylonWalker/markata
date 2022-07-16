@@ -125,6 +125,10 @@ class Markata:
     def __getattr__(self, item: str) -> Any:
         if item in self.__dict__.keys():
             return self.__getitem__(item)
+
+        if item in self._pm.hook.__dict__.keys():
+            return lambda: self.run(item)
+
         elif item in self.registered_attrs.keys():
             stage_to_run_to = max(
                 [attr["lifecycle"] for attr in self.registered_attrs[item]]
@@ -306,11 +310,8 @@ class Markata:
         return {"config": self.config, "articles": [a.to_dict() for a in self.articles]}
 
     def to_dict(self) -> dict:
-        try:
-            return self._to_dict()
-        except AttributeError:
-            self.render()
-            return self._to_dict()
+        self.render()
+        return self._to_dict()
 
     def to_json(self) -> str:
         import json
@@ -344,43 +345,6 @@ class Markata:
         )
         return articles
 
-    @set_phase
-    def glob(self) -> Markata:
-        """run glob hooks
-
-        Glob hooks should append file lists to the markata object for later
-        hooks to build from.  The default loader will utilize the `files`
-        attribute for loading.
-        """
-
-        self._pm.hook.glob(markata=self)
-        return self
-
-    @set_phase
-    def load(self) -> Markata:
-        self._pm.hook.load(markata=self)
-        return self
-
-    # @set_phase
-    def pre_render(self) -> Markata:
-        self._pm.hook.pre_render(markata=self)
-        return self
-
-    # @set_phase
-    def render(self) -> Markata:
-        self._pm.hook.render(markata=self)
-        return self
-
-    # @set_phase
-    def post_render(self) -> Markata:
-        self._pm.hook.post_render(markata=self)
-        return self
-
-    # @set_phase
-    def save(self) -> Markata:
-        self._pm.hook.save(markata=self)
-        return self
-
     def run(self, lifecycle: LifeCycle = None) -> Markata:
         if lifecycle is None:
             lifecycle = getattr(LifeCycle, max(LifeCycle._member_map_))
@@ -393,7 +357,7 @@ class Markata:
         self.console.log(f"running {stages_to_run}")
         for stage in stages_to_run:
             self.console.log(f"{stage} running")
-            getattr(self, stage)()
+            getattr(self._pm.hook, stage)(markata=self)
             self.console.log(f"{stage} complete")
 
         with self.cache as cache:
