@@ -123,20 +123,24 @@ class Markata:
         return FanoutCache(self.MARKATA_CACHE_DIR, statistics=True)
 
     def __getattr__(self, item: str) -> Any:
-        if item in self.__dict__.keys():
-            return self.__getitem__(item)
-
         if item in self._pm.hook.__dict__.keys():
+            # item is a hook, return a callable function
             return lambda: self.run(item)
 
+        if item in self.__dict__.keys():
+            # item is an attribute, return it
+            return self.__getitem__(item)
+
         elif item in self.registered_attrs.keys():
+            # item is created by a plugin, run it
             stage_to_run_to = max(
                 [attr["lifecycle"] for attr in self.registered_attrs[item]]
             ).name
             self.run(stage_to_run_to)
             return getattr(self, item)
         else:
-            raise AttributeError(item)
+            # Markata does not know what this is, raise
+            raise AttributeError(f"'Markata' object has no attribute '{item}'")
 
     @property
     def server(self) -> Server:
