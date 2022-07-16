@@ -353,21 +353,12 @@ class Markata:
         attribute for loading.
         """
 
-        try:
-            self._pm.hook.glob(markata=self)
-        except AttributeError:
-            self.configure()
-            self._pm.hook.glob(markata=self)
-
+        self._pm.hook.glob(markata=self)
         return self
 
     @set_phase
     def load(self) -> Markata:
-        try:
-            self._pm.hook.load(markata=self)
-        except AttributeError:
-            self.glob()
-            self._pm.hook.load(markata=self)
+        self._pm.hook.load(markata=self)
         return self
 
     # @set_phase
@@ -377,15 +368,7 @@ class Markata:
 
     # @set_phase
     def render(self) -> Markata:
-        try:
-            self._pm.hook.pre_render(markata=self)
-            self._pm.hook.render(markata=self)
-            self._pm.hook.post_render(markata=self)
-        except AttributeError:
-            self.load()
-            self._pm.hook.pre_render(markata=self)
-            self._pm.hook.render(markata=self)
-            self._pm.hook.post_render(markata=self)
+        self._pm.hook.render(markata=self)
         return self
 
     # @set_phase
@@ -395,11 +378,7 @@ class Markata:
 
     # @set_phase
     def save(self) -> Markata:
-        try:
-            self._pm.hook.save(markata=self)
-        except AttributeError:
-            self.render()
-            self._pm.hook.save(markata=self)
+        self._pm.hook.save(markata=self)
         return self
 
     def run(self, lifecycle: LifeCycle = None) -> Markata:
