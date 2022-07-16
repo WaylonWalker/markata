@@ -3,6 +3,7 @@ Markata plugin to create a pyinstrument profile if pyinstrument is installed.
 
 The profile will be saved to <output_dir>/_profile/index.html
 """
+from contextvars import ContextVar
 from pathlib import Path
 
 from markata import Markata
@@ -14,6 +15,9 @@ except ModuleNotFoundError:
     "ignore if pyinstrument does not exist"
     ...
 
+active_profiler_context_var: ContextVar[object | None] = ContextVar(
+    "active_profiler_context_var", default=None
+)
 
 class MarkataInstrument(Markata):
     should_profile = False
@@ -38,7 +42,7 @@ def glob(markata: MarkataInstrument) -> None:
     "start the profiler as soon as possible"
     if markata.should_profile:
         try:
-            markata.profiler = Profiler()
+            markata.profiler = Profiler(async_mode='disabled')
             markata.profiler.start()
         except NameError:
             "ignore if Profiler does not exist"
