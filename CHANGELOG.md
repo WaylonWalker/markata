@@ -6,6 +6,19 @@
   plugin is all new closes #37
 * fix: remove HTML tidy as the site generator tag
 * feat: create configurable [navbar](https://markata.dev/nav)
+* perf: prevent double runs on pre-render and post-render #39
+
+### Double Runs
+
+Previously markata would catch AttributeError and run the previous step any
+time you ran a step too early.  The way this was implemented caused some steps
+such as pre-render and post-render to run twice with every single run.
+
+This change will no longer catch attribute errors. If you run into any issues
+with your plugins not running before asking for attributes created by your
+plugin make sure that you implement the
+[@register_attr](https://markata.dev/markata/hookspec/#register_attr-function)
+decorator.
 
 ## 0.2.0
 
