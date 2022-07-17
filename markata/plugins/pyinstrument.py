@@ -14,7 +14,6 @@ except ModuleNotFoundError:
     "ignore if pyinstrument does not exist"
     ...
 
-
 class MarkataInstrument(Markata):
     should_profile = False
     profiler = None
@@ -38,7 +37,7 @@ def glob(markata: MarkataInstrument) -> None:
     "start the profiler as soon as possible"
     if markata.should_profile:
         try:
-            markata.profiler = Profiler()
+            markata.profiler = Profiler(async_mode='disabled')
             markata.profiler.start()
         except NameError:
             "ignore if Profiler does not exist"
