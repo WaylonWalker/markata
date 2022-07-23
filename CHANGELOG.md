@@ -7,6 +7,7 @@
 * fix: remove HTML tidy as the site generator tag
 * feat: create configurable [navbar](https://markata.dev/nav)
 * perf: prevent double runs on pre-render and post-render #39
+* fix: pyinstrument will not create a second profiler causing it to end in errors #50
 
 ### Double Runs
 
