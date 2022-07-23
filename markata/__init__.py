@@ -11,6 +11,7 @@ import os
 import sys
 import textwrap
 from datetime import timedelta
+from functools import lru_cache
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
 
@@ -389,6 +390,7 @@ class Markata:
 
         return [a for a in self.articles if evalr(a)]
 
+    @lru_cache
     def map(
         self,
         func: str = "title",
