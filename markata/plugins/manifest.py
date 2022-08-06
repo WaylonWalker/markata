@@ -33,6 +33,7 @@ def render(markata: "MarkataIcons") -> None:
     with open(filepath, "w+") as f:
         json.dump(manifest, f, ensure_ascii=True, indent=4)
     config = markata.get_plugin_config(__file__)
+    should_prettify = markata.config.get("prettify_html", False)
     with markata.cache as cache:
         for article in markata.iter_articles("add manifest link"):
             key = markata.make_hash(
@@ -50,7 +51,10 @@ def render(markata: "MarkataIcons") -> None:
                 link.attrs["href"] = "/manifest.json"
                 soup.head.append(link)
 
-                html = soup.prettify()
+                if should_prettify:
+                    html = soup.prettify()
+                else:
+                    html = str(soup)
                 cache.add(key, html, expire=config["cache_expire"])
             else:
                 html = html_from_cache

@@ -9,6 +9,7 @@
 * perf: prevent double runs on pre-render and post-render #39
 * perf: prevent duplicate ruun from to_dict calling pre-render #53
    * `to_dict` only runs up to `render` phase if necessary as directed by `register_attr`
+* perf: only prettify if configured #54
 * fix: pyinstrument will not create a second profiler causing it to end in errors #50
 
 ### Double Runs
@@ -22,6 +23,18 @@ with your plugins not running before asking for attributes created by your
 plugin make sure that you implement the
 [@register_attr](https://markata.dev/markata/hookspec/#register_attr-function)
 decorator.
+
+### Prettify
+
+prettify html has been turned off by default as beautifulsoup4 prettify was
+taking a significant time, and was often popping up as the slowest parts in my
+personal `_profile`.  If you want to continue running prettify throughout the
+build you can set a flag in your config to continue running prettify.
+
+``` toml
+[markata]
+prettify_html = true
+```
 
 ## 0.2.0
 

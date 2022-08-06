@@ -157,6 +157,7 @@ def render(markata: Markata) -> None:
     twitter_creator = _get_or_warn(markata.config, "twitter_creator", "")
     twitter_card = _get_or_warn(markata.config, "twitter_card", "summary_large_image")
     config_seo = markata.config.get("seo", {})
+    should_prettify = markata.config.get("prettify_html", False)
 
     with markata.cache as cache:
         for article in markata.iter_articles("add seo tags from seo.py"):
@@ -206,7 +207,10 @@ def render(markata: Markata) -> None:
                     meta_url.attrs["content"] = f'{url}/{article.metadata["slug"]}/'
                 soup.head.append(meta_url)
 
-                html = soup.prettify()
+                if should_prettify:
+                    html = soup.prettify()
+                else:
+                    html = str(soup)
                 cache.add(key, html, expire=markata.config["default_cache_expire"])
 
             else:
