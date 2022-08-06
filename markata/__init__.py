@@ -315,7 +315,6 @@ class Markata:
         return {"config": self.config, "articles": [a.to_dict() for a in self.articles]}
 
     def to_dict(self) -> dict:
-        self.render()
         return self._to_dict()
 
     def to_json(self) -> str:
