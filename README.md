@@ -3,6 +3,11 @@
   <a href="https://github.com/WaylonWalker/markata"><img src="https://user-images.githubusercontent.com/22648375/167527193-4e66d537-e78f-44dd-be65-2c1c109adf34.png" alt="Markata" width="400"></a>
 </h1>
 
+<h1 align=center>
+  <br>
+  <a href="https://github.com/WaylonWalker/markata"><img src="https://user-images.githubusercontent.com/22648375/183960585-a8de2452-b326-4e49-912c-891b686270c4.png" alt="Markata" width="400"></a>
+</h1>
+
 <p align=center>
   <em>
     Markdown to site, plugins all the way down
