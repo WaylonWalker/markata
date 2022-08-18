@@ -29,7 +29,7 @@ from markata.cli.server import Server
 from markata.cli.summary import Summary
 from markata.lifecycle import LifeCycle
 
-__version__ = "0.3.0.b7"
+__version__ = "0.3.0.b8"
 
 
 DEFAULT_MD_EXTENSIONS = [
