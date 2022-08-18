@@ -187,10 +187,9 @@ def configure(markata: Markata) -> None:
     """
     configure the default values for the feeds plugin
     """
-    config = markata.config.get("feeds", {})
-    if config is None:
+    if "feeds" not in markata.config.keys():
         markata.config["feeds"] = dict()
-        config = markata.config.get("feeds", {})
+    config = markata.config.get("feeds", dict())
     if "archive" not in config.keys():
         config["archive"] = dict()
         config["archive"]["filter"] = "True"
