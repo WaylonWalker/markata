@@ -11,6 +11,7 @@
    * `to_dict` only runs up to `render` phase if necessary as directed by `register_attr`
 * perf: only prettify if configured #54
 * fix: pyinstrument will not create a second profiler causing it to end in errors #50
+* fix: sites without feeds config do not create an index #55
 
 ### Double Runs
 
