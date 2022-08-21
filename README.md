@@ -9,6 +9,7 @@
   </em>
 </p>
 
+
 A static site generator that will give you a great site with many standard web
 features like rss, sitemaps, and seo tags, out of the box.  Running `markata
 build` will get you a that only requires you to write markdown.  If you have

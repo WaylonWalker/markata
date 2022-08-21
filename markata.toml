@@ -90,3 +90,14 @@ ignore=[
 ]
 
 
+[[markata.covers]]
+name='-dev'
+# template = "static/cover-template.png"
+font = "./static/JosefinSans-Regular.ttf"
+text_font = "./static/JosefinSans-Regular.ttf"
+font_color = "rgb(185,155,165)"
+text_font_color = "rgb(255,255,255)"
+text_key = 'description'
+padding = [0, 40, 100, 300]
+text_padding = [0,0]
+

@@ -38,15 +38,23 @@ from typing import TYPE_CHECKING, List, Optional, Tuple, Union
 from PIL import Image, ImageDraw, ImageFont
 from rich.progress import BarColumn, Progress
 
-from markata import background
 from markata.hookspec import hook_impl
 
 if TYPE_CHECKING:
     from markata import Markata
 
+DEFAULT_PADDING = (100, 10, 100, 300)
+DEFAULT_TEXT_PADDING = (100, 150, 100, 10)
+
 
 @lru_cache(maxsize=64)
-def _load_font(path: Path, size: int) -> ImageFont.FreeTypeFont:
+def _load_font(path: Optional[Path], size: int) -> ImageFont.FreeTypeFont:
+    if path is None:
+        return ImageFont.truetype(
+            str((Path(__file__).parent / "Karla-Regular.ttf").absolute()),
+            size=size,
+        )
+
     return ImageFont.truetype(path, size=size)
 
 
@@ -57,6 +65,8 @@ def get_font(
     size: int = 250,
     max_size: tuple = (800, 220),
 ) -> ImageFont.FreeTypeFont:
+    if size < 0:
+        raise RuntimeError("fontsize below zero")
     title = title or ""
     font = _load_font(path, size)
     current_size = draw.textsize(title, font=font)
@@ -92,10 +102,10 @@ def draw_text(
     bounding_box = [padding[0], padding[1], width - padding[2], height - padding[3]]
     max_size = (bounding_box[2] - bounding_box[0], bounding_box[3] - bounding_box[1])
     x1, y1, x2, y2 = bounding_box
-    if font_path:
-        font = get_font(font_path, draw, text, max_size=max_size)
-    else:
-        font = None
+    # if font_path:
+    font = get_font(font_path, draw, text, max_size=max_size)
+    # else:
+    # font = None
     w, h = draw.textsize(text, font=font)
     x = (x2 - x1 - w) / 2 + x1
     y = (y2 - y1 - h) / 2 + y1
@@ -104,6 +114,10 @@ def draw_text(
 
 def resolve_padding(padding: Tuple[int, ...]) -> Tuple[int, ...]:
     """Convert padding to a len 4 tuple"""
+    try:
+        iter(padding)
+    except TypeError:
+        padding = (padding,)
     if len(padding) == 4:
         return padding
     if len(padding) == 3:
@@ -115,22 +129,22 @@ def resolve_padding(padding: Tuple[int, ...]) -> Tuple[int, ...]:
     raise PaddingError(f"recieved padding: {padding}")
 
 
-@background.task
+# @background.task
 def make_cover(
     title: str,
     color: str,
     output_path: Path,
-    template_path: Path,
-    font_path: Optional[Path],
-    padding: Tuple[int, ...],
-    text_font: Path,
-    text: str = None,
-    text_font_color: str = None,
-    text_padding: Tuple[int, ...] = None,
+    template_path: Optional[Path] = None,
+    font_path: Optional[Path] = None,
+    padding: Tuple[int, ...] = DEFAULT_PADDING,
+    text_font: Optional[Path] = None,
+    text: Optional[str] = None,
+    text_font_color: Optional[str] = None,
+    text_padding: Tuple[int, ...] = DEFAULT_TEXT_PADDING,
     resizes: List[int] = None,
 ) -> None:
-    if output_path.exists():
-        return
+    # if output_path.exists():
+    #     return
     if template_path:
         image = Image.open(template_path)
     else:
@@ -138,12 +152,6 @@ def make_cover(
 
     draw_text(image, font_path, title, color, padding)
     if text is not None:
-        if text_padding is None:
-            text_padding = (
-                image.size[1] - image.size[1] / 5,
-                image.size[0] / 5,
-                image.size[1] - image.size[1] / 10,
-            )
         draw_text(image, text_font, text, text_font_color, text_padding)
 
     output_path.parent.mkdir(exist_ok=True)
@@ -162,6 +170,7 @@ def make_cover(
 
             filepath = Path(output_path.parent / filename)
             re_img.save(filepath)
+    return image
 
 
 @hook_impl
@@ -176,17 +185,11 @@ def save(markata: "Markata") -> None:
             try:
                 padding = cover["padding"]
             except KeyError:
-                padding = (
-                    200,
-                    100,
-                )
+                padding = DEFAULT_PADDING
             try:
                 text_padding = cover["text_padding"]
             except KeyError:
-                text_padding = (
-                    200,
-                    100,
-                )
+                text_padding = DEFAULT_PADDING
             if "text_key" in cover:
                 try:
                     text = article.metadata[cover["text_key"]]

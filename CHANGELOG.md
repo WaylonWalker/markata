@@ -1,6 +1,6 @@
 # Markata Changelog
 
-## dev
+## 0.4.0
 
 * feat: add html logging with [setup_logging](/markata/plugins/setup_logging/)
   plugin is all new closes #37
