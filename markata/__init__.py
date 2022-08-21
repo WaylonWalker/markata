@@ -30,7 +30,7 @@ from markata.cli.server import Server
 from markata.cli.summary import Summary
 from markata.lifecycle import LifeCycle
 
-__version__ = "0.4.0"
+__version__ = "0.4.0.b0"
 
 
 logger = logging.getLogger("markata")
