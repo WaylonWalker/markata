@@ -1,19 +1,64 @@
 # Markata Changelog
 
+## dev
+
+* feat: add html logging with [setup_logging](/markata/plugins/setup_logging/)
+  plugin is all new closes #37
+* fix: remove HTML tidy as the site generator tag
+* feat: create configurable [navbar](https://markata.dev/nav)
+* perf: prevent double runs on pre-render and post-render #39
+* perf: prevent duplicate ruun from to_dict calling pre-render #53
+   * `to_dict` only runs up to `render` phase if necessary as directed by `register_attr`
+* perf: only prettify if configured #54
+* fix: pyinstrument will not create a second profiler causing it to end in errors #50
+* fix: sites without feeds config do not create an index #55
+
+### Double Runs
+
+Previously markata would catch AttributeError and run the previous step any
+time you ran a step too early.  The way this was implemented caused some steps
+such as pre-render and post-render to run twice with every single run.
+
+This change will no longer catch attribute errors. If you run into any issues
+with your plugins not running before asking for attributes created by your
+plugin make sure that you implement the
+[@register_attr](https://markata.dev/markata/hookspec/#register_attr-function)
+decorator.
+
+### Prettify
+
+prettify html has been turned off by default as beautifulsoup4 prettify was
+taking a significant time, and was often popping up as the slowest parts in my
+personal `_profile`.  If you want to continue running prettify throughout the
+build you can set a flag in your config to continue running prettify.
+
+``` toml
+[markata]
+prettify_html = true
+```
+
 ## 0.2.0
 
-* feat: [auto_description](/markata/plugins/auto_description/) plugin is all new closes #13
+* feat: [auto_description](/markata/plugins/auto_description/) plugin is all
+  new closes #13
 * deprecated: long_description has been deprecated by auto_description
-* fix: [covers](/markata/plugins/covers/) plugin which would previously skip every time.
-* feat: [`markata clean`](/markata/plugins/base_cli/#clean-function) cleans up your cache and output from the command line
-* fix: [`publish_source`](/markata/plugins/publish_source/) plugin will now ignore any non yaml serializable values 
+* fix: [covers](/markata/plugins/covers/) plugin which would previously skip
+  every time.
+* feat: [`markata clean`](/markata/plugins/base_cli/#clean-function) cleans up
+  your cache and output from the command line
+* fix: [`publish_source`](/markata/plugins/publish_source/) plugin will now
+  ignore any non yaml serializable values 
 * feat: Default template colors are now customizable
 * feat: Default template now has light and dark theme
 * feat: map now has the ability to map entire posts
-* feat: [prevnext](/markata/plugins/prevnext/) plugin was added to link between posts closes #20
-* feat: [jinja_md](/markata/plugins/jinja_md/) plugins was added to incorporate jinja into all the markdown
-* breaking: [feeds](/markata/plugins/feeds) config now has feeds and feeds_config
-* feat: `output_html` can now be specified in the frontmatter [see example](/markata/plugins/publish_html/#explicityly-set-the-output)
+* feat: [prevnext](/markata/plugins/prevnext/) plugin was added to link between
+  posts closes #20
+* feat: [jinja_md](/markata/plugins/jinja_md/) plugins was added to incorporate
+  jinja into all the markdown
+* breaking: [feeds](/markata/plugins/feeds) config now has feeds and
+  feeds_config
+* feat: `output_html` can now be specified in the frontmatter [see
+  example](/markata/plugins/publish_html/#explicityly-set-the-output)
 * feat: edit link is now included in the default page template closes #21
 
 ### breaking change to feeds config

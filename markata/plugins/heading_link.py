@@ -23,6 +23,7 @@ def post_render(markata: Markata) -> None:
     """
 
     config = markata.get_plugin_config(__file__)
+    should_prettify = markata.config.get("prettify_html", False)
     with markata.cache as cache:
         for article in markata.iter_articles("link headers"):
 
@@ -37,14 +38,14 @@ def post_render(markata: Markata) -> None:
             html_from_cache = cache.get(key)
 
             if html_from_cache is None:
-                html = link_headings(article)
+                html = link_headings(article, should_prettify)
                 cache.add(key, html, expire=config["cache_expire"])
             else:
                 html = html_from_cache
             article.html = html
 
 
-def link_headings(article: "Post") -> Any:
+def link_headings(article: "Post", prettify: bool = False) -> Any:
     """
     Use BeautifulSoup to find all headings and run link_heading on them.
     """
@@ -55,8 +56,9 @@ def link_headings(article: "Post") -> Any:
             and heading.get("id", "") != "title"
         ):
             link_heading(soup, heading)
-    html = soup.prettify()
-    return html
+    if prettify:
+        return soup.prettify()
+    return str(soup)
 
 
 def link_heading(soup: "bs4.BeautifulSoup", heading: "bs4.element.Tag") -> None:

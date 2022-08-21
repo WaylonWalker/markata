@@ -31,6 +31,7 @@ def configure(markata: "MarkataMarkdown") -> None:
 
 
 @hook_impl(tryfirst=True)
+@register_attr("articles")
 def render(markata: "Markata") -> None:
     config = markata.get_plugin_config(__file__)
     with markata.cache as cache:

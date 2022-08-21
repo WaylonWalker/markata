@@ -33,7 +33,7 @@ text_padding = [0,0]
 import time
 from functools import lru_cache
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Tuple, Union
+from typing import TYPE_CHECKING, List, Optional, Tuple, Union
 
 from PIL import Image, ImageDraw, ImageFont
 from rich.progress import BarColumn, Progress
@@ -78,7 +78,7 @@ class PaddingError(BaseException):
 
 def draw_text(
     image: Image,
-    font_path: Path,
+    font_path: Optional[Path],
     text: str,
     color: Union[str, None],
     padding: Tuple[int, ...],
@@ -92,7 +92,10 @@ def draw_text(
     bounding_box = [padding[0], padding[1], width - padding[2], height - padding[3]]
     max_size = (bounding_box[2] - bounding_box[0], bounding_box[3] - bounding_box[1])
     x1, y1, x2, y2 = bounding_box
-    font = get_font(font_path, draw, text, max_size=max_size)
+    if font_path:
+        font = get_font(font_path, draw, text, max_size=max_size)
+    else:
+        font = None
     w, h = draw.textsize(text, font=font)
     x = (x2 - x1 - w) / 2 + x1
     y = (y2 - y1 - h) / 2 + y1
@@ -118,7 +121,7 @@ def make_cover(
     color: str,
     output_path: Path,
     template_path: Path,
-    font_path: Path,
+    font_path: Optional[Path],
     padding: Tuple[int, ...],
     text_font: Path,
     text: str = None,
@@ -128,7 +131,11 @@ def make_cover(
 ) -> None:
     if output_path.exists():
         return
-    image = Image.open(template_path)
+    if template_path:
+        image = Image.open(template_path)
+    else:
+        image = Image.new("RGB", (800, 450))
+
     draw_text(image, font_path, title, color, padding)
     if text is not None:
         if text_padding is None:
@@ -210,8 +217,8 @@ def save(markata: "Markata") -> None:
                     color=cover["font_color"],
                     output_path=Path(markata.config["output_dir"])
                     / (article["slug"] + cover["name"] + ".png"),
-                    template_path=cover["template"],
-                    font_path=cover["font"],
+                    template_path=cover.get("template", None),
+                    font_path=cover.get("font", None),
                     padding=padding,
                     text_font=text_font,
                     text=text,

@@ -6,10 +6,12 @@ from __future__ import annotations
 import datetime
 import hashlib
 import importlib
+import logging
 import os
 import sys
 import textwrap
 from datetime import timedelta
+from functools import lru_cache
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
 
@@ -28,8 +30,10 @@ from markata.cli.server import Server
 from markata.cli.summary import Summary
 from markata.lifecycle import LifeCycle
 
-__version__ = "0.2.0"
+__version__ = "0.3.0.b8"
 
+
+logger = logging.getLogger("markata")
 
 DEFAULT_MD_EXTENSIONS = [
     "codehilite",
@@ -78,6 +82,7 @@ DEFAULT_HOOKS = [
     "markata.plugins.base_cli",
     "markata.plugins.tui",
     "markata.plugins.jinja_md",
+    "markata.plugins.setup_logging",
 ]
 
 DEFUALT_CONFIG = {
@@ -122,16 +127,24 @@ class Markata:
         return FanoutCache(self.MARKATA_CACHE_DIR, statistics=True)
 
     def __getattr__(self, item: str) -> Any:
+        if item in self._pm.hook.__dict__.keys():
+            # item is a hook, return a callable function
+            return lambda: self.run(item)
+
         if item in self.__dict__.keys():
+            # item is an attribute, return it
             return self.__getitem__(item)
+
         elif item in self.registered_attrs.keys():
+            # item is created by a plugin, run it
             stage_to_run_to = max(
                 [attr["lifecycle"] for attr in self.registered_attrs[item]]
             ).name
             self.run(stage_to_run_to)
             return getattr(self, item)
         else:
-            raise AttributeError(item)
+            # Markata does not know what this is, raise
+            raise AttributeError(f"'Markata' object has no attribute '{item}'")
 
     @property
     def server(self) -> Server:
@@ -245,7 +258,11 @@ class Markata:
         return config
 
     def get_config(
-        self, key: str, warn: bool = True, suggested: Optional[str] = None
+        self,
+        key: str,
+        default: str = "",
+        warn: bool = True,
+        suggested: Optional[str] = None,
     ) -> Any:
         if key in self.config.keys():
             return self.config[key]
@@ -254,15 +271,15 @@ class Markata:
             if suggested is None:
                 suggested = textwrap.dedent(
                     f"""
-                        \[markata]
-                        {key} = value
-                    """  # noqa: W605
+                    [markata]
+                    {key} = '{default}'
+                    """
                 )
             if warn:
-                self.console.log(
+                logger.warning(
                     textwrap.dedent(
                         f"""
-                        Warning site_name is not set in markata config, sitemap will
+                        Warning {key} is not set in markata config, sitemap will
                         be missing root site_name
                         to resolve this open your markata.toml and add
 
@@ -270,8 +287,8 @@ class Markata:
 
                         """
                     ),
-                    style="yellow",
                 )
+        return default
 
     def make_hash(self, *keys: str) -> str:
         str_keys = [str(key) for key in keys]
@@ -305,11 +322,7 @@ class Markata:
         return {"config": self.config, "articles": [a.to_dict() for a in self.articles]}
 
     def to_dict(self) -> dict:
-        try:
-            return self._to_dict()
-        except AttributeError:
-            self.render()
-            return self._to_dict()
+        return self._to_dict()
 
     def to_json(self) -> str:
         import json
@@ -343,64 +356,6 @@ class Markata:
         )
         return articles
 
-    @set_phase
-    def glob(self) -> Markata:
-        """run glob hooks
-
-        Glob hooks should append file lists to the markata object for later
-        hooks to build from.  The default loader will utilize the `files`
-        attribute for loading.
-        """
-
-        try:
-            self._pm.hook.glob(markata=self)
-        except AttributeError:
-            self.configure()
-            self._pm.hook.glob(markata=self)
-
-        return self
-
-    @set_phase
-    def load(self) -> Markata:
-        try:
-            self._pm.hook.load(markata=self)
-        except AttributeError:
-            self.glob()
-            self._pm.hook.load(markata=self)
-        return self
-
-    # @set_phase
-    def pre_render(self) -> Markata:
-        self._pm.hook.pre_render(markata=self)
-        return self
-
-    # @set_phase
-    def render(self) -> Markata:
-        try:
-            self._pm.hook.pre_render(markata=self)
-            self._pm.hook.render(markata=self)
-            self._pm.hook.post_render(markata=self)
-        except AttributeError:
-            self.load()
-            self._pm.hook.pre_render(markata=self)
-            self._pm.hook.render(markata=self)
-            self._pm.hook.post_render(markata=self)
-        return self
-
-    # @set_phase
-    def post_render(self) -> Markata:
-        self._pm.hook.post_render(markata=self)
-        return self
-
-    # @set_phase
-    def save(self) -> Markata:
-        try:
-            self._pm.hook.save(markata=self)
-        except AttributeError:
-            self.render()
-            self._pm.hook.save(markata=self)
-        return self
-
     def run(self, lifecycle: LifeCycle = None) -> Markata:
         if lifecycle is None:
             lifecycle = getattr(LifeCycle, max(LifeCycle._member_map_))
@@ -413,7 +368,7 @@ class Markata:
         self.console.log(f"running {stages_to_run}")
         for stage in stages_to_run:
             self.console.log(f"{stage} running")
-            getattr(self, stage)()
+            getattr(self._pm.hook, stage)(markata=self)
             self.console.log(f"{stage} complete")
 
         with self.cache as cache:
@@ -434,6 +389,7 @@ class Markata:
 
         return [a for a in self.articles if evalr(a)]
 
+    @lru_cache
     def map(
         self,
         func: str = "title",

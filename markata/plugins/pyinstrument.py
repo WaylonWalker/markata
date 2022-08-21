@@ -36,9 +36,9 @@ def configure(markata: MarkataInstrument) -> None:
 @register_attr("profiler")
 def glob(markata: MarkataInstrument) -> None:
     "start the profiler as soon as possible"
-    if markata.should_profile:
+    if markata.should_profile and "profiler" not in markata.__dict__.keys():
         try:
-            markata.profiler = Profiler()
+            markata.profiler = Profiler(async_mode="disabled")
             markata.profiler.start()
         except NameError:
             "ignore if Profiler does not exist"
