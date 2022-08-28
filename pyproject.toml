@@ -1,17 +1,12 @@
+[build-system]
+requires = ["hatchling>=1.4.1"]
+build-backend = "hatchling.build"
+
 [project]
-name = "markata"
-version = "0.4.0.b0"
-description = "Static site generator plugins all the way down."
 authors = [
     {name = "Waylon Walker", email="waylon@waylonwalker.com"},
     {email = "waylon@markata.dev"}
 ]
-license = {file = "LICENSE"}
-readme = "README.md"
-requires-python = ">=3.6"
-
-keywords = ["static-site",]
-
 classifiers = [
     "Development Status :: 4 - Beta",
     "Environment :: Console",
@@ -34,7 +29,6 @@ classifiers = [
     "Topic :: Text Processing",
     "Typing :: Typed",
 ]
-
 dependencies = [
     "anyconfig",
     "beautifulsoup4",
@@ -54,7 +48,13 @@ dependencies = [
     "toml",
     "typer",
 ]
-
+description = "Static site generator plugins all the way down."
+keywords = ["static-site",]
+license = {file = "LICENSE"}
+name = "markata"
+readme = "README.md"
+requires-python = ">=3.6"
+version = "0.4.0.b0"
 
 [project.optional-dependencies]
 dev = [
@@ -71,6 +71,8 @@ dev = [
     "pytest-mock",
 ]
 
+pyinstrument = ['pyinstrument']
+
 [project.urls]
 homepage = "https://markata.dev"
 documentation = "https://markata.dev"
@@ -78,15 +80,6 @@ repository = "https://github.com/waylonwalker/markata"
 
 [project.scripts]
 markata="markata.cli:cli"
-
-# [build-system]
-# requires = ["setuptools"]
-# build-backend = "setuptools.build_meta"
-
-
-[build-system]
-requires = ["hatchling>=1.4.1"]
-build-backend = "hatchling.build"
 
 [tool.hatch.version]
 path = "markata/__init__.py"
