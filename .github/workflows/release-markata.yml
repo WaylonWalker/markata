@@ -28,25 +28,17 @@ jobs:
         run: |
           git config --global user.name 'autobump'
           git config --global user.email 'autobump@markata.dev'
-          pip install bump2version
-          bump2version pre
-          git push
-          git push --tags
+          VERSION=`hatch version`
+          # if current version is not already beta then bump minor and beta
+          [ -z "${b##*`hatch version`*}" ] && hatch version b || hatch version minor,b
 
       - name: build
         run: |
-          pip install -q build
           python -m build
 
-
       - name: pypi-publish-pre
-        if: github.ref == 'refs/heads/develop'
+        if: github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main'
         uses: pypa/gh-action-pypi-publish@v1.1.0
         with:
           password: ${{ secrets.pypi_password }}
 
-      - name: pypi-publish
-        if: github.ref == 'refs/heads/main'
-        uses: pypa/gh-action-pypi-publish@v1.1.0
-        with:
-          password: ${{ secrets.pypi_password }}
