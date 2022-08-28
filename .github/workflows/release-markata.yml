@@ -35,8 +35,8 @@ jobs:
 
       - name: build
         run: |
-          pip install wheel
-          python setup.py sdist bdist_wheel
+          pip install -q build
+          python -m build
 
 
       - name: pypi-publish-pre
