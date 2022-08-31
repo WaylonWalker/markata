@@ -31,12 +31,32 @@ jobs:
           VERSION=`hatch version`
           # if current version is not already beta then bump minor and beta
           [ -z "${b##*`hatch version`*}" ] && hatch version b || hatch version minor,b
+          NEW_VERSION=`hatch version`
+          git add markta/__about__.py
+          git commit -m "Bump version: $VERSION → $NEW_VERSION"
+          git tag $VERSION
+          git push
+          git push --tags
+
+      - name: automatically pre-release develop branch
+        if: github.ref == 'refs/heads/main'
+        run: |
+          git config --global user.name 'autobump'
+          git config --global user.email 'autobump@markata.dev'
+          VERSION=`hatch version`
+          hatch version release
+          NEW_VERSION=`hatch version`
+          git add markta/__about__.py
+          git commit -m "Bump version: $VERSION → $NEW_VERSION"
+          git tag $VERSION
+          git push
+          git push --tags
 
       - name: build
         run: |
           python -m build
 
-      - name: pypi-publish-pre
+      - name: pypi-publish
         if: github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main'
         uses: pypa/gh-action-pypi-publish@v1.1.0
         with:

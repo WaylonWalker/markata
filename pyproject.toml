@@ -1,77 +1,86 @@
-[build-system]
-requires = ["hatchling>=1.4.1"]
-build-backend = "hatchling.build"
-
 [project]
-authors = [
-    {name = "Waylon Walker", email="waylon@waylonwalker.com"},
-    {email = "waylon@markata.dev"}
-]
 classifiers = [
-    "Development Status :: 4 - Beta",
-    "Environment :: Console",
-    "Environment :: Web Environment",
-    "Intended Audience :: Developers",
-    "Natural Language :: English",
-    "Operating System :: OS Independent",
-    "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.6",
-    "Programming Language :: Python :: 3.7",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: Implementation :: CPython",
-    "Programming Language :: Python :: Implementation :: PyPy",
-    "Programming Language :: Python",
-    "Topic :: Documentation",
-    "Topic :: Software Development",
-    "Topic :: Text Processing",
-    "Typing :: Typed",
+ "Development Status :: 4 - Beta",
+ "Environment :: Console",
+ "Environment :: Web Environment",
+ "Intended Audience :: Developers",
+ "Natural Language :: English",
+ "Operating System :: OS Independent",
+ "Programming Language :: Python :: 3 :: Only",
+ "Programming Language :: Python :: 3",
+ "Programming Language :: Python :: 3.10",
+ "Programming Language :: Python :: 3.6",
+ "Programming Language :: Python :: 3.7",
+ "Programming Language :: Python :: 3.8",
+ "Programming Language :: Python :: 3.9",
+ "Programming Language :: Python :: Implementation :: CPython",
+ "Programming Language :: Python :: Implementation :: PyPy",
+ "Programming Language :: Python",
+ "Topic :: Documentation",
+ "Topic :: Software Development",
+ "Topic :: Text Processing",
+ "Typing :: Typed",
 ]
 dependencies = [
-    "anyconfig",
-    "beautifulsoup4",
-    "checksumdir",
-    "diskcache",
-    "feedgen",
-    "jinja2",
-    "more-itertools",
-    "pathspec",
-    "pillow",
-    "pluggy",
-    "pymdown-extensions",
-    "python-frontmatter",
-    "pytz",
-    "rich",
-    "textual",
-    "toml",
-    "typer",
+ "beautifulsoup4",
+ "anyconfig",
+ "checksumdir",
+ "diskcache",
+ "feedgen",
+ "jinja2",
+ "more-itertools",
+ "pathspec",
+ "pillow",
+ "pluggy",
+ "pymdown-extensions",
+ "python-frontmatter",
+ "pytz",
+ "rich",
+ "textual",
+ "toml",
+ "typer",
 ]
 description = "Static site generator plugins all the way down."
-keywords = ["static-site",]
-license = {file = "LICENSE"}
+keywords = [
+ "static-site",
+]
 name = "markata"
 readme = "README.md"
 requires-python = ">=3.6"
 version = "0.4.0.b0"
+[[project.authors]]
+name = "Waylon Walker"
+email = "waylon@waylonwalker.com"
+
+[[project.authors]]
+email = "waylon@markata.dev"
+
+[build-system]
+requires = [
+ "hatchling>=1.4.1",
+]
+build-backend = "hatchling.build"
+
+[project.license]
+file = "LICENSE"
 
 [project.optional-dependencies]
 dev = [
-    "black",
-    "build",
-    "bump2version",
-    "flake8",
-    "hatch",
-    "interrogate",
-    "mypy",
-    "pre-commit",
-    "pytest",
-    "pytest-cov",
-    "pytest-mock",
+ "black",
+ "build",
+ "bump2version",
+ "flake8",
+ "hatch",
+ "interrogate",
+ "mypy",
+ "pre-commit",
+ "pytest",
+ "pytest-cov",
+ "pytest-mock",
 ]
-
-pyinstrument = ['pyinstrument']
+pyinstrument = [
+ "pyinstrument",
+]
 
 [project.urls]
 homepage = "https://markata.dev"
@@ -79,18 +88,20 @@ documentation = "https://markata.dev"
 repository = "https://github.com/waylonwalker/markata"
 
 [project.scripts]
-markata="markata.cli:cli"
+markata = "markata.cli:cli"
+
+[tool.setuptools]
+zip-safe = false
+packages = [
+ "markata",
+]
 
 [tool.hatch.version]
 path = "markata/__init__.py"
 
-[tool.hatch.build.targets.sdist]
-exclude = [
-  "/.github",
-]
-
 [tool.hatch.build.targets.wheel]
 
-[tool.setuptools]
-zip-safe=false
-packages = ["markata",]
+[tool.hatch.build.targets.sdist]
+exclude = [
+ "/.github",
+]
