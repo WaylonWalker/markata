@@ -89,6 +89,7 @@ are covered mroe in the jinja docs for
 {{ '{{' }} '\\n'.join(markata.map('f"* [{title}]({slug})"', sort='slug')) {{ '}}' }}
 ```
 """
+import importlib
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -98,6 +99,23 @@ from jinja2 import TemplateSyntaxError, Undefined, UndefinedError, nodes
 from jinja2.ext import Extension
 
 from markata.hookspec import hook_impl, register_attr
+
+
+def register_jinja_extensions(config: dict):
+
+    extensions = []
+    for extension in config.get("extensions", []):
+        try:
+            # module style plugins
+            extensions.append(importlib.import_module(extension))
+        except ModuleNotFoundError as e:
+            # class style plugins
+            if "." in extension:
+                mod = importlib.import_module(".".join(extension.split(".")[:-1]))
+                extensions.append(getattr(mod, extension.split(".")[-1]))
+            else:
+                raise e
+    return extensions
 
 
 class IncludeRawExtension(Extension):
@@ -153,9 +171,7 @@ def pre_render(markata: "Markata") -> None:
     ignore_spec = pathspec.PathSpec.from_lines("gitwildmatch", config.get("ignore", []))
     # for article in markata.iter_articles(description="jinja_md"):
     jinja_env = jinja2.Environment(
-        extensions=[
-            IncludeRawExtension,
-        ],
+        extensions=[IncludeRawExtension, *register_jinja_extensions(config)],
     )
     for article in markata.articles:
         if article.get("jinja", True) and not ignore_spec.match_file(article["path"]):
