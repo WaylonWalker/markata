@@ -45,9 +45,6 @@ jobs:
           git push
           git push --tags
 
-      - name: build
-        run: hatch build
-
       - name: automatically pre-release develop branch
         if: github.ref == 'refs/heads/main'
         run: |
@@ -63,8 +60,7 @@ jobs:
           git push --tags
 
       - name: build
-        run: |
-          python -m build
+        run: hatch build
 
       - name: pypi-publish
         if: github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main'
