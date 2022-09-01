@@ -7,7 +7,7 @@ on:
       - '*'
 env:
   HATCH_INDEX_USER: __token__
-  HATCH_INDEX_AUTH: {{ secrets.pypi_password }}
+  HATCH_INDEX_AUTH: ${{ secrets.pypi_password }}
 
 jobs:
   build-deploy-docs:
