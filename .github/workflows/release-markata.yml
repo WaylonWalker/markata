@@ -5,23 +5,30 @@ on:
   push:
     branches:
       - '*'
+env:
+  HATCH_INDEX_USER=__token__
+  HATCH_INDEX_AUTH={{ secrets.pypi_password }}
 
 jobs:
   build-deploy-docs:
     runs-on: ubuntu-latest
     steps:
+
       - uses: actions/checkout@v2
+
       - name: Set up Python 3.10
         uses: actions/setup-python@v1
         with:
           python-version: '3.10'
 
       - name: install markata
-        run: pip install -e ".[dev]"
+        run: pip install hatch
 
-      - run: black --check markata
-      - run: flake8 markata
-      - run: pytest
+      - name: install project
+        run: hatch env create
+
+      - name: test lint
+        run: hatch run test-lint
 
       - name: automatically pre-release develop branch
         if: github.ref == 'refs/heads/develop'
@@ -37,6 +44,9 @@ jobs:
           git tag $VERSION
           git push
           git push --tags
+
+      - name: build
+        run: hatch build
 
       - name: automatically pre-release develop branch
         if: github.ref == 'refs/heads/main'
@@ -58,7 +68,8 @@ jobs:
 
       - name: pypi-publish
         if: github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main'
-        uses: pypa/gh-action-pypi-publish@v1.1.0
-        with:
-          password: ${{ secrets.pypi_password }}
+        run: hatch publish
+        # uses: pypa/gh-action-pypi-publish@v1.1.0
+        # with:
+        #   password: ${{ secrets.pypi_password }}
 
