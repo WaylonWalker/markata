@@ -83,25 +83,93 @@ pyinstrument = [
 ]
 
 [project.urls]
-homepage = "https://markata.dev"
-documentation = "https://markata.dev"
-repository = "https://github.com/waylonwalker/markata"
+Homepage = "https://markata.dev"
+Changelog = "https://markata.dev/CHANGELOG/"
+Source = "https://github.com/waylonwalker/markata"
+Issues = "https://github.com/waylonwalker/markata/issues"
+Documentation = "https://markata.dev"
 
 [project.scripts]
 markata = "markata.cli:cli"
 
-[tool.setuptools]
-zip-safe = false
-packages = [
- "markata",
-]
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_untyped_calls = true
+allow_untyped_globals = false
+ignore_missing_imports = true
+[[tool.mypy.overrides]]
+module = "tests.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "markata.background.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "diskcache.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "frontmatter.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "bs4.*"
+ignore_errors = true
 
 [tool.hatch.version]
 path = "markata/__init__.py"
+
+[tool.coverage.run]
+branch = true
+parallel = true
+omit = [
+ "markata/__about__.py",
+]
+
+[tool.hatch.envs.default]
+dependencies = [
+ "black",
+ "flake8",
+ "pytest",
+ "pytest-cov",
+]
+
+[tool.hatch.envs.test]
+[[tool.hatch.envs.test.matrix]]
+python = [
+ "38",
+ "39",
+ "310",
+ "311",
+]
+
+[tool.hatch.envs.default.scripts]
+cov = "pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=markata --cov=tests"
+no-cov = "cov --no-cov"
+lint = "flake8 markata"
+format = "black --check markata"
+test-lint = [
+ "lint",
+ "format",
+ "cov",
+]
+ci = [
+ "lint",
+ "format",
+ "cov",
+ "build",
+]
 
 [tool.hatch.build.targets.wheel]
 
 [tool.hatch.build.targets.sdist]
 exclude = [
  "/.github",
+]
+dynamic = [
+ "version",
 ]
