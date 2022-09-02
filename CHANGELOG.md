@@ -2,6 +2,10 @@
 
 ## dev
 
+* Moved to PEP 517 build #59
+
+## 0.4.0
+
 * feat: add html logging with [setup_logging](/markata/plugins/setup_logging/)
   plugin is all new closes #37
 * fix: remove HTML tidy as the site generator tag
@@ -36,6 +40,10 @@ build you can set a flag in your config to continue running prettify.
 [markata]
 prettify_html = true
 ```
+
+## 0.3.0
+
+Skipped from a bump2version misconfiguration.
 
 ## 0.2.0
 

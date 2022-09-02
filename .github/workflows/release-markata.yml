@@ -5,48 +5,16 @@ on:
   push:
     branches:
       - '*'
+env:
+  HATCH_INDEX_AUTH: ${{ secrets.pypi_password }}
 
 jobs:
-  build-deploy-docs:
+  release-markata:
     runs-on: ubuntu-latest
     steps:
+
       - uses: actions/checkout@v2
-      - name: Set up Python 3.10
-        uses: actions/setup-python@v1
+      - uses: waylonwalker/hatch-action@v1
         with:
-          python-version: '3.10'
+          before-command: "test-lint"
 
-      - name: install markata
-        run: pip install -e ".[dev]"
-
-      - run: black --check markata
-      - run: flake8 markata
-      - run: pytest
-
-      - name: automatically pre-release develop branch
-        if: github.ref == 'refs/heads/develop'
-        run: |
-          git config --global user.name 'autobump'
-          git config --global user.email 'autobump@markata.dev'
-          pip install bump2version
-          bump2version pre
-          git push
-          git push --tags
-
-      - name: build
-        run: |
-          pip install wheel
-          python setup.py sdist bdist_wheel
-
-
-      - name: pypi-publish-pre
-        if: github.ref == 'refs/heads/develop'
-        uses: pypa/gh-action-pypi-publish@v1.1.0
-        with:
-          password: ${{ secrets.pypi_password }}
-
-      - name: pypi-publish
-        if: github.ref == 'refs/heads/main'
-        uses: pypa/gh-action-pypi-publish@v1.1.0
-        with:
-          password: ${{ secrets.pypi_password }}
