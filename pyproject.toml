@@ -123,27 +123,6 @@ ignore_errors = true
 [tool.isort]
 profile = "black"
 known_third_party = ["PIL", "anyconfig", "bs4", "checksumdir", "commonmark", "dateutil", "diskcache", "feedgen", "frontmatter", "jinja2", "markdown", "more_itertools", "pathspec", "pluggy", "pytest", "pytz", "rich", "textual", "typer", "yaml"]
- "PIL",
- "anyconfig",
- "bs4",
- "checksumdir",
- "commonmark",
- "dateutil",
- "diskcache",
- "feedgen",
- "frontmatter",
- "jinja2",
- "markdown",
- "more_itertools",
- "pathspec",
- "pluggy",
- "pytest",
- "pytz",
- "rich",
- "textual",
- "typer",
- "yaml",
-]
 
 [tool.hatch.version]
 path = "markata/__init__.py"
