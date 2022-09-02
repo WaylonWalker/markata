@@ -109,6 +109,11 @@ If you want to try out your changes in a repl you can run one of the following c
 # ipython
 hatch run dev:ipython
 
+# ipython with automatically running the following 
+# from markata import Markata
+# m = Markata()
+hatch run dev:ipy
+
 # or just python
 hatch run dev:python
 ```
