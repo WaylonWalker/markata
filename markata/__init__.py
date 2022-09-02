@@ -24,6 +24,7 @@ from rich.progress import track
 from rich.table import Table
 
 from markata import hookspec, standard_config
+from markata.__about__ import __version__
 from markata.cli.plugins import Plugins
 from markata.cli.runner import Runner
 from markata.cli.server import Server
