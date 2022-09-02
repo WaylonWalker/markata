@@ -47,7 +47,6 @@ keywords = [
 name = "markata"
 readme = "README.md"
 requires-python = ">=3.6"
-version = "0.4.0.b0"
 [[project.authors]]
 name = "Waylon Walker"
 email = "waylon@waylonwalker.com"
