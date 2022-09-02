@@ -144,6 +144,17 @@ dependencies = [
  "seed-isort-config",
 ]
 
+[tool.hatch.envs.dev]
+dependencies = [
+"ipython",
+ "black",
+ "flake8",
+ "isort",
+ "pytest",
+ "pytest-cov",
+ "seed-isort-config",
+]
+
 [tool.hatch.envs.test]
 [[tool.hatch.envs.test.matrix]]
 python = [
@@ -159,6 +170,7 @@ no-cov = "cov --no-cov"
 lint = "flake8 markata"
 format = "black --check markata"
 sort-imports = "isort markata"
+build-docs = "markata build"
 test-lint = [
  "lint",
  "format",
