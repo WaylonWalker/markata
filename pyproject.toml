@@ -40,6 +40,9 @@ dependencies = [
  "toml",
  "typer",
 ]
+dynamic = [
+ "version",
+]
 description = "Static site generator plugins all the way down."
 keywords = [
  "static-site",
@@ -66,7 +69,6 @@ file = "LICENSE"
 [project.optional-dependencies]
 dev = [
  "black",
- "build",
  "flake8",
  "hatch",
  "interrogate",
@@ -144,9 +146,9 @@ dependencies = [
 
 [tool.hatch.envs.dev]
 dependencies = [
- "ipython",
  "black",
  "flake8",
+ "ipython",
  "isort",
  "pytest",
  "pytest-cov",
@@ -185,7 +187,4 @@ ipy = "ipython -i -m markata"
 [tool.hatch.build.targets.sdist]
 exclude = [
  "/.github",
-]
-dynamic = [
- "version",
 ]
