@@ -40,6 +40,9 @@ dependencies = [
  "toml",
  "typer",
 ]
+dynamic = [
+ "version",
+]
 description = "Static site generator plugins all the way down."
 keywords = [
  "static-site",
@@ -66,8 +69,6 @@ file = "LICENSE"
 [project.optional-dependencies]
 dev = [
  "black",
- "build",
- "bump2version",
  "flake8",
  "hatch",
  "interrogate",
@@ -124,7 +125,7 @@ profile = "black"
 known_third_party = ["PIL", "anyconfig", "bs4", "checksumdir", "commonmark", "dateutil", "diskcache", "feedgen", "frontmatter", "jinja2", "markdown", "more_itertools", "pathspec", "pluggy", "pytest", "pytz", "rich", "textual", "typer", "yaml"]
 
 [tool.hatch.version]
-path = "markata/__init__.py"
+path = "markata/__about__.py"
 
 [tool.coverage.run]
 branch = true
@@ -145,9 +146,9 @@ dependencies = [
 
 [tool.hatch.envs.dev]
 dependencies = [
- "ipython",
  "black",
  "flake8",
+ "ipython",
  "isort",
  "pytest",
  "pytest-cov",
@@ -186,7 +187,4 @@ ipy = "ipython -i -m markata"
 [tool.hatch.build.targets.sdist]
 exclude = [
  "/.github",
-]
-dynamic = [
- "version",
 ]
