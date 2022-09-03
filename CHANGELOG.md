@@ -2,7 +2,10 @@
 
 ## dev
 
-* Moved to PEP 517 build #59
+
+* Created entrypoint hook allowing for users to extend marka with jinja
+  exensions #60 0.5.0.dev2
+* Moved to PEP 517 build #59 0.5.0.dev1
 
 ## 0.4.0
 
