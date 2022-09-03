@@ -88,16 +88,71 @@ are covered mroe in the jinja docs for
 
 {{ '{{' }} '\\n'.join(markata.map('f"* [{title}]({slug})"', sort='slug')) {{ '}}' }}
 ```
+
+## Creating a jinja extension
+
+Here is a bit of a boilerplate example of a jinja extension.
+
+``` python
+from jinja2 import nodes
+from jinja2.ext import Extension
+
+class ExampleExtension(Extension):
+    tags = {"example"}
+
+    def __init__(self, environment):
+        super().__init__(environment)
+
+    def parse(self, parser):
+        line_number = next(parser.stream).lineno
+        arg = [parser.parse_expression()]
+        return nodes.CallBlock(self.call_method("run", arg), [], [], "").set_lineno(
+            line_number
+        )
+
+    def run(self, arg, caller):
+        return f'hello {arg}'
+```
+
+So that markata picks up your extension, you will need to register an
+entrypoint named `markata.jinja_md`.  Once installed markata will automatically
+load this extension to its list of  jinja extensions.
+
+``` toml
+[project.entry-points."markata.jinja_md"]
+markta_gh = "example_extension:ExampleExtension"
+```
+
+Once you have your extension created and ready to use you can use it in your
+markdown.
+
+``` markdown
+{% example world %}
+```
+
 """
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 import jinja2
 import pathspec
+import pkg_resources
 from jinja2 import TemplateSyntaxError, Undefined, UndefinedError, nodes
 from jinja2.ext import Extension
 
 from markata.hookspec import hook_impl, register_attr
+
+
+def register_jinja_extensions(config: dict) -> List[Extension]:
+    """
+    Gets jinja extensions from entrypoints and loads them in.
+
+    Returns: List of jinja Extensions
+    """
+
+    return [
+        ep.load() for ep in pkg_resources.iter_entry_points(group="markata.jinja_md")
+    ]
 
 
 class IncludeRawExtension(Extension):
@@ -153,9 +208,7 @@ def pre_render(markata: "Markata") -> None:
     ignore_spec = pathspec.PathSpec.from_lines("gitwildmatch", config.get("ignore", []))
     # for article in markata.iter_articles(description="jinja_md"):
     jinja_env = jinja2.Environment(
-        extensions=[
-            IncludeRawExtension,
-        ],
+        extensions=[IncludeRawExtension, *register_jinja_extensions(config)],
     )
     for article in markata.articles:
         if article.get("jinja", True) and not ignore_spec.match_file(article["path"]):
