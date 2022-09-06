@@ -1,8 +1,8 @@
 # Markata Changelog
 
-## dev
+## 0.5.0-dev
 
-
+* Fix #40 Images overlfow outside of body #66 0.5.dev3
 * Created entrypoint hook allowing for users to extend marka with jinja
   exensions #60 0.5.0.dev2
 * Moved to PEP 517 build #59 0.5.0.dev1
