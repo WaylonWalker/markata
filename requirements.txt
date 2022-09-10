@@ -10,6 +10,7 @@ pillow
 pluggy
 pymdown-extensions
 python-frontmatter
+python-slugify
 pytz
 rich
 textual
