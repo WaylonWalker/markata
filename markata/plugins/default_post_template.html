@@ -4,6 +4,17 @@
   <title>{{ title }}</title>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  {% if description %}
+  <meta name="description" content="{{ description }}">
+  {% endif %}
+  {% for attr in config.get("seo", []) %}
+  <meta{% for key, value in attr.items() %} {{ key }}="{{ value }}"{% endfor %}>{% endfor %}
+
+
+  {% if config.get('icon') %}
+  <link href="{{ config.get('icon') }}" rel="icon" type="image/png">
+  {% endif %}
+
   <script>
     function setTheme(theme) {
         document.documentElement.setAttribute("data-theme", theme);
@@ -55,6 +66,7 @@
         }
 
     }, false);
+
   </script>
   <style>
       :root {
@@ -430,6 +442,10 @@
   }
 
   </style>
+
+  {% for head in config.get('head', []) %}
+    {{ head.get('text', '') }}
+  {% endfor %}
 </head>
 
   <nav>
@@ -448,6 +464,7 @@
   <section class='title'>
   <h1 id='title'>
     {{ title }}
+    {% if config.get('edit', True) %}
       <a href="{{ edit_link }}" alt="edit post url" title="edit this post">
           <span role="img" aria-label="">
             <svg version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
@@ -471,6 +488,7 @@
             </svg>
           </span>
       </a>
+    {% endif %}
   </h1>
   </section>
   <main>
