@@ -2,10 +2,81 @@
 
 ## 0.5.0-dev
 
+* Configurable template #70 0.5.dev5
 * Fix #40 Images overlfow outside of body #66 0.5.dev3
 * Created entrypoint hook allowing for users to extend marka with jinja
   exensions #60 0.5.0.dev2
 * Moved to PEP 517 build #59 0.5.0.dev1
+
+### configurable template
+
+Now injects seo into the default template through configuration.  Here is an
+example, by adding this to your `markata.toml` configuration.
+
+``` toml
+[[markata.seo]]
+name = "og:type"
+property = "og:type"
+content = "article"
+
+[[markata.seo]]
+name = "og:author"
+property = "og:author"
+content = "Waylon Walker"
+
+[[markata.seo]]
+name = "og:site_name"
+property = "og:site_name"
+content = "Waylon Walker"
+
+[[markata.seo]]
+name = "theme-color"
+content="#322D39"
+
+[[markata.seo]]
+name = "twitter:creator"
+content="@_waylonwalker"
+```
+
+You will end up with these meta tags in your html.
+
+``` html
+<meta name="og:type" property="og:type" content="article">
+<meta name="og:author" property="og:author" content="Waylon Walker">
+<meta name="og:site_name" property="og:site_name" content="Waylon Walker">
+<meta name="theme-color" content="#322D39">
+<meta name="twitter:creator" content="@_waylonwalker">
+```
+
+You can have an array of toml tables with a key of text.  The text will be
+added as plain text to the end of the head of each page.
+
+``` toml
+[[markata.head]]
+text = """
+<style>
+img {
+width: 100%;
+height: auto;
+}
+ul {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+li {
+  flex: 1 2 400px;
+}
+</style>
+
+"""
+```
+
+Descriptions will now properly end up in each page.
+
+``` html
+  <meta name="description" content="{{ description }}">
+```
 
 ## 0.4.0
 
