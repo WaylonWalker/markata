@@ -172,13 +172,14 @@ lint = "flake8 markata"
 format = "black --check markata"
 sort-imports = "isort markata"
 build-docs = "markata build"
-test-lint = [
+lint-test = [
  "lint",
  "format",
  "seed-isort-config",
  "sort-imports",
  "cov",
 ]
+test-lint = "lint-test"
 
 [tool.hatch.envs.dev.scripts]
 ipy = "ipython -i -m markata"
