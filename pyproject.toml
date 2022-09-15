@@ -123,7 +123,7 @@ ignore_errors = true
 
 [tool.isort]
 profile = "black"
-known_third_party = ["PIL", "anyconfig", "bs4", "checksumdir", "commonmark", "dateutil", "diskcache", "feedgen", "frontmatter", "jinja2", "markdown", "more_itertools", "pathspec", "pkg_resources", "pluggy", "pytest", "pytz", "rich", "textual", "typer", "yaml"]
+known_third_party = ["PIL", "anyconfig", "bs4", "checksumdir", "commonmark", "dateutil", "diskcache", "feedgen", "frontmatter", "jinja2", "markdown", "more_itertools", "pathspec", "pkg_resources", "pluggy", "pytest", "pytz", "rich", "slugify", "textual", "typer", "yaml"]
 
 [tool.hatch.version]
 path = "markata/__about__.py"
@@ -172,13 +172,14 @@ lint = "flake8 markata"
 format = "black --check markata"
 sort-imports = "isort markata"
 build-docs = "markata build"
-test-lint = [
+lint-test = [
  "lint",
  "format",
  "seed-isort-config",
  "sort-imports",
  "cov",
 ]
+test-lint = "lint-test"
 
 [tool.hatch.envs.dev.scripts]
 ipy = "ipython -i -m markata"
