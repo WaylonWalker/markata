@@ -30,6 +30,7 @@ frontmatter.
 """
 from pathlib import Path
 from typing import TYPE_CHECKING
+
 from slugify import slugify
 
 from markata.hookspec import hook_impl
@@ -43,5 +44,10 @@ def pre_render(markata: "Markata") -> None:
     """
     Sets the article slug if one is not already set in the frontmatter.
     """
+    should_slugify = markata.config.get("slugify", True)
     for article in markata.iter_articles(description="creating slugs"):
-        article["slug"] = slugify(article.get("slug", Path(article["path"]).stem))
+        stem = article.get("slug", Path(article["path"]).stem)
+        if should_slugify:
+            article["slug"] = slugify(stem)
+        else:
+            article["slug"] = stem
