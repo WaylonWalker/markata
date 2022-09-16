@@ -2,13 +2,33 @@
 
 ## 0.5.0-dev
 
+* Fix #33 sluggify paths #69 **BREAKING CHANGE** 0.5.dev6
 * Configurable template #70 0.5.dev5
 * Fix #40 Images overlfow outside of body #66 0.5.dev3
 * Created entrypoint hook allowing for users to extend marka with jinja
   exensions #60 0.5.0.dev2
 * Moved to PEP 517 build #59 0.5.0.dev1
 
-### configurable template
+### sluggify paths
+
+`python-sluggify` was implemented to ensure good urls are in place despite the
+name of the original file.
+
+For examples of how `python-slugify` will change your url's see the
+[project's home page](https://pypi.org/project/python-slugify/)
+
+#### OPTING OUT
+
+If you have an existing site and do not want to implement redirects, or simply
+do not want to use slugify, you can opt out by setting `slugify=False` in your
+`markata.toml`.
+
+``` toml
+[markata]
+slugify=false
+```
+
+### configurable page template
 
 Now injects seo into the default template through configuration.  Here is an
 example, by adding this to your `markata.toml` configuration.
