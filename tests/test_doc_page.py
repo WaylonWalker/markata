@@ -72,7 +72,7 @@ def test_markout_exists(test_run: Any) -> Any:
 
 def test_index_exists(test_run: Any) -> Any:
     markout = test_run / "markout"
-    index = markout / "my_module" / "index.html"
+    index = markout / "my-module" / "index.html"
     assert index.exists()
 
 
