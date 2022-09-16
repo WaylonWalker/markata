@@ -8,7 +8,13 @@ Enable the redirect hook by adding it to your list of hooks.
 ``` toml
 [markata]
 
-assets_dir = "static" # Were you keep static assets to copy into the project, default is static
+# Were you keep static assets to copy into the project, default is static
+# the assets_dir will set the default _redirects file directory
+assets_dir = "static" 
+
+# You can override the default redirects file location
+redirects = static/_redirects 
+
 hooks = [
    "markata.plugins.redirects", # creates redirects from static/_redirects file
    "markata.plugins.copy_assets", # copies your static assets into the output_dir (default: `markout`)
@@ -16,8 +22,29 @@ hooks = [
 ]
 ```
 
+## Syntax
 
+Your `_redirects` file is a simplified version of what services like cloudflare
+pages or netlify use.  In fact you can use the same redirects file!
 
+Here is an example that will redirect `/old` to `/new` and `/CHANGELOG` to
+`/changelog`
+
+```
+/old        /new
+/CHANGELOG  /changelog
+```
+
+## Limitations
+_no splats_
+
+Since it is static generated this plugin cannot cover *'s.  * or splat
+redirects need to be taken care of server side.
+
+!! tip
+    If you have a public site, pair this up with
+    [ahrefs](https://app.ahrefs.com/dashboard) to keep up with pages that have
+    moved without you realizing.
 
 """
 from dataclasses import asdict, dataclass
