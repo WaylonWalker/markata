@@ -191,6 +191,9 @@ lint-test = [
 ]
 test-lint = "lint-test"
 
+[tool.hatch.envs.test.scripts]
+cov = "pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=markata --cov=tests"
+
 [tool.hatch.envs.dev.scripts]
 ipy = "ipython -i -m markata"
 
