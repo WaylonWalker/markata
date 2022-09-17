@@ -59,7 +59,7 @@ implementation.
 | Proxying                            | No      | `/blog/* https://blog.my.domain/:splat 200`                     | ...                                                                                               |
 | Domain-level redirects              | No      | `workers.example.com/* workers.example.com/blog/:splat 301`     | ...                                                                                               |
 | Redirect by country or language     | No      | `/ /us 302 Country=us`                                          | ...                                                                                               |
-| Redirect by cookie                  | No      | `/\* /preview/:splat 302 Cookie=preview`                        | ...                                                                                               |
+| Redirect by cookie                  | No      | `/* /preview/:splat 302 Cookie=preview`                        | ...                                                                                               |
 
 > Compare with [cloudflare-pages](https://developers.cloudflare.com/pages/platform/redirects/)
 
