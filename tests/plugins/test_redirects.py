@@ -1,3 +1,6 @@
+"""
+Tests the redirects plugin
+"""
 import os
 from contextlib import contextmanager
 from pathlib import Path
@@ -9,7 +12,7 @@ from markata.plugins import redirects
 
 
 @contextmanager
-def set_directory(path: Path):
+def set_directory(path: Path) -> None:
     """Sets the cwd within the context
 
     Args:
@@ -36,6 +39,7 @@ def set_directory(path: Path):
     indirect=["tmp_files"],
 )
 def test_redirect_exists(tmp_files, old, new):
+    "ensure that the default workflow works"
     with set_directory(tmp_files):
         m = Markata()
         redirects.save(m)
@@ -55,7 +59,8 @@ def test_redirect_exists(tmp_files, old, new):
     ],
     indirect=["tmp_files"],
 )
-def test_redirect_ignore_splat(tmp_files, old):
+def test_redirect_ignore_splat(tmp_files, old) -> None:
+    "splats cannot be supported statically, test that they are ignored"
     with set_directory(tmp_files):
         m = Markata()
         redirects.save(m)
@@ -66,13 +71,14 @@ def test_redirect_ignore_splat(tmp_files, old):
 @pytest.mark.parametrize(
     "tmp_files, old",
     [
-        ({"static/_redirects": "/blog/* /blog/404.html 404"}, "posts"),
-        ({"static/_redirects": "/blog/* /blog/404.html 301"}, "posts"),
-        ({"static/_redirects": "/blog/* /blog/404.html 200"}, "posts"),
+        ({"static/_redirects": "/blog/ /blog/404.html 404"}, "posts"),
+        ({"static/_redirects": "/blog/ /blog/301.html 301"}, "posts"),
+        ({"static/_redirects": "/blog/ /blog/200.html 200"}, "posts"),
     ],
     indirect=["tmp_files"],
 )
-def test_redirect_ignore_more_params(tmp_files, old):
+def test_redirect_ignore_more_params(tmp_files, old) -> None:
+    "status codes cannot be supported statically as they are issued by the server"
     with set_directory(tmp_files):
         m = Markata()
         redirects.save(m)
@@ -89,7 +95,8 @@ def test_redirect_ignore_more_params(tmp_files, old):
     ],
     indirect=["tmp_files"],
 )
-def test_redirect_configure_redirect_file(tmp_files, redirect_file, old, new):
+def test_redirect_configure_redirect_file(tmp_files, redirect_file, old, new) -> None:
+    "ensure that the redirects file can be configured"
     with set_directory(tmp_files):
         m = Markata()
         m.config["redirects"] = redirect_file
@@ -126,7 +133,8 @@ def test_redirect_configure_redirect_file(tmp_files, redirect_file, old, new):
     ],
     indirect=["tmp_files"],
 )
-def test_redirect_custom_template(tmp_files, redirect_template, old, new):
+def test_redirect_custom_template(tmp_files, redirect_template, old, new) -> None:
+    "ensure the template can be configured"
     with set_directory(tmp_files):
         m = Markata()
         m.config["redirect_template"] = redirect_template
@@ -149,13 +157,15 @@ def test_redirect_custom_template(tmp_files, redirect_template, old, new):
     ],
     indirect=["tmp_files"],
 )
-def test_redirect_empty(tmp_files, old, new):
+def test_redirect_empty(tmp_files, old, new) -> None:
+    "ensure empty redirects files work"
     with set_directory(tmp_files):
         m = Markata()
         redirects.save(m)
 
 
-def test_redirect_file_missing(tmpdir):
+def test_redirect_file_missing(tmpdir) -> None:
+    "ensure missing redirects file works"
     with set_directory(tmpdir):
         m = Markata()
         redirects.save(m)
