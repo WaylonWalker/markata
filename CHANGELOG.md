@@ -98,6 +98,17 @@ Descriptions will now properly end up in each page.
   <meta name="description" content="{{ description }}">
 ```
 
+## 0.4.1
+
+* Issue FutureWarning for upcoming change to slugify change that will change urls
+
+To keep existing behavior add this to your `markata.toml`.
+
+``` toml
+[markata]
+slugify=false
+```
+
 ## 0.4.0
 
 * feat: add html logging with [setup_logging](/markata/plugins/setup_logging/)
