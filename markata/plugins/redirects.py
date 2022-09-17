@@ -39,7 +39,29 @@ Here is an example that will redirect `/old` to `/new` and `/CHANGELOG` to
 _no splats_
 
 Since it is static generated this plugin cannot cover *'s.  * or splat
-redirects need to be taken care of server side.
+redirects need to be taken care of server side.  It also cannot change the http
+code, this is only
+
+## Features
+
+The features of markata.plugins.redirect is pretty limited since it is
+implemented only as a static page.  Other features require server side
+implementation.
+
+| Feature                             | Support | Example                                                         | Notes                                                                                             |
+| ----------------------------------- | ------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| Force                               | Yes     | `/pagethatexists /otherpage`                                    | Creates an index.html with http-equiv and canonical                                               |
+| Redirects (301, 302, 303, 307, 308) | No      | `/home / 301`                                                   | Ignored, requires server side implementation                                                      |
+| Rewrites (other status codes)       | No      | `/blog/* /blog/404.html 404`                                    | ...                                                                                               |
+| Splats                              | No      | `/blog/* /blog/:splat`                                          | ...                                                                                               |
+| Placeholders                        | No      | `/blog/:year/:month/:date/:slug /news/:year/:month/:date/:slug` | ...                                                                                               |
+| Query Parameters                    | No      | `/shop id=:id /blog/:id 301`                                    | ...                                                                                               |
+| Proxying                            | No      | `/blog/* https://blog.my.domain/:splat 200`                     | ...                                                                                               |
+| Domain-level redirects              | No      | `workers.example.com/* workers.example.com/blog/:splat 301`     | ...                                                                                               |
+| Redirect by country or language     | No      | `/ /us 302 Country=us`                                          | ...                                                                                               |
+| Redirect by cookie                  | No      | `/\* /preview/:splat 302 Cookie=preview`                        | ...                                                                                               |
+
+> Compare with [cloudflare-pages](https://developers.cloudflare.com/pages/platform/redirects/)
 
 !!! tip
     If you have a public site, pair this up with
