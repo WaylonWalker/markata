@@ -32,7 +32,7 @@ README = (Path(__file__).parent / "README.md").read_text(encoding="utf-8")
 
 setup(
     name=NAME,
-    version="0.4.0",
+    version="0.4.1",
     url="https://markata.dev",
     author="Waylon Walker",
     author_email="waylon@waylonwalker.com",
