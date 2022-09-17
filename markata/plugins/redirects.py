@@ -41,7 +41,7 @@ _no splats_
 Since it is static generated this plugin cannot cover *'s.  * or splat
 redirects need to be taken care of server side.
 
-!! tip
+!!! tip
     If you have a public site, pair this up with
     [ahrefs](https://app.ahrefs.com/dashboard) to keep up with pages that have
     moved without you realizing.
