@@ -83,7 +83,7 @@ def save(markata: "Markata") -> None:
 
     redirects = [
         Redirect(*s)
-        for r in 
+        for r in raw_redirects
         if "*" not in r and len(s := r.split()) == 2 and not r.strip().startswith("#")
     ]
 
