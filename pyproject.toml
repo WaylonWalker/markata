@@ -136,6 +136,13 @@ omit = [
  "markata/__about__.py",
 ]
 
+[tool.coverage.report]
+exclude_lines = [
+  "no cov",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+ ]
+
 [tool.hatch.envs.default]
 dependencies = [
  "black",
@@ -143,6 +150,7 @@ dependencies = [
  "isort",
  "pytest",
  "pytest-cov",
+ "pytest-tmp-files",
  "seed-isort-config",
 ]
 
