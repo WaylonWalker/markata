@@ -10,10 +10,10 @@ Enable the redirect hook by adding it to your list of hooks.
 
 # Were you keep static assets to copy into the project, default is static
 # the assets_dir will set the default _redirects file directory
-assets_dir = "static" 
+assets_dir = "static"
 
 # You can override the default redirects file location
-redirects = static/_redirects 
+redirects = static/_redirects
 
 hooks = [
    "markata.plugins.redirects", # creates redirects from static/_redirects file
