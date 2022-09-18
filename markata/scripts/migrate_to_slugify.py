@@ -26,7 +26,9 @@ if __name__ == "__main__":
     m.config["slugify"] = False
 
     original_urls = m.map("slug")
-    redirects = [o.ljust(60) + slugify(o) for o in original_urls if slugify(o) != o]
+    redirects = [
+        "/" + o.ljust(60) + "/" + slugify(o) for o in original_urls if slugify(o) != o
+    ]
     assets_dir: str = str(m.config.get("assets_dir", "static"))
     redirects_file = Path(
         str(m.config.get("redirects", Path(assets_dir) / "_redirects"))
@@ -34,6 +36,6 @@ if __name__ == "__main__":
     redirects_file.touch()
     with open(redirects_file, "a") as f:
         f.write("\n")
-        f.write("# marakta migrate to slugify redirects")
+        f.write("# marakta migrate to slugify redirects\n")
         f.write("\n".join(redirects))
         f.write("\n")
