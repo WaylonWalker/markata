@@ -2,12 +2,16 @@
 
 ## 0.5.0-dev
 
+* Remove unused function clif that was the original entrypoint #81
 * Fix #33 sluggify paths #69 **BREAKING CHANGE** 0.5.dev6
 * Configurable template #70 0.5.dev5
 * Fix #40 Images overlfow outside of body #66 0.5.dev3
 * Created entrypoint hook allowing for users to extend marka with jinja
   exensions #60 0.5.0.dev2
 * Moved to PEP 517 build #59 0.5.0.dev1
+* markata.plugins.redirects will create redirect html files as a backup when
+  server-side redirects fail, or the user does not have the ability to issue. #76
+* create a slugify migration script #82
 
 ### sluggify paths
 
@@ -16,17 +20,31 @@ name of the original file.
 
 For examples of how `python-slugify` will change your url's see the
 [project's home page](https://pypi.org/project/python-slugify/)
-
 #### OPTING OUT
 
-If you have an existing site and do not want to implement redirects, or simply
+
 do not want to use slugify, you can opt out by setting `slugify=False` in your
 `markata.toml`.
+If you have an existing site and do not want to implement redirects, or simply
 
 ``` toml
 [markata]
 slugify=false
 ```
+
+#### Migrating to slugify
+
+From the command line with `markata>=0.5.0` installed run the
+migration script from the command line to create a redirects file in the
+default location.  This should avoid all 404's as it will create a redirects
+file that many static hosting providers will issue a server-side 301 for, and
+for those that don't, markata.plugins.redirects creates a redirect html page,
+that will kick in as a backup.
+
+``` bash
+python -m markata.scripts.migrate_to_slugify
+```
+
 
 ### configurable page template
 
