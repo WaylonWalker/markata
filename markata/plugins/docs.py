@@ -94,12 +94,14 @@ def make_article(markata: "Markata", file: Path) -> frontmatter.Post:
         + "/"
         + str(file)
     )
+
+    slug = f"{file.parent}/{file.stem}".lstrip("/").lstrip("./")
     article = textwrap.dedent(
         f"""
     ---
     title: {file.name}
     status: published
-    slug: {file.parent}/{file.stem}
+    slug: {slug}
     edit_link: {edit_link}
     path: {file.stem}.md
     today: {datetime.datetime.today()}
