@@ -21,13 +21,20 @@ from slugify import slugify
 
 from markata import Markata
 
+
+def routed_slugify(text):
+    return "/".join([slugify(s) for s in text.split("/")])
+
+
 if __name__ == "__main__":
     m = Markata()
     m.config["slugify"] = False
 
     original_urls = m.map("slug")
     redirects = [
-        "/" + o.ljust(60) + "/" + slugify(o) for o in original_urls if slugify(o) != o
+        "/" + o.ljust(60) + "/" + routed_slugify(o)
+        for o in original_urls
+        if routed_slugify(o) != o
     ]
     assets_dir: str = str(m.config.get("assets_dir", "static"))
     redirects_file = Path(

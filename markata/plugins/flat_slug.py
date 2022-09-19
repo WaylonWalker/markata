@@ -46,8 +46,10 @@ def pre_render(markata: "Markata") -> None:
     """
     should_slugify = markata.config.get("slugify", True)
     for article in markata.iter_articles(description="creating slugs"):
-        stem = article.get("slug", Path(article["path"]).stem)
+        stem = article.get(
+            "slug", Path(article.get("path", article.get("title", ""))).stem
+        )
         if should_slugify:
-            article["slug"] = slugify(stem)
+            article["slug"] = "/".join([slugify(s) for s in stem.split("/")])
         else:
             article["slug"] = stem
