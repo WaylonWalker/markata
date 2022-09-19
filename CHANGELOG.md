@@ -2,8 +2,8 @@
 
 ## 0.5.0-dev
 
-* Remove unused function clif that was the original entrypoint #81
-* Fix #33 sluggify paths #69 **BREAKING CHANGE** 0.5.dev6
+* Remove unused function clif that was the original entrypoint #81 0.5.0dev8
+* Fix #33 sluggify paths #69 **BREAKING CHANGE** 0.5.0dev6
 * Configurable template #70 0.5.dev5
 * Fix #40 Images overlfow outside of body #66 0.5.dev3
 * Created entrypoint hook allowing for users to extend marka with jinja
@@ -19,9 +19,10 @@
 name of the original file.
 
 For examples of how `python-slugify` will change your url's see the
-[project's home page](https://pypi.org/project/python-slugify/)
-#### OPTING OUT
+[project's home page](https://pypi.org/project/python-slugify/).  One
+difference is that `markata` will leave `/`'s for routing in the slugs.
 
+#### OPTING OUT
 
 do not want to use slugify, you can opt out by setting `slugify=False` in your
 `markata.toml`.
