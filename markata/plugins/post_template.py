@@ -55,9 +55,14 @@ def configure(markata: "Markata") -> None:
     ```
     '''
 
-    markata.config["head"]["text"] = "\n".join(
-        flatten([t.values() for t in markata.config["head"]["text"]])
-    )
+    raw_text = markata.config.get("head", {}).get("text", "")
+
+    if isinstance(raw_text, dict):
+        markata.config["head"]["text"] = "\n".join(
+            flatten([t.values() for t in raw_text])
+        )
+    if isinstance(raw_text, list):
+        markata.config["head"]["text"] = "\n".join(flatten([t for t in raw_text]))
 
 
 @hook_impl
