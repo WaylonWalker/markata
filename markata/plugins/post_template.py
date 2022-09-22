@@ -18,7 +18,7 @@ class SilentUndefined(Undefined):
 @hook_impl
 def configure(markata: "Markata") -> None:
     '''
-    massages the configuration limitations of toml to allow a little bit easier
+    Massages the configuration limitations of toml to allow a little bit easier
     experience to the end user making configurations while allowing an simpler
     jinja template.
 
@@ -30,17 +30,23 @@ def configure(markata: "Markata") -> None:
     <{{ tag }} {% for attr, value in _meta.items() %}{{ attr }}="{{ value }}"{% endfor %}/> {% endfor %}{% endfor %}
     ```
 
-    Here is an example config
+    Here is an example config that adds
 
     ``` toml
     [[markata.head.text]]
     value = """
-    some script
+    <script>
+      console.log('hello world')
+    </script>
     """
 
     [[markata.head.text]]
     value="""
-    some style
+    html  {
+      font-family: "Space Mono", monospace;
+      background: var(--color-bg);
+      color: var(--color-text);
+    }
     """
 
     [[markata.head.meta]]
