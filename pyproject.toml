@@ -77,6 +77,7 @@ dev = [
  "pre-commit",
  "pytest",
  "pytest-cov",
+ "pytest-rich",
  "pytest-mock",
  "pytest-tmp-files",
 ]
@@ -124,7 +125,7 @@ ignore_errors = true
 
 [tool.isort]
 profile = "black"
-known_third_party = ["PIL", "anyconfig", "bs4", "checksumdir", "commonmark", "conftest", "dateutil", "diskcache", "feedgen", "frontmatter", "jinja2", "markdown", "more_itertools", "pathspec", "pkg_resources", "pluggy", "pydantic", "pytest", "pytz", "rich", "slugify", "textual", "typer", "yaml"]
+known_third_party = ["PIL", "anyconfig", "bs4", "checksumdir", "commonmark", "conftest", "dateutil", "diskcache", "feedgen", "frontmatter", "jinja2", "markdown", "more_itertools", "pathspec", "pkg_resources", "pluggy", "pydantic", "pytest", "pytz", "rich", "slugify", "textual", "toml", "typer", "yaml"]
 
 [tool.hatch.version]
 path = "markata/__about__.py"
@@ -150,6 +151,7 @@ dependencies = [
  "isort",
  "pytest",
  "pytest-cov",
+ "pytest-rich",
  "pytest-tmp-files",
  "seed-isort-config",
 ]
@@ -162,6 +164,7 @@ dependencies = [
  "isort",
  "pytest",
  "pytest-cov",
+ "pytest-rich",
  "pytest-tmp-files",
  "seed-isort-config",
 ]
