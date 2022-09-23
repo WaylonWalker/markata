@@ -443,9 +443,8 @@
 
   </style>
 
-  {% for head in config.get('head', []) %}
-    {{ head.get('text', '') }}
-  {% endfor %}
+  {{ config.get('head', {}).pop('text') if 'text' in config.get('head',{}).keys() }}{% for tag, meta in config.get('head', {}).items() %}{% for _meta in meta %}
+  <{{ tag }} {% for attr, value in _meta.items() %}{{ attr }}="{{ value }}"{% endfor %}/> {% endfor %}{% endfor %}
 </head>
 
   <nav>
