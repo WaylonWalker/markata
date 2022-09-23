@@ -3,6 +3,9 @@ name: Release Markata
 on:
   workflow_dispatch:
   push:
+    paths:
+      - 'markata/**'
+      - 'pyproject.toml'
 
 env:
   HATCH_INDEX_USER: __token__
