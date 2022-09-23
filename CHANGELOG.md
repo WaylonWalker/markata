@@ -2,10 +2,10 @@
 
 ## 0.5.0-dev
 
-* Remove unused function clif that was the original entrypoint #81 0.5.0dev8
-* Fix #33 sluggify paths #69 **BREAKING CHANGE** 0.5.0dev6
-* Configurable template #70 0.5.dev5
-* Fix #40 Images overlfow outside of body #66 0.5.dev3
+* Remove unused function clif that was the original entrypoint #81 0.5.0.dev8
+* Fix #33 sluggify paths #69 **BREAKING CHANGE** 0.5.0.dev6
+* Configurable template #70 0.5.dev5, #85 0.5.0.dev11
+* Fix #40 Images overlfow outside of body #66 0.5.0.dev3
 * Created entrypoint hook allowing for users to extend marka with jinja
   exensions #60 0.5.0.dev2
 * Moved to PEP 517 build #59 0.5.0.dev1
