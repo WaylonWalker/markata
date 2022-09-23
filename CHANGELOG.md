@@ -91,8 +91,8 @@ You can have an array of toml tables with a key of text.  The text will be
 added as plain text to the end of the head of each page.
 
 ``` toml
-[[markata.head]]
-text = """
+[[markata.head.text]]
+value = """
 <style>
 img {
 width: 100%;
