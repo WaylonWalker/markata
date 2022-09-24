@@ -86,7 +86,11 @@ card_template="<li class='post'><a href='/{{ slug }}/'>{{ title }}</a></li>"
 [markata.jinja_md]
 ignore=[
 'jinja_md.md',
+'post_template.md',
 'publish_html.md',
 ]
 
+[[markata.head.meta]]
+name = "og:author_email"
+content = "waylon@waylonwalker.com"
 
