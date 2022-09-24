@@ -1,6 +1,6 @@
 # Markata Changelog
 
-## 0.5.0-dev
+## 0.5.0.devx
 
 * Remove unused function clif that was the original entrypoint #81 0.5.0.dev8
 * Allow template variables to be used in head config #88 0.5.0.dev12

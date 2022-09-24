@@ -63,6 +63,7 @@ html  {
 ```
 
 """
+import html
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -121,9 +122,17 @@ def render(markata: "Markata") -> None:
     for article in markata.iter_articles("apply template"):
 
         if head_template:
-            head = eval(head_template.render(__version__=__version__, config=markata.config, **article))
+            head = eval(
+                head_template.render(
+                    escape=html.escape,
+                    __version__=__version__,
+                    config=markata.config,
+                    **article,
+                )
+            )
 
         article.html = template.render(
+            escape=html.escape,
             __version__=__version__,
             body=article.html,
             toc=markata.md.toc,  # type: ignore
