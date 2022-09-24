@@ -3,8 +3,9 @@
 ## 0.5.0-dev
 
 * Remove unused function clif that was the original entrypoint #81 0.5.0.dev8
-* Allow template variables to be used in head config #88 0.5.0.dev11
-* Expose `markata.__version__` to templates as `__version__` #89 0.5.0.dev12
+* Allow template variables to be used in head config #88 0.5.0.dev12
+* Expose `markata.__version__` to templates as `__version__` #89 0.5.0.dev13
+* Expose `html.expose` to templates as `expose` #90 0.5.0.dev13
 * Fix #33 sluggify paths #69 **BREAKING CHANGE** 0.5.0.dev6
 * Configurable template #70 0.5.dev5, #85 0.5.0.dev11
 * Fix #40 Images overlfow outside of body #66 0.5.0.dev3
