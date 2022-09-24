@@ -12,7 +12,7 @@ This snippet allows users to configure their head in `markata.toml`.
 
 Users can specify any sort of tag in their `markata.toml`
 
-```
+``` toml
 [[markata.head.meta]]
 name = "og:type"
 content = "article"
