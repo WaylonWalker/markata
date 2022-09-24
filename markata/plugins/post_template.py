@@ -70,6 +70,7 @@ import jinja2
 from jinja2 import Template, Undefined
 from more_itertools import flatten
 
+from markata import __version__
 from markata.hookspec import hook_impl
 
 env = jinja2.Environment()
@@ -120,9 +121,10 @@ def render(markata: "Markata") -> None:
     for article in markata.iter_articles("apply template"):
 
         if head_template:
-            head = eval(head_template.render(**article, config=markata.config))
+            head = eval(head_template.render( __version__=__version__, config=markata.config, **article))
 
         article.html = template.render(
+            __version__=__version__,
             body=article.html,
             toc=markata.md.toc,  # type: ignore
             config={
