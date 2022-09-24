@@ -86,7 +86,44 @@ card_template="<li class='post'><a href='/{{ slug }}/'>{{ title }}</a></li>"
 [markata.jinja_md]
 ignore=[
 'jinja_md.md',
+'post_template.md',
 'publish_html.md',
 ]
+
+[[markata.head.meta]]
+name = "og:author_email"
+content = "waylon@waylonwalker.com"
+
+# [[markata.head.text]]
+# value = """
+# some script 
+# """
+
+# [[markata.head.text]]
+# value="""
+# some style
+# """
+
+
+# [[markata.head.meta]]
+# name = "og:type"
+# content = "article"
+
+# [[markata.head.meta]]
+# name = "og:author"
+# content = "Waylon Walker"
+
+# [[markata.head.meta]]
+# name = "og:site_name"
+# property = "og:site_name"
+# content = "Waylon Walker {{ slug }}"
+
+# [[markata.head.meta]]
+# name = "theme-color"
+# content="#322D39"
+
+# [[markata.head.meta]]
+# name = "twitter:creator"
+# content="@_waylonwalker"
 
 
