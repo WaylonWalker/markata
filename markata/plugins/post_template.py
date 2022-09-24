@@ -110,9 +110,9 @@ def render(markata: "Markata") -> None:
     with open(template_file) as f:
         template = Template(f.read(), undefined=SilentUndefined)
 
-    if "{{" in str(markata.config.get("head")):
+    if "{{" in str(markata.config.get("head", {})):
         head_template = Template(
-            str(markata.config.get("head")), undefined=SilentUndefined
+            str(markata.config.get("head", {})), undefined=SilentUndefined
         )
     else:
         head_template = None
@@ -121,7 +121,7 @@ def render(markata: "Markata") -> None:
     for article in markata.iter_articles("apply template"):
 
         if head_template:
-            head = eval(head_template.render( __version__=__version__, config=markata.config, **article))
+            head = eval(head_template.render(__version__=__version__, config=markata.config, **article))
 
         article.html = template.render(
             __version__=__version__,
