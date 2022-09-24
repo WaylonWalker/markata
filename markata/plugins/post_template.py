@@ -56,10 +56,13 @@ html  {
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+import jinja2
 from jinja2 import Template, Undefined
 from more_itertools import flatten
 
 from markata.hookspec import hook_impl
+
+env = jinja2.Environment()
 
 if TYPE_CHECKING:
     from markata import Markata
@@ -95,11 +98,26 @@ def render(markata: "Markata") -> None:
         template_file = Path(__file__).parent / "default_post_template.html"
     with open(template_file) as f:
         template = Template(f.read(), undefined=SilentUndefined)
+
+    if "{{" in str(markata.config.get("head")):
+        head_template = Template(
+            str(markata.config.get("head")), undefined=SilentUndefined
+        )
+    else:
+        head_template = None
+        head = {}
+
     for article in markata.iter_articles("apply template"):
+
+        if head_template:
+            head = eval(head_template.render(**article, config=markata.config))
 
         article.html = template.render(
             body=article.html,
             toc=markata.md.toc,  # type: ignore
-            config=markata.config,
+            config={
+                **markata.config,
+                **{"head": head},
+            },
             **article,
         )
