@@ -30,7 +30,7 @@ The above configuration becomes this once rendered.
 ```
 
 !! Note
-    
+
     Article variables can be used for dynamic entries like canonical_url
     ``` toml
     [markata]
@@ -61,8 +61,6 @@ html  {
 }
 '''
 ```
-
-
 
 """
 from pathlib import Path
