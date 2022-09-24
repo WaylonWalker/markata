@@ -29,6 +29,16 @@ The above configuration becomes this once rendered.
 <meta name='og:Author' content='Waylon Walker' />
 ```
 
+!! Note
+    
+    Article variables can be used for dynamic entries like canonical_url
+    ``` toml
+    [markata]
+    url = "markata.dev"
+    [[markata.head.meta]]
+    href="{{ config.url }}/{{ slug }}/"
+    rel="canonical"
+    ```
 Optionally users can also specify plain text to be appended to the head of
 their documents.  This works well for things that involve full blocks.
 
