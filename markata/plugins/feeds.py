@@ -165,6 +165,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, List, Optional, Union
 
 from jinja2 import Template, Undefined
+from more_itertools import flatten
 
 from markata import Markata
 from markata.hookspec import hook_impl
@@ -189,7 +190,9 @@ def configure(markata: Markata) -> None:
     """
     if "feeds" not in markata.config.keys():
         markata.config["feeds"] = dict()
+
     config = markata.config.get("feeds", dict())
+
     if "archive" not in config.keys():
         config["archive"] = dict()
         config["archive"]["filter"] = "True"
@@ -200,6 +203,39 @@ def configure(markata: Markata) -> None:
     for page, page_conf in config.items():
         if "template" not in page_conf.keys():
             page_conf["template"] = default_post_template
+
+
+@hook_impl
+def pre_render(markata: Markata) -> None:
+    tag_config = markata.config.get("feeds", {})
+    tags = list(
+        set(
+            flatten(
+                [
+                    list(i) if isinstance(i, str) else i
+                    for i in markata.map("post.get('tags',[])")
+                ]
+            )
+        )
+    )
+    conf_list = {}
+    for tag in tags:
+        attrs = {}
+        config = markata.config.get("feeds_config", {}).get("autofeed", {})["tags"]
+        attrs["filter"] = config.get("filter", "'" + str(tag) + "'" + " in tags")
+        attrs["sort"] = config.get("sort", "slug")
+        attrs["card_template"] = config.get(
+            "card_template",
+            "<li class='post'><a href='/{{ slug }}/'>{{ title }}</a></li>",
+        )
+        attrs["reverse"] = config.get("reverse", "true")
+        attrs["tag"] = tag
+        attrs["title"] = tag
+        attrs["template"] = config.get(
+            "template", Path(__file__).parent / "default_post_template.html"
+        )
+        conf_list[tag] = attrs
+    tag_config["tags"] = conf_list
 
 
 @hook_impl
@@ -214,24 +250,36 @@ def save(markata: Markata) -> None:
 
     for page, page_conf in feeds.items():
 
-        create_page(
-            markata,
-            page,
-            description=description,
-            url=url,
-            **page_conf,
-        )
+        if "tags" == page:
+            page_conf = markata.config.get("feeds", {})["tags"]
+            for tag in page_conf:
+                tag_conf = page_conf[tag]
+                create_page(
+                    markata,
+                    page,
+                    description=description,
+                    url=url,
+                    **tag_conf,
+                )
+        else:
+            create_page(
+                markata,
+                page,
+                description=description,
+                url=url,
+                **page_conf,
+            )
 
-    home = Path(str(markata.config["output_dir"])) / "index.html"
-    archive = Path(str(markata.config["output_dir"])) / "archive" / "index.html"
-    if not home.exists() and archive.exists():
-        shutil.copy(str(archive), str(home))
+        home = Path(str(markata.config["output_dir"])) / "index.html"
+        archive = Path(str(markata.config["output_dir"])) / page / "index.html"
+        if not home.exists() and archive.exists():
+            shutil.copy(str(archive), str(home))
 
 
 def create_page(
     markata: Markata,
     page: str,
-    tags: Optional[List] = None,
+    tag: Optional[str] = None,
     status: str = "published",
     template: Optional[Union[Path, str]] = None,
     card_template: Optional[str] = None,
@@ -271,7 +319,10 @@ def create_page(
 
     with open(template) as f:
         template = Template(f.read(), undefined=SilentUndefined)
-    output_file = Path(markata.config["output_dir"]) / page / "index.html"
+    if tag:
+        output_file = Path(markata.config["output_dir"]) / "tag" / tag / "index.html"
+    else:
+        output_file = Path(markata.config["output_dir"]) / page / "index.html"
     canonical_url = f"{url}/{page}/"
     output_file.parent.mkdir(exist_ok=True, parents=True)
 
