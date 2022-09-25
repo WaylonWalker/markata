@@ -94,3 +94,4 @@ ignore=[
 name = "og:author_email"
 content = "waylon@waylonwalker.com"
 
+[markata.feeds_config.autofeed.tags]

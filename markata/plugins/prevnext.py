@@ -100,21 +100,22 @@ def prevnext(
 ) -> Optional[PrevNext]:
     posts = []
     for map_conf in conf.values():
-        _posts = markata.map("post", **map_conf)
-        # if the strategy is first, cycle back to the beginning after each map
-        if strategy == "first" and _posts:
-            _posts.append(_posts[0])
-        posts.extend(_posts)
-    # if the strategy is 'all', cycle back to the beginning after all of the maps.
-    if strategy == "all":
-        posts.append(posts[0])
+        if type(map_conf) is Dict[str, str]:
+            _posts = markata.map("post", **map_conf)
+            # if the strategy is first, cycle back to the beginning after each map
+            if strategy == "first" and _posts:
+                _posts.append(_posts[0])
+            posts.extend(_posts)
+        # if the strategy is 'all', cycle back to the beginning after all of the maps.
+        if strategy == "all":
+            posts.append(posts[0])
 
-    try:
-        post_idx = posts.index(post)
-        return PrevNext(prev=posts[post_idx - 1], next=posts[post_idx + 1])
-    except ValueError:
-        # post is not in posts
-        return None
+        try:
+            post_idx = posts.index(post)
+            return PrevNext(prev=posts[post_idx - 1], next=posts[post_idx + 1])
+        except ValueError:
+            # post is not in posts
+            return None
 
 
 TEMPLATE = """

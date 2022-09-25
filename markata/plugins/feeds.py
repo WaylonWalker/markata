@@ -222,7 +222,7 @@ def pre_render(markata: Markata) -> None:
     for tag in tags:
         attrs = {}
         config = markata.config.get("feeds_config", {}).get("autofeed", {})["tags"]
-        attrs["filter"] = config.get("filter", "'" + str(tag) + "'" + " in tags")
+        attrs["filter"] = config.get("filter", "'" + str(tag) + "'" + " in post.get('tags', [])")
         attrs["sort"] = config.get("sort", "slug")
         attrs["card_template"] = config.get(
             "card_template",
