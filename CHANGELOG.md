@@ -55,26 +55,23 @@ Now injects seo into the default template through configuration.  Here is an
 example, by adding this to your `markata.toml` configuration.
 
 ``` toml
-[[markata.seo]]
+[[markata.head.meta]]
 name = "og:type"
-property = "og:type"
 content = "article"
 
-[[markata.seo]]
+[[markata.head.meta]]
 name = "og:author"
-property = "og:author"
 content = "Waylon Walker"
 
-[[markata.seo]]
+[[markata.head.meta]]
 name = "og:site_name"
-property = "og:site_name"
 content = "Waylon Walker"
 
-[[markata.seo]]
+[[markata.head.meta]]
 name = "theme-color"
 content="#322D39"
 
-[[markata.seo]]
+[[markata.head.meta]]
 name = "twitter:creator"
 content="@_waylonwalker"
 ```
@@ -82,9 +79,9 @@ content="@_waylonwalker"
 You will end up with these meta tags in your html.
 
 ``` html
-<meta name="og:type" property="og:type" content="article">
-<meta name="og:author" property="og:author" content="Waylon Walker">
-<meta name="og:site_name" property="og:site_name" content="Waylon Walker">
+<meta name="og:type" content="article">
+<meta name="og:author" content="Waylon Walker">
+<meta name="og:site_name" content="Waylon Walker">
 <meta name="theme-color" content="#322D39">
 <meta name="twitter:creator" content="@_waylonwalker">
 ```
