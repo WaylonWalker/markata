@@ -118,7 +118,7 @@ def render(markata: "Markata") -> None:
         head_template = None
         head = {}
 
-    for article in markata.iter_articles("apply template"):
+    for article in [a for a in markata.articles if hasattr(a, 'html')]:
 
         if head_template:
             head = eval(head_template.render(__version__=__version__, config=markata.config, **article))

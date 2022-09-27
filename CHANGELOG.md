@@ -5,6 +5,7 @@
 * Remove unused function clif that was the original entrypoint #81 0.5.0.dev8
 * Allow template variables to be used in head config #88 0.5.0.dev12
 * Expose `markata.__version__` to templates as `__version__` #89 0.5.0.dev13
+* Fix, ignore post_template save on posts without an html attribute #92 0.5.0.dev13
 * Fix #33 sluggify paths #69 **BREAKING CHANGE** 0.5.0.dev6
 * Configurable template #70 0.5.dev5, #85 0.5.0.dev11
 * Fix #40 Images overlfow outside of body #66 0.5.0.dev3
@@ -312,4 +313,3 @@ The new heading link plugin makes it easier to share the exact part of an articl
 ## 0.0.1
 
 Initial Release 🎉
-
