@@ -67,6 +67,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import jinja2
+from deepmerge import always_merger
 from jinja2 import Template, Undefined
 from more_itertools import flatten
 
@@ -121,15 +122,31 @@ def render(markata: "Markata") -> None:
     for article in markata.iter_articles("apply template"):
 
         if head_template:
-            head = eval(head_template.render(__version__=__version__, config=markata.config, **article))
+            head = eval(
+                head_template.render(
+                    __version__=__version__,
+                    config=markata.config,
+                    **article,
+                )
+            )
+
+        merged_config = always_merger.merge(
+            markata.config,
+            {"head": head},
+        )
+
+        merged_config = always_merger.merge(
+            merged_config,
+            article.get(
+                "config_overrides",
+                {},
+            ),
+        )
 
         article.html = template.render(
             __version__=__version__,
             body=article.html,
             toc=markata.md.toc,  # type: ignore
-            config={
-                **markata.config,
-                **{"head": head},
-            },
+            config=merged_config,
             **article,
         )

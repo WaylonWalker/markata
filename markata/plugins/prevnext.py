@@ -67,6 +67,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Dict, List, Optional
 
+from deepmerge import always_merger
 from jinja2 import Template
 
 from markata.hookspec import hook_impl, register_attr
@@ -226,4 +227,13 @@ def pre_render(markata: "Markata") -> None:
             strategy=strategy,
         )
         if "prevnext" not in article.content and article["prevnext"]:
-            article.content += template.render(config=config, **article)
+            article.content += template.render(
+                config=always_merger(
+                    markata.config,
+                    article.get(
+                        "config_overrides",
+                        {},
+                    ),
+                ),
+                **article,
+            )
