@@ -228,7 +228,7 @@ def pre_render(markata: "Markata") -> None:
         )
         if "prevnext" not in article.content and article["prevnext"]:
             article.content += template.render(
-                config=always_merger(
+                config=always_merger.merge(
                     markata.config,
                     article.get(
                         "config_overrides",
