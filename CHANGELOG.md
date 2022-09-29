@@ -16,6 +16,7 @@
   server-side redirects fail, or the user does not have the ability to issue. #76
 * create a slugify migration script #82
 * DeepMerge `config_overrides` with config in post render methods #91 0.5.0.dev13
+* Create ipython extension to automatically load markata
 
 ### sluggify paths
 
@@ -138,6 +139,16 @@ config_overrides:
     - value: <link rel='stylesheet' href='/my-extra-styles.css' />
 ```
 
+## ipython extension
+
+Markata has an ipython extension if you want ipython to automatically load with
+an instance of `Markata` mapped to `m` and `markata` you can add the following
+to your `~/.ipython/profile_default/ipython_config.py`
+
+``` python
+c.InteractiveShellApp.extensions.append('markata')
+```
+        
 ## 0.4.1
 
 * Issue FutureWarning for upcoming change to slugify change that will change urls
