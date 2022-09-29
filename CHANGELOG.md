@@ -118,7 +118,9 @@ Descriptions will now properly end up in each page.
 
 ## Config Overrides
 
-Each post can override config settings such as `head`.  New meta tags can be added to a single post
+Each post can override config settings such as `head`.  New meta tags can be
+added to a single post, or anything that your template might reference from
+config.
 
 ``` yaml
 config_overrides:
@@ -126,22 +128,14 @@ config_overrides:
     meta:
     - content: waylonwalker
       name: author
-    - content: @_waylonwalker
-      name: twitter_creator
+    - content: '@_waylonwalker'
+      name: 'twitter:creator'
     link:
     - href: https://waylonwalker.com/that-special-post/
       rel: canonical
     text:
     - value: <link rel='stylesheet' href='/my-extra-styles.css' />
 ```
-
-``` yaml
-config_overrides:
-  head:
-    text:
-    - value: <link rel='stylesheet' href='/my-extra-styles.css' />
-```
-
 
 ## 0.4.1
 
