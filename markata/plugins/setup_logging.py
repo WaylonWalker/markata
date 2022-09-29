@@ -212,7 +212,9 @@ def configure(markata: "Markata") -> None:
     setup_log(markata, logging.WARNING)
 
     if not has_rich_handler():
-        console = RichHandler(rich_tracebacks=True)
+        console = RichHandler(
+            rich_tracebacks=True,
+        )
         console.setLevel(logging.INFO)
         formatter = logging.Formatter("%(message)s")
         console.setFormatter(formatter)

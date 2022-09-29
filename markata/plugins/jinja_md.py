@@ -131,15 +131,18 @@ markdown.
 ```
 
 """
+import copy
 from pathlib import Path
 from typing import TYPE_CHECKING, List
 
 import jinja2
 import pathspec
 import pkg_resources
+from deepmerge import always_merger
 from jinja2 import TemplateSyntaxError, Undefined, UndefinedError, nodes
 from jinja2.ext import Extension
 
+from markata import __version__
 from markata.hookspec import hook_impl, register_attr
 
 
@@ -210,12 +213,27 @@ def pre_render(markata: "Markata") -> None:
     jinja_env = jinja2.Environment(
         extensions=[IncludeRawExtension, *register_jinja_extensions(config)],
     )
+
+    _full_config = copy.deepcopy(markata.config)
     for article in markata.articles:
         if article.get("jinja", True) and not ignore_spec.match_file(article["path"]):
             try:
 
-                article.content = jinja_env.from_string(article.content).render(
-                    markata=markata, post=article
+                article.content = jinja_env.from_string(
+                    article.content
+                ).render(
+                    __version__=__version__,
+                    markata=markata,
+                    config=always_merger.merge(
+                        _full_config,
+                        copy.deepcopy(
+                            article.get(
+                                "config_overrides",
+                                {},
+                            ),
+                        ),
+                    ),
+                    **article,
                 )
                 # prevent double rendering
                 article["jinja"] = False

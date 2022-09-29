@@ -63,10 +63,12 @@ contains the post.
 `all` will cycle through all of the posts aggregated from any prevnext map.
 
 """
+import copy
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Dict, List, Optional
 
+from deepmerge import always_merger
 from jinja2 import Template
 
 from markata.hookspec import hook_impl, register_attr
@@ -218,6 +220,8 @@ def pre_render(markata: "Markata") -> None:
         template = Template(TEMPLATE)
     else:
         template = Template(Path(template).read_text())
+
+    _full_config = copy.deepcopy(markata.config)
     for article in set(markata.articles):
         article["prevnext"] = prevnext(
             markata,
@@ -226,4 +230,15 @@ def pre_render(markata: "Markata") -> None:
             strategy=strategy,
         )
         if "prevnext" not in article.content and article["prevnext"]:
-            article.content += template.render(config=config, **article)
+            article.content += template.render(
+                config=always_merger.merge(
+                    _full_config,
+                    copy.deepcopy(
+                        article.get(
+                            "config_overrides",
+                            {},
+                        )
+                    ),
+                ),
+                **article,
+            )
