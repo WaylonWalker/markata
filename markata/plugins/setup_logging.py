@@ -214,10 +214,6 @@ def configure(markata: "Markata") -> None:
     if not has_rich_handler():
         console = RichHandler(
             rich_tracebacks=True,
-            tracebacks_suppress=["click", "jinja2"],
-            locals_max_length=10,
-            locals_max_string=80,
-            tracebacks_show_locals=False,
         )
         console.setLevel(logging.INFO)
         formatter = logging.Formatter("%(message)s")
