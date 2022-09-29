@@ -140,6 +140,7 @@ def render(markata: "Markata") -> None:
         head = {}
 
     _full_config = copy.deepcopy(markata.config)
+
     for article in [a for a in markata.articles if hasattr(a, "html")]:
 
         if head_template:
