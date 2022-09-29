@@ -14,6 +14,7 @@
 * markata.plugins.redirects will create redirect html files as a backup when
   server-side redirects fail, or the user does not have the ability to issue. #76
 * create a slugify migration script #82
+* DeepMerge `config_overrides` with config in post render methods #91 0.5.0.dev13
 
 ### sluggify paths
 
@@ -47,7 +48,6 @@ that will kick in as a backup.
 ``` bash
 python -m markata.scripts.migrate_to_slugify
 ```
-
 
 ### configurable page template
 
@@ -115,6 +115,33 @@ Descriptions will now properly end up in each page.
 ``` html
   <meta name="description" content="{{ description }}">
 ```
+
+## Config Overrides
+
+Each post can override config settings such as `head`.  New meta tags can be added to a single post
+
+``` yaml
+config_overrides:
+  head:
+    meta:
+    - content: waylonwalker
+      name: author
+    - content: @_waylonwalker
+      name: twitter_creator
+    link:
+    - href: https://waylonwalker.com/that-special-post/
+      rel: canonical
+    text:
+    - value: <link rel='stylesheet' href='/my-extra-styles.css' />
+```
+
+``` yaml
+config_overrides:
+  head:
+    text:
+    - value: <link rel='stylesheet' href='/my-extra-styles.css' />
+```
+
 
 ## 0.4.1
 

@@ -131,6 +131,7 @@ markdown.
 ```
 
 """
+import copy
 from pathlib import Path
 from typing import TYPE_CHECKING, List
 
@@ -212,18 +213,24 @@ def pre_render(markata: "Markata") -> None:
     jinja_env = jinja2.Environment(
         extensions=[IncludeRawExtension, *register_jinja_extensions(config)],
     )
+
+    _full_config = copy.deepcopy(markata.config)
     for article in markata.articles:
         if article.get("jinja", True) and not ignore_spec.match_file(article["path"]):
             try:
 
-                article.content = jinja_env.from_string(article.content).render(
+                article.content = jinja_env.from_string(
+                    article.content
+                ).render(  # markata=markata, post=article)
                     __version__=__version__,
                     markata=markata,
                     config=always_merger.merge(
-                        markata.config,
-                        article.get(
-                            "config_overrides",
-                            {},
+                        _full_config,
+                        copy.deepcopy(
+                            article.get(
+                                "config_overrides",
+                                {},
+                            ),
                         ),
                     ),
                     **article,

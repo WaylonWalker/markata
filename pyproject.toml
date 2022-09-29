@@ -78,7 +78,6 @@ dev = [
  "pre-commit",
  "pytest",
  "pytest-cov",
- "pytest-rich",
  "pytest-mock",
  "pytest-tmp-files",
 ]
@@ -165,7 +164,6 @@ dependencies = [
  "isort",
  "pytest",
  "pytest-cov",
- "pytest-rich",
  "pytest-tmp-files",
  "seed-isort-config",
 ]

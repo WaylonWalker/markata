@@ -63,6 +63,7 @@ html  {
 ```
 
 """
+import copy
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -103,6 +104,25 @@ def configure(markata: "Markata") -> None:
 
 
 @hook_impl
+def pre_render(markata: "Markata") -> None:
+    """
+    FOR EACH POST: Massages the configuration limitations of toml/yaml to allow
+    a little bit easier experience to the end user making configurations while
+    allowing an simpler jinja template.  This enablees the use of the
+    `markata.head.text` list in configuration.
+    """
+    for article in [
+        a for a in markata.articles if "config_overrides" in a.metadata.keys()
+    ]:
+        raw_text = article.get("config_overrides", {}).get("head", {}).get("text", "")
+
+        if isinstance(raw_text, list):
+            article["config_overrides"]["head"]["text"] = "\n".join(
+                flatten([t.values() for t in raw_text])
+            )
+
+
+@hook_impl
 def render(markata: "Markata") -> None:
     if "post_template" in markata.config:
         template_file = markata.config["post_template"]
@@ -119,27 +139,31 @@ def render(markata: "Markata") -> None:
         head_template = None
         head = {}
 
-    for article in markata.iter_articles("apply template"):
+    _full_config = copy.deepcopy(markata.config)
+    for article in [a for a in markata.articles if hasattr(a, "html")]:
 
         if head_template:
+
             head = eval(
                 head_template.render(
                     __version__=__version__,
-                    config=markata.config,
+                    config=_full_config,
                     **article,
                 )
             )
 
-        merged_config = always_merger.merge(
-            markata.config,
-            {"head": head},
-        )
+        merged_config = {
+            **_full_config,
+            **{"head": head},
+        }
 
         merged_config = always_merger.merge(
             merged_config,
-            article.get(
-                "config_overrides",
-                {},
+            copy.deepcopy(
+                article.get(
+                    "config_overrides",
+                    {},
+                )
             ),
         )
 
@@ -148,5 +172,15 @@ def render(markata: "Markata") -> None:
             body=article.html,
             toc=markata.md.toc,  # type: ignore
             config=merged_config,
-            **article,
+            **article.metadata,
         )
+
+        # print(
+        #     template.render(
+        #         __version__=__version__,
+        #         body=article.html,
+        #         toc=markata.md.toc,
+        #         config=merged_config,
+        #         **article,
+        #     )
+        # )
