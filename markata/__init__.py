@@ -441,3 +441,8 @@ class Markata:
             for a in articles
             if eval(filter, {**a.to_dict(), "timedelta": timedelta, "post": a}, {})
         ]
+
+
+def load_ipython_extension(ipython):
+    ipython.user_ns["m"] = Markata()
+    ipython.user_ns["markata"] = ipython.user_ns["m"]
