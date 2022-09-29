@@ -111,9 +111,7 @@ def pre_render(markata: "Markata") -> None:
     allowing an simpler jinja template.  This enablees the use of the
     `markata.head.text` list in configuration.
     """
-    for article in [
-        a for a in markata.articles if "config_overrides" in a.metadata.keys()
-    ]:
+    for article in [a for a in markata.articles if "config_overrides" in a.keys()]:
         raw_text = article.get("config_overrides", {}).get("head", {}).get("text", "")
 
         if isinstance(raw_text, list):
