@@ -445,3 +445,4 @@ class Markata:
 
 def load_ipython_extension(ipython):
     ipython.user_ns["m"] = Markata()
+    ipython.user_ns["markata"] = ipython.user_ns["m"]
