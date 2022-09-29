@@ -174,13 +174,3 @@ def render(markata: "Markata") -> None:
             config=merged_config,
             **article.metadata,
         )
-
-        # print(
-        #     template.render(
-        #         __version__=__version__,
-        #         body=article.html,
-        #         toc=markata.md.toc,
-        #         config=merged_config,
-        #         **article,
-        #     )
-        # )
