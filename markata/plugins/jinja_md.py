@@ -221,7 +221,7 @@ def pre_render(markata: "Markata") -> None:
 
                 article.content = jinja_env.from_string(
                     article.content
-                ).render(  # markata=markata, post=article)
+                ).render(
                     __version__=__version__,
                     markata=markata,
                     config=always_merger.merge(
