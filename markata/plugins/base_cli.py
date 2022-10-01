@@ -41,6 +41,7 @@ import shutil
 import sys
 import traceback
 import warnings
+from pathlib import Path
 from typing import TYPE_CHECKING, Callable, Optional
 
 import typer
@@ -80,6 +81,45 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
     """
     Markata hook to implement base cli commands.
     """
+
+    new_app = typer.Typer()
+    app.add_typer(new_app)
+
+    @new_app.callback()
+    def new():
+        "create new things from templates"
+
+    @new_app.command()
+    def blog(
+        directory: Path = typer.Argument(
+            ..., help="The directory to create the blog in."
+        )
+    ) -> None:
+        "create new things from templates"
+        from copier import run_auto
+
+        typer.echo(f"creating a new project in {directory.absolute()}")
+        url = markata.config.get("starters", {}).get('blog', "git+https://github.com/WaylonWalker/markata-blog-starter")
+        run_auto(url, directory)
+
+    @new_app.command()
+    def post() -> None:
+        "create new post from templates"
+        print("create a new post")
+        from copier import run_auto
+
+        typer.echo(f"creating a new post in {Path().absolute()}/posts")
+        url = markata.config.get('starters', {}).get('post', "git+https://github.com/WaylonWalker/markata-post-template")
+        run_auto(url, Path("."))
+
+    @new_app.command()
+    def plugin() -> None:
+        "Scaffold a new plugin"
+        from copier import run_auto
+
+        typer.echo(f"creating a new plugin in {Path().absolute()}/<python-package-name>/plugins")
+        url = markata.config.get('starters', {}).get('post', "git+https://github.com/WaylonWalker/markata-plugin-template")
+        run_auto(url, Path("."))
 
     @app.command()
     def build(
