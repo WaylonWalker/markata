@@ -95,7 +95,11 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
             ..., help="The directory to create the blog in."
         )
     ) -> None:
-        "create new things from templates"
+        """
+        Create a new blog from using the template from
+        https://github.com/WaylonWalker/markata-blog-starter.
+        """
+
         from copier import run_auto
 
         typer.echo(f"creating a new project in {directory.absolute()}")
@@ -104,7 +108,11 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
 
     @new_app.command()
     def post() -> None:
-        "create new post from templates"
+        """
+        Create new blog post in the pages directory from the template at 
+        https://github.com/WaylonWalker/markata-post-template.
+        """
+
         print("create a new post")
         from copier import run_auto
 
@@ -114,7 +122,10 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
 
     @new_app.command()
     def plugin() -> None:
-        "Scaffold a new plugin"
+        """
+        Create a new plugin using the template at
+        https://github.com/WaylonWalker/markata-plugin-template.
+        """
         from copier import run_auto
 
         typer.echo(f"creating a new plugin in {Path().absolute()}/<python-package-name>/plugins")
@@ -129,7 +140,6 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
             "--quiet",
             "-q",
         ),
-        # to_dict: bool = False,
         verbose: bool = typer.Option(
             False,
             "--verbose",
