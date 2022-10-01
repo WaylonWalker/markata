@@ -18,6 +18,7 @@
 * create a slugify migration script #82
 * DeepMerge `config_overrides` with config in post render methods #91 0.5.0.dev13
 * Create ipython extension to automatically load markata #79 0.5.0.dev15
+* Fix: images wrapped in a link overflow outside of the body #96
 
 ### `new` cli command
 
