@@ -2,6 +2,7 @@
 
 ## 0.5.0-dev
 
+* Create `new` cli command for creating new `blogs`, `posts`, and `plugins` #93 0.5.0.dev16
 * Remove unused function clif that was the original entrypoint #81 0.5.0.dev8
 * Allow template variables to be used in head config #88 0.5.0.dev12
 * Expose `markata.__version__` to templates as `__version__` #89 0.5.0.dev13
@@ -17,6 +18,34 @@
 * create a slugify migration script #82
 * DeepMerge `config_overrides` with config in post render methods #91 0.5.0.dev13
 * Create ipython extension to automatically load markata #79 0.5.0.dev15
+
+### `new` cli command
+
+``` bash
+# create a new blog template
+markata new blog
+
+# create a new blog post
+markata new post
+
+# create a new plugin
+markata new plugin
+
+markata new --help
+
+ Usage: markata new [OPTIONS] COMMAND [ARGS]...
+
+ create new things from templates
+
+╭─ Options ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ --help          Show this message and exit.                                                                                                                                       │
+╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Commands ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ blog       Create a new blog from using the template from https://github.com/WaylonWalker/markata-blog-starter.                                                                   │
+│ plugin     Create a new plugin using the template at https://github.com/WaylonWalker/markata-plugin-template.                                                                     │
+│ post       Create new blog post in the pages directory from the template at  https://github.com/WaylonWalker/markata-post-template.                                               │
+╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+```
 
 ### sluggify paths
 
