@@ -75,9 +75,9 @@ def render(markata: "Markata") -> None:
     markata.config["precache_urls"].extend(DEFAULT_PRECACHE_URLS)
 
     for feed, config in markata.config.get("feeds").items():
-        markata.config["precache_urls"].append(f'/{feed}/')
+        markata.config["precache_urls"].append(f"/{feed}/")
 
-        if config.get('precache', False):
+        if config.get("precache", False):
             for post in markata.map("post", **config):
                 markata.config["precache_urls"].append(f'/{post.get("slug", "")}/')
 
