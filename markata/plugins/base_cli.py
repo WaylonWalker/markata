@@ -35,6 +35,43 @@ markata list --map 'str(date.year) + "," + title'
 see the
 [`list`](https://markata.dev/markata/plugins/base_cli/#list-function)
 section for more examples.
+
+## Creating "new" things with the cli
+
+The `new` cli is built on copier templates, and allows you to build a new blog
+from a starter repo, make new posts, and new plugins.  Before you start dumping
+new things onto your site for the first time, make sure you have a clean git
+history fully backed up, or look at the template repos to fully understand
+them.
+
+``` bash
+# create a new blog template
+# copier requires you to specify a directory
+markata new blog [directory]
+
+# create a new blog post
+markata new post
+
+# create a new plugin
+markata new plugin
+
+# for the most up to date help, just ask for help.
+markata new --help
+
+ Usage: markata new [OPTIONS] COMMAND [ARGS]...
+
+ create new things from templates
+
+╭─ Options ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ --help          Show this message and exit.                                                                                                                                       │
+╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Commands ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ blog       Create a new blog from using the template from https://github.com/WaylonWalker/markata-blog-starter.                                                                   │
+│ plugin     Create a new plugin using the template at https://github.com/WaylonWalker/markata-plugin-template.                                                                     │
+│ post       Create new blog post in the pages directory from the template at  https://github.com/WaylonWalker/markata-post-template.                                               │
+╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+```
+
 """
 import pdb
 import shutil

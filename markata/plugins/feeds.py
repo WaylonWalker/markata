@@ -241,6 +241,7 @@ def create_page(
     title: Optional[str] = "feed",
     sort: str = "True",
     reverse: bool = False,
+    **rest,
 ) -> None:
     """
     create an html unorderd list of posts.

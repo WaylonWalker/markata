@@ -447,6 +447,14 @@
 
   </style>
 
+  {% if 'markata.plugins.service_worker' in config.hooks %}
+    <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/service-worker.js');
+    }
+    </script>
+  {% endif %}
+
   {{ config.get('head', {}).pop('text') if 'text' in config.get('head',{}).keys() }}{% for tag, meta in config.get('head', {}).items() %}{% for _meta in meta %}
   <{{ tag }} {% for attr, value in _meta.items() %}{{ attr }}="{{ value }}"{% endfor %}/> {% endfor %}{% endfor %}
 </head>
