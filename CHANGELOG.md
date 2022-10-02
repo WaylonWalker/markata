@@ -25,7 +25,7 @@
   enable offline mode on sites #94 0.5.0.dev15
   [service-worker-docs](https://markata.dev/markata/plugins/service-worker/)
 * Fix: icon's were relatively linked, and were broken for any page other than
-  index, they are now absolutely linked to the root of the site. #97
+  index, they are now absolutely linked to the root of the site. #97 0.5.0.dev16
 
 ### `new` cli command
 
