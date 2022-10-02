@@ -2,7 +2,8 @@
 
 ## 0.5.0-dev
 
-* Create `new` cli command for creating new `blogs`, `posts`, and `plugins` #93 0.5.0.dev16
+* Create `new` cli command for creating new `blogs`, `posts`, and `plugins` #93
+  0.5.0.dev16 [base_cli-docs](https://markata.dev/markata/plugins/base_cli/)
 * Remove unused function clif that was the original entrypoint #81 0.5.0.dev8
 * Allow template variables to be used in head config #88 0.5.0.dev12
 * Expose `markata.__version__` to templates as `__version__` #89 0.5.0.dev13
@@ -13,18 +14,25 @@
 * Created entrypoint hook allowing for users to extend marka with jinja
   exensions #60 0.5.0.dev2
 * Moved to PEP 517 build #59 0.5.0.dev1
-* markata.plugins.redirects will create redirect html files as a backup when
-  server-side redirects fail, or the user does not have the ability to issue. #76
+* new `markata.plugins.redirects` will create redirect html files as a backup when
+  server-side redirects fail, or the user does not have the ability to issue. #76 0.5.0.dev10
+  [redirects-docs](https://markata.dev/markata/plugins/redirects/)
 * create a slugify migration script #82
 * DeepMerge `config_overrides` with config in post render methods #91 0.5.0.dev13
 * Create ipython extension to automatically load markata #79 0.5.0.dev15
 * Fix: images wrapped in a link overflow outside of the body #96
+* new `markata.plugins.service_worker` plugin to create service workers and
+  enable offline mode on sites #94 0.5.0.dev15
+  [service-worker-docs](https://markata.dev/markata/plugins/service-worker/)
 
 ### `new` cli command
 
+More information in the [base_cli-docs](https://markata.dev/markata/plugins/base_cli/).
+
 ``` bash
 # create a new blog template
-markata new blog
+# copier requires you to specify a directory
+markata new blog [directory]
 
 # create a new blog post
 markata new post
@@ -178,6 +186,7 @@ to your `~/.ipython/profile_default/ipython_config.py`
 ``` python
 c.InteractiveShellApp.extensions.append('markata')
 ```
+
         
 ## 0.4.1
 
