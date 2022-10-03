@@ -26,6 +26,8 @@
   [service-worker-docs](https://markata.dev/markata/plugins/service-worker/)
 * Fix: icon's were relatively linked, and were broken for any page other than
   index, they are now absolutely linked to the root of the site. #97 0.5.0.dev16
+* Fix: auto_descriptions were not rendered on first pass in tui or at all in
+  build due to auto_description running after jinja_md. #100 0.5.0.dev18
 
 ### `new` cli command
 
