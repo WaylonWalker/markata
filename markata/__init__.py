@@ -65,6 +65,7 @@ DEFAULT_HOOKS = [
     "markata.plugins.manifest",
     "markata.plugins.feeds",
     # "markata.plugins.generator",
+    "markata.plugins.jinja_md",
     "markata.plugins.auto_description",
     "markata.plugins.seo",
     "markata.plugins.post_template",
@@ -79,7 +80,6 @@ DEFAULT_HOOKS = [
     "markata.plugins.to_json",
     "markata.plugins.base_cli",
     "markata.plugins.tui",
-    "markata.plugins.jinja_md",
     "markata.plugins.setup_logging",
     "markata.plugins.redirects",
 ]
