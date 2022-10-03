@@ -28,6 +28,7 @@
   index, they are now absolutely linked to the root of the site. #97 0.5.0.dev16
 * Fix: auto_descriptions were not rendered on first pass in tui or at all in
   build due to auto_description running after jinja_md. #100 0.5.0.dev18
+* Fix: give redirect pages a uniqe description and title #101 0.5.0.dev19
 
 ### `new` cli command
 
