@@ -1,5 +1,7 @@
 # Markata Changelog
 
+## 0.6.0-dev
+
 ## 0.5.2
 
 * clean up unnecessary images_url is missing warning #104 0.5.2.dev1
