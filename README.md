@@ -44,8 +44,24 @@ python -m pip install markata
 markata build
 
 # or if pipx is your thing
-pix run markata build
+pipx run markata build
 ```
+
+### Building a Blog with Markata
+
+The markata cli includes a `new` command that will present you with questions
+to fill in the jinja variables in this repo.
+
+``` bash
+markata new blog [directory]
+
+# start the site and watch for changes
+hatch run tui
+```
+
+Now if you open localhost:8000, you will be presented with an example site that
+will walk you through some of the features of markata.  You can play with it at
+your own pace, or drop all of the pages and start writing your own content.
 
 ## Motivation
 
@@ -78,66 +94,7 @@ day.
 
 ## Examples Gallary
 
-### [Markata.dev](https://markata.dev)
-
-Yes, markata builds its own docs
-
-<p align=center>
-  <img src='https://user-images.githubusercontent.com/22648375/151674260-d5b1a073-ba68-4274-aac1-3b891a31e3ed.png' width=400px>
-</p>
-
-> Home page, created with index.md
-
-<p align=center>
-  <img src='https://user-images.githubusercontent.com/22648375/151674334-a5fb0205-2631-4057-8ecb-f8ba1e7ebaf9.png' width=400px>
-</p>
-
-> [base_cli plugin](https://markata.dev/markata/plugins/base_cli/) documentation generated with the [docs plugin](https://markata.dev/markata/plugins/docs/)
-
-### [WaylonWalker.com](https://waylonwalker.com)
-
-Waylonwalker.com is created completely through markata
-
-<p align=center>
-  <img src='https://user-images.githubusercontent.com/22648375/151674183-8c36cab2-bccd-4733-b78b-99384e257b00.png' width=400px>
-</p>
-
-> Post Page
-
-<p align=center>
-  <img src='https://user-images.githubusercontent.com/22648375/151674204-264d549a-fc33-4373-a675-4f5a31daaf9f.png' width=400px>
-</p>
-
-> archive page created through custom plugin
-
-### [techstructive Blog](https://mr-destructive.github.io/techstructive-blog/series/)
-
-The very first adopter of markata, [meet gor](https://twitter.com/MeetGor21) writes about golang, Django, and Bash Scripting.
-
-<p align=center>
-  <img src='https://user-images.githubusercontent.com/22648375/168610225-9a125354-56c9-4d30-8d5d-6d45a8bb6ac1.png' width=400px>
-</p>
-
-He has even created a custom plugin for dynamically adding series's to his site!
-
-<p align=center>
-  <img src='https://user-images.githubusercontent.com/22648375/168610778-be626d3b-100d-44e0-af46-10ab0255da07.png' width=400px>
-</p>
-
-### [images.WaylonWalker.com](https://images.waylonwalker.com)
-
-Waylonwalker.com currently has the built in cover image pluugin disabled for quick builds as it it a constantly evolving site with a lot of posts.  The cover images are generated in a second repo by loading article data in from [markata.json](https://waylonwalker.com/markata.json) and running the covers plugin.
-
-
-<p align=center>
-  <img src='https://user-images.githubusercontent.com/22648375/116886610-e6f03480-abee-11eb-92c8-f883314fd09a.png' width=400px>
-</p>
-
-### [pype.dev](https://pype.dev)
-
-Pype.dev is a menta data lake of all things python, linux, and homelab.
-
-<p align=center>
-  <img src='https://user-images.githubusercontent.com/22648375/168611555-b7c918fa-836e-4334-9cbd-cbb07b8ac350.png' width=400px>
-</p>
+Markata has a project gallery to show off sites built with markata.  Please
+[submit](https://github.com/WaylonWalker/markata/issues/78) yours, and check
+out the [project-gallery](http://markta.dev/project-gallery/) for inspiration.
 
