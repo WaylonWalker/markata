@@ -1,0 +1,206 @@
+[project]
+classifiers = [
+ "Development Status :: 4 - Beta",
+ "Environment :: Console",
+ "Environment :: Web Environment",
+ "Intended Audience :: Developers",
+ "Natural Language :: English",
+ "Operating System :: OS Independent",
+ "Programming Language :: Python :: 3 :: Only",
+ "Programming Language :: Python :: 3",
+ "Programming Language :: Python :: 3.10",
+ "Programming Language :: Python :: 3.6",
+ "Programming Language :: Python :: 3.7",
+ "Programming Language :: Python :: 3.8",
+ "Programming Language :: Python :: 3.9",
+ "Programming Language :: Python :: Implementation :: CPython",
+ "Programming Language :: Python :: Implementation :: PyPy",
+ "Programming Language :: Python",
+ "Topic :: Documentation",
+ "Topic :: Software Development",
+ "Topic :: Text Processing",
+ "Typing :: Typed",
+]
+dependencies = [
+ "beautifulsoup4",
+ "anyconfig",
+ "checksumdir",
+ "cookiecutter",
+ "copier",
+ "deepmerge",
+ "diskcache",
+ "feedgen",
+ "jinja2",
+ "more-itertools",
+ "pathspec",
+ "pillow",
+ "pluggy",
+ "pymdown-extensions",
+ "python-frontmatter",
+ "python-slugify",
+ "pytz",
+ "rich",
+ "textual",
+ "toml",
+ "typer",
+]
+dynamic = [
+ "version",
+]
+description = "Static site generator plugins all the way down."
+keywords = [
+ "static-site",
+]
+name = "markata"
+readme = "README.md"
+requires-python = ">=3.6"
+[[project.authors]]
+name = "Waylon Walker"
+email = "waylon@waylonwalker.com"
+
+[[project.authors]]
+email = "waylon@markata.dev"
+
+[build-system]
+requires = [
+ "hatchling>=1.4.1",
+]
+build-backend = "hatchling.build"
+
+[project.license]
+file = "LICENSE"
+
+[project.optional-dependencies]
+dev = [
+ "black",
+ "flake8",
+ "hatch",
+ "interrogate",
+ "mypy",
+ "pre-commit",
+ "pytest",
+ "pytest-cov",
+ "pytest-mock",
+ "pytest-tmp-files",
+]
+pyinstrument = [
+ "pyinstrument",
+]
+
+[project.urls]
+Homepage = "https://markata.dev"
+Changelog = "https://markata.dev/CHANGELOG/"
+Source = "https://github.com/waylonwalker/markata"
+Issues = "https://github.com/waylonwalker/markata/issues"
+Documentation = "https://markata.dev"
+
+[project.scripts]
+markata = "markata.cli:cli"
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_untyped_calls = true
+allow_untyped_globals = false
+ignore_missing_imports = true
+[[tool.mypy.overrides]]
+module = "tests.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "markata.background.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "diskcache.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "frontmatter.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "bs4.*"
+ignore_errors = true
+
+[tool.isort]
+profile = "black"
+known_third_party = ["PIL", "anyconfig", "bs4", "checksumdir", "commonmark", "conftest", "dateutil", "deepmerge", "diskcache", "feedgen", "frontmatter", "jinja2", "markdown", "more_itertools", "pathspec", "pkg_resources", "pluggy", "pydantic", "pytest", "pytz", "rich", "slugify", "textual", "toml", "typer", "yaml"]
+
+[tool.hatch.version]
+path = "markata/__about__.py"
+
+[tool.coverage.run]
+branch = true
+parallel = true
+omit = [
+ "markata/__about__.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+  "no cov",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+ ]
+
+[tool.hatch.envs.default]
+dependencies = [
+ "black",
+ "flake8",
+ "isort",
+ "pytest",
+ "pytest-cov",
+ "pytest-rich",
+ "pytest-tmp-files",
+ "seed-isort-config",
+]
+
+[tool.hatch.envs.dev]
+dependencies = [
+ "black",
+ "flake8",
+ "ipython",
+ "isort",
+ "pytest",
+ "pytest-cov",
+ "pytest-tmp-files",
+ "seed-isort-config",
+]
+
+[tool.hatch.envs.test]
+[[tool.hatch.envs.test.matrix]]
+python = [
+ "38",
+ "39",
+ "310",
+ "311",
+]
+
+[tool.hatch.envs.default.scripts]
+cov = "pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=markata --cov=tests"
+no-cov = "cov --no-cov"
+lint = "flake8 markata"
+format = "black --check markata"
+sort-imports = "isort markata"
+build-docs = "markata build"
+lint-test = [
+ "lint",
+ "format",
+ "seed-isort-config",
+ "sort-imports",
+ "cov",
+]
+test-lint = "lint-test"
+
+[tool.hatch.envs.test.scripts]
+cov = "pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=markata --cov=tests"
+
+[tool.hatch.build.targets.wheel]
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+ "/.github",
+]

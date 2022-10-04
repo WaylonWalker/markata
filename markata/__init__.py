@@ -24,14 +24,12 @@ from rich.progress import track
 from rich.table import Table
 
 from markata import hookspec, standard_config
+from markata.__about__ import __version__
 from markata.cli.plugins import Plugins
 from markata.cli.runner import Runner
 from markata.cli.server import Server
 from markata.cli.summary import Summary
 from markata.lifecycle import LifeCycle
-
-__version__ = "0.4.1"
-
 
 logger = logging.getLogger("markata")
 
@@ -67,6 +65,7 @@ DEFAULT_HOOKS = [
     "markata.plugins.manifest",
     "markata.plugins.feeds",
     # "markata.plugins.generator",
+    "markata.plugins.jinja_md",
     "markata.plugins.auto_description",
     "markata.plugins.seo",
     "markata.plugins.post_template",
@@ -81,8 +80,8 @@ DEFAULT_HOOKS = [
     "markata.plugins.to_json",
     "markata.plugins.base_cli",
     "markata.plugins.tui",
-    "markata.plugins.jinja_md",
     "markata.plugins.setup_logging",
+    "markata.plugins.redirects",
 ]
 
 DEFUALT_CONFIG = {
@@ -444,57 +443,6 @@ class Markata:
         ]
 
 
-def clif() -> None:
-    import sys
-    import time
-
-    from rich import pretty, traceback
-
-    if "--no-rich" not in sys.argv:
-        pretty.install()
-        traceback.install()
-
-    m = Markata()
-
-    if "--quiet" in sys.argv or "-q" in sys.argv:
-        m.console.quiet = True
-    else:
-        m.console.print("console options:", m.console.options)
-
-    if "--to-dict" in sys.argv:
-        m.console.quiet = True
-        data = m.to_dict()
-        m.console.quiet = False
-        m.console.print(data)
-        return
-
-    if "--draft" in sys.argv:
-        print("\n".join([a["path"] for a in m.articles if a["status"] == "draft"]))
-
-        return
-
-    if "--today" in sys.argv:
-        print("\n".join([a["path"] for a in m.articles if a["date"] == a["today"]]))
-        return
-
-    if "--scheduled" in sys.argv:
-        print("\n".join([a["path"] for a in m.articles if a["date"] > a["today"]]))
-        return
-
-    if "--back-days" in sys.argv:
-        print("\n".join([a["path"] for a in m.articles if a["date"] > a["today"]]))
-        return
-
-    if "--watch" in sys.argv:
-
-        hash = m.content_dir_hash
-        m.run()
-        console = Console()
-        with console.status("waiting for change", spinner="aesthetic", speed=0.2):
-            while True:
-                if m.content_dir_hash != hash:
-                    hash = m.content_dir_hash
-                    m.run()
-                time.sleep(0.1)
-
-    m.run()
+def load_ipython_extension(ipython):
+    ipython.user_ns["m"] = Markata()
+    ipython.user_ns["markata"] = ipython.user_ns["m"]

@@ -166,7 +166,7 @@ from typing import TYPE_CHECKING, Any, List, Optional, Union
 
 from jinja2 import Template, Undefined
 
-from markata import Markata
+from markata import Markata, __version__
 from markata.hookspec import hook_impl
 
 if TYPE_CHECKING:
@@ -241,6 +241,7 @@ def create_page(
     title: Optional[str] = "feed",
     sort: str = "True",
     reverse: bool = False,
+    **rest,
 ) -> None:
     """
     create an html unorderd list of posts.
@@ -278,6 +279,7 @@ def create_page(
     with open(output_file, "w+") as f:
         f.write(
             template.render(
+                __version__=__version__,
                 body="".join(cards),
                 url=url,
                 description=description,

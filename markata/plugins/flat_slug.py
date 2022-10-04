@@ -28,17 +28,15 @@ frontmatter.
 * `/pages/my-post.md` becomes `<markata.config['url']>/my-post/`
 * `/pages/blog/a-blog-post.md` becomes `<markata.config['url']>/a-blog-post/`
 """
-import logging
-import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING
+
+from slugify import slugify
 
 from markata.hookspec import hook_impl
 
 if TYPE_CHECKING:
     from markata import Markata
-
-logger = logging.getLogger(__file__)
 
 
 @hook_impl(tryfirst=True)
@@ -46,10 +44,12 @@ def pre_render(markata: "Markata") -> None:
     """
     Sets the article slug if one is not already set in the frontmatter.
     """
-    if markata.config.get("slugify", True):
-        message = "markata>=0.5.0 will automatically slugfify your slugs, to accept existing behavior add slugify config to your `markata.toml`, otherwise be ready to redirect changed urls. see https://markata.dev/changelog/#sluggify-paths "
-        logger.warning(message)
-        warnings.warn(message, FutureWarning)
-
+    should_slugify = markata.config.get("slugify", True)
     for article in markata.iter_articles(description="creating slugs"):
-        article["slug"] = article.get("slug", Path(article["path"]).stem)
+        stem = article.get(
+            "slug", Path(article.get("path", article.get("title", ""))).stem
+        )
+        if should_slugify:
+            article["slug"] = "/".join([slugify(s) for s in stem.split("/")])
+        else:
+            article["slug"] = stem

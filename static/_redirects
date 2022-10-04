@@ -1,0 +1,33 @@
+
+# marakta migrate to slugify redirects
+/tests/plugins/test_flat_slug                                /tests/plugins/test-flat-slug
+/tests/plugins/test_redirects                                /tests/plugins/test-redirects
+/tests/test_doc_page                                         /tests/test-doc-page
+/tests/test_one_default_page                                 /tests/test-one-default-page
+/markata/scripts/migrate_to_slugify                          /markata/scripts/migrate-to-slugify
+/markata/plugins/flat_slug                                   /markata/plugins/flat-slug
+/markata/plugins/jinja_md                                    /markata/plugins/jinja-md
+/markata/plugins/heading_link                                /markata/plugins/heading-link
+/markata/plugins/render_markdown                             /markata/plugins/render-markdown
+/markata/plugins/setup_logging                               /markata/plugins/setup-logging
+/markata/plugins/to_json                                     /markata/plugins/to-json
+/markata/plugins/publish_source                              /markata/plugins/publish-source
+/markata/plugins/publish_html                                /markata/plugins/publish-html
+/markata/plugins/publish_dev_to_source                       /markata/plugins/publish-dev-to-source
+/markata/plugins/post_template                               /markata/plugins/post-template
+/markata/plugins/icon_resize                                 /markata/plugins/icon-resize
+/markata/plugins/create_covers                               /markata/plugins/create-covers
+/markata/plugins/copy_assets                                 /markata/plugins/copy-assets
+/markata/plugins/base_cli                                    /markata/plugins/base-cli
+/markata/plugins/auto_title                                  /markata/plugins/auto-title
+/markata/plugins/auto_description                            /markata/plugins/auto-description
+/markata/plugins/__init__                                    /markata/plugins/init
+/markata/cli/__main__                                        /markata/cli/main
+/markata/cli/__init__                                        /markata/cli/init
+/markata/__init__                                            /markata/init
+/markata/__about__                                           /markata/about
+/markata/__main__                                            /markata/main
+/markata/Post                                                /markata/post
+/markata/standard_config                                     /markata/standard-config
+/jinja_meta                                                  /jinja-meta
+/CHANGELOG                                                   /changelog

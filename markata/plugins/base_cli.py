@@ -35,12 +35,50 @@ markata list --map 'str(date.year) + "," + title'
 see the
 [`list`](https://markata.dev/markata/plugins/base_cli/#list-function)
 section for more examples.
+
+## Creating "new" things with the cli
+
+The `new` cli is built on copier templates, and allows you to build a new blog
+from a starter repo, make new posts, and new plugins.  Before you start dumping
+new things onto your site for the first time, make sure you have a clean git
+history fully backed up, or look at the template repos to fully understand
+them.
+
+``` bash
+# create a new blog template
+# copier requires you to specify a directory
+markata new blog [directory]
+
+# create a new blog post
+markata new post
+
+# create a new plugin
+markata new plugin
+
+# for the most up to date help, just ask for help.
+markata new --help
+
+ Usage: markata new [OPTIONS] COMMAND [ARGS]...
+
+ create new things from templates
+
+╭─ Options ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ --help          Show this message and exit.                                                                                                                                       │
+╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Commands ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ blog       Create a new blog from using the template from https://github.com/WaylonWalker/markata-blog-starter.                                                                   │
+│ plugin     Create a new plugin using the template at https://github.com/WaylonWalker/markata-plugin-template.                                                                     │
+│ post       Create new blog post in the pages directory from the template at  https://github.com/WaylonWalker/markata-post-template.                                               │
+╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+```
+
 """
 import pdb
 import shutil
 import sys
 import traceback
 import warnings
+from pathlib import Path
 from typing import TYPE_CHECKING, Callable, Optional
 
 import typer
@@ -81,6 +119,64 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
     Markata hook to implement base cli commands.
     """
 
+    new_app = typer.Typer()
+    app.add_typer(new_app)
+
+    @new_app.callback()
+    def new():
+        "create new things from templates"
+
+    @new_app.command()
+    def blog(
+        directory: Path = typer.Argument(
+            ..., help="The directory to create the blog in."
+        )
+    ) -> None:
+        """
+        Create a new blog from using the template from
+        https://github.com/WaylonWalker/markata-blog-starter.
+        """
+
+        from copier import run_auto
+
+        typer.echo(f"creating a new project in {directory.absolute()}")
+        url = markata.config.get("starters", {}).get(
+            "blog", "git+https://github.com/WaylonWalker/markata-blog-starter"
+        )
+        run_auto(url, directory)
+
+    @new_app.command()
+    def post() -> None:
+        """
+        Create new blog post in the pages directory from the template at
+        https://github.com/WaylonWalker/markata-post-template.
+        """
+
+        print("create a new post")
+        from copier import run_auto
+
+        typer.echo(f"creating a new post in {Path().absolute()}/posts")
+        url = markata.config.get("starters", {}).get(
+            "post", "git+https://github.com/WaylonWalker/markata-post-template"
+        )
+        run_auto(url, Path("."))
+
+    @new_app.command()
+    def plugin() -> None:
+        """
+        Create a new plugin using the template at
+        https://github.com/WaylonWalker/markata-plugin-template.
+        """
+        from copier import run_auto
+
+        typer.echo(
+            f"creating a new plugin in {Path().absolute()}/<python-package-name>/plugins"
+        )
+        url = markata.config.get("starters", {}).get(
+            "post", "git+https://github.com/WaylonWalker/markata-plugin-template"
+        )
+        run_auto(url, Path("."))
+
     @app.command()
     def build(
         pretty: bool = True,
@@ -89,7 +185,6 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
             "--quiet",
             "-q",
         ),
-        # to_dict: bool = False,
         verbose: bool = typer.Option(
             False,
             "--verbose",

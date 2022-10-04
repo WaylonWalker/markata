@@ -1,6 +1,210 @@
 # Markata Changelog
 
-## dev
+## 0.5.0-dev
+
+* Create `new` cli command for creating new `blogs`, `posts`, and `plugins` #93
+  0.5.0.dev16 [base_cli-docs](https://markata.dev/markata/plugins/base_cli/)
+* Remove unused function clif that was the original entrypoint #81 0.5.0.dev8
+* Allow template variables to be used in head config #88 0.5.0.dev12
+* Expose `markata.__version__` to templates as `__version__` #89 0.5.0.dev13
+* Fix, ignore post_template save on posts without an html attribute #92 0.5.0.dev13
+* Fix #33 sluggify paths #69 **BREAKING CHANGE** 0.5.0.dev6
+* Configurable template #70 0.5.dev5, #85 0.5.0.dev11
+* Fix #40 Images overlfow outside of body #66 0.5.0.dev3
+* Created entrypoint hook allowing for users to extend marka with jinja
+  exensions #60 0.5.0.dev2
+* Moved to PEP 517 build #59 0.5.0.dev1
+* new `markata.plugins.redirects` will create redirect html files as a backup when
+  server-side redirects fail, or the user does not have the ability to issue. #76 0.5.0.dev10
+  [redirects-docs](https://markata.dev/markata/plugins/redirects/)
+* create a slugify migration script #82
+* DeepMerge `config_overrides` with config in post render methods #91 0.5.0.dev13
+* Create ipython extension to automatically load markata #79 0.5.0.dev15
+* Fix: images wrapped in a link overflow outside of the body #96
+* new `markata.plugins.service_worker` plugin to create service workers and
+  enable offline mode on sites #94 0.5.0.dev15
+  [service-worker-docs](https://markata.dev/markata/plugins/service-worker/)
+* Fix: icon's were relatively linked, and were broken for any page other than
+  index, they are now absolutely linked to the root of the site. #97 0.5.0.dev16
+* Fix: auto_descriptions were not rendered on first pass in tui or at all in
+  build due to auto_description running after jinja_md. #100 0.5.0.dev18
+* Fix: give redirect pages a uniqe description and title #101 0.5.0.dev19
+
+### `new` cli command
+
+More information in the [base_cli-docs](https://markata.dev/markata/plugins/base_cli/).
+
+``` bash
+# create a new blog template
+# copier requires you to specify a directory
+markata new blog [directory]
+
+# create a new blog post
+markata new post
+
+# create a new plugin
+markata new plugin
+
+markata new --help
+
+ Usage: markata new [OPTIONS] COMMAND [ARGS]...
+
+ create new things from templates
+
+╭─ Options ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ --help          Show this message and exit.                                                                                                                                       │
+╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Commands ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ blog       Create a new blog from using the template from https://github.com/WaylonWalker/markata-blog-starter.                                                                   │
+│ plugin     Create a new plugin using the template at https://github.com/WaylonWalker/markata-plugin-template.                                                                     │
+│ post       Create new blog post in the pages directory from the template at  https://github.com/WaylonWalker/markata-post-template.                                               │
+╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+```
+
+### sluggify paths
+
+`python-sluggify` was implemented to ensure good urls are in place despite the
+name of the original file.
+
+For examples of how `python-slugify` will change your url's see the
+[project's home page](https://pypi.org/project/python-slugify/).  One
+difference is that `markata` will leave `/`'s for routing in the slugs.
+
+#### OPTING OUT
+
+do not want to use slugify, you can opt out by setting `slugify=False` in your
+`markata.toml`.
+If you have an existing site and do not want to implement redirects, or simply
+
+``` toml
+[markata]
+slugify=false
+```
+
+#### Migrating to slugify
+
+From the command line with `markata>=0.5.0` installed run the
+migration script from the command line to create a redirects file in the
+default location.  This should avoid all 404's as it will create a redirects
+file that many static hosting providers will issue a server-side 301 for, and
+for those that don't, markata.plugins.redirects creates a redirect html page,
+that will kick in as a backup.
+
+``` bash
+python -m markata.scripts.migrate_to_slugify
+```
+
+### configurable page template
+
+Now injects seo into the default template through configuration.  Here is an
+example, by adding this to your `markata.toml` configuration.
+
+``` toml
+[[markata.head.meta]]
+name = "og:type"
+content = "article"
+
+[[markata.head.meta]]
+name = "og:author"
+content = "Waylon Walker"
+
+[[markata.head.meta]]
+name = "og:site_name"
+content = "Waylon Walker"
+
+[[markata.head.meta]]
+name = "theme-color"
+content="#322D39"
+
+[[markata.head.meta]]
+name = "twitter:creator"
+content="@_waylonwalker"
+```
+
+You will end up with these meta tags in your html.
+
+``` html
+<meta name="og:type" content="article">
+<meta name="og:author" content="Waylon Walker">
+<meta name="og:site_name" content="Waylon Walker">
+<meta name="theme-color" content="#322D39">
+<meta name="twitter:creator" content="@_waylonwalker">
+```
+
+You can have an array of toml tables with a key of text.  The text will be
+added as plain text to the end of the head of each page.
+
+``` toml
+[[markata.head]]
+text = """
+<style>
+img {
+width: 100%;
+height: auto;
+}
+ul {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+li {
+  flex: 1 2 400px;
+}
+</style>
+
+"""
+```
+
+Descriptions will now properly end up in each page.
+
+``` html
+  <meta name="description" content="{{ description }}">
+```
+
+## Config Overrides
+
+Each post can override config settings such as `head`.  New meta tags can be
+added to a single post, or anything that your template might reference from
+config.
+
+``` yaml
+config_overrides:
+  head:
+    meta:
+    - content: waylonwalker
+      name: author
+    - content: '@_waylonwalker'
+      name: 'twitter:creator'
+    link:
+    - href: https://waylonwalker.com/that-special-post/
+      rel: canonical
+    text:
+    - value: <link rel='stylesheet' href='/my-extra-styles.css' />
+```
+
+## ipython extension
+
+Markata has an ipython extension if you want ipython to automatically load with
+an instance of `Markata` mapped to `m` and `markata` you can add the following
+to your `~/.ipython/profile_default/ipython_config.py`
+
+``` python
+c.InteractiveShellApp.extensions.append('markata')
+```
+
+        
+## 0.4.1
+
+* Issue FutureWarning for upcoming change to slugify change that will change urls
+
+To keep existing behavior add this to your `markata.toml`.
+
+``` toml
+[markata]
+slugify=false
+```
+
+## 0.4.0
 
 * feat: add html logging with [setup_logging](/markata/plugins/setup_logging/)
   plugin is all new closes #37
@@ -36,6 +240,10 @@ build you can set a flag in your config to continue running prettify.
 [markata]
 prettify_html = true
 ```
+
+## 0.3.0
+
+Skipped from a bump2version misconfiguration.
 
 ## 0.2.0
 
@@ -181,4 +389,3 @@ The new heading link plugin makes it easier to share the exact part of an articl
 ## 0.0.1
 
 Initial Release 🎉
-

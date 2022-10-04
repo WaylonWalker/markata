@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta http-equiv="Refresh" content="0; url='{{ new }}'" />  
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="canonical" href="{{ new }}" />
+  <meta name="description" content="{{ old }} has been moved to {{ new }}." />
+  <title>{{ old }} has been moved to {{ new }}."<title/>
+  <style>
+    html  { 
+      font-family: "Space Mono", monospace;
+      background: {{ config.get('color_bg', '#1f2022') }};
+      color:  {{ config.get('color_text', '#eefbfe') }};
+    }
+    body {
+      margin: 5rem auto;
+      max-width: {{ config.get('body_width', '800px') }};
+            }
+
+    a {
+      text-decoration-color:  {{ config.get('color_accent', '#e1bd00c9') }};
+      color: {{ config.get('color_link', '#fb30c4') }};
+    }
+    p {
+      padding-top: 1rem;
+    }
+  </style>
+</head>
+  <body>
+    <h1>{{ old }} has Moved to {{ new }}</h1>
+    <em>Redirect</em>
+    <p>
+      {{ original.strip('/') }} has moved to <a href='{{ new }}'>{{ new.strip('/') }}</a>
+    </p>
+  </body>
+</html>
