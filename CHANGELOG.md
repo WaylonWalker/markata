@@ -1,5 +1,7 @@
 # Markata Changelog
 
+## 0.6.0-dev
+
 ## 0.5.0
 
 * Create `new` cli command for creating new `blogs`, `posts`, and `plugins` #93
