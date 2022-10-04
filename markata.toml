@@ -27,6 +27,7 @@ hooks = [
    "markata.plugins.publish_source",
    "markata.plugins.docs",
    "markata.plugins.prevnext",
+   "markata.plugins.service_worker",
    "default",
    ]
 disabled_hooks = [
@@ -62,6 +63,22 @@ twitter_creator = "@_waylonwalker"
 twitter_site = "@_waylonwalker"
 
 [markata.feeds_config]
+
+[markata.feeds.project-gallery]
+title="Project Gallery"
+filter="'project-gallery' in path"
+sort='title'
+card_template="""
+<li class='post' style='background:rgba(255, 255, 255, .05); border:1px solid rgba(255, 255, 255, .2); padding:1rem; margin: 2rem auto;' >
+<a href='/{{ slug }}/'><h2>{{ title }}</h2></a>
+<ul style='display: flex; list-style-type: None;'>
+<li><a href='{{ codeUrl }}'>Source Code</a></li>
+<li><a href='{{ url }}'>Public Site</a></li>
+
+</ul>
+{{ article_html }}
+</li>
+"""
 
 [markata.feeds.docs]
 filter='"markata" not in slug and "tests" not in slug and "404" not in slug'
