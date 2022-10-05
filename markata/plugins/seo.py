@@ -150,7 +150,7 @@ def _get_or_warn(config: Dict, key: str, default: str) -> Any:
 def render(markata: Markata) -> None:
 
     url = _get_or_warn(markata.config, "url", "")
-    images_url = _get_or_warn(markata.config, "images_url", "")
+    images_url = markata.config.get("images_url", url)
     site_name = _get_or_warn(markata.config, "site_name", "")
     author_name = _get_or_warn(markata.config, "author_name", "")
     author_email = _get_or_warn(markata.config, "author_email", "")
