@@ -1,5 +1,13 @@
 # Markata Changelog
 
+## 0.5.2
+
+* clean up unnecessary images_url is missing warning #104 0.5.1.dev1
+
+## 0.5.1
+
+* fix: contrast ratio on admonitions was not sufficient for A11y #103 0.5.1.dev0
+
 ## 0.5.0
 
 * Create `new` cli command for creating new `blogs`, `posts`, and `plugins` #93
