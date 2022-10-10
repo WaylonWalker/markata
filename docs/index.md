@@ -66,7 +66,7 @@ new blog`.
 
 Markata has a project gallery to show off sites built with markata.  Please
 [submit](https://github.com/WaylonWalker/markata/issues/78) yours, and check
-out the [project-gallery](http://markta.dev/project-gallery/) for inspiration.
+out the [project-gallery](http://markata.dev/project-gallery/) for inspiration.
 
 
 ## Source Code
