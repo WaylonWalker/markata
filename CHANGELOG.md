@@ -3,6 +3,7 @@
 ## 0.6.0-dev
 
 * Fix: article_html is not available to jinja 0.6.0.dev1 #105
+* Fix: service worker is not upating client without hard refresh 0.6.0.dev2 #106
 
 ## 0.5.2
 
