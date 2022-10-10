@@ -55,8 +55,19 @@ This is my awesome post.
 > Frontmatter is not required, but definitely gives you more control over your site.
 
 ## Next steps
+_blog starter_
 
-* [create your home page](https://markata.dev/home-page/)
+The [blog-starter](https://blog-starter.markata.dev/) has a really great write
+up on how to use markata.  You can see it in your brower at the
+[link](https://blog-starter.markata.dev/) or run it yourself `pipx run markata
+new blog`.
+
+## Examples Gallary
+
+Markata has a project gallery to show off sites built with markata.  Please
+[submit](https://github.com/WaylonWalker/markata/issues/78) yours, and check
+out the [project-gallery](http://markta.dev/project-gallery/) for inspiration.
+
 
 ## Source Code
 
