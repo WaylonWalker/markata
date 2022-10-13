@@ -14,7 +14,8 @@ class Plugins:
 
     def __rich__(self) -> Panel:
         grid = Table.grid(expand=True)
-        grid.add_row(f"[bright_blue]{len(self.m._pm.get_plugins())}[/] plugins")
+        num_plugins = f"[bright_blue]({len(self.m._pm.get_plugins())})[/]"
+
         for plugin in self.m._pm.get_plugins():
             grid.add_row(
                 "".join(
@@ -26,10 +27,13 @@ class Plugins:
                     ]
                 )
             )
-        return Panel(grid, title="plugins", border_style="gold1")
+        return Panel(
+            grid, title=f"plugins {num_plugins}", border_style="gold1", expand=False
+        )
 
 
 if __name__ == "__main__":
+    from markata import Markata
 
     plugins = Plugins(Markata())
     rich.print(plugins)
