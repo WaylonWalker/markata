@@ -1,5 +1,7 @@
+from collections import Counter
 from typing import TYPE_CHECKING, Union
 
+from more_itertools import flatten
 from rich.panel import Panel
 from rich.table import Table
 
@@ -13,38 +15,36 @@ class Summary:
         self.simple = simple
 
     def get_grid(self):
-        grid = Table.grid(expand=True)
-        grid.add_row(f"[bright_blue]{len(self.m.articles)}[/] articles")
-        grid.add_row(
-            f"[green]{len([a for a in self.m.articles if a['status'] =='published'])}[/] published"
+        self.grid = Table.grid(expand=True)
+
+        for name, config in (
+            self.m.config.get("summary", {}).get("filter_count", {}).items()
+        ):
+            self.filter_count(name, **config)
+
+        for attr in self.m.config.get("summary", {}).get("grid_attr", []):
+            self.grid_attr(attr)
+
+        return self.grid
+
+    def filter_count(self, title, filter="True", color="white") -> None:
+        self.grid.add_row(f"[{color}]{len(self.m.map(filter=filter))}[/] {title}")
+
+    def grid_attr(self, attr) -> None:
+        posts = list(
+            flatten(
+                [
+                    tags if isinstance(tags, list) else [tags]
+                    for a in self.m.articles
+                    if (tags := a.get(attr, None)) is not None
+                ]
+            )
         )
-        grid.add_row(
-            f"[gold1]{len([a for a in self.m.articles if a['status'] =='draft'])}[/] drafts"
-        )
-        grid.add_row("")
-        grid.add_row("[bold gold1]TAGS[/]")
-        from collections import Counter
-
-        from more_itertools import flatten
-
-        try:
-            for tag, count in Counter(
-                list(flatten([a["tags"] for a in self.m.articles]))
-            ).most_common():
-                grid.add_row(f'{count} {" "*(3-len(str(count)))} {tag}')
-        except KeyError:
-            ...
-
-        try:
-            grid.add_row("[bold gold1]Series[/]")
-            for series, count in Counter(
-                [a["templateKey"] for a in self.m.articles]
-            ).most_common():
-                grid.add_row(f'{count} {" "*(3-len(str(count)))} {series}')
-        except KeyError:
-            ...
-
-        return grid
+        if len(posts) > 0:
+            self.grid.add_row()
+            self.grid.add_row(f"[bold gold1]{attr.upper()}[/]")
+            for post, count in Counter(posts).most_common():
+                self.grid.add_row(f'{count} {" "*(3-len(str(count)))} {post}')
 
     def __rich__(self) -> Union[Panel, Table]:
         try:
