@@ -69,11 +69,14 @@ class Server:
                 f"[green]serving on port: [gold1]{self.port} [green]using pid: [gold1]{self.proc.pid} [green]uptime: [gold1]{self.uptime} [green]link: [gold1] http://localhost:{self.port}[/]",
                 border_style="blue",
                 title="server",
+                expand=True,
             )
 
         else:
 
-            return Panel(f"[red]server died", title="server", border_style="red")
+            return Panel(
+                f"[red]server died", title="server", border_style="red", expand=True
+            )
 
 
 if __name__ == "__main__":

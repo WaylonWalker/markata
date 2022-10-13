@@ -12,7 +12,7 @@ class Summary:
         self.m = m
         self.simple = simple
 
-    def __rich__(self) -> Union[Panel, Table]:
+    def get_grid(self):
         grid = Table.grid(expand=True)
         grid.add_row(f"[bright_blue]{len(self.m.articles)}[/] articles")
         grid.add_row(
@@ -43,14 +43,26 @@ class Summary:
                 grid.add_row(f'{count} {" "*(3-len(str(count)))} {series}')
         except KeyError:
             ...
+
+        return grid
+
+    def __rich__(self) -> Union[Panel, Table]:
+        try:
+            grid = self.get_grid()
+        except Exception:
+            grid = "Error"
         if self.simple:
             return grid
         else:
-            return Panel(grid, title="[gold1]summary[/]", border_style="magenta")
+            return Panel(
+                grid, title="[gold1]summary[/]", border_style="magenta", expand=False
+            )
 
 
 if __name__ == "__main__":
     from rich import print
+
+    from markata import Markata
 
     m = Markata()
     print(Summary(m, simple=True))
