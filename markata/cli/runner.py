@@ -26,6 +26,7 @@ class Runner:
         self.run()
 
     def run(self) -> None:
+        """ """
         self.status = "running"
         self.proc = subprocess.Popen(
             ["markata", "build"],
@@ -36,22 +37,25 @@ class Runner:
 
     @property
     def status_message(self) -> str:
+        """"""
         num_lines = self.m.console.height - 4
         last_error = "\n".join(self.last_error.split("\n")[-num_lines:])
-        if last_error == "":
-            self.title = "runner success"
+        if self.status == "running":
+            self.title = "runner running"
+            self.border = "gold1"
+        elif last_error == "":
+            self.title = "runner succeded"
             self.border = "green"
         else:
             self.title = "runner failed"
             self.border = "red"
+        self.title = f"{self.title} [blue]({round(time.time() - self.time)}s)[/]"
 
         return f"runner is {self.status} {round(time.time() - self.time)}\nhash: {self.m.content_dir_hash}\n{last_error}"
 
     def __rich__(self) -> Panel:
 
         if self.proc.poll() is None:
-            self.title = "runner running"
-            self.border = "gold1"
             return Panel(
                 Text(self.status_message),
                 border_style=self.border,
