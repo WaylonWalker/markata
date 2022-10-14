@@ -355,8 +355,10 @@ class Markata:
         )
         return articles
 
-    def run_one_lifecycle(self, lifecycle: LifeCycle = None) -> Markata:
-        getattr(self._pm.hook, lifecycle)(markata=self)
+    def teardown(self) -> Markata:
+        """give special access to the teardown lifecycle method"""
+        self._pm.hook.teardown(markata=self)
+        return self
 
     def run(self, lifecycle: LifeCycle = None) -> Markata:
         if lifecycle is None:
