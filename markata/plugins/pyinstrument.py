@@ -50,7 +50,6 @@ def save(markata: MarkataInstrument) -> None:
     "stop the profiler and save as late as possible"
     if markata.should_profile:
         try:
-
             if "profiler" in markata.__dict__.keys():
                 output_file = (
                     Path(markata.config["output_dir"]) / "_profile" / "index.html"
@@ -64,3 +63,10 @@ def save(markata: MarkataInstrument) -> None:
         except AttributeError:
             "ignore if markata does not have a profiler attribute"
             ...
+
+
+@hook_impl
+def teardown(markata: MarkataInstrument) -> None:
+    if markata.should_profile:
+        if hasattr(markata, "profiler"):
+            markata.profiler.stop()
