@@ -59,6 +59,10 @@ class Server:
     def uptime(self) -> int:
         return round(time.time() - self.start_time)
 
+    @property
+    def title(self) -> str:
+        return f"server ({self.uptime})"
+
     def kill(self) -> None:
         self.auto_restart = False
         self.proc.kill()
@@ -68,14 +72,14 @@ class Server:
             return Panel(
                 f"[green]serving on port: [gold1]{self.port} [green]using pid: [gold1]{self.proc.pid} [green]uptime: [gold1]{self.uptime} [green]link: [gold1] http://localhost:{self.port}[/]",
                 border_style="blue",
-                title="server",
+                title=self.title,
                 expand=True,
             )
 
         else:
 
             return Panel(
-                f"[red]server died", title="server", border_style="red", expand=True
+                f"[red]server died", title=self.title, border_style="red", expand=True
             )
 
 
