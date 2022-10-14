@@ -6,8 +6,9 @@
 * Fix: service worker is not upating client without hard refresh 0.6.0.dev2 #106
 * Feat: create teardown lifecycle method 0.6.0.dev3 #110
 * Fix: implement teardown on all raises 0.6.dev4 #111
-* Fix: implement teardown in pyinstrument plugin 0.6.5 #112
-* Feat: Automatically call teardown without needing to remember it before raise 0.6.6 #113
+* Fix: implement teardown in pyinstrument plugin 0.6.dev5 #112
+* Feat: Automatically call teardown without needing to remember it before raise 0.6.dev6 #113
+* Fix: only stop the profiler if it is running 0.6.dev7 #114
 
 ## 0.5.2
 
