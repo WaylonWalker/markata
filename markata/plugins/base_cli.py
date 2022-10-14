@@ -82,6 +82,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Callable, Optional
 
 import typer
+from rich import print as rich_print
 
 from markata.hookspec import hook_impl
 
@@ -118,6 +119,17 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
     """
     Markata hook to implement base cli commands.
     """
+
+    plugins_app = typer.Typer()
+    app.add_typer(plugins_app)
+
+    @plugins_app.callback()
+    def plugins():
+        "create new things from templates"
+
+    @plugins_app.command()
+    def show() -> None:
+        rich_print(markata.plugins)
 
     new_app = typer.Typer()
     app.add_typer(new_app)
