@@ -25,7 +25,6 @@ def configure(markata: "MarkataMarkdown") -> None:
     if isinstance(markata.config["markdown_extensions"], list):
         markdown_extensions = markata.config["markdown_extensions"]
     else:
-        markata.teardown()
         raise TypeError("markdown_extensions should be List[str]")
 
     markata.markdown_extensions = [*DEFAULT_MD_EXTENSIONS, *markdown_extensions]

@@ -113,7 +113,6 @@ def resolve_padding(padding: Tuple[int, ...], markata: "Markata") -> Tuple[int, 
         return padding * 2
     if len(padding) == 1:
         return padding * 4
-    markata.teardown()
     raise PaddingError(f"recieved padding: {padding}")
 
 
