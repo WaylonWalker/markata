@@ -67,6 +67,9 @@ def save(markata: MarkataInstrument) -> None:
 
 @hook_impl
 def teardown(markata: MarkataInstrument) -> None:
+    "stop the profiler on exit"
     if markata.should_profile:
         if hasattr(markata, "profiler"):
-            markata.profiler.stop()
+            if markata.profiler is not None:
+                if markata.profiler.is_running:
+                    markata.profiler.stop()
