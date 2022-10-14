@@ -143,6 +143,7 @@ class Markata:
             return getattr(self, item)
         else:
             # Markata does not know what this is, raise
+            self.teardown()
             raise AttributeError(f"'Markata' object has no attribute '{item}'")
 
     @property
@@ -206,6 +207,7 @@ class Markata:
         elif isinstance(self.config["glob_patterns"], list):
             self.config["glob_patterns"] = list(self.config["glob_patterns"])
         else:
+            self.teardown()
             raise TypeError("glob_patterns must be list or str")
         self.glob_patterns = self.config["glob_patterns"]
 
@@ -249,6 +251,7 @@ class Markata:
         config = self.config.get(key, {})
 
         if not isinstance(config, dict):
+            self.teardown()
             raise TypeError("must use dict")
         if "cache_expire" not in config.keys():
             config["cache_expire"] = self.config["default_cache_expire"]
@@ -339,6 +342,7 @@ class Markata:
                     mod = importlib.import_module(".".join(hook.split(".")[:-1]))
                     plugin = getattr(mod, hook.split(".")[-1])
                 else:
+                    self.teardown()
                     raise e
 
             self._pm.register(plugin)

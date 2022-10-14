@@ -82,6 +82,7 @@ def draw_text(
     text: str,
     color: Union[str, None],
     padding: Tuple[int, ...],
+    markata: "Markata",
 ) -> None:
     text = text or ""
     draw = ImageDraw.Draw(image)
@@ -102,9 +103,7 @@ def draw_text(
     draw.text((x, y), text, fill=color, font=font, align="center")
 
 
-def resolve_padding(
-    padding: Tuple[int, ...], markata: Markata = None
-) -> Tuple[int, ...]:
+def resolve_padding(padding: Tuple[int, ...], markata: "Markata") -> Tuple[int, ...]:
     """Convert padding to a len 4 tuple"""
     if len(padding) == 4:
         return padding
@@ -131,6 +130,7 @@ def make_cover(
     text_font_color: str = None,
     text_padding: Tuple[int, ...] = None,
     resizes: List[int] = None,
+    markata: "Markata" = None,
 ) -> None:
     if output_path.exists():
         return
@@ -139,7 +139,14 @@ def make_cover(
     else:
         image = Image.new("RGB", (800, 450))
 
-    draw_text(image, font_path, title, color, padding)
+    draw_text(
+        image=image,
+        font_path=font_path,
+        title=title,
+        color=color,
+        padding=padding,
+        markata=markata,
+    )
     if text is not None:
         if text_padding is None:
             text_padding = (
@@ -228,6 +235,7 @@ def save(markata: "Markata") -> None:
                     text_font_color=text_font_color,
                     text_padding=text_padding,
                     resizes=cover.get("resizes"),
+                    markata=markata,
                 )
             )
 
