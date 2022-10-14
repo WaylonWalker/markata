@@ -355,6 +355,9 @@ class Markata:
         )
         return articles
 
+    def run_one_lifecycle(self, lifecycle: LifeCycle = None) -> Markata:
+        getattr(self._pm.hook, lifecycle)(markata=self)
+
     def run(self, lifecycle: LifeCycle = None) -> Markata:
         if lifecycle is None:
             lifecycle = getattr(LifeCycle, max(LifeCycle._member_map_))

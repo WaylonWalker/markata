@@ -37,6 +37,7 @@ class LifeCycle(Enum):
     render = auto()
     post_render = auto()
     save = auto()
+    error = auto()
 
     def __lt__(self, other: object) -> bool:
         """
