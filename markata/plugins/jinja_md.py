@@ -243,6 +243,8 @@ def pre_render(markata: "Markata") -> None:
                 {errorline}
                 """
 
+                markata.teardown()
                 raise PostTemplateSyntaxError(msg, lineno=e.lineno)
-            except UndefinedError:
-                ...
+            except UndefinedError as e:
+                markata.teardown()
+                raise UndefinedError(f'{e} in {article["path"]}')
