@@ -214,6 +214,7 @@ def pre_render(markata: "Markata") -> None:
 
         configure prevnext in your markata.toml to use one of {SUPPORTED_STRATEGIES}
         """
+        markata.teardown()
         raise UnsupportedPrevNextStrategy(msg)
     template = config.get("template", None)
     if template is None:
