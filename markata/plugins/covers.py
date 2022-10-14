@@ -85,7 +85,7 @@ def draw_text(
 ) -> None:
     text = text or ""
     draw = ImageDraw.Draw(image)
-    padding = resolve_padding(padding)
+    padding = resolve_padding(padding, markata)
     width = image.size[0]
     height = image.size[1]
     bounding_box = [padding[0], padding[1], width - padding[0], height - padding[1]]
@@ -102,7 +102,9 @@ def draw_text(
     draw.text((x, y), text, fill=color, font=font, align="center")
 
 
-def resolve_padding(padding: Tuple[int, ...]) -> Tuple[int, ...]:
+def resolve_padding(
+    padding: Tuple[int, ...], markata: Markata = None
+) -> Tuple[int, ...]:
     """Convert padding to a len 4 tuple"""
     if len(padding) == 4:
         return padding
@@ -112,6 +114,7 @@ def resolve_padding(padding: Tuple[int, ...]) -> Tuple[int, ...]:
         return padding * 2
     if len(padding) == 1:
         return padding * 4
+    markata.teardown()
     raise PaddingError(f"recieved padding: {padding}")
 
 
