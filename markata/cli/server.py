@@ -65,7 +65,10 @@ class Server:
 
     def kill(self) -> None:
         self.auto_restart = False
+        self.proc.stdout.close()
+        self.proc.stderr.close()
         self.proc.kill()
+        self.proc.wait()
 
     def __rich__(self) -> Panel:
         if not self.proc.poll():
