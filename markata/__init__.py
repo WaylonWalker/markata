@@ -304,7 +304,11 @@ class Markata:
 
     @property
     def content_dir_hash(self) -> str:
-        hashes = [dirhash(dir) for dir in self.content_directories]
+        hashes = [
+            dirhash(dir)
+            for dir in self.content_directories
+            if dir.absolute() != Path(".").absolute()
+        ]
         return self.make_hash(*hashes)
 
     @property

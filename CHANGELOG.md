@@ -10,6 +10,8 @@
 * Feat: Automatically call teardown without needing to remember it before raise 0.6.0.dev6 #113
 * Fix: only stop the profiler if it is running 0.6.0.dev7 #114
 * Fix: map was giving inconsistent results 0.6.0.dev8 #116
+* Fix: tui continuously rebuilds if an input file exists in a parent directory
+  to the output directory 0.6.0.dev9 #118
 
 ## 0.5.2
 
