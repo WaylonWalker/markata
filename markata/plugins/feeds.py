@@ -162,12 +162,13 @@ import datetime
 import shutil
 import textwrap
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 from jinja2 import Template, Undefined
+from rich.table import Table
 
 from markata import Markata, __version__
-from markata.hookspec import hook_impl
+from markata.hookspec import hook_impl, register_attr
 
 if TYPE_CHECKING:
     from frontmatter import Post
@@ -182,7 +183,70 @@ class MarkataFilterError(RuntimeError):
     ...
 
 
+from dataclasses import dataclass
+
+
+@dataclass
+class Feed:
+    name: str
+    config: Dict
+    posts: list
+    m: Markata
+
+    def map(self, func="post", **args):
+        return self.m.map(func, **{**self.config, **args})
+
+
+class Feeds:
+    def __init__(self, markata: Markata):
+        self.m = markata
+        self.refresh()
+
+    def refresh(self) -> None:
+        """
+        Refresh all of the feeds objects
+        """
+        self.config = self.m.config.get("feeds", dict())
+        for page, page_conf in self.config.items():
+            name = page.replace("-", "_").lower()
+            feed = Feed(
+                name=name,
+                posts=self.m.map("post", **page_conf),
+                config=page_conf,
+                m=self.m,
+            )
+            self.__setattr__(name, feed)
+
+    def __getitem__(self, key: str) -> Any:
+        return getattr(self, key.replace("-", "_").lower())
+
+    def _dict_panel(self, config) -> str:
+        """
+        pretty print configs with rich
+        """
+        msg = ""
+        for key, value in config.items():
+            msg = msg + f"[grey46]{key}[/][magenta3]:[/] [grey66]{value}[/]\n"
+        return msg
+
+    def __rich__(self) -> Table:
+        from rich.table import Table
+
+        table = Table(title=f"Feeds {len(self.config)}")
+
+        table.add_column("Feed", justify="right", style="cyan", no_wrap=True)
+        table.add_column("posts", justify="left", style="green")
+        table.add_column("config", style="magenta")
+
+        for name in self.config.keys():
+            table.add_row(
+                name, str(len(self[name].posts)), self._dict_panel(self.config[name])
+            )
+        return table
+
+
 @hook_impl
+@register_attr("feeds")
 def configure(markata: Markata) -> None:
     """
     configure the default values for the feeds plugin
@@ -197,9 +261,16 @@ def configure(markata: Markata) -> None:
     default_post_template = config.get(
         "template", Path(__file__).parent / "default_post_template.html"
     )
+
     for page, page_conf in config.items():
         if "template" not in page_conf.keys():
             page_conf["template"] = default_post_template
+
+
+@hook_impl
+@register_attr("feeds")
+def pre_render(markata: Markata) -> None:
+    markata.feeds = Feeds(markata)
 
 
 @hook_impl
@@ -247,25 +318,7 @@ def create_page(
     create an html unorderd list of posts.
     """
 
-    posts = markata.map("post", filter=filter, sort=sort, reverse=reverse)
-    # if filter is not None:
-    #     posts = reversed(
-    #         sorted(
-    #             markata.articles, key=lambda x: x.get("date", datetime.date(1970, 1, 1))
-    #         )
-    #     )
-    #     try:
-    #         posts = [post for post in posts if eval(filter, post.to_dict(), {})]
-    #     except Exception as e:
-    #         msg = textwrap.dedent(
-    #             f"""
-    #                 While processing feed page='{page}' markata hit the following exception
-    #                 during filter='{filter}'
-    #                 {e}
-    #                 """
-    #         )
-    #         raise MarkataFilterError(msg)
-
+    posts = markata.feeds[page].posts
     cards = [create_card(post, card_template) for post in posts]
     cards.insert(0, "<ul>")
     cards.append("</ul>")
