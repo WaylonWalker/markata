@@ -99,8 +99,6 @@ class Runner:
 if __name__ == "__main__":
     from rich.live import Live
 
-    from markata import Markata
-
     from .cli import run_until_keyboard_interrupt
 
     with Live(Runner(Markata()), refresh_per_second=30, screen=True):
