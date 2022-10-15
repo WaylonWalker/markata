@@ -33,6 +33,11 @@ from markata.lifecycle import LifeCycle
 
 logger = logging.getLogger("markata")
 
+
+class MissingFrontMatter(NameError):
+    ...
+
+
 DEFAULT_MD_EXTENSIONS = [
     "codehilite",
     "markdown.extensions.admonition",
@@ -102,8 +107,11 @@ class Post(frontmatter.Post):
 def set_phase(function: Callable) -> Any:
     def wrapper(self: Markata, *args: Tuple, **kwargs: Dict) -> Any:
         self.phase = function.__name__
+        self.phase_file.parent.mkdir(exist_ok=True)
+        self.phase_file.write_text(self.phase)
         result = function(self, *args, **kwargs)
         self.phase = function.__name__
+        self.phase_file.parent.mkdir(exist_ok=True)
         self.phase_file.write_text(self.phase)
         return result
 
@@ -445,11 +453,37 @@ class Markata:
         if reverse:
             articles.reverse()
 
-        return [
-            eval(func, {**a.to_dict(), "timedelta": timedelta, "post": a}, {})
-            for a in articles
-            if eval(filter, {**a.to_dict(), "timedelta": timedelta, "post": a}, {})
-        ]
+        try:
+            posts = [
+                # eval(func, {**a.to_dict(), "timedelta": timedelta, "post": a}, {})
+                a
+                for a in articles
+                if eval(filter, {**a.to_dict(), "timedelta": timedelta, "post": a}, {})
+            ]
+
+            if func != "post":
+                posts = [
+                    eval(func, {**a.to_dict(), "timedelta": timedelta, "post": a}, {})
+                    for a in posts
+                ]
+
+        except NameError as e:
+            variable = str(e).split("'")[1]
+
+            missing_in_posts = self.map(
+                "path", filter=f'"{variable}" not in post.keys()'
+            )
+            message = (
+                f"variable: '{variable}' is missing in {len(missing_in_posts)} posts"
+            )
+            if len(missing_in_posts) > 10:
+                message += f"\nfirst 10 paths to posts missing {variable} [{','.join(missing_in_posts)}..."
+            else:
+                message += f"\npaths to posts missing {variable} {missing_in_posts}"
+
+            raise MissingFrontMatter(message)
+
+        return posts
 
 
 def load_ipython_extension(ipython):
