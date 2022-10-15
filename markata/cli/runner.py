@@ -23,12 +23,24 @@ class Runner:
     time = time.time()
 
     def __init__(self, markata: "Markata") -> None:
-        print("registering kill")
-        atexit.register(self.kill)
         self.m = markata
-        self.build()
+        self._dirhash = self.m.content_dir_hash
+        self._run()
+        atexit.register(self.kill)
 
-    def build(self) -> subprocess.Popen:
+    def kill(self) -> None:
+        self.proc.stdout.close()
+        self.proc.stderr.close()
+        self.proc.kill()
+        self.proc.wait()
+
+    def run(self) -> None:
+        "Runs the build only if one is not already running."
+        if self.proc.poll() is not None:
+            self._run()
+
+    def _run(self) -> None:
+        "Runs the build and sets the proc"
         self.status = "running"
         self.time = time.time()
         self.proc = subprocess.Popen(
@@ -36,25 +48,10 @@ class Runner:
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
-        print(f"starting pid {self.proc.pid}")
-
-    def kill(self):
-        self.proc.stdout.close()
-        self.proc.stderr.close()
-        self.proc.kill()
-        self.proc.wait()
-
-    def run(self) -> None:
-        """ """
-        if self.proc.poll() is not None:
-            self.proc.kill()
-            self.build()
-            print(f"starting pid {self.proc.pid}")
-        print("already running")
 
     @property
     def status_message(self) -> str:
-        """"""
+        "returns the status message to display"
         num_lines = self.m.console.height - 4
         last_error = "\n".join(self.last_error.split("\n")[-num_lines:])
         if self.status == "running":
