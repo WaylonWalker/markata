@@ -395,7 +395,6 @@ class Markata:
 
         return [a for a in self.articles if evalr(a)]
 
-    @lru_cache
     def map(
         self,
         func: str = "title",
