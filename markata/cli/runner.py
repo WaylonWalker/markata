@@ -1,3 +1,4 @@
+import atexit
 import subprocess
 import time
 from typing import TYPE_CHECKING
@@ -22,18 +23,34 @@ class Runner:
     time = time.time()
 
     def __init__(self, markata: "Markata") -> None:
+        print("registering kill")
+        atexit.register(self.kill)
         self.m = markata
-        self.run()
+        self.build()
 
-    def run(self) -> None:
-        """ """
+    def build(self) -> subprocess.Popen:
         self.status = "running"
+        self.time = time.time()
         self.proc = subprocess.Popen(
             ["markata", "build"],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
-        self.time = time.time()
+        print(f"starting pid {self.proc.pid}")
+
+    def kill(self):
+        self.proc.stdout.close()
+        self.proc.stderr.close()
+        self.proc.kill()
+        self.proc.wait()
+
+    def run(self) -> None:
+        """ """
+        if self.proc.poll() is not None:
+            self.proc.kill()
+            self.build()
+            print(f"starting pid {self.proc.pid}")
+        print("already running")
 
     @property
     def status_message(self) -> str:
@@ -51,21 +68,24 @@ class Runner:
             self.border = "red"
         self.title = f"{self.title} [blue]({round(time.time() - self.time)}s)[/]"
 
-        return f"runner is {self.status} {round(time.time() - self.time)}\nhash: {self.m.content_dir_hash}\n{last_error}"
+        return f"runner is {self.status} {round(time.time() - self.time)}\npid: {self.proc.pid}\nhash: {self.m.content_dir_hash}\n{last_error}"
 
     def __rich__(self) -> Panel:
 
-        if self.proc.poll() is None:
-            return Panel(
-                Text(self.status_message),
-                border_style=self.border,
-                title=self.title,
-                expand=True,
-            )
+        if self.proc:
+            if self.proc.poll() is None:
+                return Panel(
+                    Text(self.status_message),
+                    border_style=self.border,
+                    title=self.title,
+                    expand=True,
+                )
 
         if self.status == "running":
             self.status = "waiting"
-            self.last_error = self.proc.stderr.read().decode()
+            self.time = time.time()
+            if self.proc:
+                self.last_error = self.proc.stderr.read().decode()
 
         if self._dirhash != self.m.content_dir_hash:
             self.run()
