@@ -62,7 +62,5 @@ class Summary:
 if __name__ == "__main__":
     from rich import print
 
-    from markata import Markata
-
     m = Markata()
     print(Summary(m, simple=True))
