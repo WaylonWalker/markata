@@ -18,7 +18,9 @@ class Summary:
         self.grid = Table.grid(expand=True)
 
         for name, config in (
-            self.m.config.get("summary", {}).get("filter_count", {}).items()
+            self.m.config.get("summary", {})
+            .get("filter_count", {"aricles": {"color": "purple", "filter": "True"}})
+            .items()
         ):
             self.filter_count(name, **config)
 
