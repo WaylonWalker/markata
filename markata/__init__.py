@@ -29,13 +29,10 @@ from markata.cli.plugins import Plugins
 from markata.cli.runner import Runner
 from markata.cli.server import Server
 from markata.cli.summary import Summary
+from markata.errors import MissingFrontMatter
 from markata.lifecycle import LifeCycle
 
 logger = logging.getLogger("markata")
-
-
-class MissingFrontMatter(NameError):
-    ...
 
 
 DEFAULT_MD_EXTENSIONS = [
