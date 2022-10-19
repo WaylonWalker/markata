@@ -42,7 +42,7 @@ of posts.
 
 ```
 [markata.summary.filter_count.drafts]
-filter="status != 'published'"
+filter="published == 'False'"
 color='red'
 
 [markata.summary.filter_count.articles]
@@ -53,7 +53,7 @@ filter='"plugin" not in slug and "docs" not in path'
 color="yellow1"
 
 [markata.summary.filter_count.published]
-filter="status == 'published'"
+filter="published == 'True'"
 color='green1'
 
 [markata.summary.filter_count.plugins]

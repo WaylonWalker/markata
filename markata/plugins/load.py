@@ -46,7 +46,7 @@ def get_post(path: Path, markata: "Markata") -> Optional[Callable]:
         "cover": "",
         "title": "",
         "tags": [],
-        "status": "draft",
+        "published": "False",
         "templateKey": "",
         "path": str(path),
         "description": "",

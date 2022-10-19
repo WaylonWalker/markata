@@ -18,7 +18,7 @@ def make_index(tmp_path_factory: Any) -> Any:
             tags: ['python',]
             title:  My Awesome Post
             date: 2022-01-21T16:40:34
-            status: draft
+            published: False
 
             ---
 
