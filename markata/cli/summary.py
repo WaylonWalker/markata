@@ -1,3 +1,82 @@
+"""
+
+## Run it
+
+``` bash
+python -m markata.cli.summary
+```
+
+## Configuration
+
+There are two main things currently supported by summary, It can count the
+number of posts based on a filter (`filter_count'), and it can automatically
+list all the values of an attribute and the number of posts that have that
+attribute (`grid_attr`).
+
+### grid_attr
+
+`grid_attr` will map over all posts, find all values for each attribute
+configured, then report the number of posts for each value.
+
+``` toml
+[markata.summary]
+grid_attr = ['tags', 'series']
+```
+
+Example output that will be shown in the summary, counting all posts with each
+tag value.
+
+```
+TAGS
+247  python
+90   linux
+68   cli
+49   kedro
+46   bash
+```
+
+### filter_counts
+
+`filter_count` will pass a given filter into `markata.map` and return the number
+of posts.
+
+```
+[markata.summary.filter_count.drafts]
+filter="status != 'published'"
+color='red'
+
+[markata.summary.filter_count.articles]
+color='dark_orange'
+
+[markata.summary.filter_count.py_modules]
+filter='"plugin" not in slug and "docs" not in path'
+color="yellow1"
+
+[markata.summary.filter_count.published]
+filter="status == 'published'"
+color='green1'
+
+[markata.summary.filter_count.plugins]
+filter='"plugin" in slug and "docs" not in path'
+color="blue"
+
+[markata.summary.filter_count.docs]
+filter="'docs' in path"
+color='purple'
+```
+
+Example output might look like this, showing the number of posts that contained
+within each filter specified.
+
+```
+8 drafts
+66 articles
+20 py_modules
+58 published
+38 plugins
+8 docs
+```
+"""
 from collections import Counter
 from typing import TYPE_CHECKING, Union
 
@@ -14,7 +93,8 @@ class Summary:
         self.m = m
         self.simple = simple
 
-    def get_grid(self):
+    def get_grid(self) -> None:
+        "create a rich grid to display the summary"
         self.grid = Table.grid(expand=True)
 
         for name, config in (
@@ -29,10 +109,14 @@ class Summary:
 
         return self.grid
 
-    def filter_count(self, title, filter="True", color="white") -> None:
+    def filter_count(
+        self, title: str, filter: str = "True", color: str = "white"
+    ) -> None:
+        "add a row in the grid for the number of items in a filter config"
         self.grid.add_row(f"[{color}]{len(self.m.map(filter=filter))}[/] {title}")
 
-    def grid_attr(self, attr) -> None:
+    def grid_attr(self, attr: str) -> None:
+        "add attribute the the object grid"
         posts = list(
             flatten(
                 [
@@ -63,6 +147,8 @@ class Summary:
 
 if __name__ == "__main__":
     from rich import print
+
+    from markata import Markata
 
     m = Markata()
     print(Summary(m, simple=True))
