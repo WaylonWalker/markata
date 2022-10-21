@@ -13,6 +13,7 @@
 * Fix: tui continuously rebuilds if an input file exists in a parent directory
   to the output directory 0.6.0.dev9 #118
 * Feat: report the cache stats for the current run 0.6.0.dev11 #121
+* Fix: prevent zerodivisionerror when reporting stats 0.6.0.dev12 #122
 
 ## 0.5.2
 
