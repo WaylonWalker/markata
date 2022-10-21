@@ -391,16 +391,19 @@ class Markata:
                 f"lifetime cache hit rate {round(hits/ (hits + misses)*100, 2)}%"
             )
 
-        self.console.log(f"lifetime cache hits/misses {hits}/{misses}")
+        if misses > 0:
+            self.console.log(f"lifetime cache hits/misses {hits}/{misses}")
+
+        hits -= self.init_cache_stats[0]
+        misses -= self.init_cache_stats[1]
 
         if hits + misses > 0:
-            hits -= self.init_cache_stats[0]
-            misses -= self.init_cache_stats[1]
             self.console.log(
                 f"run cache hit rate {round(hits/ (hits + misses)*100, 2)}%"
             )
 
-        self.console.log(f"run cache hits/misses {hits}/{misses}")
+        if misses > 0:
+            self.console.log(f"run cache hits/misses {hits}/{misses}")
 
         return self
 
