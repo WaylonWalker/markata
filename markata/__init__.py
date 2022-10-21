@@ -122,6 +122,9 @@ class Markata:
             self._console = console
         atexit.register(self.teardown)
 
+        with self.cache as cache:
+            self.init_cache_stats = cache.stats()
+
     @property
     def cache(self) -> FanoutCache:
         return FanoutCache(self.MARKATA_CACHE_DIR, statistics=True)
@@ -384,8 +387,20 @@ class Markata:
             hits, misses = cache.stats()
 
         if hits + misses > 0:
-            self.console.log(f"cache hit rate {round(hits/ (hits + misses)*100, 2)}%")
-        self.console.log(f"cache hits/misses {hits}/{misses}")
+            self.console.log(
+                f"lifetime cache hit rate {round(hits/ (hits + misses)*100, 2)}%"
+            )
+
+        self.console.log(f"lifetime cache hits/misses {hits}/{misses}")
+
+        if hits + misses > 0:
+            hits -= self.init_cache_stats[0]
+            misses -= self.init_cache_stats[1]
+            self.console.log(
+                f"run cache hit rate {round(hits/ (hits + misses)*100, 2)}%"
+            )
+
+        self.console.log(f"run cache hits/misses {hits}/{misses}")
 
         return self
 
