@@ -286,6 +286,8 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
         include_empty: bool = False,
         reverse: bool = False,
         use_pager: bool = typer.Option(True, "--pager", "--no-pager"),
+        fast: bool = typer.Option(False, "--fast", "--no-fast"),
+        profile: bool = typer.Option(False, "--profile", "--no-profile"),
     ) -> None:
         """
         Provides a way run markatas, map, filter, and sort from the
@@ -452,6 +454,11 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
         `markata list` I would love to accept a PR to add it to the
         examples here.
         """
+
+        if fast:
+            articles = markata.cache.get("articles")
+            if articles is not None:
+                markata.articles = articles
 
         markata.console.quiet = True
 
