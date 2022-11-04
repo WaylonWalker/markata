@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING
 from rich.panel import Panel
 from rich.text import Text
 
+from markata.hookspec import hook_impl, register_attr
+
 if TYPE_CHECKING:
     from markata import Markata
 
@@ -94,6 +96,21 @@ class Runner:
             title=self.title,
             expand=True,
         )
+
+
+@hook_impl
+@register_attr("runner")
+def configure(markata: "Markata") -> None:
+    def get_runner(self):
+        try:
+            return self._runner
+        except AttributeError:
+            self._runner: Runner = Runner(self)
+            return self._runner
+
+    from markata import Markata
+
+    Markata.runner = property(get_runner)
 
 
 if __name__ == "__main__":

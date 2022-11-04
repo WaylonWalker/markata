@@ -5,6 +5,8 @@ from typing import Union
 
 from rich.panel import Panel
 
+from markata.hookspec import hook_impl, register_attr
+
 
 def find_port(port: int = 8000) -> int:
     """Find a port not in ues starting at given port"""
@@ -84,6 +86,21 @@ class Server:
             return Panel(
                 f"[red]server died", title=self.title, border_style="red", expand=True
             )
+
+
+@hook_impl
+@register_attr("server")
+def configure(markata: "Markata") -> None:
+    def get_server(self):
+        try:
+            return self._server
+        except AttributeError:
+            self._server: Server = Server(directory=str(self.config["output_dir"]))
+            return self._server
+
+    from markata import Markata
+
+    Markata.server = property(get_server)
 
 
 if __name__ == "__main__":

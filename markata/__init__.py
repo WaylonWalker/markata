@@ -25,15 +25,10 @@ from rich.table import Table
 
 from markata import hookspec, standard_config
 from markata.__about__ import __version__
-from markata.cli.plugins import Plugins
-from markata.cli.runner import Runner
-from markata.cli.server import Server
-from markata.cli.summary import Summary
 from markata.errors import MissingFrontMatter
 from markata.lifecycle import LifeCycle
 
 logger = logging.getLogger("markata")
-
 
 DEFAULT_MD_EXTENSIONS = [
     "codehilite",
@@ -81,6 +76,10 @@ DEFAULT_HOOKS = [
     "markata.plugins.sitemap",
     "markata.plugins.to_json",
     "markata.plugins.base_cli",
+    "markata.cli.server",
+    "markata.cli.runner",
+    "markata.cli.plugins",
+    "markata.cli.summary",
     "markata.plugins.tui",
     "markata.plugins.setup_logging",
     "markata.plugins.redirects",
@@ -153,42 +152,6 @@ class Markata:
         else:
             # Markata does not know what this is, raise
             raise AttributeError(f"'Markata' object has no attribute '{item}'")
-
-    @property
-    def server(self) -> Server:
-        try:
-            return self._server
-        except AttributeError:
-
-            self._server: Server = Server(directory=str(self.config["output_dir"]))
-            return self.server
-
-    @property
-    def runner(self) -> Runner:
-        try:
-            return self._runner
-        except AttributeError:
-
-            self._runner: Runner = Runner(self)
-            return self.runner
-
-    @property
-    def plugins(self) -> Plugins:
-        try:
-            return self._plugins
-        except AttributeError:
-
-            self._plugins: Plugins = Plugins(self)
-        return self.plugins
-
-    @property
-    def summary(self) -> Summary:
-        try:
-            return self._summary
-        except AttributeError:
-
-            self._summary: Summary = Summary(self)
-            return self.summary
 
     def __rich__(self) -> Table:
 

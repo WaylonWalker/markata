@@ -84,6 +84,8 @@ from more_itertools import flatten
 from rich.panel import Panel
 from rich.table import Table
 
+from markata.hookspec import hook_impl, register_attr
+
 if TYPE_CHECKING:
     from markata import Markata
 
@@ -145,10 +147,23 @@ class Summary:
             )
 
 
-if __name__ == "__main__":
-    from rich import print
+@hook_impl
+@register_attr("summary")
+def configure(markata: "Markata") -> None:
+    def get_summary(self):
+        try:
+            return self._summary
+        except AttributeError:
+            self._summary: Summary = Summary(self)
+            return self._summary
 
     from markata import Markata
+
+    Markata.summary = property(get_summary)
+
+
+if __name__ == "__main__":
+    from rich import print
 
     m = Markata()
     print(Summary(m, simple=True))
