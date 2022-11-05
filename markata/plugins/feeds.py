@@ -217,6 +217,18 @@ class Feeds:
             )
             self.__setattr__(name, feed)
 
+    def __iter__(self):
+        return iter(self.config.keys())
+
+    def keys(self):
+        return iter(self.config.keys())
+
+    def values(self):
+        return [self[feed] for feed in self.config.keys()]
+
+    def items(self):
+        return [(key, self[key]) for key in self.config.keys()]
+
     def __getitem__(self, key: str) -> Any:
         return getattr(self, key.replace("-", "_").lower())
 
