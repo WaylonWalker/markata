@@ -83,6 +83,8 @@ DEFAULT_HOOKS = [
     "markata.plugins.tui",
     "markata.plugins.setup_logging",
     "markata.plugins.redirects",
+    # "markata.plugins.fast",
+    "markata.plugins.uuid",
 ]
 
 DEFUALT_CONFIG = {

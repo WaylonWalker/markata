@@ -68,6 +68,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Dict, List, Optional
 
+import more_itertools
 from deepmerge import always_merger
 from jinja2 import Template
 
@@ -91,7 +92,29 @@ class UnsupportedPrevNextStrategy(NotImplementedError):
 @dataclass
 class PrevNext:
     prev: str
+    curr: str
     next: str
+
+
+class PrevNexts:
+    def __init__(self, markata: "Markata"):
+        self.markata = markata
+        self.feed_map = {
+            name: self.uuid_map(feed) for name, feed in markata.feeds.items()
+        }
+
+    def uuid_map(self, feed):
+        posts = feed.map("uuid")
+        posts.insert(0, posts[-1])
+        posts.append(posts[1])
+        three_window = list(more_itertools.windowed(posts, 3))
+        return {id[1]: PrevNext(*id) for id in three_window}
+
+    def next(self, post):
+        ...
+
+    def prev(self, post):
+        ...
 
 
 def prevnext(

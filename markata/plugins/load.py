@@ -27,20 +27,29 @@ def load(markata: "MarkataMarkdown") -> None:
         markata.config["repo_url"] = (
             markata.config.get("repo_url", "https://github.com/") + "/"
         )
+    parallel = False
 
-    futures = [get_post(article, markata) for article in markata.files]
-    task_id = progress.add_task("loading markdown")
-    progress.update(task_id, total=len(futures))
-    with progress:
-        while not all([f.done() for f in futures]):
-            time.sleep(0.1)
-            progress.update(task_id, total=len([f for f in futures if f.done()]))
-    articles = [f.result() for f in futures]
-    articles = [a for a in articles if a]
+    if parallel:
+        futures = [get_post(article, markata) for article in markata.files]
+        task_id = progress.add_task("loading markdown")
+        progress.update(task_id, total=len(futures))
+        with progress:
+            while not all([f.done() for f in futures]):
+                time.sleep(0.1)
+                progress.update(task_id, total=len([f for f in futures if f.done()]))
+        articles = [f.result() for f in futures]
+        articles = [a for a in articles if a]
+    else:
+        articles = [get_post(article, markata) for article in markata.files]
+
     markata.articles = articles
 
 
 @task
+def _parallel_get_post(*args, **kwargs):
+    get_post(*args, **kwargs)
+
+
 def get_post(path: Path, markata: "Markata") -> Optional[Callable]:
     default = {
         "cover": "",
