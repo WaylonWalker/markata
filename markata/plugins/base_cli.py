@@ -82,7 +82,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Callable, Optional
 
 import typer
-from rich import print as rich_print
 
 from markata.hookspec import hook_impl
 
