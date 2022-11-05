@@ -1,6 +1,6 @@
 # Markata Changelog
 
-## 0.6.0-dev
+## 0.6.0
 
 * Fix: article_html is not available to jinja 0.6.0.dev1 #105
 * Fix: service worker is not upating client without hard refresh 0.6.0.dev2 #106
