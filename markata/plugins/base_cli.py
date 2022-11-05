@@ -82,6 +82,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Callable, Optional
 
 import typer
+from rich import print as rich_print
 
 from markata.hookspec import hook_impl
 
@@ -195,6 +196,7 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
             "--pdb",
         ),
         profile: bool = True,
+        clean: bool = typer.Option(False, "--clean/--no-clean", "-c"),
     ) -> None:
         """
         Markata's primary way of building your site for production.
@@ -238,11 +240,15 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
         ```
         """
 
+        if clean:
+            _clean(markata=markata, quiet=quiet, dry_run=False)
+
         if pretty:
             make_pretty()
 
         if quiet:
             markata.console.quiet = True
+
 
         if verbose:
             markata.console.print("console options:", markata.console.options)
@@ -270,6 +276,7 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
         use_pager: bool = typer.Option(True, "--pager", "--no-pager"),
         fast: bool = typer.Option(False, "--fast", "--no-fast"),
         profile: bool = typer.Option(False, "--profile", "--no-profile"),
+        clean: bool = typer.Option(False, "--clean", "--no-clean"),
     ) -> None:
         """
         Provides a way run markatas, map, filter, and sort from the
@@ -430,6 +437,9 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
         `markata list` I would love to accept a PR to add it to the
         examples here.
         """
+
+        if clean:
+            _clean(markata=markata, quiet=quiet, dry_run=False)
 
         if fast:
             articles = markata.cache.get("articles")
