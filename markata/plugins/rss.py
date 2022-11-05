@@ -41,7 +41,7 @@ def render(markata: "MarkataRss") -> None:
 
     try:
         all_posts = reversed(sorted(markata.articles, key=lambda x: x["date"]))
-        posts = [post for post in all_posts if post["status"] == "published"]
+        posts = [post for post in all_posts if post["published"] == "True"]
     except BaseException:
         posts = markata.articles
 

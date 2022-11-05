@@ -15,6 +15,11 @@
 * Feat: report the cache stats for the current run 0.6.0.dev11 #121
 * Fix: prevent zerodivisionerror when reporting stats 0.6.0.dev12 #122
 * Fix: properly set the pyinstrument profiler to prevent recurrsion errors 0.6.dev13 #123
+* Clean: cli attributes (`runner`, `summary`, `server`, `plugins`) are now
+  added as Markata properties through `register_atter` rather than directly to
+  the class 0.6.0.dev13 #107
+* Fix: Markata tui will remain running even when the runner fails 0.6.0.dev13 #107
+* Fix: Pinned to `textual<0.2.0` due to breaking changes 0.6.0.dev13 #107
 
 ## 0.5.2
 

@@ -4,6 +4,8 @@ import rich
 from rich.panel import Panel
 from rich.table import Table
 
+from markata.hookspec import hook_impl, register_attr
+
 if TYPE_CHECKING:
     from markata import Markata
 
@@ -14,7 +16,8 @@ class Plugins:
 
     def __rich__(self) -> Panel:
         grid = Table.grid(expand=True)
-        grid.add_row(f"[bright_blue]{len(self.m._pm.get_plugins())}[/] plugins")
+        num_plugins = f"[bright_blue]({len(self.m._pm.get_plugins())})[/]"
+
         for plugin in self.m._pm.get_plugins():
             grid.add_row(
                 "".join(
@@ -26,7 +29,24 @@ class Plugins:
                     ]
                 )
             )
-        return Panel(grid, title="plugins", border_style="gold1")
+        return Panel(
+            grid, title=f"plugins {num_plugins}", border_style="gold1", expand=False
+        )
+
+
+@hook_impl
+@register_attr("plugins")
+def configure(markata: "Markata") -> None:
+    def get_plugins(self):
+        try:
+            return self._plugins
+        except AttributeError:
+            self._plugins: Plugins = Plugins(self)
+            return self._plugins
+
+    from markata import Markata
+
+    Markata.plugins = property(get_plugins)
 
 
 if __name__ == "__main__":

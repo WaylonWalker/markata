@@ -100,7 +100,7 @@ def make_article(markata: "Markata", file: Path) -> frontmatter.Post:
         f"""
     ---
     title: {file.name}
-    status: published
+    published: True
     slug: {slug}
     edit_link: {edit_link}
     path: {file.stem}.md

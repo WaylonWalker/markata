@@ -25,10 +25,7 @@ from rich.table import Table
 
 from markata import hookspec, standard_config
 from markata.__about__ import __version__
-from markata.cli.plugins import Plugins
-from markata.cli.runner import Runner
-from markata.cli.server import Server
-from markata.cli.summary import Summary
+from markata.errors import MissingFrontMatter
 from markata.lifecycle import LifeCycle
 
 logger = logging.getLogger("markata")
@@ -79,6 +76,10 @@ DEFAULT_HOOKS = [
     "markata.plugins.sitemap",
     "markata.plugins.to_json",
     "markata.plugins.base_cli",
+    "markata.cli.server",
+    "markata.cli.runner",
+    "markata.cli.plugins",
+    "markata.cli.summary",
     "markata.plugins.tui",
     "markata.plugins.setup_logging",
     "markata.plugins.redirects",
@@ -102,8 +103,11 @@ class Post(frontmatter.Post):
 def set_phase(function: Callable) -> Any:
     def wrapper(self: Markata, *args: Tuple, **kwargs: Dict) -> Any:
         self.phase = function.__name__
+        self.phase_file.parent.mkdir(exist_ok=True)
+        self.phase_file.write_text(self.phase)
         result = function(self, *args, **kwargs)
         self.phase = function.__name__
+        self.phase_file.parent.mkdir(exist_ok=True)
         self.phase_file.write_text(self.phase)
         return result
 
@@ -148,42 +152,6 @@ class Markata:
         else:
             # Markata does not know what this is, raise
             raise AttributeError(f"'Markata' object has no attribute '{item}'")
-
-    @property
-    def server(self) -> Server:
-        try:
-            return self._server
-        except AttributeError:
-
-            self._server: Server = Server(directory=str(self.config["output_dir"]))
-            return self.server
-
-    @property
-    def runner(self) -> Runner:
-        try:
-            return self._runner
-        except AttributeError:
-
-            self._runner: Runner = Runner(self)
-            return self.runner
-
-    @property
-    def plugins(self) -> Plugins:
-        try:
-            return self._plugins
-        except AttributeError:
-
-            self._plugins: Plugins = Plugins(self)
-        return self.plugins
-
-    @property
-    def summary(self) -> Summary:
-        try:
-            return self._summary
-        except AttributeError:
-
-            self._summary: Summary = Summary(self)
-            return self.summary
 
     def __rich__(self) -> Table:
 
@@ -463,11 +431,30 @@ class Markata:
         if reverse:
             articles.reverse()
 
-        return [
-            eval(func, {**a.to_dict(), "timedelta": timedelta, "post": a}, {})
-            for a in articles
-            if eval(filter, {**a.to_dict(), "timedelta": timedelta, "post": a}, {})
-        ]
+        try:
+            posts = [
+                eval(func, {**a.to_dict(), "timedelta": timedelta, "post": a}, {})
+                for a in articles
+                if eval(filter, {**a.to_dict(), "timedelta": timedelta, "post": a}, {})
+            ]
+
+        except NameError as e:
+            variable = str(e).split("'")[1]
+
+            missing_in_posts = self.map(
+                "path", filter=f'"{variable}" not in post.keys()'
+            )
+            message = (
+                f"variable: '{variable}' is missing in {len(missing_in_posts)} posts"
+            )
+            if len(missing_in_posts) > 10:
+                message += f"\nfirst 10 paths to posts missing {variable} [{','.join(missing_in_posts)}..."
+            else:
+                message += f"\npaths to posts missing {variable} {missing_in_posts}"
+
+            raise MissingFrontMatter(message)
+
+        return posts
 
 
 def load_ipython_extension(ipython):

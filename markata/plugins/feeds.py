@@ -105,11 +105,11 @@ filter="True"
 ```
 
 You can compare against the values of the keys from your frontmatter.  This
-example creates a feed that includes every post with the status of `draft`.
+example creates a feed that includes every post where published is `True`.
 
 ``` toml
 [markata.feeds.draft]
-filter="status=='draft'"
+filter="published=='False'"
 ```
 
 We can also compare against dates.  The
@@ -139,14 +139,14 @@ And of course you can combine all the things into larger expressions.  Here is o
 
 ``` toml
 [markata.feeds.blog]
-filter="date<=today and templateKey in ['blog-post'] and status.lower()=='published'"
+filter="date<=today and templateKey in ['blog-post'] and published =='True'"
 ```
 
 Here is another example that shows my drafts for a particular tag.
 
 ``` toml
 [markata.feeds.python-draft]
-filter="date<=today and 'python' in tags and status=='draft'"
+filter="date<=today and 'python' in tags and published=='False'"
 ```
 
 ## Defaults
@@ -232,7 +232,7 @@ def create_page(
     markata: Markata,
     page: str,
     tags: Optional[List] = None,
-    status: str = "published",
+    published: str = "True",
     template: Optional[Union[Path, str]] = None,
     card_template: Optional[str] = None,
     filter: Optional[str] = None,

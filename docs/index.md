@@ -36,7 +36,7 @@ pipx run markata build
 ### Frontmatter
 
 You will likely want to set things like `title`, `date`, `description`,
-`status`, or `template` per post, this can all be done inside yaml frontmatter.
+`published`, or `template` per post, this can all be done inside yaml frontmatter.
 
 ``` markdown
 ---
@@ -44,7 +44,7 @@ templateKey: blog-post
 tags: ['python',]
 title:  My Awesome Post
 date: 2022-01-21T16:40:34
-status: draft
+published: False
 
 ---
 
