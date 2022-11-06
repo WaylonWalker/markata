@@ -40,7 +40,7 @@ dependencies = [
  "python-slugify",
  "pytz",
  "rich",
- "textual<0.2.0",
+ "textual>0.2.0",
  "toml",
  "typer",
 ]
