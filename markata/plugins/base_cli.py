@@ -267,7 +267,6 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
         if quiet:
             markata.console.quiet = True
 
-
         if verbose:
             markata.console.print("console options:", markata.console.options)
 
@@ -469,6 +468,7 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
             articles = markata.cache.get("articles")
             if articles is not None:
                 markata.articles = articles
+                markata.going_fast = True
 
         markata.console.quiet = True
 
