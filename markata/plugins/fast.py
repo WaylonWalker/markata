@@ -11,6 +11,14 @@ hooks=[
 ]
 ```
 
+## Configuration
+
+If you want a different cache expiration on the articles stored in fast you can
+configure this in your `markata.toml` configuration file.
+
+[markata.fast]
+default_cache_expire = 12
+
 """
 import copy
 from typing import Dict
