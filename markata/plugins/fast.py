@@ -1,5 +1,7 @@
 """
-fast
+fast is a plugin that allows markata to load fast.  It will store all articles in
+cache on exit, so when running commands like `markata list` markata only needs to
+pull from cache, and not process any files.
 
 Enable this plugin by adding it to your `markata.toml` hooks list.
 
