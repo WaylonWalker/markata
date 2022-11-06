@@ -2,8 +2,9 @@ import subprocess
 
 from rich.console import RenderableType
 from textual.app import App
+from textual.containers import Container
 from textual.widget import Widget
-from textual.widgets import Footer
+from textual.widgets import Footer, Header
 
 from markata import Markata
 from markata.hookspec import hook_impl
@@ -11,7 +12,7 @@ from markata.hookspec import hook_impl
 
 class MarkataWidget(Widget):
     def __init__(self, markata: Markata, widget: str = "server"):
-        super().__init__(widget)
+        super().__init__(name=widget, id=widget)
         self.m = markata
         self.widget = widget
         self.renderable = getattr(self.m, self.widget)
@@ -25,25 +26,56 @@ class MarkataWidget(Widget):
 
 
 class MarkataApp(App):
+    CSS = """
+    #plugins, #summary {
+            width: 10%;
+            }
+    #main {
+            layout: horizontal;
+        }
+
+    #center {
+            layout: vertical;
+            height: 100%;
+            width: 80%;
+            }
+    #runner, #server {
+            height: 50%;
+            }
+    """
+
     async def on_load(self, event):
         self.m = Markata()
         self.m.console.quiet = True
-        await self.bind("q", "quit", "quit")
-        await self.bind("r", "refresh", "refresh")
+        self.bind("q", "quit")
+        self.bind("r", "refresh")
         self.new_cmd = self.m.config.get("tui", {}).get("new_cmd", "")
         if self.new_cmd != "":
-            await self.bind("n", "new", "new")
+            self.bind("n", "new")
+        self.footer = Footer()
+        self.header = Header()
 
-    async def on_mount(self) -> None:
         self.server = MarkataWidget(self.m, "server")
         self.runner = MarkataWidget(self.m, "runner")
         self.plugins = MarkataWidget(self.m, "plugins")
         self.summary = MarkataWidget(self.m, "summary")
-        await self.view.dock(Footer(), edge="bottom")
-        await self.view.dock(self.plugins, edge="left", size=30, name="plugins")
-        await self.view.dock(self.summary, edge="right", size=30, name="summary")
-        await self.view.dock(self.server, self.runner, edge="top")
-        self.set_interval(1, self.action_refresh)
+
+    def on_mount(self) -> None:
+        self.set_interval(0.2, self.action_refresh)
+
+    def compose(self) -> None:
+        yield self.header
+        yield self.footer
+        yield Container(
+            self.plugins,
+            Container(
+                self.runner,
+                self.server,
+                id="center",
+            ),
+            self.summary,
+            id="main",
+        )
 
     async def action_refresh(self) -> None:
         self.refresh()
@@ -60,8 +92,8 @@ class MarkataApp(App):
 def cli(app, markata):
     @app.command()
     def tui():
-        MarkataApp.run(log="textual.log")
+        MarkataApp().run()
 
 
 if __name__ == "__main__":
-    MarkataApp.run(log="textual.log")
+    MarkataApp().run()
