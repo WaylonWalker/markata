@@ -20,6 +20,7 @@
   the class 0.6.0.dev13 #107
 * Fix: Markata tui will remain running even when the runner fails 0.6.0.dev13 #107
 * Fix: Pinned to `textual<0.2.0` due to breaking changes 0.6.0.dev13 #107
+* Fix: snyk remove seuptools from requirements 0.6.0.dev14 #130
 
 ## 0.5.2
 
