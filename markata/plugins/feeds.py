@@ -161,6 +161,7 @@ filter="True"
 import datetime
 import shutil
 import textwrap
+from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
@@ -181,9 +182,6 @@ class SilentUndefined(Undefined):
 
 class MarkataFilterError(RuntimeError):
     ...
-
-
-from dataclasses import dataclass
 
 
 @dataclass
