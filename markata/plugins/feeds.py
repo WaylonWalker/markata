@@ -186,6 +186,23 @@ class MarkataFilterError(RuntimeError):
 
 @dataclass
 class Feed:
+    """
+    A storage class for markata feed objects.
+
+    ## Usage
+
+    ``` python
+    from markata import Markata
+    m = Markata()
+
+    # access posts for a feed
+    m.feeds.docs.posts
+
+    # access config for a feed
+    m.feeds.docs.config
+    ```
+    """
+
     name: str
     config: Dict
     posts: list
@@ -196,6 +213,67 @@ class Feed:
 
 
 class Feeds:
+    """
+    A storage class for all markata Feed objects
+
+    ``` python
+    from markata import Markata
+    m = Markata()
+
+    m.feeds
+
+    # access all config
+    m.feeds.config
+
+    # refresh list of posts in all feeds
+    m.feeds.refresh()
+
+
+    # iterating over feeds gives the name of the feed
+    for k in m.feeds:
+         print(k)
+
+    # project-gallery
+    # docs
+    # autodoc
+    # core_modules
+    # plugins
+    # archive
+
+    # iterate over items like keys and values in a dict, items returns name of feed and a feed object
+    for k, v in m.feeds.items():
+        print(k, len(v.posts))
+
+    # project-gallery 2
+    # docs 6
+    # autodoc 65
+    # core_modules 26
+    # plugins 39
+    # archive 65
+
+    # values can be iterated over in just the same way
+    for v in m.feeds.values():
+         print(len(v.posts))
+    # 2
+    # 6
+    # 65
+    # 26
+    # 39
+    # 65
+    ```
+
+    Accessing feeds can be done using square brackets or dot notation.
+
+    ``` python
+    from markata import Markata
+    m = Markata()
+
+    # both of these will return the `docs` Feed object.
+    m.feeds.docs
+    m['docs']
+    ```
+    """
+
     def __init__(self, markata: Markata):
         self.m = markata
         self.refresh()
