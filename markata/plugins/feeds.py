@@ -358,6 +358,9 @@ def configure(markata: Markata) -> None:
 @hook_impl
 @register_attr("feeds")
 def pre_render(markata: Markata) -> None:
+    """
+    Create the Feeds object and attach it to markata.
+    """
     markata.feeds = Feeds(markata)
 
 
