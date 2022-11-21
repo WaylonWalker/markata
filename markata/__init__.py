@@ -433,9 +433,17 @@ class Markata:
 
         try:
             posts = [
-                eval(func, {**a.to_dict(), "timedelta": timedelta, "post": a}, {})
+                eval(
+                    func,
+                    {**a.to_dict(), "timedelta": timedelta, "post": a, "m": self},
+                    {},
+                )
                 for a in articles
-                if eval(filter, {**a.to_dict(), "timedelta": timedelta, "post": a}, {})
+                if eval(
+                    filter,
+                    {**a.to_dict(), "timedelta": timedelta, "post": a, "m": self},
+                    {},
+                )
             ]
 
         except NameError as e:
