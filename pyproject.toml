@@ -153,6 +153,7 @@ dependencies = [
  "isort",
  "pytest",
  "pytest-cov",
+ "pytest-mock",
  "pytest-rich",
  "pytest-tmp-files",
  "seed-isort-config",
