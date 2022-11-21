@@ -206,10 +206,10 @@ class Feed:
     name: str
     config: Dict
     posts: list
-    m: Markata
+    _m: Markata
 
     def map(self, func="post", **args):
-        return self.m.map(func, **{**self.config, **args})
+        return self._m.map(func, **{**self.config, **args})
 
 
 class Feeds:
@@ -275,21 +275,21 @@ class Feeds:
     """
 
     def __init__(self, markata: Markata):
-        self.m = markata
+        self._m = markata
         self.refresh()
 
     def refresh(self) -> None:
         """
         Refresh all of the feeds objects
         """
-        self.config = self.m.config.get("feeds", dict())
+        self.config = self._m.config.get("feeds", dict())
         for page, page_conf in self.config.items():
             name = page.replace("-", "_").lower()
             feed = Feed(
                 name=name,
-                posts=self.m.map("post", **page_conf),
+                posts=self._m.map("post", **page_conf),
                 config=page_conf,
-                m=self.m,
+                _m=self._m,
             )
             self.__setattr__(name, feed)
 
