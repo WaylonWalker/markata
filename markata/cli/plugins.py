@@ -1,6 +1,8 @@
 from typing import TYPE_CHECKING
 
 import rich
+import typer
+from rich import print as rich_print
 from rich.panel import Panel
 from rich.table import Table
 
@@ -47,6 +49,23 @@ def configure(markata: "Markata") -> None:
     from markata import Markata
 
     Markata.plugins = property(get_plugins)
+
+
+@hook_impl
+def cli(app: typer.Typer, markata: "Markata") -> None:
+    feeds_app = typer.Typer()
+    app.add_typer(feeds_app)
+
+    @feeds_app.callback()
+    def feeds():
+        "feeds cli"
+
+    @feeds_app.command()
+    def show() -> None:
+        markata.console.quiet = True
+        feeds = markata.feeds
+        markata.console.quiet = False
+        rich_print(markata.feeds)
 
 
 if __name__ == "__main__":
