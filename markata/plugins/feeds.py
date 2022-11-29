@@ -165,7 +165,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
+import typer
 from jinja2 import Template, Undefined
+from rich import print as rich_print
 from rich.table import Table
 
 from markata import Markata, __version__
@@ -466,3 +468,20 @@ def create_card(post: "Post", template: Optional[str] = None) -> Any:
     except FileNotFoundError:
         _template = Template(template)
     return _template.render(**post.to_dict())
+
+
+@hook_impl
+def cli(app: typer.Typer, markata: "Markata") -> None:
+    feeds_app = typer.Typer()
+    app.add_typer(feeds_app)
+
+    @feeds_app.callback()
+    def feeds():
+        "feeds cli"
+
+    @feeds_app.command()
+    def show() -> None:
+        markata.console.quiet = True
+        feeds = markata.feeds
+        markata.console.quiet = False
+        rich_print(feeds)
