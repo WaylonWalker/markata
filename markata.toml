@@ -7,6 +7,8 @@
 #
 #                                                  markata.dev
 
+[markata.fast]
+default_cache_expire = 1209600
 [markata.nav]
 'markata'='/'
 'GitHub'='https://github.com/WaylonWalker/markata'
