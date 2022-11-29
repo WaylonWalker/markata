@@ -57,3 +57,9 @@ def test_feeds___rich__(mocker):
     feeds = Feeds(markata=mocked_markata)
 
     assert isinstance(feeds.__rich__(), rich.table.Table)
+
+
+def test_feeds_values(mocker):
+    mocked_markata = mocker.patch.object(markata, "Markata", DummyMarkata())
+    values = Feeds(markata=mocked_markata).values()
+    assert all([isinstance(v, Feed) for v in values])
