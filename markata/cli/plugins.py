@@ -65,7 +65,7 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
         markata.console.quiet = True
         feeds = markata.feeds
         markata.console.quiet = False
-        rich_print(markata.feeds)
+        rich_print(feeds)
 
 
 if __name__ == "__main__":
