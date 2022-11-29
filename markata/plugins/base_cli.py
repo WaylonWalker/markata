@@ -82,9 +82,11 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Callable, Optional
 
 import typer
-from rich import print as rich_print
 
 from markata.hookspec import hook_impl
+
+# from rich import print as rich_print
+
 
 if TYPE_CHECKING:
     from markata import Markata
@@ -276,6 +278,7 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
         fast: bool = typer.Option(False, "--fast", "--no-fast"),
         profile: bool = typer.Option(False, "--profile", "--no-profile"),
         clean: bool = typer.Option(False, "--clean", "--no-clean"),
+        quiet: bool = typer.Option(False, "--quiet", "-q"),
     ) -> None:
         """
         Provides a way run markatas, map, filter, and sort from the
