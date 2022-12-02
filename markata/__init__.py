@@ -199,10 +199,10 @@ class Markata:
             len((output_split := self.config.get("output_dir", "markout").split("/")))
             > 1
         ):
-            if "base_route" not in self.config.keys():
-                self.config["base_route"] = "/".join(output_split[1:]) + "/"
-            elif not self.config["base_route"].endswith("/"):
-                self.config["base_route"] += "/"
+            if "path_prefix" not in self.config.keys():
+                self.config["path_prefix"] = "/".join(output_split[1:]) + "/"
+            elif not self.config["path_prefix"].endswith("/"):
+                self.config["path_prefix"] += "/"
 
         try:
             default_index = self.hooks.index("default")

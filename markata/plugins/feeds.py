@@ -455,7 +455,7 @@ def create_card(
             return textwrap.dedent(
                 f"""
                 <li class='post'>
-                <a href="/{markata.config.get('route', '')}{post['slug']}/">
+                <a href="/{markata.config.get('path_prefix', '')}{post['slug']}/">
                     {post['title']} {post['date'].year}-{post['date'].month}-{post['date'].day}
                 </a>
                 </li>
@@ -465,7 +465,7 @@ def create_card(
             return textwrap.dedent(
                 f"""
                 <li class='post'>
-                <a href="/{markata.config.get('route', '')}{post['slug']}/">
+                <a href="/{markata.config.get('path_prefix', '')}{post['slug']}/">
                     {post['title']}
                 </a>
                 </li>
