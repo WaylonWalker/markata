@@ -412,7 +412,7 @@ def create_page(
     """
 
     posts = markata.feeds[page].posts
-    cards = [create_card(post, card_template) for post in posts]
+    cards = [create_card(markata, post, card_template) for post in posts]
     cards.insert(0, "<ul>")
     cards.append("</ul>")
 
