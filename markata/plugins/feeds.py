@@ -161,13 +161,17 @@ filter="True"
 import datetime
 import shutil
 import textwrap
+from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
+import typer
 from jinja2 import Template, Undefined
+from rich import print as rich_print
+from rich.table import Table
 
 from markata import Markata, __version__
-from markata.hookspec import hook_impl
+from markata.hookspec import hook_impl, register_attr
 
 if TYPE_CHECKING:
     from frontmatter import Post
@@ -182,7 +186,157 @@ class MarkataFilterError(RuntimeError):
     ...
 
 
+@dataclass
+class Feed:
+    """
+    A storage class for markata feed objects.
+
+    ## Usage
+
+    ``` python
+    from markata import Markata
+    m = Markata()
+
+    # access posts for a feed
+    m.feeds.docs.posts
+
+    # access config for a feed
+    m.feeds.docs.config
+    ```
+    """
+
+    name: str
+    config: Dict
+    posts: list
+    _m: Markata
+
+    def map(self, func="post", **args):
+        return self._m.map(func, **{**self.config, **args})
+
+
+class Feeds:
+    """
+    A storage class for all markata Feed objects
+
+    ``` python
+    from markata import Markata
+    m = Markata()
+
+    m.feeds
+
+    # access all config
+    m.feeds.config
+
+    # refresh list of posts in all feeds
+    m.feeds.refresh()
+
+
+    # iterating over feeds gives the name of the feed
+    for k in m.feeds:
+         print(k)
+
+    # project-gallery
+    # docs
+    # autodoc
+    # core_modules
+    # plugins
+    # archive
+
+    # iterate over items like keys and values in a dict, items returns name of feed and a feed object
+    for k, v in m.feeds.items():
+        print(k, len(v.posts))
+
+    # project-gallery 2
+    # docs 6
+    # autodoc 65
+    # core_modules 26
+    # plugins 39
+    # archive 65
+
+    # values can be iterated over in just the same way
+    for v in m.feeds.values():
+         print(len(v.posts))
+    # 2
+    # 6
+    # 65
+    # 26
+    # 39
+    # 65
+    ```
+
+    Accessing feeds can be done using square brackets or dot notation.
+
+    ``` python
+    from markata import Markata
+    m = Markata()
+
+    # both of these will return the `docs` Feed object.
+    m.feeds.docs
+    m['docs']
+    ```
+    """
+
+    def __init__(self, markata: Markata):
+        self._m = markata
+        self.refresh()
+
+    def refresh(self) -> None:
+        """
+        Refresh all of the feeds objects
+        """
+        self.config = self._m.config.get("feeds", dict())
+        for page, page_conf in self.config.items():
+            name = page.replace("-", "_").lower()
+            feed = Feed(
+                name=name,
+                posts=self._m.map("post", **page_conf),
+                config=page_conf,
+                _m=self._m,
+            )
+            self.__setattr__(name, feed)
+
+    def __iter__(self):
+        return iter(self.config.keys())
+
+    def keys(self):
+        return iter(self.config.keys())
+
+    def values(self):
+        return [self[feed] for feed in self.config.keys()]
+
+    def items(self):
+        return [(key, self[key]) for key in self.config.keys()]
+
+    def __getitem__(self, key: str) -> Any:
+        return getattr(self, key.replace("-", "_").lower())
+
+    def _dict_panel(self, config) -> str:
+        """
+        pretty print configs with rich
+        """
+        msg = ""
+        for key, value in config.items():
+            msg = msg + f"[grey46]{key}[/][magenta3]:[/] [grey66]{value}[/]\n"
+        return msg
+
+    def __rich__(self) -> Table:
+        from rich.table import Table
+
+        table = Table(title=f"Feeds {len(self.config)}")
+
+        table.add_column("Feed", justify="right", style="cyan", no_wrap=True)
+        table.add_column("posts", justify="left", style="green")
+        table.add_column("config", style="magenta")
+
+        for name in self.config.keys():
+            table.add_row(
+                name, str(len(self[name].posts)), self._dict_panel(self.config[name])
+            )
+        return table
+
+
 @hook_impl
+@register_attr("feeds")
 def configure(markata: Markata) -> None:
     """
     configure the default values for the feeds plugin
@@ -197,9 +351,19 @@ def configure(markata: Markata) -> None:
     default_post_template = config.get(
         "template", Path(__file__).parent / "default_post_template.html"
     )
+
     for page, page_conf in config.items():
         if "template" not in page_conf.keys():
             page_conf["template"] = default_post_template
+
+
+@hook_impl
+@register_attr("feeds")
+def pre_render(markata: Markata) -> None:
+    """
+    Create the Feeds object and attach it to markata.
+    """
+    markata.feeds = Feeds(markata)
 
 
 @hook_impl
@@ -247,25 +411,7 @@ def create_page(
     create an html unorderd list of posts.
     """
 
-    posts = markata.map("post", filter=filter, sort=sort, reverse=reverse)
-    # if filter is not None:
-    #     posts = reversed(
-    #         sorted(
-    #             markata.articles, key=lambda x: x.get("date", datetime.date(1970, 1, 1))
-    #         )
-    #     )
-    #     try:
-    #         posts = [post for post in posts if eval(filter, post.to_dict(), {})]
-    #     except Exception as e:
-    #         msg = textwrap.dedent(
-    #             f"""
-    #                 While processing feed page='{page}' markata hit the following exception
-    #                 during filter='{filter}'
-    #                 {e}
-    #                 """
-    #         )
-    #         raise MarkataFilterError(msg)
-
+    posts = markata.feeds[page].posts
     cards = [create_card(post, card_template) for post in posts]
     cards.insert(0, "<ul>")
     cards.append("</ul>")
@@ -322,3 +468,20 @@ def create_card(post: "Post", template: Optional[str] = None) -> Any:
     except FileNotFoundError:
         _template = Template(template)
     return _template.render(**post.to_dict())
+
+
+@hook_impl
+def cli(app: typer.Typer, markata: "Markata") -> None:
+    feeds_app = typer.Typer()
+    app.add_typer(feeds_app)
+
+    @feeds_app.callback()
+    def feeds():
+        "feeds cli"
+
+    @feeds_app.command()
+    def show() -> None:
+        markata.console.quiet = True
+        feeds = markata.feeds
+        markata.console.quiet = False
+        rich_print(feeds)
