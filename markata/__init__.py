@@ -195,6 +195,15 @@ class Markata:
         if isinstance(self.config["disabled_hooks"], list):
             self.disabled_hooks = self.config["disabled_hooks"]
 
+        if (
+            len((output_split := self.config.get("output_dir", "markout").split("/")))
+            > 1
+        ):
+            if "base_route" not in self.config.keys():
+                self.config["base_route"] = "/".join(output_split[1:]) + "/"
+            elif not self.config["base_route"].endswith("/"):
+                self.config["base_route"] += "/"
+
         try:
             default_index = self.hooks.index("default")
             hooks = [

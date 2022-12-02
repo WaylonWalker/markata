@@ -348,7 +348,7 @@ def configure(markata: Markata) -> None:
         config["archive"] = dict()
         config["archive"]["filter"] = "True"
 
-    default_post_template = config.get(
+    default_post_template = markata.config.get("feeds_config", {}).get(
         "template", Path(__file__).parent / "default_post_template.html"
     )
 
@@ -416,6 +416,9 @@ def create_page(
     cards.insert(0, "<ul>")
     cards.append("</ul>")
 
+    # if template is None:
+    #     template = Path(__file__).parent / "default_post_template.html"
+
     with open(template) as f:
         template = Template(f.read(), undefined=SilentUndefined)
     output_file = Path(markata.config["output_dir"]) / page / "index.html"
@@ -437,17 +440,22 @@ def create_page(
         )
 
 
-def create_card(post: "Post", template: Optional[str] = None) -> Any:
+def create_card(
+    markata: "Markata", post: "Post", template: Optional[str] = None
+) -> Any:
     """
     Creates a card for one post based on the configured template.  If no
     template is configured it will create one with the post title and dates (if present).
     """
     if template is None:
+        template = markata.config.get("feeds_config", {}).get("card_template", None)
+
+    if template is None:
         if "date" in post.keys():
             return textwrap.dedent(
                 f"""
                 <li class='post'>
-                <a href="/{post['slug']}/">
+                <a href="/{markata.config.get('route', '')}{post['slug']}/">
                     {post['title']} {post['date'].year}-{post['date'].month}-{post['date'].day}
                 </a>
                 </li>
@@ -457,7 +465,7 @@ def create_card(post: "Post", template: Optional[str] = None) -> Any:
             return textwrap.dedent(
                 f"""
                 <li class='post'>
-                <a href="/{post['slug']}/">
+                <a href="/{markata.config.get('route', '')}{post['slug']}/">
                     {post['title']}
                 </a>
                 </li>
