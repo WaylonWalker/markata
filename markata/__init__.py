@@ -378,9 +378,17 @@ class Markata:
     def filter(self, filter: str) -> List:
         def evalr(a: Post) -> Any:
             try:
-                return eval(filter, {**a.to_dict(), "timedelta": timedelta}, {})
+                return eval(
+                    filter,
+                    {**a.to_dict(), "timedelta": timedelta, "post": a, "m": self},
+                    {},
+                )
             except AttributeError:
-                return eval(filter, {**a, "timedelta": timedelta}, {})
+                return eval(
+                    filter,
+                    {**a.to_dict(), "timedelta": timedelta, "post": a, "m": self},
+                    {},
+                )
 
         return [a for a in self.articles if evalr(a)]
 
