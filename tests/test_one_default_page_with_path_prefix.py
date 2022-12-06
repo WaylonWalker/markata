@@ -41,6 +41,8 @@ def test_loaded(make_index: Any) -> None:
 def test_run(make_index: Any) -> Any:
     os.chdir(make_index)
     m = Markata()
+    m.config["output_dir"] = "markout/sub-route/"
+    m.config["path_prefix"] = "sub-route/"
     m.run()
     return make_index
 
@@ -48,15 +50,23 @@ def test_run(make_index: Any) -> Any:
 def test_markout_exists(test_run: Any) -> Any:
     markout = test_run / "markout"
     assert markout.exists()
+    sub = test_run / "markout/sub-route"
+    assert sub.exists()
 
 
 def test_index_exists(test_run: Any) -> Any:
     markout = test_run / "markout"
-    index = markout / "index.html"
-    assert index.exists()
+    sub = test_run / "markout/sub-route"
+    markout_index = markout / "index.html"
+    assert not markout_index.exists()
+    sub_index = sub / "index.html"
+    assert sub_index.exists()
 
 
 def test_rss_exists(test_run: Any) -> Any:
     markout = test_run / "markout"
+    sub = test_run / "markout/sub-route"
     rss = markout / "rss.xml"
-    assert rss.exists()
+    assert not rss.exists()
+    sub_rss = sub / "rss.xml"
+    assert sub_rss.exists()

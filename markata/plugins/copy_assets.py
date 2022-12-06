@@ -10,11 +10,8 @@ if TYPE_CHECKING:
 
 @hook_impl
 def save(markata: "Markata") -> None:
-    try:
-        output_dir = Path(str(markata.config["output_dir"]))
-        assets_dir = Path(str(markata.config["assets_dir"]))
-    except KeyError:
-        return
+    output_dir = Path(str(markata.config.get("output_dir", "markout")))
+    assets_dir = Path(str(markata.config.get("assets_dir", "static")))
 
     with markata.console.status("copying assets", spinner="aesthetic", speed=0.2):
         if assets_dir.exists():
