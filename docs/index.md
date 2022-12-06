@@ -68,6 +68,15 @@ Markata has a project gallery to show off sites built with markata.  Please
 [submit](https://github.com/WaylonWalker/markata/issues/78) yours, and check
 out the [project-gallery](http://markata.dev/project-gallery/) for inspiration.
 
+## Deploying to a sub route
+_gh pages_
+
+To deploy a subroute, add a markata.path_prifix to your config (markata.toml).
+
+``` toml
+[markata]
+path_prefix='my-sub-route'
+```
 
 ## Source Code
 
