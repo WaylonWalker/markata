@@ -85,7 +85,7 @@ title and date.
 ``` toml
 [markata.feeds.all]
 filter="True"
-card_template='<li><a href={{slug}}>{{title}}-{{date}}</a></li>'
+card_template='<li><a href={{markata.config.get('path_prefix', '')}}{{slug}}>{{title}}-{{date}}</a></li>'
 ```
 
 ### filter
