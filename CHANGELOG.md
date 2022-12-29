@@ -23,7 +23,7 @@
 * Fix: snyk remove seuptools from requirements 0.6.0.dev14 #130
 * Fix: Markata.filter was missing post and m 0.6.0.dev14 #133
 * Feat: add `path_prefix` config for gh-pages deploy 0.6.0.dev15 #132 fixes #57
-* Feat: created `markata plugin show` cli command #105
+* Feat: created `markata plugin show` cli command #109
 
 ## 0.5.2
 
