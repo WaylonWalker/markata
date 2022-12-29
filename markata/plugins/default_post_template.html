@@ -466,7 +466,7 @@
 
   <nav>
     {% for text, link in config.get('nav', {}).items() %}
-      <a href='{{link}}'>{{text}}</a>
+    <a href='{{"/" if link.startswith("/")}}{{"" if "://" in link else config["path_prefix"]}}{{link.lstrip("/")}}'>{{text}}</a>
     {% endfor %}
   </nav>
 
