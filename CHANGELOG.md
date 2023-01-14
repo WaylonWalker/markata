@@ -25,6 +25,21 @@
 * Feat: add `path_prefix` config for gh-pages deploy 0.6.0.dev15 #132 fixes #57
 * Feat: created `markata plugin show` cli command 0.6.0.dev16 #109
 * Feat: use `path_prefix` in nav entries 0.6.0.dev17 #136
+* Feat: enable wikilinks extension by default 0.6.0.dev18 #138
+
+### wikilinks
+
+wikilinks are now enabled by default ex: `[[home-page]]`.  This will create a
+link `<a class="wikilink" href="/home-page/">home-page</a>`.  This will
+automagically just work if you leave `markata.plugins.flat_slug` plugin enabled
+(which is by default).
+
+> ProTip: this was highly inspired by the
+> [marksman-lsp](https://github.com/artempyanykh/marksman) by
+> [artempyanykh](https://github.com/artempyanykh/) which can autocomplete post
+> links in this style for you.
+
+[[home-page]]
 
 ## 0.5.2
 
