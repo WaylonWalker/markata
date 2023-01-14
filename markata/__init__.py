@@ -36,6 +36,7 @@ DEFAULT_MD_EXTENSIONS = [
     "markdown.extensions.md_in_html",
     "markdown.extensions.tables",
     "markdown.extensions.toc",
+    "markdown.extensions.wikilinks",
     "pymdownx.betterem",
     "pymdownx.details",
     "pymdownx.emoji",
