@@ -39,3 +39,16 @@ color_link = 'aqua'
 color_accent = 'peachpuff'
 overlay_brightness = '1.2'
 ```
+
+## Changing your favicon
+
+Your favicon should be kept in your `assets` directory, which is `./static` by
+default.  You can name the icon what you want, `icon.png` is the default, but
+you will have to change your icon config in your `markata.toml` to use a
+different value.
+
+``` toml
+[markata]
+assets_dir = "static"
+icon = "icon.png"
+```
