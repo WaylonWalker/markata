@@ -428,6 +428,7 @@ def create_page(
     with open(output_file, "w+") as f:
         f.write(
             template.render(
+                markata=markata,
                 __version__=__version__,
                 body="".join(cards),
                 url=url,
@@ -475,7 +476,7 @@ def create_card(
         _template = Template(Path(template).read_text())
     except FileNotFoundError:
         _template = Template(template)
-    return _template.render(**post.to_dict())
+    return _template.render(markata=markata, **post.to_dict())
 
 
 @hook_impl

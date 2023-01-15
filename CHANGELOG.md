@@ -26,6 +26,7 @@
 * Feat: created `markata plugin show` cli command 0.6.0.dev16 #109
 * Feat: use `path_prefix` in nav entries 0.6.0.dev17 #136
 * Feat: enable wikilinks extension by default 0.6.0.dev18 #138
+* Feat: `markata` instance is available form inside card_template for feeds 0.6.0.dev19 #139
 
 ### wikilinks
 
