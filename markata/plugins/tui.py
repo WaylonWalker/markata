@@ -1,3 +1,5 @@
+import subprocess
+
 from rich.console import RenderableType
 from textual.app import App
 from textual.widget import Widget
@@ -23,9 +25,16 @@ class MarkataWidget(Widget):
 
 
 class MarkataApp(App):
-    async def on_mount(self) -> None:
+    async def on_load(self, event):
         self.m = Markata()
         self.m.console.quiet = True
+        await self.bind("q", "quit", "quit")
+        await self.bind("r", "refresh", "refresh")
+        self.new_cmd = self.m.config.get("tui", {}).get("new_cmd", "")
+        if self.new_cmd != "":
+            await self.bind("n", "new", "new")
+
+    async def on_mount(self) -> None:
         self.server = MarkataWidget(self.m, "server")
         self.runner = MarkataWidget(self.m, "runner")
         self.plugins = MarkataWidget(self.m, "plugins")
@@ -36,16 +45,15 @@ class MarkataApp(App):
         await self.view.dock(self.server, self.runner, edge="top")
         self.set_interval(1, self.action_refresh)
 
-    async def on_load(self, event):
-        await self.bind("q", "quit", "quit")
-        await self.bind("r", "refresh", "refresh")
-
     async def action_refresh(self) -> None:
         self.refresh()
         self.runner.refresh()
         self.server.refresh()
         self.plugins.refresh()
         self.summary.refresh()
+
+    async def action_new(self) -> None:
+        subprocess.Popen(self.new_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
 
 @hook_impl()

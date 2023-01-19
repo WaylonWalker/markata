@@ -127,7 +127,7 @@ ignore_errors = true
 
 [tool.isort]
 profile = "black"
-known_third_party = ["PIL", "anyconfig", "bs4", "checksumdir", "commonmark", "conftest", "dateutil", "deepmerge", "diskcache", "feedgen", "frontmatter", "jinja2", "markdown", "more_itertools", "pathspec", "pkg_resources", "pluggy", "pydantic", "pytest", "pytz", "rich", "slugify", "textual", "toml", "typer", "yaml"]
+known_third_party = ["PIL", "anyconfig", "bs4", "checksumdir", "commonmark", "conftest", "dateutil", "deepmerge", "diskcache", "feedgen", "frontmatter", "jinja2", "markdown", "more_itertools", "pathspec", "pkg_resources", "pluggy", "pytest", "pytz", "rich", "slugify", "textual", "toml", "typer", "yaml"]
 
 [tool.hatch.version]
 path = "markata/__about__.py"
@@ -153,6 +153,7 @@ dependencies = [
  "isort",
  "pytest",
  "pytest-cov",
+ "pytest-mock",
  "pytest-rich",
  "pytest-tmp-files",
  "seed-isort-config",

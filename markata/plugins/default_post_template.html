@@ -451,6 +451,11 @@
     <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/service-worker.js');
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+              console.log('new worker')
+              window.location.reload()
+      });
+
     }
     </script>
   {% endif %}
@@ -461,7 +466,7 @@
 
   <nav>
     {% for text, link in config.get('nav', {}).items() %}
-      <a href='{{link}}'>{{text}}</a>
+    <a href='{{"/" if link.startswith("/")}}{{"" if "://" in link else config["path_prefix"]}}{{link.lstrip("/")}}'>{{text}}</a>
     {% endfor %}
   </nav>
 

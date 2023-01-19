@@ -5,6 +5,8 @@ from typing import Union
 
 from rich.panel import Panel
 
+from markata.hookspec import hook_impl, register_attr
+
 
 def find_port(port: int = 8000) -> int:
     """Find a port not in ues starting at given port"""
@@ -59,21 +61,46 @@ class Server:
     def uptime(self) -> int:
         return round(time.time() - self.start_time)
 
+    @property
+    def title(self) -> str:
+        return f"server ({self.uptime})"
+
     def kill(self) -> None:
         self.auto_restart = False
+        self.proc.stdout.close()
+        self.proc.stderr.close()
         self.proc.kill()
+        self.proc.wait()
 
     def __rich__(self) -> Panel:
         if not self.proc.poll():
             return Panel(
                 f"[green]serving on port: [gold1]{self.port} [green]using pid: [gold1]{self.proc.pid} [green]uptime: [gold1]{self.uptime} [green]link: [gold1] http://localhost:{self.port}[/]",
                 border_style="blue",
-                title="server",
+                title=self.title,
+                expand=True,
             )
 
         else:
 
-            return Panel(f"[red]server died", title="server", border_style="red")
+            return Panel(
+                f"[red]server died", title=self.title, border_style="red", expand=True
+            )
+
+
+@hook_impl
+@register_attr("server")
+def configure(markata: "Markata") -> None:
+    def get_server(self):
+        try:
+            return self._server
+        except AttributeError:
+            self._server: Server = Server(directory=str(self.config["output_dir"]))
+            return self._server
+
+    from markata import Markata
+
+    Markata.server = property(get_server)
 
 
 if __name__ == "__main__":

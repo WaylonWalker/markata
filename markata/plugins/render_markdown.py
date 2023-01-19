@@ -1,3 +1,4 @@
+import copy
 from typing import TYPE_CHECKING, List
 
 import markdown
@@ -48,4 +49,7 @@ def render(markata: "Markata") -> None:
             else:
                 html = html_from_cache
             article.html = html
-            article.article_html = html
+            article.article_html = copy.deepcopy(html)
+
+            article["html"] = html
+            article["article_html"] = article.article_html

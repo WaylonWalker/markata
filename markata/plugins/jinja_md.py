@@ -244,5 +244,5 @@ def pre_render(markata: "Markata") -> None:
                 """
 
                 raise PostTemplateSyntaxError(msg, lineno=e.lineno)
-            except UndefinedError:
-                ...
+            except UndefinedError as e:
+                raise UndefinedError(f'{e} in {article["path"]}')

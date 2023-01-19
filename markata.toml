@@ -111,3 +111,35 @@ ignore=[
 name = "og:author_email"
 content = "waylon@waylonwalker.com"
 
+[markata.tui]
+new_cmd=['tmux', 'popup', 'markata', 'new', 'post']
+
+[[markata.tui.keymap]]
+name='new'
+key='n'
+
+[markata.summary]
+grid_attr = ['tags', 'series']
+
+[markata.summary.filter_count.drafts]
+filter="published == 'False'"
+color='red'
+
+[markata.summary.filter_count.articles]
+color='dark_orange'
+
+[markata.summary.filter_count.py_modules]
+filter='"plugin" not in slug and "docs" not in path'
+color="yellow1"
+
+[markata.summary.filter_count.published]
+filter="published == 'True'"
+color='green1'
+
+[markata.summary.filter_count.plugins]
+filter='"plugin" in slug and "docs" not in path'
+color="blue"
+
+[markata.summary.filter_count.docs]
+filter="'docs' in path"
+color='purple'

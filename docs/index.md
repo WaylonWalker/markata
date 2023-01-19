@@ -36,7 +36,7 @@ pipx run markata build
 ### Frontmatter
 
 You will likely want to set things like `title`, `date`, `description`,
-`status`, or `template` per post, this can all be done inside yaml frontmatter.
+`published`, or `template` per post, this can all be done inside yaml frontmatter.
 
 ``` markdown
 ---
@@ -44,7 +44,7 @@ templateKey: blog-post
 tags: ['python',]
 title:  My Awesome Post
 date: 2022-01-21T16:40:34
-status: draft
+published: False
 
 ---
 
@@ -55,8 +55,28 @@ This is my awesome post.
 > Frontmatter is not required, but definitely gives you more control over your site.
 
 ## Next steps
+_blog starter_
 
-* [create your home page](https://markata.dev/home-page/)
+The [blog-starter](https://blog-starter.markata.dev/) has a really great write
+up on how to use markata.  You can see it in your brower at the
+[link](https://blog-starter.markata.dev/) or run it yourself `pipx run markata
+new blog`.
+
+## Examples Gallary
+
+Markata has a project gallery to show off sites built with markata.  Please
+[submit](https://github.com/WaylonWalker/markata/issues/78) yours, and check
+out the [project-gallery](http://markata.dev/project-gallery/) for inspiration.
+
+## Deploying to a sub route
+_gh pages_
+
+To deploy a subroute, add a markata.path_prifix to your config (markata.toml).
+
+``` toml
+[markata]
+path_prefix='my-sub-route'
+```
 
 ## Source Code
 

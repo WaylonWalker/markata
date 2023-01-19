@@ -3,6 +3,7 @@
 # annotations needed to return self
 from __future__ import annotations
 
+import atexit
 import datetime
 import hashlib
 import importlib
@@ -11,7 +12,6 @@ import os
 import sys
 import textwrap
 from datetime import timedelta
-from functools import lru_cache
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
 
@@ -25,10 +25,7 @@ from rich.table import Table
 
 from markata import hookspec, standard_config
 from markata.__about__ import __version__
-from markata.cli.plugins import Plugins
-from markata.cli.runner import Runner
-from markata.cli.server import Server
-from markata.cli.summary import Summary
+from markata.errors import MissingFrontMatter
 from markata.lifecycle import LifeCycle
 
 logger = logging.getLogger("markata")
@@ -39,6 +36,7 @@ DEFAULT_MD_EXTENSIONS = [
     "markdown.extensions.md_in_html",
     "markdown.extensions.tables",
     "markdown.extensions.toc",
+    "markdown.extensions.wikilinks",
     "pymdownx.betterem",
     "pymdownx.details",
     "pymdownx.emoji",
@@ -79,6 +77,10 @@ DEFAULT_HOOKS = [
     "markata.plugins.sitemap",
     "markata.plugins.to_json",
     "markata.plugins.base_cli",
+    "markata.cli.server",
+    "markata.cli.runner",
+    "markata.cli.plugins",
+    "markata.cli.summary",
     "markata.plugins.tui",
     "markata.plugins.setup_logging",
     "markata.plugins.redirects",
@@ -102,8 +104,11 @@ class Post(frontmatter.Post):
 def set_phase(function: Callable) -> Any:
     def wrapper(self: Markata, *args: Tuple, **kwargs: Dict) -> Any:
         self.phase = function.__name__
+        self.phase_file.parent.mkdir(exist_ok=True)
+        self.phase_file.write_text(self.phase)
         result = function(self, *args, **kwargs)
         self.phase = function.__name__
+        self.phase_file.parent.mkdir(exist_ok=True)
         self.phase_file.write_text(self.phase)
         return result
 
@@ -120,6 +125,10 @@ class Markata:
         self.configure()
         if console is not None:
             self._console = console
+        atexit.register(self.teardown)
+
+        with self.cache as cache:
+            self.init_cache_stats = cache.stats()
 
     @property
     def cache(self) -> FanoutCache:
@@ -144,42 +153,6 @@ class Markata:
         else:
             # Markata does not know what this is, raise
             raise AttributeError(f"'Markata' object has no attribute '{item}'")
-
-    @property
-    def server(self) -> Server:
-        try:
-            return self._server
-        except AttributeError:
-
-            self._server: Server = Server(directory=str(self.config["output_dir"]))
-            return self.server
-
-    @property
-    def runner(self) -> Runner:
-        try:
-            return self._runner
-        except AttributeError:
-
-            self._runner: Runner = Runner(self)
-            return self.runner
-
-    @property
-    def plugins(self) -> Plugins:
-        try:
-            return self._plugins
-        except AttributeError:
-
-            self._plugins: Plugins = Plugins(self)
-        return self.plugins
-
-    @property
-    def summary(self) -> Summary:
-        try:
-            return self._summary
-        except AttributeError:
-
-            self._summary: Summary = Summary(self)
-            return self.summary
 
     def __rich__(self) -> Table:
 
@@ -222,6 +195,26 @@ class Markata:
             self.disabled_hooks = self.config["disabled_hooks"].split(",")
         if isinstance(self.config["disabled_hooks"], list):
             self.disabled_hooks = self.config["disabled_hooks"]
+
+        if not self.config.get("output_dir", "markout").endswith(
+            self.config.get("path_prefix", "")
+        ):
+            self.config["output_dir"] = (
+                self.config.get("output_dir", "markout")
+                + "/"
+                + self.config.get("path_prefix", "").rstrip("/")
+            )
+        if (
+            len((output_split := self.config.get("output_dir", "markout").split("/")))
+            > 1
+        ):
+            if "path_prefix" not in self.config.keys():
+                self.config["path_prefix"] = "/".join(output_split[1:]) + "/"
+        if not self.config.get("path_prefix", "").endswith("/"):
+            self.config["path_prefix"] = self.config.get("path_prefix", "") + "/"
+
+        self.config["output_dir"] = self.config["output_dir"].lstrip("/")
+        self.config["path_prefix"] = self.config["path_prefix"].lstrip("/")
 
         try:
             default_index = self.hooks.index("default")
@@ -303,7 +296,11 @@ class Markata:
 
     @property
     def content_dir_hash(self) -> str:
-        hashes = [dirhash(dir) for dir in self.content_directories]
+        hashes = [
+            dirhash(dir)
+            for dir in self.content_directories
+            if dir.absolute() != Path(".").absolute()
+        ]
         return self.make_hash(*hashes)
 
     @property
@@ -355,6 +352,11 @@ class Markata:
         )
         return articles
 
+    def teardown(self) -> Markata:
+        """give special access to the teardown lifecycle method"""
+        self._pm.hook.teardown(markata=self)
+        return self
+
     def run(self, lifecycle: LifeCycle = None) -> Markata:
         if lifecycle is None:
             lifecycle = getattr(LifeCycle, max(LifeCycle._member_map_))
@@ -374,21 +376,43 @@ class Markata:
             hits, misses = cache.stats()
 
         if hits + misses > 0:
-            self.console.log(f"cache hit rate {round(hits/ (hits + misses)*100, 2)}%")
-        self.console.log(f"cache hits/misses {hits}/{misses}")
+            self.console.log(
+                f"lifetime cache hit rate {round(hits/ (hits + misses)*100, 2)}%"
+            )
+
+        if misses > 0:
+            self.console.log(f"lifetime cache hits/misses {hits}/{misses}")
+
+        hits -= self.init_cache_stats[0]
+        misses -= self.init_cache_stats[1]
+
+        if hits + misses > 0:
+            self.console.log(
+                f"run cache hit rate {round(hits/ (hits + misses)*100, 2)}%"
+            )
+
+        if misses > 0:
+            self.console.log(f"run cache hits/misses {hits}/{misses}")
 
         return self
 
     def filter(self, filter: str) -> List:
         def evalr(a: Post) -> Any:
             try:
-                return eval(filter, {**a.to_dict(), "timedelta": timedelta}, {})
+                return eval(
+                    filter,
+                    {**a.to_dict(), "timedelta": timedelta, "post": a, "m": self},
+                    {},
+                )
             except AttributeError:
-                return eval(filter, {**a, "timedelta": timedelta}, {})
+                return eval(
+                    filter,
+                    {**a.to_dict(), "timedelta": timedelta, "post": a, "m": self},
+                    {},
+                )
 
         return [a for a in self.articles if evalr(a)]
 
-    @lru_cache
     def map(
         self,
         func: str = "title",
@@ -436,11 +460,38 @@ class Markata:
         if reverse:
             articles.reverse()
 
-        return [
-            eval(func, {**a.to_dict(), "timedelta": timedelta, "post": a}, {})
-            for a in articles
-            if eval(filter, {**a.to_dict(), "timedelta": timedelta, "post": a}, {})
-        ]
+        try:
+            posts = [
+                eval(
+                    func,
+                    {**a.to_dict(), "timedelta": timedelta, "post": a, "m": self},
+                    {},
+                )
+                for a in articles
+                if eval(
+                    filter,
+                    {**a.to_dict(), "timedelta": timedelta, "post": a, "m": self},
+                    {},
+                )
+            ]
+
+        except NameError as e:
+            variable = str(e).split("'")[1]
+
+            missing_in_posts = self.map(
+                "path", filter=f'"{variable}" not in post.keys()'
+            )
+            message = (
+                f"variable: '{variable}' is missing in {len(missing_in_posts)} posts"
+            )
+            if len(missing_in_posts) > 10:
+                message += f"\nfirst 10 paths to posts missing {variable} [{','.join(missing_in_posts)}..."
+            else:
+                message += f"\npaths to posts missing {variable} {missing_in_posts}"
+
+            raise MissingFrontMatter(message)
+
+        return posts
 
 
 def load_ipython_extension(ipython):

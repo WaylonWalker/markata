@@ -173,7 +173,7 @@ TEMPLATE = """
     {% if prevnext.prev['slug'] == 'index' %}
     <a class='prev' href='/'>
     {% else %}
-    <a class='prev' href='/{{ prevnext.prev['slug'] }}'>
+    <a class='prev' href='/{{ config.get('path_prefix', '') }}{{ prevnext.prev['slug'] }}'>
     {% endif %}
 
         <svg width="50px" height="50px" viewbox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -187,7 +187,7 @@ TEMPLATE = """
     {% if prevnext.next['slug'] == 'index' %}
     <a class='next' href='/'>
     {% else %}
-    <a class='next' href='/{{ prevnext.next['slug'] }}'>
+    <a class='next' href='/{{ config.get('path_prefix', '') }}{{ prevnext.next['slug'] }}'>
     {% endif %}
         <div class='prevnext-text'>
             <p class='prevnext-subtitle'>next</p>
