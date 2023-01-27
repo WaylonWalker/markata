@@ -21,7 +21,7 @@ def render(markata: Markata) -> None:
                 }
             }
             for article in markata.articles
-            if article["published"] == "True"
+            if article["status"] == "published"
         ]
     }
 
