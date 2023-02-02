@@ -84,7 +84,7 @@ class Server:
         else:
 
             return Panel(
-                f"[red]server died", title=self.title, border_style="red", expand=True
+                "[red]server died", title=self.title, border_style="red", expand=True
             )
 
 
