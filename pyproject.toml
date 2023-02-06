@@ -181,7 +181,6 @@ build-docs = "markata build"
 lint-test = [
  "lint",
  "format",
- "sort-imports",
  "cov",
 ]
 test-lint = "lint-test"
