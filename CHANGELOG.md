@@ -1,5 +1,9 @@
 # Markata Changelog
 
+## 0.7.0
+
+- Adopt ruff linter 0.7.0.dev1 #142
+
 ## 0.6.1
 
 - Fix: allow feeds to be used from within markdown
