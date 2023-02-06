@@ -72,8 +72,7 @@ file = "LICENSE"
 
 [project.optional-dependencies]
 dev = [
- "black==22.10.0",
- "flake8",
+ "black",
  "hatch",
  "interrogate",
  "mypy",
@@ -82,6 +81,7 @@ dev = [
  "pytest-cov",
  "pytest-mock",
  "pytest-tmp-files",
+ "ruff",
 ]
 pyinstrument = [
  "pyinstrument",
@@ -125,10 +125,6 @@ ignore_errors = true
 module = "bs4.*"
 ignore_errors = true
 
-[tool.isort]
-profile = "black"
-known_third_party = ["PIL", "anyconfig", "bs4", "checksumdir", "commonmark", "conftest", "dateutil", "deepmerge", "diskcache", "feedgen", "frontmatter", "jinja2", "markdown", "more_itertools", "pathspec", "pkg_resources", "pluggy", "pytest", "pytz", "rich", "slugify", "textual", "toml", "typer", "yaml"]
-
 [tool.hatch.version]
 path = "markata/__about__.py"
 
@@ -148,26 +144,33 @@ exclude_lines = [
 
 [tool.hatch.envs.default]
 dependencies = [
+<<<<<<< HEAD
  "black==22.10.0",
  "flake8",
  "isort",
+=======
+ "black",
+>>>>>>> 32f210b (ruff)
  "pytest",
  "pytest-cov",
  "pytest-mock",
  "pytest-tmp-files",
- "seed-isort-config",
+ "ruff",
 ]
 
 [tool.hatch.envs.dev]
 dependencies = [
+<<<<<<< HEAD
  "black==22.10.0",
  "flake8",
+=======
+ "black",
+>>>>>>> 32f210b (ruff)
  "ipython",
- "isort",
  "pytest",
  "pytest-cov",
  "pytest-tmp-files",
- "seed-isort-config",
+ "ruff",
 ]
 
 [tool.hatch.envs.test]
@@ -182,14 +185,12 @@ python = [
 [tool.hatch.envs.default.scripts]
 cov = "pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=markata --cov=tests"
 no-cov = "cov --no-cov"
-lint = "flake8 markata"
+lint = "ruff markata"
 format = "black --check markata"
-sort-imports = "isort markata"
 build-docs = "markata build"
 lint-test = [
  "lint",
  "format",
- "seed-isort-config",
  "sort-imports",
  "cov",
 ]
@@ -204,3 +205,8 @@ cov = "pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=markat
 exclude = [
  "/.github",
 ]
+
+[tool.ruff]
+line-length = 120 # includes docstirngs
+[tool.ruff.per-file-ignores]
+"markata/plugins/redirects.py" = ["E501"] # long docstring

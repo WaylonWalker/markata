@@ -65,7 +65,8 @@ ignore=[
 
 ## Ignoring a single file
 
-You can also ignore a single file right from the articles frontmatter, by adding `jinja: false`.
+You can also ignore a single file right from the articles frontmatter, by
+adding `jinja: false`.
 
 ```markdown
 ---
@@ -133,14 +134,14 @@ markdown.
 """
 import copy
 from pathlib import Path
-from typing import TYPE_CHECKING, List
+from typing import List, TYPE_CHECKING
 
-import jinja2
-import pathspec
-import pkg_resources
 from deepmerge import always_merger
+import jinja2
 from jinja2 import TemplateSyntaxError, Undefined, UndefinedError, nodes
 from jinja2.ext import Extension
+import pathspec
+import pkg_resources
 
 from markata import __version__
 from markata.hookspec import hook_impl, register_attr

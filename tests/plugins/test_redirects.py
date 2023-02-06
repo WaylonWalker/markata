@@ -3,8 +3,8 @@ Tests the redirects plugin
 """
 from pathlib import Path
 
-import pytest
 from conftest import set_directory
+import pytest
 
 from markata import Markata
 from markata.plugins import redirects

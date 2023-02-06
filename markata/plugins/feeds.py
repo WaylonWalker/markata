@@ -85,7 +85,13 @@ title and date.
 ``` toml
 [markata.feeds.all]
 filter="True"
-card_template='<li><a href={{markata.config.get('path_prefix', '')}}{{slug}}>{{title}}-{{date}}</a></li>'
+card_template='''
+<li>
+    <a href={{markata.config.get('path_prefix', '')}}{{slug}}>
+        {{title}}-{{date}}
+    </a>
+</li>
+'''
 ```
 
 ### filter
@@ -135,7 +141,8 @@ can check for the existence of a tag in the list.
 filter="date<=today and 'python' in tags"
 ```
 
-And of course you can combine all the things into larger expressions.  Here is one example of the main feed on my blog.
+And of course you can combine all the things into larger expressions.  Here is
+one example of the main feed on my blog.
 
 ``` toml
 [markata.feeds.blog]
@@ -158,17 +165,17 @@ posts.
 filter="True"
 
 """
+from dataclasses import dataclass
 import datetime
+from pathlib import Path
 import shutil
 import textwrap
-from dataclasses import dataclass
-from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, TYPE_CHECKING, Union
 
-import typer
 from jinja2 import Template, Undefined
 from rich import print as rich_print
 from rich.table import Table
+import typer
 
 from markata import Markata, __version__
 from markata.hookspec import hook_impl, register_attr
@@ -242,7 +249,8 @@ class Feeds:
     # plugins
     # archive
 
-    # iterate over items like keys and values in a dict, items returns name of feed and a feed object
+    # iterate over items like keys and values in a dict, items returns name of
+    # feed and a feed object
     for k, v in m.feeds.items():
         print(k, len(v.posts))
 
@@ -446,7 +454,8 @@ def create_card(
 ) -> Any:
     """
     Creates a card for one post based on the configured template.  If no
-    template is configured it will create one with the post title and dates (if present).
+    template is configured it will create one with the post title and dates
+    (if present).
     """
     if template is None:
         template = markata.config.get("feeds_config", {}).get("card_template", None)
@@ -457,7 +466,10 @@ def create_card(
                 f"""
                 <li class='post'>
                 <a href="/{markata.config.get('path_prefix', '')}{post['slug']}/">
-                    {post['title']} {post['date'].year}-{post['date'].month}-{post['date'].day}
+                    {post['title']}
+                    {post['date'].year}-
+                    {post['date'].month}-
+                    {post['date'].day}
                 </a>
                 </li>
                 """

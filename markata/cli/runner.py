@@ -67,7 +67,13 @@ class Runner:
             self.border = "red"
         self.title = f"{self.title} [blue]({round(time.time() - self.time)}s)[/]"
 
-        return f"runner is {self.status} {round(time.time() - self.time)}\npid: {self.proc.pid}\nhash: {self.m.content_dir_hash}\n{last_error}"
+        return (
+            f"runner is {self.status}"
+            f"{round(time.time() - self.time)}\n"
+            f"pid: {self.proc.pid}\n"
+            f"hash: {self.m.content_dir_hash}\n"
+            f"{last_error}"
+        )
 
     def __rich__(self) -> Panel:
 
