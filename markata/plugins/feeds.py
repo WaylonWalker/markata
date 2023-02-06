@@ -385,7 +385,6 @@ def save(markata: Markata) -> None:
     url = markata.get_config("url") or ""
 
     for page, page_conf in feeds.items():
-
         create_page(
             markata,
             page,

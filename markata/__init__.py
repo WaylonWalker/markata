@@ -155,7 +155,6 @@ class Markata:
             raise AttributeError(f"'Markata' object has no attribute '{item}'")
 
     def __rich__(self) -> Table:
-
         grid = Table.grid()
         grid.add_column("label")
         grid.add_column("value")
@@ -236,7 +235,6 @@ class Markata:
         return self
 
     def get_plugin_config(self, path_or_name: str) -> Dict:
-
         key = Path(path_or_name).stem
 
         config = self.config.get(key, {})
@@ -259,7 +257,6 @@ class Markata:
         if key in self.config.keys():
             return self.config[key]
         else:
-
             if suggested is None:
                 suggested = textwrap.dedent(
                     f"""
@@ -425,7 +422,6 @@ class Markata:
         import copy
 
         def try_sort(a: Any) -> int:
-
             if "datetime" in sort.lower():
                 return a.get(sort, datetime.datetime(1970, 1, 1))
 

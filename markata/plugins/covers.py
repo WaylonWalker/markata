@@ -162,7 +162,6 @@ def make_cover(
     covers = []
     if resizes:
         for width in resizes:
-
             re_img = image.resize((width, int(width * ratio)), Image.ANTIALIAS)
             filename = (
                 f"{output_path.stem}_{width}x{int(width*ratio)}{output_path.suffix}"

@@ -117,7 +117,6 @@ def set_description(
 
     for description_key in config:
         if description_key not in ["cache_expire", "config_key"]:
-
             # overwrites missing (None) and empty ('')
             if not article.metadata.get(description_key):
                 article.metadata[description_key] = description[

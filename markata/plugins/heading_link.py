@@ -26,7 +26,6 @@ def post_render(markata: Markata) -> None:
     should_prettify = markata.config.get("prettify_html", False)
     with markata.cache as cache:
         for article in markata.iter_articles("link headers"):
-
             key = markata.make_hash(
                 "heading_link",
                 "post_render",

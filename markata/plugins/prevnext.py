@@ -125,7 +125,6 @@ TEMPLATE = Path(__file__).parent / "prevnext_template.html"
 @hook_impl
 @register_attr("prevnext")
 def pre_render(markata: "Markata") -> None:
-
     config = markata.config.get("prevnext", {})
     feed_config = markata.config.get("feeds", {})
     strategy = config.get("strategy", "first")

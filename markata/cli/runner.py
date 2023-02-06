@@ -76,7 +76,6 @@ class Runner:
         )
 
     def __rich__(self) -> Panel:
-
         if self.proc:
             if self.proc.poll() is None:
                 return Panel(
