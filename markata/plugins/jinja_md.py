@@ -219,7 +219,6 @@ def pre_render(markata: "Markata") -> None:
     for article in markata.articles:
         if article.get("jinja", True) and not ignore_spec.match_file(article["path"]):
             try:
-
                 article.content = jinja_env.from_string(article.content).render(
                     __version__=__version__,
                     markata=markata,

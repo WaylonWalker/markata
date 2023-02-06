@@ -15,7 +15,6 @@ results = []
 
 
 def run(f, *args, **kwargs):
-
     pool._max_workers = n
     pool._adjust_thread_count()
 
