@@ -1,6 +1,6 @@
 import atexit
-import time
 from pathlib import Path
+import time
 from typing import Union
 
 from rich.panel import Panel
@@ -75,7 +75,12 @@ class Server:
     def __rich__(self) -> Panel:
         if not self.proc.poll():
             return Panel(
-                f"[green]serving on port: [gold1]{self.port} [green]using pid: [gold1]{self.proc.pid} [green]uptime: [gold1]{self.uptime} [green]link: [gold1] http://localhost:{self.port}[/]",
+                (
+                    f"[green]serving on port: [gold1]{self.port} "
+                    f"[green]using pid: [gold1]{self.proc.pid} "
+                    f"[green]uptime: [gold1]{self.uptime} "
+                    f"[green]link: [gold1] http://localhost:{self.port}[/]"
+                ),
                 border_style="blue",
                 title=self.title,
                 expand=True,
@@ -84,7 +89,7 @@ class Server:
         else:
 
             return Panel(
-                f"[red]server died", title=self.title, border_style="red", expand=True
+                "[red]server died", title=self.title, border_style="red", expand=True
             )
 
 

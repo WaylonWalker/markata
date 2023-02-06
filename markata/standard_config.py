@@ -164,12 +164,12 @@ def _get_local_path_specs(tool: str, project_home: Union[str, Path]) -> path_spe
             "keys": [tool],
         },
         {
-            "path_specs": Path(project_home) / f"pyproject.toml",
+            "path_specs": Path(project_home) / "pyproject.toml",
             "ac_parser": "toml",
             "keys": ["tool", tool],
         },
         {
-            "path_specs": Path(project_home) / f"setup.cfg",
+            "path_specs": Path(project_home) / "setup.cfg",
             "ac_parser": "ini",
             "keys": [f"tool.{tool}"],
         },
