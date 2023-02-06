@@ -200,13 +200,13 @@ class Markata:
             self.config.get("path_prefix", "")
         ):
             self.config["output_dir"] = (
-                self.config.get("output_dir", "markout") +
-                "/" +
-                self.config.get("path_prefix", "").rstrip("/")
+                self.config.get("output_dir", "markout")
+                + "/"
+                + self.config.get("path_prefix", "").rstrip("/")
             )
         if (
-            len((output_split := self.config.get("output_dir", "markout").split("/"))) >
-            1
+            len((output_split := self.config.get("output_dir", "markout").split("/")))
+            > 1
         ):
             if "path_prefix" not in self.config.keys():
                 self.config["path_prefix"] = "/".join(output_split[1:]) + "/"
@@ -221,7 +221,7 @@ class Markata:
             hooks = [
                 *self.hooks[:default_index],
                 *DEFAULT_HOOKS,
-                *self.hooks[default_index + 1:],
+                *self.hooks[default_index + 1 :],
             ]
             self.hooks = [hook for hook in hooks if hook not in self.disabled_hooks]
         except ValueError:
