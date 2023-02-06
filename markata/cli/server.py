@@ -87,7 +87,6 @@ class Server:
             )
 
         else:
-
             return Panel(
                 "[red]server died", title=self.title, border_style="red", expand=True
             )
@@ -109,7 +108,6 @@ def configure(markata: "Markata") -> None:
 
 
 if __name__ == "__main__":
-
     from rich.live import Live
 
     from markata import Markata

@@ -192,7 +192,6 @@ def _load_files(config_path_specs: path_spec_type) -> Dict:
     config_path_specs (list): a list of pathspecs and keys to load
     """
     for file in config_path_specs:
-
         if file["path_specs"].exists():
             config = anyconfig.load(**file)
         else:

@@ -14,7 +14,6 @@ if TYPE_CHECKING:
 @hook_impl(trylast=True)
 def load(markata: "Markata") -> None:
     for article in markata.iter_articles("datetime"):
-
         try:
             date = article.metadata["date"]
         except KeyError:

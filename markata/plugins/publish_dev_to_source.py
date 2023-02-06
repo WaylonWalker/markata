@@ -50,9 +50,7 @@ def join_lines(article):
 
 @hook_impl
 def post_render(markata: "Markata") -> None:
-
     for post in markata.iter_articles(description="saving source documents"):
-
         article = frontmatter.Post(
             post.content,
             **{k: v for k, v in post.metadata.items() if k in DEV_TO_FRONTMATTER},
@@ -79,6 +77,5 @@ def save(markata: "Markata") -> None:
     output_dir = Path(str(markata.config["output_dir"]))
     output_dir.mkdir(parents=True, exist_ok=True)
     for post in markata.iter_articles(description="saving source documents"):
-
         with open(output_dir / Path(post["slug"]) / "dev.md", "w+") as f:
             f.write(frontmatter.dumps(post.dev_to))
