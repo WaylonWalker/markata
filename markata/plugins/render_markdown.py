@@ -1,10 +1,15 @@
 import copy
-from typing import TYPE_CHECKING, List
+from typing import List, TYPE_CHECKING
 
 import markdown
+from markdown_it import MarkdownIt
+from mdit_py_plugins.admon import admon_plugin
+from mdit_py_plugins.footnote import footnote_plugin
+from mdit_py_plugins.front_matter import front_matter_plugin
 
 from markata import DEFAULT_MD_EXTENSIONS
 from markata.hookspec import hook_impl, register_attr
+import importlib
 
 if TYPE_CHECKING:
     from markata import Markata
@@ -28,7 +33,26 @@ def configure(markata: "MarkataMarkdown") -> None:
         raise TypeError("markdown_extensions should be List[str]")
 
     markata.markdown_extensions = [*DEFAULT_MD_EXTENSIONS, *markdown_extensions]
-    markata.md = markdown.Markdown(extensions=markata.markdown_extensions)
+
+    if (
+        markata.config.get("markdown_backend", "")
+        .lower()
+        .replace(" ", "-")
+        .replace("_", "-")
+        == "markdown-it-py"
+    ):
+        markata.md = MarkdownIt().disable("image").enable("table")
+        plugins = (front_matter_plugin, footnote_plugin, admon_plugin)
+        plugins = (getattr(importlib.import_module(".".join(plugin.split(".")[:-1])), plugin.split('.')[-1]) for plugin in ('mdit_py_plugins.admon.admon_plugin',
+                                                                                                                            'mdit_py_plugins.footnote.footnote_plugin',
+                                                                                                                            'mdit_py_plugins.front_matter.front_matter_plugin',
+                                                                                                                            ))
+        for plugin in plugins:
+            markata.md = markata.md.use(plugin)
+        markata.md.convert = markata.md.render
+        markata.md.toc = ''
+    else:
+        markata.md = markdown.Markdown(extensions=markata.markdown_extensions)
 
 
 @hook_impl(tryfirst=True)
