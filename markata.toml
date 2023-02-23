@@ -15,6 +15,11 @@
 # bump site version to bust GitHub actions cache
 site_version = 13
 
+## choose your markdown backend
+# markdown_backend='markdown'
+# markdown_backend='markdown2'
+markdown_backend='markdown-it-py'
+
 # 2 weeks in seconds
 default_cache_expire = 1209600
 
