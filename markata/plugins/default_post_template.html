@@ -83,7 +83,7 @@
         --color-bg-code: {{ config.get('color_bg_code', '#1f2022') }};
         --color-text: {{ config.get('color_text', '#eefbfe') }};
         --color-link: {{ config.get('color_link', '#fb30c4') }}; 
-        --color-accent: {{ config.get('color_accent', '#e1bd00c9') }};
+        --color-accent: {{ config.get('color_accent', '#f1fa8c') }};
         --overlay-brightness: {{ config.get('overlay_brightness', '.85') }};
         --body-width: {{ config.get('body_width', '800px') }};
       }
@@ -121,7 +121,11 @@
       blockquote {
         background: var(--color-bg);
         filter: brightness(var(--overlay-brightness));
-        border-left: 5px solid var(--color-accent);
+        border-left: 4px solid var(--color-accent);
+        border-radius: 4px;
+        box-shadow: 
+            -0.8rem 0rem 1rem -1rem #f1fa8c,
+            0.2rem 0rem 1rem rgb(0, 0, 0, .4);
         padding-left: 1rem;
         margin: 1rem;
         }
@@ -129,17 +133,59 @@
         list-style-type: None;
         padding: .2rem 0;
       }
+      pre.wrapper{
+          padding: 0;
+          box-shadow: 0.2rem 0rem 1rem rgb(0, 0, 0, .4);
+          display: flex;
+          flex-direction: column;
+          position: relative;
+      }
       pre {
+        margin:0;
         padding: 1rem;
+        min-width: -webkit-fill-available;
         max-width: fit-content;
         overflow-x: auto;
       }
 
+      pre .filepath {
+          margin:0;
+          padding-bottom: .4rem;
+          padding-left: 1rem;
+          border-radius: 4px 4px 0 0;
+          background: black;
+          display: flex;
+          justify-content: space-between;
+      }
+    
+
+      .copy-wrapper {
+        background: none;
+        position: absolute;
+        width: 100%;
+      }
+      button.copy {
+        z-index: 100;
+        background: none;
+        fill: #ffffff45;
+        border: none;
+        width: 32px;
+        align-self: flex-end;
+        position: absolute;
+        top: 0;
+        right: 0;
+        margin: 0.5rem 0.2rem;
+
+      }
+      button.copy:hover {
+        fill:white
+      }
 
       .highlight  {
         background: var(--color-bg-code);
         color: var(--color-text);
         filter: brightness(var(--overlay-brightness));
+        border-radius: 0 0 4px 4px;
       }
       .highlight .c { color: #8b8b8b } /* Comment */
       .highlight .err { color: #960050; background-color: #1e0010 } /* Error */
@@ -325,36 +371,145 @@
     display: inline-block;
   }
 
-  .admonition {
-    padding: 15px;
+.admonition {
+    box-shadow: 0.2rem 0rem 1rem rgb(0, 0, 0, .4);
     margin-bottom: 20px;
     border: 1px solid transparent;
     border-radius: 4px;
     text-align: left;
-  }
+    padding: 0;
+    border: 0;
+    padding-bottom: 1rem;
 
-  .admonition.note {
-    color: #79d3e6;
-    background-color: #081d28;
-    border-color: #1c7183;
-  }
+}
 
-  .admonition.warning {
-    color: #e6ca7a;
-    background-color: #4f4409;
-    border-color: #855c0d;
-  }
+.admonition p{
+    padding: .2rem .6rem;
+}
 
-  .admonition.danger {
-    color: #e67471;
-    background-color: #461c1c;
-    border-color: #6e2b33;
-  }
+.admonition-title {
+    background: #161718;
+    padding: 0;
+    margin: 0;
+}
 
-  .admonition-title {
-    font-weight: bold;
-    text-align: left;
-  }
+.admonition.note {
+    border-left: 4px solid #f1fa8c;
+    box-shadow: 
+        -0.8rem 0rem 1rem -1rem #f1fa8c,
+        0.2rem 0rem 1rem rgb(0, 0, 0, .4);
+}
+.admonition.note > .admonition-title {
+    border-bottom: 1px solid #3c3d2d;
+}
+
+.admonition.abstract {
+    border-left: 4px solid #8be9fd;
+    box-shadow: 
+        -0.8rem 0rem 1rem -1rem #8be9fd,
+        0.2rem 0rem 1rem rgb(0, 0, 0, .4);
+}
+.admonition.abstract > .admonition-title {
+    border-bottom: 1px solid #2c3a3f;
+}
+.admonition.info {
+    border-left: 4px solid;
+    box-shadow:
+        -0.8rem 0rem 1rem -1rem #8bb0fd,
+        0.2rem 0rem 1rem rgb(0, 0, 0, .4);
+}
+.admonition.info > .admonition-title {
+    border-bottom: 1px solid #2c313f;
+}
+
+.admonition.tip {
+    border-left: 4px solid #008080;
+    box-shadow:
+        -0.8rem 0rem 1rem -1rem #008080,
+        0.2rem 0rem 1rem rgb(0, 0, 0, .4);
+}
+.admonition.tip > .admonition-title {
+    border-bottom: 1px solid #1b2a2b;
+}
+.admonition.success {
+    border-left: 4px solid #50fa7b;
+    box-shadow:
+        -0.8rem 0rem 1rem -1rem #50fa7b,
+        0.2rem 0rem 1rem rgb(0, 0, 0, .4);
+}
+.admonition.success > .admonition-title {
+    border-bottom: 1px solid #263e2b;
+}
+
+.admonition.question {
+    border-left: 4px solid #a7fcbd;
+    box-shadow:
+        -0.8rem 0rem 1rem -1rem #a7fcbd,
+        0.2rem 0rem 1rem rgb(0, 0, 0, .4);
+}
+.admonition.question > .admonition-title {
+    border-bottom: 1px solid #303e35;
+}
+
+.admonition.warning {
+    border-left: 4px solid #ffb86c;
+    box-shadow:
+        -0.8rem 0rem 1rem -1rem #ffb86c,
+        0.2rem 0rem 1rem rgb(0, 0, 0, .4);
+}
+.admonition.warning > .admonition-title {
+    border-bottom: 1px solid #3f3328;
+}
+
+.admonition.failure {
+    border-left: 4px solid #b23b3b;
+    box-shadow:
+        -0.8rem 0rem 1rem -1rem #b23b3b,
+        0.2rem 0rem 1rem rgb(0, 0, 0, .4);
+}
+.admonition.failure > .admonition-title {
+    border-bottom: 1px solid #34201f;
+}
+
+.admonition.danger {
+    border-left: 4px solid #ff5555;
+    box-shadow:
+        -0.8rem 0rem 1rem -1rem #ff5555,
+        0.2rem 0rem 1rem rgb(0, 0, 0, .4);
+}
+.admonition.danger > .admonition-title {
+    border-bottom: 1px solid #402523;
+}
+
+.admonition.bug {
+    border-left: 4px solid #b2548a;
+    box-shadow:
+        -0.8rem 0rem 1rem -1rem #b2548a,
+        0.2rem 0rem 1rem rgb(0, 0, 0, .4);
+}
+.admonition.bug > .admonition-title {
+    border-bottom: 1px solid #32232c;
+}
+
+.admonition.example {
+    border-left: 4px solid #bd93f9;
+    box-shadow:
+        -0.8rem 0rem 1rem -1rem #bd93f9,
+        0.2rem 0rem 1rem rgb(0, 0, 0, .4);
+}
+.admonition.example > .admonition-title {
+    border-bottom: 1px solid #332d3e;
+}
+
+.admonition.quote {
+    border-left: 4px solid #999;
+    box-shadow:
+        -0.8rem 0rem 1rem -1rem #999,
+        0.2rem 0rem 1rem rgb(0, 0, 0, .4);
+}
+.admonition.quote > .admonition-title {
+    border-bottom: 1px solid #2d2e2f;
+}
 
   table {
     margin: 1rem 0;

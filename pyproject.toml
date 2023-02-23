@@ -9,10 +9,11 @@ classifiers = [
  "Operating System :: OS Independent",
  "Programming Language :: Python :: 3 :: Only",
  "Programming Language :: Python :: 3",
- "Programming Language :: Python :: 3.10",
  "Programming Language :: Python :: 3.7",
  "Programming Language :: Python :: 3.8",
  "Programming Language :: Python :: 3.9",
+ "Programming Language :: Python :: 3.10",
+ "Programming Language :: Python :: 3.11",
  "Programming Language :: Python :: Implementation :: CPython",
  "Programming Language :: Python :: Implementation :: PyPy",
  "Programming Language :: Python",
@@ -22,8 +23,8 @@ classifiers = [
  "Typing :: Typed",
 ]
 dependencies = [
- "beautifulsoup4",
  "anyconfig",
+ "beautifulsoup4",
  "checksumdir",
  "cookiecutter",
  "copier",
@@ -31,6 +32,8 @@ dependencies = [
  "diskcache",
  "feedgen",
  "jinja2",
+ "markdown-it-py[plugins]",
+ "markdown2[all]",
  "more-itertools",
  "pathspec",
  "pillow",
@@ -183,7 +186,7 @@ python = [
 ]
 
 [tool.hatch.envs.default.scripts]
-cov = "pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=markata --cov=tests"
+cov = "pytest --rich --cov-report=term-missing --cov-config=pyproject.toml --cov=markata --cov=tests"
 no-cov = "cov --no-cov"
 lint = "ruff markata"
 format = "black --check markata"
