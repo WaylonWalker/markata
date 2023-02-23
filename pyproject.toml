@@ -209,6 +209,4 @@ exclude = [
 ]
 
 [tool.ruff]
-line-length = 120 # includes docstirngs
-[tool.ruff.per-file-ignores]
-"markata/plugins/redirects.py" = ["E501"] # long docstring
+ignore=['E501'] # let black control line length errors
