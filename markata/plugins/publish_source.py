@@ -16,8 +16,9 @@ your list of hooks.
 hooks=[
    "markata.plugins.publish_source",
    ]
+```
 
-!! note
+!!! note
     publish_source is included by default, but if you have not included the
     default set of hooks you will need to explicitly add it.
 """
