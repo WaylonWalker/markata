@@ -150,7 +150,6 @@
 
       pre .filepath {
           margin:0;
-          padding-bottom: .4rem;
           padding-left: 1rem;
           border-radius: 4px 4px 0 0;
           background: black;
@@ -158,6 +157,15 @@
           justify-content: space-between;
       }
     
+      pre .filepath p{
+          margin:0
+      }
+
+      pre .filepath .right{
+          display: flex;
+          gap: .2rem;
+          align-items: center;
+      }
 
       .copy-wrapper {
         background: none;
@@ -167,11 +175,10 @@
       button.copy {
         z-index: 100;
         background: none;
-        fill: #ffffff45;
+        fill: #ffffff45; 
         border: none;
         width: 32px;
         align-self: flex-end;
-        position: absolute;
         top: 0;
         right: 0;
         margin: 0.5rem 0.2rem;
@@ -180,6 +187,17 @@
       button.copy:hover {
         fill:white
       }
+
+        a.help {
+            fill: #ffffff45; 
+        }
+        a.help:hover {
+            fill: white;
+        }
+        a.help svg{
+            height:24px;
+            width:24px;
+        }
 
       .highlight  {
         background: var(--color-bg-code);
@@ -371,7 +389,7 @@
     display: inline-block;
   }
 
-.admonition {
+.admonition, details {
     box-shadow: 0.2rem 0rem 1rem rgb(0, 0, 0, .4);
     margin-bottom: 20px;
     border: 1px solid transparent;
@@ -379,135 +397,146 @@
     text-align: left;
     padding: 0;
     border: 0;
-    padding-bottom: 1rem;
 
+}
+.admonition {
+    padding-bottom: 1rem;
+}
+
+details[open] {
+    padding-bottom: 1rem;
 }
 
 .admonition p{
     padding: .2rem .6rem;
 }
 
-.admonition-title {
+.admonition-title, .details-title {
     background: #161718;
     padding: 0;
     margin: 0;
 }
 
-.admonition.note {
+summary.admonition-title, summary.details-title {
+    padding: .5rem;
+    padding-left: 1rem;
+}
+
+.note {
     border-left: 4px solid #f1fa8c;
     box-shadow: 
         -0.8rem 0rem 1rem -1rem #f1fa8c,
         0.2rem 0rem 1rem rgb(0, 0, 0, .4);
 }
-.admonition.note > .admonition-title {
+.note > .admonition-title {
     border-bottom: 1px solid #3c3d2d;
 }
 
-.admonition.abstract {
+.abstract {
     border-left: 4px solid #8be9fd;
     box-shadow: 
         -0.8rem 0rem 1rem -1rem #8be9fd,
         0.2rem 0rem 1rem rgb(0, 0, 0, .4);
 }
-.admonition.abstract > .admonition-title {
+.abstract > .admonition-title {
     border-bottom: 1px solid #2c3a3f;
 }
-.admonition.info {
+.info {
     border-left: 4px solid;
     box-shadow:
         -0.8rem 0rem 1rem -1rem #8bb0fd,
         0.2rem 0rem 1rem rgb(0, 0, 0, .4);
 }
-.admonition.info > .admonition-title {
+.info > .admonition-title {
     border-bottom: 1px solid #2c313f;
 }
 
-.admonition.tip {
+.tip {
     border-left: 4px solid #008080;
     box-shadow:
         -0.8rem 0rem 1rem -1rem #008080,
         0.2rem 0rem 1rem rgb(0, 0, 0, .4);
 }
-.admonition.tip > .admonition-title {
+.tip > .admonition-title {
     border-bottom: 1px solid #1b2a2b;
 }
-.admonition.success {
+.success {
     border-left: 4px solid #50fa7b;
     box-shadow:
         -0.8rem 0rem 1rem -1rem #50fa7b,
         0.2rem 0rem 1rem rgb(0, 0, 0, .4);
 }
-.admonition.success > .admonition-title {
+.success > .admonition-title {
     border-bottom: 1px solid #263e2b;
 }
 
-.admonition.question {
+.question {
     border-left: 4px solid #a7fcbd;
     box-shadow:
         -0.8rem 0rem 1rem -1rem #a7fcbd,
         0.2rem 0rem 1rem rgb(0, 0, 0, .4);
 }
-.admonition.question > .admonition-title {
+.question > .admonition-title {
     border-bottom: 1px solid #303e35;
 }
 
-.admonition.warning {
+.warning {
     border-left: 4px solid #ffb86c;
     box-shadow:
         -0.8rem 0rem 1rem -1rem #ffb86c,
         0.2rem 0rem 1rem rgb(0, 0, 0, .4);
 }
-.admonition.warning > .admonition-title {
+.warning > .admonition-title {
     border-bottom: 1px solid #3f3328;
 }
 
-.admonition.failure {
+.failure {
     border-left: 4px solid #b23b3b;
     box-shadow:
         -0.8rem 0rem 1rem -1rem #b23b3b,
         0.2rem 0rem 1rem rgb(0, 0, 0, .4);
 }
-.admonition.failure > .admonition-title {
+.failure > .admonition-title {
     border-bottom: 1px solid #34201f;
 }
 
-.admonition.danger {
+.danger {
     border-left: 4px solid #ff5555;
     box-shadow:
         -0.8rem 0rem 1rem -1rem #ff5555,
         0.2rem 0rem 1rem rgb(0, 0, 0, .4);
 }
-.admonition.danger > .admonition-title {
+.danger > .admonition-title {
     border-bottom: 1px solid #402523;
 }
 
-.admonition.bug {
+.bug {
     border-left: 4px solid #b2548a;
     box-shadow:
         -0.8rem 0rem 1rem -1rem #b2548a,
         0.2rem 0rem 1rem rgb(0, 0, 0, .4);
 }
-.admonition.bug > .admonition-title {
+.bug > .admonition-title {
     border-bottom: 1px solid #32232c;
 }
 
-.admonition.example {
+.example {
     border-left: 4px solid #bd93f9;
     box-shadow:
         -0.8rem 0rem 1rem -1rem #bd93f9,
         0.2rem 0rem 1rem rgb(0, 0, 0, .4);
 }
-.admonition.example > .admonition-title {
+.example > .admonition-title {
     border-bottom: 1px solid #332d3e;
 }
 
-.admonition.quote {
+.quote {
     border-left: 4px solid #999;
     box-shadow:
         -0.8rem 0rem 1rem -1rem #999,
         0.2rem 0rem 1rem rgb(0, 0, 0, .4);
 }
-.admonition.quote > .admonition-title {
+.quote > .admonition-title {
     border-bottom: 1px solid #2d2e2f;
 }
 
@@ -601,8 +630,9 @@
   }
 
   details>* {
-    padding-left: 1rem;
+    margin: 1rem;
   }
+
   </style>
 
   {% if 'markata.plugins.service_worker' in config.hooks %}

@@ -114,7 +114,7 @@ def details(state: StateBlock, startLine: int, endLine: int, silent: bool) -> bo
         title_markup = f"{markup} {tag}"
         token = state.push("details_title_open", "summary", 1)
         token.markup = title_markup
-        token.attrs = {"class": "details-title"}
+        token.attrs = {"class": "admonition-title"}
         token.map = [startLine, startLine + 1]
 
         token = state.push("inline", "", 0)
