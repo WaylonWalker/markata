@@ -404,14 +404,14 @@
 }
 
 details[open] {
-    padding-bottom: 1rem;
+    padding-bottom: .5rem;
 }
 
 .admonition p{
     padding: .2rem .6rem;
 }
 
-.admonition-title, .details-title {
+.admonition-title, .details-title, summary {
     background: #161718;
     padding: 0;
     margin: 0;
@@ -633,6 +633,14 @@ summary.admonition-title, summary.details-title {
     margin: 1rem;
   }
 
+  .admonition>* {
+    margin: 1rem;
+  }
+
+  p.admonition-title, summary {
+    margin: 0;
+    padding-left:1rem;
+  }
   </style>
 
   {% if 'markata.plugins.service_worker' in config.hooks %}
