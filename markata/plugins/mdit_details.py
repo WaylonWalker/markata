@@ -7,9 +7,14 @@ from markdown_it import MarkdownIt
 from markdown_it.rules_block import StateBlock
 
 
-def get_tag(params: str) -> Tuple[str, str]:
+def get_tag(params: str) -> Tuple[str, str, bool]:
+    open = False
     if not params.strip():
-        return "", ""
+        return "", "", open
+
+    if params.strip().startswith("+"):
+        params = params.strip("+")
+        open = True
 
     tag, *_title = params.strip().split(" ")
     joined = " ".join(_title).strip('"').strip("'")
@@ -19,7 +24,7 @@ def get_tag(params: str) -> Tuple[str, str]:
         title = tag.title()
     elif joined != '""':
         title = joined
-    return tag.lower(), title
+    return (tag.lower(), title, open)
 
 
 def validate(params: str) -> bool:
@@ -99,12 +104,15 @@ def details(state: StateBlock, startLine: int, endLine: int, silent: bool) -> bo
     # this will prevent lazy continuations from ever going past our end marker
     state.lineMax = next_line
 
-    tag, title = get_tag(params)
+    tag, title, open = get_tag(params)
+    attrs = {"class": f"details {tag}"}
+    if open:
+        attrs["open"] = ""
 
     token = state.push("details_open", "details", 1)
     token.markup = markup
     token.block = True
-    token.attrs = {"class": f"details {tag}"}
+    token.attrs = attrs
     token.meta = {"tag": tag}
     token.content = title
     token.info = params
