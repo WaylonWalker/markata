@@ -71,6 +71,7 @@
   <style>
       :root {
         --color-bg: {{ config.get('color_bg', '#1f2022') }};
+        --color-bg-2: {{ config.get('color_bg_2', '#161718') }};
         --color-bg-code: {{ config.get('color_bg_code', '#1f2022') }};
         --color-text: {{ config.get('color_text', '#eefbfe') }};
         --color-link: {{ config.get('color_link', '#fb30c4') }}; 
@@ -80,6 +81,7 @@
       }
       [data-theme="dark"] {
         --color-bg: {{ config.get('color_bg', '#1f2022') }};
+        --color-bg-2: {{ config.get('color_bg_2', '#161718') }};
         --color-bg-code: {{ config.get('color_bg_code', '#1f2022') }};
         --color-text: {{ config.get('color_text', '#eefbfe') }};
         --color-link: {{ config.get('color_link', '#fb30c4') }}; 
@@ -89,6 +91,7 @@
       }
       [data-theme="light"] {
         --color-bg: {{ config.get('color_bg_light', '#eefbfe') }};
+        --color-bg-2: {{ config.get('color_bg_light_2', '#c8d2db') }};
         --color-bg-code: {{ config.get('color_bg_code_light', '#eefbfe') }};
         --color-text: {{ config.get('color_text_light', '#1f2022') }};
         --color-link: {{ config.get('color_link_light', '#fb30c4') }}; 
@@ -430,7 +433,7 @@ details[open] {
 }
 
 .admonition-title, .details-title, summary {
-    background: #161718;
+    background: var(--color-bg-2);
     padding: 0;
     margin: 0;
 }
