@@ -18,6 +18,7 @@ description: Docs for {{file.stem}}
 
     ???+ source "{{node.name}} <em class='small'>source</em>"
         ``` python
+
 {{ indent(ast.get_source_segment(raw_source, node), '        ') }}
         ```
 
