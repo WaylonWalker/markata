@@ -139,6 +139,7 @@
           display: flex;
           flex-direction: column;
           position: relative;
+          margin: 2rem;
       }
       pre {
         margin:0;
@@ -166,6 +167,20 @@
           gap: .2rem;
           align-items: center;
       }
+
+    pre::-webkit-scrollbar {
+    height: 4px;
+    background-color: transparent;
+    }
+
+    pre::-webkit-scrollbar-thumb {
+    background-color: #d3d3d32e;
+    border-radius: 2px;
+    }
+
+    pre::-webkit-scrollbar-track {
+    background-color: transparent;
+    }
 
       .copy-wrapper {
         background: none;
@@ -391,7 +406,7 @@
 
 .admonition, details {
     box-shadow: 0.2rem 0rem 1rem rgb(0, 0, 0, .4);
-    margin-bottom: 20px;
+    margin: 5rem 0;
     border: 1px solid transparent;
     border-radius: 4px;
     text-align: left;
@@ -654,6 +669,29 @@ summary.admonition-title, summary.details-title {
   p.admonition-title, summary {
     margin: 0;
     padding-left:1rem;
+  }
+
+  .small {
+      font-size: .9rem;
+      color: #888;
+  }
+
+  admonition+admonition{
+      margin-top:20rem;
+  }
+
+  ::-webkit-scrollbar {
+    height: 12px;
+    background-color: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: #d3d3d32e;
+    border-radius: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background-color: transparent;
   }
   </style>
 
