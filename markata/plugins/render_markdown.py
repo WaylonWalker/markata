@@ -24,15 +24,11 @@ if TYPE_CHECKING:
 
 
 def highlight_code(code, name, attrs, markata=None):
-    """Highlight a block of code"""
+    """Code highlighter for markdown-it-py."""
 
     import rich
 
-    if attrs:
-        rich.print(f"Ignoring {attrs=}")
-
     lexer = get_lexer_by_name(name or "text")
-    # rich.print(highlight(code, lexer, formatter))
     import re
 
     pattern = r'(\w+)\s*=\s*(".*?"|\S+)'
@@ -59,14 +55,14 @@ def highlight_code(code, name, attrs, markata=None):
 
     if attrs.get("help"):
         help = f"""
-        <a href={attrs.get('help')} title='help link' class='help'>{HELP_ICON}</a>
+        <a href={attrs.get('help').strip('<').strip('>').strip('"').strip("'")} title='help link' class='help'>{HELP_ICON}</a>
         """
     else:
         help = ""
     if attrs.get("title"):
         file = f"""
 <div class='filepath'>
-{md.render(attrs.get('title'))}
+{md.render(attrs.get('title').strip('"').strip("'"))}
 <div class='right'>
 {help}
 {copy_button}
@@ -90,6 +86,7 @@ def highlight_code(code, name, attrs, markata=None):
 @hook_impl(tryfirst=True)
 @register_attr("md", "markdown_extensions")
 def configure(markata: "MarkataMarkdown") -> None:
+    "Sets up a markdown instance as md"
     if "markdown_extensions" not in markata.config:
         markdown_extensions = [""]
     if isinstance(markata.config["markdown_extensions"], str):
@@ -124,11 +121,16 @@ def configure(markata: "MarkataMarkdown") -> None:
             .enable("table")
         )
         plugins = (
-            (getattr(importlib.import_module(plugin[0].split(
-                ":")[0]), plugin[0].split(":")[1]), plugin[1])
+            (
+                getattr(
+                    importlib.import_module(plugin[0].split(":")[0]),
+                    plugin[0].split(":")[1],
+                ),
+                plugin[1],
+            )
             for plugin in (
                 ("mdit_py_plugins.admon:admon_plugin", {}),
-                ("mdit_py_plugins.attrs:attrs_plugin", {'spans': True}),
+                ("mdit_py_plugins.attrs:attrs_plugin", {"spans": True}),
                 ("mdit_py_plugins.attrs:attrs_block_plugin", {}),
                 ("markata.plugins.mdit_details:details_plugin", {}),
             )
