@@ -26,8 +26,6 @@ if TYPE_CHECKING:
 def highlight_code(code, name, attrs, markata=None):
     """Code highlighter for markdown-it-py."""
 
-    import rich
-
     lexer = get_lexer_by_name(name or "text")
     import re
 
@@ -45,9 +43,8 @@ def highlight_code(code, name, attrs, markata=None):
     from markdown_it import MarkdownIt
 
     md = MarkdownIt(
-        "js-default",
+        "commonmark",
         {
-            "linkify": True,
             "html": True,
             "typographer": True,
         },
