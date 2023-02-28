@@ -13,10 +13,8 @@ description: Docs for {{file.stem}}
 
 {% for node in nodes %}
 !!! {{node.type}} {{node.name}} <em class='small'>{{node.type}}</em>
-
 {{ indent(ast.get_docstring(node) or '', '    ') }}
-
-    ???+ source "{{node.name}} <em class='small'>source</em>"
+     ???+ source "{{node.name}} <em class='small'>source</em>"
         ``` python
 
 {{ indent(ast.get_source_segment(raw_source, node), '        ') }}
