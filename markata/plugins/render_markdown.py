@@ -73,14 +73,18 @@ def configure(markata: "MarkataMarkdown") -> None:
         for plugin in markata.config.get("markdown_it_py", {}).get("disable", []):
             markata.md.disable(plugin)
 
-        for plugin in markata.config.get("markdown_it_py", {}).get("plugins", []):
-            plugin["plugin_str"] = plugin["plugin"]
-            plugin_module = plugin["plugin"].split(":")[0]
-            plugin_func = plugin["plugin"].split(":")[1]
-            plugin["plugin"] = getattr(
-                importlib.import_module(plugin_module),
-                plugin_func,
-            )
+        plugins = copy.deepcopy(
+            markata.config.get("markdown_it_py", {}).get("plugins", [])
+        )
+        for plugin in plugins:
+            if isinstance(plugin["plugin"], str):
+                plugin["plugin_str"] = plugin["plugin"]
+                plugin_module = plugin["plugin"].split(":")[0]
+                plugin_func = plugin["plugin"].split(":")[1]
+                plugin["plugin"] = getattr(
+                    importlib.import_module(plugin_module),
+                    plugin_func,
+                )
             plugin["config"] = plugin.get("config", {})
             for k, v in plugin["config"].items():
                 if k == "markata":
