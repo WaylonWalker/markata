@@ -111,6 +111,7 @@ def wikilinks_plugin(
         token.attrSet("class", "wikilink")
         if "#" in text:
             link, id = text.split("#")
+            link = link.strip("/")
         else:
             link, id = text, None
         possible_pages = markata.filter(
