@@ -44,35 +44,6 @@ disabled_hooks = [
 'markata.plugins.rss'
 ]
 
-# md_it_plugins = [
-#         ['mdit_py_plugins.admon:admon_plugin', {}],
-#         ['mdit_py_plugins.attrs:attrs_plugin', {'spans': True}],
-#         ['mdit_py_plugins.attrs:attrs_block_plugin', {}],
-#         ['markata.plugins.mdit_details:details_plugin', {}],
-#         ['mdit_py_plugins.anchors:anchors_plugin', {'permalink': True, 'permalinkSymbol': 'icon'}],
-#         ['markata.plugins.md_it_wikilinks:wikilinks_plugin', {'markata': 'markata'}]
-#     ]
-one_md_it_plugins = [
-"mdit_py_plugins.admon:admon_plugin",
-"mdit_py_plugins.attrs:attrs_plugin",
-"mdit_py_plugins.attrs:attrs_block_plugin",
-"markata.plugins.mdit_details:details_plugin",
-"mdit_py_plugins.anchors:anchors_plugin",
-"markata.plugins.md_it_wikilinks:wikilinks_plugin",
-]
-
-
-# md_it_plugins = [ [ "mdit_py_plugins.admon:admon_plugin", [],], [ "mdit_py_plugins.attrs:attrs_plugin", [ "spans",],], [ "mdit_py_plugins.attrs:attrs_block_plugin", [],], [ "markata.plugins.mdit_details:details_plugin", [],], [ "mdit_py_plugins.anchors:anchors_plugin", [ "permalink", "permalinkSymbol",],], [ "markata.plugins.md_it_wikilinks:wikilinks_plugin", [ "markata",],],]
-
-# [
-#     {name = "mdit_py_plugins.admon:admon_plugin", options = {}},
-#     {name = "mdit_py_plugins.attrs:attrs_plugin", options = {spans = true}},
-#     {name = "mdit_py_plugins.attrs:attrs_block_plugin", options = {}},
-#     {name = "markata.plugins.mdit_details:details_plugin", options = {}},
-#     {name = "mdit_py_plugins.anchors:anchors_plugin", options = {permalink = true, permalinkSymbol = "LINK_ICON"}},
-#     {name = "markata.plugins.md_it_wikilinks:wikilinks_plugin", options = {markata = "markata"}},
-# ]
-
 ## Site Config
 url = "https://markata.dev"
 title = "Markata's Docs"
@@ -171,8 +142,19 @@ card_template="<li class='post'><a href='/{{ slug }}/'>{{ title }}</a></li>"
 
 [markata.feeds.plugins]
 title="Markata Plugins"
-filter="'plugin' in slug"
-card_template="<li class='post'><a href='/{{ slug }}/'>{{ title }}</a></li>"
+filter="'plugin' in slug and 'test' not in slug"
+# card_template="<li class='post'><a href='/{{ slug }}/'>{{ title }}</a></li>"
+
+card_template="""
+<li class='post' style='background:rgba(255, 255, 255, .05); border:1px solid rgba(255, 255, 255, .2); padding:1rem; margin: 2rem auto;' >
+<a href='/{{ slug }}/'>
+    <a href='/{{ slug }}/'>{{ title }}</a>
+    <p>
+        {{ article_html[:article_html.find('</p>')]  }}
+    </p>
+</a>
+</li>
+"""
 
 [markata.jinja_md]
 ignore=[
