@@ -32,6 +32,7 @@ dependencies = [
  "diskcache",
  "feedgen",
  "jinja2",
+ "linkify-it-py",
  "markdown-it-py[plugins]",
  "markdown2[all]",
  "more-itertools",
