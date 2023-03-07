@@ -3,6 +3,86 @@ Renders markdown content as html.  This may be markdown files loaded in by way
 of the [[load]] plugin.
 
 
+## Markdown backend
+
+There are 3 supported markdown backends that you can configure markata to use
+by setting the `markdown_backend` in your `markata.toml`.
+
+``` toml title=markata.toml
+## choose your markdown backend
+# markdown_backend='markdown'
+# markdown_backend='markdown2'
+markdown_backend='markdown-it-py'
+```
+
+## markdown-it-py configuration
+
+`markdown-it-py` has quite a bit of configuration that you can do, you can read
+more about the settings in their
+[docs](https://markdown-it-py.readthedocs.io/en/latest/).
+
+``` toml title=markata.toml
+# markdown_it flavor
+[markata.markdown_it_py]
+config='gfm-like'
+```
+
+You can enable and disable built in plugins using the `enable` and `disable`
+lists.
+
+``` toml title=markata.toml
+[markata.markdown_it_py]
+# markdown_it built-in plugins
+enable = [ "table" ]
+disable = [ "image" ]
+```
+
+You can configure the `options_update` as follows, this is for the built-in
+plugins and core configuration.
+
+``` toml title=markata.toml
+[markata.markdown_it_py.options_update]
+linkify = true
+html = true
+typographer = true
+highlight = 'markata.plugins.md_it_highlight_code:highlight_code'
+```
+
+Lastly you can add external plugins as follows.  Many of the great plugins that
+come from [executable_books](https://github.com/executablebooks) actually comes
+from a separate library
+[mdit-py-plugins](https://mdit-py-plugins.readthedocs.io/), so they will be
+configured here.
+
+``` toml title=markata.toml
+[[markata.markdown_it_py.plugins]]
+plugin = "mdit_py_plugins.admon:admon_plugin"
+
+[[markata.markdown_it_py.plugins]]
+plugin = "mdit_py_plugins.admon:admon_plugin"
+
+[[markata.markdown_it_py.plugins]]
+plugin = "mdit_py_plugins.attrs:attrs_plugin"
+config = {spans = true}
+
+[[markata.markdown_it_py.plugins]]
+plugin = "mdit_py_plugins.attrs:attrs_block_plugin"
+
+[[markata.markdown_it_py.plugins]]
+plugin = "markata.plugins.mdit_details:details_plugin"
+
+[[markata.markdown_it_py.plugins]]
+plugin = "mdit_py_plugins.anchors:anchors_plugin"
+
+[markata.markdown_it_py.plugins.config]
+permalink = true
+permalinkSymbol = '<svg class="heading-permalink" aria-hidden="true" fill="currentColor" focusable="false" height="1em" viewBox="0 0 24 24" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M9.199 13.599a5.99 5.99 0 0 0 3.949 2.345 5.987 5.987 0 0 0 5.105-1.702l2.995-2.994a5.992 5.992 0 0 0 1.695-4.285 5.976 5.976 0 0 0-1.831-4.211 5.99 5.99 0 0 0-6.431-1.242 6.003 6.003 0 0 0-1.905 1.24l-1.731 1.721a.999.999 0 1 0 1.41 1.418l1.709-1.699a3.985 3.985 0 0 1 2.761-1.123 3.975 3.975 0 0 1 2.799 1.122 3.997 3.997 0 0 1 .111 5.644l-3.005 3.006a3.982 3.982 0 0 1-3.395 1.126 3.987 3.987 0 0 1-2.632-1.563A1 1 0 0 0 9.201 13.6zm5.602-3.198a5.99 5.99 0 0 0-3.949-2.345 5.987 5.987 0 0 0-5.105 1.702l-2.995 2.994a5.992 5.992 0 0 0-1.695 4.285 5.976 5.976 0 0 0 1.831 4.211 5.99 5.99 0 0 0 6.431 1.242 6.003 6.003 0 0 0 1.905-1.24l1.723-1.723a.999.999 0 1 0-1.414-1.414L9.836 19.81a3.985 3.985 0 0 1-2.761 1.123 3.975 3.975 0 0 1-2.799-1.122 3.997 3.997 0 0 1-.111-5.644l3.005-3.006a3.982 3.982 0 0 1 3.395-1.126 3.987 3.987 0 0 1 2.632 1.563 1 1 0 0 0 1.602-1.198z"></path></svg>'
+
+[[markata.markdown_it_py.plugins]]
+plugin = "markata.plugins.md_it_wikilinks:wikilinks_plugin"
+config = {markata = "markata"}
+```
+
 """
 import copy
 import importlib
