@@ -25,7 +25,6 @@ default_cache_expire = 1209600
 
 ## Markata Setup
 glob_patterns = "docs/**/*.md,CHANGELOG.md"
-## glob_patterns = "pages/**/*spaceflights*.md"
 output_dir = "markout"
 assets_dir = "static"
 hooks = [
@@ -54,7 +53,6 @@ author_email = "waylon@waylonwalaker.com"
 icon = "favicon.ico"
 lang = "en"
 # post_template = "pages/templates/post_template.html"
-# amp_template = "pages/templates/post_template.amp.html"
 repo_url = "https://github.com/waylonwalker/markata"
 repo_branch = "main"
 theme_color = "#322D39"
@@ -74,12 +72,14 @@ config='gfm-like'
 enable = [ "table" ]
 disable = [ "image" ]
 
+# markdown_it built-in plugin options
 [markata.markdown_it_py.options_update]
 linkify = true
 html = true
 typographer = true
 highlight = 'markata.plugins.md_it_highlight_code:highlight_code'
 
+# add custom markdown_it plugins
 [[markata.markdown_it_py.plugins]]
 plugin = "mdit_py_plugins.admon:admon_plugin"
 
@@ -107,7 +107,20 @@ permalinkSymbol = '<svg class="heading-permalink" aria-hidden="true" fill="curre
 plugin = "markata.plugins.md_it_wikilinks:wikilinks_plugin"
 config = {markata = "markata"}
 
+# markata feeds
+# creating pages of posts
 [markata.feeds_config]
+
+## feed template
+# [markata.feeds.<slug>]
+# title="Project Gallery"
+## python eval to True adds post to the feed
+# filter="'project-gallery' in path"
+## the key to sort on
+# sort='title'
+## the template for each post to use when added to the page
+# card_template="""
+# """
 
 [markata.feeds.project-gallery]
 title="Project Gallery"
@@ -133,18 +146,34 @@ card_template="<li class='post'><a href='/{{ slug }}/'>{{ title }}<p style='colo
 [markata.feeds.autodoc]
 title="All Markata Modules"
 filter="True"
-card_template="<li class='post'><a href='/{{ slug }}/'>{{ title }}</a></li>"
+card_template="""
+<li class='post' style='background:rgba(255, 255, 255, .05); border:1px solid rgba(255, 255, 255, .2); padding:1rem; margin: 2rem auto;' >
+<a href='/{{ slug }}/'>
+    <a href='/{{ slug }}/'>{{ title }}</a>
+    <p>
+        {{ article_html[:article_html.find('</p>')]  }}
+    </p>
+</a>
+</li>
+"""
 
 [markata.feeds.core_modules]
 title="Markata Core Modules"
-filter="'plugin' not in slug"
-card_template="<li class='post'><a href='/{{ slug }}/'>{{ title }}</a></li>"
+filter="'plugin' not in slug and 'test' not in slug and title.endswith('.py')"
+card_template="""
+<li class='post' style='background:rgba(255, 255, 255, .05); border:1px solid rgba(255, 255, 255, .2); padding:1rem; margin: 2rem auto;' >
+<a href='/{{ slug }}/'>
+    <a href='/{{ slug }}/'>{{ title }}</a>
+    <p>
+        {{ article_html[:article_html.find('</p>')]  }}
+    </p>
+</a>
+</li>
+"""
 
 [markata.feeds.plugins]
 title="Markata Plugins"
 filter="'plugin' in slug and 'test' not in slug"
-# card_template="<li class='post'><a href='/{{ slug }}/'>{{ title }}</a></li>"
-
 card_template="""
 <li class='post' style='background:rgba(255, 255, 255, .05); border:1px solid rgba(255, 255, 255, .2); padding:1rem; margin: 2rem auto;' >
 <a href='/{{ slug }}/'>
