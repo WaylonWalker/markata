@@ -43,13 +43,9 @@ def keys_on_file(post: frontmatter.Post) -> Dict[str, str]:
 
 @hook_impl
 def teardown(markata) -> None:
-    if getattr(markata, "going_fast", False):
-        markata.console.log(f"going_fast")
-    else:
-        with markata.cache as cache:
-            markata.console.log(f"not going_fast")
-            articles = copy.deepcopy(markata.articles)
-            expire = markata.config.get("fast", markata.config).get(
-                "default_cache_expire", 1209600
-            )
-            cache.add("articles", articles, expire=expire)
+    with markata.cache as cache:
+        articles = copy.deepcopy(markata.articles)
+        expire = markata.config.get("fast", markata.config).get(
+            "default_cache_expire", 1209600
+        )
+        cache.add("articles", articles, expire=expire)
