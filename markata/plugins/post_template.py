@@ -73,8 +73,8 @@ import copy
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from deepmerge import always_merger
 import jinja2
+from deepmerge import always_merger
 from jinja2 import Template, Undefined
 from more_itertools import flatten
 
@@ -146,34 +146,34 @@ def render(markata: "Markata") -> None:
     _full_config = copy.deepcopy(markata.config)
 
     for article in [a for a in markata.articles if hasattr(a, "html")]:
-        if head_template:
-            head = eval(
-                head_template.render(
-                    __version__=__version__,
-                    config=_full_config,
-                    **article,
-                )
-            )
+        # if head_template:
+        #     head = eval(
+        #         head_template.render(
+        #             __version__=__version__,
+        #             config=_full_config,
+        #             **article,
+        #         )
+        #     )
 
-        merged_config = {
-            **_full_config,
-            **{"head": head},
-        }
+        # merged_config = {
+        #     **_full_config,
+        #     **{"head": head},
+        # }
 
-        merged_config = always_merger.merge(
-            merged_config,
-            copy.deepcopy(
-                article.get(
-                    "config_overrides",
-                    {},
-                )
-            ),
-        )
+        # merged_config = always_merger.merge(
+        #     merged_config,
+        #     copy.deepcopy(
+        #         article.get(
+        #             "config_overrides",
+        #             {},
+        #         )
+        #     ),
+        # )
 
         article.html = template.render(
             __version__=__version__,
             body=article.html,
             toc=markata.md.toc,  # type: ignore
-            config=merged_config,
+            # config=merged_config,
             **article.metadata,
         )

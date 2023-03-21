@@ -42,10 +42,12 @@ def _save(output_dir: Path, article: frontmatter.Post) -> None:
     with open(
         output_dir / Path(article["slug"]).parent / Path(article["path"]).name, "w+"
     ) as f:
-        f.write(frontmatter.dumps(article))
+        f.write(article.dumps())
 
 
-def _strip_unserializable_values(article: frontmatter.Post) -> frontmatter.Post:
+def _strip_unserializable_values(
+    markata: "Markata", article: frontmatter.Post
+) -> frontmatter.Post:
     """
     Returns an article with only yaml serializable frontmatter.
     """
@@ -62,6 +64,8 @@ def _strip_unserializable_values(article: frontmatter.Post) -> frontmatter.Post:
             yaml.dump({key: value}, **kwargs)
         except RepresenterError:
             del _article[key]
+    if markata.Post:
+        _article = markata.Post(**_article.metadata, path=str(article.path))
     return _article
 
 
@@ -76,10 +80,12 @@ def save(markata: "Markata") -> None:
     """
     output_dir = Path(str(markata.config["output_dir"]))
     output_dir.mkdir(parents=True, exist_ok=True)
-    for article in markata.iter_articles(description="saving source documents"):
+    for (
+        article
+    ) in markata.articles:  # iter_articles(description="saving source documents"):
         try:
             _save(output_dir, article)
         except RepresenterError:
-            _article = _strip_unserializable_values(article)
+            _article = _strip_unserializable_values(markata, article)
 
             _save(output_dir, _article)

@@ -3,9 +3,9 @@ leading docstring
 """
 import ast
 import datetime
-from pathlib import Path
 import textwrap
-from typing import List, TYPE_CHECKING
+from pathlib import Path
+from typing import TYPE_CHECKING, List
 
 import frontmatter
 import jinja2
@@ -113,7 +113,12 @@ def make_article(markata: "Markata", file: Path) -> frontmatter.Post:
         indent=textwrap.indent,
     )
 
-    return frontmatter.loads(article)
+    article = frontmatter.loads(article)
+    article["content"] = article.content
+    if markata.post_model:
+        article = markata.Post(**article.metadata, config=markata.config)
+
+    return article
 
 
 @hook_impl

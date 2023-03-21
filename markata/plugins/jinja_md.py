@@ -134,14 +134,15 @@ markdown.
 """
 import copy
 from pathlib import Path
-from typing import List, TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
-from deepmerge import always_merger
 import jinja2
-from jinja2 import TemplateSyntaxError, Undefined, UndefinedError, nodes
-from jinja2.ext import Extension
 import pathspec
 import pkg_resources
+import pydantic
+from deepmerge import always_merger
+from jinja2 import TemplateSyntaxError, Undefined, UndefinedError, nodes
+from jinja2.ext import Extension
 
 from markata import __version__
 from markata.hookspec import hook_impl, register_attr
@@ -198,6 +199,16 @@ class PostTemplateSyntaxError(TemplateSyntaxError):
     """
 
 
+class JinjaMd(pydantic.BaseModel):
+    jinja: bool = False
+
+
+@hook_impl
+@register_attr("post_models")
+def post_model(markata: "Markata") -> None:
+    markata.post_models.append(JinjaMd)
+
+
 @hook_impl
 @register_attr("prevnext")
 def pre_render(markata: "Markata") -> None:
@@ -215,22 +226,12 @@ def pre_render(markata: "Markata") -> None:
         extensions=[IncludeRawExtension, *register_jinja_extensions(config)],
     )
 
-    _full_config = copy.deepcopy(markata.config)
     for article in markata.articles:
         if article.get("jinja", True) and not ignore_spec.match_file(article["path"]):
             try:
                 article.content = jinja_env.from_string(article.content).render(
                     __version__=__version__,
                     markata=markata,
-                    config=always_merger.merge(
-                        _full_config,
-                        copy.deepcopy(
-                            article.get(
-                                "config_overrides",
-                                {},
-                            ),
-                        ),
-                    ),
                     **article,
                 )
                 # prevent double rendering

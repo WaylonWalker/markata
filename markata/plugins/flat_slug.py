@@ -50,6 +50,6 @@ def pre_render(markata: "Markata") -> None:
             "slug", Path(article.get("path", article.get("title", ""))).stem
         )
         if should_slugify:
-            article["slug"] = "/".join([slugify(s) for s in stem.split("/")])
+            article.slug = "/".join([slugify(s) for s in stem.split("/")])
         else:
-            article["slug"] = stem
+            article.slug = stem

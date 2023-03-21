@@ -5,20 +5,20 @@ from __future__ import annotations
 
 import atexit
 import datetime
-from datetime import timedelta
 import hashlib
 import importlib
 import logging
 import os
-from pathlib import Path
 import sys
 import textwrap
+from datetime import timedelta
+from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
 
-from checksumdir import dirhash
-from diskcache import FanoutCache
 import frontmatter
 import pluggy
+from checksumdir import dirhash
+from diskcache import FanoutCache
 from rich.console import Console
 from rich.progress import track
 from rich.table import Table
@@ -71,7 +71,7 @@ DEFAULT_HOOKS = [
     "markata.plugins.copy_assets",
     "markata.plugins.publish_html",
     "markata.plugins.flat_slug",
-    "markata.plugins.datetime",
+    # "markata.plugins.datetime",
     "markata.plugins.rss",
     "markata.plugins.icon_resize",
     "markata.plugins.sitemap",
@@ -122,6 +122,7 @@ class Markata:
         self.MARKATA_CACHE_DIR.mkdir(exist_ok=True)
         self.phase_file: Path = self.MARKATA_CACHE_DIR / "phase.txt"
         self.registered_attrs = hookspec.registered_attrs
+        self.post_models = list()
         self.configure()
         if console is not None:
             self._console = console
@@ -199,13 +200,13 @@ class Markata:
             self.config.get("path_prefix", "")
         ):
             self.config["output_dir"] = (
-                self.config.get("output_dir", "markout")
-                + "/"
-                + self.config.get("path_prefix", "").rstrip("/")
+                self.config.get("output_dir", "markout") +
+                "/" +
+                self.config.get("path_prefix", "").rstrip("/")
             )
         if (
-            len((output_split := self.config.get("output_dir", "markout").split("/")))
-            > 1
+            len((output_split := self.config.get("output_dir", "markout").split("/"))) >
+            1
         ):
             if "path_prefix" not in self.config.keys():
                 self.config["path_prefix"] = "/".join(output_split[1:]) + "/"
@@ -220,7 +221,7 @@ class Markata:
             hooks = [
                 *self.hooks[:default_index],
                 *DEFAULT_HOOKS,
-                *self.hooks[default_index + 1 :],
+                *self.hooks[default_index + 1:],
             ]
             self.hooks = [hook for hook in hooks if hook not in self.disabled_hooks]
         except ValueError:
@@ -356,7 +357,7 @@ class Markata:
 
     def run(self, lifecycle: LifeCycle = None) -> Markata:
         if lifecycle is None:
-            lifecycle = getattr(LifeCycle, max(LifeCycle._member_map_))
+            lifecycle = max(LifeCycle._member_map_.values())
 
         if isinstance(lifecycle, str):
             lifecycle = LifeCycle[lifecycle]

@@ -86,9 +86,10 @@ config = {markata = "markata"}
 """
 import copy
 import importlib
-from typing import List, TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 import markdown
+import pydantic
 
 from markata import DEFAULT_MD_EXTENSIONS
 from markata.hookspec import hook_impl, register_attr
@@ -189,6 +190,16 @@ def configure(markata: "MarkataMarkdown") -> None:
         import markdown
 
         markata.md = markdown.Markdown(extensions=markata.markdown_extensions)
+
+
+class RenderMarkdown(pydantic.BaseModel):
+    html: str = None
+
+
+@hook_impl
+@register_attr("post_models")
+def post_model(markata: "Markata") -> None:
+    markata.post_models.append(RenderMarkdown)
 
 
 @hook_impl(tryfirst=True)

@@ -75,8 +75,8 @@ def wikilinks_plugin(
     def _wikilinks_inline(state: StateInline, silent: bool):
         try:
             if (
-                state.srcCharCode[state.pos] != start_char
-                or state.srcCharCode[state.pos + 1] != start_char
+                state.srcCharCode[state.pos] != start_char or
+                state.srcCharCode[state.pos + 1] != start_char
             ):
                 return False
         except IndexError:
@@ -100,7 +100,7 @@ def wikilinks_plugin(
         if not found_closing:
             return False
 
-        text = state.src[state.pos + 2 : end].strip()
+        text = state.src[state.pos + 2: end].strip()
         state.pos = end + 2
 
         if silent:
@@ -115,7 +115,7 @@ def wikilinks_plugin(
         else:
             link, id = text, None
         possible_pages = markata.filter(
-            f'path.split("/")[-1].split(".")[0].replace("_", "-") == "{link.replace("_", "-")}"'
+            f'str(path).split("/")[-1].split(".")[0].replace("_", "-") == "{link.replace("_", "-")}"'
         )
         if len(possible_pages) == 1:
             link = possible_pages[0].get("slug", f"/{text}")

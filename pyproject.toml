@@ -39,6 +39,7 @@ dependencies = [
  "pathspec",
  "pillow",
  "pluggy",
+ "pydantic",
  "pymdown-extensions",
  "python-frontmatter",
  "python-slugify",

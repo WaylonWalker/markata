@@ -57,7 +57,9 @@ lets you [make your home page](https://markata.dev/home-page/)
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from markata.hookspec import hook_impl
+import pydantic
+
+from markata.hookspec import hook_impl, register_attr
 
 if TYPE_CHECKING:
     from markata import Markata
@@ -82,7 +84,7 @@ def pre_render(markata: "Markata") -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
 
     for article in markata.articles:
-        if "output_html" in article.metadata:
+        if article.output_html:
             article_path = Path(article["output_html"])
             if not _is_relative_to(output_dir, article_path):
                 article["output_html"] = output_dir / article["output_html"]
@@ -90,6 +92,17 @@ def pre_render(markata: "Markata") -> None:
             article["output_html"] = output_dir / "index.html"
         else:
             article["output_html"] = output_dir / article["slug"] / "index.html"
+
+
+class OutPutHTML(pydantic.BaseModel):
+    output_html: Path = None
+    article_html: Path = None
+
+
+@hook_impl
+@register_attr("post_models")
+def post_model(markata: "Markata") -> None:
+    markata.post_models.append(OutPutHTML)
 
 
 @hook_impl
