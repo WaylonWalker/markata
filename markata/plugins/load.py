@@ -57,7 +57,6 @@ def pydantic_get_post(path: Path, markata: "Markata") -> Optional[Callable]:
         + "/"
         + str(path)
     )
-    markata.console.log(f"running {path}")
 
     try:
         post = markata.Post(**fm_post.metadata, config=markata.config)
@@ -69,33 +68,33 @@ def pydantic_get_post(path: Path, markata: "Markata") -> Optional[Callable]:
     return post
 
 
-# def legacy_get_post(path: Path, markata: "Markata") -> Optional[Callable]:
-#     default = {
-#         "cover": "",
-#         "title": "",
-#         "tags": [],
-#         "published": "False",
-#         "templateKey": "",
-#         "path": str(path),
-#         "description": "",
-#         "content": "",
-#     }
-#     try:
-#         post: "Post" = frontmatter.load(path)
-#         post.metadata = {**default, **post.metadata}
-#         post["content"] = post.content
-#     except ParserError:
-#         return None
-#         post = default
-#     except ValueError:
-#         return None
-#         post = default
-#     post.metadata["path"] = str(path)
-#     post["edit_link"] = (
-#         str(markata.config.get("repo_url", "https://github.com/"))
-#         + "edit/"
-#         + str(markata.config.get("repo_branch", "main"))
-#         + "/"
-#         + str(post["path"])
-#     )
-#     return post
+def legacy_get_post(path: Path, markata: "Markata") -> Optional[Callable]:
+    default = {
+        "cover": "",
+        "title": "",
+        "tags": [],
+        "published": "False",
+        "templateKey": "",
+        "path": str(path),
+        "description": "",
+        "content": "",
+    }
+    try:
+        post: "Post" = frontmatter.load(path)
+        post.metadata = {**default, **post.metadata}
+        post["content"] = post.content
+    except ParserError:
+        return None
+        post = default
+    except ValueError:
+        return None
+        post = default
+    post.metadata["path"] = str(path)
+    post["edit_link"] = (
+        str(markata.config.get("repo_url", "https://github.com/"))
+        + "edit/"
+        + str(markata.config.get("repo_branch", "main"))
+        + "/"
+        + str(post["path"])
+    )
+    return post

@@ -123,6 +123,7 @@ class Markata:
         self.phase_file: Path = self.MARKATA_CACHE_DIR / "phase.txt"
         self.registered_attrs = hookspec.registered_attrs
         self.post_models = list()
+        self.config_models = list()
         self.configure()
         if console is not None:
             self._console = console
@@ -338,14 +339,14 @@ class Markata:
 
             self._pm.register(plugin)
 
-    def __iter__(self, description: str = "working...") -> Iterable[frontmatter.Post]:
-        articles: Iterable[frontmatter.Post] = track(
+    def __iter__(self, description: str = "working...") -> Iterable[self.Post]:
+        articles: Iterable[self.Post] = track(
             self.articles, description=description, transient=True, console=self.console
         )
         return articles
 
-    def iter_articles(self, description: str) -> Iterable[frontmatter.Post]:
-        articles: Iterable[frontmatter.Post] = track(
+    def iter_articles(self, description: str) -> Iterable[self.Post]:
+        articles: Iterable[self.Post] = track(
             self.articles, description=description, transient=True, console=self.console
         )
         return articles

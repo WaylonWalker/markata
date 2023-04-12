@@ -211,4 +211,36 @@ exclude = [
 ]
 
 [tool.ruff]
-ignore=['E501'] # let black control line length errors
+ignore=[
+'E501', # let black control line length errors
+'W504', # conflicts with black line break after binary operator
+]
+# target-version = "py37"
+# line-length = 120
+# select = [
+#   "A",
+#   "B",
+#   "C",
+#   "DTZ",
+#   "E",
+#   "EM",
+#   "F",
+#   # "FBT",
+#   "I",
+#   "ICN",
+#   "ISC",
+#   "N",
+#   "PLC",
+#   "PLE",
+#   "PLR",
+#   "PLW",
+#   "Q",
+#   "RUF",
+#   "S",
+#   "SIM",
+#   "T",
+#   "TID",
+#   "UP",
+#   "W",
+#   "YTT",
+# ]

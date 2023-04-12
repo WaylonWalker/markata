@@ -3,19 +3,19 @@ Renders markdown content as html.  This may be markdown files loaded in by way
 of the [[load]] plugin.
 
 
-## Markdown backend
+# Markdown backend
 
 There are 3 supported markdown backends that you can configure markata to use
 by setting the `markdown_backend` in your `markata.toml`.
 
 ``` toml title=markata.toml
-## choose your markdown backend
+# choose your markdown backend
 # markdown_backend='markdown'
 # markdown_backend='markdown2'
 markdown_backend='markdown-it-py'
 ```
 
-## markdown-it-py configuration
+# markdown-it-py configuration
 
 `markdown-it-py` has quite a bit of configuration that you can do, you can read
 more about the settings in their
@@ -86,7 +86,8 @@ config = {markata = "markata"}
 """
 import copy
 import importlib
-from typing import TYPE_CHECKING, List
+from enum import Enum
+from typing import TYPE_CHECKING, Dict, List, Union
 
 import markdown
 import pydantic
@@ -102,6 +103,33 @@ if TYPE_CHECKING:
         articles: List = []
         md: markdown.Markdown = markdown.Markdown()
         markdown_extensions: List = []
+
+
+class Backend(str, Enum):
+    markdown = "markdown"
+    markdown2 = "markdown2"
+    markdown_it_py = "markdown-it-py"
+
+
+class RenderMarkdownConfig(pydantic.BaseModel):
+    backend: Backend = Backend("markdown-it-py")
+    md_it_extensions: Union[str, List[Dict[str, str]]] = []
+
+    @pydantic.validator("md_it_extensions")
+    def convert_to_list(cls, v):
+        if not isinstance(v, list):
+            return [v]
+        else:
+            return v
+
+
+class Config(pydantic.BaseModel):
+    render_markdown: RenderMarkdownConfig = RenderMarkdownConfig()
+
+
+@hook_impl(tryfirst=True)
+def config_model(markata: "MarkataMarkdown") -> None:
+    markata.config_models.append(Config)
 
 
 @hook_impl(tryfirst=True)
