@@ -75,7 +75,7 @@ file = "LICENSE"
 
 [project.optional-dependencies]
 dev = [
- "black",
+ "black==22.10.0",
  "hatch",
  "interrogate",
  "mypy",
@@ -147,18 +147,17 @@ exclude_lines = [
 
 [tool.hatch.envs.default]
 dependencies = [
- "black",
+ "black==22.10.0",
  "pytest",
  "pytest-cov",
  "pytest-mock",
- "pytest-rich",
  "pytest-tmp-files",
  "ruff",
 ]
 
 [tool.hatch.envs.dev]
 dependencies = [
- "black",
+ "black==22.10.0",
  "ipython",
  "pytest",
  "pytest-cov",
