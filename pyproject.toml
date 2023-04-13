@@ -188,7 +188,7 @@ python = [
 ]
 
 [tool.hatch.envs.default.scripts]
-cov = "pytest --rich --cov-report=term-missing --cov-config=pyproject.toml --cov=markata --cov=tests"
+cov = "pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=markata --cov=tests"
 no-cov = "cov --no-cov"
 lint = "ruff markata"
 format = "black --check markata"
