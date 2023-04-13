@@ -1,5 +1,17 @@
 # Markata Changelog
 
+## 0.6.1
+
+- Fix: allow feeds to be used from within markdown
+
+### Feeds in markdown
+
+```markdown
+{% for post in markata.feeds.docs.posts %}
+[{{post.title}}](/{{post.slug}})
+{% endfor %}
+```
+
 ## 0.6.0
 
 - Fix: article_html is not available to jinja 0.6.0.dev1 #105

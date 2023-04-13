@@ -72,7 +72,7 @@ file = "LICENSE"
 
 [project.optional-dependencies]
 dev = [
- "black",
+ "black==22.10.0",
  "flake8",
  "hatch",
  "interrogate",
@@ -148,20 +148,19 @@ exclude_lines = [
 
 [tool.hatch.envs.default]
 dependencies = [
- "black",
+ "black==22.10.0",
  "flake8",
  "isort",
  "pytest",
  "pytest-cov",
  "pytest-mock",
- "pytest-rich",
  "pytest-tmp-files",
  "seed-isort-config",
 ]
 
 [tool.hatch.envs.dev]
 dependencies = [
- "black",
+ "black==22.10.0",
  "flake8",
  "ipython",
  "isort",
