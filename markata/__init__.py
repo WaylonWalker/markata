@@ -13,10 +13,11 @@ import sys
 import textwrap
 from datetime import timedelta
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 import frontmatter
 import pluggy
+import pydantic
 from checksumdir import dirhash
 from diskcache import FanoutCache
 from rich.console import Console
@@ -97,40 +98,62 @@ DEFUALT_CONFIG = {
 }
 
 
-class Post(frontmatter.Post):
-    html: str
+class HooksConfig(pydantic.BaseModel):
+    hooks: list = ["default"]
+    disabled_hooks: list = []
 
 
-def set_phase(function: Callable) -> Any:
-    def wrapper(self: Markata, *args: Tuple, **kwargs: Dict) -> Any:
-        self.phase = function.__name__
-        self.phase_file.parent.mkdir(exist_ok=True)
-        self.phase_file.write_text(self.phase)
-        result = function(self, *args, **kwargs)
-        self.phase = function.__name__
-        self.phase_file.parent.mkdir(exist_ok=True)
-        self.phase_file.write_text(self.phase)
-        return result
+# class Post(frontmatter.Post):
+#     html: str
 
-    return wrapper
+# def set_phase(function: Callable) -> Any:
+#     def wrapper(self: Markata, *args: Tuple, **kwargs: Dict) -> Any:
+#         self.phase = function.__name__
+#         self.phase_file.parent.mkdir(exist_ok=True)
+#         self.phase_file.write_text(self.phase)
+#         result = function(self, *args, **kwargs)
+#         self.phase = function.__name__
+#         self.phase_file.parent.mkdir(exist_ok=True)
+#         self.phase_file.write_text(self.phase)
+#         return result
+
+# return wrapper
 
 
 class Markata:
     def __init__(self, console: Console = None) -> None:
-        self.phase = "starting"
+        # self.phase = "starting"
+        self.stages_ran = set()
         self.MARKATA_CACHE_DIR = Path(".") / ".markata.cache"
         self.MARKATA_CACHE_DIR.mkdir(exist_ok=True)
-        self.phase_file: Path = self.MARKATA_CACHE_DIR / "phase.txt"
+        self._pm = pluggy.PluginManager("markata")
+        self._pm.add_hookspecs(hookspec.MarkataSpecs)
+        with self.cache as cache:
+            self.init_cache_stats = cache.stats()
+        # self.phase_file: Path = self.MARKATA_CACHE_DIR / "phase.txt"
         self.registered_attrs = hookspec.registered_attrs
         self.post_models = list()
         self.config_models = list()
-        self.configure()
+        self.hooks_conf = HooksConfig.parse_obj(standard_config.load("markata"))
+        try:
+            default_index = self.hooks_conf.hooks.index("default")
+            hooks = [
+                *self.hooks_conf.hooks[:default_index],
+                *DEFAULT_HOOKS,
+                *self.hooks_conf.hooks[default_index + 1:],
+            ]
+            self.hooks_conf.hooks = [
+                hook for hook in hooks if hook not in self.hooks_conf.disabled_hooks
+            ]
+        except ValueError:
+            # 'default' is not in hooks , do not replace with default_hooks
+            pass
+
+        self._register_hooks()
+        # self._pm.hook.configure(markata=self)
         if console is not None:
             self._console = console
         atexit.register(self.teardown)
-
-        with self.cache as cache:
-            self.init_cache_stats = cache.stats()
 
     @property
     def cache(self) -> FanoutCache:
@@ -171,52 +194,53 @@ class Markata:
             cache.clear()
         return self
 
-    @set_phase
-    def configure(self) -> Markata:
-        sys.path.append(os.getcwd())
-        self.config = {**DEFUALT_CONFIG, **standard_config.load("markata")}
-        if isinstance(self.config["glob_patterns"], str):
-            self.config["glob_patterns"] = self.config["glob_patterns"].split(",")
-        elif isinstance(self.config["glob_patterns"], list):
-            self.config["glob_patterns"] = list(self.config["glob_patterns"])
-        else:
-            raise TypeError("glob_patterns must be list or str")
-        self.glob_patterns = self.config["glob_patterns"]
+    # @set_phase
+    def setup(self) -> Markata:
+        # sys.path.append(os.getcwd())
+        self.hooks_conf = HooksConfig.parse_obj(standard_config.load("markata"))
+        # if isinstance(self.config["glob_patterns"], str):
+        #     self.config["glob_patterns"] = self.config["glob_patterns"].split(",")
+        # elif isinstance(self.config["glob_patterns"], list):
+        #     self.config["glob_patterns"] = list(self.config["glob_patterns"])
+        # else:
+        #     raise TypeError("glob_patterns must be list or str")
+        # self.glob_patterns = self.config["glob_patterns"]
 
-        if "hooks" not in self.config:
-            self.hooks = [""]
-        if isinstance(self.config["hooks"], str):
-            self.hooks = self.config["hooks"].split(",")
-        if isinstance(self.config["hooks"], list):
-            self.hooks = self.config["hooks"]
+        # if "hooks" not in self.config:
+        #     self.hooks=[""]
+        # if isinstance(self.config["hooks"], str):
+        #     self.hooks=self.config["hooks"].split(",")
+        # if isinstance(self.config["hooks"], list):
+        #     self.hooks=self.config["hooks"]
 
-        if "disabled_hooks" not in self.config:
-            self.disabled_hooks = [""]
-        if isinstance(self.config["disabled_hooks"], str):
-            self.disabled_hooks = self.config["disabled_hooks"].split(",")
-        if isinstance(self.config["disabled_hooks"], list):
-            self.disabled_hooks = self.config["disabled_hooks"]
+        # if "disabled_hooks" not in self.config:
+        #     self.disabled_hooks=[""]
+        # if isinstance(self.config["disabled_hooks"], str):
+        #     self.disabled_hooks=self.config["disabled_hooks"].split(",")
+        # if isinstance(self.config["disabled_hooks"], list):
+        #     self.disabled_hooks=self.config["disabled_hooks"]
 
-        if not self.config.get("output_dir", "markout").endswith(
-            self.config.get("path_prefix", "")
-        ):
-            self.config["output_dir"] = (
-                self.config.get("output_dir", "markout") +
-                "/" +
-                self.config.get("path_prefix", "").rstrip("/")
-            )
-        if (
-            len((output_split := self.config.get("output_dir", "markout").split("/"))) >
-            1
-        ):
-            if "path_prefix" not in self.config.keys():
-                self.config["path_prefix"] = "/".join(output_split[1:]) + "/"
-        if not self.config.get("path_prefix", "").endswith("/"):
-            self.config["path_prefix"] = self.config.get("path_prefix", "") + "/"
+        # if not self.config.get("output_dir", "markout").endswith(
+        #     self.config.get("path_prefix", "")
+        # ):
+        #     self.config["output_dir"] = (
+        #         self.config.get("output_dir", "markout") +
+        #         "/" +
+        #         self.config.get("path_prefix", "").rstrip("/")
+        #     )
+        # if (
+        #     len((output_split := self.config.get("output_dir", "markout").split("/"))) >
+        #     1
+        # ):
+        #     if "path_prefix" not in self.config.keys():
+        #         self.config["path_prefix"] = "/".join(output_split[1:]) + "/"
+        # if not self.config.get("path_prefix", "").endswith("/"):
+        #     self.config["path_prefix"] = self.config.get("path_prefix", "") + "/"
 
-        self.config["output_dir"] = self.config["output_dir"].lstrip("/")
-        self.config["path_prefix"] = self.config["path_prefix"].lstrip("/")
+        # self.config["output_dir"] = self.config["output_dir"].lstrip("/")
+        # self.config["path_prefix"] = self.config["path_prefix"].lstrip("/")
 
+        self.hooks_conf = HooksConfig.parse_obj(standard_config.load("markata"))
         try:
             default_index = self.hooks.index("default")
             hooks = [
@@ -285,13 +309,13 @@ class Markata:
         str_keys = [str(key) for key in keys]
         return hashlib.md5("".join(str_keys).encode("utf-8")).hexdigest()
 
-    @property
-    def phase(self) -> str:
-        return self._phase
+    # @property
+    # def phase(self) -> str:
+    #     return self._phase
 
-    @phase.setter
-    def phase(self, value: str) -> None:
-        self._phase = value
+    # @phase.setter
+    # def phase(self, value: str) -> None:
+    #     self._phase = value
 
     @property
     def content_dir_hash(self) -> str:
@@ -311,7 +335,7 @@ class Markata:
             return self._console
 
     def describe(self) -> dict[str, str]:
-        return {"version": __version__, "phase": self.phase}
+        return {"version": __version__}
 
     def _to_dict(self) -> dict[str, Iterable]:
         return {"config": self.config, "articles": [a.to_dict() for a in self.articles]}
@@ -325,7 +349,7 @@ class Markata:
         return json.dumps(self.to_dict(), indent=4, sort_keys=True, default=str)
 
     def _register_hooks(self) -> None:
-        for hook in self.hooks:
+        for hook in self.hooks_conf.hooks:
             try:
                 # module style plugins
                 plugin = importlib.import_module(hook)
@@ -363,12 +387,21 @@ class Markata:
         if isinstance(lifecycle, str):
             lifecycle = LifeCycle[lifecycle]
 
-        stages_to_run = [m for m in LifeCycle._member_map_ if LifeCycle[m] <= lifecycle]
+        stages_to_run = [
+            m
+            for m in LifeCycle._member_map_
+            if (LifeCycle[m] <= lifecycle) and (m not in self.stages_ran)
+        ]
+
+        if not stages_to_run:
+            self.console.log(f"{lifecycle.name} already ran")
+            return self
 
         self.console.log(f"running {stages_to_run}")
         for stage in stages_to_run:
             self.console.log(f"{stage} running")
             getattr(self._pm.hook, stage)(markata=self)
+            self.stages_ran.add(stage)
             self.console.log(f"{stage} complete")
 
         with self.cache as cache:

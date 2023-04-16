@@ -33,10 +33,11 @@ class LifeCycle(Enum):
 
     """
 
-    configure = auto()
     config_model = auto()
     post_model = auto()
     create_models = auto()
+    load_config = auto()
+    configure = auto()
     validate_config = auto()
     glob = auto()
     load = auto()

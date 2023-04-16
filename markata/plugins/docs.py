@@ -56,7 +56,7 @@ def glob(markata: "MarkataDocs") -> None:
         markata.content_directories = content_directories
 
     try:
-        ignore = markata.config["glob"]["use_gitignore"] or True
+        ignore = markata.config.glob.use_gitignore or True
     except KeyError:
         ignore = True
 
@@ -80,6 +80,11 @@ def glob(markata: "MarkataDocs") -> None:
 
 def make_article(markata: "Markata", file: Path) -> frontmatter.Post:
     raw_source = file.read_text()
+    key = markata.make_hash("docs", "file", raw_source)
+    with markata.cache as cache:
+        article_from_cache = cache.get(key)
+        if article_from_cache is not None:
+            return article_from_cache
     tree = ast.parse(raw_source)
     add_parents(tree)
     nodes = [
@@ -116,7 +121,7 @@ def make_article(markata: "Markata", file: Path) -> frontmatter.Post:
     article = frontmatter.loads(article)
     article["content"] = article.content
     if markata.post_model:
-        article = markata.Post(**article.metadata, config=markata.config)
+        article = markata.Post(**article.metadata, markata=markata)
 
     return article
 

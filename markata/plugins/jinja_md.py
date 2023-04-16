@@ -4,16 +4,16 @@ Renders your markdown as a jinja template during pre_render.
 The markata instance is passed into the template, giving you access to things
 such as all of your articles, config, and this post as post.
 
-## Examples
+# Examples
 
 first we can grab a few things out of the frontmatter of this post.
 
 ``` markdown
-### {{ post.title }}
+# {{ post.title }}
 {{ post.description }}
 ```
 
-### one-liner list of links
+# one-liner list of links
 
 This one-liner will render a list of markdown links into your markdown at build
 time.  It's quite handy to pop into posts.
@@ -22,7 +22,7 @@ time.  It's quite handy to pop into posts.
 {{ '\\n'.join(markata.map('f"* [{title}]({slug})"', sort='slug')) }}
 ```
 
-### jinja for to markdown list of links
+# jinja for to markdown list of links
 
 Sometimes quoting things like your filters are hard to do in a one line without
 running out of quote variants.  Jinja for loops can make this much easier.
@@ -33,7 +33,7 @@ running out of quote variants.  Jinja for loops can make this much easier.
 {% endfor %}
 ```
 
-### jinja for to html list of links
+# jinja for to html list of links
 
 Since markdown is a superset of html, you can just render out html into your
 post and it is still valid.
@@ -46,7 +46,7 @@ post and it is still valid.
 </ul>
 ```
 
-## Ignoring files
+# Ignoring files
 
 It is possible to ignore files by adding an ignore to your `markata.jinja_md`
 config in your `markata.toml` file.  This ignore follows the `gitwildmatch`
@@ -63,7 +63,7 @@ ignore=[
   Docs such as this jinja_md.py file will get converted to jinja_md.md during
   build time, so use `.md` extensions instead of `.py`.
 
-## Ignoring a single file
+# Ignoring a single file
 
 You can also ignore a single file right from the articles frontmatter, by
 adding `jinja: false`.
@@ -75,7 +75,7 @@ jinja: false
 ---
 ```
 
-## Escaping
+# Escaping
 
 Sometimes you want the ability to have jinja templates in a post, but also the
 ability to keep a raw jinja template.  There are a couple of techniques that
@@ -90,7 +90,7 @@ are covered mroe in the jinja docs for
 {{ '{{' }} '\\n'.join(markata.map('f"* [{title}]({slug})"', sort='slug')) {{ '}}' }}
 ```
 
-## Creating a jinja extension
+# Creating a jinja extension
 
 Here is a bit of a boilerplate example of a jinja extension.
 
@@ -182,7 +182,7 @@ class _SilentUndefined(Undefined):
     """
     silence undefined variable errors in jinja templates.
 
-    ### Example
+    # Example
     ```python
     template = '{{ variable }}'
     article.content = Template( template, undefined=_SilentUndefined).render()
@@ -219,8 +219,8 @@ def pre_render(markata: "Markata") -> None:
     as `markata`.
     """
 
-    config = markata.get_plugin_config("jinja_md")
-    ignore_spec = pathspec.PathSpec.from_lines("gitwildmatch", config.get("ignore", []))
+    config = markata.config.jinja_md
+    ignore_spec = pathspec.PathSpec.from_lines("gitwildmatch", config.ignore)
     # for article in markata.iter_articles(description="jinja_md"):
     jinja_env = jinja2.Environment(
         extensions=[IncludeRawExtension, *register_jinja_extensions(config)],
@@ -247,3 +247,16 @@ def pre_render(markata: "Markata") -> None:
                 raise PostTemplateSyntaxError(msg, lineno=e.lineno)
             except UndefinedError as e:
                 raise UndefinedError(f'{e} in {article["path"]}')
+
+
+class JinjaMdConfig(pydantic.BaseModel):
+    ignore: List[str] = []
+
+
+class Config(pydantic.BaseModel):
+    jinja_md: JinjaMdConfig = JinjaMdConfig()
+
+
+@hook_impl(tryfirst=True)
+def config_model(markata: "Markata") -> None:
+    markata.config_models.append(Config)

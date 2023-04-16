@@ -10,7 +10,10 @@ from markata.hookspec import hook_impl, register_attr
 
 try:
     from pyinstrument import Profiler
+
+    SHOULD_PROFILE = True
 except ModuleNotFoundError:
+    SHOULD_PROFILE = False
     "ignore if pyinstrument does not exist"
     ...
 
@@ -28,16 +31,15 @@ def configure(markata: MarkataInstrument) -> None:
 
     if "should_profile" not in markata.__dict__.keys():
         markata.should_profile = markata.config.get("pyinstrument", {}).get(
-            "should_profile", True
+            "should_profile", SHOULD_PROFILE
         )
 
-    if markata.should_profile and "profiler" not in markata.__dict__.keys():
+    if markata.should_profile and markata.profiler is None:
         try:
             markata.profiler = Profiler(async_mode="disabled")
             markata.profiler.start()
         except NameError:
             "ignore if Profiler does not exist"
-            ...
 
 
 @hook_impl(trylast=True)
@@ -56,6 +58,12 @@ def save(markata: MarkataInstrument) -> None:
                 markata.console.print(markata.profiler.output_text())
 
         except AttributeError:
+            markata.console.log(
+                "profiler not available, skipping save pyinstrument save"
+            )
+            markata.console.log(
+                "[red]to enable profiler pip install markata[pyinstrument]"
+            )
             "ignore if markata does not have a profiler attribute"
             ...
 

@@ -161,6 +161,7 @@ dependencies = [
  "pytest-mock",
  "pytest-tmp-files",
  "ruff",
+ "pyinstrument",
 ]
 
 [tool.hatch.envs.dev]
@@ -188,7 +189,7 @@ python = [
 ]
 
 [tool.hatch.envs.default.scripts]
-cov = "pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=markata --cov=tests"
+cov = "pytest tests --cov-report=term-missing --cov-config=pyproject.toml --cov=markata --cov=tests"
 no-cov = "cov --no-cov"
 lint = "ruff markata"
 format = "black --check markata"
@@ -199,6 +200,8 @@ lint-test = [
  "cov",
 ]
 test-lint = "lint-test"
+build = 'markata build'
+serve = "python -m http.server --bind 0.0.0.0 8000 --directory markout"
 
 [tool.hatch.envs.test.scripts]
 cov = "pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=markata --cov=tests"
@@ -217,12 +220,12 @@ ignore=[
 ]
 # target-version = "py37"
 # line-length = 120
-# select = [
-#   "A",
+select = [
+  "A",
 #   "B",
 #   "C",
 #   "DTZ",
-#   "E",
+  "E",
 #   "EM",
 #   "F",
 #   # "FBT",
@@ -243,4 +246,4 @@ ignore=[
 #   "UP",
 #   "W",
 #   "YTT",
-# ]
+]

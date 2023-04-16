@@ -1,7 +1,7 @@
 import copy
 import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, List, Optional
 
 import pydantic
 import yaml
@@ -24,13 +24,17 @@ class Post(pydantic.BaseModel):
     today: datetime.date = pydantic.Field(default_factory=datetime.date.today)
     now: datetime.datetime = pydantic.Field(default_factory=datetime.datetime.utcnow)
     title: Optional[str] = None
-    config: dict = None
+    markata: Markata = None
+
+    class Config:
+        arbitrary_types_allowed = True
+        # json_encoders = {datetime.datetime: lambda x: x.isoformat()}
 
     def __repr_args__(self) -> "ReprArgs":
         return [
             (key, value)
             for key, value in self.__dict__.items()
-            if key in self.config["post_model"]["include"]
+            if key in self.markata.config.post_model.repr_include
         ]
 
     @property
@@ -58,21 +62,24 @@ class Post(pydantic.BaseModel):
         "for backwards compatability"
         return self.__dict__.keys()
 
-    def json(self, include=None, **kwargs):
+    def json(self, include=None, all=False, **kwargs):
         """
         override function to give a default include value that will include
         user configured includes.
         """
+        if all:
+            return pydantic.create_model("Post", **self,)(**self).json(
+                **kwargs,
+            )
         if include:
             return pydantic.create_model("Post", **self,)(**self).json(
                 include=include,
                 **kwargs,
             )
-        else:
-            return pydantic.create_model("Post", **self,)(**self).json(
-                include={i: True for i in self.config["post_model"]["include"]},
-                **kwargs,
-            )
+        return pydantic.create_model("Post", **self,)(**self).json(
+            include={i: True for i in self.config["post_model"]["include"]},
+            **kwargs,
+        )
 
     def yaml(self):
         """
@@ -113,7 +120,63 @@ class Post(pydantic.BaseModel):
         return v or slugify(str(values.get("path")))
 
 
+class PostModelConfig(pydantic.BaseModel):
+    "Configuration for the Post model"
+
+    def __init__(self, **data):
+        """
+
+        include: post attributes to include by default in Post
+        model serialization.
+        repr_include: post attributes to include by default in Post
+        repr.  If `repr_include` is None, it will default to
+        `include`, but it is likely that you want less in the repr
+        than serialized output.
+
+        example:
+
+        ``` toml title='markata.toml'
+        [markata.post_model]
+        include = ['date', 'description', 'published', 'slug', 'title', 'content', 'html']
+        repr_include = ['date', 'description', 'published', 'slug', 'title']
+        ```
+        """
+        super().__init__(**data)
+
+    include: List[str] = [
+        "date",
+        "description",
+        "published",
+        "slug",
+        "title",
+        "content",
+        "html",
+    ]
+    repr_include: Optional[List[str]] = [
+        "date",
+        "description",
+        "published",
+        "slug",
+        "title",
+    ]
+
+    @pydantic.validator("repr_include", pre=True, always=True)
+    def repr_include_validator(cls, v, *, values):
+        if v:
+            return v
+        return values.get("include", None)
+
+
+class Config(pydantic.BaseModel):
+    post_model: PostModelConfig = pydantic.Field(default_factory=PostModelConfig)
+
+
 @hook_impl
 @register_attr("post_models")
 def post_model(markata: "Markata") -> None:
     markata.post_models.append(Post)
+
+
+@hook_impl(tryfirst=True)
+def config_model(markata: "Markata") -> None:
+    markata.config_models.append(Config)

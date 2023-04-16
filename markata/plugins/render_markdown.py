@@ -111,16 +111,21 @@ class Backend(str, Enum):
     markdown_it_py = "markdown-it-py"
 
 
+class MdItExtension(pydantic.BaseModel):
+    plugin: str
+    config: Dict = None
+
+
 class RenderMarkdownConfig(pydantic.BaseModel):
     backend: Backend = Backend("markdown-it-py")
-    md_it_extensions: Union[str, List[Dict[str, str]]] = []
+    md_it_extensions: List[MdItExtension] = []
+    cache_expire: int = 3600
 
     @pydantic.validator("md_it_extensions")
     def convert_to_list(cls, v):
         if not isinstance(v, list):
             return [v]
-        else:
-            return v
+        return v
 
 
 class Config(pydantic.BaseModel):
@@ -231,9 +236,9 @@ def post_model(markata: "Markata") -> None:
 
 
 @hook_impl(tryfirst=True)
-@register_attr("articles")
+@register_attr("articles", "posts")
 def render(markata: "Markata") -> None:
-    config = markata.get_plugin_config(__file__)
+    config = markata.config.render_markdown
     with markata.cache as cache:
         for article in markata.iter_articles("rendering markdown"):
             key = markata.make_hash(
@@ -244,7 +249,7 @@ def render(markata: "Markata") -> None:
             html_from_cache = cache.get(key)
             if html_from_cache is None:
                 html = markata.md.convert(article.content)
-                cache.add(key, html, expire=config["cache_expire"])
+                cache.add(key, html, expire=config.cache_expire)
             else:
                 html = html_from_cache
             article.html = html

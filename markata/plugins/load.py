@@ -19,9 +19,15 @@ if TYPE_CHECKING:
 class ValidationError(ValueError):
     ...
 
+    # def __iter__(self):
+    #     return iter(self.__root__)
+
+    # def __getitem__(self, item):
+    #     return self.__root__[item]
+
 
 @hook_impl
-@register_attr("articles")
+@register_attr("articles", "posts")
 def load(markata: "MarkataMarkdown") -> None:
     progress = Progress(
         BarColumn(bar_width=None), transient=True, console=markata.console
@@ -30,13 +36,17 @@ def load(markata: "MarkataMarkdown") -> None:
         markata.config["repo_url"] = (
             markata.config.get("repo_url", "https://github.com/") + "/"
         )
-    Posts = pydantic.create_model("Posts", posts=(List[markata.Post], ...))
-    markata.posts = Posts(
-        posts=[get_post(article, markata) for article in markata.files]
+    Posts = pydantic.create_model(
+        "Posts",
+        posts=(List[markata.Post], ...),
     )
-    markata.articles = markata.posts.posts
+    markata.posts_obj = Posts.parse_obj(
+        {"posts": [get_post(article, markata) for article in markata.files]}
+    )
+    markata.posts = markata.posts_obj.posts
+    markata.articles = markata.posts
 
-    markata.console.log(f"loaded {len(markata.articles)} posts")
+    # markata.console.log(f"loaded {len(markata.articles)} posts")
 
 
 def get_post(path: Path, markata: "Markata") -> Optional[Callable]:
@@ -59,7 +69,7 @@ def pydantic_get_post(path: Path, markata: "Markata") -> Optional[Callable]:
     )
 
     try:
-        post = markata.Post(**fm_post.metadata, config=markata.config)
+        post = markata.Post(**fm_post.metadata, markata=markata)
 
     except pydantic.ValidationError as e:
         markata.console.log(str(e).replace("Post", str(path)))

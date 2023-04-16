@@ -165,17 +165,19 @@ posts.
 filter="True"
 
 """
-from dataclasses import dataclass
 import datetime
-from pathlib import Path
 import shutil
 import textwrap
-from typing import Any, Dict, List, Optional, TYPE_CHECKING, Union
+from dataclasses import dataclass
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Self, Union
 
+import pydantic
+import typer
 from jinja2 import Template, Undefined
 from rich import print as rich_print
 from rich.table import Table
-import typer
+from slugify import slugify
 
 from markata import Markata, __version__
 from markata.hookspec import hook_impl, register_attr
@@ -191,6 +193,27 @@ class SilentUndefined(Undefined):
 
 class MarkataFilterError(RuntimeError):
     ...
+
+
+class FeedConfig(pydantic.BaseModel):
+    title: str = "All Posts"
+    slug: Optional[str] = None
+    filter: str = "True"
+    card_template: str = """
+                <li class='post'>
+                <a href="/{{markata.config.get('path_prefix', '')}}{{post['slug']}}/">
+                    {{post['title']}}
+                </a>
+                </li>
+                """
+
+    @pydantic.validator("slug", pre=True, always=True)
+    def default_slug(cls, v, *, values):
+        return v or slugify(str(values.get("title")))
+
+
+class FeedsConfig(pydantic.BaseModel):
+    feeds: List[FeedConfig] = [FeedConfig()]
 
 
 @dataclass
@@ -212,13 +235,20 @@ class Feed:
     ```
     """
 
-    name: str
-    config: Dict
-    posts: list
+    config: FeedConfig
+    # posts: list
     _m: Markata
 
+    @property
+    def name(self):
+        return self.config.slug.replace("-", "_")
+
+    @property
+    def posts(self):
+        return self.map("post")
+
     def map(self, func="post", **args):
-        return self._m.map(func, **{**self.config, **args})
+        return self._m.map(func, **{**self.config.dict(), **args})
 
 
 class Feeds:
@@ -292,16 +322,9 @@ class Feeds:
         """
         Refresh all of the feeds objects
         """
-        self.config = self._m.config.get("feeds", dict())
-        for page, page_conf in self.config.items():
-            name = page.replace("-", "_").lower()
-            feed = Feed(
-                name=name,
-                posts=self._m.map("post", **page_conf),
-                config=page_conf,
-                _m=self._m,
-            )
-            self.__setattr__(name, feed)
+        for feed in self._m.config.feeds:
+            feed = Feed(config=feed, _m=self._m)
+            self.__setattr__(feed.name, feed)
 
     def __iter__(self):
         return iter(self.config.keys())
@@ -343,26 +366,31 @@ class Feeds:
         return table
 
 
+@hook_impl(tryfirst=True)
+def config_model(markata: "MarkataMarkdown") -> None:
+    markata.config_models.append(FeedsConfig)
+
+
 @hook_impl
 @register_attr("feeds")
 def configure(markata: Markata) -> None:
     """
     configure the default values for the feeds plugin
     """
-    if "feeds" not in markata.config.keys():
-        markata.config["feeds"] = dict()
-    config = markata.config.get("feeds", dict())
-    if "archive" not in config.keys():
-        config["archive"] = dict()
-        config["archive"]["filter"] = "True"
+    # if "feeds" not in markata.config.keys():
+    #     markata.config["feeds"] = dict()
+    # config = markata.config.get("feeds", dict())
+    # if "archive" not in config.keys():
+    #     config["archive"] = dict()
+    #     config["archive"]["filter"] = "True"
 
     default_post_template = markata.config.get("feeds_config", {}).get(
         "template", Path(__file__).parent / "default_post_template.html"
     )
 
-    for page, page_conf in config.items():
-        if "template" not in page_conf.keys():
-            page_conf["template"] = default_post_template
+    # for page, page_conf in config.items():
+    #     if "template" not in page_conf.keys():
+    #         page_conf["template"] = default_post_template
 
 
 @hook_impl

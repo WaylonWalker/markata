@@ -24,18 +24,17 @@ markdown_backend='markdown-it-py'
 default_cache_expire = 1209600
 
 ## Markata Setup
-glob_patterns = "docs/**/*.md,CHANGELOG.md"
 output_dir = "markout"
 assets_dir = "static"
 hooks = [
-   "markata.plugins.publish_source",
    "markata.plugins.docs",
    # "markata.plugins.prevnext",
    "markata.plugins.service_worker",
+   "default",
    "markata.plugins.post_model",
    "markata.plugins.config_model",
    "markata.plugins.create_models",
-   "default",
+   "markata.plugins.publish_source",
    ]
 disabled_hooks = [
 # "markata.plugins.covers",
@@ -125,7 +124,8 @@ config = {markata = "markata"}
 # card_template="""
 # """
 
-[markata.feeds.project-gallery]
+[[markata.feeds]]
+slug='project-gallery'
 title="Project Gallery"
 filter="'project-gallery' in str(path)"
 sort='title'
@@ -141,12 +141,15 @@ card_template="""
 </li>
 """
 
-[markata.feeds.docs]
+[[markata.feeds]]
+slug='docs'
+title="Documentation"
 filter='"markata" not in slug and "tests" not in slug and "404" not in slug'
 sort='slug'
 card_template="<li class='post'><a href='/{{ slug }}/'>{{ title }}<p style='color: white; text-decoration: none;'>{{ description }}</p></a> </li>"
 
-[markata.feeds.autodoc]
+[[markata.feeds]]
+slug='all'
 title="All Markata Modules"
 filter="True"
 card_template="""
@@ -160,7 +163,8 @@ card_template="""
 </li>
 """
 
-[markata.feeds.core_modules]
+[[markata.feeds]]
+slug='core-modules'
 title="Markata Core Modules"
 filter="'plugin' not in slug and 'test' not in slug and title.endswith('.py')"
 card_template="""
@@ -174,7 +178,8 @@ card_template="""
 </li>
 """
 
-[markata.feeds.plugins]
+[[markata.feeds]]
+slug='plugins'
 title="Markata Plugins"
 filter="'plugin' in slug and 'test' not in slug"
 card_template="""
@@ -233,7 +238,8 @@ filter="'docs' in str(path)"
 color='purple'
 
 [markata.post_model]
-include = ['date', 'description', 'published', 'slug', 'title']
+include = ['date', 'description', 'published', 'slug', 'title', 'content', 'html']
+repr_include = ['date', 'description', 'published', 'slug', 'title']
 
 [markata.render_markdown]
 backend='markdown-it-py'
@@ -278,3 +284,7 @@ permalinkSymbol = '<svg class="heading-permalink" aria-hidden="true" fill="curre
 [[markata.render_markdown.md_it_extensions]]
 plugin = "markata.plugins.md_it_wikilinks:wikilinks_plugin"
 config = {markata = "markata"}
+
+[markata.glob]
+glob_patterns = "docs/**/*.md,CHANGELOG.md"
+use_gitignore = true

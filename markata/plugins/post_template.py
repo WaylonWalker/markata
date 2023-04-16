@@ -71,9 +71,10 @@ html  {
 """
 import copy
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Optional
 
 import jinja2
+import pydantic
 from deepmerge import always_merger
 from jinja2 import Template, Undefined
 from more_itertools import flatten
@@ -90,6 +91,36 @@ if TYPE_CHECKING:
 class SilentUndefined(Undefined):
     def _fail_with_undefined_error(self, *args, **kwargs):
         return ""
+
+
+class Meta(pydantic.BaseModel):
+    name: str
+    content: str
+
+
+class Text(pydantic.BaseModel):
+    name: str
+    content: str
+
+
+class Link(pydantic.BaseModel):
+    rel: str = "canonical"
+    href: str
+
+
+class HeadConfig(pydantic.BaseModel):
+    meta: Optional[List[Meta]] = None
+    text: Optional[List[Text]] = None
+    link: Optional[List[Link]] = None
+
+
+class Config(pydantic.BaseModel):
+    head: HeadConfig
+
+
+@hook_impl(tryfirst=True)
+def config_model(markata: "MarkataMarkdown") -> None:
+    markata.config_models.append(Config)
 
 
 @hook_impl
