@@ -50,8 +50,9 @@ frontmatter.
 """
 import copy
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
+import pydantic
 from checksumdir import dirhash
 from jinja2 import Template
 
@@ -61,7 +62,20 @@ from markata.hookspec import hook_impl
 if TYPE_CHECKING:
     from markata import Markata
 
-DEFAULT_PRECACHE_URLS = ["index.html", "./"]
+
+class ServiceWorkerConfig(pydantic.BaseModel):
+    precache_urls: List[str] = ["index.html", "./"]
+    precache_posts: bool = False
+    precache_feeds: bool = False
+
+
+class Config(pydantic.BaseModel):
+    service_worker: ServiceWorkerConfig = ServiceWorkerConfig()
+
+
+@hook_impl(tryfirst=True)
+def config_model(markata: "Markata") -> None:
+    markata.config_models.append(Config)
 
 
 @hook_impl(trylast=True)
@@ -71,17 +85,17 @@ def render(markata: "Markata") -> None:
     `markata.plugins.service_worker.save`.
     """
 
-    markata.config["precache_urls"] = markata.config.get("precache_urls", [])
-    markata.config["precache_urls"].extend(DEFAULT_PRECACHE_URLS)
+    config = markata.config.service_worker
 
-    for feed, config in markata.config.get("feeds").items():
-        markata.config["precache_urls"].append(f"/{feed}/")
+    if config.precache_feeds:
+        for feed, config in markata.config.feeds:
+            config.precache_urls.append(f"/{feed}/")
 
-        if config.get("precache", False):
-            for post in markata.map("post", **config):
-                markata.config["precache_urls"].append(f'/{post.get("slug", "")}/')
+    if config.precache_posts:
+        for post in markata.map("post", **config):
+            config.precache_urls.append(f'/{post.get("slug", "")}/')
 
-    markata.config["precache_urls"] = list(set(markata.config["precache_urls"]))
+    config.precache_urls = list(set(config.precache_urls))
 
 
 @hook_impl(trylast=True)

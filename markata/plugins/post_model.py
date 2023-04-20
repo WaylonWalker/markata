@@ -77,7 +77,7 @@ class Post(pydantic.BaseModel):
                 **kwargs,
             )
         return pydantic.create_model("Post", **self,)(**self).json(
-            include={i: True for i in self.config["post_model"]["include"]},
+            include={i: True for i in self.markata.config.post_model.include},
             **kwargs,
         )
 
@@ -86,7 +86,7 @@ class Post(pydantic.BaseModel):
         dump model to yaml
         """
         return yaml.dump(
-            self.dict(include={i: True for i in self.config["post_model"]["include"]})
+            self.dict(include={i: True for i in self.markata.config.post_model.include})
         )
 
     def __init__(self, **data) -> None:

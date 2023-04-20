@@ -1,7 +1,7 @@
 """
 
 
-## Add head configuration
+# Add head configuration
 
 This snippet allows users to configure their head in `markata.toml`.
 
@@ -93,14 +93,29 @@ class SilentUndefined(Undefined):
         return ""
 
 
+class Style(pydantic.BaseModel):
+    color_bg: str = '#1f2022'
+    color_bg_code: str = '#1f2022'
+    color_text: str = '#eefbfe'
+    color_link: str = '#fb30c4'
+    color_accent: str = '#e1bd00c9'
+    overlay_brightness: str = '.85'
+    body_width: str = '800px'
+    color_bg_light: str = '#eefbfe'
+    color_bg_code_light: str = '#eefbfe'
+    color_text_light: str = '#1f2022'
+    color_link_light: str = '#fb30c4'
+    color_accent_light: str = '#ffeb00'
+    overlay_brightness_light: str = '.95'
+
+
 class Meta(pydantic.BaseModel):
     name: str
     content: str
 
 
 class Text(pydantic.BaseModel):
-    name: str
-    content: str
+    value: str
 
 
 class Link(pydantic.BaseModel):
@@ -109,17 +124,18 @@ class Link(pydantic.BaseModel):
 
 
 class HeadConfig(pydantic.BaseModel):
-    meta: Optional[List[Meta]] = None
-    text: Optional[List[Text]] = None
-    link: Optional[List[Link]] = None
+    meta: List[Meta] = []
+    text: List[Text] = []
+    link: List[Link] = []
 
 
 class Config(pydantic.BaseModel):
-    head: HeadConfig
+    head: HeadConfig = HeadConfig()
+    style: Style = Style()
 
 
 @hook_impl(tryfirst=True)
-def config_model(markata: "MarkataMarkdown") -> None:
+def config_model(markata: "Markata") -> None:
     markata.config_models.append(Config)
 
 
@@ -132,7 +148,7 @@ def configure(markata: "Markata") -> None:
     configuration.
     """
 
-    raw_text = markata.config.get("head", {}).get("text", "")
+    raw_text = "\n".join([t.value for t in markata.config.head.text])
 
     if isinstance(raw_text, list):
         markata.config["head"]["text"] = "\n".join(
@@ -174,8 +190,9 @@ def render(markata: "Markata") -> None:
         head_template = None
         head = {}
 
-    _full_config = copy.deepcopy(markata.config)
+    # _full_config = copy.deepcopy(markata.config)
 
+    merged_config = markata.config
     for article in [a for a in markata.articles if hasattr(a, "html")]:
         # if head_template:
         #     head = eval(
@@ -201,10 +218,12 @@ def render(markata: "Markata") -> None:
         #     ),
         # )
 
+        markata.console.log(f'rendering {article.title}')
         article.html = template.render(
             __version__=__version__,
             body=article.html,
             toc=markata.md.toc,  # type: ignore
-            # config=merged_config,
+            config=merged_config,
             **article.metadata,
         )
+        markata.console.log(f'rendered {article.title}')

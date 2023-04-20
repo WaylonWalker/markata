@@ -4,7 +4,7 @@ posts.  The list is generated using a `filter`, then each post in the list is
 rendered with a `card_template` before being applied to the `body` of the
 `template`.
 
-## Installation
+# Installation
 
 This plugin is built-in and enabled by default, but in you want to be very
 explicit you can add it to your list of existing plugins.
@@ -15,9 +15,9 @@ hooks = [
    ]
 ```
 
-## Configuration
+# Configuration
 
-### set default template and card_template
+# set default template and card_template
 
 At the root of the markata.feeds config you may set `template`, and
 `card_template`.  These will become your defaults for every feed you create.
@@ -31,7 +31,7 @@ template="pages/templates/archive_template.html"
 card_template="plugins/feed_card_template.html"
 ```
 
-### pages
+# pages
 
 Underneath of the `markata.feeds` we will create a new map for each page where
 the name of the map will be the name of the page.
@@ -45,7 +45,7 @@ single post.
 filter="True"
 ```
 
-### template
+# template
 
 The `template` configuration key is a file path to the template that you want
 to use to create the feed.  You may set the default template you want to use
@@ -73,7 +73,7 @@ The template is a jinja style template that expects to fill in a `title` and
     I highly reccomend putting your `body` in a `<ul>`, and wrapping your
     `card_template`s in an `<li>`.
 
-### card_template
+# card_template
 
 All keys available from each post is available to put into your jinja
 template.  These can either be placed there in your post frontmatter, or
@@ -94,14 +94,14 @@ card_template='''
 '''
 ```
 
-### filter
+# filter
 
 The filter is a python expression ran on every post that expects to return a
 boolean.  The variables available to this expression are every key in your
 frontmatter, plus the `timedelta` function, and `parse` function to more easily
 work with dates.
 
-## Feed Examples
+# Feed Examples
 
 True can be passed in to make a feed of all the posts you have.
 
@@ -156,7 +156,7 @@ Here is another example that shows my drafts for a particular tag.
 filter="date<=today and 'python' in tags and published=='False'"
 ```
 
-## Defaults
+# Defaults
 
 By default feeds will create one feed page at `/archive/` that includes all
 posts.
@@ -198,6 +198,7 @@ class MarkataFilterError(RuntimeError):
 class FeedConfig(pydantic.BaseModel):
     title: str = "All Posts"
     slug: Optional[str] = None
+    name: Optional[str] = None
     filter: str = "True"
     card_template: str = """
                 <li class='post'>
@@ -206,10 +207,21 @@ class FeedConfig(pydantic.BaseModel):
                 </a>
                 </li>
                 """
+    template: str = Path(__file__).parent / "default_post_template.html"
 
     @pydantic.validator("slug", pre=True, always=True)
     def default_slug(cls, v, *, values):
         return v or slugify(str(values.get("title")))
+
+    @pydantic.validator("name", pre=True, always=True)
+    def default_name(cls, v, *, values):
+        return v or str(values.get("slug")).replace("-", "_")
+
+    @pydantic.validator("card_template", "template", pre=True, always=True)
+    def read_template(cls, v, *, values) -> str:
+        if isinstance(v, Path):
+            return str(v.read_text())
+        return v
 
 
 class FeedsConfig(pydantic.BaseModel):
@@ -221,7 +233,7 @@ class Feed:
     """
     A storage class for markata feed objects.
 
-    ## Usage
+    # Usage
 
     ``` python
     from markata import Markata
@@ -316,6 +328,7 @@ class Feeds:
 
     def __init__(self, markata: Markata):
         self._m = markata
+        self.config = {f.name: f for f in markata.config.feeds}
         self.refresh()
 
     def refresh(self) -> None:
@@ -361,7 +374,9 @@ class Feeds:
 
         for name in self.config.keys():
             table.add_row(
-                name, str(len(self[name].posts)), self._dict_panel(self.config[name])
+                name,
+                str(len(self[name].posts)),
+                self._dict_panel(self.config[name].dict()),
             )
         return table
 
@@ -384,9 +399,9 @@ def configure(markata: Markata) -> None:
     #     config["archive"] = dict()
     #     config["archive"]["filter"] = "True"
 
-    default_post_template = markata.config.get("feeds_config", {}).get(
-        "template", Path(__file__).parent / "default_post_template.html"
-    )
+    # default_post_template = markata.config.get("feeds_config", {}).get(
+    #     "template", Path(__file__).parent / "default_post_template.html"
+    # )
 
     # for page, page_conf in config.items():
     #     if "template" not in page_conf.keys():
@@ -407,18 +422,15 @@ def save(markata: Markata) -> None:
     """
     Creates a new feed page for each page in the config.
     """
-    feeds = markata.config.get("feeds", {})
+    # feeds = markata.config.get("feeds", {})
 
-    description = markata.get_config("description") or ""
-    url = markata.get_config("url") or ""
+    # description = markata.get_config("description") or ""
+    # url = markata.get_config("url") or ""
 
-    for page, page_conf in feeds.items():
+    for feed in markata.feeds.values():
         create_page(
             markata,
-            page,
-            description=description,
-            url=url,
-            **page_conf,
+            feed,
         )
 
     home = Path(str(markata.config["output_dir"])) / "index.html"
@@ -429,51 +441,39 @@ def save(markata: Markata) -> None:
 
 def create_page(
     markata: Markata,
-    page: str,
-    tags: Optional[List] = None,
-    published: str = "True",
-    template: Optional[Union[Path, str]] = None,
-    card_template: Optional[str] = None,
-    filter: Optional[str] = None,
-    description: Optional[str] = None,
-    url: Optional[str] = None,
-    title: Optional[str] = "feed",
-    sort: str = "True",
-    reverse: bool = False,
-    **rest,
+    feed: Feed,
 ) -> None:
     """
     create an html unorderd list of posts.
     """
 
-    posts = markata.feeds[page].posts
-    cards = [create_card(markata, post, card_template) for post in posts]
+    posts = feed.posts
+
+    cards = [create_card(markata, post, feed.config.card_template) for post in posts]
     cards.insert(0, "<ul>")
     cards.append("</ul>")
 
     # if template is None:
     #     template = Path(__file__).parent / "default_post_template.html"
 
-    with open(template) as f:
-        template = Template(f.read(), undefined=SilentUndefined)
-    output_file = Path(markata.config["output_dir"]) / page / "index.html"
-    canonical_url = f"{url}/{page}/"
+    template = Template(feed.config.template, undefined=SilentUndefined)
+    output_file = Path(markata.config["output_dir"]) / feed.config.slug / "index.html"
+    canonical_url = f"{markata.config.url}/{feed.config.slug}/"
     output_file.parent.mkdir(exist_ok=True, parents=True)
 
-    with open(output_file, "w+") as f:
-        f.write(
-            template.render(
-                markata=markata,
-                __version__=__version__,
-                body="".join(cards),
-                url=url,
-                description=description,
-                title=title,
-                canonical_url=canonical_url,
-                today=datetime.datetime.today(),
-                config=markata.config,
-            )
-        )
+    Path(output_file).write_text(
+        template.render(
+            markata=markata,
+            __version__=__version__,
+            body="".join(cards),
+            url=markata.config.url,
+            description=markata.config.description,
+            title=feed.config.title,
+            canonical_url=canonical_url,
+            today=datetime.datetime.today(),
+            config=markata.config,
+        ),
+    )
 
 
 def create_card(
@@ -515,7 +515,7 @@ def create_card(
         _template = Template(Path(template).read_text())
     except FileNotFoundError:
         _template = Template(template)
-    return _template.render(markata=markata, **post.to_dict())
+    return _template.render(**post.to_dict())
 
 
 @hook_impl
