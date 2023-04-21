@@ -155,7 +155,7 @@ def make_cover(
             )
         draw_text(image, text_font, text, text_font_color, text_padding)
 
-    output_path.parent.mkdir(exist_ok=True)
+    # output_path.parent.mkdir(exist_ok=True)
     image.save(output_path)
     ratio = image.size[1] / image.size[0]
 

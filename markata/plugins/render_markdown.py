@@ -87,7 +87,7 @@ config = {markata = "markata"}
 import copy
 import importlib
 from enum import Enum
-from typing import TYPE_CHECKING, Dict, List, Union
+from typing import TYPE_CHECKING, Dict, List, Optional, Union
 
 import markdown
 import pydantic
@@ -132,9 +132,14 @@ class Config(pydantic.BaseModel):
     render_markdown: RenderMarkdownConfig = RenderMarkdownConfig()
 
 
+class RenderMarkdownPost(pydantic.BaseModel):
+    article_html: Optional[str] = None
+
+
 @hook_impl(tryfirst=True)
 def config_model(markata: "MarkataMarkdown") -> None:
     markata.config_models.append(Config)
+    markata.post_models.append(RenderMarkdownPost)
 
 
 @hook_impl(tryfirst=True)
@@ -255,5 +260,5 @@ def render(markata: "Markata") -> None:
             article.html = html
             article.article_html = copy.deepcopy(html)
 
-            article["html"] = html
-            article["article_html"] = article.article_html
+            article.html = html
+            article.article_html = article.article_html

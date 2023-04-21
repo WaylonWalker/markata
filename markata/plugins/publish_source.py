@@ -39,10 +39,11 @@ def _save(output_dir: Path, article: frontmatter.Post) -> None:
     """
     saves the article to the output directory at its specified slug.
     """
-    with open(
-        output_dir / Path(article["slug"]).parent / Path(article["path"]).name, "w+"
-    ) as f:
-        f.write(article.dumps())
+    path = Path(
+        output_dir / Path(article["slug"]).parent / Path(article["path"]).name,
+    )
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(article.dumps())
 
 
 def _strip_unserializable_values(
@@ -79,7 +80,7 @@ def save(markata: "Markata") -> None:
 
     """
     output_dir = Path(str(markata.config["output_dir"]))
-    output_dir.mkdir(parents=True, exist_ok=True)
+    # output_dir.mkdir(parents=True, exist_ok=True)
     for (
         article
     ) in markata.articles:  # iter_articles(description="saving source documents"):

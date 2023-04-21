@@ -15,7 +15,7 @@ class Config(pydantic.BaseModel):
     disabled_hooks: list = []
     markdown_extensions: list = []
     default_cache_expire: int = 3600
-    output_dir: str = "markout"
+    output_dir: pydantic.DirectoryPath = "markout"
     assets_dir: str = "static"
     nav: dict = {"home": "/"}
     site_version: int = 1

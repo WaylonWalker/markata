@@ -94,19 +94,19 @@ class SilentUndefined(Undefined):
 
 
 class Style(pydantic.BaseModel):
-    color_bg: str = '#1f2022'
-    color_bg_code: str = '#1f2022'
-    color_text: str = '#eefbfe'
-    color_link: str = '#fb30c4'
-    color_accent: str = '#e1bd00c9'
-    overlay_brightness: str = '.85'
-    body_width: str = '800px'
-    color_bg_light: str = '#eefbfe'
-    color_bg_code_light: str = '#eefbfe'
-    color_text_light: str = '#1f2022'
-    color_link_light: str = '#fb30c4'
-    color_accent_light: str = '#ffeb00'
-    overlay_brightness_light: str = '.95'
+    color_bg: str = "#1f2022"
+    color_bg_code: str = "#1f2022"
+    color_text: str = "#eefbfe"
+    color_link: str = "#fb30c4"
+    color_accent: str = "#e1bd00c9"
+    overlay_brightness: str = ".85"
+    body_width: str = "800px"
+    color_bg_light: str = "#eefbfe"
+    color_bg_code_light: str = "#eefbfe"
+    color_text_light: str = "#1f2022"
+    color_link_light: str = "#fb30c4"
+    color_accent_light: str = "#ffeb00"
+    overlay_brightness_light: str = ".95"
 
 
 class Meta(pydantic.BaseModel):
@@ -218,7 +218,7 @@ def render(markata: "Markata") -> None:
         #     ),
         # )
 
-        markata.console.log(f'rendering {article.title}')
+        # markata.console.log(f'rendering {article.title}')
         article.html = template.render(
             __version__=__version__,
             body=article.html,
@@ -226,4 +226,4 @@ def render(markata: "Markata") -> None:
             config=merged_config,
             **article.metadata,
         )
-        markata.console.log(f'rendered {article.title}')
+        # markata.console.log(f"rendered {article.title}")

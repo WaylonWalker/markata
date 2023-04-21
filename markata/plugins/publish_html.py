@@ -2,7 +2,7 @@
 Sets the articles `output_html` path, and saves the article's `html` to the
 `output_html` file.
 
-## Ouptut Directory
+# Ouptut Directory
 
 Output will always be written inside of the configured `output_dir`
 
@@ -12,12 +12,12 @@ Output will always be written inside of the configured `output_dir`
 output_dir = "markout"
 ```
 
-## Explicityly set the output
+# Explicityly set the output
 
 markata will save the articles `html` to the `output_html` specified in the
 articles metadata, loaded from frontmatter.
 
-### 404 example use case
+# 404 example use case
 
 Here is an example use case of explicitly setting the output_html.  By default
 markata will turn `pages/404.md` into `markout/404/index.html`, but many
@@ -47,7 +47,7 @@ pages.
 </ul>
 ```
 
-## Index.md is the one special case
+# Index.md is the one special case
 
 If you have a file `pages/index.md` it will become `markout/index.html` rather
 than `markout/index/inject.html` This is one of the primary ways that markata
@@ -55,14 +55,13 @@ lets you [make your home page](https://markata.dev/home-page/)
 
 """
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict, Union
 
 import pydantic
 
+# if TYPE_CHECKING:
+from markata import Markata
 from markata.hookspec import hook_impl, register_attr
-
-if TYPE_CHECKING:
-    from markata import Markata
 
 
 def _is_relative_to(output_dir: Path, output_html: Path):
@@ -73,36 +72,62 @@ def _is_relative_to(output_dir: Path, output_html: Path):
         return False
 
 
-@hook_impl
-def pre_render(markata: "Markata") -> None:
-    """
-    Sets the `output_html` in the articles metadata.  If the output is
-    explicitly given, it will make sure its in the `output_dir`, if it is not
-    explicitly set it will use the articles slug.
-    """
-    output_dir = Path(markata.config["output_dir"])  # type: ignore
-    output_dir.mkdir(parents=True, exist_ok=True)
+# @hook_impl
+# def pre_render(markata: "Markata") -> None:
+#     """
+#     Sets the `output_html` in the articles metadata.  If the output is
+#     explicitly given, it will make sure its in the `output_dir`, if it is not
+#     explicitly set it will use the articles slug.
+#     """
+#     output_dir = Path(markata.config["output_dir"])  # type: ignore
+#     # output_dir.mkdir(parents=True, exist_ok=True)
 
-    for article in markata.articles:
-        if article.output_html:
-            article_path = Path(article["output_html"])
-            if not _is_relative_to(output_dir, article_path):
-                article["output_html"] = output_dir / article["output_html"]
-        elif article["slug"] == "index":
-            article["output_html"] = output_dir / "index.html"
-        else:
-            article["output_html"] = output_dir / article["slug"] / "index.html"
+#     for article in markata.articles:
+#         if article.output_html:
+#             article_path = Path(article["output_html"])
+#             if not _is_relative_to(output_dir, article_path):
+#                 article["output_html"] = output_dir / article["output_html"]
+#         elif article["slug"] == "index":
+#             article["output_html"] = output_dir / "index.html"
+#         else:
+#             article["output_html"] = output_dir / article["slug"] / "index.html"
 
 
-class OutPutHTML(pydantic.BaseModel):
-    output_html: Path = None
-    article_html: Path = None
+class OutputHTML(pydantic.BaseModel):
+    markata: Markata
+    slug: str
+    output_html: Union[str, Path] = None
+
+    class Config:
+        validate_assignment = True
+        arbitrary_types_allowed = True
+
+    @pydantic.validator("output_html", pre=True, always=True)
+    @classmethod
+    def output_html_path(cls, v, *, values: Dict) -> Path:
+        if v:
+            v = Path(v)
+        return values["markata"].config.output_dir / values["slug"] / "index.html"
+
+    @pydantic.validator("output_html")
+    @classmethod
+    def output_html_relative(cls, v, *, values: Dict) -> Path:
+        if not v.relative_to(values["markata"].config.output_dir):
+            return values["markata"].config.output_dir / v
+        return v
+
+    @pydantic.validator("output_html")
+    @classmethod
+    def output_html_exists(cls, v, *, values: Dict) -> Path:
+        if not v.parent.exists():
+            v.parent.mkdir(parents=True, exist_ok=True)
+        return v
 
 
 @hook_impl
 @register_attr("post_models")
 def post_model(markata: "Markata") -> None:
-    markata.post_models.append(OutPutHTML)
+    markata.post_models.append(OutputHTML)
 
 
 @hook_impl
@@ -112,19 +137,6 @@ def save(markata: "Markata") -> None:
     is relative to the specified `output_dir`.  If its not relative to the
     `output_dir` it will log an error and move on.
     """
-    output_dir = Path(markata.config["output_dir"])  # type: ignore
 
     for article in markata.articles:
-        article_path = Path(article["output_html"])
-        if _is_relative_to(output_dir, article_path):
-            article_path.parent.mkdir(parents=True, exist_ok=True)
-            with open(article_path, "w+") as f:
-                f.write(article.html)
-        else:
-            markata.console.log(
-                f'article "{article["path"]}" '
-                f"attempted to write to "
-                f'"{article["output_html"]}"'
-                f"outside of the configured output_dir "
-                f'"{output_dir}"'
-            )
+        article.output_html.write_text(article.html)

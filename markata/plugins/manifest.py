@@ -28,7 +28,7 @@ def render(markata: "MarkataIcons") -> None:
         "icons": icons,
     }
     filepath = Path(markata.config["output_dir"]) / "manifest.json"
-    filepath.parent.mkdir(parents=True, exist_ok=True)
+    # filepath.parent.mkdir(parents=True, exist_ok=True)
     filepath.touch(exist_ok=True)
     with open(filepath, "w+") as f:
         json.dump(manifest, f, ensure_ascii=True, indent=4)

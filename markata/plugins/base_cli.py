@@ -78,16 +78,16 @@ create new things from templates
 ```
 
 """
-from pathlib import Path
 import pdb
 import shutil
 import sys
 import traceback
-from typing import Callable, Optional, TYPE_CHECKING
 import warnings
+from pathlib import Path
+from typing import TYPE_CHECKING, Callable, Optional
 
-from rich import print as rich_print
 import typer
+from rich import print as rich_print
 
 from markata.hookspec import hook_impl
 
@@ -528,14 +528,14 @@ def _clean(markata, quiet: bool = False, dry_run: bool = False):
 
     markata.console.log(
         f'{"[DRYRUN]" if dry_run else ""}'
-        f'removing outptut directory: {markata.config.get("output_dir")}'
+        f"removing outptut directory: {markata.config.output_dir}"
     )
     if not dry_run:
         try:
-            shutil.rmtree(str(markata.config.get("output_dir")))
+            shutil.rmtree(str(markata.config.output_dir))
         except FileNotFoundError:
             warnings.warn(
-                f'output directory: {markata.config.get("output_dir")} does not exist'
+                f"output directory: {markata.config.output_dir} does not exist"
             )
 
     markata.console.log(

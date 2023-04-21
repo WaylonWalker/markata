@@ -50,6 +50,7 @@ def load(markata: "MarkataMarkdown") -> None:
 
 
 def get_post(path: Path, markata: "Markata") -> Optional[Callable]:
+    breakpoint()
     if markata.post_model:
         return pydantic_get_post(path=path, markata=markata)
     else:
@@ -68,12 +69,13 @@ def pydantic_get_post(path: Path, markata: "Markata") -> Optional[Callable]:
         + str(path)
     )
 
-    try:
-        post = markata.Post(**fm_post.metadata, markata=markata)
+    # try:
+    breakpoint()
+    post = markata.Post(**fm_post.metadata, markata=markata)
 
-    except pydantic.ValidationError as e:
-        markata.console.log(str(e).replace("Post", str(path)))
-        sys.exit(1)
+    # except pydantic.ValidationError as e:
+    #     markata.console.log(str(e).replace("Post", str(path)))
+    #     sys.exit(1)
 
     return post
 

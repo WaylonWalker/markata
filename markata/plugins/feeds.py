@@ -461,7 +461,7 @@ def create_page(
     canonical_url = f"{markata.config.url}/{feed.config.slug}/"
     output_file.parent.mkdir(exist_ok=True, parents=True)
 
-    Path(output_file).write_text(
+    output_file.write_text(
         template.render(
             markata=markata,
             __version__=__version__,
