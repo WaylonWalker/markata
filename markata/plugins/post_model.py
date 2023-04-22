@@ -89,20 +89,20 @@ class Post(pydantic.BaseModel):
             self.dict(include={i: True for i in self.markata.config.post_model.include})
         )
 
-    def __init__(self, **data) -> None:
-        _full_config = copy.deepcopy(data.get("config", {}))
-        data["config"] = dict(
-            always_merger.merge(
-                _full_config,
-                copy.deepcopy(
-                    data.get(
-                        "config_overrides",
-                        {},
-                    ),
-                ),
-            ),
-        )
-        super().__init__(**data)
+    # def __init__(self, **data) -> None:
+    #     _full_config = copy.deepcopy(data.get("config", {}))
+    #     data["config"] = dict(
+    #         always_merger.merge(
+    #             _full_config,
+    #             copy.deepcopy(
+    #                 data.get(
+    #                     "config_overrides",
+    #                     {},
+    #                 ),
+    #             ),
+    #         ),
+    #     )
+    #     super().__init__(**data)
 
     def dumps(self):
         """

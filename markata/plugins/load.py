@@ -1,7 +1,7 @@
 """Default load plugin."""
-import sys
+import itertools
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable, List, Optional
+from typing import Callable, List, Optional, TYPE_CHECKING
 
 import frontmatter
 import pydantic
@@ -40,6 +40,7 @@ def load(markata: "MarkataMarkdown") -> None:
         "Posts",
         posts=(List[markata.Post], ...),
     )
+    markata.console.log(f"found {len(markata.files)} posts")
     markata.posts_obj = Posts.parse_obj(
         {"posts": [get_post(article, markata) for article in markata.files]}
     )
@@ -50,11 +51,29 @@ def load(markata: "MarkataMarkdown") -> None:
 
 
 def get_post(path: Path, markata: "Markata") -> Optional[Callable]:
-    breakpoint()
-    if markata.post_model:
+    if markata.Post:
         return pydantic_get_post(path=path, markata=markata)
     else:
         return legacy_get_post(path=path, markata=markata)
+
+
+def get_models(markata: "Markata", error: pydantic.ValidationError) -> List:
+    fields = []
+    for err in error.errors():
+        fields.extend(err["loc"])
+
+    models = {field: f"{field} used by " for field in fields}
+
+    for field, model in set(
+        itertools.product(
+            fields,
+            markata.post_models,
+        )
+    ):
+        if field in model.__fields__:
+            models[field] += f"'{model.__module__}.{model.__name__}'"
+
+    return models
 
 
 def pydantic_get_post(path: Path, markata: "Markata") -> Optional[Callable]:
@@ -69,13 +88,21 @@ def pydantic_get_post(path: Path, markata: "Markata") -> Optional[Callable]:
         + str(path)
     )
 
-    # try:
-    breakpoint()
-    post = markata.Post(**fm_post.metadata, markata=markata)
+    # post = markata.Post(**fm_post.metadata, markata=markata)
+    try:
+        post = markata.Post(**fm_post.metadata, markata=markata)
 
-    # except pydantic.ValidationError as e:
-    #     markata.console.log(str(e).replace("Post", str(path)))
-    #     sys.exit(1)
+    except pydantic.ValidationError as e:
+
+        models = get_models(markata=markata, error=e)
+        models = list(models.values())
+        models = "\n".join(models)
+        raise ValidationError(f"{e}\n\n{models}\nfailed to load {path}") from e
+    # msg = "\n".join([err.msg for err in e.errors])  # .replace("Post", str(path))
+    # msg = type(e.errors)
+    # msg = f"failed on post {path}"
+    # markata.console.log(msg)
+    # sys.exit(1)
 
     return post
 

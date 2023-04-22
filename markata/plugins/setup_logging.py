@@ -169,8 +169,7 @@ def setup_html_log(markata: "Markata", level: int = logging.INFO) -> Path:
     if has_file_handler(log_file):
         return log_file
 
-    if not log_file.parent.exists():
-        log_file.parent.mkdir(parents=True)
+    log_file.parent.mkdir(parents=True, exist_ok=True)
     if not log_file.exists():
         template_file = Path(
             str(
@@ -190,7 +189,7 @@ def setup_html_log(markata: "Markata", level: int = logging.INFO) -> Path:
         f.write(
             f"""
             <div style="
-            width: 100%; 
+            width: 100%;
             height: 20px;
             margin-top: 5rem;
             border-bottom: 1px solid goldenrod;

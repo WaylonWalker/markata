@@ -55,7 +55,7 @@ lets you [make your home page](https://markata.dev/home-page/)
 
 """
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, Union
+from typing import Dict, Union
 
 import pydantic
 
@@ -63,13 +63,12 @@ import pydantic
 from markata import Markata
 from markata.hookspec import hook_impl, register_attr
 
-
-def _is_relative_to(output_dir: Path, output_html: Path):
-    try:
-        output_html.relative_to(output_dir)
-        return True
-    except ValueError:
-        return False
+# def _is_relative_to(output_dir: Path, output_html: Path):
+#     try:
+#         output_html.relative_to(output_dir)
+#         return True
+#     except ValueError:
+#         return False
 
 
 # @hook_impl
@@ -103,21 +102,21 @@ class OutputHTML(pydantic.BaseModel):
         arbitrary_types_allowed = True
 
     @pydantic.validator("output_html", pre=True, always=True)
-    @classmethod
+    # @classmethod
     def output_html_path(cls, v, *, values: Dict) -> Path:
         if v:
             v = Path(v)
-        return values["markata"].config.output_dir / values["slug"] / "index.html"
+        return Path(values["markata"].config.output_dir / values["slug"] / "index.html")
 
     @pydantic.validator("output_html")
-    @classmethod
+    # @classmethod
     def output_html_relative(cls, v, *, values: Dict) -> Path:
         if not v.relative_to(values["markata"].config.output_dir):
             return values["markata"].config.output_dir / v
         return v
 
     @pydantic.validator("output_html")
-    @classmethod
+    # @classmethod
     def output_html_exists(cls, v, *, values: Dict) -> Path:
         if not v.parent.exists():
             v.parent.mkdir(parents=True, exist_ok=True)

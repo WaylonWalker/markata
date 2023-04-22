@@ -165,19 +165,19 @@ posts.
 filter="True"
 
 """
+from dataclasses import dataclass
 import datetime
+from pathlib import Path
 import shutil
 import textwrap
-from dataclasses import dataclass
-from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Self, Union
+from typing import Any, List, Optional, TYPE_CHECKING
 
-import pydantic
-import typer
 from jinja2 import Template, Undefined
+import pydantic
 from rich import print as rich_print
 from rich.table import Table
 from slugify import slugify
+import typer
 
 from markata import Markata, __version__
 from markata.hookspec import hook_impl, register_attr
@@ -515,7 +515,7 @@ def create_card(
         _template = Template(Path(template).read_text())
     except FileNotFoundError:
         _template = Template(template)
-    return _template.render(**post.to_dict())
+        return _template.render(**post.to_dict())
 
 
 @hook_impl

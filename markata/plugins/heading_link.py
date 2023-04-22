@@ -2,9 +2,9 @@
 Creates links next to all heading tags to make it easier for users to share a
 specific heading.
 """
-from pathlib import Path
 import re
-from typing import Any, TYPE_CHECKING
+from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
 from bs4 import BeautifulSoup
 
@@ -22,8 +22,6 @@ def post_render(markata: Markata) -> None:
     This plugin creates a link svg next to all headings.
     """
 
-    config = markata.get_plugin_config(__file__)
-    should_prettify = markata.config.get("prettify_html", False)
     with markata.cache as cache:
         for article in markata.iter_articles("link headers"):
             key = markata.make_hash(
@@ -37,14 +35,18 @@ def post_render(markata: Markata) -> None:
             html_from_cache = cache.get(key)
 
             if html_from_cache is None:
-                html = link_headings(article, should_prettify)
-                cache.add(key, html, expire=config["cache_expire"])
+                html = link_headings(article)
+                cache.add(
+                    key,
+                    html,
+                    expire=markata.config.cache_expire,
+                )
             else:
                 html = html_from_cache
             article.html = html
 
 
-def link_headings(article: "Post", prettify: bool = False) -> Any:
+def link_headings(article: "Post") -> str:
     """
     Use BeautifulSoup to find all headings and run link_heading on them.
     """
@@ -55,8 +57,6 @@ def link_headings(article: "Post", prettify: bool = False) -> Any:
             and heading.get("id", "") != "title"
         ):
             link_heading(soup, heading)
-    if prettify:
-        return soup.prettify()
     return str(soup)
 
 

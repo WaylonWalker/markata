@@ -5,21 +5,18 @@ from __future__ import annotations
 
 import atexit
 import datetime
+from datetime import timedelta
 import hashlib
 import importlib
 import logging
-import os
-import sys
-import textwrap
-from datetime import timedelta
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
+import textwrap
+from typing import Any, Dict, Iterable, List, Optional, Tuple
 
-import frontmatter
-import pluggy
-import pydantic
 from checksumdir import dirhash
 from diskcache import FanoutCache
+import pluggy
+import pydantic
 from rich.console import Console
 from rich.progress import track
 from rich.table import Table
@@ -85,6 +82,9 @@ DEFAULT_HOOKS = [
     "markata.plugins.tui",
     "markata.plugins.setup_logging",
     "markata.plugins.redirects",
+    "markata.plugins.post_model",
+    "markata.plugins.config_model",
+    "markata.plugins.create_models",
 ]
 
 DEFUALT_CONFIG = {

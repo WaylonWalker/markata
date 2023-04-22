@@ -31,9 +31,6 @@ hooks = [
    # "markata.plugins.prevnext",
    "markata.plugins.service_worker",
    "default",
-   "markata.plugins.post_model",
-   "markata.plugins.config_model",
-   "markata.plugins.create_models",
    "markata.plugins.publish_source",
    ]
 disabled_hooks = [
@@ -239,7 +236,7 @@ color='purple'
 
 [markata.post_model]
 include = ['date', 'description', 'published', 'slug', 'title', 'content', 'html']
-repr_include = ['date', 'description', 'published', 'slug', 'title']
+repr_include = ['date', 'description', 'published', 'slug', 'title', 'output_html']
 
 [markata.render_markdown]
 backend='markdown-it-py'

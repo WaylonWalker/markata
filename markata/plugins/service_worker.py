@@ -119,4 +119,5 @@ def save(markata: "Markata") -> None:
         output_dirhash=dirhash(output_dir),
     )
 
+    service_worker_file.parent.mkdir(parents=True, exist_ok=True)
     service_worker_file.write_text(service_worker_js)

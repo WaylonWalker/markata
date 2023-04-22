@@ -18,7 +18,7 @@ class GlobConfig(pydantic.BaseModel):
     @pydantic.validator("glob_patterns")
     def convert_to_list(cls, v):
         if not isinstance(v, list):
-            return [v]
+            return v.split(",")
         return v
 
 
