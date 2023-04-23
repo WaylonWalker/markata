@@ -4,6 +4,7 @@ import pydantic
 
 from markata import standard_config
 from markata.hookspec import hook_impl, register_attr
+from pathlib import Path
 
 if TYPE_CHECKING:
     from markata import Markata
@@ -15,8 +16,8 @@ class Config(pydantic.BaseModel):
     markdown_extensions: list = []
     default_cache_expire: int = 3600
     output_dir: pydantic.DirectoryPath = "markout"
-    assets_dir: str = pydantic.Field(
-        "static",
+    assets_dir: Path = pydantic.Field(
+        Path("static"),
         description="The directory to store static assets",
     )
     nav: dict = {"home": "/"}

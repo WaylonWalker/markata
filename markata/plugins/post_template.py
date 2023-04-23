@@ -70,12 +70,12 @@ html  {
 
 """
 from pathlib import Path
-from typing import TYPE_CHECKING, List
+from typing import List, TYPE_CHECKING
 
 import jinja2
-import pydantic
 from jinja2 import Template, Undefined
 from more_itertools import flatten
+import pydantic
 
 from markata import __version__
 from markata.hookspec import hook_impl
@@ -182,11 +182,11 @@ def render(markata: "Markata") -> None:
 
     if "{{" in str(markata.config.get("head", {})):
         Template(
-            str(markata.config.get("head", {})), undefined=SilentUndefined,
+            str(markata.config.get("head", {})),
+            undefined=SilentUndefined,
         )
     else:
         pass
-
 
     merged_config = markata.config
     for article in [a for a in markata.articles if hasattr(a, "html")]:

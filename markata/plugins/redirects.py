@@ -109,7 +109,7 @@ class Redirect(pydantic.BaseModel):
 
 
 class RedirectsConfig(pydantic.BaseModel):
-    assets_dir: str = "static"
+    assets_dir: Path = Path("static")
     redirects_file: Optional[Path] = None
 
     @pydantic.validator("redirects_file", always=True)
