@@ -138,6 +138,7 @@ class RenderMarkdownPost(pydantic.BaseModel):
 
 
 @hook_impl()
+@register_attr("config_models")
 def config_model(markata: "MarkataMarkdown") -> None:
     markata.config_models.append(Config)
 

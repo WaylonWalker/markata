@@ -176,7 +176,6 @@ from jinja2 import Template, Undefined
 import pydantic
 from rich import print as rich_print
 from rich.table import Table
-from slugify import slugify
 import typer
 
 from markata import Markata, __version__
@@ -197,7 +196,7 @@ class MarkataFilterError(RuntimeError):
 
 class FeedConfig(pydantic.BaseModel):
     title: str = "All Posts"
-    slug: Optional[str] = None
+    slug: str = None
     name: Optional[str] = None
     filter: str = "True"
     card_template: str = """
@@ -209,9 +208,9 @@ class FeedConfig(pydantic.BaseModel):
                 """
     template: str = Path(__file__).parent / "default_post_template.html"
 
-    @pydantic.validator("slug", pre=True, always=True)
-    def default_slug(cls, v, *, values):
-        return v or slugify(str(values.get("title")))
+    # @pydantic.validator("slug", pre=True, always=True)
+    # def default_slug(cls, v, *, values):
+    #     return v or slugify(str(values.get("title")))
 
     @pydantic.validator("name", pre=True, always=True)
     def default_name(cls, v, *, values):

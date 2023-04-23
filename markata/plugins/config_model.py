@@ -1,8 +1,8 @@
-from typing import TYPE_CHECKING, List, Optional, Union
+from typing import Optional, TYPE_CHECKING
 
 import pydantic
 
-from markata import hookspec, standard_config
+from markata import standard_config
 from markata.hookspec import hook_impl, register_attr
 
 if TYPE_CHECKING:
@@ -16,7 +16,9 @@ class Config(pydantic.BaseModel):
     markdown_extensions: list = []
     default_cache_expire: int = 3600
     output_dir: pydantic.DirectoryPath = "markout"
-    assets_dir: str = "static"
+    assets_dir: str = pydantic.Field(
+        "static", description="The directory to store static assets"
+    )
     nav: dict = {"home": "/"}
     site_version: int = 1
     markdown_backend: str = "markdown-it-py"
@@ -69,6 +71,21 @@ class Config(pydantic.BaseModel):
     def keys(self):
         "for backwards compatability"
         return self.__dict__.keys()
+
+    def toml(self: "Config") -> str:
+        import tomlkit
+
+        doc = tomlkit.document()
+
+        for key, value in self.dict().items():
+            add_doc(doc, key, value)
+            doc.add(tomlkit.comment(key))
+            if value:
+                doc[key] = value
+        return tomlkit.dumps(doc)
+
+
+# def add_doc(doc: pydantic.Document) -> None:
 
 
 @hook_impl

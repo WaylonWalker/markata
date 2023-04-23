@@ -49,7 +49,7 @@ class Config(pydantic.BaseModel):
 class FlatSlugPost(pydantic.BaseModel):
     markata: Markata
     should_slugify: Optional[bool] = None
-    slug: Optional[str] = None
+    slug: str = None
 
     class Config:
         validate_assignment = True
@@ -61,17 +61,17 @@ class FlatSlugPost(pydantic.BaseModel):
             return values["markata"].config.flat_slug.slugify
         return v
 
-    @pydantic.validator("slug", pre=True, always=True)
-    def default_slug(cls: "FlatSlugPost", v: bool, *, values: Dict) -> bool:
-        if v:
-            return v
-            # return values["markata"].config.get("slugify", True)
-        # stem = Path(values["path"], article.get("title", ""))).stem
+    # @pydantic.validator("slug", pre=True, always=True)
+    # def default_slug(cls: "FlatSlugPost", v: bool, *, values: Dict) -> bool:
+    #     if v:
+    #         return v
+    # return values["markata"].config.get("slugify", True)
+    # stem = Path(values["path"], article.get("title", ""))).stem
 
-        # if article.should_slugify:
-        # article.slug = "/".join([slugify(s) for s in stem.split("/")])
-        # else:
-        # article.slug = stem
+    # if article.should_slugify:
+    # article.slug = "/".join([slugify(s) for s in stem.split("/")])
+    # else:
+    # article.slug = stem
 
 
 @hook_impl()

@@ -22,16 +22,18 @@ markdown_backend='markdown-it-py'
 
 # 2 weeks in seconds
 default_cache_expire = 1209600
+# subroute = "docs"
 
 ## Markata Setup
 output_dir = "markout"
 assets_dir = "static"
 hooks = [
+   "markata.plugins.publish_source",
+# "markata.plugins.subroute",
    "markata.plugins.docs",
    # "markata.plugins.prevnext",
    "markata.plugins.service_worker",
    "default",
-   "markata.plugins.publish_source",
    ]
 disabled_hooks = [
 # "markata.plugins.covers",

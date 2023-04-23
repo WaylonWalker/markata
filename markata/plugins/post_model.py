@@ -1,13 +1,8 @@
-import copy
 import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import Any, Dict, Iterable, List, Optional
 
 import pydantic
-import yaml
-from dataclasses_json import config
-from deepmerge import always_merger
-from marshmallow import fields
 from slugify import slugify
 
 from markata import Markata
@@ -15,6 +10,7 @@ from markata.hookspec import hook_impl, register_attr
 
 
 class Post(pydantic.BaseModel):
+    markata: Markata = None
     path: Path
     published: bool = False
     slug: str = None
@@ -23,14 +19,13 @@ class Post(pydantic.BaseModel):
     date: datetime.date = pydantic.Field(default_factory=datetime.date.today)
     today: datetime.date = pydantic.Field(default_factory=datetime.date.today)
     now: datetime.datetime = pydantic.Field(default_factory=datetime.datetime.utcnow)
-    title: Optional[str] = None
-    markata: Markata = None
+    title: str = None
 
     class Config:
         arbitrary_types_allowed = True
         # json_encoders = {datetime.datetime: lambda x: x.isoformat()}
 
-    def __repr_args__(self) -> "ReprArgs":
+    def __repr_args__(self: "Post") -> "ReprArgs":
         return [
             (key, value)
             for key, value in self.__dict__.items()
@@ -38,31 +33,33 @@ class Post(pydantic.BaseModel):
         ]
 
     @property
-    def metadata(self):
+    def metadata(self: "Post") -> Dict:
         "for backwards compatability"
         return self.__dict__
 
-    def to_dict(self):
+    def to_dict(self: "Post") -> Dict:
         "for backwards compatability"
         return self.__dict__
 
-    def __getitem__(self, item):
+    def __getitem__(self: "Post", item: str) -> Any:
         "for backwards compatability"
         return getattr(self, item)
 
-    def __setitem__(self, key, item):
+    def __setitem__(self: "Post", key: str, item: Any) -> None:
         "for backwards compatability"
-        return setattr(self, key, item)
+        setattr(self, key, item)
 
-    def get(self, item, default):
+    def get(self: "Post", item: str, default: Any) -> Any:
         "for backwards compatability"
         return getattr(self, item, default)
 
-    def keys(self):
+    def keys(self: "Post") -> List[str]:
         "for backwards compatability"
         return self.__dict__.keys()
 
-    def json(self, include=None, all=False, **kwargs):
+    def json(
+        self: "Post", include: Iterable = None, all: bool = False, **kwargs
+    ) -> str:
         """
         override function to give a default include value that will include
         user configured includes.
@@ -81,10 +78,12 @@ class Post(pydantic.BaseModel):
             **kwargs,
         )
 
-    def yaml(self):
+    def yaml(self: "Post") -> str:
         """
         dump model to yaml
         """
+        import yaml
+
         return yaml.dump(
             self.dict(include={i: True for i in self.markata.config.post_model.include})
         )

@@ -3,12 +3,14 @@ leading docstring
 """
 import ast
 import datetime
-import textwrap
+from os import path
 from pathlib import Path
-from typing import TYPE_CHECKING, List
+import textwrap
+from typing import List, TYPE_CHECKING
 
 import frontmatter
 import jinja2
+import pydantic
 
 from markata.hookspec import hook_impl, register_attr
 
@@ -120,8 +122,16 @@ def make_article(markata: "Markata", file: Path) -> frontmatter.Post:
 
     article = frontmatter.loads(article)
     article["content"] = article.content
-    if markata.post_model:
+    try:
         article = markata.Post(**article.metadata, markata=markata)
+
+    except pydantic.ValidationError as e:
+        from markata.plugins.load import ValidationError, get_models
+
+        models = get_models(markata=markata, error=e)
+        models = list(models.values())
+        models = "\n".join(models)
+        raise ValidationError(f"{e}\n\n{models}\nfailed to load {path}") from e
 
     return article
 
