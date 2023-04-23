@@ -9,6 +9,12 @@
   </em>
 </p>
 
+## Coming soon
+
+pydantic all the things.  All post objects and config will become pydantic objects.  This will allow for validation to happen early, and referencing post attributes or config, it can be assumed that they exist whether they were explicitly created or cohersed to their defaults early in the build.
+
+---
+
 A static site generator that will give you a great site with many standard web
 features like rss, sitemaps, and seo tags, out of the box. Running `markata
 build` will get you a that only requires you to write Markdown. If you have
