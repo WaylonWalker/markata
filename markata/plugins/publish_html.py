@@ -64,11 +64,6 @@ from markata import Markata
 from markata.hookspec import hook_impl, register_attr
 
 # def _is_relative_to(output_dir: Path, output_html: Path):
-#     try:
-#         output_html.relative_to(output_dir)
-#         return True
-#     except ValueError:
-#         return False
 
 
 # @hook_impl
@@ -78,18 +73,10 @@ from markata.hookspec import hook_impl, register_attr
 #     explicitly given, it will make sure its in the `output_dir`, if it is not
 #     explicitly set it will use the articles slug.
 #     """
-#     output_dir = Path(markata.config["output_dir"])  # type: ignore
-#     # output_dir.mkdir(parents=True, exist_ok=True)
 
 #     for article in markata.articles:
 #         if article.output_html:
-#             article_path = Path(article["output_html"])
 #             if not _is_relative_to(output_dir, article_path):
-#                 article["output_html"] = output_dir / article["output_html"]
-#         elif article["slug"] == "index":
-#             article["output_html"] = output_dir / "index.html"
-#         else:
-#             article["output_html"] = output_dir / article["slug"] / "index.html"
 
 
 class OutputHTML(pydantic.BaseModel):
@@ -107,7 +94,7 @@ class OutputHTML(pydantic.BaseModel):
         if v:
             v = Path(v)
         return Path(
-            values["markata"].config.output_dir / values.get("slug") / "index.html"
+            values["markata"].config.output_dir / values.get("slug") / "index.html",
         )
 
     @pydantic.validator("output_html")

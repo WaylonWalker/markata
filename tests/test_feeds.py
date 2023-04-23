@@ -5,7 +5,7 @@ from markata.plugins.feeds import Feed, Feeds
 
 
 class DummyMarkata:
-    def __init__(self):
+    def __init__(self) -> None:
         self.config = {"feeds": {"all-posts": {"filter": True}}}
 
     def map(self, *args, **kwargs):
@@ -27,14 +27,14 @@ def test_feeds_iter(mocker):
     mocked_markata = mocker.patch.object(markata, "Markata", DummyMarkata())
     feeds = Feeds(markata=mocked_markata)
 
-    assert [feed for feed in feeds] == ["all-posts"]
+    assert list(feeds) == ["all-posts"]
 
 
 def test_feeds_keys(mocker):
     mocked_markata = mocker.patch.object(markata, "Markata", DummyMarkata())
     feeds = Feeds(markata=mocked_markata)
 
-    assert [feed for feed in feeds.keys()] == ["all-posts"]
+    assert list(feeds.keys()) == ["all-posts"]
 
 
 def test_feeds_items(mocker):
@@ -62,4 +62,4 @@ def test_feeds___rich__(mocker):
 def test_feeds_values(mocker):
     mocked_markata = mocker.patch.object(markata, "Markata", DummyMarkata())
     values = Feeds(markata=mocked_markata).values()
-    assert all([isinstance(v, Feed) for v in values])
+    assert all(isinstance(v, Feed) for v in values)

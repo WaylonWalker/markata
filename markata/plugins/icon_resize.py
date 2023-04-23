@@ -27,7 +27,7 @@ def render(markata: "MarkataIcons") -> None:
         for width in [48, 72, 96, 144, 192, 256, 384, 512]:
             height = int(float(img.size[1]) * float(width / float(img.size[0])))
             filename = Path(
-                f"{base_out_file.stem}_{width}x{height}{base_out_file.suffix}"
+                f"{base_out_file.stem}_{width}x{height}{base_out_file.suffix}",
             )
             markata.icons.append(
                 {
@@ -35,7 +35,7 @@ def render(markata: "MarkataIcons") -> None:
                     "sizes": f"{width}x{width}",
                     "type": f"image/{img.format}".lower(),
                     "purpose": "any maskable",
-                }
+                },
             )
 
 
@@ -46,12 +46,12 @@ def save(markata: "MarkataIcons") -> None:
     base_out_file = Path(markata.config["output_dir"]) / markata.config["icon"]
     for width in [48, 72, 96, 144, 192, 256, 384, 512]:
         with Image.open(
-            Path(markata.config["assets_dir"]) / markata.config["icon"]
+            Path(markata.config["assets_dir"]) / markata.config["icon"],
         ) as img:
             height = int(float(img.size[1]) * float(width / float(img.size[0])))
             img = img.resize((width, height), Image.ANTIALIAS)
             filename = Path(
-                f"{base_out_file.stem}_{width}x{height}{base_out_file.suffix}"
+                f"{base_out_file.stem}_{width}x{height}{base_out_file.suffix}",
             )
             out_file = Path(markata.config["output_dir"]) / filename
             img.save(out_file)

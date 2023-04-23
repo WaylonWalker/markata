@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
 
 def get_font(
-    path: Path, draw: ImageDraw.Draw, title: str, size: int = 250
+    path: Path, draw: ImageDraw.Draw, title: str, size: int = 250,
 ) -> ImageFont.FreeTypeFont:
     font = ImageFont.truetype(path, size=size)
     if draw.textsize(title, font=font)[0] > 800:
@@ -21,7 +21,7 @@ def get_font(
 
 @background.task
 def make_cover(
-    title: str, color: str, output_path: Path, template_path: Path, font_path: Path
+    title: str, color: str, output_path: Path, template_path: Path, font_path: Path,
 ) -> None:
     image = Image.open(template_path)
 

@@ -1,4 +1,4 @@
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import pydantic
 
@@ -10,14 +10,14 @@ if TYPE_CHECKING:
 
 
 class Config(pydantic.BaseModel):
-    # glob_patterns: Union[List[str], str] = ["**/*.md"]
     hooks: list = ["default"]
     disabled_hooks: list = []
     markdown_extensions: list = []
     default_cache_expire: int = 3600
     output_dir: pydantic.DirectoryPath = "markout"
     assets_dir: str = pydantic.Field(
-        "static", description="The directory to store static assets"
+        "static",
+        description="The directory to store static assets",
     )
     nav: dict = {"home": "/"}
     site_version: int = 1
@@ -41,20 +41,7 @@ class Config(pydantic.BaseModel):
     twitter_card: str = "summary_large_image"
     twitter_creator: Optional[str] = None
     twitter_site: Optional[str] = None
-    # markdown_it_py: dict
-    # feeds_config: dict
-    # feeds: dict
-    # jinja_md: dict
-    # head: dict
-    # summary: dict
-    # post_model: dict
     path_prefix: Optional[str] = None
-
-    # @pydantic.validator("glob_patterns")
-    # def convert_to_list(cls, v):
-    #     if not isinstance(v, list):
-    #         return [v]
-    #     return v
 
     def __getitem__(self, item):
         "for backwards compatability"
@@ -97,4 +84,5 @@ def config_model(markata: "Markata") -> None:
 @hook_impl(tryfirst=True)
 @register_attr("config")
 def load_config(markata: "Markata") -> None:
+    markata.config = markata.Config.parse_obj(standard_config.load("markata"))
     markata.config = markata.Config.parse_obj(standard_config.load("markata"))

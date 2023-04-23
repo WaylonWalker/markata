@@ -64,14 +64,9 @@ class FlatSlugPost(pydantic.BaseModel):
     # @pydantic.validator("slug", pre=True, always=True)
     # def default_slug(cls: "FlatSlugPost", v: bool, *, values: Dict) -> bool:
     #     if v:
-    #         return v
-    # return values["markata"].config.get("slugify", True)
     # stem = Path(values["path"], article.get("title", ""))).stem
 
     # if article.should_slugify:
-    # article.slug = "/".join([slugify(s) for s in stem.split("/")])
-    # else:
-    # article.slug = stem
 
 
 @hook_impl()
@@ -93,7 +88,7 @@ def pre_render(markata: "Markata") -> None:
     """
     for article in markata.iter_articles(description="creating slugs"):
         stem = article.get(
-            "slug", Path(article.get("path", article.get("title", ""))).stem
+            "slug", Path(article.get("path", article.get("title", ""))).stem,
         )
         if article.should_slugify:
             article.slug = "/".join([slugify(s) for s in stem.split("/")])

@@ -32,8 +32,8 @@ def make_project(tmp_path_factory: Any) -> Any:
                     docstring for my_method
                     '''
 
-            """
-        )
+            """,
+        ),
     )
     markta_toml = project / "markata.toml"
     markta_toml.write_text(
@@ -44,8 +44,8 @@ def make_project(tmp_path_factory: Any) -> Any:
                 "markata.plugins.docs",
                 "default",
                 ]
-            """
-        )
+            """,
+        ),
     )
 
     return project

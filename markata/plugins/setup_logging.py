@@ -11,13 +11,13 @@ There will be 6 log files created based on log level and file type.
 ```
 markout/_logs
 ├── debug
-│   └── index.html
+│   └── index.html
 ├── debug.log
 ├── info
-│   └── index.html
+│   └── index.html
 ├── info.log
 ├── warning
-│   └── index.html
+│   └── index.html
 └── warning.log
 ```
 
@@ -128,8 +128,8 @@ def setup_text_log(markata: "Markata", level: int = logging.INFO) -> Path:
                 Path(str(markata.config.get("output_dir", "markout")))
                 / "_logs"
                 / (logging.getLevelName(level).lower() + ".log"),
-            )
-        )
+            ),
+        ),
     )
     if has_file_handler(log_file):
         return log_file
@@ -162,8 +162,8 @@ def setup_html_log(markata: "Markata", level: int = logging.INFO) -> Path:
                 / "_logs"
                 / logging.getLevelName(level).lower()
                 / "index.html",
-            )
-        )
+            ),
+        ),
     )
 
     if has_file_handler(log_file):
@@ -174,9 +174,9 @@ def setup_html_log(markata: "Markata", level: int = logging.INFO) -> Path:
         template_file = Path(
             str(
                 markata.config.get(
-                    "log_template", Path(__file__).parent / "default_log_template.html"
-                )
-            )
+                    "log_template", Path(__file__).parent / "default_log_template.html",
+                ),
+            ),
         )
         template = Template(template_file.read_text(), undefined=SilentUndefined)
         log_header = template.render(
@@ -198,7 +198,7 @@ def setup_html_log(markata: "Markata", level: int = logging.INFO) -> Path:
                     {datetime.datetime.now()} running "{command}"
                 </span>
             </div>
-    """
+    """,
         )
     fh = logging.FileHandler(log_file)
     fh.setLevel(level)
@@ -212,7 +212,7 @@ def setup_html_log(markata: "Markata", level: int = logging.INFO) -> Path:
             </p>
             <p class="message">%(message)s</p>
         </li>
-        """
+        """,
     )
     fh.setFormatter(fh_formatter)
     logging.getLogger("").addHandler(fh)

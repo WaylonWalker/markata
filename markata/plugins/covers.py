@@ -93,10 +93,7 @@ def draw_text(
     bounding_box = [padding[0], padding[1], width - padding[2], height - padding[3]]
     max_size = (bounding_box[2] - bounding_box[0], bounding_box[3] - bounding_box[1])
     x1, y1, x2, y2 = bounding_box
-    if font_path:
-        font = get_font(font_path, draw, text, max_size=max_size)
-    else:
-        font = None
+    font = get_font(font_path, draw, text, max_size=max_size) if font_path else None
     w, h = draw.textsize(text, font=font)
     x = (x2 - x1 - w) / 2 + x1
     y = (y2 - y1 - h) / 2 + y1
@@ -133,10 +130,7 @@ def make_cover(
 ) -> None:
     if output_path.exists():
         return
-    if template_path:
-        image = Image.open(template_path)
-    else:
-        image = Image.new("RGB", (800, 450))
+    image = Image.open(template_path) if template_path else Image.new("RGB", (800, 450))
 
     draw_text(
         image=image,
@@ -155,7 +149,6 @@ def make_cover(
             )
         draw_text(image, text_font, text, text_font_color, text_padding)
 
-    # output_path.parent.mkdir(exist_ok=True)
     image.save(output_path)
     ratio = image.size[1] / image.size[0]
 
@@ -234,16 +227,16 @@ def save(markata: "Markata") -> None:
                     text_padding=text_padding,
                     resizes=cover.get("resizes"),
                     markata=markata,
-                )
+                ),
             )
 
     progress = Progress(
-        BarColumn(bar_width=None), transient=True, console=markata.console
+        BarColumn(bar_width=None), transient=True, console=markata.console,
     )
     task_id = progress.add_task("loading markdown")
     progress.update(task_id, total=len(futures))
     with progress:
-        while not all([f.done() for f in futures]):
+        while not all(f.done() for f in futures):
             time.sleep(0.1)
             progress.update(task_id, total=len([f for f in futures if f.done()]))
     [f.result() for f in futures]

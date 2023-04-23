@@ -47,13 +47,13 @@ def _save(output_dir: Path, article: frontmatter.Post) -> None:
 
 
 def _strip_unserializable_values(
-    markata: "Markata", article: frontmatter.Post
+    markata: "Markata", article: frontmatter.Post,
 ) -> frontmatter.Post:
     """
     Returns an article with only yaml serializable frontmatter.
     """
     _article = frontmatter.Post(
-        article.content, **{k: v for k, v in article.metadata.items() if k != "content"}
+        article.content, **{k: v for k, v in article.metadata.items() if k != "content"},
     )
     kwargs = {
         "Dumper": yaml.cyaml.CSafeDumper,
@@ -80,7 +80,6 @@ def save(markata: "Markata") -> None:
 
     """
     output_dir = Path(str(markata.config["output_dir"]))
-    # output_dir.mkdir(parents=True, exist_ok=True)
     for (
         article
     ) in markata.articles:  # iter_articles(description="saving source documents"):

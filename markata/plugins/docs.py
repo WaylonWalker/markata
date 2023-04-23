@@ -3,10 +3,10 @@ leading docstring
 """
 import ast
 import datetime
+import textwrap
 from os import path
 from pathlib import Path
-import textwrap
-from typing import List, TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 import frontmatter
 import jinja2
@@ -51,14 +51,14 @@ def glob(markata: "MarkataDocs") -> None:
 
     markata.py_files = list(Path().glob("**/*.py"))
 
-    content_directories = list(set([f.parent for f in markata.py_files]))
-    if "content_directories" in markata.__dict__.keys():
+    content_directories = list({f.parent for f in markata.py_files})
+    if "content_directories" in markata.__dict__:
         markata.content_directories.extend(content_directories)
     else:
         markata.content_directories = content_directories
 
     try:
-        ignore = markata.config.glob.use_gitignore or True
+        ignore = True
     except KeyError:
         ignore = True
 
@@ -92,7 +92,7 @@ def make_article(markata: "Markata", file: Path) -> frontmatter.Post:
     nodes = [
         n
         for n in ast.walk(tree)
-        if isinstance(n, ast.FunctionDef) or isinstance(n, ast.ClassDef)
+        if isinstance(n, (ast.FunctionDef, ast.ClassDef))
     ]
 
     edit_link = (
@@ -107,7 +107,7 @@ def make_article(markata: "Markata", file: Path) -> frontmatter.Post:
 
     jinja_env = jinja2.Environment()
     article = jinja_env.from_string(
-        (Path(__file__).parent / "default_doc_template.md").read_text()
+        (Path(__file__).parent / "default_doc_template.md").read_text(),
     ).render(
         ast=ast,
         file=file,

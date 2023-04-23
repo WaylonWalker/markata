@@ -25,8 +25,8 @@ def make_index(tmp_path: Any) -> Any:
             ---
 
             This is my awesome post.
-            """
-        )
+            """,
+        ),
     )
     return tmp_path
 

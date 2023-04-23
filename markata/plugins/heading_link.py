@@ -4,7 +4,7 @@ specific heading.
 """
 import re
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from bs4 import BeautifulSoup
 

@@ -76,14 +76,13 @@ class Runner:
         )
 
     def __rich__(self) -> Panel:
-        if self.proc:
-            if self.proc.poll() is None:
-                return Panel(
-                    Text(self.status_message),
-                    border_style=self.border,
-                    title=self.title,
-                    expand=True,
-                )
+        if self.proc and self.proc.poll() is None:
+            return Panel(
+                Text(self.status_message),
+                border_style=self.border,
+                title=self.title,
+                expand=True,
+            )
 
         if self.status == "running":
             self.status = "waiting"

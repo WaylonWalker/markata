@@ -82,7 +82,6 @@ from typing import Dict, List, Union
 
 import anyconfig
 
-# path_spec_type = List[Dict[str, Union[Path, str, List[str]]]]
 path_spec_type = List
 
 
@@ -213,7 +212,7 @@ def _load_env(tool: str) -> Dict:
     Args:
         tool (str): name of the tool to configure
     """
-    vars = [var for var in os.environ.keys() if var.startswith(tool.upper())]
+    vars = [var for var in os.environ if var.startswith(tool.upper())]
     return {
         var.lower().strip(tool.lower()).strip("_").strip("-"): os.environ[var]
         for var in vars

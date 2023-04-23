@@ -28,7 +28,7 @@ def test_head_config_text_dict(tmp_path):
 def test_head_config_text_str_toml(tmp_path):
     with set_directory(tmp_path):
         Path("markata.toml").write_text(
-            toml.dumps({"markata": {"head": {"text": "here"}}})
+            toml.dumps({"markata": {"head": {"text": "here"}}}),
         )
         m = Markata()
         post_template.configure(m)
@@ -39,8 +39,8 @@ def test_head_config_text_list_toml(tmp_path):
     with set_directory(tmp_path):
         Path("markata.toml").write_text(
             toml.dumps(
-                {"markata": {"head": {"text": [{"value": "one"}, {"value": "two"}]}}}
-            )
+                {"markata": {"head": {"text": [{"value": "one"}, {"value": "two"}]}}},
+            ),
         )
         m = Markata()
         post_template.configure(m)

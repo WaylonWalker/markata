@@ -150,7 +150,7 @@ def pre_render(markata: "Markata") -> None:
             value
             for description_key in config
             if (value := try_config_get(description_key))
-        ]
+        ],
     )
 
     with markata.cache as cache:

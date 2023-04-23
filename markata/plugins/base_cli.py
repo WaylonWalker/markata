@@ -146,8 +146,8 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
     @new_app.command()
     def blog(
         directory: Path = typer.Argument(
-            ..., help="The directory to create the blog in."
-        )
+            ..., help="The directory to create the blog in.",
+        ),
     ) -> None:
         """
         Create a new blog from using the template from
@@ -158,7 +158,7 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
 
         typer.echo(f"creating a new project in {directory.absolute()}")
         url = markata.config.get("starters", {}).get(
-            "blog", "git+https://github.com/WaylonWalker/markata-blog-starter"
+            "blog", "git+https://github.com/WaylonWalker/markata-blog-starter",
         )
         run_auto(url, directory)
 
@@ -174,7 +174,7 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
 
         typer.echo(f"creating a new post in {Path().absolute()}/posts")
         url = markata.config.get("starters", {}).get(
-            "post", "git+https://github.com/WaylonWalker/markata-post-template"
+            "post", "git+https://github.com/WaylonWalker/markata-post-template",
         )
         run_auto(url, Path("."))
 
@@ -188,10 +188,10 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
 
         typer.echo(
             f"creating a new plugin in {Path().absolute()}"
-            f"/<python-package-name>/plugins"
+            f"/<python-package-name>/plugins",
         )
         url = markata.config.get("starters", {}).get(
-            "post", "git+https://github.com/WaylonWalker/markata-plugin-template"
+            "post", "git+https://github.com/WaylonWalker/markata-plugin-template",
         )
         run_auto(url, Path("."))
 
@@ -528,18 +528,18 @@ def _clean(markata, quiet: bool = False, dry_run: bool = False):
 
     markata.console.log(
         f'{"[DRYRUN]" if dry_run else ""}'
-        f"removing outptut directory: {markata.config.output_dir}"
+        f"removing outptut directory: {markata.config.output_dir}",
     )
     if not dry_run:
         try:
             shutil.rmtree(str(markata.config.output_dir))
         except FileNotFoundError:
             warnings.warn(
-                f"output directory: {markata.config.output_dir} does not exist"
+                f"output directory: {markata.config.output_dir} does not exist",
             )
 
     markata.console.log(
-        f'{"[DRYRUN]" if dry_run else ""} removing cache directory: .markata.cache'
+        f'{"[DRYRUN]" if dry_run else ""} removing cache directory: .markata.cache',
     )
     if not dry_run:
         try:

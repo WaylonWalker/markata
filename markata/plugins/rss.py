@@ -31,7 +31,7 @@ def render(markata: "MarkataRss") -> None:
         {
             "name": name,
             "email": email,
-        }
+        },
     )
     fg.link(href=url, rel="alternate")
     fg.logo(icon)
@@ -40,7 +40,7 @@ def render(markata: "MarkataRss") -> None:
     fg.language(lang)
 
     try:
-        all_posts = reversed(sorted(markata.articles, key=lambda x: x["date"]))
+        all_posts = sorted(markata.articles, key=lambda x: x["date"], reverse=True)
         posts = [post for post in all_posts if post["published"] == "True"]
     except BaseException:
         posts = markata.articles

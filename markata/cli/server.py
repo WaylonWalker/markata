@@ -1,6 +1,6 @@
 import atexit
-from pathlib import Path
 import time
+from pathlib import Path
 from typing import Union
 
 from rich.panel import Panel
@@ -25,7 +25,7 @@ class Server:
         auto_restart: bool = True,
         directory: Union[str, "Path"] = None,
         port: int = 8000,
-    ):
+    ) -> None:
         if directory is None:
             from markata import Markata
 
@@ -88,7 +88,7 @@ class Server:
 
         else:
             return Panel(
-                "[red]server died", title=self.title, border_style="red", expand=True
+                "[red]server died", title=self.title, border_style="red", expand=True,
             )
 
 

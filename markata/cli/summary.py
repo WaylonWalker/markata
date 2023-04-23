@@ -112,7 +112,7 @@ class Summary:
         return self.grid
 
     def filter_count(
-        self, title: str, filter: str = "True", color: str = "white"
+        self, title: str, filter: str = "True", color: str = "white",
     ) -> None:
         "add a row in the grid for the number of items in a filter config"
         self.grid.add_row(f"[{color}]{len(self.m.map(filter=filter))}[/] {title}")
@@ -125,8 +125,8 @@ class Summary:
                     tags if isinstance(tags, list) else [tags]
                     for a in self.m.articles
                     if (tags := a.get(attr, None)) is not None
-                ]
-            )
+                ],
+            ),
         )
         if len(posts) > 0:
             self.grid.add_row()
@@ -143,7 +143,7 @@ class Summary:
             return grid
         else:
             return Panel(
-                grid, title="[gold1]summary[/]", border_style="magenta", expand=False
+                grid, title="[gold1]summary[/]", border_style="magenta", expand=False,
             )
 
 

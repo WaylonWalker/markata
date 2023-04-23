@@ -69,13 +69,11 @@ html  {
 ```
 
 """
-import copy
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, List
 
 import jinja2
 import pydantic
-from deepmerge import always_merger
 from jinja2 import Template, Undefined
 from more_itertools import flatten
 
@@ -152,7 +150,7 @@ def configure(markata: "Markata") -> None:
 
     if isinstance(raw_text, list):
         markata.config["head"]["text"] = "\n".join(
-            flatten([t.values() for t in raw_text])
+            flatten([t.values() for t in raw_text]),
         )
 
 
@@ -164,12 +162,12 @@ def pre_render(markata: "Markata") -> None:
     allowing an simpler jinja template.  This enablees the use of the
     `markata.head.text` list in configuration.
     """
-    for article in [a for a in markata.articles if "config_overrides" in a.keys()]:
+    for article in [a for a in markata.articles if "config_overrides" in a]:
         raw_text = article.get("config_overrides", {}).get("head", {}).get("text", "")
 
         if isinstance(raw_text, list):
             article["config_overrides"]["head"]["text"] = "\n".join(
-                flatten([t.values() for t in raw_text])
+                flatten([t.values() for t in raw_text]),
             )
 
 
@@ -183,42 +181,28 @@ def render(markata: "Markata") -> None:
         template = Template(f.read(), undefined=SilentUndefined)
 
     if "{{" in str(markata.config.get("head", {})):
-        head_template = Template(
-            str(markata.config.get("head", {})), undefined=SilentUndefined
+        Template(
+            str(markata.config.get("head", {})), undefined=SilentUndefined,
         )
     else:
-        head_template = None
-        head = {}
+        pass
 
-    # _full_config = copy.deepcopy(markata.config)
 
     merged_config = markata.config
     for article in [a for a in markata.articles if hasattr(a, "html")]:
         # if head_template:
-        #     head = eval(
         #         head_template.render(
-        #             __version__=__version__,
-        #             config=_full_config,
         #             **article,
-        #         )
-        #     )
 
-        # merged_config = {
         #     **_full_config,
         #     **{"head": head},
-        # }
 
-        # merged_config = always_merger.merge(
         #     merged_config,
         #     copy.deepcopy(
         #         article.get(
         #             "config_overrides",
-        #             {},
-        #         )
         #     ),
-        # )
 
-        # markata.console.log(f'rendering {article.title}')
         article.html = template.render(
             __version__=__version__,
             body=article.html,
@@ -226,4 +210,3 @@ def render(markata: "Markata") -> None:
             config=merged_config,
             **article.metadata,
         )
-        # markata.console.log(f"rendered {article.title}")

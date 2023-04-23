@@ -12,8 +12,8 @@ if TYPE_CHECKING:
 @hook_impl
 @register_attr("Post", "Config")
 def create_models(markata: "Markata") -> None:
-    post_models = tuple(list(unique_everseen(markata.post_models)))
+    post_models = tuple(unique_everseen(markata.post_models))
     markata.Post = create_model("Post", __base__=post_models)
     markata.Config = create_model(
-        "Config", __base__=tuple(unique_everseen(markata.config_models))
+        "Config", __base__=tuple(unique_everseen(markata.config_models)),
     )

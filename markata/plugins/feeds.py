@@ -208,10 +208,6 @@ class FeedConfig(pydantic.BaseModel):
                 """
     template: str = Path(__file__).parent / "default_post_template.html"
 
-    # @pydantic.validator("slug", pre=True, always=True)
-    # def default_slug(cls, v, *, values):
-    #     return v or slugify(str(values.get("title")))
-
     @pydantic.validator("name", pre=True, always=True)
     def default_name(cls, v, *, values):
         return v or str(values.get("slug")).replace("-", "_")
@@ -247,7 +243,6 @@ class Feed:
     """
 
     config: FeedConfig
-    # posts: list
     _m: Markata
 
     @property
@@ -325,7 +320,7 @@ class Feeds:
     ```
     """
 
-    def __init__(self, markata: Markata):
+    def __init__(self, markata: Markata) -> None:
         self._m = markata
         self.config = {f.name: f for f in markata.config.feeds}
         self.refresh()
@@ -345,10 +340,10 @@ class Feeds:
         return iter(self.config.keys())
 
     def values(self):
-        return [self[feed] for feed in self.config.keys()]
+        return [self[feed] for feed in self.config]
 
     def items(self):
-        return [(key, self[key]) for key in self.config.keys()]
+        return [(key, self[key]) for key in self.config]
 
     def __getitem__(self, key: str) -> Any:
         return getattr(self, key.replace("-", "_").lower())
@@ -371,7 +366,7 @@ class Feeds:
         table.add_column("posts", justify="left", style="green")
         table.add_column("config", style="magenta")
 
-        for name in self.config.keys():
+        for name in self.config:
             table.add_row(
                 name,
                 str(len(self[name].posts)),
@@ -392,19 +387,10 @@ def configure(markata: Markata) -> None:
     configure the default values for the feeds plugin
     """
     # if "feeds" not in markata.config.keys():
-    #     markata.config["feeds"] = dict()
-    # config = markata.config.get("feeds", dict())
     # if "archive" not in config.keys():
-    #     config["archive"] = dict()
-    #     config["archive"]["filter"] = "True"
-
-    # default_post_template = markata.config.get("feeds_config", {}).get(
-    #     "template", Path(__file__).parent / "default_post_template.html"
-    # )
 
     # for page, page_conf in config.items():
     #     if "template" not in page_conf.keys():
-    #         page_conf["template"] = default_post_template
 
 
 @hook_impl
@@ -421,10 +407,6 @@ def save(markata: Markata) -> None:
     """
     Creates a new feed page for each page in the config.
     """
-    # feeds = markata.config.get("feeds", {})
-
-    # description = markata.get_config("description") or ""
-    # url = markata.get_config("url") or ""
 
     for feed in markata.feeds.values():
         create_page(
@@ -453,7 +435,6 @@ def create_page(
     cards.append("</ul>")
 
     # if template is None:
-    #     template = Path(__file__).parent / "default_post_template.html"
 
     template = Template(feed.config.template, undefined=SilentUndefined)
     output_file = Path(markata.config["output_dir"]) / feed.config.slug / "index.html"
@@ -476,7 +457,9 @@ def create_page(
 
 
 def create_card(
-    markata: "Markata", post: "Post", template: Optional[str] = None
+    markata: "Markata",
+    post: "Post",
+    template: Optional[str] = None,
 ) -> Any:
     """
     Creates a card for one post based on the configured template.  If no
@@ -487,7 +470,7 @@ def create_card(
         template = markata.config.get("feeds_config", {}).get("card_template", None)
 
     if template is None:
-        if "date" in post.keys():
+        if "date" in post:
             return textwrap.dedent(
                 f"""
                 <li class='post'>
@@ -498,7 +481,7 @@ def create_card(
                     {post['date'].day}
                 </a>
                 </li>
-                """
+                """,
             )
         else:
             return textwrap.dedent(
@@ -508,7 +491,7 @@ def create_card(
                     {post['title']}
                 </a>
                 </li>
-                """
+                """,
             )
     try:
         _template = Template(Path(template).read_text())

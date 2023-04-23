@@ -75,7 +75,6 @@ def post_render(markata: "Markata") -> None:
 @hook_impl
 def save(markata: "Markata") -> None:
     output_dir = Path(str(markata.config["output_dir"]))
-    # output_dir.mkdir(parents=True, exist_ok=True)
     for post in markata.iter_articles(description="saving source documents"):
         with open(output_dir / Path(post["slug"]) / "dev.md", "w+") as f:
             f.write(frontmatter.dumps(post.dev_to))

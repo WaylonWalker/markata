@@ -132,7 +132,6 @@ markdown.
 ```
 
 """
-import copy
 from pathlib import Path
 from typing import TYPE_CHECKING, List
 
@@ -140,7 +139,6 @@ import jinja2
 import pathspec
 import pkg_resources
 import pydantic
-from deepmerge import always_merger
 from jinja2 import TemplateSyntaxError, Undefined, UndefinedError, nodes
 from jinja2.ext import Extension
 
@@ -167,7 +165,7 @@ class IncludeRawExtension(Extension):
         line_number = next(parser.stream).lineno
         file = [parser.parse_expression()]
         return nodes.CallBlock(
-            self.call_method("_read_file", file), [], [], ""
+            self.call_method("_read_file", file), [], [], "",
         ).set_lineno(line_number)
 
     def _read_file(self, file, caller):

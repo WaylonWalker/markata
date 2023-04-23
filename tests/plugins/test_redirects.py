@@ -3,15 +3,15 @@ Tests the redirects plugin
 """
 from pathlib import Path
 
-from conftest import set_directory
 import pytest
+from conftest import set_directory
 
 from markata import Markata
 from markata.plugins import redirects
 
 
 @pytest.mark.parametrize(
-    "tmp_files, old, new",
+    ("tmp_files", "old", "new"),
     [
         ({"static/_redirects": "old new"}, "old", "new"),
         ({"static/_redirects": "post_one post-one"}, "post_one", "post-one"),
@@ -32,7 +32,7 @@ def test_redirect_exists(tmp_files: Path, old: str, new: str) -> None:
 
 
 @pytest.mark.parametrize(
-    "tmp_files, old",
+    ("tmp_files", "old"),
     [
         ({"static/_redirects": "posts/* pages/:splat/"}, "posts"),
         ({"static/_redirects": "posts/*/2000 pages/:splat/2000"}, "posts"),
@@ -49,7 +49,7 @@ def test_redirect_ignore_splat(tmp_files: Path, old: str) -> None:
 
 
 @pytest.mark.parametrize(
-    "tmp_files, old",
+    ("tmp_files", "old"),
     [
         ({"static/_redirects": "/blog/ /blog/404.html 404"}, "posts"),
         ({"static/_redirects": "/blog/ /blog/301.html 301"}, "posts"),
@@ -67,7 +67,7 @@ def test_redirect_ignore_more_params(tmp_files: Path, old: str) -> None:
 
 
 @pytest.mark.parametrize(
-    "tmp_files, redirect_file, old, new",
+    ("tmp_files", "redirect_file", "old", "new"),
     [
         ({"static/_redirects": "old new"}, "static/_redirects", "old", "new"),
         ({"_redirects": "old new"}, "_redirects", "old", "new"),
@@ -76,7 +76,7 @@ def test_redirect_ignore_more_params(tmp_files: Path, old: str) -> None:
     indirect=["tmp_files"],
 )
 def test_redirect_configure_redirect_file(
-    tmp_files: Path, redirect_file: str, old: str, new: str
+    tmp_files: Path, redirect_file: str, old: str, new: str,
 ) -> None:
     "ensure that the redirects file can be configured"
     with set_directory(tmp_files):
@@ -92,7 +92,7 @@ def test_redirect_configure_redirect_file(
 
 
 @pytest.mark.parametrize(
-    "tmp_files, redirect_template, old, new",
+    ("tmp_files", "redirect_template", "old", "new"),
     [
         (
             {
@@ -116,7 +116,7 @@ def test_redirect_configure_redirect_file(
     indirect=["tmp_files"],
 )
 def test_redirect_custom_template(
-    tmp_files: Path, redirect_template: str, old: str, new: str
+    tmp_files: Path, redirect_template: str, old: str, new: str,
 ) -> None:
     "ensure the template can be configured"
     with set_directory(tmp_files):
@@ -129,7 +129,7 @@ def test_redirect_custom_template(
 
 
 @pytest.mark.parametrize(
-    "tmp_files, old, new",
+    ("tmp_files", "old", "new"),
     [
         (
             {

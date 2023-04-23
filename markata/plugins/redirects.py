@@ -72,9 +72,8 @@ implementation.
     moved without you realizing.
 
 """
-from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, Optional, Self
+from typing import Dict, Optional, Self
 
 import pydantic
 from jinja2 import Template

@@ -85,9 +85,9 @@ config = {markata = "markata"}
 
 """
 import copy
-from enum import Enum
 import importlib
-from typing import Dict, List, Optional, TYPE_CHECKING
+from enum import Enum
+from typing import TYPE_CHECKING, Dict, List, Optional
 
 import markdown
 import pydantic
@@ -200,7 +200,7 @@ def configure(markata: "MarkataMarkdown") -> None:
             markata.md.disable(plugin)
 
         plugins = copy.deepcopy(
-            markata.config.get("markdown_it_py", {}).get("plugins", [])
+            markata.config.get("markdown_it_py", {}).get("plugins", []),
         )
         for plugin in plugins:
             if isinstance(plugin["plugin"], str):
@@ -212,7 +212,7 @@ def configure(markata: "MarkataMarkdown") -> None:
                     plugin_func,
                 )
             plugin["config"] = plugin.get("config", {})
-            for k, v in plugin["config"].items():
+            for k, _v in plugin["config"].items():
                 if k == "markata":
                     plugin["config"][k] = markata
 
@@ -238,13 +238,11 @@ def configure(markata: "MarkataMarkdown") -> None:
 
 
 # class RenderMarkdown(pydantic.BaseModel):
-#     html: str = None
 
 
 # @hook_impl
 # @register_attr("post_models")
 # def post_model(markata: "Markata") -> None:
-#     markata.post_models.append(RenderMarkdown)
 
 
 @hook_impl(tryfirst=True)

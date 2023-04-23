@@ -10,7 +10,7 @@ from markata.hookspec import hook_impl
 
 
 class MarkataWidget(Widget):
-    def __init__(self, markata: Markata, widget: str = "server"):
+    def __init__(self, markata: Markata, widget: str = "server") -> None:
         super().__init__(widget)
         self.m = markata
         self.widget = widget

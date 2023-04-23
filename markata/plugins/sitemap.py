@@ -18,11 +18,11 @@ def render(markata: Markata) -> None:
                     "loc": url + "/" + article["slug"] + "/",
                     "changefreq": "daily",
                     "priority": "0.7",
-                }
+                },
             }
             for article in markata.articles
             if article["published"] == "True"
-        ]
+        ],
     }
 
     sitemap = (
@@ -42,7 +42,7 @@ def render(markata: Markata) -> None:
         )
         .replace("</url>", "</url>\n")
     )
-    setattr(markata, "sitemap", sitemap)
+    markata.sitemap = sitemap
 
 
 @hook_impl

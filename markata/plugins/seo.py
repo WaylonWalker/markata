@@ -29,7 +29,7 @@ def _create_seo(
     if article.metadata["description"] == "" or None:
         try:
             article.metadata["description"] = " ".join(
-                [p.text for p in soup.find(id="post-body").find_all("p")]
+                [p.text for p in soup.find(id="post-body").find_all("p")],
             ).strip()[:120]
         except AttributeError:
             article.metadata["description"] = ""
@@ -139,8 +139,8 @@ def _create_seo_tag(meta: dict, soup: BeautifulSoup) -> "Tag":
 
 def _get_or_warn(config: Dict, key: str, default: str) -> Any:
     if key not in config.keys():
-        logger.warn(
-            f"{key} is missing from markata.toml config, using default value {default}"
+        logger.warning(
+            f"{key} is missing from markata.toml config, using default value {default}",
         )
     return config.get(key, default)
 
@@ -205,10 +205,7 @@ def render(markata: Markata) -> None:
                     meta_url.attrs["content"] = f'{url}/{article.metadata["slug"]}/'
                 soup.head.append(meta_url)
 
-                if should_prettify:
-                    html = soup.prettify()
-                else:
-                    html = str(soup)
+                html = soup.prettify() if should_prettify else str(soup)
                 cache.add(key, html, expire=markata.config["default_cache_expire"])
 
             else:

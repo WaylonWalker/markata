@@ -5,7 +5,7 @@ from markata.plugins import flat_slug
 
 
 @pytest.mark.parametrize(
-    "article, slug",
+    ("article", "slug"),
     [
         ({"slug": "post_one"}, "post-one"),
         ({"slug": "post-one"}, "post-one"),
@@ -29,7 +29,7 @@ def test_flat_slug(article, slug) -> None:
 
 
 @pytest.mark.parametrize(
-    "article, slug",
+    ("article", "slug"),
     [
         ({"path": "post_one.md"}, "post-one"),
         ({"path": "post-one.md"}, "post-one"),
@@ -51,7 +51,7 @@ def test_flat_slug_path(article, slug) -> None:
 
 
 @pytest.mark.parametrize(
-    "article, slug",
+    ("article", "slug"),
     [
         ({"title": "post_one"}, "post-one"),
         ({"title": "post-one"}, "post-one"),

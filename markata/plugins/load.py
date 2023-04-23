@@ -19,18 +19,14 @@ if TYPE_CHECKING:
 class ValidationError(ValueError):
     ...
 
-    # def __iter__(self):
-    #     return iter(self.__root__)
-
-    # def __getitem__(self, item):
-    #     return self.__root__[item]
-
 
 @hook_impl
 @register_attr("articles", "posts")
 def load(markata: "MarkataMarkdown") -> None:
-    progress = Progress(
-        BarColumn(bar_width=None), transient=True, console=markata.console
+    Progress(
+        BarColumn(bar_width=None),
+        transient=True,
+        console=markata.console,
     )
     if not markata.config.get("repo_url", "https://github.com/").endswith("/"):
         markata.config["repo_url"] = (
@@ -42,12 +38,10 @@ def load(markata: "MarkataMarkdown") -> None:
     )
     markata.console.log(f"found {len(markata.files)} posts")
     markata.posts_obj = Posts.parse_obj(
-        {"posts": [get_post(article, markata) for article in markata.files]}
+        {"posts": [get_post(article, markata) for article in markata.files]},
     )
     markata.posts = markata.posts_obj.posts
     markata.articles = markata.posts
-
-    # markata.console.log(f"loaded {len(markata.articles)} posts")
 
 
 def get_post(path: Path, markata: "Markata") -> Optional[Callable]:
@@ -68,7 +62,7 @@ def get_models(markata: "Markata", error: pydantic.ValidationError) -> List:
         itertools.product(
             fields,
             markata.post_models,
-        )
+        ),
     ):
         if field in model.__fields__:
             models[field] += f"'{model.__module__}.{model.__name__}'"
@@ -88,7 +82,6 @@ def pydantic_get_post(path: Path, markata: "Markata") -> Optional[Callable]:
         + str(path)
     )
 
-    # post = markata.Post(**fm_post.metadata, markata=markata)
     try:
         post = markata.Post(**fm_post.metadata, markata=markata)
 
@@ -98,11 +91,6 @@ def pydantic_get_post(path: Path, markata: "Markata") -> Optional[Callable]:
         models = list(models.values())
         models = "\n".join(models)
         raise ValidationError(f"{e}\n\n{models}\nfailed to load {path}") from e
-    # msg = "\n".join([err.msg for err in e.errors])  # .replace("Post", str(path))
-    # msg = type(e.errors)
-    # msg = f"failed on post {path}"
-    # markata.console.log(msg)
-    # sys.exit(1)
 
     return post
 

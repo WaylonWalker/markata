@@ -23,7 +23,6 @@ class Post(pydantic.BaseModel):
 
     class Config:
         arbitrary_types_allowed = True
-        # json_encoders = {datetime.datetime: lambda x: x.isoformat()}
 
     def __repr_args__(self: "Post") -> "ReprArgs":
         return [
@@ -58,22 +57,22 @@ class Post(pydantic.BaseModel):
         return self.__dict__.keys()
 
     def json(
-        self: "Post", include: Iterable = None, all: bool = False, **kwargs
+        self: "Post", include: Iterable = None, all: bool = False, **kwargs,
     ) -> str:
         """
         override function to give a default include value that will include
         user configured includes.
         """
         if all:
-            return pydantic.create_model("Post", **self,)(**self).json(
+            return pydantic.create_model("Post", **self)(**self).json(
                 **kwargs,
             )
         if include:
-            return pydantic.create_model("Post", **self,)(**self).json(
+            return pydantic.create_model("Post", **self)(**self).json(
                 include=include,
                 **kwargs,
             )
-        return pydantic.create_model("Post", **self,)(**self).json(
+        return pydantic.create_model("Post", **self)(**self).json(
             include={i: True for i in self.markata.config.post_model.include},
             **kwargs,
         )
@@ -85,23 +84,19 @@ class Post(pydantic.BaseModel):
         import yaml
 
         return yaml.dump(
-            self.dict(include={i: True for i in self.markata.config.post_model.include})
+            self.dict(include={i: True for i in self.markata.config.post_model.include}),
         )
 
     # def __init__(self, **data) -> None:
-    #     _full_config = copy.deepcopy(data.get("config", {}))
     #     data["config"] = dict(
     #         always_merger.merge(
     #             _full_config,
     #             copy.deepcopy(
     #                 data.get(
     #                     "config_overrides",
-    #                     {},
     #                 ),
     #             ),
     #         ),
-    #     )
-    #     super().__init__(**data)
 
     def dumps(self):
         """
@@ -122,7 +117,7 @@ class Post(pydantic.BaseModel):
 class PostModelConfig(pydantic.BaseModel):
     "Configuration for the Post model"
 
-    def __init__(self, **data):
+    def __init__(self, **data) -> None:
         """
 
         include: post attributes to include by default in Post

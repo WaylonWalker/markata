@@ -13,10 +13,7 @@ if TYPE_CHECKING:
 
 @hook_impl
 def render(markata: "MarkataIcons") -> None:
-    if "icons" in markata.__dict__.keys():
-        icons = markata.icons
-    else:
-        icons = []
+    icons = markata.icons if "icons" in markata.__dict__ else []
     manifest = {
         "name": markata.get_config("site_name") or "",
         "short_name": markata.get_config("short_name") or "",
@@ -28,7 +25,6 @@ def render(markata: "MarkataIcons") -> None:
         "icons": icons,
     }
     filepath = Path(markata.config["output_dir"]) / "manifest.json"
-    # filepath.parent.mkdir(parents=True, exist_ok=True)
     filepath.touch(exist_ok=True)
     with open(filepath, "w+") as f:
         json.dump(manifest, f, ensure_ascii=True, indent=4)
@@ -51,10 +47,7 @@ def render(markata: "MarkataIcons") -> None:
                 link.attrs["href"] = "/manifest.json"
                 soup.head.append(link)
 
-                if should_prettify:
-                    html = soup.prettify()
-                else:
-                    html = str(soup)
+                html = soup.prettify() if should_prettify else str(soup)
                 cache.add(key, html, expire=config["cache_expire"])
             else:
                 html = html_from_cache
