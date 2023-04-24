@@ -9,7 +9,7 @@ from markata.hookspec import hook_impl, register_attr
 @hook_impl
 @register_attr("sitemap")
 def render(markata: Markata) -> None:
-    url = markata.get_config("url") or ""
+    url = markata.url
 
     sitemap = {
         "urlset": [

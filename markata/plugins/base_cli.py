@@ -78,16 +78,16 @@ create new things from templates
 ```
 
 """
+from pathlib import Path
 import pdb
 import shutil
 import sys
 import traceback
+from typing import Callable, Optional, TYPE_CHECKING
 import warnings
-from pathlib import Path
-from typing import TYPE_CHECKING, Callable, Optional
 
-import typer
 from rich import print as rich_print
+import typer
 
 from markata.hookspec import hook_impl
 
@@ -146,7 +146,8 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
     @new_app.command()
     def blog(
         directory: Path = typer.Argument(
-            ..., help="The directory to create the blog in.",
+            ...,
+            help="The directory to create the blog in.",
         ),
     ) -> None:
         """
@@ -158,7 +159,8 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
 
         typer.echo(f"creating a new project in {directory.absolute()}")
         url = markata.config.get("starters", {}).get(
-            "blog", "git+https://github.com/WaylonWalker/markata-blog-starter",
+            "blog",
+            "git+https://github.com/WaylonWalker/markata-blog-starter",
         )
         run_auto(url, directory)
 
@@ -174,7 +176,8 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
 
         typer.echo(f"creating a new post in {Path().absolute()}/posts")
         url = markata.config.get("starters", {}).get(
-            "post", "git+https://github.com/WaylonWalker/markata-post-template",
+            "post",
+            "git+https://github.com/WaylonWalker/markata-post-template",
         )
         run_auto(url, Path("."))
 
@@ -191,7 +194,8 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
             f"/<python-package-name>/plugins",
         )
         url = markata.config.get("starters", {}).get(
-            "post", "git+https://github.com/WaylonWalker/markata-plugin-template",
+            "post",
+            "git+https://github.com/WaylonWalker/markata-plugin-template",
         )
         run_auto(url, Path("."))
 
@@ -520,6 +524,13 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
         ```
         """
         _clean(markata=markata, quiet=quiet, dry_run=dry_run)
+
+    @app.command()
+    def serve():
+        """
+        Serve the site locally.
+        """
+        markata.serve()
 
 
 def _clean(markata, quiet: bool = False, dry_run: bool = False):

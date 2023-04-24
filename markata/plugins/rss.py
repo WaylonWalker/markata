@@ -17,13 +17,13 @@ if TYPE_CHECKING:
 @hook_impl(trylast=True)
 def render(markata: "MarkataRss") -> None:
     fg = FeedGenerator()
-    url = markata.get_config("url") or ""
-    title = markata.get_config("title") or "rss_feed"
-    name = markata.get_config("author_name") or ""
-    email = markata.get_config("author_email") or ""
-    icon = markata.get_config("icon") or ""
-    lang = markata.get_config("lang") or ""
-    rss_description = markata.get_config("rss_description") or "rss_feed"
+    url = markata.config.url
+    title = markata.config.title
+    name = markata.config.author_name
+    email = markata.config.author_email
+    icon = markata.config.icon
+    lang = markata.config.lang
+    rss_description = markata.config.rss_description
 
     fg.id(url + "/rss.xml")
     fg.title(title)

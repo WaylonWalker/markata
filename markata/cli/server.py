@@ -1,9 +1,10 @@
 import atexit
-import time
 from pathlib import Path
+import time
 from typing import Union
 
 from rich.panel import Panel
+import typer
 
 from markata.hookspec import hook_impl, register_attr
 
@@ -88,7 +89,10 @@ class Server:
 
         else:
             return Panel(
-                "[red]server died", title=self.title, border_style="red", expand=True,
+                "[red]server died",
+                title=self.title,
+                border_style="red",
+                expand=True,
             )
 
 
@@ -107,13 +111,29 @@ def configure(markata: "Markata") -> None:
     Markata.server = property(get_server)
 
 
-if __name__ == "__main__":
+def run_server() -> None:
     from rich.live import Live
 
     from markata import Markata
 
     from .cli import run_until_keyboard_interrupt
 
-    m = Markata()
     with Live(Server(), refresh_per_second=1, screen=True):
         run_until_keyboard_interrupt()
+
+
+@hook_impl()
+def cli(app: typer.Typer, markata: "Markata") -> None:
+    server_app = typer.Typer()
+    app.add_typer(server_app)
+
+    @server_app.callback(invoke_without_command=True)
+    def serve():
+        """
+        Serve the site locally.
+        """
+        run_server()
+
+
+if __name__ == "__main__":
+    run_server()

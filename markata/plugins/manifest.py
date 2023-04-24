@@ -15,13 +15,13 @@ if TYPE_CHECKING:
 def render(markata: "MarkataIcons") -> None:
     icons = markata.icons if "icons" in markata.__dict__ else []
     manifest = {
-        "name": markata.get_config("site_name") or "",
-        "short_name": markata.get_config("short_name") or "",
-        "start_url": markata.get_config("start_url") or "",
-        "display": markata.get_config("display") or "",
-        "background_color": markata.get_config("background_color") or "",
-        "theme_color": markata.get_config("theme_color") or "",
-        "description": markata.get_config("description") or "",
+        "name": markata.config.site_name,
+        "short_name": markata.config.short_name,
+        "start_url": markata.config.start_url,
+        "display": markata.config.display,
+        "background_color": markata.config.background_color,
+        "theme_color": markata.config.theme_color,
+        "description": markata.config.description,
         "icons": icons,
     }
     filepath = Path(markata.config["output_dir"]) / "manifest.json"

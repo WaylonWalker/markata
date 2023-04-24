@@ -49,7 +49,7 @@ class Config(pydantic.BaseModel):
 class FlatSlugPost(pydantic.BaseModel):
     markata: Markata
     should_slugify: Optional[bool] = None
-    slug: str = None
+    # slug: str = None
 
     class Config:
         validate_assignment = True
@@ -88,7 +88,8 @@ def pre_render(markata: "Markata") -> None:
     """
     for article in markata.iter_articles(description="creating slugs"):
         stem = article.get(
-            "slug", Path(article.get("path", article.get("title", ""))).stem,
+            "slug",
+            Path(article.get("path", article.get("title", ""))).stem,
         )
         if article.should_slugify:
             article.slug = "/".join([slugify(s) for s in stem.split("/")])

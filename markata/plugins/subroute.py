@@ -14,7 +14,7 @@ class Config(pydantic.BaseModel):
 
 class SubroutePost(pydantic.BaseModel):
     markata: Markata
-    slug: Path
+    # slug: Path
 
     class Config:
         validate_assignment = True

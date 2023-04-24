@@ -4,6 +4,7 @@ from typing import Any, Dict, Iterable, List, Optional
 
 import pydantic
 from slugify import slugify
+from polyfactory.factories.pydantic_factory import ModelFactory
 
 from markata import Markata
 from markata.hookspec import hook_impl, register_attr
@@ -84,7 +85,8 @@ class Post(pydantic.BaseModel):
         import yaml
 
         return yaml.dump(
-            self.dict(include={i: True for i in self.markata.config.post_model.include}),
+            self.dict(
+                include={i: True for i in self.markata.config.post_model.include}),
         )
 
     # def __init__(self, **data) -> None:
@@ -111,7 +113,8 @@ class Post(pydantic.BaseModel):
 
     @pydantic.validator("slug", pre=True, always=True)
     def default_slug(cls, v, *, values):
-        return v or slugify(str(values.get("path")))
+        # breakpoint()
+        return v or slugify(str(values["path"].stem))
 
 
 class PostModelConfig(pydantic.BaseModel):
@@ -174,3 +177,7 @@ def post_model(markata: "Markata") -> None:
 @hook_impl(tryfirst=True)
 def config_model(markata: "Markata") -> None:
     markata.config_models.append(Config)
+
+
+class PostFactory(ModelFactory):
+    __model__ = Post

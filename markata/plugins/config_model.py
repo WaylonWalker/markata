@@ -1,19 +1,21 @@
 from typing import TYPE_CHECKING, Optional
 
 import pydantic
+from polyfactory.factories.pydantic_factory import ModelFactory
 
 from markata import standard_config
 from markata.hookspec import hook_impl, register_attr
 from pathlib import Path
+
 
 if TYPE_CHECKING:
     from markata import Markata
 
 
 class Config(pydantic.BaseModel):
-    hooks: list = ["default"]
-    disabled_hooks: list = []
-    markdown_extensions: list = []
+    hooks: list[str] = ["default"]
+    disabled_hooks: list[str] = []
+    markdown_extensions: list[str] = []
     default_cache_expire: int = 3600
     output_dir: pydantic.DirectoryPath = "markout"
     assets_dir: Path = pydantic.Field(
@@ -85,5 +87,9 @@ def config_model(markata: "Markata") -> None:
 @hook_impl(tryfirst=True)
 @register_attr("config")
 def load_config(markata: "Markata") -> None:
-    markata.config = markata.Config.parse_obj(standard_config.load("markata"))
-    markata.config = markata.Config.parse_obj(standard_config.load("markata"))
+    if markata.config is None:
+        markata.config = markata.Config.parse_obj(standard_config.load("markata"))
+
+
+class ConfigFactory(ModelFactory):
+    __model__ = Config

@@ -55,7 +55,7 @@ lets you [make your home page](https://markata.dev/home-page/)
 
 """
 from pathlib import Path
-from typing import Dict, Union
+from typing import Dict, Optional
 
 import pydantic
 
@@ -81,8 +81,9 @@ from markata.hookspec import hook_impl, register_attr
 
 class OutputHTML(pydantic.BaseModel):
     markata: Markata
+    path: Path
     slug: str = None
-    output_html: Union[str, Path] = None
+    output_html: Path = None
 
     class Config:
         validate_assignment = True
@@ -90,26 +91,54 @@ class OutputHTML(pydantic.BaseModel):
 
     @pydantic.validator("output_html", always=True)
     @classmethod
-    def output_html_path(cls, v, *, values: Dict) -> Path:
-        if v:
-            v = Path(v)
-        return Path(
-            values["markata"].config.output_dir / values.get("slug") / "index.html",
-        )
+    def default_output_html(
+        cls: "OutputHTML", v: Optional[Path], *, values: Dict
+    ) -> Path:
+        if v is not None:
+            return v
+        if values["slug"] == "index":
+            return Path(values["markata"].config.output_dir / "index.html")
+        return Path(values["markata"].config.output_dir / values["slug"] / "index.html")
 
     @pydantic.validator("output_html")
     @classmethod
-    def output_html_relative(cls, v, *, values: Dict) -> Path:
-        if not v.relative_to(values["markata"].config.output_dir):
+    def output_html_relative(
+        cls: "OutputHTML", v: Optional[Path], *, values: Dict
+    ) -> Path:
+        if not v:
+            return v
+        if values["markata"].config.output_dir.absolute() not in v.absolute().parents:
             return values["markata"].config.output_dir / v
         return v
 
     @pydantic.validator("output_html")
     @classmethod
-    def output_html_exists(cls, v, *, values: Dict) -> Path:
+    def output_html_exists(
+        cls: "OutputHTML", v: Optional[Path], *, values: Dict
+    ) -> Path:
+        if not v:
+            return v
         if not v.parent.exists():
             v.parent.mkdir(parents=True, exist_ok=True)
         return v
+
+
+# @hook_impl
+# def pre_render(markata: "Markata") -> None:
+#     """
+#     Sets the `output_html` in the articles metadata.  If the output is
+#     explicitly given, it will make sure its in the `output_dir`, if it is not
+#     explicitly set it will use the articles slug.
+#     """
+
+#     for article in markata.articles:
+#         if not article.output_html:
+#             if article.slug == "index":
+#                 article.output_html = Path(markata.config.output_dir / "index.html")
+#             else:
+#                 article.output_html = Path(
+#                     markata.config.output_dir / article.slug / "index.html"
+#                 )
 
 
 @hook_impl
