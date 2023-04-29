@@ -60,7 +60,7 @@ markata build
 pipx run markata build
 ```
 
-### Building a Blog with Markata
+### Building a Blog with Markata _using a template_
 
 The markata cli includes a `new` command that will present you with questions
 to fill in the jinja variables in this repo.
