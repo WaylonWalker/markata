@@ -27,6 +27,14 @@ features you want.
 Markata is fully configurable through a `markata.toml` file, but the defaults
 allow to build your site right out of the box with nothing more than Markdown.
 
+### Installation
+
+`markata` is hosted on pypi and can be installed using pip.
+
+```bash
+python -m pip install markata
+```
+
 ### Create Some Content
 
 Make some `.md` files in your current working directory. By default, `markata`
