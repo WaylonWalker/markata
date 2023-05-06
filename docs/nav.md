@@ -1,11 +1,8 @@
 ---
 title: Creating your Navbar
 description: Guide to creating a navbar in markata using the default template.
+jinja: false
 ---
-
-{% for post in markata.feeds.docs.posts %}
-[{{post.title}}](/{{post.slug}})
-{% endfor %}
 
 Creating navbar links with the default markata templates is done by adding
 links in your `markata.toml` configuration within a `markata.nav` block.
@@ -47,7 +44,7 @@ appear.
 
 ```html
 <nav>
-  {% for text, link in config.get('nav', {}).items() %}
+  {% for text, link in markata.config.nav.items() %}
   <a href="{{link}}">{{text}}</a>
   {% endfor %}
 </nav>
