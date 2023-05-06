@@ -19,13 +19,13 @@ def find_port(port: int = 8000) -> int:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         if s.connect_ex(("localhost", port)) == 0:
             return find_port(port=port + 1)
-        else:
-            return port
+        return port
 
 
 class Server:
     def __init__(
-        self,
+        self: "Server",
+        *,
         auto_restart: bool = True,
         directory: Union[str, "Path"] = None,
         port: int = 8000,
@@ -116,8 +116,6 @@ def configure(markata: "Markata") -> None:
 
 def run_server() -> None:
     from rich.live import Live
-
-    from markata import Markata
 
     from .cli import run_until_keyboard_interrupt
 
