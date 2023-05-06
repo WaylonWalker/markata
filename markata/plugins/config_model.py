@@ -1,31 +1,32 @@
-from typing import TYPE_CHECKING, Optional
+from pathlib import Path
+from typing import Optional, TYPE_CHECKING
 
-import pydantic
 from polyfactory.factories.pydantic_factory import ModelFactory
+import pydantic
+from pydantic import AnyUrl, PositiveInt
+from pydantic.color import Color
 
 from markata import standard_config
 from markata.hookspec import hook_impl, register_attr
-from pathlib import Path
-
 
 if TYPE_CHECKING:
     from markata import Markata
 
 
-class Config(pydantic.BaseModel):
+class Config(pydantic.BaseSettings):
     hooks: list[str] = ["default"]
     disabled_hooks: list[str] = []
     markdown_extensions: list[str] = []
-    default_cache_expire: int = 3600
+    default_cache_expire: PositiveInt = 3600
     output_dir: pydantic.DirectoryPath = "markout"
     assets_dir: Path = pydantic.Field(
         Path("static"),
         description="The directory to store static assets",
     )
-    nav: dict = {"home": "/"}
+    nav: dict[str, AnyUrl] = {"home": "/"}
     site_version: int = 1
     markdown_backend: str = "markdown-it-py"
-    url: Optional[str] = None
+    url: Optional[AnyUrl] = None
     title: Optional[str] = None
     description: Optional[str] = None
     rss_description: Optional[str] = None
@@ -33,10 +34,10 @@ class Config(pydantic.BaseModel):
     author_email: Optional[str] = None
     icon: str = "icon.png"
     lang: str = "en"
-    repo_url: str = None
+    repo_url: Optional[AnyUrl] = None
     repo_branch: str = "main"
-    theme_color: str = "#322D39"
-    background_color: str = "#B73CF6"
+    theme_color: Color = "#322D39"
+    background_color: Color = "#B73CF6"
     start_url: str = "/"
     site_name: Optional[str] = None
     short_name: Optional[str] = None
@@ -45,6 +46,10 @@ class Config(pydantic.BaseModel):
     twitter_creator: Optional[str] = None
     twitter_site: Optional[str] = None
     path_prefix: Optional[str] = None
+
+    class Config:
+        env_prefix = "markata_"
+        extra = "allow"
 
     def __getitem__(self, item):
         "for backwards compatability"
@@ -64,11 +69,12 @@ class Config(pydantic.BaseModel):
 
     def toml(self: "Config") -> str:
         import tomlkit
+        from pydantic.json import pydantic_encoder
 
         doc = tomlkit.document()
 
         for key, value in self.dict().items():
-            add_doc(doc, key, value)
+            doc.add(key, value)
             doc.add(tomlkit.comment(key))
             if value:
                 doc[key] = value
