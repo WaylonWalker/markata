@@ -87,7 +87,7 @@ def config_model(markata: "Markata") -> None:
 @hook_impl(tryfirst=True)
 @register_attr("config")
 def load_config(markata: "Markata") -> None:
-    if markata.config is None:
+    if "config" not in markata.__dict__.keys():
         markata.config = markata.Config.parse_obj(standard_config.load("markata"))
 
 

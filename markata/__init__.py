@@ -110,14 +110,14 @@ class Markata:
         self.MARKATA_CACHE_DIR.mkdir(exist_ok=True)
         self._pm = pluggy.PluginManager("markata")
         self._pm.add_hookspecs(hookspec.MarkataSpecs)
-        if config:
+        if config is not None:
             self.config = config
         with self.cache as cache:
             self.init_cache_stats = cache.stats()
         self.registered_attrs = hookspec.registered_attrs
         self.post_models = []
         self.config_models = []
-        if config:
+        if config is not None:
             raw_hooks = config
         else:
             raw_hooks = standard_config.load("markata")
