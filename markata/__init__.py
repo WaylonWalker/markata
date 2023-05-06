@@ -10,7 +10,6 @@ import hashlib
 import importlib
 import logging
 from pathlib import Path
-import textwrap
 from typing import Any, Iterable
 
 from checksumdir import dirhash
@@ -243,7 +242,9 @@ class Markata:
 
             self._pm.register(plugin)
 
-    def __iter__(self: "Markata", description: str = "working...") -> Iterable[self.Post]:
+    def __iter__(
+        self: "Markata", description: str = "working..."
+    ) -> Iterable[self.Post]:
         articles: Iterable[self.Post] = track(
             self.articles,
             description=description,
