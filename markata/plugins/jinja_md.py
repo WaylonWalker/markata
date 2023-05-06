@@ -133,14 +133,14 @@ markdown.
 
 """
 from pathlib import Path
-from typing import TYPE_CHECKING, List
+from typing import List, TYPE_CHECKING
 
 import jinja2
+from jinja2 import TemplateSyntaxError, Undefined, UndefinedError, nodes
+from jinja2.ext import Extension
 import pathspec
 import pkg_resources
 import pydantic
-from jinja2 import TemplateSyntaxError, Undefined, UndefinedError, nodes
-from jinja2.ext import Extension
 
 from markata import __version__
 from markata.hookspec import hook_impl, register_attr
@@ -165,7 +165,10 @@ class IncludeRawExtension(Extension):
         line_number = next(parser.stream).lineno
         file = [parser.parse_expression()]
         return nodes.CallBlock(
-            self.call_method("_read_file", file), [], [], "",
+            self.call_method("_read_file", file),
+            [],
+            [],
+            "",
         ).set_lineno(line_number)
 
     def _read_file(self, file, caller):
@@ -198,7 +201,7 @@ class PostTemplateSyntaxError(TemplateSyntaxError):
 
 
 class JinjaMd(pydantic.BaseModel):
-    jinja: bool = False
+    jinja: bool = True
 
 
 @hook_impl
@@ -229,8 +232,8 @@ def pre_render(markata: "Markata") -> None:
             try:
                 article.content = jinja_env.from_string(article.content).render(
                     __version__=__version__,
-                    markata=markata,
                     **article,
+                    post=article,
                 )
                 # prevent double rendering
                 article["jinja"] = False
