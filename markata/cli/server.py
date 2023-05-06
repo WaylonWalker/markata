@@ -1,12 +1,15 @@
 import atexit
 from pathlib import Path
 import time
-from typing import Union
+from typing import TYPE_CHECKING, Union
 
 from rich.panel import Panel
 import typer
 
 from markata.hookspec import hook_impl, register_attr
+
+if TYPE_CHECKING:
+    from markata import Markata
 
 
 def find_port(port: int = 8000) -> int:
