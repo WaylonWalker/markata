@@ -83,7 +83,7 @@ import pdb
 import shutil
 import sys
 import traceback
-from typing import Callable, Optional, TYPE_CHECKING
+from typing import Callable, Literal, Optional, TYPE_CHECKING
 import warnings
 
 from rich import print as rich_print
@@ -126,15 +126,42 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
     """
 
     plugins_app = typer.Typer()
+    config_app = typer.Typer()
     app.add_typer(plugins_app)
+    app.add_typer(config_app)
 
     @plugins_app.callback()
     def plugins():
         "create new things from templates"
 
+    @config_app.callback()
+    def config():
+        "configuration management"
+
     @plugins_app.command()
     def show() -> None:
         rich_print(markata.plugins)
+
+    @config_app.command()
+    def show() -> None:
+        markata.console.quiet = True
+        rich_print(markata.config)
+
+    @config_app.command()
+    def get(key: str) -> None:
+        keys = key.split(".")
+        markata.console.quiet = True
+        keys_processed = ""
+        value = markata.config
+        na = Literal["na"]
+        for key in keys:
+            value = getattr(value, key, na)
+            keys_processed = f"{keys_processed}.{key}".strip(".")
+            if value is na:
+                rich_print(f"{keys_processed} not found")
+                sys.exit(1)
+
+        rich_print(value)
 
     new_app = typer.Typer()
     app.add_typer(new_app)
@@ -524,13 +551,6 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
         ```
         """
         _clean(markata=markata, quiet=quiet, dry_run=dry_run)
-
-    @app.command()
-    def serve():
-        """
-        Serve the site locally.
-        """
-        markata.serve()
 
 
 def _clean(markata, quiet: bool = False, dry_run: bool = False):
