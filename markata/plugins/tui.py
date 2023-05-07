@@ -1,12 +1,34 @@
 import subprocess
+from typing import List
 
+import pydantic
 from rich.console import RenderableType
 from textual.app import App
 from textual.widget import Widget
 from textual.widgets import Footer
 
 from markata import Markata
-from markata.hookspec import hook_impl
+from markata.hookspec import hook_impl, register_attr
+
+
+class TuiKey(pydantic.BaseModel):
+    name: str
+    key: str
+
+
+class TuiConfig(pydantic.BaseModel):
+    new_cmd: List[str] = ["markata", "new", "post"]
+    keymap: List[TuiKey] = [TuiKey(name="new", key="n")]
+
+
+class Config(pydantic.BaseModel):
+    tui: TuiConfig
+
+
+@hook_impl()
+@register_attr("config_models")
+def config_model(markata: "Markata") -> None:
+    markata.config_models.append(Config)
 
 
 class MarkataWidget(Widget):
@@ -30,7 +52,7 @@ class MarkataApp(App):
         self.m.console.quiet = True
         await self.bind("q", "quit", "quit")
         await self.bind("r", "refresh", "refresh")
-        self.new_cmd = self.m.config.get("tui", {}).get("new_cmd", "")
+        self.new_cmd = self.m.config.tui.new_cmd
         if self.new_cmd != "":
             await self.bind("n", "new", "new")
 
