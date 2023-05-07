@@ -3,8 +3,8 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
 
 import pydantic
-from slugify import slugify
 from polyfactory.factories.pydantic_factory import ModelFactory
+from slugify import slugify
 
 from markata import Markata
 from markata.hookspec import hook_impl, register_attr
@@ -108,7 +108,7 @@ class Post(pydantic.BaseModel):
 
     @pydantic.validator("title", pre=True, always=True)
     def title_title(cls, v, *, values):
-        title = v or Path(values["path"]).stem
+        title = v or Path(values["path"]).stem.replace("-", " ")
         return title.title()
 
     @pydantic.validator("slug", pre=True, always=True)
