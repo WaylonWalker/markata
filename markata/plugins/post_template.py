@@ -70,7 +70,7 @@ html  {
 
 """
 from pathlib import Path
-from typing import List, TYPE_CHECKING
+from typing import List, TYPE_CHECKING, Union
 
 import jinja2
 from jinja2 import Template, Undefined
@@ -123,8 +123,14 @@ class Link(pydantic.BaseModel):
 
 class HeadConfig(pydantic.BaseModel):
     meta: List[Meta] = []
-    text: List[Text] = []
-    link: List[Link] = []
+    link: List[Text] = []
+    text: Union[List[Link], str] = ""
+
+    @pydantic.validator("text", pre=True)
+    def text_to_list(cls, v):
+        if isinstance(v, list):
+            return "\n".join([text.value for text in v])
+        return v
 
 
 class Config(pydantic.BaseModel):
@@ -132,9 +138,23 @@ class Config(pydantic.BaseModel):
     style: Style = Style()
 
 
+class PostOverrides(pydantic.BaseModel):
+    head: HeadConfig = HeadConfig()
+    style: Style = Style()
+
+
+class Post(pydantic.BaseModel):
+    config_overrides: PostOverrides = PostOverrides()
+
+
 @hook_impl(tryfirst=True)
 def config_model(markata: "Markata") -> None:
     markata.config_models.append(Config)
+
+
+@hook_impl(tryfirst=True)
+def post_model(markata: "Markata") -> None:
+    markata.post_models.append(Post)
 
 
 @hook_impl
