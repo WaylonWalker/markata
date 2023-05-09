@@ -2,7 +2,7 @@
 Sets the articles `output_html` path, and saves the article's `html` to the
 `output_html` file.
 
-# Ouptut Directory
+##  Ouptut Directory
 
 Output will always be written inside of the configured `output_dir`
 
@@ -12,12 +12,12 @@ Output will always be written inside of the configured `output_dir`
 output_dir = "markout"
 ```
 
-# Explicityly set the output
+## Explicityly set the output
 
 markata will save the articles `html` to the `output_html` specified in the
 articles metadata, loaded from frontmatter.
 
-# 404 example use case
+## 404 example use case
 
 Here is an example use case of explicitly setting the output_html.  By default
 markata will turn `pages/404.md` into `markout/404/index.html`, but many
@@ -47,7 +47,7 @@ pages.
 </ul>
 ```
 
-# Index.md is the one special case
+## Index.md is the one special case
 
 If you have a file `pages/index.md` it will become `markout/index.html` rather
 than `markout/index/inject.html` This is one of the primary ways that markata
@@ -59,24 +59,8 @@ from typing import Dict, Optional
 
 import pydantic
 
-# if TYPE_CHECKING:
 from markata import Markata
 from markata.hookspec import hook_impl, register_attr
-
-# def _is_relative_to(output_dir: Path, output_html: Path):
-
-
-# @hook_impl
-# def pre_render(markata: "Markata") -> None:
-#     """
-#     Sets the `output_html` in the articles metadata.  If the output is
-#     explicitly given, it will make sure its in the `output_dir`, if it is not
-#     explicitly set it will use the articles slug.
-#     """
-
-#     for article in markata.articles:
-#         if article.output_html:
-#             if not _is_relative_to(output_dir, article_path):
 
 
 class OutputHTML(pydantic.BaseModel):
@@ -121,24 +105,6 @@ class OutputHTML(pydantic.BaseModel):
         if not v.parent.exists():
             v.parent.mkdir(parents=True, exist_ok=True)
         return v
-
-
-# @hook_impl
-# def pre_render(markata: "Markata") -> None:
-#     """
-#     Sets the `output_html` in the articles metadata.  If the output is
-#     explicitly given, it will make sure its in the `output_dir`, if it is not
-#     explicitly set it will use the articles slug.
-#     """
-
-#     for article in markata.articles:
-#         if not article.output_html:
-#             if article.slug == "index":
-#                 article.output_html = Path(markata.config.output_dir / "index.html")
-#             else:
-#                 article.output_html = Path(
-#                     markata.config.output_dir / article.slug / "index.html"
-#                 )
 
 
 @hook_impl
