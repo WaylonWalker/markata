@@ -2,8 +2,8 @@ import datetime
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
 
-import pydantic
 from polyfactory.factories.pydantic_factory import ModelFactory
+import pydantic
 from slugify import slugify
 
 from markata import Markata
@@ -58,7 +58,10 @@ class Post(pydantic.BaseModel):
         return self.__dict__.keys()
 
     def json(
-        self: "Post", include: Iterable = None, all: bool = False, **kwargs,
+        self: "Post",
+        include: Iterable = None,
+        all: bool = False,
+        **kwargs,
     ) -> str:
         """
         override function to give a default include value that will include
@@ -86,19 +89,9 @@ class Post(pydantic.BaseModel):
 
         return yaml.dump(
             self.dict(
-                include={i: True for i in self.markata.config.post_model.include}),
+                include={i: True for i in self.markata.config.post_model.include}
+            ),
         )
-
-    # def __init__(self, **data) -> None:
-    #     data["config"] = dict(
-    #         always_merger.merge(
-    #             _full_config,
-    #             copy.deepcopy(
-    #                 data.get(
-    #                     "config_overrides",
-    #                 ),
-    #             ),
-    #         ),
 
     def dumps(self):
         """
