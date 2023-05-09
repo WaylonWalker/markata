@@ -106,7 +106,6 @@ class Post(pydantic.BaseModel):
 
     @pydantic.validator("slug", pre=True, always=True)
     def default_slug(cls, v, *, values):
-        # breakpoint()
         return v or slugify(str(values["path"].stem))
 
 
