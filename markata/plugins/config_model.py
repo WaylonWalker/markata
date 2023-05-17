@@ -69,7 +69,6 @@ class Config(pydantic.BaseSettings):
 
     def toml(self: "Config") -> str:
         import tomlkit
-        from pydantic.json import pydantic_encoder
 
         doc = tomlkit.document()
 
