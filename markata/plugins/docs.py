@@ -90,9 +90,7 @@ def make_article(markata: "Markata", file: Path) -> frontmatter.Post:
     tree = ast.parse(raw_source)
     add_parents(tree)
     nodes = [
-        n
-        for n in ast.walk(tree)
-        if isinstance(n, (ast.FunctionDef, ast.ClassDef))
+        n for n in ast.walk(tree) if isinstance(n, (ast.FunctionDef, ast.ClassDef))
     ]
 
     edit_link = (

@@ -231,7 +231,9 @@ def save(markata: "Markata") -> None:
             )
 
     progress = Progress(
-        BarColumn(bar_width=None), transient=True, console=markata.console,
+        BarColumn(bar_width=None),
+        transient=True,
+        console=markata.console,
     )
     task_id = progress.add_task("loading markdown")
     progress.update(task_id, total=len(futures))

@@ -37,7 +37,10 @@ def config_model(markata: "Markata") -> None:
 def glob(markata: "Markata") -> None:
     markata.files = list(
         flatten(
-            [Path().glob(str(pattern)) for pattern in markata.config.glob.glob_patterns],
+            [
+                Path().glob(str(pattern))
+                for pattern in markata.config.glob.glob_patterns
+            ],
         ),
     )
     markata.content_directories = list({f.parent for f in markata.files})

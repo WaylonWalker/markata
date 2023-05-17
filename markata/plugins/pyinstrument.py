@@ -31,7 +31,8 @@ def configure(markata: MarkataInstrument) -> None:
 
     if "should_profile" not in markata.__dict__.keys():
         markata.should_profile = markata.config.get("pyinstrument", {}).get(
-            "should_profile", SHOULD_PROFILE,
+            "should_profile",
+            SHOULD_PROFILE,
         )
 
     if markata.should_profile and markata.profiler is None:

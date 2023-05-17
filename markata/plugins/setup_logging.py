@@ -174,7 +174,8 @@ def setup_html_log(markata: "Markata", level: int = logging.INFO) -> Path:
         template_file = Path(
             str(
                 markata.config.get(
-                    "log_template", Path(__file__).parent / "default_log_template.html",
+                    "log_template",
+                    Path(__file__).parent / "default_log_template.html",
                 ),
             ),
         )

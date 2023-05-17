@@ -60,10 +60,16 @@ app = typer.Typer(
 @app.callback()
 def main(
     version: bool = typer.Option(
-        None, "--version", callback=version_callback, is_eager=True,
+        None,
+        "--version",
+        callback=version_callback,
+        is_eager=True,
     ),
     to_json: bool = typer.Option(
-        None, "--to-json", callback=json_callback, is_eager=True,
+        None,
+        "--to-json",
+        callback=json_callback,
+        is_eager=True,
     ),
 ) -> None:
     # Do other global stuff, handle other global options here

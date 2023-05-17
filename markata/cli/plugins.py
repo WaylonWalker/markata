@@ -30,7 +30,10 @@ class Plugins:
                 ),
             )
         return Panel(
-            grid, title=f"plugins {num_plugins}", border_style="gold1", expand=False,
+            grid,
+            title=f"plugins {num_plugins}",
+            border_style="gold1",
+            expand=False,
         )
 
 
