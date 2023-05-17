@@ -376,7 +376,7 @@ class Feeds:
 
 
 @hook_impl(tryfirst=True)
-def config_model(markata: "MarkataMarkdown") -> None:
+def config_model(markata: Markata) -> None:
     markata.config_models.append(FeedsConfig)
 
 
