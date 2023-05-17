@@ -138,13 +138,19 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
     def config():
         "configuration management"
 
-    @plugins_app.command()
-    def show() -> None:
-        rich_print(markata.plugins)
-
     @config_app.command()
-    def show() -> None:
-        markata.console.quiet = True
+    def show(
+        verbose: bool = typer.Option(
+            False,
+            "--verbose",
+            "-v",
+        ),
+    ) -> None:
+
+        if verbose:
+            markata.console.quiet = False
+        else:
+            markata.console.quiet = True
         rich_print(markata.config)
 
     @config_app.command()
