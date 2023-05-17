@@ -244,8 +244,8 @@ class Markata:
 
     def __iter__(
         self: "Markata", description: str = "working..."
-    ) -> Iterable[self.Post]:
-        articles: Iterable[self.Post] = track(
+    ) -> Iterable["Markata.Post"]:
+        articles: Iterable[Markata.Post] = track(
             self.articles,
             description=description,
             transient=True,
@@ -253,8 +253,8 @@ class Markata:
         )
         return articles
 
-    def iter_articles(self: "Markata", description: str) -> Iterable[self.Post]:
-        articles: Iterable[self.Post] = track(
+    def iter_articles(self: "Markata", description: str) -> Iterable[Markata.Post]:
+        articles: Iterable[Markata.Post] = track(
             self.articles,
             description=description,
             transient=True,
@@ -316,7 +316,7 @@ class Markata:
         return self
 
     def filter(self: "Markata", filter: str) -> list:
-        def evalr(a: Post) -> Any:
+        def evalr(a: Markata.Post) -> Any:
             try:
                 return eval(
                     filter,
