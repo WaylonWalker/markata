@@ -6,6 +6,7 @@ from typing import Callable, List, Optional, TYPE_CHECKING
 import frontmatter
 import pydantic
 from rich.progress import BarColumn, Progress
+from yaml.parser import ParserError
 
 from markata.hookspec import hook_impl, register_attr
 
