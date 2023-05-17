@@ -1,6 +1,6 @@
 import datetime
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List, Optional, TYPE_CHECKING
 
 from polyfactory.factories.pydantic_factory import ModelFactory
 import pydantic
@@ -8,6 +8,9 @@ from slugify import slugify
 
 from markata import Markata
 from markata.hookspec import hook_impl, register_attr
+
+if TYPE_CHECKING:
+    from pydantic.typing import ReprArgs
 
 
 class Post(pydantic.BaseModel):
