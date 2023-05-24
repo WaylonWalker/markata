@@ -3,7 +3,7 @@ Renders markdown content as html.  This may be markdown files loaded in by way
 of the [[load]] plugin.
 
 
-# Markdown backend
+## Markdown backend
 
 There are 3 supported markdown backends that you can configure markata to use
 by setting the `markdown_backend` in your `markata.toml`.
@@ -15,7 +15,7 @@ by setting the `markdown_backend` in your `markata.toml`.
 markdown_backend='markdown-it-py'
 ```
 
-# markdown-it-py configuration
+## markdown-it-py configuration
 
 `markdown-it-py` has quite a bit of configuration that you can do, you can read
 more about the settings in their
@@ -85,9 +85,9 @@ config = {markata = "markata"}
 
 """
 import copy
-import importlib
 from enum import Enum
-from typing import TYPE_CHECKING, Dict, List, Optional
+import importlib
+from typing import Dict, List, Optional, TYPE_CHECKING
 
 import markdown
 import pydantic

@@ -32,7 +32,6 @@ class Config(pydantic.BaseSettings):
     rss_description: Optional[str] = None
     author_name: Optional[str] = None
     author_email: Optional[str] = None
-    icon: str = "icon.png"
     lang: str = "en"
     repo_url: Optional[AnyUrl] = None
     repo_branch: str = "main"
