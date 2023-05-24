@@ -1,4 +1,17 @@
-"""Icon Resize Plugin"""
+"""Icon Resize Plugin
+
+Resized favicon to a set of common sizes.
+
+## markata.plugins.icon_resize configuration
+
+```toml title=markata.toml
+[markata]
+output_dir = "markout"
+assets_dir = "static"
+icon = "static/icon.png"
+```
+
+"""
 from pathlib import Path
 from typing import Dict, List, Optional, TYPE_CHECKING
 
