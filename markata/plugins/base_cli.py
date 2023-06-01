@@ -128,6 +128,20 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
     plugins_app = typer.Typer()
     app.add_typer(plugins_app)
 
+    @app.command()
+    def tui(ctx: typer.Context) -> None:
+        try:
+            from trogon import Trogon
+            from typer.main import get_group
+        except ImportError:
+            typer.echo("trogon not installed")
+            typer.echo(
+                "install markata with optional tui group to use tui `pip install 'markata[tui]'`"
+            )
+            return
+
+        Trogon(get_group(app), click_context=ctx).run()
+
     @plugins_app.callback()
     def plugins():
         "create new things from templates"

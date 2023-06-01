@@ -3,6 +3,21 @@
 ## 0.7.0
 
 - Adopt ruff linter 0.7.0.dev1 #142
+- add trogon tui support 0.7.0.dev0
+
+### trogon tui support
+
+install with pip
+
+```bash
+pip install 'markata[tui]'
+```
+
+usage
+
+```bash
+markata tui
+```
 
 ## 0.6.1
 
