@@ -26,6 +26,7 @@ dependencies = [
  "anyconfig",
  "beautifulsoup4",
  "checksumdir",
+ "commonmark",
  "cookiecutter",
  "copier",
  "deepmerge",
