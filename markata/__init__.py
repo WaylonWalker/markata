@@ -126,7 +126,7 @@ class Markata:
             hooks = [
                 *self.hooks_conf.hooks[:default_index],
                 *DEFAULT_HOOKS,
-                *self.hooks_conf.hooks[default_index + 1 :],
+                *self.hooks_conf.hooks[default_index + 1:],
             ]
             self.hooks_conf.hooks = [
                 hook for hook in hooks if hook not in self.hooks_conf.disabled_hooks
@@ -407,7 +407,7 @@ class Markata:
             if len(missing_in_posts) > 10:
                 message += (
                     f"\nfirst 10 paths to posts missing {variable}"
-                    f"[{','.join(missing_in_posts)}..."
+                    f"[{','.join([str(p) for p in missing_in_posts[:10]])}..."
                 )
             else:
                 message += f"\npaths to posts missing {variable} {missing_in_posts}"
