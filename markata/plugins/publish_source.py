@@ -16,8 +16,9 @@ your list of hooks.
 hooks=[
    "markata.plugins.publish_source",
    ]
+```
 
-!! note
+!!! note
     publish_source is included by default, but if you have not included the
     default set of hooks you will need to explicitly add it.
 """
@@ -69,8 +70,9 @@ def save(markata: "Markata") -> None:
     """
     Saves the final modified post to the output site as markdown.
 
-    !! note
-      Any keys that are not yaml serializable will be stripped.
+    !!! note
+        Any keys that are not yaml serializable will be stripped.
+
     """
     output_dir = Path(str(markata.config["output_dir"]))
     output_dir.mkdir(parents=True, exist_ok=True)

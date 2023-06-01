@@ -1,5 +1,25 @@
 # Markata Changelog
 
+## 0.7.0
+
+- Adopt ruff linter 0.7.0.dev1 #142
+- add support for markdown_it_py backend #145
+- add trogon tui support 0.7.0.dev6
+
+### trogon tui support
+
+install with pip
+
+```bash
+pip install 'markata[tui]'
+```
+
+usage
+
+```bash
+markata tui
+```
+
 ## 0.6.1
 
 - Fix: allow feeds to be used from within markdown

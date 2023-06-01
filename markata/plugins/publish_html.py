@@ -36,7 +36,12 @@ output_html: 404.html
 pages.
 
 <ul>
-{% for post in markata.map('post', filter='"markata" not in slug and "tests" not in slug and "404" not in slug') %}
+{% for post in
+    markata.map(
+        'post',
+        filter='"markata" not in slug and "tests" not in slug and "404" not in slug'
+        )
+ %}
     <li><a href="{{ post.slug }}">{{ post.title or "CHANGELOG" }}</a></li>
 {% endfor %}
 </ul>
@@ -104,5 +109,9 @@ def save(markata: "Markata") -> None:
                 f.write(article.html)
         else:
             markata.console.log(
-                f'article "{article["path"]}" attempted to write to "{article["output_html"]}" outside of the configured output_dir "{output_dir}"'
+                f'article "{article["path"]}" '
+                f"attempted to write to "
+                f'"{article["output_html"]}"'
+                f"outside of the configured output_dir "
+                f'"{output_dir}"'
             )

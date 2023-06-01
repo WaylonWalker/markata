@@ -50,6 +50,5 @@ def configure(markata: "Markata") -> None:
 
 
 if __name__ == "__main__":
-
     plugins = Plugins(Markata())
     rich.print(plugins)

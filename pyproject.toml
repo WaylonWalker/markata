@@ -9,10 +9,11 @@ classifiers = [
  "Operating System :: OS Independent",
  "Programming Language :: Python :: 3 :: Only",
  "Programming Language :: Python :: 3",
- "Programming Language :: Python :: 3.10",
  "Programming Language :: Python :: 3.7",
  "Programming Language :: Python :: 3.8",
  "Programming Language :: Python :: 3.9",
+ "Programming Language :: Python :: 3.10",
+ "Programming Language :: Python :: 3.11",
  "Programming Language :: Python :: Implementation :: CPython",
  "Programming Language :: Python :: Implementation :: PyPy",
  "Programming Language :: Python",
@@ -22,15 +23,19 @@ classifiers = [
  "Typing :: Typed",
 ]
 dependencies = [
- "beautifulsoup4",
  "anyconfig",
+ "beautifulsoup4",
  "checksumdir",
+ "commonmark",
  "cookiecutter",
  "copier",
  "deepmerge",
  "diskcache",
  "feedgen",
  "jinja2",
+ "linkify-it-py",
+ "markdown-it-py[plugins]",
+ "markdown2[all]",
  "more-itertools",
  "pathspec",
  "pillow",
@@ -40,10 +45,10 @@ dependencies = [
  "python-slugify",
  "pytz",
  "rich",
- "textual<0.2.0",
  "toml",
  "typer",
 ]
+
 dynamic = [
  "version",
 ]
@@ -54,6 +59,7 @@ keywords = [
 name = "markata"
 readme = "README.md"
 requires-python = ">=3.6"
+
 [[project.authors]]
 name = "Waylon Walker"
 email = "waylon@waylonwalker.com"
@@ -71,9 +77,12 @@ build-backend = "hatchling.build"
 file = "LICENSE"
 
 [project.optional-dependencies]
+tui = [
+  "textual",
+  "trogon",
+]
 dev = [
  "black==22.10.0",
- "flake8",
  "hatch",
  "interrogate",
  "mypy",
@@ -82,6 +91,7 @@ dev = [
  "pytest-cov",
  "pytest-mock",
  "pytest-tmp-files",
+ "ruff",
 ]
 pyinstrument = [
  "pyinstrument",
@@ -125,10 +135,6 @@ ignore_errors = true
 module = "bs4.*"
 ignore_errors = true
 
-[tool.isort]
-profile = "black"
-known_third_party = ["PIL", "anyconfig", "bs4", "checksumdir", "commonmark", "conftest", "dateutil", "deepmerge", "diskcache", "feedgen", "frontmatter", "jinja2", "markdown", "more_itertools", "pathspec", "pkg_resources", "pluggy", "pytest", "pytz", "rich", "slugify", "textual", "toml", "typer", "yaml"]
-
 [tool.hatch.version]
 path = "markata/__about__.py"
 
@@ -149,25 +155,21 @@ exclude_lines = [
 [tool.hatch.envs.default]
 dependencies = [
  "black==22.10.0",
- "flake8",
- "isort",
  "pytest",
  "pytest-cov",
  "pytest-mock",
  "pytest-tmp-files",
- "seed-isort-config",
+ "ruff",
 ]
 
 [tool.hatch.envs.dev]
 dependencies = [
  "black==22.10.0",
- "flake8",
  "ipython",
- "isort",
  "pytest",
  "pytest-cov",
  "pytest-tmp-files",
- "seed-isort-config",
+ "ruff",
 ]
 
 [tool.hatch.envs.test]
@@ -182,15 +184,12 @@ python = [
 [tool.hatch.envs.default.scripts]
 cov = "pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=markata --cov=tests"
 no-cov = "cov --no-cov"
-lint = "flake8 markata"
+lint = "ruff markata"
 format = "black --check markata"
-sort-imports = "isort markata"
 build-docs = "markata build"
 lint-test = [
  "lint",
  "format",
- "seed-isort-config",
- "sort-imports",
  "cov",
 ]
 test-lint = "lint-test"
@@ -204,3 +203,6 @@ cov = "pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=markat
 exclude = [
  "/.github",
 ]
+
+[tool.ruff]
+ignore=['E501'] # let black control line length errors

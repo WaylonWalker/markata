@@ -7,7 +7,6 @@ import pluggy
 from markata.lifecycle import LifeCycle
 
 if TYPE_CHECKING:
-
     import typer
 
     from markata import Markata
@@ -50,7 +49,6 @@ def register_attr(*attrs: Any) -> Callable:
     def decorator_register(
         func: Callable,
     ) -> Callable:
-
         for attr in attrs:
             if attr not in registered_attrs:
                 registered_attrs[attr] = []

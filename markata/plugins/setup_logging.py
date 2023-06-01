@@ -1,6 +1,8 @@
 """
-Setup Logging hook sets up the RichHandler for pretty console logs, and file logs to the configured markata's configured `log_dir`, or
-`output_dir/_logs` if `log_dir` is not configured.  The log file will be named after the `<levelname>.log`
+Setup Logging hook sets up the RichHandler for pretty console logs, and file
+logs to the configured markata's configured `log_dir`, or `output_dir/_logs` if
+`log_dir` is not configured.  The log file will be named after the
+`<levelname>.log`
 
 ## The log files
 
@@ -187,17 +189,31 @@ def setup_html_log(markata: "Markata", level: int = logging.INFO) -> Path:
         command = Path(sys.argv[0]).name + " " + " ".join(sys.argv[1:])
         f.write(
             f"""
-            <div style="width: 100%; height: 20px; margin-top: 5rem; border-bottom: 1px solid goldenrod; text-align: center">
-    <span style="padding: 0 10px;">
-    {datetime.datetime.now()} running "{command}"
-    </span>
-    </div>
+            <div style="
+            width: 100%; 
+            height: 20px;
+            margin-top: 5rem;
+            border-bottom: 1px solid goldenrod;
+            text-align: center">
+                <span style="padding: 0 10px;">
+                    {datetime.datetime.now()} running "{command}"
+                </span>
+            </div>
     """
         )
     fh = logging.FileHandler(log_file)
     fh.setLevel(level)
     fh_formatter = logging.Formatter(
-        "<li><p><span class='time'>%(asctime)s</span> <span class='name %(name)s'>%(name)-12s</span> <span class='levelname %(levelname)s'>%(levelname)-8s</span></p><p class='message'>%(message)s</p></li>"
+        """
+        <li>
+            <p>
+                <span class="time">%(asctime)s</span>
+                <span class="name %(name)s">%(name)-12s</span>
+                <span class="levelname %(levelname)s">%(levelname)-8s</span>
+            </p>
+            <p class="message">%(message)s</p>
+        </li>
+        """
     )
     fh.setFormatter(fh_formatter)
     logging.getLogger("").addHandler(fh)
