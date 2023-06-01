@@ -9,7 +9,7 @@ There are 3 supported markdown backends that you can configure markata to use
 by setting the `markdown_backend` in your `markata.toml`.
 
 ``` toml title=markata.toml
-# choose your markdown backend
+## choose your markdown backend
 # markdown_backend='markdown'
 # markdown_backend='markdown2'
 markdown_backend='markdown-it-py'
@@ -85,9 +85,9 @@ config = {markata = "markata"}
 
 """
 import copy
-from enum import Enum
 import importlib
-from typing import Dict, List, Optional, TYPE_CHECKING
+from enum import Enum
+from typing import TYPE_CHECKING, Dict, List, Optional
 
 import markdown
 import pydantic
@@ -235,14 +235,6 @@ def configure(markata: "MarkataMarkdown") -> None:
         import markdown
 
         markata.md = markdown.Markdown(extensions=markata.markdown_extensions)
-
-
-# class RenderMarkdown(pydantic.BaseModel):
-
-
-# @hook_impl
-# @register_attr("post_models")
-# def post_model(markata: "Markata") -> None:
 
 
 @hook_impl(tryfirst=True)

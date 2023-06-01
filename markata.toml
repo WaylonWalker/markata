@@ -25,6 +25,7 @@ default_cache_expire = 1209600
 # subroute = "docs"
 
 ## Markata Setup
+glob_patterns = "docs/**/*.md,CHANGELOG.md"
 output_dir = "markout"
 assets_dir = "static"
 hooks = [

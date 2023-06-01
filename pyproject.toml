@@ -26,6 +26,7 @@ dependencies = [
  "anyconfig",
  "beautifulsoup4",
  "checksumdir",
+ "commonmark",
  "cookiecutter",
  "copier",
  "deepmerge",
@@ -46,10 +47,10 @@ dependencies = [
  "python-slugify",
  "pytz",
  "rich",
- "textual<0.2.0",
  "toml",
  "typer",
 ]
+
 dynamic = [
  "version",
 ]
@@ -60,6 +61,7 @@ keywords = [
 name = "markata"
 readme = "README.md"
 requires-python = ">=3.6"
+
 [[project.authors]]
 name = "Waylon Walker"
 email = "waylon@waylonwalker.com"
@@ -77,6 +79,10 @@ build-backend = "hatchling.build"
 file = "LICENSE"
 
 [project.optional-dependencies]
+tui = [
+  "textual",
+  "trogon",
+]
 dev = [
  "black",
  "hatch",
@@ -165,6 +171,8 @@ dependencies = [
  "black",
  "ipython",
  "polyfactory",
+ "black==22.10.0",
+ "ipython",
  "pytest",
  "pytest-cov",
  "pytest-tmp-files",

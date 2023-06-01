@@ -5,17 +5,21 @@ from __future__ import annotations
 
 import atexit
 import datetime
-from datetime import timedelta
 import hashlib
 import importlib
 import logging
+import os
+import sys
+import textwrap
+from datetime import timedelta
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
 
-from checksumdir import dirhash
-from diskcache import FanoutCache
+import frontmatter
 import pluggy
 import pydantic
+from checksumdir import dirhash
+from diskcache import FanoutCache
 from rich.console import Console
 from rich.progress import track
 from rich.table import Table
@@ -180,6 +184,73 @@ class Markata:
         return self
 
     def get_plugin_config(self: "Markata", path_or_name: str) -> dict:
+
+    @set_phase
+    def configure(self) -> Markata:
+        sys.path.append(os.getcwd())
+        self.config = {**DEFUALT_CONFIG, **standard_config.load("markata")}
+        if isinstance(self.config["glob_patterns"], str):
+            self.config["glob_patterns"] = self.config["glob_patterns"].split(",")
+        elif isinstance(self.config["glob_patterns"], list):
+            self.config["glob_patterns"] = list(self.config["glob_patterns"])
+        else:
+            raise TypeError("glob_patterns must be list or str")
+        self.glob_patterns = self.config["glob_patterns"]
+
+        if "hooks" not in self.config:
+            self.hooks = [""]
+        if isinstance(self.config["hooks"], str):
+            self.hooks = self.config["hooks"].split(",")
+        if isinstance(self.config["hooks"], list):
+            self.hooks = self.config["hooks"]
+
+        if "disabled_hooks" not in self.config:
+            self.disabled_hooks = [""]
+        if isinstance(self.config["disabled_hooks"], str):
+            self.disabled_hooks = self.config["disabled_hooks"].split(",")
+        if isinstance(self.config["disabled_hooks"], list):
+            self.disabled_hooks = self.config["disabled_hooks"]
+
+        if not self.config.get("output_dir", "markout").endswith(
+            self.config.get("path_prefix", "")
+        ):
+            self.config["output_dir"] = (
+                self.config.get("output_dir", "markout") +
+                "/" +
+                self.config.get("path_prefix", "").rstrip("/")
+            )
+        if (
+            len((output_split := self.config.get("output_dir", "markout").split("/"))) >
+            1
+        ):
+            if "path_prefix" not in self.config.keys():
+                self.config["path_prefix"] = "/".join(output_split[1:]) + "/"
+        if not self.config.get("path_prefix", "").endswith("/"):
+            self.config["path_prefix"] = self.config.get("path_prefix", "") + "/"
+
+        self.config["output_dir"] = self.config["output_dir"].lstrip("/")
+        self.config["path_prefix"] = self.config["path_prefix"].lstrip("/")
+
+        try:
+            default_index = self.hooks.index("default")
+            hooks = [
+                *self.hooks[:default_index],
+                *DEFAULT_HOOKS,
+                *self.hooks[default_index + 1:],
+            ]
+            self.hooks = [hook for hook in hooks if hook not in self.disabled_hooks]
+        except ValueError:
+            # 'default' is not in hooks , do not replace with default_hooks
+            pass
+
+        self._pm = pluggy.PluginManager("markata")
+        self._pm.add_hookspecs(hookspec.MarkataSpecs)
+        self._register_hooks()
+
+        self._pm.hook.configure(markata=self)
+        return self
+
+    def get_plugin_config(self, path_or_name: str) -> Dict:
         key = Path(path_or_name).stem
 
         config = self.config.get(key, {})
@@ -192,7 +263,39 @@ class Markata:
             config["config_key"] = key
         return config
 
-    def make_hash(self: "Markata", *keys: str) -> str:
+    def get_config(
+        self,
+        key: str,
+        default: str = "",
+        warn: bool = True,
+        suggested: Optional[str] = None,
+    ) -> Any:
+        if key in self.config.keys():
+            return self.config[key]
+        else:
+            if suggested is None:
+                suggested = textwrap.dedent(
+                    f"""
+                    [markata]
+                    {key} = '{default}'
+                    """
+                )
+            if warn:
+                logger.warning(
+                    textwrap.dedent(
+                        f"""
+                        Warning {key} is not set in markata config, sitemap will
+                        be missing root site_name
+                        to resolve this open your markata.toml and add
+
+                        {suggested}
+
+                        """
+                    ),
+                )
+        return default
+
+    def make_hash(self, *keys: str) -> str:
         str_keys = [str(key) for key in keys]
         return hashlib.md5("".join(str_keys).encode("utf-8")).hexdigest()
 

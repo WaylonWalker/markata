@@ -1,10 +1,10 @@
 import atexit
-from pathlib import Path
 import time
+from pathlib import Path
 from typing import TYPE_CHECKING, Union
 
-from rich.panel import Panel
 import typer
+from rich.panel import Panel
 
 from markata.hookspec import hook_impl, register_attr
 

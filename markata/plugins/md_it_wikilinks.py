@@ -1,5 +1,5 @@
 """
-Wikilinks depicted with `\\[[wikilinks]]` can be enabled for sites using the
+Wikilinks depicted with `\[[wikilinks]]` can be enabled for sites using the
 `markdown-it-py` plugin markata will look through all posts matching up the
 file stem to the wiki link and inserting the slug as the href.
 
@@ -75,8 +75,8 @@ def wikilinks_plugin(
     def _wikilinks_inline(state: StateInline, silent: bool):
         try:
             if (
-                state.srcCharCode[state.pos] != start_char
-                or state.srcCharCode[state.pos + 1] != start_char
+                state.srcCharCode[state.pos] != start_char or
+                state.srcCharCode[state.pos + 1] != start_char
             ):
                 return False
         except IndexError:
@@ -100,7 +100,7 @@ def wikilinks_plugin(
         if not found_closing:
             return False
 
-        text = state.src[state.pos + 2 : end].strip()
+        text = state.src[state.pos + 2: end].strip()
         state.pos = end + 2
 
         if silent:

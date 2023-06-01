@@ -78,16 +78,16 @@ create new things from templates
 ```
 
 """
-from pathlib import Path
 import pdb
 import shutil
 import sys
 import traceback
-from typing import Callable, Literal, Optional, TYPE_CHECKING
 import warnings
+from pathlib import Path
+from typing import TYPE_CHECKING, Callable, Literal, Optional
 
-from rich import print as rich_print
 import typer
+from rich import print as rich_print
 
 from markata.hookspec import hook_impl
 
@@ -129,6 +129,20 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
     config_app = typer.Typer()
     app.add_typer(plugins_app)
     app.add_typer(config_app)
+
+    @app.command()
+    def tui(ctx: typer.Context) -> None:
+        try:
+            from trogon import Trogon
+            from typer.main import get_group
+        except ImportError:
+            typer.echo("trogon not installed")
+            typer.echo(
+                "install markata with optional tui group to use tui `pip install 'markata[tui]'`"
+            )
+            return
+
+        Trogon(get_group(app), click_context=ctx).run()
 
     @plugins_app.callback()
     def plugins():

@@ -13,7 +13,7 @@ icon = "static/icon.png"
 
 """
 from pathlib import Path
-from typing import Dict, List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict, List, Optional
 
 from PIL import Image
 

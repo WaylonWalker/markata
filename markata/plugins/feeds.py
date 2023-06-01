@@ -165,18 +165,18 @@ posts.
 filter="True"
 
 """
-from dataclasses import dataclass
 import datetime
-from pathlib import Path
 import shutil
 import textwrap
-from typing import Any, List, Optional, TYPE_CHECKING
+from dataclasses import dataclass
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, List, Optional
 
-from jinja2 import Template, Undefined
 import pydantic
+import typer
+from jinja2 import Template, Undefined
 from rich import print as rich_print
 from rich.table import Table
-import typer
 
 from markata import Markata, __version__
 from markata.hookspec import hook_impl, register_attr
@@ -407,12 +407,10 @@ def save(markata: Markata) -> None:
     """
     Creates a new feed page for each page in the config.
     """
-
-    for feed in markata.feeds.values():
-        create_page(
-            markata,
-            feed,
-        )
+    create_page(
+        markata,
+        feed,
+    )
 
     home = Path(str(markata.config["output_dir"])) / "index.html"
     archive = Path(str(markata.config["output_dir"])) / "archive" / "index.html"
