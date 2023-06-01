@@ -4,11 +4,39 @@
 
 - Adopt ruff linter 0.7.0.dev1 #142
 
+### breaking changes
+
+#### Feeds are now a list
+
+```toml
+[markata.feeds.published]
+template="pages/templates/archive_template.html"
+card_template = "pages/templates/feed_card.html"
+filter="date<=today and templateKey in ['blog-post', 'til'] and status.lower()=='published'"
+sort="date"
+```
+
+> old
+
+```toml
+[[markata.feeds.published]]
+template="pages/templates/archive_template.html"
+card_template = "pages/templates/feed_card.html"
+filter="date<=today and templateKey in ['blog-post', 'til'] and status.lower()=='published'"
+sort="date"
+```
+
+> new
+
+## 0.6.2
+
+Update License and Security files.
+
 ## 0.6.1
 
-- Fix: allow feeds to be used from within markdown
+- Fix: allow feeds to be used from within Markdown.
 
-### Feeds in markdown
+### Feeds in Markdown
 
 ```markdown
 {% for post in markata.feeds.docs.posts %}
@@ -53,12 +81,12 @@
 
 wikilinks are now enabled by default ex: `[[home-page]]`. This will create a
 link `<a class="wikilink" href="/home-page/">home-page</a>`. This will
-automagically just work if you leave `markata.plugins.flat_slug` plugin enabled
+automagically work if you leave `markata.plugins.flat_slug` plugin enabled
 (which is by default).
 
 > ProTip: this was highly inspired by the
 > [marksman-lsp](https://github.com/artempyanykh/marksman) by
-> [artempyanykh](https://github.com/artempyanykh/) which can autocomplete post
+> [artempyanykh](https://github.com/artempyanykh/), which can autocomplete post
 > links in this style for you.
 
 [[home-page]]
