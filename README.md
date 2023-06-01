@@ -9,6 +9,12 @@
   </em>
 </p>
 
+## Coming soon
+
+pydantic all the things.  All post objects and config will become pydantic objects.  This will allow for validation to happen early, and referencing post attributes or config, it can be assumed that they exist whether they were explicitly created or cohersed to their defaults early in the build.
+
+---
+
 A static site generator that will give you a great site with many standard web
 features like rss, sitemaps, and seo tags, out of the box. Running `markata
 build` will get you a that only requires you to write Markdown. If you have
@@ -20,6 +26,14 @@ features you want.
 
 Markata is fully configurable through a `markata.toml` file, but the defaults
 allow to build your site right out of the box with nothing more than Markdown.
+
+### Installation
+
+`markata` is hosted on pypi and can be installed using pip.
+
+```bash
+python -m pip install markata
+```
 
 ### Create Some Content
 
@@ -46,7 +60,7 @@ markata build
 pipx run markata build
 ```
 
-### Building a Blog with Markata
+### Building a Blog with Markata _using a template_
 
 The markata cli includes a `new` command that will present you with questions
 to fill in the jinja variables in this repo.
