@@ -23,7 +23,7 @@ class Config(pydantic.BaseSettings):
         Path("static"),
         description="The directory to store static assets",
     )
-    nav: dict[str, AnyUrl] = {"home": "/"}
+    nav: dict[str, str] = {"home": "/"}
     site_version: int = 1
     markdown_backend: str = "markdown-it-py"
     url: Optional[AnyUrl] = None
