@@ -150,13 +150,8 @@ exclude_lines = [
 
 [tool.hatch.envs.default]
 dependencies = [
-<<<<<<< HEAD
- "black==22.10.0",
- "flake8",
  "isort",
-=======
  "black",
->>>>>>> 32f210b (ruff)
  "pytest",
  "pytest-cov",
  "pytest-mock",
@@ -167,12 +162,7 @@ dependencies = [
 
 [tool.hatch.envs.dev]
 dependencies = [
-<<<<<<< HEAD
- "black==22.10.0",
- "flake8",
-=======
  "black",
->>>>>>> 32f210b (ruff)
  "ipython",
  "polyfactory",
  "pytest",
