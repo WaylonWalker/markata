@@ -3,7 +3,7 @@
 ## 0.7.0
 
 - Adopt ruff linter 0.7.0.dev1 #142
-- add trogon tui support 0.7.0.dev0
+- add trogon tui support 0.7.0.dev6
 
 ### trogon tui support
 
