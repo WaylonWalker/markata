@@ -129,7 +129,7 @@ class Markata:
             hooks = [
                 *self.hooks_conf.hooks[:default_index],
                 *DEFAULT_HOOKS,
-                *self.hooks_conf.hooks[default_index + 1:],
+                *self.hooks_conf.hooks[default_index + 1 :],
             ]
             self.hooks_conf.hooks = [
                 hook for hook in hooks if hook not in self.hooks_conf.disabled_hooks
@@ -182,10 +182,6 @@ class Markata:
             cache.clear()
         return self
 
-    def get_plugin_config(self: "Markata", path_or_name: str) -> dict:
-        ...
-
-    # @set_phase
     def configure(self) -> Markata:
         sys.path.append(os.getcwd())
         self.config = {**DEFUALT_CONFIG, **standard_config.load("markata")}
@@ -215,13 +211,13 @@ class Markata:
             self.config.get("path_prefix", "")
         ):
             self.config["output_dir"] = (
-                self.config.get("output_dir", "markout") +
-                "/" +
-                self.config.get("path_prefix", "").rstrip("/")
+                self.config.get("output_dir", "markout")
+                + "/"
+                + self.config.get("path_prefix", "").rstrip("/")
             )
         if (
-            len((output_split := self.config.get("output_dir", "markout").split("/"))) >
-            1
+            len((output_split := self.config.get("output_dir", "markout").split("/")))
+            > 1
         ):
             if "path_prefix" not in self.config.keys():
                 self.config["path_prefix"] = "/".join(output_split[1:]) + "/"
@@ -236,7 +232,7 @@ class Markata:
             hooks = [
                 *self.hooks[:default_index],
                 *DEFAULT_HOOKS,
-                *self.hooks[default_index + 1:],
+                *self.hooks[default_index + 1 :],
             ]
             self.hooks = [hook for hook in hooks if hook not in self.disabled_hooks]
         except ValueError:

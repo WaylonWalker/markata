@@ -80,7 +80,6 @@ try:
                 self.new_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE
             )
 
-
 except ImportError:
     ...
 

@@ -205,8 +205,8 @@ serve = "python -m http.server --bind 0.0.0.0 8000 --directory markout"
 ruff-fix = "ruff --fix markata"
 black-fix = "black markata"
 fix = [
- "ruff-fix",
  "black-fix",
+ "ruff-fix",
 ]
 
 [tool.hatch.envs.test.scripts]
