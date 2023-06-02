@@ -73,10 +73,10 @@ implementation.
 
 """
 from pathlib import Path
-from typing import Dict, Optional, Self
+from typing import Dict, Optional
 
-import pydantic
 from jinja2 import Template
+import pydantic
 
 from markata import Markata
 from markata.hookspec import hook_impl
@@ -97,7 +97,7 @@ class Redirect(pydantic.BaseModel):
 
     @pydantic.validator("file", pre=True, always=True)
     @classmethod
-    def default_file(cls: Self, v: Path, *, values: Dict) -> Path:
+    def default_file(cls: "Redirect", v: Path, *, values: Dict) -> Path:
         if not v:
             v = (
                 values["markata"].config.output_dir
@@ -113,7 +113,9 @@ class RedirectsConfig(pydantic.BaseModel):
     redirects_file: Optional[Path] = None
 
     @pydantic.validator("redirects_file", always=True)
-    def default_redirects_file(cls: Self, v: Path, *, values: Dict) -> Path:
+    def default_redirects_file(
+        cls: "RedirectsConfig", v: Path, *, values: Dict
+    ) -> Path:
         if not v:
             return Path(values["assets_dir"]) / "_redirects"
         return v
