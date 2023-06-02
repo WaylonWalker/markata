@@ -214,14 +214,17 @@ key='n'
 [markata.summary]
 grid_attr = ['tags', 'series']
 
-[markata.summary.filter_count.drafts]
+[[markata.summary.filter_count]]
+name='drafts'
 filter="published == 'False'"
 color='red'
 
-[markata.summary.filter_count.articles]
+[[markata.summary.filter_count]]
+name='articles'
 color='dark_orange'
 
-[markata.summary.filter_count.py_modules]
+[[markata.summary.filter_count]]
+name='py_modules'
 filter='"plugin" not in slug and "docs" not in str(path)'
 color="yellow1"
 
