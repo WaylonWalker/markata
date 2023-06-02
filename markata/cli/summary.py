@@ -41,15 +41,18 @@ TAGS
 of posts.
 
 ```
-[markata.summary.filter_count.drafts]
+[[markata.summary.filter_count]]
+name='drafts'
 filter="published == 'False'"
 color='red'
 
-[markata.summary.filter_count.articles]
+[[markata.summary.filter_count]]
+name='articles'
 color='dark_orange'
 
-[markata.summary.filter_count.py_modules]
-filter='"plugin" not in slug and "docs" not in path'
+[[markata.summary.filter_count]]
+name='py_modules'
+filter='"plugin" not in slug and "docs" not in str(path)'
 color="yellow1"
 
 [markata.summary.filter_count.published]
@@ -57,11 +60,11 @@ filter="published == 'True'"
 color='green1'
 
 [markata.summary.filter_count.plugins]
-filter='"plugin" in slug and "docs" not in path'
+filter='"plugin" in slug and "docs" not in str(path)'
 color="blue"
 
 [markata.summary.filter_count.docs]
-filter="'docs' in path"
+filter="'docs' in str(path)"
 color='purple'
 ```
 
