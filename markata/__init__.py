@@ -5,21 +5,20 @@ from __future__ import annotations
 
 import atexit
 import datetime
+from datetime import timedelta
 import hashlib
 import importlib
 import logging
 import os
+from pathlib import Path
 import sys
 import textwrap
-from datetime import timedelta
-from pathlib import Path
-from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Dict, Iterable, Optional
 
-import frontmatter
-import pluggy
-import pydantic
 from checksumdir import dirhash
 from diskcache import FanoutCache
+import pluggy
+import pydantic
 from rich.console import Console
 from rich.progress import track
 from rich.table import Table
@@ -184,8 +183,9 @@ class Markata:
         return self
 
     def get_plugin_config(self: "Markata", path_or_name: str) -> dict:
+        ...
 
-    @set_phase
+    # @set_phase
     def configure(self) -> Markata:
         sys.path.append(os.getcwd())
         self.config = {**DEFUALT_CONFIG, **standard_config.load("markata")}
