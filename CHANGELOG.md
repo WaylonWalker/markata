@@ -28,6 +28,28 @@ sort="date"
 
 > new
 
+### markata.summary.filter_count is now a list
+
+The old way was to set up a dict, where the keys were the name, now its a list
+of Objects with an explicit name field.
+
+```toml
+[markata.summary.filter_count.drafts]
+filter="published == 'False'"
+color='red'
+```
+
+> Old
+
+```toml
+[[markata.summary.filter_count]]
+name='drafts'
+filter="published == 'False'"
+color='red'
+```
+
+> New
+
 ## 0.7.0
 
 - Adopt ruff linter 0.7.0.dev1 #142
