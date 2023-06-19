@@ -94,6 +94,7 @@ class Post(pydantic.BaseModel):
             self.dict(
                 include={i: True for i in self.markata.config.post_model.include}
             ),
+            Dumper=yaml.CDumper,
         )
 
     def dumps(self):

@@ -153,9 +153,6 @@ def save(markata: "Markata") -> None:
         template_file = DEFAULT_REDIRECT_TEMPLATE
     template = Template(template_file.read_text())
 
-    output_dir = Path(markata.config["output_dir"])  # type: ignore
-
     for redirect in redirects:
-        file = output_dir / redirect.original.strip("/") / "index.html"
-        file.parent.mkdir(parents=True, exist_ok=True)
+        file = markata.config.output_dir / redirect.original.strip("/") / "index.html"
         file.write_text(template.render(redirect.dict(), config=markata.config))

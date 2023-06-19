@@ -3,7 +3,7 @@ Adds a service_worker to your site.  This will make it installable on mobile,
 viewable offline, and potentially more responsive as the user goes between good
 and bad connections.
 
-## Configuration
+# Configuration
 
 Enable this plugin by adding it to your `markata.toml` hooks list.
 
@@ -24,12 +24,12 @@ files send 404's to the console.  These files likely need precache.
 precache_urls = ['archive-styles.css', 'scroll.css', 'manifest.json']
 ```
 
-## cache busting
+# cache busting
 
 Markata uses the checksum.dirhash of your output directory as the cache key.
 This is likely to change and bust the cache on every build.
 
-## pre-caching feeds
+# pre-caching feeds
 
 You can add and entire feed to your precache, this will automatically load
 these posts into the cache anytime someone visits your site and their browser
@@ -50,11 +50,11 @@ frontmatter.
 """
 import copy
 from pathlib import Path
-from typing import TYPE_CHECKING, List
+from typing import List, Optional, TYPE_CHECKING
 
-import pydantic
 from checksumdir import dirhash
 from jinja2 import Template
+import pydantic
 
 from markata import __version__
 from markata.hookspec import hook_impl
@@ -64,9 +64,28 @@ if TYPE_CHECKING:
 
 
 class ServiceWorkerConfig(pydantic.BaseModel):
+    output_dir: pydantic.DirectoryPath = "markout"
     precache_urls: List[str] = ["index.html", "./"]
     precache_posts: bool = False
     precache_feeds: bool = False
+    template_file: Optional[Path] = None
+    template: Optional[Template] = None
+    output_file: Optional[Path] = None
+
+    class Config:
+        arbitrary_types_allowed = True
+
+    @pydantic.validator("template_file", always=True, pre=True)
+    def validate_template_file(cls, v):
+        if v is None:
+            return Path(__file__).parent / "default_service_worker_template.js"
+        return v
+
+    @pydantic.validator("output_file", always=True, pre=True)
+    def validate_output_file(cls, v):
+        if v is None:
+            return Path(__file__).parent / "service_worker.js"
+        return v
 
 
 class Config(pydantic.BaseModel):
@@ -104,20 +123,12 @@ def save(markata: "Markata") -> None:
     Renders the service-worker.js file with your precache urls, and dirhash.
     """
 
-    if "service_worker_template" in markata.config:
-        template_file = markata.config["service_worker_template"]
-    else:
-        template_file = Path(__file__).parent / "default_service_worker_template.js"
-    with open(template_file) as f:
-        template = Template(f.read())
-
-    output_dir = Path(markata.config.get("output_dir", "markout"))
-    service_worker_file = output_dir / "service-worker.js"
+    template = Template(markata.config.service_worker.template_file.read_text())
     service_worker_js = template.render(
         __version__=__version__,
         config=copy.deepcopy(markata.config),
-        output_dirhash=dirhash(output_dir),
+        output_dirhash=dirhash(markata.config.output_dir),
     )
 
-    service_worker_file.parent.mkdir(parents=True, exist_ok=True)
-    service_worker_file.write_text(service_worker_js)
+    markata.config.service_worker.output_file.parent.mkdir(exist_ok=True)
+    markata.config.service_worker.output_file.write_text(service_worker_js)

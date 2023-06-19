@@ -167,6 +167,7 @@ filter="True"
 """
 from dataclasses import dataclass
 import datetime
+from functools import lru_cache
 from pathlib import Path
 import shutil
 import textwrap
@@ -380,17 +381,17 @@ def config_model(markata: Markata) -> None:
     markata.config_models.append(FeedsConfig)
 
 
-@hook_impl
-@register_attr("feeds")
-def configure(markata: Markata) -> None:
-    """
-    configure the default values for the feeds plugin
-    """
-    # if "feeds" not in markata.config.keys():
-    # if "archive" not in config.keys():
+# @hook_impl
+# @register_attr("feeds")
+# def configure(markata: Markata) -> None:
+#     """
+#     configure the default values for the feeds plugin
+#     """
+# if "feeds" not in markata.config.keys():
+# if "archive" not in config.keys():
 
-    # for page, page_conf in config.items():
-    #     if "template" not in page_conf.keys():
+# for page, page_conf in config.items():
+#     if "template" not in page_conf.keys():
 
 
 @hook_impl
@@ -407,21 +408,29 @@ def save(markata: Markata) -> None:
     """
     Creates a new feed page for each page in the config.
     """
-    for feed in markata.feeds.values():
-        create_page(
-            markata,
-            feed,
-        )
+    with markata.cache as cache:
+        for feed in markata.feeds.values():
+            create_page(
+                markata,
+                feed,
+                cache,
+            )
 
-    home = Path(str(markata.config["output_dir"])) / "index.html"
-    archive = Path(str(markata.config["output_dir"])) / "archive" / "index.html"
+    home = Path(str(markata.config.output_dir)) / "index.html"
+    archive = Path(str(markata.config.output_dir)) / "archive" / "index.html"
     if not home.exists() and archive.exists():
         shutil.copy(str(archive), str(home))
+
+
+@lru_cache()
+def get_template(src) -> Template:
+    return Template(src, undefined=SilentUndefined)
 
 
 def create_page(
     markata: Markata,
     feed: Feed,
+    cache,
 ) -> None:
     """
     create an html unorderd list of posts.
@@ -429,14 +438,14 @@ def create_page(
 
     posts = feed.posts
 
-    cards = [create_card(markata, post, feed.config.card_template) for post in posts]
+    cards = [
+        create_card(markata, post, feed.config.card_template, cache) for post in posts
+    ]
     cards.insert(0, "<ul>")
     cards.append("</ul>")
 
-    # if template is None:
-
-    template = Template(feed.config.template, undefined=SilentUndefined)
-    output_file = Path(markata.config["output_dir"]) / feed.config.slug / "index.html"
+    template = get_template(feed.config.template)
+    output_file = Path(markata.config.output_dir) / feed.config.slug / "index.html"
     canonical_url = f"{markata.config.url}/{feed.config.slug}/"
     output_file.parent.mkdir(exist_ok=True, parents=True)
 
@@ -459,44 +468,54 @@ def create_card(
     markata: "Markata",
     post: "Post",
     template: Optional[str] = None,
+    cache=None,
 ) -> Any:
     """
     Creates a card for one post based on the configured template.  If no
     template is configured it will create one with the post title and dates
     (if present).
     """
+    key = markata.make_hash("feeds", template, post.yaml())
+
+    card = cache.get(key)
+    if card is not None:
+        return card
+
     if template is None:
         template = markata.config.get("feeds_config", {}).get("card_template", None)
 
     if template is None:
         if "date" in post:
-            return textwrap.dedent(
+            card = textwrap.dedent(
                 f"""
                 <li class='post'>
-                <a href="/{markata.config.get('path_prefix', '')}{post['slug']}/">
-                    {post['title']}
-                    {post['date'].year}-
-                    {post['date'].month}-
-                    {post['date'].day}
+                <a href="/{markata.config.path_prefix}{post.slug}/">
+                    {post.title}
+                    {post.date.year}-
+                    {post.date.month}-
+                    {post.date.day}
                 </a>
                 </li>
                 """,
             )
         else:
-            return textwrap.dedent(
+            card = textwrap.dedent(
                 f"""
                 <li class='post'>
-                <a href="/{markata.config.get('path_prefix', '')}{post['slug']}/">
-                    {post['title']}
+                <a href="/{markata.config.path_prefix}{post.slug}/">
+                    {post.title}
                 </a>
                 </li>
                 """,
             )
-    try:
-        _template = Template(Path(template).read_text())
-    except FileNotFoundError:
-        _template = Template(template)
-        return _template.render(**post.to_dict())
+    else:
+        try:
+            _template = Template(Path(template).read_text())
+        except FileNotFoundError:
+            _template = Template(template)
+        card = _template.render(**post.to_dict())
+    cache.add(key, card)
+    return card
 
 
 @hook_impl

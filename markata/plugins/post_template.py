@@ -70,12 +70,12 @@ html  {
 
 """
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Union
+from typing import List, TYPE_CHECKING, Union
 
 import jinja2
-import pydantic
 from jinja2 import Template, Undefined
 from more_itertools import flatten
+import pydantic
 
 from markata import __version__
 from markata.hookspec import hook_impl

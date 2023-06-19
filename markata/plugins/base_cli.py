@@ -7,7 +7,7 @@ and
 [`list`](https://markata.dev/markata/plugins/base_cli/#list-function)
 commands as part of the main markata cli.
 
-## Building Your Site with the Cli
+# Building Your Site with the Cli
 
 Your Markata Site can be build completely from the command line.
 
@@ -22,7 +22,7 @@ see the
 [`build`](https://markata.dev/markata/plugins/base_cli/#build-function)
 section for more examples.
 
-## Listing your articles
+# Listing your articles
 
 Markata list is a tool to help list out artile attributes right to your
 terminal.  This is very helpful to find articles on larger sites, or
@@ -36,7 +36,7 @@ see the
 [`list`](https://markata.dev/markata/plugins/base_cli/#list-function)
 section for more examples.
 
-## Creating "new" things with the cli
+# Creating "new" things with the cli
 
 The `new` cli is built on copier templates, and allows you to build a new blog
 from a starter repo, make new posts, and new plugins.  Before you start dumping
@@ -78,16 +78,16 @@ create new things from templates
 ```
 
 """
+from pathlib import Path
 import pdb
 import shutil
 import sys
 import traceback
+from typing import Callable, Literal, Optional, TYPE_CHECKING
 import warnings
-from pathlib import Path
-from typing import TYPE_CHECKING, Callable, Literal, Optional
 
-import typer
 from rich import print as rich_print
+import typer
 
 from markata.hookspec import hook_impl
 
@@ -345,7 +345,7 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
         posts on it.  It makes slicing in by `templatekey`, `tag`, or
         `date` much easier.
 
-        ### default list
+        # default list
 
         By default `markata list` will list all titles in a pager, for all posts
         being loaded by markata.
@@ -354,7 +354,7 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
         markata list
         ```
 
-        ### Skip the pager
+        # Skip the pager
 
         Markata uses rich for its pager, it's pretty smart about when to
         use the pager or pass text to the next thing in the pipeline,
@@ -364,7 +364,7 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
         markata list --no-pager
         ```
 
-        ### List other attributes
+        # List other attributes
 
         You can list any other attribute tied to your posts.  These are
         added through either your yaml frontmatter at the start of your
@@ -385,7 +385,7 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
         markata list --map content
         ```
 
-        ### List more than one attribute
+        # List more than one attribute
 
         You can create new attributes as you map to echo out by
         combining existing attributes.
@@ -394,7 +394,7 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
         markata list --map 'title + " , " + slug'
         ```
 
-        ### Using Python objects as map
+        # Using Python objects as map
 
         You can access attributes of each post attribute that you map
         over.  For instance on my blog, each post has a date that is a
@@ -407,7 +407,7 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
         markata list --map 'str(date.year) + "," + title'
         ```
 
-        ### Filtering posts
+        # Filtering posts
 
         Posts are filtered with python syntax, you will have all
         attributes tied to your posts available to filter with.
@@ -416,7 +416,7 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
         markata list --filter "'__' not in title"
         ```
 
-        ### Filtering by dates
+        # Filtering by dates
 
         If your site has dates tied to your posts you can filter by
         date.  On my blog this makes a ton of sense and is quite useful.
@@ -431,7 +431,7 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
         markata list --filter "date.year==today.year"
         ```
 
-        ### Full Content Search
+        # Full Content Search
 
         You can also search the full content of each post for specific
         words.
@@ -440,7 +440,7 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
         markata list --filter "'python' in content"
         ```
 
-        ### Filtering by frontmatter data
+        # Filtering by frontmatter data
 
         I use a templateKey on my personal blog to determine which
         template to render the page with.  I can fitler my posts by a
@@ -450,7 +450,7 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
         markata list --filter "templateKey=='til'"
         ```
 
-        ### Combining filters
+        # Combining filters
 
         Filters can be combined together quite like maps can, it's all
         just python syntax.
@@ -459,7 +459,7 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
         markata list --filter "templateKey=='til' and date == today"
         ```
 
-        ### Sorting posts
+        # Sorting posts
 
         Posts can be sorted by attributes on your post, and they can
         even be reversed.
@@ -469,14 +469,14 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
         markta list --sort date --reverse
         ```
 
-        ### Putting it all together
+        # Putting it all together
 
         The real power of all this comes when you combine them all into
         lists that work for you and your workflow.  This really makes
         working on larger projects so much easier to find things.
 
 
-        ### Making a fuzzy picker for your posts
+        # Making a fuzzy picker for your posts
 
         Here is a bash command to open an fzf picker for todays posts,
         then open it in your `$EDITOR`
@@ -491,7 +491,7 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
                 xargs -I {} $EDITOR {}
         ```
 
-        ### Combining wtih nvim Telescope
+        # Combining wtih nvim Telescope
 
         Here is the same command setup as a Telescope picker for neovim.
 
@@ -539,7 +539,7 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
         Cleans up output generated by markata including both the output_dir and
         the .markata_cache.
 
-        ### Dry Run
+        # Dry Run
 
         You can run with `--dry-run` to see what markata is about to do.
 
@@ -550,7 +550,7 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
 
         ```
 
-        ### Running clean
+        # Running clean
 
         Running markata clean will fully delete all of the directories created
         by markata.
@@ -561,7 +561,7 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
                     removing cache directory: .markata.cache base_cli.py:405
         ```
 
-        ### Running Quietly
+        # Running Quietly
 
         Running with `--quiet` will remove all of the directories created by
         markata without announcing what it is doing.

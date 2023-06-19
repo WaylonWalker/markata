@@ -4,7 +4,7 @@ logs to the configured markata's configured `log_dir`, or `output_dir/_logs` if
 `log_dir` is not configured.  The log file will be named after the
 `<levelname>.log`
 
-## The log files
+# The log files
 
 There will be 6 log files created based on log level and file type.
 
@@ -21,7 +21,7 @@ markout/_logs
 └── warning.log
 ```
 
-## Configuration
+# Configuration
 
 Ensure that setup_logging is in your hooks.  You can check if `setup_logging`
 is in your hooks by running `markata list --hooks` from your terminal and
@@ -38,7 +38,7 @@ hooks=[
    ]
 ```
 
-## Log Template
+# Log Template
 ``` toml
 [markata]
 
@@ -54,7 +54,7 @@ log_template='templates/log_template.html'
 You can see the latest default `log_template` on
 [GitHub](https://github.com/WaylonWalker/markata/blob/main/markata/plugins/default_log_template.html)
 
-## Disable Logging
+# Disable Logging
 
 If you do not want logging, you can explicityly disable it by adding it to your
 `[markata.disabled_hooks]` array in your `[markata.toml]`
@@ -71,14 +71,16 @@ disabled_hooks=[
 """
 import datetime
 import logging
-import sys
 from pathlib import Path
-from typing import TYPE_CHECKING
+import sys
+from typing import Optional, TYPE_CHECKING
 
 from jinja2 import Template, Undefined
+import pydantic
+from rich.console import Console
 from rich.logging import RichHandler
 
-from markata.hookspec import hook_impl
+from markata.hookspec import hook_impl, register_attr
 
 if TYPE_CHECKING:
     from markata import Markata
@@ -115,22 +117,39 @@ def setup_log(markata: "Markata", level: int = logging.INFO) -> Path:
     return path
 
 
+class LoggingConfig(pydantic.BaseModel):
+    output_dir: pydantic.DirectoryPath = Path("markout")
+    log_dir: Optional[Path] = None
+    template: Optional[Path] = Path(__file__).parent / "default_log_template.html"
+
+    @pydantic.validator("log_dir", pre=True, always=True)
+    def validate_log_dir(cls, v, *, values):
+        Console().log("validating log_dir")
+        if v is None:
+            return values["output_dir"] / "_logs"
+        return Path(v)
+
+
+class Config(pydantic.BaseModel):
+    logging: LoggingConfig = LoggingConfig()
+
+
+@hook_impl()
+@register_attr("config_models")
+def config_model(markata: "Markata") -> None:
+    markata.config_models.append(Config)
+
+
 def setup_text_log(markata: "Markata", level: int = logging.INFO) -> Path:
     """
     sets up a plain text log in markata's configured `log_dir`, or
     `output_dir/_logs` if `log_dir` is not configured.  The log file will be
     named after the `<levelname>.log`
     """
-    log_file = Path(
-        str(
-            markata.config.get(
-                "log_dir",
-                Path(str(markata.config.get("output_dir", "markout")))
-                / "_logs"
-                / (logging.getLevelName(level).lower() + ".log"),
-            ),
-        ),
+    log_file = markata.config.logging.log_dir / (
+        logging.getLevelName(level).lower() + ".log"
     )
+
     if has_file_handler(log_file):
         return log_file
 
@@ -154,32 +173,21 @@ def setup_html_log(markata: "Markata", level: int = logging.INFO) -> Path:
     named after the `<levelname>/index.html`.  The goal of this is to give
     """
 
-    log_file = Path(
-        str(
-            markata.config.get(
-                "log_dir",
-                Path(str(markata.config.get("output_dir", "markout")))
-                / "_logs"
-                / logging.getLevelName(level).lower()
-                / "index.html",
-            ),
-        ),
+    log_file = (
+        markata.config.logging.log_dir
+        / logging.getLevelName(level).lower()
+        / "index.html"
     )
 
     if has_file_handler(log_file):
         return log_file
 
     log_file.parent.mkdir(parents=True, exist_ok=True)
+
     if not log_file.exists():
-        template_file = Path(
-            str(
-                markata.config.get(
-                    "log_template",
-                    Path(__file__).parent / "default_log_template.html",
-                ),
-            ),
+        template = Template(
+            markata.config.logging.template.read_text(), undefined=SilentUndefined
         )
-        template = Template(template_file.read_text(), undefined=SilentUndefined)
         log_header = template.render(
             title=str(markata.config.get("title", "markata build")) + " logs",
             config=markata.config,

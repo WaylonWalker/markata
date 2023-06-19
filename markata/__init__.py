@@ -108,6 +108,8 @@ class HooksConfig(pydantic.BaseModel):
 class Markata:
     def __init__(self: "Markata", console: Console = None, config=None) -> None:
         self.stages_ran = set()
+        self.threded = False
+        self._cache = None
         self.MARKATA_CACHE_DIR = Path(".") / ".markata.cache"
         self.MARKATA_CACHE_DIR.mkdir(exist_ok=True)
         self._pm = pluggy.PluginManager("markata")
@@ -129,7 +131,7 @@ class Markata:
             hooks = [
                 *self.hooks_conf.hooks[:default_index],
                 *DEFAULT_HOOKS,
-                *self.hooks_conf.hooks[default_index + 1 :],
+                *self.hooks_conf.hooks[default_index + 1:],
             ]
             self.hooks_conf.hooks = [
                 hook for hook in hooks if hook not in self.hooks_conf.disabled_hooks
@@ -145,7 +147,12 @@ class Markata:
 
     @property
     def cache(self: "Markata") -> FanoutCache:
-        return FanoutCache(self.MARKATA_CACHE_DIR, statistics=True)
+        # if self.threded:
+        #     FanoutCache(self.MARKATA_CACHE_DIR, statistics=True)
+        if self._cache is not None:
+            return self._cache
+        self._cache = FanoutCache(self.MARKATA_CACHE_DIR, statistics=True)
+        return self._cache
 
     def __getattr__(self: "Markata", item: str) -> Any:
         if item in self._pm.hook.__dict__:
@@ -184,57 +191,54 @@ class Markata:
 
     def configure(self) -> Markata:
         sys.path.append(os.getcwd())
-        self.config = {**DEFUALT_CONFIG, **standard_config.load("markata")}
-        if isinstance(self.config["glob_patterns"], str):
-            self.config["glob_patterns"] = self.config["glob_patterns"].split(",")
-        elif isinstance(self.config["glob_patterns"], list):
-            self.config["glob_patterns"] = list(self.config["glob_patterns"])
-        else:
-            raise TypeError("glob_patterns must be list or str")
-        self.glob_patterns = self.config["glob_patterns"]
+        # self.config = {**DEFUALT_CONFIG, **standard_config.load("markata")}
+        # if isinstance(self.config["glob_patterns"], str):
+        #     self.config["glob_patterns"] = self.config["glob_patterns"].split(",")
+        # elif isinstance(self.config["glob_patterns"], list):
+        #     self.config["glob_patterns"] = list(self.config["glob_patterns"])
+        # else:
+        #     raise TypeError("glob_patterns must be list or str")
+        # self.glob_patterns = self.config["glob_patterns"]
 
-        if "hooks" not in self.config:
-            self.hooks = [""]
-        if isinstance(self.config["hooks"], str):
-            self.hooks = self.config["hooks"].split(",")
-        if isinstance(self.config["hooks"], list):
-            self.hooks = self.config["hooks"]
+        # self.hooks = self.config["hooks"]
 
-        if "disabled_hooks" not in self.config:
-            self.disabled_hooks = [""]
-        if isinstance(self.config["disabled_hooks"], str):
-            self.disabled_hooks = self.config["disabled_hooks"].split(",")
-        if isinstance(self.config["disabled_hooks"], list):
-            self.disabled_hooks = self.config["disabled_hooks"]
+        # if "disabled_hooks" not in self.config:
+        #     self.disabled_hooks = [""]
+        # if isinstance(self.config["disabled_hooks"], str):
+        #     self.disabled_hooks = self.config["disabled_hooks"].split(",")
+        # if isinstance(self.config["disabled_hooks"], list):
+        #     self.disabled_hooks = self.config["disabled_hooks"]
 
-        if not self.config.get("output_dir", "markout").endswith(
-            self.config.get("path_prefix", "")
-        ):
-            self.config["output_dir"] = (
-                self.config.get("output_dir", "markout")
-                + "/"
-                + self.config.get("path_prefix", "").rstrip("/")
-            )
-        if (
-            len((output_split := self.config.get("output_dir", "markout").split("/")))
-            > 1
-        ):
-            if "path_prefix" not in self.config.keys():
-                self.config["path_prefix"] = "/".join(output_split[1:]) + "/"
-        if not self.config.get("path_prefix", "").endswith("/"):
-            self.config["path_prefix"] = self.config.get("path_prefix", "") + "/"
+        # if not self.config.get("output_dir", "markout").endswith(
+        #     self.config.get("path_prefix", "")
+        # ):
+        #     self.config["output_dir"] = (
+        #         self.config.get("output_dir", "markout") +
+        #         "/" +
+        #         self.config.get("path_prefix", "").rstrip("/")
+        #     )
+        # if (
+        #     len((output_split := self.config.get("output_dir", "markout").split("/"))) >
+        #     1
+        # ):
+        #     if "path_prefix" not in self.config.keys():
+        #         self.config["path_prefix"] = "/".join(output_split[1:]) + "/"
+        # if not self.config.get("path_prefix", "").endswith("/"):
+        #     self.config["path_prefix"] = self.config.get("path_prefix", "") + "/"
 
-        self.config["output_dir"] = self.config["output_dir"].lstrip("/")
-        self.config["path_prefix"] = self.config["path_prefix"].lstrip("/")
+        # self.config["output_dir"] = self.config["output_dir"].lstrip("/")
+        # self.config["path_prefix"] = self.config["path_prefix"].lstrip("/")
 
         try:
-            default_index = self.hooks.index("default")
+            default_index = self.hooks_conf.hooks.index("default")
             hooks = [
-                *self.hooks[:default_index],
+                *self.hooks_conf.hooks[:default_index],
                 *DEFAULT_HOOKS,
-                *self.hooks[default_index + 1 :],
+                *self.hooks_conf.hooks[default_index + 1:],
             ]
-            self.hooks = [hook for hook in hooks if hook not in self.disabled_hooks]
+            self.config.hooks = [
+                hook for hook in hooks if hook not in self.config.disabled_hooks
+            ]
         except ValueError:
             # 'default' is not in hooks , do not replace with default_hooks
             pass

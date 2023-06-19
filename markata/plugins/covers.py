@@ -30,10 +30,10 @@ padding = [10, 10, 100, 300]
 text_padding = [0,0]
 ```
 """
-import time
 from functools import lru_cache
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional, Tuple, Union
+import time
+from typing import List, Optional, TYPE_CHECKING, Tuple, Union
 
 from PIL import Image, ImageDraw, ImageFont
 from rich.progress import BarColumn, Progress
@@ -216,7 +216,7 @@ def save(markata: "Markata") -> None:
                 make_cover(
                     title=title,
                     color=cover["font_color"],
-                    output_path=Path(markata.config["output_dir"])
+                    output_path=Path(markata.config.output_dir)
                     / (article["slug"] + cover["name"] + ".png"),
                     template_path=cover.get("template", None),
                     font_path=cover.get("font", None),

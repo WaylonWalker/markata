@@ -85,24 +85,17 @@ config = {markata = "markata"}
 
 """
 import copy
-import importlib
 from enum import Enum
-from typing import TYPE_CHECKING, Dict, List, Optional
+import importlib
+from typing import Dict, List, Optional, TYPE_CHECKING
 
-import markdown
 import pydantic
 
-from markata import DEFAULT_MD_EXTENSIONS
 from markata.hookspec import hook_impl, register_attr
 from markata.plugins.md_it_highlight_code import highlight_code
 
 if TYPE_CHECKING:
     from markata import Markata
-
-    class MarkataMarkdown(Markata):
-        articles: List = []
-        md: markdown.Markdown = markdown.Markdown()
-        markdown_extensions: List = []
 
 
 class Backend(str, Enum):
@@ -118,10 +111,10 @@ class MdItExtension(pydantic.BaseModel):
 
 class RenderMarkdownConfig(pydantic.BaseModel):
     backend: Backend = Backend("markdown-it-py")
-    md_it_extensions: List[MdItExtension] = []
+    extensions: List[MdItExtension] = []
     cache_expire: int = 3600
 
-    @pydantic.validator("md_it_extensions")
+    @pydantic.validator("extensions")
     def convert_to_list(cls, v):
         if not isinstance(v, list):
             return [v]
@@ -139,7 +132,7 @@ class RenderMarkdownPost(pydantic.BaseModel):
 
 @hook_impl()
 @register_attr("config_models")
-def config_model(markata: "MarkataMarkdown") -> None:
+def config_model(markata: "Markata") -> None:
     markata.config_models.append(Config)
 
 
@@ -151,18 +144,18 @@ def post_model(markata: "Markata") -> None:
 
 @hook_impl(tryfirst=True)
 @register_attr("md", "markdown_extensions")
-def configure(markata: "MarkataMarkdown") -> None:
+def configure(markata: "Markata") -> None:
     "Sets up a markdown instance as md"
-    if "markdown_extensions" not in markata.config:
-        markdown_extensions = [""]
-    if isinstance(markata.config["markdown_extensions"], str):
-        markdown_extensions = [markata.config["markdown_extensions"]]
-    if isinstance(markata.config["markdown_extensions"], list):
-        markdown_extensions = markata.config["markdown_extensions"]
-    else:
-        raise TypeError("markdown_extensions should be List[str]")
+    # if "markdown_extensions" not in markata.config:
+    #     markdown_extensions = [""]
+    # if isinstance(markata.config["markdown_extensions"], str):
+    #     markdown_extensions = [markata.config["markdown_extensions"]]
+    # if isinstance(markata.config["markdown_extensions"], list):
+    #     markdown_extensions = markata.config["markdown_extensions"]
+    # else:
+    #     raise TypeError("markdown_extensions should be List[str]")
 
-    markata.markdown_extensions = [*DEFAULT_MD_EXTENSIONS, *markdown_extensions]
+    # markata.markdown_extensions = [*DEFAULT_MD_EXTENSIONS, *markdown_extensions]
 
     if (
         markata.config.get("markdown_backend", "")
@@ -229,12 +222,16 @@ def configure(markata: "MarkataMarkdown") -> None:
     ):
         import markdown2
 
-        markata.md = markdown2.Markdown(extras=markata.markdown_extensions)
+        markata.md = markdown2.Markdown(
+            extras=markata.config.render_markdown.extensions
+        )
         markata.md.toc = ""
     else:
         import markdown
 
-        markata.md = markdown.Markdown(extensions=markata.markdown_extensions)
+        markata.md = markdown.Markdown(
+            extensions=markata.config.render_markdown.extensions
+        )
 
 
 @hook_impl(tryfirst=True)

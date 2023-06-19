@@ -30,7 +30,7 @@ def load(markata: "MarkataMarkdown") -> None:
         console=markata.console,
     )
     if not markata.config.get("repo_url", "https://github.com/").endswith("/"):
-        markata.config["repo_url"] = (
+        markata.config.repo_url = (
             markata.config.get("repo_url", "https://github.com/") + "/"
         )
     Posts = pydantic.create_model(

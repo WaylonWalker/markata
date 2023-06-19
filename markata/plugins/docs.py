@@ -3,10 +3,11 @@ leading docstring
 """
 import ast
 import datetime
-import textwrap
+from functools import lru_cache
 from os import path
 from pathlib import Path
-from typing import TYPE_CHECKING, List
+import textwrap
+from typing import List, TYPE_CHECKING
 
 import frontmatter
 import jinja2
@@ -49,7 +50,11 @@ def glob(markata: "MarkataDocs") -> None:
 
     """
 
-    markata.py_files = list(Path().glob("**/*.py"))
+    # markata.py_files = list(Path().glob("**/*.py"))
+
+    import glob
+
+    markata.py_files = [Path(f) for f in glob.glob("**/*.py", recursive=True)]
 
     content_directories = list({f.parent for f in markata.py_files})
     if "content_directories" in markata.__dict__:
@@ -73,53 +78,62 @@ def glob(markata: "MarkataDocs") -> None:
         if Path(".markataignore").exists():
             lines.extend(Path(".markataignore").read_text().splitlines())
 
-        spec = pathspec.PathSpec.from_lines("gitwildmatch", lines)
+    spec = pathspec.PathSpec.from_lines("gitwildmatch", lines)
 
-        markata.py_files = [
-            file for file in markata.py_files if not spec.match_file(str(file))
-        ]
-
-
-def make_article(markata: "Markata", file: Path) -> frontmatter.Post:
-    raw_source = file.read_text()
-    key = markata.make_hash("docs", "file", raw_source)
-    with markata.cache as cache:
-        article_from_cache = cache.get(key)
-        if article_from_cache is not None:
-            return article_from_cache
-    tree = ast.parse(raw_source)
-    add_parents(tree)
-    nodes = [
-        n for n in ast.walk(tree) if isinstance(n, (ast.FunctionDef, ast.ClassDef))
+    markata.py_files = [
+        file for file in markata.py_files if not spec.match_file(str(file))
     ]
 
-    edit_link = (
-        str(markata.config.get("repo_url", "https://github.com/"))
-        + "edit/"
-        + str(markata.config.get("repo_branch", "main"))
-        + "/"
-        + str(file)
-    )
 
-    slug = f"{file.parent}/{file.stem}".lstrip("/").lstrip("./")
-
+@lru_cache
+def get_template():
     jinja_env = jinja2.Environment()
-    article = jinja_env.from_string(
+    template = jinja_env.from_string(
         (Path(__file__).parent / "default_doc_template.md").read_text(),
-    ).render(
-        ast=ast,
-        file=file,
-        slug=slug,
-        edit_link=edit_link,
-        tree=tree,
-        datetime=datetime,
-        nodes=nodes,
-        raw_source=raw_source,
-        indent=textwrap.indent,
     )
+    return template
 
-    article = frontmatter.loads(article)
-    article["content"] = article.content
+
+def make_article(markata: "Markata", file: Path, cache) -> frontmatter.Post:
+    raw_source = file.read_text()
+    key = markata.make_hash("docs", "file", raw_source)
+    article_from_cache = cache.get(key)
+    if article_from_cache is not None:
+        article = article_from_cache
+    else:
+        tree = ast.parse(raw_source)
+        add_parents(tree)
+        nodes = [
+            n for n in ast.walk(tree) if isinstance(n, (ast.FunctionDef, ast.ClassDef))
+        ]
+
+        edit_link = (
+            str(markata.config.get("repo_url", "https://github.com/"))
+            + "edit/"
+            + str(markata.config.get("repo_branch", "main"))
+            + "/"
+            + str(file)
+        )
+
+        slug = f"{file.parent}/{file.stem}".lstrip("/").lstrip("./")
+
+        article = get_template().render(
+            ast=ast,
+            file=file,
+            slug=slug,
+            edit_link=edit_link,
+            tree=tree,
+            datetime=datetime,
+            nodes=nodes,
+            raw_source=raw_source,
+            indent=textwrap.indent,
+        )
+
+        article = frontmatter.loads(article)
+        article["content"] = article.content
+
+        cache.add(key, article, expire=markata.config.default_cache_expire)
+
     try:
         article = markata.Post(**article.metadata, markata=markata)
 
@@ -143,4 +157,5 @@ def load(markata: "MarkataDocs") -> None:
     if "articles" not in markata.__dict__:
         markata.articles = []
     for py_file in markata.py_files:
-        markata.articles.append(make_article(markata, py_file))
+        with markata.cache as cache:
+            markata.articles.append(make_article(markata, py_file, cache))
