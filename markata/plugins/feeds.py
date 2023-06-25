@@ -196,17 +196,19 @@ class MarkataFilterError(RuntimeError):
 
 
 class FeedConfig(pydantic.BaseModel):
-    title: str = "All Posts"
+    DEFAULT_TITLE: str = "All Posts"
+
+    title: str = DEFAULT_TITLE
     slug: str = None
     name: Optional[str] = None
     filter: str = "True"
     card_template: str = """
-                <li class='post'>
-                <a href="/{{markata.config.get('path_prefix', '')}}{{post['slug']}}/">
-                    {{post['title']}}
-                </a>
-                </li>
-                """
+        <li class='post'>
+            <a href="/{{ markata.config.path_prefix }}{{ post.slug }}/">
+                {{ post.title }}
+            </a>
+        </li>
+        """
     template: str = Path(__file__).parent / "default_post_template.html"
 
     @pydantic.validator("name", pre=True, always=True)
