@@ -29,10 +29,6 @@ def load(markata: "MarkataMarkdown") -> None:
         transient=True,
         console=markata.console,
     )
-    if not markata.config.get("repo_url", "https://github.com/").endswith("/"):
-        markata.config.repo_url = (
-            markata.config.get("repo_url", "https://github.com/") + "/"
-        )
     Posts = pydantic.create_model(
         "Posts",
         posts=(List[markata.Post], ...),
@@ -72,19 +68,22 @@ def get_models(markata: "Markata", error: pydantic.ValidationError) -> List:
 
 
 def pydantic_get_post(path: Path, markata: "Markata") -> Optional[Callable]:
-    fm_post = frontmatter.load(path)
-    fm_post["content"] = fm_post.content
-    fm_post["path"] = str(path)
-    fm_post["edit_link"] = (
-        str(markata.config.get("repo_url", "https://github.com/"))
-        + "edit/"
-        + str(markata.config.get("repo_branch", "main"))
-        + "/"
-        + str(path)
-    )
+    # fm_post = frontmatter.load(path)
+    # fm_post["content"] = fm_post.content
+    # fm_post["path"] = str(path)
+    # fm_post["edit_link"] = (
+    #     markata.config.repo_url
+    #     + "edit/"
+    #     + markata.config.repo_branch
+    #     + "/"
+    #     + str(path),
+    # )
+
+    # try:
+    #     post = markata.Post(**fm_post.metadata, markata=markata)
 
     try:
-        post = markata.Post(**fm_post.metadata, markata=markata)
+        post = markata.Post.parse_file(markata=markata, path=path)
 
     except pydantic.ValidationError as e:
 
@@ -119,10 +118,6 @@ def legacy_get_post(path: Path, markata: "Markata") -> Optional[Callable]:
         post = default
     post.metadata["path"] = str(path)
     post["edit_link"] = (
-        str(markata.config.get("repo_url", "https://github.com/"))
-        + "edit/"
-        + str(markata.config.get("repo_branch", "main"))
-        + "/"
-        + str(post["path"])
+        markata.config.repo_url + "edit/" + markata.config.repo_branch + "/" + post.path
     )
     return post

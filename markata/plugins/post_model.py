@@ -1,13 +1,17 @@
 import datetime
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, TYPE_CHECKING
+from typing import Any, Dict, Iterable, List, Optional, TYPE_CHECKING, Union
 
 from polyfactory.factories.pydantic_factory import ModelFactory
 import pydantic
 from slugify import slugify
+import yaml
 
+import logging
 from markata import Markata
 from markata.hookspec import hook_impl, register_attr
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from pydantic.typing import ReprArgs
@@ -97,6 +101,41 @@ class Post(pydantic.BaseModel):
             Dumper=yaml.CDumper,
         )
 
+    @classmethod
+    def parse_file(cls, markata, path: Union[Path, str], **kwargs) -> "Post":
+        if isinstance(path, Path):
+            if path.suffix in [".md", ".markdown"]:
+                return cls.parse_markdown(markata=markata, path=path, **kwargs)
+        elif isinstance(path, str):
+            if path.endswith(".md") or path.endswith(".markdown"):
+                return cls.parse_markdown(markata=markata, path=path, **kwargs)
+        return super(Post, cls).parse_file(path, **kwargs)
+
+    @classmethod
+    def parse_markdown(cls, markata, path: Union[Path, str], **kwargs) -> "Post":
+        if isinstance(path, str):
+            path = Path(path)
+        # TODO
+        # handle no frontmatter
+        #
+        text = path.read_text()
+        try:
+            _, fm, content, *others = text.split("---\n")
+            return Post(
+                markata=markata,
+                path=path,
+                content=content,
+                **yaml.load(fm, Loader=yaml.CBaseLoader),
+            )
+        except ValueError:
+
+            logger.info(f"failed to parse {path}, it likely has no frontmatter")
+            return Post(
+                markata=markata,
+                path=path,
+                content=text,
+            )
+
     def dumps(self):
         """
         dumps raw article back out
@@ -130,7 +169,8 @@ class PostModelConfig(pydantic.BaseModel):
 
         ``` toml title='markata.toml'
         [markata.post_model]
-        include = ['date', 'description', 'published', 'slug', 'title', 'content', 'html']
+        include = ['date', 'description', 'published',
+            'slug', 'title', 'content', 'html']
         repr_include = ['date', 'description', 'published', 'slug', 'title']
         ```
         """

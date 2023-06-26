@@ -15,7 +15,7 @@ slug: /my-post
 
 ---
 
-This is my first post it will be at `<markata.config['url']>/my-post/`
+This is my first post it will be at `<markata.config.url>/my-post/`
 reguardless of filename.
 ```
 
@@ -25,8 +25,8 @@ By default the flat_slug plugin will use the `stem` of your filename, which is
 the filename without the extension, unless you explicitly set your slug in
 frontmatter.
 
-* `/pages/my-post.md` becomes `<markata.config['url']>/my-post/`
-* `/pages/blog/a-blog-post.md` becomes `<markata.config['url']>/a-blog-post/`
+* `/pages/my-post.md` becomes `<markata.config.url>/my-post/`
+* `/pages/blog/a-blog-post.md` becomes `<markata.config.url>/a-blog-post/`
 """
 from pathlib import Path
 from typing import Dict, Optional
@@ -60,13 +60,6 @@ class FlatSlugPost(pydantic.BaseModel):
         if not v:
             return values["markata"].config.flat_slug.slugify
         return v
-
-    # @pydantic.validator("slug", pre=True, always=True)
-    # def default_slug(cls: "FlatSlugPost", v: bool, *, values: Dict) -> bool:
-    #     if v:
-    # stem = Path(values["path"], article.get("title", ""))).stem
-
-    # if article.should_slugify:
 
 
 @hook_impl()

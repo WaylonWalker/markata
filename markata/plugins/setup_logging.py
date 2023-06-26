@@ -189,7 +189,7 @@ def setup_html_log(markata: "Markata", level: int = logging.INFO) -> Path:
             markata.config.logging.template.read_text(), undefined=SilentUndefined
         )
         log_header = template.render(
-            title=str(markata.config.get("title", "markata build")) + " logs",
+            title=markata.config.title + " logs",
             config=markata.config,
         )
         log_file.write_text(log_header)
