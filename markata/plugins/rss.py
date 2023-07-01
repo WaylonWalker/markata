@@ -1,8 +1,10 @@
 """Default glob plugin"""
+import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 from feedgen.feed import FeedGenerator
+import pytz
 
 from markata.hookspec import hook_impl
 
@@ -21,11 +23,11 @@ def render(markata: "MarkataRss") -> None:
     title = markata.config.title
     name = markata.config.author_name
     email = markata.config.author_email
-    icon = markata.config.icon
+    icon = str(markata.config.icon)
     lang = markata.config.lang
     rss_description = markata.config.rss_description
 
-    fg.id(url + "/rss.xml")
+    fg.id(str(url + "/rss.xml"))
     fg.title(title)
     fg.author(
         {
@@ -33,10 +35,10 @@ def render(markata: "MarkataRss") -> None:
             "email": email,
         },
     )
-    fg.link(href=url, rel="alternate")
+    fg.link(href=str(url), rel="alternate")
     fg.logo(icon)
     fg.subtitle(rss_description)
-    fg.link(href=url + "/rss.xml", rel="self")
+    fg.link(href=str(url + "/rss.xml"), rel="self")
     fg.language(lang)
 
     try:
@@ -47,12 +49,18 @@ def render(markata: "MarkataRss") -> None:
 
     for article in posts:
         fe = fg.add_entry()
-        fe.id(url + "/" + article["slug"])
-        fe.title(article.metadata["title"])
-        fe.published(article.metadata["datetime"])
-        fe.description(article.metadata["description"])
-        fe.summary(article.metadata["long_description"])
-        fe.link(href=url + "/" + article["slug"])
+        fe.id(str(url + "/" + article.slug))
+        fe.title(article.title)
+        fe.published(
+            datetime.datetime.combine(
+                article.date or datetime.datetime.min.date(),
+                datetime.datetime.min.time(),
+                pytz.UTC,
+            )
+        )
+        fe.description(article.description)
+        fe.summary(article.long_description)
+        fe.link(href=str(url + "/" + article.slug))
         fe.content(article.article_html.translate(dict.fromkeys(range(32))))
 
     markata.fg = fg

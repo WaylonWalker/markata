@@ -1,9 +1,9 @@
 """Default glob plugin"""
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Union
+from typing import List, TYPE_CHECKING, Union
 
-import pydantic
 from more_itertools import flatten
+import pydantic
 
 from markata.hookspec import hook_impl, register_attr
 
@@ -61,8 +61,22 @@ def glob(markata: "Markata") -> None:
         if Path(".markataignore").exists():
             lines.extend(Path(".markataignore").read_text().splitlines())
 
-        spec = pathspec.PathSpec.from_lines("gitwildmatch", lines)
+        key = markata.make_hash("glob", "spec", lines)
+        spec = markata.precache.get(key)
+        if spec is None:
+            spec = pathspec.PathSpec.from_lines("gitwildmatch", lines)
+            with markata.cache as cache:
+                cache.set(key, spec)
 
-        markata.files = [
-            file for file in markata.files if not spec.match_file(str(file))
-        ]
+        def check_spec(file: str) -> bool:
+            key = markata.make_hash("glob", "check_spec", file)
+            check = markata.precache.get(key)
+            if check is not None:
+                return check
+
+            check = spec.match_file(str(file))
+            with markata.cache as cache:
+                cache.set(key, check)
+            return check
+
+        markata.files = [file for file in markata.files if not check_spec(str(file))]

@@ -2,8 +2,8 @@
 Creates links next to all heading tags to make it easier for users to share a
 specific heading.
 """
-import re
 from pathlib import Path
+import re
 from typing import TYPE_CHECKING
 
 from bs4 import BeautifulSoup
@@ -32,14 +32,14 @@ def post_render(markata: Markata) -> None:
                 article.html,
             )
 
-            html_from_cache = cache.get(key)
+            html_from_cache = markata.precache.get(key)
 
             if html_from_cache is None:
                 html = link_headings(article)
                 cache.add(
                     key,
                     html,
-                    expire=markata.config.cache_expire,
+                    expire=markata.config.default_cache_expire,
                 )
             else:
                 html = html_from_cache

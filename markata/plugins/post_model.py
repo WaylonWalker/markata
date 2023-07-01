@@ -1,14 +1,14 @@
 import datetime
+import logging
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, TYPE_CHECKING, Union
+from typing import Any, Dict, List, Optional, TYPE_CHECKING, Union
 
+import dateparser
 from polyfactory.factories.pydantic_factory import ModelFactory
 import pydantic
 from slugify import slugify
 import yaml
 
-import logging
-from markata import Markata
 from markata.hookspec import hook_impl, register_attr
 
 logger = logging.getLogger(__name__)
@@ -18,18 +18,24 @@ if TYPE_CHECKING:
 
 
 class Post(pydantic.BaseModel):
-    markata: Markata = None
+    markata: Any = None
     path: Path
+    slug: Optional[str] = None
     published: bool = False
-    slug: str = None
     description: Optional[str] = None
     content: str = None
-    date: datetime.date = pydantic.Field(default_factory=datetime.date.today)
+    date: Optional[Union[datetime.date, str]] = pydantic.Field(
+        default_factory=lambda: datetime.date.min
+    )
+    date_time: Optional[datetime.datetime] = None
     today: datetime.date = pydantic.Field(default_factory=datetime.date.today)
     now: datetime.datetime = pydantic.Field(default_factory=datetime.datetime.utcnow)
+    load_time: float = 0
+    profile: Optional[str] = None
     title: str = None
 
     class Config:
+        title = "Markata.Post"
         arbitrary_types_allowed = True
 
     def __repr_args__(self: "Post") -> "ReprArgs":
@@ -64,29 +70,29 @@ class Post(pydantic.BaseModel):
         "for backwards compatability"
         return self.__dict__.keys()
 
-    def json(
-        self: "Post",
-        include: Iterable = None,
-        all: bool = False,
-        **kwargs,
-    ) -> str:
-        """
-        override function to give a default include value that will include
-        user configured includes.
-        """
-        if all:
-            return pydantic.create_model("Post", **self)(**self).json(
-                **kwargs,
-            )
-        if include:
-            return pydantic.create_model("Post", **self)(**self).json(
-                include=include,
-                **kwargs,
-            )
-        return pydantic.create_model("Post", **self)(**self).json(
-            include={i: True for i in self.markata.config.post_model.include},
-            **kwargs,
-        )
+    # def json(
+    #     self: "Post",
+    #     include: Iterable = None,
+    #     all: bool = False,
+    #     **kwargs,
+    # ) -> str:
+    #     """
+    #     override function to give a default include value that will include
+    #     user configured includes.
+    #     """
+    #     if all:
+    #         return pydantic.create_model("Post", **self)(**self).json(
+    #             **kwargs,
+    #         )
+    #     if include:
+    #         return pydantic.create_model("Post", **self)(**self).json(
+    #             include=include,
+    #             **kwargs,
+    #         )
+    #     return pydantic.create_model("Post", **self)(**self).json(
+    #         include={i: True for i in self.markata.config.post_model.include},
+    #         **kwargs,
+    #     )
 
     def yaml(self: "Post") -> str:
         """
@@ -115,26 +121,23 @@ class Post(pydantic.BaseModel):
     def parse_markdown(cls, markata, path: Union[Path, str], **kwargs) -> "Post":
         if isinstance(path, str):
             path = Path(path)
-        # TODO
-        # handle no frontmatter
-        #
         text = path.read_text()
         try:
             _, fm, content, *others = text.split("---\n")
-            return Post(
-                markata=markata,
-                path=path,
-                content=content,
-                **yaml.load(fm, Loader=yaml.CBaseLoader),
-            )
+            try:
+                fm = yaml.load(fm, Loader=yaml.CBaseLoader)
+            except yaml.YAMLError:
+                fm = {}
         except ValueError:
+            fm = {}
+            content = text
 
-            logger.info(f"failed to parse {path}, it likely has no frontmatter")
-            return Post(
-                markata=markata,
-                path=path,
-                content=text,
-            )
+        return markata.Post(
+            markata=markata,
+            path=path,
+            content=content,
+            **fm,
+        )
 
     def dumps(self):
         """
@@ -142,14 +145,64 @@ class Post(pydantic.BaseModel):
         """
         return f"{self.yaml()}\n\n---\n\n{self.content}"
 
+    @pydantic.validator("slug", pre=True, always=True)
+    def default_slug(cls, v, *, values):
+        return v or slugify(str(values["path"].stem))
+
     @pydantic.validator("title", pre=True, always=True)
     def title_title(cls, v, *, values):
         title = v or Path(values["path"]).stem.replace("-", " ")
         return title.title()
 
-    @pydantic.validator("slug", pre=True, always=True)
-    def default_slug(cls, v, *, values):
-        return v or slugify(str(values["path"].stem))
+    @pydantic.validator("date_time")
+    def dateparser_datetime(cls, v, *, values):
+        if isinstance(v, str):
+            return dateparser.parse(v)
+        return v
+
+    @pydantic.validator("date_time", pre=True, always=True)
+    def date_is_datetime(cls, v, *, values):
+        if v is None and values["date"] is None:
+            return datetime.datetime.now()
+        if isinstance(v, datetime.datetime):
+            return v
+        if isinstance(values["date"], datetime.datetime):
+            return values["date"]
+        if isinstance(v, datetime.date):
+            return datetime.datetime.combine(v, datetime.time.min)
+        if isinstance(values["date"], datetime.date):
+            return datetime.datetime.combine(values["date"], datetime.time.min)
+        return v
+
+    @pydantic.validator("date_time", pre=True, always=True)
+    def mindate_time(cls, v, *, values):
+        if v is None:
+            return datetime.datetime.min
+        return v
+
+    @pydantic.validator("date")
+    def dateparser_date(cls, v, *, values):
+        if isinstance(v, str):
+            d = values["markata"].cache.get(v)
+            if d is not None:
+                return d
+            d = dateparser.parse(v)
+            with values["markata"].cache as cache:
+                cache.add(v, d)
+        return v
+
+    @pydantic.validator("date", pre=True, always=True)
+    def datetime_is_date(cls, v, *, values):
+        if isinstance(v, datetime.date):
+            return v
+        if isinstance(v, datetime.datetime):
+            return v.date()
+
+    @pydantic.validator("date", pre=True, always=True)
+    def mindate(cls, v, *, values):
+        if v is None:
+            return datetime.date.min
+        return v
 
 
 class PostModelConfig(pydantic.BaseModel):
@@ -204,7 +257,7 @@ class Config(pydantic.BaseModel):
     post_model: PostModelConfig = pydantic.Field(default_factory=PostModelConfig)
 
 
-@hook_impl
+@hook_impl(trylast=True)
 @register_attr("post_models")
 def post_model(markata: "Markata") -> None:
     markata.post_models.append(Post)

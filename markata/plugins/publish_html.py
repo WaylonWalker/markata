@@ -55,36 +55,50 @@ lets you [make your home page](https://markata.dev/home-page/)
 
 """
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 import pydantic
+from slugify import slugify
 
-from markata import Markata
 from markata.hookspec import hook_impl, register_attr
 
 
 class OutputHTML(pydantic.BaseModel):
-    markata: Markata
+    markata: Any
     path: Path
     slug: str = None
     output_html: Path = None
 
-    class Config:
-        validate_assignment = True
-        arbitrary_types_allowed = True
+    # class Config:
+    #     validate_assignment = True
+    #     arbitrary_types_allowed = True
 
-    @pydantic.validator("output_html", always=True)
+    @pydantic.validator("slug", pre=True, always=True)
+    @classmethod
+    def default_slug(cls, v, *, values):
+        if v is None:
+            return slugify(str(values["path"].stem))
+        return v
+
+    @pydantic.validator("output_html", pre=True, always=True)
     @classmethod
     def default_output_html(
         cls: "OutputHTML", v: Optional[Path], *, values: Dict
     ) -> Path:
         if v is not None:
             return v
+        if "slug" not in values:
+            for validator in cls.__validators__["slug"]:
+                values["slug"] = validator.func(cls, v, values=values)
+
+        if values["markata"] is None:
+            for validator in cls.__validators__["markata"]:
+                values["markata"] = validator.func(cls, v, values=values)
         if values["slug"] == "index":
             return Path(values["markata"].config.output_dir / "index.html")
         return Path(values["markata"].config.output_dir / values["slug"] / "index.html")
 
-    @pydantic.validator("output_html")
+    @pydantic.validator("output_html", pre=True, always=True)
     @classmethod
     def output_html_relative(
         cls: "OutputHTML", v: Optional[Path], *, values: Dict
@@ -95,7 +109,7 @@ class OutputHTML(pydantic.BaseModel):
             return values["markata"].config.output_dir / v
         return v
 
-    @pydantic.validator("output_html")
+    @pydantic.validator("output_html", pre=True, always=True)
     @classmethod
     def output_html_exists(
         cls: "OutputHTML", v: Optional[Path], *, values: Dict

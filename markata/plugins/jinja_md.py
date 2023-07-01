@@ -133,14 +133,14 @@ markdown.
 
 """
 from pathlib import Path
-from typing import TYPE_CHECKING, List
+from typing import List, TYPE_CHECKING
 
 import jinja2
+from jinja2 import TemplateSyntaxError, Undefined, UndefinedError, nodes
+from jinja2.ext import Extension
 import pathspec
 import pkg_resources
 import pydantic
-from jinja2 import TemplateSyntaxError, Undefined, UndefinedError, nodes
-from jinja2.ext import Extension
 
 from markata import __version__
 from markata.hookspec import hook_impl, register_attr
@@ -204,13 +204,13 @@ class JinjaMd(pydantic.BaseModel):
     jinja: bool = True
 
 
-@hook_impl
+@hook_impl()
 @register_attr("post_models")
 def post_model(markata: "Markata") -> None:
     markata.post_models.append(JinjaMd)
 
 
-@hook_impl
+@hook_impl()
 @register_attr("prevnext")
 def pre_render(markata: "Markata") -> None:
     """
@@ -230,13 +230,20 @@ def pre_render(markata: "Markata") -> None:
     for article in markata.articles:
         if article.get("jinja", True) and not ignore_spec.match_file(article["path"]):
             try:
-                article.content = jinja_env.from_string(article.content).render(
-                    __version__=__version__,
-                    **article,
-                    post=article,
-                )
+                key = markata.make_hash(article.content)
+                content_from_cache = markata.precache.get(key)
+                if content_from_cache is None:
+                    article.content = jinja_env.from_string(article.content).render(
+                        __version__=__version__,
+                        **article,
+                        post=article,
+                    )
+                    with markata.cache:
+                        markata.cache.set(key, article.content)
+                else:
+                    article.content = content_from_cache
                 # prevent double rendering
-                article["jinja"] = False
+                article.jinja = False
             except TemplateSyntaxError as e:
                 errorline = article.content.split("\n")[e.lineno - 1]
                 msg = f"""

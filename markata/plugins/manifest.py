@@ -19,8 +19,8 @@ def render(markata: "MarkataIcons") -> None:
         "short_name": markata.config.short_name,
         "start_url": markata.config.start_url,
         "display": markata.config.display,
-        "background_color": markata.config.background_color,
-        "theme_color": markata.config.theme_color,
+        "background_color": str(markata.config.background_color),
+        "theme_color": str(markata.config.theme_color),
         "description": markata.config.description,
         "icons": icons,
     }
@@ -38,7 +38,7 @@ def render(markata: "MarkataIcons") -> None:
                 article.content,
                 article.html,
             )
-            html_from_cache = cache.get(key)
+            html_from_cache = markata.precache.get(key)
 
             if html_from_cache is None:
                 soup = BeautifulSoup(article.html, features="lxml")

@@ -123,19 +123,40 @@ class Link(pydantic.BaseModel):
 
 class HeadConfig(pydantic.BaseModel):
     meta: List[Meta] = []
-    link: List[Text] = []
-    text: Union[List[Link], str] = ""
+    link: List[Link] = []
+    text: Union[List[Text], str] = ""
 
     @pydantic.validator("text", pre=True)
     def text_to_list(cls, v):
         if isinstance(v, list):
-            return "\n".join([text.value for text in v])
+            return "\n".join([text["value"] for text in v])
         return v
+
+    @property
+    def html(self):
+        html = self.text
+        html += "\n"
+        for meta in self.meta:
+            html += f'<meta name="{meta.name}" content="{meta.content}" />\n'
+        for link in self.link:
+            html += f'<link rel="{link.rel}" href="{link.href}" />\n'
+        return html
 
 
 class Config(pydantic.BaseModel):
     head: HeadConfig = HeadConfig()
     style: Style = Style()
+    post_template: str
+
+    @pydantic.validator("post_template", pre=True)
+    def default_post_template(cls, v):
+        if v is None:
+            return (Path(__file__).parent / "default_post_template.html").read_text()
+        if isinstance(v, Path):
+            return v.read_text()
+        if isinstance(v, str) and Path(v).exists():
+            return Path(v).read_text()
+        return v
 
 
 class PostOverrides(pydantic.BaseModel):
@@ -166,12 +187,12 @@ def configure(markata: "Markata") -> None:
     configuration.
     """
 
-    raw_text = "\n".join([t.value for t in markata.config.head.text])
+    # raw_text = "\n".join([t.value for t in markata.config.head.text])
 
-    if isinstance(raw_text, list):
-        markata.config["head"]["text"] = "\n".join(
-            flatten([t.values() for t in raw_text]),
-        )
+    # if isinstance(raw_text, list):
+    #     markata.config["head"]["text"] = "\n".join(
+    #         flatten([t.values() for t in raw_text]),
+    #     )
 
 
 @hook_impl
@@ -193,12 +214,7 @@ def pre_render(markata: "Markata") -> None:
 
 @hook_impl
 def render(markata: "Markata") -> None:
-    if "post_template" in markata.config:
-        template_file = markata.config["post_template"]
-    else:
-        template_file = Path(__file__).parent / "default_post_template.html"
-    with open(template_file) as f:
-        template = Template(f.read(), undefined=SilentUndefined)
+    template = Template(markata.config.post_template, undefined=SilentUndefined)
 
     if "{{" in str(markata.config.get("head", {})):
         Template(

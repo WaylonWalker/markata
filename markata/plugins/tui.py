@@ -19,7 +19,7 @@ class TuiConfig(pydantic.BaseModel):
 
 
 class Config(pydantic.BaseModel):
-    tui: TuiConfig
+    tui: TuiConfig = TuiConfig()
 
 
 @hook_impl()

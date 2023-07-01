@@ -13,7 +13,7 @@ icon = "static/icon.png"
 
 """
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import Dict, List, Optional, TYPE_CHECKING
 
 from PIL import Image
 
@@ -93,9 +93,11 @@ def save(markata: "Markata") -> None:
     for width in [48, 72, 96, 144, 192, 256, 384, 512]:
         with Image.open(markata.config.icon) as img:
             height = int(float(img.size[1]) * float(width / float(img.size[0])))
-            img = img.resize((width, height), Image.ANTIALIAS)
             filename = Path(
                 f"{markata.config.icon_out_file.stem}_{width}x{height}{markata.config.icon_out_file.suffix}",
             )
             out_file = Path(markata.config.output_dir) / filename
+            if out_file.exists():
+                continue
+            img = img.resize((width, height), Image.ANTIALIAS)
             img.save(out_file)

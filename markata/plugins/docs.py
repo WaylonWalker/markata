@@ -50,8 +50,6 @@ def glob(markata: "MarkataDocs") -> None:
 
     """
 
-    # markata.py_files = list(Path().glob("**/*.py"))
-
     import glob
 
     markata.py_files = [Path(f) for f in glob.glob("**/*.py", recursive=True)]
@@ -95,9 +93,18 @@ def get_template():
 
 
 def make_article(markata: "Markata", file: Path, cache) -> frontmatter.Post:
-    raw_source = file.read_text()
+    with open(file) as f:
+        raw_source = f.read()
     key = markata.make_hash("docs", "file", raw_source)
-    article_from_cache = cache.get(key)
+    slug = f"{file.parent}/{file.stem}".lstrip("/").lstrip("./")
+    edit_link = (
+        str(markata.config.get("repo_url", "https://github.com/"))
+        + "edit/"
+        + str(markata.config.get("repo_branch", "main"))
+        + "/"
+        + str(file)
+    )
+    article_from_cache = markata.precache.get(key)
     if article_from_cache is not None:
         article = article_from_cache
     else:
@@ -106,16 +113,6 @@ def make_article(markata: "Markata", file: Path, cache) -> frontmatter.Post:
         nodes = [
             n for n in ast.walk(tree) if isinstance(n, (ast.FunctionDef, ast.ClassDef))
         ]
-
-        edit_link = (
-            str(markata.config.get("repo_url", "https://github.com/"))
-            + "edit/"
-            + str(markata.config.get("repo_branch", "main"))
-            + "/"
-            + str(file)
-        )
-
-        slug = f"{file.parent}/{file.stem}".lstrip("/").lstrip("./")
 
         article = get_template().render(
             ast=ast,
@@ -128,14 +125,24 @@ def make_article(markata: "Markata", file: Path, cache) -> frontmatter.Post:
             raw_source=raw_source,
             indent=textwrap.indent,
         )
-
-        article = frontmatter.loads(article)
-        article["content"] = article.content
-
-        cache.add(key, article, expire=markata.config.default_cache_expire)
+        cache.add(
+            key,
+            article,
+            expire=markata.config.default_cache_expire,
+        )
 
     try:
-        article = markata.Post(**article.metadata, markata=markata)
+        article = markata.Post(
+            markata=markata,
+            path=str(file).replace(".py", ".md"),
+            title=file.name,
+            content=article,
+            ast=ast,
+            file=file,
+            slug=slug,
+            edit_link=edit_link,
+            datetime=datetime,
+        )
 
     except pydantic.ValidationError as e:
         from markata.plugins.load import ValidationError, get_models

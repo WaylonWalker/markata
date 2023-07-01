@@ -16,7 +16,7 @@ import textwrap
 from typing import Any, Dict, Iterable, Optional
 
 from checksumdir import dirhash
-from diskcache import FanoutCache
+from diskcache import Cache
 import pluggy
 import pydantic
 from rich.console import Console
@@ -110,6 +110,7 @@ class Markata:
         self.stages_ran = set()
         self.threded = False
         self._cache = None
+        self._precache = None
         self.MARKATA_CACHE_DIR = Path(".") / ".markata.cache"
         self.MARKATA_CACHE_DIR.mkdir(exist_ok=True)
         self._pm = pluggy.PluginManager("markata")
@@ -144,15 +145,25 @@ class Markata:
         if console is not None:
             self._console = console
         atexit.register(self.teardown)
+        self.precache
 
     @property
-    def cache(self: "Markata") -> FanoutCache:
+    def cache(self: "Markata") -> Cache:
         # if self.threded:
         #     FanoutCache(self.MARKATA_CACHE_DIR, statistics=True)
         if self._cache is not None:
             return self._cache
-        self._cache = FanoutCache(self.MARKATA_CACHE_DIR, statistics=True)
+        self._cache = Cache(self.MARKATA_CACHE_DIR, statistics=True)
+
         return self._cache
+
+    @property
+    def precache(self: "Markata") -> None:
+        if self._precache is None:
+            self.cache.expire()
+            self.console.log("precache is None, creating it now")
+            self._precache = {k: self.cache.get(k) for k in self.cache.iterkeys()}
+        return self._precache
 
     def __getattr__(self: "Markata", item: str) -> Any:
         if item in self._pm.hook.__dict__:
@@ -331,6 +342,7 @@ class Markata:
         return json.dumps(self.to_dict(), indent=4, sort_keys=True, default=str)
 
     def _register_hooks(self: "Markata") -> None:
+        sys.path.append(os.getcwd())
         for hook in self.hooks_conf.hooks:
             try:
                 # module style plugins
@@ -338,8 +350,13 @@ class Markata:
             except ModuleNotFoundError as e:
                 # class style plugins
                 if "." in hook:
-                    mod = importlib.import_module(".".join(hook.split(".")[:-1]))
-                    plugin = getattr(mod, hook.split(".")[-1])
+                    try:
+                        mod = importlib.import_module(".".join(hook.split(".")[:-1]))
+                        plugin = getattr(mod, hook.split(".")[-1])
+                    except ModuleNotFoundError as e:
+                        raise ModuleNotFoundError(
+                            f"module {hook} not found\n{sys.path}"
+                        ) from e
                 else:
                     raise e
 

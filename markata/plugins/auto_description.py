@@ -52,7 +52,7 @@ m = Markata()
 """
 from itertools import compress
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict
+from typing import Any, Dict, TYPE_CHECKING
 
 import commonmark
 
@@ -108,10 +108,10 @@ def set_description(
         config,
     )
 
-    description_from_cache = cache.get(key)
+    description_from_cache = markata.precache.get(key)
     if description_from_cache is None:
         description = get_description(article)[:max_description]
-        markata.cache.add(key, description, expire=config["cache_expire"])
+        markata.cache.add(key, description, expire=markata.config.default_cache_expire)
     else:
         description = description_from_cache
 

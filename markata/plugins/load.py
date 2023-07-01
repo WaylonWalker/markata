@@ -43,7 +43,15 @@ def load(markata: "MarkataMarkdown") -> None:
 
 def get_post(path: Path, markata: "Markata") -> Optional[Callable]:
     if markata.Post:
-        return pydantic_get_post(path=path, markata=markata)
+
+        # profiler = Profiler(async_mode="disabled")
+        # start_time = time.time()
+        # profiler.start()
+        post = pydantic_get_post(path=path, markata=markata)
+        # profiler.stop()
+        # post.load_time = time.time() - start_time
+        # post.profile = profiler.output_text()
+        return post
     else:
         return legacy_get_post(path=path, markata=markata)
 
@@ -82,6 +90,7 @@ def pydantic_get_post(path: Path, markata: "Markata") -> Optional[Callable]:
     # try:
     #     post = markata.Post(**fm_post.metadata, markata=markata)
 
+    # markata.console.log(f"loading {path}")
     try:
         post = markata.Post.parse_file(markata=markata, path=path)
 

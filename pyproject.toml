@@ -41,6 +41,7 @@ dependencies = [
  "pillow",
  "pluggy",
  "pydantic",
+ 'dateparser',
  "polyfactory",
  "pymdown-extensions",
  "python-frontmatter",

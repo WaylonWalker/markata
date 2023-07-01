@@ -202,6 +202,8 @@ class FeedConfig(pydantic.BaseModel):
     slug: str = None
     name: Optional[str] = None
     filter: str = "True"
+    sort: str = "date"
+    revers: bool = False
     card_template: str = """
         <li class='post'>
             <a href="/{{ markata.config.path_prefix }}{{ post.slug }}/">
@@ -426,7 +428,10 @@ def save(markata: Markata) -> None:
 
 @lru_cache()
 def get_template(src) -> Template:
-    return Template(src, undefined=SilentUndefined)
+    try:
+        return Template(Path(src).read_text(), undefined=SilentUndefined)
+    except FileNotFoundError:
+        return Template(src, undefined=SilentUndefined)
 
 
 def create_page(
@@ -445,25 +450,43 @@ def create_page(
     ]
     cards.insert(0, "<ul>")
     cards.append("</ul>")
+    cards = "".join(cards)
 
     template = get_template(feed.config.template)
     output_file = Path(markata.config.output_dir) / feed.config.slug / "index.html"
     canonical_url = f"{markata.config.url}/{feed.config.slug}/"
     output_file.parent.mkdir(exist_ok=True, parents=True)
 
-    output_file.write_text(
-        template.render(
+    key = markata.make_hash(
+        "feeds",
+        template,
+        __version__,
+        cards,
+        markata.config.url,
+        markata.config.description,
+        feed.config.title,
+        canonical_url,
+        datetime.datetime.today(),
+        markata.config,
+    )
+
+    feed_html_from_cache = markata.precache.get(key)
+    if feed_html_from_cache is None:
+        feed_html = template.render(
             markata=markata,
             __version__=__version__,
-            body="".join(cards),
+            body=cards,
             url=markata.config.url,
             description=markata.config.description,
             title=feed.config.title,
             canonical_url=canonical_url,
             today=datetime.datetime.today(),
             config=markata.config,
-        ),
-    )
+        )
+        with markata.cache as cache:
+            markata.cache.set(key, feed_html)
+
+    output_file.write_text(feed_html)
 
 
 def create_card(
@@ -477,9 +500,9 @@ def create_card(
     template is configured it will create one with the post title and dates
     (if present).
     """
-    key = markata.make_hash("feeds", template, post.yaml())
+    key = markata.make_hash("feeds", template, str(post), post.content)
 
-    card = cache.get(key)
+    card = markata.precache.get(key)
     if card is not None:
         return card
 

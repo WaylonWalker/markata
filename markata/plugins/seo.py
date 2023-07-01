@@ -1,6 +1,6 @@
 """manifest plugin"""
 import logging
-from typing import TYPE_CHECKING, Any, Dict, List
+from typing import Any, Dict, List, TYPE_CHECKING
 
 from bs4 import BeautifulSoup
 
@@ -171,7 +171,7 @@ def render(markata: Markata) -> None:
                 str(config_seo),
             )
 
-            html_from_cache = cache.get(key)
+            html_from_cache = markata.precache.get(key)
 
             if html_from_cache is None:
                 soup = BeautifulSoup(article.html, features="lxml")
@@ -206,7 +206,7 @@ def render(markata: Markata) -> None:
                 soup.head.append(meta_url)
 
                 html = soup.prettify() if should_prettify else str(soup)
-                cache.add(key, html, expire=markata.config["default_cache_expire"])
+                cache.add(key, html, expire=markata.config.default_cache_expire)
 
             else:
                 html = html_from_cache

@@ -44,7 +44,7 @@ class Config(pydantic.BaseSettings):
     twitter_card: str = "summary_large_image"
     twitter_creator: Optional[str] = None
     twitter_site: Optional[str] = None
-    path_prefix: Optional[str] = None
+    path_prefix: Optional[str] = ""
 
     class Config:
         env_prefix = "markata_"

@@ -245,7 +245,7 @@ def render(markata: "Markata") -> None:
                 "render",
                 article.content,
             )
-            html_from_cache = cache.get(key)
+            html_from_cache = markata.precache.get(key)
             if html_from_cache is None:
                 html = markata.md.convert(article.content)
                 cache.add(key, html, expire=config.cache_expire)
