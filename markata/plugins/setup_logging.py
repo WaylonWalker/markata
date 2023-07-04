@@ -77,7 +77,6 @@ from typing import Optional, TYPE_CHECKING
 
 from jinja2 import Template, Undefined
 import pydantic
-from rich.console import Console
 from rich.logging import RichHandler
 
 from markata.hookspec import hook_impl, register_attr

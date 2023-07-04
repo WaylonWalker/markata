@@ -2,11 +2,13 @@
 <html lang="en">
 
 <head>
-    <title>{{ post.title }}</title>
+    {% if post.title or config.title %}
+    <title>{{ post.title or config.title }}</title>
+    {% endif %}
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    {% if post.description %}
-    <meta name="description" content="{{ post.description }}" />
+    {% if post.description or config.description %}
+    <meta name="description" content="{{ post.description or config.description }}" />
     {% endif %} {% if config.icon %}
     <link href="/{{ config.icon }}" rel="icon" type="image/png" />
     {% endif %}
@@ -70,13 +72,7 @@
     </script>
     <style>
         :root {
-            --color-bg: {
-                    {
-                    config.style.color_bg
-                }
-            }
-
-            ;
+            --color-bg: { { config.style.color_bg } } ;
 
             --color-bg-code: {
                     {
