@@ -79,6 +79,7 @@ import pydantic
 
 from markata import __version__
 from markata.hookspec import hook_impl
+import inspect
 
 env = jinja2.Environment()
 
@@ -90,6 +91,19 @@ class SilentUndefined(Undefined):
     def _fail_with_undefined_error(self, *args, **kwargs):
         return ""
 
+
+def optional(*fields):
+    def dec(_cls):
+        for field in fields:
+            _cls.__fields__[field].required = False
+            _cls.__fields__[field].default = None
+        return _cls
+
+    if fields and inspect.isclass(fields[0]) and issubclass(fields[0], pydantic.BaseModel):
+        cls = fields[0]
+        fields = cls.__fields__
+        return dec(cls)
+    return dec
 
 class Style(pydantic.BaseModel):
     color_bg: str = "#1f2022"
@@ -105,6 +119,10 @@ class Style(pydantic.BaseModel):
     color_link_light: str = "#fb30c4"
     color_accent_light: str = "#ffeb00"
     overlay_brightness_light: str = ".95"
+
+@optional
+class StyleOverrides(Style):
+    ...
 
 
 class Meta(pydantic.BaseModel):
@@ -146,12 +164,12 @@ class HeadConfig(pydantic.BaseModel):
 class Config(pydantic.BaseModel):
     head: HeadConfig = HeadConfig()
     style: Style = Style()
-    post_template: str
+    post_template: str = None
 
-    @pydantic.validator("post_template", pre=True)
+    @pydantic.validator("post_template", pre=True, always=True)
     def default_post_template(cls, v):
         if v is None:
-            return (Path(__file__).parent / "default_post_template.html").read_text()
+            return (Path(__file__).parent / "default_post_template.html.jinja").read_text()
         if isinstance(v, Path):
             return v.read_text()
         if isinstance(v, str) and Path(v).exists():
@@ -161,7 +179,7 @@ class Config(pydantic.BaseModel):
 
 class PostOverrides(pydantic.BaseModel):
     head: HeadConfig = HeadConfig()
-    style: Style = Style()
+    style: Style = StyleOverrides()
 
 
 class Post(pydantic.BaseModel):

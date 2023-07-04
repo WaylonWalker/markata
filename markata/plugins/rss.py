@@ -19,13 +19,13 @@ if TYPE_CHECKING:
 @hook_impl(trylast=True)
 def render(markata: "MarkataRss") -> None:
     fg = FeedGenerator()
-    url = markata.config.url
+    url = markata.config.url or ""
     title = markata.config.title
     name = markata.config.author_name
     email = markata.config.author_email
     icon = str(markata.config.icon)
     lang = markata.config.lang
-    rss_description = markata.config.rss_description
+    rss_description = markata.config.rss_description or "rss feed"
 
     fg.id(str(url + "/rss.xml"))
     fg.title(title)

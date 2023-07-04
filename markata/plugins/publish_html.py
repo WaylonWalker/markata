@@ -55,12 +55,15 @@ lets you [make your home page](https://markata.dev/home-page/)
 
 """
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 import pydantic
 from slugify import slugify
 
 from markata.hookspec import hook_impl, register_attr
+
+if TYPE_CHECKING:
+    from markata import Markata
 
 
 class OutputHTML(pydantic.BaseModel):

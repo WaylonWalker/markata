@@ -203,7 +203,7 @@ class FeedConfig(pydantic.BaseModel):
     name: Optional[str] = None
     filter: str = "True"
     sort: str = "date"
-    revers: bool = False
+    reverse: bool = False
     card_template: str = """
         <li class='post'>
             <a href="/{{ markata.config.path_prefix }}{{ post.slug }}/">
@@ -211,7 +211,7 @@ class FeedConfig(pydantic.BaseModel):
             </a>
         </li>
         """
-    template: str = Path(__file__).parent / "default_post_template.html"
+    template: str = Path(__file__).parent / "default_post_template.html.jinja"
 
     @pydantic.validator("name", pre=True, always=True)
     def default_name(cls, v, *, values):
@@ -225,7 +225,7 @@ class FeedConfig(pydantic.BaseModel):
 
 
 class FeedsConfig(pydantic.BaseModel):
-    feeds: List[FeedConfig] = [FeedConfig()]
+    feeds: List[FeedConfig] = [FeedConfig(slug="archive")]
 
 
 @dataclass
@@ -432,6 +432,8 @@ def get_template(src) -> Template:
         return Template(Path(src).read_text(), undefined=SilentUndefined)
     except FileNotFoundError:
         return Template(src, undefined=SilentUndefined)
+    except OSError:  # File name too long
+        return Template(src, undefined=SilentUndefined)
 
 
 def create_page(
@@ -538,7 +540,9 @@ def create_card(
             _template = Template(Path(template).read_text())
         except FileNotFoundError:
             _template = Template(template)
-        card = _template.render(**post.to_dict())
+        except OSError:  # File name too long
+            _template = Template(template)
+        card = _template.render(post=post, **post.to_dict())
     cache.add(key, card)
     return card
 

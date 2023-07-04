@@ -35,7 +35,7 @@ class Config(pydantic.BaseModel):
         description="The directory to store static assets",
     )
     icon: Optional[Path]
-    icon_out_file: Optional[Path]
+    icon_out_file: Optional[Path] = None
     icons: Optional[List[Dict[str, str]]] = []
 
     @pydantic.validator("icon")
@@ -52,10 +52,11 @@ class Config(pydantic.BaseModel):
         else:
             raise FileNotFoundError(v)
 
-    @pydantic.validator("icon_out_file")
+    @pydantic.validator("icon_out_file", pre=True, always=True)
     def default_icon_out_file(cls, v, *, values: Dict) -> Path:
-        if v is None:
+        if v is None and values["icon"] is not None:
             return Path(values["output_dir"]) / values["icon"]
+        return v
 
 
 @hook_impl()

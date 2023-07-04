@@ -27,7 +27,7 @@ class Config(pydantic.BaseSettings):
     site_version: int = 1
     markdown_backend: str = "markdown-it-py"
     url: Optional[AnyUrl] = None
-    title: Optional[str] = None
+    title: Optional[str] = "Markata Site"
     description: Optional[str] = None
     rss_description: Optional[str] = None
     author_name: Optional[str] = None
@@ -92,7 +92,11 @@ def config_model(markata: "Markata") -> None:
 @register_attr("config")
 def load_config(markata: "Markata") -> None:
     if "config" not in markata.__dict__.keys():
-        markata.config = markata.Config.parse_obj(standard_config.load("markata"))
+        config = standard_config.load("markata")
+        if config == {}:
+            markata.config = markata.Config()
+        else:
+            markata.config = markata.Config.parse_obj(config)
 
 
 class ConfigFactory(ModelFactory):

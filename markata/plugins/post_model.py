@@ -16,6 +16,8 @@ logger = logging.getLogger(__name__)
 if TYPE_CHECKING:
     from pydantic.typing import ReprArgs
 
+    from markata import Markata
+
 
 class Post(pydantic.BaseModel):
     markata: Any = None
@@ -131,6 +133,8 @@ class Post(pydantic.BaseModel):
         except ValueError:
             fm = {}
             content = text
+        if isinstance(fm, str):
+            fm = {}
 
         return markata.Post(
             markata=markata,
@@ -183,7 +187,7 @@ class Post(pydantic.BaseModel):
     @pydantic.validator("date")
     def dateparser_date(cls, v, *, values):
         if isinstance(v, str):
-            d = values["markata"].cache.get(v)
+            d = values["markata"].precache.get(v)
             if d is not None:
                 return d
             d = dateparser.parse(v)
