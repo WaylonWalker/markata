@@ -83,6 +83,8 @@ import pdb
 import shutil
 import sys
 import traceback
+import toml
+import json
 from typing import Callable, Literal, Optional, TYPE_CHECKING
 import warnings
 
@@ -166,6 +168,22 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
         else:
             markata.console.quiet = True
         rich_print(markata.config)
+
+    @config_app.command()
+    def generate(
+        verbose: bool = typer.Option(
+            False,
+            "--verbose",
+            "-v",
+        ),
+    ) -> None:
+
+        if verbose:
+            markata.console.quiet = False
+        else:
+            markata.console.quiet = True
+
+        rich_print(toml.dumps(json.loads(markata.config.json())))
 
     @config_app.command()
     def get(key: str) -> None:

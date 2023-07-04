@@ -124,7 +124,6 @@ class LoggingConfig(pydantic.BaseModel):
 
     @pydantic.validator("log_dir", pre=True, always=True)
     def validate_log_dir(cls, v, *, values):
-        Console().log("validating log_dir")
         if v is None:
             return values["output_dir"] / "_logs"
         return Path(v)

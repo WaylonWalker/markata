@@ -71,7 +71,6 @@ DEFAULT_HOOKS = [
     "markata.plugins.copy_assets",
     "markata.plugins.publish_html",
     "markata.plugins.flat_slug",
-    # "markata.plugins.datetime",
     "markata.plugins.rss",
     "markata.plugins.icon_resize",
     "markata.plugins.sitemap",
@@ -161,7 +160,6 @@ class Markata:
     def precache(self: "Markata") -> None:
         if self._precache is None:
             self.cache.expire()
-            self.console.log("precache is None, creating it now")
             self._precache = {k: self.cache.get(k) for k in self.cache.iterkeys()}
         return self._precache
 
