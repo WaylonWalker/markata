@@ -195,6 +195,7 @@ no-cov = "cov --no-cov"
 lint = "ruff markata"
 format = "black --check markata"
 build-docs = "markata build"
+lint-format = ['lint', 'format']
 lint-test = [
  "lint",
  "format",
