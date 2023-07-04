@@ -43,7 +43,6 @@ def load(markata: "MarkataMarkdown") -> None:
 
 def get_post(path: Path, markata: "Markata") -> Optional[Callable]:
     if markata.Post:
-
         # profiler = Profiler(async_mode="disabled")
         # start_time = time.time()
         # profiler.start()
@@ -95,7 +94,6 @@ def pydantic_get_post(path: Path, markata: "Markata") -> Optional[Callable]:
         post = markata.Post.parse_file(markata=markata, path=path)
 
     except pydantic.ValidationError as e:
-
         models = get_models(markata=markata, error=e)
         models = list(models.values())
         models = "\n".join(models)

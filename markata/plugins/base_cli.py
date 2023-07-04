@@ -162,7 +162,6 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
             "-v",
         ),
     ) -> None:
-
         if verbose:
             markata.console.quiet = False
         else:
@@ -177,7 +176,6 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
             "-v",
         ),
     ) -> None:
-
         if verbose:
             markata.console.quiet = False
         else:

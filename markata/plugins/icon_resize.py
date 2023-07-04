@@ -20,7 +20,6 @@ from PIL import Image
 from markata.hookspec import register_attr
 
 if TYPE_CHECKING:
-
     from markata import Markata
 
 import pydantic

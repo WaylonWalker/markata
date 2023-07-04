@@ -55,7 +55,6 @@ def post_model(markata: "Markata") -> None:
 @hook_impl
 @register_attr("sitemap")
 def render(markata: Markata) -> None:
-
     sitemap = {
         "urlset": markata.map("post.sitemap_url.dict()", filter="post.published")
     }
