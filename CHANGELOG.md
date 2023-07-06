@@ -1,5 +1,13 @@
 # Markata Changelog
 
+## 0.5.5
+
+- Fix: Icon resize broken from PIL 10.0.0 release
+
+## 0.5.4
+
+- Fix: broken `markata new` command due to pydantic v2 compatability with copier.
+
 ## 0.5.2
 
 * clean up unnecessary images_url is missing warning #104 0.5.2.dev1
