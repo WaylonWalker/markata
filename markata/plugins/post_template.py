@@ -6,8 +6,14 @@
 This snippet allows users to configure their head in `markata.toml`.
 
 ``` html
-{{ config.get('head', {}).pop('text') if 'text' in config.get('head',{}).keys() }}{% for tag, meta in config.get('head', {}).items() %}{% for _meta in meta %}
-<{{ tag }} {% for attr, value in _meta.items() %}{{ attr }}="{{ value }}"{% endfor %}/> {% endfor %}{% endfor %}
+{{ config.get('head', {}).pop('text') if 'text' in config.get('head',{}).keys() }}
+{% for tag, meta in config.get('head', {}).items() %}
+    {% for _meta in meta %}
+        <{{ tag }}
+            {% for attr, value in _meta.items() %}{{ attr }}="{{ value }}"{% endfor %}
+        />
+    {% endfor %}
+{% endfor %}
 ```
 
 Users can specify any sort of tag in their `markata.toml`
@@ -67,8 +73,8 @@ import copy
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-import jinja2
 from deepmerge import always_merger
+import jinja2
 from jinja2 import Template, Undefined
 from more_itertools import flatten
 
@@ -140,9 +146,7 @@ def render(markata: "Markata") -> None:
     _full_config = copy.deepcopy(markata.config)
 
     for article in [a for a in markata.articles if hasattr(a, "html")]:
-
         if head_template:
-
             head = eval(
                 head_template.render(
                     __version__=__version__,

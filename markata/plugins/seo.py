@@ -138,7 +138,6 @@ def _create_seo_tag(meta: dict, soup: BeautifulSoup) -> "Tag":
 
 
 def _get_or_warn(config: Dict, key: str, default: str) -> Any:
-
     if key not in config.keys():
         logger.warn(
             f"{key} is missing from markata.toml config, using default value {default}"
@@ -148,7 +147,6 @@ def _get_or_warn(config: Dict, key: str, default: str) -> Any:
 
 @hook_impl
 def render(markata: Markata) -> None:
-
     url = _get_or_warn(markata.config, "url", "")
     images_url = markata.config.get("images_url", url)
     site_name = _get_or_warn(markata.config, "site_name", "")

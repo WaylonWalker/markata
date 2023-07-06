@@ -20,7 +20,7 @@ def test_feed_map(mocker):
 
 def test_feeds(mocker):
     mocked_markata = mocker.patch.object(markata, "Markata", DummyMarkata())
-    feeds = Feeds(markata=mocked_markata)
+    Feeds(markata=mocked_markata)
 
 
 def test_feeds_iter(mocker):

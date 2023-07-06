@@ -5,20 +5,20 @@ from __future__ import annotations
 
 import atexit
 import datetime
+from datetime import timedelta
 import hashlib
 import importlib
 import logging
 import os
+from pathlib import Path
 import sys
 import textwrap
-from datetime import timedelta
-from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
 
-import frontmatter
-import pluggy
 from checksumdir import dirhash
 from diskcache import FanoutCache
+import frontmatter
+import pluggy
 from rich.console import Console
 from rich.progress import track
 from rich.table import Table
@@ -155,7 +155,6 @@ class Markata:
             raise AttributeError(f"'Markata' object has no attribute '{item}'")
 
     def __rich__(self) -> Table:
-
         grid = Table.grid()
         grid.add_column("label")
         grid.add_column("value")
@@ -236,7 +235,6 @@ class Markata:
         return self
 
     def get_plugin_config(self, path_or_name: str) -> Dict:
-
         key = Path(path_or_name).stem
 
         config = self.config.get(key, {})
@@ -259,7 +257,6 @@ class Markata:
         if key in self.config.keys():
             return self.config[key]
         else:
-
             if suggested is None:
                 suggested = textwrap.dedent(
                     f"""
@@ -425,7 +422,6 @@ class Markata:
         import copy
 
         def try_sort(a: Any) -> int:
-
             if "datetime" in sort.lower():
                 return a.get(sort, datetime.datetime(1970, 1, 1))
 
@@ -485,7 +481,10 @@ class Markata:
                 f"variable: '{variable}' is missing in {len(missing_in_posts)} posts"
             )
             if len(missing_in_posts) > 10:
-                message += f"\nfirst 10 paths to posts missing {variable} [{','.join(missing_in_posts)}..."
+                message += (
+                    f"\nfirst 10 paths to posts missing {variable}"
+                    f"[{','.join(missing_in_posts)}..."
+                )
             else:
                 message += f"\npaths to posts missing {variable} {missing_in_posts}"
 

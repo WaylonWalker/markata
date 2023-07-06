@@ -16,8 +16,10 @@ assets_dir = "static"
 redirects = static/_redirects
 
 hooks = [
-   "markata.plugins.redirects", # creates redirects from static/_redirects file
-   "markata.plugins.copy_assets", # copies your static assets into the output_dir (default: `markout`)
+   # creates redirects from static/_redirects file
+   "markata.plugins.redirects",
+   # copies your static assets into the output_dir (default: `markout`)
+   "markata.plugins.copy_assets",
   ...
 ]
 ```
@@ -61,7 +63,8 @@ implementation.
 | Redirect by country or language     | No      | `/ /us 302 Country=us`                                          | ...                                                                                               |
 | Redirect by cookie                  | No      | `/* /preview/:splat 302 Cookie=preview`                        | ...                                                                                               |
 
-> Compare with [cloudflare-pages](https://developers.cloudflare.com/pages/platform/redirects/)
+> Compare with 
+> [cloudflare-pages](https://developers.cloudflare.com/pages/platform/redirects/)
 
 !!! tip
     If you have a public site, pair this up with

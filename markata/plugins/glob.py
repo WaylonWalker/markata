@@ -13,7 +13,6 @@ if TYPE_CHECKING:
 @hook_impl
 @register_attr("content_directories", "files")
 def glob(markata: "Markata") -> None:
-
     markata.files = list(
         flatten([Path().glob(str(pattern)) for pattern in markata.glob_patterns])
     )

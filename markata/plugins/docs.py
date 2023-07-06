@@ -3,11 +3,12 @@ leading docstring
 """
 import ast
 import datetime
-import textwrap
 from pathlib import Path
-from typing import TYPE_CHECKING, List
+import textwrap
+from typing import List, TYPE_CHECKING
 
 import frontmatter
+import jinja2
 
 from markata.hookspec import hook_impl, register_attr
 
@@ -96,42 +97,21 @@ def make_article(markata: "Markata", file: Path) -> frontmatter.Post:
     )
 
     slug = f"{file.parent}/{file.stem}".lstrip("/").lstrip("./")
-    article = textwrap.dedent(
-        f"""
-    ---
-    title: {file.name}
-    published: True
-    slug: {slug}
-    edit_link: {edit_link}
-    path: {file.stem}.md
-    today: {datetime.datetime.today()}
-    description: Docs for {file.stem}
 
-    ---
-
-    """
+    jinja_env = jinja2.Environment()
+    article = jinja_env.from_string(
+        (Path(__file__).parent / "default_doc_template.md").read_text()
+    ).render(
+        ast=ast,
+        file=file,
+        slug=slug,
+        edit_link=edit_link,
+        tree=tree,
+        datetime=datetime,
+        nodes=nodes,
+        raw_source=raw_source,
+        indent=textwrap.indent,
     )
-    article += textwrap.dedent(
-        f"""
-            {ast.get_docstring(tree) or ""}
-            """
-    )
-    for node in nodes:
-        article += textwrap.dedent(
-            f"""
-
----
-
-## {node.name} `{node.type}`
-
-{ast.get_docstring(node)}
-
-??? "{node.name} source"
-    ``` python
-{textwrap.indent(ast.get_source_segment(raw_source, node), '    ')}
-    ```
-        """
-        )
 
     return frontmatter.loads(article)
 
