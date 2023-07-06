@@ -33,6 +33,10 @@ usage
 markata tui
 ```
 
+## 0.6.4
+
+- Fix: Icon resize broken from PIL 10.0.0 release
+
 ## 0.6.3
 
 - Fix: broken `markata new` command due to pydantic v2 compatability with copier.
@@ -95,6 +99,10 @@ automagically just work if you leave `markata.plugins.flat_slug` plugin enabled
 > links in this style for you.
 
 [[home-page]]
+
+## 0.5.5
+
+- Fix: Icon resize broken from PIL 10.0.0 release
 
 ## 0.5.4
 
