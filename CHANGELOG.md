@@ -50,6 +50,15 @@ color='red'
 
 > New
 
+## 0.7.3
+
+- Fix: broken default feed card template
+- Fix: broken links for index.md in feeds
+
+## 0.7.2
+
+- Fix: broken `markata new` command due to pydantic v2 compatability with copier.
+
 ## 0.7.0
 
 - Adopt ruff linter 0.7.0.dev1 #142
@@ -69,6 +78,10 @@ usage
 ```bash
 markata tui
 ```
+
+## 0.6.3
+
+- Fix: broken `markata new` command due to pydantic v2 compatability with copier.
 
 ## 0.6.2
 
@@ -132,6 +145,10 @@ automagically work if you leave `markata.plugins.flat_slug` plugin enabled
 > links in this style for you.
 
 [[home-page]]
+
+## 0.5.4
+
+- Fix: broken `markata new` command due to pydantic v2 compatability with copier.
 
 ## 0.5.2
 

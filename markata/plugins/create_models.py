@@ -15,18 +15,20 @@ class Config:
     extras = "allow"
 
 
+class PostConfig:
+    title = "Markata.Post"
+    arbitrary_types_allowed = True
+    copy_on_model_validation = False
+
 @hook_impl
 @register_attr("Post", "Config")
 def create_models(markata: "Markata") -> None:
-    @pydantic.validator("markata", pre=True, always=True)
-    def default_markata(cls, v, *, values: Dict) -> "Markata":
-        if v is None:
-            return markata
 
     post_models = tuple(unique_everseen(markata.post_models))
     markata.Post = create_model(
-        "Post", __base__=post_models, __validators__={"markata": default_markata}
+        "Post",  __base__=post_models, 
     )
+    markata.Post.markata = markata
     markata.Config = create_model(
         "Config",
         __base__=tuple(unique_everseen(markata.config_models)),

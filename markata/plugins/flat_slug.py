@@ -47,21 +47,12 @@ class Config(pydantic.BaseModel):
 
 
 class FlatSlugPost(pydantic.BaseModel):
-    markata: Markata
     should_slugify: Optional[bool] = None
-    # slug: str = None
-
-    class Config:
-        validate_assignment = True
-        arbitrary_types_allowed = True
 
     @pydantic.validator("should_slugify", pre=True, always=True)
     def default_slugify(cls: "FlatSlugPost", v: bool, *, values: Dict) -> bool:
-        if values["markata"] is None:
-            for validator in cls.__validators__["markata"]:
-                values["markata"] = validator.func(cls, v, values=values)
         if not v:
-            return values["markata"].config.flat_slug.slugify
+            return cls.markata.config.flat_slug.slugify
         return v
 
 

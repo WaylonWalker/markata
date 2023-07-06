@@ -9,19 +9,15 @@ from markata.hookspec import hook_impl, register_attr
 
 
 class SiteMapUrl(pydantic.BaseModel):
-    markata: Any = pydantic.Field(..., exclude=True)
     slug: str = pydantic.Field(..., exclude=True)
     loc: str = pydantic.Field(None, include=True)
     changefreq: str = pydantic.Field("daily", include=True)
     priority: str = pydantic.Field("0.7", include=True)
 
-    class Config:
-        arbitrary_types_allowed = True
-
     @pydantic.validator("loc")
     def default_loc(cls, v, *, values):
         if v is None:
-            return values["markata"].config.url + "/" + values["slug"] + "/"
+            return cls.markata.config.url + "/" + values["slug"] + "/"
         return v
 
     def dict(self, *args, **kwargs):
@@ -29,20 +25,16 @@ class SiteMapUrl(pydantic.BaseModel):
 
 
 class SiteMapPost(pydantic.BaseModel):
-    markata: Any
     slug: str = None
     published: bool = True
     sitemap_url: Optional[SiteMapUrl] = None
 
-    class Config:
-        arbitrary_types_allowed = True
-
     @pydantic.validator("sitemap_url", pre=False, always=True)
     def default_loc(cls, v, *, values):
         if v is None:
-            return SiteMapUrl(markata=values["markata"], slug=values["slug"])
+            return SiteMapUrl(markata=cls.markata, slug=values["slug"])
         if v.markata is None:
-            return SiteMapUrl(markata=values["markata"], slug=values["slug"])
+            return SiteMapUrl(markata=cls.markata, slug=values["slug"])
         return v
 
 

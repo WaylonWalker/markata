@@ -64,7 +64,7 @@ if TYPE_CHECKING:
 
 
 class ServiceWorkerConfig(pydantic.BaseModel):
-    output_dir: pydantic.DirectoryPath = "markout"
+    output_dir: pydantic.DirectoryPath = None
     precache_urls: List[str] = ["index.html", "./"]
     precache_posts: bool = False
     precache_feeds: bool = False
@@ -75,6 +75,12 @@ class ServiceWorkerConfig(pydantic.BaseModel):
     class Config:
         arbitrary_types_allowed = True
 
+    @pydantic.validator("output_dir", always=True, pre=True)
+    def validate_output_dir(cls, v):
+        if v is None:
+            return cls.markata.config.output_dir
+        return v
+
     @pydantic.validator("template_file", always=True, pre=True)
     def validate_template_file(cls, v):
         if v is None:
@@ -82,9 +88,9 @@ class ServiceWorkerConfig(pydantic.BaseModel):
         return v
 
     @pydantic.validator("output_file", always=True, pre=True)
-    def validate_output_file(cls, v):
+    def validate_output_file(cls, v, *, values):
         if v is None:
-            return Path(__file__).parent / "service_worker.js"
+            return values["output_dir"] / "service_worker.js"
         return v
 
 

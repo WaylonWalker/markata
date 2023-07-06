@@ -89,24 +89,10 @@ class Redirect(pydantic.BaseModel):
     original: str
     new: str
     markata: Markata
-    file: Optional[Path] = None
 
     class Config:
         validate_assignment = True
         arbitrary_types_allowed = True
-
-    @pydantic.validator("file", pre=True, always=True)
-    @classmethod
-    def default_file(cls: "Redirect", v: Path, *, values: Dict) -> Path:
-        if not v:
-            v = (
-                values["markata"].config.output_dir
-                / values["original"].strip("/")
-                / "index.html"
-            )
-            v.parent.mkdir(parents=True, exist_ok=True)
-        return v
-
 
 class RedirectsConfig(pydantic.BaseModel):
     assets_dir: Path = Path("static")
@@ -155,4 +141,5 @@ def save(markata: "Markata") -> None:
 
     for redirect in redirects:
         file = markata.config.output_dir / redirect.original.strip("/") / "index.html"
+        file.parent.mkdir(parents=True, exist_ok=True)
         file.write_text(template.render(redirect.dict(), config=markata.config))

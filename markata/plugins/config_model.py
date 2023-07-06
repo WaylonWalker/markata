@@ -18,7 +18,7 @@ class Config(pydantic.BaseSettings):
     disabled_hooks: list[str] = []
     markdown_extensions: list[str] = []
     default_cache_expire: PositiveInt = 3600
-    output_dir: pydantic.DirectoryPath = "markout"
+    output_dir: pydantic.DirectoryPath = Path("markout")
     assets_dir: Path = pydantic.Field(
         Path("static"),
         description="The directory to store static assets",

@@ -131,7 +131,7 @@ filter="'project-gallery' in str(path)"
 sort='title'
 card_template="""
 <li class='post' style='background:rgba(255, 255, 255, .05); border:1px solid rgba(255, 255, 255, .2); padding:1rem; margin: 2rem auto;' >
-<a href='/{{ slug }}/'><h2>{{ title }}</h2></a>
+<a href='{{ href }}'><h2>{{ title }}</h2></a>
 <ul style='display: flex; list-style-type: None;'>
 <li><a href='{{ codeUrl }}'>Source Code</a></li>
 <li><a href='{{ url }}'>Public Site</a></li>
@@ -146,7 +146,7 @@ slug='docs'
 title="Documentation"
 filter='"markata" not in slug and "tests" not in slug and "404" not in slug'
 sort='slug'
-card_template="<li class='post'><a href='/{{ slug }}/'>{{ title }}<p style='color: white; text-decoration: none;'>{{ description }}</p></a> </li>"
+card_template="<li class='post'><a href='{{ href }}'>{{ title }}<p style='color: white; text-decoration: none;'>{{ description }}</p></a> </li>"
 
 [[markata.feeds]]
 slug='all'
@@ -154,8 +154,8 @@ title="All Markata Modules"
 filter="True"
 card_template="""
 <li class='post' style='background:rgba(255, 255, 255, .05); border:1px solid rgba(255, 255, 255, .2); padding:1rem; margin: 2rem auto;' >
-<a href='/{{ slug }}/'>
-    <a href='/{{ slug }}/'>{{ title }}</a>
+<a href='{{ href }}'>
+    <a href='{{ href }}'>{{ title }}</a>
     <p>
         {{ article_html[:article_html.find('</p>')]  }}
     </p>
@@ -169,8 +169,8 @@ title="Markata Core Modules"
 filter="'plugin' not in slug and 'test' not in slug and title.endswith('.py')"
 card_template="""
 <li class='post' style='background:rgba(255, 255, 255, .05); border:1px solid rgba(255, 255, 255, .2); padding:1rem; margin: 2rem auto;' >
-<a href='/{{ slug }}/'>
-    <a href='/{{ slug }}/'>{{ title }}</a>
+<a href='{{ href }}'>
+    <a href='{{ href }}'>{{ title }}</a>
     <p>
         {{ article_html[:article_html.find('</p>')]  }}
     </p>
@@ -184,8 +184,8 @@ title="Markata Plugins"
 filter="'plugin' in slug and 'test' not in slug"
 card_template="""
 <li class='post' style='background:rgba(255, 255, 255, .05); border:1px solid rgba(255, 255, 255, .2); padding:1rem; margin: 2rem auto;' >
-<a href='/{{ slug }}/'>
-    <a href='/{{ slug }}/'>{{ title }}</a>
+<a href='{{ href }}'>
+    <a href='/{{ href }}/'>{{ title }}</a>
     <p>
         {{ article_html[:article_html.find('</p>')]  }}
     </p>
@@ -198,6 +198,8 @@ ignore=[
 'jinja_md.md',
 'post_template.md',
 'publish_html.md',
+'CHANGELOG.md',
+'feeds.md',
 ]
 
 [[markata.head.meta]]

@@ -94,12 +94,7 @@ class OutputHTML(pydantic.BaseModel):
             for validator in cls.__validators__["slug"]:
                 values["slug"] = validator.func(cls, v, values=values)
 
-        if values["markata"] is None:
-            for validator in cls.__validators__["markata"]:
-                values["markata"] = validator.func(cls, v, values=values)
-        if values["slug"] == "index":
-            return Path(values["markata"].config.output_dir / "index.html")
-        return Path(values["markata"].config.output_dir / values["slug"] / "index.html")
+        return Path(cls.markata.config.output_dir / values["slug"] / "index.html")
 
     @pydantic.validator("output_html", pre=True, always=True)
     @classmethod
@@ -108,8 +103,10 @@ class OutputHTML(pydantic.BaseModel):
     ) -> Path:
         if not v:
             return v
-        if values["markata"].config.output_dir.absolute() not in v.absolute().parents:
-            return values["markata"].config.output_dir / v
+        if isinstance(v, str):
+            v = Path(v)
+        if cls.markata.config.output_dir.absolute() not in v.absolute().parents:
+            return cls.markata.config.output_dir / v
         return v
 
     @pydantic.validator("output_html", pre=True, always=True)

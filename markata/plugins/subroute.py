@@ -23,7 +23,7 @@ class SubroutePost(pydantic.BaseModel):
     @pydantic.validator("slug")
     @classmethod
     def relative_to_subroute(cls, v, *, values: Dict) -> Path:
-        subroute = values["markata"].config.subroute
+        subroute = cls.markata.config.subroute
         if subroute == Path(""):
             return v
 

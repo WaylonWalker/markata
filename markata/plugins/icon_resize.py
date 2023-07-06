@@ -99,5 +99,5 @@ def save(markata: "Markata") -> None:
             out_file = Path(markata.config.output_dir) / filename
             if out_file.exists():
                 continue
-            img = img.resize((width, height), Image.ANTIALIAS)
+            img = img.resize((width, height), Image.LANCZOS)
             img.save(out_file)

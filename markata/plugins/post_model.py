@@ -23,6 +23,7 @@ class Post(pydantic.BaseModel):
     markata: Any = None
     path: Path
     slug: Optional[str] = None
+    href: Optional[str] = None
     published: bool = False
     description: Optional[str] = None
     content: str = None
@@ -37,7 +38,7 @@ class Post(pydantic.BaseModel):
     title: str = None
 
     class Config:
-        title = "Markata.Post"
+        validate_assignment = True
         arbitrary_types_allowed = True
 
     def __repr_args__(self: "Post") -> "ReprArgs":
@@ -170,9 +171,26 @@ class Post(pydantic.BaseModel):
         """
         return f"---\n{self.yaml()}\n\n---\n\n{self.content}"
 
+    # @pydantic.validator("markata", pre=True, always=True)
+    # def default_markata(cls, v, *, values):
+    #     breakpoint()
+    #     return v or cls.markata
+
     @pydantic.validator("slug", pre=True, always=True)
     def default_slug(cls, v, *, values):
         return v or slugify(str(values["path"].stem))
+
+    @pydantic.validator("slug", pre=True, always=True)
+    def index_slug_is_empty(cls, v, *, values):
+        if v == 'index':
+            return ''
+        return v
+
+    @pydantic.validator("href", pre=True, always=True)
+    def default_href(cls, v, *, values):
+        if v:
+            return v
+        return f"/{values['slug'].strip('/')}/".replace('//', '/')
 
     @pydantic.validator("title", pre=True, always=True)
     def title_title(cls, v, *, values):
@@ -208,11 +226,11 @@ class Post(pydantic.BaseModel):
     @pydantic.validator("date")
     def dateparser_date(cls, v, *, values):
         if isinstance(v, str):
-            d = values["markata"].precache.get(v)
+            d = cls.markata.precache.get(v)
             if d is not None:
                 return d
             d = dateparser.parse(v)
-            with values["markata"].cache as cache:
+            with cls.markata.cache as cache:
                 cache.add(v, d)
         return v
 
