@@ -49,7 +49,7 @@ def save(markata: "MarkataIcons") -> None:
             Path(markata.config["assets_dir"]) / markata.config["icon"]
         ) as img:
             height = int(float(img.size[1]) * float(width / float(img.size[0])))
-            img = img.resize((width, height), Image.ANTIALIAS)
+            img = img.resize((width, height), Image.LANCZOS)
             filename = Path(
                 f"{base_out_file.stem}_{width}x{height}{base_out_file.suffix}"
             )
