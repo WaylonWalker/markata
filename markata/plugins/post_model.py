@@ -109,6 +109,27 @@ class Post(pydantic.BaseModel):
             Dumper=yaml.CDumper,
         )
 
+    def markdown(self: "Post") -> str:
+        """
+        dump model to markdown
+        """
+
+        import yaml
+
+        frontmatter = yaml.dump(
+            self.dict(
+                include={i: True for i in [_i for _i in self.markata.config.post_model.include if _i != "content"]}
+            ),
+            Dumper=yaml.CDumper,
+        )
+        post = '---\n'
+        post += frontmatter
+        post += "---\n\n"
+
+        if self.content:
+            post += self.content
+        return post
+
     @classmethod
     def parse_file(cls, markata, path: Union[Path, str], **kwargs) -> "Post":
         if isinstance(path, Path):
@@ -147,7 +168,7 @@ class Post(pydantic.BaseModel):
         """
         dumps raw article back out
         """
-        return f"{self.yaml()}\n\n---\n\n{self.content}"
+        return f"---\n{self.yaml()}\n\n---\n\n{self.content}"
 
     @pydantic.validator("slug", pre=True, always=True)
     def default_slug(cls, v, *, values):
