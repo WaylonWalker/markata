@@ -1,5 +1,9 @@
 # Markata Changelog
 
+## 0.7.4
+
+- Fix: Icon resize broken from PIL 10.0.0 release
+
 ## 0.7.3
 
 - Fix: broken default feed card template
