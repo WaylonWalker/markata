@@ -137,13 +137,13 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
         https://github.com/WaylonWalker/markata-blog-starter.
         """
 
-        from copier import run_auto
+        from copier import run_copy
 
         typer.echo(f"creating a new project in {directory.absolute()}")
         url = markata.config.get("starters", {}).get(
             "blog", "git+https://github.com/WaylonWalker/markata-blog-starter"
         )
-        run_auto(url, directory)
+        run_copy(url, directory)
 
     @new_app.command()
     def post() -> None:
@@ -153,13 +153,13 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
         """
 
         print("create a new post")
-        from copier import run_auto
+        from copier import run_copy
 
         typer.echo(f"creating a new post in {Path().absolute()}/posts")
         url = markata.config.get("starters", {}).get(
             "post", "git+https://github.com/WaylonWalker/markata-post-template"
         )
-        run_auto(url, Path("."))
+        run_copy(url, Path("."))
 
     @new_app.command()
     def plugin() -> None:
@@ -167,7 +167,7 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
         Create a new plugin using the template at
         https://github.com/WaylonWalker/markata-plugin-template.
         """
-        from copier import run_auto
+        from copier import run_copy
 
         typer.echo(
             f"creating a new plugin in {Path().absolute()}/<python-package-name>/plugins"
@@ -175,7 +175,7 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
         url = markata.config.get("starters", {}).get(
             "post", "git+https://github.com/WaylonWalker/markata-plugin-template"
         )
-        run_auto(url, Path("."))
+        run_copy(url, Path("."))
 
     @app.command()
     def build(
