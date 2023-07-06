@@ -50,6 +50,10 @@ color='red'
 
 > New
 
+## 0.7.4
+
+- Fix: Icon resize broken from PIL 10.0.0 release
+
 ## 0.7.3
 
 - Fix: broken default feed card template
@@ -78,6 +82,10 @@ usage
 ```bash
 markata tui
 ```
+
+## 0.6.4
+
+- Fix: Icon resize broken from PIL 10.0.0 release
 
 ## 0.6.3
 
@@ -145,6 +153,10 @@ automagically work if you leave `markata.plugins.flat_slug` plugin enabled
 > links in this style for you.
 
 [[home-page]]
+
+## 0.5.5
+
+- Fix: Icon resize broken from PIL 10.0.0 release
 
 ## 0.5.4
 
