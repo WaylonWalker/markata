@@ -464,7 +464,7 @@ def create_card(
             return textwrap.dedent(
                 f"""
                 <li class='post'>
-                <a href="/{markata.config.get('path_prefix', '')}{post['slug']}/">
+                <a href="/{markata.config.get('path_prefix', '')}{'' if post['slug'] == 'index' else post['slug'] + '/'}">
                     {post['title']}
                     {post['date'].year}-
                     {post['date'].month}-
