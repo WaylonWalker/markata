@@ -119,7 +119,7 @@ def prevnext(
         return None
 
 
-TEMPLATE = Path(__file__).parent / "prevnext_template.html"
+TEMPLATE = (Path(__file__).parent / "prevnext_template.html").read_text()
 
 
 @hook_impl
