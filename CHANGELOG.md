@@ -1,5 +1,9 @@
 # Markata Changelog
 
+## 0.6.4
+
+- Fix: Icon resize broken from PIL 10.0.0 release
+
 ## 0.6.1
 
 - Fix: allow feeds to be used from within markdown
