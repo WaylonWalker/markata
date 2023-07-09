@@ -95,7 +95,6 @@ class SilentUndefined(Undefined):
 def optional(*fields):
     def dec(_cls):
         for field in fields:
-            _cls.__fields__[field].required = False
             _cls.__fields__[field].default = None
         return _cls
 

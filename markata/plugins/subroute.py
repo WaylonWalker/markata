@@ -6,6 +6,7 @@ from rich.markdown import Markdown
 
 from markata import Markata
 from markata.hookspec import hook_impl, register_attr
+from pydantic import ConfigDict
 
 
 class Config(pydantic.BaseModel):
@@ -14,11 +15,7 @@ class Config(pydantic.BaseModel):
 
 class SubroutePost(pydantic.BaseModel):
     markata: Markata
-    # slug: Path
-
-    class Config:
-        validate_assignment = True
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
 
     @pydantic.validator("slug")
     @classmethod

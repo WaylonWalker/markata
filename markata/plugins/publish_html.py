@@ -67,14 +67,10 @@ if TYPE_CHECKING:
 
 
 class OutputHTML(pydantic.BaseModel):
-    markata: Any
+    markata: Any = None
     path: Path
     slug: str = None
     output_html: Path = None
-
-    # class Config:
-    #     validate_assignment = True
-    #     arbitrary_types_allowed = True
 
     @pydantic.validator("slug", pre=True, always=True)
     @classmethod
@@ -84,38 +80,37 @@ class OutputHTML(pydantic.BaseModel):
         return v
 
     @pydantic.validator("output_html", pre=True, always=True)
-    @classmethod
     def default_output_html(
         cls: "OutputHTML", v: Optional[Path], *, values: Dict
     ) -> Path:
+        if isinstance(v, str):
+            v = Path(v)
         if v is not None:
             return v
         if "slug" not in values:
             for validator in cls.__validators__["slug"]:
                 values["slug"] = validator.func(cls, v, values=values)
 
-        return Path(cls.markata.config.output_dir / values["slug"] / "index.html")
+        if values["slug"] == "index":
+            return cls.markata.config.output_dir / "index.html"
+        return cls.markata.config.output_dir / values["slug"] / "index.html"
 
-    @pydantic.validator("output_html", pre=True, always=True)
-    @classmethod
+    @pydantic.validator("output_html")
     def output_html_relative(
         cls: "OutputHTML", v: Optional[Path], *, values: Dict
     ) -> Path:
-        if not v:
-            return v
         if isinstance(v, str):
             v = Path(v)
         if cls.markata.config.output_dir.absolute() not in v.absolute().parents:
             return cls.markata.config.output_dir / v
         return v
 
-    @pydantic.validator("output_html", pre=True, always=True)
-    @classmethod
+    @pydantic.validator("output_html")
     def output_html_exists(
         cls: "OutputHTML", v: Optional[Path], *, values: Dict
     ) -> Path:
-        if not v:
-            return v
+        if isinstance(v, str):
+            v = Path(v)
         if not v.parent.exists():
             v.parent.mkdir(parents=True, exist_ok=True)
         return v

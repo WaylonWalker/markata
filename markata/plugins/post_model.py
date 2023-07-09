@@ -10,6 +10,7 @@ from slugify import slugify
 import yaml
 
 from markata.hookspec import hook_impl, register_attr
+from pydantic import ConfigDict
 
 logger = logging.getLogger(__name__)
 
@@ -27,19 +28,18 @@ class Post(pydantic.BaseModel):
     published: bool = False
     description: Optional[str] = None
     content: str = None
-    date: Optional[Union[datetime.date, str]] = pydantic.Field(
-        default_factory=lambda: datetime.date.min
-    )
+    # date: Union[datetime.date, str]=None
+    date: Optional[Union[datetime.date, str]] = None
+    # pydantic.Field(
+        # default_factory=lambda: datetime.date.min
+    # )
     date_time: Optional[datetime.datetime] = None
     today: datetime.date = pydantic.Field(default_factory=datetime.date.today)
     now: datetime.datetime = pydantic.Field(default_factory=datetime.datetime.utcnow)
     load_time: float = 0
     profile: Optional[str] = None
     title: str = None
-
-    class Config:
-        validate_assignment = True
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
 
     def __repr_args__(self: "Post") -> "ReprArgs":
         return [
@@ -147,7 +147,8 @@ class Post(pydantic.BaseModel):
             path = Path(path)
         text = path.read_text()
         try:
-            _, fm, content, *others = text.split("---\n")
+            _, fm, *content = text.split("---\n")
+            content = "---\n".join(content)
             try:
                 fm = yaml.load(fm, Loader=yaml.CBaseLoader)
             except yaml.YAMLError:
@@ -171,11 +172,6 @@ class Post(pydantic.BaseModel):
         """
         return f"---\n{self.yaml()}\n\n---\n\n{self.content}"
 
-    # @pydantic.validator("markata", pre=True, always=True)
-    # def default_markata(cls, v, *, values):
-    #     breakpoint()
-    #     return v or cls.markata
-
     @pydantic.validator("slug", pre=True, always=True)
     def default_slug(cls, v, *, values):
         return v or slugify(str(values["path"].stem))
@@ -197,7 +193,7 @@ class Post(pydantic.BaseModel):
         title = v or Path(values["path"]).stem.replace("-", " ")
         return title.title()
 
-    @pydantic.validator("date_time")
+    @pydantic.validator("date_time", pre=True, always=True)
     def dateparser_datetime(cls, v, *, values):
         if isinstance(v, str):
             return dateparser.parse(v)
@@ -219,33 +215,43 @@ class Post(pydantic.BaseModel):
 
     @pydantic.validator("date_time", pre=True, always=True)
     def mindate_time(cls, v, *, values):
-        if v is None:
+        if v is None and values["date"] is None:
             return datetime.datetime.min
+        if isinstance(v, datetime.datetime):
+            return v
+        if isinstance(values["date"], datetime.datetime):
+            return values["date"]
+        if isinstance(v, datetime.date):
+            return datetime.datetime.combine(v, datetime.time.min)
+        if isinstance(values["date"], datetime.date):
+            return datetime.datetime.combine(values["date"], datetime.time.min) 
         return v
 
-    @pydantic.validator("date")
+    @pydantic.validator("date", pre=True, always=True)
     def dateparser_date(cls, v, *, values):
+        if v is None:
+            return datetime.date.min
         if isinstance(v, str):
             d = cls.markata.precache.get(v)
             if d is not None:
                 return d
-            d = dateparser.parse(v)
+            d = dateparser.parse(v).date()
             with cls.markata.cache as cache:
                 cache.add(v, d)
         return v
 
-    @pydantic.validator("date", pre=True, always=True)
-    def datetime_is_date(cls, v, *, values):
-        if isinstance(v, datetime.date):
-            return v
-        if isinstance(v, datetime.datetime):
-            return v.date()
+    # @pydantic.validator("date", pre=True, always=True)
+    # def datetime_is_date(cls, v, *, values):
+    #     if isinstance(v, datetime.date):
+    #         return v
+    #     if isinstance(v, datetime.datetime):
+    #         return v.date()
 
-    @pydantic.validator("date", pre=True, always=True)
-    def mindate(cls, v, *, values):
-        if v is None:
-            return datetime.date.min
-        return v
+    # @pydantic.validator("date", pre=True, always=True)
+    # def mindate(cls, v, *, values):
+    #     if v is None:
+    #         return datetime.date.min
+    #     return v
 
 
 class PostModelConfig(pydantic.BaseModel):

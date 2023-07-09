@@ -80,6 +80,7 @@ import pydantic
 
 from markata import Markata
 from markata.hookspec import hook_impl
+from pydantic import ConfigDict
 
 DEFAULT_REDIRECT_TEMPLATE = Path(__file__).parent / "default_redirect_template.html"
 
@@ -89,10 +90,7 @@ class Redirect(pydantic.BaseModel):
     original: str
     new: str
     markata: Markata
-
-    class Config:
-        validate_assignment = True
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
 
 class RedirectsConfig(pydantic.BaseModel):
     assets_dir: Path = Path("static")

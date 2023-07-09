@@ -58,6 +58,7 @@ import pydantic
 
 from markata import __version__
 from markata.hookspec import hook_impl
+from pydantic import ConfigDict
 
 if TYPE_CHECKING:
     from markata import Markata
@@ -70,9 +71,7 @@ class ServiceWorkerConfig(pydantic.BaseModel):
     precache_feeds: bool = False
     template_file: Optional[Path] = None
     template: Optional[Template] = None
-
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     @pydantic.validator("template_file", always=True, pre=True)
     def validate_template_file(cls, v):

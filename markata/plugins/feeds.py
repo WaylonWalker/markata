@@ -41,7 +41,9 @@ The following config will create a page at `/all-posts` that inclues every
 single post.
 
 ``` toml
-[markata.feeds.all-posts]
+[[markata.feeds]]
+title="All Posts"
+slug='all'
 filter="True"
 ```
 
@@ -83,7 +85,9 @@ Here is a very simple example that would give a link to each post with the
 title and date.
 
 ``` toml
-[markata.feeds.all]
+[[markata.feeds]]
+slug='all'
+title='All Posts'
 filter="True"
 card_template='''
 <li>
@@ -106,7 +110,9 @@ work with dates.
 True can be passed in to make a feed of all the posts you have.
 
 ``` toml
-[markata.feeds.archive]
+[[markata.feeds]]
+slug='all'
+title='All Posts'
 filter="True"
 ```
 
@@ -114,7 +120,9 @@ You can compare against the values of the keys from your frontmatter.  This
 example creates a feed that includes every post where published is `True`.
 
 ``` toml
-[markata.feeds.draft]
+[[markata.feeds]]
+slug='draft'
+title='Draft'
 filter="published=='False'"
 ```
 
@@ -126,10 +134,14 @@ today's posts.  The following two examples will create a feed for scheduled
 posts and for today's posts respectively.
 
 ``` toml
-[markata.feeds.scheduled]
+[[markata.feeds]]
+slug='scheduled'
+title='Scheduled'
 filter="date>today"
 
-[markata.feeds.today]
+[[markata.feeds]]
+slug='today'
+title='Today'
 filter="date==today"
 ```
 
@@ -137,7 +149,9 @@ If you have list of items in your frontmatter for something like `tags`, you
 can check for the existence of a tag in the list.
 
 ``` toml
-[markata.feeds.python]
+[[markata.feeds]]
+slug='python'
+title='Python'
 filter="date<=today and 'python' in tags"
 ```
 
@@ -145,14 +159,18 @@ And of course you can combine all the things into larger expressions.  Here is
 one example of the main feed on my blog.
 
 ``` toml
-[markata.feeds.blog]
+[[markata.feeds]]
+slug='blog'
+title='Blog'
 filter="date<=today and templateKey in ['blog-post'] and published =='True'"
 ```
 
 Here is another example that shows my drafts for a particular tag.
 
 ``` toml
-[markata.feeds.python-draft]
+[[markata.feeds]]
+slug='python-draft'
+title='Python Draft'
 filter="date<=today and 'python' in tags and published=='False'"
 ```
 
@@ -161,7 +179,9 @@ filter="date<=today and 'python' in tags and published=='False'"
 By default feeds will create one feed page at `/archive/` that includes all
 posts.
 
-[markata.feeds.archive]
+[[markata.feeds]]
+slug='archive'
+title='All Posts'
 filter="True"
 
 """

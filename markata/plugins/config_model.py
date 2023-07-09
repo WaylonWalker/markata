@@ -3,17 +3,18 @@ from typing import Optional, TYPE_CHECKING
 
 from polyfactory.factories.pydantic_factory import ModelFactory
 import pydantic
-from pydantic import AnyUrl, PositiveInt
-from pydantic.color import Color
+from pydantic import ConfigDict, AnyUrl, PositiveInt
+from pydantic_settings import BaseSettings
 
 from markata import standard_config
 from markata.hookspec import hook_impl, register_attr
+from pydantic_extra_types.color import Color
 
 if TYPE_CHECKING:
     from markata import Markata
 
 
-class Config(pydantic.BaseSettings):
+class Config(BaseSettings):
     hooks: list[str] = ["default"]
     disabled_hooks: list[str] = []
     markdown_extensions: list[str] = []
@@ -45,10 +46,7 @@ class Config(pydantic.BaseSettings):
     twitter_creator: Optional[str] = None
     twitter_site: Optional[str] = None
     path_prefix: Optional[str] = ""
-
-    class Config:
-        env_prefix = "markata_"
-        extra = "allow"
+    model_config = ConfigDict(env_prefix="markata_", extra="allow")
 
     def __getitem__(self, item):
         "for backwards compatability"

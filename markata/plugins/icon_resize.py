@@ -33,7 +33,7 @@ class Config(pydantic.BaseModel):
         Path("static"),
         description="The directory to store static assets",
     )
-    icon: Optional[Path]
+    icon: Optional[Path] = None
     icon_out_file: Optional[Path] = None
     icons: Optional[List[Dict[str, str]]] = []
 
