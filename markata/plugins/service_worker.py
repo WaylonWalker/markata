@@ -70,29 +70,15 @@ class ServiceWorkerConfig(pydantic.BaseModel):
     precache_feeds: bool = False
     template_file: Optional[Path] = None
     template: Optional[Template] = None
-    output_file: Optional[Path] = None
 
     class Config:
         arbitrary_types_allowed = True
-
-    @pydantic.validator("output_dir", always=True, pre=True)
-    def validate_output_dir(cls, v):
-        if v is None:
-            return cls.markata.config.output_dir
-        return v
 
     @pydantic.validator("template_file", always=True, pre=True)
     def validate_template_file(cls, v):
         if v is None:
             return Path(__file__).parent / "default_service_worker_template.js"
         return v
-
-    @pydantic.validator("output_file", always=True, pre=True)
-    def validate_output_file(cls, v, *, values):
-        if v is None:
-            return values["output_dir"] / "service_worker.js"
-        return v
-
 
 class Config(pydantic.BaseModel):
     service_worker: ServiceWorkerConfig = ServiceWorkerConfig()
@@ -136,5 +122,5 @@ def save(markata: "Markata") -> None:
         output_dirhash=dirhash(markata.config.output_dir),
     )
 
-    markata.config.service_worker.output_file.parent.mkdir(exist_ok=True)
-    markata.config.service_worker.output_file.write_text(service_worker_js)
+    output_file = markata.config.output_dir / "service-worker.js"
+    output_file.write_text(service_worker_js)
