@@ -31,7 +31,7 @@ class Post(pydantic.BaseModel):
     # date: Union[datetime.date, str]=None
     date: Optional[Union[datetime.date, str]] = None
     # pydantic.Field(
-        # default_factory=lambda: datetime.date.min
+    # default_factory=lambda: datetime.date.min
     # )
     date_time: Optional[datetime.datetime] = None
     today: datetime.date = pydantic.Field(default_factory=datetime.date.today)
@@ -119,11 +119,18 @@ class Post(pydantic.BaseModel):
 
         frontmatter = yaml.dump(
             self.dict(
-                include={i: True for i in [_i for _i in self.markata.config.post_model.include if _i != "content"]}
+                include={
+                    i: True
+                    for i in [
+                        _i
+                        for _i in self.markata.config.post_model.include
+                        if _i != "content"
+                    ]
+                }
             ),
             Dumper=yaml.CDumper,
         )
-        post = '---\n'
+        post = "---\n"
         post += frontmatter
         post += "---\n\n"
 
@@ -178,15 +185,15 @@ class Post(pydantic.BaseModel):
 
     @pydantic.validator("slug", pre=True, always=True)
     def index_slug_is_empty(cls, v, *, values):
-        if v == 'index':
-            return ''
+        if v == "index":
+            return ""
         return v
 
     @pydantic.validator("href", pre=True, always=True)
     def default_href(cls, v, *, values):
         if v:
             return v
-        return f"/{values['slug'].strip('/')}/".replace('//', '/')
+        return f"/{values['slug'].strip('/')}/".replace("//", "/")
 
     @pydantic.validator("title", pre=True, always=True)
     def title_title(cls, v, *, values):
@@ -224,7 +231,7 @@ class Post(pydantic.BaseModel):
         if isinstance(v, datetime.date):
             return datetime.datetime.combine(v, datetime.time.min)
         if isinstance(values["date"], datetime.date):
-            return datetime.datetime.combine(values["date"], datetime.time.min) 
+            return datetime.datetime.combine(values["date"], datetime.time.min)
         return v
 
     @pydantic.validator("date", pre=True, always=True)

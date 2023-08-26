@@ -92,6 +92,7 @@ class Redirect(pydantic.BaseModel):
     markata: Markata
     model_config = ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
 
+
 class RedirectsConfig(pydantic.BaseModel):
     assets_dir: Path = Path("static")
     redirects_file: Optional[Path] = None

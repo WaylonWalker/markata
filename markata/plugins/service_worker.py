@@ -79,6 +79,7 @@ class ServiceWorkerConfig(pydantic.BaseModel):
             return Path(__file__).parent / "default_service_worker_template.js"
         return v
 
+
 class Config(pydantic.BaseModel):
     service_worker: ServiceWorkerConfig = ServiceWorkerConfig()
 
