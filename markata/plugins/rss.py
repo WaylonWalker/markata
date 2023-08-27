@@ -3,8 +3,8 @@ import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from feedgen.feed import FeedGenerator
 import pytz
+from feedgen.feed import FeedGenerator
 
 from markata.hookspec import hook_impl
 
@@ -27,7 +27,7 @@ def render(markata: "MarkataRss") -> None:
     lang = markata.config.lang
     rss_description = markata.config.rss_description or "rss feed"
 
-    fg.id(str(url + "/rss.xml"))
+    fg.id(str(url) + "/rss.xml")
     fg.title(title)
     fg.author(
         {
@@ -38,7 +38,7 @@ def render(markata: "MarkataRss") -> None:
     fg.link(href=str(url), rel="alternate")
     fg.logo(icon)
     fg.subtitle(rss_description)
-    fg.link(href=str(url + "/rss.xml"), rel="self")
+    fg.link(href=str(url) + "/rss.xml", rel="self")
     fg.language(lang)
 
     try:
@@ -60,7 +60,7 @@ def render(markata: "MarkataRss") -> None:
         )
         fe.description(article.description)
         fe.summary(article.long_description)
-        fe.link(href=str(url + "/" + article.slug))
+        fe.link(href=str(url) + "/" + article.slug)
         fe.content(article.article_html.translate(dict.fromkeys(range(32))))
 
     markata.fg = fg

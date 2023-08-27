@@ -1,16 +1,16 @@
 import datetime
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 import dateparser
-from polyfactory.factories.pydantic_factory import ModelFactory
 import pydantic
-from slugify import slugify
 import yaml
+from polyfactory.factories.pydantic_factory import ModelFactory
+from pydantic import ConfigDict
+from slugify import slugify
 
 from markata.hookspec import hook_impl, register_attr
-from pydantic import ConfigDict
 
 logger = logging.getLogger(__name__)
 
@@ -163,7 +163,7 @@ class Post(pydantic.BaseModel):
         except ValueError:
             fm = {}
             content = text
-        if isinstance(fm, str):
+        if fm is None or isinstance(fm, str):
             fm = {}
 
         return markata.Post(
@@ -203,12 +203,18 @@ class Post(pydantic.BaseModel):
     @pydantic.validator("date_time", pre=True, always=True)
     def dateparser_datetime(cls, v, *, values):
         if isinstance(v, str):
-            return dateparser.parse(v)
+            d = dateparser.parse(v)
+            if d is None:
+                raise ValueError(f'"{v}" is not a valid date')
         return v
 
     @pydantic.validator("date_time", pre=True, always=True)
     def date_is_datetime(cls, v, *, values):
+        if v is None and "date" not in values:
+            values["markata"].console.log(f"{values['path']} has no date")
+            return datetime.datetime.now()
         if v is None and values["date"] is None:
+            values["markata"].console.log(f"{values['path']} has no date")
             return datetime.datetime.now()
         if isinstance(v, datetime.datetime):
             return v
@@ -222,7 +228,11 @@ class Post(pydantic.BaseModel):
 
     @pydantic.validator("date_time", pre=True, always=True)
     def mindate_time(cls, v, *, values):
-        if v is None and values["date"] is None:
+        if v is None and "date" not in values:
+            values["markata"].console.log(f"{values['path']} has no date")
+            return datetime.datetime.min
+        if values["date"] is None:
+            values["markata"].console.log(f"{values['path']} has no date")
             return datetime.datetime.min
         if isinstance(v, datetime.datetime):
             return v
@@ -242,7 +252,10 @@ class Post(pydantic.BaseModel):
             d = cls.markata.precache.get(v)
             if d is not None:
                 return d
-            d = dateparser.parse(v).date()
+            d = dateparser.parse(v)
+            if d is None:
+                raise ValueError(f'"{v}" is not a valid date')
+            d = d.date()
             with cls.markata.cache as cache:
                 cache.add(v, d)
         return v
