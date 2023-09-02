@@ -72,171 +72,33 @@
     </script>
     <style>
         :root {
-            --color-bg: { { config.style.color_bg } } ;
-
-            --color-bg-code: {
-                    {
-                    config.style.color_bg_code
-                }
-            }
-
-            ;
-
-            --color-text: {
-                    {
-                    config.style.color_text
-                }
-            }
-
-            ;
-
-            --color-link: {
-                    {
-                    config.style.color_link
-                }
-            }
-
-            ;
-
-            --color-accent: {
-                    {
-                    config.style.color_accent
-                }
-            }
-
-            ;
-
-            --overlay-brightness: {
-                    {
-                    config.style.overlay_brightness
-                }
-            }
-
-            ;
-
-            --body-width: {
-                    {
-                    config.style.body_width
-                }
-            }
-
-            ;
+            --color-bg: {{ config.style.color_bg }} ;
+            --color-bg-code: {{ config.style.color_bg_code }};
+            --color-text: {{ config.style.color_text }};
+            --color-link: {{ config.style.color_link }};
+            --color-accent: {{ config.style.color_accent }};
+            --overlay-brightness: {{ config.style.overlay_brightness }};
+            --body-width: {{ config.style.body_width }};
         }
 
         [data-theme="dark"] {
-            --color-bg: {
-                    {
-                    config.style.color_bg
-                }
-            }
-
-            ;
-
-            --color-bg-code: {
-                    {
-                    config.style.color_bg_code
-                }
-            }
-
-            ;
-
-            --color-text: {
-                    {
-                    config.style.color_text
-                }
-            }
-
-            ;
-
-            --color-link: {
-                    {
-                    config.style.color_link
-                }
-            }
-
-            ;
-
-            --color-accent: {
-                    {
-                    config.style.color_accent
-                }
-            }
-
-            ;
-
-            --overlay-brightness: {
-                    {
-                    config.style.overlay_brightness
-                }
-            }
-
-            ;
-
-            --body-width: {
-                    {
-                    config.style.body_width
-                }
-            }
-
-            ;
+            --color-bg: {{ config.style.color_bg }};
+            --color-bg-code: {{ config.style.color_bg_code }};
+            --color-text: {{ config.style.color_text }};
+            --color-link: {{ config.style.color_link }};
+            --color-accent: {{ config.style.color_accent }};
+            --overlay-brightness: {{ config.style.overlay_brightness }};
+            --body-width: {{ config.style.body_width }};
         }
 
         [data-theme="light"] {
-            --color-bg: {
-                    {
-                    config.style.color_bg_light
-                }
-            }
-
-            ;
-
-            --color-bg-2: {
-                    {
-                    config.style.color_bg_light_2
-                }
-            }
-
-            ;
-
-            --color-bg-code: {
-                    {
-                    config.style.color_bg_code_light
-                }
-            }
-
-            ;
-
-            --color-text: {
-                    {
-                    config.style.color_text_light
-                }
-            }
-
-            ;
-
-            --color-link: {
-                    {
-                    config.style.color_link_light
-                }
-            }
-
-            ;
-
-            --color-accent: {
-                    {
-                    config.style.color_accent_light
-                }
-            }
-
-            ;
-
-            --overlay-brightness: {
-                    {
-                    config.style.overlay_brightness_light
-                }
-            }
-
-            ;
+            --color-bg: {{ config.style.color_bg_light }};
+            --color-bg-2: {{ config.style.color_bg_light_2 }};
+            --color-bg-code: {{ config.style.color_bg_code_light }};
+            --color-text: {{ config.style.color_text_light }};
+            --color-link: {{ config.style.color_link_light }};
+            --color-accent: {{ config.style.color_accent_light }};
+            --overlay-brightness: {{ config.style.overlay_brightness_light }};
         }
 
         html {
