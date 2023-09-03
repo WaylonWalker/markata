@@ -185,19 +185,19 @@ title='All Posts'
 filter="True"
 
 """
-from dataclasses import dataclass
 import datetime
-from functools import lru_cache
-from pathlib import Path
 import shutil
 import textwrap
-from typing import Any, List, Optional, TYPE_CHECKING
+from dataclasses import dataclass
+from functools import lru_cache
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, List, Optional
 
-from jinja2 import Template, Undefined
 import pydantic
+import typer
+from jinja2 import Template, Undefined
 from rich import print as rich_print
 from rich.table import Table
-import typer
 
 from markata import Markata, __version__
 from markata.hookspec import hook_impl, register_attr
@@ -224,6 +224,7 @@ class FeedConfig(pydantic.BaseModel):
     filter: str = "True"
     sort: str = "date"
     reverse: bool = False
+    rss: bool = True
     card_template: str = """
         <li class='post'>
             <a href="/{{ markata.config.path_prefix }}{{ post.slug }}/">
@@ -232,6 +233,8 @@ class FeedConfig(pydantic.BaseModel):
         </li>
         """
     template: str = Path(__file__).parent / "default_post_template.html.jinja"
+    rss_template: str = Path(__file__).parent / "default_rss_template.xml"
+    xsl_template: str = Path(__file__).parent / "default_xsl_template.xsl"
 
     @pydantic.validator("name", pre=True, always=True)
     def default_name(cls, v, *, values):
@@ -272,7 +275,7 @@ class Feed:
 
     @property
     def name(self):
-        return self.config.slug.replace("-", "_")
+        return self.config.name
 
     @property
     def posts(self):
@@ -365,7 +368,7 @@ class Feeds:
         return iter(self.config.keys())
 
     def values(self):
-        return [self[feed] for feed in self.config]
+        return [self[feed] for feed in self.config.keys()]
 
     def items(self):
         return [(key, self[key]) for key in self.config]
@@ -379,6 +382,10 @@ class Feeds:
         """
         msg = ""
         for key, value in config.items():
+            if isinstance(value, str):
+                if len(value) > 50:
+                    value = value[:50] + "..."
+                value = value
             msg = msg + f"[grey46]{key}[/][magenta3]:[/] [grey66]{value}[/]\n"
         return msg
 
@@ -445,6 +452,16 @@ def save(markata: Markata) -> None:
     if not home.exists() and archive.exists():
         shutil.copy(str(archive), str(home))
 
+    xsl_template = get_template(feed.config.xsl_template)
+    xsl = xsl_template.render(
+        markata=markata,
+        __version__=__version__,
+        today=datetime.datetime.today(),
+        config=markata.config,
+    )
+    xsl_file = Path(markata.config.output_dir) / "rss.xsl"
+    xsl_file.write_text(xsl)
+
 
 @lru_cache()
 def get_template(src) -> Template:
@@ -475,9 +492,13 @@ def create_page(
     cards = "".join(cards)
 
     template = get_template(feed.config.template)
+    rss_template = get_template(feed.config.rss_template)
     output_file = Path(markata.config.output_dir) / feed.config.slug / "index.html"
     canonical_url = f"{markata.config.url}/{feed.config.slug}/"
     output_file.parent.mkdir(exist_ok=True, parents=True)
+
+    rss_output_file = Path(markata.config.output_dir) / feed.config.slug / "rss.xml"
+    rss_output_file.parent.mkdir(exist_ok=True, parents=True)
 
     key = markata.make_hash(
         "feeds",
@@ -508,7 +529,10 @@ def create_page(
         with markata.cache as cache:
             markata.cache.set(key, feed_html)
 
+    feed_rss = rss_template.render(markata=markata, feed=feed)
+
     output_file.write_text(feed_html)
+    rss_output_file.write_text(feed_rss)
 
 
 def create_card(

@@ -78,20 +78,19 @@ This file is in BETA. Please test and contribute to the discussion:
         <style type="text/css">
           * { box-sizing: border-box; }
 
-        ::-webkit-scrollbar {
-            height: 12px;
+        pre::-webkit-scrollbar {
+            height: 4px;
             background-color: transparent;
         }
 
-        ::-webkit-scrollbar-thumb {
+        pre::-webkit-scrollbar-thumb {
             background-color: #d3d3d32e;
-            border-radius: 6px;
+            border-radius: 2px;
         }
 
-        ::-webkit-scrollbar-track {
+        pre::-webkit-scrollbar-track {
             background-color: transparent;
         }
-
           img { max-width: 100%; }
             body { --gap: 5vw; margin: 0; font-family: system-ui; line-height: 1.7;
                   background-color: #1f2022;
@@ -179,3 +178,4 @@ This file is in BETA. Please test and contribute to the discussion:
     </html>
   </xsl:template>
 </xsl:stylesheet>
+

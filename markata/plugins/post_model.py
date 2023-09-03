@@ -39,7 +39,11 @@ class Post(pydantic.BaseModel):
     load_time: float = 0
     profile: Optional[str] = None
     title: str = None
-    model_config = ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
+    model_config = ConfigDict(
+        validate_assignment=True,
+        arbitrary_types_allowed=True,
+        extra="allow",
+    )
 
     def __repr_args__(self: "Post") -> "ReprArgs":
         return [
@@ -166,12 +170,14 @@ class Post(pydantic.BaseModel):
         if fm is None or isinstance(fm, str):
             fm = {}
 
-        return markata.Post(
-            markata=markata,
-            path=path,
-            content=content,
+        post_args = {
+            "markata": markata,
+            "path": path,
+            "content": content,
             **fm,
-        )
+        }
+
+        return markata.Post(**post_args)
 
     def dumps(self):
         """
