@@ -264,6 +264,7 @@ class Post(pydantic.BaseModel):
             d = d.date()
             with cls.markata.cache as cache:
                 cache.add(v, d)
+            return d
         return v
 
     # @pydantic.validator("date", pre=True, always=True)
