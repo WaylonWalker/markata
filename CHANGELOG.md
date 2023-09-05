@@ -6,6 +6,18 @@
 
 ### breaking changes
 
+There are a number of breaking changes going into 0.8.0. Use caution when
+upgrading.
+
+#### glob config is now under markata.glob
+
+```diff
+- [markata]
+- glob_patterns = "pages/**/*.md"
++ [markata.glob]
++ glob_patterns = "pages/**/*.md"
+```
+
 #### Feeds are now a list
 
 ```toml
