@@ -63,7 +63,7 @@ implementation.
 | Redirect by country or language     | No      | `/ /us 302 Country=us`                                          | ...                                                                                               |
 | Redirect by cookie                  | No      | `/* /preview/:splat 302 Cookie=preview`                        | ...                                                                                               |
 
-> Compare with 
+> Compare with
 > [cloudflare-pages](https://developers.cloudflare.com/pages/platform/redirects/)
 
 !!! tip
@@ -72,25 +72,47 @@ implementation.
     moved without you realizing.
 
 """
-from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import Dict, Optional
 
 from jinja2 import Template
+import pydantic
 
+from markata import Markata
 from markata.hookspec import hook_impl
-
-if TYPE_CHECKING:
-    from markata import Markata
+from pydantic import ConfigDict
 
 DEFAULT_REDIRECT_TEMPLATE = Path(__file__).parent / "default_redirect_template.html"
 
 
-@dataclass
-class Redirect:
+class Redirect(pydantic.BaseModel):
     "DataClass to store the original and new url"
     original: str
     new: str
+    markata: Markata
+    model_config = ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
+
+
+class RedirectsConfig(pydantic.BaseModel):
+    assets_dir: Path = Path("static")
+    redirects_file: Optional[Path] = None
+
+    @pydantic.validator("redirects_file", always=True)
+    def default_redirects_file(
+        cls: "RedirectsConfig", v: Path, *, values: Dict
+    ) -> Path:
+        if not v:
+            return Path(values["assets_dir"]) / "_redirects"
+        return v
+
+
+class Config(pydantic.BaseModel):
+    redirects: RedirectsConfig = RedirectsConfig()
+
+
+@hook_impl(tryfirst=True)
+def config_model(markata: "Markata") -> None:
+    markata.config_models.append(Config)
 
 
 @hook_impl
@@ -98,17 +120,14 @@ def save(markata: "Markata") -> None:
     """
     saves an index.html in the directory called out by the redirect.
     """
-    assets_dir: str = str(markata.config.get("assets_dir", "static"))
-    redirects_file = Path(
-        str(markata.config.get("redirects", Path(assets_dir) / "_redirects"))
-    )
+    redirects_file = Path(markata.config.redirects.redirects_file)
     if redirects_file.exists():
         raw_redirects = redirects_file.read_text().split("\n")
     else:
         raw_redirects = []
 
     redirects = [
-        Redirect(*s)
+        Redirect(original=s[0], new=s[1], markata=markata)
         for r in raw_redirects
         if "*" not in r and len(s := r.split()) == 2 and not r.strip().startswith("#")
     ]
@@ -119,10 +138,7 @@ def save(markata: "Markata") -> None:
         template_file = DEFAULT_REDIRECT_TEMPLATE
     template = Template(template_file.read_text())
 
-    output_dir = Path(markata.config["output_dir"])  # type: ignore
-    output_dir.mkdir(parents=True, exist_ok=True)
-
     for redirect in redirects:
-        file = output_dir / redirect.original.strip("/") / "index.html"
+        file = markata.config.output_dir / redirect.original.strip("/") / "index.html"
         file.parent.mkdir(parents=True, exist_ok=True)
-        file.write_text(template.render(**asdict(redirect), config=markata.config))
+        file.write_text(template.render(redirect.dict(), config=markata.config))

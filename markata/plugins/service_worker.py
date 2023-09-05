@@ -3,7 +3,7 @@ Adds a service_worker to your site.  This will make it installable on mobile,
 viewable offline, and potentially more responsive as the user goes between good
 and bad connections.
 
-## Configuration
+# Configuration
 
 Enable this plugin by adding it to your `markata.toml` hooks list.
 
@@ -24,12 +24,12 @@ files send 404's to the console.  These files likely need precache.
 precache_urls = ['archive-styles.css', 'scroll.css', 'manifest.json']
 ```
 
-## cache busting
+# cache busting
 
 Markata uses the checksum.dirhash of your output directory as the cache key.
 This is likely to change and bust the cache on every build.
 
-## pre-caching feeds
+# pre-caching feeds
 
 You can add and entire feed to your precache, this will automatically load
 these posts into the cache anytime someone visits your site and their browser
@@ -50,18 +50,43 @@ frontmatter.
 """
 import copy
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import List, Optional, TYPE_CHECKING
 
 from checksumdir import dirhash
 from jinja2 import Template
+import pydantic
 
 from markata import __version__
 from markata.hookspec import hook_impl
+from pydantic import ConfigDict
 
 if TYPE_CHECKING:
     from markata import Markata
 
-DEFAULT_PRECACHE_URLS = ["index.html", "./"]
+
+class ServiceWorkerConfig(pydantic.BaseModel):
+    output_dir: pydantic.DirectoryPath = None
+    precache_urls: List[str] = ["index.html", "./"]
+    precache_posts: bool = False
+    precache_feeds: bool = False
+    template_file: Optional[Path] = None
+    template: Optional[Template] = None
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    @pydantic.validator("template_file", always=True, pre=True)
+    def validate_template_file(cls, v):
+        if v is None:
+            return Path(__file__).parent / "default_service_worker_template.js"
+        return v
+
+
+class Config(pydantic.BaseModel):
+    service_worker: ServiceWorkerConfig = ServiceWorkerConfig()
+
+
+@hook_impl(tryfirst=True)
+def config_model(markata: "Markata") -> None:
+    markata.config_models.append(Config)
 
 
 @hook_impl(trylast=True)
@@ -71,17 +96,17 @@ def render(markata: "Markata") -> None:
     `markata.plugins.service_worker.save`.
     """
 
-    markata.config["precache_urls"] = markata.config.get("precache_urls", [])
-    markata.config["precache_urls"].extend(DEFAULT_PRECACHE_URLS)
+    config = markata.config.service_worker
 
-    for feed, config in markata.config.get("feeds").items():
-        markata.config["precache_urls"].append(f"/{feed}/")
+    if config.precache_feeds:
+        for feed, config in markata.config.feeds:
+            config.precache_urls.append(f"/{feed}/")
 
-        if config.get("precache", False):
-            for post in markata.map("post", **config):
-                markata.config["precache_urls"].append(f'/{post.get("slug", "")}/')
+    if config.precache_posts:
+        for post in markata.map("post", **config):
+            config.precache_urls.append(f'/{post.get("slug", "")}/')
 
-    markata.config["precache_urls"] = list(set(markata.config["precache_urls"]))
+    config.precache_urls = list(set(config.precache_urls))
 
 
 @hook_impl(trylast=True)
@@ -90,19 +115,12 @@ def save(markata: "Markata") -> None:
     Renders the service-worker.js file with your precache urls, and dirhash.
     """
 
-    if "service_worker_template" in markata.config:
-        template_file = markata.config["service_worker_template"]
-    else:
-        template_file = Path(__file__).parent / "default_service_worker_template.js"
-    with open(template_file) as f:
-        template = Template(f.read())
-
-    output_dir = Path(markata.config.get("output_dir", "markout"))
-    service_worker_file = output_dir / "service-worker.js"
+    template = Template(markata.config.service_worker.template_file.read_text())
     service_worker_js = template.render(
         __version__=__version__,
         config=copy.deepcopy(markata.config),
-        output_dirhash=dirhash(output_dir),
+        output_dirhash=dirhash(markata.config.output_dir),
     )
 
-    service_worker_file.write_text(service_worker_js)
+    output_file = markata.config.output_dir / "service-worker.js"
+    output_file.write_text(service_worker_js)

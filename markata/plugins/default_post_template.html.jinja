@@ -71,35 +71,35 @@
         );
     </script>
     <style>
-        :root {
-            --color-bg: {{ config.style.color_bg }} ;
-            --color-bg-code: {{ config.style.color_bg_code }};
-            --color-text: {{ config.style.color_text }};
-            --color-link: {{ config.style.color_link }};
-            --color-accent: {{ config.style.color_accent }};
-            --overlay-brightness: {{ config.style.overlay_brightness }};
-            --body-width: {{ config.style.body_width }};
-        }
-
-        [data-theme="dark"] {
-            --color-bg: {{ config.style.color_bg }};
-            --color-bg-code: {{ config.style.color_bg_code }};
-            --color-text: {{ config.style.color_text }};
-            --color-link: {{ config.style.color_link }};
-            --color-accent: {{ config.style.color_accent }};
-            --overlay-brightness: {{ config.style.overlay_brightness }};
-            --body-width: {{ config.style.body_width }};
-        }
-
-        [data-theme="light"] {
-            --color-bg: {{ config.style.color_bg_light }};
-            --color-bg-2: {{ config.style.color_bg_light_2 }};
-            --color-bg-code: {{ config.style.color_bg_code_light }};
-            --color-text: {{ config.style.color_text_light }};
-            --color-link: {{ config.style.color_link_light }};
-            --color-accent: {{ config.style.color_accent_light }};
-            --overlay-brightness: {{ config.style.overlay_brightness_light }};
-        }
+      :root {
+        --color-bg: {{ post.config_overrides.style.color_bg or config.style.color_bg }};
+        --color-bg-2: {{ post.config_overrides.style.color_bg_2  or config.style.color_bg_2 }};
+        --color-bg-code: {{ post.config_overrides.style.color_bg_code or config.style.color_bg_code }};
+        --color-text: {{ post.config_overrides.style.color_text or config.style.color_text }};
+        --color-link: {{ post.config_overrides.style.color_link or config.style.color_link }}; 
+        --color-accent: {{ post.config_overrides.style.color_accent or config.style.color_accent }};
+        --overlay-brightness: {{ post.config_overrides.style.overlay_brightness or config.style.overlay_brightness }};
+        --body-width: {{ post.config_overrides.style.body_width or config.style.body_width }};
+      }
+      [data-theme="dark"] {
+        --color-bg: {{ post.config_overrides.style.color_bg or config.style.color_bg }};
+        --color-bg-2: {{ post.config_overrides.style.color_bg_2 or config.style.color_bg_2 }};
+        --color-bg-code: {{ post.config_overrides.style.color_bg_code or config.style.color_bg_code }};
+        --color-text: {{ post.config_overrides.style.color_text or config.style.color_text }};
+        --color-link: {{ post.config_overrides.style.color_link or config.style.color_link }}; 
+        --color-accent: {{ post.config_overrides.style.color_accent or config.style.color_accent }};
+        --overlay-brightness: {{ post.config_overrides.style.overlay_brightness or config.style.overlay_brightness }};
+        --body-width: {{ post.config_overrides.style.body_width or config.style.body_width }};
+      }
+      [data-theme="light"] {
+        --color-bg: {{ post.config_overrides.style.color_bg_light or config.style.color_bg_light }};
+        --color-bg-2: {{ post.config_overrides.style.color_bg_light_2 or config.style.color_bg_light_2 }};
+        --color-bg-code: {{ post.config_overrides.style.color_bg_code_light or config.style.color_bg_code_light }};
+        --color-text: {{ post.config_overrides.style.color_text_light or config.style.color_text_light }};
+        --color-link: {{ post.config_overrides.style.color_link_light or config.style.color_link_light }}; 
+        --color-accent: {{ post.config_overrides.style.color_accent_light or config.style.color_accent_light }};
+        --overlay-brightness: {{ post.config_overrides.style.overlay_brightness_light or config.style.overlay_brightness_light }};
+      }
 
         html {
             font-family: "Space Mono", monospace;
@@ -1036,7 +1036,7 @@
 <nav>
     {% for text, link in config.nav.items() %}
     <a
-        href='{{"/" if link.startswith("/")}}{{"" if "://" in link else config["path_prefix"]}}{{link.lstrip("/")}}'>{{text}}</a>
+        href='{{"/" if link.startswith("/")}}{{"" if "://" in link else config.path_prefix}}{{link.lstrip("/")}}'>{{text}}</a>
     {% endfor %}
 </nav>
 
@@ -1049,7 +1049,8 @@
     </div>
     <section class="title">
         <h1 id="title">
-            {{ title }} {% if config.get %}
+            {{ title }} 
+            {% if edit_link %}
             <a href="{{ edit_link }}" alt="edit post url" title="edit this post">
                 <span role="img" aria-label="">
                     <svg version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg"

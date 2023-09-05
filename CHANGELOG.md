@@ -1,5 +1,80 @@
 # Markata Changelog
 
+## 0.8.0
+
+- pydantic support
+
+### breaking changes
+
+There are a number of breaking changes going into 0.8.0. Use caution when
+upgrading.
+
+#### glob config is now under markata.glob
+
+```diff
+- [markata]
+- glob_patterns = "pages/**/*.md"
++ [markata.glob]
++ glob_patterns = "pages/**/*.md"
+```
+
+#### Feeds are now a list
+
+```toml
+[markata.feeds.published]
+template="pages/templates/archive_template.html"
+card_template = "pages/templates/feed_card.html"
+filter="date<=today and templateKey in ['blog-post', 'til'] and status.lower()=='published'"
+sort="date"
+```
+
+> old
+
+```toml
+[[markata.feeds.published]]
+template="pages/templates/archive_template.html"
+card_template = "pages/templates/feed_card.html"
+filter="date<=today and templateKey in ['blog-post', 'til'] and status.lower()=='published'"
+sort="date"
+```
+
+> new
+
+### markata.summary.filter_count is now a list
+
+The old way was to set up a dict, where the keys were the name, now its a list
+of Objects with an explicit name field.
+
+```toml
+[markata.summary.filter_count.drafts]
+filter="published == 'False'"
+color='red'
+```
+
+> Old
+
+```toml
+[[markata.summary.filter_count]]
+name='drafts'
+filter="published == 'False'"
+color='red'
+```
+
+> New
+
+## 0.7.4
+
+- Fix: Icon resize broken from PIL 10.0.0 release
+
+## 0.7.3
+
+- Fix: broken default feed card template
+- Fix: broken links for index.md in feeds
+
+## 0.7.2
+
+- Fix: broken `markata new` command due to pydantic v2 compatability with copier.
+
 ## 0.7.0
 
 - Adopt ruff linter 0.7.0.dev1 #142
@@ -20,11 +95,23 @@ usage
 markata tui
 ```
 
+## 0.6.4
+
+- Fix: Icon resize broken from PIL 10.0.0 release
+
+## 0.6.3
+
+- Fix: broken `markata new` command due to pydantic v2 compatability with copier.
+
+## 0.6.2
+
+Update License and Security files.
+
 ## 0.6.1
 
-- Fix: allow feeds to be used from within markdown
+- Fix: allow feeds to be used from within Markdown.
 
-### Feeds in markdown
+### Feeds in Markdown
 
 ```markdown
 {% for post in markata.feeds.docs.posts %}
@@ -51,7 +138,7 @@ markata tui
 - Fix: properly set the pyinstrument profiler to prevent recurrsion errors
   0.6.dev13 #123
 - Clean: cli attributes (`runner`, `summary`, `server`, `plugins`) are now
-  added as Markata properties through `register_atter` rather than directly to
+  added as Markata properties through `register_attr` rather than directly to
   the class 0.6.0.dev13 #107
 - Fix: Markata tui will remain running even when the runner fails 0.6.0.dev13
   #107
@@ -69,15 +156,23 @@ markata tui
 
 wikilinks are now enabled by default ex: `[[home-page]]`. This will create a
 link `<a class="wikilink" href="/home-page/">home-page</a>`. This will
-automagically just work if you leave `markata.plugins.flat_slug` plugin enabled
+automagically work if you leave `markata.plugins.flat_slug` plugin enabled
 (which is by default).
 
 > ProTip: this was highly inspired by the
 > [marksman-lsp](https://github.com/artempyanykh/marksman) by
-> [artempyanykh](https://github.com/artempyanykh/) which can autocomplete post
+> [artempyanykh](https://github.com/artempyanykh/), which can autocomplete post
 > links in this style for you.
 
 [[home-page]]
+
+## 0.5.5
+
+- Fix: Icon resize broken from PIL 10.0.0 release
+
+## 0.5.4
+
+- Fix: broken `markata new` command due to pydantic v2 compatability with copier.
 
 ## 0.5.2
 

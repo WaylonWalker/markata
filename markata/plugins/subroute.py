@@ -1,18 +1,43 @@
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import Dict
 
-from markata.hookspec import hook_impl
+import pydantic
+from rich.markdown import Markdown
 
-if TYPE_CHECKING:
-    from markata import Markata
+from markata import Markata
+from markata.hookspec import hook_impl, register_attr
+from pydantic import ConfigDict
 
 
-@hook_impl(tryfirst=True)
-def pre_render(markata: "Markata") -> None:
-    """
-    Sets the article slug if one is not already set in the frontmatter.
-    """
-    subroute = markata.config.get("subroute", "")
-    for article in markata.iter_articles(description="creating slugs"):
-        slug = Path(article.get("slug", Path(article["path"]).stem))
-        article["slug"] = slug.parent / Path(subroute) / slug.stem
+class Config(pydantic.BaseModel):
+    subroute: Path = Path("")
+
+
+class SubroutePost(pydantic.BaseModel):
+    markata: Markata
+    model_config = ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
+
+    @pydantic.validator("slug")
+    @classmethod
+    def relative_to_subroute(cls, v, *, values: Dict) -> Path:
+        subroute = cls.markata.config.subroute
+        if subroute == Path(""):
+            return v
+
+        slug = Path(v)
+
+        if not slug.relative_to(subroute):
+            return slug.parent / subroute / slug.stem
+        return v
+
+
+@hook_impl()
+@register_attr("config_models")
+def config_model(markata: "Markata") -> None:
+    markata.config_models.append(Config)
+
+
+@hook_impl()
+@register_attr("post_models")
+def post_model(markata: Markdown) -> None:
+    markata.post_models.append(SubroutePost)

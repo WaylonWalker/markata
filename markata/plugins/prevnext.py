@@ -119,7 +119,7 @@ def prevnext(
         return None
 
 
-TEMPLATE = Path(__file__).parent / "prevnext_template.html"
+TEMPLATE = (Path(__file__).parent / "prevnext_template.html").read_text()
 
 
 @hook_impl
@@ -157,7 +157,7 @@ def pre_render(markata: "Markata") -> None:
                         article.get(
                             "config_overrides",
                             {},
-                        )
+                        ),
                     ),
                 ),
                 **article,

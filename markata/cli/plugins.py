@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
 
 class Plugins:
-    def __init__(self, markata: "Markata"):
+    def __init__(self, markata: "Markata") -> None:
         self.m = markata
 
     def __rich__(self) -> Panel:
@@ -26,11 +26,14 @@ class Plugins:
                         ".".join(plugin.__name__.split(".")[:-1]),
                         ".[/]",
                         plugin.__name__.split(".")[-1],
-                    ]
-                )
+                    ],
+                ),
             )
         return Panel(
-            grid, title=f"plugins {num_plugins}", border_style="gold1", expand=False
+            grid,
+            title=f"plugins {num_plugins}",
+            border_style="gold1",
+            expand=False,
         )
 
 

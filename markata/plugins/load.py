@@ -1,13 +1,13 @@
 """Default load plugin."""
-import time
+import itertools
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable, List, Optional
+from typing import Callable, List, Optional, TYPE_CHECKING
 
 import frontmatter
+import pydantic
 from rich.progress import BarColumn, Progress
 from yaml.parser import ParserError
 
-from markata.background import task
 from markata.hookspec import hook_impl, register_attr
 
 if TYPE_CHECKING:
@@ -17,31 +17,92 @@ if TYPE_CHECKING:
         articles: List = []
 
 
+class ValidationError(ValueError):
+    ...
+
+
 @hook_impl
-@register_attr("articles")
+@register_attr("articles", "posts")
 def load(markata: "MarkataMarkdown") -> None:
-    progress = Progress(
-        BarColumn(bar_width=None), transient=True, console=markata.console
+    Progress(
+        BarColumn(bar_width=None),
+        transient=True,
+        console=markata.console,
     )
-    if not markata.config.get("repo_url", "https://github.com/").endswith("/"):
-        markata.config["repo_url"] = (
-            markata.config.get("repo_url", "https://github.com/") + "/"
-        )
-
-    futures = [get_post(article, markata) for article in markata.files]
-    task_id = progress.add_task("loading markdown")
-    progress.update(task_id, total=len(futures))
-    with progress:
-        while not all([f.done() for f in futures]):
-            time.sleep(0.1)
-            progress.update(task_id, total=len([f for f in futures if f.done()]))
-    articles = [f.result() for f in futures]
-    articles = [a for a in articles if a]
-    markata.articles = articles
+    Posts = pydantic.create_model(
+        "Posts",
+        posts=(List[markata.Post], ...),
+    )
+    markata.console.log(f"found {len(markata.files)} posts")
+    markata.posts_obj = Posts.parse_obj(
+        {"posts": [get_post(article, markata) for article in markata.files]},
+    )
+    markata.posts = markata.posts_obj.posts
+    markata.articles = markata.posts
 
 
-@task
 def get_post(path: Path, markata: "Markata") -> Optional[Callable]:
+    if markata.Post:
+        # profiler = Profiler(async_mode="disabled")
+        # start_time = time.time()
+        # profiler.start()
+        post = pydantic_get_post(path=path, markata=markata)
+        # profiler.stop()
+        # post.load_time = time.time() - start_time
+        # post.profile = profiler.output_text()
+        return post
+    else:
+        return legacy_get_post(path=path, markata=markata)
+
+
+def get_models(markata: "Markata", error: pydantic.ValidationError) -> List:
+    fields = []
+    for err in error.errors():
+        fields.extend(err["loc"])
+
+    models = {field: f"{field} used by " for field in fields}
+
+    for field, model in set(
+        itertools.product(
+            fields,
+            markata.post_models,
+        ),
+    ):
+        if field in model.__fields__:
+            models[field] += f"'{model.__module__}.{model.__name__}'"
+
+    return models
+
+
+def pydantic_get_post(path: Path, markata: "Markata") -> Optional[Callable]:
+    # fm_post = frontmatter.load(path)
+    # fm_post["content"] = fm_post.content
+    # fm_post["path"] = str(path)
+    # fm_post["edit_link"] = (
+    #     markata.config.repo_url
+    #     + "edit/"
+    #     + markata.config.repo_branch
+    #     + "/"
+    #     + str(path),
+    # )
+
+    # try:
+    #     post = markata.Post(**fm_post.metadata, markata=markata)
+
+    # markata.console.log(f"loading {path}")
+    try:
+        post = markata.Post.parse_file(markata=markata, path=path)
+
+    except pydantic.ValidationError as e:
+        models = get_models(markata=markata, error=e)
+        models = list(models.values())
+        models = "\n".join(models)
+        raise ValidationError(f"{e}\n\n{models}\nfailed to load {path}") from e
+
+    return post
+
+
+def legacy_get_post(path: Path, markata: "Markata") -> Optional[Callable]:
     default = {
         "cover": "",
         "title": "",
@@ -55,6 +116,7 @@ def get_post(path: Path, markata: "Markata") -> Optional[Callable]:
     try:
         post: "Post" = frontmatter.load(path)
         post.metadata = {**default, **post.metadata}
+        post["content"] = post.content
     except ParserError:
         return None
         post = default
@@ -63,10 +125,6 @@ def get_post(path: Path, markata: "Markata") -> Optional[Callable]:
         post = default
     post.metadata["path"] = str(path)
     post["edit_link"] = (
-        str(markata.config.get("repo_url", "https://github.com/"))
-        + "edit/"
-        + str(markata.config.get("repo_branch", "main"))
-        + "/"
-        + str(post["path"])
+        markata.config.repo_url + "edit/" + markata.config.repo_branch + "/" + post.path
     )
     return post

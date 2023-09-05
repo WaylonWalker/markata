@@ -10,23 +10,12 @@ jobs:
   build-deploy-docs:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      # - name: Get current date
-      #   id: date
-      #   run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
-
-      # - name: Cache
-      #   uses: actions/cache@v2
-      #   with:
-      #     path: .markata.cache
-      #     key: ${{ runner.os }}-${{ hashfiles('markata.toml') }}-${{ steps.date.outputs.date }}-markata
-      #     restore-keys: |
-      #       ${{ runner.os }}-${{ hashfiles('markata.toml') }}-markata
+      - uses: actions/checkout@v3
 
       - name: Set up Python 3.10
-        uses: actions/setup-python@v1
+        uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
+          python-version: "3.10"
 
       - name: install markata
         run: pip install -e .

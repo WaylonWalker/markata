@@ -13,12 +13,12 @@ import os
 from pathlib import Path
 import sys
 import textwrap
-from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Dict, Iterable, Optional
 
 from checksumdir import dirhash
-from diskcache import FanoutCache
-import frontmatter
+from diskcache import Cache
 import pluggy
+import pydantic
 from rich.console import Console
 from rich.progress import track
 from rich.table import Table
@@ -71,7 +71,6 @@ DEFAULT_HOOKS = [
     "markata.plugins.copy_assets",
     "markata.plugins.publish_html",
     "markata.plugins.flat_slug",
-    "markata.plugins.datetime",
     "markata.plugins.rss",
     "markata.plugins.icon_resize",
     "markata.plugins.sitemap",
@@ -84,6 +83,9 @@ DEFAULT_HOOKS = [
     "markata.plugins.tui",
     "markata.plugins.setup_logging",
     "markata.plugins.redirects",
+    "markata.plugins.post_model",
+    "markata.plugins.config_model",
+    "markata.plugins.create_models",
 ]
 
 DEFUALT_CONFIG = {
@@ -97,56 +99,83 @@ DEFUALT_CONFIG = {
 }
 
 
-class Post(frontmatter.Post):
-    html: str
-
-
-def set_phase(function: Callable) -> Any:
-    def wrapper(self: Markata, *args: Tuple, **kwargs: Dict) -> Any:
-        self.phase = function.__name__
-        self.phase_file.parent.mkdir(exist_ok=True)
-        self.phase_file.write_text(self.phase)
-        result = function(self, *args, **kwargs)
-        self.phase = function.__name__
-        self.phase_file.parent.mkdir(exist_ok=True)
-        self.phase_file.write_text(self.phase)
-        return result
-
-    return wrapper
+class HooksConfig(pydantic.BaseModel):
+    hooks: list = ["default"]
+    disabled_hooks: list = []
 
 
 class Markata:
-    def __init__(self, console: Console = None) -> None:
-        self.phase = "starting"
+    def __init__(self: "Markata", console: Console = None, config=None) -> None:
+        self.stages_ran = set()
+        self.threded = False
+        self._cache = None
+        self._precache = None
         self.MARKATA_CACHE_DIR = Path(".") / ".markata.cache"
         self.MARKATA_CACHE_DIR.mkdir(exist_ok=True)
-        self.phase_file: Path = self.MARKATA_CACHE_DIR / "phase.txt"
+        self._pm = pluggy.PluginManager("markata")
+        self._pm.add_hookspecs(hookspec.MarkataSpecs)
+        if config is not None:
+            self.config = config
+        with self.cache as cache:
+            self.init_cache_stats = cache.stats()
         self.registered_attrs = hookspec.registered_attrs
-        self.configure()
+        self.post_models = []
+        self.config_models = []
+        if config is not None:
+            raw_hooks = config
+        else:
+            raw_hooks = standard_config.load("markata")
+        self.hooks_conf = HooksConfig.parse_obj(raw_hooks)
+        try:
+            default_index = self.hooks_conf.hooks.index("default")
+            hooks = [
+                *self.hooks_conf.hooks[:default_index],
+                *DEFAULT_HOOKS,
+                *self.hooks_conf.hooks[default_index + 1 :],
+            ]
+            self.hooks_conf.hooks = [
+                hook for hook in hooks if hook not in self.hooks_conf.disabled_hooks
+            ]
+        except ValueError:
+            # 'default' is not in hooks , do not replace with default_hooks
+            pass
+
+        self._register_hooks()
         if console is not None:
             self._console = console
         atexit.register(self.teardown)
-
-        with self.cache as cache:
-            self.init_cache_stats = cache.stats()
+        self.precache
 
     @property
-    def cache(self) -> FanoutCache:
-        return FanoutCache(self.MARKATA_CACHE_DIR, statistics=True)
+    def cache(self: "Markata") -> Cache:
+        # if self.threded:
+        #     FanoutCache(self.MARKATA_CACHE_DIR, statistics=True)
+        if self._cache is not None:
+            return self._cache
+        self._cache = Cache(self.MARKATA_CACHE_DIR, statistics=True)
 
-    def __getattr__(self, item: str) -> Any:
-        if item in self._pm.hook.__dict__.keys():
+        return self._cache
+
+    @property
+    def precache(self: "Markata") -> None:
+        if self._precache is None:
+            self.cache.expire()
+            self._precache = {k: self.cache.get(k) for k in self.cache.iterkeys()}
+        return self._precache
+
+    def __getattr__(self: "Markata", item: str) -> Any:
+        if item in self._pm.hook.__dict__:
             # item is a hook, return a callable function
             return lambda: self.run(item)
 
-        if item in self.__dict__.keys():
+        if item in self.__dict__:
             # item is an attribute, return it
             return self.__getitem__(item)
 
-        elif item in self.registered_attrs.keys():
+        elif item in self.registered_attrs:
             # item is created by a plugin, run it
             stage_to_run_to = max(
-                [attr["lifecycle"] for attr in self.registered_attrs[item]]
+                [attr["lifecycle"] for attr in self.registered_attrs[item]],
             ).name
             self.run(stage_to_run_to)
             return getattr(self, item)
@@ -154,7 +183,7 @@ class Markata:
             # Markata does not know what this is, raise
             raise AttributeError(f"'Markata' object has no attribute '{item}'")
 
-    def __rich__(self) -> Table:
+    def __rich__(self: "Markata") -> Table:
         grid = Table.grid()
         grid.add_column("label")
         grid.add_column("value")
@@ -164,65 +193,61 @@ class Markata:
 
         return grid
 
-    def bust_cache(self) -> Markata:
+    def bust_cache(self: "Markata") -> Markata:
         with self.cache as cache:
             cache.clear()
         return self
 
-    @set_phase
     def configure(self) -> Markata:
         sys.path.append(os.getcwd())
-        self.config = {**DEFUALT_CONFIG, **standard_config.load("markata")}
-        if isinstance(self.config["glob_patterns"], str):
-            self.config["glob_patterns"] = self.config["glob_patterns"].split(",")
-        elif isinstance(self.config["glob_patterns"], list):
-            self.config["glob_patterns"] = list(self.config["glob_patterns"])
-        else:
-            raise TypeError("glob_patterns must be list or str")
-        self.glob_patterns = self.config["glob_patterns"]
+        # self.config = {**DEFUALT_CONFIG, **standard_config.load("markata")}
+        # if isinstance(self.config["glob_patterns"], str):
+        #     self.config["glob_patterns"] = self.config["glob_patterns"].split(",")
+        # elif isinstance(self.config["glob_patterns"], list):
+        #     self.config["glob_patterns"] = list(self.config["glob_patterns"])
+        # else:
+        #     raise TypeError("glob_patterns must be list or str")
+        # self.glob_patterns = self.config["glob_patterns"]
 
-        if "hooks" not in self.config:
-            self.hooks = [""]
-        if isinstance(self.config["hooks"], str):
-            self.hooks = self.config["hooks"].split(",")
-        if isinstance(self.config["hooks"], list):
-            self.hooks = self.config["hooks"]
+        # self.hooks = self.config["hooks"]
 
-        if "disabled_hooks" not in self.config:
-            self.disabled_hooks = [""]
-        if isinstance(self.config["disabled_hooks"], str):
-            self.disabled_hooks = self.config["disabled_hooks"].split(",")
-        if isinstance(self.config["disabled_hooks"], list):
-            self.disabled_hooks = self.config["disabled_hooks"]
+        # if "disabled_hooks" not in self.config:
+        #     self.disabled_hooks = [""]
+        # if isinstance(self.config["disabled_hooks"], str):
+        #     self.disabled_hooks = self.config["disabled_hooks"].split(",")
+        # if isinstance(self.config["disabled_hooks"], list):
+        #     self.disabled_hooks = self.config["disabled_hooks"]
 
-        if not self.config.get("output_dir", "markout").endswith(
-            self.config.get("path_prefix", "")
-        ):
-            self.config["output_dir"] = (
-                self.config.get("output_dir", "markout")
-                + "/"
-                + self.config.get("path_prefix", "").rstrip("/")
-            )
-        if (
-            len((output_split := self.config.get("output_dir", "markout").split("/")))
-            > 1
-        ):
-            if "path_prefix" not in self.config.keys():
-                self.config["path_prefix"] = "/".join(output_split[1:]) + "/"
-        if not self.config.get("path_prefix", "").endswith("/"):
-            self.config["path_prefix"] = self.config.get("path_prefix", "") + "/"
+        # if not self.config.get("output_dir", "markout").endswith(
+        #     self.config.get("path_prefix", "")
+        # ):
+        #     self.config["output_dir"] = (
+        #         self.config.get("output_dir", "markout") +
+        #         "/" +
+        #         self.config.get("path_prefix", "").rstrip("/")
+        #     )
+        # if (
+        #     len((output_split := self.config.get("output_dir", "markout").split("/"))) >
+        #     1
+        # ):
+        #     if "path_prefix" not in self.config.keys():
+        #         self.config["path_prefix"] = "/".join(output_split[1:]) + "/"
+        # if not self.config.get("path_prefix", "").endswith("/"):
+        #     self.config["path_prefix"] = self.config.get("path_prefix", "") + "/"
 
-        self.config["output_dir"] = self.config["output_dir"].lstrip("/")
-        self.config["path_prefix"] = self.config["path_prefix"].lstrip("/")
+        # self.config["output_dir"] = self.config["output_dir"].lstrip("/")
+        # self.config["path_prefix"] = self.config["path_prefix"].lstrip("/")
 
         try:
-            default_index = self.hooks.index("default")
+            default_index = self.hooks_conf.hooks.index("default")
             hooks = [
-                *self.hooks[:default_index],
+                *self.hooks_conf.hooks[:default_index],
                 *DEFAULT_HOOKS,
-                *self.hooks[default_index + 1 :],
+                *self.hooks_conf.hooks[default_index + 1 :],
             ]
-            self.hooks = [hook for hook in hooks if hook not in self.disabled_hooks]
+            self.config.hooks = [
+                hook for hook in hooks if hook not in self.config.disabled_hooks
+            ]
         except ValueError:
             # 'default' is not in hooks , do not replace with default_hooks
             pass
@@ -284,15 +309,7 @@ class Markata:
         return hashlib.md5("".join(str_keys).encode("utf-8")).hexdigest()
 
     @property
-    def phase(self) -> str:
-        return self._phase
-
-    @phase.setter
-    def phase(self, value: str) -> None:
-        self._phase = value
-
-    @property
-    def content_dir_hash(self) -> str:
+    def content_dir_hash(self: "Markata") -> str:
         hashes = [
             dirhash(dir)
             for dir in self.content_directories
@@ -301,72 +318,95 @@ class Markata:
         return self.make_hash(*hashes)
 
     @property
-    def console(self) -> Console:
+    def console(self: "Markata") -> Console:
         try:
             return self._console
         except AttributeError:
             self._console = Console()
             return self._console
 
-    def describe(self) -> dict[str, str]:
-        return {"version": __version__, "phase": self.phase}
+    def describe(self: "Markata") -> dict[str, str]:
+        return {"version": __version__}
 
-    def _to_dict(self) -> dict[str, Iterable]:
+    def _to_dict(self: "Markata") -> dict[str, Iterable]:
         return {"config": self.config, "articles": [a.to_dict() for a in self.articles]}
 
-    def to_dict(self) -> dict:
+    def to_dict(self: "Markata") -> dict:
         return self._to_dict()
 
-    def to_json(self) -> str:
+    def to_json(self: "Markata") -> str:
         import json
 
         return json.dumps(self.to_dict(), indent=4, sort_keys=True, default=str)
 
-    def _register_hooks(self) -> None:
-        for hook in self.hooks:
+    def _register_hooks(self: "Markata") -> None:
+        sys.path.append(os.getcwd())
+        for hook in self.hooks_conf.hooks:
             try:
                 # module style plugins
                 plugin = importlib.import_module(hook)
             except ModuleNotFoundError as e:
                 # class style plugins
                 if "." in hook:
-                    mod = importlib.import_module(".".join(hook.split(".")[:-1]))
-                    plugin = getattr(mod, hook.split(".")[-1])
+                    try:
+                        mod = importlib.import_module(".".join(hook.split(".")[:-1]))
+                        plugin = getattr(mod, hook.split(".")[-1])
+                    except ModuleNotFoundError as e:
+                        raise ModuleNotFoundError(
+                            f"module {hook} not found\n{sys.path}"
+                        ) from e
                 else:
                     raise e
 
             self._pm.register(plugin)
 
-    def __iter__(self, description: str = "working...") -> Iterable[frontmatter.Post]:
-        articles: Iterable[frontmatter.Post] = track(
-            self.articles, description=description, transient=True, console=self.console
+    def __iter__(
+        self: "Markata", description: str = "working..."
+    ) -> Iterable["Markata.Post"]:
+        articles: Iterable[Markata.Post] = track(
+            self.articles,
+            description=description,
+            transient=True,
+            console=self.console,
         )
         return articles
 
-    def iter_articles(self, description: str) -> Iterable[frontmatter.Post]:
-        articles: Iterable[frontmatter.Post] = track(
-            self.articles, description=description, transient=True, console=self.console
+    def iter_articles(self: "Markata", description: str) -> Iterable[Markata.Post]:
+        articles: Iterable[Markata.Post] = track(
+            self.articles,
+            description=description,
+            transient=True,
+            console=self.console,
         )
         return articles
 
-    def teardown(self) -> Markata:
+    def teardown(self: "Markata") -> Markata:
         """give special access to the teardown lifecycle method"""
         self._pm.hook.teardown(markata=self)
         return self
 
-    def run(self, lifecycle: LifeCycle = None) -> Markata:
+    def run(self: "Markata", lifecycle: LifeCycle = None) -> Markata:
         if lifecycle is None:
-            lifecycle = getattr(LifeCycle, max(LifeCycle._member_map_))
+            lifecycle = max(LifeCycle._member_map_.values())
 
         if isinstance(lifecycle, str):
             lifecycle = LifeCycle[lifecycle]
 
-        stages_to_run = [m for m in LifeCycle._member_map_ if LifeCycle[m] <= lifecycle]
+        stages_to_run = [
+            m
+            for m in LifeCycle._member_map_
+            if (LifeCycle[m] <= lifecycle) and (m not in self.stages_ran)
+        ]
+
+        if not stages_to_run:
+            self.console.log(f"{lifecycle.name} already ran")
+            return self
 
         self.console.log(f"running {stages_to_run}")
         for stage in stages_to_run:
             self.console.log(f"{stage} running")
             getattr(self._pm.hook, stage)(markata=self)
+            self.stages_ran.add(stage)
             self.console.log(f"{stage} complete")
 
         with self.cache as cache:
@@ -374,7 +414,7 @@ class Markata:
 
         if hits + misses > 0:
             self.console.log(
-                f"lifetime cache hit rate {round(hits/ (hits + misses)*100, 2)}%"
+                f"lifetime cache hit rate {round(hits/ (hits + misses)*100, 2)}%",
             )
 
         if misses > 0:
@@ -385,7 +425,7 @@ class Markata:
 
         if hits + misses > 0:
             self.console.log(
-                f"run cache hit rate {round(hits/ (hits + misses)*100, 2)}%"
+                f"run cache hit rate {round(hits/ (hits + misses)*100, 2)}%",
             )
 
         if misses > 0:
@@ -393,8 +433,8 @@ class Markata:
 
         return self
 
-    def filter(self, filter: str) -> List:
-        def evalr(a: Post) -> Any:
+    def filter(self: "Markata", filter: str) -> list:
+        def evalr(a: Markata.Post) -> Any:
             try:
                 return eval(
                     filter,
@@ -411,14 +451,14 @@ class Markata:
         return [a for a in self.articles if evalr(a)]
 
     def map(
-        self,
+        self: "Markata",
         func: str = "title",
         filter: str = "True",
         sort: str = "True",
         reverse: bool = True,
-        *args: Tuple,
-        **kwargs: Dict,
-    ) -> List:
+        *args: tuple,
+        **kwargs: dict,
+    ) -> list:
         import copy
 
         def try_sort(a: Any) -> int:
@@ -442,8 +482,9 @@ class Markata:
                     try:
                         return int(
                             datetime.datetime.combine(
-                                value, datetime.datetime.min.time()
-                            ).timestamp()
+                                value,
+                                datetime.datetime.min.time(),
+                            ).timestamp(),
                         )
                     except Exception:
                         try:
@@ -475,7 +516,8 @@ class Markata:
             variable = str(e).split("'")[1]
 
             missing_in_posts = self.map(
-                "path", filter=f'"{variable}" not in post.keys()'
+                "path",
+                filter=f'"{variable}" not in post.keys()',
             )
             message = (
                 f"variable: '{variable}' is missing in {len(missing_in_posts)} posts"
@@ -483,7 +525,7 @@ class Markata:
             if len(missing_in_posts) > 10:
                 message += (
                     f"\nfirst 10 paths to posts missing {variable}"
-                    f"[{','.join(missing_in_posts)}..."
+                    f"[{','.join([str(p) for p in missing_in_posts[:10]])}..."
                 )
             else:
                 message += f"\npaths to posts missing {variable} {missing_in_posts}"
@@ -495,4 +537,5 @@ class Markata:
 
 def load_ipython_extension(ipython):
     ipython.user_ns["m"] = Markata()
+    ipython.user_ns["markata"] = ipython.user_ns["m"]
     ipython.user_ns["markata"] = ipython.user_ns["m"]

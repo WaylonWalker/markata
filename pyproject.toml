@@ -9,6 +9,7 @@ classifiers = [
  "Operating System :: OS Independent",
  "Programming Language :: Python :: 3 :: Only",
  "Programming Language :: Python :: 3",
+ "Programming Language :: Python :: 3.10",
  "Programming Language :: Python :: 3.7",
  "Programming Language :: Python :: 3.8",
  "Programming Language :: Python :: 3.9",
@@ -40,6 +41,10 @@ dependencies = [
  "pathspec",
  "pillow",
  "pluggy",
+ "polyfactory",
+ "pydantic>=2.0",
+ "pydantic_extra_types>=2.0",
+ "pydantic_settings",
  "pymdown-extensions",
  "python-frontmatter",
  "python-slugify",
@@ -47,6 +52,7 @@ dependencies = [
  "rich",
  "toml",
  "typer",
+ 'dateparser',
 ]
 
 dynamic = [
@@ -82,7 +88,7 @@ tui = [
   "trogon",
 ]
 dev = [
- "black==22.10.0",
+ "black",
  "hatch",
  "interrogate",
  "mypy",
@@ -154,16 +160,21 @@ exclude_lines = [
 
 [tool.hatch.envs.default]
 dependencies = [
- "black==22.10.0",
+ "isort",
+ "black",
  "pytest",
  "pytest-cov",
  "pytest-mock",
  "pytest-tmp-files",
  "ruff",
+ "pyinstrument",
 ]
 
 [tool.hatch.envs.dev]
 dependencies = [
+ "black",
+ "ipython",
+ "polyfactory",
  "black==22.10.0",
  "ipython",
  "pytest",
@@ -182,17 +193,26 @@ python = [
 ]
 
 [tool.hatch.envs.default.scripts]
-cov = "pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=markata --cov=tests"
+cov = "pytest tests --cov-report=term-missing --cov-config=pyproject.toml --cov=markata --cov=tests"
 no-cov = "cov --no-cov"
 lint = "ruff markata"
 format = "black --check markata"
 build-docs = "markata build"
+lint-format = ['lint', 'format']
 lint-test = [
  "lint",
  "format",
  "cov",
 ]
 test-lint = "lint-test"
+build = 'markata build'
+serve = "python -m http.server --bind 0.0.0.0 8000 --directory markout"
+ruff-fix = "ruff --fix markata"
+black-fix = "black markata"
+fix = [
+ "black-fix",
+ "ruff-fix",
+]
 
 [tool.hatch.envs.test.scripts]
 cov = "pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=markata --cov=tests"
@@ -205,4 +225,15 @@ exclude = [
 ]
 
 [tool.ruff]
-ignore=['E501'] # let black control line length errors
+# E501 let black control line length errors
+ignore = [
+  "E501"
+]
+
+target-version = "py37"
+[tool.ruff.per-file-ignores]
+'tests/**/*.py' = ['S101']
+select = [
+  "A",
+  "E",
+]

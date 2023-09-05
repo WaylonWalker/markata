@@ -13,22 +13,18 @@ if TYPE_CHECKING:
 
 @hook_impl
 def render(markata: "MarkataIcons") -> None:
-    if "icons" in markata.__dict__.keys():
-        icons = markata.icons
-    else:
-        icons = []
+    icons = markata.icons if "icons" in markata.__dict__ else []
     manifest = {
-        "name": markata.get_config("site_name") or "",
-        "short_name": markata.get_config("short_name") or "",
-        "start_url": markata.get_config("start_url") or "",
-        "display": markata.get_config("display") or "",
-        "background_color": markata.get_config("background_color") or "",
-        "theme_color": markata.get_config("theme_color") or "",
-        "description": markata.get_config("description") or "",
+        "name": markata.config.site_name,
+        "short_name": markata.config.short_name,
+        "start_url": markata.config.start_url,
+        "display": markata.config.display,
+        "background_color": str(markata.config.background_color),
+        "theme_color": str(markata.config.theme_color),
+        "description": markata.config.description,
         "icons": icons,
     }
     filepath = Path(markata.config["output_dir"]) / "manifest.json"
-    filepath.parent.mkdir(parents=True, exist_ok=True)
     filepath.touch(exist_ok=True)
     with open(filepath, "w+") as f:
         json.dump(manifest, f, ensure_ascii=True, indent=4)
@@ -42,7 +38,7 @@ def render(markata: "MarkataIcons") -> None:
                 article.content,
                 article.html,
             )
-            html_from_cache = cache.get(key)
+            html_from_cache = markata.precache.get(key)
 
             if html_from_cache is None:
                 soup = BeautifulSoup(article.html, features="lxml")
@@ -51,10 +47,7 @@ def render(markata: "MarkataIcons") -> None:
                 link.attrs["href"] = "/manifest.json"
                 soup.head.append(link)
 
-                if should_prettify:
-                    html = soup.prettify()
-                else:
-                    html = str(soup)
+                html = soup.prettify() if should_prettify else str(soup)
                 cache.add(key, html, expire=config["cache_expire"])
             else:
                 html = html_from_cache

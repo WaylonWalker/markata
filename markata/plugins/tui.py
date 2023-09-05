@@ -1,9 +1,32 @@
 import subprocess
+from typing import List
 
+import pydantic
 from rich.console import RenderableType
 
 from markata import Markata
-from markata.hookspec import hook_impl
+from markata.hookspec import hook_impl, register_attr
+
+
+class TuiKey(pydantic.BaseModel):
+    name: str
+    key: str
+
+
+class TuiConfig(pydantic.BaseModel):
+    new_cmd: List[str] = ["markata", "new", "post"]
+    keymap: List[TuiKey] = [TuiKey(name="new", key="n")]
+
+
+class Config(pydantic.BaseModel):
+    tui: TuiConfig = TuiConfig()
+
+
+@hook_impl()
+@register_attr("config_models")
+def config_model(markata: "Markata") -> None:
+    markata.config_models.append(Config)
+
 
 try:
     from textual.app import App
@@ -11,18 +34,18 @@ try:
     from textual.widgets import Footer
 
     class MarkataWidget(Widget):
-        def __init__(self, markata: Markata, widget: str = "server"):
+        def __init__(self, markata: Markata, widget: str = "server") -> None:
             super().__init__(widget)
             self.m = markata
             self.widget = widget
             self.renderable = getattr(self.m, self.widget)
 
-        def render(self):
-            return self.renderable
+            def render(self):
+                return self.renderable
 
-        async def update(self, renderable: RenderableType) -> None:
-            self.renderable = renderable
-            self.refresh()
+            async def update(self, renderable: RenderableType) -> None:
+                self.renderable = renderable
+                self.refresh()
 
     class MarkataApp(App):
         async def on_load(self, event):

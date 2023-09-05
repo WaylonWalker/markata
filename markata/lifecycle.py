@@ -20,17 +20,25 @@ class LifeCycle(Enum):
     """
     LifeCycle currently supports the following steps.
 
+
     * configure - load and fix configuration
     * glob - find files
     * load - load files
+    * validate_posts
     * pre_render - clean up files/metadata before render
     * render - render content
     * post_render - clean up rendered content
     * save - store results to disk
+    * teardown - runs on exit
 
     """
 
+    config_model = auto()
+    post_model = auto()
+    create_models = auto()
+    load_config = auto()
     configure = auto()
+    validate_config = auto()
     glob = auto()
     load = auto()
     pre_render = auto()
