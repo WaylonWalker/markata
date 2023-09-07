@@ -5,20 +5,20 @@ from __future__ import annotations
 
 import atexit
 import datetime
-from datetime import timedelta
 import hashlib
 import importlib
 import logging
 import os
-from pathlib import Path
 import sys
 import textwrap
+from datetime import timedelta
+from pathlib import Path
 from typing import Any, Dict, Iterable, Optional
 
-from checksumdir import dirhash
-from diskcache import Cache
 import pluggy
 import pydantic
+from checksumdir import dirhash
+from diskcache import Cache
 from rich.console import Console
 from rich.progress import track
 from rich.table import Table
@@ -54,6 +54,7 @@ DEFAULT_MD_EXTENSIONS = [
 ]
 
 DEFAULT_HOOKS = [
+    "markata.plugins.copy_assets",
     "markata.plugins.heading_link",
     "markata.plugins.pyinstrument",
     "markata.plugins.glob",
@@ -62,13 +63,11 @@ DEFAULT_HOOKS = [
     "markata.plugins.render_markdown",
     "markata.plugins.manifest",
     # "markata.plugins.generator",
-    "markata.plugins.jinja_md",
     "markata.plugins.feeds",
     "markata.plugins.auto_description",
     "markata.plugins.seo",
     "markata.plugins.post_template",
     "markata.plugins.covers",
-    "markata.plugins.copy_assets",
     "markata.plugins.publish_html",
     "markata.plugins.flat_slug",
     "markata.plugins.rss",
@@ -86,6 +85,7 @@ DEFAULT_HOOKS = [
     "markata.plugins.post_model",
     "markata.plugins.config_model",
     "markata.plugins.create_models",
+    "markata.plugins.jinja_md",
 ]
 
 DEFUALT_CONFIG = {
