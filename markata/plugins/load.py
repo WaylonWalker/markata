@@ -1,7 +1,7 @@
 """Default load plugin."""
 import itertools
 from pathlib import Path
-from typing import Callable, List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable, List, Optional
 
 import frontmatter
 import pydantic
@@ -43,13 +43,7 @@ def load(markata: "MarkataMarkdown") -> None:
 
 def get_post(path: Path, markata: "Markata") -> Optional[Callable]:
     if markata.Post:
-        # profiler = Profiler(async_mode="disabled")
-        # start_time = time.time()
-        # profiler.start()
         post = pydantic_get_post(path=path, markata=markata)
-        # profiler.stop()
-        # post.load_time = time.time() - start_time
-        # post.profile = profiler.output_text()
         return post
     else:
         return legacy_get_post(path=path, markata=markata)
@@ -75,23 +69,9 @@ def get_models(markata: "Markata", error: pydantic.ValidationError) -> List:
 
 
 def pydantic_get_post(path: Path, markata: "Markata") -> Optional[Callable]:
-    # fm_post = frontmatter.load(path)
-    # fm_post["content"] = fm_post.content
-    # fm_post["path"] = str(path)
-    # fm_post["edit_link"] = (
-    #     markata.config.repo_url
-    #     + "edit/"
-    #     + markata.config.repo_branch
-    #     + "/"
-    #     + str(path),
-    # )
-
-    # try:
-    #     post = markata.Post(**fm_post.metadata, markata=markata)
-
-    # markata.console.log(f"loading {path}")
     try:
         post = markata.Post.parse_file(markata=markata, path=path)
+        markata.Post.validate(post)
 
     except pydantic.ValidationError as e:
         models = get_models(markata=markata, error=e)
