@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 from more_itertools import unique_everseen
 from pydantic import create_model
@@ -21,12 +21,16 @@ class PostConfig:
 
 
 @hook_impl
-@register_attr("Post", "Config")
+@register_attr("Post", "Posts", "Config")
 def create_models(markata: "Markata") -> None:
     post_models = tuple(unique_everseen(markata.post_models))
     markata.Post = create_model(
         "Post",
         __base__=post_models,
+    )
+    markata.Posts = create_model(
+        "Posts",
+        posts=(List[markata.Post], ...),
     )
     markata.Post.markata = markata
     markata.Config = create_model(
