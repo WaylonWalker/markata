@@ -225,6 +225,7 @@ class FeedConfig(pydantic.BaseModel):
     sort: str = "date"
     reverse: bool = False
     rss: bool = True
+    sitemap: bool = True
     card_template: str = """
         <li class='post'>
             <a href="/{{ markata.config.path_prefix }}{{ post.slug }}/">
@@ -234,6 +235,7 @@ class FeedConfig(pydantic.BaseModel):
         """
     template: str = Path(__file__).parent / "default_post_template.html.jinja"
     rss_template: str = Path(__file__).parent / "default_rss_template.xml"
+    sitemap_template: str = Path(__file__).parent / "default_sitemap_template.xml"
     xsl_template: str = Path(__file__).parent / "default_xsl_template.xsl"
 
     @pydantic.validator("name", pre=True, always=True)
@@ -493,12 +495,18 @@ def create_page(
 
     template = get_template(feed.config.template)
     rss_template = get_template(feed.config.rss_template)
+    sitemap_template = get_template(feed.config.sitemap_template)
     output_file = Path(markata.config.output_dir) / feed.config.slug / "index.html"
     canonical_url = f"{markata.config.url}/{feed.config.slug}/"
     output_file.parent.mkdir(exist_ok=True, parents=True)
 
     rss_output_file = Path(markata.config.output_dir) / feed.config.slug / "rss.xml"
     rss_output_file.parent.mkdir(exist_ok=True, parents=True)
+
+    sitemap_output_file = (
+        Path(markata.config.output_dir) / feed.config.slug / "sitemap.xml"
+    )
+    sitemap_output_file.parent.mkdir(exist_ok=True, parents=True)
 
     key = markata.make_hash(
         "feeds",
@@ -530,9 +538,11 @@ def create_page(
             markata.cache.set(key, feed_html)
 
     feed_rss = rss_template.render(markata=markata, feed=feed)
+    feed_sitemap = sitemap_template.render(markata=markata, feed=feed)
 
     output_file.write_text(feed_html)
     rss_output_file.write_text(feed_rss)
+    sitemap_output_file.write_text(feed_sitemap)
 
 
 def create_card(
