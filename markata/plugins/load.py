@@ -29,12 +29,8 @@ def load(markata: "MarkataMarkdown") -> None:
         transient=True,
         console=markata.console,
     )
-    Posts = pydantic.create_model(
-        "Posts",
-        posts=(List[markata.Post], ...),
-    )
     markata.console.log(f"found {len(markata.files)} posts")
-    markata.posts_obj = Posts.parse_obj(
+    markata.posts_obj = markata.Posts.parse_obj(
         {"posts": [get_post(article, markata) for article in markata.files]},
     )
     markata.posts = markata.posts_obj.posts
