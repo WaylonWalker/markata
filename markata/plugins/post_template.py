@@ -69,17 +69,17 @@ html  {
 ```
 
 """
+import inspect
 from pathlib import Path
-from typing import List, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, List, Union
 
 import jinja2
+import pydantic
 from jinja2 import Template, Undefined
 from more_itertools import flatten
-import pydantic
 
 from markata import __version__
 from markata.hookspec import hook_impl
-import inspect
 
 env = jinja2.Environment()
 
@@ -281,5 +281,6 @@ def render(markata: "Markata") -> None:
             body=article.html,
             toc=markata.md.toc,  # type: ignore
             config=merged_config,
+            post=article,
             **article.metadata,
         )
