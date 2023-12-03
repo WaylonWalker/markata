@@ -53,6 +53,7 @@ m = Markata()
 from itertools import compress
 from pathlib import Path
 from typing import Any, Dict, TYPE_CHECKING
+import html
 
 import commonmark
 
@@ -87,6 +88,7 @@ def get_description(article: "Post") -> str:
     # deduplicate paragraph_nodes based on unique source position
     unique_paragraph_nodes = list(compress(paragraph_nodes, unique_mask))
     paragraphs = " ".join([p.first_child.literal for p in unique_paragraph_nodes])
+    paragraphs = html.escape(paragraphs)
     return paragraphs
 
 
