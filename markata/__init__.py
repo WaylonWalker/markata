@@ -3,6 +3,7 @@
 # annotations needed to return self
 from __future__ import annotations
 
+import copy
 import atexit
 import datetime
 import hashlib
@@ -30,6 +31,7 @@ from markata.lifecycle import LifeCycle
 
 logger = logging.getLogger("markata")
 
+
 DEFAULT_MD_EXTENSIONS = [
     "codehilite",
     "markdown.extensions.admonition",
@@ -55,7 +57,7 @@ DEFAULT_MD_EXTENSIONS = [
 
 DEFAULT_HOOKS = [
     "markata.plugins.copy_assets",
-    "markata.plugins.heading_link",
+    # "markata.plugins.heading_link",
     "markata.plugins.pyinstrument",
     "markata.plugins.glob",
     "markata.plugins.load",
@@ -65,7 +67,7 @@ DEFAULT_HOOKS = [
     # "markata.plugins.generator",
     "markata.plugins.feeds",
     "markata.plugins.auto_description",
-    "markata.plugins.seo",
+    # "markata.plugins.seo",
     "markata.plugins.post_template",
     "markata.plugins.covers",
     "markata.plugins.publish_html",
@@ -85,7 +87,7 @@ DEFAULT_HOOKS = [
     "markata.plugins.post_model",
     "markata.plugins.config_model",
     "markata.plugins.create_models",
-    "markata.plugins.jinja_md",
+    # "markata.plugins.jinja_md",
 ]
 
 DEFUALT_CONFIG = {
@@ -106,6 +108,7 @@ class HooksConfig(pydantic.BaseModel):
 
 class Markata:
     def __init__(self: "Markata", console: Console = None, config=None) -> None:
+        self.__version__ = __version__
         self.stages_ran = set()
         self.threded = False
         self._cache = None
@@ -306,7 +309,7 @@ class Markata:
 
     def make_hash(self, *keys: str) -> str:
         str_keys = [str(key) for key in keys]
-        return hashlib.md5("".join(str_keys).encode("utf-8")).hexdigest()
+        return hashlib.sha256("".join(str_keys).encode("utf-8")).hexdigest()
 
     @property
     def content_dir_hash(self: "Markata") -> str:

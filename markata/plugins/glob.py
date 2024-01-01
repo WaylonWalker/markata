@@ -1,6 +1,7 @@
 """Default glob plugin"""
 from pathlib import Path
 from typing import List, TYPE_CHECKING, Union
+from markata import background
 
 from more_itertools import flatten
 import pydantic
@@ -68,6 +69,7 @@ def glob(markata: "Markata") -> None:
             with markata.cache as cache:
                 cache.set(key, spec)
 
+        @background.task
         def check_spec(file: str) -> bool:
             key = markata.make_hash("glob", "check_spec", file)
             check = markata.precache.get(key)
@@ -79,4 +81,6 @@ def glob(markata: "Markata") -> None:
                 cache.set(key, check)
             return check
 
-        markata.files = [file for file in markata.files if not check_spec(str(file))]
+        file_checks = [(file, check_spec(str(file))) for file in markata.files]
+        [check.result() for _, check in file_checks]
+        markata.files = [file for file, check in file_checks if check]

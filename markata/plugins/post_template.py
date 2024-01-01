@@ -69,19 +69,20 @@ html  {
 ```
 
 """
+from functools import lru_cache
 import inspect
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Union
+from typing import List, Optional, TYPE_CHECKING, Union
 
 import jinja2
-import pydantic
 from jinja2 import Template, Undefined
-from more_itertools import flatten
 
-from markata import __version__
+from more_itertools import flatten
+import pydantic
+
+from markata import __version__, background
 from markata.hookspec import hook_impl
 
-env = jinja2.Environment()
 
 if TYPE_CHECKING:
     from markata import Markata
@@ -169,19 +170,38 @@ class HeadConfig(pydantic.BaseModel):
 class Config(pydantic.BaseModel):
     head: HeadConfig = HeadConfig()
     style: Style = Style()
-    post_template: str = None
+    post_template: str = "post.html"
+    dynamic_templates_dir: Path = Path(".markata.cache/templates")
+    templates_dir: List[Path] = pydantic.Field(
+        [Path("templates"), Path(__file__).parents[1] / "templates"],
+    )
+    env_options: dict = {}
 
-    @pydantic.validator("post_template", pre=True, always=True)
-    def default_post_template(cls, v):
-        if v is None:
-            return (
-                Path(__file__).parent / "default_post_template.html.jinja"
-            ).read_text()
-        if isinstance(v, Path):
-            return v.read_text()
-        if isinstance(v, str) and Path(v).exists():
-            return Path(v).read_text()
+    @pydantic.validator("templates_dir", pre=True, always=True)
+    def dynamic_templates_in_templates_dir(cls, v, *, values):
+        if values["dynamic_templates_dir"] not in v:
+            v.append(values["dynamic_templates_dir"])
         return v
+
+    @property
+    def jinja_loader(self):
+        return jinja2.FileSystemLoader(self.templates_dir)
+
+    @property
+    def jinja_env(
+        self,
+    ):
+        if hasattr(self, "_jinja_env"):
+            return self._jinja_env
+        self.env_options.setdefault("loader", self.jinja_loader)
+        self.env_options.setdefault("undefined", SilentUndefined)
+        self.env_options.setdefault("lstrip_blocks", True)
+        self.env_options.setdefault("trim_blocks", True)
+
+        env = jinja2.Environment(**self.env_options)
+
+        self._jinja_env = env
+        return env
 
 
 class PostOverrides(pydantic.BaseModel):
@@ -191,6 +211,13 @@ class PostOverrides(pydantic.BaseModel):
 
 class Post(pydantic.BaseModel):
     config_overrides: PostOverrides = PostOverrides()
+    template: Optional[str] = None
+
+    @pydantic.validator("template", pre=True, always=True)
+    def default_template(cls, v, *, values):
+        if v is None:
+            return values["markata"].config.post_template
+        return v
 
 
 @hook_impl(tryfirst=True)
@@ -228,6 +255,15 @@ def pre_render(markata: "Markata") -> None:
     allowing an simpler jinja template.  This enablees the use of the
     `markata.head.text` list in configuration.
     """
+
+    markata.config.dynamic_templates_dir.mkdir(parents=True, exist_ok=True)
+    head_template = markata.config.dynamic_templates_dir / "head.html"
+    head_template.write_text(
+        markata.config.jinja_env.get_template("base_head.html").render(
+            {"markata": markata}
+        ),
+    )
+
     for article in [a for a in markata.articles if "config_overrides" in a]:
         raw_text = article.get("config_overrides", {}).get("head", {}).get("text", "")
 
@@ -239,48 +275,95 @@ def pre_render(markata: "Markata") -> None:
 
 @hook_impl
 def render(markata: "Markata") -> None:
-    template = Template(markata.config.post_template, undefined=SilentUndefined)
+    # with markata.cache as cache:
+    # for article in markata.articles:
+    #     merged_config = markata.config
+    #     key = markata.make_hash(
+    #         "post_template",
+    #         __version__,
+    #         merged_config,
+    #         article.key,
+    #     )
 
-    if "{{" in str(markata.config.get("head", {})):
-        Template(
-            str(markata.config.get("head", {})),
-            undefined=SilentUndefined,
-        )
-    else:
-        pass
+    #     article._html = markata.precache.get(key)
+
+    # futures = [
+    #     (article, render_article(markata, article, cache))
+    #     for article in markata.articles
+    # ]
+    futures = []
 
     merged_config = markata.config
-    for article in [a for a in markata.articles if hasattr(a, "html")]:
-        # TODO do we need to handle merge??
-        # if head_template:
-        #     head = eval(
-        #         head_template.render(
-        #             __version__=__version__,
-        #             config=_full_config,
-        #             **article,
-        #         )
-        #     )
-
-        # merged_config = {
-        #     **_full_config,
-        #     **{"head": head},
-        # }
-
-        # merged_config = always_merger.merge(
-        #     merged_config,
-        #     copy.deepcopy(
-        #         article.get(
-        #             "config_overrides",
-        #             {},
-        #         )
-        #     ),
-        # )
-
-        article.html = template.render(
-            __version__=__version__,
-            body=article.html,
-            toc=markata.md.toc,  # type: ignore
-            config=merged_config,
-            post=article,
-            **article.metadata,
+    for article in markata.articles:
+        key = markata.make_hash(
+            "post_template",
+            __version__,
+            merged_config,
+            article.key,
         )
+        html = markata.precache.get(key)
+
+        if html is not None:
+            article.html = html
+        else:
+            futures.append((article, render_article(markata, article)))
+
+    for article, future in futures:
+        article.html = future.result()
+        # cache.set(key, article.html)
+
+
+@lru_cache()
+def get_template(markata, template):
+    try:
+        return markata.config.jinja_env.get_template(template)
+    except jinja2.TemplateNotFound:
+        # try to load it as a file
+        ...
+
+    try:
+        return Template(Path(template).read_text(), undefined=SilentUndefined)
+    except FileNotFoundError:
+        # default to load it as a string
+        ...
+    return Template(template, undefined=SilentUndefined)
+
+
+@background.task
+def render_article(markata, article):
+    merged_config = markata.config
+    template = get_template(markata, article.template)
+    # TODO do we need to handle merge??
+    # if head_template:
+    #     head = eval(
+    #         head_template.render(
+    #             __version__=__version__,
+    #             config=_full_config,
+    #             **article,
+    #         )
+    #     )
+
+    # merged_config = {
+    #     **_full_config,
+    #     **{"head": head},
+    # }
+
+    # merged_config = always_merger.merge(
+    #     merged_config,
+    #     copy.deepcopy(
+    #         article.get(
+    #             "config_overrides",
+    #             {},
+    #         )
+    #     ),
+    # )
+
+    html = template.render(
+        __version__=__version__,
+        body=article.article_html,
+        toc=markata.md.toc,  # type: ignore
+        config=merged_config,
+        post=article,
+        **article.metadata,
+    )
+    return html

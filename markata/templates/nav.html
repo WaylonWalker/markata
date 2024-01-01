@@ -1,0 +1,12 @@
+<nav>
+    {% for text, link in config.nav.items() %}
+    <a
+        href='{{"/" if link.startswith("/")}}{{"" if "://" in link else config["path_prefix"]}}{{link.lstrip("/")}}'>{{text}}</a>
+    {% endfor %}
+</nav>
+<div>
+    <label id="theme-switch" class="theme-switch" for="checkbox-theme" title="light/dark mode toggle">
+        <input type="checkbox" id="checkbox-theme" />
+        <div class="slider round"></div>
+    </label>
+</div>

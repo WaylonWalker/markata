@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="{{ markata.config.lang }}">
+
+<head>
+    {% block head %}
+    {% if post.title or config.title %}
+    <title>{{ post.title or config.title }}</title>
+    {% endif %}
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    {% if post.description or config.description %}
+    <meta name="description" content="{{ post.description or config.description }}" />
+    {% endif %} {% if config.icon %}
+    <link href="/{{ config.icon }}" rel="icon" type="image/png" />
+    {% endif %}
+
+    <script>
+        {% include "theme.js" %}
+    </script>
+
+    <style>
+        <!-- prettier-ignore 
+        -->
+    <!-- prettier-ignore-attribute -->
+    {% include "post.css" %}
+    </style>
+
+    {% if 'markata.plugins.service_worker' in config.hooks %}
+    <script>
+        if ("serviceWorker" in navigator) {
+            navigator.serviceWorker.register("/service-worker.js");
+            navigator.serviceWorker.addEventListener("controllerchange", () => {
+                console.log("new worker");
+                window.location.reload();
+            });
+        }
+    </script>
+    {% endif %}
+
+    {% include "head.html" %}
+    {% endblock %}
+</head>
+
+<body>
+    {% include "nav.html" %}
+    {% block content %} {% endblock %}
+    {% block footer %} {% endblock %}
+</body>
+
+</html>

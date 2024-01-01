@@ -44,6 +44,7 @@ class Post(pydantic.BaseModel):
         arbitrary_types_allowed=True,
         extra="allow",
     )
+    template: Optional[str] = "post.html"
 
     def __repr_args__(self: "Post") -> "ReprArgs":
         return [
@@ -51,6 +52,20 @@ class Post(pydantic.BaseModel):
             for key, value in self.__dict__.items()
             if key in self.markata.config.post_model.repr_include
         ]
+
+    @property
+    def key(self: "Post") -> List[str]:
+        return self.markata.make_hash(
+            self.slug,
+            self.slug,
+            self.href,
+            self.published,
+            self.description,
+            self.content,
+            self.date,
+            self.title,
+            self.template,
+        )
 
     @property
     def metadata(self: "Post") -> Dict:
@@ -177,7 +192,7 @@ class Post(pydantic.BaseModel):
             **fm,
         }
 
-        return markata.Post(**post_args)
+        return markata.Post.parse_obj(post_args)
 
     def dumps(self):
         """
@@ -194,6 +209,12 @@ class Post(pydantic.BaseModel):
         if v == "index":
             return ""
         return v
+
+    @pydantic.validator("slug", pre=True, always=True)
+    def no_double_slash_in_slug(cls, v, *, values):
+        if v is None:
+            return v
+        return v.replace("//", "/")
 
     @pydantic.validator("href", pre=True, always=True)
     def default_href(cls, v, *, values):
@@ -345,4 +366,5 @@ def config_model(markata: "Markata") -> None:
 
 
 class PostFactory(ModelFactory):
+    __model__ = Post
     __model__ = Post

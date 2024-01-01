@@ -193,6 +193,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, List, Optional
 
+from markata import background
 import pydantic
 import typer
 from jinja2 import Template, Undefined
@@ -233,7 +234,7 @@ class FeedConfig(pydantic.BaseModel):
             </a>
         </li>
         """
-    template: str = Path(__file__).parent / "default_post_template.html.jinja"
+    template: str = "feed.html"
     rss_template: str = Path(__file__).parent / "default_rss_template.xml"
     sitemap_template: str = Path(__file__).parent / "default_sitemap_template.xml"
     xsl_template: str = Path(__file__).parent / "default_xsl_template.xsl"
@@ -486,14 +487,17 @@ def create_page(
 
     posts = feed.posts
 
-    cards = [
-        create_card(markata, post, feed.config.card_template, cache) for post in posts
-    ]
-    cards.insert(0, "<ul>")
-    cards.append("</ul>")
-    cards = "".join(cards)
+    # card_futures = [
+    #     create_card(markata, post, feed.config.card_template, cache) for post in posts
+    # ]
+    # cards = [card.result() for card in card_futures]
 
-    template = get_template(feed.config.template)
+    # cards.insert(0, "<ul>")
+    # cards.append("</ul>")
+    # cards = "".join(cards)
+
+    # template = get_template(feed.config.template)
+    template = markata.config.jinja_env.get_template(feed.config.template)
     rss_template = get_template(feed.config.rss_template)
     sitemap_template = get_template(feed.config.sitemap_template)
     output_file = Path(markata.config.output_dir) / feed.config.slug / "index.html"
@@ -512,7 +516,7 @@ def create_page(
         "feeds",
         template,
         __version__,
-        cards,
+        # cards,
         markata.config.url,
         markata.config.description,
         feed.config.title,
@@ -526,7 +530,8 @@ def create_page(
         feed_html = template.render(
             markata=markata,
             __version__=__version__,
-            body=cards,
+            # body=cards,
+            posts=posts,
             url=markata.config.url,
             description=markata.config.description,
             title=feed.config.title,
@@ -534,8 +539,7 @@ def create_page(
             today=datetime.datetime.today(),
             config=markata.config,
         )
-        with markata.cache as cache:
-            markata.cache.set(key, feed_html)
+        cache.set(key, feed_html)
 
     feed_rss = rss_template.render(markata=markata, feed=feed)
     feed_sitemap = sitemap_template.render(markata=markata, feed=feed)
@@ -545,6 +549,7 @@ def create_page(
     sitemap_output_file.write_text(feed_sitemap)
 
 
+@background.task
 def create_card(
     markata: "Markata",
     post: "Post",
