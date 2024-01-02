@@ -15,7 +15,10 @@ jobs:
   release-markata:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: waylonwalker/hatch-action@v3
         with:
           before-command: "lint-format"
+        env:
+          # required for gh release
+          GH_TOKEN: ${{ github.token }}
