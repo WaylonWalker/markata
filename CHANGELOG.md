@@ -64,8 +64,6 @@ filter="published == 'False'"
 color='red'
 ```
 
-> New
-
 ## 0.7.4
 
 - Fix: Icon resize broken from PIL 10.0.0 release
