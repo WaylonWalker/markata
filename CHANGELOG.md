@@ -4,6 +4,10 @@
 
 - pydantic support
 
+### Pydantic Support
+
+Now plugins are configured through a pydantic Config object.
+
 ### breaking changes
 
 There are a number of breaking changes going into 0.8.0. Use caution when
