@@ -1,57 +1,104 @@
-"""Icon Resize Plugin"""
-from pathlib import Path
-from typing import TYPE_CHECKING
+"""Icon Resize Plugin
 
+Resized favicon to a set of common sizes.
+
+## markata.plugins.icon_resize configuration
+
+```toml title=markata.toml
+[markata]
+output_dir = "markout"
+assets_dir = "static"
+icon = "static/icon.png"
+```
+
+"""
 from PIL import Image
+from pathlib import Path
+from typing import Dict, List, Optional, TYPE_CHECKING
 
-from markata.hookspec import hook_impl, register_attr
+from markata.hookspec import register_attr
+
 
 if TYPE_CHECKING:
-    from typing import Dict, List
-
     from markata import Markata
 
-    class MarkataIcons(Markata):
-        icons: List[Dict[str, str]]
+import pydantic
+
+from markata.hookspec import hook_impl
+
+
+class Config(pydantic.BaseModel):
+    output_dir: pydantic.DirectoryPath = "markout"
+    assets_dir: Path = pydantic.Field(
+        Path("static"),
+        description="The directory to store static assets",
+    )
+    icon: Optional[Path] = None
+    icon_out_file: Optional[Path] = None
+    icons: Optional[List[Dict[str, str]]] = []
+
+    @pydantic.validator("icon")
+    def ensure_icon_exists(cls, v, *, values: Dict) -> Path:
+        if v is None:
+            return
+        if v.exists():
+            return v
+
+        icon = Path(values["assets_dir"]) / v
+
+        if icon.exists():
+            return icon
+        else:
+            raise FileNotFoundError(v)
+
+    @pydantic.validator("icon_out_file", pre=True, always=True)
+    def default_icon_out_file(cls, v, *, values: Dict) -> Path:
+        if v is None and values["icon"] is not None:
+            return Path(values["output_dir"]) / values["icon"]
+        return v
+
+
+@hook_impl()
+@register_attr("config_models")
+def config_model(markata: "Markata") -> None:
+    markata.config_models.append(Config)
 
 
 @hook_impl
 @register_attr("icons")
-def render(markata: "MarkataIcons") -> None:
-    if "icon" not in markata.config:
+def render(markata: "Markata") -> None:
+    if markata.config.icon is None:
         return
-    base_out_file = Path(markata.config["output_dir"]) / markata.config["icon"]
 
-    with Image.open(Path(markata.config["assets_dir"]) / markata.config["icon"]) as img:
-        markata.icons = []
+    with Image.open(markata.config.icon) as img:
         for width in [48, 72, 96, 144, 192, 256, 384, 512]:
             height = int(float(img.size[1]) * float(width / float(img.size[0])))
             filename = Path(
-                f"{base_out_file.stem}_{width}x{height}{base_out_file.suffix}"
+                f"{markata.config.icon_out_file.stem}_{width}x{height}{markata.config.icon_out_file.suffix}",
             )
-            markata.icons.append(
+            markata.config.icons.append(
                 {
                     "src": str(filename),
                     "sizes": f"{width}x{width}",
                     "type": f"image/{img.format}".lower(),
                     "purpose": "any maskable",
-                }
+                },
             )
 
 
 @hook_impl
-def save(markata: "MarkataIcons") -> None:
-    if "icon" not in markata.config:
+def save(markata: "Markata") -> None:
+    if markata.config.icon is None:
         return
-    base_out_file = Path(markata.config["output_dir"]) / markata.config["icon"]
     for width in [48, 72, 96, 144, 192, 256, 384, 512]:
-        with Image.open(
-            Path(markata.config["assets_dir"]) / markata.config["icon"]
-        ) as img:
+        with Image.open(markata.config.icon) as img:
             height = int(float(img.size[1]) * float(width / float(img.size[0])))
             img = img.resize((width, height), Image.LANCZOS)
             filename = Path(
-                f"{base_out_file.stem}_{width}x{height}{base_out_file.suffix}"
+                f"{markata.config.icon_out_file.stem}_{width}x{height}{markata.config.icon_out_file.suffix}",
             )
-            out_file = Path(markata.config["output_dir"]) / filename
+            out_file = Path(markata.config.output_dir) / filename
+            if out_file.exists():
+                continue
+            img = img.resize((width, height), Image.LANCZOS)
             img.save(out_file)

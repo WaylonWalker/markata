@@ -157,7 +157,7 @@ def pre_render(markata: "Markata") -> None:
                         article.get(
                             "config_overrides",
                             {},
-                        )
+                        ),
                     ),
                 ),
                 **article,

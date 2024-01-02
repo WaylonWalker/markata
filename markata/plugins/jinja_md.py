@@ -4,16 +4,16 @@ Renders your markdown as a jinja template during pre_render.
 The markata instance is passed into the template, giving you access to things
 such as all of your articles, config, and this post as post.
 
-## Examples
+# Examples
 
 first we can grab a few things out of the frontmatter of this post.
 
 ``` markdown
-### {{ post.title }}
+# {{ post.title }}
 {{ post.description }}
 ```
 
-### one-liner list of links
+# one-liner list of links
 
 This one-liner will render a list of markdown links into your markdown at build
 time.  It's quite handy to pop into posts.
@@ -22,7 +22,7 @@ time.  It's quite handy to pop into posts.
 {{ '\\n'.join(markata.map('f"* [{title}]({slug})"', sort='slug')) }}
 ```
 
-### jinja for to markdown list of links
+# jinja for to markdown list of links
 
 Sometimes quoting things like your filters are hard to do in a one line without
 running out of quote variants.  Jinja for loops can make this much easier.
@@ -33,7 +33,7 @@ running out of quote variants.  Jinja for loops can make this much easier.
 {% endfor %}
 ```
 
-### jinja for to html list of links
+# jinja for to html list of links
 
 Since markdown is a superset of html, you can just render out html into your
 post and it is still valid.
@@ -46,7 +46,7 @@ post and it is still valid.
 </ul>
 ```
 
-## Ignoring files
+# Ignoring files
 
 It is possible to ignore files by adding an ignore to your `markata.jinja_md`
 config in your `markata.toml` file.  This ignore follows the `gitwildmatch`
@@ -63,7 +63,7 @@ ignore=[
   Docs such as this jinja_md.py file will get converted to jinja_md.md during
   build time, so use `.md` extensions instead of `.py`.
 
-## Ignoring a single file
+# Ignoring a single file
 
 You can also ignore a single file right from the articles frontmatter, by
 adding `jinja: false`.
@@ -75,7 +75,7 @@ jinja: false
 ---
 ```
 
-## Escaping
+# Escaping
 
 Sometimes you want the ability to have jinja templates in a post, but also the
 ability to keep a raw jinja template.  There are a couple of techniques that
@@ -90,7 +90,7 @@ are covered mroe in the jinja docs for
 {{ '{{' }} '\\n'.join(markata.map('f"* [{title}]({slug})"', sort='slug')) {{ '}}' }}
 ```
 
-## Creating a jinja extension
+# Creating a jinja extension
 
 Here is a bit of a boilerplate example of a jinja extension.
 
@@ -132,16 +132,15 @@ markdown.
 ```
 
 """
-import copy
 from pathlib import Path
 from typing import List, TYPE_CHECKING
 
-from deepmerge import always_merger
 import jinja2
 from jinja2 import TemplateSyntaxError, Undefined, UndefinedError, nodes
 from jinja2.ext import Extension
 import pathspec
 import pkg_resources
+import pydantic
 
 from markata import __version__
 from markata.hookspec import hook_impl, register_attr
@@ -166,7 +165,10 @@ class IncludeRawExtension(Extension):
         line_number = next(parser.stream).lineno
         file = [parser.parse_expression()]
         return nodes.CallBlock(
-            self.call_method("_read_file", file), [], [], ""
+            self.call_method("_read_file", file),
+            [],
+            [],
+            "",
         ).set_lineno(line_number)
 
     def _read_file(self, file, caller):
@@ -181,7 +183,7 @@ class _SilentUndefined(Undefined):
     """
     silence undefined variable errors in jinja templates.
 
-    ### Example
+    # Example
     ```python
     template = '{{ variable }}'
     article.content = Template( template, undefined=_SilentUndefined).render()
@@ -198,7 +200,17 @@ class PostTemplateSyntaxError(TemplateSyntaxError):
     """
 
 
-@hook_impl
+class JinjaMd(pydantic.BaseModel):
+    jinja: bool = True
+
+
+@hook_impl()
+@register_attr("post_models")
+def post_model(markata: "Markata") -> None:
+    markata.post_models.append(JinjaMd)
+
+
+@hook_impl()
 @register_attr("prevnext")
 def pre_render(markata: "Markata") -> None:
     """
@@ -208,33 +220,30 @@ def pre_render(markata: "Markata") -> None:
     as `markata`.
     """
 
-    config = markata.get_plugin_config("jinja_md")
-    ignore_spec = pathspec.PathSpec.from_lines("gitwildmatch", config.get("ignore", []))
+    config = markata.config.jinja_md
+    ignore_spec = pathspec.PathSpec.from_lines("gitwildmatch", config.ignore)
     # for article in markata.iter_articles(description="jinja_md"):
     jinja_env = jinja2.Environment(
         extensions=[IncludeRawExtension, *register_jinja_extensions(config)],
     )
 
-    _full_config = copy.deepcopy(markata.config)
     for article in markata.articles:
         if article.get("jinja", True) and not ignore_spec.match_file(article["path"]):
             try:
-                article.content = jinja_env.from_string(article.content).render(
-                    __version__=__version__,
-                    markata=markata,
-                    config=always_merger.merge(
-                        _full_config,
-                        copy.deepcopy(
-                            article.get(
-                                "config_overrides",
-                                {},
-                            ),
-                        ),
-                    ),
-                    **article,
-                )
+                key = markata.make_hash(article.content)
+                content_from_cache = markata.precache.get(key)
+                if content_from_cache is None:
+                    article.content = jinja_env.from_string(article.content).render(
+                        __version__=__version__,
+                        **article,
+                        post=article,
+                    )
+                    with markata.cache:
+                        markata.cache.set(key, article.content)
+                else:
+                    article.content = content_from_cache
                 # prevent double rendering
-                article["jinja"] = False
+                article.jinja = False
             except TemplateSyntaxError as e:
                 errorline = article.content.split("\n")[e.lineno - 1]
                 msg = f"""
@@ -246,3 +255,16 @@ def pre_render(markata: "Markata") -> None:
                 raise PostTemplateSyntaxError(msg, lineno=e.lineno)
             except UndefinedError as e:
                 raise UndefinedError(f'{e} in {article["path"]}')
+
+
+class JinjaMdConfig(pydantic.BaseModel):
+    ignore: List[str] = []
+
+
+class Config(pydantic.BaseModel):
+    jinja_md: JinjaMdConfig = JinjaMdConfig()
+
+
+@hook_impl(tryfirst=True)
+def config_model(markata: "Markata") -> None:
+    markata.config_models.append(Config)

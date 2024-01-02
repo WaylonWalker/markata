@@ -3,12 +3,15 @@ leading docstring
 """
 import ast
 import datetime
+from functools import lru_cache
+from os import path
 from pathlib import Path
 import textwrap
 from typing import List, TYPE_CHECKING
 
 import frontmatter
 import jinja2
+import pydantic
 
 from markata.hookspec import hook_impl, register_attr
 
@@ -47,16 +50,18 @@ def glob(markata: "MarkataDocs") -> None:
 
     """
 
-    markata.py_files = list(Path().glob("**/*.py"))
+    import glob
 
-    content_directories = list(set([f.parent for f in markata.py_files]))
-    if "content_directories" in markata.__dict__.keys():
+    markata.py_files = [Path(f) for f in glob.glob("**/*.py", recursive=True)]
+
+    content_directories = list({f.parent for f in markata.py_files})
+    if "content_directories" in markata.__dict__:
         markata.content_directories.extend(content_directories)
     else:
         markata.content_directories = content_directories
 
     try:
-        ignore = markata.config["glob"]["use_gitignore"] or True
+        ignore = True
     except KeyError:
         ignore = True
 
@@ -71,23 +76,27 @@ def glob(markata: "MarkataDocs") -> None:
         if Path(".markataignore").exists():
             lines.extend(Path(".markataignore").read_text().splitlines())
 
-        spec = pathspec.PathSpec.from_lines("gitwildmatch", lines)
+    spec = pathspec.PathSpec.from_lines("gitwildmatch", lines)
 
-        markata.py_files = [
-            file for file in markata.py_files if not spec.match_file(str(file))
-        ]
-
-
-def make_article(markata: "Markata", file: Path) -> frontmatter.Post:
-    raw_source = file.read_text()
-    tree = ast.parse(raw_source)
-    add_parents(tree)
-    nodes = [
-        n
-        for n in ast.walk(tree)
-        if isinstance(n, ast.FunctionDef) or isinstance(n, ast.ClassDef)
+    markata.py_files = [
+        file for file in markata.py_files if not spec.match_file(str(file))
     ]
 
+
+@lru_cache
+def get_template():
+    jinja_env = jinja2.Environment()
+    template = jinja_env.from_string(
+        (Path(__file__).parent / "default_doc_template.md").read_text(),
+    )
+    return template
+
+
+def make_article(markata: "Markata", file: Path, cache) -> frontmatter.Post:
+    with open(file) as f:
+        raw_source = f.read()
+    key = markata.make_hash("docs", "file", raw_source)
+    slug = f"{file.parent}/{file.stem}".lstrip("/").lstrip("./")
     edit_link = (
         str(markata.config.get("repo_url", "https://github.com/"))
         + "edit/"
@@ -95,25 +104,55 @@ def make_article(markata: "Markata", file: Path) -> frontmatter.Post:
         + "/"
         + str(file)
     )
+    article_from_cache = markata.precache.get(key)
+    if article_from_cache is not None:
+        article = article_from_cache
+    else:
+        tree = ast.parse(raw_source)
+        add_parents(tree)
+        nodes = [
+            n for n in ast.walk(tree) if isinstance(n, (ast.FunctionDef, ast.ClassDef))
+        ]
 
-    slug = f"{file.parent}/{file.stem}".lstrip("/").lstrip("./")
+        article = get_template().render(
+            ast=ast,
+            file=file,
+            slug=slug,
+            edit_link=edit_link,
+            tree=tree,
+            datetime=datetime,
+            nodes=nodes,
+            raw_source=raw_source,
+            indent=textwrap.indent,
+        )
+        cache.add(
+            key,
+            article,
+            expire=markata.config.default_cache_expire,
+        )
 
-    jinja_env = jinja2.Environment()
-    article = jinja_env.from_string(
-        (Path(__file__).parent / "default_doc_template.md").read_text()
-    ).render(
-        ast=ast,
-        file=file,
-        slug=slug,
-        edit_link=edit_link,
-        tree=tree,
-        datetime=datetime,
-        nodes=nodes,
-        raw_source=raw_source,
-        indent=textwrap.indent,
-    )
+    try:
+        article = markata.Post(
+            markata=markata,
+            path=str(file).replace(".py", ".md"),
+            title=file.name,
+            content=article,
+            ast=ast,
+            file=file,
+            slug=slug,
+            edit_link=edit_link,
+            datetime=datetime,
+        )
 
-    return frontmatter.loads(article)
+    except pydantic.ValidationError as e:
+        from markata.plugins.load import ValidationError, get_models
+
+        models = get_models(markata=markata, error=e)
+        models = list(models.values())
+        models = "\n".join(models)
+        raise ValidationError(f"{e}\n\n{models}\nfailed to load {path}") from e
+
+    return article
 
 
 @hook_impl
@@ -125,4 +164,5 @@ def load(markata: "MarkataDocs") -> None:
     if "articles" not in markata.__dict__:
         markata.articles = []
     for py_file in markata.py_files:
-        markata.articles.append(make_article(markata, py_file))
+        with markata.cache as cache:
+            markata.articles.append(make_article(markata, py_file, cache))

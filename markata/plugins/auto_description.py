@@ -52,7 +52,8 @@ m = Markata()
 """
 from itertools import compress
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict
+from typing import Any, Dict, TYPE_CHECKING
+import html
 
 import commonmark
 
@@ -87,6 +88,7 @@ def get_description(article: "Post") -> str:
     # deduplicate paragraph_nodes based on unique source position
     unique_paragraph_nodes = list(compress(paragraph_nodes, unique_mask))
     paragraphs = " ".join([p.first_child.literal for p in unique_paragraph_nodes])
+    paragraphs = html.escape(paragraphs)
     return paragraphs
 
 
@@ -108,10 +110,10 @@ def set_description(
         config,
     )
 
-    description_from_cache = cache.get(key)
+    description_from_cache = markata.precache.get(key)
     if description_from_cache is None:
         description = get_description(article)[:max_description]
-        markata.cache.add(key, description, expire=config["cache_expire"])
+        markata.cache.add(key, description, expire=markata.config.default_cache_expire)
     else:
         description = description_from_cache
 
@@ -150,7 +152,7 @@ def pre_render(markata: "Markata") -> None:
             value
             for description_key in config
             if (value := try_config_get(description_key))
-        ]
+        ],
     )
 
     with markata.cache as cache:

@@ -115,18 +115,18 @@ def wikilinks_plugin(
         else:
             link, id = text, None
         possible_pages = markata.filter(
-            f'path.split("/")[-1].split(".")[0].replace("_", "-") == "{link.replace("_", "-")}"'
+            f'str(path).split("/")[-1].split(".")[0].replace("_", "-") == "{link.replace("_", "-")}"',
         )
         if len(possible_pages) == 1:
             link = possible_pages[0].get("slug", f"/{text}")
         elif len(possible_pages) > 1:
             logger.warning(
-                f"wikilink [[{text}]] ({link}, {id}) has duplicate matches, defaulting to the first"
+                f"wikilink [[{text}]] ({link}, {id}) has duplicate matches, defaulting to the first",
             )
             link = possible_pages[0].get("slug", f"/{text}")
         else:
             logger.warning(
-                f"wikilink [[{text}]] ({link}, {id}) no matches, defaulting to '/{text}'"
+                f"wikilink [[{text}]] ({link}, {id}) no matches, defaulting to '/{text}'",
             )
             link = text
 

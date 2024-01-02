@@ -1,5 +1,76 @@
-<!DOCTYPE html>
-<html lang="en">
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+
+# Pretty Feed
+
+Styles an RSS/Atom feed, making it friendly for humans viewers, and adds a link
+to aboutfeeds.com for new user onboarding. See it in action:
+
+   https://interconnected.org/home/feed
+
+
+## How to use
+
+1. Download this XML stylesheet from the following URL and host it on your own
+   domain (this is a limitation of XSL in browsers):
+
+   https://github.com/genmon/aboutfeeds/blob/main/tools/pretty-feed-v3.xsl
+
+2. Include the XSL at the top of the RSS/Atom feed, like:
+
+```
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet href="/PATH-TO-YOUR-STYLES/pretty-feed-v3.xsl" type="text/xsl"?>
+```
+
+3. Serve the feed with the following HTTP headers:
+
+```
+Content-Type: application/xml; charset=utf-8  # not application/rss+xml
+x-content-type-options: nosniff
+```
+
+(These headers are required to style feeds for users with Safari on iOS/Mac.)
+
+
+
+## Limitations
+
+- Styling the feed *prevents* the browser from automatically opening a
+  newsreader application. This is a trade off, but it's a benefit to new users
+  who won't have a newsreader installed, and they are saved from seeing or
+  downloaded obscure XML content. For existing newsreader users, they will know
+  to copy-and-paste the feed URL, and they get the benefit of an in-browser feed
+  preview.
+- Feed styling, for all browsers, is only available to site owners who control
+  their own platform. The need to add both XML and HTTP headers makes this a
+  limited solution.
+
+
+## Credits
+
+pretty-feed is based on work by lepture.com:
+
+   https://lepture.com/en/2019/rss-style-with-xsl
+
+This current version is maintained by aboutfeeds.com:
+
+   https://github.com/genmon/aboutfeeds
+
+
+## Feedback
+
+This file is in BETA. Please test and contribute to the discussion:
+
+     https://github.com/genmon/aboutfeeds/issues/8
+
+-->
+<xsl:stylesheet version="3.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                xmlns:atom="http://www.w3.org/2005/Atom" xmlns:dc="http://purl.org/dc/elements/1.1/"
+                xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd">
+  <xsl:output method="html" version="1.0" encoding="UTF-8" indent="yes"/>
+  <xsl:template match="/">
+    <html xmlns="http://www.w3.org/1999/xhtml" lang='en'>
 
 <head>
     {% if post.title or config.title %}
@@ -1033,10 +1104,15 @@
     {% endfor %}{% endfor %}
 </head>
 
-<nav>
+        <nav class="container-md px-3 py-2 mt-2 mt-md-5 mb-5 markdown-body">
+          <p class="bg-yellow-light ml-n1 px-1 py-1 mb-1">
+            <strong>This is a web feed,</strong> also known as an RSS feed. <strong>Subscribe</strong> by copying the URL from the address bar into your newsreader.
+          </p>
     {% for text, link in config.nav.items() %}
     <a
-        href='{{"/" if link.startswith("/")}}{{"" if "://" in link else config["path_prefix"]}}{{link.lstrip("/")}}'>{{text}}</a>
+    href='{{"/" if link.startswith("/")}}{{"" if "://" in link else config["path_prefix"]}}{{link.lstrip("/")}}'>
+        {{text}}
+    </a>
     {% endfor %}
 </nav>
 
@@ -1051,33 +1127,51 @@
         <h1 id="title">
             {{ title }} {% if config.get %}
             <a href="{{ edit_link }}" alt="edit post url" title="edit this post">
-                <span role="img" aria-label="">
-                    <svg version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg"
-                        xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="30" height="30"
-                        viewBox="0 0 494.936 494.936" style="enable-background: new 0 0 494.936 494.936"
-                        xml:space="preserve" fill="currentcolor">
-                        <g>
-                            <g>
-                                <path d="M389.844,182.85c-6.743,0-12.21,5.467-12.21,12.21v222.968c0,23.562-19.174,42.735-42.736,42.735H67.157
-                  c-23.562,0-42.736-19.174-42.736-42.735V150.285c0-23.562,19.174-42.735,42.736-42.735h267.741c6.743,0,12.21-5.467,12.21-12.21
-                  s-5.467-12.21-12.21-12.21H67.157C30.126,83.13,0,113.255,0,150.285v267.743c0,37.029,30.126,67.155,67.157,67.155h267.741
-                  c37.03,0,67.156-30.126,67.156-67.155V195.061C402.054,188.318,396.587,182.85,389.844,182.85z" />
-                                <path d="M483.876,20.791c-14.72-14.72-38.669-14.714-53.377,0L221.352,229.944c-0.28,0.28-3.434,3.559-4.251,5.396l-28.963,65.069
-                  c-2.057,4.619-1.056,10.027,2.521,13.6c2.337,2.336,5.461,3.576,8.639,3.576c1.675,0,3.362-0.346,4.96-1.057l65.07-28.963
-                  c1.83-0.815,5.114-3.97,5.396-4.25L483.876,74.169c7.131-7.131,11.06-16.61,11.06-26.692
-                  C494.936,37.396,491.007,27.915,483.876,20.791z M466.61,56.897L257.457,266.05c-0.035,0.036-0.055,0.078-0.089,0.107
-                  l-33.989,15.131L238.51,247.3c0.03-0.036,0.071-0.055,0.107-0.09L447.765,38.058c5.038-5.039,13.819-5.033,18.846,0.005
-                  c2.518,2.51,3.905,5.855,3.905,9.414C470.516,51.036,469.127,54.38,466.61,56.897z" />
-                            </g>
-                        </g>
-                    </svg>
-                </span>
             </a>
             {% endif %}
         </h1>
     </section>
-    <main>{{ body }}</main>
+
+    <main>
+        <div class="container">
+          <header>
+            <h1><xsl:value-of select="/rss/channel/title"/></h1>
+            <p><xsl:value-of select="/rss/channel/description"/></p>
+            <a class="head_link" target="_blank">
+              <xsl:attribute name="href">
+                <xsl:value-of select="/rss/channel/link"/>
+              </xsl:attribute>
+              Visit Website &#x2192;
+            </a>
+          </header>
+          <section class="recent">
+            <h2>Recent Items</h2>
+            <xsl:for-each select="/rss/channel/item">
+              <div class="pb-5">
+                <h3>
+                  <a target="_blank">
+                    <xsl:attribute name="href">
+                      <xsl:value-of select="link"/>
+                    </xsl:attribute>
+                    <xsl:value-of select="title"/>
+                  </a>
+                </h3>
+                <p>
+                <xsl:value-of select="description"/>
+                </p>
+                <small class="meta">
+                  Published: <xsl:value-of select="pubDate" />
+                </small>
+              </div>
+            </xsl:for-each>
+          </section>
+        </div>
+
+      {{ body }}
+    </main>
     <footer>© {{ today.year }}</footer>
 </body>
 
 </html>
+  </xsl:template>
+</xsl:stylesheet>

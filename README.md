@@ -9,18 +9,22 @@
   </em>
 </p>
 
-## Coming soon
-
-pydantic all the things.  All post objects and config will become pydantic objects.  This will allow for validation to happen early, and referencing post attributes or config, it can be assumed that they exist whether they were explicitly created or cohersed to their defaults early in the build.
-
----
-
 A static site generator that will give you a great site with many standard web
 features like rss, sitemaps, and seo tags, out of the box. Running `markata
 build` will get you a that only requires you to write Markdown. If you have
 additional features that you want, don't worry, since markata is built
 completely on plugins you can develop and install your own plugins to add the
 features you want.
+
+> This has been a pet project for me to learn library development, plugin
+> driven design, diskcache, and more.  It is the core of what builds my own site [waylonwalker.com](https://waylonwalker.com).
+
+## Disclaimer
+
+Make sure that you pin down what version of markata you want to use.  If you
+are starting a new project that's probably the latest version from
+[pypi](https://pypi.org/project/markata).  Things are likely to change in major
+releases, I do my best to document them, and not to break patches.
 
 ## QuickStart
 
@@ -45,6 +49,9 @@ mkdir pages
 echo '# My First Post' > first-post.md
 echo '# Hello World' > hello-world.md
 ```
+
+> This example shows how you can build a site from only a single markdown
+> file.
 
 ### Build your site
 

@@ -57,7 +57,7 @@ def register_attr(*attrs: Any) -> Callable:
                     "func": func,
                     "funcname": func.__code__.co_name,
                     "lifecycle": getattr(LifeCycle, func.__code__.co_name),
-                }
+                },
             )
 
         @functools.wraps(func)

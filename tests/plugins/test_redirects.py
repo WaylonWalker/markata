@@ -1,13 +1,28 @@
 """
 Tests the redirects plugin
 """
+# context manager to set the directory
+from contextlib import contextmanager
 from pathlib import Path
 
-from conftest import set_directory
 import pytest
 
 from markata import Markata
 from markata.plugins import redirects
+import os
+
+
+@contextmanager
+def set_directory(path):
+    """
+    context manager to set the directory
+    """
+    cwd = Path.cwd()
+    try:
+        os.chdir(path)
+        yield
+    finally:
+        os.chdir(cwd)
 
 
 @pytest.mark.parametrize(

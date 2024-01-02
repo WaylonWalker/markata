@@ -1,9 +1,10 @@
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 import frontmatter
+import pydantic
 
-from markata.hookspec import hook_impl
+from markata.hookspec import hook_impl, register_attr
 
 if TYPE_CHECKING:
     from markata import Markata
@@ -48,6 +49,17 @@ def join_lines(article):
     return "\n".join(lines)
 
 
+class PublishDevToSourcePost(pydantic.BaseModel):
+    markata: Markata
+    canonical_url: Optional[str] = None
+
+
+@hook_impl
+@register_attr("post_models")
+def post_model(markata: "Markata") -> None:
+    markata.post_models.append(PublishDevToSourcePost)
+
+
 @hook_impl
 def post_render(markata: "Markata") -> None:
     for post in markata.iter_articles(description="saving source documents"):
@@ -60,22 +72,19 @@ def post_render(markata: "Markata") -> None:
         article.content = join_lines(article.content)
 
         if "canonical_url" not in article:
-            article["canonical_url"] = f'{markata.config["url"]}/{post["slug"]}/'
+            article["canonical_url"] = f"{markata.config.url}/{post.slug}/"
 
         if "published" not in article:
             article["published"] = True
 
         if "cover_image" not in article:
-            article[
-                "cover_image"
-            ] = f"{markata.config['images_url']}/{post['slug']}.png"
+            article["cover_image"] = f"{markata.config.images_url}/{post.slug}.png"
         post.dev_to = article
 
 
 @hook_impl
 def save(markata: "Markata") -> None:
-    output_dir = Path(str(markata.config["output_dir"]))
-    output_dir.mkdir(parents=True, exist_ok=True)
+    output_dir = Path(str(markata.config.output_dir))
     for post in markata.iter_articles(description="saving source documents"):
         with open(output_dir / Path(post["slug"]) / "dev.md", "w+") as f:
             f.write(frontmatter.dumps(post.dev_to))

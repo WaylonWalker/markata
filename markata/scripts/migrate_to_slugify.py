@@ -15,7 +15,6 @@ going to be on to better urls.
 slugify=false
 ```
 """
-from pathlib import Path
 
 from slugify import slugify
 
@@ -36,10 +35,8 @@ if __name__ == "__main__":
         for o in original_urls
         if routed_slugify(o) != o
     ]
-    assets_dir: str = str(m.config.get("assets_dir", "static"))
-    redirects_file = Path(
-        str(m.config.get("redirects", Path(assets_dir) / "_redirects"))
-    )
+    assets_dir: str = m.config.assets_dir
+    redirects_file = m.config.get.redirects_file
     redirects_file.touch()
     with open(redirects_file, "a") as f:
         f.write("\n")

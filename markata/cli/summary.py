@@ -41,15 +41,18 @@ TAGS
 of posts.
 
 ```
-[markata.summary.filter_count.drafts]
+[[markata.summary.filter_count]]
+name='drafts'
 filter="published == 'False'"
 color='red'
 
-[markata.summary.filter_count.articles]
+[[markata.summary.filter_count]]
+name='articles'
 color='dark_orange'
 
-[markata.summary.filter_count.py_modules]
-filter='"plugin" not in slug and "docs" not in path'
+[[markata.summary.filter_count]]
+name='py_modules'
+filter='"plugin" not in slug and "docs" not in str(path)'
 color="yellow1"
 
 [markata.summary.filter_count.published]
@@ -57,11 +60,11 @@ filter="published == 'True'"
 color='green1'
 
 [markata.summary.filter_count.plugins]
-filter='"plugin" in slug and "docs" not in path'
+filter='"plugin" in slug and "docs" not in str(path)'
 color="blue"
 
 [markata.summary.filter_count.docs]
-filter="'docs' in path"
+filter="'docs' in str(path)"
 color='purple'
 ```
 
@@ -78,16 +81,41 @@ within each filter specified.
 ```
 """
 from collections import Counter
-from typing import TYPE_CHECKING, Union
+from typing import List, TYPE_CHECKING, Union
 
 from more_itertools import flatten
+import pydantic
 from rich.panel import Panel
 from rich.table import Table
+import typer
 
 from markata.hookspec import hook_impl, register_attr
 
 if TYPE_CHECKING:
     from markata import Markata
+
+
+class FilterCount(pydantic.BaseModel):
+    name: str
+    filter: str = "True"
+    color: str = "white"
+
+
+class SummaryConfig(pydantic.BaseModel):
+    grid_attr: List[str] = ["tags", "series"]
+    filter_count: List[FilterCount] = FilterCount(
+        name="drafts", filter="published == 'False'", color="red"
+    )
+
+
+class Config(pydantic.BaseModel):
+    summary: SummaryConfig = SummaryConfig()
+
+
+@hook_impl()
+@register_attr("config_models")
+def config_model(markata: "Markata") -> None:
+    markata.config_models.append(Config)
 
 
 class Summary:
@@ -99,23 +127,22 @@ class Summary:
         "create a rich grid to display the summary"
         self.grid = Table.grid(expand=True)
 
-        for name, config in (
-            self.m.config.get("summary", {})
-            .get("filter_count", {"aricles": {"color": "purple", "filter": "True"}})
-            .items()
-        ):
-            self.filter_count(name, **config)
+        for filter_count in self.m.config.summary.filter_count:
+            self.filter_count(filter_count)
 
-        for attr in self.m.config.get("summary", {}).get("grid_attr", []):
+        for attr in self.m.config.summary.grid_attr:
             self.grid_attr(attr)
 
         return self.grid
 
     def filter_count(
-        self, title: str, filter: str = "True", color: str = "white"
+        self,
+        fc: FilterCount,
     ) -> None:
         "add a row in the grid for the number of items in a filter config"
-        self.grid.add_row(f"[{color}]{len(self.m.map(filter=filter))}[/] {title}")
+        self.grid.add_row(
+            f"[{fc.color}]{len(self.m.map(filter=fc.filter))}[/] {fc.name}"
+        )
 
     def grid_attr(self, attr: str) -> None:
         "add attribute the the object grid"
@@ -123,10 +150,10 @@ class Summary:
             flatten(
                 [
                     tags if isinstance(tags, list) else [tags]
-                    for a in self.m.articles
+                    for a in self.m.posts
                     if (tags := a.get(attr, None)) is not None
-                ]
-            )
+                ],
+            ),
         )
         if len(posts) > 0:
             self.grid.add_row()
@@ -135,15 +162,16 @@ class Summary:
                 self.grid.add_row(f'{count} {" "*(3-len(str(count)))} {post}')
 
     def __rich__(self) -> Union[Panel, Table]:
-        try:
-            grid = self.get_grid()
-        except Exception:
-            grid = "Error"
+        grid = self.get_grid()
+
         if self.simple:
             return grid
         else:
             return Panel(
-                grid, title="[gold1]summary[/]", border_style="magenta", expand=False
+                grid,
+                title="[gold1]summary[/]",
+                border_style="magenta",
+                expand=False,
             )
 
 
@@ -160,6 +188,24 @@ def configure(markata: "Markata") -> None:
     from markata import Markata
 
     Markata.summary = property(get_summary)
+
+
+@hook_impl()
+def cli(app: typer.Typer, markata: "Markata") -> None:
+    """
+    Markata hook to implement base cli commands.
+    """
+    summary_app = typer.Typer()
+    app.add_typer(summary_app, name="summary")
+
+    @summary_app.callback(invoke_without_command=True)
+    def summary():
+        "show the application summary"
+        from rich import print
+
+        markata.console.quiet = True
+
+        print(Summary(markata, simple=True))
 
 
 if __name__ == "__main__":

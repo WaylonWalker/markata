@@ -1,11 +1,15 @@
 import atexit
-from pathlib import Path
 import time
-from typing import Union
+from pathlib import Path
+from typing import TYPE_CHECKING, Union
 
+import typer
 from rich.panel import Panel
 
 from markata.hookspec import hook_impl, register_attr
+
+if TYPE_CHECKING:
+    from markata import Markata
 
 
 def find_port(port: int = 8000) -> int:
@@ -15,17 +19,17 @@ def find_port(port: int = 8000) -> int:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         if s.connect_ex(("localhost", port)) == 0:
             return find_port(port=port + 1)
-        else:
-            return port
+        return port
 
 
 class Server:
     def __init__(
-        self,
+        self: "Server",
+        *,
         auto_restart: bool = True,
         directory: Union[str, "Path"] = None,
         port: int = 8000,
-    ):
+    ) -> None:
         if directory is None:
             from markata import Markata
 
@@ -88,7 +92,10 @@ class Server:
 
         else:
             return Panel(
-                "[red]server died", title=self.title, border_style="red", expand=True
+                "[red]server died",
+                title=self.title,
+                border_style="red",
+                expand=True,
             )
 
 
@@ -107,13 +114,27 @@ def configure(markata: "Markata") -> None:
     Markata.server = property(get_server)
 
 
-if __name__ == "__main__":
+def run_server() -> None:
     from rich.live import Live
-
-    from markata import Markata
 
     from .cli import run_until_keyboard_interrupt
 
-    m = Markata()
     with Live(Server(), refresh_per_second=1, screen=True):
         run_until_keyboard_interrupt()
+
+
+@hook_impl()
+def cli(app: typer.Typer, markata: "Markata") -> None:
+    server_app = typer.Typer()
+    app.add_typer(server_app)
+
+    @server_app.callback(invoke_without_command=True)
+    def serve():
+        """
+        Serve the site locally.
+        """
+        run_server()
+
+
+if __name__ == "__main__":
+    run_server()

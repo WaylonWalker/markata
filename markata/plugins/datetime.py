@@ -2,7 +2,7 @@
 import datetime
 from typing import TYPE_CHECKING
 
-import dateutil.parser
+import dateutil
 import pytz
 
 from markata.hookspec import hook_impl
@@ -31,5 +31,5 @@ def load(markata: "Markata") -> None:
         article["today"] = datetime.date.today()
         article["now"] = datetime.datetime.now()
         article["datetime"] = date
-        if date is not None:
-            article["date"] = date.date()
+        # if date is not None:
+        #     article["date"] = date.date()
