@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<?xml-stylesheet href="/rss.xsl" type="text/xsl"?>
+<rss version="2.0">
+<channel>
+    <title>docs</title>
+    <link>https://markata.dev/</link>
+    <description>Documentation for using the Markata static site generator</description>
+    <generator>Markata</generator>
+    <image>
+        <url>static/favicon.ico</url>
+        <link>https://markata.dev/</link>
+    </image>
+    <language>en</language>
+
+  <item>
+      <title>Getting Started With Markata</title>
+      <link>https://markata.dev//</link>
+      <description>Guide to get going with Markata</description>
+      <guid>https://markata.dev//</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Admonitions</title>
+      <link>https://markata.dev//admonitions</link>
+      <description>This is what the default admonition styles look like and how to create them.</description>
+      <guid>https://markata.dev//admonitions</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Changelog</title>
+      <link>https://markata.dev//changelog</link>
+      <description>pydantic support Now plugins are configured through a pydantic Config object. There are a number of breaking changes going into 0.8.0. Use caution when old new </description>
+      <guid>https://markata.dev//changelog</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Theming Your Markata Site</title>
+      <link>https://markata.dev//color-theme</link>
+      <description>Guide to get going with Markata</description>
+      <guid>https://markata.dev//color-theme</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Creating Your Home Page</title>
+      <link>https://markata.dev//home-page</link>
+      <description>There are several ways to create your home/landing page, lets walk through them.</description>
+      <guid>https://markata.dev//home-page</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Creating Your Navbar</title>
+      <link>https://markata.dev//nav</link>
+      <description>Guide to creating a navbar in markata using the default template.</description>
+      <guid>https://markata.dev//nav</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Waylonwalker.Com</title>
+      <link>https://markata.dev//waylonwalker</link>
+      <description>This Waylon Walker A typical post has a header that is screenshot as the og image for display on Waylonwalker.com has several feeds running, but the most promin</description>
+      <guid>https://markata.dev//waylonwalker</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+<lastBuildDate></lastBuildDate>
+</channel>
+</rss>

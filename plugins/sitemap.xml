@@ -1,0 +1,292 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet href="/sitemap.xsl" type="text/xsl"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
+   <url>
+      <loc>https://markata.dev//markata/plugins/rss</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+
+   <url>
+      <loc>https://markata.dev//markata/plugins/heading-link</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+
+   <url>
+      <loc>https://markata.dev//markata/plugins/post-model</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+
+   <url>
+      <loc>https://markata.dev//markata/plugins/manifest</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+
+   <url>
+      <loc>https://markata.dev//markata/plugins/feeds</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+
+   <url>
+      <loc>https://markata.dev//markata/plugins/redirects</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+
+   <url>
+      <loc>https://markata.dev//markata/plugins/config-model</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+
+   <url>
+      <loc>https://markata.dev//markata/plugins/glob</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+
+   <url>
+      <loc>https://markata.dev//markata/plugins/generator</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+
+   <url>
+      <loc>https://markata.dev//markata/plugins/auto-description</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+
+   <url>
+      <loc>https://markata.dev//markata/plugins/tui</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+
+   <url>
+      <loc>https://markata.dev//markata/plugins/copy-assets</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+
+   <url>
+      <loc>https://markata.dev//markata/plugins/publish-dev-to-source</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+
+   <url>
+      <loc>https://markata.dev//markata/plugins/post-template</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+
+   <url>
+      <loc>https://markata.dev//markata/plugins/create-covers</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+
+   <url>
+      <loc>https://markata.dev//markata/plugins/docs</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+
+   <url>
+      <loc>https://markata.dev//markata/plugins/publish-source</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+
+   <url>
+      <loc>https://markata.dev//markata/plugins/md-it-highlight-code</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+
+   <url>
+      <loc>https://markata.dev//markata/plugins/load</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+
+   <url>
+      <loc>https://markata.dev//markata/plugins/flat-slug</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+
+   <url>
+      <loc>https://markata.dev//markata/plugins/init</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+
+   <url>
+      <loc>https://markata.dev//markata/plugins/prevnext</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+
+   <url>
+      <loc>https://markata.dev//markata/plugins/setup-logging</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+
+   <url>
+      <loc>https://markata.dev//markata/plugins/md-it-wikilinks</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+
+   <url>
+      <loc>https://markata.dev//markata/plugins/seo</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+
+   <url>
+      <loc>https://markata.dev//markata/plugins/publish-html</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+
+   <url>
+      <loc>https://markata.dev//markata/plugins/base-cli</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+
+   <url>
+      <loc>https://markata.dev//markata/plugins/to-json</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+
+   <url>
+      <loc>https://markata.dev//markata/plugins/service-worker</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+
+   <url>
+      <loc>https://markata.dev//markata/plugins/sitemap</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+
+   <url>
+      <loc>https://markata.dev//markata/plugins/create-models</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+
+   <url>
+      <loc>https://markata.dev//markata/plugins/pyinstrument</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+
+   <url>
+      <loc>https://markata.dev//markata/plugins/subroute</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+
+   <url>
+      <loc>https://markata.dev//markata/plugins/jinja-md</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+
+   <url>
+      <loc>https://markata.dev//markata/plugins/auto-title</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+
+   <url>
+      <loc>https://markata.dev//markata/plugins/covers</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+
+   <url>
+      <loc>https://markata.dev//markata/plugins/icon-resize</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+
+   <url>
+      <loc>https://markata.dev//markata/plugins/render-markdown</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+
+   <url>
+      <loc>https://markata.dev//markata/plugins/datetime</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+
+   <url>
+      <loc>https://markata.dev//markata/plugins/mdit-details</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+
+   <url>
+      <loc>https://markata.dev//markata/cli/plugins</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+
+</urlset>

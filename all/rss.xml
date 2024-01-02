@@ -1,0 +1,629 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<?xml-stylesheet href="/rss.xsl" type="text/xsl"?>
+<rss version="2.0">
+<channel>
+    <title>all</title>
+    <link>https://markata.dev/</link>
+    <description>Documentation for using the Markata static site generator</description>
+    <generator>Markata</generator>
+    <image>
+        <url>static/favicon.ico</url>
+        <link>https://markata.dev/</link>
+    </image>
+    <language>en</language>
+
+  <item>
+      <title>Creating Your Navbar</title>
+      <link>https://markata.dev//nav</link>
+      <description>Guide to creating a navbar in markata using the default template.</description>
+      <guid>https://markata.dev//nav</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Whoops That Page Was Not Found</title>
+      <link>https://markata.dev//404</link>
+      <description>404, looks like we can&#39;t find the page you are looking for</description>
+      <guid>https://markata.dev//404</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Admonitions</title>
+      <link>https://markata.dev//admonitions</link>
+      <description>This is what the default admonition styles look like and how to create them.</description>
+      <guid>https://markata.dev//admonitions</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Creating Your Home Page</title>
+      <link>https://markata.dev//home-page</link>
+      <description>There are several ways to create your home/landing page, lets walk through them.</description>
+      <guid>https://markata.dev//home-page</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Theming Your Markata Site</title>
+      <link>https://markata.dev//color-theme</link>
+      <description>Guide to get going with Markata</description>
+      <guid>https://markata.dev//color-theme</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Getting Started With Markata</title>
+      <link>https://markata.dev//</link>
+      <description>Guide to get going with Markata</description>
+      <guid>https://markata.dev//</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Waylonwalker.Com</title>
+      <link>https://markata.dev//waylonwalker</link>
+      <description>This Waylon Walker A typical post has a header that is screenshot as the og image for display on Waylonwalker.com has several feeds running, but the most promin</description>
+      <guid>https://markata.dev//waylonwalker</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Markata&#39;S Docs</title>
+      <link>https://markata.dev//markata-dev</link>
+      <description>Markata builds it Using the </description>
+      <guid>https://markata.dev//markata-dev</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Changelog</title>
+      <link>https://markata.dev//changelog</link>
+      <description>pydantic support Now plugins are configured through a pydantic Config object. There are a number of breaking changes going into 0.8.0. Use caution when old new </description>
+      <guid>https://markata.dev//changelog</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Standard_Config.Py</title>
+      <link>https://markata.dev//markata/standard-config</link>
+      <description>Standard Config. Inspired from frustrations that some tools have a tool.ini, .tool.ini, This file is for any project that can be configured in plain text such a</description>
+      <guid>https://markata.dev//markata/standard-config</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Hookspec.Py</title>
+      <link>https://markata.dev//markata/hookspec</link>
+      <description>Define hook specs. ! ???+ source  ! ???+ source  ! ! ???+ source  ! ???+ source  ! ???+ source </description>
+      <guid>https://markata.dev//markata/hookspec</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>__About__.Py</title>
+      <link>https://markata.dev//markata/about</link>
+      <description>None</description>
+      <guid>https://markata.dev//markata/about</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>__Init__.Py</title>
+      <link>https://markata.dev//markata/init</link>
+      <description>Markata is a tool for handling directories of markdown. ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source </description>
+      <guid>https://markata.dev//markata/init</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Lifecycle.Py</title>
+      <link>https://markata.dev//markata/lifecycle</link>
+      <description>The LifeCycle is a core component for the internal workings of Markata.  It ! ???+ source  ! !</description>
+      <guid>https://markata.dev//markata/lifecycle</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>__Main__.Py</title>
+      <link>https://markata.dev//markata/main</link>
+      <description>None</description>
+      <guid>https://markata.dev//markata/main</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Errors.Py</title>
+      <link>https://markata.dev//markata/errors</link>
+      <description>None ! ! ???+ source </description>
+      <guid>https://markata.dev//markata/errors</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Rss.Py</title>
+      <link>https://markata.dev//markata/plugins/rss</link>
+      <description>Default glob plugin ! ???+ source  ! ???+ source  ! ???+ source </description>
+      <guid>https://markata.dev//markata/plugins/rss</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Heading_Link.Py</title>
+      <link>https://markata.dev//markata/plugins/heading-link</link>
+      <description>Creates links next to all heading tags to make it easier for users to share a ! ! !</description>
+      <guid>https://markata.dev//markata/plugins/heading-link</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Post_Model.Py</title>
+      <link>https://markata.dev//markata/plugins/post-model</link>
+      <description>None ! ???+ source  ! ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ! ! ! ! ! ! ! ! ???+ source  ! ???+ source  ! ! ???+ source  </description>
+      <guid>https://markata.dev//markata/plugins/post-model</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Manifest.Py</title>
+      <link>https://markata.dev//markata/plugins/manifest</link>
+      <description>manifest plugin ! ???+ source </description>
+      <guid>https://markata.dev//markata/plugins/manifest</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Feeds.Py</title>
+      <link>https://markata.dev//markata/plugins/feeds</link>
+      <description>The  This plugin is built-in and enabled by default, but in you want to be very At the root of the markata.feeds config you may set  Underneath of the  The foll</description>
+      <guid>https://markata.dev//markata/plugins/feeds</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Redirects.Py</title>
+      <link>https://markata.dev//markata/plugins/redirects</link>
+      <description>Creates redirects for times when your backend server can Enable the redirect hook by adding it to your list of hooks. Your  Here is an example that will redirec</description>
+      <guid>https://markata.dev//markata/plugins/redirects</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Config_Model.Py</title>
+      <link>https://markata.dev//markata/plugins/config-model</link>
+      <description>None ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ! ! ! ! ???+ source </description>
+      <guid>https://markata.dev//markata/plugins/config-model</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Glob.Py</title>
+      <link>https://markata.dev//markata/plugins/glob</link>
+      <description>Default glob plugin ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source </description>
+      <guid>https://markata.dev//markata/plugins/glob</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Generator.Py</title>
+      <link>https://markata.dev//markata/plugins/generator</link>
+      <description>add generator meta tag ! ???+ source </description>
+      <guid>https://markata.dev//markata/plugins/generator</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Auto_Description.Py</title>
+      <link>https://markata.dev//markata/plugins/auto-description</link>
+      <description>A Markata plugin to create automatic descriptions for markdown documents.  It Open up your  ! In the above we will end up with three different descritpions, By </description>
+      <guid>https://markata.dev//markata/plugins/auto-description</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Tui.Py</title>
+      <link>https://markata.dev//markata/plugins/tui</link>
+      <description>None ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source </description>
+      <guid>https://markata.dev//markata/plugins/tui</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Copy_Assets.Py</title>
+      <link>https://markata.dev//markata/plugins/copy-assets</link>
+      <description>None ! ???+ source </description>
+      <guid>https://markata.dev//markata/plugins/copy-assets</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Publish_Dev_To_Source.Py</title>
+      <link>https://markata.dev//markata/plugins/publish-dev-to-source</link>
+      <description>None ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source </description>
+      <guid>https://markata.dev//markata/plugins/publish-dev-to-source</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Post_Template.Py</title>
+      <link>https://markata.dev//markata/plugins/post-template</link>
+      <description>This snippet allows users to configure their head in  Users can specify any sort of tag in their  The above configuration becomes this once rendered. ! Optional</description>
+      <guid>https://markata.dev//markata/plugins/post-template</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Create_Covers.Py</title>
+      <link>https://markata.dev//markata/plugins/create-covers</link>
+      <description>None ! ???+ source  ! ???+ source  ! ???+ source </description>
+      <guid>https://markata.dev//markata/plugins/create-covers</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Docs.Py</title>
+      <link>https://markata.dev//markata/plugins/docs</link>
+      <description>leading docstring ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ! ???+ source </description>
+      <guid>https://markata.dev//markata/plugins/docs</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Publish_Source.Py</title>
+      <link>https://markata.dev//markata/plugins/publish-source</link>
+      <description>Writes the final modified markdown and frontmatter to the output directory. The only configuration for the publish ! ! ! ! ???+ source </description>
+      <guid>https://markata.dev//markata/plugins/publish-source</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Md_It_Highlight_Code.Py</title>
+      <link>https://markata.dev//markata/plugins/md-it-highlight-code</link>
+      <description>None !</description>
+      <guid>https://markata.dev//markata/plugins/md-it-highlight-code</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Load.Py</title>
+      <link>https://markata.dev//markata/plugins/load</link>
+      <description>Default load plugin. ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source </description>
+      <guid>https://markata.dev//markata/plugins/load</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Flat_Slug.Py</title>
+      <link>https://markata.dev//markata/plugins/flat-slug</link>
+      <description>The articles slug is what determines the url to your page.  It should be If you explicitly set the slug in the frontmatter of a post, markata will not By defaul</description>
+      <guid>https://markata.dev//markata/plugins/flat-slug</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>__Init__.Py</title>
+      <link>https://markata.dev//markata/plugins/init</link>
+      <description>None</description>
+      <guid>https://markata.dev//markata/plugins/init</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Prevnext.Py</title>
+      <link>https://markata.dev//markata/plugins/prevnext</link>
+      <description>The prevnext plugin, creates previous and next links inside each post. In this example we have two maps of posts to look through.  prevnext will look The config</description>
+      <guid>https://markata.dev//markata/plugins/prevnext</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Setup_Logging.Py</title>
+      <link>https://markata.dev//markata/plugins/setup-logging</link>
+      <description>Setup Logging hook sets up the RichHandler for pretty console logs, and file There will be 6 log files created based on log level and file type. Ensure that set</description>
+      <guid>https://markata.dev//markata/plugins/setup-logging</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Md_It_Wikilinks.Py</title>
+      <link>https://markata.dev//markata/plugins/md-it-wikilinks</link>
+      <description>Wikilinks depicted with  ???+ note normal wikilink A special feature that markata brings is slug lookup.  It is able to not only ???+ note markata slug lookup !</description>
+      <guid>https://markata.dev//markata/plugins/md-it-wikilinks</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Seo.Py</title>
+      <link>https://markata.dev//markata/plugins/seo</link>
+      <description>manifest plugin ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source </description>
+      <guid>https://markata.dev//markata/plugins/seo</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Publish_Html.Py</title>
+      <link>https://markata.dev//markata/plugins/publish-html</link>
+      <description>Sets the articles  Output will always be written inside of the configured  markata will save the articles  Here is an example use case of explicitly setting the</description>
+      <guid>https://markata.dev//markata/plugins/publish-html</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Base_Cli.Py</title>
+      <link>https://markata.dev//markata/plugins/base-cli</link>
+      <description>Markata This plugin enables Your Markata Site can be build completely from the command line. see the Markata list is a tool to help list out artile attributes r</description>
+      <guid>https://markata.dev//markata/plugins/base-cli</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>To_Json.Py</title>
+      <link>https://markata.dev//markata/plugins/to-json</link>
+      <description>None ! ???+ source </description>
+      <guid>https://markata.dev//markata/plugins/to-json</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Service_Worker.Py</title>
+      <link>https://markata.dev//markata/plugins/service-worker</link>
+      <description>Adds a service Enable this plugin by adding it to your  If you have any content that you want to  precache, add it to the list of Markata uses the checksum.dirh</description>
+      <guid>https://markata.dev//markata/plugins/service-worker</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Sitemap.Py</title>
+      <link>https://markata.dev//markata/plugins/sitemap</link>
+      <description>None ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source </description>
+      <guid>https://markata.dev//markata/plugins/sitemap</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Create_Models.Py</title>
+      <link>https://markata.dev//markata/plugins/create-models</link>
+      <description>None ! ???+ source  ! ???+ source  ! ???+ source </description>
+      <guid>https://markata.dev//markata/plugins/create-models</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Pyinstrument.Py</title>
+      <link>https://markata.dev//markata/plugins/pyinstrument</link>
+      <description>Markata plugin to create a pyinstrument profile if pyinstrument is installed. The profile will be saved to  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ </description>
+      <guid>https://markata.dev//markata/plugins/pyinstrument</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Subroute.Py</title>
+      <link>https://markata.dev//markata/plugins/subroute</link>
+      <description>None ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source </description>
+      <guid>https://markata.dev//markata/plugins/subroute</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Jinja_Md.Py</title>
+      <link>https://markata.dev//markata/plugins/jinja-md</link>
+      <description>Renders your markdown as a jinja template during pre The markata instance is passed into the template, giving you access to things first we can grab a few thing</description>
+      <guid>https://markata.dev//markata/plugins/jinja-md</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Auto_Title.Py</title>
+      <link>https://markata.dev//markata/plugins/auto-title</link>
+      <description>None ! ???+ source </description>
+      <guid>https://markata.dev//markata/plugins/auto-title</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Covers.Py</title>
+      <link>https://markata.dev//markata/plugins/covers</link>
+      <description>Example configuration.  Covers supports multiple covers to be configured.  Here ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ! ???+ source  ! ?</description>
+      <guid>https://markata.dev//markata/plugins/covers</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Icon_Resize.Py</title>
+      <link>https://markata.dev//markata/plugins/icon-resize</link>
+      <description>Icon Resize Plugin Resized favicon to a set of common sizes. ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source </description>
+      <guid>https://markata.dev//markata/plugins/icon-resize</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Render_Markdown.Py</title>
+      <link>https://markata.dev//markata/plugins/render-markdown</link>
+      <description>Renders markdown content as html.  This may be markdown files loaded in by way There are 3 supported markdown backends that you can configure markata to use mar</description>
+      <guid>https://markata.dev//markata/plugins/render-markdown</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Datetime.Py</title>
+      <link>https://markata.dev//markata/plugins/datetime</link>
+      <description>Default datetime plugin ! ???+ source </description>
+      <guid>https://markata.dev//markata/plugins/datetime</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Mdit_Details.Py</title>
+      <link>https://markata.dev//markata/plugins/mdit-details</link>
+      <description>None ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source </description>
+      <guid>https://markata.dev//markata/plugins/mdit-details</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Plugins.Py</title>
+      <link>https://markata.dev//markata/cli/plugins</link>
+      <description>None ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source </description>
+      <guid>https://markata.dev//markata/cli/plugins</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Header.Py</title>
+      <link>https://markata.dev//markata/cli/header</link>
+      <description>None ! ! ???+ source </description>
+      <guid>https://markata.dev//markata/cli/header</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Runner.Py</title>
+      <link>https://markata.dev//markata/cli/runner</link>
+      <description>None ! ! ???+ source  ! ???+ source  ! ???+ source  ! ! ! ! ???+ source  ! ???+ source </description>
+      <guid>https://markata.dev//markata/cli/runner</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Server.Py</title>
+      <link>https://markata.dev//markata/cli/server</link>
+      <description>None ! ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ?</description>
+      <guid>https://markata.dev//markata/cli/server</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Summary.Py</title>
+      <link>https://markata.dev//markata/cli/summary</link>
+      <description>There are two main things currently supported by summary, It can count the grid_attr Example output that will be shown in the summary, counting all posts with e</description>
+      <guid>https://markata.dev//markata/cli/summary</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Cli.Py</title>
+      <link>https://markata.dev//markata/cli/cli</link>
+      <description>None ! ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source </description>
+      <guid>https://markata.dev//markata/cli/cli</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>__Init__.Py</title>
+      <link>https://markata.dev//markata/cli/init</link>
+      <description>None</description>
+      <guid>https://markata.dev//markata/cli/init</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>__Main__.Py</title>
+      <link>https://markata.dev//markata/cli/main</link>
+      <description>None ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source </description>
+      <guid>https://markata.dev//markata/cli/main</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Migrate_To_Slugify.Py</title>
+      <link>https://markata.dev//markata/scripts/migrate-to-slugify</link>
+      <description>Slugify migration for projects moving from markata to run this script install markata&amp;gt;=0.5.0 and run the following. Then make sure that you do not explicity </description>
+      <guid>https://markata.dev//markata/scripts/migrate-to-slugify</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Test_Feeds.Py</title>
+      <link>https://markata.dev//tests/test-feeds</link>
+      <description>None ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???</description>
+      <guid>https://markata.dev//tests/test-feeds</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Test_Redirects.Py</title>
+      <link>https://markata.dev//tests/plugins/test-redirects</link>
+      <description>Tests the redirects plugin ! ! ! ! ! ! ! !</description>
+      <guid>https://markata.dev//tests/plugins/test-redirects</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+  <item>
+      <title>Test_Post_Model.Py</title>
+      <link>https://markata.dev//tests/plugins/test-post-model</link>
+      <description>None ! ???+ source  ! ???+ source </description>
+      <guid>https://markata.dev//tests/plugins/test-post-model</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+
+<lastBuildDate></lastBuildDate>
+</channel>
+</rss>
