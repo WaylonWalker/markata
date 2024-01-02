@@ -4,7 +4,6 @@ import json
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-
 from markata.hookspec import hook_impl
 
 if TYPE_CHECKING:

@@ -185,7 +185,6 @@ title='All Posts'
 filter="True"
 
 """
-
 import datetime
 import shutil
 import textwrap
@@ -262,6 +261,44 @@ class PrettyList(list, JupyterMixin):
 
     def __rich__(self) -> Pretty:
         return Pretty(self)
+
+
+class FeedConfig(pydantic.BaseModel):
+    DEFAULT_TITLE: str = "All Posts"
+
+    title: str = DEFAULT_TITLE
+    slug: str = None
+    name: Optional[str] = None
+    filter: str = "True"
+    sort: str = "date"
+    reverse: bool = False
+    rss: bool = True
+    sitemap: bool = True
+    card_template: str = """
+        <li class='post'>
+            <a href="/{{ markata.config.path_prefix }}{{ post.slug }}/">
+                {{ post.title }}
+            </a>
+        </li>
+        """
+    template: str = Path(__file__).parent / "default_post_template.html.jinja"
+    rss_template: str = Path(__file__).parent / "default_rss_template.xml"
+    sitemap_template: str = Path(__file__).parent / "default_sitemap_template.xml"
+    xsl_template: str = Path(__file__).parent / "default_xsl_template.xsl"
+
+    @pydantic.validator("name", pre=True, always=True)
+    def default_name(cls, v, *, values):
+        return v or str(values.get("slug")).replace("-", "_")
+
+    @pydantic.validator("card_template", "template", pre=True, always=True)
+    def read_template(cls, v, *, values) -> str:
+        if isinstance(v, Path):
+            return str(v.read_text())
+        return v
+
+
+class FeedsConfig(pydantic.BaseModel):
+    feeds: List[FeedConfig] = [FeedConfig(slug="archive")]
 
 
 @dataclass

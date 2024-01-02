@@ -54,7 +54,8 @@ m = Markata()
 import html
 from itertools import compress
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict
+from typing import Any, Dict, TYPE_CHECKING
+import html
 
 import commonmark
 

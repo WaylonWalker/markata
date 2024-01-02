@@ -12,7 +12,6 @@ icon = "static/icon.png"
 ```
 
 """
-
 from PIL import Image
 from pathlib import Path
 from typing import Dict, List, Optional, TYPE_CHECKING

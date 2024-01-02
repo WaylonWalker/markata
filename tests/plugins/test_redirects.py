@@ -1,7 +1,6 @@
 """
 Tests the redirects plugin
 """
-
 # context manager to set the directory
 from contextlib import contextmanager
 from pathlib import Path

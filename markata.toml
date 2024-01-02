@@ -25,6 +25,7 @@ markdown_backend = 'markdown-it-py'
 
 # 2 weeks in seconds
 default_cache_expire = 1209600
+# subroute = "docs"
 
 # set the subroute if you are deploying to a subroute of a site
 # make sure you enable the subroute plugin

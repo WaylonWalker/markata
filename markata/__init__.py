@@ -127,7 +127,6 @@ class Markata:
             raw_hooks = config
         else:
             raw_hooks = standard_config.load("markata")
-
         self.hooks_conf = HooksConfig.parse_obj(raw_hooks)
         try:
             default_index = self.hooks_conf.hooks.index("default")
