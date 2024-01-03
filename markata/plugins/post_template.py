@@ -70,7 +70,10 @@ html  {
 
 """
 from functools import lru_cache
+from rich.syntax import Syntax
+from rich import print as rich_print
 import inspect
+import typer
 from pathlib import Path
 from typing import List, Optional, TYPE_CHECKING, Union, Dict
 
@@ -387,3 +390,46 @@ def render_template(markata, article, template):
         **article.metadata,
     )
     return html
+
+
+@hook_impl()
+def cli(app: typer.Typer, markata: "Markata") -> None:
+    """
+    Markata hook to implement base cli commands.
+    """
+
+    templates_app = typer.Typer()
+    app.add_typer(templates_app)
+
+    @templates_app.callback()
+    def templates():
+        "template management"
+
+    @templates_app.command()
+    def show(
+        template: str = typer.Argument(None, help="template to show"),
+        theme: str = typer.Option(None, help="pygments syntax theme"),
+    ) -> None:
+        markata.console.quiet = True
+        if template:
+            template = get_template(markata, template)
+
+            markata.console.quiet = False
+            markata.console.print(template.filename)
+            if theme is None or theme.lower() == "none":
+                markata.console.print(Path(template.filename).read_text())
+            else:
+                syntax = Syntax.from_path(template.filename, theme=theme)
+                markata.console.print(syntax)
+
+            return
+        templates = markata.config.jinja_env.list_templates()
+        template_directories = markata.config.templates_dir
+        markata.console.quiet = False
+        markata.console.print("Templates directories:", style="green")
+        for dir in template_directories:
+            markata.console.print(dir)
+        markata.console.print()
+        markata.console.print("Templates:", style="green")
+        for template in templates:
+            rich_print(template)
