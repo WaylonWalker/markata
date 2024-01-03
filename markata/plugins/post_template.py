@@ -72,7 +72,7 @@ html  {
 from functools import lru_cache
 import inspect
 from pathlib import Path
-from typing import List, Optional, TYPE_CHECKING, Union
+from typing import List, Optional, TYPE_CHECKING, Union, Dict
 
 import jinja2
 from jinja2 import Template, Undefined
@@ -170,7 +170,7 @@ class HeadConfig(pydantic.BaseModel):
 class Config(pydantic.BaseModel):
     head: HeadConfig = HeadConfig()
     style: Style = Style()
-    post_template: str = "post.html"
+    post_template: str | Dict[str, str] = "post.html"
     dynamic_templates_dir: Path = Path(".markata.cache/templates")
     templates_dir: List[Path] = pydantic.Field(
         [Path("templates"), Path(__file__).parents[1] / "templates"],
@@ -211,7 +211,7 @@ class PostOverrides(pydantic.BaseModel):
 
 class Post(pydantic.BaseModel):
     config_overrides: PostOverrides = PostOverrides()
-    template: Optional[str] = None
+    template: Optional[str | Dict[str, str]] = None
 
     @pydantic.validator("template", pre=True, always=True)
     def default_template(cls, v, *, values):
@@ -331,8 +331,20 @@ def get_template(markata, template):
 
 @background.task
 def render_article(markata, article):
+    if isinstance(article.template, str):
+        template = get_template(markata, article.template)
+        return render_template(markata, article, template)
+    if isinstance(article.template, dict):
+        htmls = {
+            slug: render_template(markata, article, get_template(markata, template))
+            for slug, template in article.template.items()
+        }
+        return htmls
+
+
+def render_template(markata, article, template):
+    template = get_template(markata, template)
     merged_config = markata.config
-    template = get_template(markata, article.template)
     # TODO do we need to handle merge??
     # if head_template:
     #     head = eval(

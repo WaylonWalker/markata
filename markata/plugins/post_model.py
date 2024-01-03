@@ -44,7 +44,7 @@ class Post(pydantic.BaseModel):
         arbitrary_types_allowed=True,
         extra="allow",
     )
-    template: Optional[str] = "post.html"
+    template: Optional[str | Dict[str, str]] = "post.html"
 
     def __repr_args__(self: "Post") -> "ReprArgs":
         return [

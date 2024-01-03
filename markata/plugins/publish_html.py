@@ -131,4 +131,18 @@ def save(markata: "Markata") -> None:
     """
 
     for article in markata.articles:
-        article.output_html.write_text(article.html)
+        if article.html is None:
+            continue
+        if isinstance(article.html, str):
+            article.output_html.write_text(article.html)
+        if isinstance(article.html, Dict):
+            for slug, html in article.html.items():
+                if slug == "index":
+                    slug = ""
+                    output_html = article.output_html
+                else:
+                    slug = slugify(slug)
+                    output_html = article.output_html.parent / slug / "index.html"
+
+                output_html.parent.mkdir(parents=True, exist_ok=True)
+                output_html.write_text(html)
