@@ -201,7 +201,7 @@ class PostTemplateSyntaxError(TemplateSyntaxError):
 
 
 class JinjaMd(pydantic.BaseModel):
-    jinja: bool = True
+    jinja: bool = False
 
 
 @hook_impl()
