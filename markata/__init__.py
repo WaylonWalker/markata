@@ -3,7 +3,6 @@
 # annotations needed to return self
 from __future__ import annotations
 
-import copy
 import atexit
 import datetime
 import hashlib
