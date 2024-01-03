@@ -217,7 +217,15 @@ class Post(pydantic.BaseModel):
     def default_template(cls, v, *, values):
         if v is None:
             return values["markata"].config.post_template
-        return v
+        if isinstance(v, str):
+            v = {"index": v}
+        if isinstance(values["markata"].config.post_template, str):
+            config_template = {
+                "index": values["markata"].config.post_template,
+            }
+        else:
+            config_template = values["markata"].config.post_template
+        return {**config_template, **v}
 
 
 @hook_impl(tryfirst=True)

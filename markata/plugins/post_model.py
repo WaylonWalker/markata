@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 import dateparser
 import pydantic
+from pydantic import Field
 import yaml
 from polyfactory.factories.pydantic_factory import ModelFactory
 from pydantic import ConfigDict
@@ -21,7 +22,7 @@ if TYPE_CHECKING:
 
 
 class Post(pydantic.BaseModel):
-    markata: Any = None
+    markata: Any = Field(None, exclude=True)
     path: Path
     slug: Optional[str] = None
     href: Optional[str] = None
@@ -189,6 +190,7 @@ class Post(pydantic.BaseModel):
             "markata": markata,
             "path": path,
             "content": content,
+            "raw": text,
             **fm,
         }
 

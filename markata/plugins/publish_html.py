@@ -140,6 +140,8 @@ def save(markata: "Markata") -> None:
                 if slug == "index":
                     slug = ""
                     output_html = article.output_html
+                elif "." in slug:
+                    output_html = article.output_html.parent / slug
                 else:
                     slug = slugify(slug)
                     output_html = article.output_html.parent / slug / "index.html"

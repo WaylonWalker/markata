@@ -1,9 +1,4 @@
-{% extends "base.html" %}
+{% extends "content_base.html" %}
 {% block content %}
-<article>
-    {% include "title.html" %}
-    <section class="body">
-        {{ body }}
-    </section>
-</article>
+    {% include "post_partial.html" %}
 {% endblock %}
