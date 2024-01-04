@@ -8,7 +8,7 @@
     Markdown to site, plugins all the way down
   </em>
 </p>
-
+ 
 A static site generator that will give you a great site with many standard web
 features like rss, sitemaps, and seo tags, out of the box. Running `markata
 build` will get you a that only requires you to write Markdown. If you have
@@ -18,6 +18,11 @@ features you want.
 
 > This has been a pet project for me to learn library development, plugin
 > driven design, diskcache, and more.  It is the core of what builds my own site [waylonwalker.com](https://waylonwalker.com).
+
+## UPCOMING NEXT RELEASE
+
+The next release will be jinja filled. Out with all the single file templates, template strings, looping through card generation, we will have a proper jinja env with includes, bases, and all the things.  It will be much easier to maintain and render faster.
+
 
 ## Disclaimer
 
