@@ -65,30 +65,25 @@ This file is in BETA. Please test and contribute to the discussion:
      https://github.com/genmon/aboutfeeds/issues/8
 
 -->
-<xsl:stylesheet version="3.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-                xmlns:atom="http://www.w3.org/2005/Atom"
-                xmlns:dc="http://purl.org/dc/elements/1.1/"
-                xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd">
+<xsl:stylesheet version="3.0"
+    xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+    xmlns:sm="http://www.sitemaps.org/schemas/sitemap/0.9">
   <xsl:output method="html" version="1.0" encoding="UTF-8" indent="yes"/>
   <xsl:template match="/">
-    <html xmlns="http://www.w3.org/1999/xhtml" lang='en'>
+      <html xmlns="http://www.w3.org/1999/xhtml" lang='{{ markata.config.lang }}'>
 
 <head>
-    <title>Markata's Docs</title>
+    <title>{{ markata.config.title }}</title>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="Documentation for using the Markata static site generator" />
-     <link href="/static/favicon.ico" rel="icon" type="image/png" />
-
+    <meta name="description" content="{{ markata.config.description }}" />
+     <link href="{{ markata.config.icon.name }}" rel="icon" type="image/png" />
     <script>
         {% include "theme.js" %}
     </script>
     <style>
         {% include "post.css" %}
     </style>
-
-     <meta content="waylon@waylonwalker.com" name="og:author_email" />
-    <meta content="waylon@waylonwalker.com" name="og:author_email" />
 </head>
 
         <nav class="container-md px-3 py-2 mt-2 mt-md-5 mb-5 markdown-body">
@@ -122,35 +117,29 @@ This file is in BETA. Please test and contribute to the discussion:
     <main>
         <div class="container">
           <header>
-            <h1><xsl:value-of select="/rss/channel/title"/></h1>
-            <p><xsl:value-of select="/rss/channel/description"/></p>
+            <h1><xsl:value-of select="/urlset/title"/></h1>
+            <p><xsl:value-of select="/urlset/description"/></p>
             <a class="head_link" target="_blank">
               <xsl:attribute name="href">
-                <xsl:value-of select="/rss/channel/link"/>
+                <xsl:value-of select="/urlset/link"/>
               </xsl:attribute>
               Visit Website &#x2192;
             </a>
           </header>
           <section class="recent">
             <h2>Recent Items</h2>
-            <xsl:for-each select="/rss/channel/item">
-              <div class="pb-5">
-                <h3>
-                  <a target="_blank">
-                    <xsl:attribute name="href">
-                      <xsl:value-of select="link"/>
-                    </xsl:attribute>
-                    <xsl:value-of select="title"/>
-                  </a>
-                </h3>
-                <p>
-                <xsl:value-of select="description"/>
-                </p>
-                <small class="meta">
-                  Published: <xsl:value-of select="pubDate" />
-                </small>
-              </div>
+            <ul>
+            <xsl:for-each select="sm:urlset/sm:url">
+                <li>
+                    <a href="{sm:loc}">
+                        <xsl:value-of select="sm:loc"/>
+                    <xsl:value-of select="sm:lastmod"/>
+                    <xsl:value-of select="sm:title"/>
+                    <xsl:value-of select="sm:description"/>
+                    </a>
+                </li>
             </xsl:for-each>
+            </ul>
           </section>
         </div>
 

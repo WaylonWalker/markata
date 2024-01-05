@@ -1,33 +1,33 @@
 :root {
-  --color-bg:{{markata.config.style.color_bg}};
-  --color-bg-code:{{markata.config.style.color_bg_code}};
-  --color-text:{{markata.config.style.color_text}};
-  --color-link:{{markata.config.style.color_link}};
-  --color-accent:{{markata.config.style.color_accent}};
-  --overlay-brightness:{{markata.config.style.overlay_brightness}};
-  --body-width:{{markata.config.style.body_width}};
+  --color-bg:#1f2022;
+  --color-bg-code:#1f2022;
+  --color-text:#eefbfe;
+  --color-link:#fb30c4;
+  --color-accent:#e1bd00c9;
+  --overlay-brightness:.85;
+  --body-width:800px;
 }
 
 [data-theme="dark"] {
-  --color-bg:{{markata.config.style.color_bg}};
-  --color-bg-code:{{markata.config.style.color_bg_code}};
-  --color-text:{{markata.config.style.color_text}};
-  --color-link:{{markata.config.style.color_link}};
-  --color-accent:{{markata.config.style.color_accent}};
-  --overlay-brightness:{{markata.config.style.overlay_brightness}};
-  --body-width:{{markata.config.style.body_width}};
+  --color-bg:#1f2022;
+  --color-bg-code:#1f2022;
+  --color-text:#eefbfe;
+  --color-link:#fb30c4;
+  --color-accent:#e1bd00c9;
+  --overlay-brightness:.85;
+  --body-width:800px;
   --audio-filter: invert(100%);
 }
 
 [data-theme="light"] {
-  --color-bg:{{markata.config.style.color_bg_light}};
-  --color-bg-2:{{markata.config.style.color_bg_light_2}};
-  --color-bg-code:{{markata.config.style.color_bg_code_light}};
-  --color-text:{{markata.config.style.color_text_light}};
-  --color-link:{{markata.config.style.color_link_light}};
-  --color-accent:{{markata.config.style.color_accent_light}};
-  --overlay-brightness:{{markata.config.style.overlay_brightness_light}};
-  --body-width:{{markata.config.style.body_width}};
+  --color-bg:#eefbfe;
+  --color-bg-2:;
+  --color-bg-code:#eefbfe;
+  --color-text:#1f2022;
+  --color-link:#fb30c4;
+  --color-accent:#ffeb00;
+  --overlay-brightness:.95;
+  --body-width:800px;
   --audio-filter: invert(0%);
 }
 

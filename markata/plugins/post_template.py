@@ -392,6 +392,19 @@ def render_template(markata, article, template):
 
 
 @hook_impl()
+def save(markata: "Markata") -> None:
+    linked_templates = [
+        t
+        for t in markata.config.jinja_env.list_templates()
+        if t.endswith("css") or t.endswith("js") or t.endswith("xsl")
+    ]
+    for template in linked_templates:
+        template = get_template(markata, template)
+        css = template.render(markata=markata, __version__=__version__)
+        Path(markata.config.output_dir / Path(template.filename).name).write_text(css)
+
+
+@hook_impl()
 def cli(app: typer.Typer, markata: "Markata") -> None:
     """
     Markata hook to implement base cli commands.

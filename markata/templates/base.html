@@ -14,13 +14,15 @@
                 <link href="/{{ markata.config.icon.name }}" rel="icon" type="image/png" />
             {% endif %}
 
-            <script>
-                {% include "theme.js" %}
-            </script>
+            <link rel="stylesheet" href="/post.css" />
+            <script src="/theme.js"></script>
+            <!-- <script> -->
+            <!--     {% include "theme.js" %} -->
+            <!-- </script> -->
 
-            <style>
-                {% include "post.css" %}
-            </style>
+            <!-- <style> -->
+            <!--     {% include "post.css" %} -->
+            <!-- </style> -->
 
             {% if 'markata.plugins.service_worker' in markata.config.hooks %}
                 <script>
