@@ -1,4 +1,5 @@
 from pathlib import Path
+import datetime
 from typing import Optional, TYPE_CHECKING
 
 from polyfactory.factories.pydantic_factory import ModelFactory
@@ -47,6 +48,7 @@ class Config(BaseSettings):
     twitter_site: Optional[str] = None
     path_prefix: Optional[str] = ""
     model_config = ConfigDict(env_prefix="markata_", extra="allow")
+    today: datetime.date = pydantic.Field(default_factory=datetime.date.today)
 
     def __getitem__(self, item):
         "for backwards compatability"

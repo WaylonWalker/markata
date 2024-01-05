@@ -1,50 +1,15 @@
 <!DOCTYPE html>
 <html lang="{{ markata.config.lang }}">
-
+    {% include "base_head.html" %}
     <head>
         {% block head %}
-            {% if post.title or markata.config.title %}
-                <title>{{ post.title or markata.config.title }}</title>
-            {% endif %}
-            <meta charset="UTF-8" />
-            <meta name="viewport" content="width=device-width, initial-scale=1" />
-            {% if post.description or markata.config.description %}
-                <meta name="description" content="{{ post.description or markata.config.description }}" />
-            {% endif %} {% if markata.config.icon.name %}
-                <link href="/{{ markata.config.icon.name }}" rel="icon" type="image/png" />
-            {% endif %}
-
-            <link rel="stylesheet" href="/post.css" />
-            <script src="/theme.js"></script>
-            <!-- <script> -->
-            <!--     {% include "theme.js" %} -->
-            <!-- </script> -->
-
-            <!-- <style> -->
-            <!--     {% include "post.css" %} -->
-            <!-- </style> -->
-
-            {% if 'markata.plugins.service_worker' in markata.config.hooks %}
-                <script>
-                    if ("serviceWorker" in navigator) {
-                        navigator.serviceWorker.register("/service-worker.js");
-                        navigator.serviceWorker.addEventListener("controllerchange", () => {
-                            console.log("new worker");
-                            window.location.reload();
-                        });
-                    }
-                </script>
-            {% endif %}
-
-            {% include "head.html" %}
+            {% include 'base_head.html' %}
         {% endblock %}
     </head>
-
     <body>
         {% block body %}
             {% block content %} {% endblock %}
             {% block footer %} {% endblock %}
         {% endblock %}
     </body>
-
 </html>

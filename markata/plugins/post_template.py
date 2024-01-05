@@ -270,7 +270,7 @@ def pre_render(markata: "Markata") -> None:
     markata.config.dynamic_templates_dir.mkdir(parents=True, exist_ok=True)
     head_template = markata.config.dynamic_templates_dir / "head.html"
     head_template.write_text(
-        markata.config.jinja_env.get_template("base_head.html").render(
+        markata.config.jinja_env.get_template("dynamic_head.html").render(
             {"markata": markata}
         ),
     )
