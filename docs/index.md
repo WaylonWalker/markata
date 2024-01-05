@@ -95,7 +95,7 @@ date and includes a lot of examples of how to use the markata cli.
 
 > **Yes** this library generates it's own docs
 
-- [All Modules](https://markata.dev/autodoc/)
-- [Core Modules](https://markata.dev/core_modules/)
-- [Plugins](https://markata.dev/plugins/)
-- [color theme](https://markata.dev/color-theme/)
+- [All Modules](/autodoc/)
+- [Core Modules](/core_modules/)
+- [Plugins](/plugins/)
+- [color theme](/color-theme/)

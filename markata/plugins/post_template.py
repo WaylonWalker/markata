@@ -383,11 +383,10 @@ def render_template(markata, article, template):
 
     html = template.render(
         __version__=__version__,
+        markata=markata,
         body=article.article_html,
-        toc=markata.md.toc,  # type: ignore
         config=merged_config,
         post=article,
-        **article.metadata,
     )
     return html
 

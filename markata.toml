@@ -22,6 +22,9 @@ markdown_backend = 'markdown-it-py'
 
 # 2 weeks in seconds
 default_cache_expire = 1209600
+
+# set the subroute if you are deploying to a subroute of a site
+# make sure you enable the subroute plugin
 # subroute = "docs"
 
 ## Markata Setup
@@ -135,69 +138,44 @@ slug = 'project-gallery'
 title = "Project Gallery"
 filter = "'project-gallery' in str(path)"
 sort = 'title'
-card_template = """
-<li class='post' style='background:rgba(255, 255, 255, .05); border:1px solid rgba(255, 255, 255, .2); padding:1rem; margin: 2rem auto;' >
-<a href='{{ href }}'><h2>{{ title }}</h2></a>
-<ul style='display: flex; list-style-type: None;'>
-<li><a href='{{ codeUrl }}'>Source Code</a></li>
-<li><a href='{{ url }}'>Public Site</a></li>
-
-</ul>
-{{ article_html }}
-</li>
-"""
 
 [[markata.feeds]]
 slug = 'docs'
 title = "Documentation"
 filter = '"markata" not in slug and "tests" not in slug and "404" not in slug'
 sort = 'slug'
-card_template = "<li class='post'><a href='{{ href }}'>{{ title }}<p style='color: white; text-decoration: none;'>{{ description }}</p></a> </li>"
+
+[[markata.feeds]]
+slug = 'autodoc'
+title = "AutoDoc Python Modules."
+filter = '"markata" in slug and "tests" not in slug and "404" not in slug'
+sort = 'slug'
+
+[[markata.feeds]]
+slug = 'autodoc'
+title = "AutoDoc Python Modules."
+filter = '"markata" in slug and "plugin" not in slug and "tests" not in slug and "404" not in slug'
+sort = 'slug'
 
 [[markata.feeds]]
 slug = 'all'
 title = "All Markata Modules"
 filter = "True"
-card_template = """
-<li class='post' style='background:rgba(255, 255, 255, .05); border:1px solid rgba(255, 255, 255, .2); padding:1rem; margin: 2rem auto;' >
-<a href='{{ href }}'>
-    <a href='{{ href }}'>{{ title }}</a>
-    <p>
-        {{ article_html[:article_html.find('</p>')]  }}
-    </p>
-</a>
-</li>
-"""
 
 [[markata.feeds]]
 slug = 'core-modules'
 title = "Markata Core Modules"
-filter = "'plugin' not in slug and 'test' not in slug and title.endswith('.py')"
-card_template = """
-<li class='post' style='background:rgba(255, 255, 255, .05); border:1px solid rgba(255, 255, 255, .2); padding:1rem; margin: 2rem auto;' >
-<a href='{{ href }}'>
-    <a href='{{ href }}'>{{ title }}</a>
-    <p>
-        {{ article_html[:article_html.find('</p>')]  }}
-    </p>
-</a>
-</li>
-"""
+filter = "'plugin' not in slug and 'test' not in slug and title.lower().endswith('.py')"
+
+[[markata.feeds]]
+slug = 'core_modules'
+title = "Markata Core Modules"
+filter = "'plugin' not in slug and 'test' not in slug and title.lower().endswith('.py')"
 
 [[markata.feeds]]
 slug = 'plugins'
 title = "Markata Plugins"
 filter = "'plugin' in slug and 'test' not in slug"
-card_template = """
-<li class='post' style='background:rgba(255, 255, 255, .05); border:1px solid rgba(255, 255, 255, .2); padding:1rem; margin: 2rem auto;' >
-<a href='{{ href }}'>
-    <a href='/{{ href }}/'>{{ title }}</a>
-    <p>
-        {{ article_html[:article_html.find('</p>')]  }}
-    </p>
-</a>
-</li>
-"""
 
 [markata.jinja_md]
 ignore = [

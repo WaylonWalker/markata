@@ -186,6 +186,7 @@ filter="True"
 
 """
 import datetime
+import jinja2
 import shutil
 import textwrap
 from dataclasses import dataclass
@@ -227,27 +228,15 @@ class FeedConfig(pydantic.BaseModel):
     reverse: bool = False
     rss: bool = True
     sitemap: bool = True
-    card_template: str = """
-        <li class='post'>
-            <a href="/{{ markata.config.path_prefix }}{{ post.slug }}/">
-                {{ post.title }}
-            </a>
-        </li>
-        """
+    card_template: str = "card.html"
     template: str = "feed.html"
-    rss_template: str = Path(__file__).parent / "default_rss_template.xml"
-    sitemap_template: str = Path(__file__).parent / "default_sitemap_template.xml"
-    xsl_template: str = Path(__file__).parent / "default_xsl_template.xsl"
+    rss_template: str = "rss.xml"
+    sitemap_template: str = "sitemap.xml"
+    xsl_template: str = "rss.xsl"
 
     @pydantic.validator("name", pre=True, always=True)
     def default_name(cls, v, *, values):
         return v or str(values.get("slug")).replace("-", "_")
-
-    @pydantic.validator("card_template", "template", pre=True, always=True)
-    def read_template(cls, v, *, values) -> str:
-        if isinstance(v, Path):
-            return str(v.read_text())
-        return v
 
 
 class FeedsConfig(pydantic.BaseModel):
@@ -415,19 +404,6 @@ def config_model(markata: Markata) -> None:
     markata.config_models.append(FeedsConfig)
 
 
-# @hook_impl
-# @register_attr("feeds")
-# def configure(markata: Markata) -> None:
-#     """
-#     configure the default values for the feeds plugin
-#     """
-# if "feeds" not in markata.config.keys():
-# if "archive" not in config.keys():
-
-# for page, page_conf in config.items():
-#     if "template" not in page_conf.keys():
-
-
 @hook_impl
 @register_attr("feeds")
 def pre_render(markata: Markata) -> None:
@@ -435,6 +411,22 @@ def pre_render(markata: Markata) -> None:
     Create the Feeds object and attach it to markata.
     """
     markata.feeds = Feeds(markata)
+
+
+@lru_cache()
+def get_template(markata, template):
+    try:
+        return markata.config.jinja_env.get_template(template)
+    except jinja2.TemplateNotFound:
+        # try to load it as a file
+        ...
+
+    try:
+        return Template(Path(template).read_text(), undefined=SilentUndefined)
+    except FileNotFoundError:
+        # default to load it as a string
+        ...
+    return Template(template, undefined=SilentUndefined)
 
 
 @hook_impl
@@ -455,7 +447,7 @@ def save(markata: Markata) -> None:
     if not home.exists() and archive.exists():
         shutil.copy(str(archive), str(home))
 
-    xsl_template = get_template(feed.config.xsl_template)
+    xsl_template = get_template(markata, feed.config.xsl_template)
     xsl = xsl_template.render(
         markata=markata,
         __version__=__version__,
@@ -464,16 +456,6 @@ def save(markata: Markata) -> None:
     )
     xsl_file = Path(markata.config.output_dir) / "rss.xsl"
     xsl_file.write_text(xsl)
-
-
-@lru_cache()
-def get_template(src) -> Template:
-    try:
-        return Template(Path(src).read_text(), undefined=SilentUndefined)
-    except FileNotFoundError:
-        return Template(src, undefined=SilentUndefined)
-    except OSError:  # File name too long
-        return Template(src, undefined=SilentUndefined)
 
 
 def create_page(
@@ -497,9 +479,10 @@ def create_page(
     # cards = "".join(cards)
 
     # template = get_template(feed.config.template)
-    template = markata.config.jinja_env.get_template(feed.config.template)
-    rss_template = get_template(feed.config.rss_template)
-    sitemap_template = get_template(feed.config.sitemap_template)
+
+    template = get_template(markata, feed.config.template)
+    rss_template = get_template(markata, feed.config.rss_template)
+    sitemap_template = get_template(markata, feed.config.sitemap_template)
     output_file = Path(markata.config.output_dir) / feed.config.slug / "index.html"
     canonical_url = f"{markata.config.url}/{feed.config.slug}/"
     output_file.parent.mkdir(exist_ok=True, parents=True)
@@ -538,6 +521,7 @@ def create_page(
             canonical_url=canonical_url,
             today=datetime.datetime.today(),
             config=markata.config,
+            feed=feed,
         )
         cache.set(key, feed_html)
 
