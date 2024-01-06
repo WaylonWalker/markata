@@ -16,14 +16,7 @@
         <h2>The Items</h2>
         <ul>
         <xsl:for-each select="sm:urlset/sm:url">
-            <li>
-                <a href="{sm:loc}">
-                    <xsl:value-of select="sm:loc"/>
-                <xsl:value-of select="sm:lastmod"/>
-                <xsl:value-of select="sm:title"/>
-                <xsl:value-of select="sm:description"/>
-                </a>
-            </li>
+            {% include 'sitemap_card.html' %}
         </xsl:for-each>
         </ul>
         </section>
