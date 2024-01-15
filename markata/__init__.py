@@ -28,6 +28,8 @@ from markata.__about__ import __version__
 from markata.errors import MissingFrontMatter
 from markata.lifecycle import LifeCycle
 
+from markata.exceptions import TooManyPosts, NoPosts
+
 logger = logging.getLogger("markata")
 
 
@@ -133,7 +135,7 @@ class Markata:
             hooks = [
                 *self.hooks_conf.hooks[:default_index],
                 *DEFAULT_HOOKS,
-                *self.hooks_conf.hooks[default_index + 1 :],
+                *self.hooks_conf.hooks[default_index + 1:],
             ]
             self.hooks_conf.hooks = [
                 hook for hook in hooks if hook not in self.hooks_conf.disabled_hooks
@@ -245,7 +247,7 @@ class Markata:
             hooks = [
                 *self.hooks_conf.hooks[:default_index],
                 *DEFAULT_HOOKS,
-                *self.hooks_conf.hooks[default_index + 1 :],
+                *self.hooks_conf.hooks[default_index + 1:],
             ]
             self.config.hooks = [
                 hook for hook in hooks if hook not in self.config.disabled_hooks
@@ -535,6 +537,39 @@ class Markata:
             raise MissingFrontMatter(message)
 
         return posts
+
+    def first(
+        self: "Markata",
+        filter: str = "True",
+        sort: str = "True",
+        reverse: bool = True,
+        *args: tuple,
+        **kwargs: dict,
+    ) -> list:
+        return self.map("post", filter, sort, reverse, *args, **kwargs)[0]
+
+    def last(
+        self: "Markata",
+        filter: str = "True",
+        sort: str = "True",
+        reverse: bool = True,
+        *args: tuple,
+        **kwargs: dict,
+    ) -> list:
+        return self.map("post", filter, sort, reverse, *args, **kwargs)[-1]
+
+    def one(
+        self: "Markata",
+        filter: str = "True",
+        *args: tuple,
+        **kwargs: dict,
+    ) -> list:
+        posts = self.map("post", filter, *args, **kwargs)
+        if len(posts) > 1:
+            raise TooManyPosts(f"found {len(posts)} posts, expected 1. {posts}")
+        if len(posts) == 0:
+            raise NoPosts
+        return posts[0]
 
 
 def load_ipython_extension(ipython):

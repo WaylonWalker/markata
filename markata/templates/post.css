@@ -135,7 +135,7 @@ pre::-webkit-scrollbar-track {
     background: none;
     position: absolute;
     width: 100%;
-    z-index: 100;
+    z-index: 25;
     display: flex;
     justify-content: flex-end;
 }

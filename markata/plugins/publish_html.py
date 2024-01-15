@@ -58,6 +58,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
 import pydantic
+from pydantic import Field
 from slugify import slugify
 
 from markata.hookspec import hook_impl, register_attr
@@ -67,7 +68,7 @@ if TYPE_CHECKING:
 
 
 class OutputHTML(pydantic.BaseModel):
-    markata: Any = None
+    markata: Any = Field(None, exclude=True)
     path: Path
     slug: str = None
     output_html: Path = None

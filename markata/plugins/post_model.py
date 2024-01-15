@@ -1,4 +1,7 @@
+from rich.jupyter import JupyterMixin
+from rich.pretty import Pretty
 import datetime
+from rich.table import Table
 import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
@@ -21,7 +24,7 @@ if TYPE_CHECKING:
     from markata import Markata
 
 
-class Post(pydantic.BaseModel):
+class Post(pydantic.BaseModel, JupyterMixin):
     markata: Any = Field(None, exclude=True)
     path: Path
     slug: Optional[str] = None
@@ -46,6 +49,10 @@ class Post(pydantic.BaseModel):
         extra="allow",
     )
     template: Optional[str | Dict[str, str]] = "post.html"
+    sidebar: Optional[Any] = None
+
+    def __rich__(self) -> Pretty:
+        return Pretty(self)
 
     def __repr_args__(self: "Post") -> "ReprArgs":
         return [
@@ -57,7 +64,6 @@ class Post(pydantic.BaseModel):
     @property
     def key(self: "Post") -> List[str]:
         return self.markata.make_hash(
-            self.slug,
             self.slug,
             self.href,
             self.published,
@@ -303,6 +309,40 @@ class Post(pydantic.BaseModel):
     #         return datetime.date.min
     #     return v
 
+    # @pydantic.validator("sidebar", pre=True, always=True)
+    # def default_sidebar(cls, v, *, values):
+    #     if v is None:
+    #         return v
+    #     if isinstance(v, str):
+    #         return values["markata"].feeds.get(v)
+
+    # from rich.table import Table
+
+    # table = Table(title=f"Post: {self.title}", show_header=False, show_lines=False)
+    # table.add_column("Key", style="cyan", no_wrap=True)
+    # table.add_column("Value", style="green")
+
+    # table.add_row("date", str(self.date))
+    # table.add_row("title", str(self.title))
+    # if len(self.description) > 80:
+    #     table.add_row("description", str(self.description)[:80] + "...")
+    # else:
+    #     table.add_row("description", str(self.description))
+    # table.add_row("published", str(self.published))
+    # if len(self.content.splitlines()) > 12:
+    #     table.add_row(
+    #         "content",
+    #         "[medium_orchid]\n".join(self.content.splitlines()[:12])
+    #         + "\n\n"
+    #         + "[yellow]... "
+    #         + str(len(self.content.splitlines()) - 12)
+    #         + " more lines",
+    #     )
+    # else:
+    #     table.add_row("content", str(self.content))
+
+    # return table
+
 
 class PostModelConfig(pydantic.BaseModel):
     "Configuration for the Post model"
@@ -338,6 +378,13 @@ class PostModelConfig(pydantic.BaseModel):
         "html",
     ]
     repr_include: Optional[List[str]] = [
+        "date",
+        "description",
+        "published",
+        "slug",
+        "title",
+    ]
+    export_include: Optional[List[str]] = [
         "date",
         "description",
         "published",

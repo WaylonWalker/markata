@@ -14,7 +14,7 @@ class Config(pydantic.BaseModel):
 
 
 class SubroutePost(pydantic.BaseModel):
-    markata: Markata
+    markata: Any = Field(None, exclude=True)
     model_config = ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
 
     @pydantic.validator("slug")

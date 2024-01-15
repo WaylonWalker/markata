@@ -10,12 +10,14 @@ from pydantic_settings import BaseSettings
 from markata import standard_config
 from markata.hookspec import hook_impl, register_attr
 from pydantic_extra_types.color import Color
+from rich.jupyter import JupyterMixin
+from rich.pretty import Pretty
 
 if TYPE_CHECKING:
     from markata import Markata
 
 
-class Config(BaseSettings):
+class Config(BaseSettings, JupyterMixin):
     hooks: list[str] = ["default"]
     disabled_hooks: list[str] = []
     markdown_extensions: list[str] = []
@@ -78,8 +80,9 @@ class Config(BaseSettings):
                 doc[key] = value
         return tomlkit.dumps(doc)
 
-
-# def add_doc(doc: pydantic.Document) -> None:
+    @property
+    def __rich__(self) -> Pretty:
+        return lambda: Pretty(self)
 
 
 @hook_impl

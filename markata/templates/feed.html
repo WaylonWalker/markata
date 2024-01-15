@@ -1,15 +1,8 @@
 {% extends "content_base.html" %}
 {% block content %}
-    <article>
-        <header>
-            <h1>{{ title }}</h1>
-        </header>
-        <div>
-            <ul id='feed'>
-                {% for post in posts %}
-                    {% include feed.config.card_template %}
-                {% endfor %}
-            </ul>
-        </div>
-    </article>
+    <div class='container flex-grow px-8 mx-auto max-w-screen-xl min-h-screen'>
+        {% for post in posts %}
+            {% include feed.config.card_template %}
+        {% endfor %}
+    </div>
 {% endblock %}

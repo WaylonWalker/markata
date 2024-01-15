@@ -79,6 +79,8 @@ create new things from templates
 
 """
 from pathlib import Path
+import pydantic
+from typing import List
 import pdb
 import shutil
 import sys
@@ -529,6 +531,9 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
         filtered = filtered[tail:head]
         if reverse:
             filtered = reversed(filtered)
+
+        class Posts(pydantic.RootModel):
+            root: List[markata.Post]
 
         markata.console.quiet = False
         if markata.console.is_terminal and use_pager:

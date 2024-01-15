@@ -185,6 +185,12 @@ title='All Posts'
 filter="True"
 
 """
+
+from rich.panel import Panel
+from rich.jupyter import JupyterMixin
+from rich.table import Table
+from rich.pretty import Pretty
+from markata.exceptions import TooManyPosts, NoPosts
 import datetime
 import jinja2
 import shutil
@@ -217,7 +223,7 @@ class MarkataFilterError(RuntimeError):
     ...
 
 
-class FeedConfig(pydantic.BaseModel):
+class FeedConfig(pydantic.BaseModel, JupyterMixin):
     DEFAULT_TITLE: str = "All Posts"
 
     title: str = DEFAULT_TITLE
@@ -238,13 +244,29 @@ class FeedConfig(pydantic.BaseModel):
     def default_name(cls, v, *, values):
         return v or str(values.get("slug")).replace("-", "_")
 
+    @property
+    def __rich_console__(self) -> "rich.console.Console":
+        return self.markata.console
+
+    @property
+    def __rich__(self) -> Pretty:
+        return lambda: Pretty(self)
+
 
 class FeedsConfig(pydantic.BaseModel):
     feeds: List[FeedConfig] = [FeedConfig(slug="archive")]
 
 
+class PrettyList(list, JupyterMixin):
+    def _repr_pretty_(self):
+        return self.__rich__()
+
+    def __rich__(self) -> Pretty:
+        return Pretty(self)
+
+
 @dataclass
-class Feed:
+class Feed(JupyterMixin):
     """
     A storage class for markata feed objects.
 
@@ -266,18 +288,44 @@ class Feed:
     _m: Markata
 
     @property
+    def __rich_console__(self) -> "rich.console.Console":
+        return self._m.console
+
+    @property
     def name(self):
         return self.config.name
 
     @property
     def posts(self):
-        return self.map("post")
+        return PrettyList(self.map("post"))
+
+    def first(
+        self: "Markata",
+    ) -> list:
+        return self.posts[0]
+
+    def last(
+        self: "Markata",
+    ) -> list:
+        return self.posts[-1]
 
     def map(self, func="post", **args):
         return self._m.map(func, **{**self.config.dict(), **args})
 
+    def __rich__(self) -> Table:
+        table = Table(title=f"Feed: {self.name}")
 
-class Feeds:
+        table.add_column("Post", justify="right", style="cyan", no_wrap=True)
+        table.add_column("slug", justify="left", style="green")
+        table.add_column("published", justify="left", style="green")
+
+        for post in self.posts:
+            table.add_row(post.title, post.slug, str(post.published))
+
+        return table
+
+
+class Feeds(JupyterMixin):
     """
     A storage class for all markata Feed objects
 
@@ -367,6 +415,9 @@ class Feeds:
 
     def __getitem__(self, key: str) -> Any:
         return getattr(self, key.replace("-", "_").lower())
+
+    def get(self, key: str, default: Any = None) -> Any:
+        return getattr(self, key.replace("-", "_").lower(), default)
 
     def _dict_panel(self, config) -> str:
         """

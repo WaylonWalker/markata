@@ -263,7 +263,7 @@ def pre_render(markata: "Markata") -> None:
     """
     FOR EACH POST: Massages the configuration limitations of toml/yaml to allow
     a little bit easier experience to the end user making configurations while
-    allowing an simpler jinja template.  This enablees the use of the
+    allowing an simpler jinja template.  This enables the use of the
     `markata.head.text` list in configuration.
     """
 
