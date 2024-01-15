@@ -186,11 +186,9 @@ filter="True"
 
 """
 
-from rich.panel import Panel
 from rich.jupyter import JupyterMixin
 from rich.table import Table
 from rich.pretty import Pretty
-from markata.exceptions import TooManyPosts, NoPosts
 import datetime
 import jinja2
 import shutil

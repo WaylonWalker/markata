@@ -1,7 +1,6 @@
 from rich.jupyter import JupyterMixin
 from rich.pretty import Pretty
 import datetime
-from rich.table import Table
 import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
