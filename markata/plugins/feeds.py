@@ -202,14 +202,13 @@ from markata import background
 import pydantic
 import typer
 from jinja2 import Template, Undefined
-from rich import print as rich_print
-from rich.table import Table
 
 from markata import Markata, __version__
 from markata.hookspec import hook_impl, register_attr
 
 if TYPE_CHECKING:
     from frontmatter import Post
+    from rich.console import Console
 
 
 class SilentUndefined(Undefined):
@@ -243,7 +242,7 @@ class FeedConfig(pydantic.BaseModel, JupyterMixin):
         return v or str(values.get("slug")).replace("-", "_")
 
     @property
-    def __rich_console__(self) -> "rich.console.Console":
+    def __rich_console__(self) -> "Console":
         return self.markata.console
 
     @property
@@ -286,7 +285,7 @@ class Feed(JupyterMixin):
     _m: Markata
 
     @property
-    def __rich_console__(self) -> "rich.console.Console":
+    def __rich_console__(self) -> "Console":
         return self._m.console
 
     @property
@@ -431,8 +430,6 @@ class Feeds(JupyterMixin):
         return msg
 
     def __rich__(self) -> Table:
-        from rich.table import Table
-
         table = Table(title=f"Feeds {len(self.config)}")
 
         table.add_column("Feed", justify="right", style="cyan", no_wrap=True)
@@ -651,6 +648,4 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
     @feeds_app.command()
     def show() -> None:
         markata.console.quiet = True
-        feeds = markata.feeds
         markata.console.quiet = False
-        rich_print(feeds)
