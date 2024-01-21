@@ -325,6 +325,9 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
         ```
         """
 
+        if markata.console.record:
+            markata.console.print("console is already recording")
+
         if pretty:
             make_pretty()
 
@@ -334,15 +337,14 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
         if verbose:
             markata.console.print("console options:", markata.console.options)
 
-        if profile:
-            markata.should_profile_cli = True
-            markata.should_profile = True
-            markata.configure()
+        if not profile:
+            markata.config.profiler.should_profile = False
 
         if should_pdb:
             pdb_run(markata.run)
 
         else:
+            markata.console.log("[purple]starting the build")
             markata.run()
 
     @app.command()

@@ -39,6 +39,7 @@ class ProfilerConfig(pydantic.BaseModel):
 
 
 class Config(pydantic.BaseModel):
+    should_profile: bool = SHOULD_PROFILE
     profiler: ProfilerConfig = ProfilerConfig()
 
 
