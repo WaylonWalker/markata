@@ -135,7 +135,7 @@ class Markata:
             hooks = [
                 *self.hooks_conf.hooks[:default_index],
                 *DEFAULT_HOOKS,
-                *self.hooks_conf.hooks[default_index + 1:],
+                *self.hooks_conf.hooks[default_index + 1 :],
             ]
             self.hooks_conf.hooks = [
                 hook for hook in hooks if hook not in self.hooks_conf.disabled_hooks
@@ -181,6 +181,9 @@ class Markata:
             stage_to_run_to = max(
                 [attr["lifecycle"] for attr in self.registered_attrs[item]],
             ).name
+            self.console.log(
+                f"Running to [purple]{stage_to_run_to}[/] to retrieve [purple]{item}[/]"
+            )
             self.run(stage_to_run_to)
             return getattr(self, item)
         else:
@@ -247,7 +250,7 @@ class Markata:
             hooks = [
                 *self.hooks_conf.hooks[:default_index],
                 *DEFAULT_HOOKS,
-                *self.hooks_conf.hooks[default_index + 1:],
+                *self.hooks_conf.hooks[default_index + 1 :],
             ]
             self.config.hooks = [
                 hook for hook in hooks if hook not in self.config.disabled_hooks
@@ -326,7 +329,7 @@ class Markata:
         try:
             return self._console
         except AttributeError:
-            self._console = Console()
+            self._console = Console(record=True)
             return self._console
 
     def describe(self: "Markata") -> dict[str, str]:
@@ -370,7 +373,7 @@ class Markata:
         articles: Iterable[Markata.Post] = track(
             self.articles,
             description=description,
-            transient=True,
+            transient=False,
             console=self.console,
         )
         return articles
@@ -390,6 +393,8 @@ class Markata:
         return self
 
     def run(self: "Markata", lifecycle: LifeCycle = None) -> Markata:
+        if self.console.record:
+            self.console.log("we are recording")
         if lifecycle is None:
             lifecycle = max(LifeCycle._member_map_.values())
 
