@@ -140,12 +140,11 @@ def make_article(markata: "Markata", file: Path, cache) -> frontmatter.Post:
             output_html=output_html,
             title=file.name,
             content=article,
-            # ast=ast,
             file=file,
             slug=slug,
             edit_link=edit_link,
-            # datetime=datetime,
-            sidebar="plugins",
+            # enable sidebar in the future
+            # sidebar="plugins",
         )
 
     except pydantic.ValidationError as e:

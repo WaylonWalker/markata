@@ -135,7 +135,7 @@ class Markata:
             hooks = [
                 *self.hooks_conf.hooks[:default_index],
                 *DEFAULT_HOOKS,
-                *self.hooks_conf.hooks[default_index + 1 :],
+                *self.hooks_conf.hooks[default_index + 1:],
             ]
             self.hooks_conf.hooks = [
                 hook for hook in hooks if hook not in self.hooks_conf.disabled_hooks
@@ -148,7 +148,7 @@ class Markata:
         if console is not None:
             self._console = console
         atexit.register(self.teardown)
-        self.precache
+        # self.precache
 
     @property
     def cache(self: "Markata") -> Cache:
@@ -186,6 +186,8 @@ class Markata:
             )
             self.run(stage_to_run_to)
             return getattr(self, item)
+        elif item == "precache":
+            return self._precache or {}
         else:
             # Markata does not know what this is, raise
             raise AttributeError(f"'Markata' object has no attribute '{item}'")
@@ -250,7 +252,7 @@ class Markata:
             hooks = [
                 *self.hooks_conf.hooks[:default_index],
                 *DEFAULT_HOOKS,
-                *self.hooks_conf.hooks[default_index + 1 :],
+                *self.hooks_conf.hooks[default_index + 1:],
             ]
             self.config.hooks = [
                 hook for hook in hooks if hook not in self.config.disabled_hooks

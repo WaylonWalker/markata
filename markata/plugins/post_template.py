@@ -173,7 +173,7 @@ class HeadConfig(pydantic.BaseModel):
 class Config(pydantic.BaseModel):
     head: HeadConfig = HeadConfig()
     style: Style = Style()
-    post_template: str | Dict[str, str] = "post.html"
+    post_template: Optional[Union[str | Dict[str, str]]] = "post.html"
     dynamic_templates_dir: Path = Path(".markata.cache/templates")
     templates_dir: List[Path] = pydantic.Field(
         [Path("templates"), Path(__file__).parents[1] / "templates"],
