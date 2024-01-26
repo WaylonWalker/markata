@@ -135,7 +135,7 @@ class Markata:
             hooks = [
                 *self.hooks_conf.hooks[:default_index],
                 *DEFAULT_HOOKS,
-                *self.hooks_conf.hooks[default_index + 1:],
+                *self.hooks_conf.hooks[default_index + 1 :],
             ]
             self.hooks_conf.hooks = [
                 hook for hook in hooks if hook not in self.hooks_conf.disabled_hooks
@@ -252,7 +252,7 @@ class Markata:
             hooks = [
                 *self.hooks_conf.hooks[:default_index],
                 *DEFAULT_HOOKS,
-                *self.hooks_conf.hooks[default_index + 1:],
+                *self.hooks_conf.hooks[default_index + 1 :],
             ]
             self.config.hooks = [
                 hook for hook in hooks if hook not in self.config.disabled_hooks
