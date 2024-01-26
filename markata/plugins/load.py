@@ -1,4 +1,5 @@
 """Default load plugin."""
+
 import itertools
 from pathlib import Path
 from typing import TYPE_CHECKING, Callable, List, Optional
@@ -18,8 +19,7 @@ if TYPE_CHECKING:
         articles: List = []
 
 
-class ValidationError(ValueError):
-    ...
+class ValidationError(ValueError): ...
 
 
 @hook_impl

@@ -216,8 +216,7 @@ class SilentUndefined(Undefined):
         return ""
 
 
-class MarkataFilterError(RuntimeError):
-    ...
+class MarkataFilterError(RuntimeError): ...
 
 
 class FeedConfig(pydantic.BaseModel, JupyterMixin):

@@ -1,5 +1,6 @@
 """Markata is a tool for handling directories of markdown.
 """
+
 # annotations needed to return self
 from __future__ import annotations
 

@@ -1,4 +1,5 @@
 """Default glob plugin"""
+
 import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING

@@ -30,6 +30,7 @@ padding = [10, 10, 100, 300]
 text_padding = [0,0]
 ```
 """
+
 from functools import lru_cache
 from pathlib import Path
 import time

@@ -69,6 +69,7 @@ html  {
 ```
 
 """
+
 from functools import lru_cache
 from rich.syntax import Syntax
 from rich import print as rich_print
@@ -130,8 +131,7 @@ class Style(pydantic.BaseModel):
 
 
 @optional
-class StyleOverrides(Style):
-    ...
+class StyleOverrides(Style): ...
 
 
 class Meta(pydantic.BaseModel):

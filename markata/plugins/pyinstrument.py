@@ -3,6 +3,7 @@ Markata plugin to create a pyinstrument profile if pyinstrument is installed.
 
 The profile will be saved to <output_dir>/_profile/index.html
 """
+
 from pathlib import Path
 from typing import Any, Optional
 
@@ -24,9 +25,9 @@ except ModuleNotFoundError:
 class ProfilerConfig(pydantic.BaseModel):
     output_dir: pydantic.DirectoryPath = Path("markout")
     should_profile: bool = SHOULD_PROFILE
-    profiler: Optional[
-        Any
-    ] = None  # No valicator for type pyinstrument.profiler.Profiler
+    profiler: Optional[Any] = (
+        None  # No valicator for type pyinstrument.profiler.Profiler
+    )
     output_file: Optional[Path] = None
 
     @pydantic.validator("output_file", pre=True, always=True)

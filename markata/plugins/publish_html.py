@@ -54,6 +54,7 @@ than `markout/index/inject.html` This is one of the primary ways that markata
 lets you [make your home page](https://markata.dev/home-page/)
 
 """
+
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, Optional
 

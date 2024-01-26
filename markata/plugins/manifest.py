@@ -1,4 +1,5 @@
 """manifest plugin"""
+
 import json
 from pathlib import Path
 from typing import TYPE_CHECKING

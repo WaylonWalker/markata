@@ -1,6 +1,7 @@
 """
 leading docstring
 """
+
 from slugify import slugify
 import ast
 import datetime

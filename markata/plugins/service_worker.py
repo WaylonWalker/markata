@@ -48,6 +48,7 @@ precache=true
 > note this assumes that the blog implements a published boolean in each posts
 frontmatter.
 """
+
 import copy
 from pathlib import Path
 from typing import List, Optional, TYPE_CHECKING

@@ -1,4 +1,5 @@
 """Default glob plugin"""
+
 from pathlib import Path
 from typing import List, TYPE_CHECKING, Union
 from markata import background
