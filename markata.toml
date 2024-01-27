@@ -10,6 +10,9 @@
 [markata.nav]
 'markata' = '/'
 'GitHub' = 'https://github.com/WaylonWalker/markata'
+'docs' = 'https://markata.dev/docs/'
+'plugins' = 'https://markata.dev/plugins/'
+
 
 [markata]
 # bump site version to bust GitHub actions cache

@@ -216,7 +216,8 @@ class SilentUndefined(Undefined):
         return ""
 
 
-class MarkataFilterError(RuntimeError): ...
+class MarkataFilterError(RuntimeError):
+    ...
 
 
 class FeedConfig(pydantic.BaseModel, JupyterMixin):
@@ -647,4 +648,7 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
     @feeds_app.command()
     def show() -> None:
         markata.console.quiet = True
+        feeds = markata.feeds
         markata.console.quiet = False
+        markata.console.print("Feeds")
+        markata.console.print(feeds)

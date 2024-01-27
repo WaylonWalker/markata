@@ -1,6 +1,10 @@
 <li class='my-6 list-none'>
     <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+        {% if markata.config.path_prefix+post.slug != '' %}
         href="/{{markata.config.path_prefix}}{{post.slug}}/">
+        {% else %}
+        href="/">
+        {% endif %}
         <h2 class='mx-4 mt-1 text-3xl font-bold'>
             {{post.title}}
         </h2>
