@@ -130,10 +130,6 @@
   max-width: 42rem
 }
 
-.max-w-4xl {
-  max-width: 56rem
-}
-
 .max-w-screen-xl {
   max-width: 1280px
 }
@@ -232,9 +228,18 @@
   padding-right: 2rem
 }
 
+.py-1 {
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem
+}
+
 .py-2 {
   padding-top: 0.5rem;
   padding-bottom: 0.5rem
+}
+
+.pt-4 {
+  padding-top: 1rem
 }
 
 .text-3xl {
@@ -310,6 +315,10 @@
 
 .\[tool\:my_tool\] {
   tool: my tool
+}
+
+.odd\:bg-black\/10:nth-child(odd) {
+  background-color: rgb(0 0 0 / 0.1)
 }
 
 .open\:min-h-screen[open] {
