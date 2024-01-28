@@ -1,8 +1,10 @@
 """Default load plugin."""
+
 import itertools
 from pathlib import Path
 from typing import TYPE_CHECKING, Callable, List, Optional
 
+from markata import background
 import frontmatter
 import pydantic
 from rich.progress import BarColumn, Progress
@@ -17,8 +19,7 @@ if TYPE_CHECKING:
         articles: List = []
 
 
-class ValidationError(ValueError):
-    ...
+class ValidationError(ValueError): ...
 
 
 @hook_impl
@@ -30,13 +31,17 @@ def load(markata: "MarkataMarkdown") -> None:
         console=markata.console,
     )
     markata.console.log(f"found {len(markata.files)} posts")
+    post_futures = [get_post(article, markata) for article in markata.files]
+    posts = [post.result() for post in post_futures if post is not None]
+
     markata.posts_obj = markata.Posts.parse_obj(
-        {"posts": [get_post(article, markata) for article in markata.files]},
+        {"posts": posts},
     )
     markata.posts = markata.posts_obj.posts
     markata.articles = markata.posts
 
 
+@background.task
 def get_post(path: Path, markata: "Markata") -> Optional[Callable]:
     if markata.Post:
         post = pydantic_get_post(path=path, markata=markata)

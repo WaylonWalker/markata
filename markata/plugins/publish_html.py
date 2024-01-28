@@ -54,10 +54,12 @@ than `markout/index/inject.html` This is one of the primary ways that markata
 lets you [make your home page](https://markata.dev/home-page/)
 
 """
+
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
 import pydantic
+from pydantic import Field
 from slugify import slugify
 
 from markata.hookspec import hook_impl, register_attr
@@ -67,7 +69,7 @@ if TYPE_CHECKING:
 
 
 class OutputHTML(pydantic.BaseModel):
-    markata: Any = None
+    markata: Any = Field(None, exclude=True)
     path: Path
     slug: str = None
     output_html: Path = None
@@ -131,4 +133,20 @@ def save(markata: "Markata") -> None:
     """
 
     for article in markata.articles:
-        article.output_html.write_text(article.html)
+        if article.html is None:
+            continue
+        if isinstance(article.html, str):
+            article.output_html.write_text(article.html)
+        if isinstance(article.html, Dict):
+            for slug, html in article.html.items():
+                if slug == "index":
+                    slug = ""
+                    output_html = article.output_html
+                elif "." in slug:
+                    output_html = article.output_html.parent / slug
+                else:
+                    slug = slugify(slug)
+                    output_html = article.output_html.parent / slug / "index.html"
+
+                output_html.parent.mkdir(parents=True, exist_ok=True)
+                output_html.write_text(html)

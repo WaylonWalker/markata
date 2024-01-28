@@ -84,6 +84,7 @@ config = {markata = "markata"}
 ```
 
 """
+
 import copy
 from enum import Enum
 import importlib
@@ -127,7 +128,7 @@ class Config(pydantic.BaseModel):
 
 class RenderMarkdownPost(pydantic.BaseModel):
     article_html: Optional[str] = None
-    html: Optional[str] = None
+    html: Optional[str | Dict[str, str]] = None
 
 
 @hook_impl()

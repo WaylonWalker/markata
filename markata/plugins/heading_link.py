@@ -2,6 +2,7 @@
 Creates links next to all heading tags to make it easier for users to share a
 specific heading.
 """
+
 from pathlib import Path
 import re
 from typing import TYPE_CHECKING

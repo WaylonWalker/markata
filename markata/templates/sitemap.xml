@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet href="/sitemap.xsl" type="text/xsl"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <title>{{ feed.config.name | e }}</title>
+    <link>{{ markata.config.url | e }}</link>
+{% for post in feed.posts %}
+   <url>
+      <title>{{ post.title | e }}</title>
+      <description>{{ post.description | e }}</description>
+      <loc>{{ markata.config.url | e }}/{{ markata.config.path_prefix | e }}{{ post.slug | e }}</loc>
+      <lastmod>{{ post.date | e }}</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+{% endfor %}
+</urlset>

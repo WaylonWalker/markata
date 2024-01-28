@@ -78,7 +78,10 @@ create new things from templates
 ```
 
 """
+
 from pathlib import Path
+import pydantic
+from typing import List
 import pdb
 import shutil
 import sys
@@ -323,6 +326,9 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
         ```
         """
 
+        if markata.console.record:
+            markata.console.print("console is already recording")
+
         if pretty:
             make_pretty()
 
@@ -332,15 +338,14 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
         if verbose:
             markata.console.print("console options:", markata.console.options)
 
-        if profile:
-            markata.should_profile_cli = True
-            markata.should_profile = True
-            markata.configure()
+        if not profile:
+            markata.config.profiler.should_profile = False
 
         if should_pdb:
             pdb_run(markata.run)
 
         else:
+            markata.console.log("[purple]starting the build")
             markata.run()
 
     @app.command()
@@ -529,6 +534,9 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
         filtered = filtered[tail:head]
         if reverse:
             filtered = reversed(filtered)
+
+        class Posts(pydantic.RootModel):
+            root: List[markata.Post]
 
         markata.console.quiet = False
         if markata.console.is_terminal and use_pager:

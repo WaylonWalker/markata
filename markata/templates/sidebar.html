@@ -1,0 +1,6 @@
+{% if post.sidebar %}
+{% set feed = markata.feeds.get(post.sidebar) %}
+{% set title = post.sidebar %}
+{% set card_template = 'link_card.html' %}
+{% include "feed_partial.html" %}
+{% endif %}

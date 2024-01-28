@@ -11,6 +11,7 @@ step = Lifecycle.glob
 ```
 
 """
+
 from enum import Enum, auto
 from functools import total_ordering
 

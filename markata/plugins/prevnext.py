@@ -63,6 +63,7 @@ contains the post.
 `all` will cycle through all of the posts aggregated from any prevnext map.
 
 """
+
 import copy
 from dataclasses import dataclass
 from pathlib import Path

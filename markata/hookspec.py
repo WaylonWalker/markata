@@ -1,4 +1,5 @@
 """Define hook specs."""
+
 import functools
 from typing import TYPE_CHECKING, Any, Callable, Dict, List
 
@@ -27,8 +28,7 @@ class MarkataSpecs:
 @hook_spec
 def generic_lifecycle_method(
     markata: "Markata",
-) -> Any:
-    ...
+) -> Any: ...
 
 
 @hook_spec

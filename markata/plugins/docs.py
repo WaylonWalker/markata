@@ -1,6 +1,8 @@
 """
 leading docstring
 """
+
+from slugify import slugify
 import ast
 import datetime
 from functools import lru_cache
@@ -96,7 +98,8 @@ def make_article(markata: "Markata", file: Path, cache) -> frontmatter.Post:
     with open(file) as f:
         raw_source = f.read()
     key = markata.make_hash("docs", "file", raw_source)
-    slug = f"{file.parent}/{file.stem}".lstrip("/").lstrip("./")
+    slug = f"{file.parent}/{slugify(file.stem)}".lstrip("/").lstrip("./")
+    output_html = markata.config.output_dir / slug / "index.html"
     edit_link = (
         str(markata.config.get("repo_url", "https://github.com/"))
         + "edit/"
@@ -135,13 +138,14 @@ def make_article(markata: "Markata", file: Path, cache) -> frontmatter.Post:
         article = markata.Post(
             markata=markata,
             path=str(file).replace(".py", ".md"),
+            output_html=output_html,
             title=file.name,
             content=article,
-            ast=ast,
             file=file,
             slug=slug,
             edit_link=edit_link,
-            datetime=datetime,
+            # enable sidebar in the future
+            # sidebar="plugins",
         )
 
     except pydantic.ValidationError as e:

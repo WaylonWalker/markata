@@ -4,5 +4,4 @@ class MarkataConfigError(ValueError):
     """
 
 
-class MissingFrontMatter(NameError):
-    ...
+class MissingFrontMatter(NameError): ...

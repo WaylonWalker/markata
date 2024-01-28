@@ -1,0 +1,16 @@
+<li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'>
+        <xsl:attribute name="href">
+            <xsl:value-of select="link" />
+        </xsl:attribute>
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+            <xsl:value-of select="title" />
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            <xsl:value-of select="description" />
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            <xsl:value-of select="pubDate" />
+        </time>
+    </a>
+</li>

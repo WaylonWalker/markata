@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="{{ markata.config.lang }}">
+    {% include "base_head.html" %}
+    <head>
+        {% block head %}
+            {% include 'base_head.html' %}
+        {% endblock %}
+    </head>
+    <body>
+        {% block body %}
+            {% block content %} {% endblock %}
+            {% block footer %} {% endblock %}
+        {% endblock %}
+    </body>
+</html>

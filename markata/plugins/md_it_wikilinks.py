@@ -41,6 +41,7 @@ blindly link to the route specified, but will look up the slug of an article.
     <a class="wikilink" href="/markata/plugins/load">load</a>
     ```
 """
+
 import logging
 
 from markdown_it import MarkdownIt

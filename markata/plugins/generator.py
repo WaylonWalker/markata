@@ -1,4 +1,5 @@
 """add generator meta tag"""
+
 from bs4 import BeautifulSoup
 
 from markata import Markata, __version__

@@ -1,0 +1,27 @@
+<header class='flex justify-center items-center p-8'>
+    {% if post.sidebar %}
+    <details class='absolute top-0 left-0 z-50 m-0 xl:hidden group open:min-h-screen bg-neutral-800'>
+        <summary class='py-2 px-4 list-none'>
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                stroke="currentColor" class="w-6 h-6 rotate-90">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+            </svg>
+        </summary>
+        {% include "sidebar.html" %}
+    </details>
+    {% endif %}
+
+    <nav class='flex justify-center items-center my-8'>
+        {% for text, link in markata.config.nav.items() %}
+        <a
+            href='{{"/" if link.startswith("/")}}{{"" if "://" in link else markata.config["path_prefix"]}}{{link.lstrip("/")}}'>{{text}}</a>
+        {% endfor %}
+    </nav>
+
+    <div>
+        <label id="theme-switch" class="theme-switch" for="checkbox-theme" title="light/dark mode toggle">
+            <input type="checkbox" id="checkbox-theme" />
+            <div class="slider round"></div>
+        </label>
+    </div>
+</header>
