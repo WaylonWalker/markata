@@ -70,13 +70,7 @@ def render(markata: "Markata") -> None:
     if markata.config.icon is None:
         return
 
-    with 
-    
-    
-    
-    
-    
-    .open(markata.config.icon) as img:
+    with Image.open(markata.config.icon) as img:
         for width in [48, 72, 96, 144, 192, 256, 384, 512]:
             height = int(float(img.size[1]) * float(width / float(img.size[0])))
             filename = Path(
