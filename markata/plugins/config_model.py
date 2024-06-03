@@ -1,17 +1,17 @@
-from pathlib import Path
 import datetime
-from typing import Optional, TYPE_CHECKING
+from pathlib import Path
+from typing import TYPE_CHECKING, Optional
 
-from polyfactory.factories.pydantic_factory import ModelFactory
 import pydantic
-from pydantic import ConfigDict, AnyUrl, PositiveInt
+from polyfactory.factories.pydantic_factory import ModelFactory
+from pydantic import AnyUrl, ConfigDict, PositiveInt
+from pydantic_extra_types.color import Color
 from pydantic_settings import BaseSettings
+from rich.jupyter import JupyterMixin
+from rich.pretty import Pretty
 
 from markata import standard_config
 from markata.hookspec import hook_impl, register_attr
-from pydantic_extra_types.color import Color
-from rich.jupyter import JupyterMixin
-from rich.pretty import Pretty
 
 if TYPE_CHECKING:
     from markata import Markata
@@ -79,6 +79,13 @@ class Config(BaseSettings, JupyterMixin):
             if value:
                 doc[key] = value
         return tomlkit.dumps(doc)
+
+    @pydantic.validator("output_dir", pre=True, always=True)
+    def validate_output_dir_exists(cls, value: Path) -> Path:
+        if not isinstance(value, Path):
+            value = Path(value)
+        value.mkdir(parents=True, exist_ok=True)
+        return value
 
     @property
     def __rich__(self) -> Pretty:
