@@ -51,10 +51,10 @@ m = Markata()
 
 """
 
+import html
 from itertools import compress
 from pathlib import Path
-from typing import Any, Dict, TYPE_CHECKING
-import html
+from typing import TYPE_CHECKING, Any, Dict
 
 import commonmark
 
@@ -106,6 +106,7 @@ def set_description(
     the configured descriptions for the article.
     """
     key = markata.make_hash(
+        "auto_description",
         article.content,
         plugin_text,
         config,
