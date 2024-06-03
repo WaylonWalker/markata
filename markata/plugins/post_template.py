@@ -68,6 +68,16 @@ html  {
 '''
 ```
 
+## Add scripts to head
+
+Markata config also supports adding scripts to the head via configuration.
+
+``` toml
+[[ markata.head.script ]]
+    src = "https://cdn.tailwindcss.com"
+
+```
+
 """
 
 from functools import lru_cache
