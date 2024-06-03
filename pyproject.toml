@@ -52,6 +52,7 @@ dependencies = [
     "rich",
     "toml",
     "typer",
+    "xxhash",
     'dateparser',
 ]
 

@@ -1,5 +1,4 @@
-"""Markata is a tool for handling directories of markdown.
-"""
+"""Markata is a tool for handling directories of markdown."""
 
 # annotations needed to return self
 from __future__ import annotations
@@ -27,9 +26,8 @@ from rich.table import Table
 from markata import hookspec, standard_config
 from markata.__about__ import __version__
 from markata.errors import MissingFrontMatter
+from markata.exceptions import NoPosts, TooManyPosts
 from markata.lifecycle import LifeCycle
-
-from markata.exceptions import TooManyPosts, NoPosts
 
 logger = logging.getLogger("markata")
 
@@ -130,6 +128,7 @@ class Markata:
             raw_hooks = config
         else:
             raw_hooks = standard_config.load("markata")
+
         self.hooks_conf = HooksConfig.parse_obj(raw_hooks)
         try:
             default_index = self.hooks_conf.hooks.index("default")
@@ -149,7 +148,7 @@ class Markata:
         if console is not None:
             self._console = console
         atexit.register(self.teardown)
-        # self.precache
+        self.precache
 
     @property
     def cache(self: "Markata") -> Cache:
@@ -315,8 +314,11 @@ class Markata:
         return default
 
     def make_hash(self, *keys: str) -> str:
+        import xxhash
+
         str_keys = [str(key) for key in keys]
-        return hashlib.sha256("".join(str_keys).encode("utf-8")).hexdigest()
+        hash = xxhash.xxh64("".join(str_keys).encode("utf-8")).hexdigest()
+        return hash
 
     @property
     def content_dir_hash(self: "Markata") -> str:
@@ -332,7 +334,7 @@ class Markata:
         try:
             return self._console
         except AttributeError:
-            self._console = Console(record=True)
+            self._console = Console()
             return self._console
 
     def describe(self: "Markata") -> dict[str, str]:
@@ -396,8 +398,6 @@ class Markata:
         return self
 
     def run(self: "Markata", lifecycle: LifeCycle = None) -> Markata:
-        if self.console.record:
-            self.console.log("we are recording")
         if lifecycle is None:
             lifecycle = max(LifeCycle._member_map_.values())
 
