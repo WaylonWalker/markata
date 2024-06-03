@@ -79,20 +79,19 @@ create new things from templates
 
 """
 
-from pathlib import Path
-import pydantic
-from typing import List
+import json
 import pdb
 import shutil
 import sys
 import traceback
-import toml
-import json
-from typing import Callable, Literal, Optional, TYPE_CHECKING
 import warnings
+from pathlib import Path
+from typing import TYPE_CHECKING, Callable, List, Literal, Optional
 
-from rich import print as rich_print
+import pydantic
+import toml
 import typer
+from rich import print as rich_print
 
 from markata.hookspec import hook_impl
 
@@ -325,9 +324,6 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
         markata build --no-profile
         ```
         """
-
-        if markata.console.record:
-            markata.console.print("console is already recording")
 
         if pretty:
             make_pretty()
