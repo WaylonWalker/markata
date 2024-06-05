@@ -189,16 +189,28 @@ class Config(pydantic.BaseModel):
     style: Style = Style()
     post_template: Optional[Union[str | Dict[str, str]]] = "post.html"
     dynamic_templates_dir: Path = Path(".markata.cache/templates")
-    templates_dir: List[Path] = pydantic.Field(
-        [Path("templates"), Path(__file__).parents[1] / "templates"],
-    )
+    templates_dir: Union[Path, List[Path]] = pydantic.Field(Path("templates"))
+
     env_options: dict = {}
 
-    @pydantic.validator("templates_dir", pre=True, always=True)
-    def dynamic_templates_in_templates_dir(cls, v, *, values):
-        if values["dynamic_templates_dir"] not in v:
-            v.append(values["dynamic_templates_dir"])
-        return v
+    @pydantic.model_validator(mode="after")
+    def dynamic_templates_in_templates_dir(self):
+        markata_templates = Path(__file__).parents[1] / "templates"
+
+        if isinstance(self.templates_dir, Path):
+            self.templates_dir = [
+                self.templates_dir,
+                markata_templates,
+                self.dynamic_templates_dir,
+            ]
+
+        if markata_templates not in self.templates_dir:
+            self.templates_dir.append(markata_templates)
+
+        if self.dynamic_templates_dir not in self.templates_dir:
+            self.templates_dir.append(self.dynamic_templates_dir)
+
+        return self
 
     @property
     def jinja_loader(self):
@@ -424,18 +436,41 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
             return
         templates = markata.config.jinja_env.list_templates()
         markata.console.quiet = False
-        markata.console.print("Templates directories:", style="green")
+        markata.console.print("Templates directories:", style="green underline")
 
+        markata_templates = Path(__file__).parents[1] / "templates"
         for dir in markata.config.templates_dir:
-            markata.console.print(f"[red]{dir}[/]", style="red")
+            if dir == markata.config.dynamic_templates_dir:
+                markata.console.print(
+                    f"[gold3]{dir}[/][grey50] (dynamically created templates from configuration)[/] [gold3]\[markata.config.dynamic_templates_dir][/]",
+                    style="red",
+                )
+            elif dir == markata_templates:
+                markata.console.print(
+                    f"[cyan]{dir}[/][grey50] (built-in)[/]", style="red"
+                )
+            else:
+                markata.console.print(
+                    f"[orchid]{dir}[/] [orchid]\[markata.config.templates_dir][/]",
+                    style="red",
+                )
 
         markata.console.print()
         markata.console.print(
-            "Available Templates: [white]name -> path[/]", style="green"
+            "Available Templates: [white]name -> path[/]", style="green underline"
         )
         for template in templates:
             source, file, uptodate = markata.config.jinja_env.loader.get_source(
                 markata.config.jinja_env, template
             )
 
-            rich_print(f"{template} -> [red]{file}[/]")
+            if Path(file).is_relative_to(markata.config.dynamic_templates_dir):
+                markata.console.print(
+                    f"[gold3]{template} -> [red]{file}[/] [grey50](dynamic)[/]"
+                )
+            elif Path(file).is_relative_to(markata_templates):
+                markata.console.print(
+                    f"[cyan]{template} -> [red]{file}[/] [grey50](built-in)[/]"
+                )
+            else:
+                markata.console.print(f"[orchid]{template}[/] -> [red]{file}[/]")
