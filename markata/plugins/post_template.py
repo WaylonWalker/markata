@@ -90,7 +90,6 @@ import pydantic
 import typer
 from jinja2 import Template, Undefined
 from more_itertools import flatten
-from rich import print as rich_print
 from rich.syntax import Syntax
 
 from markata import __version__
@@ -139,8 +138,7 @@ class Style(pydantic.BaseModel):
 
 
 @optional
-class StyleOverrides(Style):
-    ...
+class StyleOverrides(Style): ...
 
 
 class Meta(pydantic.BaseModel):

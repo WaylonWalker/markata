@@ -1,4 +1,4 @@
-""" The LifeCycle is a core component for the internal workings of Markata.  It
+"""The LifeCycle is a core component for the internal workings of Markata.  It
 sets fourth the hooks available, the methods to run them on the Markata
 instance, and the order they run in.
 
