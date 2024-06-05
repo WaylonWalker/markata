@@ -80,23 +80,21 @@ Markata config also supports adding scripts to the head via configuration.
 
 """
 
-from functools import lru_cache
-from rich.syntax import Syntax
-from rich import print as rich_print
 import inspect
-import typer
+from functools import lru_cache
 from pathlib import Path
-from typing import List, Optional, TYPE_CHECKING, Union, Dict
+from typing import TYPE_CHECKING, Dict, List, Optional, Union
 
 import jinja2
-from jinja2 import Template, Undefined
-
-from more_itertools import flatten
 import pydantic
+import typer
+from jinja2 import Template, Undefined
+from more_itertools import flatten
+from rich import print as rich_print
+from rich.syntax import Syntax
 
-from markata import __version__, background
+from markata import __version__
 from markata.hookspec import hook_impl
-
 
 if TYPE_CHECKING:
     from markata import Markata
@@ -141,7 +139,8 @@ class Style(pydantic.BaseModel):
 
 
 @optional
-class StyleOverrides(Style): ...
+class StyleOverrides(Style):
+    ...
 
 
 class Meta(pydantic.BaseModel):
@@ -158,9 +157,14 @@ class Link(pydantic.BaseModel):
     href: str
 
 
+class Script(pydantic.BaseModel):
+    src: str
+
+
 class HeadConfig(pydantic.BaseModel):
     meta: List[Meta] = []
     link: List[Link] = []
+    script: List[Script] = []
     text: Union[List[Text], str] = ""
 
     @pydantic.validator("text", pre=True)
@@ -260,13 +264,6 @@ def configure(markata: "Markata") -> None:
     configuration.
     """
 
-    # raw_text = "\n".join([t.value for t in markata.config.head.text])
-
-    # if isinstance(raw_text, list):
-    #     markata.config["head"]["text"] = "\n".join(
-    #         flatten([t.values() for t in raw_text]),
-    #     )
-
 
 @hook_impl
 def pre_render(markata: "Markata") -> None:
@@ -296,42 +293,10 @@ def pre_render(markata: "Markata") -> None:
 
 @hook_impl
 def render(markata: "Markata") -> None:
-    # with markata.cache as cache:
-    # for article in markata.articles:
-    #     merged_config = markata.config
-    #     key = markata.make_hash(
-    #         "post_template",
-    #         __version__,
-    #         merged_config,
-    #         article.key,
-    #     )
-
-    #     article._html = markata.precache.get(key)
-
-    # futures = [
-    #     (article, render_article(markata, article, cache))
-    #     for article in markata.articles
-    # ]
-    futures = []
-
-    merged_config = markata.config
-    for article in markata.articles:
-        key = markata.make_hash(
-            "post_template",
-            __version__,
-            merged_config,
-            article.key,
-        )
-        html = markata.precache.get(key)
-
-        if html is not None:
+    with markata.cache as cache:
+        for article in markata.articles:
+            html = render_article(markata=markata, cache=cache, article=article)
             article.html = html
-        else:
-            futures.append((article, render_article(markata, article)))
-
-    for article, future in futures:
-        article.html = future.result()
-        # cache.set(key, article.html)
 
 
 @lru_cache()
@@ -350,17 +315,29 @@ def get_template(markata, template):
     return Template(template, undefined=SilentUndefined)
 
 
-@background.task
-def render_article(markata, article):
+# def render_article(markata, article):
+def render_article(markata, cache, article):
+    key = markata.make_hash(
+        "post_template",
+        __version__,
+        article.key,
+    )
+    html = markata.precache.get(key)
+
+    if html is not None:
+        return html
+
     if isinstance(article.template, str):
         template = get_template(markata, article.template)
-        return render_template(markata, article, template)
+        html = render_template(markata, article, template)
+
     if isinstance(article.template, dict):
-        htmls = {
+        html = {
             slug: render_template(markata, article, get_template(markata, template))
             for slug, template in article.template.items()
         }
-        return htmls
+    cache.add(key, html, expire=markata.config.default_cache_expire)
+    return html
 
 
 def render_template(markata, article, template):
@@ -446,12 +423,19 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
 
             return
         templates = markata.config.jinja_env.list_templates()
-        template_directories = markata.config.templates_dir
         markata.console.quiet = False
         markata.console.print("Templates directories:", style="green")
-        for dir in template_directories:
-            markata.console.print(dir)
+
+        for dir in markata.config.templates_dir:
+            markata.console.print(f"[red]{dir}[/]", style="red")
+
         markata.console.print()
-        markata.console.print("Templates:", style="green")
+        markata.console.print(
+            "Available Templates: [white]name -> path[/]", style="green"
+        )
         for template in templates:
-            rich_print(template)
+            source, file, uptodate = markata.config.jinja_env.loader.get_source(
+                markata.config.jinja_env, template
+            )
+
+            rich_print(f"{template} -> [red]{file}[/]")

@@ -186,11 +186,7 @@ filter="True"
 
 """
 
-from rich.jupyter import JupyterMixin
-from rich.table import Table
-from rich.pretty import Pretty
 import datetime
-import jinja2
 import shutil
 import textwrap
 from dataclasses import dataclass
@@ -198,12 +194,15 @@ from functools import lru_cache
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, List, Optional
 
-from markata import background
+import jinja2
 import pydantic
 import typer
 from jinja2 import Template, Undefined
+from rich.jupyter import JupyterMixin
+from rich.pretty import Pretty
+from rich.table import Table
 
-from markata import Markata, __version__
+from markata import Markata, __version__, background
 from markata.hookspec import hook_impl, register_attr
 
 if TYPE_CHECKING:
@@ -216,7 +215,8 @@ class SilentUndefined(Undefined):
         return ""
 
 
-class MarkataFilterError(RuntimeError): ...
+class MarkataFilterError(RuntimeError):
+    ...
 
 
 class FeedConfig(pydantic.BaseModel, JupyterMixin):
@@ -512,6 +512,30 @@ def create_page(
     create an html unorderd list of posts.
     """
 
+    template = get_template(markata, feed.config.template)
+    canonical_url = f"{markata.config.url}/{feed.config.slug}/"
+
+    key = markata.make_hash(
+        "feeds",
+        template,
+        __version__,
+        # cards,
+        markata.config.url,
+        markata.config.description,
+        feed.config.title,
+        canonical_url,
+        # datetime.datetime.today(),
+        # markata.config,
+    )
+
+    html_key = markata.make_hash(key, "html")
+    feed_rss_key = markata.make_hash(key, "rss")
+    feed_sitemap_key = markata.make_hash(key, "sitemap")
+
+    feed_html_from_cache = markata.precache.get(html_key)
+    feed_rss_from_cache = markata.precache.get(feed_rss_key)
+    feed_sitemap_from_cache = markata.precache.get(feed_sitemap_key)
+
     posts = feed.posts
 
     # card_futures = [
@@ -525,11 +549,7 @@ def create_page(
 
     # template = get_template(feed.config.template)
 
-    template = get_template(markata, feed.config.template)
-    rss_template = get_template(markata, feed.config.rss_template)
-    sitemap_template = get_template(markata, feed.config.sitemap_template)
     output_file = Path(markata.config.output_dir) / feed.config.slug / "index.html"
-    canonical_url = f"{markata.config.url}/{feed.config.slug}/"
     output_file.parent.mkdir(exist_ok=True, parents=True)
 
     rss_output_file = Path(markata.config.output_dir) / feed.config.slug / "rss.xml"
@@ -540,20 +560,6 @@ def create_page(
     )
     sitemap_output_file.parent.mkdir(exist_ok=True, parents=True)
 
-    key = markata.make_hash(
-        "feeds",
-        template,
-        __version__,
-        # cards,
-        markata.config.url,
-        markata.config.description,
-        feed.config.title,
-        canonical_url,
-        datetime.datetime.today(),
-        markata.config,
-    )
-
-    feed_html_from_cache = markata.precache.get(key)
     if feed_html_from_cache is None:
         feed_html = template.render(
             markata=markata,
@@ -568,10 +574,23 @@ def create_page(
             config=markata.config,
             feed=feed,
         )
-        cache.set(key, feed_html)
+        cache.set(html_key, feed_html)
+    else:
+        feed_html = feed_html_from_cache
 
-    feed_rss = rss_template.render(markata=markata, feed=feed)
-    feed_sitemap = sitemap_template.render(markata=markata, feed=feed)
+    if feed_rss_from_cache is None:
+        rss_template = get_template(markata, feed.config.rss_template)
+        feed_rss = rss_template.render(markata=markata, feed=feed)
+        cache.set(feed_rss_key, feed_rss)
+    else:
+        feed_rss = feed_rss_from_cache
+
+    if feed_sitemap_from_cache is None:
+        sitemap_template = get_template(markata, feed.config.sitemap_template)
+        feed_sitemap = sitemap_template.render(markata=markata, feed=feed)
+        cache.set(feed_sitemap_key, feed_sitemap)
+    else:
+        feed_sitemap = feed_sitemap_from_cache
 
     output_file.write_text(feed_html)
     rss_output_file.write_text(feed_rss)
