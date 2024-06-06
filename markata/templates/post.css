@@ -63,6 +63,11 @@ body {
     line-height: 1.56;
 }
 
+article img {
+    max-width: var(--body-width);
+}
+
+
 blockquote {
     background: var(--color-bg);
     filter: brightness(var(--overlay-brightness));
