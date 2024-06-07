@@ -215,7 +215,8 @@ class SilentUndefined(Undefined):
         return ""
 
 
-class MarkataFilterError(RuntimeError): ...
+class MarkataFilterError(RuntimeError):
+    ...
 
 
 class FeedConfig(pydantic.BaseModel, JupyterMixin):
@@ -563,15 +564,14 @@ def create_page(
         feed_html = template.render(
             markata=markata,
             __version__=__version__,
-            # body=cards,
-            posts=posts,
+            # posts=posts,
             url=markata.config.url,
-            description=markata.config.description,
-            title=feed.config.title,
-            canonical_url=canonical_url,
-            today=datetime.datetime.today(),
             config=markata.config,
             feed=feed,
+            # description=markata.config.description,
+            # title=feed.config.title,
+            # canonical_url=canonical_url,
+            # today=datetime.datetime.today(),
         )
         cache.set(html_key, feed_html)
     else:
