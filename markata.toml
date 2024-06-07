@@ -84,7 +84,7 @@ og = 'og.html'
 config = 'gfm-like'
 # markdown_it built-in plugins
 enable = ["table"]
-disable = ["image"]
+# disable = ["image"]
 
 # markdown_it built-in plugin options
 [markata.markdown_it_py.options_update]
