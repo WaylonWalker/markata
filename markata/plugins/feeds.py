@@ -536,7 +536,7 @@ def create_page(
     feed_rss_from_cache = markata.precache.get(feed_rss_key)
     feed_sitemap_from_cache = markata.precache.get(feed_sitemap_key)
 
-    posts = feed.posts
+    # posts = feed.posts
 
     # card_futures = [
     #     create_card(markata, post, feed.config.card_template, cache) for post in posts
