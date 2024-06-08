@@ -72,6 +72,7 @@ implementation.
     moved without you realizing.
 
 """
+
 from pathlib import Path
 from typing import Dict, Optional
 
@@ -87,6 +88,7 @@ DEFAULT_REDIRECT_TEMPLATE = Path(__file__).parent / "default_redirect_template.h
 
 class Redirect(pydantic.BaseModel):
     "DataClass to store the original and new url"
+
     original: str
     new: str
     markata: Markata

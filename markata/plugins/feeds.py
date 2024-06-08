@@ -185,6 +185,7 @@ title='All Posts'
 filter="True"
 
 """
+
 import datetime
 import shutil
 import textwrap
@@ -193,17 +194,20 @@ from functools import lru_cache
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, List, Optional
 
+import jinja2
 import pydantic
 import typer
 from jinja2 import Template, Undefined
-from rich import print as rich_print
+from rich.jupyter import JupyterMixin
+from rich.pretty import Pretty
 from rich.table import Table
 
-from markata import Markata, __version__
+from markata import Markata, __version__, background
 from markata.hookspec import hook_impl, register_attr
 
 if TYPE_CHECKING:
     from frontmatter import Post
+    from rich.console import Console
 
 
 class SilentUndefined(Undefined):
@@ -215,7 +219,7 @@ class MarkataFilterError(RuntimeError):
     ...
 
 
-class FeedConfig(pydantic.BaseModel):
+class FeedConfig(pydantic.BaseModel, JupyterMixin):
     DEFAULT_TITLE: str = "All Posts"
 
     title: str = DEFAULT_TITLE
@@ -226,35 +230,39 @@ class FeedConfig(pydantic.BaseModel):
     reverse: bool = False
     rss: bool = True
     sitemap: bool = True
-    card_template: str = """
-        <li class='post'>
-            <a href="/{{ markata.config.path_prefix }}{{ post.slug }}/">
-                {{ post.title }}
-            </a>
-        </li>
-        """
-    template: str = Path(__file__).parent / "default_post_template.html.jinja"
-    rss_template: str = Path(__file__).parent / "default_rss_template.xml"
-    sitemap_template: str = Path(__file__).parent / "default_sitemap_template.xml"
-    xsl_template: str = Path(__file__).parent / "default_xsl_template.xsl"
+    card_template: str = "card.html"
+    template: str = "feed.html"
+    rss_template: str = "rss.xml"
+    sitemap_template: str = "sitemap.xml"
+    xsl_template: str = "rss.xsl"
 
     @pydantic.validator("name", pre=True, always=True)
     def default_name(cls, v, *, values):
         return v or str(values.get("slug")).replace("-", "_")
 
-    @pydantic.validator("card_template", "template", pre=True, always=True)
-    def read_template(cls, v, *, values) -> str:
-        if isinstance(v, Path):
-            return str(v.read_text())
-        return v
+    @property
+    def __rich_console__(self) -> "Console":
+        return self.markata.console
+
+    @property
+    def __rich__(self) -> Pretty:
+        return lambda: Pretty(self)
 
 
 class FeedsConfig(pydantic.BaseModel):
     feeds: List[FeedConfig] = [FeedConfig(slug="archive")]
 
 
+class PrettyList(list, JupyterMixin):
+    def _repr_pretty_(self):
+        return self.__rich__()
+
+    def __rich__(self) -> Pretty:
+        return Pretty(self)
+
+
 @dataclass
-class Feed:
+class Feed(JupyterMixin):
     """
     A storage class for markata feed objects.
 
@@ -276,18 +284,44 @@ class Feed:
     _m: Markata
 
     @property
+    def __rich_console__(self) -> "Console":
+        return self._m.console
+
+    @property
     def name(self):
         return self.config.name
 
     @property
     def posts(self):
-        return self.map("post")
+        return PrettyList(self.map("post"))
+
+    def first(
+        self: "Markata",
+    ) -> list:
+        return self.posts[0]
+
+    def last(
+        self: "Markata",
+    ) -> list:
+        return self.posts[-1]
 
     def map(self, func="post", **args):
         return self._m.map(func, **{**self.config.dict(), **args})
 
+    def __rich__(self) -> Table:
+        table = Table(title=f"Feed: {self.name}")
 
-class Feeds:
+        table.add_column("Post", justify="right", style="cyan", no_wrap=True)
+        table.add_column("slug", justify="left", style="green")
+        table.add_column("published", justify="left", style="green")
+
+        for post in self.posts:
+            table.add_row(post.title, post.slug, str(post.published))
+
+        return table
+
+
+class Feeds(JupyterMixin):
     """
     A storage class for all markata Feed objects
 
@@ -378,6 +412,9 @@ class Feeds:
     def __getitem__(self, key: str) -> Any:
         return getattr(self, key.replace("-", "_").lower())
 
+    def get(self, key: str, default: Any = None) -> Any:
+        return getattr(self, key.replace("-", "_").lower(), default)
+
     def _dict_panel(self, config) -> str:
         """
         pretty print configs with rich
@@ -392,8 +429,6 @@ class Feeds:
         return msg
 
     def __rich__(self) -> Table:
-        from rich.table import Table
-
         table = Table(title=f"Feeds {len(self.config)}")
 
         table.add_column("Feed", justify="right", style="cyan", no_wrap=True)
@@ -414,19 +449,6 @@ def config_model(markata: Markata) -> None:
     markata.config_models.append(FeedsConfig)
 
 
-# @hook_impl
-# @register_attr("feeds")
-# def configure(markata: Markata) -> None:
-#     """
-#     configure the default values for the feeds plugin
-#     """
-# if "feeds" not in markata.config.keys():
-# if "archive" not in config.keys():
-
-# for page, page_conf in config.items():
-#     if "template" not in page_conf.keys():
-
-
 @hook_impl
 @register_attr("feeds")
 def pre_render(markata: Markata) -> None:
@@ -434,6 +456,22 @@ def pre_render(markata: Markata) -> None:
     Create the Feeds object and attach it to markata.
     """
     markata.feeds = Feeds(markata)
+
+
+@lru_cache()
+def get_template(markata, template):
+    try:
+        return markata.config.jinja_env.get_template(template)
+    except jinja2.TemplateNotFound:
+        # try to load it as a file
+        ...
+
+    try:
+        return Template(Path(template).read_text(), undefined=SilentUndefined)
+    except FileNotFoundError:
+        # default to load it as a string
+        ...
+    return Template(template, undefined=SilentUndefined)
 
 
 @hook_impl
@@ -454,7 +492,7 @@ def save(markata: Markata) -> None:
     if not home.exists() and archive.exists():
         shutil.copy(str(archive), str(home))
 
-    xsl_template = get_template(feed.config.xsl_template)
+    xsl_template = get_template(markata, feed.config.xsl_template)
     xsl = xsl_template.render(
         markata=markata,
         __version__=__version__,
@@ -463,16 +501,6 @@ def save(markata: Markata) -> None:
     )
     xsl_file = Path(markata.config.output_dir) / "rss.xsl"
     xsl_file.write_text(xsl)
-
-
-@lru_cache()
-def get_template(src) -> Template:
-    try:
-        return Template(Path(src).read_text(), undefined=SilentUndefined)
-    except FileNotFoundError:
-        return Template(src, undefined=SilentUndefined)
-    except OSError:  # File name too long
-        return Template(src, undefined=SilentUndefined)
 
 
 def create_page(
@@ -484,20 +512,44 @@ def create_page(
     create an html unorderd list of posts.
     """
 
+    template = get_template(markata, feed.config.template)
+    canonical_url = f"{markata.config.url}/{feed.config.slug}/"
+
+    key = markata.make_hash(
+        "feeds",
+        template,
+        __version__,
+        # cards,
+        markata.config.url,
+        markata.config.description,
+        feed.config.title,
+        canonical_url,
+        # datetime.datetime.today(),
+        # markata.config,
+    )
+
+    html_key = markata.make_hash(key, "html")
+    feed_rss_key = markata.make_hash(key, "rss")
+    feed_sitemap_key = markata.make_hash(key, "sitemap")
+
+    feed_html_from_cache = markata.precache.get(html_key)
+    feed_rss_from_cache = markata.precache.get(feed_rss_key)
+    feed_sitemap_from_cache = markata.precache.get(feed_sitemap_key)
+
     posts = feed.posts
 
-    cards = [
-        create_card(markata, post, feed.config.card_template, cache) for post in posts
-    ]
-    cards.insert(0, "<ul>")
-    cards.append("</ul>")
-    cards = "".join(cards)
+    # card_futures = [
+    #     create_card(markata, post, feed.config.card_template, cache) for post in posts
+    # ]
+    # cards = [card.result() for card in card_futures]
 
-    template = get_template(feed.config.template)
-    rss_template = get_template(feed.config.rss_template)
-    sitemap_template = get_template(feed.config.sitemap_template)
+    # cards.insert(0, "<ul>")
+    # cards.append("</ul>")
+    # cards = "".join(cards)
+
+    # template = get_template(feed.config.template)
+
     output_file = Path(markata.config.output_dir) / feed.config.slug / "index.html"
-    canonical_url = f"{markata.config.url}/{feed.config.slug}/"
     output_file.parent.mkdir(exist_ok=True, parents=True)
 
     rss_output_file = Path(markata.config.output_dir) / feed.config.slug / "rss.xml"
@@ -508,43 +560,43 @@ def create_page(
     )
     sitemap_output_file.parent.mkdir(exist_ok=True, parents=True)
 
-    key = markata.make_hash(
-        "feeds",
-        template,
-        __version__,
-        cards,
-        markata.config.url,
-        markata.config.description,
-        feed.config.title,
-        canonical_url,
-        datetime.datetime.today(),
-        markata.config,
-    )
-
-    feed_html_from_cache = markata.precache.get(key)
     if feed_html_from_cache is None:
         feed_html = template.render(
             markata=markata,
             __version__=__version__,
-            body=cards,
+            # posts=posts,
             url=markata.config.url,
-            description=markata.config.description,
-            title=feed.config.title,
-            canonical_url=canonical_url,
-            today=datetime.datetime.today(),
             config=markata.config,
+            feed=feed,
+            # description=markata.config.description,
+            # title=feed.config.title,
+            # canonical_url=canonical_url,
+            # today=datetime.datetime.today(),
         )
-        with markata.cache as cache:
-            markata.cache.set(key, feed_html)
+        cache.set(html_key, feed_html)
+    else:
+        feed_html = feed_html_from_cache
 
-    feed_rss = rss_template.render(markata=markata, feed=feed)
-    feed_sitemap = sitemap_template.render(markata=markata, feed=feed)
+    if feed_rss_from_cache is None:
+        rss_template = get_template(markata, feed.config.rss_template)
+        feed_rss = rss_template.render(markata=markata, feed=feed)
+        cache.set(feed_rss_key, feed_rss)
+    else:
+        feed_rss = feed_rss_from_cache
+
+    if feed_sitemap_from_cache is None:
+        sitemap_template = get_template(markata, feed.config.sitemap_template)
+        feed_sitemap = sitemap_template.render(markata=markata, feed=feed)
+        cache.set(feed_sitemap_key, feed_sitemap)
+    else:
+        feed_sitemap = feed_sitemap_from_cache
 
     output_file.write_text(feed_html)
     rss_output_file.write_text(feed_rss)
     sitemap_output_file.write_text(feed_sitemap)
 
 
+@background.task
 def create_card(
     markata: "Markata",
     post: "Post",
@@ -615,4 +667,5 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
         markata.console.quiet = True
         feeds = markata.feeds
         markata.console.quiet = False
-        rich_print(feeds)
+        markata.console.print("Feeds")
+        markata.console.print(feeds)

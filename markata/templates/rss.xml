@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<?xml-stylesheet href="/rss.xsl" type="text/xsl"?>
+<rss version="2.0">
+<channel>
+    <title>{{ feed.config.name | e }}</title>
+    <link>{{ markata.config.url | e }}</link>
+    <description>{{ markata.config.description | e }}</description>
+    <generator>Markata</generator>
+    <image>
+        <url>{{ markata.config.icon | e }}</url>
+        <link>{{ markata.config.url | e }}</link>
+    </image>
+    <language>{{ markata.config.lang | e }}</language>
+{% for post in feed.posts %}
+  <item>
+      <title>{{ post.title | e }}</title>
+      <link>{{ markata.config.url | e }}/{{ markata.config.path_prefix | e }}{{ post.slug | e }}</link>
+      <description>{{ post.description | e }}</description>
+      <guid>{{ markata.config.url | e }}/{{ markata.config.path_prefix | e }}{{ post.slug | e }}</guid>
+      <pubDate>{{ post.date | e }}</pubDate>
+      <author>{{ markata.config.author_name | e }}</author>
+  </item>
+{% endfor %}
+<lastBuildDate>{{ post.today | e }}</lastBuildDate>
+</channel>
+</rss>

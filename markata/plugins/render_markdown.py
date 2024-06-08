@@ -84,10 +84,11 @@ config = {markata = "markata"}
 ```
 
 """
+
 import copy
-from enum import Enum
 import importlib
-from typing import Dict, List, Optional, TYPE_CHECKING
+from enum import Enum
+from typing import TYPE_CHECKING, Dict, List, Optional
 
 import pydantic
 
@@ -127,7 +128,7 @@ class Config(pydantic.BaseModel):
 
 class RenderMarkdownPost(pydantic.BaseModel):
     article_html: Optional[str] = None
-    html: Optional[str] = None
+    html: Optional[str | Dict[str, str]] = None
 
 
 @hook_impl()
@@ -239,20 +240,27 @@ def configure(markata: "Markata") -> None:
 def render(markata: "Markata") -> None:
     config = markata.config.render_markdown
     with markata.cache as cache:
-        for article in markata.iter_articles("rendering markdown"):
-            key = markata.make_hash(
-                "render_markdown",
-                "render",
-                article.content,
-            )
-            html_from_cache = markata.precache.get(key)
-            if html_from_cache is None:
-                html = markata.md.convert(article.content)
-                cache.add(key, html, expire=config.cache_expire)
-            else:
-                html = html_from_cache
-            article.html = html
-            article.article_html = copy.deepcopy(html)
+        for article in markata.articles:
+            article.html = render_article(markata, config, cache, article)
+            article.article_html = copy.deepcopy(article.html)
 
-            article.html = html
-            article.article_html = article.article_html
+
+def render_article(markata: "Markata", config, cache, article):
+    key = markata.make_hash(
+        "render_markdown",
+        "render",
+        article.content,
+    )
+    html_from_cache = markata.precache.get(key)
+    if html_from_cache is None:
+        html = markata.md.convert(article.content)
+        cache.add(key, html, expire=config.cache_expire)
+    else:
+        html = html_from_cache
+    return html
+
+    article.html = html
+    article.article_html = copy.deepcopy(html)
+
+    article.html = html
+    article.article_html = article.article_html

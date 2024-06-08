@@ -1,8 +1,8 @@
 from pathlib import Path
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, Any
 
 import frontmatter
-import pydantic
+from pydantic import Field, BaseModel
 
 from markata.hookspec import hook_impl, register_attr
 
@@ -49,8 +49,8 @@ def join_lines(article):
     return "\n".join(lines)
 
 
-class PublishDevToSourcePost(pydantic.BaseModel):
-    markata: Markata
+class PublishDevToSourcePost(BaseModel):
+    markata: Any = Field(None, exclude=True)
     canonical_url: Optional[str] = None
 
 
@@ -85,6 +85,8 @@ def post_render(markata: "Markata") -> None:
 @hook_impl
 def save(markata: "Markata") -> None:
     output_dir = Path(str(markata.config.output_dir))
-    for post in markata.iter_articles(description="saving source documents"):
-        with open(output_dir / Path(post["slug"]) / "dev.md", "w+") as f:
-            f.write(frontmatter.dumps(post.dev_to))
+    with markata.console.status("Saving source documents...") as status:
+        for post in markata.iter_articles(description="saving source documents"):
+            status.update(f"Saving {post['slug']}...")
+            with open(output_dir / Path(post["slug"]) / "dev.md", "w+") as f:
+                f.write(frontmatter.dumps(post.dev_to))

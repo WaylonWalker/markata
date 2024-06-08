@@ -1,0 +1,8 @@
+{% extends "content_base.html" %}
+{% block content %}
+    <div class='container flex-grow px-8 mx-auto max-w-screen-xl min-h-screen'>
+        {% for post in feed.posts %}
+            {% include feed.config.card_template %}
+        {% endfor %}
+    </div>
+{% endblock %}

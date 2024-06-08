@@ -1,11 +1,10 @@
-"""Markata is a tool for handling directories of markdown.
-"""
+"""Markata is a tool for handling directories of markdown."""
+
 # annotations needed to return self
 from __future__ import annotations
 
 import atexit
 import datetime
-import hashlib
 import importlib
 import logging
 import os
@@ -26,9 +25,11 @@ from rich.table import Table
 from markata import hookspec, standard_config
 from markata.__about__ import __version__
 from markata.errors import MissingFrontMatter
+from markata.exceptions import NoPosts, TooManyPosts
 from markata.lifecycle import LifeCycle
 
 logger = logging.getLogger("markata")
+
 
 DEFAULT_MD_EXTENSIONS = [
     "codehilite",
@@ -55,7 +56,7 @@ DEFAULT_MD_EXTENSIONS = [
 
 DEFAULT_HOOKS = [
     "markata.plugins.copy_assets",
-    "markata.plugins.heading_link",
+    # "markata.plugins.heading_link",
     "markata.plugins.pyinstrument",
     "markata.plugins.glob",
     "markata.plugins.load",
@@ -65,7 +66,7 @@ DEFAULT_HOOKS = [
     # "markata.plugins.generator",
     "markata.plugins.feeds",
     "markata.plugins.auto_description",
-    "markata.plugins.seo",
+    # "markata.plugins.seo",
     "markata.plugins.post_template",
     "markata.plugins.covers",
     "markata.plugins.publish_html",
@@ -85,7 +86,7 @@ DEFAULT_HOOKS = [
     "markata.plugins.post_model",
     "markata.plugins.config_model",
     "markata.plugins.create_models",
-    "markata.plugins.jinja_md",
+    # "markata.plugins.jinja_md",
 ]
 
 DEFUALT_CONFIG = {
@@ -106,6 +107,7 @@ class HooksConfig(pydantic.BaseModel):
 
 class Markata:
     def __init__(self: "Markata", console: Console = None, config=None) -> None:
+        self.__version__ = __version__
         self.stages_ran = set()
         self.threded = False
         self._cache = None
@@ -125,6 +127,7 @@ class Markata:
             raw_hooks = config
         else:
             raw_hooks = standard_config.load("markata")
+
         self.hooks_conf = HooksConfig.parse_obj(raw_hooks)
         try:
             default_index = self.hooks_conf.hooks.index("default")
@@ -177,8 +180,13 @@ class Markata:
             stage_to_run_to = max(
                 [attr["lifecycle"] for attr in self.registered_attrs[item]],
             ).name
+            self.console.log(
+                f"Running to [purple]{stage_to_run_to}[/] to retrieve [purple]{item}[/]"
+            )
             self.run(stage_to_run_to)
             return getattr(self, item)
+        elif item == "precache":
+            return self._precache or {}
         else:
             # Markata does not know what this is, raise
             raise AttributeError(f"'Markata' object has no attribute '{item}'")
@@ -305,8 +313,11 @@ class Markata:
         return default
 
     def make_hash(self, *keys: str) -> str:
+        import xxhash
+
         str_keys = [str(key) for key in keys]
-        return hashlib.md5("".join(str_keys).encode("utf-8")).hexdigest()
+        hash = xxhash.xxh64("".join(str_keys).encode("utf-8")).hexdigest()
+        return hash
 
     @property
     def content_dir_hash(self: "Markata") -> str:
@@ -366,7 +377,7 @@ class Markata:
         articles: Iterable[Markata.Post] = track(
             self.articles,
             description=description,
-            transient=True,
+            transient=False,
             console=self.console,
         )
         return articles
@@ -533,6 +544,39 @@ class Markata:
             raise MissingFrontMatter(message)
 
         return posts
+
+    def first(
+        self: "Markata",
+        filter: str = "True",
+        sort: str = "True",
+        reverse: bool = True,
+        *args: tuple,
+        **kwargs: dict,
+    ) -> list:
+        return self.map("post", filter, sort, reverse, *args, **kwargs)[0]
+
+    def last(
+        self: "Markata",
+        filter: str = "True",
+        sort: str = "True",
+        reverse: bool = True,
+        *args: tuple,
+        **kwargs: dict,
+    ) -> list:
+        return self.map("post", filter, sort, reverse, *args, **kwargs)[-1]
+
+    def one(
+        self: "Markata",
+        filter: str = "True",
+        *args: tuple,
+        **kwargs: dict,
+    ) -> list:
+        posts = self.map("post", filter, *args, **kwargs)
+        if len(posts) > 1:
+            raise TooManyPosts(f"found {len(posts)} posts, expected 1. {posts}")
+        if len(posts) == 0:
+            raise NoPosts
+        return posts[0]
 
 
 def load_ipython_extension(ipython):
