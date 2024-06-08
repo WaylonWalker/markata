@@ -31,44 +31,16 @@ releases, I do my best to document them, and not to break patches.
 Markata is fully configurable through a `markata.toml` file, but the defaults
 allow to build your site right out of the box with nothing more than Markdown.
 
-
-![new blog gif](./static/new-blog.gif)
-
-
 ### Installation
 
 `markata` is hosted on pypi and can be installed using pip.
 
 ```bash
 python -m pip install markata
-```
-
-### Create Some Content
-
-Make some `.md` files in your current working directory. By default, `markata`
-will recursively look in all subdirectories for markdown files `**/*.md`.
-
-```bash
-mkdir pages
-echo '# My First Post' > first-post.md
-echo '# Hello World' > hello-world.md
-```
-
-> This example shows how you can build a site from only a single markdown
-> file.
-
-### Build your site
-
-Install markata into your virtual environment and run `markata build`. It will
-create your site in `./markout`, leave its cache in `./.markata.cache`, and
-copy all assets from `./static` into `./markout` by default.
-
-```bash
-python -m pip install markata
-markata build
 
 # or if pipx is your thing
-pipx run markata build
+
+pipx install markata
 ```
 
 ### Building a Blog with Markata _using a template_
@@ -79,13 +51,16 @@ to fill in the jinja variables in this repo.
 ```bash
 markata new blog [directory]
 
+markata build
 # start the site and watch for changes
-hatch run tui
+markata serve
 ```
 
 Now if you open localhost:8000, you will be presented with an example site that
 will walk you through some features of markata. You can play with it at
 your own pace, or drop all the pages and start writing your own content.
+
+![new blog gif](./static/new-blog.gif)
 
 ## Motivation
 
