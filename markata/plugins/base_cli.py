@@ -183,7 +183,7 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
         else:
             markata.console.quiet = True
 
-        rich_print(toml.dumps(json.loads(markata.config.json())))
+        rich_print(toml.dumps(json.loads(markata.config.model_dump())))
 
     @config_app.command()
     def get(key: str) -> None:
