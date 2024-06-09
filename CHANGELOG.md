@@ -1,76 +1,6 @@
 # Markata Changelog
 
-## 0.8.0
-
-- pydantic support
-
-### Pydantic Support
-
-Now plugins are configured through a pydantic Config object.
-
-### breaking changes
-
-There are a number of breaking changes going into 0.8.0. Use caution when
-upgrading.
-
-#### glob config is now under markata.glob
-
-```diff
-- [markata]
-- glob_patterns = "pages/**/*.md"
-+ [markata.glob]
-+ glob_patterns = "pages/**/*.md"
-```
-
-#### Feeds are now a list
-
-Feeds are now a list of Objects within the configuration that you choose from
-whether its toml or yaml.  Also templates_dir is now configurable, and once you
-have a templates dir it is better to specify templates by name relative to your
-templates_dir.
-
-```toml
-[markata]
-templates_dir = "pages/templates"
-
-[markata.feeds.published]
-template="archive_template.html"
-card_template = "feed_card.html"
-filter="date<=today and templateKey in ['blog-post', 'til'] and status.lower()=='published'"
-sort="date"
-```
-
-> old
-
-```toml
-[[markata.feeds.published]]
-template="pages/templates/archive_template.html"
-card_template = "pages/templates/feed_card.html"
-filter="date<=today and templateKey in ['blog-post', 'til'] and status.lower()=='published'"
-sort="date"
-```
-
-> new
-
-### markata.summary.filter_count is now a list
-
-The old way was to set up a dict, where the keys were the name, now its a list
-of Objects with an explicit name field.
-
-```toml
-[markata.summary.filter_count.drafts]
-filter="published == 'False'"
-color='red'
-```
-
-> Old
-
-```toml
-[[markata.summary.filter_count]]
-name='drafts'
-filter="published == 'False'"
-color='red'
-```
+## 0.8.1
 
 ### Better Jinja Templates
 
@@ -89,13 +19,18 @@ markata templates show
 #### Variables
 
 The following variables are available within jinja templates for post
-templates.
+templates.  This is now consistent accross all three built in plugins that
+render jinja templates.
+
+##### post_template
 
 - `__version__` - the version of markata
 - `markata` - the markata instance
 - `config` - the markata config
 - `body` - the body of the post
 - `post` - the current post object
+
+##### feeds
 
 Similarly from within rendering feeds.
 
@@ -104,6 +39,16 @@ Similarly from within rendering feeds.
 - `config` - the markata config
 - `posts` - the list of posts
 - `feed` - the current feed object
+
+##### jinja_md
+
+Similar to posts from within jinja_md to render a markdown post as a template.
+
+- `__version__` - the version of markata
+- `markata` - the markata instance
+- `body` - the body of the post
+- `config` - the markata config
+- `post` - the current post object
 
 #### Feeds cli
 
@@ -206,6 +151,78 @@ The feeds cli will help show which templates each feed will be using.
 │                 │       │ xsl_template: rss.xsl                                         │
 │                 │       │                                                               │
 └─────────────────┴───────┴───────────────────────────────────────────────────────────────┘
+```
+
+## 0.8.0
+
+- pydantic support
+
+### Pydantic Support
+
+Now plugins are configured through a pydantic Config object.
+
+### breaking changes
+
+There are a number of breaking changes going into 0.8.0. Use caution when
+upgrading.
+
+#### glob config is now under markata.glob
+
+```diff
+- [markata]
+- glob_patterns = "pages/**/*.md"
++ [markata.glob]
++ glob_patterns = "pages/**/*.md"
+```
+
+#### Feeds are now a list
+
+Feeds are now a list of Objects within the configuration that you choose from
+whether its toml or yaml.  Also templates_dir is now configurable, and once you
+have a templates dir it is better to specify templates by name relative to your
+templates_dir.
+
+```toml
+[markata]
+templates_dir = "pages/templates"
+
+[markata.feeds.published]
+template="archive_template.html"
+card_template = "feed_card.html"
+filter="date<=today and templateKey in ['blog-post', 'til'] and status.lower()=='published'"
+sort="date"
+```
+
+> old
+
+```toml
+[[markata.feeds.published]]
+template="pages/templates/archive_template.html"
+card_template = "pages/templates/feed_card.html"
+filter="date<=today and templateKey in ['blog-post', 'til'] and status.lower()=='published'"
+sort="date"
+```
+
+> new
+
+### markata.summary.filter_count is now a list
+
+The old way was to set up a dict, where the keys were the name, now its a list
+of Objects with an explicit name field.
+
+```toml
+[markata.summary.filter_count.drafts]
+filter="published == 'False'"
+color='red'
+```
+
+> Old
+
+```toml
+[[markata.summary.filter_count]]
+name='drafts'
+filter="published == 'False'"
+color='red'
 ```
 
 ## 0.7.4
