@@ -236,7 +236,9 @@ def pre_render(markata: "Markata") -> None:
                 if content_from_cache is None:
                     post.content = jinja_env.from_string(post.content).render(
                         __version__=__version__,
-                        **post,
+                        markata=markata,
+                        body=post.article_html,
+                        config=markata.config,
                         post=post,
                     )
                     with markata.cache:
