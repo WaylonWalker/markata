@@ -223,10 +223,13 @@ class FeedConfig(pydantic.BaseModel, JupyterMixin):
 
     title: str = DEFAULT_TITLE
     slug: str = None
+    description: Optional[str] = None
     name: Optional[str] = None
     filter: str = "True"
     sort: str = "date"
     reverse: bool = False
+    head: Optional[int] = None
+    tail: Optional[int] = None
     rss: bool = True
     sitemap: bool = True
     card_template: str = "card.html"
@@ -292,7 +295,16 @@ class Feed(JupyterMixin):
 
     @property
     def posts(self):
-        return PrettyList(self.map("post"))
+        posts = self.map("post")
+        if self.config.head is not None and self.config.tail is not None:
+            head_posts = posts[:self.config.head]
+            tail_posts = posts[-self.config.tail:]
+            return PrettyList(head_posts + tail_posts)
+        if self.config.head is not None:
+            return PrettyList(posts[:self.config.head])
+        if self.config.tail is not None:
+            return PrettyList(posts[-self.config.tail:])
+        return PrettyList(posts)
 
     def first(
         self: "Markata",
@@ -560,10 +572,16 @@ def create_page(
     sitemap_output_file.parent.mkdir(exist_ok=True, parents=True)
 
     if feed_html_from_cache is None:
+        post = {
+            "url": canonical_url,
+            "title": feed.config.title,
+            "description": markata.config.description,
+            "feed": feed,
+        }
         feed_html = template.render(
             markata=markata,
             __version__=__version__,
-            # posts=posts,
+            post=feed.config.model_dump(),
             url=markata.config.url,
             config=markata.config,
             feed=feed,

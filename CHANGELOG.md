@@ -38,6 +38,7 @@ Similarly from within rendering feeds.
 - `markata` - the markata instance
 - `config` - the markata config
 - `posts` - the list of posts
+- `post` - a pseudo post object with title, slug, description, and date for template consistency
 - `feed` - the current feed object
 
 ##### jinja_md
