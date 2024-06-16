@@ -215,7 +215,8 @@ class SilentUndefined(Undefined):
         return ""
 
 
-class MarkataFilterError(RuntimeError): ...
+class MarkataFilterError(RuntimeError):
+    ...
 
 
 class FeedConfig(pydantic.BaseModel, JupyterMixin):
@@ -234,6 +235,7 @@ class FeedConfig(pydantic.BaseModel, JupyterMixin):
     sitemap: bool = True
     card_template: str = "card.html"
     template: str = "feed.html"
+    partial_template: str = "feed_partial.html"
     rss_template: str = "rss.xml"
     sitemap_template: str = "sitemap.xml"
     xsl_template: str = "rss.xsl"
@@ -297,13 +299,13 @@ class Feed(JupyterMixin):
     def posts(self):
         posts = self.map("post")
         if self.config.head is not None and self.config.tail is not None:
-            head_posts = posts[:self.config.head]
-            tail_posts = posts[-self.config.tail:]
+            head_posts = posts[: self.config.head]
+            tail_posts = posts[-self.config.tail :]
             return PrettyList(head_posts + tail_posts)
         if self.config.head is not None:
-            return PrettyList(posts[:self.config.head])
+            return PrettyList(posts[: self.config.head])
         if self.config.tail is not None:
-            return PrettyList(posts[-self.config.tail:])
+            return PrettyList(posts[-self.config.tail :])
         return PrettyList(posts)
 
     def first(
@@ -524,6 +526,7 @@ def create_page(
     """
 
     template = get_template(markata, feed.config.template)
+    partial_template = get_template(markata, feed.config.partial_template)
     canonical_url = f"{markata.config.url}/{feed.config.slug}/"
 
     key = markata.make_hash(
@@ -540,28 +543,22 @@ def create_page(
     )
 
     html_key = markata.make_hash(key, "html")
+    html_partial_key = markata.make_hash(key, "partial_html")
     feed_rss_key = markata.make_hash(key, "rss")
     feed_sitemap_key = markata.make_hash(key, "sitemap")
 
     feed_html_from_cache = markata.precache.get(html_key)
+    feed_html_partial_from_cache = markata.precache.get(html_partial_key)
     feed_rss_from_cache = markata.precache.get(feed_rss_key)
     feed_sitemap_from_cache = markata.precache.get(feed_sitemap_key)
 
-    # posts = feed.posts
-
-    # card_futures = [
-    #     create_card(markata, post, feed.config.card_template, cache) for post in posts
-    # ]
-    # cards = [card.result() for card in card_futures]
-
-    # cards.insert(0, "<ul>")
-    # cards.append("</ul>")
-    # cards = "".join(cards)
-
-    # template = get_template(feed.config.template)
-
     output_file = Path(markata.config.output_dir) / feed.config.slug / "index.html"
     output_file.parent.mkdir(exist_ok=True, parents=True)
+
+    partial_output_file = (
+        Path(markata.config.output_dir) / feed.config.slug / "partial" / "index.html"
+    )
+    partial_output_file.parent.mkdir(exist_ok=True, parents=True)
 
     rss_output_file = Path(markata.config.output_dir) / feed.config.slug / "rss.xml"
     rss_output_file.parent.mkdir(exist_ok=True, parents=True)
@@ -572,12 +569,6 @@ def create_page(
     sitemap_output_file.parent.mkdir(exist_ok=True, parents=True)
 
     if feed_html_from_cache is None:
-        post = {
-            "url": canonical_url,
-            "title": feed.config.title,
-            "description": markata.config.description,
-            "feed": feed,
-        }
         feed_html = template.render(
             markata=markata,
             __version__=__version__,
@@ -585,14 +576,23 @@ def create_page(
             url=markata.config.url,
             config=markata.config,
             feed=feed,
-            # description=markata.config.description,
-            # title=feed.config.title,
-            # canonical_url=canonical_url,
-            # today=datetime.datetime.today(),
         )
         cache.set(html_key, feed_html)
     else:
         feed_html = feed_html_from_cache
+
+    if feed_html_partial_from_cache is None:
+        feed_html_partial = partial_template.render(
+            markata=markata,
+            __version__=__version__,
+            post=feed.config.model_dump(),
+            url=markata.config.url,
+            config=markata.config,
+            feed=feed,
+        )
+        cache.set(html_partial_key, feed_html_partial)
+    else:
+        feed_html_partial = feed_html_partial_from_cache
 
     if feed_rss_from_cache is None:
         rss_template = get_template(markata, feed.config.rss_template)
@@ -609,6 +609,7 @@ def create_page(
         feed_sitemap = feed_sitemap_from_cache
 
     output_file.write_text(feed_html)
+    partial_output_file.write_text(feed_html_partial)
     rss_output_file.write_text(feed_rss)
     sitemap_output_file.write_text(feed_sitemap)
 

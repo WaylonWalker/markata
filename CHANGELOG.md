@@ -2,6 +2,12 @@
 
 ## 0.8.1
 
+### Feeds have partials
+
+The `feeds` plugin now has configurable `partial_template` that can be used to
+render only the inside of the feeds page.  This is indended to allow you to
+load small feeds into a page with htmx.
+
 ### Better Jinja Templates
 
 Markata now fully supports jinja templates with a loader that will load from

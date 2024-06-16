@@ -5,7 +5,7 @@
     <div>
         <ul id='feed' class='px-0 mx-0 list-none'>
             {% for post in feed.posts %}
-            {% include card_template or feed.config.card_template %}
+            {% include card_template or feed.config.card_template or config.feeds.card_template %}
             {% endfor %}
         </ul>
     </div>
