@@ -134,14 +134,13 @@ markdown.
 """
 
 from pathlib import Path
-from typing import TYPE_CHECKING, List
+from typing import List, TYPE_CHECKING
 
-import jinja2
+from jinja2 import TemplateSyntaxError, Undefined, UndefinedError, nodes
+from jinja2.ext import Extension
 import pathspec
 import pkg_resources
 import pydantic
-from jinja2 import TemplateSyntaxError, Undefined, UndefinedError, nodes
-from jinja2.ext import Extension
 
 from markata import __version__
 from markata.hookspec import hook_impl, register_attr
@@ -224,16 +223,19 @@ def pre_render(markata: "Markata") -> None:
     config = markata.config.jinja_md
     ignore_spec = pathspec.PathSpec.from_lines("gitwildmatch", config.ignore)
     # for post in markata.iter_articles(description="jinja_md"):
-    jinja_env = jinja2.Environment(
-        extensions=[IncludeRawExtension, *register_jinja_extensions(config)],
-    )
+
+    # jinja_env = jinja2.Environment(
+    #     extensions=[IncludeRawExtension, *register_jinja_extensions(config)],
+    # )
+    jinja_env = markata.config.jinja_env
+    jinja_env.undefined = _SilentUndefined
 
     for post in markata.posts:
         if post.get("jinja", True) and not ignore_spec.match_file(post["path"]):
             try:
                 key = markata.make_hash("jina_md", "pre_render", post.content)
                 content_from_cache = markata.precache.get(key)
-                if content_from_cache is None:
+                if content_from_cache is None and post.content is not None:
                     post.content = jinja_env.from_string(post.content).render(
                         __version__=__version__,
                         markata=markata,
