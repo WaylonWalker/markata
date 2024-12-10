@@ -1,0 +1,334 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet href="/sitemap.xsl" type="text/xsl"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <title>plugins</title>
+    <link>https://markata.dev/</link>
+   <url>
+      <title>Plugins.Py</title>
+      <description>None ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source </description>
+      <loc>https://markata.dev//markata/cli/plugins</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>Feeds.Py</title>
+      <description>The  This plugin is built-in and enabled by default, but in you want to be very At the root of the markata.feeds config you may set  Underneath of the  The foll</description>
+      <loc>https://markata.dev//markata/plugins/feeds</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>Config_Model.Py</title>
+      <description>None ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ! ! ! ! ???+ source  ! ???+ source  ! ???+ source </description>
+      <loc>https://markata.dev//markata/plugins/config-model</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>Publish_Html.Py</title>
+      <description>Sets the articles  Output will always be written inside of the configured  markata will save the articles  Here is an example use case of explicitly setting the</description>
+      <loc>https://markata.dev//markata/plugins/publish-html</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>Sitemap.Py</title>
+      <description>None ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source </description>
+      <loc>https://markata.dev//markata/plugins/sitemap</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>Create_Covers.Py</title>
+      <description>None ! ???+ source  ! ???+ source  ! ???+ source </description>
+      <loc>https://markata.dev//markata/plugins/create-covers</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>Glob.Py</title>
+      <description>Default glob plugin ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source </description>
+      <loc>https://markata.dev//markata/plugins/glob</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>Render_Markdown.Py</title>
+      <description>Renders markdown content as html.  This may be markdown files loaded in by way There are 3 supported markdown backends that you can configure markata to use mar</description>
+      <loc>https://markata.dev//markata/plugins/render-markdown</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>Tui.Py</title>
+      <description>None ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source </description>
+      <loc>https://markata.dev//markata/plugins/tui</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>Heading_Link.Py</title>
+      <description>Creates links next to all heading tags to make it easier for users to share a ! ! !</description>
+      <loc>https://markata.dev//markata/plugins/heading-link</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>Seo.Py</title>
+      <description>manifest plugin ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source </description>
+      <loc>https://markata.dev//markata/plugins/seo</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>Post_Template.Py</title>
+      <description>This snippet allows users to configure their head in  Users can specify any sort of tag in their  The above configuration becomes this once rendered. ! Optional</description>
+      <loc>https://markata.dev//markata/plugins/post-template</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>Manifest.Py</title>
+      <description>manifest plugin ! ???+ source </description>
+      <loc>https://markata.dev//markata/plugins/manifest</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>To_Json.Py</title>
+      <description>None ! ???+ source </description>
+      <loc>https://markata.dev//markata/plugins/to-json</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>Service_Worker.Py</title>
+      <description>Adds a service Enable this plugin by adding it to your  If you have any content that you want to  precache, add it to the list of Markata uses the checksum.dirh</description>
+      <loc>https://markata.dev//markata/plugins/service-worker</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>Datetime.Py</title>
+      <description>Default datetime plugin ! ???+ source </description>
+      <loc>https://markata.dev//markata/plugins/datetime</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>Prevnext.Py</title>
+      <description>The prevnext plugin, creates previous and next links inside each post. In this example we have two maps of posts to look through.  prevnext will look The config</description>
+      <loc>https://markata.dev//markata/plugins/prevnext</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>Md_It_Highlight_Code.Py</title>
+      <description>None !</description>
+      <loc>https://markata.dev//markata/plugins/md-it-highlight-code</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>Publish_Dev_To_Source.Py</title>
+      <description>None ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source </description>
+      <loc>https://markata.dev//markata/plugins/publish-dev-to-source</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>Flat_Slug.Py</title>
+      <description>The articles slug is what determines the url to your page.  It should be If you explicitly set the slug in the frontmatter of a post, markata will not By defaul</description>
+      <loc>https://markata.dev//markata/plugins/flat-slug</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>Redirects.Py</title>
+      <description>Creates redirects for times when your backend server can Enable the redirect hook by adding it to your list of hooks. Your  Here is an example that will redirec</description>
+      <loc>https://markata.dev//markata/plugins/redirects</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>Icon_Resize.Py</title>
+      <description>Icon Resize Plugin Resized favicon to a set of common sizes. ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source </description>
+      <loc>https://markata.dev//markata/plugins/icon-resize</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>Auto_Description.Py</title>
+      <description>A Markata plugin to create automatic descriptions for markdown documents.  It Open up your  ! In the above we will end up with three different descritpions, By </description>
+      <loc>https://markata.dev//markata/plugins/auto-description</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>Subroute.Py</title>
+      <description>None ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source </description>
+      <loc>https://markata.dev//markata/plugins/subroute</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>__Init__.Py</title>
+      <description>None</description>
+      <loc>https://markata.dev//markata/plugins/init</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>Publish_Source.Py</title>
+      <description>Writes the final modified markdown and frontmatter to the output directory. The only configuration for the publish ! ! ! ! ???+ source </description>
+      <loc>https://markata.dev//markata/plugins/publish-source</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>Copy_Assets.Py</title>
+      <description>None ! ???+ source </description>
+      <loc>https://markata.dev//markata/plugins/copy-assets</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>Covers.Py</title>
+      <description>Example configuration.  Covers supports multiple covers to be configured.  Here ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ! ???+ source  ! ?</description>
+      <loc>https://markata.dev//markata/plugins/covers</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>Rss.Py</title>
+      <description>Default glob plugin ! ???+ source  ! ???+ source  ! ???+ source </description>
+      <loc>https://markata.dev//markata/plugins/rss</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>Create_Models.Py</title>
+      <description>None ! ???+ source  ! ???+ source  ! ???+ source </description>
+      <loc>https://markata.dev//markata/plugins/create-models</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>Generator.Py</title>
+      <description>add generator meta tag ! ???+ source </description>
+      <loc>https://markata.dev//markata/plugins/generator</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>Pyinstrument.Py</title>
+      <description>Markata plugin to create a pyinstrument profile if pyinstrument is installed. The profile will be saved to  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ </description>
+      <loc>https://markata.dev//markata/plugins/pyinstrument</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>Docs.Py</title>
+      <description>leading docstring ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ! ???+ source </description>
+      <loc>https://markata.dev//markata/plugins/docs</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>Post_Model.Py</title>
+      <description>None ! ???+ source  ! ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ! ! ! ! ! ! ! ! ???+ source  ! </description>
+      <loc>https://markata.dev//markata/plugins/post-model</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>Setup_Logging.Py</title>
+      <description>Setup Logging hook sets up the RichHandler for pretty console logs, and file There will be 6 log files created based on log level and file type. Ensure that set</description>
+      <loc>https://markata.dev//markata/plugins/setup-logging</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>Mdit_Details.Py</title>
+      <description>None ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source </description>
+      <loc>https://markata.dev//markata/plugins/mdit-details</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>Jinja_Md.Py</title>
+      <description>Renders your markdown as a jinja template during pre The markata instance is passed into the template, giving you access to things first we can grab a few thing</description>
+      <loc>https://markata.dev//markata/plugins/jinja-md</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>Md_It_Wikilinks.Py</title>
+      <description>Wikilinks depicted with  ???+ note normal wikilink A special feature that markata brings is slug lookup.  It is able to not only ???+ note markata slug lookup !</description>
+      <loc>https://markata.dev//markata/plugins/md-it-wikilinks</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>Load.Py</title>
+      <description>Default load plugin. ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source </description>
+      <loc>https://markata.dev//markata/plugins/load</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>Auto_Title.Py</title>
+      <description>None ! ???+ source </description>
+      <loc>https://markata.dev//markata/plugins/auto-title</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>Base_Cli.Py</title>
+      <description>Markata This plugin enables Your Markata Site can be build completely from the command line. see the Markata list is a tool to help list out artile attributes r</description>
+      <loc>https://markata.dev//markata/plugins/base-cli</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+</urlset>

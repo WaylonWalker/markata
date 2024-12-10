@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet href="/sitemap.xsl" type="text/xsl"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <title>autodoc</title>
+    <link>https://markata.dev/</link>
+   <url>
+      <title>Markata&#39;S Docs</title>
+      <description>Markata builds it Using the </description>
+      <loc>https://markata.dev//markata-dev</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>__About__.Py</title>
+      <description>None</description>
+      <loc>https://markata.dev//markata/about</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>Cli.Py</title>
+      <description>None ! ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source </description>
+      <loc>https://markata.dev//markata/cli/cli</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>Header.Py</title>
+      <description>None ! ! ???+ source </description>
+      <loc>https://markata.dev//markata/cli/header</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>__Init__.Py</title>
+      <description>None</description>
+      <loc>https://markata.dev//markata/cli/init</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>__Main__.Py</title>
+      <description>None ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source </description>
+      <loc>https://markata.dev//markata/cli/main</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>Runner.Py</title>
+      <description>None ! ! ???+ source  ! ???+ source  ! ???+ source  ! ! ! ! ???+ source  ! ???+ source </description>
+      <loc>https://markata.dev//markata/cli/runner</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>Server.Py</title>
+      <description>None ! ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ?</description>
+      <loc>https://markata.dev//markata/cli/server</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>Summary.Py</title>
+      <description>There are two main things currently supported by summary, It can count the grid_attr Example output that will be shown in the summary, counting all posts with e</description>
+      <loc>https://markata.dev//markata/cli/summary</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>Errors.Py</title>
+      <description>None ! ! ???+ source </description>
+      <loc>https://markata.dev//markata/errors</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>Exceptions.Py</title>
+      <description>None ! ???+ source  ! ???+ source </description>
+      <loc>https://markata.dev//markata/exceptions</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>Hookspec.Py</title>
+      <description>Define hook specs. ! ???+ source  ! ???+ source  ! ! ???+ source  ! ???+ source  ! ???+ source </description>
+      <loc>https://markata.dev//markata/hookspec</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>__Init__.Py</title>
+      <description>Markata is a tool for handling directories of markdown. ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source </description>
+      <loc>https://markata.dev//markata/init</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>Lifecycle.Py</title>
+      <description>The LifeCycle is a core component for the internal workings of Markata.  It ! ???+ source  ! !</description>
+      <loc>https://markata.dev//markata/lifecycle</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>__Main__.Py</title>
+      <description>None</description>
+      <loc>https://markata.dev//markata/main</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>Migrate_To_Slugify.Py</title>
+      <description>Slugify migration for projects moving from markata to run this script install markata&amp;gt;=0.5.0 and run the following. Then make sure that you do not explicity </description>
+      <loc>https://markata.dev//markata/scripts/migrate-to-slugify</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>Standard_Config.Py</title>
+      <description>Standard Config. Inspired from frustrations that some tools have a tool.ini, .tool.ini, This file is for any project that can be configured in plain text such a</description>
+      <loc>https://markata.dev//markata/standard-config</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+</urlset>

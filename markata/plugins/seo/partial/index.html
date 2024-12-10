@@ -1,0 +1,273 @@
+<article class='w-full'>
+<section class="title">
+    <h1 id="title">
+        Seo.Py
+    </h1>
+</section>    <section class="body">
+        <p>manifest plugin</p>
+<p>!! function <h2 id='_create_seo' class='admonition-title' style='margin:0;padding:.5rem 1rem;'>_create_seo <em class='small'>function</em></h2></p>
+<div class="admonition source is-collapsible collapsible-open">
+<p class="admonition-title">_create_seo <em class='small'>source</em></p>
+</div>
+<pre class='wrapper'>
+
+<div class='copy-wrapper'>
+
+<button class='copy' title='copy code to clipboard' onclick="navigator.clipboard.writeText(this.parentElement.parentElement.querySelector('pre').textContent)"><svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 115.77 122.88" style="enable-background:new 0 0 115.77 122.88" xml:space="preserve"><style type="text/css">.st0{fill-rule:evenodd;clip-rule:evenodd;}</style><g><path class="st0" d="M89.62,13.96v7.73h12.19h0.01v0.02c3.85,0.01,7.34,1.57,9.86,4.1c2.5,2.51,4.06,5.98,4.07,9.82h0.02v0.02 v73.27v0.01h-0.02c-0.01,3.84-1.57,7.33-4.1,9.86c-2.51,2.5-5.98,4.06-9.82,4.07v0.02h-0.02h-61.7H40.1v-0.02 c-3.84-0.01-7.34-1.57-9.86-4.1c-2.5-2.51-4.06-5.98-4.07-9.82h-0.02v-0.02V92.51H13.96h-0.01v-0.02c-3.84-0.01-7.34-1.57-9.86-4.1 c-2.5-2.51-4.06-5.98-4.07-9.82H0v-0.02V13.96v-0.01h0.02c0.01-3.85,1.58-7.34,4.1-9.86c2.51-2.5,5.98-4.06,9.82-4.07V0h0.02h61.7 h0.01v0.02c3.85,0.01,7.34,1.57,9.86,4.1c2.5,2.51,4.06,5.98,4.07,9.82h0.02V13.96L89.62,13.96z M79.04,21.69v-7.73v-0.02h0.02 c0-0.91-0.39-1.75-1.01-2.37c-0.61-0.61-1.46-1-2.37-1v0.02h-0.01h-61.7h-0.02v-0.02c-0.91,0-1.75,0.39-2.37,1.01 c-0.61,0.61-1,1.46-1,2.37h0.02v0.01v64.59v0.02h-0.02c0,0.91,0.39,1.75,1.01,2.37c0.61,0.61,1.46,1,2.37,1v-0.02h0.01h12.19V35.65 v-0.01h0.02c0.01-3.85,1.58-7.34,4.1-9.86c2.51-2.5,5.98-4.06,9.82-4.07v-0.02h0.02H79.04L79.04,21.69z M105.18,108.92V35.65v-0.02 h0.02c0-0.91-0.39-1.75-1.01-2.37c-0.61-0.61-1.46-1-2.37-1v0.02h-0.01h-61.7h-0.02v-0.02c-0.91,0-1.75,0.39-2.37,1.01 c-0.61,0.61-1,1.46-1,2.37h0.02v0.01v73.27v0.02h-0.02c0,0.91,0.39,1.75,1.01,2.37c0.61,0.61,1.46,1,2.37,1v-0.02h0.01h61.7h0.02 v0.02c0.91,0,1.75-0.39,2.37-1.01c0.61-0.61,1-1.46,1-2.37h-0.02V108.92L105.18,108.92z"/></g></svg></button>
+</div>
+        
+<div class="highlight"><pre><span></span>        <span class="k">def</span> <span class="nf">_create_seo</span><span class="p">(</span>
+            <span class="n">markata</span><span class="p">:</span> <span class="n">Markata</span><span class="p">,</span>
+            <span class="n">soup</span><span class="p">:</span> <span class="n">BeautifulSoup</span><span class="p">,</span>
+            <span class="n">article</span><span class="p">:</span> <span class="s2">&quot;frontmatter.Post&quot;</span><span class="p">,</span>
+            <span class="n">site_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="n">author_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="n">author_email</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="n">twitter_card</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="n">twitter_creator</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="n">config_seo</span><span class="p">:</span> <span class="n">Dict</span><span class="p">,</span>
+            <span class="n">images_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">article</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;description&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">article</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;description&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                        <span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">text</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">soup</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;post-body&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">find_all</span><span class="p">(</span><span class="s2">&quot;p&quot;</span><span class="p">)],</span>
+                    <span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()[:</span><span class="mi">120</span><span class="p">]</span>
+                <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                    <span class="n">article</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;description&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+            <span class="n">seo</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="o">*</span><span class="n">config_seo</span><span class="p">,</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;og:author&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;property&quot;</span><span class="p">:</span> <span class="s2">&quot;og:author&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">author_name</span><span class="p">,</span>
+                <span class="p">},</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;og:author_email&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;property&quot;</span><span class="p">:</span> <span class="s2">&quot;og:author_email&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">author_email</span><span class="p">,</span>
+                <span class="p">},</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;og:type&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;property&quot;</span><span class="p">:</span> <span class="s2">&quot;og:type&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s2">&quot;website&quot;</span><span class="p">,</span>
+                <span class="p">},</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;description&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;property&quot;</span><span class="p">:</span> <span class="s2">&quot;description&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">article</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;description&quot;</span><span class="p">],</span>
+                <span class="p">},</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;og:description&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;property&quot;</span><span class="p">:</span> <span class="s2">&quot;og:description&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">article</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;description&quot;</span><span class="p">],</span>
+                <span class="p">},</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;twitter:description&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;property&quot;</span><span class="p">:</span> <span class="s2">&quot;twitter:description&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">article</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;description&quot;</span><span class="p">],</span>
+                <span class="p">},</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;og:title&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;property&quot;</span><span class="p">:</span> <span class="s2">&quot;og:title&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">article</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;title&quot;</span><span class="p">]</span><span class="si">}</span><span class="s1"> | </span><span class="si">{</span><span class="n">site_name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">[:</span><span class="mi">60</span><span class="p">],</span>
+                <span class="p">},</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;twitter:title&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;property&quot;</span><span class="p">:</span> <span class="s2">&quot;twitter:title&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">article</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;title&quot;</span><span class="p">]</span><span class="si">}</span><span class="s1"> | </span><span class="si">{</span><span class="n">site_name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">[:</span><span class="mi">60</span><span class="p">],</span>
+                <span class="p">},</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;og:image&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;property&quot;</span><span class="p">:</span> <span class="s2">&quot;og:image&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">images_url</span><span class="si">}</span><span class="s1">/</span><span class="si">{</span><span class="n">article</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;slug&quot;</span><span class="p">]</span><span class="si">}</span><span class="s1">-og.png&#39;</span><span class="p">,</span>
+                <span class="p">},</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;twitter:image&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;property&quot;</span><span class="p">:</span> <span class="s2">&quot;twitter:image&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">images_url</span><span class="si">}</span><span class="s1">/</span><span class="si">{</span><span class="n">article</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;slug&quot;</span><span class="p">]</span><span class="si">}</span><span class="s1">-og.png&#39;</span><span class="p">,</span>
+                <span class="p">},</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;og:image:width&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;property&quot;</span><span class="p">:</span> <span class="s2">&quot;og:image:width&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s2">&quot;1600&quot;</span><span class="p">,</span>
+                <span class="p">},</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;og:image:width&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;property&quot;</span><span class="p">:</span> <span class="s2">&quot;og:image:width&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s2">&quot;900&quot;</span><span class="p">,</span>
+                <span class="p">},</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;twitter:card&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;property&quot;</span><span class="p">:</span> <span class="s2">&quot;twitter:card&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">twitter_card</span><span class="p">,</span>
+                <span class="p">},</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;og:site_name&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;property&quot;</span><span class="p">:</span> <span class="s2">&quot;og:site_name&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">site_name</span><span class="p">,</span>
+                <span class="p">},</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;twitter:creator&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;property&quot;</span><span class="p">:</span> <span class="s2">&quot;twitter:creator&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">twitter_creator</span><span class="p">,</span>
+                <span class="p">},</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;title&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;property&quot;</span><span class="p">:</span> <span class="s2">&quot;title&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">article</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;title&quot;</span><span class="p">],</span>
+                <span class="p">},</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;generator&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;property&quot;</span><span class="p">:</span> <span class="s2">&quot;generator&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;markata </span><span class="si">{</span><span class="n">__version__</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="p">},</span>
+            <span class="p">]</span>
+            <span class="k">return</span> <span class="n">seo</span>
+</pre></div>
+
+</pre>
+
+<p>!! function <h2 id='_add_seo_tags' class='admonition-title' style='margin:0;padding:.5rem 1rem;'>_add_seo_tags <em class='small'>function</em></h2></p>
+<div class="admonition source is-collapsible collapsible-open">
+<p class="admonition-title">_add_seo_tags <em class='small'>source</em></p>
+</div>
+<pre class='wrapper'>
+
+<div class='copy-wrapper'>
+
+<button class='copy' title='copy code to clipboard' onclick="navigator.clipboard.writeText(this.parentElement.parentElement.querySelector('pre').textContent)"><svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 115.77 122.88" style="enable-background:new 0 0 115.77 122.88" xml:space="preserve"><style type="text/css">.st0{fill-rule:evenodd;clip-rule:evenodd;}</style><g><path class="st0" d="M89.62,13.96v7.73h12.19h0.01v0.02c3.85,0.01,7.34,1.57,9.86,4.1c2.5,2.51,4.06,5.98,4.07,9.82h0.02v0.02 v73.27v0.01h-0.02c-0.01,3.84-1.57,7.33-4.1,9.86c-2.51,2.5-5.98,4.06-9.82,4.07v0.02h-0.02h-61.7H40.1v-0.02 c-3.84-0.01-7.34-1.57-9.86-4.1c-2.5-2.51-4.06-5.98-4.07-9.82h-0.02v-0.02V92.51H13.96h-0.01v-0.02c-3.84-0.01-7.34-1.57-9.86-4.1 c-2.5-2.51-4.06-5.98-4.07-9.82H0v-0.02V13.96v-0.01h0.02c0.01-3.85,1.58-7.34,4.1-9.86c2.51-2.5,5.98-4.06,9.82-4.07V0h0.02h61.7 h0.01v0.02c3.85,0.01,7.34,1.57,9.86,4.1c2.5,2.51,4.06,5.98,4.07,9.82h0.02V13.96L89.62,13.96z M79.04,21.69v-7.73v-0.02h0.02 c0-0.91-0.39-1.75-1.01-2.37c-0.61-0.61-1.46-1-2.37-1v0.02h-0.01h-61.7h-0.02v-0.02c-0.91,0-1.75,0.39-2.37,1.01 c-0.61,0.61-1,1.46-1,2.37h0.02v0.01v64.59v0.02h-0.02c0,0.91,0.39,1.75,1.01,2.37c0.61,0.61,1.46,1,2.37,1v-0.02h0.01h12.19V35.65 v-0.01h0.02c0.01-3.85,1.58-7.34,4.1-9.86c2.51-2.5,5.98-4.06,9.82-4.07v-0.02h0.02H79.04L79.04,21.69z M105.18,108.92V35.65v-0.02 h0.02c0-0.91-0.39-1.75-1.01-2.37c-0.61-0.61-1.46-1-2.37-1v0.02h-0.01h-61.7h-0.02v-0.02c-0.91,0-1.75,0.39-2.37,1.01 c-0.61,0.61-1,1.46-1,2.37h0.02v0.01v73.27v0.02h-0.02c0,0.91,0.39,1.75,1.01,2.37c0.61,0.61,1.46,1,2.37,1v-0.02h0.01h61.7h0.02 v0.02c0.91,0,1.75-0.39,2.37-1.01c0.61-0.61,1-1.46,1-2.37h-0.02V108.92L105.18,108.92z"/></g></svg></button>
+</div>
+        
+<div class="highlight"><pre><span></span>        <span class="k">def</span> <span class="nf">_add_seo_tags</span><span class="p">(</span><span class="n">seo</span><span class="p">:</span> <span class="n">List</span><span class="p">,</span> <span class="n">article</span><span class="p">:</span> <span class="s2">&quot;frontmatter.Post&quot;</span><span class="p">,</span> <span class="n">soup</span><span class="p">:</span> <span class="n">BeautifulSoup</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">meta</span> <span class="ow">in</span> <span class="n">seo</span><span class="p">:</span>
+                <span class="n">soup</span><span class="o">.</span><span class="n">head</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_create_seo_tag</span><span class="p">(</span><span class="n">meta</span><span class="p">,</span> <span class="n">soup</span><span class="p">))</span>
+</pre></div>
+
+</pre>
+
+<p>!! function <h2 id='_create_seo_tag' class='admonition-title' style='margin:0;padding:.5rem 1rem;'>_create_seo_tag <em class='small'>function</em></h2></p>
+<div class="admonition source is-collapsible collapsible-open">
+<p class="admonition-title">_create_seo_tag <em class='small'>source</em></p>
+</div>
+<pre class='wrapper'>
+
+<div class='copy-wrapper'>
+
+<button class='copy' title='copy code to clipboard' onclick="navigator.clipboard.writeText(this.parentElement.parentElement.querySelector('pre').textContent)"><svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 115.77 122.88" style="enable-background:new 0 0 115.77 122.88" xml:space="preserve"><style type="text/css">.st0{fill-rule:evenodd;clip-rule:evenodd;}</style><g><path class="st0" d="M89.62,13.96v7.73h12.19h0.01v0.02c3.85,0.01,7.34,1.57,9.86,4.1c2.5,2.51,4.06,5.98,4.07,9.82h0.02v0.02 v73.27v0.01h-0.02c-0.01,3.84-1.57,7.33-4.1,9.86c-2.51,2.5-5.98,4.06-9.82,4.07v0.02h-0.02h-61.7H40.1v-0.02 c-3.84-0.01-7.34-1.57-9.86-4.1c-2.5-2.51-4.06-5.98-4.07-9.82h-0.02v-0.02V92.51H13.96h-0.01v-0.02c-3.84-0.01-7.34-1.57-9.86-4.1 c-2.5-2.51-4.06-5.98-4.07-9.82H0v-0.02V13.96v-0.01h0.02c0.01-3.85,1.58-7.34,4.1-9.86c2.51-2.5,5.98-4.06,9.82-4.07V0h0.02h61.7 h0.01v0.02c3.85,0.01,7.34,1.57,9.86,4.1c2.5,2.51,4.06,5.98,4.07,9.82h0.02V13.96L89.62,13.96z M79.04,21.69v-7.73v-0.02h0.02 c0-0.91-0.39-1.75-1.01-2.37c-0.61-0.61-1.46-1-2.37-1v0.02h-0.01h-61.7h-0.02v-0.02c-0.91,0-1.75,0.39-2.37,1.01 c-0.61,0.61-1,1.46-1,2.37h0.02v0.01v64.59v0.02h-0.02c0,0.91,0.39,1.75,1.01,2.37c0.61,0.61,1.46,1,2.37,1v-0.02h0.01h12.19V35.65 v-0.01h0.02c0.01-3.85,1.58-7.34,4.1-9.86c2.51-2.5,5.98-4.06,9.82-4.07v-0.02h0.02H79.04L79.04,21.69z M105.18,108.92V35.65v-0.02 h0.02c0-0.91-0.39-1.75-1.01-2.37c-0.61-0.61-1.46-1-2.37-1v0.02h-0.01h-61.7h-0.02v-0.02c-0.91,0-1.75,0.39-2.37,1.01 c-0.61,0.61-1,1.46-1,2.37h0.02v0.01v73.27v0.02h-0.02c0,0.91,0.39,1.75,1.01,2.37c0.61,0.61,1.46,1,2.37,1v-0.02h0.01h61.7h0.02 v0.02c0.91,0,1.75-0.39,2.37-1.01c0.61-0.61,1-1.46,1-2.37h-0.02V108.92L105.18,108.92z"/></g></svg></button>
+</div>
+        
+<div class="highlight"><pre><span></span>        <span class="k">def</span> <span class="nf">_create_seo_tag</span><span class="p">(</span><span class="n">meta</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">soup</span><span class="p">:</span> <span class="n">BeautifulSoup</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Tag&quot;</span><span class="p">:</span>
+            <span class="n">tag</span> <span class="o">=</span> <span class="n">soup</span><span class="o">.</span><span class="n">new_tag</span><span class="p">(</span><span class="s2">&quot;meta&quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">meta</span><span class="p">:</span>
+                <span class="n">tag</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">meta</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+            <span class="k">return</span> <span class="n">tag</span>
+</pre></div>
+
+</pre>
+
+<p>!! function <h2 id='_get_or_warn' class='admonition-title' style='margin:0;padding:.5rem 1rem;'>_get_or_warn <em class='small'>function</em></h2></p>
+<div class="admonition source is-collapsible collapsible-open">
+<p class="admonition-title">_get_or_warn <em class='small'>source</em></p>
+</div>
+<pre class='wrapper'>
+
+<div class='copy-wrapper'>
+
+<button class='copy' title='copy code to clipboard' onclick="navigator.clipboard.writeText(this.parentElement.parentElement.querySelector('pre').textContent)"><svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 115.77 122.88" style="enable-background:new 0 0 115.77 122.88" xml:space="preserve"><style type="text/css">.st0{fill-rule:evenodd;clip-rule:evenodd;}</style><g><path class="st0" d="M89.62,13.96v7.73h12.19h0.01v0.02c3.85,0.01,7.34,1.57,9.86,4.1c2.5,2.51,4.06,5.98,4.07,9.82h0.02v0.02 v73.27v0.01h-0.02c-0.01,3.84-1.57,7.33-4.1,9.86c-2.51,2.5-5.98,4.06-9.82,4.07v0.02h-0.02h-61.7H40.1v-0.02 c-3.84-0.01-7.34-1.57-9.86-4.1c-2.5-2.51-4.06-5.98-4.07-9.82h-0.02v-0.02V92.51H13.96h-0.01v-0.02c-3.84-0.01-7.34-1.57-9.86-4.1 c-2.5-2.51-4.06-5.98-4.07-9.82H0v-0.02V13.96v-0.01h0.02c0.01-3.85,1.58-7.34,4.1-9.86c2.51-2.5,5.98-4.06,9.82-4.07V0h0.02h61.7 h0.01v0.02c3.85,0.01,7.34,1.57,9.86,4.1c2.5,2.51,4.06,5.98,4.07,9.82h0.02V13.96L89.62,13.96z M79.04,21.69v-7.73v-0.02h0.02 c0-0.91-0.39-1.75-1.01-2.37c-0.61-0.61-1.46-1-2.37-1v0.02h-0.01h-61.7h-0.02v-0.02c-0.91,0-1.75,0.39-2.37,1.01 c-0.61,0.61-1,1.46-1,2.37h0.02v0.01v64.59v0.02h-0.02c0,0.91,0.39,1.75,1.01,2.37c0.61,0.61,1.46,1,2.37,1v-0.02h0.01h12.19V35.65 v-0.01h0.02c0.01-3.85,1.58-7.34,4.1-9.86c2.51-2.5,5.98-4.06,9.82-4.07v-0.02h0.02H79.04L79.04,21.69z M105.18,108.92V35.65v-0.02 h0.02c0-0.91-0.39-1.75-1.01-2.37c-0.61-0.61-1.46-1-2.37-1v0.02h-0.01h-61.7h-0.02v-0.02c-0.91,0-1.75,0.39-2.37,1.01 c-0.61,0.61-1,1.46-1,2.37h0.02v0.01v73.27v0.02h-0.02c0,0.91,0.39,1.75,1.01,2.37c0.61,0.61,1.46,1,2.37,1v-0.02h0.01h61.7h0.02 v0.02c0.91,0,1.75-0.39,2.37-1.01c0.61-0.61,1-1.46,1-2.37h-0.02V108.92L105.18,108.92z"/></g></svg></button>
+</div>
+        
+<div class="highlight"><pre><span></span>        <span class="k">def</span> <span class="nf">_get_or_warn</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2"> is missing from markata.toml config, using default value </span><span class="si">{</span><span class="n">default</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">return</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="p">)</span>
+</pre></div>
+
+</pre>
+
+<p>!! function <h2 id='render' class='admonition-title' style='margin:0;padding:.5rem 1rem;'>render <em class='small'>function</em></h2></p>
+<div class="admonition source is-collapsible collapsible-open">
+<p class="admonition-title">render <em class='small'>source</em></p>
+</div>
+<pre class='wrapper'>
+
+<div class='copy-wrapper'>
+
+<button class='copy' title='copy code to clipboard' onclick="navigator.clipboard.writeText(this.parentElement.parentElement.querySelector('pre').textContent)"><svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 115.77 122.88" style="enable-background:new 0 0 115.77 122.88" xml:space="preserve"><style type="text/css">.st0{fill-rule:evenodd;clip-rule:evenodd;}</style><g><path class="st0" d="M89.62,13.96v7.73h12.19h0.01v0.02c3.85,0.01,7.34,1.57,9.86,4.1c2.5,2.51,4.06,5.98,4.07,9.82h0.02v0.02 v73.27v0.01h-0.02c-0.01,3.84-1.57,7.33-4.1,9.86c-2.51,2.5-5.98,4.06-9.82,4.07v0.02h-0.02h-61.7H40.1v-0.02 c-3.84-0.01-7.34-1.57-9.86-4.1c-2.5-2.51-4.06-5.98-4.07-9.82h-0.02v-0.02V92.51H13.96h-0.01v-0.02c-3.84-0.01-7.34-1.57-9.86-4.1 c-2.5-2.51-4.06-5.98-4.07-9.82H0v-0.02V13.96v-0.01h0.02c0.01-3.85,1.58-7.34,4.1-9.86c2.51-2.5,5.98-4.06,9.82-4.07V0h0.02h61.7 h0.01v0.02c3.85,0.01,7.34,1.57,9.86,4.1c2.5,2.51,4.06,5.98,4.07,9.82h0.02V13.96L89.62,13.96z M79.04,21.69v-7.73v-0.02h0.02 c0-0.91-0.39-1.75-1.01-2.37c-0.61-0.61-1.46-1-2.37-1v0.02h-0.01h-61.7h-0.02v-0.02c-0.91,0-1.75,0.39-2.37,1.01 c-0.61,0.61-1,1.46-1,2.37h0.02v0.01v64.59v0.02h-0.02c0,0.91,0.39,1.75,1.01,2.37c0.61,0.61,1.46,1,2.37,1v-0.02h0.01h12.19V35.65 v-0.01h0.02c0.01-3.85,1.58-7.34,4.1-9.86c2.51-2.5,5.98-4.06,9.82-4.07v-0.02h0.02H79.04L79.04,21.69z M105.18,108.92V35.65v-0.02 h0.02c0-0.91-0.39-1.75-1.01-2.37c-0.61-0.61-1.46-1-2.37-1v0.02h-0.01h-61.7h-0.02v-0.02c-0.91,0-1.75,0.39-2.37,1.01 c-0.61,0.61-1,1.46-1,2.37h0.02v0.01v73.27v0.02h-0.02c0,0.91,0.39,1.75,1.01,2.37c0.61,0.61,1.46,1,2.37,1v-0.02h0.01h61.7h0.02 v0.02c0.91,0,1.75-0.39,2.37-1.01c0.61-0.61,1-1.46,1-2.37h-0.02V108.92L105.18,108.92z"/></g></svg></button>
+</div>
+        
+<div class="highlight"><pre><span></span>        <span class="k">def</span> <span class="nf">render</span><span class="p">(</span><span class="n">markata</span><span class="p">:</span> <span class="n">Markata</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">url</span> <span class="o">=</span> <span class="n">_get_or_warn</span><span class="p">(</span><span class="n">markata</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="s2">&quot;url&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="n">images_url</span> <span class="o">=</span> <span class="n">markata</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;images_url&quot;</span><span class="p">,</span> <span class="n">url</span><span class="p">)</span>
+            <span class="n">site_name</span> <span class="o">=</span> <span class="n">_get_or_warn</span><span class="p">(</span><span class="n">markata</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="s2">&quot;site_name&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="n">author_name</span> <span class="o">=</span> <span class="n">_get_or_warn</span><span class="p">(</span><span class="n">markata</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="s2">&quot;author_name&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="n">author_email</span> <span class="o">=</span> <span class="n">_get_or_warn</span><span class="p">(</span><span class="n">markata</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="s2">&quot;author_email&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="n">twitter_creator</span> <span class="o">=</span> <span class="n">_get_or_warn</span><span class="p">(</span><span class="n">markata</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="s2">&quot;twitter_creator&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="n">twitter_card</span> <span class="o">=</span> <span class="n">_get_or_warn</span><span class="p">(</span><span class="n">markata</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="s2">&quot;twitter_card&quot;</span><span class="p">,</span> <span class="s2">&quot;summary_large_image&quot;</span><span class="p">)</span>
+            <span class="n">config_seo</span> <span class="o">=</span> <span class="n">markata</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;seo&quot;</span><span class="p">,</span> <span class="p">{})</span>
+            <span class="n">should_prettify</span> <span class="o">=</span> <span class="n">markata</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;prettify_html&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+
+            <span class="k">with</span> <span class="n">markata</span><span class="o">.</span><span class="n">cache</span> <span class="k">as</span> <span class="n">cache</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">article</span> <span class="ow">in</span> <span class="n">markata</span><span class="o">.</span><span class="n">iter_articles</span><span class="p">(</span><span class="s2">&quot;add seo tags from seo.py&quot;</span><span class="p">):</span>
+                    <span class="n">key</span> <span class="o">=</span> <span class="n">markata</span><span class="o">.</span><span class="n">make_hash</span><span class="p">(</span>
+                        <span class="s2">&quot;seo&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;render&quot;</span><span class="p">,</span>
+                        <span class="n">article</span><span class="o">.</span><span class="n">html</span><span class="p">,</span>
+                        <span class="n">site_name</span><span class="p">,</span>
+                        <span class="n">url</span><span class="p">,</span>
+                        <span class="n">article</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;slug&quot;</span><span class="p">],</span>
+                        <span class="n">twitter_card</span><span class="p">,</span>
+                        <span class="n">article</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;title&quot;</span><span class="p">],</span>
+                        <span class="nb">str</span><span class="p">(</span><span class="n">config_seo</span><span class="p">),</span>
+                    <span class="p">)</span>
+
+                    <span class="n">html_from_cache</span> <span class="o">=</span> <span class="n">markata</span><span class="o">.</span><span class="n">precache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+
+                    <span class="k">if</span> <span class="n">html_from_cache</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">soup</span> <span class="o">=</span> <span class="n">BeautifulSoup</span><span class="p">(</span><span class="n">article</span><span class="o">.</span><span class="n">html</span><span class="p">,</span> <span class="n">features</span><span class="o">=</span><span class="s2">&quot;lxml&quot;</span><span class="p">)</span>
+                        <span class="n">seo</span> <span class="o">=</span> <span class="n">_create_seo</span><span class="p">(</span>
+                            <span class="n">markata</span><span class="o">=</span><span class="n">markata</span><span class="p">,</span>
+                            <span class="n">soup</span><span class="o">=</span><span class="n">soup</span><span class="p">,</span>
+                            <span class="n">article</span><span class="o">=</span><span class="n">article</span><span class="p">,</span>
+                            <span class="n">site_name</span><span class="o">=</span><span class="n">site_name</span><span class="p">,</span>
+                            <span class="n">author_name</span><span class="o">=</span><span class="n">author_name</span><span class="p">,</span>
+                            <span class="n">author_email</span><span class="o">=</span><span class="n">author_email</span><span class="p">,</span>
+                            <span class="n">twitter_card</span><span class="o">=</span><span class="n">twitter_card</span><span class="p">,</span>
+                            <span class="n">twitter_creator</span><span class="o">=</span><span class="n">twitter_creator</span><span class="p">,</span>
+                            <span class="n">config_seo</span><span class="o">=</span><span class="n">config_seo</span><span class="p">,</span>
+                            <span class="n">images_url</span><span class="o">=</span><span class="n">images_url</span><span class="p">,</span>
+                        <span class="p">)</span>
+                        <span class="n">_add_seo_tags</span><span class="p">(</span><span class="n">seo</span><span class="p">,</span> <span class="n">article</span><span class="p">,</span> <span class="n">soup</span><span class="p">)</span>
+                        <span class="n">canonical_link</span> <span class="o">=</span> <span class="n">soup</span><span class="o">.</span><span class="n">new_tag</span><span class="p">(</span><span class="s2">&quot;link&quot;</span><span class="p">)</span>
+                        <span class="n">canonical_link</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;rel&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;canonical&quot;</span>
+                        <span class="k">if</span> <span class="n">article</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;slug&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;index&quot;</span><span class="p">:</span>
+                            <span class="n">canonical_link</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;href&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s2">/&quot;</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">canonical_link</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;href&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s1">/</span><span class="si">{</span><span class="n">article</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;slug&quot;</span><span class="p">]</span><span class="si">}</span><span class="s1">/&#39;</span>
+                        <span class="n">soup</span><span class="o">.</span><span class="n">head</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">canonical_link</span><span class="p">)</span>
+
+                        <span class="n">meta_url</span> <span class="o">=</span> <span class="n">soup</span><span class="o">.</span><span class="n">new_tag</span><span class="p">(</span><span class="s2">&quot;meta&quot;</span><span class="p">)</span>
+                        <span class="n">meta_url</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;og:url&quot;</span>
+                        <span class="n">meta_url</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;property&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;og:url&quot;</span>
+                        <span class="k">if</span> <span class="n">article</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;slug&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;index&quot;</span><span class="p">:</span>
+                            <span class="n">meta_url</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;content&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s2">/&quot;</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">meta_url</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;content&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s1">/</span><span class="si">{</span><span class="n">article</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;slug&quot;</span><span class="p">]</span><span class="si">}</span><span class="s1">/&#39;</span>
+                        <span class="n">soup</span><span class="o">.</span><span class="n">head</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">meta_url</span><span class="p">)</span>
+
+                        <span class="n">html</span> <span class="o">=</span> <span class="n">soup</span><span class="o">.</span><span class="n">prettify</span><span class="p">()</span> <span class="k">if</span> <span class="n">should_prettify</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">soup</span><span class="p">)</span>
+                        <span class="n">cache</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">html</span><span class="p">,</span> <span class="n">expire</span><span class="o">=</span><span class="n">markata</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">default_cache_expire</span><span class="p">)</span>
+
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">html</span> <span class="o">=</span> <span class="n">html_from_cache</span>
+                    <span class="n">article</span><span class="o">.</span><span class="n">html</span> <span class="o">=</span> <span class="n">html</span>
+</pre></div>
+
+</pre>
+
+
+    </section>
+</article>

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<?xml-stylesheet href="/rss.xsl" type="text/xsl"?>
+<rss version="2.0">
+<channel>
+    <title>project_gallery</title>
+    <link>https://markata.dev/</link>
+    <description>Documentation for using the Markata static site generator</description>
+    <generator>Markata</generator>
+    <image>
+        <url>static/favicon.ico</url>
+        <link>https://markata.dev/</link>
+    </image>
+    <language>en</language>
+  <item>
+      <title>Markata&#39;S Docs</title>
+      <link>https://markata.dev//markata-dev</link>
+      <description>Markata builds it Using the </description>
+      <guid>https://markata.dev//markata-dev</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>Waylonwalker.Com</title>
+      <link>https://markata.dev//waylonwalker</link>
+      <description>This Waylon Walker A typical post has a header that is screenshot as the og image for display on Waylonwalker.com has several feeds running, but the most promin</description>
+      <guid>https://markata.dev//waylonwalker</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+<lastBuildDate></lastBuildDate>
+</channel>
+</rss>

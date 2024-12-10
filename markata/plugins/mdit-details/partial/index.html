@@ -1,0 +1,257 @@
+<article class='w-full'>
+<section class="title">
+    <h1 id="title">
+        Mdit_Details.Py
+    </h1>
+</section>    <section class="body">
+        <p>None</p>
+<p>!! function <h2 id='get_tag' class='admonition-title' style='margin:0;padding:.5rem 1rem;'>get_tag <em class='small'>function</em></h2></p>
+<div class="admonition source is-collapsible collapsible-open">
+<p class="admonition-title">get_tag <em class='small'>source</em></p>
+</div>
+<pre class='wrapper'>
+
+<div class='copy-wrapper'>
+
+<button class='copy' title='copy code to clipboard' onclick="navigator.clipboard.writeText(this.parentElement.parentElement.querySelector('pre').textContent)"><svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 115.77 122.88" style="enable-background:new 0 0 115.77 122.88" xml:space="preserve"><style type="text/css">.st0{fill-rule:evenodd;clip-rule:evenodd;}</style><g><path class="st0" d="M89.62,13.96v7.73h12.19h0.01v0.02c3.85,0.01,7.34,1.57,9.86,4.1c2.5,2.51,4.06,5.98,4.07,9.82h0.02v0.02 v73.27v0.01h-0.02c-0.01,3.84-1.57,7.33-4.1,9.86c-2.51,2.5-5.98,4.06-9.82,4.07v0.02h-0.02h-61.7H40.1v-0.02 c-3.84-0.01-7.34-1.57-9.86-4.1c-2.5-2.51-4.06-5.98-4.07-9.82h-0.02v-0.02V92.51H13.96h-0.01v-0.02c-3.84-0.01-7.34-1.57-9.86-4.1 c-2.5-2.51-4.06-5.98-4.07-9.82H0v-0.02V13.96v-0.01h0.02c0.01-3.85,1.58-7.34,4.1-9.86c2.51-2.5,5.98-4.06,9.82-4.07V0h0.02h61.7 h0.01v0.02c3.85,0.01,7.34,1.57,9.86,4.1c2.5,2.51,4.06,5.98,4.07,9.82h0.02V13.96L89.62,13.96z M79.04,21.69v-7.73v-0.02h0.02 c0-0.91-0.39-1.75-1.01-2.37c-0.61-0.61-1.46-1-2.37-1v0.02h-0.01h-61.7h-0.02v-0.02c-0.91,0-1.75,0.39-2.37,1.01 c-0.61,0.61-1,1.46-1,2.37h0.02v0.01v64.59v0.02h-0.02c0,0.91,0.39,1.75,1.01,2.37c0.61,0.61,1.46,1,2.37,1v-0.02h0.01h12.19V35.65 v-0.01h0.02c0.01-3.85,1.58-7.34,4.1-9.86c2.51-2.5,5.98-4.06,9.82-4.07v-0.02h0.02H79.04L79.04,21.69z M105.18,108.92V35.65v-0.02 h0.02c0-0.91-0.39-1.75-1.01-2.37c-0.61-0.61-1.46-1-2.37-1v0.02h-0.01h-61.7h-0.02v-0.02c-0.91,0-1.75,0.39-2.37,1.01 c-0.61,0.61-1,1.46-1,2.37h0.02v0.01v73.27v0.02h-0.02c0,0.91,0.39,1.75,1.01,2.37c0.61,0.61,1.46,1,2.37,1v-0.02h0.01h61.7h0.02 v0.02c0.91,0,1.75-0.39,2.37-1.01c0.61-0.61,1-1.46,1-2.37h-0.02V108.92L105.18,108.92z"/></g></svg></button>
+</div>
+        
+<div class="highlight"><pre><span></span>        <span class="k">def</span> <span class="nf">get_tag</span><span class="p">(</span><span class="n">params</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]:</span>
+            <span class="nb">open</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">params</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
+                <span class="k">return</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="nb">open</span>
+
+            <span class="k">if</span> <span class="n">params</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;+&quot;</span><span class="p">):</span>
+                <span class="n">params</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s2">&quot;+&quot;</span><span class="p">)</span>
+                <span class="nb">open</span> <span class="o">=</span> <span class="kc">True</span>
+
+            <span class="n">tag</span><span class="p">,</span> <span class="o">*</span><span class="n">_title</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
+            <span class="n">joined</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">_title</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s2">&quot;&#39;&quot;</span><span class="p">)</span>
+
+            <span class="n">title</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">joined</span><span class="p">:</span>
+                <span class="n">title</span> <span class="o">=</span> <span class="n">tag</span><span class="o">.</span><span class="n">title</span><span class="p">()</span>
+            <span class="k">elif</span> <span class="n">joined</span> <span class="o">!=</span> <span class="s1">&#39;&quot;&quot;&#39;</span><span class="p">:</span>
+                <span class="n">title</span> <span class="o">=</span> <span class="n">joined</span>
+            <span class="k">return</span> <span class="p">(</span><span class="n">tag</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span> <span class="n">title</span><span class="p">,</span> <span class="nb">open</span><span class="p">)</span>
+</pre></div>
+
+</pre>
+
+<p>!! function <h2 id='validate' class='admonition-title' style='margin:0;padding:.5rem 1rem;'>validate <em class='small'>function</em></h2></p>
+<div class="admonition source is-collapsible collapsible-open">
+<p class="admonition-title">validate <em class='small'>source</em></p>
+</div>
+<pre class='wrapper'>
+
+<div class='copy-wrapper'>
+
+<button class='copy' title='copy code to clipboard' onclick="navigator.clipboard.writeText(this.parentElement.parentElement.querySelector('pre').textContent)"><svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 115.77 122.88" style="enable-background:new 0 0 115.77 122.88" xml:space="preserve"><style type="text/css">.st0{fill-rule:evenodd;clip-rule:evenodd;}</style><g><path class="st0" d="M89.62,13.96v7.73h12.19h0.01v0.02c3.85,0.01,7.34,1.57,9.86,4.1c2.5,2.51,4.06,5.98,4.07,9.82h0.02v0.02 v73.27v0.01h-0.02c-0.01,3.84-1.57,7.33-4.1,9.86c-2.51,2.5-5.98,4.06-9.82,4.07v0.02h-0.02h-61.7H40.1v-0.02 c-3.84-0.01-7.34-1.57-9.86-4.1c-2.5-2.51-4.06-5.98-4.07-9.82h-0.02v-0.02V92.51H13.96h-0.01v-0.02c-3.84-0.01-7.34-1.57-9.86-4.1 c-2.5-2.51-4.06-5.98-4.07-9.82H0v-0.02V13.96v-0.01h0.02c0.01-3.85,1.58-7.34,4.1-9.86c2.51-2.5,5.98-4.06,9.82-4.07V0h0.02h61.7 h0.01v0.02c3.85,0.01,7.34,1.57,9.86,4.1c2.5,2.51,4.06,5.98,4.07,9.82h0.02V13.96L89.62,13.96z M79.04,21.69v-7.73v-0.02h0.02 c0-0.91-0.39-1.75-1.01-2.37c-0.61-0.61-1.46-1-2.37-1v0.02h-0.01h-61.7h-0.02v-0.02c-0.91,0-1.75,0.39-2.37,1.01 c-0.61,0.61-1,1.46-1,2.37h0.02v0.01v64.59v0.02h-0.02c0,0.91,0.39,1.75,1.01,2.37c0.61,0.61,1.46,1,2.37,1v-0.02h0.01h12.19V35.65 v-0.01h0.02c0.01-3.85,1.58-7.34,4.1-9.86c2.51-2.5,5.98-4.06,9.82-4.07v-0.02h0.02H79.04L79.04,21.69z M105.18,108.92V35.65v-0.02 h0.02c0-0.91-0.39-1.75-1.01-2.37c-0.61-0.61-1.46-1-2.37-1v0.02h-0.01h-61.7h-0.02v-0.02c-0.91,0-1.75,0.39-2.37,1.01 c-0.61,0.61-1,1.46-1,2.37h0.02v0.01v73.27v0.02h-0.02c0,0.91,0.39,1.75,1.01,2.37c0.61,0.61,1.46,1,2.37,1v-0.02h0.01h61.7h0.02 v0.02c0.91,0,1.75-0.39,2.37-1.01c0.61-0.61,1-1.46,1-2.37h-0.02V108.92L105.18,108.92z"/></g></svg></button>
+</div>
+        
+<div class="highlight"><pre><span></span>        <span class="k">def</span> <span class="nf">validate</span><span class="p">(</span><span class="n">params</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+            <span class="n">tag</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span>
+            <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
+</pre></div>
+
+</pre>
+
+<p>!! function <h2 id='details' class='admonition-title' style='margin:0;padding:.5rem 1rem;'>details <em class='small'>function</em></h2></p>
+<div class="admonition source is-collapsible collapsible-open">
+<p class="admonition-title">details <em class='small'>source</em></p>
+</div>
+<pre class='wrapper'>
+
+<div class='copy-wrapper'>
+
+<button class='copy' title='copy code to clipboard' onclick="navigator.clipboard.writeText(this.parentElement.parentElement.querySelector('pre').textContent)"><svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 115.77 122.88" style="enable-background:new 0 0 115.77 122.88" xml:space="preserve"><style type="text/css">.st0{fill-rule:evenodd;clip-rule:evenodd;}</style><g><path class="st0" d="M89.62,13.96v7.73h12.19h0.01v0.02c3.85,0.01,7.34,1.57,9.86,4.1c2.5,2.51,4.06,5.98,4.07,9.82h0.02v0.02 v73.27v0.01h-0.02c-0.01,3.84-1.57,7.33-4.1,9.86c-2.51,2.5-5.98,4.06-9.82,4.07v0.02h-0.02h-61.7H40.1v-0.02 c-3.84-0.01-7.34-1.57-9.86-4.1c-2.5-2.51-4.06-5.98-4.07-9.82h-0.02v-0.02V92.51H13.96h-0.01v-0.02c-3.84-0.01-7.34-1.57-9.86-4.1 c-2.5-2.51-4.06-5.98-4.07-9.82H0v-0.02V13.96v-0.01h0.02c0.01-3.85,1.58-7.34,4.1-9.86c2.51-2.5,5.98-4.06,9.82-4.07V0h0.02h61.7 h0.01v0.02c3.85,0.01,7.34,1.57,9.86,4.1c2.5,2.51,4.06,5.98,4.07,9.82h0.02V13.96L89.62,13.96z M79.04,21.69v-7.73v-0.02h0.02 c0-0.91-0.39-1.75-1.01-2.37c-0.61-0.61-1.46-1-2.37-1v0.02h-0.01h-61.7h-0.02v-0.02c-0.91,0-1.75,0.39-2.37,1.01 c-0.61,0.61-1,1.46-1,2.37h0.02v0.01v64.59v0.02h-0.02c0,0.91,0.39,1.75,1.01,2.37c0.61,0.61,1.46,1,2.37,1v-0.02h0.01h12.19V35.65 v-0.01h0.02c0.01-3.85,1.58-7.34,4.1-9.86c2.51-2.5,5.98-4.06,9.82-4.07v-0.02h0.02H79.04L79.04,21.69z M105.18,108.92V35.65v-0.02 h0.02c0-0.91-0.39-1.75-1.01-2.37c-0.61-0.61-1.46-1-2.37-1v0.02h-0.01h-61.7h-0.02v-0.02c-0.91,0-1.75,0.39-2.37,1.01 c-0.61,0.61-1,1.46-1,2.37h0.02v0.01v73.27v0.02h-0.02c0,0.91,0.39,1.75,1.01,2.37c0.61,0.61,1.46,1,2.37,1v-0.02h0.01h61.7h0.02 v0.02c0.91,0,1.75-0.39,2.37-1.01c0.61-0.61,1-1.46,1-2.37h-0.02V108.92L105.18,108.92z"/></g></svg></button>
+</div>
+        
+<div class="highlight"><pre><span></span>        <span class="k">def</span> <span class="nf">details</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">StateBlock</span><span class="p">,</span> <span class="n">startLine</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">endLine</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">silent</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+            <span class="n">start</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">bMarks</span><span class="p">[</span><span class="n">startLine</span><span class="p">]</span> <span class="o">+</span> <span class="n">state</span><span class="o">.</span><span class="n">tShift</span><span class="p">[</span><span class="n">startLine</span><span class="p">]</span>
+            <span class="n">maximum</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">eMarks</span><span class="p">[</span><span class="n">startLine</span><span class="p">]</span>
+
+            <span class="c1"># Check out the first character quickly, which should filter out most of non-containers</span>
+            <span class="k">if</span> <span class="nb">ord</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">src</span><span class="p">[</span><span class="n">start</span><span class="p">])</span> <span class="o">!=</span> <span class="n">MARKER_CHAR</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">False</span>
+
+            <span class="c1"># Check out the rest of the marker string</span>
+            <span class="n">pos</span> <span class="o">=</span> <span class="n">start</span> <span class="o">+</span> <span class="mi">1</span>
+            <span class="k">while</span> <span class="n">pos</span> <span class="o">&lt;=</span> <span class="n">maximum</span> <span class="ow">and</span> <span class="n">MARKER_STR</span><span class="p">[(</span><span class="n">pos</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span> <span class="o">%</span> <span class="n">MARKER_LEN</span><span class="p">]</span> <span class="o">==</span> <span class="n">state</span><span class="o">.</span><span class="n">src</span><span class="p">[</span><span class="n">pos</span><span class="p">]:</span>
+                <span class="n">pos</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="n">marker_count</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">floor</span><span class="p">((</span><span class="n">pos</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span> <span class="o">/</span> <span class="n">MARKER_LEN</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">marker_count</span> <span class="o">&lt;</span> <span class="n">MIN_MARKERS</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">False</span>
+            <span class="n">marker_pos</span> <span class="o">=</span> <span class="n">pos</span> <span class="o">-</span> <span class="p">((</span><span class="n">pos</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span> <span class="o">%</span> <span class="n">MARKER_LEN</span><span class="p">)</span>
+            <span class="n">params</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">src</span><span class="p">[</span><span class="n">marker_pos</span><span class="p">:</span><span class="n">maximum</span><span class="p">]</span>
+            <span class="n">markup</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">src</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">marker_pos</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">validate</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
+                <span class="k">return</span> <span class="kc">False</span>
+
+            <span class="c1"># Since start is found, we can report success here in validation mode</span>
+            <span class="k">if</span> <span class="n">silent</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">True</span>
+
+            <span class="n">old_parent</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">parentType</span>
+            <span class="n">old_line_max</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">lineMax</span>
+            <span class="n">old_indent</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">blkIndent</span>
+
+            <span class="n">blk_start</span> <span class="o">=</span> <span class="n">pos</span>
+            <span class="k">while</span> <span class="n">blk_start</span> <span class="o">&lt;</span> <span class="n">maximum</span> <span class="ow">and</span> <span class="n">state</span><span class="o">.</span><span class="n">src</span><span class="p">[</span><span class="n">blk_start</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot; &quot;</span><span class="p">:</span>
+                <span class="n">blk_start</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="n">state</span><span class="o">.</span><span class="n">parentType</span> <span class="o">=</span> <span class="s2">&quot;details&quot;</span>
+            <span class="n">state</span><span class="o">.</span><span class="n">blkIndent</span> <span class="o">+=</span> <span class="n">blk_start</span> <span class="o">-</span> <span class="n">start</span>
+
+            <span class="n">was_empty</span> <span class="o">=</span> <span class="kc">False</span>
+
+            <span class="c1"># Search for the end of the block</span>
+            <span class="n">next_line</span> <span class="o">=</span> <span class="n">startLine</span>
+            <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+                <span class="n">next_line</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">if</span> <span class="n">next_line</span> <span class="o">&gt;=</span> <span class="n">endLine</span><span class="p">:</span>
+                    <span class="c1"># unclosed block should be autoclosed by end of document.</span>
+                    <span class="c1"># also block seems to be autoclosed by end of parent</span>
+                    <span class="k">break</span>
+                <span class="n">pos</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">bMarks</span><span class="p">[</span><span class="n">next_line</span><span class="p">]</span> <span class="o">+</span> <span class="n">state</span><span class="o">.</span><span class="n">tShift</span><span class="p">[</span><span class="n">next_line</span><span class="p">]</span>
+                <span class="n">maximum</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">eMarks</span><span class="p">[</span><span class="n">next_line</span><span class="p">]</span>
+                <span class="n">is_empty</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">sCount</span><span class="p">[</span><span class="n">next_line</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">state</span><span class="o">.</span><span class="n">blkIndent</span>
+
+                <span class="c1"># two consecutive empty lines autoclose the block</span>
+                <span class="k">if</span> <span class="n">is_empty</span> <span class="ow">and</span> <span class="n">was_empty</span><span class="p">:</span>
+                    <span class="k">break</span>
+                <span class="n">was_empty</span> <span class="o">=</span> <span class="n">is_empty</span>
+
+                <span class="k">if</span> <span class="n">pos</span> <span class="o">&lt;</span> <span class="n">maximum</span> <span class="ow">and</span> <span class="n">state</span><span class="o">.</span><span class="n">sCount</span><span class="p">[</span><span class="n">next_line</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">state</span><span class="o">.</span><span class="n">blkIndent</span><span class="p">:</span>
+                    <span class="c1"># non-empty line with negative indent should stop the block:</span>
+                    <span class="c1"># - !!!</span>
+                    <span class="c1">#  test</span>
+                    <span class="k">break</span>
+
+            <span class="c1"># this will prevent lazy continuations from ever going past our end marker</span>
+            <span class="n">state</span><span class="o">.</span><span class="n">lineMax</span> <span class="o">=</span> <span class="n">next_line</span>
+
+            <span class="n">tag</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span> <span class="nb">open</span> <span class="o">=</span> <span class="n">get_tag</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+            <span class="n">attrs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;class&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;details </span><span class="si">{</span><span class="n">tag</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">}</span>
+            <span class="k">if</span> <span class="nb">open</span><span class="p">:</span>
+                <span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;open&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+            <span class="n">token</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="s2">&quot;details_open&quot;</span><span class="p">,</span> <span class="s2">&quot;details&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">token</span><span class="o">.</span><span class="n">markup</span> <span class="o">=</span> <span class="n">markup</span>
+            <span class="n">token</span><span class="o">.</span><span class="n">block</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">token</span><span class="o">.</span><span class="n">attrs</span> <span class="o">=</span> <span class="n">attrs</span>
+            <span class="n">token</span><span class="o">.</span><span class="n">meta</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;tag&quot;</span><span class="p">:</span> <span class="n">tag</span><span class="p">}</span>
+            <span class="n">token</span><span class="o">.</span><span class="n">content</span> <span class="o">=</span> <span class="n">title</span>
+            <span class="n">token</span><span class="o">.</span><span class="n">info</span> <span class="o">=</span> <span class="n">params</span>
+            <span class="n">token</span><span class="o">.</span><span class="n">map</span> <span class="o">=</span> <span class="p">[</span><span class="n">startLine</span><span class="p">,</span> <span class="n">next_line</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="n">title</span><span class="p">:</span>
+                <span class="n">title_markup</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">markup</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">tag</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="n">token</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="s2">&quot;details_title_open&quot;</span><span class="p">,</span> <span class="s2">&quot;summary&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+                <span class="n">token</span><span class="o">.</span><span class="n">markup</span> <span class="o">=</span> <span class="n">title_markup</span>
+                <span class="n">token</span><span class="o">.</span><span class="n">attrs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;class&quot;</span><span class="p">:</span> <span class="s2">&quot;admonition-title&quot;</span><span class="p">}</span>
+                <span class="n">token</span><span class="o">.</span><span class="n">map</span> <span class="o">=</span> <span class="p">[</span><span class="n">startLine</span><span class="p">,</span> <span class="n">startLine</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+
+                <span class="n">token</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="s2">&quot;inline&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                <span class="n">token</span><span class="o">.</span><span class="n">content</span> <span class="o">=</span> <span class="n">title</span>
+                <span class="n">token</span><span class="o">.</span><span class="n">map</span> <span class="o">=</span> <span class="p">[</span><span class="n">startLine</span><span class="p">,</span> <span class="n">startLine</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+                <span class="n">token</span><span class="o">.</span><span class="n">children</span> <span class="o">=</span> <span class="p">[]</span>
+
+                <span class="n">token</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="s2">&quot;details_title_close&quot;</span><span class="p">,</span> <span class="s2">&quot;summary&quot;</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+                <span class="n">token</span><span class="o">.</span><span class="n">markup</span> <span class="o">=</span> <span class="n">title_markup</span>
+
+            <span class="n">state</span><span class="o">.</span><span class="n">md</span><span class="o">.</span><span class="n">block</span><span class="o">.</span><span class="n">tokenize</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">startLine</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">next_line</span><span class="p">)</span>
+
+            <span class="n">token</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="s2">&quot;details_close&quot;</span><span class="p">,</span> <span class="s2">&quot;details&quot;</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">token</span><span class="o">.</span><span class="n">markup</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">src</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">pos</span><span class="p">]</span>
+            <span class="n">token</span><span class="o">.</span><span class="n">block</span> <span class="o">=</span> <span class="kc">True</span>
+
+            <span class="n">state</span><span class="o">.</span><span class="n">parentType</span> <span class="o">=</span> <span class="n">old_parent</span>
+            <span class="n">state</span><span class="o">.</span><span class="n">lineMax</span> <span class="o">=</span> <span class="n">old_line_max</span>
+            <span class="n">state</span><span class="o">.</span><span class="n">blkIndent</span> <span class="o">=</span> <span class="n">old_indent</span>
+            <span class="n">state</span><span class="o">.</span><span class="n">line</span> <span class="o">=</span> <span class="n">next_line</span>
+
+            <span class="k">return</span> <span class="kc">True</span>
+</pre></div>
+
+</pre>
+
+<p>!! function <h2 id='details_plugin' class='admonition-title' style='margin:0;padding:.5rem 1rem;'>details_plugin <em class='small'>function</em></h2>
+Plugin to use
+<code>python-markdown style detailss     &lt;https://python-markdown.github.io/extensions/details&gt;</code>_.</p>
+<pre><code>.. code-block:: md
+
+    ??? note
+        *content*
+
+Note, this is ported from
+`markdown-it-admon
+&lt;https://github.com/commenthol/markdown-it-admon&gt;`_.
+</code></pre>
+<div class="admonition source is-collapsible collapsible-open">
+<p class="admonition-title">details_plugin <em class='small'>source</em></p>
+</div>
+<pre class='wrapper'>
+
+<div class='copy-wrapper'>
+
+<button class='copy' title='copy code to clipboard' onclick="navigator.clipboard.writeText(this.parentElement.parentElement.querySelector('pre').textContent)"><svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 115.77 122.88" style="enable-background:new 0 0 115.77 122.88" xml:space="preserve"><style type="text/css">.st0{fill-rule:evenodd;clip-rule:evenodd;}</style><g><path class="st0" d="M89.62,13.96v7.73h12.19h0.01v0.02c3.85,0.01,7.34,1.57,9.86,4.1c2.5,2.51,4.06,5.98,4.07,9.82h0.02v0.02 v73.27v0.01h-0.02c-0.01,3.84-1.57,7.33-4.1,9.86c-2.51,2.5-5.98,4.06-9.82,4.07v0.02h-0.02h-61.7H40.1v-0.02 c-3.84-0.01-7.34-1.57-9.86-4.1c-2.5-2.51-4.06-5.98-4.07-9.82h-0.02v-0.02V92.51H13.96h-0.01v-0.02c-3.84-0.01-7.34-1.57-9.86-4.1 c-2.5-2.51-4.06-5.98-4.07-9.82H0v-0.02V13.96v-0.01h0.02c0.01-3.85,1.58-7.34,4.1-9.86c2.51-2.5,5.98-4.06,9.82-4.07V0h0.02h61.7 h0.01v0.02c3.85,0.01,7.34,1.57,9.86,4.1c2.5,2.51,4.06,5.98,4.07,9.82h0.02V13.96L89.62,13.96z M79.04,21.69v-7.73v-0.02h0.02 c0-0.91-0.39-1.75-1.01-2.37c-0.61-0.61-1.46-1-2.37-1v0.02h-0.01h-61.7h-0.02v-0.02c-0.91,0-1.75,0.39-2.37,1.01 c-0.61,0.61-1,1.46-1,2.37h0.02v0.01v64.59v0.02h-0.02c0,0.91,0.39,1.75,1.01,2.37c0.61,0.61,1.46,1,2.37,1v-0.02h0.01h12.19V35.65 v-0.01h0.02c0.01-3.85,1.58-7.34,4.1-9.86c2.51-2.5,5.98-4.06,9.82-4.07v-0.02h0.02H79.04L79.04,21.69z M105.18,108.92V35.65v-0.02 h0.02c0-0.91-0.39-1.75-1.01-2.37c-0.61-0.61-1.46-1-2.37-1v0.02h-0.01h-61.7h-0.02v-0.02c-0.91,0-1.75,0.39-2.37,1.01 c-0.61,0.61-1,1.46-1,2.37h0.02v0.01v73.27v0.02h-0.02c0,0.91,0.39,1.75,1.01,2.37c0.61,0.61,1.46,1,2.37,1v-0.02h0.01h61.7h0.02 v0.02c0.91,0,1.75-0.39,2.37-1.01c0.61-0.61,1-1.46,1-2.37h-0.02V108.92L105.18,108.92z"/></g></svg></button>
+</div>
+        
+<div class="highlight"><pre><span></span>        <span class="k">def</span> <span class="nf">details_plugin</span><span class="p">(</span><span class="n">md</span><span class="p">:</span> <span class="n">MarkdownIt</span><span class="p">,</span> <span class="n">render</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Plugin to use</span>
+<span class="sd">            `python-markdown style detailss</span>
+<span class="sd">            &lt;https://python-markdown.github.io/extensions/details&gt;`_.</span>
+
+<span class="sd">            .. code-block:: md</span>
+
+<span class="sd">                ??? note</span>
+<span class="sd">                    *content*</span>
+
+<span class="sd">            Note, this is ported from</span>
+<span class="sd">            `markdown-it-admon</span>
+<span class="sd">            &lt;https://github.com/commenthol/markdown-it-admon&gt;`_.</span>
+<span class="sd">            &quot;&quot;&quot;</span>
+
+            <span class="k">def</span> <span class="nf">renderDefault</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tokens</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">_options</span><span class="p">,</span> <span class="n">env</span><span class="p">):</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">renderToken</span><span class="p">(</span><span class="n">tokens</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">_options</span><span class="p">,</span> <span class="n">env</span><span class="p">)</span>
+
+            <span class="n">render</span> <span class="o">=</span> <span class="n">render</span> <span class="ow">or</span> <span class="n">renderDefault</span>
+
+            <span class="n">md</span><span class="o">.</span><span class="n">add_render_rule</span><span class="p">(</span><span class="s2">&quot;details_open&quot;</span><span class="p">,</span> <span class="n">render</span><span class="p">)</span>
+            <span class="n">md</span><span class="o">.</span><span class="n">add_render_rule</span><span class="p">(</span><span class="s2">&quot;details_close&quot;</span><span class="p">,</span> <span class="n">render</span><span class="p">)</span>
+            <span class="n">md</span><span class="o">.</span><span class="n">add_render_rule</span><span class="p">(</span><span class="s2">&quot;details_title_open&quot;</span><span class="p">,</span> <span class="n">render</span><span class="p">)</span>
+            <span class="n">md</span><span class="o">.</span><span class="n">add_render_rule</span><span class="p">(</span><span class="s2">&quot;details_title_close&quot;</span><span class="p">,</span> <span class="n">render</span><span class="p">)</span>
+
+            <span class="n">md</span><span class="o">.</span><span class="n">block</span><span class="o">.</span><span class="n">ruler</span><span class="o">.</span><span class="n">before</span><span class="p">(</span>
+                <span class="s2">&quot;fence&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;details&quot;</span><span class="p">,</span>
+                <span class="n">details</span><span class="p">,</span>
+                <span class="p">{</span><span class="s2">&quot;alt&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;paragraph&quot;</span><span class="p">,</span> <span class="s2">&quot;reference&quot;</span><span class="p">,</span> <span class="s2">&quot;blockquote&quot;</span><span class="p">,</span> <span class="s2">&quot;list&quot;</span><span class="p">]},</span>
+            <span class="p">)</span>
+</pre></div>
+
+</pre>
+
+<p>!! function <h2 id='renderDefault' class='admonition-title' style='margin:0;padding:.5rem 1rem;'>renderDefault <em class='small'>function</em></h2></p>
+<div class="admonition source is-collapsible collapsible-open">
+<p class="admonition-title">renderDefault <em class='small'>source</em></p>
+</div>
+<pre class='wrapper'>
+
+<div class='copy-wrapper'>
+
+<button class='copy' title='copy code to clipboard' onclick="navigator.clipboard.writeText(this.parentElement.parentElement.querySelector('pre').textContent)"><svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 115.77 122.88" style="enable-background:new 0 0 115.77 122.88" xml:space="preserve"><style type="text/css">.st0{fill-rule:evenodd;clip-rule:evenodd;}</style><g><path class="st0" d="M89.62,13.96v7.73h12.19h0.01v0.02c3.85,0.01,7.34,1.57,9.86,4.1c2.5,2.51,4.06,5.98,4.07,9.82h0.02v0.02 v73.27v0.01h-0.02c-0.01,3.84-1.57,7.33-4.1,9.86c-2.51,2.5-5.98,4.06-9.82,4.07v0.02h-0.02h-61.7H40.1v-0.02 c-3.84-0.01-7.34-1.57-9.86-4.1c-2.5-2.51-4.06-5.98-4.07-9.82h-0.02v-0.02V92.51H13.96h-0.01v-0.02c-3.84-0.01-7.34-1.57-9.86-4.1 c-2.5-2.51-4.06-5.98-4.07-9.82H0v-0.02V13.96v-0.01h0.02c0.01-3.85,1.58-7.34,4.1-9.86c2.51-2.5,5.98-4.06,9.82-4.07V0h0.02h61.7 h0.01v0.02c3.85,0.01,7.34,1.57,9.86,4.1c2.5,2.51,4.06,5.98,4.07,9.82h0.02V13.96L89.62,13.96z M79.04,21.69v-7.73v-0.02h0.02 c0-0.91-0.39-1.75-1.01-2.37c-0.61-0.61-1.46-1-2.37-1v0.02h-0.01h-61.7h-0.02v-0.02c-0.91,0-1.75,0.39-2.37,1.01 c-0.61,0.61-1,1.46-1,2.37h0.02v0.01v64.59v0.02h-0.02c0,0.91,0.39,1.75,1.01,2.37c0.61,0.61,1.46,1,2.37,1v-0.02h0.01h12.19V35.65 v-0.01h0.02c0.01-3.85,1.58-7.34,4.1-9.86c2.51-2.5,5.98-4.06,9.82-4.07v-0.02h0.02H79.04L79.04,21.69z M105.18,108.92V35.65v-0.02 h0.02c0-0.91-0.39-1.75-1.01-2.37c-0.61-0.61-1.46-1-2.37-1v0.02h-0.01h-61.7h-0.02v-0.02c-0.91,0-1.75,0.39-2.37,1.01 c-0.61,0.61-1,1.46-1,2.37h0.02v0.01v73.27v0.02h-0.02c0,0.91,0.39,1.75,1.01,2.37c0.61,0.61,1.46,1,2.37,1v-0.02h0.01h61.7h0.02 v0.02c0.91,0,1.75-0.39,2.37-1.01c0.61-0.61,1-1.46,1-2.37h-0.02V108.92L105.18,108.92z"/></g></svg></button>
+</div>
+        
+<div class="highlight"><pre><span></span>        <span class="k">def</span> <span class="nf">renderDefault</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tokens</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">_options</span><span class="p">,</span> <span class="n">env</span><span class="p">):</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">renderToken</span><span class="p">(</span><span class="n">tokens</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">_options</span><span class="p">,</span> <span class="n">env</span><span class="p">)</span>
+</pre></div>
+
+</pre>
+
+
+    </section>
+</article>

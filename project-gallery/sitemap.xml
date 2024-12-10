@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet href="/sitemap.xsl" type="text/xsl"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <title>project_gallery</title>
+    <link>https://markata.dev/</link>
+   <url>
+      <title>Markata&#39;S Docs</title>
+      <description>Markata builds it Using the </description>
+      <loc>https://markata.dev//markata-dev</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>Waylonwalker.Com</title>
+      <description>This Waylon Walker A typical post has a header that is screenshot as the og image for display on Waylonwalker.com has several feeds running, but the most promin</description>
+      <loc>https://markata.dev//waylonwalker</loc>
+      <lastmod>0001-01-01</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+</urlset>

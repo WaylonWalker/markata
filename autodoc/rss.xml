@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<?xml-stylesheet href="/rss.xsl" type="text/xsl"?>
+<rss version="2.0">
+<channel>
+    <title>autodoc</title>
+    <link>https://markata.dev/</link>
+    <description>Documentation for using the Markata static site generator</description>
+    <generator>Markata</generator>
+    <image>
+        <url>static/favicon.ico</url>
+        <link>https://markata.dev/</link>
+    </image>
+    <language>en</language>
+  <item>
+      <title>Markata&#39;S Docs</title>
+      <link>https://markata.dev//markata-dev</link>
+      <description>Markata builds it Using the </description>
+      <guid>https://markata.dev//markata-dev</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>__About__.Py</title>
+      <link>https://markata.dev//markata/about</link>
+      <description>None</description>
+      <guid>https://markata.dev//markata/about</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>Cli.Py</title>
+      <link>https://markata.dev//markata/cli/cli</link>
+      <description>None ! ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source </description>
+      <guid>https://markata.dev//markata/cli/cli</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>Header.Py</title>
+      <link>https://markata.dev//markata/cli/header</link>
+      <description>None ! ! ???+ source </description>
+      <guid>https://markata.dev//markata/cli/header</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>__Init__.Py</title>
+      <link>https://markata.dev//markata/cli/init</link>
+      <description>None</description>
+      <guid>https://markata.dev//markata/cli/init</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>__Main__.Py</title>
+      <link>https://markata.dev//markata/cli/main</link>
+      <description>None ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source </description>
+      <guid>https://markata.dev//markata/cli/main</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>Runner.Py</title>
+      <link>https://markata.dev//markata/cli/runner</link>
+      <description>None ! ! ???+ source  ! ???+ source  ! ???+ source  ! ! ! ! ???+ source  ! ???+ source </description>
+      <guid>https://markata.dev//markata/cli/runner</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>Server.Py</title>
+      <link>https://markata.dev//markata/cli/server</link>
+      <description>None ! ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ?</description>
+      <guid>https://markata.dev//markata/cli/server</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>Summary.Py</title>
+      <link>https://markata.dev//markata/cli/summary</link>
+      <description>There are two main things currently supported by summary, It can count the grid_attr Example output that will be shown in the summary, counting all posts with e</description>
+      <guid>https://markata.dev//markata/cli/summary</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>Errors.Py</title>
+      <link>https://markata.dev//markata/errors</link>
+      <description>None ! ! ???+ source </description>
+      <guid>https://markata.dev//markata/errors</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>Exceptions.Py</title>
+      <link>https://markata.dev//markata/exceptions</link>
+      <description>None ! ???+ source  ! ???+ source </description>
+      <guid>https://markata.dev//markata/exceptions</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>Hookspec.Py</title>
+      <link>https://markata.dev//markata/hookspec</link>
+      <description>Define hook specs. ! ???+ source  ! ???+ source  ! ! ???+ source  ! ???+ source  ! ???+ source </description>
+      <guid>https://markata.dev//markata/hookspec</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>__Init__.Py</title>
+      <link>https://markata.dev//markata/init</link>
+      <description>Markata is a tool for handling directories of markdown. ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source  ! ???+ source </description>
+      <guid>https://markata.dev//markata/init</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>Lifecycle.Py</title>
+      <link>https://markata.dev//markata/lifecycle</link>
+      <description>The LifeCycle is a core component for the internal workings of Markata.  It ! ???+ source  ! !</description>
+      <guid>https://markata.dev//markata/lifecycle</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>__Main__.Py</title>
+      <link>https://markata.dev//markata/main</link>
+      <description>None</description>
+      <guid>https://markata.dev//markata/main</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>Migrate_To_Slugify.Py</title>
+      <link>https://markata.dev//markata/scripts/migrate-to-slugify</link>
+      <description>Slugify migration for projects moving from markata to run this script install markata&amp;gt;=0.5.0 and run the following. Then make sure that you do not explicity </description>
+      <guid>https://markata.dev//markata/scripts/migrate-to-slugify</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>Standard_Config.Py</title>
+      <link>https://markata.dev//markata/standard-config</link>
+      <description>Standard Config. Inspired from frustrations that some tools have a tool.ini, .tool.ini, This file is for any project that can be configured in plain text such a</description>
+      <guid>https://markata.dev//markata/standard-config</guid>
+      <pubDate>0001-01-01</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+<lastBuildDate></lastBuildDate>
+</channel>
+</rss>
