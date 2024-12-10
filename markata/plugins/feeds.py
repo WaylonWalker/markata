@@ -185,21 +185,22 @@ title='All Posts'
 filter="True"
 
 """
-import datetime
-import shutil
-import textwrap
+
 from dataclasses import dataclass
+import datetime
 from functools import lru_cache
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, List, Optional
+import shutil
+import textwrap
+from typing import Any, List, Optional, TYPE_CHECKING
 
 import jinja2
-import pydantic
-import typer
 from jinja2 import Template, Undefined
+import pydantic
 from rich.jupyter import JupyterMixin
 from rich.pretty import Pretty
 from rich.table import Table
+import typer
 
 from markata import Markata, __version__, background
 from markata.hookspec import hook_impl, register_attr
@@ -261,44 +262,6 @@ class PrettyList(list, JupyterMixin):
 
     def __rich__(self) -> Pretty:
         return Pretty(self)
-
-
-class FeedConfig(pydantic.BaseModel):
-    DEFAULT_TITLE: str = "All Posts"
-
-    title: str = DEFAULT_TITLE
-    slug: str = None
-    name: Optional[str] = None
-    filter: str = "True"
-    sort: str = "date"
-    reverse: bool = False
-    rss: bool = True
-    sitemap: bool = True
-    card_template: str = """
-        <li class='post'>
-            <a href="/{{ markata.config.path_prefix }}{{ post.slug }}/">
-                {{ post.title }}
-            </a>
-        </li>
-        """
-    template: str = Path(__file__).parent / "default_post_template.html.jinja"
-    rss_template: str = Path(__file__).parent / "default_rss_template.xml"
-    sitemap_template: str = Path(__file__).parent / "default_sitemap_template.xml"
-    xsl_template: str = Path(__file__).parent / "default_xsl_template.xsl"
-
-    @pydantic.validator("name", pre=True, always=True)
-    def default_name(cls, v, *, values):
-        return v or str(values.get("slug")).replace("-", "_")
-
-    @pydantic.validator("card_template", "template", pre=True, always=True)
-    def read_template(cls, v, *, values) -> str:
-        if isinstance(v, Path):
-            return str(v.read_text())
-        return v
-
-
-class FeedsConfig(pydantic.BaseModel):
-    feeds: List[FeedConfig] = [FeedConfig(slug="archive")]
 
 
 @dataclass
@@ -518,6 +481,9 @@ def get_template(markata, template):
     try:
         return Template(Path(template).read_text(), undefined=SilentUndefined)
     except FileNotFoundError:
+        # default to load it as a string
+        ...
+    except OSError:  # thrown by File name too long
         # default to load it as a string
         ...
     return Template(template, undefined=SilentUndefined)
