@@ -132,10 +132,10 @@ markdown.
 ```
 
 """
+
 from pathlib import Path
 from typing import List, TYPE_CHECKING
 
-import jinja2
 from jinja2 import TemplateSyntaxError, Undefined, UndefinedError, nodes
 from jinja2.ext import Extension
 import pathspec
@@ -186,7 +186,7 @@ class _SilentUndefined(Undefined):
     # Example
     ```python
     template = '{{ variable }}'
-    article.content = Template( template, undefined=_SilentUndefined).render()
+    post.content = Template( template, undefined=_SilentUndefined).render()
     ```
     """
 
@@ -201,7 +201,7 @@ class PostTemplateSyntaxError(TemplateSyntaxError):
 
 
 class JinjaMd(pydantic.BaseModel):
-    jinja: bool = True
+    jinja: bool = False
 
 
 @hook_impl()
@@ -222,39 +222,44 @@ def pre_render(markata: "Markata") -> None:
 
     config = markata.config.jinja_md
     ignore_spec = pathspec.PathSpec.from_lines("gitwildmatch", config.ignore)
-    # for article in markata.iter_articles(description="jinja_md"):
-    jinja_env = jinja2.Environment(
-        extensions=[IncludeRawExtension, *register_jinja_extensions(config)],
-    )
+    # for post in markata.iter_articles(description="jinja_md"):
 
-    for article in markata.articles:
-        if article.get("jinja", True) and not ignore_spec.match_file(article["path"]):
+    # jinja_env = jinja2.Environment(
+    #     extensions=[IncludeRawExtension, *register_jinja_extensions(config)],
+    # )
+    jinja_env = markata.config.jinja_env
+    jinja_env.undefined = _SilentUndefined
+
+    for post in markata.posts:
+        if post.get("jinja", True) and not ignore_spec.match_file(post["path"]):
             try:
-                key = markata.make_hash(article.content)
+                key = markata.make_hash("jina_md", "pre_render", post.content)
                 content_from_cache = markata.precache.get(key)
-                if content_from_cache is None:
-                    article.content = jinja_env.from_string(article.content).render(
+                if content_from_cache is None and post.content is not None:
+                    post.content = jinja_env.from_string(post.content).render(
                         __version__=__version__,
-                        **article,
-                        post=article,
+                        markata=markata,
+                        body=post.article_html,
+                        config=markata.config,
+                        post=post,
                     )
                     with markata.cache:
-                        markata.cache.set(key, article.content)
+                        markata.cache.set(key, post.content)
                 else:
-                    article.content = content_from_cache
+                    post.content = content_from_cache
                 # prevent double rendering
-                article.jinja = False
+                post.jinja = False
             except TemplateSyntaxError as e:
-                errorline = article.content.split("\n")[e.lineno - 1]
+                errorline = post.content.split("\n")[e.lineno - 1]
                 msg = f"""
-                Error while processing post {article['path']}
+                Error while processing post {post['path']}
 
                 {errorline}
                 """
 
                 raise PostTemplateSyntaxError(msg, lineno=e.lineno)
             except UndefinedError as e:
-                raise UndefinedError(f'{e} in {article["path"]}')
+                raise UndefinedError(f'{e} in {post["path"]}')
 
 
 class JinjaMdConfig(pydantic.BaseModel):

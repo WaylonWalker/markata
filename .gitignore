@@ -257,3 +257,6 @@ tags
 # End of https://www.toptal.com/developers/gitignore/api/vim,emacs,sublimetext,vscode,python
 .envrc
 markout
+.venv311
+database.db
+node_modules

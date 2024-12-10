@@ -78,18 +78,20 @@ create new things from templates
 ```
 
 """
-from pathlib import Path
+
+import json
 import pdb
 import shutil
 import sys
 import traceback
-import toml
-import json
-from typing import Callable, Literal, Optional, TYPE_CHECKING
 import warnings
+from pathlib import Path
+from typing import TYPE_CHECKING, Callable, List, Literal, Optional
 
-from rich import print as rich_print
+import pydantic
+import toml
 import typer
+from rich import print as rich_print
 
 from markata.hookspec import hook_impl
 
@@ -181,7 +183,7 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
         else:
             markata.console.quiet = True
 
-        rich_print(toml.dumps(json.loads(markata.config.json())))
+        rich_print(toml.dumps(json.loads(markata.config.model_dump())))
 
     @config_app.command()
     def get(key: str) -> None:
@@ -332,15 +334,14 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
         if verbose:
             markata.console.print("console options:", markata.console.options)
 
-        if profile:
-            markata.should_profile_cli = True
-            markata.should_profile = True
-            markata.configure()
+        if not profile:
+            markata.config.profiler.should_profile = False
 
         if should_pdb:
             pdb_run(markata.run)
 
         else:
+            markata.console.log("[purple]starting the build")
             markata.run()
 
     @app.command()
@@ -529,6 +530,9 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
         filtered = filtered[tail:head]
         if reverse:
             filtered = reversed(filtered)
+
+        class Posts(pydantic.RootModel):
+            root: List[markata.Post]
 
         markata.console.quiet = False
         if markata.console.is_terminal and use_pager:

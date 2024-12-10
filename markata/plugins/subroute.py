@@ -1,20 +1,22 @@
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Any
 
-import pydantic
 from rich.markdown import Markdown
+import pydantic
+from pydantic import Field
+from pydantic import BaseModel
 
 from markata import Markata
 from markata.hookspec import hook_impl, register_attr
 from pydantic import ConfigDict
 
 
-class Config(pydantic.BaseModel):
+class Config(BaseModel):
     subroute: Path = Path("")
 
 
-class SubroutePost(pydantic.BaseModel):
-    markata: Markata
+class SubroutePost(BaseModel):
+    markata: Any = Field(None, exclude=True)
     model_config = ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
 
     @pydantic.validator("slug")

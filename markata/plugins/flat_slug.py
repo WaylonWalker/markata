@@ -28,6 +28,7 @@ frontmatter.
 * `/pages/my-post.md` becomes `<markata.config.url>/my-post/`
 * `/pages/blog/a-blog-post.md` becomes `<markata.config.url>/a-blog-post/`
 """
+
 from pathlib import Path
 from typing import Dict, Optional
 

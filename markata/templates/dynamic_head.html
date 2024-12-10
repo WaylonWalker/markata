@@ -1,0 +1,11 @@
+{% for meta in markata.config.head.meta %}
+<meta name="{{ meta.name }}" content="{{ meta.content }}" />
+{% endfor %}
+
+{% for link in markata.config.head.link %}
+<link rel="{{ link.rel }}" href="{{ link.href }}" />
+{% endfor %}
+
+{% for link in markata.config.head.script %}
+<script src="{{ link.src }}"></script>
+{% endfor %}

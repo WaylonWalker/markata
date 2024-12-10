@@ -1,4 +1,5 @@
 """Default datetime plugin"""
+
 import datetime
 from typing import TYPE_CHECKING
 
