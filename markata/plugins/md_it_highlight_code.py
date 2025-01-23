@@ -39,14 +39,14 @@ def highlight_code(code, name, attrs, markata=None):
 
     if attrs.get("help"):
         help = f"""
-        <a href={attrs.get('help').strip('<').strip('>').strip('"').strip("'")} title='help link' class='help'>{HELP_ICON}</a>
+        <a href={attrs.get("help").strip("<").strip(">").strip('"').strip("'")} title='help link' class='help'>{HELP_ICON}</a>
         """
     else:
         help = ""
     if attrs.get("title"):
         file = f"""
 <div class='filepath'>
-{md.render(attrs.get('title').strip('"').strip("'"))}
+{md.render(attrs.get("title").strip('"').strip("'"))}
 <div class='right'>
 {help}
 {copy_button}

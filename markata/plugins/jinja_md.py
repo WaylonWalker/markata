@@ -252,14 +252,14 @@ def pre_render(markata: "Markata") -> None:
             except TemplateSyntaxError as e:
                 errorline = post.content.split("\n")[e.lineno - 1]
                 msg = f"""
-                Error while processing post {post['path']}
+                Error while processing post {post["path"]}
 
                 {errorline}
                 """
 
                 raise PostTemplateSyntaxError(msg, lineno=e.lineno)
             except UndefinedError as e:
-                raise UndefinedError(f'{e} in {post["path"]}')
+                raise UndefinedError(f"{e} in {post['path']}")
 
 
 class JinjaMdConfig(pydantic.BaseModel):

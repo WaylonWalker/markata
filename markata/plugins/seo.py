@@ -70,22 +70,22 @@ def _create_seo(
         {
             "name": "og:title",
             "property": "og:title",
-            "content": f'{article.metadata["title"]} | {site_name}'[:60],
+            "content": f"{article.metadata['title']} | {site_name}"[:60],
         },
         {
             "name": "twitter:title",
             "property": "twitter:title",
-            "content": f'{article.metadata["title"]} | {site_name}'[:60],
+            "content": f"{article.metadata['title']} | {site_name}"[:60],
         },
         {
             "name": "og:image",
             "property": "og:image",
-            "content": f'{images_url}/{article.metadata["slug"]}-og.png',
+            "content": f"{images_url}/{article.metadata['slug']}-og.png",
         },
         {
             "name": "twitter:image",
             "property": "twitter:image",
-            "content": f'{images_url}/{article.metadata["slug"]}-og.png',
+            "content": f"{images_url}/{article.metadata['slug']}-og.png",
         },
         {
             "name": "og:image:width",
@@ -194,7 +194,7 @@ def render(markata: Markata) -> None:
                 if article.metadata["slug"] == "index":
                     canonical_link.attrs["href"] = f"{url}/"
                 else:
-                    canonical_link.attrs["href"] = f'{url}/{article.metadata["slug"]}/'
+                    canonical_link.attrs["href"] = f"{url}/{article.metadata['slug']}/"
                 soup.head.append(canonical_link)
 
                 meta_url = soup.new_tag("meta")
@@ -203,7 +203,7 @@ def render(markata: Markata) -> None:
                 if article.metadata["slug"] == "index":
                     meta_url.attrs["content"] = f"{url}/"
                 else:
-                    meta_url.attrs["content"] = f'{url}/{article.metadata["slug"]}/'
+                    meta_url.attrs["content"] = f"{url}/{article.metadata['slug']}/"
                 soup.head.append(meta_url)
 
                 html = soup.prettify() if should_prettify else str(soup)

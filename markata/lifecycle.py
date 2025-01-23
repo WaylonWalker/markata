@@ -22,7 +22,12 @@ class LifeCycle(Enum):
     LifeCycle currently supports the following steps.
 
 
+    * config_model - load configuration models from plugins
+    * post_model - load post models from plugins
+    * create_models - merge models from all plugins into markata.Post and markata.Plugin
+    * load_config - load configuration
     * configure - load and fix configuration
+    * validate_config - validate configuration
     * glob - find files
     * load - load files
     * validate_posts

@@ -107,7 +107,7 @@ def render(markata: "Markata") -> None:
         with markata.console.status("pre-caching posts...") as status:
             for post in markata.map("post", **config):
                 status.update(f"pre-caching {post.get('slug', '')}...")
-                config.precache_urls.append(f'/{post.get("slug", "")}/')
+                config.precache_urls.append(f"/{post.get('slug', '')}/")
 
     config.precache_urls = list(set(config.precache_urls))
 

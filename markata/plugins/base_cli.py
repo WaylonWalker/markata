@@ -598,7 +598,7 @@ def _clean(markata, quiet: bool = False, dry_run: bool = False):
         markata.console.quiet = True
 
     markata.console.log(
-        f'{"[DRYRUN]" if dry_run else ""}'
+        f"{'[DRYRUN]' if dry_run else ''}"
         f"removing outptut directory: {markata.config.output_dir}",
     )
     if not dry_run:
@@ -610,7 +610,7 @@ def _clean(markata, quiet: bool = False, dry_run: bool = False):
             )
 
     markata.console.log(
-        f'{"[DRYRUN]" if dry_run else ""} removing cache directory: .markata.cache',
+        f"{'[DRYRUN]' if dry_run else ''} removing cache directory: .markata.cache",
     )
     if not dry_run:
         try:

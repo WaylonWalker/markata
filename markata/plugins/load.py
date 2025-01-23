@@ -1,4 +1,5 @@
 """Default load plugin."""
+
 import itertools
 from pathlib import Path
 from typing import TYPE_CHECKING, Callable, List, Optional

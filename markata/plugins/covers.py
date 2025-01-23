@@ -30,6 +30,7 @@ padding = [10, 10, 100, 300]
 text_padding = [0,0]
 ```
 """
+
 from functools import lru_cache
 from pathlib import Path
 import time
@@ -157,7 +158,7 @@ def make_cover(
         for width in resizes:
             re_img = image.resize((width, int(width * ratio)), Image.ANTIALIAS)
             filename = (
-                f"{output_path.stem}_{width}x{int(width*ratio)}{output_path.suffix}"
+                f"{output_path.stem}_{width}x{int(width * ratio)}{output_path.suffix}"
             )
             covers.append(filename)
 

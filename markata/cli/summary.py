@@ -160,7 +160,7 @@ class Summary:
             self.grid.add_row()
             self.grid.add_row(f"[bold gold1]{attr.upper()}[/]")
             for post, count in Counter(posts).most_common():
-                self.grid.add_row(f'{count} {" "*(3-len(str(count)))} {post}')
+                self.grid.add_row(f"{count} {' ' * (3 - len(str(count)))} {post}")
 
     def __rich__(self) -> Union[Panel, Table]:
         grid = self.get_grid()
