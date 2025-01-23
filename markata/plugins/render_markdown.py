@@ -88,8 +88,7 @@ config = {markata = "markata"}
 import copy
 from enum import Enum
 import importlib
-from enum import Enum
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import Dict, List, Optional, TYPE_CHECKING
 
 import pydantic
 
