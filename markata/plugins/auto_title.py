@@ -4,7 +4,7 @@ from markata.hookspec import hook_impl, register_attr
 
 
 @hook_impl
-@register_attr("articles", "posts")
+@register_attr()
 def pre_render(markata) -> None:
     for article in markata.filter('title==""'):
         article["title"] = (

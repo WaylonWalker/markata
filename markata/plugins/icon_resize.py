@@ -13,7 +13,6 @@ icon = "static/icon.png"
 
 """
 
-from PIL import Image
 from pathlib import Path
 from typing import Dict, List, Optional, TYPE_CHECKING
 
@@ -70,6 +69,7 @@ def config_model(markata: "Markata") -> None:
 def render(markata: "Markata") -> None:
     if markata.config.icon is None:
         return
+    from PIL import Image
 
     with Image.open(markata.config.icon) as img:
         for width in [48, 72, 96, 144, 192, 256, 384, 512]:
@@ -91,6 +91,8 @@ def render(markata: "Markata") -> None:
 def save(markata: "Markata") -> None:
     if markata.config.icon is None:
         return
+    from PIL import Image
+
     for width in [48, 72, 96, 144, 192, 256, 384, 512]:
         with Image.open(markata.config.icon) as img:
             height = int(float(img.size[1]) * float(width / float(img.size[0])))

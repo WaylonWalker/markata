@@ -80,17 +80,17 @@ Markata config also supports adding scripts to the head via configuration.
 
 """
 
-import inspect
 from functools import lru_cache
+import inspect
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, List, Optional, Union
+from typing import Dict, List, Optional, TYPE_CHECKING, Union
 
 import jinja2
-import pydantic
-import typer
 from jinja2 import Template, Undefined
 from more_itertools import flatten
+import pydantic
 from rich.syntax import Syntax
+import typer
 
 from markata import __version__
 from markata.hookspec import hook_impl
@@ -346,7 +346,7 @@ def render_article(markata, cache, article):
             slug: render_template(markata, article, get_template(markata, template))
             for slug, template in article.template.items()
         }
-    cache.add(key, html, expire=markata.config.default_cache_expire)
+    cache.set(key, html, expire=markata.config.default_cache_expire)
     return html
 
 
@@ -408,7 +408,7 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
     """
 
     templates_app = typer.Typer()
-    app.add_typer(templates_app)
+    app.add_typer(templates_app, name="templates")
 
     @templates_app.callback()
     def templates():

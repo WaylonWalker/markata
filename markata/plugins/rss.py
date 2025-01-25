@@ -5,12 +5,13 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pytz
-from feedgen.feed import FeedGenerator
+
 
 from markata.hookspec import hook_impl
 
 if TYPE_CHECKING:
     from markata import Markata
+    from feedgen.feed import FeedGenerator
 
     class MarkataRss(Markata):
         fg: "FeedGenerator"
@@ -19,6 +20,8 @@ if TYPE_CHECKING:
 
 @hook_impl(trylast=True)
 def render(markata: "MarkataRss") -> None:
+    from feedgen.feed import FeedGenerator
+
     fg = FeedGenerator()
     url = markata.config.url or ""
     title = markata.config.title

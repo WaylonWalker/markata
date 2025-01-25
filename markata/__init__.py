@@ -16,7 +16,6 @@ from typing import Any, Dict, Iterable, Optional
 
 import pluggy
 import pydantic
-from checksumdir import dirhash
 from diskcache import Cache
 from rich.console import Console
 from rich.progress import track
@@ -320,6 +319,8 @@ class Markata:
 
     @property
     def content_dir_hash(self: "Markata") -> str:
+        from checksumdir import dirhash
+
         hashes = [
             dirhash(dir)
             for dir in self.content_directories
@@ -392,7 +393,8 @@ class Markata:
 
     def teardown(self: "Markata") -> Markata:
         """give special access to the teardown lifecycle method"""
-        self._pm.hook.teardown(markata=self)
+        if self.stages_ran:
+            self._pm.hook.teardown(markata=self)
         return self
 
     def run(self: "Markata", lifecycle: LifeCycle = None) -> Markata:

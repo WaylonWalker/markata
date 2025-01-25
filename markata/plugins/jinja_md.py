@@ -139,7 +139,6 @@ from typing import List, TYPE_CHECKING
 from jinja2 import TemplateSyntaxError, Undefined, UndefinedError, nodes
 from jinja2.ext import Extension
 import pathspec
-import pkg_resources
 import pydantic
 
 from markata import __version__
@@ -152,6 +151,8 @@ def register_jinja_extensions(config: dict) -> List[Extension]:
 
     Returns: List of jinja Extensions
     """
+
+    import pkg_resources
 
     return [
         ep.load() for ep in pkg_resources.iter_entry_points(group="markata.jinja_md")
@@ -230,7 +231,7 @@ def pre_render(markata: "Markata") -> None:
     jinja_env = markata.config.jinja_env
     jinja_env.undefined = _SilentUndefined
 
-    for post in markata.posts:
+    for post in markata.filter("jinja==True"):
         if post.get("jinja", True) and not ignore_spec.match_file(post["path"]):
             try:
                 key = markata.make_hash("jina_md", "pre_render", post.content)

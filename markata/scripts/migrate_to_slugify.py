@@ -16,12 +16,12 @@ slugify=false
 ```
 """
 
-from slugify import slugify
-
 from markata import Markata
 
 
 def routed_slugify(text):
+    from slugify import slugify
+
     return "/".join([slugify(s) for s in text.split("/")])
 
 

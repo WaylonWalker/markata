@@ -33,31 +33,43 @@ text_padding = [0,0]
 
 from functools import lru_cache
 from pathlib import Path
+from rich.progress import BarColumn, Progress
 import time
 from typing import List, Optional, TYPE_CHECKING, Tuple, Union
 
-from PIL import Image, ImageDraw, ImageFont
-from rich.progress import BarColumn, Progress
-
 from markata import background
 from markata.hookspec import hook_impl
+
+# Lazy imports for PIL
+Image = None
+ImageDraw = None
+ImageFont = None
+
+
+def _lazy_import_pil():
+    """Lazy import PIL modules when needed."""
+    global Image, ImageDraw, ImageFont
+    if Image is None:
+        from PIL import Image, ImageDraw, ImageFont
+
 
 if TYPE_CHECKING:
     from markata import Markata
 
 
 @lru_cache(maxsize=64)
-def _load_font(path: Path, size: int) -> ImageFont.FreeTypeFont:
+def _load_font(path: Path, size: int) -> "ImageFont.FreeTypeFont":
+    _lazy_import_pil()
     return ImageFont.truetype(path, size=size)
 
 
 def get_font(
     path: Path,
-    draw: ImageDraw.Draw,
+    draw: "ImageDraw.Draw",
     title: str,
     size: int = 250,
     max_size: tuple = (800, 220),
-) -> ImageFont.FreeTypeFont:
+) -> "ImageFont.FreeTypeFont":
     title = title or ""
     font = _load_font(path, size)
     current_size = draw.textsize(title, font=font)
@@ -78,13 +90,14 @@ class PaddingError(BaseException):
 
 
 def draw_text(
-    image: Image,
+    image: "Image",
     font_path: Optional[Path],
     text: str,
     color: Union[str, None],
     padding: Tuple[int, ...],
     markata: "Markata",
 ) -> None:
+    _lazy_import_pil()
     text = text or ""
     draw = ImageDraw.Draw(image)
     padding = resolve_padding(padding, markata)
@@ -129,6 +142,7 @@ def make_cover(
     resizes: List[int] = None,
     markata: "Markata" = None,
 ) -> None:
+    _lazy_import_pil()
     if output_path.exists():
         return
     image = Image.open(template_path) if template_path else Image.new("RGB", (800, 450))

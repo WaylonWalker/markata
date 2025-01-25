@@ -56,11 +56,10 @@ lets you [make your home page](https://markata.dev/home-page/)
 """
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import Any, Dict, Optional, TYPE_CHECKING
 
 import pydantic
 from pydantic import Field
-from slugify import slugify
 
 from markata.hookspec import hook_impl, register_attr
 
@@ -77,6 +76,8 @@ class OutputHTML(pydantic.BaseModel):
     @pydantic.validator("slug", pre=True, always=True)
     @classmethod
     def default_slug(cls, v, *, values):
+        from slugify import slugify
+
         if v is None:
             return slugify(str(values["path"].stem))
         return v
@@ -131,6 +132,7 @@ def save(markata: "Markata") -> None:
     is relative to the specified `output_dir`.  If its not relative to the
     `output_dir` it will log an error and move on.
     """
+    from slugify import slugify
 
     for article in markata.articles:
         if article.html is None:

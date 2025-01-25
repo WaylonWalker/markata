@@ -52,6 +52,7 @@ dependencies = [
     "python-slugify",
     "pytz",
     "rich",
+    "setuptools",
     "toml",
     "typer",
     "xxhash",

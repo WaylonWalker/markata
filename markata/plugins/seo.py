@@ -207,7 +207,7 @@ def render(markata: Markata) -> None:
                 soup.head.append(meta_url)
 
                 html = soup.prettify() if should_prettify else str(soup)
-                cache.add(key, html, expire=markata.config.default_cache_expire)
+                cache.set(key, html, expire=markata.config.default_cache_expire)
 
             else:
                 html = html_from_cache
