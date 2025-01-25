@@ -56,7 +56,6 @@ from itertools import compress
 from pathlib import Path
 from typing import Any, Dict, TYPE_CHECKING
 
-import commonmark
 
 from markata.hookspec import hook_impl
 
@@ -66,14 +65,15 @@ if TYPE_CHECKING:
 
     from markata import Markata
 
-_parser = commonmark.Parser()
-
 
 def get_description(article: "Post") -> str:
     """
     Get the full-length description for a single post using the commonmark
     parser.  Only paragraph nodes will count as text towards the description.
     """
+    import commonmark
+
+    _parser = commonmark.Parser()
     ast = _parser.parse(article.content)
 
     # find all paragraph nodes
@@ -115,7 +115,7 @@ def set_description(
     description_from_cache = markata.precache.get(key)
     if description_from_cache is None:
         description = get_description(article)[:max_description]
-        markata.cache.add(key, description, expire=markata.config.default_cache_expire)
+        markata.cache.set(key, description, expire=markata.config.default_cache_expire)
     else:
         description = description_from_cache
 

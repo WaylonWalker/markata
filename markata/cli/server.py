@@ -1,10 +1,10 @@
 import atexit
-import time
 from pathlib import Path
+import time
 from typing import TYPE_CHECKING, Union
 
-import typer
 from rich.panel import Panel
+import typer
 
 from markata.hookspec import hook_impl, register_attr
 
@@ -126,7 +126,7 @@ def run_server() -> None:
 @hook_impl()
 def cli(app: typer.Typer, markata: "Markata") -> None:
     server_app = typer.Typer()
-    app.add_typer(server_app)
+    app.add_typer(server_app, name="server")
 
     @server_app.callback(invoke_without_command=True)
     def serve():

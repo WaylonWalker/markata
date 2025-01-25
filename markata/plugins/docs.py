@@ -2,7 +2,6 @@
 leading docstring
 """
 
-from slugify import slugify
 import ast
 import datetime
 from functools import lru_cache
@@ -95,6 +94,8 @@ def get_template():
 
 
 def make_article(markata: "Markata", file: Path, cache) -> frontmatter.Post:
+    from slugify import slugify
+
     with open(file) as f:
         raw_source = f.read()
     key = markata.make_hash("docs", "file", raw_source)
@@ -128,7 +129,7 @@ def make_article(markata: "Markata", file: Path, cache) -> frontmatter.Post:
             raw_source=raw_source,
             indent=textwrap.indent,
         )
-        cache.add(
+        cache.set(
             key,
             article,
             expire=markata.config.default_cache_expire,

@@ -1,7 +1,6 @@
 from pathlib import Path
 from typing import Optional
 
-import anyconfig
 import pydantic
 
 from markata import Markata
@@ -47,6 +46,8 @@ def post_model(markata: "Markata") -> None:
 @hook_impl
 @register_attr("sitemap")
 def render(markata: Markata) -> None:
+    import anyconfig
+
     sitemap = {
         "urlset": markata.map("post.sitemap_url.dict()", filter="post.published")
     }

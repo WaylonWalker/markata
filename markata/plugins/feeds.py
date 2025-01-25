@@ -676,7 +676,7 @@ def create_card(
 @hook_impl
 def cli(app: typer.Typer, markata: "Markata") -> None:
     feeds_app = typer.Typer()
-    app.add_typer(feeds_app)
+    app.add_typer(feeds_app, name="feeds")
 
     @feeds_app.callback()
     def feeds():

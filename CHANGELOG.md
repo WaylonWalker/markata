@@ -1,5 +1,15 @@
 # Markata Changelog
 
+## 0.8.2
+
+- Fix: markata installs setuptools required by one dependency
+- Fix: cleaup cli output
+- Fix: speed up cli starup with some lazy imports
+- Fix: all cache.adds were replaced with cache.set
+- Fix: Updated to new typer format requiring name=
+- Fix: teardown only runs if a the build process was started, i.e. some clis
+  will not need to teardown
+
 ## 0.8.1
 
 ### Feeds have partials

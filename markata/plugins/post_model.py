@@ -1,17 +1,13 @@
-from rich.jupyter import JupyterMixin
-from rich.pretty import Pretty
 import datetime
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from rich.jupyter import JupyterMixin
+from rich.pretty import Pretty
+from typing import Any, Dict, List, Optional, TYPE_CHECKING, Union
 
-import dateparser
 import pydantic
-from pydantic import Field
+from pydantic import ConfigDict, Field
 import yaml
-from polyfactory.factories.pydantic_factory import ModelFactory
-from pydantic import ConfigDict
-from slugify import slugify
 
 from markata.hookspec import hook_impl, register_attr
 
@@ -209,6 +205,8 @@ class Post(pydantic.BaseModel, JupyterMixin):
 
     @pydantic.validator("slug", pre=True, always=True)
     def default_slug(cls, v, *, values):
+        from slugify import slugify
+
         return v or slugify(str(values["path"].stem))
 
     @pydantic.validator("slug", pre=True, always=True)
@@ -236,6 +234,9 @@ class Post(pydantic.BaseModel, JupyterMixin):
 
     @pydantic.validator("date_time", pre=True, always=True)
     def dateparser_datetime(cls, v, *, values):
+        # dateparser is slow to import, do it lazily for faster cli
+        import dateparser
+
         if isinstance(v, str):
             d = dateparser.parse(v)
             if d is None:
@@ -286,12 +287,16 @@ class Post(pydantic.BaseModel, JupyterMixin):
             d = cls.markata.precache.get(v)
             if d is not None:
                 return d
+
+            # dateparser is slow to import, do it lazily for faster cli
+            import dateparser
+
             d = dateparser.parse(v)
             if d is None:
                 raise ValueError(f'"{v}" is not a valid date')
             d = d.date()
             with cls.markata.cache as cache:
-                cache.add(v, d)
+                cache.set(v, d)
             return d
         return v
 
@@ -413,6 +418,7 @@ def config_model(markata: "Markata") -> None:
     markata.config_models.append(Config)
 
 
-class PostFactory(ModelFactory):
-    __model__ = Post
-    __model__ = Post
+# from polyfactory.factories.pydantic_factory import ModelFactory
+# class PostFactory(ModelFactory):
+#     __model__ = Post
+#     __model__ = Post

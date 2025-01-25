@@ -236,13 +236,14 @@ def configure(markata: "Markata") -> None:
 
 
 @hook_impl(tryfirst=True)
-@register_attr("articles", "posts")
+@register_attr("rendered_posts")
 def render(markata: "Markata") -> None:
     config = markata.config.render_markdown
     with markata.cache as cache:
         for article in markata.articles:
             article.html = render_article(markata, config, cache, article)
             article.article_html = copy.deepcopy(article.html)
+    markata.rendered_posts = markata.posts
 
 
 def render_article(markata: "Markata", config, cache, article):
@@ -252,9 +253,10 @@ def render_article(markata: "Markata", config, cache, article):
         article.content,
     )
     html_from_cache = markata.precache.get(key)
+
     if html_from_cache is None:
         html = markata.md.convert(article.content)
-        cache.add(key, html, expire=config.cache_expire)
+        cache.set(key, html, expire=config.cache_expire)
     else:
         html = html_from_cache
     return html

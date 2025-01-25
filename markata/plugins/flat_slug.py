@@ -33,7 +33,6 @@ from pathlib import Path
 from typing import Dict, Optional
 
 import pydantic
-from slugify import slugify
 
 from markata import Markata
 from markata.hookspec import hook_impl, register_attr
@@ -74,6 +73,8 @@ def pre_render(markata: "Markata") -> None:
     """
     Sets the article slug if one is not already set in the frontmatter.
     """
+    from slugify import slugify
+
     for article in markata.iter_articles(description="creating slugs"):
         stem = article.get(
             "slug",
