@@ -55,6 +55,7 @@ DEFAULT_MD_EXTENSIONS = [
 
 DEFAULT_HOOKS = [
     "markata.plugins.skip",
+    "markata.plugins.md_it_wikilinks",
     "markata.plugins.copy_assets",
     # "markata.plugins.heading_link",
     "markata.plugins.pyinstrument",
