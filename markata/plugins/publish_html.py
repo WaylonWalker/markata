@@ -134,7 +134,7 @@ def save(markata: "Markata") -> None:
     """
     from slugify import slugify
 
-    for article in markata.articles:
+    for article in markata.filter("skip==False"):
         if article.html is None:
             continue
         if isinstance(article.html, str):

@@ -304,7 +304,7 @@ def pre_render(markata: "Markata") -> None:
 @hook_impl
 def render(markata: "Markata") -> None:
     with markata.cache as cache:
-        for article in markata.articles:
+        for article in markata.filter("skip==False"):
             html = render_article(markata=markata, cache=cache, article=article)
             article.html = html
 

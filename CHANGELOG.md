@@ -1,5 +1,11 @@
 # Markata Changelog
 
+## 0.9.0
+
+- Feat: add skip plugin
+- Fix: wikilinks uses a faster and more robust link lookup
+- Feat: most plugins now only do work on posts not marked as skip
+
 ## 0.8.2
 
 - Fix: markata installs setuptools required by one dependency

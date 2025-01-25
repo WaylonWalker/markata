@@ -128,6 +128,14 @@ def save(markata: "Markata") -> None:
     else:
         raw_redirects = []
 
+    key = markata.make_hash("redirects", "raw_redirects", raw_redirects)
+    with markata.cache as cache:
+        cache.get(key)
+        if cache.get(key) == "done":
+            return
+
+        cache.set(key, "done", expire=markata.config.default_cache_expire)
+
     redirects = [
         Redirect(original=s[0], new=s[1], markata=markata)
         for r in raw_redirects

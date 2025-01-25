@@ -239,8 +239,17 @@ def configure(markata: "Markata") -> None:
 @register_attr("rendered_posts")
 def render(markata: "Markata") -> None:
     config = markata.config.render_markdown
+    for article in markata.filter("skip==False"):
+        article.post_key = markata.make_hash(
+            "render_markdown",
+            "render",
+            article.content,
+        )
     with markata.cache as cache:
-        for article in markata.articles:
+        # for article in markata.articles:
+        #     article.html = cache.get(article.post_key)
+
+        for article in markata.filter("skip==False"):
             article.html = render_article(markata, config, cache, article)
             article.article_html = copy.deepcopy(article.html)
     markata.rendered_posts = markata.posts

@@ -44,10 +44,24 @@ blindly link to the route specified, but will look up the slug of an article.
 
 import logging
 
+from markata.hookspec import hook_impl, register_attr
 from markdown_it import MarkdownIt
 from markdown_it.rules_inline import StateInline
 
 logger = logging.getLogger("markata")
+
+
+@hook_impl()
+@register_attr("possible_wikilink")
+def load(markata: "Markata") -> None:
+    markata.possible_wikilink = {}
+
+    for slug in markata.map("slug"):
+        wikilink = slug.split("/")[-1]
+        if wikilink in markata.possible_wikilink:
+            markata.possible_wikilink[wikilink].append(slug)
+        else:
+            markata.possible_wikilink[wikilink] = [slug]
 
 
 def wikilinks_plugin(
@@ -115,16 +129,18 @@ def wikilinks_plugin(
             link = link.strip("/")
         else:
             link, id = text, None
-        possible_pages = markata.filter(
-            f'str(path).split("/")[-1].split(".")[0].replace("_", "-") == "{link.replace("_", "-")}"',
-        )
+
+        # possible_pages = markata.filter(
+        #     f'str(path).split("/")[-1].split(".")[0].replace("_", "-") == "{link.replace("_", "-")}"',
+        # )
+        possible_pages = markata.possible_wikilink.get(link, [])
         if len(possible_pages) == 1:
-            link = possible_pages[0].get("slug", f"/{text}")
+            link = possible_pages[0]
         elif len(possible_pages) > 1:
             logger.warning(
                 f"wikilink [[{text}]] ({link}, {id}) has duplicate matches, defaulting to the first",
             )
-            link = possible_pages[0].get("slug", f"/{text}")
+            link = possible_pages[0]
         else:
             logger.warning(
                 f"wikilink [[{text}]] ({link}, {id}) no matches, defaulting to '/{text}'",

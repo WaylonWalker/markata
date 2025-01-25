@@ -570,7 +570,9 @@ def create_page(
     )
     sitemap_output_file.parent.mkdir(exist_ok=True, parents=True)
 
+    from_cache = True
     if feed_html_from_cache is None:
+        from_cache = False
         feed_html = template.render(
             markata=markata,
             __version__=__version__,
@@ -584,6 +586,7 @@ def create_page(
         feed_html = feed_html_from_cache
 
     if feed_html_partial_from_cache is None:
+        from_cache = False
         feed_html_partial = partial_template.render(
             markata=markata,
             __version__=__version__,
@@ -597,6 +600,7 @@ def create_page(
         feed_html_partial = feed_html_partial_from_cache
 
     if feed_rss_from_cache is None:
+        from_cache = False
         rss_template = get_template(markata, feed.config.rss_template)
         feed_rss = rss_template.render(markata=markata, feed=feed)
         cache.set(feed_rss_key, feed_rss)
@@ -604,11 +608,21 @@ def create_page(
         feed_rss = feed_rss_from_cache
 
     if feed_sitemap_from_cache is None:
+        from_cache = False
         sitemap_template = get_template(markata, feed.config.sitemap_template)
         feed_sitemap = sitemap_template.render(markata=markata, feed=feed)
         cache.set(feed_sitemap_key, feed_sitemap)
     else:
         feed_sitemap = feed_sitemap_from_cache
+
+    if (
+        from_cache == True
+        and output_file.exists()
+        and partial_output_file.exists()
+        and rss_output_file.exists()
+        and sitemap_output_file.exists()
+    ):
+        return
 
     output_file.write_text(feed_html)
     partial_output_file.write_text(feed_html_partial)

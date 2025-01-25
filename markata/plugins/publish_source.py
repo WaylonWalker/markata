@@ -83,9 +83,9 @@ def save(markata: "Markata") -> None:
 
     """
     output_dir = Path(str(markata.config["output_dir"]))
-    for (
-        article
-    ) in markata.articles:  # iter_articles(description="saving source documents"):
+    for article in markata.filter(
+        "skip==False"
+    ):  # iter_articles(description="saving source documents"):
         try:
             _save(output_dir, article)
         except RepresenterError:

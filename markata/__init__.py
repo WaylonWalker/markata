@@ -5,18 +5,18 @@ from __future__ import annotations
 
 import atexit
 import datetime
+from datetime import timedelta
 import importlib
 import logging
 import os
+from pathlib import Path
 import sys
 import textwrap
-from datetime import timedelta
-from pathlib import Path
 from typing import Any, Dict, Iterable, Optional
 
+from diskcache import Cache
 import pluggy
 import pydantic
-from diskcache import Cache
 from rich.console import Console
 from rich.progress import track
 from rich.table import Table
@@ -154,11 +154,13 @@ class Markata:
         if self._cache is not None:
             return self._cache
         self._cache = Cache(self.MARKATA_CACHE_DIR, statistics=True)
+        self._cache.expire()
 
         return self._cache
 
     @property
     def precache(self: "Markata") -> None:
+        return self.cache
         if self._precache is None:
             self.cache.expire()
             self._precache = {k: self.cache.get(k) for k in self.cache.iterkeys()}
@@ -384,7 +386,7 @@ class Markata:
 
     def iter_articles(self: "Markata", description: str) -> Iterable[Markata.Post]:
         articles: Iterable[Markata.Post] = track(
-            self.articles,
+            self.filter("skip == False"),
             description=description,
             transient=True,
             console=self.console,

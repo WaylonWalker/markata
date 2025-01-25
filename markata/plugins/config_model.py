@@ -1,9 +1,8 @@
 import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import Optional, TYPE_CHECKING
 
 import pydantic
-from polyfactory.factories.pydantic_factory import ModelFactory
 from pydantic import AnyUrl, ConfigDict, PositiveInt
 from pydantic_extra_types.color import Color
 from pydantic_settings import BaseSettings
@@ -109,5 +108,6 @@ def load_config(markata: "Markata") -> None:
             markata.config = markata.Config.parse_obj(config)
 
 
-class ConfigFactory(ModelFactory):
-    __model__ = Config
+# from polyfactory.factories.pydantic_factory import ModelFactory
+# class ConfigFactory(ModelFactory):
+#     __model__ = Config
