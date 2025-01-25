@@ -54,6 +54,7 @@ dependencies = [
     "rich",
     "setuptools",
     "toml",
+    "tomli",
     "typer",
     "xxhash",
 ]
