@@ -47,6 +47,10 @@ import logging
 from markata.hookspec import hook_impl, register_attr
 from markdown_it import MarkdownIt
 from markdown_it.rules_inline import StateInline
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from markata import Markata
 
 logger = logging.getLogger("markata")
 

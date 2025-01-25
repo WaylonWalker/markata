@@ -616,7 +616,7 @@ def create_page(
         feed_sitemap = feed_sitemap_from_cache
 
     if (
-        from_cache == True
+        from_cache
         and output_file.exists()
         and partial_output_file.exists()
         and rss_output_file.exists()
