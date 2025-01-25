@@ -33,13 +33,18 @@ text_padding = [0,0]
 
 from functools import lru_cache
 from pathlib import Path
+from rich.progress import BarColumn, Progress
 import time
 from typing import List, Optional, TYPE_CHECKING, Tuple, Union
+
+from markata import background
+from markata.hookspec import hook_impl
 
 # Lazy imports for PIL
 Image = None
 ImageDraw = None
 ImageFont = None
+
 
 def _lazy_import_pil():
     """Lazy import PIL modules when needed."""
@@ -47,10 +52,6 @@ def _lazy_import_pil():
     if Image is None:
         from PIL import Image, ImageDraw, ImageFont
 
-from rich.progress import BarColumn, Progress
-
-from markata import background
-from markata.hookspec import hook_impl
 
 if TYPE_CHECKING:
     from markata import Markata
