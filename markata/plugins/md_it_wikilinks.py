@@ -55,7 +55,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger("markata")
 
 
-@hook_impl()
+@hook_impl(trylast=True)
 @register_attr("possible_wikilink")
 def load(markata: "Markata") -> None:
     markata.possible_wikilink = {}
