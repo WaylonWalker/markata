@@ -21,6 +21,9 @@ class Config(BaseSettings, JupyterMixin):
     disabled_hooks: list[str] = []
     markdown_extensions: list[str] = []
     default_cache_expire: PositiveInt = 3600
+    template_cache_expire: PositiveInt = 86400  # 24 hours
+    markdown_cache_expire: PositiveInt = 21600  # 6 hours
+    dynamic_cache_expire: PositiveInt = 3600   # 1 hour
     output_dir: pydantic.DirectoryPath = Path("markout")
     assets_dir: Path = pydantic.Field(
         Path("static"),

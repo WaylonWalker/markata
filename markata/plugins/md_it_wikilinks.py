@@ -55,12 +55,20 @@ if TYPE_CHECKING:
 logger = logging.getLogger("markata")
 
 
-@hook_impl(trylast=True)
+@hook_impl()
 @register_attr("possible_wikilink")
-def load(markata: "Markata") -> None:
+def pre_render(markata: "Markata") -> None:
     markata.possible_wikilink = {}
 
     for slug in markata.map("slug"):
+        wikilink = slug.split("/")[-1]
+        if wikilink in markata.possible_wikilink:
+            markata.possible_wikilink[wikilink].append(slug)
+        else:
+            markata.possible_wikilink[wikilink] = [slug]
+    markata.possible_wikilink["index"] = ["index"]
+
+    for slug in [v.config.slug for v in markata.feeds.values()]:
         wikilink = slug.split("/")[-1]
         if wikilink in markata.possible_wikilink:
             markata.possible_wikilink[wikilink].append(slug)
@@ -142,12 +150,12 @@ def wikilinks_plugin(
             link = possible_pages[0]
         elif len(possible_pages) > 1:
             logger.warning(
-                f"wikilink [[{text}]] ({link}, {id}) has duplicate matches, defaulting to the first",
+                f"wikilink [[{text}]] has duplicate matches, defaulting to the first",
             )
             link = possible_pages[0]
         else:
             logger.warning(
-                f"wikilink [[{text}]] ({link}, {id}) no matches, defaulting to '/{text}'",
+                f"wikilink [[{text}]] no matches, defaulting to '/{text}'",
             )
             link = text
 

@@ -188,7 +188,7 @@ class Config(pydantic.BaseModel):
     post_template: Optional[Union[str | Dict[str, str]]] = "post.html"
     dynamic_templates_dir: Path = Path(".markata.cache/templates")
     templates_dir: Union[Path, List[Path]] = pydantic.Field(Path("templates"))
-
+    template_cache_dir: Path = Path(".markata.cache/template_bytecode")
     env_options: dict = {}
 
     @pydantic.model_validator(mode="after")
@@ -214,19 +214,19 @@ class Config(pydantic.BaseModel):
     def jinja_loader(self):
         return jinja2.FileSystemLoader(self.templates_dir)
 
-    @property
-    def jinja_env(
-        self,
-    ):
+    @property 
+    def jinja_env(self):
         if hasattr(self, "_jinja_env"):
             return self._jinja_env
+            
         self.env_options.setdefault("loader", self.jinja_loader)
         self.env_options.setdefault("undefined", SilentUndefined)
         self.env_options.setdefault("lstrip_blocks", True)
         self.env_options.setdefault("trim_blocks", True)
-
+        self.env_options.setdefault("bytecode_cache", MarkataTemplateCache(self.template_cache_dir))
+        self.env_options.setdefault("auto_reload", False)  # Disable auto reload in production
+        
         env = jinja2.Environment(**self.env_options)
-
         self._jinja_env = env
         return env
 
@@ -255,78 +255,31 @@ class Post(pydantic.BaseModel):
         return {**config_template, **v}
 
 
-@hook_impl(tryfirst=True)
-def config_model(markata: "Markata") -> None:
-    markata.config_models.append(Config)
+_template_cache = {}
 
-
-@hook_impl(tryfirst=True)
-def post_model(markata: "Markata") -> None:
-    markata.post_models.append(Post)
-
-
-@hook_impl
-def configure(markata: "Markata") -> None:
-    """
-    Massages the configuration limitations of toml to allow a little bit easier
-    experience to the end user making configurations while allowing an simpler
-    jinja template.  This enablees the use of the `markata.head.text` list in
-    configuration.
-    """
-
-
-@hook_impl
-def pre_render(markata: "Markata") -> None:
-    """
-    FOR EACH POST: Massages the configuration limitations of toml/yaml to allow
-    a little bit easier experience to the end user making configurations while
-    allowing an simpler jinja template.  This enables the use of the
-    `markata.head.text` list in configuration.
-    """
-
-    markata.config.dynamic_templates_dir.mkdir(parents=True, exist_ok=True)
-    head_template = markata.config.dynamic_templates_dir / "head.html"
-    head_template.write_text(
-        markata.config.jinja_env.get_template("dynamic_head.html").render(
-            {"markata": markata}
-        ),
-    )
-
-    for article in [a for a in markata.articles if "config_overrides" in a]:
-        raw_text = article.get("config_overrides", {}).get("head", {}).get("text", "")
-
-        if isinstance(raw_text, list):
-            article["config_overrides"]["head"]["text"] = "\n".join(
-                flatten([t.values() for t in raw_text]),
-            )
-
-
-@hook_impl
-def render(markata: "Markata") -> None:
-    with markata.cache as cache:
-        for article in markata.filter("skip==False"):
-            html = render_article(markata=markata, cache=cache, article=article)
-            article.html = html
-
-
-@lru_cache()
 def get_template(markata, template):
+    """Get a template from the cache or compile it."""
     try:
         return markata.config.jinja_env.get_template(template)
     except jinja2.TemplateNotFound:
-        # try to load it as a file
-        ...
+        if template.startswith("/"):
+            template_path = Path(template)
+        else:
+            template_path = (
+                Path(__file__).parent.parent / "templates" / template
+            ).resolve()
 
-    try:
-        return Template(Path(template).read_text(), undefined=SilentUndefined)
-    except FileNotFoundError:
-        # default to load it as a string
-        ...
-    return Template(template, undefined=SilentUndefined)
+        if not template_path.exists():
+            template_path = Path(template)
 
+        if not template_path.exists():
+            raise FileNotFoundError(f"Template not found: {template}")
 
-# def render_article(markata, article):
+        template_content = template_path.read_text()
+        return Template(template_content, undefined=SilentUndefined)
+
 def render_article(markata, cache, article):
+    """Render an article using cached templates."""
     key = markata.make_hash(
         "post_template",
         __version__,
@@ -351,42 +304,27 @@ def render_article(markata, cache, article):
 
 
 def render_template(markata, article, template):
-    template = get_template(markata, template)
+    """Render a template with article context."""
     merged_config = markata.config
-    # TODO do we need to handle merge??
-    # if head_template:
-    #     head = eval(
-    #         head_template.render(
-    #             __version__=__version__,
-    #             config=_full_config,
-    #             **article,
-    #         )
-    #     )
-
-    # merged_config = {
-    #     **_full_config,
-    #     **{"head": head},
-    # }
-
-    # merged_config = always_merger.merge(
-    #     merged_config,
-    #     copy.deepcopy(
-    #         article.get(
-    #             "config_overrides",
-    #             {},
-    #         )
-    #     ),
-    # )
-
-    html = template.render(
-        __version__=__version__,
-        markata=markata,
-        body=article.article_html,
-        config=merged_config,
-        post=article,
-    )
-    return html
-
+    
+    # Get the body content - prefer article_html, fallback to html
+    body = getattr(article, 'article_html', None)
+    if body is None:
+        body = getattr(article, 'html', '')
+    
+    context = {
+        "post": article,
+        "markata": markata,
+        "config": merged_config,
+        "body": body,
+    }
+    
+    try:
+        return template.render(**context)
+    except Exception as e:
+        markata.console.print(f"[red]Error rendering template for {article.path}[/]")
+        markata.console.print(f"[red]{str(e)}[/]")
+        raise
 
 @hook_impl()
 def save(markata: "Markata") -> None:
@@ -472,3 +410,75 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
                 )
             else:
                 markata.console.print(f"[orchid]{template}[/] -> [red]{file}[/]")
+
+class MarkataTemplateCache(jinja2.BytecodeCache):
+    """Template bytecode cache for improved performance."""
+    
+    def __init__(self, directory):
+        self.directory = Path(directory)
+        self.directory.mkdir(parents=True, exist_ok=True)
+        
+    def load_bytecode(self, bucket):
+        filename = self.directory / f"{bucket.key}.cache"
+        if filename.exists():
+            with open(filename, 'rb') as f:
+                bucket.bytecode_from_string(f.read())
+
+    def dump_bytecode(self, bucket):
+        filename = self.directory / f"{bucket.key}.cache"
+        with open(filename, 'wb') as f:
+            f.write(bucket.bytecode_to_string())
+
+
+@hook_impl(tryfirst=True)
+def config_model(markata: "Markata") -> None:
+    markata.config_models.append(Config)
+
+
+@hook_impl(tryfirst=True)
+def post_model(markata: "Markata") -> None:
+    markata.post_models.append(Post)
+
+
+@hook_impl
+def configure(markata: "Markata") -> None:
+    """
+    Massages the configuration limitations of toml to allow a little bit easier
+    experience to the end user making configurations while allowing an simpler
+    jinja template.  This enablees the use of the `markata.head.text` list in
+    configuration.
+    """
+
+
+@hook_impl
+def pre_render(markata: "Markata") -> None:
+    """
+    FOR EACH POST: Massages the configuration limitations of toml/yaml to allow
+    a little bit easier experience to the end user making configurations while
+    allowing an simpler jinja template.  This enables the use of the
+    `markata.head.text` list in configuration.
+    """
+
+    markata.config.dynamic_templates_dir.mkdir(parents=True, exist_ok=True)
+    head_template = markata.config.dynamic_templates_dir / "head.html"
+    head_template.write_text(
+        markata.config.jinja_env.get_template("dynamic_head.html").render(
+            {"markata": markata}
+        ),
+    )
+
+    for article in [a for a in markata.articles if "config_overrides" in a]:
+        raw_text = article.get("config_overrides", {}).get("head", {}).get("text", "")
+
+        if isinstance(raw_text, list):
+            article["config_overrides"]["head"]["text"] = "\n".join(
+                flatten([t.values() for t in raw_text]),
+            )
+
+
+@hook_impl
+def render(markata: "Markata") -> None:
+    with markata.cache as cache:
+        for article in markata.filter("skip==False"):
+            html = render_article(markata=markata, cache=cache, article=article)
+            article.html = html

@@ -59,7 +59,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional, TYPE_CHECKING
 
 import pydantic
-from pydantic import Field
+from pydantic import Field, field_validator
 
 from markata.hookspec import hook_impl, register_attr
 
@@ -73,49 +73,45 @@ class OutputHTML(pydantic.BaseModel):
     slug: str = None
     output_html: Path = None
 
-    @pydantic.validator("slug", pre=True, always=True)
-    @classmethod
-    def default_slug(cls, v, *, values):
+    @field_validator("slug", mode="before")
+    def default_slug(cls, v, info):
         from slugify import slugify
 
         if v is None:
-            return slugify(str(values["path"].stem))
+            return slugify(str(info.data.get("path", "").stem))
         return v
 
-    @pydantic.validator("output_html", pre=True, always=True)
+    @field_validator("output_html", mode="before")
     def default_output_html(
-        cls: "OutputHTML", v: Optional[Path], *, values: Dict
+        cls: "OutputHTML", v: Optional[Path], info
     ) -> Path:
         if isinstance(v, str):
             v = Path(v)
         if v is not None:
             return v
-        if "slug" not in values:
-            for validator in cls.__validators__["slug"]:
-                values["slug"] = validator.func(cls, v, values=values)
+        
+        slug = info.data.get("slug")
+        if slug is None:
+            slug = cls.default_slug(None, info)
 
-        if values["slug"] == "index":
+        if slug == "index":
             return cls.markata.config.output_dir / "index.html"
-        return cls.markata.config.output_dir / values["slug"] / "index.html"
+        return cls.markata.config.output_dir / slug / "index.html"
 
-    @pydantic.validator("output_html")
+    @field_validator("output_html", mode="before")
     def output_html_relative(
-        cls: "OutputHTML", v: Optional[Path], *, values: Dict
+        cls: "OutputHTML", v: Optional[Path], info
     ) -> Path:
-        if isinstance(v, str):
-            v = Path(v)
-        if cls.markata.config.output_dir.absolute() not in v.absolute().parents:
-            return cls.markata.config.output_dir / v
+        if v is None:
+            return cls.default_output_html(v, info)
         return v
 
-    @pydantic.validator("output_html")
+    @field_validator("output_html", mode="before")
     def output_html_exists(
-        cls: "OutputHTML", v: Optional[Path], *, values: Dict
+        cls: "OutputHTML", v: Optional[Path], info
     ) -> Path:
-        if isinstance(v, str):
-            v = Path(v)
-        if not v.parent.exists():
-            v.parent.mkdir(parents=True, exist_ok=True)
+        if v is None:
+            return cls.default_output_html(v, info)
         return v
 
 
@@ -138,6 +134,8 @@ def save(markata: "Markata") -> None:
         if article.html is None:
             continue
         if isinstance(article.html, str):
+            # Create parent directories before writing
+            article.output_html.parent.mkdir(parents=True, exist_ok=True)
             article.output_html.write_text(article.html)
         if isinstance(article.html, Dict):
             for slug, html in article.html.items():
