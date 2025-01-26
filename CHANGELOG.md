@@ -1,5 +1,21 @@
 # Markata Changelog
 
+## 0.10.0
+
+### Performance Improvements
+
+#### Core Optimizations
+- Added map cache with statistics tracking in Markata core
+- Optimized template rendering with bytecode caching
+- Parallelized markdown rendering and file loading
+- Added configurable cache expiration times for different components
+
+#### Component-specific Optimizations
+- Updated auto_description to use markdown-it for better performance
+- Improved date parsing with dateparser fallback
+- Optimized post loading with bulk processing
+- Modernized pydantic validators to use new field_validator syntax
+
 ## 0.9.0
 
 - Feat: add skip plugin
