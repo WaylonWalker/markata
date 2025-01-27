@@ -1,12 +1,12 @@
 """Default load plugin."""
 
+from concurrent.futures import ThreadPoolExecutor
 import itertools
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable, List, Optional
-from concurrent.futures import ThreadPoolExecutor
+from typing import Callable, List, Optional, TYPE_CHECKING
 
-from markata import background
 import frontmatter
+from markata import background
 import pydantic
 from rich.progress import BarColumn, Progress
 from yaml.parser import ParserError
@@ -27,8 +27,13 @@ def load_file_content(path: Path) -> tuple[Path, dict]:
     """Load file content without validation."""
     try:
         with open(path, "r") as f:
-            content = f.read()
-        return path, frontmatter.loads(content)
+            raw_content = f.read()
+        try:
+            content = frontmatter.loads(raw_content)
+        except Exception:
+            content = None
+        content["raw"] = raw_content
+        return path, content
     except Exception:
         return path, None
 

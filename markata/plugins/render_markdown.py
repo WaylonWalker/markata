@@ -117,8 +117,9 @@ class RenderMarkdownConfig(pydantic.BaseModel):
     extensions: List[MdItExtension] = []
     cache_expire: int = 3600
 
-    @pydantic.validator("extensions")
-    def convert_to_list(cls, v):
+    @pydantic.field_validator("extensions", mode="before")
+    @classmethod
+    def validate_extensions(cls, v) -> List[str]:
         if not isinstance(v, list):
             return [v]
         return v

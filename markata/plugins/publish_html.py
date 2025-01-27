@@ -56,7 +56,7 @@ lets you [make your home page](https://markata.dev/home-page/)
 """
 
 from pathlib import Path
-from typing import Any, Dict, Optional, TYPE_CHECKING
+from typing import Any, Dict, Optional, TYPE_CHECKING, Union
 
 import pydantic
 from pydantic import Field, field_validator, ConfigDict
@@ -71,7 +71,7 @@ class OutputHTML(pydantic.BaseModel):
     markata: Any = Field(None, exclude=True)
     path: Path
     slug: str = None
-    output_html: Optional[str] = None
+    output_html: Optional[Path] = None
 
     class Config:
         model_config = ConfigDict(
@@ -85,36 +85,47 @@ class OutputHTML(pydantic.BaseModel):
         )
 
     @field_validator("slug", mode="before")
-    def default_slug(cls, v, info):
+    @classmethod
+    def default_slug(cls, v, info) -> str:
         from slugify import slugify
 
         if v is None:
-            return slugify(str(info.data.get("path", "").stem))
+            path = info.data.get("path")
+            if path is None:
+                return ""
+            return slugify(str(path.stem))
         return v
 
     @field_validator("output_html", mode="before")
-    def default_output_html(cls: "OutputHTML", v: Optional[str], info) -> Path:
+    @classmethod
+    def default_output_html(cls, v: Optional[Union[str, Path]], info) -> Optional[Path]:
         if isinstance(v, str):
             v = Path(v)
         if v is not None:
             return v
+
+        markata = info.data.get("markata")
+        if markata is None:
+            raise ValueError("markata is required")
 
         slug = info.data.get("slug")
         if slug is None:
             slug = cls.default_slug(None, info)
 
         if slug == "index":
-            return cls.markata.config.output_dir / "index.html"
-        return cls.markata.config.output_dir / slug / "index.html"
+            return markata.config.output_dir / "index.html"
+        return markata.config.output_dir / slug / "index.html"
 
     @field_validator("output_html", mode="before")
-    def output_html_relative(cls: "OutputHTML", v: Optional[Path], info) -> Path:
+    @classmethod
+    def output_html_relative(cls, v: Optional[Path], info) -> Optional[Path]:
         if v is None:
             return cls.default_output_html(v, info)
         return v
 
     @field_validator("output_html", mode="before")
-    def output_html_exists(cls: "OutputHTML", v: Optional[Path], info) -> Path:
+    @classmethod
+    def output_html_exists(cls, v: Optional[Path], info) -> Optional[Path]:
         if v is None:
             return cls.default_output_html(v, info)
         return v

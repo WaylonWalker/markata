@@ -82,13 +82,13 @@ Markata config also supports adding scripts to the head via configuration.
 
 import inspect
 from pathlib import Path
-from typing import Dict, List, Optional, TYPE_CHECKING, Union
+from typing import Any, Dict, List, Optional, TYPE_CHECKING, Union
 
 import jinja2
 from jinja2 import Template, Undefined
 from more_itertools import flatten
 import pydantic
-from pydantic import field_validator, model_validator
+from pydantic import ConfigDict, Field, field_validator, model_validator, root_validator
 from rich.syntax import Syntax
 import typer
 
@@ -192,23 +192,26 @@ class Config(pydantic.BaseModel):
     env_options: dict = {}
 
     @model_validator(mode="after")
-    def dynamic_templates_in_templates_dir(cls, values):
+    @classmethod
+    def dynamic_templates_in_templates_dir(cls, model) -> "Config":
         markata_templates = Path(__file__).parents[1] / "templates"
+        templates_dir = model.templates_dir
+        dynamic_templates_dir = model.dynamic_templates_dir
 
-        if isinstance(values["templates_dir"], Path):
-            values["templates_dir"] = [
-                values["templates_dir"],
+        if isinstance(templates_dir, Path):
+            model.templates_dir = [
+                templates_dir,
                 markata_templates,
-                values["dynamic_templates_dir"],
+                dynamic_templates_dir,
             ]
 
-        if markata_templates not in values["templates_dir"]:
-            values["templates_dir"].append(markata_templates)
+        if markata_templates not in model.templates_dir:
+            model.templates_dir.append(markata_templates)
 
-        if values["dynamic_templates_dir"] not in values["templates_dir"]:
-            values["templates_dir"].append(values["dynamic_templates_dir"])
+        if dynamic_templates_dir not in model.templates_dir:
+            model.templates_dir.append(dynamic_templates_dir)
 
-        return values
+        return model
 
     @property
     def jinja_loader(self):
@@ -243,19 +246,32 @@ class PostOverrides(pydantic.BaseModel):
 class Post(pydantic.BaseModel):
     config_overrides: PostOverrides = PostOverrides()
     template: Optional[str | Dict[str, str]] = None
+    markata: Any = Field(None, exclude=True)
 
-    @field_validator("template", mode="before", always=True)
-    def default_template(cls, v, *, values):
+    model_config = ConfigDict(
+        validate_assignment=True,  # Config model
+        arbitrary_types_allowed=True,
+        extra="allow",
+        str_strip_whitespace=True,
+        validate_default=True,
+        coerce_numbers_to_str=True,
+        populate_by_name=True,
+    )
+
+    @field_validator("template", mode="before")
+    @classmethod
+    def default_template(cls, v, info) -> Union[str, Dict[str, str]]:
+        markata = info.data.get("markata")
         if v is None:
-            return values["markata"].config.post_template
+            return markata.config.post_template
         if isinstance(v, str):
             v = {"index": v}
-        if isinstance(values["markata"].config.post_template, str):
+        if isinstance(markata.config.post_template, str):
             config_template = {
-                "index": values["markata"].config.post_template,
+                "index": markata.config.post_template,
             }
         else:
-            config_template = values["markata"].config.post_template
+            config_template = markata.config.post_template
         return {**config_template, **v}
 
 

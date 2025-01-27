@@ -134,7 +134,7 @@ markdown.
 """
 
 from pathlib import Path
-from typing import Any, List, TYPE_CHECKING
+from typing import Any, List, Optional, TYPE_CHECKING
 
 from jinja2 import TemplateSyntaxError, Undefined, UndefinedError, nodes
 from jinja2.ext import Extension
@@ -205,6 +205,8 @@ class PostTemplateSyntaxError(TemplateSyntaxError):
 class JinjaMd(pydantic.BaseModel):
     markata: Any = Field(None, exclude=True)
     content: str = ""
+    article_html: Optional[str] = None
+    jinja: bool = Field(default=False)
     model_config = pydantic.ConfigDict(
         validate_assignment=False,
         arbitrary_types_allowed=True,

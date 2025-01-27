@@ -38,6 +38,9 @@ class Post(pydantic.BaseModel, JupyterMixin):
     load_time: float = 0
     profile: Optional[str] = None
     title: str = None
+    template: Optional[str | Dict[str, str]] = "post.html"
+    sidebar: Optional[Any] = None
+
     model_config = ConfigDict(
         validate_assignment=False,  # Skip validation on assignment for performance
         arbitrary_types_allowed=True,
@@ -47,8 +50,6 @@ class Post(pydantic.BaseModel, JupyterMixin):
         coerce_numbers_to_str=True,
         populate_by_name=True,
     )
-    template: Optional[str | Dict[str, str]] = "post.html"
-    sidebar: Optional[Any] = None
 
     def __rich__(self) -> Pretty:
         return Pretty(self)
@@ -368,56 +369,9 @@ class Post(pydantic.BaseModel, JupyterMixin):
         # If we still don't have a date, use now
         return datetime.datetime.now()
 
-    # @pydantic.validator("date", pre=True, always=True)
-    # def datetime_is_date(cls, v, *, values):
-    #     if isinstance(v, datetime.date):
-    #         return v
-    #     if isinstance(v, datetime.datetime):
-    #         return v.date()
-
-    # @pydantic.validator("date", pre=True, always=True)
-    # def mindate(cls, v, *, values):
-    #     if v is None:
-    #         return datetime.date.min
-    #     return v
-
-    # @pydantic.validator("sidebar", pre=True, always=True)
-    # def default_sidebar(cls, v, *, values):
-    #     if v is None:
-    #         return v
-    #     if isinstance(v, str):
-    #         return values["markata"].feeds.get(v)
-
-    # from rich.table import Table
-
-    # table = Table(title=f"Post: {self.title}", show_header=False, show_lines=False)
-    # table.add_column("Key", style="cyan", no_wrap=True)
-    # table.add_column("Value", style="green")
-
-    # table.add_row("date", str(self.date))
-    # table.add_row("title", str(self.title))
-    # if len(self.description) > 80:
-    #     table.add_row("description", str(self.description)[:80] + "...")
-    # else:
-    #     table.add_row("description", str(self.description))
-    # table.add_row("published", str(self.published))
-    # if len(self.content.splitlines()) > 12:
-    #     table.add_row(
-    #         "content",
-    #         "[medium_orchid]\n".join(self.content.splitlines()[:12])
-    #         + "\n\n"
-    #         + "[yellow]... "
-    #         + str(len(self.content.splitlines()) - 12)
-    #         + " more lines",
-    #     )
-    # else:
-    #     table.add_row("content", str(self.content))
-
-    # return table
-
 
 class PostModelConfig(pydantic.BaseModel):
-    "Configuration for the Post model"
+    """Configuration for the Post model"""
 
     def __init__(self, **data) -> None:
         """
@@ -464,11 +418,22 @@ class PostModelConfig(pydantic.BaseModel):
         "title",
     ]
 
-    @pydantic.validator("repr_include", pre=True, always=True)
-    def repr_include_validator(cls, v, *, values):
+    model_config = ConfigDict(
+        validate_assignment=True,    # Config model
+        arbitrary_types_allowed=True,
+        extra="allow",
+        str_strip_whitespace=True,
+        validate_default=True,
+        coerce_numbers_to_str=True,
+        populate_by_name=True,
+    )
+
+    @field_validator("repr_include", mode="before")
+    @classmethod
+    def repr_include_validator(cls, v, info) -> Optional[List[str]]:
         if v:
             return v
-        return values.get("include", None)
+        return info.data.get("include")
 
 
 class Config(pydantic.BaseModel):

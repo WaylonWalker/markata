@@ -78,6 +78,7 @@ from typing import Optional, TYPE_CHECKING
 
 from jinja2 import Template, Undefined
 import pydantic
+from pydantic import ConfigDict, Field
 from rich.logging import RichHandler
 
 from markata.hookspec import hook_impl, register_attr
@@ -119,14 +120,30 @@ def setup_log(markata: "Markata", level: int = logging.INFO) -> Path:
 
 class LoggingConfig(pydantic.BaseModel):
     output_dir: pydantic.DirectoryPath = Path("markout")
-    log_dir: Optional[Path] = None
+    log_dir: Path = Field(None, validate_default=True)
     template: Optional[Path] = Path(__file__).parent / "default_log_template.html"
 
+    model_config = ConfigDict(
+        validate_assignment=True,  # Config model
+        arbitrary_types_allowed=True,
+        extra="allow",
+        str_strip_whitespace=True,
+        validate_default=True,
+        coerce_numbers_to_str=True,
+        populate_by_name=True,
+    )
+
     @pydantic.field_validator("log_dir", mode="before")
-    def validate_log_dir(cls, v, *, values):
+    @classmethod
+    def validate_log_dir(cls, v, info) -> Path:
         if v is None:
-            return values["output_dir"] / "_logs"
-        return Path(v)
+            output_dir = info.data.get("output_dir", Path("markout"))
+            return output_dir / "_logs"
+        if isinstance(v, str):
+            return Path(v)
+        if isinstance(v, Path):
+            return v
+        raise ValueError(f"log_dir must be a string or Path, got {type(v)}")
 
 
 class Config(pydantic.BaseModel):

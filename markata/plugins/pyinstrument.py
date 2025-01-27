@@ -5,7 +5,7 @@ The profile will be saved to <output_dir>/_profile/index.html
 """
 
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 import pydantic
 
@@ -23,17 +23,40 @@ except ModuleNotFoundError:
 
 
 class ProfilerConfig(pydantic.BaseModel):
-    output_dir: pydantic.DirectoryPath = Path("markout")
+    output_dir: Path = Path("markout")
     should_profile: bool = SHOULD_PROFILE
     profiler: Optional[Any] = (
         None  # No valicator for type pyinstrument.profiler.Profiler
     )
     output_file: Optional[Path] = None
 
+    model_config = pydantic.ConfigDict(
+        validate_assignment=True,    # Config model
+        arbitrary_types_allowed=True,
+        extra="allow",
+        str_strip_whitespace=True,
+        validate_default=True,
+        coerce_numbers_to_str=True,
+        populate_by_name=True,
+    )
+
+    @pydantic.field_validator("output_dir", mode="before")
+    @classmethod
+    def ensure_output_dir_exists(cls, v: Union[str, Path]) -> Path:
+        """Ensure output directory exists, creating it if necessary."""
+        if isinstance(v, str):
+            v = Path(v)
+        v.mkdir(parents=True, exist_ok=True)
+        return v
+
     @pydantic.field_validator("output_file", mode="before")
-    def validate_output_file(cls, v, *, values):
+    @classmethod
+    def validate_output_file(cls, v, info) -> Optional[Path]:
         if v is None:
-            output_file = values["output_dir"] / "_profile" / "index.html"
+            output_dir = info.data.get("output_dir")
+            if output_dir is None:
+                output_dir = Path("markout")
+            output_file = output_dir / "_profile" / "index.html"
             output_file.parent.mkdir(parents=True, exist_ok=True)
             return output_file
         return v

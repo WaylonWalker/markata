@@ -24,9 +24,9 @@ class SubroutePost(BaseModel):
         populate_by_name=True,
     )
 
-    @field_validator("slug")
+    @field_validator("slug", mode="before")
     @classmethod
-    def relative_to_subroute(cls, v, *, values: dict) -> Path:
+    def relative_to_subroute(cls, v, info) -> Path:
         subroute = cls.markata.config.subroute
         if subroute == Path(""):
             return v

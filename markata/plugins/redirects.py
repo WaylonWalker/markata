@@ -74,7 +74,6 @@ implementation.
 """
 
 from pathlib import Path
-from typing import Optional
 
 from jinja2 import Template
 import pydantic
@@ -98,7 +97,7 @@ class Redirect(pydantic.BaseModel):
 
 
 class RedirectsConfig(pydantic.BaseModel):
-    redirects_file: Optional[Path] = None
+    redirects_file: Path = Path("static/_redirects")
     model_config = pydantic.ConfigDict(
         validate_assignment=True,
         arbitrary_types_allowed=True,
