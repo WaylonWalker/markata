@@ -2,16 +2,17 @@ from pathlib import Path
 from typing import Optional
 
 import pydantic
+from pydantic import Field
 
 from markata import Markata
 from markata.hookspec import hook_impl, register_attr
 
 
 class SiteMapUrl(pydantic.BaseModel):
-    slug: str = pydantic.Field(..., exclude=True)
-    loc: str = pydantic.Field(None, include=True)
-    changefreq: str = pydantic.Field("daily", include=True)
-    priority: str = pydantic.Field("0.7", include=True)
+    slug: str = Field(..., exclude=True)
+    loc: str = Field(None, include=True)
+    changefreq: str = Field("daily", include=True)
+    priority: str = Field("0.7", include=True)
 
     _loc = pydantic.field_validator("loc", pre=False, always=True)(
         lambda v, *, values, **kwargs: values["markata"].config.url

@@ -74,11 +74,10 @@ implementation.
 """
 
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Optional
 
 from jinja2 import Template
 import pydantic
-from pydantic import field_validator
 
 from markata import Markata
 from markata.hookspec import hook_impl

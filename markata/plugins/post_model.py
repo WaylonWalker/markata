@@ -283,7 +283,7 @@ class Post(pydantic.BaseModel, JupyterMixin):
                         return datetime.date.today()
         # If we get here, try to convert to string
         try:
-            return date_is_date(cls, str(v), info)
+            return cls.date_is_date(str(v), info)
         except (ValueError, TypeError):
             print(f"Failed to convert {v!r} to date")  # Debug log
             return datetime.date.today()

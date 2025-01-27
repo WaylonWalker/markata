@@ -52,7 +52,6 @@ m = Markata()
 """
 
 import html
-from itertools import compress
 from pathlib import Path
 from typing import Any, Dict, TYPE_CHECKING
 
@@ -72,7 +71,6 @@ def get_description(article: "Post") -> str:
     Uses markdown-it-py to parse the markdown and extracts text content from all nodes.
     """
     from markdown_it import MarkdownIt
-    import html
 
     md = MarkdownIt("commonmark")
     tokens = md.parse(article.content)

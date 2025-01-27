@@ -3,10 +3,9 @@
 import itertools
 from pathlib import Path
 from typing import TYPE_CHECKING, Callable, List, Optional
-from concurrent.futures import as_completed, ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor
 
 from markata import background
-import asyncio
 import frontmatter
 import pydantic
 from rich.progress import BarColumn, Progress
@@ -30,7 +29,7 @@ def load_file_content(path: Path) -> tuple[Path, dict]:
         with open(path, "r") as f:
             content = f.read()
         return path, frontmatter.loads(content)
-    except Exception as e:
+    except Exception:
         return path, None
 
 

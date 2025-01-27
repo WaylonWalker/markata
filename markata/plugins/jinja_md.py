@@ -134,12 +134,13 @@ markdown.
 """
 
 from pathlib import Path
-from typing import List, TYPE_CHECKING, Any
+from typing import Any, List, TYPE_CHECKING
 
 from jinja2 import TemplateSyntaxError, Undefined, UndefinedError, nodes
 from jinja2.ext import Extension
 import pathspec
 import pydantic
+from pydantic import Field
 
 from markata import __version__
 from markata.hookspec import hook_impl, register_attr

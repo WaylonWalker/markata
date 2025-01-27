@@ -6,6 +6,7 @@ from __future__ import annotations
 import atexit
 import datetime
 from datetime import timedelta
+from functools import lru_cache
 import importlib
 import logging
 import os
@@ -13,7 +14,6 @@ from pathlib import Path
 import sys
 import textwrap
 from typing import Any, Dict, Iterable, Optional
-from functools import lru_cache
 
 from diskcache import Cache
 import pluggy
@@ -24,7 +24,6 @@ from rich.table import Table
 
 from markata import hookspec, standard_config
 from markata.__about__ import __version__
-from markata.errors import MissingFrontMatter
 from markata.exceptions import NoPosts, TooManyPosts
 from markata.lifecycle import LifeCycle
 
@@ -414,7 +413,7 @@ class Markata:
             total = stats["total"]
             if total > 0:
                 hit_rate = (stats["hits"] / total) * 100
-                self.console.print(f"\n[yellow]Map Cache Statistics:[/yellow]")
+                self.console.print("\n[yellow]Map Cache Statistics:[/yellow]")
                 self.console.print(f"Total calls: {total}")
                 self.console.print(f"Cache hits: {stats['hits']}")
                 self.console.print(f"Cache misses: {stats['misses']}")

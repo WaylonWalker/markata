@@ -80,7 +80,6 @@ Markata config also supports adding scripts to the head via configuration.
 
 """
 
-from functools import lru_cache
 import inspect
 from pathlib import Path
 from typing import Dict, List, Optional, TYPE_CHECKING, Union
