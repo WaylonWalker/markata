@@ -215,18 +215,22 @@ class Config(pydantic.BaseModel):
     def jinja_loader(self):
         return jinja2.FileSystemLoader(self.templates_dir)
 
-    @property 
+    @property
     def jinja_env(self):
         if hasattr(self, "_jinja_env"):
             return self._jinja_env
-            
+
         self.env_options.setdefault("loader", self.jinja_loader)
         self.env_options.setdefault("undefined", SilentUndefined)
         self.env_options.setdefault("lstrip_blocks", True)
         self.env_options.setdefault("trim_blocks", True)
-        self.env_options.setdefault("bytecode_cache", MarkataTemplateCache(self.template_cache_dir))
-        self.env_options.setdefault("auto_reload", False)  # Disable auto reload in production
-        
+        self.env_options.setdefault(
+            "bytecode_cache", MarkataTemplateCache(self.template_cache_dir)
+        )
+        self.env_options.setdefault(
+            "auto_reload", False
+        )  # Disable auto reload in production
+
         env = jinja2.Environment(**self.env_options)
         self._jinja_env = env
         return env
@@ -258,6 +262,7 @@ class Post(pydantic.BaseModel):
 
 _template_cache = {}
 
+
 def get_template(markata, template):
     """Get a template from the cache or compile it."""
     try:
@@ -278,6 +283,7 @@ def get_template(markata, template):
 
         template_content = template_path.read_text()
         return Template(template_content, undefined=SilentUndefined)
+
 
 def render_article(markata, cache, article):
     """Render an article using cached templates."""
@@ -307,25 +313,26 @@ def render_article(markata, cache, article):
 def render_template(markata, article, template):
     """Render a template with article context."""
     merged_config = markata.config
-    
+
     # Get the body content - prefer article_html, fallback to html
-    body = getattr(article, 'article_html', None)
+    body = getattr(article, "article_html", None)
     if body is None:
-        body = getattr(article, 'html', '')
-    
+        body = getattr(article, "html", "")
+
     context = {
         "post": article,
         "markata": markata,
         "config": merged_config,
         "body": body,
     }
-    
+
     try:
         return template.render(**context)
     except Exception as e:
         markata.console.print(f"[red]Error rendering template for {article.path}[/]")
         markata.console.print(f"[red]{str(e)}[/]")
         raise
+
 
 @hook_impl()
 def save(markata: "Markata") -> None:
@@ -412,22 +419,23 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
             else:
                 markata.console.print(f"[orchid]{template}[/] -> [red]{file}[/]")
 
+
 class MarkataTemplateCache(jinja2.BytecodeCache):
     """Template bytecode cache for improved performance."""
-    
+
     def __init__(self, directory):
         self.directory = Path(directory)
         self.directory.mkdir(parents=True, exist_ok=True)
-        
+
     def load_bytecode(self, bucket):
         filename = self.directory / f"{bucket.key}.cache"
         if filename.exists():
-            with open(filename, 'rb') as f:
+            with open(filename, "rb") as f:
                 bucket.bytecode_from_string(f.read())
 
     def dump_bytecode(self, bucket):
         filename = self.directory / f"{bucket.key}.cache"
-        with open(filename, 'wb') as f:
+        with open(filename, "wb") as f:
             f.write(bucket.bytecode_to_string())
 
 

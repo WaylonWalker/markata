@@ -34,10 +34,10 @@ def load(markata: "Markata") -> None:
             if markata.cache.get(key) == "done":
                 post.skip = True
     console.log(
-        f'{len(markata.filter("skip==True"))}/{len(markata.posts)} posts skipped'
+        f"{len(markata.filter('skip==True'))}/{len(markata.posts)} posts skipped"
     )
     console.log(
-        f'{len(markata.filter("skip==False"))}/{len(markata.posts)} posts not skipped'
+        f"{len(markata.filter('skip==False'))}/{len(markata.posts)} posts not skipped"
     )
 
 

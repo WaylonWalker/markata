@@ -93,7 +93,9 @@ class Redirect(pydantic.BaseModel):
     original: str
     new: str
     markata: Markata
-    model_config = pydantic.ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
+    model_config = pydantic.ConfigDict(
+        validate_assignment=True, arbitrary_types_allowed=True
+    )
 
 
 class RedirectsConfig(pydantic.BaseModel):

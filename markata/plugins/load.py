@@ -27,7 +27,7 @@ class ValidationError(ValueError): ...
 def load_file_content(path: Path) -> tuple[Path, dict]:
     """Load file content without validation."""
     try:
-        with open(path, 'r') as f:
+        with open(path, "r") as f:
             content = f.read()
         return path, frontmatter.loads(content)
     except Exception as e:
@@ -43,20 +43,20 @@ def load(markata: "MarkataMarkdown") -> None:
         console=markata.console,
     )
     markata.console.log(f"found {len(markata.files)} posts")
-    
+
     # Use ThreadPoolExecutor to load files in parallel
     with ThreadPoolExecutor() as executor:
         # Load all file contents first
         file_contents = list(executor.map(load_file_content, markata.files))
-    
+
     posts = []
     errors = []
-    
+
     # Bulk process and validate posts
     for path, content in file_contents:
         if content is None:
             continue
-            
+
         try:
             if markata.Post:
                 # Create post using model_validate to get proper type coercion
@@ -65,9 +65,9 @@ def load(markata: "MarkataMarkdown") -> None:
                         "markata": markata,
                         "path": path,
                         "content": content.content,
-                        **content.metadata
+                        **content.metadata,
                     },
-                    context={"markata": markata}
+                    context={"markata": markata},
                 )
                 posts.append(post)
             else:
@@ -76,7 +76,7 @@ def load(markata: "MarkataMarkdown") -> None:
                     posts.append(post)
         except Exception as e:
             errors.append((path, str(e)))
-            
+
     if errors:
         for path, error in errors:
             markata.console.log(f"Error loading {path}: {error}")

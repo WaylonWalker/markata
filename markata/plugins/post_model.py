@@ -39,7 +39,7 @@ class Post(pydantic.BaseModel, JupyterMixin):
     profile: Optional[str] = None
     title: str = None
     model_config = ConfigDict(
-        validate_assignment=False,   # Skip validation on assignment for performance
+        validate_assignment=False,  # Skip validation on assignment for performance
         arbitrary_types_allowed=True,
         extra="allow",
         str_strip_whitespace=True,

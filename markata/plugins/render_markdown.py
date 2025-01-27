@@ -251,16 +251,16 @@ def render(markata: "Markata") -> None:
     """Render markdown content in parallel."""
     config = markata.config.render_markdown
     articles = list(markata.filter("skip==False"))
-    
+
     with markata.cache as cache:
         with concurrent.futures.ThreadPoolExecutor() as executor:
             render_func = partial(render_article_parallel, markata, config, cache)
             args_list = [(article,) for article in articles]
-            
+
             for article, html in executor.map(render_func, args_list):
                 article.html = html
                 article.article_html = copy.deepcopy(html)
-                
+
     markata.rendered_posts = markata.posts
 
 
@@ -268,19 +268,15 @@ def render_article_parallel(markata, config, cache, article):
     # Handle article being passed as a tuple
     if isinstance(article, tuple):
         article = article[0]  # Extract the Post object from the tuple
-        
-    # Get content, defaulting to empty string
-    content = getattr(article, 'content', '')
-    if not content:
-        article.article_html = ''
-        article.html = ''
-        return article, ''
 
-    key = markata.make_hash(
-        "render_markdown",
-        "render",
-        content
-    )
+    # Get content, defaulting to empty string
+    content = getattr(article, "content", "")
+    if not content:
+        article.article_html = ""
+        article.html = ""
+        return article, ""
+
+    key = markata.make_hash("render_markdown", "render", content)
     html_from_cache = markata.precache.get(key)
 
     if html_from_cache is not None:

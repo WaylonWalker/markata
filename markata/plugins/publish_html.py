@@ -93,14 +93,12 @@ class OutputHTML(pydantic.BaseModel):
         return v
 
     @field_validator("output_html", mode="before")
-    def default_output_html(
-        cls: "OutputHTML", v: Optional[str], info
-    ) -> Path:
+    def default_output_html(cls: "OutputHTML", v: Optional[str], info) -> Path:
         if isinstance(v, str):
             v = Path(v)
         if v is not None:
             return v
-        
+
         slug = info.data.get("slug")
         if slug is None:
             slug = cls.default_slug(None, info)
@@ -110,17 +108,13 @@ class OutputHTML(pydantic.BaseModel):
         return cls.markata.config.output_dir / slug / "index.html"
 
     @field_validator("output_html", mode="before")
-    def output_html_relative(
-        cls: "OutputHTML", v: Optional[Path], info
-    ) -> Path:
+    def output_html_relative(cls: "OutputHTML", v: Optional[Path], info) -> Path:
         if v is None:
             return cls.default_output_html(v, info)
         return v
 
     @field_validator("output_html", mode="before")
-    def output_html_exists(
-        cls: "OutputHTML", v: Optional[Path], info
-    ) -> Path:
+    def output_html_exists(cls: "OutputHTML", v: Optional[Path], info) -> Path:
         if v is None:
             return cls.default_output_html(v, info)
         return v

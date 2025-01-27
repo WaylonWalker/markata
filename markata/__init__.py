@@ -123,7 +123,7 @@ class Markata:
         self.threded = False
         self._cache = None
         self._precache = None
-        self._map_cache_stats = {'hits': 0, 'misses': 0, 'total': 0}
+        self._map_cache_stats = {"hits": 0, "misses": 0, "total": 0}
         self.MARKATA_CACHE_DIR = Path(".") / ".markata.cache"
         self.MARKATA_CACHE_DIR.mkdir(exist_ok=True)
         self._pm = pluggy.PluginManager("markata")
@@ -409,17 +409,19 @@ class Markata:
     def teardown(self: "Markata"):
         """Cleanup and print statistics when Markata is done."""
         # Print map cache statistics if they exist
-        if hasattr(self, '_map_cache_stats'):
+        if hasattr(self, "_map_cache_stats"):
             stats = self._map_cache_stats
-            total = stats['total']
+            total = stats["total"]
             if total > 0:
-                hit_rate = (stats['hits'] / total) * 100
+                hit_rate = (stats["hits"] / total) * 100
                 self.console.print(f"\n[yellow]Map Cache Statistics:[/yellow]")
                 self.console.print(f"Total calls: {total}")
                 self.console.print(f"Cache hits: {stats['hits']}")
                 self.console.print(f"Cache misses: {stats['misses']}")
                 self.console.print(f"Hit rate: {hit_rate:.1f}%")
-                self.console.print(f"Cache size: {len(getattr(self, '_filtered_cache', {}))}")
+                self.console.print(
+                    f"Cache size: {len(getattr(self, '_filtered_cache', {}))}"
+                )
         if self.stages_ran:
             self._pm.hook.teardown(markata=self)
         return self
@@ -495,16 +497,17 @@ class Markata:
             return lambda a: a.get(sort, datetime.datetime(1970, 1, 1))
         if "date" in sort.lower():
             return lambda a: a.get(sort, datetime.date(1970, 1, 1))
-        
+
         # Create a compiled function for complex sort expressions
         try:
-            code = compile(sort, '<string>', 'eval')
+            code = compile(sort, "<string>", "eval")
+
             def sort_key(a):
                 try:
                     value = eval(code, a.to_dict(), {})
                     if isinstance(value, (int, float)):
                         return value
-                    if hasattr(value, 'timestamp'):
+                    if hasattr(value, "timestamp"):
                         return value.timestamp()
                     if isinstance(value, datetime.date):
                         return datetime.datetime.combine(
@@ -514,6 +517,7 @@ class Markata:
                     return sum(ord(c) for c in str(value))
                 except Exception:
                     return -1
+
             return sort_key
         except Exception:
             return lambda _: -1
@@ -525,20 +529,20 @@ class Markata:
 
     def _get_eval_globals(self):
         """Get common globals used in eval operations"""
-        if not hasattr(self, '_eval_globals'):
-            self._eval_globals = {'timedelta': timedelta}
+        if not hasattr(self, "_eval_globals"):
+            self._eval_globals = {"timedelta": timedelta}
         return self._eval_globals
 
     def _eval_with_article(self, code, article, extra_globals=None):
         """Evaluate code with article context, reusing dict where possible"""
-        if not hasattr(article, '_eval_dict'):
+        if not hasattr(article, "_eval_dict"):
             article._eval_dict = article.to_dict()
-            article._eval_dict.update({'post': article, 'm': self})
-        
+            article._eval_dict.update({"post": article, "m": self})
+
         globals_dict = self._get_eval_globals()
         if extra_globals:
             globals_dict.update(extra_globals)
-        
+
         try:
             return eval(code, article._eval_dict, globals_dict)
         except Exception:
@@ -554,50 +558,53 @@ class Markata:
         **kwargs: dict,
     ) -> list:
         # Cache the filtered articles
-        if not hasattr(self, '_filtered_cache'):
+        if not hasattr(self, "_filtered_cache"):
             self._filtered_cache = {}
-        
-        filter_key = (
-            func, filter, sort, reverse, args,
-            frozenset(kwargs.items())
-        )
-        
-        self._map_cache_stats['total'] += 1
-        
+
+        filter_key = (func, filter, sort, reverse, args, frozenset(kwargs.items()))
+
+        self._map_cache_stats["total"] += 1
+
         if filter_key in self._filtered_cache:
-            self._map_cache_stats['hits'] += 1
+            self._map_cache_stats["hits"] += 1
             articles = self._filtered_cache[filter_key]
         else:
-            self._map_cache_stats['misses'] += 1
-            filter_code = compile(filter, '<string>', 'eval')
-            eval_globals = {'timedelta': timedelta, **kwargs} if kwargs else {'timedelta': timedelta}
-            
+            self._map_cache_stats["misses"] += 1
+            filter_code = compile(filter, "<string>", "eval")
+            eval_globals = (
+                {"timedelta": timedelta, **kwargs}
+                if kwargs
+                else {"timedelta": timedelta}
+            )
+
             # Filter in one pass
             articles = []
             for article in self.articles:
                 try:
                     ctx = article.to_dict()
-                    ctx['post'] = article
-                    ctx['m'] = self
+                    ctx["post"] = article
+                    ctx["m"] = self
                     if eval(filter_code, ctx, eval_globals):
                         articles.append(article)
                 except Exception:
                     continue
-            
+
             # Sort if needed
             if sort != "True":
                 sort_key = self._get_sort_key(sort)
                 articles.sort(key=sort_key, reverse=reverse)
             elif reverse:
                 articles.reverse()
-                
+
             self._filtered_cache[filter_key] = articles
-        
+
         # Map in one pass with same context structure
-        map_code = compile(func, '<string>', 'eval')
-        eval_globals = {'timedelta': timedelta, **kwargs} if kwargs else {'timedelta': timedelta}
+        map_code = compile(func, "<string>", "eval")
+        eval_globals = (
+            {"timedelta": timedelta, **kwargs} if kwargs else {"timedelta": timedelta}
+        )
         return [
-            eval(map_code, {'post': a, 'm': self, **a.to_dict()}, eval_globals)
+            eval(map_code, {"post": a, "m": self, **a.to_dict()}, eval_globals)
             for a in articles
         ]
 

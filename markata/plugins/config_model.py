@@ -23,7 +23,7 @@ class Config(BaseSettings, JupyterMixin):
     default_cache_expire: PositiveInt = 3600
     template_cache_expire: PositiveInt = 86400  # 24 hours
     markdown_cache_expire: PositiveInt = 21600  # 6 hours
-    dynamic_cache_expire: PositiveInt = 3600   # 1 hour
+    dynamic_cache_expire: PositiveInt = 3600  # 1 hour
     output_dir: pydantic.DirectoryPath = Path("markout")
     assets_dir: Path = pydantic.Field(
         Path("static"),
@@ -52,7 +52,7 @@ class Config(BaseSettings, JupyterMixin):
     twitter_site: Optional[str] = None
     path_prefix: Optional[str] = ""
     model_config = ConfigDict(
-        validate_assignment=True,    # Validate on assignment for config models
+        validate_assignment=True,  # Validate on assignment for config models
         arbitrary_types_allowed=True,
         extra="allow",
         str_strip_whitespace=True,

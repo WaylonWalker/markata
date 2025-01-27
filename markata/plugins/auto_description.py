@@ -76,13 +76,13 @@ def get_description(article: "Post") -> str:
 
     md = MarkdownIt("commonmark")
     tokens = md.parse(article.content)
-    
+
     # Extract text content from all inline tokens
     text_chunks = []
     for token in tokens:
         if token.type == "inline" and token.content:
             text_chunks.append(token.content)
-    
+
     description = " ".join(text_chunks)
     return html.escape(description)
 
