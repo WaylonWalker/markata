@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Optional, TYPE_CHECKING
 
 import pydantic
-from pydantic import AnyUrl, ConfigDict, PositiveInt
+from pydantic import AnyUrl, ConfigDict, PositiveInt, field_validator
 from pydantic_extra_types.color import Color
 from pydantic_settings import BaseSettings
 from rich.jupyter import JupyterMixin
@@ -51,7 +51,15 @@ class Config(BaseSettings, JupyterMixin):
     twitter_creator: Optional[str] = None
     twitter_site: Optional[str] = None
     path_prefix: Optional[str] = ""
-    model_config = ConfigDict(env_prefix="markata_", extra="allow")
+    model_config = ConfigDict(
+        validate_assignment=True,    # Validate on assignment for config models
+        arbitrary_types_allowed=True,
+        extra="allow",
+        str_strip_whitespace=True,
+        validate_default=True,
+        coerce_numbers_to_str=True,
+        populate_by_name=True,
+    )
     today: datetime.date = pydantic.Field(default_factory=datetime.date.today)
 
     def __getitem__(self, item):
@@ -82,7 +90,7 @@ class Config(BaseSettings, JupyterMixin):
                 doc[key] = value
         return tomlkit.dumps(doc)
 
-    @pydantic.validator("output_dir", pre=True, always=True)
+    @field_validator("output_dir", mode="before")
     def validate_output_dir_exists(cls, value: Path) -> Path:
         if not isinstance(value, Path):
             value = Path(value)

@@ -59,7 +59,7 @@ import pydantic
 
 from markata import __version__
 from markata.hookspec import hook_impl
-from pydantic import ConfigDict
+from pydantic import ConfigDict, field_validator
 
 if TYPE_CHECKING:
     from markata import Markata
@@ -74,11 +74,11 @@ class ServiceWorkerConfig(pydantic.BaseModel):
     template: Optional[Template] = None
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    @pydantic.validator("template_file", always=True, pre=True)
-    def validate_template_file(cls, v):
-        if v is None:
-            return Path(__file__).parent / "default_service_worker_template.js"
-        return v
+    _template_file_validator = field_validator("template_file", mode="before")(
+        lambda _, v: Path(__file__).parent / "default_service_worker_template.js"
+        if v is None
+        else v
+    )
 
 
 class Config(pydantic.BaseModel):

@@ -30,7 +30,7 @@ class ProfilerConfig(pydantic.BaseModel):
     )
     output_file: Optional[Path] = None
 
-    @pydantic.validator("output_file", pre=True, always=True)
+    @pydantic.field_validator("output_file", mode="before")
     def validate_output_file(cls, v, *, values):
         if v is None:
             output_file = values["output_dir"] / "_profile" / "index.html"

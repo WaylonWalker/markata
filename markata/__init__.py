@@ -103,6 +103,15 @@ DEFUALT_CONFIG = {
 
 
 class HooksConfig(pydantic.BaseModel):
+    model_config = pydantic.ConfigDict(
+        validate_assignment=True,
+        arbitrary_types_allowed=True,
+        extra="allow",
+        str_strip_whitespace=True,
+        validate_default=True,
+        coerce_numbers_to_str=True,
+        populate_by_name=True,
+    )
     hooks: list = ["default"]
     disabled_hooks: list = []
 
@@ -624,9 +633,3 @@ class Markata:
         if len(posts) == 0:
             raise NoPosts
         return posts[0]
-
-
-def load_ipython_extension(ipython):
-    ipython.user_ns["m"] = Markata()
-    ipython.user_ns["markata"] = ipython.user_ns["m"]
-    ipython.user_ns["markata"] = ipython.user_ns["m"]

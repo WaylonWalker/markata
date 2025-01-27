@@ -197,6 +197,7 @@ from typing import Any, List, Optional, TYPE_CHECKING
 import jinja2
 from jinja2 import Template, Undefined
 import pydantic
+from pydantic import field_validator
 from rich.jupyter import JupyterMixin
 from rich.pretty import Pretty
 from rich.table import Table
@@ -239,7 +240,7 @@ class FeedConfig(pydantic.BaseModel, JupyterMixin):
     sitemap_template: str = "sitemap.xml"
     xsl_template: str = "rss.xsl"
 
-    @pydantic.validator("name", pre=True, always=True)
+    @field_validator("name", mode="before")
     def default_name(cls, v, *, values):
         return v or str(values.get("slug")).replace("-", "_")
 

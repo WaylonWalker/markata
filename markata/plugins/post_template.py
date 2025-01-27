@@ -89,6 +89,7 @@ import jinja2
 from jinja2 import Template, Undefined
 from more_itertools import flatten
 import pydantic
+from pydantic import field_validator, model_validator
 from rich.syntax import Syntax
 import typer
 
@@ -165,7 +166,7 @@ class HeadConfig(pydantic.BaseModel):
     script: List[Script] = []
     text: Union[List[Text], str] = ""
 
-    @pydantic.validator("text", pre=True)
+    @field_validator("text", mode="before")
     def text_to_list(cls, v):
         if isinstance(v, list):
             return "\n".join([text["value"] for text in v])
@@ -191,24 +192,24 @@ class Config(pydantic.BaseModel):
     template_cache_dir: Path = Path(".markata.cache/template_bytecode")
     env_options: dict = {}
 
-    @pydantic.model_validator(mode="after")
-    def dynamic_templates_in_templates_dir(self):
+    @model_validator(mode="after")
+    def dynamic_templates_in_templates_dir(cls, values):
         markata_templates = Path(__file__).parents[1] / "templates"
 
-        if isinstance(self.templates_dir, Path):
-            self.templates_dir = [
-                self.templates_dir,
+        if isinstance(values["templates_dir"], Path):
+            values["templates_dir"] = [
+                values["templates_dir"],
                 markata_templates,
-                self.dynamic_templates_dir,
+                values["dynamic_templates_dir"],
             ]
 
-        if markata_templates not in self.templates_dir:
-            self.templates_dir.append(markata_templates)
+        if markata_templates not in values["templates_dir"]:
+            values["templates_dir"].append(markata_templates)
 
-        if self.dynamic_templates_dir not in self.templates_dir:
-            self.templates_dir.append(self.dynamic_templates_dir)
+        if values["dynamic_templates_dir"] not in values["templates_dir"]:
+            values["templates_dir"].append(values["dynamic_templates_dir"])
 
-        return self
+        return values
 
     @property
     def jinja_loader(self):
@@ -240,7 +241,7 @@ class Post(pydantic.BaseModel):
     config_overrides: PostOverrides = PostOverrides()
     template: Optional[str | Dict[str, str]] = None
 
-    @pydantic.validator("template", pre=True, always=True)
+    @field_validator("template", mode="before", always=True)
     def default_template(cls, v, *, values):
         if v is None:
             return values["markata"].config.post_template

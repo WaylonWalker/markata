@@ -13,11 +13,14 @@ class SiteMapUrl(pydantic.BaseModel):
     changefreq: str = pydantic.Field("daily", include=True)
     priority: str = pydantic.Field("0.7", include=True)
 
-    @pydantic.validator("loc")
-    def default_loc(cls, v, *, values):
-        if v is None:
-            return cls.markata.config.url + "/" + values["slug"] + "/"
-        return v
+    _loc = pydantic.field_validator("loc", pre=False, always=True)(
+        lambda v, *, values, **kwargs: values["markata"].config.url
+        + "/"
+        + values["slug"]
+        + "/"
+        if v is None
+        else v
+    )
 
     def dict(self, *args, **kwargs):
         return {"url": {**super().dict(*args, **kwargs)}}
@@ -28,13 +31,15 @@ class SiteMapPost(pydantic.BaseModel):
     published: bool = True
     sitemap_url: Optional[SiteMapUrl] = None
 
-    @pydantic.validator("sitemap_url", pre=False, always=True)
-    def default_loc(cls, v, *, values):
-        if v is None:
-            return SiteMapUrl(markata=cls.markata, slug=values["slug"])
-        if v.markata is None:
-            return SiteMapUrl(markata=cls.markata, slug=values["slug"])
-        return v
+    _sitemap_url = pydantic.field_validator("sitemap_url", mode="after")(
+        lambda v, *, values, **kwargs: SiteMapUrl(
+            markata=values["markata"], slug=values["slug"]
+        )
+        if v is None
+        else SiteMapUrl(markata=values["markata"], slug=values["slug"])
+        if v.markata is None
+        else v
+    )
 
 
 @hook_impl()

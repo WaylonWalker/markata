@@ -129,8 +129,16 @@ class Config(pydantic.BaseModel):
 
 
 class RenderMarkdownPost(pydantic.BaseModel):
-    article_html: Optional[str] = None
-    html: Optional[str | Dict[str, str]] = None
+    html: Optional[str] = None
+    model_config = pydantic.ConfigDict(
+        validate_assignment=False,
+        arbitrary_types_allowed=True,
+        extra="allow",
+        str_strip_whitespace=True,
+        validate_default=True,
+        coerce_numbers_to_str=True,
+        populate_by_name=True,
+    )
 
 
 @hook_impl()

@@ -59,7 +59,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional, TYPE_CHECKING
 
 import pydantic
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, ConfigDict
 
 from markata.hookspec import hook_impl, register_attr
 
@@ -71,7 +71,18 @@ class OutputHTML(pydantic.BaseModel):
     markata: Any = Field(None, exclude=True)
     path: Path
     slug: str = None
-    output_html: Path = None
+    output_html: Optional[str] = None
+
+    class Config:
+        model_config = ConfigDict(
+            validate_assignment=False,
+            arbitrary_types_allowed=True,
+            extra="allow",
+            str_strip_whitespace=True,
+            validate_default=True,
+            coerce_numbers_to_str=True,
+            populate_by_name=True,
+        )
 
     @field_validator("slug", mode="before")
     def default_slug(cls, v, info):
@@ -83,7 +94,7 @@ class OutputHTML(pydantic.BaseModel):
 
     @field_validator("output_html", mode="before")
     def default_output_html(
-        cls: "OutputHTML", v: Optional[Path], info
+        cls: "OutputHTML", v: Optional[str], info
     ) -> Path:
         if isinstance(v, str):
             v = Path(v)

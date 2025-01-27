@@ -37,7 +37,7 @@ class Config(pydantic.BaseModel):
     icon_out_file: Optional[Path] = None
     icons: Optional[List[Dict[str, str]]] = []
 
-    @pydantic.validator("icon")
+    @pydantic.field_validator("icon")
     def ensure_icon_exists(cls, v, *, values: Dict) -> Path:
         if v is None:
             return
@@ -51,7 +51,7 @@ class Config(pydantic.BaseModel):
         else:
             raise FileNotFoundError(v)
 
-    @pydantic.validator("icon_out_file", pre=True, always=True)
+    @pydantic.field_validator("icon_out_file", mode="before")
     def default_icon_out_file(cls, v, *, values: Dict) -> Path:
         if v is None and values["icon"] is not None:
             return Path(values["output_dir"]) / values["icon"]

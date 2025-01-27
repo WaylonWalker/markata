@@ -122,7 +122,7 @@ class LoggingConfig(pydantic.BaseModel):
     log_dir: Optional[Path] = None
     template: Optional[Path] = Path(__file__).parent / "default_log_template.html"
 
-    @pydantic.validator("log_dir", pre=True, always=True)
+    @pydantic.field_validator("log_dir", mode="before")
     def validate_log_dir(cls, v, *, values):
         if v is None:
             return values["output_dir"] / "_logs"

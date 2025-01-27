@@ -39,13 +39,13 @@ class Post(pydantic.BaseModel, JupyterMixin):
     profile: Optional[str] = None
     title: str = None
     model_config = ConfigDict(
-        validate_assignment=True,
+        validate_assignment=False,   # Skip validation on assignment for performance
         arbitrary_types_allowed=True,
         extra="allow",
         str_strip_whitespace=True,
         validate_default=True,
         coerce_numbers_to_str=True,
-        populate_by_name=True,  # Allow population by alias
+        populate_by_name=True,
     )
     template: Optional[str | Dict[str, str]] = "post.html"
     sidebar: Optional[Any] = None
