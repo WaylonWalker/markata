@@ -28,12 +28,8 @@ no-cov:
 lint:
     #!/usr/bin/env bash
     set -euxo pipefail
-    ruff check markata
-
-format:
-    #!/usr/bin/env bash
-    set -euxo pipefail
-    ruff format .
+    # this is what runs in ci
+    hatch run lint-format
 
 build-docs:
     #!/usr/bin/env bash
@@ -50,9 +46,7 @@ ruff-fix:
     set -euxo pipefail
     ruff check markata --fix
 
-lint-format: lint format
-
-lint-test: lint format cov
+lint-test: lint cov
 
 
 
