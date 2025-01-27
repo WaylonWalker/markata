@@ -25,7 +25,7 @@ def post_model(markata: "Markata") -> None:
     markata.post_models.append(PostModel)
 
 
-@hook_impl
+@hook_impl(trylast=True)
 def load(markata: "Markata") -> None:
     """Runs after posts are loaded to check if they should be skipped."""
     for post in markata.posts:
