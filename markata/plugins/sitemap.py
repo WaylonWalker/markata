@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Optional, Any
 
 import pydantic
-from pydantic import ConfigDict, Field
+from pydantic import Field
 
 from markata import Markata
 from markata.hookspec import hook_impl, register_attr
@@ -10,19 +10,20 @@ from markata.hookspec import hook_impl, register_attr
 
 class SiteMapUrl(pydantic.BaseModel):
     """A model representing a URL entry in the sitemap.xml file.
-    
+
     To configure the base URL for your site, set the 'url' field in your markata config:
     ```yaml
     url: https://example.com
     ```
-    
+
     If no base URL is set, relative URLs will be used.
     """
+
     slug: str = Field(..., exclude=True)
     loc: str = Field(
-        None, 
+        None,
         include=True,
-        description="The full URL for this page in the sitemap. Generated automatically from config.url + slug."
+        description="The full URL for this page in the sitemap. Generated automatically from config.url + slug.",
     )
     changefreq: str = Field("daily", include=True)
     priority: str = Field("0.7", include=True)
@@ -42,7 +43,7 @@ class SiteMapUrl(pydantic.BaseModel):
     @classmethod
     def validate_loc(cls, v, info) -> str:
         """Generate the URL for the sitemap entry.
-        
+
         Uses markata.config.url as the base URL if set, otherwise uses relative URLs.
         Example: https://example.com/my-page/ or /my-page/
         """
@@ -55,12 +56,12 @@ class SiteMapUrl(pydantic.BaseModel):
                     "This usually means the Post model is missing required fields. "
                     "Check that your post has a valid slug and markata instance."
                 )
-            
+
             # Get base URL from config, default to empty string if not set
             base_url = getattr(markata.config, "url", "")
             if not base_url:
                 return f"/{slug}/"
-                
+
             # Ensure URL has a trailing slash for consistency
             return f"{base_url.rstrip('/')}/{slug}/"
         return v
@@ -71,12 +72,13 @@ class SiteMapUrl(pydantic.BaseModel):
 
 class SiteMapPost(pydantic.BaseModel):
     """A model for posts that will be included in the sitemap.
-    
+
     To configure the base URL for your site, set the 'url' field in your markata config:
     ```yaml
     url: https://example.com
     ```
     """
+
     slug: str = None
     published: bool = True
     sitemap_url: Optional[SiteMapUrl] = None

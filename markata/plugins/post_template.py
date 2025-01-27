@@ -88,7 +88,7 @@ import jinja2
 from jinja2 import Template, Undefined
 from more_itertools import flatten
 import pydantic
-from pydantic import ConfigDict, Field, field_validator, model_validator, root_validator
+from pydantic import ConfigDict, Field, field_validator, model_validator
 from rich.syntax import Syntax
 import typer
 

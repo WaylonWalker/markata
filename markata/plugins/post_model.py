@@ -419,7 +419,7 @@ class PostModelConfig(pydantic.BaseModel):
     ]
 
     model_config = ConfigDict(
-        validate_assignment=True,    # Config model
+        validate_assignment=True,  # Config model
         arbitrary_types_allowed=True,
         extra="allow",
         str_strip_whitespace=True,

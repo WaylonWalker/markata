@@ -31,7 +31,7 @@ class ProfilerConfig(pydantic.BaseModel):
     output_file: Optional[Path] = None
 
     model_config = pydantic.ConfigDict(
-        validate_assignment=True,    # Config model
+        validate_assignment=True,  # Config model
         arbitrary_types_allowed=True,
         extra="allow",
         str_strip_whitespace=True,

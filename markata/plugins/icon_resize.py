@@ -42,11 +42,11 @@ class Config(pydantic.BaseModel):
     def ensure_icon_exists(cls, v, info) -> Path:
         if v is None:
             return None
-            
+
         # Convert string to Path if needed
         if isinstance(v, str):
             v = Path(v)
-            
+
         if v.exists():
             return v
 

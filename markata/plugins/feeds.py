@@ -186,7 +186,6 @@ filter="True"
 
 """
 
-from dataclasses import dataclass
 import datetime
 from functools import lru_cache
 from pathlib import Path
@@ -294,6 +293,7 @@ class Feed(pydantic.BaseModel, JupyterMixin):
     # access config for a feed
     m.feeds.docs.config
     """
+
     config: FeedConfig
     markata: Markata = pydantic.Field(exclude=True)
 
@@ -680,7 +680,7 @@ class Feeds(JupyterMixin):
             elif feed_config.name is None and feed_config.slug is None:
                 feed_config.slug = "archive"
                 feed_config.name = "archive"
-                
+
             feed = Feed(config=feed_config, markata=self.markata)
             self.__setattr__(feed.name, feed)
 
