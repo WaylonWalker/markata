@@ -16,6 +16,7 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
     "Programming Language :: Python",
@@ -83,7 +84,6 @@ file = "LICENSE"
 [project.optional-dependencies]
 tui = ["textual", "trogon"]
 dev = [
-    "black",
     "hatch",
     "interrogate",
     "mypy",
@@ -148,7 +148,6 @@ exclude_lines = ["no cov", "if __name__ == .__main__.:", "if TYPE_CHECKING:"]
 [tool.hatch.envs.default]
 dependencies = [
     "isort",
-    "black",
     "pytest",
     "pytest-cov",
     "pytest-mock",
@@ -159,10 +158,8 @@ dependencies = [
 
 [tool.hatch.envs.dev]
 dependencies = [
-    "black",
     "ipython",
     "polyfactory",
-    "black==22.10.0",
     "ipython",
     "pytest",
     "pytest-cov",
@@ -178,7 +175,7 @@ python = ["38", "39", "310", "311"]
 cov = "pytest tests --cov-report=term-missing --cov-config=pyproject.toml --cov=markata --cov=tests"
 no-cov = "cov --no-cov"
 lint = "ruff check markata"
-format = "black --check markata"
+format = "ruff format markata"
 build-docs = "markata build"
 lint-format = ['lint', 'format']
 lint-test = ["lint", "format", "cov"]
@@ -186,8 +183,6 @@ test-lint = "lint-test"
 build = 'markata build'
 serve = "python -m http.server --bind 0.0.0.0 8000 --directory markout"
 ruff-fix = "ruff --fix markata"
-black-fix = "black markata"
-fix = ["black-fix", "ruff-fix"]
 
 [tool.hatch.envs.test.scripts]
 cov = "pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=markata --cov=tests"
