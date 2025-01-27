@@ -149,13 +149,31 @@ def wikilinks_plugin(
         if len(possible_pages) == 1:
             link = possible_pages[0]
         elif len(possible_pages) > 1:
+            if md.options["article"] is None:
+                debug_value = "UNKNOWN"
+            else:
+                debug_value = md.options["article"].get(
+                    "path",
+                    md.options["article"].get(
+                        "title", md.options["article"].get("slug", "")
+                    ),
+                )
             logger.warning(
-                f"wikilink [[{text}]] has duplicate matches, defaulting to the first",
+                f"wikilink [[{text}]] has duplicate matches ({possible_pages}) in file '{debug_value}', defaulting to the first match ({possible_pages[0]})",
             )
             link = possible_pages[0]
         else:
+            if md.options["article"] is None:
+                debug_value = "UNKNOWN"
+            else:
+                debug_value = md.options["article"].get(
+                    "path",
+                    md.options["article"].get(
+                        "title", md.options["article"].get("slug", "")
+                    ),
+                )
             logger.warning(
-                f"wikilink [[{text}]] no matches, defaulting to '/{text}'",
+                f"wikilink [[{text}]] no matches in file '{debug_value}', defaulting to '/{text}'",
             )
             link = text
 

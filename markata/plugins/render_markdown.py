@@ -285,7 +285,12 @@ def render_article_parallel(markata, config, cache, article):
         article.html = html_from_cache
         return article, html_from_cache
 
+    # Update markata instance with current article for plugin usage
+    markata.md.options['article'] = article
     html = markata.md.convert(content)
+    # Clear the article reference
+    markata.md.options['article'] = None
+    
     cache.set(key, html, expire=markata.config.markdown_cache_expire)
     article.article_html = html
     article.html = html

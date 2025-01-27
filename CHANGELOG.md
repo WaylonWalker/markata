@@ -1,26 +1,27 @@
 # Markata Changelog
 
-## 0.10.0
+## 0.9.0
+
+- Feat: add skip plugin
+- Fix: wikilinks uses a faster and more robust link lookup
+- Feat: most plugins now only do work on posts not marked as skip
+- Fix: wikilinks now give good error messages to show you which article is throwing the warning
 
 ### Performance Improvements
 
 #### Core Optimizations
+
 - Added map cache with statistics tracking in Markata core
 - Optimized template rendering with bytecode caching
 - Parallelized markdown rendering and file loading
 - Added configurable cache expiration times for different components
 
 #### Component-specific Optimizations
+
 - Updated auto_description to use markdown-it for better performance
 - Improved date parsing with dateparser fallback
 - Optimized post loading with bulk processing
 - Modernized pydantic validators to use new field_validator syntax
-
-## 0.9.0
-
-- Feat: add skip plugin
-- Fix: wikilinks uses a faster and more robust link lookup
-- Feat: most plugins now only do work on posts not marked as skip
 
 ## 0.8.2
 
