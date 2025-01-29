@@ -30,7 +30,7 @@ frontmatter.
 """
 
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Optional, Any
 
 import pydantic
 
@@ -48,11 +48,26 @@ class Config(pydantic.BaseModel):
 
 class FlatSlugPost(pydantic.BaseModel):
     should_slugify: Optional[bool] = None
+    markata: Any = pydantic.Field(None, exclude=True)
 
-    @pydantic.validator("should_slugify", pre=True, always=True)
-    def default_slugify(cls: "FlatSlugPost", v: bool, *, values: Dict) -> bool:
-        if not v:
-            return cls.markata.config.flat_slug.slugify
+    model_config = pydantic.ConfigDict(
+        validate_assignment=False,
+        arbitrary_types_allowed=True,
+        extra="allow",
+        str_strip_whitespace=True,
+        validate_default=True,
+        coerce_numbers_to_str=True,
+        populate_by_name=True,
+    )
+
+    @pydantic.field_validator("should_slugify", mode="before")
+    @classmethod
+    def default_slugify(cls, v: Optional[bool], info) -> bool:
+        if v is None:
+            markata = info.data.get("markata")
+            if markata is None:
+                return True  # Default to True if no markata instance
+            return markata.config.flat_slug.slugify
         return v
 
 

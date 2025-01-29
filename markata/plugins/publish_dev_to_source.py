@@ -1,8 +1,9 @@
 from pathlib import Path
-from typing import Optional, TYPE_CHECKING, Any
+from typing import Any, Optional, TYPE_CHECKING
 
 import frontmatter
-from pydantic import Field, BaseModel
+import pydantic
+from pydantic import ConfigDict, Field
 
 from markata.hookspec import hook_impl, register_attr
 
@@ -49,8 +50,17 @@ def join_lines(article):
     return "\n".join(lines)
 
 
-class PublishDevToSourcePost(BaseModel):
+class PublishDevToSourcePost(pydantic.BaseModel):
     markata: Any = Field(None, exclude=True)
+    model_config = ConfigDict(
+        validate_assignment=False,  # Performance model
+        arbitrary_types_allowed=True,
+        extra="allow",
+        str_strip_whitespace=True,
+        validate_default=True,
+        coerce_numbers_to_str=True,
+        populate_by_name=True,
+    )
     canonical_url: Optional[str] = None
 
 

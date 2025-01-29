@@ -186,7 +186,6 @@ filter="True"
 
 """
 
-from dataclasses import dataclass
 import datetime
 from functools import lru_cache
 from pathlib import Path
@@ -197,6 +196,7 @@ from typing import Any, List, Optional, TYPE_CHECKING
 import jinja2
 from jinja2 import Template, Undefined
 import pydantic
+from pydantic import ConfigDict, field_validator
 from rich.jupyter import JupyterMixin
 from rich.pretty import Pretty
 from rich.table import Table
@@ -239,9 +239,35 @@ class FeedConfig(pydantic.BaseModel, JupyterMixin):
     sitemap_template: str = "sitemap.xml"
     xsl_template: str = "rss.xsl"
 
-    @pydantic.validator("name", pre=True, always=True)
-    def default_name(cls, v, *, values):
-        return v or str(values.get("slug")).replace("-", "_")
+    model_config = ConfigDict(
+        validate_assignment=True,  # Config model
+        arbitrary_types_allowed=True,
+        extra="allow",
+        str_strip_whitespace=True,
+        validate_default=True,
+        coerce_numbers_to_str=True,
+        populate_by_name=True,
+    )
+
+    @field_validator("name", mode="before")
+    @classmethod
+    def default_name(cls, v, info) -> str:
+        if v:
+            return v
+        slug = info.data.get("slug")
+        if not slug:
+            raise ValueError("Either name or slug must be provided")
+        return str(slug).replace("-", "_")
+
+    @field_validator("slug", mode="before")
+    @classmethod
+    def default_slug(cls, v, info) -> str:
+        if v:
+            return v
+        name = info.data.get("name")
+        if not name:
+            raise ValueError("Either name or slug must be provided")
+        return str(name).replace("_", "-")
 
     @property
     def __rich_console__(self) -> "Console":
@@ -252,22 +278,8 @@ class FeedConfig(pydantic.BaseModel, JupyterMixin):
         return lambda: Pretty(self)
 
 
-class FeedsConfig(pydantic.BaseModel):
-    feeds: List[FeedConfig] = [FeedConfig(slug="archive")]
-
-
-class PrettyList(list, JupyterMixin):
-    def _repr_pretty_(self):
-        return self.__rich__()
-
-    def __rich__(self) -> Pretty:
-        return Pretty(self)
-
-
-@dataclass
-class Feed(JupyterMixin):
-    """
-    A storage class for markata feed objects.
+class Feed(pydantic.BaseModel, JupyterMixin):
+    """A storage class for markata feed objects.
 
     # Usage
 
@@ -280,18 +292,24 @@ class Feed(JupyterMixin):
 
     # access config for a feed
     m.feeds.docs.config
-    ```
     """
 
     config: FeedConfig
-    _m: Markata
+    markata: Markata = pydantic.Field(exclude=True)
+
+    model_config = ConfigDict(
+        validate_assignment=False,
+        arbitrary_types_allowed=True,
+        extra="allow",
+        str_strip_whitespace=True,
+        validate_default=True,
+        coerce_numbers_to_str=True,
+        populate_by_name=True,
+    )
 
     @property
-    def __rich_console__(self) -> "Console":
-        return self._m.console
-
-    @property
-    def name(self):
+    def name(self) -> str:
+        """The name of the feed, used for accessing it in the feeds object."""
         return self.config.name
 
     @property
@@ -318,7 +336,11 @@ class Feed(JupyterMixin):
         return self.posts[-1]
 
     def map(self, func="post", **args):
-        return self._m.map(func, **{**self.config.dict(), **args})
+        return self.markata.map(func, **{**self.config.dict(), **args})
+
+    @property
+    def __rich_console__(self) -> "Console":
+        return self.markata.console
 
     def __rich__(self) -> Table:
         table = Table(title=f"Feed: {self.name}")
@@ -333,127 +355,16 @@ class Feed(JupyterMixin):
         return table
 
 
-class Feeds(JupyterMixin):
-    """
-    A storage class for all markata Feed objects
-
-    ``` python
-    from markata import Markata
-    m = Markata()
-
-    m.feeds
-
-    # access all config
-    m.feeds.config
-
-    # refresh list of posts in all feeds
-    m.feeds.refresh()
+class FeedsConfig(pydantic.BaseModel):
+    feeds: List[FeedConfig] = [FeedConfig(slug="archive")]
 
 
-    # iterating over feeds gives the name of the feed
-    for k in m.feeds:
-         print(k)
+class PrettyList(list, JupyterMixin):
+    def _repr_pretty_(self):
+        return self.__rich__()
 
-    # project-gallery
-    # docs
-    # autodoc
-    # core_modules
-    # plugins
-    # archive
-
-    # iterate over items like keys and values in a dict, items returns name of
-    # feed and a feed object
-    for k, v in m.feeds.items():
-        print(k, len(v.posts))
-
-    # project-gallery 2
-    # docs 6
-    # autodoc 65
-    # core_modules 26
-    # plugins 39
-    # archive 65
-
-    # values can be iterated over in just the same way
-    for v in m.feeds.values():
-         print(len(v.posts))
-    # 2
-    # 6
-    # 65
-    # 26
-    # 39
-    # 65
-    ```
-
-    Accessing feeds can be done using square brackets or dot notation.
-
-    ``` python
-    from markata import Markata
-    m = Markata()
-
-    # both of these will return the `docs` Feed object.
-    m.feeds.docs
-    m['docs']
-    ```
-    """
-
-    def __init__(self, markata: Markata) -> None:
-        self._m = markata
-        self.config = {f.name: f for f in markata.config.feeds}
-        self.refresh()
-
-    def refresh(self) -> None:
-        """
-        Refresh all of the feeds objects
-        """
-        for feed in self._m.config.feeds:
-            feed = Feed(config=feed, _m=self._m)
-            self.__setattr__(feed.name, feed)
-
-    def __iter__(self):
-        return iter(self.config.keys())
-
-    def keys(self):
-        return iter(self.config.keys())
-
-    def values(self):
-        return [self[feed] for feed in self.config.keys()]
-
-    def items(self):
-        return [(key, self[key]) for key in self.config]
-
-    def __getitem__(self, key: str) -> Any:
-        return getattr(self, key.replace("-", "_").lower())
-
-    def get(self, key: str, default: Any = None) -> Any:
-        return getattr(self, key.replace("-", "_").lower(), default)
-
-    def _dict_panel(self, config) -> str:
-        """
-        pretty print configs with rich
-        """
-        msg = ""
-        for key, value in config.items():
-            if isinstance(value, str):
-                if len(value) > 50:
-                    value = value[:50] + "..."
-                value = value
-            msg = msg + f"[grey46]{key}[/][magenta3]:[/] [grey66]{value}[/]\n"
-        return msg
-
-    def __rich__(self) -> Table:
-        table = Table(title=f"Feeds {len(self.config)}")
-
-        table.add_column("Feed", justify="right", style="cyan", no_wrap=True)
-        table.add_column("posts", justify="left", style="green")
-        table.add_column("config", style="magenta")
-
-        for name in self.config:
-            table.add_row(
-                name,
-                str(len(self[name].posts)),
-                self._dict_panel(self.config[name].dict()),
-            )
-        return table
+    def __rich__(self) -> Pretty:
+        return Pretty(self)
 
 
 @hook_impl(tryfirst=True)
@@ -570,7 +481,9 @@ def create_page(
     )
     sitemap_output_file.parent.mkdir(exist_ok=True, parents=True)
 
+    from_cache = True
     if feed_html_from_cache is None:
+        from_cache = False
         feed_html = template.render(
             markata=markata,
             __version__=__version__,
@@ -584,6 +497,7 @@ def create_page(
         feed_html = feed_html_from_cache
 
     if feed_html_partial_from_cache is None:
+        from_cache = False
         feed_html_partial = partial_template.render(
             markata=markata,
             __version__=__version__,
@@ -597,6 +511,7 @@ def create_page(
         feed_html_partial = feed_html_partial_from_cache
 
     if feed_rss_from_cache is None:
+        from_cache = False
         rss_template = get_template(markata, feed.config.rss_template)
         feed_rss = rss_template.render(markata=markata, feed=feed)
         cache.set(feed_rss_key, feed_rss)
@@ -604,11 +519,21 @@ def create_page(
         feed_rss = feed_rss_from_cache
 
     if feed_sitemap_from_cache is None:
+        from_cache = False
         sitemap_template = get_template(markata, feed.config.sitemap_template)
         feed_sitemap = sitemap_template.render(markata=markata, feed=feed)
         cache.set(feed_sitemap_key, feed_sitemap)
     else:
         feed_sitemap = feed_sitemap_from_cache
+
+    if (
+        from_cache
+        and output_file.exists()
+        and partial_output_file.exists()
+        and rss_output_file.exists()
+        and sitemap_output_file.exists()
+    ):
+        return
 
     output_file.write_text(feed_html)
     partial_output_file.write_text(feed_html_partial)
@@ -689,3 +614,116 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
         markata.console.quiet = False
         markata.console.print("Feeds")
         markata.console.print(feeds)
+
+
+class Feeds(JupyterMixin):
+    """A storage class for all markata Feed objects
+
+    ``` python
+    from markata import Markata
+    markata = Markata()
+
+    markata.feeds
+
+    # access all config
+    markata.feeds.config
+
+    # refresh list of posts in all feeds
+    markata.feeds.refresh()
+
+
+    # iterating over feeds gives the name of the feed
+    for k in markata.feeds:
+         print(k)
+
+    # project-gallery
+    # docs
+    # autodoc
+    # core_modules
+    # plugins
+    # archive
+
+    # iterate over items like keys and values in a dict, items returns name of
+    # feed and a feed object
+    for k, v in markata.feeds.items():
+        print(k, len(v.posts))
+
+    # project-gallery 2
+    # docs 6
+    # autodoc 65
+    # core_modules 26
+    # plugins 39
+    # archive 65
+
+    # values can be iterated over in just the same way
+    for v in markata.feeds.values():
+         print(len(v.posts))
+    # 2
+    # 6
+    # 65
+    # 26
+    # 39
+    # 65
+    """
+
+    def __init__(self, markata: Markata) -> None:
+        self.markata = markata
+        self.config = {f.name: f for f in markata.config.feeds}
+        self.refresh()
+
+    def refresh(self):
+        """Refresh all of the feeds objects"""
+        for feed_config in self.markata.config.feeds:
+            # Ensure feed has a name, falling back to slug if needed
+            if feed_config.name is None and feed_config.slug is not None:
+                feed_config.name = feed_config.slug.replace("-", "_")
+            elif feed_config.name is None and feed_config.slug is None:
+                feed_config.slug = "archive"
+                feed_config.name = "archive"
+
+            feed = Feed(config=feed_config, markata=self.markata)
+            self.__setattr__(feed.name, feed)
+
+    def __iter__(self):
+        return iter(self.config.keys())
+
+    def keys(self):
+        return iter(self.config.keys())
+
+    def values(self):
+        return [self[feed] for feed in self.config.keys()]
+
+    def items(self):
+        return [(key, self[key]) for key in self.config]
+
+    def __getitem__(self, key: str) -> Any:
+        return getattr(self, key.replace("-", "_").lower())
+
+    def get(self, key: str, default: Any = None) -> Any:
+        return getattr(self, key.replace("-", "_").lower(), default)
+
+    def _dict_panel(self, config) -> str:
+        """pretty print configs with rich"""
+        msg = ""
+        for key, value in config.items():
+            if isinstance(value, str):
+                if len(value) > 50:
+                    value = value[:50] + "..."
+                value = value
+            msg = msg + f"[grey46]{key}[/][magenta3]:[/] [grey66]{value}[/]\n"
+        return msg
+
+    def __rich__(self) -> Table:
+        table = Table(title=f"Feeds {len(self.config)}")
+
+        table.add_column("Feed", justify="right", style="cyan", no_wrap=True)
+        table.add_column("posts", justify="left", style="green")
+        table.add_column("config", style="magenta")
+
+        for name in self.config:
+            table.add_row(
+                name,
+                str(len(self[name].posts)),
+                self._dict_panel(self.config[name].dict()),
+            )
+        return table

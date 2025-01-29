@@ -145,6 +145,8 @@ def make_article(markata: "Markata", file: Path, cache) -> frontmatter.Post:
             file=file,
             slug=slug,
             edit_link=edit_link,
+            published=False,  # Don't include docs in sitemap by default
+            date=datetime.datetime.now(),
             # enable sidebar in the future
             # sidebar="plugins",
         )

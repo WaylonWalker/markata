@@ -52,7 +52,6 @@ m = Markata()
 """
 
 import html
-from itertools import compress
 from pathlib import Path
 from typing import Any, Dict, TYPE_CHECKING
 
@@ -68,29 +67,22 @@ if TYPE_CHECKING:
 
 def get_description(article: "Post") -> str:
     """
-    Get the full-length description for a single post using the commonmark
-    parser.  Only paragraph nodes will count as text towards the description.
+    Get the full-length description for a single post by converting markdown to plain text.
+    Uses markdown-it-py to parse the markdown and extracts text content from all nodes.
     """
-    import commonmark
+    from markdown_it import MarkdownIt
 
-    _parser = commonmark.Parser()
-    ast = _parser.parse(article.content)
+    md = MarkdownIt("commonmark")
+    tokens = md.parse(article.content)
 
-    # find all paragraph nodes
-    paragraph_nodes = [
-        n[0]
-        for n in ast.walker()
-        if n[0].t == "paragraph" and n[0].first_child.literal is not None
-    ]
-    # for reasons unknown to me commonmark duplicates nodes, dedupe based on sourcepos
-    sourcepos = [p.sourcepos for p in paragraph_nodes]
-    # find first occurence of node based on source position
-    unique_mask = [sourcepos.index(s) == i for i, s in enumerate(sourcepos)]
-    # deduplicate paragraph_nodes based on unique source position
-    unique_paragraph_nodes = list(compress(paragraph_nodes, unique_mask))
-    paragraphs = " ".join([p.first_child.literal for p in unique_paragraph_nodes])
-    paragraphs = html.escape(paragraphs)
-    return paragraphs
+    # Extract text content from all inline tokens
+    text_chunks = []
+    for token in tokens:
+        if token.type == "inline" and token.content:
+            text_chunks.append(token.content)
+
+    description = " ".join(text_chunks)
+    return html.escape(description)
 
 
 def set_description(

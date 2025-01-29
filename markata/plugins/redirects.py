@@ -74,14 +74,13 @@ implementation.
 """
 
 from pathlib import Path
-from typing import Dict, Optional
 
 from jinja2 import Template
 import pydantic
 
 from markata import Markata
 from markata.hookspec import hook_impl
-from pydantic import ConfigDict
+
 
 DEFAULT_REDIRECT_TEMPLATE = Path(__file__).parent / "default_redirect_template.html"
 
@@ -92,20 +91,22 @@ class Redirect(pydantic.BaseModel):
     original: str
     new: str
     markata: Markata
-    model_config = ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
+    model_config = pydantic.ConfigDict(
+        validate_assignment=True, arbitrary_types_allowed=True
+    )
 
 
 class RedirectsConfig(pydantic.BaseModel):
-    assets_dir: Path = Path("static")
-    redirects_file: Optional[Path] = None
-
-    @pydantic.validator("redirects_file", always=True)
-    def default_redirects_file(
-        cls: "RedirectsConfig", v: Path, *, values: Dict
-    ) -> Path:
-        if not v:
-            return Path(values["assets_dir"]) / "_redirects"
-        return v
+    redirects_file: Path = Path("static/_redirects")
+    model_config = pydantic.ConfigDict(
+        validate_assignment=True,
+        arbitrary_types_allowed=True,
+        extra="allow",
+        str_strip_whitespace=True,
+        validate_default=True,
+        coerce_numbers_to_str=True,
+        populate_by_name=True,
+    )
 
 
 class Config(pydantic.BaseModel):
@@ -127,6 +128,14 @@ def save(markata: "Markata") -> None:
         raw_redirects = redirects_file.read_text().split("\n")
     else:
         raw_redirects = []
+
+    key = markata.make_hash("redirects", "raw_redirects", raw_redirects)
+    with markata.cache as cache:
+        cache.get(key)
+        if cache.get(key) == "done":
+            return
+
+        cache.set(key, "done", expire=markata.config.default_cache_expire)
 
     redirects = [
         Redirect(original=s[0], new=s[1], markata=markata)

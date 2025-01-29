@@ -56,10 +56,10 @@ lets you [make your home page](https://markata.dev/home-page/)
 """
 
 from pathlib import Path
-from typing import Any, Dict, Optional, TYPE_CHECKING
+from typing import Any, Dict, Optional, TYPE_CHECKING, Union
 
 import pydantic
-from pydantic import Field
+from pydantic import Field, field_validator, ConfigDict
 
 from markata.hookspec import hook_impl, register_attr
 
@@ -71,51 +71,63 @@ class OutputHTML(pydantic.BaseModel):
     markata: Any = Field(None, exclude=True)
     path: Path
     slug: str = None
-    output_html: Path = None
+    output_html: Optional[Path] = None
 
-    @pydantic.validator("slug", pre=True, always=True)
+    class Config:
+        model_config = ConfigDict(
+            validate_assignment=False,
+            arbitrary_types_allowed=True,
+            extra="allow",
+            str_strip_whitespace=True,
+            validate_default=True,
+            coerce_numbers_to_str=True,
+            populate_by_name=True,
+        )
+
+    @field_validator("slug", mode="before")
     @classmethod
-    def default_slug(cls, v, *, values):
+    def default_slug(cls, v, info) -> str:
         from slugify import slugify
 
         if v is None:
-            return slugify(str(values["path"].stem))
+            path = info.data.get("path")
+            if path is None:
+                return ""
+            return slugify(str(path.stem))
         return v
 
-    @pydantic.validator("output_html", pre=True, always=True)
-    def default_output_html(
-        cls: "OutputHTML", v: Optional[Path], *, values: Dict
-    ) -> Path:
+    @field_validator("output_html", mode="before")
+    @classmethod
+    def default_output_html(cls, v: Optional[Union[str, Path]], info) -> Optional[Path]:
         if isinstance(v, str):
             v = Path(v)
         if v is not None:
             return v
-        if "slug" not in values:
-            for validator in cls.__validators__["slug"]:
-                values["slug"] = validator.func(cls, v, values=values)
 
-        if values["slug"] == "index":
-            return cls.markata.config.output_dir / "index.html"
-        return cls.markata.config.output_dir / values["slug"] / "index.html"
+        markata = info.data.get("markata")
+        if markata is None:
+            raise ValueError("markata is required")
 
-    @pydantic.validator("output_html")
-    def output_html_relative(
-        cls: "OutputHTML", v: Optional[Path], *, values: Dict
-    ) -> Path:
-        if isinstance(v, str):
-            v = Path(v)
-        if cls.markata.config.output_dir.absolute() not in v.absolute().parents:
-            return cls.markata.config.output_dir / v
+        slug = info.data.get("slug")
+        if slug is None:
+            slug = cls.default_slug(None, info)
+
+        if slug == "index":
+            return markata.config.output_dir / "index.html"
+        return markata.config.output_dir / slug / "index.html"
+
+    @field_validator("output_html", mode="before")
+    @classmethod
+    def output_html_relative(cls, v: Optional[Path], info) -> Optional[Path]:
+        if v is None:
+            return cls.default_output_html(v, info)
         return v
 
-    @pydantic.validator("output_html")
-    def output_html_exists(
-        cls: "OutputHTML", v: Optional[Path], *, values: Dict
-    ) -> Path:
-        if isinstance(v, str):
-            v = Path(v)
-        if not v.parent.exists():
-            v.parent.mkdir(parents=True, exist_ok=True)
+    @field_validator("output_html", mode="before")
+    @classmethod
+    def output_html_exists(cls, v: Optional[Path], info) -> Optional[Path]:
+        if v is None:
+            return cls.default_output_html(v, info)
         return v
 
 
@@ -134,10 +146,12 @@ def save(markata: "Markata") -> None:
     """
     from slugify import slugify
 
-    for article in markata.articles:
+    for article in markata.filter("skip==False"):
         if article.html is None:
             continue
         if isinstance(article.html, str):
+            # Create parent directories before writing
+            article.output_html.parent.mkdir(parents=True, exist_ok=True)
             article.output_html.write_text(article.html)
         if isinstance(article.html, Dict):
             for slug, html in article.html.items():

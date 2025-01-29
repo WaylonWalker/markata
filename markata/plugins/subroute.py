@@ -1,14 +1,11 @@
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any
 
-from rich.markdown import Markdown
-import pydantic
-from pydantic import Field
+from pydantic import ConfigDict, Field, field_validator
 from pydantic import BaseModel
 
 from markata import Markata
 from markata.hookspec import hook_impl, register_attr
-from pydantic import ConfigDict
 
 
 class Config(BaseModel):
@@ -17,11 +14,19 @@ class Config(BaseModel):
 
 class SubroutePost(BaseModel):
     markata: Any = Field(None, exclude=True)
-    model_config = ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
+    model_config = ConfigDict(
+        validate_assignment=True,
+        arbitrary_types_allowed=True,
+        extra="allow",
+        str_strip_whitespace=True,
+        validate_default=True,
+        coerce_numbers_to_str=True,
+        populate_by_name=True,
+    )
 
-    @pydantic.validator("slug")
+    @field_validator("slug", mode="before")
     @classmethod
-    def relative_to_subroute(cls, v, *, values: Dict) -> Path:
+    def relative_to_subroute(cls, v, info) -> Path:
         subroute = cls.markata.config.subroute
         if subroute == Path(""):
             return v
@@ -41,5 +46,5 @@ def config_model(markata: "Markata") -> None:
 
 @hook_impl()
 @register_attr("post_models")
-def post_model(markata: Markdown) -> None:
+def post_model(markata: Markata) -> None:
     markata.post_models.append(SubroutePost)

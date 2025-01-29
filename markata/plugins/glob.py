@@ -17,10 +17,11 @@ class GlobConfig(pydantic.BaseModel):
     glob_patterns: Union[List[str], str] = ["**/*.md"]
     use_gitignore: bool = True
 
-    @pydantic.validator("glob_patterns")
-    def convert_to_list(cls, v):
-        if not isinstance(v, list):
-            return v.split(",")
+    @pydantic.field_validator("glob_patterns", mode="before")
+    @classmethod
+    def validate_glob_patterns(cls, v) -> List[str]:
+        if isinstance(v, str):
+            return [v]
         return v
 
 

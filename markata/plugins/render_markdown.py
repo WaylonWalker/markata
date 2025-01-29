@@ -89,6 +89,8 @@ import copy
 from enum import Enum
 import importlib
 from typing import Dict, List, Optional, TYPE_CHECKING
+import concurrent.futures
+from functools import partial
 
 import pydantic
 
@@ -115,8 +117,9 @@ class RenderMarkdownConfig(pydantic.BaseModel):
     extensions: List[MdItExtension] = []
     cache_expire: int = 3600
 
-    @pydantic.validator("extensions")
-    def convert_to_list(cls, v):
+    @pydantic.field_validator("extensions", mode="before")
+    @classmethod
+    def validate_extensions(cls, v) -> List[str]:
         if not isinstance(v, list):
             return [v]
         return v
@@ -127,8 +130,16 @@ class Config(pydantic.BaseModel):
 
 
 class RenderMarkdownPost(pydantic.BaseModel):
-    article_html: Optional[str] = None
-    html: Optional[str | Dict[str, str]] = None
+    html: Optional[str] = None
+    model_config = pydantic.ConfigDict(
+        validate_assignment=False,
+        arbitrary_types_allowed=True,
+        extra="allow",
+        str_strip_whitespace=True,
+        validate_default=True,
+        coerce_numbers_to_str=True,
+        populate_by_name=True,
+    )
 
 
 @hook_impl()
@@ -238,31 +249,49 @@ def configure(markata: "Markata") -> None:
 @hook_impl(tryfirst=True)
 @register_attr("rendered_posts")
 def render(markata: "Markata") -> None:
+    """Render markdown content in parallel."""
     config = markata.config.render_markdown
+    articles = list(markata.filter("skip==False"))
+
     with markata.cache as cache:
-        for article in markata.articles:
-            article.html = render_article(markata, config, cache, article)
-            article.article_html = copy.deepcopy(article.html)
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            render_func = partial(render_article_parallel, markata, config, cache)
+            args_list = [(article,) for article in articles]
+
+            for article, html in executor.map(render_func, args_list):
+                article.html = html
+                article.article_html = copy.deepcopy(html)
+
     markata.rendered_posts = markata.posts
 
 
-def render_article(markata: "Markata", config, cache, article):
-    key = markata.make_hash(
-        "render_markdown",
-        "render",
-        article.content,
-    )
+def render_article_parallel(markata, config, cache, article):
+    # Handle article being passed as a tuple
+    if isinstance(article, tuple):
+        article = article[0]  # Extract the Post object from the tuple
+
+    # Get content, defaulting to empty string
+    content = getattr(article, "content", "")
+    if not content:
+        article.article_html = ""
+        article.html = ""
+        return article, ""
+
+    key = markata.make_hash("render_markdown", "render", content)
     html_from_cache = markata.precache.get(key)
 
-    if html_from_cache is None:
-        html = markata.md.convert(article.content)
-        cache.set(key, html, expire=config.cache_expire)
-    else:
-        html = html_from_cache
-    return html
+    if html_from_cache is not None:
+        article.article_html = html_from_cache
+        article.html = html_from_cache
+        return article, html_from_cache
 
+    # Update markata instance with current article for plugin usage
+    markata.md.options['article'] = article
+    html = markata.md.convert(content)
+    # Clear the article reference
+    markata.md.options['article'] = None
+    
+    cache.set(key, html, expire=markata.config.markdown_cache_expire)
+    article.article_html = html
     article.html = html
-    article.article_html = copy.deepcopy(html)
-
-    article.html = html
-    article.article_html = article.article_html
+    return article, html

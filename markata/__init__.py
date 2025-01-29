@@ -5,25 +5,25 @@ from __future__ import annotations
 
 import atexit
 import datetime
+from datetime import timedelta
+from functools import lru_cache
 import importlib
 import logging
 import os
+from pathlib import Path
 import sys
 import textwrap
-from datetime import timedelta
-from pathlib import Path
 from typing import Any, Dict, Iterable, Optional
 
+from diskcache import Cache
 import pluggy
 import pydantic
-from diskcache import Cache
 from rich.console import Console
 from rich.progress import track
 from rich.table import Table
 
 from markata import hookspec, standard_config
 from markata.__about__ import __version__
-from markata.errors import MissingFrontMatter
 from markata.exceptions import NoPosts, TooManyPosts
 from markata.lifecycle import LifeCycle
 
@@ -54,6 +54,8 @@ DEFAULT_MD_EXTENSIONS = [
 ]
 
 DEFAULT_HOOKS = [
+    "markata.plugins.skip",
+    "markata.plugins.md_it_wikilinks",
     "markata.plugins.copy_assets",
     # "markata.plugins.heading_link",
     "markata.plugins.pyinstrument",
@@ -61,7 +63,7 @@ DEFAULT_HOOKS = [
     "markata.plugins.load",
     "markata.plugins.auto_title",
     "markata.plugins.render_markdown",
-    "markata.plugins.manifest",
+    # "markata.plugins.manifest",
     # "markata.plugins.generator",
     "markata.plugins.feeds",
     "markata.plugins.auto_description",
@@ -70,9 +72,9 @@ DEFAULT_HOOKS = [
     "markata.plugins.covers",
     "markata.plugins.publish_html",
     "markata.plugins.flat_slug",
-    "markata.plugins.rss",
+    # "markata.plugins.rss",
     "markata.plugins.icon_resize",
-    "markata.plugins.sitemap",
+    # "markata.plugins.sitemap",
     "markata.plugins.to_json",
     "markata.plugins.base_cli",
     "markata.cli.server",
@@ -100,6 +102,15 @@ DEFUALT_CONFIG = {
 
 
 class HooksConfig(pydantic.BaseModel):
+    model_config = pydantic.ConfigDict(
+        validate_assignment=True,
+        arbitrary_types_allowed=True,
+        extra="allow",
+        str_strip_whitespace=True,
+        validate_default=True,
+        coerce_numbers_to_str=True,
+        populate_by_name=True,
+    )
     hooks: list = ["default"]
     disabled_hooks: list = []
 
@@ -111,6 +122,7 @@ class Markata:
         self.threded = False
         self._cache = None
         self._precache = None
+        self._map_cache_stats = {"hits": 0, "misses": 0, "total": 0}
         self.MARKATA_CACHE_DIR = Path(".") / ".markata.cache"
         self.MARKATA_CACHE_DIR.mkdir(exist_ok=True)
         self._pm = pluggy.PluginManager("markata")
@@ -154,11 +166,13 @@ class Markata:
         if self._cache is not None:
             return self._cache
         self._cache = Cache(self.MARKATA_CACHE_DIR, statistics=True)
+        self._cache.expire()
 
         return self._cache
 
     @property
     def precache(self: "Markata") -> None:
+        return self.cache
         if self._precache is None:
             self.cache.expire()
             self._precache = {k: self.cache.get(k) for k in self.cache.iterkeys()}
@@ -239,7 +253,7 @@ class Markata:
         #     if "path_prefix" not in self.config.keys():
         #         self.config["path_prefix"] = "/".join(output_split[1:]) + "/"
         # if not self.config.get("path_prefix", "").endswith("/"):
-        #     self.config["path_prefix"] = self.config.get("path_prefix", "") + "/"
+        #     self.config["path_prefix"] = self.config["path_prefix"] + "/"
 
         # self.config["output_dir"] = self.config["output_dir"].lstrip("/")
         # self.config["path_prefix"] = self.config["path_prefix"].lstrip("/")
@@ -384,15 +398,29 @@ class Markata:
 
     def iter_articles(self: "Markata", description: str) -> Iterable[Markata.Post]:
         articles: Iterable[Markata.Post] = track(
-            self.articles,
+            self.filter("skip == False"),
             description=description,
             transient=True,
             console=self.console,
         )
         return articles
 
-    def teardown(self: "Markata") -> Markata:
-        """give special access to the teardown lifecycle method"""
+    def teardown(self: "Markata"):
+        """Cleanup and print statistics when Markata is done."""
+        # Print map cache statistics if they exist
+        if hasattr(self, "_map_cache_stats"):
+            stats = self._map_cache_stats
+            total = stats["total"]
+            if total > 0:
+                hit_rate = (stats["hits"] / total) * 100
+                self.console.print("\n[yellow]Map Cache Statistics:[/yellow]")
+                self.console.print(f"Total calls: {total}")
+                self.console.print(f"Cache hits: {stats['hits']}")
+                self.console.print(f"Cache misses: {stats['misses']}")
+                self.console.print(f"Hit rate: {hit_rate:.1f}%")
+                self.console.print(
+                    f"Cache size: {len(getattr(self, '_filtered_cache', {}))}"
+                )
         if self.stages_ran:
             self._pm.hook.teardown(markata=self)
         return self
@@ -462,6 +490,63 @@ class Markata:
 
         return [a for a in self.articles if evalr(a)]
 
+    def _compile_sort_key(self, sort: str):
+        """Compile a sort key function for better performance"""
+        if "datetime" in sort.lower():
+            return lambda a: a.get(sort, datetime.datetime(1970, 1, 1))
+        if "date" in sort.lower():
+            return lambda a: a.get(sort, datetime.date(1970, 1, 1))
+
+        # Create a compiled function for complex sort expressions
+        try:
+            code = compile(sort, "<string>", "eval")
+
+            def sort_key(a):
+                try:
+                    value = eval(code, a.to_dict(), {})
+                    if isinstance(value, (int, float)):
+                        return value
+                    if hasattr(value, "timestamp"):
+                        return value.timestamp()
+                    if isinstance(value, datetime.date):
+                        return datetime.datetime.combine(
+                            value,
+                            datetime.datetime.min.time(),
+                        ).timestamp()
+                    return sum(ord(c) for c in str(value))
+                except Exception:
+                    return -1
+
+            return sort_key
+        except Exception:
+            return lambda _: -1
+
+    @lru_cache(maxsize=32)
+    def _get_sort_key(self, sort: str):
+        """Cache compiled sort key functions"""
+        return self._compile_sort_key(sort)
+
+    def _get_eval_globals(self):
+        """Get common globals used in eval operations"""
+        if not hasattr(self, "_eval_globals"):
+            self._eval_globals = {"timedelta": timedelta}
+        return self._eval_globals
+
+    def _eval_with_article(self, code, article, extra_globals=None):
+        """Evaluate code with article context, reusing dict where possible"""
+        if not hasattr(article, "_eval_dict"):
+            article._eval_dict = article.to_dict()
+            article._eval_dict.update({"post": article, "m": self})
+
+        globals_dict = self._get_eval_globals()
+        if extra_globals:
+            globals_dict.update(extra_globals)
+
+        try:
+            return eval(code, article._eval_dict, globals_dict)
+        except Exception:
+            return None
+
     def map(
         self: "Markata",
         func: str = "title",
@@ -471,80 +556,56 @@ class Markata:
         *args: tuple,
         **kwargs: dict,
     ) -> list:
-        import copy
+        # Cache the filtered articles
+        if not hasattr(self, "_filtered_cache"):
+            self._filtered_cache = {}
 
-        def try_sort(a: Any) -> int:
-            if "datetime" in sort.lower():
-                return a.get(sort, datetime.datetime(1970, 1, 1))
+        filter_key = (func, filter, sort, reverse, args, frozenset(kwargs.items()))
 
-            if "date" in sort.lower():
-                return a.get(sort, datetime.date(1970, 1, 1))
+        self._map_cache_stats["total"] += 1
 
-            try:
-                value = eval(sort, a.to_dict(), {})
-            except NameError:
-                return -1
-            return value
-            try:
-                return int(value)
-            except TypeError:
+        if filter_key in self._filtered_cache:
+            self._map_cache_stats["hits"] += 1
+            articles = self._filtered_cache[filter_key]
+        else:
+            self._map_cache_stats["misses"] += 1
+            filter_code = compile(filter, "<string>", "eval")
+            eval_globals = (
+                {"timedelta": timedelta, **kwargs}
+                if kwargs
+                else {"timedelta": timedelta}
+            )
+
+            # Filter in one pass
+            articles = []
+            for article in self.articles:
                 try:
-                    return int(value.timestamp())
+                    ctx = article.to_dict()
+                    ctx["post"] = article
+                    ctx["m"] = self
+                    if eval(filter_code, ctx, eval_globals):
+                        articles.append(article)
                 except Exception:
-                    try:
-                        return int(
-                            datetime.datetime.combine(
-                                value,
-                                datetime.datetime.min.time(),
-                            ).timestamp(),
-                        )
-                    except Exception:
-                        try:
-                            return sum([ord(c) for c in str(value)])
-                        except Exception:
-                            return -1
+                    continue
 
-        articles = copy.copy(self.articles)
-        articles.sort(key=try_sort)
-        if reverse:
-            articles.reverse()
+            # Sort if needed
+            if sort != "True":
+                sort_key = self._get_sort_key(sort)
+                articles.sort(key=sort_key, reverse=reverse)
+            elif reverse:
+                articles.reverse()
 
-        try:
-            posts = [
-                eval(
-                    func,
-                    {**a.to_dict(), "timedelta": timedelta, "post": a, "m": self},
-                    {},
-                )
-                for a in articles
-                if eval(
-                    filter,
-                    {**a.to_dict(), "timedelta": timedelta, "post": a, "m": self},
-                    {},
-                )
-            ]
+            self._filtered_cache[filter_key] = articles
 
-        except NameError as e:
-            variable = str(e).split("'")[1]
-
-            missing_in_posts = self.map(
-                "path",
-                filter=f'"{variable}" not in post.keys()',
-            )
-            message = (
-                f"variable: '{variable}' is missing in {len(missing_in_posts)} posts"
-            )
-            if len(missing_in_posts) > 10:
-                message += (
-                    f"\nfirst 10 paths to posts missing {variable}"
-                    f"[{','.join([str(p) for p in missing_in_posts[:10]])}..."
-                )
-            else:
-                message += f"\npaths to posts missing {variable} {missing_in_posts}"
-
-            raise MissingFrontMatter(message)
-
-        return posts
+        # Map in one pass with same context structure
+        map_code = compile(func, "<string>", "eval")
+        eval_globals = (
+            {"timedelta": timedelta, **kwargs} if kwargs else {"timedelta": timedelta}
+        )
+        return [
+            eval(map_code, {"post": a, "m": self, **a.to_dict()}, eval_globals)
+            for a in articles
+        ]
 
     def first(
         self: "Markata",
@@ -578,9 +639,3 @@ class Markata:
         if len(posts) == 0:
             raise NoPosts
         return posts[0]
-
-
-def load_ipython_extension(ipython):
-    ipython.user_ns["m"] = Markata()
-    ipython.user_ns["markata"] = ipython.user_ns["m"]
-    ipython.user_ns["markata"] = ipython.user_ns["m"]

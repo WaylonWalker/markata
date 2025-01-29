@@ -6,7 +6,7 @@ from rich.pretty import Pretty
 from typing import Any, Dict, List, Optional, TYPE_CHECKING, Union
 
 import pydantic
-from pydantic import ConfigDict, Field
+from pydantic import ConfigDict, Field, field_validator
 import yaml
 
 from markata.hookspec import hook_impl, register_attr
@@ -26,25 +26,30 @@ class Post(pydantic.BaseModel, JupyterMixin):
     href: Optional[str] = None
     published: bool = False
     description: Optional[str] = None
-    content: str = None
-    # date: Union[datetime.date, str]=None
-    date: Optional[Union[datetime.date, str]] = None
-    # pydantic.Field(
-    # default_factory=lambda: datetime.date.min
-    # )
+    content: str = ""  # Default to empty string instead of None
+    tags: List[str] = Field(default_factory=list)
+    raw_date: Optional[Any] = Field(
+        None, alias="date", exclude=True
+    )  # Accept any type for raw_date
+    date: Optional[datetime.date] = None
     date_time: Optional[datetime.datetime] = None
     today: datetime.date = pydantic.Field(default_factory=datetime.date.today)
     now: datetime.datetime = pydantic.Field(default_factory=datetime.datetime.utcnow)
     load_time: float = 0
     profile: Optional[str] = None
     title: str = None
-    model_config = ConfigDict(
-        validate_assignment=True,
-        arbitrary_types_allowed=True,
-        extra="allow",
-    )
     template: Optional[str | Dict[str, str]] = "post.html"
     sidebar: Optional[Any] = None
+
+    model_config = ConfigDict(
+        validate_assignment=False,  # Skip validation on assignment for performance
+        arbitrary_types_allowed=True,
+        extra="allow",
+        str_strip_whitespace=True,
+        validate_default=True,
+        coerce_numbers_to_str=True,
+        populate_by_name=True,
+    )
 
     def __rich__(self) -> Pretty:
         return Pretty(self)
@@ -203,153 +208,170 @@ class Post(pydantic.BaseModel, JupyterMixin):
         """
         return f"---\n{self.yaml()}\n\n---\n\n{self.content}"
 
-    @pydantic.validator("slug", pre=True, always=True)
-    def default_slug(cls, v, *, values):
+    @field_validator("slug", mode="before")
+    def default_slug(cls, v, info):
         from slugify import slugify
 
-        return v or slugify(str(values["path"].stem))
+        return v or slugify(str(info.data.get("path", "").stem))
 
-    @pydantic.validator("slug", pre=True, always=True)
-    def index_slug_is_empty(cls, v, *, values):
+    @field_validator("slug", mode="before")
+    def index_slug_is_empty(cls, v, info):
         if v == "index":
             return ""
         return v
 
-    @pydantic.validator("slug", pre=True, always=True)
-    def no_double_slash_in_slug(cls, v, *, values):
+    @field_validator("slug", mode="before")
+    def no_double_slash_in_slug(cls, v, info):
         if v is None:
             return v
         return v.replace("//", "/")
 
-    @pydantic.validator("href", pre=True, always=True)
-    def default_href(cls, v, *, values):
+    @field_validator("href", mode="before")
+    def default_href(cls, v, info):
         if v:
             return v
-        return f"/{values['slug'].strip('/')}/".replace("//", "/")
+        return f"/{info.data.get('slug', '').strip('/')}/".replace("//", "/")
 
-    @pydantic.validator("title", pre=True, always=True)
-    def title_title(cls, v, *, values):
-        title = v or Path(values["path"]).stem.replace("-", " ")
-        return title.title()
-
-    @pydantic.validator("date_time", pre=True, always=True)
-    def dateparser_datetime(cls, v, *, values):
-        # dateparser is slow to import, do it lazily for faster cli
-        import dateparser
-
-        if isinstance(v, str):
-            d = dateparser.parse(v)
-            if d is None:
-                raise ValueError(f'"{v}" is not a valid date')
-        return v
-
-    @pydantic.validator("date_time", pre=True, always=True)
-    def date_is_datetime(cls, v, *, values):
-        if v is None and "date" not in values:
-            values["markata"].console.log(f"{values['path']} has no date")
-            return datetime.datetime.now()
-        if v is None and values["date"] is None:
-            values["markata"].console.log(f"{values['path']} has no date")
-            return datetime.datetime.now()
-        if isinstance(v, datetime.datetime):
+    @field_validator("title", mode="before")
+    def title_title(cls, v, info):
+        if v:
             return v
-        if isinstance(values["date"], datetime.datetime):
-            return values["date"]
-        if isinstance(v, datetime.date):
-            return datetime.datetime.combine(v, datetime.time.min)
-        if isinstance(values["date"], datetime.date):
-            return datetime.datetime.combine(values["date"], datetime.time.min)
-        return v
+        return info.data.get("path", "").stem.replace("-", " ").title()
 
-    @pydantic.validator("date_time", pre=True, always=True)
-    def mindate_time(cls, v, *, values):
-        if v is None and "date" not in values:
-            values["markata"].console.log(f"{values['path']} has no date")
-            return datetime.datetime.min
-        if values["date"] is None:
-            values["markata"].console.log(f"{values['path']} has no date")
-            return datetime.datetime.min
-        if isinstance(v, datetime.datetime):
+    @field_validator("description", mode="before")
+    def default_description(cls, v, info):
+        if v:
             return v
-        if isinstance(values["date"], datetime.datetime):
-            return values["date"]
-        if isinstance(v, datetime.date):
-            return datetime.datetime.combine(v, datetime.time.min)
-        if isinstance(values["date"], datetime.date):
-            return datetime.datetime.combine(values["date"], datetime.time.min)
-        return v
+        content = info.data.get("content", "")
+        if content:
+            return " ".join(content.split()[:50])
+        return None
 
-    @pydantic.validator("date", pre=True, always=True)
-    def dateparser_date(cls, v, *, values):
+    @field_validator("tags", mode="before")
+    def tags_not_none(cls, v, info):
         if v is None:
-            return datetime.date.min
-        if isinstance(v, str):
-            d = cls.markata.precache.get(v)
-            if d is not None:
-                return d
-
-            # dateparser is slow to import, do it lazily for faster cli
-            import dateparser
-
-            d = dateparser.parse(v)
-            if d is None:
-                raise ValueError(f'"{v}" is not a valid date')
-            d = d.date()
-            with cls.markata.cache as cache:
-                cache.set(v, d)
-            return d
+            return []
         return v
 
-    # @pydantic.validator("date", pre=True, always=True)
-    # def datetime_is_date(cls, v, *, values):
-    #     if isinstance(v, datetime.date):
-    #         return v
-    #     if isinstance(v, datetime.datetime):
-    #         return v.date()
+    @field_validator("date", mode="before")
+    def date_is_date(cls, v, info):
+        # print(f"date_is_date received value: {v!r} of type {type(v)}")  # Debug log
+        if v is None:
+            return None
 
-    # @pydantic.validator("date", pre=True, always=True)
-    # def mindate(cls, v, *, values):
-    #     if v is None:
-    #         return datetime.date.min
-    #     return v
+        if isinstance(v, datetime.date) and not isinstance(v, datetime.datetime):
+            return v
+        if isinstance(v, datetime.datetime):
+            # Ensure zero time when converting datetime to date
+            zero_time = v.replace(hour=0, minute=0, second=0, microsecond=0)
+            return zero_time.date()
+        if isinstance(v, str):
+            try:
+                # Try ISO format first
+                return datetime.datetime.fromisoformat(v.replace("Z", "+00:00")).date()
+            except ValueError:
+                try:
+                    # Try parsing with time
+                    dt = datetime.datetime.strptime(v, "%Y-%m-%d %H:%M")
+                    # Ensure zero time
+                    zero_time = dt.replace(hour=0, minute=0, second=0, microsecond=0)
+                    return zero_time.date()
+                except ValueError:
+                    try:
+                        # Fallback to date only
+                        return datetime.datetime.strptime(v, "%Y-%m-%d").date()
+                    except ValueError:
+                        return datetime.date.today()
+        # If we get here, try to convert to string
+        try:
+            return cls.date_is_date(str(v), info)
+        except (ValueError, TypeError):
+            print(f"Failed to convert {v!r} to date")  # Debug log
+            return datetime.date.today()
 
-    # @pydantic.validator("sidebar", pre=True, always=True)
-    # def default_sidebar(cls, v, *, values):
-    #     if v is None:
-    #         return v
-    #     if isinstance(v, str):
-    #         return values["markata"].feeds.get(v)
+    @field_validator("date_time", mode="before")
+    def parse_date_time(cls, v, info):
+        """Single validator to handle all date_time parsing cases"""
+        # If we have an explicit date_time value
+        if v is not None:
+            if isinstance(v, datetime.datetime):
+                return v
+            if isinstance(v, datetime.date):
+                return datetime.datetime.combine(v, datetime.time.min)
+            if isinstance(v, str):
+                try:
+                    # Try ISO format first
+                    return datetime.datetime.fromisoformat(v.replace("Z", "+00:00"))
+                except ValueError:
+                    try:
+                        return datetime.datetime.strptime(v, "%Y-%m-%d %H:%M")
+                    except ValueError:
+                        try:
+                            return datetime.datetime.strptime(v, "%Y-%m-%d")
+                        except ValueError:
+                            # Try dateparser as last resort for explicit date_time
+                            import dateparser
 
-    # from rich.table import Table
+                            parsed = dateparser.parse(v)
+                            if parsed:
+                                return parsed
+                            return datetime.datetime.now()
 
-    # table = Table(title=f"Post: {self.title}", show_header=False, show_lines=False)
-    # table.add_column("Key", style="cyan", no_wrap=True)
-    # table.add_column("Value", style="green")
+        # Get the raw date string directly from raw_date field
+        raw_date = info.data.get("raw_date")
+        if raw_date and isinstance(raw_date, str):
+            try:
+                # Try ISO format first
+                return datetime.datetime.fromisoformat(raw_date.replace("Z", "+00:00"))
+            except ValueError:
+                try:
+                    # Try parsing raw_date with time first
+                    return datetime.datetime.strptime(raw_date, "%Y-%m-%d %H:%M")
+                except ValueError:
+                    try:
+                        # Fallback to date only
+                        return datetime.datetime.strptime(raw_date, "%Y-%m-%d")
+                    except ValueError:
+                        # Try dateparser as last resort
+                        import dateparser
 
-    # table.add_row("date", str(self.date))
-    # table.add_row("title", str(self.title))
-    # if len(self.description) > 80:
-    #     table.add_row("description", str(self.description)[:80] + "...")
-    # else:
-    #     table.add_row("description", str(self.description))
-    # table.add_row("published", str(self.published))
-    # if len(self.content.splitlines()) > 12:
-    #     table.add_row(
-    #         "content",
-    #         "[medium_orchid]\n".join(self.content.splitlines()[:12])
-    #         + "\n\n"
-    #         + "[yellow]... "
-    #         + str(len(self.content.splitlines()) - 12)
-    #         + " more lines",
-    #     )
-    # else:
-    #     table.add_row("content", str(self.content))
+                        parsed = dateparser.parse(raw_date)
+                        if parsed:
+                            return parsed
 
-    # return table
+        # If no raw_date, try to derive from date field
+        date = info.data.get("date")
+        if date:
+            if isinstance(date, datetime.datetime):
+                return date
+            if isinstance(date, str):
+                try:
+                    # Try ISO format first
+                    return datetime.datetime.fromisoformat(date.replace("Z", "+00:00"))
+                except ValueError:
+                    try:
+                        # Try parsing date with time first
+                        return datetime.datetime.strptime(date, "%Y-%m-%d %H:%M")
+                    except ValueError:
+                        try:
+                            # Fallback to date only
+                            return datetime.datetime.strptime(date, "%Y-%m-%d")
+                        except ValueError:
+                            # Try dateparser as last resort
+                            import dateparser
+
+                            parsed = dateparser.parse(date)
+                            if parsed:
+                                return parsed
+            if isinstance(date, datetime.date):
+                return datetime.datetime.combine(date, datetime.time.min)
+
+        # If we still don't have a date, use now
+        return datetime.datetime.now()
 
 
 class PostModelConfig(pydantic.BaseModel):
-    "Configuration for the Post model"
+    """Configuration for the Post model"""
 
     def __init__(self, **data) -> None:
         """
@@ -396,11 +418,22 @@ class PostModelConfig(pydantic.BaseModel):
         "title",
     ]
 
-    @pydantic.validator("repr_include", pre=True, always=True)
-    def repr_include_validator(cls, v, *, values):
+    model_config = ConfigDict(
+        validate_assignment=True,  # Config model
+        arbitrary_types_allowed=True,
+        extra="allow",
+        str_strip_whitespace=True,
+        validate_default=True,
+        coerce_numbers_to_str=True,
+        populate_by_name=True,
+    )
+
+    @field_validator("repr_include", mode="before")
+    @classmethod
+    def repr_include_validator(cls, v, info) -> Optional[List[str]]:
         if v:
             return v
-        return values.get("include", None)
+        return info.data.get("include")
 
 
 class Config(pydantic.BaseModel):

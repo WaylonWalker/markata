@@ -80,18 +80,18 @@ create new things from templates
 """
 
 import json
+from pathlib import Path
 import pdb
 import shutil
 import sys
 import traceback
+from typing import Callable, List, Literal, Optional, TYPE_CHECKING
 import warnings
-from pathlib import Path
-from typing import TYPE_CHECKING, Callable, List, Literal, Optional
 
 import pydantic
+from rich import print as rich_print
 import toml
 import typer
-from rich import print as rich_print
 
 from markata.hookspec import hook_impl
 
@@ -131,8 +131,8 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
 
     plugins_app = typer.Typer()
     config_app = typer.Typer()
-    app.add_typer(plugins_app)
-    app.add_typer(config_app)
+    app.add_typer(plugins_app, name="plugins")
+    app.add_typer(config_app, name="config")
 
     @app.command()
     def tui(ctx: typer.Context) -> None:
@@ -202,7 +202,7 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
         rich_print(value)
 
     new_app = typer.Typer()
-    app.add_typer(new_app)
+    app.add_typer(new_app, name="new")
 
     @new_app.callback()
     def new():
