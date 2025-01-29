@@ -375,7 +375,8 @@ class Post(pydantic.BaseModel, JupyterMixin):
     def date_is_date(cls, v, info):
         # print(f"date_is_date received value: {v!r} of type {type(v)}")  # Debug log
         if v is None:
-            return None
+            # return None
+            return info.data.get("markata").config.default_date
 
         if isinstance(v, datetime.date) and not isinstance(v, datetime.datetime):
             return v
@@ -512,6 +513,7 @@ class PostModelConfig(pydantic.BaseModel):
         """
         super().__init__(**data)
 
+    default_date: datetime.date = datetime.date.today()
     include: List[str] = [
         "date",
         "description",

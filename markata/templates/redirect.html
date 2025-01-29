@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-2xl font-bold mb-4">Redirecting...</h1>
+    <p class="mb-4">You will be redirected to <a href="{{ target_url }}" class="text-blue-500 hover:underline">{{ target_url }}</a></p>
+    <script>window.location.href = "{{ target_url }}";</script>
+</div>
+{% endblock %}

@@ -1,0 +1,15 @@
+<article class='w-full'>
+<section class="title">
+    <h1 id="title">
+        Whoops that page was not found
+    </h1>
+</section>    <section class="body">
+        <p>404, looks like we can't find the page you are looking for.  Try one of these
+pages.</p>
+<ul>
+{% for post in markata.map('post', filter='"markata" not in slug and "tests" not in slug and "404" not in slug') %}
+    <li><a href="{{ post.slug }}">{{ post.title or "CHANGELOG" }}</a></li>
+{% endfor %}
+</ul>
+    </section>
+</article>

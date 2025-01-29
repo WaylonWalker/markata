@@ -105,9 +105,18 @@ def pre_render(markata: "Markata") -> None:
     markata.possible_wikilink = {}
 
     for slug in markata.map("slug"):
+        # register both final slug and full path slug
+        wikilink = slug
+        if wikilink in markata.possible_wikilink:
+            if slug not in markata.possible_wikilink[wikilink]:
+                markata.possible_wikilink[wikilink].append(slug)
+        else:
+            markata.possible_wikilink[wikilink] = [slug]
+
         wikilink = slug.split("/")[-1]
         if wikilink in markata.possible_wikilink:
-            markata.possible_wikilink[wikilink].append(slug)
+            if slug not in markata.possible_wikilink[wikilink]:
+                markata.possible_wikilink[wikilink].append(slug)
         else:
             markata.possible_wikilink[wikilink] = [slug]
     markata.possible_wikilink["index"] = ["index"]

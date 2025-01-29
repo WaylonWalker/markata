@@ -14,7 +14,6 @@
 'plugins' = 'https://markata.dev/plugins/'
 
 [markata.style]
-body_width = "1200px"
 
 [markata]
 # bump site version to bust GitHub actions cache
@@ -34,7 +33,7 @@ default_cache_expire = 1209600
 # subroute = "docs"
 
 ## Markata Setup
-glob_patterns = "docs/**/*.md,CHANGELOG.md"
+glob_patterns = ["docs/**/*.md", "CHANGELOG.md"]
 output_dir = "markout"
 assets_dir = "static"
 hooks = [
@@ -295,5 +294,5 @@ plugin = "markata.plugins.md_it_wikilinks:wikilinks_plugin"
 config = { markata = "markata" }
 
 [markata.glob]
-glob_patterns = "docs/**/*.md,CHANGELOG.md"
+glob_patterns = ["docs/**/*.md","CHANGELOG.md"]
 use_gitignore = true

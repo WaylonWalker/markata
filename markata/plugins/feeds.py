@@ -179,10 +179,12 @@ filter="date<=today and 'python' in tags and published=='False'"
 By default feeds will create one feed page at `/archive/` that includes all
 posts.
 
+``` toml
 [[markata.feeds]]
 slug='archive'
 title='All Posts'
 filter="True"
+```
 
 """
 

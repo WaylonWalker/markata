@@ -4,43 +4,35 @@ description: This is what the default admonition styles look like and how to cre
 ---
 
 ???+ note open by default
-you can open a details tab with '+'
+   you can open a details tab with '+'
 
-<!-- prettier-ignore -->
 ??? note closed by default
     you can open a details tab with '+'
 
 ## all of the admonitions
 
-<!-- prettier-ignore -->
 !!! note
     a note
 
-<!-- prettier-ignore -->
 !!! abstract
     an abstract
 
-<!-- prettier-ignore -->
 !!! info
 
     admonitions
 
-<!-- prettier-ignore -->
 !!! tip
 
     You should think about using admonitions
 
-<!-- prettier-ignore -->
 !!! success
 
     Run Successful!
 
-<!-- prettier-ignore -->
 !!! question
 
     What do you think of this?
 
-<!-- prettier-ignore -->
 !!! source
     Add some source code.
     ```python
@@ -48,23 +40,18 @@ you can open a details tab with '+'
 
 ````
 
-<!-- prettier-ignore -->
 !!! warning
     a warning
 
-<!-- prettier-ignore -->
 !!! failure
     a failure
 
-<!-- prettier-ignore -->
 !!! danger
     some danger
 
-<!-- prettier-ignore -->
 !!! bug
     a bug
 
-<!-- prettier-ignore -->
 !!! example
     an example
 
@@ -72,7 +59,6 @@ you can open a details tab with '+'
     print('hello world')
     ```
 
-<!-- prettier-ignore -->
 !!! quote
 
     a quote
