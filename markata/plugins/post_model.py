@@ -376,7 +376,7 @@ class Post(pydantic.BaseModel, JupyterMixin):
         # print(f"date_is_date received value: {v!r} of type {type(v)}")  # Debug log
         if v is None:
             # return None
-            return info.data.get("markata").config.default_date
+            return info.data.get("markata").config.post_model.default_date
 
         if isinstance(v, datetime.date) and not isinstance(v, datetime.datetime):
             return v

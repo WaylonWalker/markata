@@ -250,8 +250,8 @@ def load(markata: "MarkataDocs") -> None:
     """
     similar to [glob](../glob)
     """
-    if "articles" not in markata.__dict__:
-        markata.articles = []
+    # if "articles" not in markata.__dict__:
+    #     markata.articles = []
     for py_file in markata.py_files:
         with markata.cache as cache:
             markata.articles.append(make_article(markata, py_file, cache))
