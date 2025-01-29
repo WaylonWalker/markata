@@ -1,45 +1,89 @@
 """
-Wikilinks depicted with `\[[wikilinks]]` can be enabled for sites using the
-`markdown-it-py` plugin markata will look through all posts matching up the
-file stem to the wiki link and inserting the slug as the href.
+The `markata.plugins.md_it_wikilinks` plugin adds support for wiki-style links using
+double brackets (`[[link]]`). It automatically resolves links to other posts in your
+site using file names or slugs.
 
-???+ note normal wikilink
+# Installation
 
-    Here is a link to a markdown file `docs/nav.md`, and the url becomes
-    [/nav](/nav).
+This plugin is built-in and enabled by default through the 'default' plugin.
+If you want to be explicit, you can add it to your list of plugins:
 
-    ```md
-    [[nav]]
-    ```
+```toml
+hooks = [
+    "markata.plugins.md_it_wikilinks",
+]
+```
 
-    When rendered out this wikilink will become an anchor link.
+# Uninstallation
 
-    ```html
-    <a class="wikilink" href="/nav">load</a>
-    ```
+Since this plugin is included in the default plugin set, to disable it you must explicitly
+add it to the disabled_hooks list if you are using the 'default' plugin:
 
-    > This behaves just like the standard wikilink
+```toml
+disabled_hooks = [
+    "markata.plugins.md_it_wikilinks",
+]
+```
 
-A special feature that markata brings is slug lookup.  It is able to not only
-blindly link to the route specified, but will look up the slug of an article.
+# Configuration
 
+This plugin requires no explicit configuration. It automatically processes wikilinks
+in your markdown content.
 
-???+ note markata slug lookup
-    Markata has a load plugin that is generated with the [[docs]] plugin.  It's
-    filepath is `markata/plugins/load.py`, so it can be referenced by the file
-    stem `load`.
+# Functionality
 
-    ```md
-    [[load]]
-    ```
+## Basic Wikilinks
 
-    Markata will look up the article by the file stem, grab the first article,
-    and use its slug as the href.  This turns it into an anchor link that looks
-    like this.
+Simple file-based linking:
+```markdown
+[[nav]]              -> links to docs/nav.md as /nav
+[[blog/post]]        -> links to blog/post.md as /blog/post
+[[about|About Me]]   -> links to about.md with "About Me" as text
+```
 
-    ```html
-    <a class="wikilink" href="/markata/plugins/load">load</a>
-    ```
+## Smart Slug Resolution
+
+The plugin:
+1. Looks up the target file in your content
+2. Finds its generated slug
+3. Creates a link to the final URL
+
+Example:
+```markdown
+# File: posts/2024-01-my-post.md
+slug: /blog/my-post
+
+# In another file:
+[[2024-01-my-post]]  -> links to /blog/my-post
+```
+
+## Link Formats
+
+Supports multiple link styles:
+- Basic: `[[filename]]`
+- With text: `[[filename|Link Text]]`
+- With path: `[[folder/file]]`
+- With extension: `[[file.md]]` (extension stripped in output)
+
+## HTML Output
+
+Generated HTML structure:
+```html
+<a class="wikilink" href="/target-slug">Link Text</a>
+```
+
+## Error Handling
+
+For broken links:
+- Maintains the wikilink syntax
+- Adds a 'broken-link' class
+- Optionally logs warnings
+
+## Dependencies
+
+This plugin depends on:
+- markdown-it-py for markdown parsing
+- The `render_markdown` plugin for final HTML output
 """
 
 import logging

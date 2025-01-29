@@ -1,136 +1,98 @@
 """
-Renders your markdown as a jinja template during pre_render.
+The `markata.plugins.jinja_md` plugin enables Jinja2 templating within your markdown
+content. This allows you to dynamically generate content using Python expressions and
+access to the full Markata context.
 
-The markata instance is passed into the template, giving you access to things
-such as all of your articles, config, and this post as post.
+# Installation
 
-# Examples
+This plugin is built-in and enabled by default through the 'default' plugin.
+If you want to be explicit, you can add it to your list of plugins:
 
-first we can grab a few things out of the frontmatter of this post.
+```toml
+hooks = [
+    "markata.plugins.jinja_md",
+]
+```
 
-``` markdown
+# Uninstallation
+
+Since this plugin is included in the default plugin set, to disable it you must explicitly
+add it to the disabled_hooks list if you are using the 'default' plugin:
+
+```toml
+disabled_hooks = [
+    "markata.plugins.jinja_md",
+]
+```
+
+# Configuration
+
+Configure Jinja markdown settings in your `markata.toml`:
+
+```toml
+[markata.jinja_md]
+# List of files to ignore for Jinja processing
+ignore = [
+    "README.md",
+    "CHANGELOG.md"
+]
+```
+
+# Functionality
+
+## Template Variables
+
+Your markdown has access to:
+- `post`: The current post being rendered
+- `markata`: The Markata instance with all configuration and posts
+
+## Example Usage
+
+### Access Post Metadata
+```markdown
 # {{ post.title }}
 {{ post.description }}
+
+Published on: {{ post.date.strftime('%Y-%m-%d') }}
 ```
 
-# one-liner list of links
-
-This one-liner will render a list of markdown links into your markdown at build
-time.  It's quite handy to pop into posts.
-
-``` markdown
+### Generate Link Lists
+```markdown
+{# One-liner list of all posts #}
 {{ '\\n'.join(markata.map('f"* [{title}]({slug})"', sort='slug')) }}
-```
 
-# jinja for to markdown list of links
-
-Sometimes quoting things like your filters are hard to do in a one line without
-running out of quote variants.  Jinja for loops can make this much easier.
-
-``` markdown
+{# For-loop with filtering #}
 {% for post in markata.map('post', filter='"git" in tags') %}
 * [{{ post.title }}]({{ post.slug }})
 {% endfor %}
 ```
 
-# jinja for to html list of links
-
-Since markdown is a superset of html, you can just render out html into your
-post and it is still valid.
-
-``` markdown
-<ul>
-{% for post in markata.map('post', filter='"git" in tags') %}
-    <li><a href="{{ post.slug }}">{{ post.title }}</a></li>
-{% endfor %}
-</ul>
-```
-
-# Ignoring files
-
-It is possible to ignore files by adding an ignore to your `markata.jinja_md`
-config in your `markata.toml` file.  This ignore follows the `gitwildmatch`
-rules, so think of it the same as writing a gitignore.
-
-```toml
-[markata.jinja_md]
-ignore=[
-'jinja_md.md',
-]
-```
-
-!!note
-  Docs such as this jinja_md.py file will get converted to jinja_md.md during
-  build time, so use `.md` extensions instead of `.py`.
-
-# Ignoring a single file
-
-You can also ignore a single file right from the articles frontmatter, by
-adding `jinja: false`.
-
+### Include Raw Files
 ```markdown
----
-jinja: false
-
----
+{# Include file contents without processing #}
+{% include_raw 'code/example.py' %}
 ```
 
-# Escaping
+## Jinja Extensions
 
-Sometimes you want the ability to have jinja templates in a post, but also the
-ability to keep a raw jinja template.  There are a couple of techniques that
-are covered mroe in the jinja docs for
-[escaping](https://jinja.palletsprojects.com/en/3.1.x/templates/#escaping)
+The plugin supports:
+1. Custom extensions via entrypoints
+2. Built-in extensions like include_raw
+3. Silent undefined variables
+4. Custom error messages
 
-```markdown
-{% raw %}
-{{ '\\n'.join(markata.map('f"* [{title}]({slug})"', sort='slug')) }}
-{% endraw %}
+## Error Handling
 
-{{ '{{' }} '\\n'.join(markata.map('f"* [{title}]({slug})"', sort='slug')) {{ '}}' }}
-```
+The plugin provides:
+- Custom error messages for template syntax errors
+- Silent handling of undefined variables
+- Detailed error reporting with file and line info
 
-# Creating a jinja extension
+## Dependencies
 
-Here is a bit of a boilerplate example of a jinja extension.
-
-``` python
-from jinja2 import nodes
-from jinja2.ext import Extension
-
-class ExampleExtension(Extension):
-    tags = {"example"}
-
-    def __init__(self, environment):
-        super().__init__(environment)
-
-    def parse(self, parser):
-        line_number = next(parser.stream).lineno
-        arg = [parser.parse_expression()]
-        return nodes.CallBlock(self.call_method("run", arg), [], [], "").set_lineno(
-            line_number
-        )
-
-    def run(self, arg, caller):
-        return f'hello {arg}'
-```
-
-So that markata picks up your extension, you will need to register an
-entrypoint named `markata.jinja_md`.  Once installed markata will automatically
-load this extension to its list of  jinja extensions.
-
-``` toml
-[project.entry-points."markata.jinja_md"]
-markta_gh = "example_extension:ExampleExtension"
-```
-
-Once you have your extension created and ready to use you can use it in your
-markdown.
-
-``` markdown
-{% example world %}
-```
-
+This plugin depends on:
+- Jinja2 for template processing
+- The `render_markdown` plugin for final HTML rendering
 """
 
 from pathlib import Path

@@ -281,7 +281,7 @@ class FeedConfig(pydantic.BaseModel, JupyterMixin):
 class Feed(pydantic.BaseModel, JupyterMixin):
     """A storage class for markata feed objects.
 
-    # Usage
+    ## Usage
 
     ``` python
     from markata import Markata
@@ -292,6 +292,7 @@ class Feed(pydantic.BaseModel, JupyterMixin):
 
     # access config for a feed
     m.feeds.docs.config
+    ```
     """
 
     config: FeedConfig

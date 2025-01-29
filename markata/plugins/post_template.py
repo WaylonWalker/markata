@@ -1,6 +1,146 @@
 """
 
 
+The `markata.plugins.post_template` plugin handles the rendering of posts using Jinja2
+templates. It provides extensive configuration options for HTML head elements, styling,
+and template customization.
+
+# Installation
+
+This plugin is built-in and enabled by default through the 'default' plugin.
+If you want to be explicit, you can add it to your list of plugins:
+
+```toml
+hooks = [
+    "markata.plugins.post_template",
+]
+```
+
+# Uninstallation
+
+Since this plugin is included in the default plugin set, to disable it you must explicitly
+add it to the disabled_hooks list if you are using the 'default' plugin:
+
+```toml
+disabled_hooks = [
+    "markata.plugins.post_template",
+]
+```
+
+# Configuration
+
+## Head Elements
+
+Configure HTML head elements in `markata.toml`:
+
+```toml
+# Meta tags
+[[markata.head.meta]]
+name = "og:type"
+content = "article"
+
+[[markata.head.meta]]
+name = "og:author"
+content = "Your Name"
+
+# Links
+[[markata.head.link]]
+rel = "canonical"
+href = "https://example.com"
+
+# Scripts
+[[markata.head.script]]
+src = "/assets/main.js"
+
+# Raw HTML
+markata.head.text = '''
+<style>
+  /* Custom CSS */
+</style>
+'''
+```
+
+## Styling
+
+Configure default styles:
+
+```toml
+[markata.style]
+color_bg = "#1f2022"
+color_text = "#eefbfe"
+color_link = "#fb30c4"
+color_accent = "#e1bd00c9"
+body_width = "800px"
+```
+
+## Templates
+
+Configure template settings:
+
+```toml
+[markata]
+# Default template
+post_template = "post.html"
+
+# Template directories
+templates_dir = "templates"
+dynamic_templates_dir = ".markata.cache/templates"
+template_cache_dir = ".markata.cache/template_bytecode"
+
+# Jinja environment options
+env_options = { trim_blocks = true }
+```
+
+# Functionality
+
+## Template Rendering
+
+The plugin:
+1. Loads templates from configured directories
+2. Compiles and caches templates for performance
+3. Renders posts with Jinja2 templating
+4. Supports template inheritance and includes
+5. Provides template bytecode caching
+
+## Post-Specific Overrides
+
+Each post can override global settings:
+
+```yaml
+---
+template: custom.html
+config_overrides:
+  head:
+    meta:
+      - name: og:type
+        content: video
+  style:
+    color_bg: "#000000"
+---
+```
+
+## Template Context
+
+Templates have access to:
+- Post attributes
+- Global configuration
+- Custom filters and functions
+- Markata instance
+
+## Performance Features
+
+- Template bytecode caching
+- Template compilation caching
+- Configurable Jinja2 environment
+- Efficient head element rendering
+
+## Dependencies
+
+This plugin depends on:
+- jinja2 for templating
+- pydantic for configuration
+- typer for CLI commands
+
 # Add head configuration
 
 This snippet allows users to configure their head in `markata.toml`.
@@ -503,6 +643,6 @@ def pre_render(markata: "Markata") -> None:
 @hook_impl
 def render(markata: "Markata") -> None:
     with markata.cache as cache:
-        for article in markata.filter("skip==False"):
+        for article in markata.filter("not skip"):
             html = render_article(markata=markata, cache=cache, article=article)
             article.html = html

@@ -1,65 +1,105 @@
 """
-Sets the articles `output_html` path, and saves the article's `html` to the
-`output_html` file.
+The `markata.plugins.publish_html` plugin handles saving rendered HTML content to files.
+It determines the output path for each article and ensures files are saved in the correct
+location within the output directory.
 
-##  Ouptut Directory
+# Installation
 
-Output will always be written inside of the configured `output_dir`
+This plugin is built-in and enabled by default through the 'default' plugin.
+If you want to be explicit, you can add it to your list of plugins:
+
+```toml
+hooks = [
+    "markata.plugins.publish_html",
+]
+```
+
+# Uninstallation
+
+Since this plugin is included in the default plugin set, to disable it you must explicitly
+add it to the disabled_hooks list if you are using the 'default' plugin:
+
+```toml
+disabled_hooks = [
+    "markata.plugins.publish_html",
+]
+```
+
+Note: Disabling this plugin will prevent HTML files from being written to disk.
+
+# Configuration
+
+Configure HTML output in `markata.toml`:
 
 ```toml
 [markata]
-# markout is the default, but you can override it in your markata.toml file
-output_dir = "markout"
+# Base output directory
+output_dir = "dist"
+
+# Custom output paths
+[[markata.output_paths]]
+pattern = "blog/*"
+output = "posts/{stem}.html"
+
+[[markata.output_paths]]
+pattern = "docs/*"
+output = "documentation/{stem}/index.html"
 ```
 
-## Explicityly set the output
+# Functionality
 
-markata will save the articles `html` to the `output_html` specified in the
-articles metadata, loaded from frontmatter.
+## Path Resolution
 
-## 404 example use case
+The plugin:
+1. Determines output path for each post
+2. Creates necessary directories
+3. Validates paths are within output_dir
+4. Handles custom path mappings
 
-Here is an example use case of explicitly setting the output_html.  By default
-markata will turn `pages/404.md` into `markout/404/index.html`, but many
-hosting providers look for a 404.html to redirect the user to when a page is
-not found.
+## Output Model
 
-```markdown
----
-title: Whoops that page was not found
-description: 404, looks like we can't find the page you are looking for
-output_html: 404.html
+Extends the base Post model with:
+- output_html path
+- Path validation
+- Slug resolution
+- Directory creation
 
----
+## File Operations
 
-404, looks like we can't find the page you are looking for.  Try one of these
-pages.
+Handles:
+- Directory creation
+- File writing
+- Path validation
+- Error logging
 
-<ul>
-{% for post in
-    markata.map(
-        'post',
-        filter='"markata" not in slug and "tests" not in slug and "404" not in slug'
-        )
- %}
-    <li><a href="{{ post.slug }}">{{ post.title or "CHANGELOG" }}</a></li>
-{% endfor %}
-</ul>
-```
+## Path Customization
 
-## Index.md is the one special case
+Supports:
+- Custom output paths
+- Path patterns
+- Directory structures
+- Index files
 
-If you have a file `pages/index.md` it will become `markout/index.html` rather
-than `markout/index/inject.html` This is one of the primary ways that markata
-lets you [make your home page](https://markata.dev/home-page/)
+## Safety Features
 
+Includes:
+- Path validation
+- Directory verification
+- Error handling
+- Logging
+
+## Dependencies
+
+This plugin depends on:
+- pathlib for path operations
+- pydantic for model validation
 """
 
 from pathlib import Path
 from typing import Any, Dict, Optional, TYPE_CHECKING, Union
 
 import pydantic
-from pydantic import Field, field_validator, ConfigDict
+from pydantic import ConfigDict, Field, field_validator
 
 from markata.hookspec import hook_impl, register_attr
 
@@ -146,7 +186,7 @@ def save(markata: "Markata") -> None:
     """
     from slugify import slugify
 
-    for article in markata.filter("skip==False"):
+    for article in markata.filter("not skip"):
         if article.html is None:
             continue
         if isinstance(article.html, str):

@@ -1,75 +1,107 @@
 """
-Creates redirects for times when your backend server can't.
+The `markata.plugins.redirects` plugin creates static redirects for your site using
+a simple configuration file. Compatible with services like Cloudflare Pages and Netlify.
 
-## Configuration
+# Installation
 
-Enable the redirect hook by adding it to your list of hooks.
+This plugin is built-in but not enabled by default. Add it to your plugins list:
 
-``` toml
-[markata]
-
-# Were you keep static assets to copy into the project, default is static
-# the assets_dir will set the default _redirects file directory
-assets_dir = "static"
-
-# You can override the default redirects file location
-redirects = static/_redirects
-
+```toml
 hooks = [
-   # creates redirects from static/_redirects file
-   "markata.plugins.redirects",
-   # copies your static assets into the output_dir (default: `markout`)
-   "markata.plugins.copy_assets",
-  ...
+    "markata.plugins.redirects",
 ]
 ```
 
-## Syntax
+# Uninstallation
 
-Your `_redirects` file is a simplified version of what services like cloudflare
-pages or netlify use.  In fact you can use the same redirects file!
+Remove the plugin from your hooks list in `markata.toml`:
 
-Here is an example that will redirect `/old` to `/new` and `/CHANGELOG` to
-`/changelog`
-
-```
-/old        /new
-/CHANGELOG  /changelog
+```toml
+hooks = [
+    # Remove or comment out the line below
+    # "markata.plugins.redirects",
+]
 ```
 
-## Limitations
-_no splats_
+# Configuration
 
-Since it is static generated this plugin cannot cover *'s.  * or splat
-redirects need to be taken care of server side.  It also cannot change the http
-code, this is only
+Configure redirects in `markata.toml`:
 
-## Features
+```toml
+[markata]
+# Default redirects file location
+redirects = "static/_redirects"
 
-The features of markata.plugins.redirect is pretty limited since it is
-implemented only as a static page.  Other features require server side
-implementation.
+# Or use assets_dir to set default location
+assets_dir = "static"
+```
 
-| Feature                             | Support | Example                                                         | Notes                                                                                             |
-| ----------------------------------- | ------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| Force                               | Yes     | `/pagethatexists /otherpage`                                    | Creates an index.html with http-equiv and canonical                                               |
-| Redirects (301, 302, 303, 307, 308) | No      | `/home / 301`                                                   | Ignored, requires server side implementation                                                      |
-| Rewrites (other status codes)       | No      | `/blog/* /blog/404.html 404`                                    | ...                                                                                               |
-| Splats                              | No      | `/blog/* /blog/:splat`                                          | ...                                                                                               |
-| Placeholders                        | No      | `/blog/:year/:month/:date/:slug /news/:year/:month/:date/:slug` | ...                                                                                               |
-| Query Parameters                    | No      | `/shop id=:id /blog/:id 301`                                    | ...                                                                                               |
-| Proxying                            | No      | `/blog/* https://blog.my.domain/:splat 200`                     | ...                                                                                               |
-| Domain-level redirects              | No      | `workers.example.com/* workers.example.com/blog/:splat 301`     | ...                                                                                               |
-| Redirect by country or language     | No      | `/ /us 302 Country=us`                                          | ...                                                                                               |
-| Redirect by cookie                  | No      | `/* /preview/:splat 302 Cookie=preview`                        | ...                                                                                               |
+## Redirects File Format
 
-> Compare with
-> [cloudflare-pages](https://developers.cloudflare.com/pages/platform/redirects/)
+Create a `_redirects` file with entries:
 
-!!! tip
-    If you have a public site, pair this up with
-    [ahrefs](https://app.ahrefs.com/dashboard) to keep up with pages that have
-    moved without you realizing.
+```text
+# Basic redirect
+/old-path    /new-path
+
+# Force specific status code
+/api/*    /v2/api/:splat    301
+
+# Redirect with query parameters
+/search    /new-search    301?q=:q
+
+# Proxy to external URL
+/external    https://api.example.com    200
+
+# Redirect based on country
+/app/*    /app/us/:splat    200    Country=us
+/app/*    /app/mx/:splat    200    Country=mx
+
+# Redirect with placeholders
+/blog/:year/:month    /posts/:year/:month
+```
+
+# Functionality
+
+## Redirect Types
+
+Supports:
+- Basic redirects
+- Path patterns
+- Query parameters
+- Status codes
+- Country rules
+- Placeholders
+
+## File Generation
+
+The plugin:
+1. Reads redirect rules
+2. Creates HTML files
+3. Handles directories
+4. Preserves parameters
+
+## Compatibility
+
+Works with:
+- Cloudflare Pages
+- Netlify
+- Static hosting
+- Local development
+
+## Performance
+
+Features:
+- Efficient file creation
+- Pattern matching
+- Rule validation
+- Error handling
+
+## Dependencies
+
+This plugin depends on:
+- pydantic for configuration
+- pathlib for file operations
 
 """
 

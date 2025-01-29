@@ -1,3 +1,112 @@
+"""
+The `markata.plugins.config_model` plugin defines Markata's core configuration model,
+providing validation and type safety for all configuration options.
+
+# Installation
+
+This plugin is built-in and enabled by default through the 'default' plugin.
+If you want to be explicit, you can add it to your list of plugins:
+
+```toml
+hooks = [
+    "markata.plugins.config_model",
+]
+```
+
+# Uninstallation
+
+Since this plugin is included in the default plugin set, to disable it you must explicitly
+add it to the disabled_hooks list if you are using the 'default' plugin:
+
+```toml
+disabled_hooks = [
+    "markata.plugins.config_model",
+]
+```
+
+Note: Disabling this plugin will break most of Markata's functionality as the Config
+model is fundamental to the system.
+
+# Configuration
+
+Configure Markata in `markata.toml`:
+
+```toml
+[markata]
+# Core settings
+output_dir = "markout"
+assets_dir = "static"
+
+# Plugin management
+hooks = ["default"]
+disabled_hooks = []
+
+# Cache settings
+default_cache_expire = 3600
+template_cache_expire = 86400  # 24 hours
+markdown_cache_expire = 21600  # 6 hours
+dynamic_cache_expire = 3600   # 1 hour
+
+# Markdown settings
+markdown_extensions = []
+
+# Development settings
+dev_server_port = 8000
+dev_server_host = "localhost"
+```
+
+# Functionality
+
+## Configuration Model
+
+Core settings:
+- `output_dir`: Build output location
+- `assets_dir`: Static assets location
+- `hooks`: Active plugins
+- `disabled_hooks`: Disabled plugins
+- `markdown_extensions`: Markdown processors
+- Cache expiration times
+- Development server settings
+
+## Validation
+
+The model provides:
+- Type checking and coercion
+- Path validation
+- URL validation
+- Color validation
+- Integer constraints
+- Default values
+
+## Settings Management
+
+Features:
+- Environment variable support
+- TOML file loading
+- Settings inheritance
+- Dynamic updates
+- Validation on change
+
+## Performance
+
+Uses optimized Pydantic config:
+- Assignment validation
+- Arbitrary types
+- Extra fields
+- String stripping
+- Default validation
+- Number coercion
+- Name population
+
+## Dependencies
+
+This plugin depends on:
+- pydantic for model definition
+- pydantic-settings for settings management
+- pydantic-extra-types for color support
+- rich for console output
+"""
+
 import datetime
 from pathlib import Path
 from typing import Optional, TYPE_CHECKING

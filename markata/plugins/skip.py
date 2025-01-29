@@ -33,11 +33,9 @@ def load(markata: "Markata") -> None:
             key = markata.make_hash("skip", post.raw)
             if markata.cache.get(key) == "done":
                 post.skip = True
+    console.log(f"{len(markata.filter('skip'))}/{len(markata.posts)} posts skipped")
     console.log(
-        f"{len(markata.filter('skip==True'))}/{len(markata.posts)} posts skipped"
-    )
-    console.log(
-        f"{len(markata.filter('skip==False'))}/{len(markata.posts)} posts not skipped"
+        f"{len(markata.filter('not skip'))}/{len(markata.posts)} posts not skipped"
     )
 
 
@@ -45,7 +43,7 @@ def load(markata: "Markata") -> None:
 def save(markata: "Markata") -> None:
     """Save the 'done' status for processed posts."""
     # for post in markata.posts:
-    for post in markata.filter("skip==False"):
+    for post in markata.filter("not skip"):
         if hasattr(post, "raw"):
             if post.output_html.exists():
                 key = markata.make_hash("skip", post.raw)

@@ -1,53 +1,87 @@
 """
-A Markata plugin to create automatic descriptions for markdown documents.  It
-does this by grabbing the first `{len}` number of characters from the document
-that are in a paragraph.
+The `markata.plugins.auto_description` plugin automatically generates descriptions for your
+posts by extracting text from the first paragraphs of your markdown content. It can create
+multiple descriptions of different lengths for different purposes (e.g., SEO, previews).
 
-## Configuration
+# Installation
 
-Open up your `markata.toml` file and add new entries for your
-auto_descriptions.  You can have multiple desriptions, each one will be named
-after the key you give it in your config.
+This plugin is built-in and enabled by default through the 'default' plugin.
+If you want to be explicit, you can add it to your list of plugins:
 
-``` toml
-[markata]
+```toml
+hooks = [
+    "markata.plugins.auto_description",
+]
+```
 
-# make sure its in your list of hooks
-hooks=[
-   "markata.plugins.auto_description",
-   ]
+# Uninstallation
 
+Since this plugin is included in the default plugin set, to disable it you must explicitly
+add it to the disabled_hooks list if you are using the 'default' plugin:
+
+```toml
+disabled_hooks = [
+    "markata.plugins.auto_description",
+]
+```
+
+# Configuration
+
+Configure multiple description types in your `markata.toml`:
+
+```toml
+# Standard description (160 characters)
 [markata.auto_description.description]
-len=160
+len = 160
+
+# Longer description (250 characters)
 [markata.auto_description.long_description]
-len=250
+len = 250
+
+# Full description (500 characters)
 [markata.auto_description.super_description]
-len=500
+len = 500
 ```
 
-!!! note
-   Make sure that you have the auto_description plugin in your configured hooks.
+Each description configuration:
+- Must be under `markata.auto_description.[name]`
+- Requires a `len` parameter specifying maximum character length
+- Creates an attribute named after the configuration key
 
-In the above we will end up with three different descritpions,
-(`description`, `long_description`, and `super_description`) each will be the
-first number of characters from the document as specified in the config.
+## Frontmatter Override
 
-### Defaults
+You can override automatic descriptions by setting them in frontmatter:
 
-By default markata will set `description` to 160 and `long_description` to 250,
-if they are not set in your config.
-
-### Using the Description
-
-Downstream hooks can now use the description for things such as seo, or feeds.
-Here is a simple example that lists all of the descriptions in all posts.  This
-is a handy thing you can do right from a repl.
-
-``` python
-from markata import Markata
-m = Markata()
-[p["description"] for p in m.articles]
+```markdown
+---
+title: My Post
+description: My custom description
+long_description: A longer custom description
+---
 ```
+
+# Functionality
+
+## Description Generation
+
+The plugin:
+1. Converts markdown to plain text
+2. Finds the first meaningful paragraphs
+3. Truncates to the specified length
+4. Ensures clean word breaks
+5. Caches results for performance
+
+## Registered Attributes
+
+For each configured description (e.g., `description`, `long_description`), the plugin adds:
+- The description attribute with the generated/specified text
+- Truncated to the configured length
+- Preserving complete words
+
+## Dependencies
+
+This plugin depends on:
+- markdown-it-py for markdown parsing
 
 """
 

@@ -13,6 +13,8 @@
 'docs' = 'https://markata.dev/docs/'
 'plugins' = 'https://markata.dev/plugins/'
 
+[markata.style]
+body_width = "1200px"
 
 [markata]
 # bump site version to bust GitHub actions cache

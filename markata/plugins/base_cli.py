@@ -1,82 +1,105 @@
 """
-Markata's base command line commands.
+The `markata.plugins.base_cli` plugin provides Markata's core command-line interface
+functionality, including essential commands like `build`, `list`, and `clean`.
 
-This plugin enables
-[`build`](https://markata.dev/markata/plugins/base_cli/#build-function)
-and
-[`list`](https://markata.dev/markata/plugins/base_cli/#list-function)
-commands as part of the main markata cli.
+# Installation
 
-# Building Your Site with the Cli
+This plugin is built-in and enabled by default through the 'default' plugin.
+If you want to be explicit, you can add it to your list of plugins:
 
-Your Markata Site can be build completely from the command line.
-
-``` bash
-markata build
-
-# or if you prefer pipx
-pipx run markata build
+```toml
+hooks = [
+    "markata.plugins.base_cli",
+]
 ```
 
-see the
-[`build`](https://markata.dev/markata/plugins/base_cli/#build-function)
-section for more examples.
+# Uninstallation
 
-# Listing your articles
+Since this plugin is included in the default plugin set, to disable it you must explicitly
+add it to the disabled_hooks list if you are using the 'default' plugin:
 
-Markata list is a tool to help list out artile attributes right to your
-terminal.  This is very helpful to find articles on larger sites, or
-debug what is getting picked up by markata.
-
-``` bash
-markata list --map 'str(date.year) + "," + title'
+```toml
+disabled_hooks = [
+    "markata.plugins.base_cli",
+]
 ```
 
-see the
-[`list`](https://markata.dev/markata/plugins/base_cli/#list-function)
-section for more examples.
+# Configuration
 
-# Creating "new" things with the cli
+No explicit configuration is required. The plugin automatically registers CLI commands.
 
-The `new` cli is built on copier templates, and allows you to build a new blog
-from a starter repo, make new posts, and new plugins.  Before you start dumping
-new things onto your site for the first time, make sure you have a clean git
-history fully backed up, or look at the template repos to fully understand
-them.
+# Functionality
 
-``` bash
-# create a new blog template
-# copier requires you to specify a directory
-markata new blog [directory]
+## Core Commands
 
-# create a new blog post
-markata new post
+### Build Command
 
-# create a new plugin
-markata new plugin
+Build your Markata site:
+```bash
+markata build [options]
 
-# for the most up to date help, just ask for help.
-markata new --help
-
-Usage: markata new [OPTIONS] COMMAND [ARGS]...
-
-create new things from templates
-
-╭─ Options ────────────────────────────────────────────────────────────────────────╮
-│ --help          Show this message and exit.                                      │
-╰──────────────────────────────────────────────────────────────────────────────────╯
-╭─ Commands ───────────────────────────────────────────────────────────────────────╮
-│ blog    Create a new blog from using the template from                           │
-│         https://github.com/WaylonWalker/markata-blog-starter.                    │
-│ plugin  Create a new plugin using the template at                                │
-│         https://github.com/WaylonWalker/markata-plugin-template.                 │
-│ post    Create new blog post in the pages directory from the template at         │
-│         https://github.com/WaylonWalker/markata-post-template.                   │
-╰──────────────────────────────────────────────────────────────────────────────────╯
-
-
+# Options:
+--clean         Clean output directory first
+--watch         Watch for changes and rebuild
+--serve         Start development server
+--profile       Profile the build process
+--debug         Enable debug mode
 ```
 
+### List Command
+
+List and filter articles:
+```bash
+markata list [options]
+
+# Options:
+--filter "post.published"  Filter posts by expression
+--sort "post.date"        Sort posts by attribute
+--reverse                 Reverse sort order
+--format "{title}"        Custom output format
+```
+
+### Clean Command
+
+Clean build artifacts:
+```bash
+markata clean [options]
+
+# Options:
+--dry-run      Show what would be deleted
+--quiet        Suppress output
+```
+
+## Debug Features
+
+The plugin provides:
+- Pretty error formatting
+- Post-mortem debugging
+- Performance profiling
+- Verbose logging
+
+## Development Server
+
+Features include:
+- Live reload
+- Asset serving
+- Port configuration
+- Host configuration
+
+## Watch Mode
+
+Supports:
+- File watching
+- Auto-rebuild
+- Pattern matching
+- Debouncing
+
+## Dependencies
+
+This plugin depends on:
+- typer for CLI interface
+- rich for terminal output
+- watchfiles for watch mode
 """
 
 import json

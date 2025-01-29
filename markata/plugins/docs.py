@@ -1,5 +1,87 @@
 """
-leading docstring
+The `markata.plugins.docs` plugin automatically generates documentation pages from Python
+source code docstrings. It parses Python files, extracts docstrings and code structure,
+and creates markdown documentation.
+
+# Installation
+
+This plugin is built-in and enabled by default through the 'default' plugin.
+If you want to be explicit, you can add it to your list of plugins:
+
+```toml
+hooks = [
+    "markata.plugins.docs",
+]
+```
+
+# Uninstallation
+
+Since this plugin is included in the default plugin set, to disable it you must explicitly
+add it to the disabled_hooks list if you are using the 'default' plugin:
+
+```toml
+disabled_hooks = [
+    "markata.plugins.docs",
+]
+```
+
+# Configuration
+
+Configure documentation generation in your `markata.toml`:
+
+```toml
+[markata.docs]
+# Directories containing Python files to document
+content_directories = [
+    "markata",
+    "tests"
+]
+
+# Template for generated documentation
+template = "docs/template.md.j2"
+```
+
+## Template Variables
+
+The following variables are available in documentation templates:
+- `module`: Module name
+- `docstring`: Module docstring
+- `classes`: List of class definitions and their docstrings
+- `functions`: List of function definitions and their docstrings
+- `source`: Path to source file
+- `ast`: Abstract Syntax Tree of the module
+
+# Functionality
+
+## Documentation Generation
+
+The plugin:
+1. Finds Python files in configured directories
+2. Parses files using Python's AST
+3. Extracts docstrings and code structure
+4. Applies templates to generate markdown
+5. Creates documentation pages in the output directory
+
+## AST Analysis
+
+The plugin analyzes:
+- Module-level docstrings
+- Class definitions and docstrings
+- Function definitions and docstrings
+- Function parameters and return types
+- Code structure and relationships
+
+## Registered Attributes
+
+The plugin adds these attributes to Markata:
+- `py_files`: List of Python files being documented
+- `content_directories`: List of directories being processed
+
+## Dependencies
+
+This plugin depends on:
+- ast (Python standard library) for code parsing
+- jinja2 for template rendering
 """
 
 import ast
