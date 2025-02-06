@@ -103,7 +103,7 @@ from markata.hookspec import hook_impl
 
 
 class Config(pydantic.BaseModel):
-    output_dir: pydantic.DirectoryPath = "markout"
+    output_dir: Path = Path("markout")
     assets_dir: Path = pydantic.Field(
         Path("static"),
         description="The directory to store static assets",

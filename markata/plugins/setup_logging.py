@@ -119,7 +119,7 @@ def setup_log(markata: "Markata", level: int = logging.INFO) -> Path:
 
 
 class LoggingConfig(pydantic.BaseModel):
-    output_dir: pydantic.DirectoryPath = Path("markout")
+    output_dir: Path = Path("markout")
     log_dir: Path = Field(None, validate_default=True)
     template: Optional[Path] = Path(__file__).parent / "default_log_template.html"
 

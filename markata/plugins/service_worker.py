@@ -66,7 +66,7 @@ if TYPE_CHECKING:
 
 
 class ServiceWorkerConfig(pydantic.BaseModel):
-    output_dir: pydantic.DirectoryPath = None
+    output_dir: Path = Path("markout")
     precache_urls: List[str] = ["index.html", "./"]
     precache_posts: bool = False
     precache_feeds: bool = False

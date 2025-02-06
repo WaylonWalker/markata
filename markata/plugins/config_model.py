@@ -133,7 +133,7 @@ class Config(BaseSettings, JupyterMixin):
     template_cache_expire: PositiveInt = 86400  # 24 hours
     markdown_cache_expire: PositiveInt = 21600  # 6 hours
     dynamic_cache_expire: PositiveInt = 3600  # 1 hour
-    output_dir: pydantic.DirectoryPath = Path("markout")
+    output_dir: Path = Path("markout")
     assets_dir: Path = pydantic.Field(
         Path("static"),
         description="The directory to store static assets",
