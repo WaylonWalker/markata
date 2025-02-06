@@ -26,11 +26,12 @@ This plugin will generate HTML redirect pages for missing URLs that forward user
 to the most relevant existing page, or present a list of suggested pages when ambiguity exists.
 """
 
+import json
 from markata.hookspec import hook_impl
 from pathlib import Path
 import pydantic
 from pydantic import Field
-from typing import TYPE_CHECKING, Optional
+from typing import Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from markata import Markata
@@ -156,3 +157,14 @@ def save(markata: "Markata") -> None:
             suggestions=sorted(full_suggestions),
         )
         suggestion_file.write_text(html, encoding="utf-8")
+    # generate json file for didyoumean suggestions
+
+    didyoumean_data = markata.map(
+        "{'slug':slug,'title':title,'description':description,'tags':tags}",
+        filter=markata.config.didyoumean_filter,
+        sort="True",
+    )
+
+    didyoumean_json = json.dumps(didyoumean_data)
+    didyoumean_file = output_dir / "didyoumean.json"
+    didyoumean_file.write_text(didyoumean_json, encoding="utf-8")
