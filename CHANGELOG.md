@@ -3,6 +3,7 @@
 ## 0.9.1
 
 - HUGE DOCS UPDATE
+- FIX: feeds now update with any content change
 
 ## 0.9.0
 

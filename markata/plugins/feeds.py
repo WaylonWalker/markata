@@ -453,6 +453,7 @@ def create_page(
         markata.config.url,
         markata.config.description,
         feed.config.title,
+        feed.map("content"),
         canonical_url,
         # datetime.datetime.today(),
         # markata.config,
