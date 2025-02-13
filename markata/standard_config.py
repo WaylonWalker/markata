@@ -218,15 +218,15 @@ class MarkataConfig(BaseModel):
     # Site info
     title: str = Field(..., description="Site title")
     url: str = Field(..., description="Site base URL")
-    
+
     # Directories
     content_dir: Path = Field("content", description="Content directory")
     output_dir: Path = Field("markout", description="Output directory")
-    
+
     # Features
     debug: bool = Field(False, description="Enable debug mode")
     parallel: bool = Field(True, description="Enable parallel processing")
-    
+
     model_config = ConfigDict(
         validate_assignment=True,
         arbitrary_types_allowed=True,

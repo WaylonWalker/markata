@@ -1,11 +1,15 @@
 {% for meta in markata.config.head.meta %}
-<meta name="{{ meta.name }}" content="{{ meta.content }}" />
+    {% if meta.property %}
+        <meta property="{{ meta.property }}" content="{{ meta.content }}" />
+    {% else %}
+        <meta name="{{ meta.name }}" content="{{ meta.content }}" />
+    {% endif %}
 {% endfor %}
 
 {% for link in markata.config.head.link %}
-<link rel="{{ link.rel }}" href="{{ link.href }}" />
+    <link rel="{{ link.rel }}" href="{{ link.href }}" />
 {% endfor %}
 
 {% for link in markata.config.head.script %}
-<script src="{{ link.src }}"></script>
+    <script src="{{ link.src }}"></script>
 {% endfor %}

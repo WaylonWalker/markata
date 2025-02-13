@@ -79,6 +79,7 @@ from markata.hookspec import hook_impl, register_attr
 
 logger = logging.getLogger(__name__)
 
+
 def _show_deprecation_warning():
     logger.warning(
         "DEPRECATION WARNING: The 'sitemap' plugin is deprecated and will be removed in a "

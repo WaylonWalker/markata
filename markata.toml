@@ -191,7 +191,7 @@ ignore = [
 ]
 
 [[markata.head.meta]]
-name = "og:author_email"
+property = "og:author_email"
 content = "waylon@waylonwalker.com"
 
 [markata.tui]

@@ -4,6 +4,7 @@
 
 - HUGE DOCS UPDATE
 - FIX: feeds now update with any content change
+- FIX: og tags should use property not name
 
 ## 0.9.0
 
