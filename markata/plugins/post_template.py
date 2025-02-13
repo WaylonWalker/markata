@@ -282,8 +282,22 @@ class StyleOverrides(Style): ...
 
 
 class Meta(pydantic.BaseModel):
-    name: str
+    name: Optional[str] = None
+    property: Optional[str] = None
     content: str
+
+    @field_validator("name", mode="after")
+    def check_og(cls, v):
+        if v.startswith("og:"):
+            raise ValueError("Meta names cannot start with og:, use property instead")
+        return v
+
+    # ensure one of name or property is set
+    @model_validator(mode="after")
+    def check_one(cls, values):
+        if not values.name and not values.property:
+            raise ValueError("One of name or property must be set")
+        return values
 
 
 class Text(pydantic.BaseModel):
