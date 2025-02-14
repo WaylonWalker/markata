@@ -189,20 +189,24 @@ def save(markata: "Markata") -> None:
     for article in markata.filter("not skip"):
         if article.html is None:
             continue
+
         if isinstance(article.html, str):
             # Create parent directories before writing
             article.output_html.parent.mkdir(parents=True, exist_ok=True)
             article.output_html.write_text(article.html)
-        if isinstance(article.html, Dict):
+        elif isinstance(article.html, dict):
             for slug, html in article.html.items():
+                # Handle special case for index
                 if slug == "index":
-                    slug = ""
-                    output_html = article.output_html
+                    output_path = article.output_html
+                # Handle files with extensions
                 elif "." in slug:
-                    output_html = article.output_html.parent / slug
+                    output_path = article.output_html.parent / slug
+                # Handle other slugs by creating subdirectories
                 else:
-                    slug = slugify(slug)
-                    output_html = article.output_html.parent / slug / "index.html"
+                    slug_path = slugify(slug)
+                    output_path = article.output_html.parent / slug_path / "index.html"
 
-                output_html.parent.mkdir(parents=True, exist_ok=True)
-                output_html.write_text(html)
+                # Create parent directories and write file
+                output_path.parent.mkdir(parents=True, exist_ok=True)
+                output_path.write_text(html)

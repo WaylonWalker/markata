@@ -84,7 +84,9 @@ if TYPE_CHECKING:
         fg: "FeedGenerator"
         rss: str
 
+
 logger = logging.getLogger(__name__)
+
 
 def _show_deprecation_warning():
     logger.warning(
@@ -93,6 +95,7 @@ def _show_deprecation_warning():
         "comprehensive feed generation capabilities. See the documentation for migration "
         "instructions: https://markata.dev/markata/plugins/feeds/"
     )
+
 
 @hook_impl(trylast=True)
 def render(markata: "MarkataRss") -> None:
@@ -142,7 +145,18 @@ def render(markata: "MarkataRss") -> None:
         fe.description(article.description)
         fe.summary(article.long_description)
         fe.link(href=str(url) + "/" + article.slug)
-        fe.content(article.article_html.translate(dict.fromkeys(range(32))))
+
+        # Get the article HTML content
+        article_html = article.article_html
+        if isinstance(article_html, dict):
+            # Try to get the 'index' HTML content first
+            article_html = article_html.get('index')
+            if article_html is None:
+                # Fall back to the first available HTML content
+                article_html = next(iter(article_html.values()))
+
+        # Clean up the HTML content by removing control characters
+        fe.content(article_html.translate(dict.fromkeys(range(32))))
 
     markata.fg = fg
     markata.rss = fg.rss_str(pretty=True)

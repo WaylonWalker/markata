@@ -100,16 +100,19 @@ def post_render(markata: Markata) -> None:
 
             html_from_cache = markata.precache.get(key)
 
-            if html_from_cache is None:
-                html = link_headings(article)
-                cache.add(
-                    key,
-                    html,
-                    expire=markata.config.default_cache_expire,
-                )
-            else:
-                html = html_from_cache
-            article.html = html
+            if html_from_cache is not None:
+                article.html = html_from_cache
+                continue
+
+            if isinstance(article.html, str):
+                article.html = link_headings(article)
+            elif isinstance(article.html, dict):
+                article.html = {
+                    slug: link_headings(type('Post', (), {'html': html}))
+                    for slug, html in article.html.items()
+                }
+
+            cache.set(key, article.html, expire=markata.config.default_cache_expire)
 
 
 def link_headings(article: "Post") -> str:
