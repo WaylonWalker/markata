@@ -1,11 +1,11 @@
 """
 The `markata.plugins.load` plugin is responsible for loading and parsing markdown files
-with frontmatter into Post objects. It provides parallel loading capabilities and 
+with frontmatter into Post objects. It provides parallel loading capabilities and
 handles both modern Pydantic-based and legacy frontmatter validation.
 
 # Installation
 
-This plugin is built-in and enabled by default through the 'default' plugin. 
+This plugin is built-in and enabled by default through the 'default' plugin.
 If you want to be explicit, you can add it to your list of plugins:
 
 ```toml

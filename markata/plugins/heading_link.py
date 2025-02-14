@@ -108,7 +108,7 @@ def post_render(markata: Markata) -> None:
                 article.html = link_headings(article)
             elif isinstance(article.html, dict):
                 article.html = {
-                    slug: link_headings(type('Post', (), {'html': html}))
+                    slug: link_headings(type("Post", (), {"html": html}))
                     for slug, html in article.html.items()
                 }
 

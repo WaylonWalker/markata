@@ -96,7 +96,7 @@ This plugin depends on:
 """
 
 from pathlib import Path
-from typing import Any, Dict, Optional, TYPE_CHECKING, Union
+from typing import Any, Optional, TYPE_CHECKING, Union
 
 import pydantic
 from pydantic import ConfigDict, Field, field_validator

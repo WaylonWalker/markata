@@ -5,7 +5,7 @@ URL structure.
 
 # Installation
 
-This plugin is built-in and enabled by default through the 'default' plugin. 
+This plugin is built-in and enabled by default through the 'default' plugin.
 If you want to be explicit, you can add it to your list of plugins:
 
 ```toml
@@ -55,7 +55,7 @@ regardless of filename.
 
 ## Automatic Slug Based on Filename
 
-By default the flat_slug plugin will use the `stem` of your filename (filename without 
+By default the flat_slug plugin will use the `stem` of your filename (filename without
 extension) unless you explicitly set your slug in frontmatter.
 
 Examples:

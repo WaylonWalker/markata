@@ -59,6 +59,7 @@ from markata.hookspec import hook_impl
 def render(markata: Markata) -> None:
     should_prettify = markata.config.prettify_html
     for article in markata.iter_articles("add ssg tag"):
+
         def process_html(html_content):
             soup = BeautifulSoup(html_content, features="lxml")
             tag = soup.new_tag("meta")
@@ -74,6 +75,5 @@ def render(markata: Markata) -> None:
             article.html = process_html(article.html)
         elif isinstance(article.html, dict):
             article.html = {
-                slug: process_html(html)
-                for slug, html in article.html.items()
+                slug: process_html(html) for slug, html in article.html.items()
             }

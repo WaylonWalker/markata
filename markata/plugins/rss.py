@@ -150,7 +150,7 @@ def render(markata: "MarkataRss") -> None:
         article_html = article.article_html
         if isinstance(article_html, dict):
             # Try to get the 'index' HTML content first
-            article_html = article_html.get('index')
+            article_html = article_html.get("index")
             if article_html is None:
                 # Fall back to the first available HTML content
                 article_html = next(iter(article_html.values()))

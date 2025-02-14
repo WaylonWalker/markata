@@ -31,7 +31,7 @@ Configure asset directories in your `markata.toml`:
 ```toml
 [markata]
 # Directory containing your static assets
-assets_dir = "assets"  
+assets_dir = "assets"
 
 # Directory where assets will be copied
 output_dir = "markout"
