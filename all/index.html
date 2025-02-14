@@ -1,0 +1,1222 @@
+<!DOCTYPE html>
+<html lang="en">
+<title>All Markata Modules</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="description" content="Documentation for using the Markata static site generator" />
+ <link href="/favicon.ico" rel="icon" type="image/png" />
+
+<link rel="stylesheet" href="/post.css" />
+<link rel="stylesheet" href="/app.css" />
+<script src="/theme.js"></script>
+
+
+        <meta property="og:author_email" content="waylon@waylonwalker.com" />
+
+    <head>
+        <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+<title>All Markata Modules</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="description" content="Documentation for using the Markata static site generator" />
+ <link href="/favicon.ico" rel="icon" type="image/png" />
+
+<link rel="stylesheet" href="/post.css" />
+<link rel="stylesheet" href="/app.css" />
+<script src="/theme.js"></script>
+
+
+        <meta property="og:author_email" content="waylon@waylonwalker.com" />
+
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                const collapsibleElements = document.querySelectorAll('.is-collapsible');
+                collapsibleElements.forEach(el => {
+                    const summary = el.querySelector('.admonition-title');
+                    if (summary) {
+                        summary.style.cursor = 'pointer';
+                        summary.addEventListener('click', () => {
+                            el.classList.toggle('collapsible-open');
+                        });
+                    }
+                });
+            });
+        </script>
+
+        <style>
+
+            .admonition.source {
+                padding-bottom: 0;
+            }
+            .admonition.source pre.wrapper {
+                margin: 0;
+                padding: 0;
+            }
+            .is-collapsible {
+                overflow: hidden;
+                transition: max-height 0.3s ease;
+            }
+            .is-collapsible:not(.collapsible-open) {
+                max-height: 0;
+                padding-bottom: 2.5rem;
+            }
+            .admonition-title {
+                font-weight: bold;
+                margin-bottom: 8px;
+            }
+        </style>
+    </head>
+    <body>
+<div class='container flex flex-row min-h-screen'>
+    <div>
+    </div>
+    <div class='flex-grow px-8 mx-auto min-h-screen'>
+<header class='flex justify-center items-center p-8'>
+
+    <nav class='flex justify-center items-center my-8'>
+        <a
+            href='/'>markata</a>
+        <a
+            href='https://github.com/WaylonWalker/markata'>GitHub</a>
+        <a
+            href='https://markata.dev/docs/'>docs</a>
+        <a
+            href='https://markata.dev/plugins/'>plugins</a>
+    </nav>
+
+    <div>
+        <label id="theme-switch" class="theme-switch" for="checkbox-theme" title="light/dark mode toggle">
+            <input type="checkbox" id="checkbox-theme" />
+            <div class="slider round"></div>
+        </label>
+    </div>
+</header>    <div class='container flex-grow px-8 mx-auto max-w-screen-xl min-h-screen'>
+<article>
+    <header class='sticky top-0 pt-4 bg-neutral-800'>
+        <h1 class='p-0 m-0'></h1>
+    </header>
+    <div>
+        <ul id='feed' class='px-0 mx-0 list-none'>
+<li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/404/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            Whoops that page was not found
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            404, looks like we can't find the page you are looking for
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/home-page/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            Creating your Home Page
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            There are several ways to create your home/landing page, lets walk through them.
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/nav/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            Creating your Navbar
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            Guide to creating a navbar in markata using the default template.
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/index/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            Getting Started with Markata
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            Guide to get going with Markata
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/multi-template/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            Using Multiple Templates
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            Guide to using multiple templates in markata
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/color-theme/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            Theming your markata site
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            Guide to get going with Markata
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/admonitions/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            Admonitions
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            This is what the default admonition styles look like and how to create them.
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/create-manual/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            Manually create a new site
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            Lets manually create a new website with markata.
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata-dev/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            Markata's Docs
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            [![Markta.dev home page](/markata.dev_.webp)](https://markata.dev){.shadow-2xl} Markata builds it&#x27;s own docs in completely in `markata` using all built in
+
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/waylonwalker/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            WaylonWalker.com
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            [![Waylonwalker.com home page](/waylonwalker.com.webp)](https://waylonwalker.com) This Waylon Walker&#x27;s personal blog where he is learning in public.  Posti
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/changelog/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            Changelog
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            Markata Changelog 0.9.1 HUGE DOCS UPDATE FIX: feeds now update with any content change FIX: og tags should use property not name 0.9.0 Feat: add skip plugin Fix
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/test/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            test.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            None
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/tests/test-feeds/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            test_feeds.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            None
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/tests/plugins/test-redirects/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            test_redirects.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            Tests the redirects plugin !!! function
+    &lt;h2 id=&quot;set_directory&quot; class=&quot;admonition-title&quot; style=&quot;margin: 0; padding: .5rem 1rem;&q
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/tests/plugins/test-post-model/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            test_post_model.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            None
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/init/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            __init__.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            Markata is a tool for handling directories of markdown. !!! method
+    &lt;h2 id=&quot;teardown&quot; class=&quot;admonition-title&quot; style=&quot;margin: 0; 
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/hookspec/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            hookspec.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            Markata&#x27;s hook specification system for plugin development. Overview Markata uses pluggy to define hooks that plugins can implement. These hooks allow plug
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/main/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            __main__.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            None
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/lifecycle/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            lifecycle.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            The LifeCycle is a core component for the internal workings of Markata.  It
+sets fourth the hooks available, the methods to run them on the Markata
+instance, an
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/exceptions/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            exceptions.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            None
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/standard-config/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            standard_config.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            Standard Config.
+A module to load tooling config from a users project space. Inspired from frustrations that some tools have a tool.ini, .tool.ini,
+setup.cfg, o
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/errors/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            errors.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            None !!! class
+    &lt;h2 id=&quot;MarkataConfigError&quot; class=&quot;admonition-title&quot; style=&quot;margin: 0; padding: .5rem 1rem;&quot;&gt;MarkataConfi
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/about/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            __about__.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            None
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/plugins/analytics/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            analytics.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            The `markata.plugins.analytics` plugin generates analytics and contribution visualizations
+for your Markata site. It creates a contributions heatmap similar to 
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/plugins/auto-description/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            auto_description.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            The `markata.plugins.auto_description` plugin automatically generates descriptions for your
+posts by extracting text from the first paragraphs of your markdown 
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/plugins/rss/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            rss.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            [DEPRECATED] The `markata.plugins.rss` plugin is deprecated and will be removed in a
+future version. Please use `markata.plugins.feeds` instead, which provides 
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/plugins/mdit-details/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            mdit_details.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            The `markata.plugins.mdit_details` plugin adds support for collapsible details/summary
+sections in markdown using the `???` syntax. This is similar to HTML&#x27
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/plugins/md-it-highlight-code/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            md_it_highlight_code.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            The `markata.plugins.md_it_highlight_code` plugin adds syntax highlighting to code blocks
+in your markdown content. It uses Pygments for highlighting and adds a
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/plugins/skip/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            skip.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            Post Skipping and Caching Plugin !!! function
+    &lt;h2 id=&quot;post_model&quot; class=&quot;admonition-title&quot; style=&quot;margin: 0; padding: .5rem 1rem
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/plugins/md-it-wikilinks/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            md_it_wikilinks.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            The `markata.plugins.md_it_wikilinks` plugin adds support for wiki-style links using
+double brackets (`[[link]]`). It automatically resolves links to other post
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/plugins/pyinstrument/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            pyinstrument.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            The `markata.plugins.pyinstrument` plugin adds performance profiling capabilities using
+pyinstrument. It generates detailed HTML reports showing where your buil
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/plugins/init/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            __init__.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            None
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/plugins/sitemap/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            sitemap.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            [DEPRECATED] The `markata.plugins.sitemap` plugin is deprecated and will be removed in a
+future version. Please use `markata.plugins.feeds` instead, which provi
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/plugins/covers/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            covers.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            The `markata.plugins.covers` plugin generates custom cover images for your posts using
+configurable templates. It supports multiple cover image formats with dif
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/plugins/load/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            load.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            The `markata.plugins.load` plugin is responsible for loading and parsing markdown files
+with frontmatter into Post objects. It provides parallel loading capabil
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/plugins/redirects/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            redirects.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            The `markata.plugins.redirects` plugin creates static redirects for your site using
+a simple configuration file. Compatible with services like Cloudflare Pages 
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/plugins/datetime/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            datetime.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            The `markata.plugins.datetime` plugin handles date and time parsing for posts. It ensures
+consistent datetime handling by converting various date formats to tim
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/plugins/prevnext/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            prevnext.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            The `markata.plugins.prevnext` plugin adds previous and next navigation links to each
+post, allowing readers to easily navigate between related content. Install
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/plugins/create-models/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            create_models.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            The `markata.plugins.create_models` plugin dynamically creates Markata&#x27;s core Pydantic
+models by combining model fragments from various plugins. This enabl
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/plugins/config-model/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            config_model.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            The `markata.plugins.config_model` plugin defines Markata&#x27;s core configuration model,
+providing validation and type safety for all configuration options. I
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/plugins/feeds/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            feeds.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            The `markata.plugins.feeds` plugin is used to create feed pages, which are lists of
+posts.  The list is generated using a `filter`, then each post in the list i
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/plugins/seo/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            seo.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            manifest plugin
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/plugins/copy-assets/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            copy_assets.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            The `markata.plugins.copy_assets` plugin copies static assets (images, CSS, JavaScript, etc.)
+from your assets directory to the output directory during the buil
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/plugins/create-covers/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            create_covers.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            The `markata.plugins.create_covers` plugin is a simplified version of the covers plugin.
+It generates basic cover images with titles using a single template and
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/plugins/jinja-md/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            jinja_md.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            The `markata.plugins.jinja_md` plugin enables Jinja2 templating within your markdown
+content. This allows you to dynamically generate content using Python expre
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/plugins/docs/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            docs.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            The `markata.plugins.docs` plugin automatically generates documentation pages from Python
+source code docstrings. It parses Python files, extracts docstrings an
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/plugins/tui/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            tui.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            None
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/plugins/post-model/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            post_model.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            The `markata.plugins.post_model` plugin defines the core Post model used throughout
+Markata. It provides robust validation, serialization, and configuration opt
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/plugins/publish-html/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            publish_html.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            The `markata.plugins.publish_html` plugin handles saving rendered HTML content to files.
+It determines the output path for each article and ensures files are sa
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/plugins/post-template/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            post_template.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            The `markata.plugins.post_template` plugin handles the rendering of posts using Jinja2
+templates. It provides extensive configuration options for HTML head elem
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/plugins/to-json/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            to_json.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            None
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/plugins/base-cli/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            base_cli.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            The `markata.plugins.base_cli` plugin provides Markata&#x27;s core command-line interface
+functionality, including essential commands like `build`, `list`, and 
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/plugins/auto-title/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            auto_title.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            The `markata.plugins.auto_title` plugin automatically generates titles for posts that
+don&#x27;t have a title specified in their frontmatter. It uses the filena
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/plugins/publish-source/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            publish_source.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            The `markata.plugins.publish_source` plugin saves processed markdown files to the output
+directory, preserving frontmatter and content modifications. This enabl
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/plugins/publish-dev-to-source/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            publish_dev_to_source.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            The `markata.plugins.publish_dev_to_source` plugin enables synchronization between
+your Markata posts and dev.to articles. It handles frontmatter translation an
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/plugins/glob/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            glob.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            The `markata.plugins.glob` plugin handles file discovery using glob patterns.
+It determines which files should be processed by Markata based on configured patte
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/plugins/render-markdown/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            render_markdown.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            The `markata.plugins.render_markdown` plugin converts markdown content to HTML.
+This plugin is essential for rendering markdown files loaded by the `load` plugi
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/plugins/icon-resize/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            icon_resize.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            The `markata.plugins.icon_resize` plugin automatically generates favicons in multiple
+sizes from a single source image. This ensures your site has appropriate i
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/plugins/subroute/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            subroute.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            None
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/plugins/flat-slug/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            flat_slug.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            The `markata.plugins.flat_slug` plugin handles URL slug generation for your articles.
+It sanitizes special characters that don&#x27;t work in browsers and provi
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/plugins/generator/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            generator.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            The `markata.plugins.generator` plugin adds a meta generator tag to each generated HTML page,
+indicating that the page was generated by Markata and including th
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/plugins/heading-link/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            heading_link.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            The `markata.plugins.heading_link` plugin adds clickable link icons next to headings in
+your HTML output. This makes it easy for readers to share direct links t
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/plugins/manifest/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            manifest.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            The `markata.plugins.manifest` plugin generates a Web App Manifest (manifest.json) file
+for your site. This enables Progressive Web App (PWA) features and provi
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/plugins/service-worker/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            service_worker.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            Adds a service_worker to your site.  This will make it installable on mobile,
+viewable offline, and potentially more responsive as the user goes between good
+an
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/plugins/setup-logging/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            setup_logging.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            Setup Logging hook sets up the RichHandler for pretty console logs, and file
+logs to the configured markata&#x27;s configured `log_dir`, or `output_dir/_logs` i
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/plugins/didyoumean/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            didyoumean.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            DidYouMean Plugin for Markata Automatically generates redirect pages for URLs that may be mistyped by users. Installation Configuration Usage This plugin will g
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/scripts/migrate-to-slugify/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            migrate_to_slugify.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            Slugify migration for projects moving from markata&lt;0.5.0 into markata&gt;=0.5.0 to run this script install markata&gt;=0.5.0 and run the following. Then make
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/cli/server/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            server.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            None !!! function
+    &lt;h2 id=&quot;find_port&quot; class=&quot;admonition-title&quot; style=&quot;margin: 0; padding: .5rem 1rem;&quot;&gt;find_port &lt;em c
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/cli/init/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            __init__.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            None
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/cli/cli/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            cli.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            None !!! function
+    &lt;h2 id=&quot;make_layout&quot; class=&quot;admonition-title&quot; style=&quot;margin: 0; padding: .5rem 1rem;&quot;&gt;make_layout &lt;
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/cli/runner/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            runner.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            None !!! class
+    &lt;h2 id=&quot;Runner&quot; class=&quot;admonition-title&quot; style=&quot;margin: 0; padding: .5rem 1rem;&quot;&gt;Runner &lt;em class=&quo
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/cli/main/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            __main__.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            None
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/cli/summary/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            summary.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            Run it Configuration There are two main things currently supported by summary, It can count the
+number of posts based on a filter (`filter_count&#x27;), and it 
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/cli/header/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            header.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            None !!! class
+    &lt;h2 id=&quot;Header&quot; class=&quot;admonition-title&quot; style=&quot;margin: 0; padding: .5rem 1rem;&quot;&gt;Header &lt;em class=&quo
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/cli/plugins/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            plugins.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            None
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata/cli/didyoumean/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            didyoumean.py
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            dummy didyoumean page for testing didyoumean suggestions
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-02-14
+        </time>
+    </a>
+</li>        </ul>
+    </div>
+</article>    </div>
+    </div>
+    <div></div>
+</div>
+     </body>
+</html>

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<?xml-stylesheet href="/rss.xsl" type="text/xsl"?>
+<rss version="2.0">
+<channel>
+    <title>project_gallery</title>
+    <link>https://markata.dev/</link>
+    <description>Documentation for using the Markata static site generator</description>
+    <generator>Markata</generator>
+    <image>
+        <url>static/favicon.ico</url>
+        <link>https://markata.dev/</link>
+    </image>
+    <language>en</language>
+  <item>
+      <title>Markata&#39;s Docs</title>
+      <link>https://markata.dev//markata-dev</link>
+      <description>[![Markta.dev home page](/markata.dev_.webp)](https://markata.dev){.shadow-2xl} Markata builds it&amp;#x27;s own docs in completely in `markata` using all built in
+</description>
+      <guid>https://markata.dev//markata-dev</guid>
+      <pubDate>2025-02-14</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>WaylonWalker.com</title>
+      <link>https://markata.dev//waylonwalker</link>
+      <description>[![Waylonwalker.com home page](/waylonwalker.com.webp)](https://waylonwalker.com) This Waylon Walker&amp;#x27;s personal blog where he is learning in public.  Posti</description>
+      <guid>https://markata.dev//waylonwalker</guid>
+      <pubDate>2025-02-14</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+<lastBuildDate></lastBuildDate>
+</channel>
+</rss>

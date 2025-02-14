@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet href="/sitemap.xsl" type="text/xsl"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <title>project_gallery</title>
+    <link>https://markata.dev/</link>
+   <url>
+      <title>Markata&#39;s Docs</title>
+      <description>[![Markta.dev home page](/markata.dev_.webp)](https://markata.dev){.shadow-2xl} Markata builds it&amp;#x27;s own docs in completely in `markata` using all built in
+</description>
+      <loc>https://markata.dev//markata-dev</loc>
+      <lastmod>2025-02-14</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>WaylonWalker.com</title>
+      <description>[![Waylonwalker.com home page](/waylonwalker.com.webp)](https://waylonwalker.com) This Waylon Walker&amp;#x27;s personal blog where he is learning in public.  Posti</description>
+      <loc>https://markata.dev//waylonwalker</loc>
+      <lastmod>2025-02-14</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+</urlset>
