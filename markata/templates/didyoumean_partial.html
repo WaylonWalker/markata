@@ -18,7 +18,7 @@
 
     const pages = await fetch('/didyoumean.json').then(response => response.json());
     const populate_search_input = {{ (populate_search_input or False) |tojson }}
-    const search_hotkey = {{ config.search_hotkey|tojson }}
+    const search_hotkey = {{ (config.search_hotkey or '/')|tojson }}
 
 // Get current path from URL, removing leading/trailing slashes
     if (populate_search_input) {
