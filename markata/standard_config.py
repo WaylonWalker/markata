@@ -265,7 +265,11 @@ See hookspec.py for plugin development and lifecycle.py for build process detail
 import configparser
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Union
 
 import tomli
 import yaml

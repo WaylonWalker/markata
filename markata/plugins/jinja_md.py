@@ -96,16 +96,23 @@ This plugin depends on:
 """
 
 from pathlib import Path
-from typing import Any, List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
+from typing import Any
+from typing import List
+from typing import Optional
 
-from jinja2 import TemplateSyntaxError, Undefined, UndefinedError, nodes
-from jinja2.ext import Extension
 import pathspec
 import pydantic
+from jinja2 import TemplateSyntaxError
+from jinja2 import Undefined
+from jinja2 import UndefinedError
+from jinja2 import nodes
+from jinja2.ext import Extension
 from pydantic import Field
 
 from markata import __version__
-from markata.hookspec import hook_impl, register_attr
+from markata.hookspec import hook_impl
+from markata.hookspec import register_attr
 
 
 def register_jinja_extensions(config: dict) -> List[Extension]:

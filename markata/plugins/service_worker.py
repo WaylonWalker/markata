@@ -51,15 +51,18 @@ frontmatter.
 
 import copy
 from pathlib import Path
-from typing import List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
+from typing import List
+from typing import Optional
 
+import pydantic
 from checksumdir import dirhash
 from jinja2 import Template
-import pydantic
+from pydantic import ConfigDict
+from pydantic import field_validator
 
 from markata import __version__
 from markata.hookspec import hook_impl
-from pydantic import ConfigDict, field_validator
 
 if TYPE_CHECKING:
     from markata import Markata

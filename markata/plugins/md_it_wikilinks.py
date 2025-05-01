@@ -87,11 +87,13 @@ This plugin depends on:
 """
 
 import logging
+from typing import TYPE_CHECKING
 
-from markata.hookspec import hook_impl, register_attr
 from markdown_it import MarkdownIt
 from markdown_it.rules_inline import StateInline
-from typing import TYPE_CHECKING
+
+from markata.hookspec import hook_impl
+from markata.hookspec import register_attr
 
 if TYPE_CHECKING:
     from markata import Markata

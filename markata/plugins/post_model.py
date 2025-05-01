@@ -119,15 +119,23 @@ This plugin depends on:
 import datetime
 import logging
 from pathlib import Path
-from rich.jupyter import JupyterMixin
-from rich.pretty import Pretty
-from typing import Any, Dict, List, Optional, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Union
 
 import pydantic
-from pydantic import ConfigDict, Field, field_validator
 import yaml
+from pydantic import ConfigDict
+from pydantic import Field
+from pydantic import field_validator
+from rich.jupyter import JupyterMixin
+from rich.pretty import Pretty
 
-from markata.hookspec import hook_impl, register_attr
+from markata.hookspec import hook_impl
+from markata.hookspec import register_attr
 
 logger = logging.getLogger(__name__)
 

@@ -199,7 +199,11 @@ See [[ markata/lifecycle ]] for the exact order hooks are executed.
 """
 
 import functools
-from typing import Any, Callable, Dict, List, TYPE_CHECKING
+from typing import TYPE_CHECKING
+from typing import Any
+from typing import Callable
+from typing import Dict
+from typing import List
 
 import pluggy
 

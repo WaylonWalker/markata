@@ -3,6 +3,7 @@ Tests the redirects plugin
 """
 
 # context manager to set the directory
+import os
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -10,7 +11,6 @@ import pytest
 
 from markata import Markata
 from markata.plugins import redirects
-import os
 
 
 @contextmanager

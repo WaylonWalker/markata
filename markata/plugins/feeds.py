@@ -189,23 +189,33 @@ filter="True"
 """
 
 import datetime
-from functools import lru_cache
-from pathlib import Path
 import shutil
 import textwrap
-from typing import Any, List, Optional, TYPE_CHECKING
+import warnings
+from functools import lru_cache
+from pathlib import Path
+from typing import TYPE_CHECKING
+from typing import Any
+from typing import List
+from typing import Optional
 
 import jinja2
-from jinja2 import Template, Undefined
 import pydantic
-from pydantic import ConfigDict, field_validator
+import typer
+from jinja2 import Template
+from jinja2 import Undefined
+from pydantic import ConfigDict
+from pydantic import field_validator
 from rich.jupyter import JupyterMixin
 from rich.pretty import Pretty
 from rich.table import Table
-import typer
 
-from markata import Markata, __version__, background
-from markata.hookspec import hook_impl, register_attr
+from markata import Markata
+from markata import __version__
+from markata import background
+from markata.errors import DeprecationWarning
+from markata.hookspec import hook_impl
+from markata.hookspec import register_attr
 
 if TYPE_CHECKING:
     from frontmatter import Post
@@ -383,8 +393,6 @@ class FeedsConfig(pydantic.BaseModel):
 
     @property
     def jinja_env(self):
-        from markata.errors import DeprecationWarning
-
         warnings.warn(
             "The FeedsConfig.jinja_env property is deprecated and will be removed in a future release. "
             "Please use the Markata.jinja_env property instead.",
@@ -621,6 +629,8 @@ def create_card(
 
         # Check package templates if not found in user paths
         if not template_path:
+            import importlib
+
             package_template = (
                 importlib.resources.files("markata") / "templates" / template
             )

@@ -96,12 +96,18 @@ This plugin depends on:
 """
 
 from pathlib import Path
-from typing import Any, Optional, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
+from typing import Any
+from typing import Optional
+from typing import Union
 
 import pydantic
-from pydantic import ConfigDict, Field, field_validator
+from pydantic import ConfigDict
+from pydantic import Field
+from pydantic import field_validator
 
-from markata.hookspec import hook_impl, register_attr
+from markata.hookspec import hook_impl
+from markata.hookspec import register_attr
 
 if TYPE_CHECKING:
     from markata import Markata

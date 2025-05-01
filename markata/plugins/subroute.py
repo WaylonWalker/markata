@@ -1,11 +1,14 @@
 from pathlib import Path
 from typing import Any
 
-from pydantic import ConfigDict, Field, field_validator
 from pydantic import BaseModel
+from pydantic import ConfigDict
+from pydantic import Field
+from pydantic import field_validator
 
 from markata import Markata
-from markata.hookspec import hook_impl, register_attr
+from markata.hookspec import hook_impl
+from markata.hookspec import register_attr
 
 
 class Config(BaseModel):

@@ -74,12 +74,14 @@ This plugin depends on:
 - more-itertools for deduplication
 """
 
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
+from typing import List
 
 from more_itertools import unique_everseen
 from pydantic import create_model
 
-from markata.hookspec import hook_impl, register_attr
+from markata.hookspec import hook_impl
+from markata.hookspec import register_attr
 
 if TYPE_CHECKING:
     from markata import Markata

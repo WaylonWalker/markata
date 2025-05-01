@@ -71,14 +71,17 @@ This plugin has no dependencies on other Markata plugins.
 
 """
 
-from markata import background
 from pathlib import Path
-from typing import List, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
+from typing import List
+from typing import Union
 
-from more_itertools import flatten
 import pydantic
+from more_itertools import flatten
 
-from markata.hookspec import hook_impl, register_attr
+from markata import background
+from markata.hookspec import hook_impl
+from markata.hookspec import register_attr
 
 if TYPE_CHECKING:
     from markata import Markata

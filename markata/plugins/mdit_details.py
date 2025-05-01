@@ -97,7 +97,9 @@ This plugin depends on:
 # Process detials and pass to cb.
 
 import math
-from typing import Callable, Optional, Tuple
+from typing import Callable
+from typing import Optional
+from typing import Tuple
 
 from markdown_it import MarkdownIt
 from markdown_it.rules_block import StateBlock

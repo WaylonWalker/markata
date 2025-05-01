@@ -27,11 +27,14 @@ to the most relevant existing page, or present a list of suggested pages when am
 """
 
 import json
-from markata.hookspec import hook_impl
 from pathlib import Path
+from typing import TYPE_CHECKING
+from typing import Optional
+
 import pydantic
 from pydantic import Field
-from typing import Optional, TYPE_CHECKING
+
+from markata.hookspec import hook_impl
 
 if TYPE_CHECKING:
     from markata import Markata

@@ -72,16 +72,20 @@ disabled_hooks=[
 
 import datetime
 import logging
-from pathlib import Path
 import sys
-from typing import Optional, TYPE_CHECKING
+from pathlib import Path
+from typing import TYPE_CHECKING
+from typing import Optional
 
-from jinja2 import Template, Undefined
 import pydantic
-from pydantic import ConfigDict, Field
+from jinja2 import Template
+from jinja2 import Undefined
+from pydantic import ConfigDict
+from pydantic import Field
 from rich.logging import RichHandler
 
-from markata.hookspec import hook_impl, register_attr
+from markata.hookspec import hook_impl
+from markata.hookspec import register_attr
 
 if TYPE_CHECKING:
     from markata import Markata

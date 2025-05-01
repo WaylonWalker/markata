@@ -69,12 +69,14 @@ The plugin registers the following attributes on Post objects:
 """
 
 from pathlib import Path
-from typing import Optional, Any
+from typing import Any
+from typing import Optional
 
 import pydantic
 
 from markata import Markata
-from markata.hookspec import hook_impl, register_attr
+from markata.hookspec import hook_impl
+from markata.hookspec import register_attr
 
 
 class FlatSlugConfig(pydantic.BaseModel):

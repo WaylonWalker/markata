@@ -103,18 +103,22 @@ This plugin depends on:
 """
 
 import json
-from pathlib import Path
 import pdb
 import shutil
 import sys
 import traceback
-from typing import Callable, List, Literal, Optional, TYPE_CHECKING
 import warnings
+from pathlib import Path
+from typing import TYPE_CHECKING
+from typing import Callable
+from typing import List
+from typing import Literal
+from typing import Optional
 
 import pydantic
-from rich import print as rich_print
 import toml
 import typer
+from rich import print as rich_print
 
 from markata.hookspec import hook_impl
 

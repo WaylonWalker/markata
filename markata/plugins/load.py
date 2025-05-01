@@ -99,21 +99,27 @@ This plugin depends on:
 - multiprocessing for parallel loading
 """
 
-from concurrent.futures import ThreadPoolExecutor
 import itertools
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import Callable, List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
+from typing import Callable
+from typing import List
+from typing import Optional
 
 import frontmatter
-from markata import background
 import pydantic
-from rich.progress import BarColumn, Progress
+from rich.progress import BarColumn
+from rich.progress import Progress
 from yaml.parser import ParserError
 
-from markata.hookspec import hook_impl, register_attr
+from markata import background
+from markata.hookspec import hook_impl
+from markata.hookspec import register_attr
 
 if TYPE_CHECKING:
-    from markata import Markata, Post
+    from markata import Markata
+    from markata import Post
 
     class MarkataMarkdown(Markata):
         articles: List = []

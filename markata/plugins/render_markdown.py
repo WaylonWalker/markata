@@ -94,14 +94,18 @@ This plugin depends on:
 
 import concurrent.futures
 import copy
+import importlib
 from enum import Enum
 from functools import partial
-import importlib
-from typing import Dict, List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
+from typing import Dict
+from typing import List
+from typing import Optional
 
 import pydantic
 
-from markata.hookspec import hook_impl, register_attr
+from markata.hookspec import hook_impl
+from markata.hookspec import register_attr
 from markata.plugins.md_it_highlight_code import highlight_code
 
 if TYPE_CHECKING:

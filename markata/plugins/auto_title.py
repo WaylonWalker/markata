@@ -60,7 +60,8 @@ The plugin modifies:
 
 from pathlib import Path
 
-from markata.hookspec import hook_impl, register_attr
+from markata.hookspec import hook_impl
+from markata.hookspec import register_attr
 
 
 @hook_impl

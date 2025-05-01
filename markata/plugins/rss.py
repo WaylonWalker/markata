@@ -74,11 +74,13 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pytz
+
 from markata.hookspec import hook_impl
 
 if TYPE_CHECKING:
-    from markata import Markata
     from feedgen.feed import FeedGenerator
+
+    from markata import Markata
 
     class MarkataRss(Markata):
         fg: "FeedGenerator"

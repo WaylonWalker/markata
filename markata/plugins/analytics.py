@@ -71,10 +71,13 @@ This plugin depends on:
 - The `datetime` plugin for post date information
 """
 
-from markata.hookspec import hook_impl, register_attr
 from pathlib import Path
-import pydantic
 from typing import TYPE_CHECKING
+
+import pydantic
+
+from markata.hookspec import hook_impl
+from markata.hookspec import register_attr
 
 if TYPE_CHECKING:
     from markata import Markata

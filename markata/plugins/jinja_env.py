@@ -65,12 +65,14 @@ from pathlib import Path
 from typing import List
 
 import jinja2
-from jinja2 import ChoiceLoader, Environment, FileSystemLoader
 import pydantic
+from jinja2 import ChoiceLoader
+from jinja2 import Environment
+from jinja2 import FileSystemLoader
 
 from markata import Markata
-from markata.hookspec import hook_impl, register_attr
-
+from markata.hookspec import hook_impl
+from markata.hookspec import register_attr
 
 MARKATA_PLUGIN_NAME = "Jinja Environment"
 MARKATA_PLUGIN_PACKAGE_NAME = "jinja-env"

@@ -90,12 +90,15 @@ This plugin depends on:
 """
 
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any
+from typing import Optional
+from typing import Union
 
 import pydantic
 
 from markata import Markata
-from markata.hookspec import hook_impl, register_attr
+from markata.hookspec import hook_impl
+from markata.hookspec import register_attr
 
 try:
     from pyinstrument import Profiler
@@ -188,7 +191,7 @@ def save(markata: Markata) -> None:
                         "profiler not available, skipping save pyinstrument save",
                     )
                     markata.console.log(
-                        "[red]to enable profiler [wheat1][itallic]pip install 'markata\[pyinstrument]'",
+                        r"[red]to enable profiler [wheat1][itallic]pip install 'markata\[pyinstrument]'",
                     )
 
 

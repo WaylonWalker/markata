@@ -107,12 +107,11 @@ This plugin depends on:
 
 from pathlib import Path
 
-from jinja2 import Template
 import pydantic
+from jinja2 import Template
 
 from markata import Markata
 from markata.hookspec import hook_impl
-
 
 DEFAULT_REDIRECT_TEMPLATE = Path(__file__).parent / "default_redirect_template.html"
 

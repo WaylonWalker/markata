@@ -86,16 +86,18 @@ This plugin depends on:
 
 import ast
 import datetime
+import textwrap
 from functools import lru_cache
 from os import path
 from pathlib import Path
-import textwrap
-from typing import List, TYPE_CHECKING
+from typing import TYPE_CHECKING
+from typing import List
 
 import frontmatter
 import pydantic
 
-from markata.hookspec import hook_impl, register_attr
+from markata.hookspec import hook_impl
+from markata.hookspec import register_attr
 
 if TYPE_CHECKING:
     from markata import Markata
@@ -232,7 +234,8 @@ def make_article(markata: "Markata", file: Path, cache) -> frontmatter.Post:
         )
 
     except pydantic.ValidationError as e:
-        from markata.plugins.load import ValidationError, get_models
+        from markata.plugins.load import ValidationError
+        from markata.plugins.load import get_models
 
         models = get_models(markata=markata, error=e)
         models = list(models.values())

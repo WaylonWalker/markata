@@ -89,10 +89,12 @@ This plugin depends on:
 """
 
 from pathlib import Path
-from typing import Dict, List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
+from typing import Dict
+from typing import List
+from typing import Optional
 
 from markata.hookspec import register_attr
-
 
 if TYPE_CHECKING:
     from markata import Markata

@@ -82,15 +82,18 @@ within each filter specified.
 """
 
 from collections import Counter
-from typing import List, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
+from typing import List
+from typing import Union
 
-from more_itertools import flatten
 import pydantic
+import typer
+from more_itertools import flatten
 from rich.panel import Panel
 from rich.table import Table
-import typer
 
-from markata.hookspec import hook_impl, register_attr
+from markata.hookspec import hook_impl
+from markata.hookspec import register_attr
 
 if TYPE_CHECKING:
     from markata import Markata

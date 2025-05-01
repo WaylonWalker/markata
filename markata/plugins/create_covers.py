@@ -62,7 +62,9 @@ use the `markata.plugins.covers` plugin instead.
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image
+from PIL import ImageDraw
+from PIL import ImageFont
 
 from markata import background
 from markata.hookspec import hook_impl

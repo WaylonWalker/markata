@@ -87,8 +87,9 @@ This plugin depends on:
 
 import html
 from pathlib import Path
-from typing import Any, Dict, TYPE_CHECKING
-
+from typing import TYPE_CHECKING
+from typing import Any
+from typing import Dict
 
 from markata.hookspec import hook_impl
 

@@ -68,8 +68,8 @@ This plugin depends on:
 - The `render_markdown` plugin to provide HTML content
 """
 
-from pathlib import Path
 import re
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from bs4 import BeautifulSoup

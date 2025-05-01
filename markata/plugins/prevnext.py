@@ -100,12 +100,16 @@ This plugin depends on:
 import copy
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import TYPE_CHECKING
+from typing import Dict
+from typing import List
+from typing import Optional
 
 from deepmerge import always_merger
 from jinja2 import Template
 
-from markata.hookspec import hook_impl, register_attr
+from markata.hookspec import hook_impl
+from markata.hookspec import register_attr
 
 if TYPE_CHECKING:
     from frontmatter import Post

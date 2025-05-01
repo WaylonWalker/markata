@@ -93,11 +93,17 @@ This plugin depends on:
 - Pillow (PIL) for image manipulation
 """
 
+import time
 from functools import lru_cache
 from pathlib import Path
-from rich.progress import BarColumn, Progress
-import time
-from typing import List, Optional, TYPE_CHECKING, Tuple, Union
+from typing import TYPE_CHECKING
+from typing import List
+from typing import Optional
+from typing import Tuple
+from typing import Union
+
+from rich.progress import BarColumn
+from rich.progress import Progress
 
 from markata import background
 from markata.hookspec import hook_impl
@@ -112,7 +118,9 @@ def _lazy_import_pil():
     """Lazy import PIL modules when needed."""
     global Image, ImageDraw, ImageFont
     if Image is None:
-        from PIL import Image, ImageDraw, ImageFont
+        from PIL import Image
+        from PIL import ImageDraw
+        from PIL import ImageFont
 
 
 if TYPE_CHECKING:

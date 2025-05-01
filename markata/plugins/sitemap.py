@@ -67,15 +67,17 @@ WARNING: This plugin is deprecated and will be removed in a future version.
 Please migrate to `markata.plugins.feeds` as soon as possible.
 """
 
-from pathlib import Path
 import logging
-from typing import Optional, Any
+from pathlib import Path
+from typing import Any
+from typing import Optional
 
 import pydantic
 from pydantic import Field
 
 from markata import Markata
-from markata.hookspec import hook_impl, register_attr
+from markata.hookspec import hook_impl
+from markata.hookspec import register_attr
 
 logger = logging.getLogger(__name__)
 

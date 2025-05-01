@@ -109,17 +109,22 @@ This plugin depends on:
 
 import datetime
 from pathlib import Path
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
+from typing import Optional
 
 import pydantic
-from pydantic import AnyUrl, ConfigDict, PositiveInt, field_validator
+from pydantic import AnyUrl
+from pydantic import ConfigDict
+from pydantic import PositiveInt
+from pydantic import field_validator
 from pydantic_extra_types.color import Color
 from pydantic_settings import BaseSettings
 from rich.jupyter import JupyterMixin
 from rich.pretty import Pretty
 
 from markata import standard_config
-from markata.hookspec import hook_impl, register_attr
+from markata.hookspec import hook_impl
+from markata.hookspec import register_attr
 
 if TYPE_CHECKING:
     from markata import Markata
