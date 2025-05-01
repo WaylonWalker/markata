@@ -63,6 +63,7 @@ DEFAULT_HOOKS = [
     "markata.plugins.glob",
     "markata.plugins.load",
     "markata.plugins.auto_title",
+    "markata.plugins.jinja_env",  # Add centralized jinja environment
     "markata.plugins.render_markdown",
     # "markata.plugins.manifest",
     # "markata.plugins.generator",

@@ -222,7 +222,6 @@ class MarkataFilterError(RuntimeError): ...
 
 class FeedConfig(pydantic.BaseModel, JupyterMixin):
     DEFAULT_TITLE: str = "All Posts"
-
     title: str = DEFAULT_TITLE
     slug: str = None
     description: Optional[str] = None
@@ -234,6 +233,8 @@ class FeedConfig(pydantic.BaseModel, JupyterMixin):
     tail: Optional[int] = None
     rss: bool = True
     sitemap: bool = True
+    # feed_groups: Dict[str, List[str]] = Field(default_factory=dict)
+    # sidebar_feeds: List[str] = Field(default_factory=list)
     card_template: str = "card.html"
     template: str = "feed.html"
     partial_template: str = "feed_partial.html"
@@ -358,8 +359,47 @@ class Feed(pydantic.BaseModel, JupyterMixin):
         return table
 
 
+class MarkataTemplateCache(jinja2.BytecodeCache):
+    """Template bytecode cache for improved performance."""
+
+    def __init__(self, directory):
+        self.directory = Path(directory)
+        self.directory.mkdir(parents=True, exist_ok=True)
+
+    def load_bytecode(self, bucket):
+        filename = self.directory / f"{bucket.key}.cache"
+        if filename.exists():
+            with open(filename, "rb") as f:
+                bucket.bytecode_from_string(f.read())
+
+    def dump_bytecode(self, bucket):
+        filename = self.directory / f"{bucket.key}.cache"
+        with open(filename, "wb") as f:
+            f.write(bucket.bytecode_to_string())
+
+
 class FeedsConfig(pydantic.BaseModel):
     feeds: List[FeedConfig] = [FeedConfig(slug="archive")]
+
+    @property
+    def jinja_env(self):
+        if hasattr(self, "_jinja_env"):
+            return self._jinja_env
+
+        self.env_options.setdefault("loader", self.jinja_loader)
+        self.env_options.setdefault("undefined", SilentUndefined)
+        self.env_options.setdefault("lstrip_blocks", True)
+        self.env_options.setdefault("trim_blocks", True)
+        self.env_options.setdefault(
+            "bytecode_cache", MarkataTemplateCache(self.template_cache_dir)
+        )
+        self.env_options.setdefault(
+            "auto_reload", False
+        )  # Disable auto reload in production
+
+        env = jinja2.Environment(**self.env_options)
+        self._jinja_env = env
+        return env
 
 
 class PrettyList(list, JupyterMixin):
@@ -387,7 +427,7 @@ def pre_render(markata: Markata) -> None:
 @lru_cache()
 def get_template(markata, template):
     try:
-        return markata.config.jinja_env.get_template(template)
+        return markata.jinja_env.get_template(template)
     except jinja2.TemplateNotFound:
         # try to load it as a file
         ...
@@ -557,14 +597,38 @@ def create_card(
     template is configured it will create one with the post title and dates
     (if present).
     """
-    key = markata.make_hash("feeds", template, str(post), post.content)
+    if template is None:
+        template = markata.config.get("feeds_config", {}).get("card_template", None)
+
+    # Get template modification time if template exists
+    template_mtime = 0
+    if template:
+        template_path = None
+        # Check user template paths first
+        for path in markata.jinja_env.template_paths:
+            potential_path = Path(path) / template
+            if potential_path.exists():
+                template_path = potential_path
+                break
+
+        # Check package templates if not found in user paths
+        if not template_path:
+            package_template = (
+                importlib.resources.files("markata") / "templates" / template
+            )
+            if package_template.exists():
+                template_path = package_template
+
+        if template_path:
+            template_mtime = template_path.stat().st_mtime
+
+    key = markata.make_hash(
+        "feeds", template, str(post), post.content, str(template_mtime)
+    )
 
     card = markata.precache.get(key)
     if card is not None:
         return card
-
-    if template is None:
-        template = markata.config.get("feeds_config", {}).get("card_template", None)
 
     if template is None:
         if "date" in post:
@@ -595,7 +659,7 @@ def create_card(
             _template = Template(Path(template).read_text())
         except FileNotFoundError:
             _template = Template(template)
-        except OSError:  # File name too long
+        except OSError:  # thrown by File name too long
             _template = Template(template)
         card = _template.render(post=post, **post.to_dict())
     cache.add(key, card)

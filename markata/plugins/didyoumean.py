@@ -39,7 +39,7 @@ if TYPE_CHECKING:
 
 def render_template(markata: "Markata", template_name: str, **context) -> str:
     """Render a template with the given context."""
-    template = markata.config.jinja_env.get_template(template_name)
+    template = markata.jinja_env.get_template(template_name)
     return template.render(markata=markata, body="", config=markata.config, **context)
 
 

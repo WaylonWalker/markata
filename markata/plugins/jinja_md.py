@@ -203,7 +203,7 @@ def pre_render(markata: "Markata") -> None:
     # jinja_env = jinja2.Environment(
     #     extensions=[IncludeRawExtension, *register_jinja_extensions(config)],
     # )
-    jinja_env = markata.config.jinja_env
+    jinja_env = markata.jinja_env
     jinja_env.undefined = _SilentUndefined
 
     for post in markata.filter("jinja==True"):

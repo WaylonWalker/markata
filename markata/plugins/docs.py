@@ -93,7 +93,6 @@ import textwrap
 from typing import List, TYPE_CHECKING
 
 import frontmatter
-import jinja2
 import pydantic
 
 from markata.hookspec import hook_impl, register_attr
@@ -167,9 +166,8 @@ def glob(markata: "MarkataDocs") -> None:
 
 
 @lru_cache
-def get_template():
-    jinja_env = jinja2.Environment()
-    template = jinja_env.from_string(
+def get_template(markata: "Markata"):
+    template = markata.jinja_env.from_string(
         (Path(__file__).parent / "default_doc_template.md").read_text(),
     )
     return template
@@ -200,7 +198,7 @@ def make_article(markata: "Markata", file: Path, cache) -> frontmatter.Post:
             n for n in ast.walk(tree) if isinstance(n, (ast.FunctionDef, ast.ClassDef))
         ]
 
-        article = get_template().render(
+        article = get_template(markata).render(
             ast=ast,
             file=file,
             slug=slug,
