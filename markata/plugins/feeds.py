@@ -383,6 +383,14 @@ class FeedsConfig(pydantic.BaseModel):
 
     @property
     def jinja_env(self):
+        from markata.errors import DeprecationWarning
+
+        warnings.warn(
+            "The FeedsConfig.jinja_env property is deprecated and will be removed in a future release. "
+            "Please use the Markata.jinja_env property instead.",
+            DeprecationWarning,
+        )
+
         if hasattr(self, "_jinja_env"):
             return self._jinja_env
 
