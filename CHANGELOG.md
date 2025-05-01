@@ -7,6 +7,7 @@
 - Fix: og tags should use property not name
 - Feat: centralized `jinja_env` plugin that is used for template rendering accross all plugins
 - Feat: added support for multiple templates per article https://markata.dev/multi-template/
+- Feat: skip now supports environment variable `MARKATA_SKIP=true/false` to control skipping
 
 ## 0.9.0
 
