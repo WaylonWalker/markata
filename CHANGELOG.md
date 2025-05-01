@@ -3,8 +3,10 @@
 ## 0.9.1
 
 - HUGE DOCS UPDATE
-- FIX: feeds now update with any content change
-- FIX: og tags should use property not name
+- Fix: feeds now update with any content change
+- Fix: og tags should use property not name
+- Feat: centralized `jinja_env` plugin that is used for template rendering accross all plugins
+- Feat: added support for multiple templates per article https://markata.dev/multi-template/
 
 ## 0.9.0
 
@@ -800,4 +802,4 @@ heading it's next to.
 
 ## 0.0.1
 
-Initial Release 🎉
+Initial Release 
