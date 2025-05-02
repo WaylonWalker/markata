@@ -74,7 +74,7 @@ setting = True
 
 Markata's standard configuration system.
 
-# Configuration Overview
+## Configuration Overview
 
 Markata uses a hierarchical configuration system based on Pydantic models. Configuration
 can be set through:
@@ -206,7 +206,7 @@ highlight_theme = "monokai"
 line_numbers = true
 ```
 
-# Configuration Validation
+## Configuration Validation
 
 The configuration is validated using Pydantic models:
 

@@ -2,7 +2,7 @@
 The `markata.plugins.pyinstrument` plugin adds performance profiling capabilities using
 pyinstrument. It generates detailed HTML reports showing where your build spends time.
 
-# Installation
+## Installation
 
 This plugin is built-in but not enabled by default. Add it to your plugins list:
 
@@ -17,7 +17,7 @@ You must also install pyinstrument:
 pip install pyinstrument
 ```
 
-# Uninstallation
+## Uninstallation
 
 Remove the plugin from your hooks list in `markata.toml`:
 
@@ -28,7 +28,7 @@ hooks = [
 ]
 ```
 
-# Configuration
+## Configuration
 
 Configure profiling in `markata.toml`:
 
@@ -47,7 +47,7 @@ show_all = false
 timeline = false
 ```
 
-# Functionality
+## Functionality
 
 ## Profiling Features
 
@@ -65,7 +65,7 @@ Creates reports with:
 - Function details
 - Stack traces
 
-## Configuration Options
+### Configuration Options
 
 Supports:
 - Custom output paths

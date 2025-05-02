@@ -2,7 +2,7 @@
 The `markata.plugins.config_model` plugin defines Markata's core configuration model,
 providing validation and type safety for all configuration options.
 
-# Installation
+## Installation
 
 This plugin is built-in and enabled by default through the 'default' plugin.
 If you want to be explicit, you can add it to your list of plugins:
@@ -13,7 +13,7 @@ hooks = [
 ]
 ```
 
-# Uninstallation
+## Uninstallation
 
 Since this plugin is included in the default plugin set, to disable it you must explicitly
 add it to the disabled_hooks list if you are using the 'default' plugin:
@@ -27,7 +27,7 @@ disabled_hooks = [
 Note: Disabling this plugin will break most of Markata's functionality as the Config
 model is fundamental to the system.
 
-# Configuration
+## Configuration
 
 Configure Markata in `markata.toml`:
 
@@ -55,9 +55,9 @@ dev_server_port = 8000
 dev_server_host = "localhost"
 ```
 
-# Functionality
+## Functionality
 
-## Configuration Model
+### Configuration Model
 
 Core settings:
 - `output_dir`: Build output location

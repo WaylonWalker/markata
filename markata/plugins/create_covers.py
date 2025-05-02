@@ -2,7 +2,7 @@
 The `markata.plugins.create_covers` plugin is a simplified version of the covers plugin.
 It generates basic cover images with titles using a single template and font configuration.
 
-# Installation
+## Installation
 
 This plugin is built-in but NOT enabled by default. To use it, add it to your plugins:
 
@@ -12,7 +12,7 @@ hooks = [
 ]
 ```
 
-# Uninstallation
+## Uninstallation
 
 Since this plugin is not in the default plugin set, simply remove it from your hooks list
 to disable it:
@@ -24,7 +24,7 @@ hooks = [
 ]
 ```
 
-# Configuration
+## Configuration
 
 Configure basic cover settings in your `markata.toml`:
 
@@ -35,7 +35,7 @@ font = "./static/OpenSans-Regular.ttf"  # Font file for title
 font_color = "rgb(255,255,255)"        # Title color (white)
 ```
 
-# Functionality
+## Functionality
 
 ## Cover Generation
 

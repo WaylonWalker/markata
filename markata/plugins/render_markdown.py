@@ -2,7 +2,7 @@
 The `markata.plugins.render_markdown` plugin converts markdown content to HTML.
 This plugin is essential for rendering markdown files loaded by the `load` plugin.
 
-# Installation
+## Installation
 
 This plugin is built-in and enabled by default through the 'default' plugin.
 If you want to be explicit, you can add it to your list of plugins:
@@ -13,7 +13,7 @@ hooks = [
 ]
 ```
 
-# Uninstallation
+## Uninstallation
 
 Since this plugin is included in the default plugin set, to disable it you must explicitly
 add it to the disabled_hooks list if you are using the 'default' plugin:
@@ -26,7 +26,7 @@ disabled_hooks = [
 
 Note: Disabling this plugin will prevent markdown files from being rendered to HTML.
 
-# Configuration
+## Configuration
 
 ## Markdown Backend Selection
 
@@ -78,7 +78,7 @@ Control markdown rendering cache:
 cache_expire = 3600  # Cache expiration in seconds
 ```
 
-# Functionality
+## Functionality
 
 ## Registered Attributes
 

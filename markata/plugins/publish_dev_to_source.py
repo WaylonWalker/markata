@@ -3,7 +3,7 @@ The `markata.plugins.publish_dev_to_source` plugin enables synchronization betwe
 your Markata posts and dev.to articles. It handles frontmatter translation and content
 formatting for dev.to compatibility.
 
-# Installation
+## Installation
 
 This plugin is built-in but not enabled by default. Add it to your plugins list:
 
@@ -13,7 +13,7 @@ hooks = [
 ]
 ```
 
-# Uninstallation
+## Uninstallation
 
 Remove the plugin from your hooks list in `markata.toml`:
 
@@ -24,12 +24,12 @@ hooks = [
 ]
 ```
 
-# Configuration
+## Configuration
 
 No explicit configuration is required. The plugin automatically processes posts with
 dev.to-specific frontmatter.
 
-# Functionality
+## Functionality
 
 ## Frontmatter Mapping
 

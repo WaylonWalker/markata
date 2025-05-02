@@ -4,7 +4,7 @@ Provides a centralized Jinja2 environment configuration for consistent template 
 across all Markata plugins. This plugin ensures template rendering behavior is consistent
 and available even when specific template-using plugins are not enabled.
 
-# Installation
+## Installation
 
 This plugin is built-in and enabled by default through the 'default' plugin.
 If you want to be explicit, you can add it to your list of plugins:
@@ -15,7 +15,7 @@ hooks = [
 ]
 ```
 
-# Uninstallation
+## Uninstallation
 
 Since this plugin is included in the default plugin set, to disable it you must explicitly
 add it to the disabled_hooks list if you are using the 'default' plugin:
@@ -26,7 +26,7 @@ disabled_hooks = [
 ]
 ```
 
-# Configuration
+## Configuration
 
 Configure Jinja environment settings in your `markata.toml`:
 

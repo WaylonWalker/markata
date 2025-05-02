@@ -3,7 +3,7 @@ The `markata.plugins.mdit_details` plugin adds support for collapsible details/s
 sections in markdown using the `???` syntax. This is similar to HTML's `<details>` element
 but with a more markdown-friendly syntax.
 
-# Installation
+## Installation
 
 This plugin is built-in and enabled by default through the 'default' plugin.
 If you want to be explicit, you can add it to your list of plugins:
@@ -14,7 +14,7 @@ hooks = [
 ]
 ```
 
-# Uninstallation
+## Uninstallation
 
 Since this plugin is included in the default plugin set, to disable it you must explicitly
 add it to the disabled_hooks list if you are using the 'default' plugin:
@@ -25,12 +25,12 @@ disabled_hooks = [
 ]
 ```
 
-# Configuration
+## Configuration
 
 This plugin requires no explicit configuration. It automatically processes details
 blocks in your markdown content.
 
-# Functionality
+## Functionality
 
 ## Basic Usage
 

@@ -2,7 +2,7 @@
 The `markata.plugins.copy_assets` plugin copies static assets (images, CSS, JavaScript, etc.)
 from your assets directory to the output directory during the build process.
 
-# Installation
+## Installation
 
 This plugin is built-in and enabled by default through the 'default' plugin.
 If you want to be explicit, you can add it to your list of plugins:
@@ -13,7 +13,7 @@ hooks = [
 ]
 ```
 
-# Uninstallation
+## Uninstallation
 
 Since this plugin is included in the default plugin set, to disable it you must explicitly
 add it to the disabled_hooks list if you are using the 'default' plugin:
@@ -24,7 +24,7 @@ disabled_hooks = [
 ]
 ```
 
-# Configuration
+## Configuration
 
 Configure asset directories in your `markata.toml`:
 
@@ -37,7 +37,7 @@ assets_dir = "assets"
 output_dir = "markout"
 ```
 
-# Functionality
+## Functionality
 
 ## Asset Copying
 

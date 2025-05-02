@@ -3,7 +3,7 @@ The `markata.plugins.auto_title` plugin automatically generates titles for posts
 don't have a title specified in their frontmatter. It uses the filename to create a
 human-readable title.
 
-# Installation
+## Installation
 
 This plugin is built-in and enabled by default through the 'default' plugin.
 If you want to be explicit, you can add it to your list of plugins:
@@ -14,7 +14,7 @@ hooks = [
 ]
 ```
 
-# Uninstallation
+## Uninstallation
 
 Since this plugin is included in the default plugin set, to disable it you must explicitly
 add it to the disabled_hooks list if you are using the 'default' plugin:
@@ -25,11 +25,11 @@ disabled_hooks = [
 ]
 ```
 
-# Configuration
+## Configuration
 
 This plugin requires no configuration. It automatically processes any post without a title.
 
-# Functionality
+## Functionality
 
 ## Title Generation
 

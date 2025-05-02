@@ -3,7 +3,7 @@ DidYouMean Plugin for Markata
 
 Automatically generates redirect pages for URLs that may be mistyped by users.
 
-# Installation
+## Installation
 
 ```toml
 hooks = [
@@ -11,7 +11,7 @@ hooks = [
 ]
 ```
 
-# Configuration
+## Configuration
 
 ```toml
 [markata.didyoumean]

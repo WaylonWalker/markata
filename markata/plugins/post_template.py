@@ -5,7 +5,7 @@ The `markata.plugins.post_template` plugin handles the rendering of posts using 
 templates. It provides extensive configuration options for HTML head elements, styling,
 and template customization.
 
-# Installation
+## Installation
 
 This plugin is built-in and enabled by default through the 'default' plugin.
 If you want to be explicit, you can add it to your list of plugins:
@@ -16,7 +16,7 @@ hooks = [
 ]
 ```
 
-# Uninstallation
+## Uninstallation
 
 Since this plugin is included in the default plugin set, to disable it you must explicitly
 add it to the disabled_hooks list if you are using the 'default' plugin:
@@ -27,7 +27,7 @@ disabled_hooks = [
 ]
 ```
 
-# Configuration
+## Configuration
 
 ## Head Elements
 
@@ -91,7 +91,7 @@ template_cache_dir = ".markata.cache/template_bytecode"
 env_options = { trim_blocks = true }
 ```
 
-# Functionality
+## Functionality
 
 ## Template Rendering
 

@@ -2,7 +2,7 @@
 The `markata.plugins.redirects` plugin creates static redirects for your site using
 a simple configuration file. Compatible with services like Cloudflare Pages and Netlify.
 
-# Installation
+## Installation
 
 This plugin is built-in but not enabled by default. Add it to your plugins list:
 
@@ -12,7 +12,7 @@ hooks = [
 ]
 ```
 
-# Uninstallation
+## Uninstallation
 
 Remove the plugin from your hooks list in `markata.toml`:
 
@@ -23,7 +23,7 @@ hooks = [
 ]
 ```
 
-# Configuration
+## Configuration
 
 Configure redirects in `markata.toml`:
 
@@ -61,7 +61,7 @@ Create a `_redirects` file with entries:
 /blog/:year/:month    /posts/:year/:month
 ```
 
-# Functionality
+## Functionality
 
 ## Redirect Types
 

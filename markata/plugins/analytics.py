@@ -3,7 +3,7 @@ The `markata.plugins.analytics` plugin generates analytics and contribution visu
 for your Markata site. It creates a contributions heatmap similar to GitHub's contribution
 graph and provides post statistics.
 
-# Installation
+## Installation
 
 This plugin is built-in and enabled by default through the 'default' plugin.
 If you want to be explicit, you can add it to your list of plugins:
@@ -14,7 +14,7 @@ hooks = [
 ]
 ```
 
-# Uninstallation
+## Uninstallation
 
 Since this plugin is included in the default plugin set, to disable it you must explicitly
 add it to the disabled_hooks list if you are using the 'default' plugin:
@@ -25,7 +25,7 @@ disabled_hooks = [
 ]
 ```
 
-# Configuration
+## Configuration
 
 Configure analytics behavior in your `markata.toml`:
 
@@ -41,7 +41,7 @@ contributions_cmap = "rocket"
 filter = ""  # e.g. "draft != True" to exclude drafts
 ```
 
-# Functionality
+## Functionality
 
 ## Contribution Heatmap
 

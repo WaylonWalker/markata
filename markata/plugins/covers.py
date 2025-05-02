@@ -3,7 +3,7 @@ The `markata.plugins.covers` plugin generates custom cover images for your posts
 configurable templates. It supports multiple cover image formats with different sizes,
 fonts, and layouts for various platforms (e.g., blog, social media, dev.to).
 
-# Installation
+## Installation
 
 This plugin is built-in and enabled by default through the 'default' plugin.
 If you want to be explicit, you can add it to your list of plugins:
@@ -14,7 +14,7 @@ hooks = [
 ]
 ```
 
-# Uninstallation
+## Uninstallation
 
 Since this plugin is included in the default plugin set, to disable it you must explicitly
 add it to the disabled_hooks list if you are using the 'default' plugin:
@@ -25,7 +25,7 @@ disabled_hooks = [
 ]
 ```
 
-# Configuration
+## Configuration
 
 Configure multiple cover image templates in your `markata.toml`:
 
@@ -53,7 +53,7 @@ padding = [10, 10, 100, 300]
 text_padding = [0, 0]
 ```
 
-## Configuration Options
+### Configuration Options
 
 Each cover configuration supports:
 - `name`: Suffix for generated files (e.g., '-dev' creates 'post-dev.png')
@@ -66,7 +66,7 @@ Each cover configuration supports:
 - `padding`: List of 1-4 integers for title padding
 - `text_padding`: List of 1-4 integers for description padding
 
-# Functionality
+## Functionality
 
 ## Cover Generation
 

@@ -3,7 +3,7 @@ The `markata.plugins.load` plugin is responsible for loading and parsing markdow
 with frontmatter into Post objects. It provides parallel loading capabilities and
 handles both modern Pydantic-based and legacy frontmatter validation.
 
-# Installation
+## Installation
 
 This plugin is built-in and enabled by default through the 'default' plugin.
 If you want to be explicit, you can add it to your list of plugins:
@@ -14,7 +14,7 @@ hooks = [
 ]
 ```
 
-# Uninstallation
+## Uninstallation
 
 Since this plugin is included in the default plugin set, to disable it you must explicitly
 add it to the disabled_hooks list if you are using the 'default' plugin:
@@ -28,7 +28,7 @@ disabled_hooks = [
 Note: Disabling this plugin will prevent Markata from loading any markdown files.
 This will effectively disable most of Markata's functionality.
 
-# Configuration
+## Configuration
 
 Configure loading behavior in your `markata.toml`:
 
@@ -47,7 +47,7 @@ legacy_frontmatter = false
 load_workers = 4
 ```
 
-# Functionality
+## Functionality
 
 ## File Loading
 

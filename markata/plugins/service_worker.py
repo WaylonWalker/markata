@@ -3,7 +3,7 @@ Adds a service_worker to your site.  This will make it installable on mobile,
 viewable offline, and potentially more responsive as the user goes between good
 and bad connections.
 
-# Configuration
+## Configuration
 
 Enable this plugin by adding it to your `markata.toml` hooks list.
 

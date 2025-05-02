@@ -3,7 +3,7 @@ The `markata.plugins.icon_resize` plugin automatically generates favicons in mul
 sizes from a single source image. This ensures your site has appropriate icons for
 different devices and platforms.
 
-# Installation
+## Installation
 
 This plugin is built-in and enabled by default through the 'default' plugin.
 If you want to be explicit, you can add it to your list of plugins:
@@ -14,7 +14,7 @@ hooks = [
 ]
 ```
 
-# Uninstallation
+## Uninstallation
 
 Since this plugin is included in the default plugin set, to disable it you must explicitly
 add it to the disabled_hooks list if you are using the 'default' plugin:
@@ -25,7 +25,7 @@ disabled_hooks = [
 ]
 ```
 
-# Configuration
+## Configuration
 
 Configure icon settings in your `markata.toml`:
 
@@ -45,7 +45,7 @@ icon = "static/icon.png"
 icon_sizes = [16, 32, 48, 128, 180, 192, 512]
 ```
 
-# Functionality
+## Functionality
 
 ## Icon Generation
 

@@ -3,7 +3,7 @@ The `markata.plugins.publish_html` plugin handles saving rendered HTML content t
 It determines the output path for each article and ensures files are saved in the correct
 location within the output directory.
 
-# Installation
+## Installation
 
 This plugin is built-in and enabled by default through the 'default' plugin.
 If you want to be explicit, you can add it to your list of plugins:
@@ -14,7 +14,7 @@ hooks = [
 ]
 ```
 
-# Uninstallation
+## Uninstallation
 
 Since this plugin is included in the default plugin set, to disable it you must explicitly
 add it to the disabled_hooks list if you are using the 'default' plugin:
@@ -27,7 +27,7 @@ disabled_hooks = [
 
 Note: Disabling this plugin will prevent HTML files from being written to disk.
 
-# Configuration
+## Configuration
 
 Configure HTML output in `markata.toml`:
 
@@ -46,7 +46,7 @@ pattern = "docs/*"
 output = "documentation/{stem}/index.html"
 ```
 
-# Functionality
+## Functionality
 
 ## Path Resolution
 

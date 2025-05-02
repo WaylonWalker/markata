@@ -21,7 +21,7 @@ markout/_logs
 └── warning.log
 ```
 
-# Configuration
+## Configuration
 
 Ensure that setup_logging is in your hooks.  You can check if `setup_logging`
 is in your hooks by running `markata list --hooks` from your terminal and

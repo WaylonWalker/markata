@@ -3,7 +3,7 @@ The `markata.plugins.md_it_wikilinks` plugin adds support for wiki-style links u
 double brackets (`[[link]]`). It automatically resolves links to other posts in your
 site using file names or slugs.
 
-# Installation
+## Installation
 
 This plugin is built-in and enabled by default through the 'default' plugin.
 If you want to be explicit, you can add it to your list of plugins:
@@ -14,7 +14,7 @@ hooks = [
 ]
 ```
 
-# Uninstallation
+## Uninstallation
 
 Since this plugin is included in the default plugin set, to disable it you must explicitly
 add it to the disabled_hooks list if you are using the 'default' plugin:
@@ -25,12 +25,12 @@ disabled_hooks = [
 ]
 ```
 
-# Configuration
+## Configuration
 
 This plugin requires no explicit configuration. It automatically processes wikilinks
 in your markdown content.
 
-# Functionality
+## Functionality
 
 ## Basic Wikilinks
 

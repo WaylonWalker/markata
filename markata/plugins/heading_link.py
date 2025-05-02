@@ -3,7 +3,7 @@ The `markata.plugins.heading_link` plugin adds clickable link icons next to head
 your HTML output. This makes it easy for readers to share direct links to specific
 sections of your content.
 
-# Installation
+## Installation
 
 This plugin is built-in and enabled by default through the 'default' plugin.
 If you want to be explicit, you can add it to your list of plugins:
@@ -14,7 +14,7 @@ hooks = [
 ]
 ```
 
-# Uninstallation
+## Uninstallation
 
 Since this plugin is included in the default plugin set, to disable it you must explicitly
 add it to the disabled_hooks list if you are using the 'default' plugin:
@@ -25,12 +25,12 @@ disabled_hooks = [
 ]
 ```
 
-# Configuration
+## Configuration
 
 This plugin requires no explicit configuration. It automatically processes all headings
 in your HTML content.
 
-# Functionality
+## Functionality
 
 ## Link Generation
 

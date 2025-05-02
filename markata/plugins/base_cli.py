@@ -2,7 +2,7 @@
 The `markata.plugins.base_cli` plugin provides Markata's core command-line interface
 functionality, including essential commands like `build`, `list`, and `clean`.
 
-# Installation
+## Installation
 
 This plugin is built-in and enabled by default through the 'default' plugin.
 If you want to be explicit, you can add it to your list of plugins:
@@ -13,7 +13,7 @@ hooks = [
 ]
 ```
 
-# Uninstallation
+## Uninstallation
 
 Since this plugin is included in the default plugin set, to disable it you must explicitly
 add it to the disabled_hooks list if you are using the 'default' plugin:
@@ -24,11 +24,11 @@ disabled_hooks = [
 ]
 ```
 
-# Configuration
+## Configuration
 
 No explicit configuration is required. The plugin automatically registers CLI commands.
 
-# Functionality
+## Functionality
 
 ## Core Commands
 

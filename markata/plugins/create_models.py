@@ -3,7 +3,7 @@ The `markata.plugins.create_models` plugin dynamically creates Markata's core Py
 models by combining model fragments from various plugins. This enables extensible and
 type-safe data models.
 
-# Installation
+## Installation
 
 This plugin is built-in and enabled by default through the 'default' plugin.
 If you want to be explicit, you can add it to your list of plugins:
@@ -14,7 +14,7 @@ hooks = [
 ]
 ```
 
-# Uninstallation
+## Uninstallation
 
 Since this plugin is included in the default plugin set, to disable it you must explicitly
 add it to the disabled_hooks list if you are using the 'default' plugin:
@@ -28,12 +28,12 @@ disabled_hooks = [
 Note: Disabling this plugin will break most of Markata's functionality as it's
 responsible for creating core models.
 
-# Configuration
+## Configuration
 
 No explicit configuration is required. The plugin automatically creates models from
 registered model fragments.
 
-# Functionality
+## Functionality
 
 ## Model Creation
 

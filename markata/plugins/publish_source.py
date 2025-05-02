@@ -3,7 +3,7 @@ The `markata.plugins.publish_source` plugin saves processed markdown files to th
 directory, preserving frontmatter and content modifications. This enables source file
 access alongside rendered HTML.
 
-# Installation
+## Installation
 
 This plugin is built-in and enabled by default through the 'default' plugin.
 If you want to be explicit, you can add it to your list of plugins:
@@ -14,7 +14,7 @@ hooks = [
 ]
 ```
 
-# Uninstallation
+## Uninstallation
 
 Since this plugin is included in the default plugin set, to disable it you must explicitly
 add it to the disabled_hooks list if you are using the 'default' plugin:
@@ -25,12 +25,12 @@ disabled_hooks = [
 ]
 ```
 
-# Configuration
+## Configuration
 
 No explicit configuration is required. The plugin automatically saves source files
 alongside HTML output.
 
-# Functionality
+## Functionality
 
 ## File Output
 

@@ -3,7 +3,7 @@ The `markata.plugins.datetime` plugin handles date and time parsing for posts. I
 consistent datetime handling by converting various date formats to timezone-aware datetime
 objects.
 
-# Installation
+## Installation
 
 This plugin is built-in and enabled by default through the 'default' plugin.
 If you want to be explicit, you can add it to your list of plugins:
@@ -14,7 +14,7 @@ hooks = [
 ]
 ```
 
-# Uninstallation
+## Uninstallation
 
 Since this plugin is included in the default plugin set, to disable it you must explicitly
 add it to the disabled_hooks list if you are using the 'default' plugin:
@@ -27,7 +27,7 @@ disabled_hooks = [
 
 Note: Disabling this plugin will prevent proper date handling and sorting in other plugins.
 
-# Configuration
+## Configuration
 
 This plugin requires no explicit configuration. It processes dates from post frontmatter.
 
@@ -49,7 +49,7 @@ date: 2024-01-28T12:00:00Z  # Date and time with timezone
 ---
 ```
 
-# Functionality
+## Functionality
 
 ## Date Parsing
 

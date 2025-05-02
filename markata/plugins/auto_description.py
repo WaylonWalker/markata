@@ -3,7 +3,7 @@ The `markata.plugins.auto_description` plugin automatically generates descriptio
 posts by extracting text from the first paragraphs of your markdown content. It can create
 multiple descriptions of different lengths for different purposes (e.g., SEO, previews).
 
-# Installation
+## Installation
 
 This plugin is built-in and enabled by default through the 'default' plugin.
 If you want to be explicit, you can add it to your list of plugins:
@@ -14,7 +14,7 @@ hooks = [
 ]
 ```
 
-# Uninstallation
+## Uninstallation
 
 Since this plugin is included in the default plugin set, to disable it you must explicitly
 add it to the disabled_hooks list if you are using the 'default' plugin:
@@ -25,7 +25,7 @@ disabled_hooks = [
 ]
 ```
 
-# Configuration
+## Configuration
 
 Configure multiple description types in your `markata.toml`:
 
@@ -60,7 +60,7 @@ long_description: A longer custom description
 ---
 ```
 
-# Functionality
+## Functionality
 
 ## Description Generation
 

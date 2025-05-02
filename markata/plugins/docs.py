@@ -3,7 +3,7 @@ The `markata.plugins.docs` plugin automatically generates documentation pages fr
 source code docstrings. It parses Python files, extracts docstrings and code structure,
 and creates markdown documentation.
 
-# Installation
+## Installation
 
 This plugin is built-in and enabled by default through the 'default' plugin.
 If you want to be explicit, you can add it to your list of plugins:
@@ -14,7 +14,7 @@ hooks = [
 ]
 ```
 
-# Uninstallation
+## Uninstallation
 
 Since this plugin is included in the default plugin set, to disable it you must explicitly
 add it to the disabled_hooks list if you are using the 'default' plugin:
@@ -25,7 +25,7 @@ disabled_hooks = [
 ]
 ```
 
-# Configuration
+## Configuration
 
 Configure documentation generation in your `markata.toml`:
 
@@ -51,7 +51,7 @@ The following variables are available in documentation templates:
 - `source`: Path to source file
 - `ast`: Abstract Syntax Tree of the module
 
-# Functionality
+## Functionality
 
 ## Documentation Generation
 

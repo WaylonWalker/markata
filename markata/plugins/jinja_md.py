@@ -3,7 +3,7 @@ The `markata.plugins.jinja_md` plugin enables Jinja2 templating within your mark
 content. This allows you to dynamically generate content using Python expressions and
 access to the full Markata context.
 
-# Installation
+## Installation
 
 This plugin is built-in and enabled by default through the 'default' plugin.
 If you want to be explicit, you can add it to your list of plugins:
@@ -14,7 +14,7 @@ hooks = [
 ]
 ```
 
-# Uninstallation
+## Uninstallation
 
 Since this plugin is included in the default plugin set, to disable it you must explicitly
 add it to the disabled_hooks list if you are using the 'default' plugin:
@@ -25,7 +25,7 @@ disabled_hooks = [
 ]
 ```
 
-# Configuration
+## Configuration
 
 Configure Jinja markdown settings in your `markata.toml`:
 
@@ -38,7 +38,7 @@ ignore = [
 ]
 ```
 
-# Functionality
+## Functionality
 
 ## Template Variables
 

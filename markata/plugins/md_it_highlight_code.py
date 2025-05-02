@@ -3,7 +3,7 @@ The `markata.plugins.md_it_highlight_code` plugin adds syntax highlighting to co
 in your markdown content. It uses Pygments for highlighting and adds a copy button for
 easy code sharing.
 
-# Installation
+## Installation
 
 This plugin is built-in and enabled by default through the 'default' plugin.
 If you want to be explicit, you can add it to your list of plugins:
@@ -14,7 +14,7 @@ hooks = [
 ]
 ```
 
-# Uninstallation
+## Uninstallation
 
 Since this plugin is included in the default plugin set, to disable it you must explicitly
 add it to the disabled_hooks list if you are using the 'default' plugin:
@@ -25,7 +25,7 @@ disabled_hooks = [
 ]
 ```
 
-# Configuration
+## Configuration
 
 Configure syntax highlighting in your `markata.toml`:
 
@@ -42,7 +42,7 @@ copy_button_text = "Copy"
 copy_button_copied_text = "Copied!"
 ```
 
-# Functionality
+## Functionality
 
 ## Code Highlighting
 

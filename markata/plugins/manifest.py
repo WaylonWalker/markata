@@ -3,7 +3,7 @@ The `markata.plugins.manifest` plugin generates a Web App Manifest (manifest.jso
 for your site. This enables Progressive Web App (PWA) features and provides metadata
 for mobile devices.
 
-# Installation
+## Installation
 
 This plugin is built-in and enabled by default through the 'default' plugin.
 If you want to be explicit, you can add it to your list of plugins:
@@ -14,7 +14,7 @@ hooks = [
 ]
 ```
 
-# Uninstallation
+## Uninstallation
 
 Since this plugin is included in the default plugin set, to disable it you must explicitly
 add it to the disabled_hooks list if you are using the 'default' plugin:
@@ -25,7 +25,7 @@ disabled_hooks = [
 ]
 ```
 
-# Configuration
+## Configuration
 
 Configure manifest settings in your `markata.toml`:
 
@@ -44,7 +44,7 @@ description = "My awesome blog"    # Site description
 output_dir = "markout"
 ```
 
-# Functionality
+## Functionality
 
 ## Manifest Generation
 

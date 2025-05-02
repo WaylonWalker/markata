@@ -5,7 +5,7 @@ It determines which files should be processed by Markata based on configured pat
 > A glob is a string that can be used to match files and directories.
 > https://docs.python.org/3/library/pathlib.html#pathlib.Path.glob
 
-# Installation
+## Installation
 
 This plugin is built-in and enabled by default through the 'default' plugin.
 If you want to be explicit, you can add it to your list of plugins:
@@ -16,7 +16,7 @@ hooks = [
 ]
 ```
 
-# Uninstallation
+## Uninstallation
 
 Since this plugin is included in the default plugin set, to disable it you must explicitly
 add it to the disabled_hooks list if you are using the 'default' plugin:
@@ -27,7 +27,7 @@ disabled_hooks = [
 ]
 ```
 
-# Configuration
+## Configuration
 
 Configure glob patterns and behavior in your `markata.toml`:
 
@@ -56,7 +56,7 @@ use_gitignore = true  # Set to false to process gitignored files
   - Default: `true`
   - When true, files matching .gitignore patterns are skipped
 
-# Functionality
+## Functionality
 
 The glob plugin runs early in the Markata pipeline to discover files for processing.
 It supports:

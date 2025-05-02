@@ -3,7 +3,7 @@ The `markata.plugins.flat_slug` plugin handles URL slug generation for your arti
 It sanitizes special characters that don't work in browsers and provides a consistent
 URL structure.
 
-# Installation
+## Installation
 
 This plugin is built-in and enabled by default through the 'default' plugin.
 If you want to be explicit, you can add it to your list of plugins:
@@ -14,7 +14,7 @@ hooks = [
 ]
 ```
 
-# Uninstallation
+## Uninstallation
 
 Since this plugin is included in the default plugin set, to disable it you must explicitly
 add it to the disabled_hooks list if you are using the 'default' plugin:
@@ -27,7 +27,7 @@ disabled_hooks = [
 
 Note: Disabling this plugin will prevent automatic URL slug generation and sanitization.
 
-# Configuration
+## Configuration
 
 Configure the plugin behavior in your `markata.toml`:
 
@@ -36,7 +36,7 @@ Configure the plugin behavior in your `markata.toml`:
 slugify = true  # Set to false to disable automatic slug sanitization
 ```
 
-# Functionality
+## Functionality
 
 ## Explicit Slug in Frontmatter
 

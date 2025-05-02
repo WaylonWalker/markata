@@ -3,7 +3,7 @@
 future version. Please use `markata.plugins.feeds` instead, which provides more
 comprehensive sitemap generation capabilities.
 
-# Installation
+## Installation
 
 This plugin is deprecated. Use `markata.plugins.feeds` instead:
 

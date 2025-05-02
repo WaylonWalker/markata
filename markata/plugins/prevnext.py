@@ -2,7 +2,7 @@
 The `markata.plugins.prevnext` plugin adds previous and next navigation links to each
 post, allowing readers to easily navigate between related content.
 
-# Installation
+## Installation
 
 This plugin is built-in and enabled by default through the 'default' plugin.
 If you want to be explicit, you can add it to your list of plugins:
@@ -13,7 +13,7 @@ hooks = [
 ]
 ```
 
-# Uninstallation
+## Uninstallation
 
 Since this plugin is included in the default plugin set, to disable it you must explicitly
 add it to the disabled_hooks list if you are using the 'default' plugin:
@@ -24,7 +24,7 @@ disabled_hooks = [
 ]
 ```
 
-# Configuration
+## Configuration
 
 Configure navigation behavior in `markata.toml`:
 
@@ -57,7 +57,7 @@ sort = "post.part"
 reverse = false
 ```
 
-# Functionality
+## Functionality
 
 ## Navigation Maps
 

@@ -4,7 +4,7 @@ posts.  The list is generated using a `filter`, then each post in the list is
 rendered with a `card_template` before being applied to the `body` of the
 `template`.
 
-# Installation
+## Installation
 
 This plugin is built-in and enabled by default, but in you want to be very
 explicit you can add it to your list of existing plugins.
@@ -15,7 +15,7 @@ hooks = [
    ]
 ```
 
-# Configuration
+## Configuration
 
 # set default template and card_template
 
