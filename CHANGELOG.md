@@ -1,5 +1,9 @@
 # Markata Changelog
 
+## 0.9.2
+
+- Fix: `auto_description` now more accuratetly returns plain text, does not cut off words, and add an ellipsis.
+
 ## 0.9.1
 
 - HUGE DOCS UPDATE
