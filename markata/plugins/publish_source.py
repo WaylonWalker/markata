@@ -1,26 +1,74 @@
 """
-Writes the final modified markdown and frontmatter to the output directory.
-Replacing the trailing slash if its there and adding .md will bring up the raw
-source.
+The `markata.plugins.publish_source` plugin saves processed markdown files to the output
+directory, preserving frontmatter and content modifications. This enables source file
+access alongside rendered HTML.
+
+## Installation
+
+This plugin is built-in and enabled by default through the 'default' plugin.
+If you want to be explicit, you can add it to your list of plugins:
+
+```toml
+hooks = [
+    "markata.plugins.publish_source",
+]
+```
+
+## Uninstallation
+
+Since this plugin is included in the default plugin set, to disable it you must explicitly
+add it to the disabled_hooks list if you are using the 'default' plugin:
+
+```toml
+disabled_hooks = [
+    "markata.plugins.publish_source",
+]
+```
 
 ## Configuration
 
-The only configuration for the publish_source plugin is to make sure its in
-your list of hooks.
+No explicit configuration is required. The plugin automatically saves source files
+alongside HTML output.
 
+## Functionality
 
-``` toml
-[markata]
+## File Output
 
-# make sure its in your list of hooks
-hooks=[
-   "markata.plugins.publish_source",
-   ]
-```
+The plugin:
+1. Preserves markdown source
+2. Maintains frontmatter
+3. Creates output directories
+4. Uses post slugs for paths
 
-!!! note
-    publish_source is included by default, but if you have not included the
-    default set of hooks you will need to explicitly add it.
+## Path Resolution
+
+Source files are saved:
+- At post's slug location
+- With .md extension
+- In output directory
+- Alongside HTML files
+
+## Frontmatter Handling
+
+Handles frontmatter:
+- Strips unserializable values
+- Preserves YAML compatibility
+- Maintains metadata
+- Logs stripped fields
+
+## Error Handling
+
+Includes:
+- YAML validation
+- Path verification
+- Directory creation
+- Error logging
+
+## Dependencies
+
+This plugin depends on:
+- python-frontmatter for YAML handling
+- pyyaml for serialization
 """
 
 from pathlib import Path
@@ -84,7 +132,7 @@ def save(markata: "Markata") -> None:
     """
     output_dir = Path(str(markata.config["output_dir"]))
     for article in markata.filter(
-        "skip==False"
+        "not skip"
     ):  # iter_articles(description="saving source documents"):
         try:
             _save(output_dir, article)

@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block body %}
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-4xl font-bold mb-6">Page Not Found</h1>
+
+        {% with populate_search_input=True %}
+            {% include "didyoumean_partial.html" %}
+        {% endwith %}
+
+    </div>
+
+{% endblock %}

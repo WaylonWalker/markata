@@ -1,41 +1,109 @@
 """
+The `markata.plugins.covers` plugin generates custom cover images for your posts using
+configurable templates. It supports multiple cover image formats with different sizes,
+fonts, and layouts for various platforms (e.g., blog, social media, dev.to).
 
-### Configuration
+## Installation
 
-Example configuration.  Covers supports multiple covers to be configured.  Here
-is an example from my blog where we have a template sized for dev.to and one
-sized for open graph.  Each image takes it's own configuration.
+This plugin is built-in and enabled by default through the 'default' plugin.
+If you want to be explicit, you can add it to your list of plugins:
 
-``` toml
+```toml
+hooks = [
+    "markata.plugins.covers",
+]
+```
+
+## Uninstallation
+
+Since this plugin is included in the default plugin set, to disable it you must explicitly
+add it to the disabled_hooks list if you are using the 'default' plugin:
+
+```toml
+disabled_hooks = [
+    "markata.plugins.covers",
+]
+```
+
+## Configuration
+
+Configure multiple cover image templates in your `markata.toml`:
+
+```toml
 [[markata.covers]]
-name='-dev'
-template = "static/cover-template.png"
-font = "./static/JosefinSans-Regular.ttf"
-text_font = "./static/JosefinSans-Regular.ttf"
-font_color = "rgb(185,155,165)"
-text_font_color = "rgb(255,255,255)"
-text_key = 'description'
-padding = [0, 40, 100, 300]
-text_padding = [0,0]
+name = '-dev'                                    # Suffix for generated files
+template = "static/cover-template.png"           # Base template image
+font = "./static/JosefinSans-Regular.ttf"        # Title font
+text_font = "./static/JosefinSans-Regular.ttf"   # Description font
+font_color = "rgb(185,155,165)"                 # Title color
+text_font_color = "rgb(255,255,255)"            # Description color
+text_key = 'description'                        # Post attribute to use for description
+padding = [0, 40, 100, 300]                     # Title padding [top, right, bottom, left]
+text_padding = [0, 0]                           # Description padding
 
 [[markata.covers]]
-name=''
-template = "static/og-template.png"
+name = ''                                       # No suffix (default cover)
+template = "static/og-template.png"             # Different template for social media
 font = "./static/JosefinSans-Regular.ttf"
 font_color = "rgb(255,255,255)"
 text_font = "./static/JosefinSans-Regular.ttf"
 text_font_color = "rgb(200,200,200)"
 text_key = 'description'
 padding = [10, 10, 100, 300]
-text_padding = [0,0]
+text_padding = [0, 0]
 ```
+
+### Configuration Options
+
+Each cover configuration supports:
+- `name`: Suffix for generated files (e.g., '-dev' creates 'post-dev.png')
+- `template`: Path to template image
+- `font`: Path to title font file
+- `text_font`: Path to description font file
+- `font_color`: RGB color for title
+- `text_font_color`: RGB color for description
+- `text_key`: Post attribute to use for description text
+- `padding`: List of 1-4 integers for title padding
+- `text_padding`: List of 1-4 integers for description padding
+
+## Functionality
+
+## Cover Generation
+
+The plugin:
+1. Loads the template image for each configuration
+2. Draws the post title using specified font and color
+3. Optionally draws description text
+4. Applies configured padding
+5. Saves the generated cover with appropriate suffix
+
+## File Naming
+
+Generated files follow this pattern:
+- Main cover: `<slug>.png`
+- Named covers: `<slug><name>.png`
+
+Example:
+- `my-post.png` (default cover)
+- `my-post-dev.png` (dev.to cover)
+
+## Dependencies
+
+This plugin depends on:
+- Pillow (PIL) for image manipulation
 """
 
+import time
 from functools import lru_cache
 from pathlib import Path
-from rich.progress import BarColumn, Progress
-import time
-from typing import List, Optional, TYPE_CHECKING, Tuple, Union
+from typing import TYPE_CHECKING
+from typing import List
+from typing import Optional
+from typing import Tuple
+from typing import Union
+
+from rich.progress import BarColumn
+from rich.progress import Progress
 
 from markata import background
 from markata.hookspec import hook_impl
@@ -50,7 +118,9 @@ def _lazy_import_pil():
     """Lazy import PIL modules when needed."""
     global Image, ImageDraw, ImageFont
     if Image is None:
-        from PIL import Image, ImageDraw, ImageFont
+        from PIL import Image
+        from PIL import ImageDraw
+        from PIL import ImageFont
 
 
 if TYPE_CHECKING:

@@ -5,7 +5,8 @@ import pydantic
 from rich.console import RenderableType
 
 from markata import Markata
-from markata.hookspec import hook_impl, register_attr
+from markata.hookspec import hook_impl
+from markata.hookspec import register_attr
 
 
 class TuiKey(pydantic.BaseModel):

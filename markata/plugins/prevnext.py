@@ -1,78 +1,115 @@
 """
-The prevnext plugin, creates previous and next links inside each post.
+The `markata.plugins.prevnext` plugin adds previous and next navigation links to each
+post, allowing readers to easily navigate between related content.
 
-## Example config
+## Installation
 
-In this example we have two maps of posts to look through.  prevnext will look
-through each of these lists of posts for the current post, then return the post
-before and after this post as the prevnext posts.
+This plugin is built-in and enabled by default through the 'default' plugin.
+If you want to be explicit, you can add it to your list of plugins:
 
-``` toml
-
-[markata]
-# default colors will be taken from markata's color_text and color_accent
-color_text=white
-color_text_light=black
-color_accent=white
-color_accent_light=black
-
-[markata.prevnext]
-# strategy can be 'first' or 'all'
-# 'first' will cycle through the first map the post is found in.
-# 'all' will cycle through all of the maps
-strategy='first'
-
-# if you want different colors than your main color_text and color_accent, then
-# you can override it here
-# colors can be any valid css color format
-
-prevnext_color_text=white
-prevnext_color_text_light=black
-prevnext_color_angle=white
-prevnext_color_angle_light=black
-
-
-# you can have multiple maps, the order they appear will determine their preference
-[markata.feeds.python]
-filter='"python" in tags'
-sort='slug'
-
-[markata.feeds.others]
-filter='"python" not in tags'
-sort='slug'
+```toml
+hooks = [
+    "markata.plugins.prevnext",
+]
 ```
 
-The configuration below will setup two maps, one where "python" is in the list
-of tags, and another where it is not.  This will link all python posts together
-with a prevnext cycle, and all non-python posts in a separate prevnext cycle.
+## Uninstallation
 
-## strategy
+Since this plugin is included in the default plugin set, to disable it you must explicitly
+add it to the disabled_hooks list if you are using the 'default' plugin:
 
-There are currently two supported strategies.
+```toml
+disabled_hooks = [
+    "markata.plugins.prevnext",
+]
+```
 
-* first
-* all
+## Configuration
 
-### first
+Configure navigation behavior in `markata.toml`:
 
-`first` will cycle through only the posts contained within the first map that
-contains the post.
+```toml
+[markata.prevnext]
+# Strategy for finding prev/next posts
+# 'first': Use first map where post is found
+# 'all': Use all maps
+strategy = 'first'
 
-### all
+# Custom colors (optional)
+prevnext_color_text = "white"
+prevnext_color_text_light = "black"
+prevnext_color_angle = "white"
+prevnext_color_angle_light = "black"
 
-`all` will cycle through all of the posts aggregated from any prevnext map.
+# Navigation maps
+[[markata.prevnext.maps]]
+# Map posts by category
+category = "tutorials"
+filter = "post.category == 'tutorials'"
+sort = "post.date"
+reverse = true
 
+[[markata.prevnext.maps]]
+# Map posts by series
+category = "python-series"
+filter = "post.series == 'python'"
+sort = "post.part"
+reverse = false
+```
+
+## Functionality
+
+## Navigation Maps
+
+The plugin allows you to:
+1. Define multiple navigation maps
+2. Filter posts by attributes
+3. Sort posts by any field
+4. Control sort direction
+5. Group related content
+
+## Navigation Strategies
+
+Two navigation modes:
+- `first`: Use first map containing the post
+- `all`: Use all maps containing the post
+
+## Template Integration
+
+Adds to each post:
+- Previous post link
+- Next post link
+- Navigation styling
+- Responsive design
+
+## Styling
+
+Customizable colors:
+- Text colors
+- Arrow colors
+- Light/dark mode support
+- Hover effects
+
+## Dependencies
+
+This plugin depends on:
+- jinja2 for templating
+- pydantic for configuration
 """
 
 import copy
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import TYPE_CHECKING
+from typing import Dict
+from typing import List
+from typing import Optional
 
 from deepmerge import always_merger
 from jinja2 import Template
 
-from markata.hookspec import hook_impl, register_attr
+from markata.hookspec import hook_impl
+from markata.hookspec import register_attr
 
 if TYPE_CHECKING:
     from frontmatter import Post

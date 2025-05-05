@@ -1,100 +1,111 @@
 """
-Renders markdown content as html.  This may be markdown files loaded in by way
-of the [[load]] plugin.
+The `markata.plugins.render_markdown` plugin converts markdown content to HTML.
+This plugin is essential for rendering markdown files loaded by the `load` plugin.
 
+## Installation
 
-## Markdown backend
+This plugin is built-in and enabled by default through the 'default' plugin.
+If you want to be explicit, you can add it to your list of plugins:
 
-There are 3 supported markdown backends that you can configure markata to use
-by setting the `markdown_backend` in your `markata.toml`.
+```toml
+hooks = [
+    "markata.plugins.render_markdown",
+]
+```
 
-``` toml title=markata.toml
+## Uninstallation
+
+Since this plugin is included in the default plugin set, to disable it you must explicitly
+add it to the disabled_hooks list if you are using the 'default' plugin:
+
+```toml
+disabled_hooks = [
+    "markata.plugins.render_markdown",
+]
+```
+
+Note: Disabling this plugin will prevent markdown files from being rendered to HTML.
+
+## Configuration
+
+## Markdown Backend Selection
+
+Choose from 3 supported markdown backends by setting `markdown_backend` in your `markata.toml`:
+
+```toml
 ## choose your markdown backend
-# markdown_backend='markdown'
-# markdown_backend='markdown2'
-markdown_backend='markdown-it-py'
+# markdown_backend='markdown'      # Python-Markdown
+# markdown_backend='markdown2'     # markdown2
+markdown_backend='markdown-it-py'  # markdown-it-py (default)
 ```
 
-## markdown-it-py configuration
+## Backend-Specific Configuration
 
-`markdown-it-py` has quite a bit of configuration that you can do, you can read
-more about the settings in their
-[docs](https://markdown-it-py.readthedocs.io/en/latest/).
+### markdown-it-py
 
-``` toml title=markata.toml
-# markdown_it flavor
+Configure markdown-it-py behavior in your `markata.toml`:
+
+```toml
 [markata.markdown_it_py]
-config='gfm-like'
+# Set the flavor - options: 'zero', 'commonmark', 'gfm-like'
+config = 'gfm-like'
+
+# Enable specific plugins
+enable = [
+    'table',
+    'strikethrough',
+    'footnote',
+]
+
+# Disable specific plugins
+disable = [
+    'linkify',
+]
+
+# Configure plugins
+[markata.markdown_it_py.plugins.footnote]
+# Plugin-specific settings here
 ```
 
-You can enable and disable built in plugins using the `enable` and `disable`
-lists.
+Read more about markdown-it-py settings in their [documentation](https://markdown-it-py.readthedocs.io/en/latest/).
 
-``` toml title=markata.toml
-[markata.markdown_it_py]
-# markdown_it built-in plugins
-enable = [ "table" ]
-disable = [ "image" ]
+## Cache Configuration
+
+Control markdown rendering cache:
+
+```toml
+[markata.render_markdown]
+cache_expire = 3600  # Cache expiration in seconds
 ```
 
-You can configure the `options_update` as follows, this is for the built-in
-plugins and core configuration.
+## Functionality
 
-``` toml title=markata.toml
-[markata.markdown_it_py.options_update]
-linkify = true
-html = true
-typographer = true
-highlight = 'markata.plugins.md_it_highlight_code:highlight_code'
-```
+## Registered Attributes
 
-Lastly you can add external plugins as follows.  Many of the great plugins that
-come from [executable_books](https://github.com/executablebooks) actually comes
-from a separate library
-[mdit-py-plugins](https://mdit-py-plugins.readthedocs.io/), so they will be
-configured here.
+The plugin registers the following attributes on Post objects:
+- `html`: The rendered HTML content from the markdown source
 
-``` toml title=markata.toml
-[[markata.markdown_it_py.plugins]]
-plugin = "mdit_py_plugins.admon:admon_plugin"
+## Dependencies
 
-[[markata.markdown_it_py.plugins]]
-plugin = "mdit_py_plugins.admon:admon_plugin"
-
-[[markata.markdown_it_py.plugins]]
-plugin = "mdit_py_plugins.attrs:attrs_plugin"
-config = {spans = true}
-
-[[markata.markdown_it_py.plugins]]
-plugin = "mdit_py_plugins.attrs:attrs_block_plugin"
-
-[[markata.markdown_it_py.plugins]]
-plugin = "markata.plugins.mdit_details:details_plugin"
-
-[[markata.markdown_it_py.plugins]]
-plugin = "mdit_py_plugins.anchors:anchors_plugin"
-
-[markata.markdown_it_py.plugins.config]
-permalink = true
-permalinkSymbol = '<svg class="heading-permalink" aria-hidden="true" fill="currentColor" focusable="false" height="1em" viewBox="0 0 24 24" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M9.199 13.599a5.99 5.99 0 0 0 3.949 2.345 5.987 5.987 0 0 0 5.105-1.702l2.995-2.994a5.992 5.992 0 0 0 1.695-4.285 5.976 5.976 0 0 0-1.831-4.211 5.99 5.99 0 0 0-6.431-1.242 6.003 6.003 0 0 0-1.905 1.24l-1.731 1.721a.999.999 0 1 0 1.41 1.418l1.709-1.699a3.985 3.985 0 0 1 2.761-1.123 3.975 3.975 0 0 1 2.799 1.122 3.997 3.997 0 0 1 .111 5.644l-3.005 3.006a3.982 3.982 0 0 1-3.395 1.126 3.987 3.987 0 0 1-2.632-1.563A1 1 0 0 0 9.201 13.6zm5.602-3.198a5.99 5.99 0 0 0-3.949-2.345 5.987 5.987 0 0 0-5.105 1.702l-2.995 2.994a5.992 5.992 0 0 0-1.695 4.285 5.976 5.976 0 0 0 1.831 4.211 5.99 5.99 0 0 0 6.431 1.242 6.003 6.003 0 0 0 1.905-1.24l1.723-1.723a.999.999 0 1 0-1.414-1.414L9.836 19.81a3.985 3.985 0 0 1-2.761 1.123 3.975 3.975 0 0 1-2.799-1.122 3.997 3.997 0 0 1-.111-5.644l3.005-3.006a3.982 3.982 0 0 1 3.395-1.126 3.987 3.987 0 0 1 2.632 1.563 1 1 0 0 0 1.602-1.198z"></path></svg>'
-
-[[markata.markdown_it_py.plugins]]
-plugin = "markata.plugins.md_it_wikilinks:wikilinks_plugin"
-config = {markata = "markata"}
-```
-
+This plugin depends on:
+- One of: python-markdown, markdown2, or markdown-it-py (based on configuration)
+- The `load` plugin to provide markdown content for rendering
 """
 
-import copy
-from enum import Enum
-import importlib
-from typing import Dict, List, Optional, TYPE_CHECKING
 import concurrent.futures
+import copy
+import importlib
+from enum import Enum
 from functools import partial
+from typing import TYPE_CHECKING
+from typing import Dict
+from typing import List
+from typing import Optional
 
 import pydantic
 
-from markata.hookspec import hook_impl, register_attr
+from markata.hookspec import hook_impl
+from markata.hookspec import register_attr
 from markata.plugins.md_it_highlight_code import highlight_code
 
 if TYPE_CHECKING:
@@ -251,7 +262,7 @@ def configure(markata: "Markata") -> None:
 def render(markata: "Markata") -> None:
     """Render markdown content in parallel."""
     config = markata.config.render_markdown
-    articles = list(markata.filter("skip==False"))
+    articles = list(markata.filter("not skip"))
 
     with markata.cache as cache:
         with concurrent.futures.ThreadPoolExecutor() as executor:
@@ -286,11 +297,11 @@ def render_article_parallel(markata, config, cache, article):
         return article, html_from_cache
 
     # Update markata instance with current article for plugin usage
-    markata.md.options['article'] = article
+    markata.md.options["article"] = article
     html = markata.md.convert(content)
     # Clear the article reference
-    markata.md.options['article'] = None
-    
+    markata.md.options["article"] = None
+
     cache.set(key, html, expire=markata.config.markdown_cache_expire)
     article.article_html = html
     article.html = html

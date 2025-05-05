@@ -5,3 +5,6 @@ class MarkataConfigError(ValueError):
 
 
 class MissingFrontMatter(NameError): ...
+
+
+class DeprecationWarning(UserWarning): ...

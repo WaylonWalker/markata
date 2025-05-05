@@ -7,7 +7,7 @@ description: Lets manually create a new website with markata.
 Markata has some templates that let you get up and running quickly, but you
 _can_ make a site with only markdown if you wanted.
 
-### Installation
+## Installation
 
 `markata` is hosted on pypi and can be installed using pip.
 
@@ -19,7 +19,7 @@ python -m pip install markata
 pipx install markata
 ```
 
-### Create Some Content
+## Create Some Content
 
 Make some `.md` files in your current working directory. By default, `markata`
 will recursively look in all subdirectories for markdown files `**/*.md`.
@@ -33,7 +33,7 @@ echo '# Hello World' > hello-world.md
 > This example shows how you can build a site from only a single markdown
 > file.
 
-### Build your site
+## Build your site
 
 Install markata into your virtual environment and run `markata build`. It will
 create your site in `./markout`, leave its cache in `./.markata.cache`, and

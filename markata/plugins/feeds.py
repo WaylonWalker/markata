@@ -4,7 +4,7 @@ posts.  The list is generated using a `filter`, then each post in the list is
 rendered with a `card_template` before being applied to the `body` of the
 `template`.
 
-# Installation
+## Installation
 
 This plugin is built-in and enabled by default, but in you want to be very
 explicit you can add it to your list of existing plugins.
@@ -15,7 +15,7 @@ hooks = [
    ]
 ```
 
-# Configuration
+## Configuration
 
 # set default template and card_template
 
@@ -179,31 +179,43 @@ filter="date<=today and 'python' in tags and published=='False'"
 By default feeds will create one feed page at `/archive/` that includes all
 posts.
 
+``` toml
 [[markata.feeds]]
 slug='archive'
 title='All Posts'
 filter="True"
+```
 
 """
 
 import datetime
-from functools import lru_cache
-from pathlib import Path
 import shutil
 import textwrap
-from typing import Any, List, Optional, TYPE_CHECKING
+import warnings
+from functools import lru_cache
+from pathlib import Path
+from typing import TYPE_CHECKING
+from typing import Any
+from typing import List
+from typing import Optional
 
 import jinja2
-from jinja2 import Template, Undefined
 import pydantic
-from pydantic import ConfigDict, field_validator
+import typer
+from jinja2 import Template
+from jinja2 import Undefined
+from pydantic import ConfigDict
+from pydantic import field_validator
 from rich.jupyter import JupyterMixin
 from rich.pretty import Pretty
 from rich.table import Table
-import typer
 
-from markata import Markata, __version__, background
-from markata.hookspec import hook_impl, register_attr
+from markata import Markata
+from markata import __version__
+from markata import background
+from markata.errors import DeprecationWarning
+from markata.hookspec import hook_impl
+from markata.hookspec import register_attr
 
 if TYPE_CHECKING:
     from frontmatter import Post
@@ -220,7 +232,6 @@ class MarkataFilterError(RuntimeError): ...
 
 class FeedConfig(pydantic.BaseModel, JupyterMixin):
     DEFAULT_TITLE: str = "All Posts"
-
     title: str = DEFAULT_TITLE
     slug: str = None
     description: Optional[str] = None
@@ -232,6 +243,8 @@ class FeedConfig(pydantic.BaseModel, JupyterMixin):
     tail: Optional[int] = None
     rss: bool = True
     sitemap: bool = True
+    # feed_groups: Dict[str, List[str]] = Field(default_factory=dict)
+    # sidebar_feeds: List[str] = Field(default_factory=list)
     card_template: str = "card.html"
     template: str = "feed.html"
     partial_template: str = "feed_partial.html"
@@ -281,7 +294,7 @@ class FeedConfig(pydantic.BaseModel, JupyterMixin):
 class Feed(pydantic.BaseModel, JupyterMixin):
     """A storage class for markata feed objects.
 
-    # Usage
+    ## Usage
 
     ``` python
     from markata import Markata
@@ -292,6 +305,7 @@ class Feed(pydantic.BaseModel, JupyterMixin):
 
     # access config for a feed
     m.feeds.docs.config
+    ```
     """
 
     config: FeedConfig
@@ -355,8 +369,53 @@ class Feed(pydantic.BaseModel, JupyterMixin):
         return table
 
 
+class MarkataTemplateCache(jinja2.BytecodeCache):
+    """Template bytecode cache for improved performance."""
+
+    def __init__(self, directory):
+        self.directory = Path(directory)
+        self.directory.mkdir(parents=True, exist_ok=True)
+
+    def load_bytecode(self, bucket):
+        filename = self.directory / f"{bucket.key}.cache"
+        if filename.exists():
+            with open(filename, "rb") as f:
+                bucket.bytecode_from_string(f.read())
+
+    def dump_bytecode(self, bucket):
+        filename = self.directory / f"{bucket.key}.cache"
+        with open(filename, "wb") as f:
+            f.write(bucket.bytecode_to_string())
+
+
 class FeedsConfig(pydantic.BaseModel):
     feeds: List[FeedConfig] = [FeedConfig(slug="archive")]
+
+    @property
+    def jinja_env(self):
+        warnings.warn(
+            "The FeedsConfig.jinja_env property is deprecated and will be removed in a future release. "
+            "Please use the Markata.jinja_env property instead.",
+            DeprecationWarning,
+        )
+
+        if hasattr(self, "_jinja_env"):
+            return self._jinja_env
+
+        self.env_options.setdefault("loader", self.jinja_loader)
+        self.env_options.setdefault("undefined", SilentUndefined)
+        self.env_options.setdefault("lstrip_blocks", True)
+        self.env_options.setdefault("trim_blocks", True)
+        self.env_options.setdefault(
+            "bytecode_cache", MarkataTemplateCache(self.template_cache_dir)
+        )
+        self.env_options.setdefault(
+            "auto_reload", False
+        )  # Disable auto reload in production
+
+        env = jinja2.Environment(**self.env_options)
+        self._jinja_env = env
+        return env
 
 
 class PrettyList(list, JupyterMixin):
@@ -384,7 +443,7 @@ def pre_render(markata: Markata) -> None:
 @lru_cache()
 def get_template(markata, template):
     try:
-        return markata.config.jinja_env.get_template(template)
+        return markata.jinja_env.get_template(template)
     except jinja2.TemplateNotFound:
         # try to load it as a file
         ...
@@ -450,6 +509,7 @@ def create_page(
         markata.config.url,
         markata.config.description,
         feed.config.title,
+        feed.map("content"),
         canonical_url,
         # datetime.datetime.today(),
         # markata.config,
@@ -553,14 +613,40 @@ def create_card(
     template is configured it will create one with the post title and dates
     (if present).
     """
-    key = markata.make_hash("feeds", template, str(post), post.content)
+    if template is None:
+        template = markata.config.get("feeds_config", {}).get("card_template", None)
+
+    # Get template modification time if template exists
+    template_mtime = 0
+    if template:
+        template_path = None
+        # Check user template paths first
+        for path in markata.jinja_env.template_paths:
+            potential_path = Path(path) / template
+            if potential_path.exists():
+                template_path = potential_path
+                break
+
+        # Check package templates if not found in user paths
+        if not template_path:
+            import importlib
+
+            package_template = (
+                importlib.resources.files("markata") / "templates" / template
+            )
+            if package_template.exists():
+                template_path = package_template
+
+        if template_path:
+            template_mtime = template_path.stat().st_mtime
+
+    key = markata.make_hash(
+        "feeds", template, str(post), post.content, str(template_mtime)
+    )
 
     card = markata.precache.get(key)
     if card is not None:
         return card
-
-    if template is None:
-        template = markata.config.get("feeds_config", {}).get("card_template", None)
 
     if template is None:
         if "date" in post:
@@ -591,7 +677,7 @@ def create_card(
             _template = Template(Path(template).read_text())
         except FileNotFoundError:
             _template = Template(template)
-        except OSError:  # File name too long
+        except OSError:  # thrown by File name too long
             _template = Template(template)
         card = _template.render(post=post, **post.to_dict())
     cache.add(key, card)

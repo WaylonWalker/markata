@@ -1,10 +1,75 @@
 """
-Creates links next to all heading tags to make it easier for users to share a
-specific heading.
+The `markata.plugins.heading_link` plugin adds clickable link icons next to headings in
+your HTML output. This makes it easy for readers to share direct links to specific
+sections of your content.
+
+## Installation
+
+This plugin is built-in and enabled by default through the 'default' plugin.
+If you want to be explicit, you can add it to your list of plugins:
+
+```toml
+hooks = [
+    "markata.plugins.heading_link",
+]
+```
+
+## Uninstallation
+
+Since this plugin is included in the default plugin set, to disable it you must explicitly
+add it to the disabled_hooks list if you are using the 'default' plugin:
+
+```toml
+disabled_hooks = [
+    "markata.plugins.heading_link",
+]
+```
+
+## Configuration
+
+This plugin requires no explicit configuration. It automatically processes all headings
+in your HTML content.
+
+## Functionality
+
+## Link Generation
+
+The plugin:
+1. Finds all heading elements (h1-h6) in the HTML
+2. Adds an SVG link icon next to each heading
+3. Makes the icon clickable to copy the direct URL
+4. Uses heading text to generate URL-safe anchor IDs
+
+## HTML Output
+
+For each heading, the plugin adds:
+```html
+<h2 id="my-heading">
+    My Heading
+    <a class="heading-link" href="#my-heading">
+        <svg><!-- Link icon SVG --></svg>
+    </a>
+</h2>
+```
+
+## URL Structure
+
+Generated URLs follow this pattern:
+- Base URL: The page's URL
+- Anchor: `#heading-text-as-slug`
+
+Example:
+- `https://example.com/post/#my-heading-section`
+
+## Dependencies
+
+This plugin depends on:
+- BeautifulSoup4 for HTML parsing and modification
+- The `render_markdown` plugin to provide HTML content
 """
 
-from pathlib import Path
 import re
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from bs4 import BeautifulSoup
@@ -35,16 +100,19 @@ def post_render(markata: Markata) -> None:
 
             html_from_cache = markata.precache.get(key)
 
-            if html_from_cache is None:
-                html = link_headings(article)
-                cache.add(
-                    key,
-                    html,
-                    expire=markata.config.default_cache_expire,
-                )
-            else:
-                html = html_from_cache
-            article.html = html
+            if html_from_cache is not None:
+                article.html = html_from_cache
+                continue
+
+            if isinstance(article.html, str):
+                article.html = link_headings(article)
+            elif isinstance(article.html, dict):
+                article.html = {
+                    slug: link_headings(type("Post", (), {"html": html}))
+                    for slug, html in article.html.items()
+                }
+
+            cache.set(key, article.html, expire=markata.config.default_cache_expire)
 
 
 def link_headings(article: "Post") -> str:

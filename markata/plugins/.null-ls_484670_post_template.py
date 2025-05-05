@@ -5,7 +5,7 @@ The `markata.plugins.post_template` plugin handles the rendering of posts using 
 templates. It provides extensive configuration options for HTML head elements, styling,
 and template customization.
 
-## Installation
+# Installation
 
 This plugin is built-in and enabled by default through the 'default' plugin.
 If you want to be explicit, you can add it to your list of plugins:
@@ -16,7 +16,7 @@ hooks = [
 ]
 ```
 
-## Uninstallation
+# Uninstallation
 
 Since this plugin is included in the default plugin set, to disable it you must explicitly
 add it to the disabled_hooks list if you are using the 'default' plugin:
@@ -27,7 +27,7 @@ disabled_hooks = [
 ]
 ```
 
-## Configuration
+# Configuration
 
 ## Head Elements
 
@@ -91,7 +91,7 @@ template_cache_dir = ".markata.cache/template_bytecode"
 env_options = { trim_blocks = true }
 ```
 
-## Functionality
+# Functionality
 
 ## Template Rendering
 
@@ -396,7 +396,7 @@ def get_template(markata, template):
         return _template_cache[cache_key]
 
     if isinstance(template, str):
-        template = markata.jinja_env.get_template(template)
+        template = markata.config.jinja_env.get_template(template)
     _template_cache[cache_key] = template
     return template
 
@@ -454,7 +454,7 @@ def render_template(markata, article, template):
 def save(markata: "Markata") -> None:
     linked_templates = [
         t
-        for t in markata.jinja_env.list_templates()
+        for t in markata.config.jinja_env.list_templates()
         if t.endswith("css") or t.endswith("js") or t.endswith("xsl")
     ]
     for template in linked_templates:
@@ -481,44 +481,45 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
         template: str = typer.Argument(None, help="template to show"),
         theme: str = typer.Option(None, help="pygments syntax theme"),
     ) -> None:
-        markata.console.quiet = False
+        markata.console.quiet = True
         if template is not None:
             # Show specific template
             try:
-                syntax = markata.jinja_env.get_template(template).source
+                syntax = markata.config.jinja_env.get_template(template).source
                 markata.console.print(syntax)
             except Exception as e:
                 markata.console.print(
                     f"Error loading template {template}: {str(e)}", style="red"
                 )
-
             return
 
         try:
-            templates = markata.jinja_env.list_templates()
+            templates = markata.config.jinja_env.list_templates()
+            breakpoint()
             markata.console.quiet = False
             markata.console.print("Templates directories:", style="green underline")
 
             # Show built-in templates directory
             markata_templates = Path(__file__).parents[1] / "templates"
-            # markata.console.print(f"  {markata_templates} [grey50](built-in)[/]")
+            markata.console.print(f"  {markata_templates} [grey50](built-in)[/]")
 
             # Show user template paths
-            for path in markata.config.templates_dir:
-                if path == markata_templates:
-                    markata.console.print(f"  {path} [grey50](built-in)[/]")
-                elif path == markata.config.dynamic_templates_dir:
-                    markata.console.print(f"  {path} [grey50](dynamic)[/]")
-                else:
-                    markata.console.print(f"  {path}")
+            if hasattr(markata.config, "post_template"):
+                for path in markata.config.post_template.templates_dir:
+                    if path == markata.config.post_template.dynamic_templates_dir:
+                        markata.console.print(f"  {path} [grey50](dynamic)[/]")
+                    else:
+                        markata.console.print(f"  {path}")
 
             markata.console.print("\nAvailable templates:", style="green underline")
             for template in sorted(templates):
                 try:
-                    source, file, uptodate = markata.jinja_env.loader.get_source(
-                        markata.jinja_env, template
+                    source, file, uptodate = markata.config.jinja_env.loader.get_source(
+                        markata.config.jinja_env, template
                     )
-                    if Path(file).is_relative_to(markata.config.dynamic_templates_dir):
+                    if Path(file).is_relative_to(
+                        markata.config.post_template.dynamic_templates_dir
+                    ):
                         markata.console.print(
                             f"  {template} -> {file} [grey50](dynamic)[/]"
                         )
@@ -610,7 +611,7 @@ def configure(markata: "Markata") -> None:
     """
 
 
-@hook_impl(tryfirst=True)
+@hook_impl
 def pre_render(markata: "Markata") -> None:
     """
     FOR EACH POST: Massages the configuration limitations of toml/yaml to allow
@@ -619,13 +620,13 @@ def pre_render(markata: "Markata") -> None:
     `markata.head.text` list in configuration.
     """
 
-    # markata.config.dynamic_templates_dir.mkdir(parents=True, exist_ok=True)
-    # head_template = markata.config.dynamic_templates_dir / "head.html"
-    # head_template.write_text(
-    #     markata.jinja_env.get_template("dynamic_head.html").render(
-    #         {"markata": markata}
-    #     ),
-    # )
+    markata.config.dynamic_templates_dir.mkdir(parents=True, exist_ok=True)
+    head_template = markata.config.dynamic_templates_dir / "head.html"
+    head_template.write_text(
+        markata.config.jinja_env.get_template("dynamic_head.html").render(
+            {"markata": markata}
+        ),
+    )
 
     for article in [a for a in markata.articles if "config_overrides" in a]:
         raw_text = article.get("config_overrides", {}).get("head", {}).get("text", "")

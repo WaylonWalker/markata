@@ -1,5 +1,14 @@
 # Markata Changelog
 
+## 0.9.1
+
+- HUGE DOCS UPDATE
+- Fix: feeds now update with any content change
+- Fix: og tags should use property not name
+- Feat: centralized `jinja_env` plugin that is used for template rendering accross all plugins
+- Feat: added support for multiple templates per article https://markata.dev/multi-template/
+- Feat: skip now supports environment variable `MARKATA_SKIP=true/false` to control skipping
+
 ## 0.9.0
 
 - Feat: add skip plugin
@@ -8,6 +17,22 @@
 - Fix: wikilinks now give good error messages to show you which article is throwing the warning
 
 ### Performance Improvements
+
+Here are a couple of build times ran back to back on the same content with 0.8.2 and 0.9.0
+
+## Markata
+
+63 posts
+
+- 0.9.0 - 4.308s cold - 1.457s hot
+- 0.8.2 - 9.063s cold - 1.542s hot
+
+## waylonwalker.com
+
+exactly 2k posts
+
+- 0.9.0 - 69.200s cold - 2.860 hot
+- 0.8.2 - 479s cold - 4.683 hot
 
 #### Core Optimizations
 
@@ -778,4 +803,4 @@ heading it's next to.
 
 ## 0.0.1
 
-Initial Release 🎉
+Initial Release 

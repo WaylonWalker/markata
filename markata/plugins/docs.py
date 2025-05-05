@@ -1,20 +1,103 @@
 """
-leading docstring
+The `markata.plugins.docs` plugin automatically generates documentation pages from Python
+source code docstrings. It parses Python files, extracts docstrings and code structure,
+and creates markdown documentation.
+
+## Installation
+
+This plugin is built-in and enabled by default through the 'default' plugin.
+If you want to be explicit, you can add it to your list of plugins:
+
+```toml
+hooks = [
+    "markata.plugins.docs",
+]
+```
+
+## Uninstallation
+
+Since this plugin is included in the default plugin set, to disable it you must explicitly
+add it to the disabled_hooks list if you are using the 'default' plugin:
+
+```toml
+disabled_hooks = [
+    "markata.plugins.docs",
+]
+```
+
+## Configuration
+
+Configure documentation generation in your `markata.toml`:
+
+```toml
+[markata.docs]
+# Directories containing Python files to document
+content_directories = [
+    "markata",
+    "tests"
+]
+
+# Template for generated documentation
+template = "docs/template.md.j2"
+```
+
+## Template Variables
+
+The following variables are available in documentation templates:
+- `module`: Module name
+- `docstring`: Module docstring
+- `classes`: List of class definitions and their docstrings
+- `functions`: List of function definitions and their docstrings
+- `source`: Path to source file
+- `ast`: Abstract Syntax Tree of the module
+
+## Functionality
+
+## Documentation Generation
+
+The plugin:
+1. Finds Python files in configured directories
+2. Parses files using Python's AST
+3. Extracts docstrings and code structure
+4. Applies templates to generate markdown
+5. Creates documentation pages in the output directory
+
+## AST Analysis
+
+The plugin analyzes:
+- Module-level docstrings
+- Class definitions and docstrings
+- Function definitions and docstrings
+- Function parameters and return types
+- Code structure and relationships
+
+## Registered Attributes
+
+The plugin adds these attributes to Markata:
+- `py_files`: List of Python files being documented
+- `content_directories`: List of directories being processed
+
+## Dependencies
+
+This plugin depends on:
+- ast (Python standard library) for code parsing
+- jinja2 for template rendering
 """
 
 import ast
 import datetime
+import textwrap
 from functools import lru_cache
 from os import path
 from pathlib import Path
-import textwrap
-from typing import List, TYPE_CHECKING
+from typing import TYPE_CHECKING
+from typing import List
 
 import frontmatter
-import jinja2
 import pydantic
 
-from markata.hookspec import hook_impl, register_attr
+from markata.hookspec import hook_impl
+from markata.hookspec import register_attr
 
 if TYPE_CHECKING:
     from markata import Markata
@@ -85,9 +168,8 @@ def glob(markata: "MarkataDocs") -> None:
 
 
 @lru_cache
-def get_template():
-    jinja_env = jinja2.Environment()
-    template = jinja_env.from_string(
+def get_template(markata: "Markata"):
+    template = markata.jinja_env.from_string(
         (Path(__file__).parent / "default_doc_template.md").read_text(),
     )
     return template
@@ -118,7 +200,7 @@ def make_article(markata: "Markata", file: Path, cache) -> frontmatter.Post:
             n for n in ast.walk(tree) if isinstance(n, (ast.FunctionDef, ast.ClassDef))
         ]
 
-        article = get_template().render(
+        article = get_template(markata).render(
             ast=ast,
             file=file,
             slug=slug,
@@ -152,7 +234,8 @@ def make_article(markata: "Markata", file: Path, cache) -> frontmatter.Post:
         )
 
     except pydantic.ValidationError as e:
-        from markata.plugins.load import ValidationError, get_models
+        from markata.plugins.load import ValidationError
+        from markata.plugins.load import get_models
 
         models = get_models(markata=markata, error=e)
         models = list(models.values())
@@ -168,8 +251,8 @@ def load(markata: "MarkataDocs") -> None:
     """
     similar to [glob](../glob)
     """
-    if "articles" not in markata.__dict__:
-        markata.articles = []
+    # if "articles" not in markata.__dict__:
+    #     markata.articles = []
     for py_file in markata.py_files:
         with markata.cache as cache:
             markata.articles.append(make_article(markata, py_file, cache))

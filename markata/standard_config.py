@@ -71,12 +71,205 @@ setting = True
 * <project_home>/.tool.ini
 * <project_home>/pyproject.toml
 * <project_home>/setup.cfg
+
+Markata's standard configuration system.
+
+## Configuration Overview
+
+Markata uses a hierarchical configuration system based on Pydantic models. Configuration
+can be set through:
+1. TOML files
+2. Environment variables
+3. Command line arguments
+
+# Basic Configuration
+
+Minimal `markata.toml`:
+```toml
+[markata]
+# Site info
+title = "My Site"
+url = "https://example.com"
+description = "Site description"
+
+# Content locations
+content_dir = "content"
+output_dir = "markout"
+assets_dir = "static"
+
+# Plugin management
+hooks = ["default"]
+```
+
+# Environment Variables
+
+All settings can be overridden with environment variables:
+```bash
+# Override site URL
+export MARKATA_URL="https://staging.example.com"
+
+# Override output directory
+export MARKATA_OUTPUT_DIR="dist"
+
+# Enable debug mode
+export MARKATA_DEBUG=1
+```
+
+# Detailed Configuration
+
+## Core Settings
+
+```toml
+[markata]
+# Site information
+title = "My Site"                  # Site title
+url = "https://example.com"        # Base URL
+description = "Site description"   # Meta description
+author_name = "Author Name"        # Author name
+author_email = "me@example.com"    # Author email
+icon = "favicon.ico"               # Site icon
+lang = "en"                        # Site language
+
+# Content locations
+content_dir = "content"           # Source content location
+output_dir = "markout"            # Build output location
+assets_dir = "static"             # Static assets location
+template_dir = "templates"        # Template location
+
+# Plugin management
+hooks = ["default"]               # Active plugins
+disabled_hooks = []               # Disabled plugins
+```
+
+## Cache Settings
+
+```toml
+[markata]
+# Cache configuration
+default_cache_expire = 3600       # Default TTL (1 hour)
+template_cache_expire = 86400     # Template TTL (24 hours)
+markdown_cache_expire = 21600     # Markdown TTL (6 hours)
+dynamic_cache_expire = 3600       # Dynamic TTL (1 hour)
+```
+
+## Development Settings
+
+```toml
+[markata]
+# Development server
+dev_server_port = 8000            # Local server port
+dev_server_host = "localhost"     # Local server host
+debug = false                     # Debug mode
+
+# Performance
+parallel = true                   # Enable parallel processing
+workers = 4                       # Number of worker threads
+```
+
+## Content Settings
+
+```toml
+[markata]
+# Content processing
+default_template = "post.html"    # Default template
+markdown_extensions = [           # Markdown extensions
+    "fenced_code",
+    "tables",
+    "footnotes"
+]
+
+# Content filtering
+draft = false                     # Include drafts
+future = false                    # Include future posts
+```
+
+# Plugin Configuration
+
+Each plugin can define its own configuration section:
+
+```toml
+# RSS feed configuration
+[markata.feeds]
+rss = { output = "rss.xml" }
+atom = { output = "atom.xml" }
+json = { output = "feed.json" }
+
+# Template configuration
+[markata.template]
+engine = "jinja2"
+cache_size = 100
+autoescape = true
+
+# Markdown configuration
+[markata.markdown]
+highlight_theme = "monokai"
+line_numbers = true
+```
+
+## Configuration Validation
+
+The configuration is validated using Pydantic models:
+
+```python
+from pydantic import BaseModel, Field
+
+class MarkataConfig(BaseModel):
+    \"\"\"Core configuration model.\"\"\"
+    # Site info
+    title: str = Field(..., description="Site title")
+    url: str = Field(..., description="Site base URL")
+
+    # Directories
+    content_dir: Path = Field("content", description="Content directory")
+    output_dir: Path = Field("markout", description="Output directory")
+
+    # Features
+    debug: bool = Field(False, description="Enable debug mode")
+    parallel: bool = Field(True, description="Enable parallel processing")
+
+    model_config = ConfigDict(
+        validate_assignment=True,
+        arbitrary_types_allowed=True,
+        extra="allow",
+        str_strip_whitespace=True,
+        validate_default=True,
+        populate_by_name=True,
+    )
+```
+
+# Usage Example
+
+```python
+from markata import Markata
+
+# Load config from file
+markata = Markata.from_file("markata.toml")
+
+# Access configuration
+print(markata.config.title)         # Site title
+print(markata.config.url)           # Site URL
+print(markata.config.content_dir)   # Content directory
+
+# Access plugin config
+print(markata.config.feeds.rss)     # RSS feed config
+print(markata.config.template)      # Template config
+
+# Override config
+markata.config.debug = True
+markata.config.parallel = False
+```
+
+See hookspec.py for plugin development and lifecycle.py for build process details.
 """
 
 import configparser
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Union
 
 import tomli
 import yaml

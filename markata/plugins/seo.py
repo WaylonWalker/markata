@@ -1,11 +1,15 @@
 """manifest plugin"""
 
 import logging
-from typing import Any, Dict, List, TYPE_CHECKING
+from typing import TYPE_CHECKING
+from typing import Any
+from typing import Dict
+from typing import List
 
 from bs4 import BeautifulSoup
 
-from markata import Markata, __version__
+from markata import Markata
+from markata import __version__
 from markata.hookspec import hook_impl
 
 if TYPE_CHECKING:

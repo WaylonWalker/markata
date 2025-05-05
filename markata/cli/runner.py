@@ -6,7 +6,8 @@ from typing import TYPE_CHECKING
 from rich.panel import Panel
 from rich.text import Text
 
-from markata.hookspec import hook_impl, register_attr
+from markata.hookspec import hook_impl
+from markata.hookspec import register_attr
 
 if TYPE_CHECKING:
     from markata import Markata

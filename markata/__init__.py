@@ -5,26 +5,31 @@ from __future__ import annotations
 
 import atexit
 import datetime
-from datetime import timedelta
-from functools import lru_cache
 import importlib
 import logging
 import os
-from pathlib import Path
 import sys
 import textwrap
-from typing import Any, Dict, Iterable, Optional
+from datetime import timedelta
+from functools import lru_cache
+from pathlib import Path
+from typing import Any
+from typing import Dict
+from typing import Iterable
+from typing import Optional
 
-from diskcache import Cache
 import pluggy
 import pydantic
+from diskcache import Cache
 from rich.console import Console
 from rich.progress import track
 from rich.table import Table
 
-from markata import hookspec, standard_config
+from markata import hookspec
+from markata import standard_config
 from markata.__about__ import __version__
-from markata.exceptions import NoPosts, TooManyPosts
+from markata.exceptions import NoPosts
+from markata.exceptions import TooManyPosts
 from markata.lifecycle import LifeCycle
 
 logger = logging.getLogger("markata")
@@ -54,6 +59,7 @@ DEFAULT_MD_EXTENSIONS = [
 ]
 
 DEFAULT_HOOKS = [
+    "markata.plugins.didyoumean",
     "markata.plugins.skip",
     "markata.plugins.md_it_wikilinks",
     "markata.plugins.copy_assets",
@@ -62,6 +68,7 @@ DEFAULT_HOOKS = [
     "markata.plugins.glob",
     "markata.plugins.load",
     "markata.plugins.auto_title",
+    "markata.plugins.jinja_env",  # Add centralized jinja environment
     "markata.plugins.render_markdown",
     # "markata.plugins.manifest",
     # "markata.plugins.generator",

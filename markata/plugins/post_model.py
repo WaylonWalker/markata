@@ -1,15 +1,141 @@
+"""
+The `markata.plugins.post_model` plugin defines the core Post model used throughout
+Markata. It provides robust validation, serialization, and configuration options for
+all post attributes.
+
+## Installation
+
+This plugin is built-in and enabled by default through the 'default' plugin.
+If you want to be explicit, you can add it to your list of plugins:
+
+```toml
+hooks = [
+    "markata.plugins.post_model",
+]
+```
+
+## Uninstallation
+
+Since this plugin is included in the default plugin set, to disable it you must explicitly
+add it to the disabled_hooks list if you are using the 'default' plugin:
+
+```toml
+disabled_hooks = [
+    "markata.plugins.post_model",
+]
+```
+
+Note: Disabling this plugin will break most of Markata's functionality as the Post
+model is fundamental to the system.
+
+## Configuration
+
+Configure post model behavior in your `markata.toml`:
+
+```toml
+[markata.post_model]
+# Attributes to include when serializing posts
+include = [
+    "date",
+    "description",
+    "published",
+    "slug",
+    "title",
+    "content",
+    "html"
+]
+
+# Attributes to show in post representations
+repr_include = [
+    "date",
+    "description",
+    "published",
+    "slug",
+    "title"
+]
+
+# Attributes to include when exporting
+export_include = [
+    "date",
+    "description",
+    "published",
+    "slug",
+    "title"
+]
+```
+
+## Functionality
+
+## Post Model
+
+Core attributes:
+- `path`: Path to source file
+- `slug`: URL-friendly identifier
+- `href`: Full URL path
+- `published`: Publication status
+- `description`: Post summary
+- `content`: Raw markdown content
+- `html`: Rendered HTML content
+- `tags`: List of post tags
+- `date`: Publication date
+- `title`: Post title
+
+## Validation
+
+The model provides:
+- Type checking and coercion
+- Required field validation
+- Custom field validators
+- Default values
+- Rich error messages
+
+## Serialization
+
+Supports multiple output formats:
+- Full serialization (all fields)
+- Representation (subset for display)
+- Export (subset for external use)
+- JSON/YAML compatible
+
+## Performance
+
+Uses optimized Pydantic config:
+- Disabled assignment validation
+- Arbitrary types allowed
+- Extra fields allowed
+- String whitespace stripping
+- Default value validation
+- Number to string coercion
+- Alias population
+
+## Dependencies
+
+This plugin depends on:
+- pydantic for model definition
+- rich for console output
+- yaml for YAML handling
+"""
+
 import datetime
 import logging
 from pathlib import Path
-from rich.jupyter import JupyterMixin
-from rich.pretty import Pretty
-from typing import Any, Dict, List, Optional, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Union
 
 import pydantic
-from pydantic import ConfigDict, Field, field_validator
 import yaml
+from pydantic import ConfigDict
+from pydantic import Field
+from pydantic import field_validator
+from rich.jupyter import JupyterMixin
+from rich.pretty import Pretty
 
-from markata.hookspec import hook_impl, register_attr
+from markata.hookspec import hook_impl
+from markata.hookspec import register_attr
 
 logger = logging.getLogger(__name__)
 
@@ -257,7 +383,8 @@ class Post(pydantic.BaseModel, JupyterMixin):
     def date_is_date(cls, v, info):
         # print(f"date_is_date received value: {v!r} of type {type(v)}")  # Debug log
         if v is None:
-            return None
+            # return None
+            return info.data.get("markata").config.post_model.default_date
 
         if isinstance(v, datetime.date) and not isinstance(v, datetime.datetime):
             return v
@@ -394,6 +521,7 @@ class PostModelConfig(pydantic.BaseModel):
         """
         super().__init__(**data)
 
+    default_date: datetime.date = datetime.date.today()
     include: List[str] = [
         "date",
         "description",

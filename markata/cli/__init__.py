@@ -1,4 +1,7 @@
-from .cli import app, cli, make_layout, run_until_keyboard_interrupt
+from .cli import app
+from .cli import cli
+from .cli import make_layout
+from .cli import run_until_keyboard_interrupt
 from .header import Header
 from .plugins import Plugins
 from .runner import Runner
