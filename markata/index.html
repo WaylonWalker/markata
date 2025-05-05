@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<title>Markata's Docs</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="description" content="Documentation for using the Markata static site generator" />
+ <link href="/favicon.ico" rel="icon" type="image/png" />
+
+<link rel="stylesheet" href="/post.css" />
+<link rel="stylesheet" href="/app.css" />
+<script src="/theme.js"></script>
+
+
+        <meta property="og:author_email" content="waylon@waylonwalker.com" />
+
+    <head>
+        <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+<title>Markata's Docs</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="description" content="Documentation for using the Markata static site generator" />
+ <link href="/favicon.ico" rel="icon" type="image/png" />
+
+<link rel="stylesheet" href="/post.css" />
+<link rel="stylesheet" href="/app.css" />
+<script src="/theme.js"></script>
+
+
+        <meta property="og:author_email" content="waylon@waylonwalker.com" />
+
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                const collapsibleElements = document.querySelectorAll('.is-collapsible');
+                collapsibleElements.forEach(el => {
+                    const summary = el.querySelector('.admonition-title');
+                    if (summary) {
+                        summary.style.cursor = 'pointer';
+                        summary.addEventListener('click', () => {
+                            el.classList.toggle('collapsible-open');
+                        });
+                    }
+                });
+            });
+        </script>
+
+        <style>
+
+            .admonition.source {
+                padding-bottom: 0;
+            }
+            .admonition.source pre.wrapper {
+                margin: 0;
+                padding: 0;
+            }
+            .is-collapsible {
+                overflow: hidden;
+                transition: max-height 0.3s ease;
+            }
+            .is-collapsible:not(.collapsible-open) {
+                max-height: 0;
+                padding-bottom: 2.5rem;
+            }
+            .admonition-title {
+                font-weight: bold;
+                margin-bottom: 8px;
+            }
+        </style>
+    </head>
+    <body>
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-2xl font-bold mb-4">Did you mean...</h1>
+    <p class="mb-4">The path <code class="bg-gray-100 px-2 py-1 rounded">markata</code> could refer to multiple pages:</p>
+    <ul class="list-disc pl-8">
+        <li class="mb-2"><a href="/markata/about" class="text-blue-500 hover:underline">/markata/about</a></li>
+        <li class="mb-2"><a href="/markata/cli/cli" class="text-blue-500 hover:underline">/markata/cli/cli</a></li>
+        <li class="mb-2"><a href="/markata/cli/didyoumean" class="text-blue-500 hover:underline">/markata/cli/didyoumean</a></li>
+        <li class="mb-2"><a href="/markata/cli/header" class="text-blue-500 hover:underline">/markata/cli/header</a></li>
+        <li class="mb-2"><a href="/markata/cli/init" class="text-blue-500 hover:underline">/markata/cli/init</a></li>
+        <li class="mb-2"><a href="/markata/cli/main" class="text-blue-500 hover:underline">/markata/cli/main</a></li>
+        <li class="mb-2"><a href="/markata/cli/plugins" class="text-blue-500 hover:underline">/markata/cli/plugins</a></li>
+        <li class="mb-2"><a href="/markata/cli/runner" class="text-blue-500 hover:underline">/markata/cli/runner</a></li>
+        <li class="mb-2"><a href="/markata/cli/server" class="text-blue-500 hover:underline">/markata/cli/server</a></li>
+        <li class="mb-2"><a href="/markata/cli/summary" class="text-blue-500 hover:underline">/markata/cli/summary</a></li>
+        <li class="mb-2"><a href="/markata/errors" class="text-blue-500 hover:underline">/markata/errors</a></li>
+        <li class="mb-2"><a href="/markata/exceptions" class="text-blue-500 hover:underline">/markata/exceptions</a></li>
+        <li class="mb-2"><a href="/markata/hookspec" class="text-blue-500 hover:underline">/markata/hookspec</a></li>
+        <li class="mb-2"><a href="/markata/init" class="text-blue-500 hover:underline">/markata/init</a></li>
+        <li class="mb-2"><a href="/markata/lifecycle" class="text-blue-500 hover:underline">/markata/lifecycle</a></li>
+        <li class="mb-2"><a href="/markata/main" class="text-blue-500 hover:underline">/markata/main</a></li>
+        <li class="mb-2"><a href="/markata/plugins/analytics" class="text-blue-500 hover:underline">/markata/plugins/analytics</a></li>
+        <li class="mb-2"><a href="/markata/plugins/auto-description" class="text-blue-500 hover:underline">/markata/plugins/auto-description</a></li>
+        <li class="mb-2"><a href="/markata/plugins/auto-title" class="text-blue-500 hover:underline">/markata/plugins/auto-title</a></li>
+        <li class="mb-2"><a href="/markata/plugins/base-cli" class="text-blue-500 hover:underline">/markata/plugins/base-cli</a></li>
+        <li class="mb-2"><a href="/markata/plugins/config-model" class="text-blue-500 hover:underline">/markata/plugins/config-model</a></li>
+        <li class="mb-2"><a href="/markata/plugins/copy-assets" class="text-blue-500 hover:underline">/markata/plugins/copy-assets</a></li>
+        <li class="mb-2"><a href="/markata/plugins/covers" class="text-blue-500 hover:underline">/markata/plugins/covers</a></li>
+        <li class="mb-2"><a href="/markata/plugins/create-covers" class="text-blue-500 hover:underline">/markata/plugins/create-covers</a></li>
+        <li class="mb-2"><a href="/markata/plugins/create-models" class="text-blue-500 hover:underline">/markata/plugins/create-models</a></li>
+        <li class="mb-2"><a href="/markata/plugins/datetime" class="text-blue-500 hover:underline">/markata/plugins/datetime</a></li>
+        <li class="mb-2"><a href="/markata/plugins/didyoumean" class="text-blue-500 hover:underline">/markata/plugins/didyoumean</a></li>
+        <li class="mb-2"><a href="/markata/plugins/docs" class="text-blue-500 hover:underline">/markata/plugins/docs</a></li>
+        <li class="mb-2"><a href="/markata/plugins/feeds" class="text-blue-500 hover:underline">/markata/plugins/feeds</a></li>
+        <li class="mb-2"><a href="/markata/plugins/flat-slug" class="text-blue-500 hover:underline">/markata/plugins/flat-slug</a></li>
+        <li class="mb-2"><a href="/markata/plugins/generator" class="text-blue-500 hover:underline">/markata/plugins/generator</a></li>
+        <li class="mb-2"><a href="/markata/plugins/glob" class="text-blue-500 hover:underline">/markata/plugins/glob</a></li>
+        <li class="mb-2"><a href="/markata/plugins/heading-link" class="text-blue-500 hover:underline">/markata/plugins/heading-link</a></li>
+        <li class="mb-2"><a href="/markata/plugins/icon-resize" class="text-blue-500 hover:underline">/markata/plugins/icon-resize</a></li>
+        <li class="mb-2"><a href="/markata/plugins/init" class="text-blue-500 hover:underline">/markata/plugins/init</a></li>
+        <li class="mb-2"><a href="/markata/plugins/jinja-env" class="text-blue-500 hover:underline">/markata/plugins/jinja-env</a></li>
+        <li class="mb-2"><a href="/markata/plugins/jinja-md" class="text-blue-500 hover:underline">/markata/plugins/jinja-md</a></li>
+        <li class="mb-2"><a href="/markata/plugins/load" class="text-blue-500 hover:underline">/markata/plugins/load</a></li>
+        <li class="mb-2"><a href="/markata/plugins/manifest" class="text-blue-500 hover:underline">/markata/plugins/manifest</a></li>
+        <li class="mb-2"><a href="/markata/plugins/md-it-highlight-code" class="text-blue-500 hover:underline">/markata/plugins/md-it-highlight-code</a></li>
+        <li class="mb-2"><a href="/markata/plugins/md-it-wikilinks" class="text-blue-500 hover:underline">/markata/plugins/md-it-wikilinks</a></li>
+        <li class="mb-2"><a href="/markata/plugins/mdit-details" class="text-blue-500 hover:underline">/markata/plugins/mdit-details</a></li>
+        <li class="mb-2"><a href="/markata/plugins/post-model" class="text-blue-500 hover:underline">/markata/plugins/post-model</a></li>
+        <li class="mb-2"><a href="/markata/plugins/post-template" class="text-blue-500 hover:underline">/markata/plugins/post-template</a></li>
+        <li class="mb-2"><a href="/markata/plugins/prevnext" class="text-blue-500 hover:underline">/markata/plugins/prevnext</a></li>
+        <li class="mb-2"><a href="/markata/plugins/publish-dev-to-source" class="text-blue-500 hover:underline">/markata/plugins/publish-dev-to-source</a></li>
+        <li class="mb-2"><a href="/markata/plugins/publish-html" class="text-blue-500 hover:underline">/markata/plugins/publish-html</a></li>
+        <li class="mb-2"><a href="/markata/plugins/publish-source" class="text-blue-500 hover:underline">/markata/plugins/publish-source</a></li>
+        <li class="mb-2"><a href="/markata/plugins/pyinstrument" class="text-blue-500 hover:underline">/markata/plugins/pyinstrument</a></li>
+        <li class="mb-2"><a href="/markata/plugins/redirects" class="text-blue-500 hover:underline">/markata/plugins/redirects</a></li>
+        <li class="mb-2"><a href="/markata/plugins/render-markdown" class="text-blue-500 hover:underline">/markata/plugins/render-markdown</a></li>
+        <li class="mb-2"><a href="/markata/plugins/rss" class="text-blue-500 hover:underline">/markata/plugins/rss</a></li>
+        <li class="mb-2"><a href="/markata/plugins/seo" class="text-blue-500 hover:underline">/markata/plugins/seo</a></li>
+        <li class="mb-2"><a href="/markata/plugins/service-worker" class="text-blue-500 hover:underline">/markata/plugins/service-worker</a></li>
+        <li class="mb-2"><a href="/markata/plugins/setup-logging" class="text-blue-500 hover:underline">/markata/plugins/setup-logging</a></li>
+        <li class="mb-2"><a href="/markata/plugins/sitemap" class="text-blue-500 hover:underline">/markata/plugins/sitemap</a></li>
+        <li class="mb-2"><a href="/markata/plugins/skip" class="text-blue-500 hover:underline">/markata/plugins/skip</a></li>
+        <li class="mb-2"><a href="/markata/plugins/subroute" class="text-blue-500 hover:underline">/markata/plugins/subroute</a></li>
+        <li class="mb-2"><a href="/markata/plugins/to-json" class="text-blue-500 hover:underline">/markata/plugins/to-json</a></li>
+        <li class="mb-2"><a href="/markata/plugins/tui" class="text-blue-500 hover:underline">/markata/plugins/tui</a></li>
+        <li class="mb-2"><a href="/markata/scripts/migrate-to-slugify" class="text-blue-500 hover:underline">/markata/scripts/migrate-to-slugify</a></li>
+        <li class="mb-2"><a href="/markata/standard-config" class="text-blue-500 hover:underline">/markata/standard-config</a></li>
+    </ul>
+</div>
+    </body>
+</html>
