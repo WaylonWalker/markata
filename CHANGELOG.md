@@ -2,7 +2,9 @@
 
 ## 0.10.0
 
-- Fix: `auto_description` now more accuratetly returns plain text, does not cut off words, and add an ellipsis.
+- Fix: `auto_description` now more accurately returns plain text, does not cut off words, and add an ellipsis.
+- Fix: article_html now typed such that it may be a dict without warning
+- publish_source now only supports using post models that include a dumps command, i.e. no longer frontmatter post objects
 
 ## 0.9.1
 
@@ -10,7 +12,7 @@
 - Fix: feeds now update with any content change
 - Fix: og tags should use property not name
 - Feat: centralized `jinja_env` plugin that is used for template rendering accross all plugins
-- Feat: added support for multiple templates per article https://markata.dev/multi-template/
+- Feat: added support for multiple templates per article <https://markata.dev/multi-template/>
 - Feat: skip now supports environment variable `MARKATA_SKIP=true/false` to control skipping
 
 ## 0.9.0
@@ -807,4 +809,4 @@ heading it's next to.
 
 ## 0.0.1
 
-Initial Release 
+Initial Release
