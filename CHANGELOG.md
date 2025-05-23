@@ -5,6 +5,7 @@
 - Fix: `auto_description` now more accurately returns plain text, does not cut off words, and add an ellipsis.
 - Fix: article_html now typed such that it may be a dict without warning
 - publish_source now only supports using post models that include a dumps command, i.e. no longer frontmatter post objects
+- Fix: Raise warning, do not silently pass no config when `markata.toml` has parse errors
 
 ## 0.9.1
 
