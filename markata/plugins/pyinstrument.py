@@ -191,7 +191,7 @@ def save(markata: Markata) -> None:
                         "profiler not available, skipping save pyinstrument save",
                     )
                     markata.console.log(
-                        r"[red]to enable profiler [wheat1][itallic]pip install 'markata\[pyinstrument]'",
+                        r"[red]to enable profiler [wheat1][itallic]pip install 'markata[pyinstrument]'",
                     )
 
 
