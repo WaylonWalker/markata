@@ -237,8 +237,6 @@ include = [
     'published',
     'slug',
     'title',
-    'content',
-    'html',
 ]
 repr_include = [
     'date',
