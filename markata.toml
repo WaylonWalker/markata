@@ -179,7 +179,7 @@ filter = "'plugin' not in slug and 'test' not in slug and title.lower().endswith
 [[markata.feeds]]
 slug = 'plugins'
 title = "Markata Plugins"
-filter = "'plugin' in slug and 'test' not in slug"
+filter = "'plugin' in post.slug and 'test' not in post.slug"
 
 [markata.jinja_md]
 ignore = [
