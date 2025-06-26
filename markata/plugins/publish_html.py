@@ -158,7 +158,7 @@ class OutputHTML(pydantic.BaseModel):
         if slug is None:
             slug = cls.default_slug(None, info)
 
-        if slug in ["", "index",'/']:
+        if slug in ["", "index", "/"]:
             return markata.config.output_dir / "index.html"
         return markata.config.output_dir / slug / "index.html"
 
@@ -198,7 +198,9 @@ def save(markata: "Markata") -> None:
 
         if isinstance(article.html, str):
             # Create parent directories before writing
-            current_html = article.output_html.read_text() if article.output_html.exists() else ""
+            current_html = (
+                article.output_html.read_text() if article.output_html.exists() else ""
+            )
             if current_html != article.html:
                 article.output_html.parent.mkdir(parents=True, exist_ok=True)
                 article.output_html.write_text(article.html)

@@ -95,8 +95,11 @@ def copy_if_changed(src_dir, dst_dir):
         for fname in files:
             src_file = Path(root) / fname
             dst_file = dst_root / fname
-            if not dst_file.exists() or not filecmp.cmp(src_file, dst_file, shallow=False):
+            if not dst_file.exists() or not filecmp.cmp(
+                src_file, dst_file, shallow=False
+            ):
                 shutil.copy2(src_file, dst_file)  # preserves metadata
+
 
 @hook_impl
 def save(markata: "Markata") -> None:

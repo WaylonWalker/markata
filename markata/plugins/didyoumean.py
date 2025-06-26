@@ -145,9 +145,7 @@ def save(markata: "Markata") -> None:
         target_url = f"/{target}"
         redirect_file.parent.mkdir(parents=True, exist_ok=True)
         html = render_template(markata, "redirect.html", target_url=target_url)
-        current_content = (
-            redirect_file.read_text() if redirect_file.exists() else ""
-        )
+        current_content = redirect_file.read_text() if redirect_file.exists() else ""
         if current_content != html:
             redirect_file.write_text(html, encoding="utf-8")
 
@@ -180,9 +178,7 @@ def save(markata: "Markata") -> None:
 
     didyoumean_json = json.dumps(didyoumean_data)
     didyoumean_file = output_dir / "didyoumean.json"
-    current_content = (
-        didyoumean_file.read_text() if didyoumean_file.exists() else ""
-    )
+    current_content = didyoumean_file.read_text() if didyoumean_file.exists() else ""
     if current_content != didyoumean_json:
         didyoumean_file.parent.mkdir(parents=True, exist_ok=True)
         didyoumean_file.write_text(didyoumean_json, encoding="utf-8")
