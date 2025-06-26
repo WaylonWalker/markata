@@ -485,7 +485,9 @@ def save(markata: Markata) -> None:
         config=markata.config,
     )
     xsl_file = Path(markata.config.output_dir) / "rss.xsl"
-    xsl_file.write_text(xsl)
+    current_xsl = xsl_file.read_text() if xsl_file.exists() else ""
+    if current_xsl != xsl:
+        xsl_file.write_text(xsl)
 
 
 def create_page(
@@ -595,10 +597,22 @@ def create_page(
     ):
         return
 
-    output_file.write_text(feed_html)
-    partial_output_file.write_text(feed_html_partial)
-    rss_output_file.write_text(feed_rss)
-    sitemap_output_file.write_text(feed_sitemap)
+    current_html = output_file.read_text() if output_file.exists() else ""
+    if current_html != feed_html:
+        output_file.write_text(feed_html)
+    current_partial_html = (
+        partial_output_file.read_text() if partial_output_file.exists() else ""
+    )
+    if current_partial_html != feed_html_partial:
+        partial_output_file.write_text(feed_html_partial)
+    current_rss = rss_output_file.read_text() if rss_output_file.exists() else ""
+    if current_rss != feed_rss:
+        rss_output_file.write_text(feed_rss)
+    current_sitemap = (
+        sitemap_output_file.read_text() if sitemap_output_file.exists() else ""
+    )
+    if current_sitemap != feed_sitemap:
+        sitemap_output_file.write_text(feed_sitemap)
 
 
 @background.task

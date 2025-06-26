@@ -88,11 +88,16 @@ def _save(output_dir: Path, article: frontmatter.Post) -> None:
     """
     saves the article to the output directory at its specified slug.
     """
-    path = Path(
+    if article.slug in ["", "/"]:
+        path = Path(output_dir) / Path(article.path).name
+    else:
+        path = Path(
         output_dir / Path(article["slug"]).parent / Path(article["path"]).name,
     )
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(article.dumps())
+    current_content = path.read_text() if path.exists() else ""
+    if current_content != article.dumps():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(article.dumps())
 
 
 def _strip_unserializable_values(
