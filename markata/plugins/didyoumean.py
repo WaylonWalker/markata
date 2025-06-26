@@ -85,7 +85,9 @@ def save(markata: "Markata") -> None:
 
     # Write 404 page
     not_found_file = output_dir / "404.html"
-    not_found_file.write_text(html, encoding="utf-8")
+    current_content = not_found_file.read_text() if not_found_file.exists() else ""
+    if current_content != html:
+        not_found_file.write_text(html, encoding="utf-8")
 
     # Maps for redirects and suggestions
     redirect_map = {}  # path -> target
@@ -143,7 +145,11 @@ def save(markata: "Markata") -> None:
         target_url = f"/{target}"
         redirect_file.parent.mkdir(parents=True, exist_ok=True)
         html = render_template(markata, "redirect.html", target_url=target_url)
-        redirect_file.write_text(html, encoding="utf-8")
+        current_content = (
+            redirect_file.read_text() if redirect_file.exists() else ""
+        )
+        if current_content != html:
+            redirect_file.write_text(html, encoding="utf-8")
 
     # Generate suggestion pages
     for suggestion_path, suggestions in suggestions_map.items():
@@ -159,7 +165,11 @@ def save(markata: "Markata") -> None:
             path=suggestion_path,
             suggestions=sorted(full_suggestions),
         )
-        suggestion_file.write_text(html, encoding="utf-8")
+        current_content = (
+            suggestion_file.read_text() if suggestion_file.exists() else ""
+        )
+        if current_content != html:
+            suggestion_file.write_text(html, encoding="utf-8")
     # generate json file for didyoumean suggestions
 
     didyoumean_data = markata.map(
@@ -170,4 +180,9 @@ def save(markata: "Markata") -> None:
 
     didyoumean_json = json.dumps(didyoumean_data)
     didyoumean_file = output_dir / "didyoumean.json"
-    didyoumean_file.write_text(didyoumean_json, encoding="utf-8")
+    current_content = (
+        didyoumean_file.read_text() if didyoumean_file.exists() else ""
+    )
+    if current_content != didyoumean_json:
+        didyoumean_file.parent.mkdir(parents=True, exist_ok=True)
+        didyoumean_file.write_text(didyoumean_json, encoding="utf-8")

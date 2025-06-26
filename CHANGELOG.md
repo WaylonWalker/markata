@@ -6,6 +6,8 @@
 - Fix: article_html now typed such that it may be a dict without warning
 - publish_source now only supports using post models that include a dumps command, i.e. no longer frontmatter post objects
 - Fix: Raise warning, do not silently pass no config when `markata.toml` has parse errors
+- Feat: Save files only if they have changed, this prevents whole site re-deploys on every change
+- Fix: do not use the word index in the slug of the post for links
 
 ## 0.9.1
 
