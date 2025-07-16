@@ -1,0 +1,102 @@
+<style>
+/* Base chat message style, inspired by .admonition */
+.chat,
+.chat-reply {
+    box-shadow: 0.2rem 0rem 1rem rgba(0, 0, 0, 0.35);
+    margin: 2rem 0;
+    border-radius: 16px;
+    border: 0;
+    text-align: left;
+    padding: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    max-width: 600px;
+    word-break: break-word;
+}
+
+/* Outgoing chat message (e.g. user) */
+.chat {
+    background: var(--color-bg-2, #22223b);
+    border-left: 6px solid #8be9fd;
+    box-shadow:
+        -0.6rem 0rem 1rem -1rem #8be9fd,
+        0.2rem 0rem 1rem rgba(0, 0, 0, 0.35);
+    align-self: flex-start;
+    text-align: left;
+    margin-right: 16rem;
+}
+
+.chat-title {
+    background: var(--color-bg-2, #1a1b26);
+    color: #ccc;
+    font-weight: bold;
+    font-size: 1rem;
+    padding: .5rem 1rem;
+    border-bottom: 1px solid rgba(0,0,0,0.15);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    text-align: left;
+}
+
+.chat-content {
+    padding: .6rem 1.2rem .8rem 1.2rem;
+    font-size: 1.05rem;
+    color: #f8f8f2;
+    background: transparent;
+    text-align: left;
+}
+
+/* Incoming chat reply (e.g. bot) */
+.chat-reply {
+    background: var(--color-bg-2, #23272e);
+    border-right: 6px solid #bd93f9;
+    border-left: 0;
+    box-shadow:
+        0.6rem 0rem 1rem -1rem #bd93f9,
+        0.2rem 0rem 1rem rgba(0, 0, 0, 0.35);
+    align-self: flex-end;
+    text-align: right;
+    margin-left: 16rem;
+}
+
+.chat-reply-title {
+    background: var(--color-bg-2, #1a1b26);
+    color: #ccc;
+    font-weight: bold;
+    font-size: 1rem;
+    padding: .5rem 1rem;
+    border-bottom: 1px solid rgba(0,0,0,0.15);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    text-align: right;
+}
+
+.chat-reply-content {
+    padding: .6rem 1.2rem .8rem 1.2rem;
+    font-size: 1.05rem;
+    color: #f8f8f2;
+    background: transparent;
+    text-align: right;
+}
+
+/* Optional: hover effect for chat bubbles */
+.chat:hover,
+.chat-reply:hover {
+    box-shadow: 0.3rem 0rem 1.2rem rgba(139, 233, 253, 0.18), 
+                0.3rem 0rem 2rem rgba(189, 147, 249, 0.15), 
+                0.2rem 0rem 1rem rgba(0,0,0,0.5);
+    transition: box-shadow 0.2s;
+}
+
+/* Responsive for mobile */
+@media (max-width: 700px) {
+    .chat,
+    .chat-reply {
+        max-width: 98vw;
+        margin: 1rem 0;
+    }
+}
+</style>

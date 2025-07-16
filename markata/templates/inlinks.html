@@ -1,0 +1,84 @@
+<section class='mt-48'>
+    {% if post.inlinks is not none and post.inlinks %}
+    <h2>Inlinks</h2>
+    <ul>
+            {% for link in post.inlinks %}
+            {% if link.source_url != 'https://waylon.ra.cat.com/index' and link.source_post.slug not in markata.feeds.keys()%}
+                <li><a href='{{ link.source_url }}'>{{ link.source_post.title }}</a></li>
+            {% endif %}
+            {% endfor %}
+    </ul>
+    {% endif %}
+
+    {% if post.outlinks is not none and post.outlinks %}
+    <h2 class='mt-1'>Outlinks</h2>
+    <ul>
+            {% for link in post.outlinks %}
+
+            {% if link.target_post is none %}
+                <li><a href='{{ link.target_url }}'>{{ link.target_url }}</a></li>
+            {% else %}
+                <li><a href='{{ link.target_url }}'>{{ link.target_post.title }}</a></li>
+            {% endif %}
+            {% endfor %}
+    </ul>
+    {% endif %}
+
+    {% if post.inlinks is not none and post.inlinks %}
+    {% if post.outlinks is not none and post.outlinks %}
+<h2 class='mt-1'>Graph</h2>
+<pre class="mermaid text-black">
+graph LR
+
+{% for link in post.inlinks %}
+    {% if link.source_post.slug != 'index' and link.source_post.slug not in markata.feeds.keys()%}
+    {{ link.source_post.slug }}:::inlink --> {{ post.slug }}:::this
+
+    {% for inlink in link.source_post.inlinks %}
+    {% if inlink.source_post.slug != 'index' and inlink.source_post.slug not in markata.feeds.keys()%}
+    {{ inlink.source_post.slug }} --> {{ inlink.target_post.slug }}:::inlink
+    {% endif %}
+    {% endfor %}
+
+    {% for outlink in link.source.outlinks %}
+    {% if outlink.target_post is not none %}
+    {{ outlink.source_post.slug }}:::inlink --> {{ outlink.target_post.slug }}
+    {% endif %}
+    {{ outlink.source_post.slug }}:::inlink --> {{ outlink.target_url.replace(":", "_").replace("/", "_").replace('@', '_') }}
+    {% endfor %}
+
+    {% endif %}
+{% endfor %}
+
+{% for link in post.outlinks %}
+    {% if link.target_post is not none %}
+    {{ link.source_post.slug }}:::this --> {{ link.target_post.slug }}:::outlink
+
+    {% for outlink in link.target_post.outlinks %}
+    {% if outlink.target_post is not none %}
+    {{ outlink.source_post.slug }}:::outlink --> {{ outlink.target_post.slug }}
+    {% endif %}
+    {{ outlink.source_post.slug }}:::outlink --> {{ link.target_text }}
+    {% endfor %}
+
+    {% for inlink in link.target_post.inlinks[:5] %}
+    {{ inlink.source_post.slug }} --> {{ inlink.target_post.slug }}:::outlink
+    {% endfor %}
+    {% if link.target_post.inlinks|length > 5 %}
+    ...{{ link.target_post.inlinks|length - 5 }}-more --> {{ link.target_post.slug }}:::outlink
+    {% endif %}
+
+
+    {% else %}
+
+    {{ link.source_post.slug }}:::this --> {{ link.target_text }}:::outlink
+    {% endif %}
+{% endfor %}
+    classDef this stroke:#ffcc00
+    classDef outlink stroke:#50C878
+    classDef inlink stroke:#75E6DA
+</pre>
+    </section>
+
+    {% endif %}
+    {% endif %}

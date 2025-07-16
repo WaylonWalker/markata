@@ -1,0 +1,247 @@
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const collapsibleElements = document.querySelectorAll('.is-collapsible');
+        collapsibleElements.forEach(el => {
+            const summary = el.querySelector('.admonition-title');
+            if (summary) {
+                console.log('Adding click listener to:', summary);
+                summary.style.cursor = 'pointer';
+                summary.addEventListener('click', () => {
+                    el.classList.toggle('collapsible-open');
+                    el.classList.toggle('collapsible-closed');
+                });
+            }
+        });
+    });
+</script>
+
+<style>
+    .admonition.source {
+        padding-bottom: 0;
+    }
+    .admonition.source pre.wrapper {
+        margin: 0;
+        padding: 0;
+    }
+    .is-collapsible {
+        overflow: hidden;
+        transition: max-height 0.3s ease;
+    }
+    .is-collapsible:not(.collapsible-open) {
+        max-height: 0;
+        padding-bottom: 2.5rem;
+    }
+    .admonition-title {
+        position: sticky;
+        top: 0;
+        font-weight: bold;
+        margin-bottom: 8px;
+    }
+
+    .admonition,
+    details {
+        box-shadow: 0.2rem 0rem 1rem rgb(0, 0, 0, .4);
+        margin: 5rem 0;
+        border: 1px solid transparent;
+        border-radius: 4px;
+        text-align: left;
+        padding: 0;
+        border: 0;
+
+    }
+
+    .admonition {
+        padding-bottom: 1rem;
+    }
+
+    details[open] {
+        padding-bottom: .5rem;
+    }
+
+    .admonition p {
+        padding: .2rem .6rem;
+    }
+
+    .admonition-title,
+    .details-title,
+    summary {
+        background: var(--color-bg-2);
+        padding: 0;
+        margin: 0;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
+    summary:hover {
+        cursor: pointer;
+    }
+
+    summary.admonition-title,
+    summary.details-title {
+        padding: .5rem;
+        padding-left: 1rem;
+    }
+
+    .note {
+        border-left: 4px solid #f1fa8c;
+        box-shadow:
+            -0.8rem 0rem 1rem -1rem #f1fa8c,
+            0.2rem 0rem 1rem rgb(0, 0, 0, .4);
+    }
+
+    .note>.admonition-title {
+        border-bottom: 1px solid #3c3d2d;
+    }
+
+    .abstract {
+        border-left: 4px solid #8be9fd;
+        box-shadow:
+            -0.8rem 0rem 1rem -1rem #8be9fd,
+            0.2rem 0rem 1rem rgb(0, 0, 0, .4);
+    }
+
+    .abstract>.admonition-title {
+        border-bottom: 1px solid #2c3a3f;
+    }
+
+    .info {
+        border-left: 4px solid;
+        box-shadow:
+            -0.8rem 0rem 1rem -1rem #8bb0fd,
+            0.2rem 0rem 1rem rgb(0, 0, 0, .4);
+    }
+
+    .info>.admonition-title {
+        border-bottom: 1px solid #2c313f;
+    }
+
+    .tip {
+        border-left: 4px solid #008080;
+        box-shadow:
+            -0.8rem 0rem 1rem -1rem #008080,
+            0.2rem 0rem 1rem rgb(0, 0, 0, .4);
+    }
+
+    .tip>.admonition-title {
+        border-bottom: 1px solid #1b2a2b;
+    }
+
+    .success {
+        border-left: 4px solid #50fa7b;
+        box-shadow:
+            -0.8rem 0rem 1rem -1rem #50fa7b,
+            0.2rem 0rem 1rem rgb(0, 0, 0, .4);
+    }
+
+    .success>.admonition-title {
+        border-bottom: 1px solid #263e2b;
+    }
+
+    .question {
+        border-left: 4px solid #a7fcbd;
+        box-shadow:
+            -0.8rem 0rem 1rem -1rem #a7fcbd,
+            0.2rem 0rem 1rem rgb(0, 0, 0, .4);
+    }
+
+    .question>.admonition-title {
+        border-bottom: 1px solid #303e35;
+    }
+
+    .warning {
+        border-left: 4px solid #ffb86c;
+        box-shadow:
+            -0.8rem 0rem 1rem -1rem #ffb86c,
+            0.2rem 0rem 1rem rgb(0, 0, 0, .4);
+    }
+
+    .warning>.admonition-title {
+        border-bottom: 1px solid #3f3328;
+    }
+
+    .failure {
+        border-left: 4px solid #b23b3b;
+        box-shadow:
+            -0.8rem 0rem 1rem -1rem #b23b3b,
+            0.2rem 0rem 1rem rgb(0, 0, 0, .4);
+    }
+
+    .failure>.admonition-title {
+        border-bottom: 1px solid #34201f;
+    }
+
+    .danger {
+        border-left: 4px solid #ff5555;
+        box-shadow:
+            -0.8rem 0rem 1rem -1rem #ff5555,
+            0.2rem 0rem 1rem rgb(0, 0, 0, .4);
+    }
+
+    .danger>.admonition-title {
+        border-bottom: 1px solid #402523;
+    }
+
+    .bug {
+        border-left: 4px solid #b2548a;
+        box-shadow:
+            -0.8rem 0rem 1rem -1rem #b2548a,
+            0.2rem 0rem 1rem rgb(0, 0, 0, .4);
+    }
+
+    .bug>.admonition-title {
+        border-bottom: 1px solid #32232c;
+    }
+
+    .example {
+        border-left: 4px solid #bd93f9;
+        box-shadow:
+            -0.8rem 0rem 1rem -1rem #bd93f9,
+            0.2rem 0rem 1rem rgb(0, 0, 0, .4);
+    }
+
+    .example>.admonition-title {
+        border-bottom: 1px solid #332d3e;
+    }
+
+    .source {
+        border-left: 4px solid #bd93f9;
+        box-shadow:
+            -0.8rem 0rem 1rem -1rem #bd93f9,
+            0.2rem 0rem 1rem rgb(0, 0, 0, .4);
+    }
+
+    .source>.admonition-title {
+        border-bottom: 1px solid #332d3e;
+    }
+
+    .quote {
+        border-left: 4px solid #999;
+        box-shadow:
+            -0.8rem 0rem 1rem -1rem #999,
+            0.2rem 0rem 1rem rgb(0, 0, 0, .4);
+    }
+
+    .quote>.admonition-title {
+        border-bottom: 1px solid #2d2e2f;
+    }
+
+    .admonition>* {
+        margin: 1rem;
+    }
+
+    p.admonition-title,
+    summary {
+        margin: 0;
+        padding-left: 1.2rem;
+    }
+
+    .small {
+        font-size: .9rem;
+        color: #888;
+    }
+
+    admonition+admonition {
+        margin-top: 20rem;
+    }
+</style>

@@ -1,0 +1,136 @@
+<script src="/tailwind.js"></script>
+<style type="text/tailwindcss">
+@layer base {
+    h3 {
+        @apply text-2xl font-bold mb-4 text-[{{ markata.config.style.color_text }}];
+    }
+    ul {
+        @apply list-disc pl-6;
+    }
+    ol {
+        @apply list-decimal pl-6;
+    }
+    html, body {
+        @apply bg-black text-white font-sans;
+    }
+    h1, h2, h3, h4, h5, h6 {
+        @apply font-bold tracking-tight mt-12;
+    }
+    h1 {
+        @apply text-4xl sm:text-5xl md:text-6xl lg:text-7xl;
+        @apply text-[{{ markata.config.style.color_text }}] my-36 pt-16 mx-auto text-center;
+    }
+    h2 {
+        @apply text-3xl sm:text-4xl;
+        @apply text-[{{ markata.config.style.color_text }}] mb-6 border-b-1 border-[{{ markata.style.color_accent }}] pb-1;
+        @apply pl-6 mt-24;
+    }
+    h3 {
+        @apply text-2xl sm:text-3xl;
+        @apply font-bold mb-4 text-[{{ markata.config.style.color_text }}];
+        @apply pl-6;
+    }
+    h4, h5, h6 {
+        @apply text-xl mb-2 text-[{{ markata.config.style.color_text }}];
+    }
+    p, ul, ol, blockquote {
+        @apply mb-4 text-white leading-relaxed mx-auto;
+        @apply max-w-md text-sm;
+        @apply sm:max-w-xl sm:text-lg;
+        @apply md:max-w-2xl md:text-xl;
+        @apply lg:max-w-3xl lg:text-2xl;
+        @apply xl:max-w-4xl lg:text-3xl;
+    }
+    code, pre {
+        @apply mb-4 text-white leading-relaxed mx-auto;
+        @apply max-w-md text-sm;
+        @apply sm:max-w-xl sm:text-lg;
+        @apply w-full max-w-[100vw];
+    }
+    ul ul, ol ol {
+        @apply pl-6 text-sm;
+        @apply sm:text-base;
+        @apply md:text-lg;
+        @apply lg:text-xl;
+        @apply xl:text-2xl;
+    }
+    p {
+        @apply my-8;
+    }
+    li>p {
+        @apply my-2;
+    }
+    section.body{
+        @apply max-w-lg mx-auto;
+        @apply sm:max-w-2xl;
+        @apply md:max-w-3xl;
+        @apply lg:max-w-4xl;
+        @apply xl:max-w-7xl;
+    }
+    a {
+        @apply text-[{{ markata.config.style.color_text }}]  hover:text-black hover:bg-[{{ markata.config.style.color_text }}] transition-colors duration-200 px-1 rounded;
+    }
+    ul {
+        @apply list-disc pl-6 mb-4 marker:text-[{{ markata.config.style.color_text }}];
+    }
+    ol {
+        @apply list-decimal pl-6 mb-4 marker:text-[{{ markata.config.style.color_text }}];
+    }
+    li {
+        @apply mb-2;
+    }
+    blockquote {
+        @apply border-l-4 border-[{{ markata.config.style.color_accent }}] pl-4 italic text-gray-200 bg-[#232323] py-2 mb-4;
+    }
+    code {
+        @apply bg-[#1a1a1a] text-[{{ markata.config.style.color_text }}] px-2 py-1 rounded font-mono;
+    }
+    pre {
+        @apply bg-[#232323] text-[{{ markata.config.style.color_text }}] p-4 rounded-xl mb-4 overflow-x-auto font-mono;
+    }
+    hr {
+        @apply border-t-2 border-[{{ markata.config.style.color_accent }}] my-8;
+    }
+    button, input[type='submit'] {
+        @apply bg-[{{ markata.style.color_accent }}] text-black font-bold py-2 px-4 rounded shadow hover:bg-black hover:text-[{{ markata.config.style.color_text }}] border-2 border-[{{ markata.config.style.color_accent }}] transition-colors duration-200;
+    }
+    input, textarea, select {
+        @apply bg-black text-white border-2 border-[{{ markata.config.style.color_accent }}] rounded px-3 py-2 mb-4 focus:outline-none focus:ring-2 focus:ring-[{{ markata.config.style.color_accent }}];
+    }
+    table {
+        @apply border-collapse bg-[#232323] text-white mb-6;
+        @apply w-full overflow-x-auto block;
+        @apply flex-grow px-4 mx-auto;
+        max-width: fit-content;
+    }
+    th, td {
+        @apply border border-[{{ markata.config.style.color_text }}] px-4 py-2;
+    }
+    th {
+        @apply bg-[{{ markata.config.style.color_text }}] text-black;
+    }
+    tr:nth-child(even) {
+        @apply bg-[#181818];
+    }
+    ::selection {
+        @apply bg-[{{ markata.style.color_text }}] text-black;
+    }
+    ::-moz-selection {
+        @apply bg-[{{ markata.sytle.color_text }}] text-black;
+    }
+    pre.wrapper {
+        @apply relative p-0 mx-auto;
+    }
+    .copy-wrapper {
+        @apply bg-inherit absolute z-10 flex justify-end w-full;
+    }
+    button.copy {
+        @apply z-100 bg-inherit fill-[{{ markata.style.color_accent }}] border-0 self-end top-0 right-0 mx-2 my-1 hover:bg-black hover:fill-white;
+    }
+    .copy-wrapper svg {
+        @apply w-6 h-6 mx-2;
+    }
+
+}
+
+</style>

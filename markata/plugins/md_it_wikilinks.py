@@ -200,7 +200,7 @@ def wikilinks_plugin(
         # possible_pages = markata.filter(
         #     f'str(path).split("/")[-1].split(".")[0].replace("_", "-") == "{link.replace("_", "-")}"',
         # )
-        possible_pages = markata.possible_wikilink.get(link, [])
+        possible_pages = markata.possible_wikilink.get(link.lower(), [])
         if len(possible_pages) == 1:
             link = possible_pages[0]
         elif len(possible_pages) > 1:

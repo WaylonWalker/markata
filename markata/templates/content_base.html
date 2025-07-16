@@ -1,15 +1,9 @@
 {% extends "base.html" %}
 {% block body %}
-<div class='container flex flex-row min-h-screen'>
-    {% if post.sidebar %}
-    <div
-        class='hidden overflow-y-scroll sticky top-0 left-0 px-8 mr-auto max-w-2xl min-h-screen max-h-screen border-r-2 border-red-500 xl:block contianer shadow-xlc shadow-neutral-950 bg-neutral-800'>
-        {% include "sidebar.html" %}
-    </div>
-    {% endif %}
+<div class='container min-h-screen max-w-7xl mx-auto flex flex-col lg:flex-row'>
     <div>
     </div>
-    <div class='flex-grow px-8 mx-auto min-h-screen'>
+    <div class='flex-grow px-0 sm:px-8 mx-auto min-h-screen'>
         {% include "nav.html" %}
         {% block content %} {% endblock %}
     </div>

@@ -1,0 +1,9 @@
+<article class='w-full'>
+    <section class="body">
+        <a href="/{{ post.slug }}" class="text-[{{ markata.config.style.color_text }}] hover:text-black hover:bg-[{{ markata.style.color_accent }}] transition-colors duration-200 px-1 rounded">
+            <h2 class='p-0 m-0'>{{ post.title }}</h2>
+        </a>
+        {{ post.article_html }}
+    </section>
+</article>
+

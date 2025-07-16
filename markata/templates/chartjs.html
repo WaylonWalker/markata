@@ -1,0 +1,17 @@
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll("pre.chartjs").forEach((block, idx) => {
+    try {
+      const config = JSON.parse(block.textContent);
+      const canvas = document.createElement("canvas");
+      const wrapper = document.createElement("div");
+      wrapper.className = "chartjs-wrapper";
+      wrapper.appendChild(canvas);
+      block.replaceWith(wrapper);
+      new Chart(canvas.getContext("2d"), config);
+    } catch (err) {
+      console.error("Failed to render Chart.js chart", err);
+    }
+  });
+});    </script>

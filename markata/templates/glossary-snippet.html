@@ -1,0 +1,20 @@
+<span tabindex="0" class="glossary-term group/{{ glossary_post.slug | replace('/', '') }} cursor-help border-b border-dotted border-pink-500 hover/{{ glossary_post.slug | replace('/', '') }}:tooltip inline-block">
+    <a href="{{ markata.config.url }}{{ glossary_post.slug }}" class='no-underline'>
+    <strong class='pt-8'>{{ term }}</strong>
+    <span class="
+        glossary-tooltip
+        tooltip absolute left-0 right-0 lg:left-auto lg:right-auto lg:w-md   bg-black border-2 border-dotted ring-6 ring-black
+        -translate-y-full
+        lg:-translate-x-1/4
+        border-pink-500 text-center text-white py-1  rounded z-10
+        text-base
+        invisible
+        group-hover/{{ glossary_post.slug | replace('/', '') }}:visible hover/{{ glossary_post.slug | replace('/', '') }}:visible
+        group-active/{{ glossary_post.slug | replace('/', '') }}:visible active/{{ glossary_post.slug | replace('/', '') }}:visible
+        group-focus/{{ glossary_post.slug | replace('/', '') }}:visible focus/{{ glossary_post.slug | replace('/', '') }}:visible
+        " hx-get="/{{ glossary_post.slug }}/partial" hx-trigger="load">
+    loading glossary
+    </span>
+    </a>
+</span>
+
