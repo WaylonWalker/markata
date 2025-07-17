@@ -244,6 +244,7 @@ from markata import __version__
 from markata.hookspec import hook_impl
 from markata.plugins.jinja_env import get_template
 from markata.plugins.jinja_env import get_templates_mtime
+from markata.plugins.theme import THEME_DEFAULTS
 
 if TYPE_CHECKING:
     from markata import Markata
@@ -290,6 +291,272 @@ class ThemeStyle(pydantic.BaseModel):
     selection_text: Optional[Color] = None
     border: Optional[Color] = None
     background_image: Optional[str] = None
+
+THEME_DEFAULTS: Dict[str, Dict[str, Dict[str, str]]] = {
+    "tokyo-night": {
+        "light": {
+            "text": "gray-900",
+            "muted": "gray-500",
+            "heading": "black",
+            "accent": "indigo-600",
+            "accent_alt": "purple-600",
+            "background": "white",
+            "surface": "gray-50",
+            "code_bg": "gray-100",
+            "blockquote_bg": "gray-100",
+            "blockquote_border": "indigo-300",
+            "link_hover": "black",
+            "selection_bg": "indigo-100",
+            "selection_text": "gray-900",
+            "border": "gray-200",
+        },
+        "dark": {
+            "text": "gray-100",
+            "muted": "gray-400",
+            "heading": "white",
+            "accent": "indigo-400",
+            "accent_alt": "purple-400",
+            "background": "[#1a1b26]",
+            "surface": "[#222436]",
+            "code_bg": "[#2f3549]",
+            "blockquote_bg": "[#1f2335]",
+            "blockquote_border": "indigo-500",
+            "link_hover": "white",
+            "selection_bg": "[#2f3549]",
+            "selection_text": "white",
+            "border": "[#3b4261]",
+        },
+    },
+    "catppuccin": {
+        "light": {
+            "text": "rose-900",
+            "muted": "rose-500",
+            "heading": "rose-800",
+            "accent": "pink-500",
+            "accent_alt": "purple-400",
+            "background": "rose-50",
+            "surface": "rose-100",
+            "code_bg": "rose-100",
+            "blockquote_bg": "rose-200",
+            "blockquote_border": "pink-400",
+            "link_hover": "pink-800",
+            "selection_bg": "rose-300",
+            "selection_text": "rose-900",
+            "border": "rose-300",
+            "code_theme": "dracula",
+        },
+        "dark": {
+            "text": "rose-200",
+            "muted": "rose-400",
+            "heading": "rose-100",
+            "accent": "pink-400",
+            "accent_alt": "lavender-300",
+            "background": "[#1e1e28]",
+            "surface": "[#2a2a38]",
+            "code_bg": "[#2c2c3a]",
+            "blockquote_bg": "[#2b2b3a]",
+            "blockquote_border": "pink-500",
+            "link_hover": "white",
+            "selection_bg": "[#403d52]",
+            "selection_text": "rose-50",
+            "border": "[#4e4e5a]",
+            "code_theme": "dracula",
+        },
+    },
+    "everforest": {
+        "light": {
+            "text": "green-900",
+            "muted": "green-500",
+            "heading": "green-800",
+            "accent": "green-600",
+            "accent_alt": "lime-500",
+            "background": "green-50",
+            "surface": "green-100",
+            "code_bg": "green-100",
+            "blockquote_bg": "green-200",
+            "blockquote_border": "green-400",
+            "link_hover": "green-800",
+            "selection_bg": "green-200",
+            "selection_text": "green-900",
+            "border": "green-300",
+            "code_theme": "solarized-light",
+        },
+        "dark": {
+            "text": "green-100",
+            "muted": "green-400",
+            "heading": "green-50",
+            "accent": "green-400",
+            "accent_alt": "lime-400",
+            "background": "[#2b3339]",
+            "surface": "[#374045]",
+            "code_bg": "[#3b444a]",
+            "blockquote_bg": "[#3d484f]",
+            "blockquote_border": "green-500",
+            "link_hover": "white",
+            "selection_bg": "[#475258]",
+            "selection_text": "white",
+            "border": "[#5c6a70]",
+            "code_theme": "solarized-dark",
+        },
+    },
+    "gruvbox": {
+        "light": {
+            "text": "orange-900",
+            "muted": "orange-400",
+            "heading": "yellow-900",
+            "accent": "orange-600",
+            "accent_alt": "yellow-500",
+            "background": "white",
+            "surface": "orange-50",
+            "code_bg": "orange-100",
+            "blockquote_bg": "orange-200",
+            "blockquote_border": "orange-300",
+            "link_hover": "orange-800",
+            "selection_bg": "orange-200",
+            "selection_text": "orange-900",
+            "border": "orange-300",
+        },
+        "dark": {
+            "text": "orange-100",
+            "muted": "orange-400",
+            "heading": "yellow-100",
+            "accent": "orange-400",
+            "accent_alt": "yellow-400",
+            "background": "[#282828]",
+            "surface": "[#3c3836]",
+            "code_bg": "[#504945]",
+            "blockquote_bg": "[#3a3634]",
+            "blockquote_border": "orange-500",
+            "link_hover": "white",
+            "selection_bg": "[#665c54]",
+            "selection_text": "orange-50",
+            "border": "[#7c6f64]",
+        },
+    },
+    "kanagwa": {
+        "light": {
+            "text": "slate-900",
+            "muted": "slate-400",
+            "heading": "slate-800",
+            "accent": "blue-600",
+            "accent_alt": "indigo-500",
+            "background": "slate-50",
+            "surface": "slate-100",
+            "code_bg": "slate-100",
+            "blockquote_bg": "slate-200",
+            "blockquote_border": "blue-300",
+            "link_hover": "blue-800",
+            "selection_bg": "blue-100",
+            "selection_text": "slate-900",
+            "border": "slate-300",
+        },
+        "dark": {
+            "text": "slate-100",
+            "muted": "slate-400",
+            "heading": "slate-50",
+            "accent": "blue-400",
+            "accent_alt": "indigo-400",
+            "background": "[#1f2335]",
+            "surface": "[#2a2e3e]",
+            "code_bg": "[#3a3f52]",
+            "blockquote_bg": "[#2e3440]",
+            "blockquote_border": "blue-500",
+            "link_hover": "white",
+            "selection_bg": "[#394260]",
+            "selection_text": "white",
+            "border": "[#4b5162]",
+        },
+    },
+    "nord": {
+        "light": {
+            "text": "cyan-900",
+            "muted": "cyan-400",
+            "heading": "cyan-800",
+            "accent": "cyan-600",
+            "accent_alt": "blue-500",
+            "background": "cyan-2000",
+            "surface": "cyan-100",
+            "code_bg": "cyan-50",
+            "blockquote_bg": "cyan-200",
+            "blockquote_border": "cyan-300",
+            "link_hover": "cyan-800",
+            "selection_bg": "cyan-200",
+            "selection_text": "cyan-900",
+            "border": "cyan-300",
+            "code_theme": "solarized-light",
+        },
+        "dark": {
+            "text": "cyan-100",
+            "muted": "cyan-400",
+            "heading": "cyan-50",
+            "accent": "cyan-400",
+            "accent_alt": "blue-300",
+            "background": "[#2e3440]",
+            "surface": "[#3b4252]",
+            "code_bg": "[#434c5e]",
+            "blockquote_bg": "[#4c566a]",
+            "blockquote_border": "cyan-500",
+            "link_hover": "white",
+            "selection_bg": "[#5e81ac]",
+            "selection_text": "cyan-50",
+            "border": "[#6b7d97]",
+            "code_theme": "nord-darker",
+        },
+    },
+    "synthwave-84": {
+        "light": {
+            "text": "purple-900",
+            "muted": "pink-500",
+            "heading": "fuchsia-800",
+            "accent": "pink-500",
+            "accent_alt": "fuchsia-500",
+            "background": "pink-50",
+            "surface": "pink-100",
+            "code_bg": "pink-100",
+            "blockquote_bg": "pink-200",
+            "blockquote_border": "pink-400",
+            "link_hover": "purple-800",
+            "selection_bg": "fuchsia-200",
+            "selection_text": "purple-900",
+            "border": "pink-300",
+            "code_theme": "monokai",
+        },
+        "dark": {
+            "text": "[#ff00ff]",
+            "muted": "[#c060c0]",
+            "heading": "[#ff66ff]",
+            "accent": "pink-400",
+            "accent_alt": "fuchsia-400",
+            "background": "[#2d0036]",
+            "surface": "[#440055]",
+            "code_bg": "[#3d0047]",
+            "blockquote_bg": "[#520066]",
+            "blockquote_border": "pink-500",
+            "link_hover": "white",
+            "selection_bg": "[#8800aa]",
+            "selection_text": "[#ffffff]",
+            "border": "[#ff00ff]",
+            "code_theme": "monokai",
+        },
+    },
+}
+
+
+class ThemeStyle(pydantic.BaseModel):
+    text: Optional[str] = None
+    muted: Optional[str] = None
+    heading: Optional[str] = None
+    accent: Optional[str] = None
+    accent_alt: Optional[str] = None
+    background: Optional[str] = None
+    surface: Optional[str] = None
+    code_bg: Optional[str] = None
+    blockquote_bg: Optional[str] = None
+    blockquote_border: Optional[str] = None
+    link_hover: Optional[str] = None
+    selection_bg: Optional[str] = None
+    selection_text: Optional[str] = None
+    border: Optional[str] = None
     code_theme: Literal[
         "abap",
         "algol",
@@ -384,7 +651,6 @@ def merge_styles(defaults: dict, overrides: Optional[dict]) -> ThemeStyle:
     return ThemeStyle(**wrapped_final)
 
 
-from markata.plugins.theme import THEME_DEFAULTS
 
 
 class Style(pydantic.BaseModel):

@@ -17,8 +17,10 @@
 {% include "chat.html" %}
 <style>
 <!-- {{ markata.config.style.light.code_theme }} -->
-{{ markata.config.style.light.highlight_styles | indent(2) }}
+{{ markata.config.style.dark.highlight_styles | indent(2) }}
 
 <!-- {{ markata.config.style.dark.code_theme }} -->
-{{ markata.config.style.dark.highlight_styles | replace(".highlight", ".dark .highlight") | replace(".hll", ".dark .hll") | replace("td.linenos", ".dark td.linenos") | replace("span.linenos", ".dark span.linenos") | indent(2) }}
-</style>{% include "head.html" %}
+@custom-variant dark (&:where(.dark, .dark *));
+:where(.dark, .dark *) {
+{{ markata.config.style.light.highlight_styles | indent(2) }}
+</style>
