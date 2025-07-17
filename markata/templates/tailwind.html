@@ -22,7 +22,7 @@
     }
     h2 {
         @apply text-3xl sm:text-4xl;
-        @apply text-[{{ markata.config.style.color_text }}] mb-6 border-b-1 border-[{{ markata.style.color_accent }}] pb-1;
+        @apply text-[{{ markata.config.style.color_text }}] mb-6 border-b-1 border-[{{ markata.config.style.color_accent }}] pb-1;
         @apply pl-6 mt-24;
     }
     h3 {
@@ -92,7 +92,7 @@
         @apply border-t-2 border-[{{ markata.config.style.color_accent }}] my-8;
     }
     button, input[type='submit'] {
-        @apply bg-[{{ markata.style.color_accent }}] text-black font-bold py-2 px-4 rounded shadow hover:bg-black hover:text-[{{ markata.config.style.color_text }}] border-2 border-[{{ markata.config.style.color_accent }}] transition-colors duration-200;
+        @apply bg-[{{ markata.config.style.color_accent }}] text-black font-bold py-2 px-4 rounded shadow hover:bg-black hover:text-[{{ markata.config.style.color_text }}] border-2 border-[{{ markata.config.style.color_accent }}] transition-colors duration-200;
     }
     input, textarea, select {
         @apply bg-black text-white border-2 border-[{{ markata.config.style.color_accent }}] rounded px-3 py-2 mb-4 focus:outline-none focus:ring-2 focus:ring-[{{ markata.config.style.color_accent }}];
@@ -113,10 +113,10 @@
         @apply bg-[#181818];
     }
     ::selection {
-        @apply bg-[{{ markata.style.color_text }}] text-black;
+        @apply bg-[{{ markata.config.style.color_text }}] text-black;
     }
     ::-moz-selection {
-        @apply bg-[{{ markata.sytle.color_text }}] text-black;
+        @apply bg-[{{ markata.config.style.color_text }}] text-black;
     }
     pre.wrapper {
         @apply relative p-0 mx-auto;
@@ -125,7 +125,7 @@
         @apply bg-inherit absolute z-10 flex justify-end w-full;
     }
     button.copy {
-        @apply z-100 bg-inherit fill-[{{ markata.style.color_accent }}] border-0 self-end top-0 right-0 mx-2 my-1 hover:bg-black hover:fill-white;
+        @apply z-100 bg-inherit fill-[{{ markata.config.style.color_accent }}] border-0 self-end top-0 right-0 mx-2 my-1 hover:bg-black hover:fill-white;
     }
     .copy-wrapper svg {
         @apply w-6 h-6 mx-2;
