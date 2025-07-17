@@ -59,6 +59,7 @@ DEFAULT_MD_EXTENSIONS = [
 ]
 
 DEFAULT_HOOKS = [
+    "markata.plugins.mermaid",
     "markata.plugins.didyoumean",
     "markata.plugins.skip",
     "markata.plugins.md_it_wikilinks",

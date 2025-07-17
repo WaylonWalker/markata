@@ -1,247 +1,134 @@
 <script>
-    document.addEventListener("DOMContentLoaded", () => {
-        const collapsibleElements = document.querySelectorAll('.is-collapsible');
-        collapsibleElements.forEach(el => {
-            const summary = el.querySelector('.admonition-title');
-            if (summary) {
-                console.log('Adding click listener to:', summary);
-                summary.style.cursor = 'pointer';
-                summary.addEventListener('click', () => {
-                    el.classList.toggle('collapsible-open');
-                    el.classList.toggle('collapsible-closed');
-                });
-            }
+  document.addEventListener("DOMContentLoaded", () => {
+    const collapsibleElements = document.querySelectorAll('.is-collapsible');
+    collapsibleElements.forEach(el => {
+      const summary = el.querySelector('.admonition-title');
+      if (summary) {
+        summary.style.cursor = 'pointer';
+        summary.addEventListener('click', () => {
+          el.classList.toggle('collapsible-open');
+          el.classList.toggle('collapsible-closed');
         });
+      }
     });
+  });
 </script>
 
-<style>
-    .admonition.source {
-        padding-bottom: 0;
-    }
-    .admonition.source pre.wrapper {
-        margin: 0;
-        padding: 0;
-    }
-    .is-collapsible {
-        overflow: hidden;
-        transition: max-height 0.3s ease;
-    }
-    .is-collapsible:not(.collapsible-open) {
-        max-height: 0;
-        padding-bottom: 2.5rem;
-    }
-    .admonition-title {
-        position: sticky;
-        top: 0;
-        font-weight: bold;
-        margin-bottom: 8px;
-    }
+<style type="text/tailwindcss">
+  .is-collapsible {
+    @apply overflow-hidden transition-[max-height] duration-300 ease-in-out;
+  }
 
-    .admonition,
-    details {
-        box-shadow: 0.2rem 0rem 1rem rgb(0, 0, 0, .4);
-        margin: 5rem 0;
-        border: 1px solid transparent;
-        border-radius: 4px;
-        text-align: left;
-        padding: 0;
-        border: 0;
+  .is-collapsible:not(.collapsible-open) {
+    @apply max-h-0 pb-10;
+  }
 
-    }
+  .admonition {
+    @apply my-20 border border-transparent rounded shadow-md text-left;
+    @apply bg-[{{ markata.config.style.light.surface }}] dark:bg-[{{ markata.config.style.dark.surface }}];
+    @apply pb-4;
+  }
 
-    .admonition {
-        padding-bottom: 1rem;
-    }
+  .admonition-title {
+    @apply sticky top-0 z-10 font-bold mb-2 px-4 py-2 bg-[{{ markata.config.style.light.blockquote_bg }}] dark:bg-[{{ markata.config.style.dark.blockquote_bg }}];
+    @apply border-b border-[{{ markata.config.style.light.border }}] dark:border-[{{ markata.config.style.dark.border }}];
+  }
 
-    details[open] {
-        padding-bottom: .5rem;
-    }
+  .admonition p {
+    @apply px-4 py-1;
+  }
 
-    .admonition p {
-        padding: .2rem .6rem;
-    }
+  .admonition.source {
+    @apply pb-0;
+  }
 
-    .admonition-title,
-    .details-title,
-    summary {
-        background: var(--color-bg-2);
-        padding: 0;
-        margin: 0;
-        position: sticky;
-        top: 0;
-        z-index: 10;
-    }
+  .admonition.source pre.wrapper {
+    @apply m-0 p-0;
+  }
 
-    summary:hover {
-        cursor: pointer;
-    }
+  /* Admonition types */
+  .note {
+    @apply border-yellow-300/50 dark:border-yellow-400/50 bg-yellow-50 dark:bg-yellow-900/5;
+    @apply text-yellow-950 dark:text-yellow-50;
+  }
 
-    summary.admonition-title,
-    summary.details-title {
-        padding: .5rem;
-        padding-left: 1rem;
-    }
+  .note .admonition-title {
+      @apply text-yellow-800 dark:text-yellow-200;
+  }
 
-    .note {
-        border-left: 4px solid #f1fa8c;
-        box-shadow:
-            -0.8rem 0rem 1rem -1rem #f1fa8c,
-            0.2rem 0rem 1rem rgb(0, 0, 0, .4);
-    }
+  .abstract {
+    @apply border-cyan-300/50 dark:border-cyan-400/50 bg-cyan-50 dark:bg-cyan-900/50;
+  }
 
-    .note>.admonition-title {
-        border-bottom: 1px solid #3c3d2d;
-    }
+  .info {
+    @apply border-blue-300/50 dark:border-blue-400/50 bg-blue-50 dark:bg-blue-900/50;
+  }
 
-    .abstract {
-        border-left: 4px solid #8be9fd;
-        box-shadow:
-            -0.8rem 0rem 1rem -1rem #8be9fd,
-            0.2rem 0rem 1rem rgb(0, 0, 0, .4);
-    }
+  .tip {
+    @apply border-teal-600 bg-teal-50 dark:border-teal-400/50 dark:bg-teal-900/50;
+  }
 
-    .abstract>.admonition-title {
-        border-bottom: 1px solid #2c3a3f;
-    }
+  .success {
+    @apply border-green-400/50 bg-green-50 dark:border-green-500 dark:bg-green-900/50;
+  }
 
-    .info {
-        border-left: 4px solid;
-        box-shadow:
-            -0.8rem 0rem 1rem -1rem #8bb0fd,
-            0.2rem 0rem 1rem rgb(0, 0, 0, .4);
-    }
+  .question {
+    @apply border-emerald-300/50 bg-emerald-50 dark:border-emerald-400/50 dark:bg-emerald-900/50;
+  }
 
-    .info>.admonition-title {
-        border-bottom: 1px solid #2c313f;
-    }
+  .warning {
+    @apply border-orange-400/50 bg-orange-50 dark:border-orange-500 dark:bg-orange-900/50;
+  }
 
-    .tip {
-        border-left: 4px solid #008080;
-        box-shadow:
-            -0.8rem 0rem 1rem -1rem #008080,
-            0.2rem 0rem 1rem rgb(0, 0, 0, .4);
-    }
+  .failure {
+    @apply border-red-600 bg-red-50 dark:border-red-700 dark:bg-red-900/50;
+  }
 
-    .tip>.admonition-title {
-        border-bottom: 1px solid #1b2a2b;
-    }
+  .danger {
+    @apply border-red-500 bg-red-50 dark:border-red-600 dark:bg-red-900/50;
+  }
 
-    .success {
-        border-left: 4px solid #50fa7b;
-        box-shadow:
-            -0.8rem 0rem 1rem -1rem #50fa7b,
-            0.2rem 0rem 1rem rgb(0, 0, 0, .4);
-    }
+  .danger .admonition-title {
+    @apply text-red-800 dark:text-red-200;
+    @apply bg-red-50 dark:bg-red-900/50;
+  }
 
-    .success>.admonition-title {
-        border-bottom: 1px solid #263e2b;
-    }
+  .bug {
+    @apply border-pink-500 bg-pink-50 dark:border-pink-600 dark:bg-pink-900/50;
+  }
 
-    .question {
-        border-left: 4px solid #a7fcbd;
-        box-shadow:
-            -0.8rem 0rem 1rem -1rem #a7fcbd,
-            0.2rem 0rem 1rem rgb(0, 0, 0, .4);
-    }
+  .example {
+    @apply border-violet-400/50 bg-violet-50 dark:border-violet-500 dark:bg-violet-900/50;
+  }
 
-    .question>.admonition-title {
-        border-bottom: 1px solid #303e35;
-    }
+  .source {
+    @apply border-purple-300/50 bg-purple-50 dark:border-purple-400/50 dark:bg-purple-900/50;
+  }
 
-    .warning {
-        border-left: 4px solid #ffb86c;
-        box-shadow:
-            -0.8rem 0rem 1rem -1rem #ffb86c,
-            0.2rem 0rem 1rem rgb(0, 0, 0, .4);
-    }
+  .quote {
+    @apply border-gray-400/50 bg-gray-50 dark:border-gray-500 dark:bg-gray-900/50;
+  }
 
-    .warning>.admonition-title {
-        border-bottom: 1px solid #3f3328;
-    }
+  .small {
+      @apply text-sm text-{{ markata.config.style.light.muted }};
+      @apply dark:text-{{ markata.config.style.dark.muted }};
+  }
 
-    .failure {
-        border-left: 4px solid #b23b3b;
-        box-shadow:
-            -0.8rem 0rem 1rem -1rem #b23b3b,
-            0.2rem 0rem 1rem rgb(0, 0, 0, .4);
-    }
+  summary:hover {
+    @apply cursor-pointer;
+  }
 
-    .failure>.admonition-title {
-        border-bottom: 1px solid #34201f;
-    }
+  summary.admonition-title,
+  summary.details-title {
+    @apply px-4 py-2;
+  }
 
-    .danger {
-        border-left: 4px solid #ff5555;
-        box-shadow:
-            -0.8rem 0rem 1rem -1rem #ff5555,
-            0.2rem 0rem 1rem rgb(0, 0, 0, .4);
-    }
+  details[open] {
+    @apply pb-2;
+  }
 
-    .danger>.admonition-title {
-        border-bottom: 1px solid #402523;
-    }
-
-    .bug {
-        border-left: 4px solid #b2548a;
-        box-shadow:
-            -0.8rem 0rem 1rem -1rem #b2548a,
-            0.2rem 0rem 1rem rgb(0, 0, 0, .4);
-    }
-
-    .bug>.admonition-title {
-        border-bottom: 1px solid #32232c;
-    }
-
-    .example {
-        border-left: 4px solid #bd93f9;
-        box-shadow:
-            -0.8rem 0rem 1rem -1rem #bd93f9,
-            0.2rem 0rem 1rem rgb(0, 0, 0, .4);
-    }
-
-    .example>.admonition-title {
-        border-bottom: 1px solid #332d3e;
-    }
-
-    .source {
-        border-left: 4px solid #bd93f9;
-        box-shadow:
-            -0.8rem 0rem 1rem -1rem #bd93f9,
-            0.2rem 0rem 1rem rgb(0, 0, 0, .4);
-    }
-
-    .source>.admonition-title {
-        border-bottom: 1px solid #332d3e;
-    }
-
-    .quote {
-        border-left: 4px solid #999;
-        box-shadow:
-            -0.8rem 0rem 1rem -1rem #999,
-            0.2rem 0rem 1rem rgb(0, 0, 0, .4);
-    }
-
-    .quote>.admonition-title {
-        border-bottom: 1px solid #2d2e2f;
-    }
-
-    .admonition>* {
-        margin: 1rem;
-    }
-
-    p.admonition-title,
-    summary {
-        margin: 0;
-        padding-left: 1.2rem;
-    }
-
-    .small {
-        font-size: .9rem;
-        color: #888;
-    }
-
-    admonition+admonition {
-        margin-top: 20rem;
-    }
+  admonition + admonition {
+    @apply mt-80;
+  }
 </style>
+

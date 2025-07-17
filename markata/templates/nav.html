@@ -17,5 +17,52 @@
             href='{{"/" if link.startswith("/")}}{{"" if "://" in link else markata.config["path_prefix"]}}{{link.lstrip("/")}}'>{{text}}</a>
         {% endfor %}
     </nav>
+<!-- Theme toggle button -->
+<button id="theme-toggle" aria-label="Toggle Theme"
+  class="fixed top-4 right-4 z-50 flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-100 shadow transition-colors hover:bg-gray-200 dark:hover:bg-gray-700">
+  <!-- Icon gets swapped dynamically -->
+  <svg id="theme-icon" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5">
+
+    <!-- Placeholder: replaced on load -->
+  </svg>
+</button>
+
+
+<script>
+  const toggleBtn = document.getElementById('theme-toggle');
+  const icon = document.getElementById('theme-icon');
+
+  const sun = `
+    <circle cx="12" cy="12" r="5" />
+    <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+  `;
+
+  const moon = `
+    <path d="M21 12.79A9 9 0 0111.21 3 7 7 0 0012 21a9 9 0 009-8.21z" />
+  `;
+
+  function setIcon(isDark) {
+    icon.innerHTML = isDark ? moon : sun;
+  }
+
+  // Apply theme on load
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const savedTheme = localStorage.getItem('theme');
+  const isDark = savedTheme === 'dark' || (!savedTheme && prefersDark);
+
+  if (isDark) {
+    document.documentElement.classList.add('dark');
+  }
+
+  setIcon(document.documentElement.classList.contains('dark'));
+
+  // Toggle theme
+  toggleBtn.addEventListener('click', () => {
+    const html = document.documentElement;
+    const isNowDark = html.classList.toggle('dark');
+    localStorage.setItem('theme', isNowDark ? 'dark' : 'light');
+    setIcon(isNowDark);
+  });
+</script>
 
 </header>
