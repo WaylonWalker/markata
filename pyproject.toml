@@ -29,6 +29,7 @@ dependencies = [
     "anyconfig",
     "beautifulsoup4",
     "checksumdir",
+    "colour",
     "commonmark",
     "cookiecutter",
     "copier",
