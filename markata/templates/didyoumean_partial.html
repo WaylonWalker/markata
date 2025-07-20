@@ -2,7 +2,18 @@
     <div class="mb-0  max-w-4xl mx-auto ">
         <!-- <label for="search" class="block text-sm font-medium mb-2">Search for a page</label> -->
         <input type="text" id="search"
-               class="w-full p-2 border rounded-md bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-pink-500"
+               class="
+               w-full p-2 border rounded-md 
+
+               bg-[{{ markata.config.style.light.surface.lighten(0.1) }}]
+               dark:bg-[{{ markata.config.style.dark.surface.darken(0.1) }}]
+
+               focus:ring-[{{ markata.config.style.light.border.blend(markata.config.style.light.background, 0.2) }}]
+               dark:focus:ring-[{{ markata.config.style.dark.border.blend(markata.config.style.dark.background, 0.2) }}]
+
+               focus:bg-[{{ markata.config.style.light.surface.lighten(0.05) }}]
+               focus:dark:bg-[{{ markata.config.style.dark.surface.darken(0.05) }}]
+               "
                placeholder="'/' Search for a page">
     </div>
 
@@ -117,27 +128,46 @@
         const resultsDiv = document.getElementById('didyoumean_results');
 
         if (results.length === 0) {
-            resultsDiv.innerHTML = '<p class="text-gray-500 col-span-full text-center py-8">No similar pages found.</p>';
+            resultsDiv.innerHTML = '<p class="col-span-full text-center rounded-lg px-4 py-8 bg-[{{ markata.config.style.light.surface.lighten(0.1) }}] dark:bg-[{{ markata.config.style.dark.surface.darken(0.1) }}] ">No similar pages found.</p>';
             return;
         }
 
         const html = results.map(page => `
-        <li class="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg hover:shadow-lg transition-shadow first:mt-4">
-            <a href="/${page.slug}" class="block">
-                <h3 class="text-lg font-semibold text-pink-500 hover:text-pink-600 dark:text-pink-400 dark:hover:text-pink-300 mb-2">
+        <li class="rounded-lg hover:shadow-lg transition-shadow first:mt-4 border-1
+
+
+               bg-[{{ markata.config.style.light.surface.lighten(0.1) }}]
+               dark:bg-[{{ markata.config.style.dark.surface.darken(0.1) }}]
+
+                border-[{{ markata.config.style.light.border.blend(markata.config.style.light.surface.lighten(0.1), 0.8) }}]
+                dark:border-[{{ markata.config.style.dark.border.blend(markata.config.style.dark.surface.darken(0.1), 0.8) }}]
+
+        ">
+            <a href="/${page.slug}" class="block p-4
+                hover:bg-[{{ markata.config.style.light.accent }}]
+                hover:bg-[{{ markata.config.style.light.link_hover.blend(markata.config.style.light.surface.lighten(0.1), 0.8) }}]
+                hover:dark:bg-[{{ markata.config.style.dark.accent.blend(markata.config.style.dark.surface.darken(0.1), 0.8) }}]
+                hover:text-[{{ markata.config.style.light.link_hover }}]
+                hover:dark:text-[{{ markata.config.style.dark.link_hover }}]
+
+            ">
+                <h3 class="text-lg font-semibold mb-2">
                     ${page.title || page.slug}
                 </h3>
                 ${page.description ? `
-            <p class="text-sm text-gray-600 dark:text-gray-300 mb-3 line-clamp-2">
+            <p class="text-sm mb-3 line-clamp-2">
             ${page.description}
             </p>
             ` : ''}
-                <div class="flex flex-wrap gap-2 text-xs text-gray-500 dark:text-gray-400">
+                <div class="flex flex-wrap gap-2 text-xs ">
                 </div>
                 ${page.tags && page.tags.length > 0 ? `
             <div class="mt-3 flex flex-wrap gap-2">
             ${page.tags.map(tag => `
-                            <span class="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-xs">
+                            <span class="px-2 py-1 rounded text-xs
+               bg-[{{ markata.config.style.light.surface }}]
+               dark:bg-[{{ markata.config.style.dark.surface }}]
+                            ">
                                 ${tag}
                             </span>
                         `).join('')}

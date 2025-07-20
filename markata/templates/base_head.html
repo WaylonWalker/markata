@@ -15,14 +15,10 @@
 {% include "chartjs.html" %}
 {% include "admonition.html" %}
 {% include "chat.html" %}
-{% include "head.html" %}
 <style>
 <!-- {{ markata.config.style.light.code_theme }} -->
-{{ markata.config.style.dark.highlight_styles | indent(2) }}
+{{ markata.config.style.light.highlight_styles | indent(2) }}
 
 <!-- {{ markata.config.style.dark.code_theme }} -->
-@custom-variant dark (&:where(.dark, .dark *));
-:where(.dark, .dark *) {
-{{ markata.config.style.light.highlight_styles | indent(2) }}j
-}
-</style>
+{{ markata.config.style.dark.highlight_styles | replace(".highlight", ".dark .highlight") | replace(".hll", ".dark .hll") | replace("td.linenos", ".dark td.linenos") | replace("span.linenos", ".dark span.linenos") | indent(2) }}
+</style>{% include "head.html" %}

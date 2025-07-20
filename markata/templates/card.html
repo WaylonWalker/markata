@@ -1,9 +1,15 @@
-<li class='my-6 list-none'>
-    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
-        {% if markata.config.path_prefix+post.slug !='' %} href="/{{markata.config.path_prefix}}{{post.slug}}/">
-        {% else %}
-        href="/">
-        {% endif %}
+<li class='my-6 list-none border-xl rounded border
+border-{{ markata.config.style.light.border }}
+dark:border-{{ markata.config.style.dark.border }}
+bg-{{ markata.config.style.light.background }}
+dark:bg-{{ markata.config.style.dark.background }}
+
+    '>
+    <a class='w-full no-underline
+text-{{ markata.config.style.light.text }}
+dark:text-{{ markata.config.style.dark.text }}
+    '
+    {% if markata.config.path_prefix+post.slug !='' %} href="/{{markata.config.path_prefix}}{{post.slug}}/"> {% else %} href="/"> {% endif %}
         <h2 class='mx-4 mt-1 text-3xl font-bold'>
 
             {% if post.title | length > 50 %}
@@ -12,10 +18,10 @@
             {{post.title | truncate(50)}}
             {% endif %}
         </h2>
-        <p class='mx-4 text-neutral-200'>
+        <p class='mx-4'>
             {{post.description}}
         </p>
-        <time class='mx-4 text-neutral-600'>
+        <time class='mx-4 '>
             {{post.date}}
         </time>
     </a>

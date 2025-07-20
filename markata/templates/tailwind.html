@@ -5,21 +5,63 @@
 @layer base {
   html, body {
     @apply font-sans;
-    @apply bg-{{ markata.config.style.light.background }};
-    @apply text-{{ markata.config.style.light.text }};
-    @apply dark:bg-{{ markata.config.style.dark.background }} dark:text-{{ markata.config.style.dark.text }};
+    @apply text-[{{ markata.config.style.light.text }}];
+    @apply dark:text-[{{ markata.config.style.dark.text }}];
+
+
+
   }
 
-  body {
-    @apply bg-{{ markata.config.style.light.surface }};
-    @apply dark:bg-{{ markata.config.style.dark.surface }};
+  #bg-surface {
+    @apply fixed w-full h-full;
+    z-index: -1;
+
+    @apply bg-[{{ markata.config.style.light.background  }}];
+    @apply dark:bg-[{{ markata.config.style.dark.background }}];
+
+    @apply bg-linear-to-b from-[{{ markata.config.style.light.background }}] to-[{{ markata.config.style.light.background.darken(0.05) }}];
+    @apply dark:bg-linear-to-b dark:from-[{{ markata.config.style.dark.background }}] dark:to-[{{ markata.config.style.dark.background.darken(0.1) }}];
+    
   }
+
+  b, strong, em, i, strike, s, code{
+    @apply text-[{{ markata.config.style.light.text.darken(0.2) }}];
+    @apply dark:text-[{{ markata.config.style.dark.text.lighten(0.2) }}];
+  }
+
 
   h1, h2, h3, h4, h5, h6 {
+    @apply pl-6;
     @apply font-bold tracking-tight mt-12;
-    @apply text-{{ markata.config.style.light.heading }};
-    @apply dark:text-{{ markata.config.style.dark.heading }};
+    @apply text-[{{ markata.config.style.light.heading }}];
+    @apply dark:text-[{{ markata.config.style.dark.heading }}];
   }
+
+  h2 {
+    @apply text-[{{ markata.config.style.light.heading.darken(0.05) }}];
+    @apply dark:text-[{{ markata.config.style.dark.heading.lighten(0.05) }}];
+  }
+
+  h3 {
+    @apply text-[{{ markata.config.style.light.heading.darken(0.1) }}];
+    @apply dark:text-[{{ markata.config.style.dark.heading.lighten(0.1) }}];
+  }
+
+  h4 {
+    @apply text-[{{ markata.config.style.light.heading.darken(0.15) }}];
+    @apply dark:text-[{{ markata.config.style.dark.heading.lighten(0.15) }}];
+  }
+
+  h5 {
+    @apply text-[{{ markata.config.style.light.heading.darken(0.2) }}];
+    @apply dark:text-[{{ markata.config.style.dark.heading.lighten(0.2) }}];
+  }
+
+  h6 {
+    @apply text-[{{ markata.config.style.light.heading.darken(0.25) }}];
+    @apply dark:text-[{{ markata.config.style.dark.heading.lighten(0.25) }}];
+  }
+
 
   h1 {
     @apply text-4xl sm:text-5xl md:text-6xl lg:text-7xl my-36 pt-16 mx-auto text-center;
@@ -27,8 +69,8 @@
 
   h2 {
     @apply text-3xl sm:text-4xl mb-6 border-b pb-1 pl-6 mt-24;
-    @apply border-{{ markata.config.style.light.border }};
-    @apply dark:border-{{ markata.config.style.dark.border }};
+    @apply border-[{{ markata.config.style.light.border }}];
+    @apply dark:border-[{{ markata.config.style.dark.border }}];
   }
 
   h3 {
@@ -54,12 +96,12 @@
 
   ul {
     @apply list-disc pl-6 mb-4;
-    @apply marker:text-{{ markata.config.style.light.accent }} dark:marker:text-{{ markata.config.style.dark.accent }};
+    @apply marker:text-[{{ markata.config.style.light.accent }}] dark:marker:text-[{{ markata.config.style.dark.accent }}];
   }
 
   ol {
     @apply list-decimal pl-6 mb-4;
-    @apply marker:text-{{ markata.config.style.light.accent }} dark:marker:text-{{ markata.config.style.dark.accent }};
+    @apply marker:text-[{{ markata.config.style.light.accent }}] dark:marker:text-[{{ markata.config.style.dark.accent }}];
   }
 
   ul ul, ol ol {
@@ -71,46 +113,63 @@
   }
 
   section.body {
-    @apply max-w-lg mx-auto sm:max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-7xl;
+    @apply max-w-4xl mx-auto sm:max-w-4xl md:max-w-4xl lg:max-w-4xl xl:max-w-7xl;
+    @apply rounded rounded-xl shadow-xl;
+    @apply border-6;
+    @apply border-[{{ markata.config.style.light.border.blend(markata.config.style.light.background, 0.8) }}];
+    @apply dark:border-[{{ markata.config.style.dark.border.blend(markata.config.style.dark.background, 0.8) }}];
+    @apply bg-[{{ markata.config.style.light.surface }}];
+    @apply dark:bg-[{{ markata.config.style.dark.surface }}];
   }
 
   a {
+    @apply underline;
     @apply transition-colors duration-200 px-1 rounded;
-    @apply text-{{ markata.config.style.light.accent }};
-    @apply dark:text-{{ markata.config.style.dark.accent }};
+    @apply text-[{{ markata.config.style.light.accent }}];
+    @apply dark:text-[{{ markata.config.style.dark.accent }}];
   }
 
   a:hover {
-    @apply bg-{{ markata.config.style.light.accent }};
-    @apply bg-{{ markata.config.style.light.link_hover }};
-    @apply dark:bg-{{ markata.config.style.dark.accent }} dark:text-{{ markata.config.style.dark.link_hover }};
+    @apply bg-[{{ markata.config.style.light.accent }}];
+    @apply bg-[{{ markata.config.style.light.link_hover }}];
+    @apply dark:bg-[{{ markata.config.style.dark.accent }}] dark:text-[{{ markata.config.style.dark.link_hover }}];
   }
 
   blockquote {
-    @apply border-l-4 pl-4 italic py-2 mb-4;
-    @apply bg-{{ markata.config.style.light.blockquote_bg }};
-    @apply border-{{ markata.config.style.light.blockquote_border }};
-    @apply dark:bg-{{ markata.config.style.dark.blockquote_bg }} dark:border-{{ markata.config.style.dark.blockquote_border }};
+    @apply border-1 border-l-4 lg:border-l-8 pl-4 italic py-2 mb-4 rounded-r-xl shadow-lg;
+
+    @apply border-[{{ markata.config.style.light.blockquote_border.blend(markata.config.style.light.background, 0.6) }}];
+    @apply dark:border-[{{ markata.config.style.dark.blockquote_border.blend(markata.config.style.dark.background, 0.6) }}];
+
+    @apply border-l-[{{ markata.config.style.light.blockquote_border }}];
+    @apply dark:border-l-[{{ markata.config.style.dark.blockquote_border }}];
+
+    @apply bg-[{{ markata.config.style.light.blockquote_bg }}];
+    @apply dark:bg-[{{ markata.config.style.dark.blockquote_bg }}];
+
+    @apply bg-linear-to-r to-[{{ markata.config.style.light.blockquote_bg }}] from-[{{ markata.config.style.light.blockquote_bg.darken(0.03) }}];
+    @apply dark:bg-linear-to-r dark:to-[{{ markata.config.style.dark.blockquote_bg }}] dark:from-[{{ markata.config.style.dark.blockquote_bg.darken(0.03) }}];
   }
 
   code {
-    @apply px-2 py-1 rounded font-mono shadow-lg border-2;
-    @apply bg-{{ markata.config.style.light.code_bg }};
-    @apply text-{{ markata.config.style.light.text }};
-    @apply dark:bg-{{ markata.config.style.dark.code_bg }} dark:text-{{ markata.config.style.dark.text }};
+    @apply rounded font-mono shadow-lg;
+    @apply border-[{{ markata.config.style.light.background }}];
+    @apply dark:border-[{{ markata.config.style.dark.background }}];
+    @apply bg-[{{ markata.config.style.light.background }}];
+    @apply dark:bg-[{{ markata.config.style.dark.background }}];
   }
 
   pre {
-    @apply p-4 rounded-xl mb-4 overflow-x-auto font-mono w-full max-w-[100vw];
-    @apply border-{{ markata.config.style.light.border }};
-    @apply dark:border-{{ markata.config.style.dark.border }};
-    @apply bg-{{ markata.config.style.light.code_bg }};
-    @apply text-{{ markata.config.style.light.text }};
-    @apply dark:bg-{{ markata.config.style.dark.code_bg }} dark:text-{{ markata.config.style.dark.text }};
+    @apply p-4 mb-4 overflow-x-auto font-mono; 
+    @apply border-[{{ markata.config.style.light.border }}];
+    @apply dark:border-[{{ markata.config.style.dark.border }}];
+    @apply bg-[{{ markata.config.style.light.code_bg }}];
+    @apply text-[{{ markata.config.style.light.text }}];
+    @apply dark:bg-[{{ markata.config.style.dark.code_bg }}] dark:text-[{{ markata.config.style.dark.text }}];
   }
 
   pre.wrapper {
-    @apply relative p-0 mx-auto;
+    @apply relative p-0  mx-auto lg:mx-4 rounded-xl shadow-lg;
   }
 
   .copy-wrapper {
@@ -119,8 +178,8 @@
 
   button.copy {
     @apply z-100 bg-inherit border-0 self-end top-0 right-0 mx-2 my-1 hover:bg-black;
-    @apply fill-{{ markata.config.style.light.accent }};
-    @apply dark:fill-{{ markata.config.style.dark.accent }};
+    @apply fill-[{{ markata.config.style.light.accent }}];
+    @apply dark:fill-[{{ markata.config.style.dark.accent }}];
   }
 
   .copy-wrapper svg {
@@ -129,92 +188,107 @@
 
   hr {
     @apply border-t-2 my-8;
-    @apply border-{{ markata.config.style.light.border }};
-    @apply dark:border-{{ markata.config.style.dark.border }};
+    @apply border-[{{ markata.config.style.light.border }}];
+    @apply dark:border-[{{ markata.config.style.dark.border }}];
   }
 
   button,
   input[type='submit'] {
     @apply font-bold py-2 px-4 rounded shadow border-2 transition-colors duration-200;
-    @apply bg-{{ markata.config.style.light.surface }};
-    @apply border-{{ markata.config.style.light.accent }};
-    @apply text-{{ markata.config.style.light.link_hover }};
-    @apply dark:bg-{{ markata.config.style.dark.surface }};
-    @apply dark:border-{{ markata.config.style.dark.accent }};
-    @apply dark:text-{{ markata.config.style.dark.link_hover }};
+    @apply bg-[{{ markata.config.style.light.surface }}];
+    @apply border-[{{ markata.config.style.light.accent }}];
+    @apply text-[{{ markata.config.style.light.link_hover }}];
+    @apply dark:bg-[{{ markata.config.style.dark.surface }}];
+    @apply dark:border-[{{ markata.config.style.dark.accent }}];
+    @apply dark:text-[{{ markata.config.style.dark.link_hover }}];
   }
 
   button:hover,
   input[type='submit']:hover {
-    @apply bg-{{ markata.config.style.light.background }};
-    @apply text-{{ markata.config.style.light.accent }};
-    @apply dark:bg-{{ markata.config.style.dark.background }};
-    @apply dark:text-{{ markata.config.style.dark.accent }};
+    @apply bg-[{{ markata.config.style.light.background }}];
+    @apply text-[{{ markata.config.style.light.accent }}];
+    @apply dark:bg-[{{ markata.config.style.dark.background }}];
+    @apply dark:text-[{{ markata.config.style.dark.accent }}];
   }
 
   input,
   textarea,
   select {
     @apply rounded px-3 py-2 mb-4 border-2 focus:outline-none focus:ring-2;
-    @apply bg-{{ markata.config.style.light.surface }};
-    @apply text-{{ markata.config.style.light.text }};
-    @apply border-{{ markata.config.style.light.border }};
-    --tw-ring-color: {{ markata.config.style.light.accent }};
-    @apply dark:bg-{{ markata.config.style.dark.surface }} dark:text-{{ markata.config.style.dark.text }} dark:border-{{ markata.config.style.dark.border }};
+    @apply bg-[{{ markata.config.style.light.surface }}];
+    @apply text-[{{ markata.config.style.light.text }}];
+    @apply border-[{{ markata.config.style.light.border }}];
+    --tw-ring-color: [{{ markata.config.style.light.accent }}];
+    @apply dark:bg-[{{ markata.config.style.dark.surface }}] dark:text-[{{ markata.config.style.dark.text }}] dark:border-[{{ markata.config.style.dark.border }}];
   }
 
   table {
     @apply border-collapse mb-6 w-full overflow-x-auto block flex-grow px-4 mx-auto;
-    @apply bg-{{ markata.config.style.light.surface }};
-    @apply text-{{ markata.config.style.light.text }};
+    @apply bg-[{{ markata.config.style.light.surface }}];
+    @apply text-[{{ markata.config.style.light.text }}];
     max-width: fit-content;
-    @apply dark:bg-{{ markata.config.style.dark.surface }} dark:text-{{ markata.config.style.dark.text }};
+    @apply dark:bg-[{{ markata.config.style.dark.surface }}] dark:text-[{{ markata.config.style.dark.text }}];
   }
 
   th,
   td {
     @apply px-4 py-2 border;
-    @apply border-{{ markata.config.style.light.border }};
-    @apply dark:border-{{ markata.config.style.dark.border }};
+    @apply border-[{{ markata.config.style.light.border }}];
+    @apply dark:border-[{{ markata.config.style.dark.border }}];
   }
 
   th {
-    @apply bg-{{ markata.config.style.light.surface }};
-    @apply text-{{ markata.config.style.light.text }};
-    @apply dark:bg-{{ markata.config.style.dark.surface }} dark:text-{{ markata.config.style.dark.text }};
+    @apply bg-[{{ markata.config.style.light.surface }}];
+    @apply text-[{{ markata.config.style.light.text }}];
+    @apply dark:bg-[{{ markata.config.style.dark.surface }}] dark:text-[{{ markata.config.style.dark.text }}];
   }
 
   tr:nth-child(even) {
-    @apply bg-{{ markata.config.style.light.code_bg }};
-    @apply dark:bg-{{ markata.config.style.dark.code_bg }};
+    @apply bg-[{{ markata.config.style.light.code_bg }}];
+    @apply dark:bg-[{{ markata.config.style.dark.code_bg }}];
   }
 
   ::selection {
-    @apply bg-{{ markata.config.style.light.selection_bg }};
-    @apply text-{{ markata.config.style.light.selection_text }};
-    @apply dark:bg-{{ markata.config.style.dark.selection_bg }} dark:text-{{ markata.config.style.dark.selection_text }};
+    @apply text-[{{ markata.config.style.light.selection_text }}];
+    @apply bg-[{{ markata.config.style.light.selection_bg }}];
+    @apply dark:bg-[{{ markata.config.style.dark.selection_bg }}] dark:text-[{{ markata.config.style.dark.selection_text }}];
+  }
+
+  b::selection,
+  strong::selection,
+  i::selection,
+  em::selection,
+  code::selection,
+  strike::selection,
+  s::selection
+  {
+    @apply text-[{{ markata.config.style.light.selection_text.lighten(0.2) }}];
+    @apply dark:text-[{{ markata.config.style.dark.selection_text.darken(0.2) }}];
+    @apply bg-[{{ markata.config.style.light.selection_bg }}];
+    @apply dark:bg-[{{ markata.config.style.dark.selection_bg }}];
+
   }
 
   ::-moz-selection {
-    @apply bg-{{ markata.config.style.light.selection_bg }};
-    @apply text-{{ markata.config.style.light.selection_text }};
-    @apply dark:bg-{{ markata.config.style.dark.selection_bg }} dark:text-{{ markata.config.style.dark.selection_text }};
+    @apply bg-[{{ markata.config.style.light.selection_bg }}];
+    @apply text-[{{ markata.config.style.light.selection_text }}];
+    @apply dark:bg-[{{ markata.config.style.dark.selection_bg }}] dark:text-[{{ markata.config.style.dark.selection_text }}];
   }
 
   .text-muted {
-    @apply text-{{ markata.config.style.light.muted }};
-    @apply dark:text-{{ markata.config.style.dark.muted }};
+    @apply text-[{{ markata.config.style.light.muted }}];
+    @apply dark:text-[{{ markata.config.style.dark.muted }}];
   }
 
   .bg-surface {
-    @apply bg-{{ markata.config.style.light.surface }};
-    @apply dark:bg-{{ markata.config.style.dark.surface }};
+    @apply bg-[{{ markata.config.style.light.surface }}];
+    @apply dark:bg-[{{ markata.config.style.dark.surface }}];
   }
   img {
     @apply mx-auto border-2 rounded-lg;
     @apply shadow-lg;
-    @apply border-{{ markata.config.style.light.border }};
-    @apply dark:border-{{ markata.config.style.dark.border }};
+    @apply border-[{{ markata.config.style.light.border }}];
+    @apply dark:border-[{{ markata.config.style.dark.border }}];
   }
 }
 </style>

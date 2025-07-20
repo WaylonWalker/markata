@@ -11,5 +11,5 @@
 {% endfor %}
 
 {% for link in markata.config.head.script %}
-    <script src="{{ link.src }}"></script>
+    <script src="{{ link.src }}" {{ 'defer' if link.defer }}></script>
 {% endfor %}
