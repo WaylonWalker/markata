@@ -287,6 +287,7 @@ class ThemeStyle(pydantic.BaseModel):
     selection_bg: Optional[Color] = None
     selection_text: Optional[Color] = None
     border: Optional[Color] = None
+    background_image: Optional[str] = None
     code_theme: Literal[
         "abap",
         "algol",
@@ -370,10 +371,13 @@ def merge_styles(defaults: dict, overrides: Optional[dict]) -> ThemeStyle:
         final.update({k: v for k, v in overrides.items() if v is not None})
 
     code_theme = final.pop("code_theme", None)
+    background_image = final.pop("background_image", None)
     wrapped_final = {k: Color(v) for k, v in final.items()}
 
     if code_theme:
         wrapped_final["code_theme"] = code_theme
+    if background_image:
+        wrapped_final["background_image"] = background_image
 
     return ThemeStyle(**wrapped_final)
 

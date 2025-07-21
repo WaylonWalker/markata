@@ -12,18 +12,33 @@
 
   }
 
-  #bg-surface {
-    @apply fixed w-full h-full;
-    z-index: -1;
+#bg-surface {
+  @apply fixed w-full h-full;
+  z-index: -1;
 
-    @apply bg-[{{ markata.config.style.light.background  }}];
-    @apply dark:bg-[{{ markata.config.style.dark.background }}];
+  /* Fallback base color */
+  @apply bg-[{{ markata.config.style.light.background }}];
 
-    @apply bg-linear-to-b from-[{{ markata.config.style.light.background }}] to-[{{ markata.config.style.light.background.darken(0.05) }}];
-    @apply dark:bg-linear-to-b dark:from-[{{ markata.config.style.dark.background }}] dark:to-[{{ markata.config.style.dark.background.darken(0.1) }}];
-    
-  }
+  background-image:
+    url("{{ markata.config.style.light.background_image }}"),
+    linear-gradient(
+      to bottom,
+      {{ markata.config.style.light.background }},
+      {{ markata.config.style.light.background.darken(0.05) }}
+    );
+}
 
+.dark #bg-surface {
+  @apply bg-[{{ markata.config.style.dark.background }}];
+
+  background-image:
+    url("{{ markata.config.style.dark.background_image }}"),
+    linear-gradient(
+      to bottom,
+      {{ markata.config.style.dark.background }},
+      {{ markata.config.style.dark.background.darken(0.1) }}
+    );
+}
   b, strong, em, i, strike, s, code{
     @apply text-[{{ markata.config.style.light.text.darken(0.2) }}];
     @apply dark:text-[{{ markata.config.style.dark.text.lighten(0.2) }}];

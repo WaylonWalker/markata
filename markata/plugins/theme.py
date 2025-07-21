@@ -1,3 +1,5 @@
+# "background_image": "https://transparenttextures.com/patterns/asfalt-dark.png",
+
 from typing import Dict
 
 from colour import Color as BaseColor
@@ -480,6 +482,7 @@ THEME_DEFAULTS: Dict[str, Dict[str, str]] = {
             "selection_bg": "indigo-100",
             "selection_text": "gray-900",
             "border": "gray-200",
+            "background_image": "https://transparenttextures.com/patterns/black-thread-light.png",
         },
         "dark": {
             "text": "gray-100",
@@ -496,6 +499,8 @@ THEME_DEFAULTS: Dict[str, Dict[str, str]] = {
             "selection_bg": "#2f3549",
             "selection_text": "white",
             "border": "#3b4261",
+            # "background_image": "https://transparenttextures.com/patterns/dark-leather.png",
+            "background_image": "https://transparenttextures.com/patterns/black-scales.png",
         },
     },
     "catppuccin": {
@@ -515,6 +520,7 @@ THEME_DEFAULTS: Dict[str, Dict[str, str]] = {
             "selection_text": "rose-900",
             "border": "rose-300",
             "code_theme": "stata-light",
+            "background_image": "https://transparenttextures.com/patterns/gray-floral.png",
         },
         "dark": {
             "text": "rose-200",
@@ -532,6 +538,7 @@ THEME_DEFAULTS: Dict[str, Dict[str, str]] = {
             "selection_text": "rose-50",
             "border": "#4e4e5a",
             "code_theme": "dracula",
+            "background_image": "https://transparenttextures.com/patterns/crissxcross.png",
         },
     },
     "everforest": {
@@ -551,6 +558,7 @@ THEME_DEFAULTS: Dict[str, Dict[str, str]] = {
             "selection_text": "green-900",
             "border": "green-300",
             "code_theme": "stata-light",
+            "background_image": "https://transparenttextures.com/patterns/cartographer.png",
         },
         "dark": {
             "text": "green-100",
@@ -568,6 +576,7 @@ THEME_DEFAULTS: Dict[str, Dict[str, str]] = {
             "selection_text": "white",
             "border": "#517d90",
             "code_theme": "stata-dark",
+            "background_image": "https://transparenttextures.com/patterns/cartographer.png",
         },
     },
     "gruvbox": {
@@ -586,6 +595,7 @@ THEME_DEFAULTS: Dict[str, Dict[str, str]] = {
             "selection_bg": "orange-200",
             "selection_text": "orange-900",
             "border": "orange-300",
+            "background_image": "https://transparenttextures.com/patterns/cartographer.png",
         },
         "dark": {
             "text": "orange-100",
@@ -602,6 +612,7 @@ THEME_DEFAULTS: Dict[str, Dict[str, str]] = {
             "selection_bg": "#665c54",
             "selection_text": "orange-50",
             "border": "#7c6f64",
+            "background_image": "https://transparenttextures.com/patterns/green-dust-and-scratches.png",
         },
     },
     "kanagwa": {
