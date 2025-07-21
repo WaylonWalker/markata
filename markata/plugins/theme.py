@@ -24,7 +24,8 @@ def print_color_swatch(name: str, hex_color: str):
 
 
 class Color(BaseColor):
-    def __init__(self, value=None, **kwargs):
+    def __init__(self, value=None, alpha=1.0, **kwargs):
+        self.__dict__["alpha"] = alpha
         if value is not None:
             # Handle Tailwind-style like "blue-500"
             if isinstance(value, str):
@@ -65,12 +66,20 @@ class Color(BaseColor):
     def __str__(self):
         return self.hex_l
 
+    def __str__(self):
+        # Convert to 8-digit hex if alpha < 1
+        hex_rgb = self.hex_l
+        if self.alpha < 1.0:
+            alpha_hex = f"{round(self.alpha * 255):02x}"
+            return f"{hex_rgb}{alpha_hex}"
+        return f"{hex_rgb}"
+
     def __repr__(self):
-        return self.hex_l
+        return str(self)
 
     def __rich_repr__(self) -> RichReprResult:
         text_color = "#000000" if self.get_luminance() > 0.5 else "#ffffff"
-        swatch = Text(f" {self.hex.ljust(46)} ", style=f"on {self.hex_l} {text_color}")
+        swatch = Text(f" {str(self).ljust(46)} ", style=f"on {str(self)} {text_color}")
         yield "swatch", swatch
 
     def __rich_console__(
@@ -82,7 +91,7 @@ class Color(BaseColor):
 
     def __rich__(self):
         text_color = "#000000" if self.get_luminance() > 0.5 else "#ffffff"
-        return Text(f" {self.hex} ", style=f"on {self.hex_l} {text_color}")
+        return Text(f" {str(self).ljust(46)} ", style=f"on {str(self)} {text_color}")
 
     def __add__(self, other):
         return self.mix_hsl(other)
@@ -167,6 +176,11 @@ class Color(BaseColor):
         h, s, l = self.get_hsl()
 
         return Color(hsl=(h, s, clamp(l - amount)))
+
+    def with_alpha(self, alpha):
+        new = Color(str(self))  # make a copy using the current hex
+        new.__dict__["alpha"] = max(0.0, min(1.0, alpha))
+        return new
 
 
 def clamp(value, min_value=0, max_value=1):
@@ -666,6 +680,7 @@ THEME_DEFAULTS: Dict[str, Dict[str, str]] = {
             "selection_text": "cyan-900",
             "border": "cyan-300",
             "code_theme": "solarized-light",
+            "background_image": "https://transparenttextures.com/patterns/green-gobbler.png",
         },
         "dark": {
             "text": "cyan-100",
@@ -683,6 +698,9 @@ THEME_DEFAULTS: Dict[str, Dict[str, str]] = {
             "selection_text": "cyan-50",
             "border": "#6b7d97",
             "code_theme": "nord-darker",
+            # "background_image": "https://transparenttextures.com/patterns/green-gobbler.png",
+            # "background_image": "https://transparenttextures.com/patterns/stardust.png",
+            # "background_image": "https://transparenttextures.com/patterns/asfalt-dark.png",
         },
     },
     "synthwave-84": {

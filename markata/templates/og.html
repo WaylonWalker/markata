@@ -2,19 +2,20 @@
 {% block content %}
 <article style="text-align: center;">
     <style>
+        html {
+        }
         body {
-            font-size: 600%;
-            background: black;
-            color: #FFCC00;
             min-height: 100vh;
+            height: 100vh;
             min-width: 100vw;
+            width: 100vw;
             margin: 0;
-            border: 6px solid #FFCC00;
+            border: 12px solid {{ markata.config.style.dark.accent }};
+            border-radius: 24px;
             display: flex;
             justify-content: center;
             align-items: center;
         }
-
         .edit {
             display: none;
         }

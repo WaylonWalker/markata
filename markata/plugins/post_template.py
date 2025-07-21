@@ -489,7 +489,11 @@ class HeadConfig(pydantic.BaseModel):
 class Config(pydantic.BaseModel):
     head: HeadConfig = HeadConfig()
     style: Style = Style()
-    post_template: Optional[Union[str | Dict[str, str]]] = "post.html"
+    post_template: Optional[Union[str | Dict[str, str]]] = {
+        "index": "post.html",
+        "partial": "post_partial.html",
+        "og": "og.html",
+    }
     dynamic_templates_dir: Path = Path(".markata.cache/templates")
     templates_dir: Union[Path, List[Path]] = pydantic.Field(Path("templates"))
     template_cache_dir: Path = Path(".markata.cache/template_bytecode")

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ markata.config.lang }}">
+<html lang="{{ markata.config.lang }}" class='dark'>
     <head>
         {% block head %}
             {% include 'base_head.html' %}
@@ -7,6 +7,7 @@
     </head>
     <body>
         <div id='bg-surface'></div>
+
         {% block body %}
             {% block content %} {% endblock %}
             {% block footer %} {% endblock %}

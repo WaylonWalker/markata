@@ -1,5 +1,25 @@
-<section class="title">
-    <h1 id="title">
+<section class="title h-screen max-h-screen flex flex-col justify-around items-center">
+<style>
+p.description {
+  font-size: clamp(1rem, 2.5vw, 1.75rem); /* responsive font size */
+  line-height: 1.2;
+  overflow-wrap: break-word;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+</style>
+    <h1 id="title" class='mt-0 pb-0 text-7xl'>
         {{ post.title }}
     </h1>
+    <div class='flex flex-wrap gap-2 justify-between w-screen'>
+    <p class='flex-1 text-xl self-end mx-auto mb-0 ml-1 text-[{{ markata.config.style.light.accent }}] dark:text-[{{ markata.config.style.dark.accent }}]'>
+    {{ post.date }}
+    </p>
+    <p class='description text-3xl m-0 p-0 mx-auto max-w-xl'>
+    {{ post.description }}
+    </p>
+    <p class='flex-1 text-xl self-end mx-auto mb-0 mr-1 text-[{{ markata.config.style.light.accent }}] dark:text-[{{ markata.config.style.dark.accent }}]'>
+    {{ markata.config.author_name }}
+    </p>
+    </div>
 </section>
