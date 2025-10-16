@@ -40,7 +40,7 @@ def load(markata: "Markata") -> None:
     for post in markata.posts:
         if hasattr(post, "raw"):
             key = markata.make_hash("skip", post.raw)
-            if markata.cache.get(key) == "done":
+            if markata.cache.get(key) == "done" and not post.get("jinja", False):
                 post.skip = True
     markata.console.log(
         f"{len(markata.filter('skip'))}/{len(markata.posts)} posts skipped"
