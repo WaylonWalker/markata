@@ -114,7 +114,9 @@ def pre_render(markata: "Markata") -> None:
         contributions is not None
         and (output_dir / "total_posts_over_time.png").exists()
     ):
-        print("Contribution graph already rendered, skipping analytics render")
+        markata.console.print(
+            "Contribution graph already rendered, skipping analytics render"
+        )
         # if conributions have not changed, don't render again
         return
 
