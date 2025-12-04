@@ -1,13 +1,13 @@
 """Markata's hook specification system for plugin development.
 
-# Overview
+## Overview
 
 Markata uses pluggy to define hooks that plugins can implement. These hooks allow plugins
 to modify Markata's behavior at specific points in the build process.
 
-# Hook Types
+## Hook Types
 
-## Configuration Hooks
+### Configuration Hooks
 
 Used to set up plugin configuration and models:
 
@@ -84,7 +84,7 @@ def save(markata):
         (output_dir / "custom.html").write_text(index)
 ```
 
-# Hook Ordering
+## Hook Ordering
 
 Control execution order with decorators:
 
@@ -102,7 +102,7 @@ def configure(markata): ...
 def configure(markata): ...
 ```
 
-# Attribute Registration
+## Attribute Registration
 
 Register data on the Markata instance:
 
@@ -125,7 +125,7 @@ def render(markata):
     print(markata.articles)  # Access registered data
 ```
 
-# Complex Example
+## Complex Example
 
 Here's a complete plugin example combining multiple hooks:
 

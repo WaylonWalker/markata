@@ -412,7 +412,12 @@ def _load_config_file(file_spec: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         yaml.YAMLError,
         tomli.TOMLDecodeError,
         configparser.Error,
-    ):
+    ) as e:
+        # warn if var tool name in file name
+        if file_spec["keys"][0] in str(path):
+            message = f"Failed to load config file: {path}: {e}"
+            raise UserWarning(message)
+
         return None
 
 

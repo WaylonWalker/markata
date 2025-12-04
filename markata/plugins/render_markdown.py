@@ -141,7 +141,7 @@ class Config(pydantic.BaseModel):
 
 
 class RenderMarkdownPost(pydantic.BaseModel):
-    html: Optional[str] = None
+    html: Optional[Dict[str, str] | str] = None
     model_config = pydantic.ConfigDict(
         validate_assignment=False,
         arbitrary_types_allowed=True,

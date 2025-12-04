@@ -73,7 +73,10 @@ markout/
 ```
 """
 
+import filecmp
+import os
 import shutil
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from markata.hookspec import hook_impl
@@ -82,12 +85,24 @@ if TYPE_CHECKING:
     from markata import Markata
 
 
+def copy_if_changed(src_dir, dst_dir):
+    src_dir = Path(src_dir)
+    dst_dir = Path(dst_dir)
+    for root, _, files in os.walk(src_dir):
+        rel_root = Path(root).relative_to(src_dir)
+        dst_root = dst_dir / rel_root
+        dst_root.mkdir(parents=True, exist_ok=True)
+        for fname in files:
+            src_file = Path(root) / fname
+            dst_file = dst_root / fname
+            if not dst_file.exists() or not filecmp.cmp(
+                src_file, dst_file, shallow=False
+            ):
+                shutil.copy2(src_file, dst_file)  # preserves metadata
+
+
 @hook_impl
 def save(markata: "Markata") -> None:
     with markata.console.status("copying assets", spinner="aesthetic", speed=0.2):
         if markata.config.assets_dir.exists():
-            shutil.copytree(
-                markata.config.assets_dir,
-                markata.config.output_dir,
-                dirs_exist_ok=True,
-            )
+            copy_if_changed(markata.config.assets_dir, markata.config.output_dir)

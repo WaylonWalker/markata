@@ -1,0 +1,135 @@
+<style>
+/* Overlay styles */
+#img-zoom-overlay {
+  display: none;
+  position: fixed; z-index: 9999; left: 0; top: 0; width: 100vw; height: 100vh;
+  background: rgba(0,0,0,0.97);
+  justify-content: center; align-items: center;
+  cursor: zoom-out;
+}
+#img-zoom-overlay.active { display: flex; }
+#img-zoom-overlay img {
+  max-width: 90vw;
+  max-height: 90vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  box-shadow: 0 2px 32px #000a;
+  transition: transform 0.2s;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}</style>
+<div id="img-zoom-overlay"><img src=""/></div>
+<script>
+// Medium-like image zoom for all images in .post-content
+(function() {
+  // Config: Change selector if needed!
+  const imgSelector = 'img';
+  const overlay = document.getElementById('img-zoom-overlay');
+    console.log(overlay);
+  const zoomImg = overlay.querySelector('img');
+  let scale = 1, originX = 0.5, originY = 0.5, start = {x:0,y:0}, pan = {x:0,y:0}, isPanning = false;
+
+  // Open overlay on image click
+  document.addEventListener('click', function(e) {
+    const img = e.target.closest(imgSelector);
+    if (!img) return;
+    e.preventDefault();
+    zoomImg.src = img.src;
+    scale = 1; pan = {x:0, y:0}; zoomImg.style.transform = "none";
+    overlay.classList.add('active');
+  });
+
+  // Close overlay on click/Esc
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) overlay.classList.remove('active');
+  });
+  document.addEventListener('keydown', e => {
+    if (overlay.classList.contains('active') && e.key === 'Escape') overlay.classList.remove('active');
+  });
+
+  // Mouse wheel zoom
+  zoomImg.addEventListener('wheel', function(e) {
+    e.preventDefault();
+    // Get mouse position relative to image
+    const rect = zoomImg.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+    // Compute the percent position
+    const percentX = mouseX / rect.width;
+    const percentY = mouseY / rect.height;
+
+    // Set transform-origin to the mouse point
+    zoomImg.style.transformOrigin = `${percentX * 100}% ${percentY * 100}%`;
+
+    // Update scale
+    let delta = e.deltaY > 0 ? -0.15 : 0.15;
+    scale = Math.max(1, scale + delta);
+
+    zoomImg.style.transform = `scale(${scale}) translate(${pan.x}px, ${pan.y}px)`;
+  });
+
+  // Mouse drag to pan
+
+zoomImg.addEventListener('mousedown', function(e) {
+  if (scale === 1 || e.button !== 0) return; // Only left button, only when zoomed
+  isPanning = true;
+  start.x = e.clientX;
+  start.y = e.clientY;
+  zoomImg.style.cursor = 'grabbing';
+  e.preventDefault();
+});
+
+window.addEventListener('mousemove', function(e) {
+  if (!isPanning) return;
+  pan.x += e.clientX - start.x;
+  pan.y += e.clientY - start.y;
+  start.x = e.clientX;
+  start.y = e.clientY;
+  zoomImg.style.transform = `scale(${scale}) translate(${pan.x}px, ${pan.y}px)`;
+});
+
+window.addEventListener('mouseup', function(e) {
+  if (isPanning) {
+    isPanning = false;
+    zoomImg.style.cursor = 'grab';
+  }
+});
+  // Touch: pinch to zoom, drag to pan
+  let lastDist = null;
+  zoomImg.addEventListener('touchstart', function(e) {
+    if (e.touches.length === 2) {
+      lastDist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+    } else if (e.touches.length === 1 && scale > 1) {
+      start.x = e.touches[0].clientX; start.y = e.touches[0].clientY;
+    }
+  });
+  zoomImg.addEventListener('touchmove', function(e) {
+    if (e.touches.length === 2 && lastDist !== null) {
+      let newDist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      let delta = (newDist - lastDist) / 150;
+      scale = Math.max(1, scale + delta);
+      zoomImg.style.transform = `scale(${scale}) translate(${pan.x}px, ${pan.y}px)`;
+      lastDist = newDist;
+    } else if (e.touches.length === 1 && scale > 1) {
+      let dx = e.touches[0].clientX - start.x;
+      let dy = e.touches[0].clientY - start.y;
+      pan.x += dx; pan.y += dy;
+      zoomImg.style.transform = `scale(${scale}) translate(${pan.x}px, ${pan.y}px)`;
+      start.x = e.touches[0].clientX; start.y = e.touches[0].clientY;
+      e.preventDefault();
+    }
+  });
+  zoomImg.addEventListener('touchend', function(e) {
+    if (e.touches.length < 2) lastDist = null;
+  });
+})();
+        </script>
+
