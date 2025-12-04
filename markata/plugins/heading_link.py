@@ -74,6 +74,7 @@ from typing import TYPE_CHECKING
 
 from bs4 import BeautifulSoup
 
+from markata import __version__
 from markata import Markata
 from markata.hookspec import hook_impl
 
@@ -93,7 +94,7 @@ def post_render(markata: Markata) -> None:
             key = markata.make_hash(
                 "heading_link",
                 "post_render",
-                Path(__file__).read_text(),
+                __version__,
                 article.content,
                 article.html,
             )
