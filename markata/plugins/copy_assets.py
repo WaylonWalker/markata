@@ -106,8 +106,3 @@ def save(markata: "Markata") -> None:
     with markata.console.status("copying assets", spinner="aesthetic", speed=0.2):
         if markata.config.assets_dir.exists():
             copy_if_changed(markata.config.assets_dir, markata.config.output_dir)
-            # shutil.copytree(
-            #     markata.config.assets_dir,
-            #     markata.config.output_dir,
-            #     dirs_exist_ok=True,
-            # )
