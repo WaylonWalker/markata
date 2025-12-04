@@ -147,7 +147,7 @@ def set_description(
     the configured descriptions for the article.
     """
     key = markata.make_hash(
-        "auto_description-v5",
+        "auto_description",
         article.content,
         plugin_text,
         config,
