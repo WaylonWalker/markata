@@ -85,13 +85,17 @@ This plugin depends on:
 
 """
 
-import html
+import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import Dict
 
+from bs4 import MarkupResemblesLocatorWarning
+
 from markata.hookspec import hook_impl
+
+warnings.filterwarnings("ignore", category=MarkupResemblesLocatorWarning)
 
 if TYPE_CHECKING:
     from diskcache import FanoutCache
@@ -104,20 +108,30 @@ def get_description(article: "Post") -> str:
     """
     Get the full-length description for a single post by converting markdown to plain text.
     Uses markdown-it-py to parse the markdown and extracts text content from all nodes.
+    Strips out any HTML tags, returning only plain text. Properly handles markdown links and formatting.
     """
+    from bs4 import BeautifulSoup
     from markdown_it import MarkdownIt
+
+    def extract_text(tokens):
+        text_chunks = []
+        for token in tokens:
+            # If the token has children, recursively extract from children
+            if hasattr(token, "children") and token.children:
+                text_chunks.append(extract_text(token.children))
+            elif token.type == "text":
+                text_chunks.append(token.content)
+        return " ".join(text_chunks)
 
     md = MarkdownIt("commonmark")
     tokens = md.parse(article.content)
 
-    # Extract text content from all inline tokens
-    text_chunks = []
-    for token in tokens:
-        if token.type == "inline" and token.content:
-            text_chunks.append(token.content)
-
-    description = " ".join(text_chunks)
-    return html.escape(description)
+    # Recursively extract visible text from all tokens
+    description = extract_text(tokens)
+    # Remove any HTML tags using BeautifulSoup
+    soup = BeautifulSoup(description, "html.parser")
+    plain_text = soup.get_text(separator=" ", strip=True)
+    return plain_text
 
 
 def set_description(
@@ -139,20 +153,33 @@ def set_description(
         config,
     )
 
-    description_from_cache = markata.precache.get(key)
+    description_from_cache = markata.cache.get(key)
+
     if description_from_cache is None:
         description = get_description(article)[:max_description]
         markata.cache.set(key, description, expire=markata.config.default_cache_expire)
     else:
         description = description_from_cache
+    article["description"] = description
 
     for description_key in config:
         if description_key not in ["cache_expire", "config_key"]:
+            desc_len = config[description_key]["len"]
+
+            # Truncate to word boundary and add ellipsis if needed
+            def safe_truncate(text, max_len):
+                if len(text) > max_len:
+                    truncated = text[:max_len].rstrip()
+                    if " " in truncated:
+                        truncated = truncated[: truncated.rfind(" ")].rstrip()
+                    return truncated + "…"
+                return text
+
             # overwrites missing (None) and empty ('')
             if not article.metadata.get(description_key):
-                article.metadata[description_key] = description[
-                    : config[description_key]["len"]
-                ]
+                article.metadata[description_key] = safe_truncate(description, desc_len)
+            if description_key == "description":
+                article["description"] = safe_truncate(description, desc_len)
 
 
 @hook_impl
@@ -185,7 +212,8 @@ def pre_render(markata: "Markata") -> None:
     )
 
     with markata.cache as cache:
-        for article in markata.iter_articles("setting auto description"):
+        # for article in markata.iter_articles("setting auto description"):
+        for article in markata.articles:
             set_description(
                 markata=markata,
                 article=article,

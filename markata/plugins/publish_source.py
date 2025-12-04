@@ -74,51 +74,10 @@ This plugin depends on:
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-import frontmatter
-import yaml
-from yaml.representer import RepresenterError
-
 from markata.hookspec import hook_impl
 
 if TYPE_CHECKING:
     from markata import Markata
-
-
-def _save(output_dir: Path, article: frontmatter.Post) -> None:
-    """
-    saves the article to the output directory at its specified slug.
-    """
-    path = Path(
-        output_dir / Path(article["slug"]).parent / Path(article["path"]).name,
-    )
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(article.dumps())
-
-
-def _strip_unserializable_values(
-    markata: "Markata",
-    article: frontmatter.Post,
-) -> frontmatter.Post:
-    """
-    Returns an article with only yaml serializable frontmatter.
-    """
-    _article = frontmatter.Post(
-        article.content,
-        **{k: v for k, v in article.metadata.items() if k != "content"},
-    )
-    kwargs = {
-        "Dumper": yaml.cyaml.CSafeDumper,
-        "default_flow_style": False,
-        "allow_unicode": True,
-    }
-    for key, value in article.metadata.items():
-        try:
-            yaml.dump({key: value}, **kwargs)
-        except RepresenterError:
-            del _article[key]
-    if markata.Post:
-        _article = markata.Post(**_article.metadata, path=str(article.path))
-    return _article
 
 
 @hook_impl
@@ -134,9 +93,10 @@ def save(markata: "Markata") -> None:
     for article in markata.filter(
         "not skip"
     ):  # iter_articles(description="saving source documents"):
-        try:
-            _save(output_dir, article)
-        except RepresenterError:
-            _article = _strip_unserializable_values(markata, article)
-
-            _save(output_dir, _article)
+        path = Path(
+            output_dir / Path(article["slug"]).parent / Path(article["path"]).name,
+        )
+        current_content = path.read_text() if path.exists() else ""
+        if current_content != article.dumps():
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(article.dumps())

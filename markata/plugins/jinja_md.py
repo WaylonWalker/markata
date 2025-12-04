@@ -98,6 +98,7 @@ This plugin depends on:
 from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Any
+from typing import Dict
 from typing import List
 from typing import Optional
 
@@ -174,7 +175,7 @@ class PostTemplateSyntaxError(TemplateSyntaxError):
 class JinjaMd(pydantic.BaseModel):
     markata: Any = Field(None, exclude=True)
     content: str = ""
-    article_html: Optional[str] = None
+    article_html: Optional[Dict[str, str] | str] = None
     jinja: bool = Field(default=False)
     model_config = pydantic.ConfigDict(
         validate_assignment=False,
