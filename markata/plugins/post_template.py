@@ -548,12 +548,33 @@ def get_template(markata, template):
     return template
 
 
+def get_templates_mtime(markata):
+    """Get latest mtime from all template directories.
+    
+    This tracks changes to any template file including includes, extends, and imports.
+    """
+    max_mtime = 0
+    for template_dir in markata.jinja_env.template_paths:
+        template_path = Path(template_dir)
+        if template_path.exists():
+            for path in template_path.rglob('*'):
+                if path.is_file():
+                    try:
+                        max_mtime = max(max_mtime, path.stat().st_mtime)
+                    except (OSError, FileNotFoundError):
+                        continue
+    return max_mtime
+
+
 def render_article(markata, cache, article):
     """Render an article using cached templates."""
+    templates_mtime = get_templates_mtime(markata)
+    
     key = markata.make_hash(
         "post_template",
         __version__,
         article.key,
+        str(templates_mtime),  # Track template file changes
     )
 
     html = markata.precache.get(key)
