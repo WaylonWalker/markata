@@ -403,7 +403,7 @@ def get_template(markata, template):
 
 def get_templates_mtime(markata):
     """Get latest mtime from all template directories.
-    
+
     This tracks changes to any template file including includes, extends, and imports.
     """
     max_mtime = 0
@@ -422,7 +422,7 @@ def get_templates_mtime(markata):
 def render_article(markata, cache, article):
     """Render an article using cached templates."""
     templates_mtime = get_templates_mtime(markata)
-    
+
     key = markata.make_hash(
         "post_template",
         __version__,

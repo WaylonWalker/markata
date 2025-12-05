@@ -220,8 +220,8 @@ def pre_render(markata: "Markata") -> None:
                 # Include post metadata and markata version in cache key
                 # since these affect the rendered output
                 key = markata.make_hash(
-                    "jinja_md", 
-                    "pre_render", 
+                    "jinja_md",
+                    "pre_render",
                     post.content,
                     str(post.to_dict()),  # Include all post metadata
                     __version__,  # Include markata version
