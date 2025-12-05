@@ -69,13 +69,12 @@ This plugin depends on:
 """
 
 import re
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 from bs4 import BeautifulSoup
 
-from markata import __version__
 from markata import Markata
+from markata import __version__
 from markata.hookspec import hook_impl
 
 if TYPE_CHECKING:

@@ -442,7 +442,7 @@ def pre_render(markata: Markata) -> None:
 
 def get_templates_mtime(markata):
     """Get latest mtime from all template directories.
-    
+
     This tracks changes to any template file including includes, extends, and imports.
     """
     max_mtime = 0
@@ -520,7 +520,7 @@ def create_page(
     template = get_template(markata, feed.config.template)
     partial_template = get_template(markata, feed.config.partial_template)
     canonical_url = f"{markata.config.url}/{feed.config.slug}/"
-    
+
     # Get templates mtime to bust cache when any template changes
     templates_mtime = get_templates_mtime(markata)
 
