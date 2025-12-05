@@ -1,5 +1,33 @@
 # Markata Changelog
 
+## 0.11.0
+
+### Cache Invalidation Improvements
+
+- Fix: feeds now properly invalidate cache when post metadata changes (title, date, slug, published, description)
+- Fix: feeds now properly invalidate cache when template files are modified
+- Fix: post_template now tracks template file changes for cache invalidation
+- Fix: redirects now invalidate cache when template files change
+- Fix: jinja_md now includes post metadata and version in cache keys
+- Fix: standardized cache keys across plugins to include `__version__` for proper invalidation on updates
+- Fix: render_markdown now includes backend and extensions in cache key
+- Perf: heading_link replaced expensive file I/O with `__version__` in cache key
+
+### Template Utilities (Breaking for Plugin Authors)
+
+- **BREAKING**: Removed internal `get_template()` functions from `feeds.py` and `post_template.py`
+- Feat: added centralized `get_template()`, `get_template_paths()`, and `get_templates_mtime()` to `jinja_env` plugin
+- Feat: `get_template()` includes automatic caching with `@lru_cache` and smart fallback handling
+- **Plugin authors**: Import from `markata.plugins.jinja_env` instead of using internal functions
+  ```python
+  from markata.plugins.jinja_env import get_template, get_templates_mtime
+  template = get_template(markata.jinja_env, "template.html")
+  ```
+
+## 0.10.1
+
+- Release: version bump
+
 ## 0.10.0
 
 - Fix: `auto_description` now more accurately returns plain text, does not cut off words, and add an ellipsis.
