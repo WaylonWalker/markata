@@ -192,7 +192,6 @@ import datetime
 import shutil
 import textwrap
 import warnings
-from functools import lru_cache
 from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Any
@@ -217,7 +216,6 @@ from markata.errors import DeprecationWarning
 from markata.hookspec import hook_impl
 from markata.hookspec import register_attr
 from markata.plugins.jinja_env import get_template
-from markata.plugins.jinja_env import get_template_paths
 from markata.plugins.jinja_env import get_templates_mtime
 
 if TYPE_CHECKING:

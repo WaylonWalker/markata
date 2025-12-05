@@ -242,7 +242,6 @@ from pydantic import model_validator
 from markata import __version__
 from markata.hookspec import hook_impl
 from markata.plugins.jinja_env import get_template
-from markata.plugins.jinja_env import get_template_paths
 from markata.plugins.jinja_env import get_templates_mtime
 
 if TYPE_CHECKING:
