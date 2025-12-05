@@ -174,6 +174,7 @@ def render(markata: Markata) -> None:
                 twitter_card,
                 article.metadata["title"],
                 str(config_seo),
+                __version__,
             )
 
             html_from_cache = markata.precache.get(key)

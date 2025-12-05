@@ -93,6 +93,7 @@ from typing import Dict
 
 from bs4 import MarkupResemblesLocatorWarning
 
+from markata import __version__
 from markata.hookspec import hook_impl
 
 warnings.filterwarnings("ignore", category=MarkupResemblesLocatorWarning)
@@ -151,6 +152,7 @@ def set_description(
         article.content,
         plugin_text,
         config,
+        __version__,
     )
 
     description_from_cache = markata.cache.get(key)

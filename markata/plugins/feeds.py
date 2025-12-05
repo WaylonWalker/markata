@@ -192,7 +192,6 @@ import datetime
 import shutil
 import textwrap
 import warnings
-from functools import lru_cache
 from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Any
@@ -216,6 +215,8 @@ from markata import background
 from markata.errors import DeprecationWarning
 from markata.hookspec import hook_impl
 from markata.hookspec import register_attr
+from markata.plugins.jinja_env import get_template
+from markata.plugins.jinja_env import get_templates_mtime
 
 if TYPE_CHECKING:
     from frontmatter import Post
@@ -440,25 +441,6 @@ def pre_render(markata: Markata) -> None:
     markata.feeds = Feeds(markata)
 
 
-@lru_cache()
-def get_template(markata, template):
-    try:
-        return markata.jinja_env.get_template(template)
-    except jinja2.TemplateNotFound:
-        # try to load it as a file
-        ...
-
-    try:
-        return Template(Path(template).read_text(), undefined=SilentUndefined)
-    except FileNotFoundError:
-        # default to load it as a string
-        ...
-    except OSError:  # thrown by File name too long
-        # default to load it as a string
-        ...
-    return Template(template, undefined=SilentUndefined)
-
-
 @hook_impl
 def save(markata: Markata) -> None:
     """
@@ -477,7 +459,7 @@ def save(markata: Markata) -> None:
     if not home.exists() and archive.exists():
         shutil.copy(str(archive), str(home))
 
-    xsl_template = get_template(markata, feed.config.xsl_template)
+    xsl_template = get_template(markata.jinja_env, feed.config.xsl_template)
     xsl = xsl_template.render(
         markata=markata,
         __version__=__version__,
@@ -499,9 +481,12 @@ def create_page(
     create an html unorderd list of posts.
     """
 
-    template = get_template(markata, feed.config.template)
-    partial_template = get_template(markata, feed.config.partial_template)
+    template = get_template(markata.jinja_env, feed.config.template)
+    partial_template = get_template(markata.jinja_env, feed.config.partial_template)
     canonical_url = f"{markata.config.url}/{feed.config.slug}/"
+
+    # Get templates mtime to bust cache when any template changes
+    templates_mtime = get_templates_mtime(markata.jinja_env)
 
     key = markata.make_hash(
         "feeds",
@@ -511,8 +496,9 @@ def create_page(
         markata.config.url,
         markata.config.description,
         feed.config.title,
-        feed.map("content"),
+        feed.map("str(post.to_dict())"),  # Track all post metadata, not just content
         canonical_url,
+        str(templates_mtime),  # Track template file changes
         # datetime.datetime.today(),
         # markata.config,
     )
@@ -574,7 +560,7 @@ def create_page(
 
     if feed_rss_from_cache is None:
         from_cache = False
-        rss_template = get_template(markata, feed.config.rss_template)
+        rss_template = get_template(markata.jinja_env, feed.config.rss_template)
         feed_rss = rss_template.render(markata=markata, feed=feed)
         cache.set(feed_rss_key, feed_rss)
     else:
@@ -582,7 +568,7 @@ def create_page(
 
     if feed_sitemap_from_cache is None:
         from_cache = False
-        sitemap_template = get_template(markata, feed.config.sitemap_template)
+        sitemap_template = get_template(markata.jinja_env, feed.config.sitemap_template)
         feed_sitemap = sitemap_template.render(markata=markata, feed=feed)
         cache.set(feed_sitemap_key, feed_sitemap)
     else:
@@ -630,32 +616,11 @@ def create_card(
     if template is None:
         template = markata.config.get("feeds_config", {}).get("card_template", None)
 
-    # Get template modification time if template exists
-    template_mtime = 0
-    if template:
-        template_path = None
-        # Check user template paths first
-        for path in markata.jinja_env.template_paths:
-            potential_path = Path(path) / template
-            if potential_path.exists():
-                template_path = potential_path
-                break
-
-        # Check package templates if not found in user paths
-        if not template_path:
-            import importlib
-
-            package_template = (
-                importlib.resources.files("markata") / "templates" / template
-            )
-            if package_template.exists():
-                template_path = package_template
-
-        if template_path:
-            template_mtime = template_path.stat().st_mtime
+    # Get templates mtime to bust cache when any template changes
+    templates_mtime = get_templates_mtime(markata.jinja_env)
 
     key = markata.make_hash(
-        "feeds", template, str(post), post.content, str(template_mtime)
+        "feeds", template, str(post.to_dict()), str(templates_mtime)
     )
 
     card = markata.precache.get(key)
