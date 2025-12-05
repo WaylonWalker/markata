@@ -536,21 +536,6 @@ class Config(pydantic.BaseModel):
         return templates_dir
 
 
-_template_cache = {}
-
-
-def _get_cached_template(markata, template):
-    """Get a template from the cache or compile it."""
-    cache_key = str(template)
-    if cache_key in _template_cache:
-        return _template_cache[cache_key]
-
-    if isinstance(template, str):
-        template = get_template(markata.jinja_env, template)
-    _template_cache[cache_key] = template
-    return template
-
-
 def render_article(markata, cache, article):
     """Render an article using cached templates."""
     templates_mtime = get_templates_mtime(markata.jinja_env)
@@ -568,12 +553,12 @@ def render_article(markata, cache, article):
         return html
 
     if isinstance(article.template, str):
-        template = _get_cached_template(markata, article.template)
+        template = get_template(markata.jinja_env, article.template)
         html = render_template(markata, article, template)
 
     if isinstance(article.template, dict):
         html = {
-            slug: render_template(markata, article, _get_cached_template(markata, template))
+            slug: render_template(markata, article, get_template(markata.jinja_env, template))
             for slug, template in article.template.items()
         }
     cache.set(key, html, expire=markata.config.default_cache_expire)
@@ -612,7 +597,7 @@ def save(markata: "Markata") -> None:
         if t.endswith("css") or t.endswith("js") or t.endswith("xsl")
     ]
     for template in linked_templates:
-        template = _get_cached_template(markata, template)
+        template = get_template(markata.jinja_env, template)
         css = template.render(markata=markata, __version__=__version__)
         Path(markata.config.output_dir / Path(template.filename).name).write_text(css)
 
