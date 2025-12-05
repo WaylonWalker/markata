@@ -61,6 +61,7 @@ def render_template(markata, content):
 - Silent undefined behavior means undefined variables render as empty strings
 """
 
+from functools import lru_cache
 from pathlib import Path
 from typing import List
 
@@ -259,13 +260,16 @@ def get_templates_mtime(env: Environment) -> float:
     return max_mtime
 
 
+@lru_cache(maxsize=128)
 def get_template(env: Environment, template: str) -> jinja2.Template:
-    """Get a template with fallback handling.
+    """Get a template with fallback handling and caching.
     
     Tries to load the template in the following order:
     1. From the Jinja2 environment (template loader)
     2. As a file path (if the string is a valid file path)
     3. As a string template (direct template compilation)
+    
+    Templates are cached after loading for performance.
     
     Args:
         env: Jinja2 Environment instance

@@ -443,12 +443,6 @@ def pre_render(markata: Markata) -> None:
     markata.feeds = Feeds(markata)
 
 
-@lru_cache()
-def _get_cached_template(markata, template):
-    """Get a template with caching, using the centralized get_template function."""
-    return get_template(markata.jinja_env, template)
-
-
 @hook_impl
 def save(markata: Markata) -> None:
     """
@@ -467,7 +461,7 @@ def save(markata: Markata) -> None:
     if not home.exists() and archive.exists():
         shutil.copy(str(archive), str(home))
 
-    xsl_template = _get_cached_template(markata, feed.config.xsl_template)
+    xsl_template = get_template(markata.jinja_env, feed.config.xsl_template)
     xsl = xsl_template.render(
         markata=markata,
         __version__=__version__,
@@ -489,8 +483,8 @@ def create_page(
     create an html unorderd list of posts.
     """
 
-    template = _get_cached_template(markata, feed.config.template)
-    partial_template = _get_cached_template(markata, feed.config.partial_template)
+    template = get_template(markata.jinja_env, feed.config.template)
+    partial_template = get_template(markata.jinja_env, feed.config.partial_template)
     canonical_url = f"{markata.config.url}/{feed.config.slug}/"
 
     # Get templates mtime to bust cache when any template changes
@@ -568,7 +562,7 @@ def create_page(
 
     if feed_rss_from_cache is None:
         from_cache = False
-        rss_template = _get_cached_template(markata, feed.config.rss_template)
+        rss_template = get_template(markata.jinja_env, feed.config.rss_template)
         feed_rss = rss_template.render(markata=markata, feed=feed)
         cache.set(feed_rss_key, feed_rss)
     else:
@@ -576,7 +570,7 @@ def create_page(
 
     if feed_sitemap_from_cache is None:
         from_cache = False
-        sitemap_template = _get_cached_template(markata, feed.config.sitemap_template)
+        sitemap_template = get_template(markata.jinja_env, feed.config.sitemap_template)
         feed_sitemap = sitemap_template.render(markata=markata, feed=feed)
         cache.set(feed_sitemap_key, feed_sitemap)
     else:
