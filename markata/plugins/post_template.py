@@ -242,6 +242,9 @@ from rich.console import Console
 
 from markata import __version__
 from markata.hookspec import hook_impl
+from markata.plugins.jinja_env import get_template
+from markata.plugins.jinja_env import get_template_paths
+from markata.plugins.jinja_env import get_templates_mtime
 
 if TYPE_CHECKING:
     from markata import Markata
@@ -536,56 +539,21 @@ class Config(pydantic.BaseModel):
 _template_cache = {}
 
 
-def get_template(markata, template):
+def _get_cached_template(markata, template):
     """Get a template from the cache or compile it."""
     cache_key = str(template)
     if cache_key in _template_cache:
         return _template_cache[cache_key]
 
     if isinstance(template, str):
-        template = markata.jinja_env.get_template(template)
+        template = get_template(markata.jinja_env, template)
     _template_cache[cache_key] = template
     return template
 
 
-def get_template_paths(env):
-    """Extract template paths from Jinja2 Environment's loader."""
-    from jinja2 import ChoiceLoader, FileSystemLoader
-    
-    paths = []
-    loader = env.loader
-    
-    if isinstance(loader, ChoiceLoader):
-        for sub_loader in loader.loaders:
-            if isinstance(sub_loader, FileSystemLoader):
-                paths.extend(sub_loader.searchpath)
-    elif isinstance(loader, FileSystemLoader):
-        paths.extend(loader.searchpath)
-    
-    return paths
-
-
-def get_templates_mtime(markata):
-    """Get latest mtime from all template directories.
-
-    This tracks changes to any template file including includes, extends, and imports.
-    """
-    max_mtime = 0
-    for template_dir in get_template_paths(markata.jinja_env):
-        template_path = Path(template_dir)
-        if template_path.exists():
-            for path in template_path.rglob('*'):
-                if path.is_file():
-                    try:
-                        max_mtime = max(max_mtime, path.stat().st_mtime)
-                    except (OSError, FileNotFoundError):
-                        continue
-    return max_mtime
-
-
 def render_article(markata, cache, article):
     """Render an article using cached templates."""
-    templates_mtime = get_templates_mtime(markata)
+    templates_mtime = get_templates_mtime(markata.jinja_env)
 
     key = markata.make_hash(
         "post_template",
@@ -600,12 +568,12 @@ def render_article(markata, cache, article):
         return html
 
     if isinstance(article.template, str):
-        template = get_template(markata, article.template)
+        template = _get_cached_template(markata, article.template)
         html = render_template(markata, article, template)
 
     if isinstance(article.template, dict):
         html = {
-            slug: render_template(markata, article, get_template(markata, template))
+            slug: render_template(markata, article, _get_cached_template(markata, template))
             for slug, template in article.template.items()
         }
     cache.set(key, html, expire=markata.config.default_cache_expire)
@@ -644,7 +612,7 @@ def save(markata: "Markata") -> None:
         if t.endswith("css") or t.endswith("js") or t.endswith("xsl")
     ]
     for template in linked_templates:
-        template = get_template(markata, template)
+        template = _get_cached_template(markata, template)
         css = template.render(markata=markata, __version__=__version__)
         Path(markata.config.output_dir / Path(template.filename).name).write_text(css)
 

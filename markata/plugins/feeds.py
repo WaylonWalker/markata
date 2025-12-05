@@ -216,6 +216,9 @@ from markata import background
 from markata.errors import DeprecationWarning
 from markata.hookspec import hook_impl
 from markata.hookspec import register_attr
+from markata.plugins.jinja_env import get_template
+from markata.plugins.jinja_env import get_template_paths
+from markata.plugins.jinja_env import get_templates_mtime
 
 if TYPE_CHECKING:
     from frontmatter import Post
@@ -440,58 +443,10 @@ def pre_render(markata: Markata) -> None:
     markata.feeds = Feeds(markata)
 
 
-def get_template_paths(env):
-    """Extract template paths from Jinja2 Environment's loader."""
-    from jinja2 import ChoiceLoader, FileSystemLoader
-    
-    paths = []
-    loader = env.loader
-    
-    if isinstance(loader, ChoiceLoader):
-        for sub_loader in loader.loaders:
-            if isinstance(sub_loader, FileSystemLoader):
-                paths.extend(sub_loader.searchpath)
-    elif isinstance(loader, FileSystemLoader):
-        paths.extend(loader.searchpath)
-    
-    return paths
-
-
-def get_templates_mtime(markata):
-    """Get latest mtime from all template directories.
-
-    This tracks changes to any template file including includes, extends, and imports.
-    """
-    max_mtime = 0
-    for template_dir in get_template_paths(markata.jinja_env):
-        template_path = Path(template_dir)
-        if template_path.exists():
-            for path in template_path.rglob('*'):
-                if path.is_file():
-                    try:
-                        max_mtime = max(max_mtime, path.stat().st_mtime)
-                    except (OSError, FileNotFoundError):
-                        continue
-    return max_mtime
-
-
 @lru_cache()
-def get_template(markata, template):
-    try:
-        return markata.jinja_env.get_template(template)
-    except jinja2.TemplateNotFound:
-        # try to load it as a file
-        ...
-
-    try:
-        return Template(Path(template).read_text(), undefined=SilentUndefined)
-    except FileNotFoundError:
-        # default to load it as a string
-        ...
-    except OSError:  # thrown by File name too long
-        # default to load it as a string
-        ...
-    return Template(template, undefined=SilentUndefined)
+def _get_cached_template(markata, template):
+    """Get a template with caching, using the centralized get_template function."""
+    return get_template(markata.jinja_env, template)
 
 
 @hook_impl
@@ -512,7 +467,7 @@ def save(markata: Markata) -> None:
     if not home.exists() and archive.exists():
         shutil.copy(str(archive), str(home))
 
-    xsl_template = get_template(markata, feed.config.xsl_template)
+    xsl_template = _get_cached_template(markata, feed.config.xsl_template)
     xsl = xsl_template.render(
         markata=markata,
         __version__=__version__,
@@ -534,12 +489,12 @@ def create_page(
     create an html unorderd list of posts.
     """
 
-    template = get_template(markata, feed.config.template)
-    partial_template = get_template(markata, feed.config.partial_template)
+    template = _get_cached_template(markata, feed.config.template)
+    partial_template = _get_cached_template(markata, feed.config.partial_template)
     canonical_url = f"{markata.config.url}/{feed.config.slug}/"
 
     # Get templates mtime to bust cache when any template changes
-    templates_mtime = get_templates_mtime(markata)
+    templates_mtime = get_templates_mtime(markata.jinja_env)
 
     key = markata.make_hash(
         "feeds",
@@ -613,7 +568,7 @@ def create_page(
 
     if feed_rss_from_cache is None:
         from_cache = False
-        rss_template = get_template(markata, feed.config.rss_template)
+        rss_template = _get_cached_template(markata, feed.config.rss_template)
         feed_rss = rss_template.render(markata=markata, feed=feed)
         cache.set(feed_rss_key, feed_rss)
     else:
@@ -621,7 +576,7 @@ def create_page(
 
     if feed_sitemap_from_cache is None:
         from_cache = False
-        sitemap_template = get_template(markata, feed.config.sitemap_template)
+        sitemap_template = _get_cached_template(markata, feed.config.sitemap_template)
         feed_sitemap = sitemap_template.render(markata=markata, feed=feed)
         cache.set(feed_sitemap_key, feed_sitemap)
     else:
@@ -670,7 +625,7 @@ def create_card(
         template = markata.config.get("feeds_config", {}).get("card_template", None)
 
     # Get templates mtime to bust cache when any template changes
-    templates_mtime = get_templates_mtime(markata)
+    templates_mtime = get_templates_mtime(markata.jinja_env)
 
     key = markata.make_hash(
         "feeds", template, str(post.to_dict()), str(templates_mtime)
