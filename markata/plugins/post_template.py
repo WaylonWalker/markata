@@ -548,13 +548,30 @@ def get_template(markata, template):
     return template
 
 
+def get_template_paths(env):
+    """Extract template paths from Jinja2 Environment's loader."""
+    from jinja2 import ChoiceLoader, FileSystemLoader
+    
+    paths = []
+    loader = env.loader
+    
+    if isinstance(loader, ChoiceLoader):
+        for sub_loader in loader.loaders:
+            if isinstance(sub_loader, FileSystemLoader):
+                paths.extend(sub_loader.searchpath)
+    elif isinstance(loader, FileSystemLoader):
+        paths.extend(loader.searchpath)
+    
+    return paths
+
+
 def get_templates_mtime(markata):
     """Get latest mtime from all template directories.
 
     This tracks changes to any template file including includes, extends, and imports.
     """
     max_mtime = 0
-    for template_dir in markata.jinja_env.template_paths:
+    for template_dir in get_template_paths(markata.jinja_env):
         template_path = Path(template_dir)
         if template_path.exists():
             for path in template_path.rglob('*'):
