@@ -216,34 +216,34 @@ def configure(markata: Markata) -> None:
 
 def get_template_paths(env: Environment) -> list[str]:
     """Extract template paths from Jinja2 Environment's loader.
-    
+
     Args:
         env: Jinja2 Environment instance
-        
+
     Returns:
         List of template directory paths from all FileSystemLoaders
     """
     paths = []
     loader = env.loader
-    
+
     if isinstance(loader, ChoiceLoader):
         for sub_loader in loader.loaders:
             if isinstance(sub_loader, FileSystemLoader):
                 paths.extend(sub_loader.searchpath)
     elif isinstance(loader, FileSystemLoader):
         paths.extend(loader.searchpath)
-    
+
     return paths
 
 
 def get_templates_mtime(env: Environment) -> float:
     """Get latest mtime from all template directories.
-    
+
     This tracks changes to any template file including includes, extends, and imports.
-    
+
     Args:
         env: Jinja2 Environment instance
-        
+
     Returns:
         Maximum modification time across all template files, or 0 if none found
     """
@@ -263,18 +263,18 @@ def get_templates_mtime(env: Environment) -> float:
 @lru_cache(maxsize=128)
 def get_template(env: Environment, template: str) -> jinja2.Template:
     """Get a template with fallback handling and caching.
-    
+
     Tries to load the template in the following order:
     1. From the Jinja2 environment (template loader)
     2. As a file path (if the string is a valid file path)
     3. As a string template (direct template compilation)
-    
+
     Templates are cached after loading for performance.
-    
+
     Args:
         env: Jinja2 Environment instance
         template: Template name, file path, or template string
-        
+
     Returns:
         Compiled Jinja2 Template object
     """
@@ -283,7 +283,7 @@ def get_template(env: Environment, template: str) -> jinja2.Template:
         return env.get_template(template)
     except jinja2.TemplateNotFound:
         pass
-    
+
     # Try to load as a file
     try:
         template_content = Path(template).read_text()
@@ -292,6 +292,6 @@ def get_template(env: Environment, template: str) -> jinja2.Template:
         pass
     except OSError:  # File name too long, etc.
         pass
-    
+
     # Fall back to treating it as a string template
     return env.from_string(template)
