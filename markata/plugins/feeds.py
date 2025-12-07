@@ -244,6 +244,8 @@ class FeedConfig(pydantic.BaseModel, JupyterMixin):
     tail: Optional[int] = None
     rss: bool = True
     sitemap: bool = True
+    atom: bool = True
+    atom_template: str = "atom.xml"
     # feed_groups: Dict[str, List[str]] = Field(default_factory=dict)
     # sidebar_feeds: List[str] = Field(default_factory=list)
     card_template: str = "card.html"
@@ -471,7 +473,6 @@ def save(markata: Markata) -> None:
     if current_xsl != xsl:
         xsl_file.write_text(xsl)
 
-
 def create_page(
     markata: Markata,
     feed: Feed,
@@ -492,7 +493,6 @@ def create_page(
         "feeds",
         template,
         __version__,
-        # cards,
         markata.config.url,
         markata.config.description,
         feed.config.title,
@@ -507,11 +507,13 @@ def create_page(
     html_partial_key = markata.make_hash(key, "partial_html")
     feed_rss_key = markata.make_hash(key, "rss")
     feed_sitemap_key = markata.make_hash(key, "sitemap")
+    feed_atom_key = markata.make_hash(key, "atom")
 
     feed_html_from_cache = markata.precache.get(html_key)
     feed_html_partial_from_cache = markata.precache.get(html_partial_key)
     feed_rss_from_cache = markata.precache.get(feed_rss_key)
     feed_sitemap_from_cache = markata.precache.get(feed_sitemap_key)
+    feed_atom_from_cache = markata.precache.get(feed_atom_key)
 
     output_file = Path(markata.config.output_dir) / feed.config.slug / "index.html"
     output_file.parent.mkdir(exist_ok=True, parents=True)
@@ -529,7 +531,14 @@ def create_page(
     )
     sitemap_output_file.parent.mkdir(exist_ok=True, parents=True)
 
+    atom_output_file = (
+        Path(markata.config.output_dir) / feed.config.slug / "atom.xml"
+    )
+    atom_output_file.parent.mkdir(exist_ok=True, parents=True)
+
     from_cache = True
+
+    # ---------- HTML ----------
     if feed_html_from_cache is None:
         from_cache = False
         feed_html = template.render(
@@ -544,6 +553,7 @@ def create_page(
     else:
         feed_html = feed_html_from_cache
 
+    # ---------- Partial HTML ----------
     if feed_html_partial_from_cache is None:
         from_cache = False
         feed_html_partial = partial_template.render(
@@ -558,47 +568,86 @@ def create_page(
     else:
         feed_html_partial = feed_html_partial_from_cache
 
-    if feed_rss_from_cache is None:
-        from_cache = False
-        rss_template = get_template(markata.jinja_env, feed.config.rss_template)
-        feed_rss = rss_template.render(markata=markata, feed=feed)
-        cache.set(feed_rss_key, feed_rss)
+    # ---------- RSS ----------
+    if feed.config.rss:
+        if feed_rss_from_cache is None:
+            from_cache = False
+            rss_template = get_template(markata.jinja_env, feed.config.rss_template)
+            feed_rss = rss_template.render(markata=markata, feed=feed)
+            cache.set(feed_rss_key, feed_rss)
+        else:
+            feed_rss = feed_rss_from_cache
     else:
-        feed_rss = feed_rss_from_cache
+        feed_rss = None
 
-    if feed_sitemap_from_cache is None:
-        from_cache = False
-        sitemap_template = get_template(markata.jinja_env, feed.config.sitemap_template)
-        feed_sitemap = sitemap_template.render(markata=markata, feed=feed)
-        cache.set(feed_sitemap_key, feed_sitemap)
+    # ---------- Sitemap ----------
+    if feed.config.sitemap:
+        if feed_sitemap_from_cache is None:
+            from_cache = False
+            sitemap_template = get_template(markata.jinja_env, feed.config.sitemap_template)
+            feed_sitemap = sitemap_template.render(markata=markata, feed=feed)
+            cache.set(feed_sitemap_key, feed_sitemap)
+        else:
+            feed_sitemap = feed_sitemap_from_cache
     else:
-        feed_sitemap = feed_sitemap_from_cache
+        feed_sitemap = None
 
-    if (
-        from_cache
-        and output_file.exists()
-        and partial_output_file.exists()
-        and rss_output_file.exists()
-        and sitemap_output_file.exists()
-    ):
-        return
+    # ---------- Atom ----------
+    if feed.config.atom:
+        if feed_atom_from_cache is None:
+            from_cache = False
+            atom_template = get_template(markata, feed.config.atom_template)
+            feed_atom = atom_template.render(
+                markata=markata,
+                feed=feed,
+                datetime=datetime,  # ⭐ so the template can use datetime
+            )
+            cache.set(feed_atom_key, feed_atom)
+        else:
+            feed_atom = feed_atom_from_cache
+        # If everything came from cache and files exist, bail early
+        if (
+            from_cache
+            and output_file.exists()
+            and partial_output_file.exists()
+            and (not feed.config.rss or rss_output_file.exists())
+            and (not feed.config.sitemap or sitemap_output_file.exists())
+            and (not feed.config.atom or atom_output_file.exists())
+        ):
+            return
 
+    # Write HTML
     current_html = output_file.read_text() if output_file.exists() else ""
     if current_html != feed_html:
         output_file.write_text(feed_html)
+
+    # Write partial HTML
     current_partial_html = (
         partial_output_file.read_text() if partial_output_file.exists() else ""
     )
     if current_partial_html != feed_html_partial:
         partial_output_file.write_text(feed_html_partial)
-    current_rss = rss_output_file.read_text() if rss_output_file.exists() else ""
-    if current_rss != feed_rss:
-        rss_output_file.write_text(feed_rss)
-    current_sitemap = (
-        sitemap_output_file.read_text() if sitemap_output_file.exists() else ""
-    )
-    if current_sitemap != feed_sitemap:
-        sitemap_output_file.write_text(feed_sitemap)
+
+    # Write RSS (if enabled)
+    if feed_rss is not None:
+        current_rss = rss_output_file.read_text() if rss_output_file.exists() else ""
+        if current_rss != feed_rss:
+            rss_output_file.write_text(feed_rss)
+
+    # Write sitemap (if enabled)
+    if feed_sitemap is not None:
+        current_sitemap = (
+            sitemap_output_file.read_text() if sitemap_output_file.exists() else ""
+        )
+        if current_sitemap != feed_sitemap:
+            sitemap_output_file.write_text(feed_sitemap)
+
+    # Write Atom (if enabled)
+    if feed_atom is not None:
+        current_atom = atom_output_file.read_text() if atom_output_file.exists() else ""
+        if current_atom != feed_atom:
+            atom_output_file.write_text(feed_atom)
+
 
 
 @background.task
