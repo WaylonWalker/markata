@@ -12,6 +12,7 @@
 - Fix: standardized cache keys across plugins to include `__version__` for proper invalidation on updates
 - Fix: render_markdown now includes backend and extensions in cache key
 - Perf: heading_link replaced expensive file I/O with `__version__` in cache key
+- Feat: feeds now support atom feeds
 
 ### Template Utilities (Breaking for Plugin Authors)
 
