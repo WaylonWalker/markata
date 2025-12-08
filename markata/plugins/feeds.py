@@ -596,7 +596,7 @@ def create_page(
     if feed.config.atom:
         if feed_atom_from_cache is None:
             from_cache = False
-            atom_template = get_template(markata, feed.config.atom_template)
+            atom_template = get_template(markata.jinja_env, feed.config.atom_template)
             feed_atom = atom_template.render(
                 markata=markata,
                 feed=feed,
