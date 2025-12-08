@@ -11,7 +11,7 @@
 - Fix: jinja_md now includes post metadata and version in cache keys
 - Fix: standardized cache keys across plugins to include `__version__` for proper invalidation on updates
 - Fix: render_markdown now includes backend and extensions in cache key
-- Fix: `auto_description` now strips wikilinks, HTML tags, markdown-it attributes (e.g. {.class-name}), admonitions (!!!, !!!+, ???, ???+), and HTML comments for cleaner descriptions
+- Fix: `auto_description` now strips wikilinks, HTML tags, markdown-it attributes (e.g. {.class-name}), Jinja template tags, admonitions (!!!, !!!+, ???, ???+), and HTML comments for cleaner descriptions
 - Perf: heading_link replaced expensive file I/O with `__version__` in cache key
 - Feat: feeds now support atom feeds
 

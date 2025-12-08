@@ -123,6 +123,10 @@ def get_description(article: "Post") -> str:
     # Remove CSS class attributes {.class-name}
     content = re.sub(r'\{\.[\w\-]+\}', '', content)
     
+    # Remove Jinja template tags {% %} and {{ }}
+    content = re.sub(r'\{%.*?%\}', '', content, flags=re.DOTALL)
+    content = re.sub(r'\{\{.*?\}\}', '', content, flags=re.DOTALL)
+    
     # Remove wikilinks [[link]] or [[link|text]]
     content = re.sub(r'\[\[([^\]|]+)(?:\|([^\]]+))?\]\]', lambda m: m.group(2) if m.group(2) else m.group(1), content)
     
@@ -152,8 +156,6 @@ def get_description(article: "Post") -> str:
     # Clean up excessive whitespace
     description = re.sub(r'\s+', ' ', description).strip()
 
-    print(f'Generated description: {description[:60]}...')
-    
     return description
 
 
