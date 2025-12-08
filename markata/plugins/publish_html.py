@@ -167,18 +167,18 @@ class OutputHTML(pydantic.BaseModel):
     def output_html_relative(cls, v: Optional[Path], info) -> Optional[Path]:
         if v is None:
             return cls.default_output_html(v, info)
-        
+
         # If a custom output_html is provided, ensure it's relative to output_dir
         markata = info.data.get("markata")
         if markata is None:
             return v
-        
+
         output_dir = markata.config.output_dir
-        
+
         # Convert string to Path if needed
         if isinstance(v, str):
             v = Path(v)
-        
+
         # If v is already absolute and within output_dir, keep it
         if v.is_absolute():
             try:
@@ -187,7 +187,7 @@ class OutputHTML(pydantic.BaseModel):
             except ValueError:
                 # Not relative to output_dir, make it so
                 pass
-        
+
         # Make relative paths relative to output_dir
         return output_dir / v
 
