@@ -111,8 +111,27 @@ def get_description(article: "Post") -> str:
     Uses markdown-it-py to parse the markdown and extracts text content from all nodes.
     Strips out any HTML tags, returning only plain text. Properly handles markdown links and formatting.
     """
+    import re
     from bs4 import BeautifulSoup
     from markdown_it import MarkdownIt
+
+    content = article.content
+    
+    # Remove admonitions (e.g., !!!, !!!+, ???, ???+)
+    content = re.sub(r'^[!?]{3}\+? .*?$', '', content, flags=re.MULTILINE)
+    
+    # Remove CSS class attributes {.class-name}
+    content = re.sub(r'\{\.[\w\-]+\}', '', content)
+    
+    # Remove wikilinks [[link]] or [[link|text]]
+    content = re.sub(r'\[\[([^\]|]+)(?:\|([^\]]+))?\]\]', lambda m: m.group(2) if m.group(2) else m.group(1), content)
+    
+    # Remove HTML comments
+    content = re.sub(r'<!--.*?-->', '', content, flags=re.DOTALL)
+    
+    # Remove HTML tags before markdown parsing
+    soup = BeautifulSoup(content, "html.parser")
+    content = soup.get_text(separator=" ")
 
     def extract_text(tokens):
         text_chunks = []
@@ -125,14 +144,17 @@ def get_description(article: "Post") -> str:
         return " ".join(text_chunks)
 
     md = MarkdownIt("commonmark")
-    tokens = md.parse(article.content)
+    tokens = md.parse(content)
 
     # Recursively extract visible text from all tokens
     description = extract_text(tokens)
-    # Remove any HTML tags using BeautifulSoup
-    soup = BeautifulSoup(description, "html.parser")
-    plain_text = soup.get_text(separator=" ", strip=True)
-    return plain_text
+    
+    # Clean up excessive whitespace
+    description = re.sub(r'\s+', ' ', description).strip()
+
+    print(f'Generated description: {description[:60]}...')
+    
+    return description
 
 
 def set_description(
@@ -148,7 +170,7 @@ def set_description(
     the configured descriptions for the article.
     """
     key = markata.make_hash(
-        "auto_description",
+        "auto_description2",
         article.content,
         plugin_text,
         config,
