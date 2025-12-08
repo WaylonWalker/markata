@@ -1,12 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
+<?xml-stylesheet href="/atom.xsl" type="text/xsl"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
-  <title>{{ feed.config.title }}</title>
-  <id>{{ markata.config.url }}/{{ feed.config.slug }}/</id>
+  {# Normalize once: pydantic Url -> string, strip trailing slash #}
+  {% set base_url = markata.config.url | string | trim('/') %}
+  {% set feed_slug = feed.config.slug | string | trim('/') %}
 
-  <link href="{{ markata.config.url }}/{{ feed.config.slug }}/atom.xml" rel="self" />
-  <link href="{{ markata.config.url }}/" rel="alternate" />
+  <title>{{ feed.config.title|e }}</title>
+  <subtitle>{{ markata.config.description | e }}</subtitle>
+  <link>{{ markata.config.url | e }}</link>
+  <id>{{ (base_url ~ '/' ~ feed_slug ~ '/') | e }}</id>
 
-  {# Feed-level updated (Atom likes this) #}
+  <link href="{{ (base_url ~ '/' ~ feed_slug ~ '/atom.xml') | e }}" rel="self" />
+  <link href="{{ (base_url ~ '/') | e }}" rel="alternate" />
+
   {% set updated_post = feed.posts[0] if feed.posts else None %}
   {% if updated_post and updated_post.date %}
   <updated>{{ updated_post.date.isoformat() }}Z</updated>
@@ -15,10 +21,12 @@
   {% endif %}
 
   {% for post in feed.posts %}
+  {% set post_slug = post.slug | string | trim('/') %}
   <entry>
-    <title>{{ post.title }}</title>
-    <id>{{ markata.config.url }}/{{ post.slug }}/</id>
-    <link href="{{ markata.config.url }}/{{ post.slug }}/" rel="alternate" />
+    <title>{{ post.title|e }}</title>
+
+    <id>{{ (base_url ~ '/' ~ post_slug ~ '/') | e }}</id>
+    <link href="{{ (base_url ~ '/' ~ post_slug ~ '/') | e }}" rel="alternate" />
 
     {% if post.date %}
     <updated>{{ post.date.isoformat() }}Z</updated>
