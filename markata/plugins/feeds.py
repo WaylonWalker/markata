@@ -469,8 +469,13 @@ def save(markata: Markata) -> None:
         config=markata.config,
     )
     xsl_file = Path(markata.config.output_dir) / "rss.xsl"
-    current_xsl = xsl_file.read_text() if xsl_file.exists() else ""
-    if current_xsl != xsl:
+    # Only read file if it exists and we need to compare
+    should_write = True
+    if xsl_file.exists():
+        current_xsl = xsl_file.read_text()
+        should_write = current_xsl != xsl
+    
+    if should_write:
         xsl_file.write_text(xsl)
 
 def create_page(
@@ -488,6 +493,16 @@ def create_page(
 
     # Get templates mtime to bust cache when any template changes
     templates_mtime = get_templates_mtime(markata.jinja_env)
+    
+    # Cache expensive feed.map() call for hash generation
+    cache_key_posts = f"feed_hash_posts_{feed.config.slug}"
+    if not hasattr(markata, "_feed_hash_cache"):
+        markata._feed_hash_cache = {}
+    
+    if cache_key_posts not in markata._feed_hash_cache:
+        markata._feed_hash_cache[cache_key_posts] = feed.map("str(post.to_dict())")
+    
+    posts_hash_data = markata._feed_hash_cache[cache_key_posts]
 
     key = markata.make_hash(
         "feeds",
@@ -496,7 +511,7 @@ def create_page(
         markata.config.url,
         markata.config.description,
         feed.config.title,
-        feed.map("str(post.to_dict())"),  # Track all post metadata, not just content
+        posts_hash_data,  # Use cached post data
         canonical_url,
         str(templates_mtime),  # Track template file changes
         # datetime.datetime.today(),
@@ -516,25 +531,19 @@ def create_page(
     feed_atom_from_cache = markata.precache.get(feed_atom_key)
 
     output_file = Path(markata.config.output_dir) / feed.config.slug / "index.html"
-    output_file.parent.mkdir(exist_ok=True, parents=True)
-
     partial_output_file = (
         Path(markata.config.output_dir) / feed.config.slug / "partial" / "index.html"
     )
-    partial_output_file.parent.mkdir(exist_ok=True, parents=True)
-
     rss_output_file = Path(markata.config.output_dir) / feed.config.slug / "rss.xml"
-    rss_output_file.parent.mkdir(exist_ok=True, parents=True)
-
     sitemap_output_file = (
         Path(markata.config.output_dir) / feed.config.slug / "sitemap.xml"
     )
-    sitemap_output_file.parent.mkdir(exist_ok=True, parents=True)
-
     atom_output_file = (
         Path(markata.config.output_dir) / feed.config.slug / "atom.xml"
     )
-    atom_output_file.parent.mkdir(exist_ok=True, parents=True)
+    
+    # Create all directories in one batch
+    partial_output_file.parent.mkdir(exist_ok=True, parents=True)
 
     from_cache = True
 
