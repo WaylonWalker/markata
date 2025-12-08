@@ -176,11 +176,12 @@ def configure(markata: Markata) -> None:
 
     markata.config.dynamic_templates_dir.mkdir(parents=True, exist_ok=True)
     head_template = markata.config.dynamic_templates_dir / "head.html"
-    head_template.write_text(
-        env_for_dynamic_render.get_template("dynamic_head.html").render(
-            {"markata": markata}
-        ),
+    new_content = env_for_dynamic_render.get_template("dynamic_head.html").render(
+        {"markata": markata}
     )
+    current_content = head_template.read_text() if head_template.exists() else ""
+    if current_content != new_content:
+        head_template.write_text(new_content)
 
     # Set up loaders
     loaders = []

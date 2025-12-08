@@ -187,4 +187,7 @@ def save(markata: "Markata") -> None:
     for redirect in redirects:
         file = markata.config.output_dir / redirect.original.strip("/") / "index.html"
         file.parent.mkdir(parents=True, exist_ok=True)
-        file.write_text(template.render(redirect.dict(), config=markata.config))
+        new_content = template.render(redirect.dict(), config=markata.config)
+        current_content = file.read_text() if file.exists() else ""
+        if current_content != new_content:
+            file.write_text(new_content)

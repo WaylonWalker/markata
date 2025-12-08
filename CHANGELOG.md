@@ -2,6 +2,13 @@
 
 ## 0.11.0
 
+### Performance Improvements
+
+- Perf: feeds now cache expensive `feed.map()` calls during hash generation (~7.7s savings)
+- Perf: feeds batch directory creation operations (~2s savings)
+- Perf: feeds only read XSL files when they exist and need comparison
+- Perf: to_json, service_worker, redirects, jinja_env, and post_template now only write files when content changes (prevents unnecessary file system modifications and downstream syncing)
+
 ### Cache Invalidation Improvements
 
 - Fix: feeds now properly invalidate cache when post metadata changes (title, date, slug, published, description)

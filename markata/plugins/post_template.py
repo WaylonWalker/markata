@@ -598,7 +598,10 @@ def save(markata: "Markata") -> None:
     for template in linked_templates:
         template = get_template(markata.jinja_env, template)
         css = template.render(markata=markata, __version__=__version__)
-        Path(markata.config.output_dir / Path(template.filename).name).write_text(css)
+        output_path = Path(markata.config.output_dir / Path(template.filename).name)
+        current_content = output_path.read_text() if output_path.exists() else ""
+        if current_content != css:
+            output_path.write_text(css)
 
 
 @hook_impl()
