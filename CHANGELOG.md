@@ -12,6 +12,7 @@
 - Fix: standardized cache keys across plugins to include `__version__` for proper invalidation on updates
 - Fix: render_markdown now includes backend and extensions in cache key
 - Fix: `auto_description` now strips wikilinks, HTML tags, markdown-it attributes (e.g. {.class-name}), Jinja template tags, admonitions (!!!, !!!+, ???, ???+), and HTML comments for cleaner descriptions
+- Fix: `publish_html` now properly resolves custom `output_html` paths relative to `output_dir`, preventing files from being written to project root
 - Perf: heading_link replaced expensive file I/O with `__version__` in cache key
 - Feat: feeds now support atom feeds
 
