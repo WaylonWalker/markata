@@ -112,27 +112,28 @@ def get_description(article: "Post") -> str:
     Strips out any HTML tags, returning only plain text. Properly handles markdown links and formatting.
     """
     import re
+
     from bs4 import BeautifulSoup
     from markdown_it import MarkdownIt
 
     content = article.content
-    
+
     # Remove admonitions (e.g., !!!, !!!+, ???, ???+)
     content = re.sub(r'^[!?]{3}\+? .*?$', '', content, flags=re.MULTILINE)
-    
+
     # Remove CSS class attributes {.class-name}
     content = re.sub(r'\{\.[\w\-]+\}', '', content)
-    
+
     # Remove Jinja template tags {% %} and {{ }}
     content = re.sub(r'\{%.*?%\}', '', content, flags=re.DOTALL)
     content = re.sub(r'\{\{.*?\}\}', '', content, flags=re.DOTALL)
-    
+
     # Remove wikilinks [[link]] or [[link|text]]
     content = re.sub(r'\[\[([^\]|]+)(?:\|([^\]]+))?\]\]', lambda m: m.group(2) if m.group(2) else m.group(1), content)
-    
+
     # Remove HTML comments
     content = re.sub(r'<!--.*?-->', '', content, flags=re.DOTALL)
-    
+
     # Remove HTML tags before markdown parsing
     soup = BeautifulSoup(content, "html.parser")
     content = soup.get_text(separator=" ")
@@ -152,7 +153,7 @@ def get_description(article: "Post") -> str:
 
     # Recursively extract visible text from all tokens
     description = extract_text(tokens)
-    
+
     # Clean up excessive whitespace
     description = re.sub(r'\s+', ' ', description).strip()
 
