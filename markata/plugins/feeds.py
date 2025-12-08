@@ -474,7 +474,7 @@ def save(markata: Markata) -> None:
     if xsl_file.exists():
         current_xsl = xsl_file.read_text()
         should_write = current_xsl != xsl
-    
+
     if should_write:
         xsl_file.write_text(xsl)
 
@@ -493,15 +493,15 @@ def create_page(
 
     # Get templates mtime to bust cache when any template changes
     templates_mtime = get_templates_mtime(markata.jinja_env)
-    
+
     # Cache expensive feed.map() call for hash generation
     cache_key_posts = f"feed_hash_posts_{feed.config.slug}"
     if not hasattr(markata, "_feed_hash_cache"):
         markata._feed_hash_cache = {}
-    
+
     if cache_key_posts not in markata._feed_hash_cache:
         markata._feed_hash_cache[cache_key_posts] = feed.map("str(post.to_dict())")
-    
+
     posts_hash_data = markata._feed_hash_cache[cache_key_posts]
 
     key = markata.make_hash(
@@ -541,7 +541,7 @@ def create_page(
     atom_output_file = (
         Path(markata.config.output_dir) / feed.config.slug / "atom.xml"
     )
-    
+
     # Create all directories in one batch
     partial_output_file.parent.mkdir(exist_ok=True, parents=True)
 
