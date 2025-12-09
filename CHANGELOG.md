@@ -4,6 +4,8 @@
 
 ### Performance Improvements
 
+- Perf: increased diskcache size limit to 5GB and reduced cull_limit to minimize expensive eviction operations (saves ~4s during cache culling)
+- Perf: optimized feed hash generation to use lightweight post identifiers (slug + content_hash) instead of expensive `str(post.to_dict())` serialization (saves ~6s)
 - Perf: feeds now cache expensive `feed.map()` calls during hash generation (~7.7s savings)
 - Perf: feeds batch directory creation operations (~2s savings)
 - Perf: feeds only read XSL files when they exist and need comparison

@@ -494,13 +494,16 @@ def create_page(
     # Get templates mtime to bust cache when any template changes
     templates_mtime = get_templates_mtime(markata.jinja_env)
 
-    # Cache expensive feed.map() call for hash generation
+    # Use simpler hash for posts instead of expensive str(post.to_dict())
+    # Hash just the essential post identifiers: slug + content_hash
     cache_key_posts = f"feed_hash_posts_{feed.config.slug}"
     if not hasattr(markata, "_feed_hash_cache"):
         markata._feed_hash_cache = {}
 
     if cache_key_posts not in markata._feed_hash_cache:
-        markata._feed_hash_cache[cache_key_posts] = feed.map("str(post.to_dict())")
+        # Use post slugs and content hashes instead of full to_dict()
+        posts_data = feed.map("(post.slug, getattr(post, 'content_hash', ''))")
+        markata._feed_hash_cache[cache_key_posts] = str(sorted(posts_data))
 
     posts_hash_data = markata._feed_hash_cache[cache_key_posts]
 
