@@ -2,7 +2,7 @@
 <?xml-stylesheet href="/rss.xsl" type="text/xsl"?>
 <rss version="2.0">
 <channel>
-    <title>{{ feed.config.name | e }}</title>
+    <title>{{ feed.config.title | e }}</title>
     <link>{{ markata.config.url | e }}</link>
     <description>{{ markata.config.description | e }}</description>
     <generator>Markata</generator>

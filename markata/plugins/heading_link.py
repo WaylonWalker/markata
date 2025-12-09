@@ -69,12 +69,12 @@ This plugin depends on:
 """
 
 import re
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 from bs4 import BeautifulSoup
 
 from markata import Markata
+from markata import __version__
 from markata.hookspec import hook_impl
 
 if TYPE_CHECKING:
@@ -93,7 +93,7 @@ def post_render(markata: Markata) -> None:
             key = markata.make_hash(
                 "heading_link",
                 "post_render",
-                Path(__file__).read_text(),
+                __version__,
                 article.content,
                 article.html,
             )
