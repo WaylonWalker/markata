@@ -1,0 +1,52 @@
+<article class='w-full'>
+<section class="title">
+    <h1 id="title">
+        cli.py
+    </h1>
+</section>    <section class="body">
+        <hr />
+<p>None</p>
+<hr />
+<div class="admonition function">
+<p class="admonition-title">Function</p>
+<h2 id="make_layout" class="admonition-title" style="margin: 0; padding: .5rem 1rem;">make_layout <em class="small">function</em></h2>
+<p>Define the layout.</p>
+</div>
+<div class="admonition source is-collapsible collapsible-open">
+<p class="admonition-title">make_layout <em class='small'>source</em></p>
+<pre class='wrapper'>
+
+<div class='copy-wrapper'>
+
+<button class='copy' title='copy code to clipboard' onclick="navigator.clipboard.writeText(this.parentElement.parentElement.querySelector('pre').textContent)"><svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 115.77 122.88" style="enable-background:new 0 0 115.77 122.88" xml:space="preserve"><style type="text/css">.st0{fill-rule:evenodd;clip-rule:evenodd;}</style><g><path class="st0" d="M89.62,13.96v7.73h12.19h0.01v0.02c3.85,0.01,7.34,1.57,9.86,4.1c2.5,2.51,4.06,5.98,4.07,9.82h0.02v0.02 v73.27v0.01h-0.02c-0.01,3.84-1.57,7.33-4.1,9.86c-2.51,2.5-5.98,4.06-9.82,4.07v0.02h-0.02h-61.7H40.1v-0.02 c-3.84-0.01-7.34-1.57-9.86-4.1c-2.5-2.51-4.06-5.98-4.07-9.82h-0.02v-0.02V92.51H13.96h-0.01v-0.02c-3.84-0.01-7.34-1.57-9.86-4.1 c-2.5-2.51-4.06-5.98-4.07-9.82H0v-0.02V13.96v-0.01h0.02c0.01-3.85,1.58-7.34,4.1-9.86c2.51-2.5,5.98-4.06,9.82-4.07V0h0.02h61.7 h0.01v0.02c3.85,0.01,7.34,1.57,9.86,4.1c2.5,2.51,4.06,5.98,4.07,9.82h0.02V13.96L89.62,13.96z M79.04,21.69v-7.73v-0.02h0.02 c0-0.91-0.39-1.75-1.01-2.37c-0.61-0.61-1.46-1-2.37-1v0.02h-0.01h-61.7h-0.02v-0.02c-0.91,0-1.75,0.39-2.37,1.01 c-0.61,0.61-1,1.46-1,2.37h0.02v0.01v64.59v0.02h-0.02c0,0.91,0.39,1.75,1.01,2.37c0.61,0.61,1.46,1,2.37,1v-0.02h0.01h12.19V35.65 v-0.01h0.02c0.01-3.85,1.58-7.34,4.1-9.86c2.51-2.5,5.98-4.06,9.82-4.07v-0.02h0.02H79.04L79.04,21.69z M105.18,108.92V35.65v-0.02 h0.02c0-0.91-0.39-1.75-1.01-2.37c-0.61-0.61-1.46-1-2.37-1v0.02h-0.01h-61.7h-0.02v-0.02c-0.91,0-1.75,0.39-2.37,1.01 c-0.61,0.61-1,1.46-1,2.37h0.02v0.01v73.27v0.02h-0.02c0,0.91,0.39,1.75,1.01,2.37c0.61,0.61,1.46,1,2.37,1v-0.02h0.01h61.7h0.02 v0.02c0.91,0,1.75-0.39,2.37-1.01c0.61-0.61,1-1.46,1-2.37h-0.02V108.92L105.18,108.92z"/></g></svg></button>
+</div>
+        
+<div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">make_layout</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Layout</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Define the layout.&quot;&quot;&quot;</span>
+    <span class="n">layout</span> <span class="o">=</span> <span class="n">Layout</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;root&quot;</span><span class="p">)</span>
+
+    <span class="n">layout</span><span class="o">.</span><span class="n">split</span><span class="p">(</span>
+        <span class="n">Layout</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;header&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">3</span><span class="p">),</span>
+        <span class="n">Layout</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;main&quot;</span><span class="p">),</span>
+    <span class="p">)</span>
+    <span class="n">layout</span><span class="p">[</span><span class="s2">&quot;main&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">split_row</span><span class="p">(</span>
+        <span class="n">Layout</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;side&quot;</span><span class="p">,</span> <span class="n">ratio</span><span class="o">=</span><span class="mi">50</span><span class="p">),</span>
+        <span class="n">Layout</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;mid&quot;</span><span class="p">,</span> <span class="n">ratio</span><span class="o">=</span><span class="mi">30</span><span class="p">),</span>
+        <span class="n">Layout</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;describe&quot;</span><span class="p">,</span> <span class="n">ratio</span><span class="o">=</span><span class="mi">20</span><span class="p">),</span>
+    <span class="p">)</span>
+    <span class="n">layout</span><span class="p">[</span><span class="s2">&quot;mid&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span>
+        <span class="n">Layout</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;server&quot;</span><span class="p">),</span>
+        <span class="n">Layout</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;runner&quot;</span><span class="p">),</span>
+    <span class="p">)</span>
+    <span class="n">layout</span><span class="p">[</span><span class="s2">&quot;side&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span>
+        <span class="n">Layout</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;plugins&quot;</span><span class="p">),</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">layout</span>
+</pre></div>
+
+</pre>
+
+</div>
+
+    </section>
+</article>

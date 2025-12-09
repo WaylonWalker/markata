@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<title>Markata's Docs</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="description" content="Documentation for using the Markata static site generator" />
+ <link href="/favicon.ico" rel="icon" type="image/png" />
+
+<link rel="stylesheet" href="/post.css" />
+<link rel="stylesheet" href="/app.css" />
+<script src="/theme.js"></script>
+
+
+        <meta property="og:author_email" content="waylon@waylonwalker.com" />
+
+    <head>
+        <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+<title>Markata's Docs</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="description" content="Documentation for using the Markata static site generator" />
+ <link href="/favicon.ico" rel="icon" type="image/png" />
+
+<link rel="stylesheet" href="/post.css" />
+<link rel="stylesheet" href="/app.css" />
+<script src="/theme.js"></script>
+
+
+        <meta property="og:author_email" content="waylon@waylonwalker.com" />
+
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                const collapsibleElements = document.querySelectorAll('.is-collapsible');
+                collapsibleElements.forEach(el => {
+                    const summary = el.querySelector('.admonition-title');
+                    if (summary) {
+                        summary.style.cursor = 'pointer';
+                        summary.addEventListener('click', () => {
+                            el.classList.toggle('collapsible-open');
+                        });
+                    }
+                });
+            });
+        </script>
+
+        <style>
+
+            .admonition.source {
+                padding-bottom: 0;
+            }
+            .admonition.source pre.wrapper {
+                margin: 0;
+                padding: 0;
+            }
+            .is-collapsible {
+                overflow: hidden;
+                transition: max-height 0.3s ease;
+            }
+            .is-collapsible:not(.collapsible-open) {
+                max-height: 0;
+                padding-bottom: 2.5rem;
+            }
+            .admonition-title {
+                font-weight: bold;
+                margin-bottom: 8px;
+            }
+        </style>
+    </head>
+    <body>
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-2xl font-bold mb-4">Did you mean...</h1>
+    <p class="mb-4">The path <code class="bg-gray-100 px-2 py-1 rounded">cli</code> could refer to multiple pages:</p>
+    <ul class="list-disc pl-8">
+        <li class="mb-2"><a href="/markata/cli/cli" class="text-blue-500 hover:underline">/markata/cli/cli</a></li>
+        <li class="mb-2"><a href="/markata/cli/didyoumean" class="text-blue-500 hover:underline">/markata/cli/didyoumean</a></li>
+        <li class="mb-2"><a href="/markata/cli/header" class="text-blue-500 hover:underline">/markata/cli/header</a></li>
+        <li class="mb-2"><a href="/markata/cli/init" class="text-blue-500 hover:underline">/markata/cli/init</a></li>
+        <li class="mb-2"><a href="/markata/cli/main" class="text-blue-500 hover:underline">/markata/cli/main</a></li>
+        <li class="mb-2"><a href="/markata/cli/plugins" class="text-blue-500 hover:underline">/markata/cli/plugins</a></li>
+        <li class="mb-2"><a href="/markata/cli/runner" class="text-blue-500 hover:underline">/markata/cli/runner</a></li>
+        <li class="mb-2"><a href="/markata/cli/server" class="text-blue-500 hover:underline">/markata/cli/server</a></li>
+        <li class="mb-2"><a href="/markata/cli/summary" class="text-blue-500 hover:underline">/markata/cli/summary</a></li>
+    </ul>
+</div>
+    </body>
+</html>

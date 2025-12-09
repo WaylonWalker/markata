@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<title>Project Gallery</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="description" content="Documentation for using the Markata static site generator" />
+ <link href="/favicon.ico" rel="icon" type="image/png" />
+
+<link rel="stylesheet" href="/post.css" />
+<link rel="stylesheet" href="/app.css" />
+<script src="/theme.js"></script>
+
+
+        <meta property="og:author_email" content="waylon@waylonwalker.com" />
+
+    <head>
+        <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+<title>Project Gallery</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="description" content="Documentation for using the Markata static site generator" />
+ <link href="/favicon.ico" rel="icon" type="image/png" />
+
+<link rel="stylesheet" href="/post.css" />
+<link rel="stylesheet" href="/app.css" />
+<script src="/theme.js"></script>
+
+
+        <meta property="og:author_email" content="waylon@waylonwalker.com" />
+
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                const collapsibleElements = document.querySelectorAll('.is-collapsible');
+                collapsibleElements.forEach(el => {
+                    const summary = el.querySelector('.admonition-title');
+                    if (summary) {
+                        summary.style.cursor = 'pointer';
+                        summary.addEventListener('click', () => {
+                            el.classList.toggle('collapsible-open');
+                        });
+                    }
+                });
+            });
+        </script>
+
+        <style>
+
+            .admonition.source {
+                padding-bottom: 0;
+            }
+            .admonition.source pre.wrapper {
+                margin: 0;
+                padding: 0;
+            }
+            .is-collapsible {
+                overflow: hidden;
+                transition: max-height 0.3s ease;
+            }
+            .is-collapsible:not(.collapsible-open) {
+                max-height: 0;
+                padding-bottom: 2.5rem;
+            }
+            .admonition-title {
+                font-weight: bold;
+                margin-bottom: 8px;
+            }
+        </style>
+    </head>
+    <body>
+<div class='container flex flex-row min-h-screen'>
+    <div>
+    </div>
+    <div class='flex-grow px-8 mx-auto min-h-screen'>
+<header class='flex justify-center items-center p-8'>
+
+    <nav class='flex justify-center items-center my-8'>
+        <a
+            href='/'>markata</a>
+        <a
+            href='https://github.com/WaylonWalker/markata'>GitHub</a>
+        <a
+            href='https://markata.dev/docs/'>docs</a>
+        <a
+            href='https://markata.dev/plugins/'>plugins</a>
+    </nav>
+
+    <div>
+        <label id="theme-switch" class="theme-switch" for="checkbox-theme" title="light/dark mode toggle">
+            <input type="checkbox" id="checkbox-theme" />
+            <div class="slider round"></div>
+        </label>
+    </div>
+</header>    <div class='container flex-grow px-8 mx-auto max-w-screen-xl min-h-screen'>
+<article>
+    <header class='sticky top-0 pt-4 bg-neutral-800'>
+        <h1 class='p-0 m-0'></h1>
+    </header>
+    <div>
+        <ul id='feed' class='px-0 mx-0 list-none'>
+<li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/markata-dev/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            Markata's Docs
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            Markta.dev home page Markata builds it's own docs in completely in using all built in templatates and plugins. Markta.dev home page Using the plugin it is…
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-12-09
+        </time>
+    </a>
+</li><li class='my-6 list-none'>
+    <a class='w-full text-white no-underline rounded bg-neutral-800 shadow-lgc shadow-neutral-900 hover:bg-neutral-700'
+ href="/waylonwalker/">
+        <h2 class='mx-4 mt-1 text-3xl font-bold'>
+
+            WaylonWalker.com
+        </h2>
+        <p class='mx-4 text-neutral-200'>
+            Waylonwalker.com home page This Waylon Walker's personal blog where he is learning in public. Posting about topics such as linux, vim, python, and kedro.…
+        </p>
+        <time class='mx-4 text-neutral-600'>
+            2025-12-09
+        </time>
+    </a>
+</li>        </ul>
+    </div>
+</article>    </div>
+    </div>
+    <div></div>
+</div>
+     </body>
+</html>

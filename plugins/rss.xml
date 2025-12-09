@@ -1,0 +1,376 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<?xml-stylesheet href="/rss.xsl" type="text/xsl"?>
+<rss version="2.0">
+<channel>
+    <title>Markata Plugins</title>
+    <link>https://markata.dev/</link>
+    <description>Documentation for using the Markata static site generator</description>
+    <generator>Markata</generator>
+    <image>
+        <url>static/favicon.ico</url>
+        <link>https://markata.dev/</link>
+    </image>
+    <language>en</language>
+  <item>
+      <title>plugins.py</title>
+      <link>https://markata.dev//markata/cli/plugins</link>
+      <description>None</description>
+      <guid>https://markata.dev//markata/cli/plugins</guid>
+      <pubDate>2025-12-09</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>sitemap.py</title>
+      <link>https://markata.dev//markata/plugins/sitemap</link>
+      <description>[DEPRECATED] The plugin is deprecated and will be removed in a future version. Please use instead, which provides more comprehensive sitemap generation…</description>
+      <guid>https://markata.dev//markata/plugins/sitemap</guid>
+      <pubDate>2025-12-09</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>copy_assets.py</title>
+      <link>https://markata.dev//markata/plugins/copy-assets</link>
+      <description>The plugin copies static assets (images, CSS, JavaScript, etc.) from your assets directory to the output directory during the build process. Installation This…</description>
+      <guid>https://markata.dev//markata/plugins/copy-assets</guid>
+      <pubDate>2025-12-09</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>config_model.py</title>
+      <link>https://markata.dev//markata/plugins/config-model</link>
+      <description>The plugin defines Markata&#39;s core configuration model, providing validation and type safety for all configuration options. Installation This plugin is…</description>
+      <guid>https://markata.dev//markata/plugins/config-model</guid>
+      <pubDate>2025-12-09</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>pyinstrument.py</title>
+      <link>https://markata.dev//markata/plugins/pyinstrument</link>
+      <description>The plugin adds performance profiling capabilities using pyinstrument. It generates detailed HTML reports showing where your build spends time. Installation…</description>
+      <guid>https://markata.dev//markata/plugins/pyinstrument</guid>
+      <pubDate>2025-12-09</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>md_it_wikilinks.py</title>
+      <link>https://markata.dev//markata/plugins/md-it-wikilinks</link>
+      <description>The plugin adds support for wiki-style links using double brackets ( ). It automatically resolves links to other posts in your site using file names or slugs.…</description>
+      <guid>https://markata.dev//markata/plugins/md-it-wikilinks</guid>
+      <pubDate>2025-12-09</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>post_template.py</title>
+      <link>https://markata.dev//markata/plugins/post-template</link>
+      <description>The plugin handles the rendering of posts using Jinja2 templates. It provides extensive configuration options for HTML head elements, styling, and template…</description>
+      <guid>https://markata.dev//markata/plugins/post-template</guid>
+      <pubDate>2025-12-09</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>didyoumean.py</title>
+      <link>https://markata.dev//markata/plugins/didyoumean</link>
+      <description>DidYouMean Plugin for Markata Automatically generates redirect pages for URLs that may be mistyped by users. Installation Configuration Usage This plugin will…</description>
+      <guid>https://markata.dev//markata/plugins/didyoumean</guid>
+      <pubDate>2025-12-09</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>manifest.py</title>
+      <link>https://markata.dev//markata/plugins/manifest</link>
+      <description>The plugin generates a Web App Manifest (manifest.json) file for your site. This enables Progressive Web App (PWA) features and provides metadata for mobile…</description>
+      <guid>https://markata.dev//markata/plugins/manifest</guid>
+      <pubDate>2025-12-09</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>heading_link.py</title>
+      <link>https://markata.dev//markata/plugins/heading-link</link>
+      <description>The plugin adds clickable link icons next to headings in your HTML output. This makes it easy for readers to share direct links to specific sections of your…</description>
+      <guid>https://markata.dev//markata/plugins/heading-link</guid>
+      <pubDate>2025-12-09</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>redirects.py</title>
+      <link>https://markata.dev//markata/plugins/redirects</link>
+      <description>The plugin creates static redirects for your site using a simple configuration file. Compatible with services like Cloudflare Pages and Netlify. Installation…</description>
+      <guid>https://markata.dev//markata/plugins/redirects</guid>
+      <pubDate>2025-12-09</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>base_cli.py</title>
+      <link>https://markata.dev//markata/plugins/base-cli</link>
+      <description>The plugin provides Markata&#39;s core command-line interface functionality, including essential commands like , , and . Installation This plugin is built-in and…</description>
+      <guid>https://markata.dev//markata/plugins/base-cli</guid>
+      <pubDate>2025-12-09</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>flat_slug.py</title>
+      <link>https://markata.dev//markata/plugins/flat-slug</link>
+      <description>The plugin handles URL slug generation for your articles. It sanitizes special characters that don&#39;t work in browsers and provides a consistent URL structure.…</description>
+      <guid>https://markata.dev//markata/plugins/flat-slug</guid>
+      <pubDate>2025-12-09</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>create_models.py</title>
+      <link>https://markata.dev//markata/plugins/create-models</link>
+      <description>The plugin dynamically creates Markata&#39;s core Pydantic models by combining model fragments from various plugins. This enables extensible and type-safe data…</description>
+      <guid>https://markata.dev//markata/plugins/create-models</guid>
+      <pubDate>2025-12-09</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>publish_html.py</title>
+      <link>https://markata.dev//markata/plugins/publish-html</link>
+      <description>The plugin handles saving rendered HTML content to files. It determines the output path for each article and ensures files are saved in the correct location…</description>
+      <guid>https://markata.dev//markata/plugins/publish-html</guid>
+      <pubDate>2025-12-09</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>analytics.py</title>
+      <link>https://markata.dev//markata/plugins/analytics</link>
+      <description>The plugin generates analytics and contribution visualizations for your Markata site. It creates a contributions heatmap similar to GitHub&#39;s contribution…</description>
+      <guid>https://markata.dev//markata/plugins/analytics</guid>
+      <pubDate>2025-12-09</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>auto_title.py</title>
+      <link>https://markata.dev//markata/plugins/auto-title</link>
+      <description>The plugin automatically generates titles for posts that don&#39;t have a title specified in their frontmatter. It uses the filename to create a human-readable…</description>
+      <guid>https://markata.dev//markata/plugins/auto-title</guid>
+      <pubDate>2025-12-09</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>jinja_md.py</title>
+      <link>https://markata.dev//markata/plugins/jinja-md</link>
+      <description>The plugin enables Jinja2 templating within your markdown content. This allows you to dynamically generate content using Python expressions and access to the…</description>
+      <guid>https://markata.dev//markata/plugins/jinja-md</guid>
+      <pubDate>2025-12-09</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>docs.py</title>
+      <link>https://markata.dev//markata/plugins/docs</link>
+      <description>The plugin automatically generates documentation pages from Python source code docstrings. It parses Python files, extracts docstrings and code structure, and…</description>
+      <guid>https://markata.dev//markata/plugins/docs</guid>
+      <pubDate>2025-12-09</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>feeds.py</title>
+      <link>https://markata.dev//markata/plugins/feeds</link>
+      <description>The plugin is used to create feed pages, which are lists of posts. The list is generated using a , then each post in the list is rendered with a before being…</description>
+      <guid>https://markata.dev//markata/plugins/feeds</guid>
+      <pubDate>2025-12-09</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>prevnext.py</title>
+      <link>https://markata.dev//markata/plugins/prevnext</link>
+      <description>The plugin adds previous and next navigation links to each post, allowing readers to easily navigate between related content. Installation This plugin is…</description>
+      <guid>https://markata.dev//markata/plugins/prevnext</guid>
+      <pubDate>2025-12-09</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>icon_resize.py</title>
+      <link>https://markata.dev//markata/plugins/icon-resize</link>
+      <description>The plugin automatically generates favicons in multiple sizes from a single source image. This ensures your site has appropriate icons for different devices…</description>
+      <guid>https://markata.dev//markata/plugins/icon-resize</guid>
+      <pubDate>2025-12-09</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>render_markdown.py</title>
+      <link>https://markata.dev//markata/plugins/render-markdown</link>
+      <description>The plugin converts markdown content to HTML. This plugin is essential for rendering markdown files loaded by the plugin. Installation This plugin is built-in…</description>
+      <guid>https://markata.dev//markata/plugins/render-markdown</guid>
+      <pubDate>2025-12-09</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>rss.py</title>
+      <link>https://markata.dev//markata/plugins/rss</link>
+      <description>[DEPRECATED] The plugin is deprecated and will be removed in a future version. Please use instead, which provides more comprehensive feed generation…</description>
+      <guid>https://markata.dev//markata/plugins/rss</guid>
+      <pubDate>2025-12-09</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>mdit_details.py</title>
+      <link>https://markata.dev//markata/plugins/mdit-details</link>
+      <description>The plugin adds support for collapsible details/summary sections in markdown using the syntax. This is similar to HTML&#39;s element but with a more…</description>
+      <guid>https://markata.dev//markata/plugins/mdit-details</guid>
+      <pubDate>2025-12-09</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>seo.py</title>
+      <link>https://markata.dev//markata/plugins/seo</link>
+      <description>manifest plugin</description>
+      <guid>https://markata.dev//markata/plugins/seo</guid>
+      <pubDate>2025-12-09</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>create_covers.py</title>
+      <link>https://markata.dev//markata/plugins/create-covers</link>
+      <description>The plugin is a simplified version of the covers plugin. It generates basic cover images with titles using a single template and font configuration.…</description>
+      <guid>https://markata.dev//markata/plugins/create-covers</guid>
+      <pubDate>2025-12-09</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>datetime.py</title>
+      <link>https://markata.dev//markata/plugins/datetime</link>
+      <description>The plugin handles date and time parsing for posts. It ensures consistent datetime handling by converting various date formats to timezone-aware datetime…</description>
+      <guid>https://markata.dev//markata/plugins/datetime</guid>
+      <pubDate>2025-12-09</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>skip.py</title>
+      <link>https://markata.dev//markata/plugins/skip</link>
+      <description>Post Skipping and Caching Plugin</description>
+      <guid>https://markata.dev//markata/plugins/skip</guid>
+      <pubDate>2025-12-09</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>subroute.py</title>
+      <link>https://markata.dev//markata/plugins/subroute</link>
+      <description>None</description>
+      <guid>https://markata.dev//markata/plugins/subroute</guid>
+      <pubDate>2025-12-09</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>service_worker.py</title>
+      <link>https://markata.dev//markata/plugins/service-worker</link>
+      <description>Adds a service_worker to your site. This will make it installable on mobile, viewable offline, and potentially more responsive as the user goes between good…</description>
+      <guid>https://markata.dev//markata/plugins/service-worker</guid>
+      <pubDate>2025-12-09</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>glob.py</title>
+      <link>https://markata.dev//markata/plugins/glob</link>
+      <description>The plugin handles file discovery using glob patterns. It determines which files should be processed by Markata based on configured patterns. A glob is a…</description>
+      <guid>https://markata.dev//markata/plugins/glob</guid>
+      <pubDate>2025-12-09</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>publish_dev_to_source.py</title>
+      <link>https://markata.dev//markata/plugins/publish-dev-to-source</link>
+      <description>The plugin enables synchronization between your Markata posts and dev.to articles. It handles frontmatter translation and content formatting for dev.to…</description>
+      <guid>https://markata.dev//markata/plugins/publish-dev-to-source</guid>
+      <pubDate>2025-12-09</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>post_model.py</title>
+      <link>https://markata.dev//markata/plugins/post-model</link>
+      <description>The plugin defines the core Post model used throughout Markata. It provides robust validation, serialization, and configuration options for all post…</description>
+      <guid>https://markata.dev//markata/plugins/post-model</guid>
+      <pubDate>2025-12-09</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>setup_logging.py</title>
+      <link>https://markata.dev//markata/plugins/setup-logging</link>
+      <description>Setup Logging hook sets up the RichHandler for pretty console logs, and file logs to the configured markata&#39;s configured , or if is not configured. The log…</description>
+      <guid>https://markata.dev//markata/plugins/setup-logging</guid>
+      <pubDate>2025-12-09</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>generator.py</title>
+      <link>https://markata.dev//markata/plugins/generator</link>
+      <description>The plugin adds a meta generator tag to each generated HTML page, indicating that the page was generated by Markata and including the version number.…</description>
+      <guid>https://markata.dev//markata/plugins/generator</guid>
+      <pubDate>2025-12-09</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>load.py</title>
+      <link>https://markata.dev//markata/plugins/load</link>
+      <description>The plugin is responsible for loading and parsing markdown files with frontmatter into Post objects. It provides parallel loading capabilities and handles…</description>
+      <guid>https://markata.dev//markata/plugins/load</guid>
+      <pubDate>2025-12-09</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>jinja_env.py</title>
+      <link>https://markata.dev//markata/plugins/jinja-env</link>
+      <description>Jinja2 Environment Plugin Provides a centralized Jinja2 environment configuration for consistent template rendering across all Markata plugins. This plugin…</description>
+      <guid>https://markata.dev//markata/plugins/jinja-env</guid>
+      <pubDate>2025-12-09</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>publish_source.py</title>
+      <link>https://markata.dev//markata/plugins/publish-source</link>
+      <description>The plugin saves processed markdown files to the output directory, preserving frontmatter and content modifications. This enables source file access alongside…</description>
+      <guid>https://markata.dev//markata/plugins/publish-source</guid>
+      <pubDate>2025-12-09</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>tui.py</title>
+      <link>https://markata.dev//markata/plugins/tui</link>
+      <description>None</description>
+      <guid>https://markata.dev//markata/plugins/tui</guid>
+      <pubDate>2025-12-09</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>covers.py</title>
+      <link>https://markata.dev//markata/plugins/covers</link>
+      <description>The plugin generates custom cover images for your posts using configurable templates. It supports multiple cover image formats with different sizes, fonts,…</description>
+      <guid>https://markata.dev//markata/plugins/covers</guid>
+      <pubDate>2025-12-09</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>auto_description.py</title>
+      <link>https://markata.dev//markata/plugins/auto-description</link>
+      <description>The plugin automatically generates descriptions for your posts by extracting text from the first paragraphs of your markdown content. It can create multiple…</description>
+      <guid>https://markata.dev//markata/plugins/auto-description</guid>
+      <pubDate>2025-12-09</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>__init__.py</title>
+      <link>https://markata.dev//markata/plugins/init</link>
+      <description>None</description>
+      <guid>https://markata.dev//markata/plugins/init</guid>
+      <pubDate>2025-12-09</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>to_json.py</title>
+      <link>https://markata.dev//markata/plugins/to-json</link>
+      <description>None</description>
+      <guid>https://markata.dev//markata/plugins/to-json</guid>
+      <pubDate>2025-12-09</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+  <item>
+      <title>md_it_highlight_code.py</title>
+      <link>https://markata.dev//markata/plugins/md-it-highlight-code</link>
+      <description>The plugin adds syntax highlighting to code blocks in your markdown content. It uses Pygments for highlighting and adds a copy button for easy code sharing.…</description>
+      <guid>https://markata.dev//markata/plugins/md-it-highlight-code</guid>
+      <pubDate>2025-12-09</pubDate>
+      <author>Waylon Walker</author>
+  </item>
+<lastBuildDate></lastBuildDate>
+</channel>
+</rss>

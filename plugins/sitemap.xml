@@ -1,0 +1,366 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet href="/sitemap.xsl" type="text/xsl"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <title>plugins</title>
+    <link>https://markata.dev/</link>
+   <url>
+      <title>plugins.py</title>
+      <description>None</description>
+      <loc>https://markata.dev//markata/cli/plugins</loc>
+      <lastmod>2025-12-09</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>sitemap.py</title>
+      <description>[DEPRECATED] The plugin is deprecated and will be removed in a future version. Please use instead, which provides more comprehensive sitemap generation…</description>
+      <loc>https://markata.dev//markata/plugins/sitemap</loc>
+      <lastmod>2025-12-09</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>copy_assets.py</title>
+      <description>The plugin copies static assets (images, CSS, JavaScript, etc.) from your assets directory to the output directory during the build process. Installation This…</description>
+      <loc>https://markata.dev//markata/plugins/copy-assets</loc>
+      <lastmod>2025-12-09</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>config_model.py</title>
+      <description>The plugin defines Markata&#39;s core configuration model, providing validation and type safety for all configuration options. Installation This plugin is…</description>
+      <loc>https://markata.dev//markata/plugins/config-model</loc>
+      <lastmod>2025-12-09</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>pyinstrument.py</title>
+      <description>The plugin adds performance profiling capabilities using pyinstrument. It generates detailed HTML reports showing where your build spends time. Installation…</description>
+      <loc>https://markata.dev//markata/plugins/pyinstrument</loc>
+      <lastmod>2025-12-09</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>md_it_wikilinks.py</title>
+      <description>The plugin adds support for wiki-style links using double brackets ( ). It automatically resolves links to other posts in your site using file names or slugs.…</description>
+      <loc>https://markata.dev//markata/plugins/md-it-wikilinks</loc>
+      <lastmod>2025-12-09</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>post_template.py</title>
+      <description>The plugin handles the rendering of posts using Jinja2 templates. It provides extensive configuration options for HTML head elements, styling, and template…</description>
+      <loc>https://markata.dev//markata/plugins/post-template</loc>
+      <lastmod>2025-12-09</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>didyoumean.py</title>
+      <description>DidYouMean Plugin for Markata Automatically generates redirect pages for URLs that may be mistyped by users. Installation Configuration Usage This plugin will…</description>
+      <loc>https://markata.dev//markata/plugins/didyoumean</loc>
+      <lastmod>2025-12-09</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>manifest.py</title>
+      <description>The plugin generates a Web App Manifest (manifest.json) file for your site. This enables Progressive Web App (PWA) features and provides metadata for mobile…</description>
+      <loc>https://markata.dev//markata/plugins/manifest</loc>
+      <lastmod>2025-12-09</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>heading_link.py</title>
+      <description>The plugin adds clickable link icons next to headings in your HTML output. This makes it easy for readers to share direct links to specific sections of your…</description>
+      <loc>https://markata.dev//markata/plugins/heading-link</loc>
+      <lastmod>2025-12-09</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>redirects.py</title>
+      <description>The plugin creates static redirects for your site using a simple configuration file. Compatible with services like Cloudflare Pages and Netlify. Installation…</description>
+      <loc>https://markata.dev//markata/plugins/redirects</loc>
+      <lastmod>2025-12-09</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>base_cli.py</title>
+      <description>The plugin provides Markata&#39;s core command-line interface functionality, including essential commands like , , and . Installation This plugin is built-in and…</description>
+      <loc>https://markata.dev//markata/plugins/base-cli</loc>
+      <lastmod>2025-12-09</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>flat_slug.py</title>
+      <description>The plugin handles URL slug generation for your articles. It sanitizes special characters that don&#39;t work in browsers and provides a consistent URL structure.…</description>
+      <loc>https://markata.dev//markata/plugins/flat-slug</loc>
+      <lastmod>2025-12-09</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>create_models.py</title>
+      <description>The plugin dynamically creates Markata&#39;s core Pydantic models by combining model fragments from various plugins. This enables extensible and type-safe data…</description>
+      <loc>https://markata.dev//markata/plugins/create-models</loc>
+      <lastmod>2025-12-09</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>publish_html.py</title>
+      <description>The plugin handles saving rendered HTML content to files. It determines the output path for each article and ensures files are saved in the correct location…</description>
+      <loc>https://markata.dev//markata/plugins/publish-html</loc>
+      <lastmod>2025-12-09</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>analytics.py</title>
+      <description>The plugin generates analytics and contribution visualizations for your Markata site. It creates a contributions heatmap similar to GitHub&#39;s contribution…</description>
+      <loc>https://markata.dev//markata/plugins/analytics</loc>
+      <lastmod>2025-12-09</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>auto_title.py</title>
+      <description>The plugin automatically generates titles for posts that don&#39;t have a title specified in their frontmatter. It uses the filename to create a human-readable…</description>
+      <loc>https://markata.dev//markata/plugins/auto-title</loc>
+      <lastmod>2025-12-09</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>jinja_md.py</title>
+      <description>The plugin enables Jinja2 templating within your markdown content. This allows you to dynamically generate content using Python expressions and access to the…</description>
+      <loc>https://markata.dev//markata/plugins/jinja-md</loc>
+      <lastmod>2025-12-09</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>docs.py</title>
+      <description>The plugin automatically generates documentation pages from Python source code docstrings. It parses Python files, extracts docstrings and code structure, and…</description>
+      <loc>https://markata.dev//markata/plugins/docs</loc>
+      <lastmod>2025-12-09</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>feeds.py</title>
+      <description>The plugin is used to create feed pages, which are lists of posts. The list is generated using a , then each post in the list is rendered with a before being…</description>
+      <loc>https://markata.dev//markata/plugins/feeds</loc>
+      <lastmod>2025-12-09</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>prevnext.py</title>
+      <description>The plugin adds previous and next navigation links to each post, allowing readers to easily navigate between related content. Installation This plugin is…</description>
+      <loc>https://markata.dev//markata/plugins/prevnext</loc>
+      <lastmod>2025-12-09</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>icon_resize.py</title>
+      <description>The plugin automatically generates favicons in multiple sizes from a single source image. This ensures your site has appropriate icons for different devices…</description>
+      <loc>https://markata.dev//markata/plugins/icon-resize</loc>
+      <lastmod>2025-12-09</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>render_markdown.py</title>
+      <description>The plugin converts markdown content to HTML. This plugin is essential for rendering markdown files loaded by the plugin. Installation This plugin is built-in…</description>
+      <loc>https://markata.dev//markata/plugins/render-markdown</loc>
+      <lastmod>2025-12-09</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>rss.py</title>
+      <description>[DEPRECATED] The plugin is deprecated and will be removed in a future version. Please use instead, which provides more comprehensive feed generation…</description>
+      <loc>https://markata.dev//markata/plugins/rss</loc>
+      <lastmod>2025-12-09</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>mdit_details.py</title>
+      <description>The plugin adds support for collapsible details/summary sections in markdown using the syntax. This is similar to HTML&#39;s element but with a more…</description>
+      <loc>https://markata.dev//markata/plugins/mdit-details</loc>
+      <lastmod>2025-12-09</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>seo.py</title>
+      <description>manifest plugin</description>
+      <loc>https://markata.dev//markata/plugins/seo</loc>
+      <lastmod>2025-12-09</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>create_covers.py</title>
+      <description>The plugin is a simplified version of the covers plugin. It generates basic cover images with titles using a single template and font configuration.…</description>
+      <loc>https://markata.dev//markata/plugins/create-covers</loc>
+      <lastmod>2025-12-09</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>datetime.py</title>
+      <description>The plugin handles date and time parsing for posts. It ensures consistent datetime handling by converting various date formats to timezone-aware datetime…</description>
+      <loc>https://markata.dev//markata/plugins/datetime</loc>
+      <lastmod>2025-12-09</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>skip.py</title>
+      <description>Post Skipping and Caching Plugin</description>
+      <loc>https://markata.dev//markata/plugins/skip</loc>
+      <lastmod>2025-12-09</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>subroute.py</title>
+      <description>None</description>
+      <loc>https://markata.dev//markata/plugins/subroute</loc>
+      <lastmod>2025-12-09</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>service_worker.py</title>
+      <description>Adds a service_worker to your site. This will make it installable on mobile, viewable offline, and potentially more responsive as the user goes between good…</description>
+      <loc>https://markata.dev//markata/plugins/service-worker</loc>
+      <lastmod>2025-12-09</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>glob.py</title>
+      <description>The plugin handles file discovery using glob patterns. It determines which files should be processed by Markata based on configured patterns. A glob is a…</description>
+      <loc>https://markata.dev//markata/plugins/glob</loc>
+      <lastmod>2025-12-09</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>publish_dev_to_source.py</title>
+      <description>The plugin enables synchronization between your Markata posts and dev.to articles. It handles frontmatter translation and content formatting for dev.to…</description>
+      <loc>https://markata.dev//markata/plugins/publish-dev-to-source</loc>
+      <lastmod>2025-12-09</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>post_model.py</title>
+      <description>The plugin defines the core Post model used throughout Markata. It provides robust validation, serialization, and configuration options for all post…</description>
+      <loc>https://markata.dev//markata/plugins/post-model</loc>
+      <lastmod>2025-12-09</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>setup_logging.py</title>
+      <description>Setup Logging hook sets up the RichHandler for pretty console logs, and file logs to the configured markata&#39;s configured , or if is not configured. The log…</description>
+      <loc>https://markata.dev//markata/plugins/setup-logging</loc>
+      <lastmod>2025-12-09</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>generator.py</title>
+      <description>The plugin adds a meta generator tag to each generated HTML page, indicating that the page was generated by Markata and including the version number.…</description>
+      <loc>https://markata.dev//markata/plugins/generator</loc>
+      <lastmod>2025-12-09</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>load.py</title>
+      <description>The plugin is responsible for loading and parsing markdown files with frontmatter into Post objects. It provides parallel loading capabilities and handles…</description>
+      <loc>https://markata.dev//markata/plugins/load</loc>
+      <lastmod>2025-12-09</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>jinja_env.py</title>
+      <description>Jinja2 Environment Plugin Provides a centralized Jinja2 environment configuration for consistent template rendering across all Markata plugins. This plugin…</description>
+      <loc>https://markata.dev//markata/plugins/jinja-env</loc>
+      <lastmod>2025-12-09</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>publish_source.py</title>
+      <description>The plugin saves processed markdown files to the output directory, preserving frontmatter and content modifications. This enables source file access alongside…</description>
+      <loc>https://markata.dev//markata/plugins/publish-source</loc>
+      <lastmod>2025-12-09</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>tui.py</title>
+      <description>None</description>
+      <loc>https://markata.dev//markata/plugins/tui</loc>
+      <lastmod>2025-12-09</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>covers.py</title>
+      <description>The plugin generates custom cover images for your posts using configurable templates. It supports multiple cover image formats with different sizes, fonts,…</description>
+      <loc>https://markata.dev//markata/plugins/covers</loc>
+      <lastmod>2025-12-09</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>auto_description.py</title>
+      <description>The plugin automatically generates descriptions for your posts by extracting text from the first paragraphs of your markdown content. It can create multiple…</description>
+      <loc>https://markata.dev//markata/plugins/auto-description</loc>
+      <lastmod>2025-12-09</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>__init__.py</title>
+      <description>None</description>
+      <loc>https://markata.dev//markata/plugins/init</loc>
+      <lastmod>2025-12-09</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>to_json.py</title>
+      <description>None</description>
+      <loc>https://markata.dev//markata/plugins/to-json</loc>
+      <lastmod>2025-12-09</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <title>md_it_highlight_code.py</title>
+      <description>The plugin adds syntax highlighting to code blocks in your markdown content. It uses Pygments for highlighting and adds a copy button for easy code sharing.…</description>
+      <loc>https://markata.dev//markata/plugins/md-it-highlight-code</loc>
+      <lastmod>2025-12-09</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+</urlset>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<?xml-stylesheet href="/atom.xsl" type="text/xsl"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title>AutoDoc Python Modules.</title>
+  <subtitle>Documentation for using the Markata static site generator</subtitle>
+  <link>https://markata.dev/</link>
+  <id>https://markata.dev/autodoc/</id>
+
+  <link href="https://markata.dev/autodoc/atom.xml" rel="self" />
+  <link href="https://markata.dev/" rel="alternate" />
+
+  <updated>2025-12-09T02:16:11.767431Z</updated>
+
+</feed>

@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<?xml-stylesheet href="/atom.xsl" type="text/xsl"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title>Project Gallery</title>
+  <subtitle>Documentation for using the Markata static site generator</subtitle>
+  <link>https://markata.dev/</link>
+  <id>https://markata.dev/project-gallery/</id>
+
+  <link href="https://markata.dev/project-gallery/atom.xml" rel="self" />
+  <link href="https://markata.dev/" rel="alternate" />
+
+  <updated>2025-12-09Z</updated>
+
+  <entry>
+    <title>Markata&#39;s Docs</title>
+
+    <id>https://markata.dev/markata-dev/</id>
+    <link href="https://markata.dev/markata-dev/" rel="alternate" />
+
+    <updated>2025-12-09Z</updated>
+    <published>2025-12-09Z</published>
+
+    <summary type="html"><![CDATA[
+Markta.dev home page Markata builds it's own docs in completely in using all built in templatates and plugins. Markta.dev home page Using the plugin it is…
+    ]]></summary>
+
+    <content type="html"><![CDATA[
+[![Markta.dev home page](/markata.dev_.webp)](https://markata.dev){.shadow-2xl}
+
+Markata builds it's own docs in completely in `markata` using all built in
+templatates and plugins.
+
+[![Markta.dev home page](/markata.dev_markata_plugins_base-cli_.webp)](https://https://markata.dev/markata/plugins/base-cli/){.shadow-2xl}
+
+Using the `markata.plugins.docs` plugin it is able to load all the python
+files.  It renders out all the docstrings as markdown and shows the code in
+highlighted code blocks.
+    ]]></content>
+  </entry>
+  <entry>
+    <title>WaylonWalker.com</title>
+
+    <id>https://markata.dev/waylonwalker/</id>
+    <link href="https://markata.dev/waylonwalker/" rel="alternate" />
+
+    <updated>2025-12-09Z</updated>
+    <published>2025-12-09Z</published>
+
+    <summary type="html"><![CDATA[
+Waylonwalker.com home page This Waylon Walker's personal blog where he is learning in public. Posting about topics such as linux, vim, python, and kedro.…
+    ]]></summary>
+
+    <content type="html"><![CDATA[
+[![Waylonwalker.com home page](/waylonwalker.com.webp)](https://waylonwalker.com)
+
+This Waylon Walker's personal blog where he is learning in public.  Posting
+about topics such as linux, vim, python, and kedro.  Flexing just a bit, after
+writing content on the domain since 2017 it is achieving  15K clicks from
+google every 28 days, 36 top 3 ranked keywords, and 2,400 top 10 ranked keywords.
+
+
+[![Waylonwalker.com post](/waylonwalker.com_markata-configure-head.webp)](https://waylonwalker.com/markata-configure-head/)
+
+A typical post has a header that is screenshot as the og image for display on
+social platforms using selenium.  The overall theme holds similar to the home
+and feeds pages.  With a large dark background image of repeating W's.
+
+
+[![Waylonwalker.com feed](/waylonwalker.com_archive.webp)](https://waylonwalker.com/archive/)
+
+Waylonwalker.com has several feeds running, but the most prominant one that is
+shared in the navigation bar is the
+[archive](https://waylonwalker.com/archive).  The feed itself has an RGB
+backlight inspired yellow and purple glow around it.
+    ]]></content>
+  </entry>
+</feed>
