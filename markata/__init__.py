@@ -173,7 +173,12 @@ class Markata:
         #     FanoutCache(self.MARKATA_CACHE_DIR, statistics=True)
         if self._cache is not None:
             return self._cache
-        self._cache = Cache(self.MARKATA_CACHE_DIR, statistics=True)
+        self._cache = Cache(
+            self.MARKATA_CACHE_DIR,
+            statistics=True,
+            size_limit=5 * 1024**3,  # 5GB to reduce culling frequency
+            cull_limit=10,  # Evict fewer entries at a time (default is 100)
+        )
         self._cache.expire()
 
         return self._cache
