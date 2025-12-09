@@ -501,8 +501,9 @@ def create_page(
         markata._feed_hash_cache = {}
 
     if cache_key_posts not in markata._feed_hash_cache:
-        # Use post slugs and content hashes instead of full to_dict()
-        posts_data = feed.map("(post.slug, getattr(post, 'content_hash', ''))")
+        # Use post slugs and published dates instead of full to_dict()
+        # This provides a stable, lightweight cache key
+        posts_data = feed.map("(post.slug, str(getattr(post, 'date', '')), getattr(post, 'title', ''))")
         markata._feed_hash_cache[cache_key_posts] = str(sorted(posts_data))
 
     posts_hash_data = markata._feed_hash_cache[cache_key_posts]

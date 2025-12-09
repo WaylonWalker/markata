@@ -188,8 +188,14 @@ class OutputHTML(pydantic.BaseModel):
                 # Not relative to output_dir, make it so
                 pass
 
-        # Make relative paths relative to output_dir
-        return output_dir / v
+        # Check if path already starts with output_dir
+        try:
+            v.relative_to(output_dir)
+            # Path is already relative to output_dir
+            return v
+        except ValueError:
+            # Path doesn't start with output_dir, prepend it
+            return output_dir / v
 
     @field_validator("output_html", mode="before")
     @classmethod
