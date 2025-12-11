@@ -275,22 +275,22 @@ def optional(*fields):
 from markata.plugins.theme import Color
 
 
-class ThemeStyle(pydantic.BaseModel):
-    text: Optional[Color] = None
-    muted: Optional[Color] = None
-    heading: Optional[Color] = None
-    accent: Optional[Color] = None
-    accent_alt: Optional[Color] = None
-    background: Optional[Color] = None
-    surface: Optional[Color] = None
-    code_bg: Optional[Color] = None
-    blockquote_bg: Optional[Color] = None
-    blockquote_border: Optional[Color] = None
-    link_hover: Optional[Color] = None
-    selection_bg: Optional[Color] = None
-    selection_text: Optional[Color] = None
-    border: Optional[Color] = None
-    background_image: Optional[str] = None
+# class ThemeStyle(pydantic.BaseModel):
+#     text: Optional[Color] = None
+#     muted: Optional[Color] = None
+#     heading: Optional[Color] = None
+#     accent: Optional[Color] = None
+#     accent_alt: Optional[Color] = None
+#     background: Optional[Color] = None
+#     surface: Optional[Color] = None
+#     code_bg: Optional[Color] = None
+#     blockquote_bg: Optional[Color] = None
+#     blockquote_border: Optional[Color] = None
+#     link_hover: Optional[Color] = None
+#     selection_bg: Optional[Color] = None
+#     selection_text: Optional[Color] = None
+#     border: Optional[Color] = None
+#     background_image: Optional[str] = None
 
 THEME_DEFAULTS: Dict[str, Dict[str, Dict[str, str]]] = {
     "tokyo-night": {
@@ -316,15 +316,15 @@ THEME_DEFAULTS: Dict[str, Dict[str, Dict[str, str]]] = {
             "heading": "white",
             "accent": "indigo-400",
             "accent_alt": "purple-400",
-            "background": "[#1a1b26]",
-            "surface": "[#222436]",
-            "code_bg": "[#2f3549]",
-            "blockquote_bg": "[#1f2335]",
+            "background": "#1a1b26",
+            "surface": "#222436",
+            "code_bg": "#2f3549",
+            "blockquote_bg": "#1f2335",
             "blockquote_border": "indigo-500",
             "link_hover": "white",
-            "selection_bg": "[#2f3549]",
+            "selection_bg": "#2f3549",
             "selection_text": "white",
-            "border": "[#3b4261]",
+            "border": "#3b4261",
         },
     },
     "catppuccin": {
@@ -350,16 +350,17 @@ THEME_DEFAULTS: Dict[str, Dict[str, Dict[str, str]]] = {
             "muted": "rose-400",
             "heading": "rose-100",
             "accent": "pink-400",
-            "accent_alt": "lavender-300",
-            "background": "[#1e1e28]",
-            "surface": "[#2a2a38]",
-            "code_bg": "[#2c2c3a]",
-            "blockquote_bg": "[#2b2b3a]",
+            # "accent_alt": "lavender-300",
+            "accent_alt": "rose-300",
+            "background": "#1e1e28",
+            "surface": "#2a2a38",
+            "code_bg": "#2c2c3a",
+            "blockquote_bg": "#2b2b3a",
             "blockquote_border": "pink-500",
             "link_hover": "white",
-            "selection_bg": "[#403d52]",
+            "selection_bg": "#403d52",
             "selection_text": "rose-50",
-            "border": "[#4e4e5a]",
+            "border": "#4e4e5a",
             "code_theme": "dracula",
         },
     },
@@ -387,15 +388,15 @@ THEME_DEFAULTS: Dict[str, Dict[str, Dict[str, str]]] = {
             "heading": "green-50",
             "accent": "green-400",
             "accent_alt": "lime-400",
-            "background": "[#2b3339]",
-            "surface": "[#374045]",
-            "code_bg": "[#3b444a]",
-            "blockquote_bg": "[#3d484f]",
+            "background": "#2b3339",
+            "surface": "#374045",
+            "code_bg": "#3b444a",
+            "blockquote_bg": "#3d484f",
             "blockquote_border": "green-500",
             "link_hover": "white",
-            "selection_bg": "[#475258]",
+            "selection_bg": "#475258",
             "selection_text": "white",
-            "border": "[#5c6a70]",
+            "border": "#5c6a70",
             "code_theme": "solarized-dark",
         },
     },
@@ -422,15 +423,15 @@ THEME_DEFAULTS: Dict[str, Dict[str, Dict[str, str]]] = {
             "heading": "yellow-100",
             "accent": "orange-400",
             "accent_alt": "yellow-400",
-            "background": "[#282828]",
-            "surface": "[#3c3836]",
-            "code_bg": "[#504945]",
-            "blockquote_bg": "[#3a3634]",
+            "background": "#282828",
+            "surface": "#3c3836",
+            "code_bg": "#504945",
+            "blockquote_bg": "#3a3634",
             "blockquote_border": "orange-500",
             "link_hover": "white",
-            "selection_bg": "[#665c54]",
+            "selection_bg": "#665c54",
             "selection_text": "orange-50",
-            "border": "[#7c6f64]",
+            "border": "#7c6f64",
         },
     },
     "kanagwa": {
@@ -456,15 +457,15 @@ THEME_DEFAULTS: Dict[str, Dict[str, Dict[str, str]]] = {
             "heading": "slate-50",
             "accent": "blue-400",
             "accent_alt": "indigo-400",
-            "background": "[#1f2335]",
-            "surface": "[#2a2e3e]",
-            "code_bg": "[#3a3f52]",
-            "blockquote_bg": "[#2e3440]",
+            "background": "#1f2335",
+            "surface": "#2a2e3e",
+            "code_bg": "#3a3f52",
+            "blockquote_bg": "#2e3440",
             "blockquote_border": "blue-500",
             "link_hover": "white",
-            "selection_bg": "[#394260]",
+            "selection_bg": "#394260",
             "selection_text": "white",
-            "border": "[#4b5162]",
+            "border": "#4b5162",
         },
     },
     "nord": {
@@ -491,15 +492,15 @@ THEME_DEFAULTS: Dict[str, Dict[str, Dict[str, str]]] = {
             "heading": "cyan-50",
             "accent": "cyan-400",
             "accent_alt": "blue-300",
-            "background": "[#2e3440]",
-            "surface": "[#3b4252]",
-            "code_bg": "[#434c5e]",
-            "blockquote_bg": "[#4c566a]",
+            "background": "#2e3440",
+            "surface": "#3b4252",
+            "code_bg": "#434c5e",
+            "blockquote_bg": "#4c566a",
             "blockquote_border": "cyan-500",
             "link_hover": "white",
-            "selection_bg": "[#5e81ac]",
+            "selection_bg": "#5e81ac",
             "selection_text": "cyan-50",
-            "border": "[#6b7d97]",
+            "border": "#6b7d97",
             "code_theme": "nord-darker",
         },
     },
@@ -522,20 +523,20 @@ THEME_DEFAULTS: Dict[str, Dict[str, Dict[str, str]]] = {
             "code_theme": "monokai",
         },
         "dark": {
-            "text": "[#ff00ff]",
-            "muted": "[#c060c0]",
-            "heading": "[#ff66ff]",
+            "text": "#ff00ff",
+            "muted": "#c060c0",
+            "heading": "#ff66ff",
             "accent": "pink-400",
             "accent_alt": "fuchsia-400",
-            "background": "[#2d0036]",
-            "surface": "[#440055]",
-            "code_bg": "[#3d0047]",
-            "blockquote_bg": "[#520066]",
+            "background": "#2d0036",
+            "surface": "#440055",
+            "code_bg": "#3d0047",
+            "blockquote_bg": "#520066",
             "blockquote_border": "pink-500",
             "link_hover": "white",
-            "selection_bg": "[#8800aa]",
-            "selection_text": "[#ffffff]",
-            "border": "[#ff00ff]",
+            "selection_bg": "#8800aa",
+            "selection_text": "#ffffff",
+            "border": "#ff00ff",
             "code_theme": "monokai",
         },
     },
@@ -543,20 +544,20 @@ THEME_DEFAULTS: Dict[str, Dict[str, Dict[str, str]]] = {
 
 
 class ThemeStyle(pydantic.BaseModel):
-    text: Optional[str] = None
-    muted: Optional[str] = None
-    heading: Optional[str] = None
-    accent: Optional[str] = None
-    accent_alt: Optional[str] = None
-    background: Optional[str] = None
-    surface: Optional[str] = None
-    code_bg: Optional[str] = None
-    blockquote_bg: Optional[str] = None
-    blockquote_border: Optional[str] = None
-    link_hover: Optional[str] = None
-    selection_bg: Optional[str] = None
-    selection_text: Optional[str] = None
-    border: Optional[str] = None
+    text: Optional[Color] = None
+    muted: Optional[Color] = None
+    heading: Optional[Color] = None
+    accent: Optional[Color] = None
+    accent_alt: Optional[Color] = None
+    background: Optional[Color] = None
+    surface: Optional[Color] = None
+    code_bg: Optional[Color] = None
+    blockquote_bg: Optional[Color] = None
+    blockquote_border: Optional[Color] = None
+    link_hover: Optional[Color] = None
+    selection_bg: Optional[Color] = None
+    selection_text: Optional[Color] = None
+    border: Optional[Color] = None
     code_theme: Literal[
         "abap",
         "algol",

@@ -25,13 +25,13 @@
 
   .admonition {
     @apply my-20 border border-transparent rounded shadow-md text-left;
-    @apply bg-[{{ markata.config.style.light.surface }}] dark:bg-[{{ markata.config.style.dark.surface }}];
+    @apply bg-[{{ markata.config.style.light.surface.tw }}] dark:bg-[{{ markata.config.style.dark.surface.tw }}];
     @apply pb-4;
   }
 
   .admonition-title {
-    @apply sticky top-0 z-10 font-bold mb-2 px-4 py-2 bg-[{{ markata.config.style.light.blockquote_bg }}] dark:bg-[{{ markata.config.style.dark.blockquote_bg }}];
-    @apply border-b border-[{{ markata.config.style.light.border }}] dark:border-[{{ markata.config.style.dark.border }}];
+    @apply sticky top-0 z-10 font-bold mb-2 px-4 py-2 bg-[{{ markata.config.style.light.blockquote_bg.tw }}] dark:bg-[{{ markata.config.style.dark.blockquote_bg.tw }}];
+    @apply border-b border-[{{ markata.config.style.light.border.tw }}] dark:border-[{{ markata.config.style.dark.border.tw }}];
   }
 
   .admonition p {
@@ -110,8 +110,8 @@
   }
 
   .small {
-      @apply text-sm text-{{ markata.config.style.light.muted }};
-      @apply dark:text-{{ markata.config.style.dark.muted }};
+      @apply text-sm text-{{ markata.config.style.light.muted.tw }};
+      @apply dark:text-{{ markata.config.style.dark.muted.tw }};
   }
 
   summary:hover {

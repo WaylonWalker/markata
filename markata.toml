@@ -13,8 +13,6 @@
 'docs' = 'https://markata.dev/docs/'
 'plugins' = 'https://markata.dev/plugins/'
 
-[markata.style]
-
 [markata]
 # bump site version to bust GitHub actions cache
 site_version = 13

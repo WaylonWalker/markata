@@ -25,24 +25,56 @@ def print_color_swatch(name: str, hex_color: str):
 
 class Color(BaseColor):
     def __init__(self, value=None, alpha=1.0, **kwargs):
+        # store tailwind token if we got one
         self.__dict__["alpha"] = alpha
+        self.__dict__["_tw_token"] = None
+
         if value is not None:
-            # Handle Tailwind-style like "blue-500"
             if isinstance(value, str):
+                original = value
+
+                # name-index form, e.g. "rose-500"
                 if "-" in value:
-                    name, index = value.split("-")
-                    value = tailwind_v4_colors[name][int(index)]
+                    name, index = value.split("-", 1)
+                    if name in tailwind_v4_colors:
+                        palette = tailwind_v4_colors[name]
+                        try:
+                            color_val = palette[int(index)]
+                        except (ValueError, KeyError):
+                            # fall back to original string – let BaseColor deal with it
+                            color_val = value
+                        else:
+                            self.__dict__["_tw_token"] = f"{name}-{index}"
+                            value = color_val
+
+                # just a tailwind name like "rose" or "slate"
                 elif value in tailwind_v4_colors:
+                    self.__dict__["_tw_token"] = value
                     val = tailwind_v4_colors[value]
                     if isinstance(val, dict):
-                        value = val.get(500, list(val.values())[0])  # fallback
+                        # fallback to 500 or first value
+                        value = val.get(500, list(val.values())[0])
                     else:
                         value = val
+                # else: hex or other format; no special token stored
+
             super().__init__(value)
         else:
-            # Support keyword-based construction like hex=, hsl=, rgb=
             super().__init__(**kwargs)
 
+    @property
+    def tw(self) -> str:
+        """
+        Tailwind-friendly suffix for utilities:
+
+        - If constructed from a tailwind token like "rose-500", return "rose-500".
+        - If constructed from hex like "#2a2a38", return "[#2a2a38]" for arbitrary values.
+        """
+        token = getattr(self, "_tw_token", None)
+        if token:
+            return token
+        # arbitrary value syntax for pure hex
+        return f"[{self.hex_l}]"
     @classmethod
     def __get_pydantic_core_schema__(
         cls, source_type, handler: GetCoreSchemaHandler
