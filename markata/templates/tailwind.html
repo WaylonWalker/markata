@@ -18,19 +18,22 @@
   }
 
   body {
-    @apply bg-{{ markata.config.style.light.surface.tw }};
+    @apply bg-{{ markata.config.style.light.background.tw }};
     {% if markata.config.style.light.background_image %}background-image: url('{{ markata.config.style.light.background_image }}');{% endif %}
   }
 
   .dark body {
-    @apply bg-{{ markata.config.style.dark.surface.tw }};
+    @apply bg-{{ markata.config.style.dark.background.tw }};
     {% if markata.config.style.dark.background_image %}background-image: url('{{ markata.config.style.dark.background_image }}');{% endif %}
   }
 
   h1, h2, h3, h4, h5, h6 {
     @apply font-bold tracking-tight mt-12;
     @apply text-{{ markata.config.style.light.heading.tw }};
-    @apply dark:text-{{ markata.config.style.dark.heading.tw }};
+  }
+
+  .dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
+    @apply text-{{ markata.config.style.dark.heading.tw }};
   }
 
   h1 {
@@ -40,7 +43,10 @@
   h2 {
     @apply text-3xl sm:text-4xl mb-6 border-b pb-1 pl-6 mt-24;
     @apply border-{{ markata.config.style.light.border.tw }};
-    @apply dark:border-{{ markata.config.style.dark.border.tw }};
+  }
+
+  .dark h2 {
+    @apply border-{{ markata.config.style.dark.border.tw }};
   }
 
   h3 {
@@ -75,12 +81,20 @@
 
   ul {
     @apply list-disc pl-6 mb-4;
-    @apply marker:text-{{ markata.config.style.light.accent.tw }} dark:marker:text-{{ markata.config.style.dark.accent.tw }};
+    @apply marker:text-{{ markata.config.style.light.accent.tw }};
+  }
+
+  .dark ul {
+    @apply marker:text-{{ markata.config.style.dark.accent.tw }};
   }
 
   ol {
     @apply list-decimal pl-6 mb-4;
-    @apply marker:text-{{ markata.config.style.light.accent.tw }} dark:marker:text-{{ markata.config.style.dark.accent.tw }};
+    @apply marker:text-{{ markata.config.style.light.accent.tw }};
+  }
+
+  .dark ol {
+    @apply marker:text-{{ markata.config.style.dark.accent.tw }};
   }
 
   ul ul, ol ol {
@@ -94,43 +108,67 @@
   section.body {
     @apply max-w-lg mx-auto sm:max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-7xl;
     @apply bg-{{ markata.config.style.light.surface.tw }};
-    @apply dark:bg-{{ markata.config.style.dark.surface.tw }};
+    @apply text-{{ markata.config.style.light.text.tw }};
     @apply p-8 rounded-lg shadow-lg;
+  }
+
+  .dark section.body {
+    @apply bg-{{ markata.config.style.dark.surface.tw }};
+    @apply text-{{ markata.config.style.dark.text.tw }};
   }
 
   a {
     @apply transition-colors duration-200 px-1 rounded;
     @apply text-{{ markata.config.style.light.accent.tw }};
-    @apply dark:text-{{ markata.config.style.dark.accent.tw }};
+  }
+
+  .dark a {
+    @apply text-{{ markata.config.style.dark.accent.tw }};
   }
 
   a:hover {
     @apply bg-{{ markata.config.style.light.accent.tw }};
     @apply bg-{{ markata.config.style.light.link_hover.tw }};
-    @apply dark:bg-{{ markata.config.style.dark.accent.tw }} dark:text-{{ markata.config.style.dark.link_hover.tw }};
+  }
+
+  .dark a:hover {
+    @apply bg-{{ markata.config.style.dark.accent.tw }};
+    @apply text-{{ markata.config.style.dark.link_hover.tw }};
   }
 
   blockquote {
     @apply border-l-4 pl-4 italic py-2 mb-4;
     @apply bg-{{ markata.config.style.light.blockquote_bg.tw }};
     @apply border-{{ markata.config.style.light.blockquote_border.tw }};
-    @apply dark:bg-{{ markata.config.style.dark.blockquote_bg.tw }} dark:border-{{ markata.config.style.dark.blockquote_border.tw }};
+  }
+
+  .dark blockquote {
+    @apply bg-{{ markata.config.style.dark.blockquote_bg.tw }};
+    @apply border-{{ markata.config.style.dark.blockquote_border.tw }};
   }
 
   code {
     @apply px-2 py-1 rounded font-mono shadow-lg border-2;
     @apply bg-{{ markata.config.style.light.code_bg.tw }};
     @apply text-{{ markata.config.style.light.text.tw }};
-    @apply dark:bg-{{ markata.config.style.dark.code_bg.tw }} dark:text-{{ markata.config.style.dark.text.tw }};
+  }
+
+  .dark code {
+    @apply bg-{{ markata.config.style.dark.code_bg.tw }};
+    @apply text-{{ markata.config.style.dark.text.tw }};
   }
 
   pre {
     @apply p-4 rounded-xl mb-4 overflow-x-auto font-mono w-full max-w-[100vw];
     @apply border-{{ markata.config.style.light.border.tw }};
-    @apply dark:border-{{ markata.config.style.dark.border.tw }};
     @apply bg-{{ markata.config.style.light.code_bg.tw }};
     @apply text-{{ markata.config.style.light.text.tw }};
-    @apply dark:bg-{{ markata.config.style.dark.code_bg.tw }} dark:text-{{ markata.config.style.dark.text.tw }};
+  }
+
+  .dark pre {
+    @apply border-{{ markata.config.style.dark.border.tw }};
+    @apply bg-{{ markata.config.style.dark.code_bg.tw }};
+    @apply text-{{ markata.config.style.dark.text.tw }};
   }
 
   pre.wrapper {
@@ -144,7 +182,10 @@
   button.copy {
     @apply z-50 bg-inherit border-0 self-end top-0 right-0 mx-2 my-1 hover:bg-black;
     @apply fill-{{ markata.config.style.light.accent.tw }};
-    @apply dark:fill-{{ markata.config.style.dark.accent.tw }};
+  }
+
+  .dark button.copy {
+    @apply fill-{{ markata.config.style.dark.accent.tw }};
   }
 
   .copy-wrapper svg {
@@ -154,7 +195,10 @@
   hr {
     @apply border-t-2 my-8;
     @apply border-{{ markata.config.style.light.border.tw }};
-    @apply dark:border-{{ markata.config.style.dark.border.tw }};
+  }
+
+  .dark hr {
+    @apply border-{{ markata.config.style.dark.border.tw }};
   }
 
   button,
@@ -163,17 +207,25 @@
     @apply bg-{{ markata.config.style.light.surface.tw }};
     @apply border-{{ markata.config.style.light.accent.tw }};
     @apply text-{{ markata.config.style.light.link_hover.tw }};
-    @apply dark:bg-{{ markata.config.style.dark.surface.tw }};
-    @apply dark:border-{{ markata.config.style.dark.accent.tw }};
-    @apply dark:text-{{ markata.config.style.dark.link_hover.tw }};
+  }
+
+  .dark button,
+  .dark input[type='submit'] {
+    @apply bg-{{ markata.config.style.dark.surface.tw }};
+    @apply border-{{ markata.config.style.dark.accent.tw }};
+    @apply text-{{ markata.config.style.dark.link_hover.tw }};
   }
 
   button:hover,
   input[type='submit']:hover {
     @apply bg-{{ markata.config.style.light.background.tw }};
     @apply text-{{ markata.config.style.light.accent.tw }};
-    @apply dark:bg-{{ markata.config.style.dark.background.tw }};
-    @apply dark:text-{{ markata.config.style.dark.accent.tw }};
+  }
+
+  .dark button:hover,
+  .dark input[type='submit']:hover {
+    @apply bg-{{ markata.config.style.dark.background.tw }};
+    @apply text-{{ markata.config.style.dark.accent.tw }};
   }
 
   input,
@@ -184,7 +236,14 @@
     @apply text-{{ markata.config.style.light.text.tw }};
     @apply border-{{ markata.config.style.light.border.tw }};
     --tw-ring-color: {{ markata.config.style.light.accent.tw }};
-    @apply dark:bg-{{ markata.config.style.dark.surface.tw }} dark:text-{{ markata.config.style.dark.text.tw }} dark:border-{{ markata.config.style.dark.border.tw }};
+  }
+
+  .dark input,
+  .dark textarea,
+  .dark select {
+    @apply bg-{{ markata.config.style.dark.surface.tw }};
+    @apply text-{{ markata.config.style.dark.text.tw }};
+    @apply border-{{ markata.config.style.dark.border.tw }};
   }
 
   table {
@@ -192,54 +251,97 @@
     @apply bg-{{ markata.config.style.light.surface.tw }};
     @apply text-{{ markata.config.style.light.text.tw }};
     max-width: fit-content;
-    @apply dark:bg-{{ markata.config.style.dark.surface.tw }} dark:text-{{ markata.config.style.dark.text.tw }};
+  }
+
+  .dark table {
+    @apply bg-{{ markata.config.style.dark.surface.tw }};
+    @apply text-{{ markata.config.style.dark.text.tw }};
   }
 
   th,
   td {
     @apply px-4 py-2 border;
     @apply border-{{ markata.config.style.light.border.tw }};
-    @apply dark:border-{{ markata.config.style.dark.border.tw }};
+  }
+
+  .dark th,
+  .dark td {
+    @apply border-{{ markata.config.style.dark.border.tw }};
   }
 
   th {
     @apply bg-{{ markata.config.style.light.surface.tw }};
     @apply text-{{ markata.config.style.light.text.tw }};
-    @apply dark:bg-{{ markata.config.style.dark.surface.tw }} dark:text-{{ markata.config.style.dark.text.tw }};
+  }
+
+  .dark th {
+    @apply bg-{{ markata.config.style.dark.surface.tw }};
+    @apply text-{{ markata.config.style.dark.text.tw }};
   }
 
   tr:nth-child(even) {
     @apply bg-{{ markata.config.style.light.code_bg.tw }};
-    @apply dark:bg-{{ markata.config.style.dark.code_bg.tw }};
+  }
+
+  .dark tr:nth-child(even) {
+    @apply bg-{{ markata.config.style.dark.code_bg.tw }};
   }
 
   ::selection {
     @apply bg-{{ markata.config.style.light.selection_bg.tw }};
     @apply text-{{ markata.config.style.light.selection_text.tw }};
-    @apply dark:bg-{{ markata.config.style.dark.selection_bg.tw }} dark:text-{{ markata.config.style.dark.selection_text.tw }};
+  }
+
+  .dark ::selection {
+    @apply bg-{{ markata.config.style.dark.selection_bg.tw }};
+    @apply text-{{ markata.config.style.dark.selection_text.tw }};
   }
 
   ::-moz-selection {
     @apply bg-{{ markata.config.style.light.selection_bg.tw }};
     @apply text-{{ markata.config.style.light.selection_text.tw }};
-    @apply dark:bg-{{ markata.config.style.dark.selection_bg.tw }} dark:text-{{ markata.config.style.dark.selection_text.tw }};
+  }
+
+  .dark ::-moz-selection {
+    @apply bg-{{ markata.config.style.dark.selection_bg.tw }};
+    @apply text-{{ markata.config.style.dark.selection_text.tw }};
   }
 
   .text-muted {
     @apply text-{{ markata.config.style.light.muted.tw }};
-    @apply dark:text-{{ markata.config.style.dark.muted.tw }};
+  }
+
+  .dark .text-muted {
+    @apply text-{{ markata.config.style.dark.muted.tw }};
   }
 
   .bg-surface {
     @apply bg-{{ markata.config.style.light.surface.tw }};
-    @apply dark:bg-{{ markata.config.style.dark.surface.tw }};
+  }
+
+  .dark .bg-surface {
+    @apply bg-{{ markata.config.style.dark.surface.tw }};
+  }
+
+  section.title {
+    @apply bg-{{ markata.config.style.light.surface.tw }};
+    @apply text-{{ markata.config.style.light.text.tw }};
+    @apply p-8 rounded-lg shadow-lg;
+  }
+
+  .dark section.title {
+    @apply bg-{{ markata.config.style.dark.surface.tw }};
+    @apply text-{{ markata.config.style.dark.text.tw }};
   }
 
   img {
     @apply mx-auto border-2 rounded-lg;
     @apply shadow-lg;
     @apply border-{{ markata.config.style.light.border.tw }};
-    @apply dark:border-{{ markata.config.style.dark.border.tw }};
+  }
+
+  .dark img {
+    @apply border-{{ markata.config.style.dark.border.tw }};
   }
 }
 </style>
