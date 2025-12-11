@@ -9,18 +9,21 @@
 @layer base {
   html, body {
     @apply font-sans;
-    @apply text-[{{ markata.config.style.light.text.tw }}];
-    @apply dark:text-[{{ markata.config.style.dark.text.tw }}];
+    @apply text-{{ markata.config.style.light.text.tw }};
     @apply w-screen;
+  }
+
+  .dark html, .dark body {
+    @apply text-{{ markata.config.style.dark.text.tw }};
   }
 
   body {
     @apply bg-{{ markata.config.style.light.surface.tw }};
-    @apply dark:bg-{{ markata.config.style.dark.surface.tw }};
     {% if markata.config.style.light.background_image %}background-image: url('{{ markata.config.style.light.background_image }}');{% endif %}
   }
 
   .dark body {
+    @apply bg-{{ markata.config.style.dark.surface.tw }};
     {% if markata.config.style.dark.background_image %}background-image: url('{{ markata.config.style.dark.background_image }}');{% endif %}
   }
 

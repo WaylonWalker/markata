@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  darkMode: 'class',
   content: [
     "markata/templates/**/*.{html,js}",
     "markout/**/*.{html,js}",
