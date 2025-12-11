@@ -1,0 +1,74 @@
+from typing import Optional
+
+from pydantic import BaseModel
+
+
+class HighlightStyle(BaseModel):
+    c: Optional[str] = None  # Comment
+    err: Optional[str] = None  # Error
+    k: Optional[str] = None  # Keyword
+    l: Optional[str] = None  # Literal
+    n: Optional[str] = None  # Name
+    o: Optional[str] = None  # Operator
+    p: Optional[str] = None  # Punctuation
+    ch: Optional[str] = None  # Comment.Hashbang
+    cm: Optional[str] = None  # Comment.Multiline
+    cp: Optional[str] = None  # Comment.Preproc
+    cpf: Optional[str] = None  # Comment.PreprocFile
+    c1: Optional[str] = None  # Comment.Single
+    cs: Optional[str] = None  # Comment.Special
+    gd: Optional[str] = None  # Generic.Deleted
+    ge: Optional[str] = None  # Generic.Emph (use font-style)
+    gi: Optional[str] = None  # Generic.Inserted
+    gs: Optional[str] = None  # Generic.Strong (use font-weight)
+    gu: Optional[str] = None  # Generic.Subheading
+    kc: Optional[str] = None  # Keyword.Constant
+    kd: Optional[str] = None  # Keyword.Declaration
+    kn: Optional[str] = None  # Keyword.Namespace
+    kp: Optional[str] = None  # Keyword.Pseudo
+    kr: Optional[str] = None  # Keyword.Reserved
+    kt: Optional[str] = None  # Keyword.Type
+    ld: Optional[str] = None  # Literal.Date
+    m: Optional[str] = None  # Literal.Number
+    s: Optional[str] = None  # Literal.String
+    na: Optional[str] = None  # Name.Attribute
+    nb: Optional[str] = None  # Name.Builtin
+    nc: Optional[str] = None  # Name.Class
+    no: Optional[str] = None  # Name.Constant
+    nd: Optional[str] = None  # Name.Decorator
+    ni: Optional[str] = None  # Name.Entity
+    ne: Optional[str] = None  # Name.Exception
+    nf: Optional[str] = None  # Name.Function
+    nl: Optional[str] = None  # Name.Label
+    nn: Optional[str] = None  # Name.Namespace
+    nx: Optional[str] = None  # Name.Other
+    py: Optional[str] = None  # Name.Property
+    nt: Optional[str] = None  # Name.Tag
+    nv: Optional[str] = None  # Name.Variable
+    ow: Optional[str] = None  # Operator.Word
+    w: Optional[str] = None  # Text.Whitespace
+    mb: Optional[str] = None  # Literal.Number.Bin
+    mf: Optional[str] = None  # Literal.Number.Float
+    mh: Optional[str] = None  # Literal.Number.Hex
+    mi: Optional[str] = None  # Literal.Number.Integer
+    mo: Optional[str] = None  # Literal.Number.Oct
+    sa: Optional[str] = None  # Literal.String.Affix
+    sb: Optional[str] = None  # Literal.String.Backtick
+    sc: Optional[str] = None  # Literal.String.Char
+    dl: Optional[str] = None  # Literal.String.Delimiter
+    sd: Optional[str] = None  # Literal.String.Doc
+    s2: Optional[str] = None  # Literal.String.Double
+    se: Optional[str] = None  # Literal.String.Escape
+    sh: Optional[str] = None  # Literal.String.Heredoc
+    si: Optional[str] = None  # Literal.String.Interpol
+    sx: Optional[str] = None  # Literal.String.Other
+    sr: Optional[str] = None  # Literal.String.Regex
+    s1: Optional[str] = None  # Literal.String.Single
+    ss: Optional[str] = None  # Literal.String.Symbol
+    bp: Optional[str] = None  # Name.Builtin.Pseudo
+    fm: Optional[str] = None  # Name.Function.Magic
+    vc: Optional[str] = None  # Name.Variable.Class
+    vg: Optional[str] = None  # Name.Variable.Global
+    vi: Optional[str] = None  # Name.Variable.Instance
+    vm: Optional[str] = None  # Name.Variable.Magic
+    il: Optional[str] = None  # Literal.Number.Integer Long

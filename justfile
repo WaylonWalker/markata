@@ -48,5 +48,5 @@ ruff-fix:
 
 lint-test: lint cov
 
-
-
+get-tailwind:
+    curl https://cdn.tailwindcss.com -o static/tailwind.js

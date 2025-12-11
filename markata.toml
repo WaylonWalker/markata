@@ -73,6 +73,9 @@ twitter_card = "summary_large_image"
 twitter_creator = "@_waylonwalker"
 twitter_site = "@_waylonwalker"
 
+[markata.style]
+theme = 'catppuccin'
+
 [markata.post_template]
 index = 'post.html'
 partial = 'post_partial.html'
