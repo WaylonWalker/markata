@@ -73,6 +73,7 @@ twitter_site = "@_waylonwalker"
 
 [markata.style]
 theme = 'catppuccin'
+# theme = 'everforest'
 
 [markata.post_template]
 index = 'post.html'

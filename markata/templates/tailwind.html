@@ -1,18 +1,27 @@
+<script>
+  tailwind.config = {
+    darkMode: 'class'
+  }
+</script>
 <script src="/tailwind.js"></script>
 <style type="text/tailwindcss">
-@custom-variant dark (&:where(.dark, .dark *));
 
 @layer base {
   html, body {
     @apply font-sans;
     @apply text-[{{ markata.config.style.light.text.tw }}];
     @apply dark:text-[{{ markata.config.style.dark.text.tw }}];
-    @apply max-w-screen w-screen;
+    @apply w-screen;
   }
 
   body {
     @apply bg-{{ markata.config.style.light.surface.tw }};
     @apply dark:bg-{{ markata.config.style.dark.surface.tw }};
+    {% if markata.config.style.light.background_image %}background-image: url('{{ markata.config.style.light.background_image }}');{% endif %}
+  }
+
+  .dark body {
+    {% if markata.config.style.dark.background_image %}background-image: url('{{ markata.config.style.dark.background_image }}');{% endif %}
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -81,6 +90,9 @@
 
   section.body {
     @apply max-w-lg mx-auto sm:max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-7xl;
+    @apply bg-{{ markata.config.style.light.surface.tw }};
+    @apply dark:bg-{{ markata.config.style.dark.surface.tw }};
+    @apply p-8 rounded-lg shadow-lg;
   }
 
   a {
@@ -127,7 +139,7 @@
   }
 
   button.copy {
-    @apply z-100 bg-inherit border-0 self-end top-0 right-0 mx-2 my-1 hover:bg-black;
+    @apply z-50 bg-inherit border-0 self-end top-0 right-0 mx-2 my-1 hover:bg-black;
     @apply fill-{{ markata.config.style.light.accent.tw }};
     @apply dark:fill-{{ markata.config.style.dark.accent.tw }};
   }
