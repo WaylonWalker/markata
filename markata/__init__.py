@@ -124,7 +124,13 @@ class HooksConfig(pydantic.BaseModel):
 
 
 class Markata:
-    def __init__(self: "Markata", console: Console = None, config=None) -> None:
+    def __init__(
+        self: "Markata",
+        console: Console = None,
+        config=None,
+        config_overrides: Optional[Dict[str, Any]] = None,
+        config_file: Optional[Path] = None,
+    ) -> None:
         self.__version__ = __version__
         self.stages_ran = set()
         self.threded = False
@@ -135,6 +141,11 @@ class Markata:
         self.MARKATA_CACHE_DIR.mkdir(exist_ok=True)
         self._pm = pluggy.PluginManager("markata")
         self._pm.add_hookspecs(hookspec.MarkataSpecs)
+        
+        # Store config overrides for later use in load_config hook
+        self._config_overrides = config_overrides or {}
+        self._config_file = config_file
+        
         if config is not None:
             self.config = config
         with self.cache as cache:
@@ -145,7 +156,12 @@ class Markata:
         if config is not None:
             raw_hooks = config
         else:
-            raw_hooks = standard_config.load("markata")
+            raw_hooks = standard_config.load(
+                "markata",
+                project_home=config_file.parent if config_file else ".",
+                overrides=config_overrides or {},
+                config_file=config_file,
+            )
         self.hooks_conf = HooksConfig.parse_obj(raw_hooks)
         try:
             default_index = self.hooks_conf.hooks.index("default")
@@ -209,7 +225,13 @@ class Markata:
                 f"Running to [purple]{stage_to_run_to}[/] to retrieve [purple]{item}[/]"
             )
             self.run(stage_to_run_to)
-            return getattr(self, item)
+            # Check __dict__ directly to avoid infinite recursion
+            if item in self.__dict__:
+                return self.__dict__[item]
+            else:
+                raise AttributeError(
+                    f"'Markata' object has no attribute '{item}' after running {stage_to_run_to}"
+                )
         elif item == "precache":
             return self._precache or {}
         else:

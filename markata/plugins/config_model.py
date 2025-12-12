@@ -226,7 +226,16 @@ def config_model(markata: "Markata") -> None:
 @register_attr("config")
 def load_config(markata: "Markata") -> None:
     if "config" not in markata.__dict__.keys():
-        config = standard_config.load("markata")
+        # Get overrides from markata instance if available
+        config_overrides = getattr(markata, "_config_overrides", {})
+        config_file = getattr(markata, "_config_file", None)
+        
+        config = standard_config.load(
+            "markata",
+            project_home=config_file.parent if config_file else ".",
+            overrides=config_overrides,
+            config_file=config_file,
+        )
         if config == {}:
             markata.config = markata.Config()
         else:

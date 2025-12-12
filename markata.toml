@@ -148,6 +148,7 @@ sort = 'title'
 [[markata.feeds]]
 slug = 'docs'
 title = "Documentation"
+description = "Documentation for using the Markata static site generator"
 filter = '"markata" not in slug and "tests" not in slug and "404" not in slug'
 sort = 'slug'
 

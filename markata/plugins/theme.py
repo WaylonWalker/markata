@@ -69,8 +69,19 @@ class Color(BaseColor):
 
         - If constructed from a tailwind token like "rose-500", return "rose-500".
         - If constructed from hex like "#2a2a38", return "[#2a2a38]" for arbitrary values.
+        - If alpha < 1, use Tailwind's opacity modifier syntax (e.g., "rose-500/50" or "[#2a2a38]/50").
         """
         token = getattr(self, "_tw_token", None)
+        alpha = getattr(self, "alpha", 1.0)
+        
+        if alpha < 1.0:
+            # Convert alpha to percentage for Tailwind opacity modifier
+            opacity = int(alpha * 100)
+            if token:
+                return f"{token}/{opacity}"
+            else:
+                return f"[{self.hex_l}]/{opacity}"
+        
         if token:
             return token
         # arbitrary value syntax for pure hex
@@ -209,10 +220,19 @@ class Color(BaseColor):
 
         return Color(hsl=(h, s, clamp(l - amount)))
 
+    def saturate(self, amount=0.1):
+        h, s, l = self.get_hsl()
+        return Color(hsl=(h, clamp(s + amount), l))
+    def desaturate(self, amount=0.1):
+        h, s, l = self.get_hsl()
+        return Color(hsl=(h, clamp(s - amount), l))
+    def invert(self):
+        r, g, b = self.get_rgb()
+        return Color(rgb=(1 - r, 1 - g, 1 - b))
+
+
     def with_alpha(self, alpha):
-        new = Color(str(self))  # make a copy using the current hex
-        new.__dict__["alpha"] = max(0.0, min(1.0, alpha))
-        return new
+        return Color(rgb=self.get_rgb(), alpha=clamp(alpha, 0, 1))
 
 
 def clamp(value, min_value=0, max_value=1):
@@ -677,6 +697,7 @@ THEME_DEFAULTS: Dict[str, Dict[str, str]] = {
             "selection_bg": "blue-100",
             "selection_text": "slate-900",
             "border": "slate-300",
+            "background_image": "https://transparenttextures.com/patterns/white-wave.png",
         },
         "dark": {
             "text": "slate-100",
@@ -693,6 +714,7 @@ THEME_DEFAULTS: Dict[str, Dict[str, str]] = {
             "selection_bg": "#394260",
             "selection_text": "white",
             "border": "#4b5162",
+            "background_image": "https://transparenttextures.com/patterns/white-wave.png",
         },
     },
     "nord": {
