@@ -119,20 +119,24 @@ def get_description(article: "Post") -> str:
     content = article.content
 
     # Remove admonitions (e.g., !!!, !!!+, ???, ???+)
-    content = re.sub(r'^[!?]{3}\+? .*?$', '', content, flags=re.MULTILINE)
+    content = re.sub(r"^[!?]{3}\+? .*?$", "", content, flags=re.MULTILINE)
 
     # Remove CSS class attributes {.class-name}
-    content = re.sub(r'\{\.[\w\-]+\}', '', content)
+    content = re.sub(r"\{\.[\w\-]+\}", "", content)
 
     # Remove Jinja template tags {% %} and {{ }}
-    content = re.sub(r'\{%.*?%\}', '', content, flags=re.DOTALL)
-    content = re.sub(r'\{\{.*?\}\}', '', content, flags=re.DOTALL)
+    content = re.sub(r"\{%.*?%\}", "", content, flags=re.DOTALL)
+    content = re.sub(r"\{\{.*?\}\}", "", content, flags=re.DOTALL)
 
     # Remove wikilinks [[link]] or [[link|text]]
-    content = re.sub(r'\[\[([^\]|]+)(?:\|([^\]]+))?\]\]', lambda m: m.group(2) if m.group(2) else m.group(1), content)
+    content = re.sub(
+        r"\[\[([^\]|]+)(?:\|([^\]]+))?\]\]",
+        lambda m: m.group(2) if m.group(2) else m.group(1),
+        content,
+    )
 
     # Remove HTML comments
-    content = re.sub(r'<!--.*?-->', '', content, flags=re.DOTALL)
+    content = re.sub(r"<!--.*?-->", "", content, flags=re.DOTALL)
 
     # Remove HTML tags before markdown parsing
     soup = BeautifulSoup(content, "html.parser")
@@ -155,7 +159,7 @@ def get_description(article: "Post") -> str:
     description = extract_text(tokens)
 
     # Clean up excessive whitespace
-    description = re.sub(r'\s+', ' ', description).strip()
+    description = re.sub(r"\s+", " ", description).strip()
 
     return description
 

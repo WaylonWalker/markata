@@ -478,6 +478,7 @@ def save(markata: Markata) -> None:
     if should_write:
         xsl_file.write_text(xsl)
 
+
 def create_page(
     markata: Markata,
     feed: Feed,
@@ -503,7 +504,9 @@ def create_page(
     if cache_key_posts not in markata._feed_hash_cache:
         # Use post slugs and published dates instead of full to_dict()
         # This provides a stable, lightweight cache key
-        posts_data = feed.map("(post.slug, str(getattr(post, 'date', '')), getattr(post, 'title', ''))")
+        posts_data = feed.map(
+            "(post.slug, str(getattr(post, 'date', '')), getattr(post, 'title', ''))"
+        )
         markata._feed_hash_cache[cache_key_posts] = str(sorted(posts_data))
 
     posts_hash_data = markata._feed_hash_cache[cache_key_posts]
@@ -542,9 +545,7 @@ def create_page(
     sitemap_output_file = (
         Path(markata.config.output_dir) / feed.config.slug / "sitemap.xml"
     )
-    atom_output_file = (
-        Path(markata.config.output_dir) / feed.config.slug / "atom.xml"
-    )
+    atom_output_file = Path(markata.config.output_dir) / feed.config.slug / "atom.xml"
 
     # Create all directories in one batch
     partial_output_file.parent.mkdir(exist_ok=True, parents=True)
@@ -597,7 +598,9 @@ def create_page(
     if feed.config.sitemap:
         if feed_sitemap_from_cache is None:
             from_cache = False
-            sitemap_template = get_template(markata.jinja_env, feed.config.sitemap_template)
+            sitemap_template = get_template(
+                markata.jinja_env, feed.config.sitemap_template
+            )
             feed_sitemap = sitemap_template.render(markata=markata, feed=feed)
             cache.set(feed_sitemap_key, feed_sitemap)
         else:
@@ -660,7 +663,6 @@ def create_page(
         current_atom = atom_output_file.read_text() if atom_output_file.exists() else ""
         if current_atom != feed_atom:
             atom_output_file.write_text(feed_atom)
-
 
 
 @background.task

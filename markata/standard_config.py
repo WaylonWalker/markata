@@ -440,15 +440,32 @@ def _load_files(config_path_specs: path_spec_type) -> Dict[str, Any]:
 def _load_env(tool: str) -> Dict[str, Any]:
     """Load config from environment variables.
 
+    Supports nested configuration with double underscore:
+    MARKATA_STYLE__THEME=nord -> {"style": {"theme": "nord"}}
+
     Args:
         tool (str): name of the tool to configure
     """
     env_prefix = tool.upper()
-    env_config = {
-        key.replace(f"{env_prefix}_", "").lower(): value
-        for key, value in os.environ.items()
-        if key.startswith(f"{env_prefix}_")
-    }
+    env_config = {}
+
+    for key, value in os.environ.items():
+        if key.startswith(f"{env_prefix}_"):
+            # Remove prefix
+            config_key = key.replace(f"{env_prefix}_", "").lower()
+
+            # Handle nested keys with double underscore
+            if "__" in config_key:
+                keys = config_key.split("__")
+                current = env_config
+                for k in keys[:-1]:
+                    if k not in current:
+                        current[k] = {}
+                    current = current[k]
+                current[keys[-1]] = value
+            else:
+                env_config[config_key] = value
+
     return env_config
 
 
@@ -456,13 +473,14 @@ def load(
     tool: str,
     project_home: Union[Path, str] = ".",
     overrides: Optional[Dict[str, Any]] = None,
+    config_file: Optional[Union[Path, str]] = None,
 ) -> Dict[str, Any]:
     """Load tool config from standard config files.
 
     Resolution Order
 
     * First global file with a tool key
-    * First local file with a tool key
+    * First local file with a tool key (or specific config_file if provided)
     * Environment variables prefixed with `TOOL`
     * Overrides
 
@@ -470,6 +488,7 @@ def load(
         tool (str): name of the tool to configure
         project_home (Union[Path, str], optional): Project directory to search for config files. Defaults to ".".
         overrides (Dict, optional): Override values to apply last. Defaults to None.
+        config_file (Union[Path, str], optional): Specific config file to load instead of searching. Defaults to None.
 
     Returns:
         Dict[str, Any]: Configuration object
@@ -479,7 +498,39 @@ def load(
 
     # Load from files in order of precedence
     config.update(_load_files(_get_global_path_specs(tool)) or {})
-    config.update(_load_files(_get_local_path_specs(tool, project_home)) or {})
+
+    # If a specific config file is provided, use it instead of searching
+    if config_file:
+        config_path = Path(config_file)
+        if not config_path.exists():
+            raise FileNotFoundError(f"Config file not found: {config_file}")
+
+        # Determine parser from file extension
+        suffix = config_path.suffix.lower()
+        if suffix == ".toml":
+            parser = "toml"
+        elif suffix in (".yml", ".yaml"):
+            parser = "yaml"
+        elif suffix in (".ini", ".cfg"):
+            parser = "ini"
+        else:
+            # Try toml as default
+            parser = "toml"
+
+        file_spec = {
+            "path_specs": config_path,
+            "parser": parser,
+            "keys": [tool]
+            if parser == "ini"
+            else (["tool", tool] if parser == "toml" else [tool]),
+        }
+
+        file_config = _load_config_file(file_spec)
+        if file_config:
+            config.update(file_config)
+    else:
+        config.update(_load_files(_get_local_path_specs(tool, project_home)) or {})
+
     config.update(_load_env(tool))
     config.update(overrides)
 

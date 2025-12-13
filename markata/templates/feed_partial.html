@@ -1,6 +1,25 @@
 <article>
-    <header class='sticky top-0 pt-4 bg-neutral-800'>
-        <h1 class='p-0 m-0'>{{ title }}</h1>
+    <header class='
+        sticky
+        top-0
+        pt-8
+        pb-4
+        mb-24
+        rounded-xl
+        bg-{{ config.style.light.surface.tw }}
+        dark:bg-{{ config.style.dark.surface.with_alpha(0.8).tw }}
+        text-{{ config.style.light.text.tw }}
+        dark:text-{{ config.style.dark.text.tw }}
+        z-10
+        '>
+        <h1 class='p-0 m-0'>{{ feed.config.title }}</h1>
+        {% if feed.config.description %}
+        <p class='
+        m-auto
+        p-0
+        text-center
+        '>{{ feed.config.description }}</p>
+        {% endif %}
     </header>
     <div>
         <ul id='feed' class='px-0 mx-auto list-none'>

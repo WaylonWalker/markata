@@ -174,7 +174,9 @@ def save(markata: "Markata") -> None:
     # Get template mtime to bust cache when template changes
     template_mtime = template_file.stat().st_mtime if template_file.exists() else 0
 
-    key = markata.make_hash("redirects", "raw_redirects", raw_redirects, str(template_mtime))
+    key = markata.make_hash(
+        "redirects", "raw_redirects", raw_redirects, str(template_mtime)
+    )
     with markata.cache as cache:
         cache.get(key)
         if cache.get(key) == "done":

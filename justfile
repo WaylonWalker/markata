@@ -25,28 +25,44 @@ no-cov:
     set -euxo pipefail
     pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=markata --cov=tests tests --no-cov
 
-lint:
+check:
     #!/usr/bin/env bash
     set -euxo pipefail
     # this is what runs in ci
-    hatch run lint-format
+    uv run ruff check markata
+    uv run ruff format markata
+
+fix:
+    #!/usr/bin/env bash
+    set -euxo pipefail
+    uv run ruff check markata --fix
+
+fix-unsafe:
+    #!/usr/bin/env bash
+    set -euxo pipefail
+    uv run ruff check markata --fix --unsafe
 
 build-docs:
     #!/usr/bin/env bash
     set -euxo pipefail
     markata build
 
+clean-build:
+    #!/usr/bin/env bash
+    uv run markata clean
+    uv run markata build
+
 serve:
     #!/usr/bin/env bash
     set -euxo pipefail
-    python -m http.server --bind 0.0.0.0 8000 --directory markout
+    uv run markata server
 
 ruff-fix:
     #!/usr/bin/env bash
     set -euxo pipefail
     ruff check markata --fix
 
-lint-test: lint cov
-
 get-tailwind:
-    curl https://cdn.tailwindcss.com -o static/tailwind.js
+    curl -L https://cdn.tailwindcss.com/3.4.17 -o static/tailwind.js
+get-htmx:
+    curl -L https://unpkg.com/htmx.org@1.9.2 -o static/htmx.js

@@ -1,14 +1,22 @@
-<li class='my-6 list-none border-xl rounded border
-border-{{ markata.config.style.light.border }}
-dark:border-{{ markata.config.style.dark.border }}
-bg-{{ markata.config.style.light.background }}
-dark:bg-{{ markata.config.style.dark.background }}
-
+<li class='my-6 list-none rounded-xl border
+border-{{ markata.config.style.light.border.tw }}
+dark:border-{{ markata.config.style.dark.border.tw }}
+bg-{{ markata.config.style.light.surface.tw }}
+dark:bg-{{ markata.config.style.dark.surface.tw }}
+hover:bg-{{ markata.config.style.light.surface.lighten(0.05).tw }}
+hover:dark:bg-{{ markata.config.style.dark.surface.darken(0.05).tw }}
     '>
-    <a class='w-full no-underline
-text-{{ markata.config.style.light.text }}
-dark:text-{{ markata.config.style.dark.text }}
-    '
+    <a class='
+        block
+        w-full
+        no-underline px-0
+        hover:bg-transparent
+        hover:dark:bg-transparent
+        text-{{ markata.config.style.light.text.tw }}
+        dark:text-{{ markata.config.style.dark.text.tw }}
+        hover:text-{{ markata.config.style.light.text.lighten(0.2).desaturate(0.8).tw }}
+        hover:dark:text-{{ markata.config.style.dark.text.darken(0.2).desaturate(0.8).tw }}
+            '
     {% if markata.config.path_prefix+post.slug !='' %} href="/{{markata.config.path_prefix}}{{post.slug}}/"> {% else %} href="/"> {% endif %}
         <h2 class='mx-4 mt-1 text-3xl font-bold'>
 
