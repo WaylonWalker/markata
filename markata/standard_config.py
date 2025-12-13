@@ -448,12 +448,12 @@ def _load_env(tool: str) -> Dict[str, Any]:
     """
     env_prefix = tool.upper()
     env_config = {}
-    
+
     for key, value in os.environ.items():
         if key.startswith(f"{env_prefix}_"):
             # Remove prefix
             config_key = key.replace(f"{env_prefix}_", "").lower()
-            
+
             # Handle nested keys with double underscore
             if "__" in config_key:
                 keys = config_key.split("__")
@@ -465,7 +465,7 @@ def _load_env(tool: str) -> Dict[str, Any]:
                 current[keys[-1]] = value
             else:
                 env_config[config_key] = value
-    
+
     return env_config
 
 
@@ -498,13 +498,13 @@ def load(
 
     # Load from files in order of precedence
     config.update(_load_files(_get_global_path_specs(tool)) or {})
-    
+
     # If a specific config file is provided, use it instead of searching
     if config_file:
         config_path = Path(config_file)
         if not config_path.exists():
             raise FileNotFoundError(f"Config file not found: {config_file}")
-        
+
         # Determine parser from file extension
         suffix = config_path.suffix.lower()
         if suffix == ".toml":
@@ -516,19 +516,19 @@ def load(
         else:
             # Try toml as default
             parser = "toml"
-        
+
         file_spec = {
             "path_specs": config_path,
             "parser": parser,
             "keys": [tool] if parser == "ini" else (["tool", tool] if parser == "toml" else [tool]),
         }
-        
+
         file_config = _load_config_file(file_spec)
         if file_config:
             config.update(file_config)
     else:
         config.update(_load_files(_get_local_path_specs(tool, project_home)) or {})
-    
+
     config.update(_load_env(tool))
     config.update(overrides)
 

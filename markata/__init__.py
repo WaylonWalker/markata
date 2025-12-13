@@ -141,11 +141,11 @@ class Markata:
         self.MARKATA_CACHE_DIR.mkdir(exist_ok=True)
         self._pm = pluggy.PluginManager("markata")
         self._pm.add_hookspecs(hookspec.MarkataSpecs)
-        
+
         # Store config overrides for later use in load_config hook
         self._config_overrides = config_overrides or {}
         self._config_file = config_file
-        
+
         if config is not None:
             self.config = config
         with self.cache as cache:

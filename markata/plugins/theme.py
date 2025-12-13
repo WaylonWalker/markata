@@ -73,7 +73,7 @@ class Color(BaseColor):
         """
         token = getattr(self, "_tw_token", None)
         alpha = getattr(self, "alpha", 1.0)
-        
+
         if alpha < 1.0:
             # Convert alpha to percentage for Tailwind opacity modifier
             opacity = int(alpha * 100)
@@ -81,7 +81,7 @@ class Color(BaseColor):
                 return f"{token}/{opacity}"
             else:
                 return f"[{self.hex_l}]/{opacity}"
-        
+
         if token:
             return token
         # arbitrary value syntax for pure hex

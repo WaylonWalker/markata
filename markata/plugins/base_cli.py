@@ -199,17 +199,17 @@ def parse_set_options(set_args: List[str]) -> Dict[str, Any]:
     for arg in set_args:
         if "=" not in arg:
             raise ValueError(f"Invalid --set format: {arg}. Expected key=value")
-        
+
         key, value = arg.split("=", 1)
         keys = key.split(".")
-        
+
         # Navigate/create nested dict structure
         current = config
         for k in keys[:-1]:
             if k not in current:
                 current[k] = {}
             current = current[k]
-        
+
         # Set the value, attempting type conversion
         final_key = keys[-1]
         # Try to parse as JSON for complex types
@@ -219,7 +219,7 @@ def parse_set_options(set_args: List[str]) -> Dict[str, Any]:
         except (json.JSONDecodeError, ValueError):
             # Keep as string if not valid JSON
             current[final_key] = value
-    
+
     return config
 
 
@@ -510,7 +510,7 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
 
         # Save console reference before potential reinit
         console = markata.console
-        
+
         if quiet:
             console.quiet = True
 
@@ -519,21 +519,21 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
 
         # Build config overrides from CLI arguments
         config_overrides = {}
-        
+
         # Add output_dir if specified
         if output_dir:
             config_overrides["output_dir"] = output_dir
-        
+
         # Parse and merge --set options
         if set_config:
             set_overrides = parse_set_options(set_config)
             # Deep merge set_overrides into config_overrides
             _deep_merge(config_overrides, set_overrides)
-        
+
         # Reinitialize markata with overrides if any were provided
         if config_file or config_overrides:
             from markata import Markata
-            
+
             # Create a new instance with overrides
             markata_instance = Markata(
                 console=console,
@@ -543,7 +543,7 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
         else:
             # Use the existing instance
             markata_instance = markata
-        
+
         if not profile:
             markata_instance.config.profiler.should_profile = False
 

@@ -274,7 +274,6 @@ def optional(*fields):
 
 from markata.plugins.theme import Color
 
-
 # class ThemeStyle(pydantic.BaseModel):
 #     text: Optional[Color] = None
 #     muted: Optional[Color] = None

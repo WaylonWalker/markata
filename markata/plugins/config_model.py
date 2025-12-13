@@ -229,7 +229,7 @@ def load_config(markata: "Markata") -> None:
         # Get overrides from markata instance if available
         config_overrides = getattr(markata, "_config_overrides", {})
         config_file = getattr(markata, "_config_file", None)
-        
+
         config = standard_config.load(
             "markata",
             project_home=config_file.parent if config_file else ".",
