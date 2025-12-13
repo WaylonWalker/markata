@@ -292,7 +292,6 @@ from markata.plugins.theme import Color
 #     background_image: Optional[str] = None
 
 
-
 class ThemeStyle(pydantic.BaseModel):
     text: Optional[Color] = None
     muted: Optional[Color] = None
@@ -401,8 +400,6 @@ def merge_styles(defaults: dict, overrides: Optional[dict]) -> ThemeStyle:
         wrapped_final["background_image"] = background_image
 
     return ThemeStyle(**wrapped_final)
-
-
 
 
 class Style(pydantic.BaseModel):
@@ -575,7 +572,9 @@ def render_article(markata, cache, article):
 
     if isinstance(article.template, dict):
         html = {
-            slug: render_template(markata, article, get_template(markata.jinja_env, template))
+            slug: render_template(
+                markata, article, get_template(markata.jinja_env, template)
+            )
             for slug, template in article.template.items()
         }
     cache.set(key, html, expire=markata.config.default_cache_expire)

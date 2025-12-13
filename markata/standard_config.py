@@ -439,7 +439,7 @@ def _load_files(config_path_specs: path_spec_type) -> Dict[str, Any]:
 
 def _load_env(tool: str) -> Dict[str, Any]:
     """Load config from environment variables.
-    
+
     Supports nested configuration with double underscore:
     MARKATA_STYLE__THEME=nord -> {"style": {"theme": "nord"}}
 
@@ -520,7 +520,9 @@ def load(
         file_spec = {
             "path_specs": config_path,
             "parser": parser,
-            "keys": [tool] if parser == "ini" else (["tool", tool] if parser == "toml" else [tool]),
+            "keys": [tool]
+            if parser == "ini"
+            else (["tool", tool] if parser == "toml" else [tool]),
         }
 
         file_config = _load_config_file(file_spec)

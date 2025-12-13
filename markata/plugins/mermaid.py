@@ -56,7 +56,7 @@ MERMAID_BLOCK_RE = re.compile(r"```[\s]*mermaid\n(.*?)\n```", re.DOTALL)
 @hook_impl
 def pre_render(markata: "Markata") -> None:
     for article in markata.iter_articles("processing mermaid blocks"):
-        key = markata.make_hash("mermaid", article.content)
+        markata.make_hash("mermaid", article.content)
         if "mermaid" in article.content:
             article.content = MERMAID_BLOCK_RE.sub(
                 replace_mermaid_block, article.content

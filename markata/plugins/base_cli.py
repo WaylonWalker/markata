@@ -190,7 +190,7 @@ def make_pretty() -> None:
 
 def parse_set_options(set_args: List[str]) -> Dict[str, Any]:
     """Parse --set key=value arguments into a nested config dict.
-    
+
     Supports dot notation for nested keys:
     - output_dir=dist -> {"output_dir": "dist"}
     - style.theme=nord -> {"style": {"theme": "nord"}}
@@ -215,6 +215,7 @@ def parse_set_options(set_args: List[str]) -> Dict[str, Any]:
         # Try to parse as JSON for complex types
         try:
             import json
+
             current[final_key] = json.loads(value)
         except (json.JSONDecodeError, ValueError):
             # Keep as string if not valid JSON

@@ -31,8 +31,6 @@ class Color(BaseColor):
 
         if value is not None:
             if isinstance(value, str):
-                original = value
-
                 # name-index form, e.g. "rose-500"
                 if "-" in value:
                     name, index = value.split("-", 1)
@@ -86,6 +84,7 @@ class Color(BaseColor):
             return token
         # arbitrary value syntax for pure hex
         return f"[{self.hex_l}]"
+
     @classmethod
     def __get_pydantic_core_schema__(
         cls, source_type, handler: GetCoreSchemaHandler
@@ -223,13 +222,14 @@ class Color(BaseColor):
     def saturate(self, amount=0.1):
         h, s, l = self.get_hsl()
         return Color(hsl=(h, clamp(s + amount), l))
+
     def desaturate(self, amount=0.1):
         h, s, l = self.get_hsl()
         return Color(hsl=(h, clamp(s - amount), l))
+
     def invert(self):
         r, g, b = self.get_rgb()
         return Color(rgb=(1 - r, 1 - g, 1 - b))
-
 
     def with_alpha(self, alpha):
         return Color(rgb=self.get_rgb(), alpha=clamp(alpha, 0, 1))
