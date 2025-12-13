@@ -211,5 +211,6 @@ force-single-line = true
 
 [dependency-groups]
 dev = [
+    "ipython>=8.12.3",
     "ruff>=0.14.9",
 ]
