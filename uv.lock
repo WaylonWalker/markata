@@ -2108,6 +2108,11 @@ tui = [
     { name = "trogon", version = "0.6.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.8.1'" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "ruff" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "anyconfig" },
@@ -2157,6 +2162,9 @@ requires-dist = [
     { name = "xxhash" },
 ]
 provides-extras = ["dev", "pyinstrument", "tui"]
+
+[package.metadata.requires-dev]
+dev = [{ name = "ruff", specifier = ">=0.14.9" }]
 
 [[package]]
 name = "markdown"

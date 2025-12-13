@@ -208,3 +208,8 @@ unfixable = []
 
 [tool.ruff.lint.isort]
 force-single-line = true
+
+[dependency-groups]
+dev = [
+    "ruff>=0.14.9",
+]
