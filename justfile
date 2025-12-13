@@ -44,7 +44,7 @@ clean-build:
 serve:
     #!/usr/bin/env bash
     set -euxo pipefail
-    python -m http.server --bind 0.0.0.0 8000 --directory markout
+    uv run markata server
 
 ruff-fix:
     #!/usr/bin/env bash
