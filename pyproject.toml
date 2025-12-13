@@ -66,7 +66,7 @@ description = "Static site generator plugins all the way down."
 keywords = ["static-site"]
 name = "markata"
 readme = "README.md"
-requires-python = ">=3.6"
+requires-python = ">=3.8"
 
 [[project.authors]]
 name = "Waylon Walker"
