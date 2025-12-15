@@ -553,7 +553,20 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
 
         else:
             markata_instance.console.log("[purple]starting the build")
-            markata_instance.run()
+            try:
+                markata_instance.run()
+            except Exception as e:
+                # Check if it's our ConfigurationError
+                if e.__class__.__name__ == 'ConfigurationError':
+                    # Error already displayed, just exit cleanly
+                    # Suppress any atexit errors by redirecting stderr
+                    import sys
+                    import os
+                    sys.stderr.close()
+                    sys.stderr = open(os.devnull, 'w')
+                    sys.exit(1)
+                # For any other exception, re-raise it
+                raise
 
     @app.command()
     def list(

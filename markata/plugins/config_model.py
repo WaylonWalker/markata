@@ -130,6 +130,11 @@ if TYPE_CHECKING:
     from markata import Markata
 
 
+class ConfigurationError(Exception):
+    """Custom exception for configuration errors that should display cleanly."""
+    pass
+
+
 class Config(BaseSettings, JupyterMixin):
     hooks: list[str] = ["default"]
     disabled_hooks: list[str] = []
@@ -239,7 +244,31 @@ def load_config(markata: "Markata") -> None:
         if config == {}:
             markata.config = markata.Config()
         else:
-            markata.config = markata.Config.parse_obj(config)
+            try:
+                markata.config = markata.Config.parse_obj(config)
+            except pydantic.ValidationError as e:
+                # Extract clean error messages from Pydantic validation errors
+                from rich.console import Console
+                console = Console(stderr=True)
+                
+                console.print("\n[bold red]Configuration Error:[/]\n")
+                
+                for error in e.errors():
+                    field_path = '.'.join(str(loc) for loc in error['loc'])
+                    msg = error['msg']
+                    
+                    # If it's our custom theme error, it already has nice formatting
+                    if 'Theme' in msg and 'not available' in msg:
+                        console.print(f"[yellow]{field_path}:[/]")
+                        # Print our nicely formatted message
+                        for line in msg.split('\n'):
+                            if line.strip():
+                                console.print(f"  {line}")
+                    else:
+                        console.print(f"[yellow]{field_path}:[/] {msg}")
+                
+                console.print()
+                raise ConfigurationError("Configuration validation failed") from None
 
 
 # from polyfactory.factories.pydantic_factory import ModelFactory

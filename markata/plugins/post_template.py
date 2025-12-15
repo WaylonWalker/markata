@@ -400,20 +400,26 @@ def merge_styles(defaults: dict, overrides: Optional[dict]) -> ThemeStyle:
 
 
 class Style(pydantic.BaseModel):
-    theme: Literal[
-        "tokyo-night",
-        "catppuccin",
-        "everforest",
-        "gruvbox",
-        "kanagwa",
-        "nord",
-        "synthwave-84",
-    ] = "tokyo-night"
+    theme: str = "tokyo-night"
 
     light: Optional[ThemeStyle] = None
     dark: Optional[ThemeStyle] = None
     # overlay_brightness: Optional[str] = ".85"
     # body_width: Optional[str] = "800px"
+
+    @field_validator("theme")
+    @classmethod
+    def validate_theme(cls, v: str) -> str:
+        available_themes = list(THEME_DEFAULTS.keys())
+        if v not in available_themes:
+            available = ', '.join(sorted(available_themes))
+            raise ValueError(
+                f"\n\n"
+                f"Theme '{v}' is not available.\n\n"
+                f"Available themes are:\n  {available}\n\n"
+                f"Please update your markata.toml [markata.style] section to use one of the available themes.\n"
+            )
+        return v
 
     @root_validator(pre=True)
     def apply_theme_defaults(cls, values):
@@ -835,6 +841,14 @@ console = Console(record=True)
 
 
 def print_theme(theme: str):
+    if theme not in THEME_DEFAULTS:
+        available_themes = sorted(THEME_DEFAULTS.keys())
+        console.print(
+            f"\n[bold red]Error:[/] Theme '{theme}' is not available.\n\n"
+            f"[yellow]Available themes:[/]\n  " + '\n  '.join(available_themes) + "\n"
+        )
+        return
+    
     console.print()
     console.print()
     console.print(
