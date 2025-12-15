@@ -106,9 +106,6 @@ class Color(BaseColor):
         raise TypeError(f"Cannot convert {value!r} to {cls.__name__}")
 
     def __str__(self):
-        return self.hex_l
-
-    def __str__(self):
         # Convert to 8-digit hex if alpha < 1
         hex_rgb = self.hex_l
         if self.alpha < 1.0:
@@ -154,10 +151,10 @@ class Color(BaseColor):
         base = self.get_hsl()
         overlay = other.get_hsl()
 
-        h = (1 - ratio) * base[0] + ratio * overlay[0]
-        s = (1 - ratio) * base[1] + ratio * overlay[1]
-        l = (1 - ratio) * base[2] + ratio * overlay[2]
-        return Color(hsl=(h, s, l))  # .hex_l
+        hue = (1 - ratio) * base[0] + ratio * overlay[0]
+        saturation = (1 - ratio) * base[1] + ratio * overlay[1]
+        lightness = (1 - ratio) * base[2] + ratio * overlay[2]
+        return Color(hsl=(hue, saturation, lightness))  # .hex_l
 
     def blend(self, other, ratio=0.5):
         return self.mix(other, ratio)
@@ -175,18 +172,6 @@ class Color(BaseColor):
         result = [op(x, scalar) for x in a]
         clamped = [min(max(c, 0), 1) for c in result]
         return Color(rgb=tuple(clamped))
-
-    def __add__(self, other):
-        return self._rgb_math(other, lambda a, b: a + b)
-
-    def __sub__(self, other):
-        return self._rgb_math(other, lambda a, b: a - b)
-
-    def __mul__(self, other):
-        if isinstance(other, Color):
-            return self._rgb_math(other, lambda a, b: a * b)
-        else:
-            return self._rgb_scalar_math(other, lambda a, b: a * b)
 
     def __truediv__(self, other):
         if isinstance(other, Color):
@@ -207,29 +192,29 @@ class Color(BaseColor):
         console.print(text, justify="left", end=" ")
 
     def compliment(self):
-        h, s, l = self.get_hsl()
-        return Color(hsl=((h + 0.5) % 1, s, l))
+        hue, saturation, lightness = self.get_hsl()
+        return Color(hsl=((hue + 0.5) % 1, saturation, lightness))
 
     def lighten(self, amount=0.1):
-        h, s, l = self.get_hsl()
-        return Color(hsl=(h, s, clamp(l + amount)))
+        hue, saturation, lightness = self.get_hsl()
+        return Color(hsl=(hue, saturation, clamp(lightness + amount)))
 
     def darken(self, amount=0.1):
-        h, s, l = self.get_hsl()
+        hue, saturation, lightness = self.get_hsl()
 
-        return Color(hsl=(h, s, clamp(l - amount)))
+        return Color(hsl=(hue, saturation, clamp(lightness - amount)))
 
     def saturate(self, amount=0.1):
-        h, s, l = self.get_hsl()
-        return Color(hsl=(h, clamp(s + amount), l))
+        hue, saturation, lightness = self.get_hsl()
+        return Color(hsl=(hue, clamp(saturation + amount), lightness))
 
     def desaturate(self, amount=0.1):
-        h, s, l = self.get_hsl()
-        return Color(hsl=(h, clamp(s - amount), l))
+        hue, saturation, lightness = self.get_hsl()
+        return Color(hsl=(hue, clamp(saturation - amount), lightness))
 
     def invert(self):
-        r, g, b = self.get_rgb()
-        return Color(rgb=(1 - r, 1 - g, 1 - b))
+        red, green, blue = self.get_rgb()
+        return Color(rgb=(1 - red, 1 - green, 1 - blue))
 
     def with_alpha(self, alpha):
         return Color(rgb=self.get_rgb(), alpha=clamp(alpha, 0, 1))

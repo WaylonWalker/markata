@@ -7,7 +7,7 @@ class HighlightStyle(BaseModel):
     c: Optional[str] = None  # Comment
     err: Optional[str] = None  # Error
     k: Optional[str] = None  # Keyword
-    l: Optional[str] = None  # Literal
+    lit: Optional[str] = None  # Literal
     n: Optional[str] = None  # Name
     o: Optional[str] = None  # Operator
     p: Optional[str] = None  # Punctuation

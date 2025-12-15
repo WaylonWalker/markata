@@ -219,6 +219,7 @@ Markata config also supports adding scripts to the head via configuration.
 """
 
 import inspect
+import re
 from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Any
@@ -245,6 +246,7 @@ from markata.hookspec import hook_impl
 from markata.plugins.jinja_env import get_template
 from markata.plugins.jinja_env import get_templates_mtime
 from markata.plugins.theme import THEME_DEFAULTS
+from markata.plugins.theme import Color
 
 if TYPE_CHECKING:
     from markata import Markata
@@ -271,8 +273,6 @@ def optional(*fields):
         return dec(cls)
     return dec
 
-
-from markata.plugins.theme import Color
 
 # class ThemeStyle(pydantic.BaseModel):
 #     text: Optional[Color] = None
@@ -368,9 +368,6 @@ class ThemeStyle(pydantic.BaseModel):
             if v:
                 yield Text(f"--{k} {v}", style="bold")
         return self
-
-
-import re
 
 
 def wrap_raw_color(key: str, value: Optional[str]) -> Optional[str]:
@@ -626,6 +623,7 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
     """
     Markata hook to implement base cli commands.
     """
+    from markata.plugins.theme import print_color_swatch
 
     templates_app = typer.Typer()
     app.add_typer(templates_app, name="templates")
@@ -690,6 +688,37 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
                     markata.console.print(f"  {template}")
         except Exception as e:
             markata.console.print(f"Error listing templates: {str(e)}", style="red")
+
+    theme_app = typer.Typer()
+    app.add_typer(theme_app, name="theme")
+
+    @theme_app.callback()
+    def theme():
+        "configuration management"
+
+    @theme_app.command()
+    def show_theme():
+        "show the application summary"
+
+        markata.console.quiet = True
+        console.print(f"[bold]{markata.config.style.theme.title()} Theme[/]")
+        console.print()
+        console.print("[bold]Light Theme[/]")
+
+        for key, color in markata.config.style.dark.model_dump().items():
+            if "#" in color and key not in ["code_theme", "highlight_styles"]:
+                print_color_swatch(
+                    f"dark.{key}: {color}",
+                    color.replace("[", "").replace("]", ""),
+                )
+
+        console.print("\n[bold]Dark Theme[/]")
+        for key, color in markata.config.style.light.model_dump().items():
+            if "#" in color and key not in ["code_theme", "highlight_styles"]:
+                print_color_swatch(
+                    f"light.{key}: {color}",
+                    color.replace("[", "").replace("]", ""),
+                )
 
 
 class PostOverrides(pydantic.BaseModel):
@@ -831,59 +860,3 @@ def print_theme(theme: str):
             #     f"light.{key}: {color}",
             #     color.replace("[", "").replace("]", ""),
             # )
-
-
-@hook_impl()
-def cli(app: typer.Typer, markata: "Markata") -> None:
-    """
-    Markata hook to implement base cli commands.
-    """
-    theme_app = typer.Typer()
-    app.add_typer(theme_app, name="theme")
-
-    @theme_app.callback()
-    def theme():
-        "configuration management"
-
-    @theme_app.command()
-    def show():
-        "show the application summary"
-
-        markata.console.quiet = True
-        console.print(f"[bold]{markata.config.style.theme.title()} Theme[/]")
-        console.print()
-        console.print("[bold]Light Theme[/]")
-
-        for key, color in markata.config.style.dark.model_dump().items():
-            if "#" in color and key not in ["code_theme", "highlight_styles"]:
-                print_color_swatch(
-                    f"dark.{key}: {color}",
-                    color.replace("[", "").replace("]", ""),
-                )
-
-        console.print("\n[bold]Dark Theme[/]")
-        for key, color in markata.config.style.light.model_dump().items():
-            if "#" in color and key not in ["code_theme", "highlight_styles"]:
-                print_color_swatch(
-                    f"light.{key}: {color}",
-                    color.replace("[", "").replace("]", ""),
-                )
-
-    @theme_app.command()
-    def list():
-        "show the application summary"
-
-        markata.console.quiet = True
-        # console.print(markata.config.style)
-        for theme in THEME_DEFAULTS:
-            console.print(theme)
-
-    @theme_app.command()
-    def show_all():
-        "show the application summary"
-
-        markata.console.quiet = True
-        for theme in THEME_DEFAULTS:
-            print_theme(theme)
-        html = console.export_html(inline_styles=True)
-        Path("themes.html").write_text(html)
