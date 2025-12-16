@@ -469,6 +469,15 @@ def _load_env(tool: str) -> Dict[str, Any]:
     return env_config
 
 
+def _deep_merge(target: Dict, source: Dict) -> None:
+    """Deep merge source dict into target dict."""
+    for key, value in source.items():
+        if key in target and isinstance(target[key], dict) and isinstance(value, dict):
+            _deep_merge(target[key], value)
+        else:
+            target[key] = value
+
+
 def load(
     tool: str,
     project_home: Union[Path, str] = ".",
@@ -527,12 +536,18 @@ def load(
 
         file_config = _load_config_file(file_spec)
         if file_config:
-            config.update(file_config)
+            _deep_merge(config, file_config)
     else:
-        config.update(_load_files(_get_local_path_specs(tool, project_home)) or {})
+        local_config = _load_files(_get_local_path_specs(tool, project_home))
+        if local_config:
+            _deep_merge(config, local_config)
 
-    config.update(_load_env(tool))
-    config.update(overrides)
+    env_config = _load_env(tool)
+    if env_config:
+        _deep_merge(config, env_config)
+    
+    if overrides:
+        _deep_merge(config, overrides)
 
     # If no settings class is provided, return the raw dict
     return config

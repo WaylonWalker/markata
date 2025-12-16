@@ -53,17 +53,23 @@ markata build -o dist/theme-everforest
 
 #### Generic Config Override (`--set`)
 
-Set any configuration value using dot notation:
+Set any configuration value using dot notation. Config overrides use **deep merge**, so nested values are merged rather than replaced:
 
 ```bash
 # Single value
 markata build -s output_dir=dist
 
-# Nested config
+# Nested config (merges with existing style config)
 markata build -s style.theme=nord
 
 # Multiple values
 markata build -s output_dir=dist -s style.theme=catppuccin
+
+# Override single template while keeping others
+markata build -s post_template.index=custom.html
+
+# Add new template variant
+markata build -s post_template.summary=summary.html
 
 # Complex values (use JSON)
 markata build -s 'nav={"home":"/","docs":"/docs"}'
@@ -100,6 +106,30 @@ done
 ```
 
 See [example_theme_build.sh](../example_theme_build.sh) for a complete example.
+
+## Use Case: Template Overrides
+
+Override or add post templates without modifying config files:
+
+```bash
+# Override just the index template (keeps partial, og, etc.)
+markata build -s post_template.index=custom.html
+
+# Add a new summary template
+markata build -s post_template.summary=summary_template.html
+
+# Override multiple templates
+markata build \
+    -s post_template.index=custom.html \
+    -s post_template.partial=custom_partial.html
+
+# Combine with theme override
+markata build \
+    -s style.theme=nord \
+    -s post_template.index=nord_post.html
+```
+
+**Note:** Template overrides use deep merge, so specifying `-s post_template.index=custom.html` will only override the `index` template while preserving other template variants like `partial`, `og`, and `raw.md`.
 
 ## Config Value Format
 
