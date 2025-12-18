@@ -1,5 +1,54 @@
 # Markata Changelog
 
+## 0.11.0
+
+### CLI Configuration Overrides
+
+- Feat: Add `-s/--set` flag for runtime config overrides with dot notation (e.g., `-s 'style.theme=nord'`)
+- Feat: Add `-c/--config` flag for alternate config files
+- Feat: Add `-o/--output-dir` flag for output directory override
+- Feat: Add support for `MARKATA_*` environment variables with nested config (e.g., `MARKATA_STYLE__THEME=nord`)
+- Feat: Add `parse_set_options()` and `_deep_merge()` utilities for config handling
+- Enable: Runtime theme switching and configuration without editing files
+
+### Performance Improvements
+
+- Perf: increased diskcache size limit to 5GB and reduced cull_limit to minimize expensive eviction operations (saves ~4s during cache culling)
+- Perf: optimized feed hash generation to use lightweight post identifiers (slug + content_hash) instead of expensive `str(post.to_dict())` serialization (saves ~6s)
+- Perf: feeds now cache expensive `feed.map()` calls during hash generation (~7.7s savings)
+- Perf: feeds batch directory creation operations (~2s savings)
+- Perf: feeds only read XSL files when they exist and need comparison
+- Perf: to_json, service_worker, redirects, jinja_env, and post_template now only write files when content changes (prevents unnecessary file system modifications and downstream syncing)
+
+### Cache Invalidation Improvements
+
+- Fix: feeds now properly invalidate cache when post metadata changes (title, date, slug, published, description)
+- Fix: feeds now properly invalidate cache when template files are modified
+- Fix: post_template now tracks template file changes for cache invalidation
+- Fix: redirects now invalidate cache when template files change
+- Fix: jinja_md now includes post metadata and version in cache keys
+- Fix: standardized cache keys across plugins to include `__version__` for proper invalidation on updates
+- Fix: render_markdown now includes backend and extensions in cache key
+- Fix: `auto_description` now strips wikilinks, HTML tags, markdown-it attributes (e.g. {.class-name}), Jinja template tags, admonitions (!!!, !!!+, ???, ???+), and HTML comments for cleaner descriptions
+- Fix: `publish_html` now properly resolves custom `output_html` paths relative to `output_dir`, preventing files from being written to project root
+- Perf: heading_link replaced expensive file I/O with `__version__` in cache key
+- Feat: feeds now support atom feeds
+
+### Template Utilities (Breaking for Plugin Authors)
+
+- **BREAKING**: Removed internal `get_template()` functions from `feeds.py` and `post_template.py`
+- Feat: added centralized `get_template()`, `get_template_paths()`, and `get_templates_mtime()` to `jinja_env` plugin
+- Feat: `get_template()` includes automatic caching with `@lru_cache` and smart fallback handling
+- **Plugin authors**: Import from `markata.plugins.jinja_env` instead of using internal functions
+  ```python
+  from markata.plugins.jinja_env import get_template, get_templates_mtime
+  template = get_template(markata.jinja_env, "template.html")
+  ```
+
+## 0.10.1
+
+- Release: version bump
+
 ## 0.10.0
 
 - Fix: `auto_description` now more accurately returns plain text, does not cut off words, and add an ellipsis.

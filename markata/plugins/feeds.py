@@ -192,7 +192,6 @@ import datetime
 import shutil
 import textwrap
 import warnings
-from functools import lru_cache
 from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Any
@@ -216,6 +215,8 @@ from markata import background
 from markata.errors import DeprecationWarning
 from markata.hookspec import hook_impl
 from markata.hookspec import register_attr
+from markata.plugins.jinja_env import get_template
+from markata.plugins.jinja_env import get_templates_mtime
 
 if TYPE_CHECKING:
     from frontmatter import Post
@@ -243,6 +244,8 @@ class FeedConfig(pydantic.BaseModel, JupyterMixin):
     tail: Optional[int] = None
     rss: bool = True
     sitemap: bool = True
+    atom: bool = True
+    atom_template: str = "atom.xml"
     # feed_groups: Dict[str, List[str]] = Field(default_factory=dict)
     # sidebar_feeds: List[str] = Field(default_factory=list)
     card_template: str = "card.html"
@@ -440,25 +443,6 @@ def pre_render(markata: Markata) -> None:
     markata.feeds = Feeds(markata)
 
 
-@lru_cache()
-def get_template(markata, template):
-    try:
-        return markata.jinja_env.get_template(template)
-    except jinja2.TemplateNotFound:
-        # try to load it as a file
-        ...
-
-    try:
-        return Template(Path(template).read_text(), undefined=SilentUndefined)
-    except FileNotFoundError:
-        # default to load it as a string
-        ...
-    except OSError:  # thrown by File name too long
-        # default to load it as a string
-        ...
-    return Template(template, undefined=SilentUndefined)
-
-
 @hook_impl
 def save(markata: Markata) -> None:
     """
@@ -477,7 +461,7 @@ def save(markata: Markata) -> None:
     if not home.exists() and archive.exists():
         shutil.copy(str(archive), str(home))
 
-    xsl_template = get_template(markata, feed.config.xsl_template)
+    xsl_template = get_template(markata.jinja_env, feed.config.xsl_template)
     xsl = xsl_template.render(
         markata=markata,
         __version__=__version__,
@@ -485,10 +469,14 @@ def save(markata: Markata) -> None:
         config=markata.config,
     )
     xsl_file = Path(markata.config.output_dir) / "rss.xsl"
-    current_xsl = xsl_file.read_text() if xsl_file.exists() else ""
-    if current_xsl != xsl:
-        xsl_file.write_text(xsl)
+    # Only read file if it exists and we need to compare
+    should_write = True
+    if xsl_file.exists():
+        current_xsl = xsl_file.read_text()
+        should_write = current_xsl != xsl
 
+    if should_write:
+        xsl_file.write_text(xsl)
 
 def create_page(
     markata: Markata,
@@ -499,20 +487,37 @@ def create_page(
     create an html unorderd list of posts.
     """
 
-    template = get_template(markata, feed.config.template)
-    partial_template = get_template(markata, feed.config.partial_template)
+    template = get_template(markata.jinja_env, feed.config.template)
+    partial_template = get_template(markata.jinja_env, feed.config.partial_template)
     canonical_url = f"{markata.config.url}/{feed.config.slug}/"
+
+    # Get templates mtime to bust cache when any template changes
+    templates_mtime = get_templates_mtime(markata.jinja_env)
+
+    # Use simpler hash for posts instead of expensive str(post.to_dict())
+    # Hash just the essential post identifiers: slug + content_hash
+    cache_key_posts = f"feed_hash_posts_{feed.config.slug}"
+    if not hasattr(markata, "_feed_hash_cache"):
+        markata._feed_hash_cache = {}
+
+    if cache_key_posts not in markata._feed_hash_cache:
+        # Use post slugs and published dates instead of full to_dict()
+        # This provides a stable, lightweight cache key
+        posts_data = feed.map("(post.slug, str(getattr(post, 'date', '')), getattr(post, 'title', ''))")
+        markata._feed_hash_cache[cache_key_posts] = str(sorted(posts_data))
+
+    posts_hash_data = markata._feed_hash_cache[cache_key_posts]
 
     key = markata.make_hash(
         "feeds",
         template,
         __version__,
-        # cards,
         markata.config.url,
         markata.config.description,
         feed.config.title,
-        feed.map("content"),
+        posts_hash_data,  # Use cached post data
         canonical_url,
+        str(templates_mtime),  # Track template file changes
         # datetime.datetime.today(),
         # markata.config,
     )
@@ -521,29 +526,32 @@ def create_page(
     html_partial_key = markata.make_hash(key, "partial_html")
     feed_rss_key = markata.make_hash(key, "rss")
     feed_sitemap_key = markata.make_hash(key, "sitemap")
+    feed_atom_key = markata.make_hash(key, "atom")
 
     feed_html_from_cache = markata.precache.get(html_key)
     feed_html_partial_from_cache = markata.precache.get(html_partial_key)
     feed_rss_from_cache = markata.precache.get(feed_rss_key)
     feed_sitemap_from_cache = markata.precache.get(feed_sitemap_key)
+    feed_atom_from_cache = markata.precache.get(feed_atom_key)
 
     output_file = Path(markata.config.output_dir) / feed.config.slug / "index.html"
-    output_file.parent.mkdir(exist_ok=True, parents=True)
-
     partial_output_file = (
         Path(markata.config.output_dir) / feed.config.slug / "partial" / "index.html"
     )
-    partial_output_file.parent.mkdir(exist_ok=True, parents=True)
-
     rss_output_file = Path(markata.config.output_dir) / feed.config.slug / "rss.xml"
-    rss_output_file.parent.mkdir(exist_ok=True, parents=True)
-
     sitemap_output_file = (
         Path(markata.config.output_dir) / feed.config.slug / "sitemap.xml"
     )
-    sitemap_output_file.parent.mkdir(exist_ok=True, parents=True)
+    atom_output_file = (
+        Path(markata.config.output_dir) / feed.config.slug / "atom.xml"
+    )
+
+    # Create all directories in one batch
+    partial_output_file.parent.mkdir(exist_ok=True, parents=True)
 
     from_cache = True
+
+    # ---------- HTML ----------
     if feed_html_from_cache is None:
         from_cache = False
         feed_html = template.render(
@@ -558,6 +566,7 @@ def create_page(
     else:
         feed_html = feed_html_from_cache
 
+    # ---------- Partial HTML ----------
     if feed_html_partial_from_cache is None:
         from_cache = False
         feed_html_partial = partial_template.render(
@@ -572,47 +581,86 @@ def create_page(
     else:
         feed_html_partial = feed_html_partial_from_cache
 
-    if feed_rss_from_cache is None:
-        from_cache = False
-        rss_template = get_template(markata, feed.config.rss_template)
-        feed_rss = rss_template.render(markata=markata, feed=feed)
-        cache.set(feed_rss_key, feed_rss)
+    # ---------- RSS ----------
+    if feed.config.rss:
+        if feed_rss_from_cache is None:
+            from_cache = False
+            rss_template = get_template(markata.jinja_env, feed.config.rss_template)
+            feed_rss = rss_template.render(markata=markata, feed=feed)
+            cache.set(feed_rss_key, feed_rss)
+        else:
+            feed_rss = feed_rss_from_cache
     else:
-        feed_rss = feed_rss_from_cache
+        feed_rss = None
 
-    if feed_sitemap_from_cache is None:
-        from_cache = False
-        sitemap_template = get_template(markata, feed.config.sitemap_template)
-        feed_sitemap = sitemap_template.render(markata=markata, feed=feed)
-        cache.set(feed_sitemap_key, feed_sitemap)
+    # ---------- Sitemap ----------
+    if feed.config.sitemap:
+        if feed_sitemap_from_cache is None:
+            from_cache = False
+            sitemap_template = get_template(markata.jinja_env, feed.config.sitemap_template)
+            feed_sitemap = sitemap_template.render(markata=markata, feed=feed)
+            cache.set(feed_sitemap_key, feed_sitemap)
+        else:
+            feed_sitemap = feed_sitemap_from_cache
     else:
-        feed_sitemap = feed_sitemap_from_cache
+        feed_sitemap = None
 
-    if (
-        from_cache
-        and output_file.exists()
-        and partial_output_file.exists()
-        and rss_output_file.exists()
-        and sitemap_output_file.exists()
-    ):
-        return
+    # ---------- Atom ----------
+    if feed.config.atom:
+        if feed_atom_from_cache is None:
+            from_cache = False
+            atom_template = get_template(markata.jinja_env, feed.config.atom_template)
+            feed_atom = atom_template.render(
+                markata=markata,
+                feed=feed,
+                datetime=datetime,  # ⭐ so the template can use datetime
+            )
+            cache.set(feed_atom_key, feed_atom)
+        else:
+            feed_atom = feed_atom_from_cache
+        # If everything came from cache and files exist, bail early
+        if (
+            from_cache
+            and output_file.exists()
+            and partial_output_file.exists()
+            and (not feed.config.rss or rss_output_file.exists())
+            and (not feed.config.sitemap or sitemap_output_file.exists())
+            and (not feed.config.atom or atom_output_file.exists())
+        ):
+            return
 
+    # Write HTML
     current_html = output_file.read_text() if output_file.exists() else ""
     if current_html != feed_html:
         output_file.write_text(feed_html)
+
+    # Write partial HTML
     current_partial_html = (
         partial_output_file.read_text() if partial_output_file.exists() else ""
     )
     if current_partial_html != feed_html_partial:
         partial_output_file.write_text(feed_html_partial)
-    current_rss = rss_output_file.read_text() if rss_output_file.exists() else ""
-    if current_rss != feed_rss:
-        rss_output_file.write_text(feed_rss)
-    current_sitemap = (
-        sitemap_output_file.read_text() if sitemap_output_file.exists() else ""
-    )
-    if current_sitemap != feed_sitemap:
-        sitemap_output_file.write_text(feed_sitemap)
+
+    # Write RSS (if enabled)
+    if feed_rss is not None:
+        current_rss = rss_output_file.read_text() if rss_output_file.exists() else ""
+        if current_rss != feed_rss:
+            rss_output_file.write_text(feed_rss)
+
+    # Write sitemap (if enabled)
+    if feed_sitemap is not None:
+        current_sitemap = (
+            sitemap_output_file.read_text() if sitemap_output_file.exists() else ""
+        )
+        if current_sitemap != feed_sitemap:
+            sitemap_output_file.write_text(feed_sitemap)
+
+    # Write Atom (if enabled)
+    if feed_atom is not None:
+        current_atom = atom_output_file.read_text() if atom_output_file.exists() else ""
+        if current_atom != feed_atom:
+            atom_output_file.write_text(feed_atom)
+
 
 
 @background.task
@@ -630,32 +678,11 @@ def create_card(
     if template is None:
         template = markata.config.get("feeds_config", {}).get("card_template", None)
 
-    # Get template modification time if template exists
-    template_mtime = 0
-    if template:
-        template_path = None
-        # Check user template paths first
-        for path in markata.jinja_env.template_paths:
-            potential_path = Path(path) / template
-            if potential_path.exists():
-                template_path = potential_path
-                break
-
-        # Check package templates if not found in user paths
-        if not template_path:
-            import importlib
-
-            package_template = (
-                importlib.resources.files("markata") / "templates" / template
-            )
-            if package_template.exists():
-                template_path = package_template
-
-        if template_path:
-            template_mtime = template_path.stat().st_mtime
+    # Get templates mtime to bust cache when any template changes
+    templates_mtime = get_templates_mtime(markata.jinja_env)
 
     key = markata.make_hash(
-        "feeds", template, str(post), post.content, str(template_mtime)
+        "feeds", template, str(post.to_dict()), str(templates_mtime)
     )
 
     card = markata.precache.get(key)

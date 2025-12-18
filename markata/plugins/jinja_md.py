@@ -217,7 +217,15 @@ def pre_render(markata: "Markata") -> None:
     for post in markata.filter("jinja==True"):
         if post.get("jinja", True) and not ignore_spec.match_file(post["path"]):
             try:
-                key = markata.make_hash("jina_md", "pre_render", post.content)
+                # Include post metadata and markata version in cache key
+                # since these affect the rendered output
+                key = markata.make_hash(
+                    "jinja_md",
+                    "pre_render",
+                    post.content,
+                    str(post.to_dict()),  # Include all post metadata
+                    __version__,  # Include markata version
+                )
                 content_from_cache = markata.precache.get(key)
                 if content_from_cache is None and post.content is not None:
                     post.content = jinja_env.from_string(post.content).render(

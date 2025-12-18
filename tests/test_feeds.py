@@ -1,7 +1,8 @@
 import rich
 
 import markata
-from markata.plugins.feeds import Feed, Feeds
+from markata.plugins.feeds import Feed
+from markata.plugins.feeds import Feeds
 
 
 class DummyMarkata:
