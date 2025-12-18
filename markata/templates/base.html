@@ -1,50 +1,13 @@
 <!DOCTYPE html>
 <html lang="{{ markata.config.lang }}">
-    {% include "base_head.html" %}
     <head>
-        <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
         {% block head %}
             {% include 'base_head.html' %}
         {% endblock %}
-        <script>
-            document.addEventListener("DOMContentLoaded", () => {
-                const collapsibleElements = document.querySelectorAll('.is-collapsible');
-                collapsibleElements.forEach(el => {
-                    const summary = el.querySelector('.admonition-title');
-                    if (summary) {
-                        summary.style.cursor = 'pointer';
-                        summary.addEventListener('click', () => {
-                            el.classList.toggle('collapsible-open');
-                        });
-                    }
-                });
-            });
-        </script>
-
-        <style>
-
-            .admonition.source {
-                padding-bottom: 0;
-            }
-            .admonition.source pre.wrapper {
-                margin: 0;
-                padding: 0;
-            }
-            .is-collapsible {
-                overflow: hidden;
-                transition: max-height 0.3s ease;
-            }
-            .is-collapsible:not(.collapsible-open) {
-                max-height: 0;
-                padding-bottom: 2.5rem;
-            }
-            .admonition-title {
-                font-weight: bold;
-                margin-bottom: 8px;
-            }
-        </style>
     </head>
     <body>
+        <div id='bg-surface'></div>
+
         {% block body %}
             {% block content %} {% endblock %}
             {% block footer %} {% endblock %}

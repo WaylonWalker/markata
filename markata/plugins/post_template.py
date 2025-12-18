@@ -1,6 +1,4 @@
 """
-
-
 The `markata.plugins.post_template` plugin handles the rendering of posts using Jinja2
 templates. It provides extensive configuration options for HTML head elements, styling,
 and template customization.
@@ -226,6 +224,7 @@ from typing import TYPE_CHECKING
 from typing import Any
 from typing import Dict
 from typing import List
+from typing import Literal
 from typing import Optional
 from typing import Union
 
@@ -238,11 +237,14 @@ from pydantic import ConfigDict
 from pydantic import Field
 from pydantic import field_validator
 from pydantic import model_validator
+from pydantic import root_validator
+from rich.console import Console
 
 from markata import __version__
 from markata.hookspec import hook_impl
 from markata.plugins.jinja_env import get_template
 from markata.plugins.jinja_env import get_templates_mtime
+from markata.plugins.theme import THEME_DEFAULTS
 
 if TYPE_CHECKING:
     from markata import Markata
@@ -270,20 +272,175 @@ def optional(*fields):
     return dec
 
 
+from markata.plugins.theme import Color
+
+# class ThemeStyle(pydantic.BaseModel):
+#     text: Optional[Color] = None
+#     muted: Optional[Color] = None
+#     heading: Optional[Color] = None
+#     accent: Optional[Color] = None
+#     accent_alt: Optional[Color] = None
+#     background: Optional[Color] = None
+#     surface: Optional[Color] = None
+#     code_bg: Optional[Color] = None
+#     blockquote_bg: Optional[Color] = None
+#     blockquote_border: Optional[Color] = None
+#     link_hover: Optional[Color] = None
+#     selection_bg: Optional[Color] = None
+#     selection_text: Optional[Color] = None
+#     border: Optional[Color] = None
+#     background_image: Optional[str] = None
+
+
+class ThemeStyle(pydantic.BaseModel):
+    text: Optional[Color] = None
+    muted: Optional[Color] = None
+    heading: Optional[Color] = None
+    accent: Optional[Color] = None
+    accent_alt: Optional[Color] = None
+    background: Optional[Color] = None
+    surface: Optional[Color] = None
+    code_bg: Optional[Color] = None
+    blockquote_bg: Optional[Color] = None
+    blockquote_border: Optional[Color] = None
+    link_hover: Optional[Color] = None
+    selection_bg: Optional[Color] = None
+    selection_text: Optional[Color] = None
+    border: Optional[Color] = None
+    background_image: Optional[str] = None
+    code_theme: Literal[
+        "abap",
+        "algol",
+        "algol_nu",
+        "arduino",
+        "autumn",
+        "bw",
+        "borland",
+        "coffee",
+        "colorful",
+        "default",
+        "dracula",
+        "emacs",
+        "friendly_grayscale",
+        "friendly",
+        "fruity",
+        "github-dark",
+        "gruvbox-dark",
+        "gruvbox-light",
+        "igor",
+        "inkpot",
+        "lightbulb",
+        "lilypond",
+        "lovelace",
+        "manni",
+        "material",
+        "monokai",
+        "murphy",
+        "native",
+        "nord-darker",
+        "nord",
+        "one-dark",
+        "paraiso-dark",
+        "paraiso-light",
+        "pastie",
+        "perldoc",
+        "rainbow_dash",
+        "rrt",
+        "sas",
+        "solarized-dark",
+        "solarized-light",
+        "staroffice",
+        "stata-dark",
+        "stata-light",
+        "tango",
+        "trac",
+        "vim",
+        "vs",
+        "xcode",
+        "zenburn",
+    ] = "nord"
+    highlight_styles: Optional[str] = None
+
+    def __rich__(self):
+        from rich.text import Text
+
+        for k, v in self.dict().items():
+            if v:
+                yield Text(f"--{k} {v}", style="bold")
+        return self
+
+
+import re
+
+
+def wrap_raw_color(key: str, value: Optional[str]) -> Optional[str]:
+    if key.endswith("_theme"):
+        return value
+    if not value:
+        return value
+    if re.match(r"^[a-z]+-\d{3}$", value):  # Tailwind class like "blue-500"
+        return value
+    if value.startswith("[") and value.endswith("]"):  # already wrapped
+        return value
+    return f"[{value}]"
+
+
+def merge_styles(defaults: dict, overrides: Optional[dict]) -> ThemeStyle:
+    final = (defaults or {}).copy()
+    if overrides:
+        final.update({k: v for k, v in overrides.items() if v is not None})
+
+    code_theme = final.pop("code_theme", None)
+    background_image = final.pop("background_image", None)
+    wrapped_final = {k: Color(v) for k, v in final.items()}
+
+    if code_theme:
+        wrapped_final["code_theme"] = code_theme
+    if background_image:
+        wrapped_final["background_image"] = background_image
+
+    return ThemeStyle(**wrapped_final)
+
+
 class Style(pydantic.BaseModel):
-    color_bg: str = "#1f2022"
-    color_bg_code: str = "#1f2022"
-    color_text: str = "#eefbfe"
-    color_link: str = "#fb30c4"
-    color_accent: str = "#e1bd00c9"
-    overlay_brightness: str = ".85"
-    body_width: str = "800px"
-    color_bg_light: str = "#eefbfe"
-    color_bg_code_light: str = "#eefbfe"
-    color_text_light: str = "#1f2022"
-    color_link_light: str = "#fb30c4"
-    color_accent_light: str = "#ffeb00"
-    overlay_brightness_light: str = ".95"
+    theme: Literal[
+        "tokyo-night",
+        "catppuccin",
+        "everforest",
+        "gruvbox",
+        "kanagwa",
+        "nord",
+        "synthwave-84",
+    ] = "tokyo-night"
+
+    light: Optional[ThemeStyle] = None
+    dark: Optional[ThemeStyle] = None
+    # overlay_brightness: Optional[str] = ".85"
+    # body_width: Optional[str] = "800px"
+
+    @root_validator(pre=True)
+    def apply_theme_defaults(cls, values):
+        theme_name = values.get("theme")
+        theme_defaults = THEME_DEFAULTS.get(theme_name, {})
+        values["light"] = merge_styles(
+            theme_defaults.get("light", {}), values.get("light")
+        )
+        values["dark"] = merge_styles(
+            theme_defaults.get("dark", {}), values.get("dark")
+        )
+
+        from pygments.formatters import HtmlFormatter
+        from pygments.styles import get_style_by_name
+
+        light_style = get_style_by_name(values["light"].code_theme)
+        light_formatter = HtmlFormatter(style=light_style)
+        values["light"].highlight_styles = light_formatter.get_style_defs(".highlight")
+
+        dark_style = get_style_by_name(values["dark"].code_theme)
+        dark_formatter = HtmlFormatter(style=dark_style)
+        values["dark"].highlight_styles = dark_formatter.get_style_defs(".highlight")
+
+        return values
 
 
 @optional
@@ -320,6 +477,7 @@ class Link(pydantic.BaseModel):
 
 class Script(pydantic.BaseModel):
     src: str
+    defer: Optional[bool] = False
 
 
 class HeadConfig(pydantic.BaseModel):
@@ -348,7 +506,11 @@ class HeadConfig(pydantic.BaseModel):
 class Config(pydantic.BaseModel):
     head: HeadConfig = HeadConfig()
     style: Style = Style()
-    post_template: Optional[Union[str | Dict[str, str]]] = "post.html"
+    post_template: Optional[Union[str | Dict[str, str]]] = {
+        "index": "post.html",
+        "partial": "post_partial.html",
+        "og": "og.html",
+    }
     dynamic_templates_dir: Path = Path(".markata.cache/templates")
     templates_dir: Union[Path, List[Path]] = pydantic.Field(Path("templates"))
     template_cache_dir: Path = Path(".markata.cache/template_bytecode")
@@ -398,6 +560,7 @@ def render_article(markata, cache, article):
         article.key,
         str(templates_mtime),  # Track template file changes
     )
+
     html = markata.precache.get(key)
 
     if html is not None:
@@ -409,7 +572,9 @@ def render_article(markata, cache, article):
 
     if isinstance(article.template, dict):
         html = {
-            slug: render_template(markata, article, get_template(markata.jinja_env, template))
+            slug: render_template(
+                markata, article, get_template(markata.jinja_env, template)
+            )
             for slug, template in article.template.items()
         }
     cache.set(key, html, expire=markata.config.default_cache_expire)
@@ -635,3 +800,90 @@ def render(markata: "Markata") -> None:
         for article in markata.filter("not skip"):
             html = render_article(markata=markata, cache=cache, article=article)
             article.html = html
+
+
+console = Console(record=True)
+
+
+def print_theme(theme: str):
+    console.print()
+    console.print()
+    console.print(
+        f"[bold {Color(THEME_DEFAULTS[theme]['dark']['text'])} on {Color(THEME_DEFAULTS[theme]['dark']['background'])}]{theme.title()} Theme[/]".center(
+            80
+        )
+    )
+    console.print()
+    console.print("[bold]Light Theme[/]")
+    for key, color in THEME_DEFAULTS[theme]["light"].items():
+        if key not in ["code_theme", "highlight_styles"]:
+            console.print(key, Color(color))
+            # print_color_swatch(
+            #     f"dark.{key}: {color}",
+            #     color.replace("[", "").replace("]", ""),
+            # )
+
+    console.print("\n[bold]Dark Theme[/]")
+    for key, color in THEME_DEFAULTS[theme]["dark"].items():
+        if key not in ["code_theme", "highlight_styles"]:
+            console.print(key, Color(color))
+            # print_color_swatch(
+            #     f"light.{key}: {color}",
+            #     color.replace("[", "").replace("]", ""),
+            # )
+
+
+@hook_impl()
+def cli(app: typer.Typer, markata: "Markata") -> None:
+    """
+    Markata hook to implement base cli commands.
+    """
+    theme_app = typer.Typer()
+    app.add_typer(theme_app, name="theme")
+
+    @theme_app.callback()
+    def theme():
+        "configuration management"
+
+    @theme_app.command()
+    def show():
+        "show the application summary"
+
+        markata.console.quiet = True
+        console.print(f"[bold]{markata.config.style.theme.title()} Theme[/]")
+        console.print()
+        console.print("[bold]Light Theme[/]")
+
+        for key, color in markata.config.style.dark.model_dump().items():
+            if "#" in color and key not in ["code_theme", "highlight_styles"]:
+                print_color_swatch(
+                    f"dark.{key}: {color}",
+                    color.replace("[", "").replace("]", ""),
+                )
+
+        console.print("\n[bold]Dark Theme[/]")
+        for key, color in markata.config.style.light.model_dump().items():
+            if "#" in color and key not in ["code_theme", "highlight_styles"]:
+                print_color_swatch(
+                    f"light.{key}: {color}",
+                    color.replace("[", "").replace("]", ""),
+                )
+
+    @theme_app.command()
+    def list():
+        "show the application summary"
+
+        markata.console.quiet = True
+        # console.print(markata.config.style)
+        for theme in THEME_DEFAULTS:
+            console.print(theme)
+
+    @theme_app.command()
+    def show_all():
+        "show the application summary"
+
+        markata.console.quiet = True
+        for theme in THEME_DEFAULTS:
+            print_theme(theme)
+        html = console.export_html(inline_styles=True)
+        Path("themes.html").write_text(html)
