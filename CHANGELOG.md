@@ -2,6 +2,15 @@
 
 ## 0.11.0
 
+### CLI Configuration Overrides
+
+- Feat: Add `-s/--set` flag for runtime config overrides with dot notation (e.g., `-s 'style.theme=nord'`)
+- Feat: Add `-c/--config` flag for alternate config files
+- Feat: Add `-o/--output-dir` flag for output directory override
+- Feat: Add support for `MARKATA_*` environment variables with nested config (e.g., `MARKATA_STYLE__THEME=nord`)
+- Feat: Add `parse_set_options()` and `_deep_merge()` utilities for config handling
+- Enable: Runtime theme switching and configuration without editing files
+
 ### Performance Improvements
 
 - Perf: increased diskcache size limit to 5GB and reduced cull_limit to minimize expensive eviction operations (saves ~4s during cache culling)
