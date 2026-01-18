@@ -234,7 +234,6 @@ def load_config(markata: "Markata") -> None:
             "markata",
             project_home=config_file.parent if config_file else ".",
             overrides=config_overrides,
-            config_file=config_file,
         )
         if config == {}:
             markata.config = markata.Config()

@@ -252,7 +252,7 @@ def get_templates_mtime(env: Environment) -> float:
     for template_dir in get_template_paths(env):
         template_path = Path(template_dir)
         if template_path.exists():
-            for path in template_path.rglob('*'):
+            for path in template_path.rglob("*"):
                 if path.is_file():
                     try:
                         max_mtime = max(max_mtime, path.stat().st_mtime)

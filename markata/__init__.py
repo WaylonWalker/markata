@@ -59,7 +59,6 @@ DEFAULT_MD_EXTENSIONS = [
 ]
 
 DEFAULT_HOOKS = [
-    "markata.plugins.mermaid",
     "markata.plugins.didyoumean",
     "markata.plugins.skip",
     "markata.plugins.md_it_wikilinks",
@@ -160,7 +159,6 @@ class Markata:
                 "markata",
                 project_home=config_file.parent if config_file else ".",
                 overrides=config_overrides or {},
-                config_file=config_file,
             )
         self.hooks_conf = HooksConfig.parse_obj(raw_hooks)
         try:

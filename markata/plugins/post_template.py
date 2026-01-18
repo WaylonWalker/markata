@@ -388,6 +388,12 @@ class Config(pydantic.BaseModel):
         return templates_dir
 
 
+def render_article_worker(markata, cache, article):
+    """Worker function for parallel post rendering."""
+    html = render_article(markata, cache, article)
+    return article, html
+
+
 def render_article(markata, cache, article):
     """Render an article using cached templates."""
     templates_mtime = get_templates_mtime(markata.jinja_env)
@@ -409,7 +415,9 @@ def render_article(markata, cache, article):
 
     if isinstance(article.template, dict):
         html = {
-            slug: render_template(markata, article, get_template(markata.jinja_env, template))
+            slug: render_template(
+                markata, article, get_template(markata.jinja_env, template)
+            )
             for slug, template in article.template.items()
         }
     cache.set(key, html, expire=markata.config.default_cache_expire)
@@ -420,7 +428,7 @@ def render_template(markata, article, template):
     """Render a template with article context."""
     merged_config = markata.config
 
-    # Get the body content - prefer article_html, fallback to html
+    # Get body content - prefer article_html, fallback to html
     body = getattr(article, "article_html", None)
     if body is None:
         body = getattr(article, "html", "")
@@ -631,7 +639,40 @@ def pre_render(markata: "Markata") -> None:
 
 @hook_impl
 def render(markata: "Markata") -> None:
+    """
+    Parallel post rendering with conservative approach.
+    """
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    # Get all articles to render
+    articles = list(markata.filter("not skip"))
+
+    # Use conservative worker count for stability
+    max_workers = min(16, len(articles))  # Conservative worker count
+
     with markata.cache as cache:
-        for article in markata.filter("not skip"):
-            html = render_article(markata=markata, cache=cache, article=article)
-            article.html = html
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            # Submit post rendering jobs in smaller batches for stability
+            batch_size = 10
+            for i in range(0, len(articles), batch_size):
+                batch = articles[i : i + batch_size]
+
+                # Process this batch
+                futures = [
+                    executor.submit(render_article_worker, markata, cache, article)
+                    for article in batch
+                ]
+
+                # Wait for batch to complete before next batch
+                for future in as_completed(futures):
+                    try:
+                        article, html = future.result()
+                        article.html = html
+                    except Exception as exc:
+                        article_key = (
+                            getattr(article, "key", "unknown")
+                            if hasattr(article, "key")
+                            else "unknown"
+                        )
+                        print(f"Post rendering error for {article_key}: {exc}")
+                        # Continue with other posts in batch

@@ -444,9 +444,9 @@ def pre_render(markata: Markata) -> None:
 
 
 @hook_impl
-def save(markata: Markata) -> None:
+def save(markata: "Markata") -> None:
     """
-    Creates a new feed page for each page in the config.
+    Creates a new feed page for each page in config.
     """
     with markata.cache as cache:
         for feed in markata.feeds.values():
@@ -478,8 +478,14 @@ def save(markata: Markata) -> None:
     if should_write:
         xsl_file.write_text(xsl)
 
+
+def create_page_worker(markata: "Markata", feed: Feed, cache):
+    """Worker function for parallel feed processing."""
+    create_page(markata, feed, cache)
+
+
 def create_page(
-    markata: Markata,
+    markata: "Markata",
     feed: Feed,
     cache,
 ) -> None:
@@ -503,7 +509,9 @@ def create_page(
     if cache_key_posts not in markata._feed_hash_cache:
         # Use post slugs and published dates instead of full to_dict()
         # This provides a stable, lightweight cache key
-        posts_data = feed.map("(post.slug, str(getattr(post, 'date', '')), getattr(post, 'title', ''))")
+        posts_data = feed.map(
+            "(post.slug, str(getattr(post, 'date', '')), getattr(post, 'title', ''))"
+        )
         markata._feed_hash_cache[cache_key_posts] = str(sorted(posts_data))
 
     posts_hash_data = markata._feed_hash_cache[cache_key_posts]
@@ -542,41 +550,84 @@ def create_page(
     sitemap_output_file = (
         Path(markata.config.output_dir) / feed.config.slug / "sitemap.xml"
     )
-    atom_output_file = (
-        Path(markata.config.output_dir) / feed.config.slug / "atom.xml"
-    )
+    atom_output_file = Path(markata.config.output_dir) / feed.config.slug / "atom.xml"
 
     # Create all directories in one batch
     partial_output_file.parent.mkdir(exist_ok=True, parents=True)
 
     from_cache = True
 
-    # ---------- HTML ----------
-    if feed_html_from_cache is None:
-        from_cache = False
-        feed_html = template.render(
-            markata=markata,
-            __version__=__version__,
-            post=feed.config.model_dump(),
-            url=markata.config.url,
-            config=markata.config,
-            feed=feed,
+    # ---------- PARALLEL TEMPLATE RENDERING ----------
+    from concurrent.futures import ThreadPoolExecutor
+
+    # Track if we need to update cache
+    cache_updated = False
+
+    # Start parallel template rendering
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        # Submit template rendering jobs
+        html_future = (
+            None
+            if feed_html_from_cache
+            else executor.submit(
+                template.render,
+                markata=markata,
+                __version__=__version__,
+                post=feed.config.model_dump(),
+                url=markata.config.url,
+                config=markata.config,
+                feed=feed,
+            )
         )
+
+        partial_future = (
+            None
+            if feed_html_partial_from_cache
+            else executor.submit(
+                partial_template.render,
+                markata=markata,
+                __version__=__version__,
+                post=feed.config.model_dump(),
+                url=markata.config.url,
+                config=markata.config,
+                feed=feed,
+            )
+        )
+
+        # Collect results as they complete
+        futures = []
+        results = {}
+
+        if html_future:
+            futures.append(("html", html_future))
+        if partial_future:
+            futures.append(("partial", partial_future))
+
+        for template_type, future in futures:
+            try:
+                results[template_type] = future.result()
+                cache_updated = True
+            except Exception as exc:
+                print(f"Template rendering error for {template_type}: {exc}")
+                # Fall back to cached version or None
+                if template_type == "html":
+                    results["html"] = feed_html_from_cache
+                elif template_type == "partial":
+                    results["partial"] = feed_html_partial_from_cache
+
+    # ---------- HTML ----------
+    if "html" in results:
+        from_cache = False
+        feed_html = results["html"]
         cache.set(html_key, feed_html)
     else:
+        from_cache = True  # Keep original from_cache value
         feed_html = feed_html_from_cache
 
     # ---------- Partial HTML ----------
-    if feed_html_partial_from_cache is None:
+    if "partial" in results:
         from_cache = False
-        feed_html_partial = partial_template.render(
-            markata=markata,
-            __version__=__version__,
-            post=feed.config.model_dump(),
-            url=markata.config.url,
-            config=markata.config,
-            feed=feed,
-        )
+        feed_html_partial = results["partial"]
         cache.set(html_partial_key, feed_html_partial)
     else:
         feed_html_partial = feed_html_partial_from_cache
@@ -597,7 +648,9 @@ def create_page(
     if feed.config.sitemap:
         if feed_sitemap_from_cache is None:
             from_cache = False
-            sitemap_template = get_template(markata.jinja_env, feed.config.sitemap_template)
+            sitemap_template = get_template(
+                markata.jinja_env, feed.config.sitemap_template
+            )
             feed_sitemap = sitemap_template.render(markata=markata, feed=feed)
             cache.set(feed_sitemap_key, feed_sitemap)
         else:
@@ -629,38 +682,86 @@ def create_page(
         ):
             return
 
-    # Write HTML
-    current_html = output_file.read_text() if output_file.exists() else ""
-    if current_html != feed_html:
-        output_file.write_text(feed_html)
+    # ---------- PARALLEL FILE I/O ----------
+    from concurrent.futures import ThreadPoolExecutor
 
-    # Write partial HTML
-    current_partial_html = (
-        partial_output_file.read_text() if partial_output_file.exists() else ""
-    )
-    if current_partial_html != feed_html_partial:
-        partial_output_file.write_text(feed_html_partial)
-
-    # Write RSS (if enabled)
-    if feed_rss is not None:
-        current_rss = rss_output_file.read_text() if rss_output_file.exists() else ""
-        if current_rss != feed_rss:
-            rss_output_file.write_text(feed_rss)
-
-    # Write sitemap (if enabled)
-    if feed_sitemap is not None:
-        current_sitemap = (
-            sitemap_output_file.read_text() if sitemap_output_file.exists() else ""
+    # Read current files in parallel
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        # Submit file read operations
+        html_read_future = executor.submit(
+            lambda: output_file.read_text() if output_file.exists() else ""
         )
-        if current_sitemap != feed_sitemap:
-            sitemap_output_file.write_text(feed_sitemap)
+        partial_read_future = executor.submit(
+            lambda: partial_output_file.read_text()
+            if partial_output_file.exists()
+            else ""
+        )
 
-    # Write Atom (if enabled)
-    if feed_atom is not None:
-        current_atom = atom_output_file.read_text() if atom_output_file.exists() else ""
-        if current_atom != feed_atom:
-            atom_output_file.write_text(feed_atom)
+        # Submit conditional file reads
+        rss_read_future = None
+        sitemap_read_future = None
+        atom_read_future = None
 
+        if feed_rss is not None:
+            rss_read_future = executor.submit(
+                lambda: rss_output_file.read_text() if rss_output_file.exists() else ""
+            )
+        if feed_sitemap is not None:
+            sitemap_read_future = executor.submit(
+                lambda: sitemap_output_file.read_text()
+                if sitemap_output_file.exists()
+                else ""
+            )
+        if feed_atom is not None:
+            atom_read_future = executor.submit(
+                lambda: atom_output_file.read_text()
+                if atom_output_file.exists()
+                else ""
+            )
+
+        # Collect read results
+        current_html = html_read_future.result()
+        current_partial_html = partial_read_future.result()
+        current_rss = rss_read_future.result() if rss_read_future else None
+        current_sitemap = sitemap_read_future.result() if sitemap_read_future else None
+        current_atom = atom_read_future.result() if atom_read_future else None
+
+    # Submit file write operations in parallel
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        write_futures = []
+
+        # Write HTML
+        if current_html != feed_html:
+            write_futures.append(executor.submit(output_file.write_text, feed_html))
+
+        # Write partial HTML
+        if current_partial_html != feed_html_partial:
+            write_futures.append(
+                executor.submit(partial_output_file.write_text, feed_html_partial)
+            )
+
+        # Write RSS (if enabled)
+        if feed_rss is not None and current_rss != feed_rss:
+            write_futures.append(executor.submit(rss_output_file.write_text, feed_rss))
+
+        # Write sitemap (if enabled)
+        if feed_sitemap is not None and current_sitemap != feed_sitemap:
+            write_futures.append(
+                executor.submit(sitemap_output_file.write_text, feed_sitemap)
+            )
+
+        # Write Atom (if enabled)
+        if feed_atom is not None and current_atom != feed_atom:
+            write_futures.append(
+                executor.submit(atom_output_file.write_text, feed_atom)
+            )
+
+        # Wait for all writes to complete
+        for future in write_futures:
+            try:
+                future.result()
+            except Exception as exc:
+                print(f"File write error: {exc}")
 
 
 @background.task
