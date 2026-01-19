@@ -694,7 +694,6 @@ def create_paginated_feed(
     total_pages = (total_posts + per_page - 1) // per_page
 
     template = get_template(markata, feed.config.template)
-    partial_template = get_template(markata, feed.config.partial_template)
     canonical_url = f"{markata.config.url}/{feed.config.slug}/"
 
     for page_num in range(1, total_pages + 1):
