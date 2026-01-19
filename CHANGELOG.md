@@ -34,6 +34,16 @@
 - Perf: heading_link replaced expensive file I/O with `__version__` in cache key
 - Feat: feeds now support atom feeds
 
+### Enhanced Wikilinks System
+
+- Feat: Added comprehensive configuration system for wikilinks resolution with priority-based scoring
+- Feat: Implemented intelligent duplicate resolution that eliminates false warnings for hierarchical patterns (e.g., `tag/python` vs `python`)
+- Fix: Fixed display text override syntax `[[page|Display Text]]` - now properly splits on first pipe and preserves display text
+- Feat: Added support for anchor links `[[page#anchor]]` and complex syntax `[[folder/page#anchor|Display Text]]`
+- Feat: Configurable priority rules allow custom scoring patterns for different content types
+- Feat: Warning suppression patterns to reduce noise for expected duplicates (e.g., `tag/*`, `category/*`)
+- Feat: Multiple resolution strategies: "priority" (default), "first", or "warn"
+
 ### Template Utilities (Breaking for Plugin Authors)
 
 - **BREAKING**: Removed internal `get_template()` functions from `feeds.py` and `post_template.py`
