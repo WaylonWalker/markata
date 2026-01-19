@@ -189,6 +189,7 @@ filter="True"
 """
 
 import datetime
+import re
 import shutil
 import textwrap
 import warnings
@@ -222,6 +223,53 @@ if TYPE_CHECKING:
     from rich.console import Console
 
 
+def to_pythonic_identifier(name: str) -> str:
+    """
+    Convert a string to a valid Python identifier.
+
+    This function handles various problematic characters that might appear
+    in feed names or slugs, making them suitable for use as Python attribute
+    names and dictionary keys.
+
+    Rules applied:
+    - Replace spaces, slashes, dots, and other non-alphanumeric characters with underscores
+    - Convert to lowercase
+    - Remove leading/trailing underscores
+    - Ensure the result starts with a letter or underscore
+    - Collapse multiple consecutive underscores to a single one
+
+    Examples:
+    'project-gallery' -> 'project_gallery'
+    'tag/htmx' -> 'tag_htmx'
+    'My Feed Name' -> 'my_feed_name'
+    '123start' -> '_123start'
+    """
+    if not name:
+        return "_unnamed"
+
+    # Replace non-alphanumeric characters (except underscores) with underscores
+    pythonic = re.sub(r"[^a-zA-Z0-9_]", "_", str(name))
+
+    # Convert to lowercase
+    pythonic = pythonic.lower()
+
+    # Collapse multiple consecutive underscores
+    pythonic = re.sub(r"_+", "_", pythonic)
+
+    # Remove leading and trailing underscores
+    pythonic = pythonic.strip("_")
+
+    # Ensure it starts with a letter or underscore (not a digit)
+    if pythonic and pythonic[0].isdigit():
+        pythonic = "_" + pythonic
+
+    # Handle empty result or result that became empty after processing
+    if not pythonic:
+        pythonic = "_unnamed"
+
+    return pythonic
+
+
 class SilentUndefined(Undefined):
     def _fail_with_undefined_error(self, *args, **kwargs):
         return ""
@@ -252,6 +300,12 @@ class FeedConfig(pydantic.BaseModel, JupyterMixin):
     sitemap_template: str = "sitemap.xml"
     xsl_template: str = "rss.xsl"
 
+    # Pagination configuration
+    enabled: bool = False
+    items_per_page: int = 10
+    pagination_type: str = "htmx"  # htmx, manual, js
+    per_page: int = 10  # backwards compatibility
+
     model_config = ConfigDict(
         validate_assignment=True,  # Config model
         arbitrary_types_allowed=True,
@@ -266,11 +320,11 @@ class FeedConfig(pydantic.BaseModel, JupyterMixin):
     @classmethod
     def default_name(cls, v, info) -> str:
         if v:
-            return v
+            return to_pythonic_identifier(str(v))
         slug = info.data.get("slug")
         if not slug:
             raise ValueError("Either name or slug must be provided")
-        return str(slug).replace("-", "_")
+        return to_pythonic_identifier(str(slug))
 
     @field_validator("slug", mode="before")
     @classmethod
@@ -328,6 +382,10 @@ class Feed(pydantic.BaseModel, JupyterMixin):
 
     @property
     def posts(self):
+        # If this is a paginated page with specific posts, return those
+        if hasattr(self, "_page_posts"):
+            return PrettyList(self._page_posts)
+
         posts = self.map("post")
         if self.config.head is not None and self.config.tail is not None:
             head_posts = posts[: self.config.head]
@@ -466,11 +524,18 @@ def save(markata: Markata) -> None:
     """
     with markata.cache as cache:
         for feed in markata.feeds.values():
-            create_page(
-                markata,
-                feed,
-                cache,
-            )
+            if feed.config.enabled:
+                create_paginated_feed(
+                    markata,
+                    feed,
+                    cache,
+                )
+            else:
+                create_page(
+                    markata,
+                    feed,
+                    cache,
+                )
 
     home = Path(str(markata.config.output_dir)) / "index.html"
     archive = Path(str(markata.config.output_dir)) / "archive" / "index.html"
@@ -613,6 +678,149 @@ def create_page(
     )
     if current_sitemap != feed_sitemap:
         sitemap_output_file.write_text(feed_sitemap)
+
+
+def create_paginated_feed(
+    markata: Markata,
+    feed: Feed,
+    cache,
+) -> None:
+    """
+    Create paginated feed pages.
+    """
+    posts = feed.posts
+    per_page = getattr(feed.config, "items_per_page", feed.config.per_page)
+    total_posts = len(posts)
+    total_pages = (total_posts + per_page - 1) // per_page
+
+    template = get_template(markata, feed.config.template)
+    partial_template = get_template(markata, feed.config.partial_template)
+    canonical_url = f"{markata.config.url}/{feed.config.slug}/"
+
+    for page_num in range(1, total_pages + 1):
+        start_idx = (page_num - 1) * per_page
+        end_idx = start_idx + per_page
+        page_posts = posts[start_idx:end_idx]
+
+        # Create pagination context
+        pagination_context = {
+            "current_page": page_num,
+            "total_pages": total_pages,
+            "total_posts": total_posts,
+            "per_page": per_page,
+            "has_prev": page_num > 1,
+            "has_next": page_num < total_pages,
+            "prev_page": page_num - 1 if page_num > 1 else None,
+            "next_page": page_num + 1 if page_num < total_pages else None,
+            "pagination_type": feed.config.pagination_type,
+        }
+
+        # Create a feed object with just the posts for this page
+        page_feed = Feed(config=feed.config, markata=feed.markata)
+        # Override the posts property for this page
+        page_feed._page_posts = page_posts
+
+        key = markata.make_hash(
+            "feeds",
+            "paginated",
+            template,
+            __version__,
+            markata.config.url,
+            markata.config.description,
+            feed.config.title,
+            [p.content for p in page_posts],
+            canonical_url,
+            page_num,
+            pagination_context,
+        )
+
+        html_key = markata.make_hash(key, "html")
+        html_partial_key = markata.make_hash(key, "partial_html")
+
+        # Determine output file paths
+        if page_num == 1:
+            # First page goes to the main feed index
+            output_file = (
+                Path(markata.config.output_dir) / feed.config.slug / "index.html"
+            )
+        else:
+            # Subsequent pages go to numbered subdirectories
+            output_file = (
+                Path(markata.config.output_dir)
+                / feed.config.slug
+                / str(page_num)
+                / "index.html"
+            )
+
+        partial_output_file = output_file.parent / "partial" / "index.html"
+        output_file.parent.mkdir(exist_ok=True, parents=True)
+        partial_output_file.parent.mkdir(exist_ok=True, parents=True)
+
+        # Check cache
+        feed_html_from_cache = markata.precache.get(html_key)
+        feed_html_partial_from_cache = markata.precache.get(html_partial_key)
+
+        from_cache = True
+        if feed_html_from_cache is None:
+            from_cache = False
+            feed_html = template.render(
+                markata=markata,
+                __version__=__version__,
+                post=feed.config.model_dump(),
+                url=markata.config.url,
+                config=markata.config,
+                feed=page_feed,
+                pagination_enabled=True,
+                pagination_config=pagination_context,
+                title=feed.config.title,
+                page=page_num,
+                total_pages=total_pages,
+                has_next=pagination_context["has_next"],
+                has_prev=pagination_context["has_prev"],
+                next_page=pagination_context["next_page"],
+                prev_page=pagination_context["prev_page"],
+                feed_name=feed.config.slug,
+                posts=page_posts,
+                page_posts=page_posts,
+            )
+            cache.set(html_key, feed_html)
+        else:
+            feed_html = feed_html_from_cache
+
+        if feed_html_partial_from_cache is None:
+            from_cache = False
+            # For HTMX partials, use items-only template to avoid duplicating page structure
+            items_partial_template = get_template(markata, "feed_items_partial.html")
+            feed_html_partial = items_partial_template.render(
+                markata=markata,
+                __version__=__version__,
+                post=feed.config.model_dump(),
+                url=markata.config.url,
+                config=markata.config,
+                feed=page_feed,
+                card_template=feed.config.card_template,
+                posts=page_posts,
+                page_posts=page_posts,
+                has_next=pagination_context["has_next"],
+                next_page=pagination_context["next_page"],
+                feed_name=feed.config.slug,
+            )
+            cache.set(html_partial_key, feed_html_partial)
+        else:
+            feed_html_partial = feed_html_partial_from_cache
+
+        if from_cache and output_file.exists() and partial_output_file.exists():
+            continue
+
+        current_html = output_file.read_text() if output_file.exists() else ""
+        if current_html != feed_html:
+            output_file.write_text(feed_html)
+
+        current_partial_html = (
+            partial_output_file.read_text() if partial_output_file.exists() else ""
+        )
+        if current_partial_html != feed_html_partial:
+            partial_output_file.write_text(feed_html_partial)
 
 
 @background.task
@@ -776,7 +984,7 @@ class Feeds(JupyterMixin):
         for feed_config in self.markata.config.feeds:
             # Ensure feed has a name, falling back to slug if needed
             if feed_config.name is None and feed_config.slug is not None:
-                feed_config.name = feed_config.slug.replace("-", "_")
+                feed_config.name = to_pythonic_identifier(str(feed_config.slug))
             elif feed_config.name is None and feed_config.slug is None:
                 feed_config.slug = "archive"
                 feed_config.name = "archive"
@@ -797,10 +1005,10 @@ class Feeds(JupyterMixin):
         return [(key, self[key]) for key in self.config]
 
     def __getitem__(self, key: str) -> Any:
-        return getattr(self, key.replace("-", "_").lower())
+        return getattr(self, to_pythonic_identifier(str(key)))
 
     def get(self, key: str, default: Any = None) -> Any:
-        return getattr(self, key.replace("-", "_").lower(), default)
+        return getattr(self, to_pythonic_identifier(str(key)), default)
 
     def _dict_panel(self, config) -> str:
         """pretty print configs with rich"""

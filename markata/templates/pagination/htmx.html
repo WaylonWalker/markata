@@ -1,0 +1,102 @@
+{% if config.pagination_type == 'htmx' %}
+<!-- HTMX infinite scroll -->
+<div id="feed-items" class="feed-container">
+  <!-- Initial page items rendered here -->
+</div>
+
+<!-- Infinite scroll trigger -->
+{% if has_next %}
+<div id="load-more-trigger" 
+     hx-get="{{ feed_name }}/page/{{ next_page }}/"
+     hx-target="#feed-items"
+     hx-swap="beforeend"
+     hx-trigger="revealed"
+     hx-indicator=".loading-indicator"
+     hx-push-url="true">
+</div>
+
+<!-- Loading indicator -->
+<div class="loading-indicator htmx-indicator" style="display: none;">
+  <div class="spinner"></div>
+  <span>Loading more...</span>
+</div>
+
+<!-- Fallback for no-JS -->
+<noscript>
+  <style>
+    .htmx-indicator { display: none !important; }
+    #load-more-trigger { display: none !important; }
+  </style>
+  {% include 'pagination/manual.html' %}
+</noscript>
+
+<!-- End message -->
+{% elif config.show_end_message %}
+<div class="end-message">
+  <p>You've reached the end of this feed!</p>
+</div>
+{% endif %}
+
+<!-- Include HTMX from CDN -->
+<script src="https://unpkg.com/htmx.org@1.9.10"></script>
+
+<style>
+.feed-container {
+  min-height: 100vh;
+}
+
+.loading-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 2rem;
+  color: var(--text-color-muted, #6b7280);
+}
+
+.spinner {
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 2px solid var(--border-color, #e5e7eb);
+  border-top: 2px solid var(--primary-bg, #3b82f6);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.end-message {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-color-muted, #6b7280);
+  font-style: italic;
+  border-top: 1px solid var(--border-color, #e5e7eb);
+  margin-top: 2rem;
+}
+
+/* Skeleton loading for better perceived performance */
+.htmx-request .loading-indicator {
+  display: flex !important;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .loading-indicator,
+  .end-message {
+    color: var(--text-color-muted-dark, #9ca3af);
+  }
+  
+  .spinner {
+    border-color: var(--border-color-dark, #374151);
+    border-top-color: var(--primary-bg-dark, #2563eb);
+  }
+  
+  .end-message {
+    border-color: var(--border-color-dark, #374151);
+  }
+}
+</style>
+{% endif %}

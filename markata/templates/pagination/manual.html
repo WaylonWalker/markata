@@ -1,0 +1,168 @@
+{% if config.pagination_type == 'manual' %}
+<nav class="pagination" role="navigation" aria-label="Pagination">
+  <div class="pagination-info">
+    <span>Page {{ page }} of {{ total_pages }}</span>
+  </div>
+  
+  <div class="pagination-links">
+    {% if has_prev %}
+      <a href="{{ feed_name }}/" class="page-link" aria-label="First page">First</a>
+      {% if prev_page > 1 %}
+        <a href="{{ feed_name }}/page/{{ prev_page }}/" class="page-link" aria-label="Previous page">Previous</a>
+      {% else %}
+        <a href="{{ feed_name }}/" class="page-link" aria-label="Previous page">Previous</a>
+      {% endif %}
+    {% endif %}
+    
+    {% if show_all_pages %}
+      {% for page_num in page_range %}
+        {% if page_num == page %}
+          <span class="page-link current" aria-current="page">{{ page_num }}</span>
+        {% else %}
+          {% if page_num == 1 %}
+            <a href="{{ feed_name }}/" class="page-link">{{ page_num }}</a>
+          {% else %}
+            <a href="{{ feed_name }}/page/{{ page_num }}/" class="page-link">{{ page_num }}</a>
+          {% endif %}
+        {% endif %}
+      {% endfor %}
+    {% else %}
+      {% for page_num in page_range %}
+        {% if page_num == page %}
+          <span class="page-link current" aria-current="page">{{ page_num }}</span>
+        {% else %}
+          {% if page_num == 1 %}
+            <a href="{{ feed_name }}/" class="page-link">{{ page_num }}</a>
+          {% else %}
+            <a href="{{ feed_name }}/page/{{ page_num }}/" class="page-link">{{ page_num }}</a>
+          {% endif %}
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+    
+    {% if has_next %}
+      <a href="{{ feed_name }}/page/{{ next_page }}/" class="page-link" aria-label="Next page">Next</a>
+      <a href="{{ feed_name }}/page/{{ total_pages }}/" class="page-link" aria-label="Last page">Last</a>
+    {% endif %}
+  </div>
+  
+  {% if config.show_end_message and not has_next %}
+    <div class="end-message">
+      <p>You've reached the end of this feed!</p>
+    </div>
+  {% endif %}
+</nav>
+
+<style>
+.pagination {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  margin: 2rem 0;
+  padding: 1rem;
+  background: var(--bg-color, #fff);
+  border-radius: 8px;
+  border: 1px solid var(--border-color, #e5e7eb);
+}
+
+.pagination-info {
+  font-size: 0.875rem;
+  color: var(--text-color-muted, #6b7280);
+}
+
+.pagination-links {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.page-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.5rem;
+  height: 2.5rem;
+  padding: 0 0.75rem;
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 6px;
+  background: var(--bg-color, #fff);
+  color: var(--text-color, #374151);
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.page-link:hover {
+  background: var(--hover-bg, #f3f4f6);
+  border-color: var(--hover-border, #d1d5db);
+  color: var(--text-color, #374151);
+}
+
+.page-link.current {
+  background: var(--primary-bg, #3b82f6);
+  border-color: var(--primary-border, #3b82f6);
+  color: var(--primary-text, #fff);
+  font-weight: 600;
+}
+
+.page-link[aria-label="First page"],
+.page-link[aria-label="Last page"] {
+  font-size: 0.75rem;
+  min-width: auto;
+  padding: 0 0.5rem;
+}
+
+.end-message {
+  text-align: center;
+  color: var(--text-color-muted, #6b7280);
+  font-style: italic;
+  margin-top: 1rem;
+}
+
+/* Responsive design */
+@media (max-width: 640px) {
+  .pagination-links {
+    gap: 0.25rem;
+  }
+  
+  .page-link {
+    min-width: 2rem;
+    height: 2rem;
+    padding: 0 0.5rem;
+    font-size: 0.75rem;
+  }
+  
+  .page-link[aria-label="First page"],
+  .page-link[aria-label="Last page"] {
+    display: none;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .pagination {
+    background: var(--bg-color-dark, #1f2937);
+    border-color: var(--border-color-dark, #374151);
+  }
+  
+  .page-link {
+    background: var(--bg-color-dark, #1f2937);
+    border-color: var(--border-color-dark, #374151);
+    color: var(--text-color-dark, #f9fafb);
+  }
+  
+  .page-link:hover {
+    background: var(--hover-bg-dark, #374151);
+    border-color: var(--hover-border-dark, #4b5563);
+  }
+  
+  .pagination-info,
+  .end-message {
+    color: var(--text-color-muted-dark, #9ca3af);
+  }
+}
+</style>
+{% endif %}

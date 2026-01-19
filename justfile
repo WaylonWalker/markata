@@ -34,6 +34,7 @@ lint:
 build-docs:
     #!/usr/bin/env bash
     set -euxo pipefail
+    . ./.venv/bin/activate
     markata build
 
 serve:

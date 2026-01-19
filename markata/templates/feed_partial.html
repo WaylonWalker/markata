@@ -1,12 +1,193 @@
 <article>
     <header class='sticky top-0 pt-4 bg-neutral-800'>
         <h1 class='p-0 m-0'>{{ title }}</h1>
+        {% if pagination_enabled %}
+        <div class="pagination-info text-neutral-400 text-sm mb-4">
+            <span>Page {{ page }} of {{ total_pages }}</span>
+            <span class="ml-4">Showing {{ posts|length }} items</span>
+        </div>
+        {% endif %}
     </header>
     <div>
         <ul id='feed' class='px-0 mx-0 list-none'>
-            {% for post in feed.posts %}
+            {% for post in posts %}
             {% include card_template or feed.config.card_template or config.feeds.card_template %}
             {% endfor %}
         </ul>
+        
+        {% if pagination_enabled %}
+        {% set config = pagination_config %}
+        
+        {% if config.pagination_type == 'manual' or config.pagination_type != 'htmx' %}
+        <!-- For manual and JS pagination, show full wrapper with controls -->
+        <div class="pagination-controls mt-8 flex justify-center space-x-4">
+            {% if prev_page %}
+            {% if page > 2 %}
+            <a href="/{{ feed_name }}/{{ prev_page }}/" 
+            {% else %}
+            <a href="/{{ feed_name }}/" 
+            {% endif %}
+               class="px-4 py-2 bg-neutral-700 text-white rounded hover:bg-neutral-600 transition">
+                ← Previous
+            </a>
+            {% endif %}
+            
+            <span class="px-4 py-2 text-neutral-400">
+                {{ page }} / {{ total_pages }}
+            </span>
+            
+            {% if has_next %}
+            <a href="/{{ feed_name }}/{{ next_page }}/" 
+               class="px-4 py-2 bg-neutral-700 text-white rounded hover:bg-neutral-600 transition">
+                Next →
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        {% if config.pagination_type == 'htmx' %}
+        <!-- For HTMX, only show load more trigger -->
+        {% if has_next %}
+        <div id="load-more-trigger" 
+             hx-get="/{{ feed_name }}/{{ next_page }}/partial/"
+             hx-target="#feed"
+             hx-swap="beforeend"
+             hx-trigger="revealed"
+             hx-indicator=".loading-indicator"
+             hx-push-url="/{{ feed_name }}/{{ next_page }}/">
+        </div>
+        {% endif %}
+
+        <div class="loading-indicator htmx-indicator" style="display: none;">
+          <div class="spinner"></div>
+          <span>Loading more...</span>
+        </div>
+        
+        <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+        {% endif %}
+        
+        {% if config.pagination_type == 'js' %}
+        <div id="scroll-trigger" style="height: 1px;"></div>
+
+        <div class="loading-indicator" style="display: none;">
+          <div class="spinner"></div>
+          <span>Loading more...</span>
+        </div>
+
+        <script>
+        // Feature detection and initialization
+        if ('IntersectionObserver' in window && {{ config.pagination_type|tojson }} === 'js') {
+          class InfiniteScroll {
+            constructor() {
+              this.currentPage = {{ page }};
+              this.totalPages = {{ total_pages }};
+              this.feedName = {{ feed_name|tojson }};
+              this.loading = false;
+              
+              this.setupObserver();
+            }
+            
+            setupObserver() {
+              const trigger = document.getElementById('scroll-trigger');
+              if (!trigger) return;
+              
+              const observer = new IntersectionObserver((entries) => {
+                if (entries[0].isIntersecting && !this.loading) {
+                  this.loadMore();
+                }
+              }, { 
+                rootMargin: '100px' 
+              });
+              
+              observer.observe(trigger);
+            }
+            
+            async loadMore() {
+              if (this.currentPage >= this.totalPages) return;
+              
+              this.loading = true;
+              this.showLoading();
+              
+              try {
+                const nextPage = this.currentPage + 1;
+                const response = await fetch(`/${this.feedName}/${nextPage}/`);
+                const html = await response.text();
+                
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const newItems = doc.querySelectorAll('#feed li');
+                const container = document.getElementById('feed');
+                
+                newItems.forEach(item => container.appendChild(item));
+                
+                this.currentPage = nextPage;
+                
+                // Update URL for bookmarkability
+                if (history.pushState) {
+                  history.pushState({}, '', `/${this.feedName}/${nextPage}/`);
+                }
+                
+                // Remove trigger if this was the last page
+                if (this.currentPage >= this.totalPages) {
+                  const trigger = document.getElementById('scroll-trigger');
+                  if (trigger) trigger.remove();
+                }
+                
+              } catch (error) {
+                console.error('Failed to load more content:', error);
+              } finally {
+                this.loading = false;
+                this.hideLoading();
+              }
+            }
+            
+            showLoading() {
+              const indicator = document.querySelector('.loading-indicator');
+              if (indicator) indicator.style.display = 'flex';
+            }
+            
+            hideLoading() {
+              const indicator = document.querySelector('.loading-indicator');
+              if (indicator) indicator.style.display = 'none';
+            }
+          }
+          
+          // Initialize when DOM is ready
+          if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+              new InfiniteScroll();
+            });
+          } else {
+            new InfiniteScroll();
+          }
+        }
+        </script>
+
+        <style>
+        .loading-indicator {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.75rem;
+          padding: 2rem;
+          color: var(--text-color-muted, #6b7280);
+        }
+
+        .spinner {
+          width: 1.5rem;
+          height: 1.5rem;
+          border: 2px solid var(--border-color, #e5e7eb);
+          border-top: 2px solid var(--primary-bg, #3b82f6);
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        </style>
+        {% endif %}
+        {% endif %}
     </div>
 </article>
