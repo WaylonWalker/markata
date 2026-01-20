@@ -3,9 +3,25 @@
         <h1 class='p-0 m-0'>{{ title }}</h1>
         {% if pagination_enabled %}
         <div class="pagination-info text-neutral-400 text-sm mb-4">
-            <span>Page {{ page }} of {{ total_pages }}</span>
-            <span class="ml-4">Showing {{ posts|length }} items</span>
+            <span>Page <span id="current-page">{{ page }}</span> of {{ total_pages }}</span>
+            <span class="ml-4">Showing <span id="items-shown">{{ posts|length }}</span> of {{ total_posts }} items</span>
         </div>
+        {% endif %}
+
+        {% if pagination_enabled and config.pagination_type == 'js' %}
+        <script>
+        window.paginationData = {
+            enabled: {{ pagination_enabled|tojson }},
+            type: {{ config.pagination_type|tojson }},
+            page: {{ page|tojson }},
+            totalPages: {{ total_pages|tojson }},
+            totalPosts: {{ total_posts|tojson }},
+            itemsShown: {{ posts|length|tojson }},
+            feedName: {{ feed_name|tojson }},
+            hasNext: {{ has_next|tojson }},
+            config: {{ config|tojson }}
+        };
+        </script>
         {% endif %}
     </header>
     <div>
@@ -73,6 +89,23 @@
           <div class="spinner"></div>
           <span>Loading more...</span>
         </div>
+        {% endif %}
+
+        <div class="loading-indicator htmx-indicator" style="display: none;">
+          <div class="spinner"></div>
+          <span>Loading more...</span>
+        </div>
+        
+        <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+        {% endif %}
+        
+        {% if config.pagination_type == 'js' %}
+        <div id="scroll-trigger" style="height: 1px;"></div>
+
+        <div class="loading-indicator" style="display: none;">
+          <div class="spinner"></div>
+          <span>Loading more...</span>
+        </div>
 
         <script>
         // Feature detection and initialization
@@ -81,6 +114,8 @@
             constructor() {
               this.currentPage = {{ page }};
               this.totalPages = {{ total_pages }};
+              this.totalPosts = {{ total_posts }};
+              this.itemsShown = {{ posts|length }};
               this.feedName = {{ feed_name|tojson }};
               this.loading = false;
               
@@ -88,10 +123,10 @@
             }
             
             setupObserver() {
-              const trigger = document.getElementById('scroll-trigger');
-              if (!trigger) return;
+              // Create a persistent element at the bottom to observe
+              this.createPersistentTrigger();
               
-              const observer = new IntersectionObserver((entries) => {
+              this.observer = new IntersectionObserver((entries) => {
                 if (entries[0].isIntersecting && !this.loading) {
                   this.loadMore();
                 }
@@ -99,7 +134,33 @@
                 rootMargin: '100px' 
               });
               
-              observer.observe(trigger);
+              this.observeTrigger();
+            }
+            
+            createPersistentTrigger() {
+              // Create a persistent trigger that won't be replaced
+              this.persistentTrigger = document.createElement('div');
+              this.persistentTrigger.id = 'js-scroll-trigger';
+              this.persistentTrigger.style.height = '1px';
+              this.persistentTrigger.style.width = '100%';
+              
+              // Insert it before the template trigger
+              const templateTrigger = document.getElementById('scroll-trigger');
+              if (templateTrigger) {
+                templateTrigger.parentNode.insertBefore(this.persistentTrigger, templateTrigger);
+              } else {
+                // Fallback: add to end of feed container
+                const feed = document.getElementById('feed');
+                if (feed) {
+                  feed.appendChild(this.persistentTrigger);
+                }
+              }
+            }
+            
+            observeTrigger() {
+              if (this.persistentTrigger && this.observer) {
+                this.observer.observe(this.persistentTrigger);
+              }
             }
             
             async loadMore() {
@@ -121,17 +182,27 @@
                 newItems.forEach(item => container.appendChild(item));
                 
                 this.currentPage = nextPage;
+                this.itemsShown += newItems.length;
+                
+                // Update pagination info
+                this.updatePaginationInfo();
                 
                 // Update URL for bookmarkability
                 if (history.pushState) {
                   history.pushState({}, '', `/${this.feedName}/${nextPage}/`);
                 }
                 
-                // Remove trigger if this was the last page
-                if (this.currentPage >= this.totalPages) {
-                  const trigger = document.getElementById('scroll-trigger');
-                  if (trigger) trigger.remove();
-                }
+        // Re-observe trigger for the next page
+        if (this.currentPage < this.totalPages) {
+          // No need to re-observe, our persistent trigger stays in place
+          // Just ensure it's still being observed
+          this.observeTrigger();
+        } else {
+          // Remove our persistent trigger if this was the last page
+          if (this.persistentTrigger) {
+            this.persistentTrigger.remove();
+          }
+        }
                 
               } catch (error) {
                 console.error('Failed to load more content:', error);
@@ -149,6 +220,14 @@
             hideLoading() {
               const indicator = document.querySelector('.loading-indicator');
               if (indicator) indicator.style.display = 'none';
+            }
+            
+            updatePaginationInfo() {
+              const currentPageEl = document.getElementById('current-page');
+              const itemsShownEl = document.getElementById('items-shown');
+              
+              if (currentPageEl) currentPageEl.textContent = this.currentPage;
+              if (itemsShownEl) itemsShownEl.textContent = this.itemsShown;
             }
           }
           

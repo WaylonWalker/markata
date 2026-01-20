@@ -196,26 +196,40 @@ import warnings
 from functools import lru_cache
 from pathlib import Path
 from typing import TYPE_CHECKING
-from typing import Any
-from typing import List
-from typing import Optional
+from urllib.request import urlopen
 
-import jinja2
+import frontmatter
 import pydantic
-import typer
-from jinja2 import Template
-from jinja2 import Undefined
-from pydantic import ConfigDict
-from pydantic import field_validator
-from rich.jupyter import JupyterMixin
-from rich.pretty import Pretty
-from rich.table import Table
 
-from markata import Markata
-from markata import __version__
-from markata import background
-from markata.errors import DeprecationWarning
 from markata.hookspec import hook_impl
+from markata import background
+from typing import Optional, TYPE_CHECKING, Dict, List, Union, Any
+import jinja2
+from jinja2 import Environment, Undefined
+
+if TYPE_CHECKING:
+    pass  # rich imports available at runtime
+else:
+    from rich.jupyter import JupyterMixin
+    from rich.table import Table
+    from rich.console import Console
+    from rich.pretty import Pretty
+    from rich.jupyter import JupyterMixin
+from rich.table import Table
+from rich.console import Console
+from rich.pretty import Pretty
+import typer
+
+# Import JupyterMixin at runtime when needed
+if not TYPE_CHECKING:
+    JupyterMixin = type("JupyterMixin", (), {})
+
+from pydantic import ConfigDict, Field, field_validator
+
+# Import Markata at module level for type annotations
+Markata = None
+if TYPE_CHECKING:
+    from markata import Markata as MarkataType
 from markata.hookspec import register_attr
 
 if TYPE_CHECKING:
@@ -270,12 +284,13 @@ def to_pythonic_identifier(name: str) -> str:
     return pythonic
 
 
-class SilentUndefined(Undefined):
-    def _fail_with_undefined_error(self, *args, **kwargs):
-        return ""
+if TYPE_CHECKING:
 
+    class SilentUndefined(Undefined):
+        def _fail_with_undefined_error(self, *args, **kwargs):
+            return ""
 
-class MarkataFilterError(RuntimeError): ...
+    class MarkataFilterError(RuntimeError): ...
 
 
 class FeedConfig(pydantic.BaseModel, JupyterMixin):
@@ -341,7 +356,7 @@ class FeedConfig(pydantic.BaseModel, JupyterMixin):
         return self.markata.console
 
     @property
-    def __rich__(self) -> Pretty:
+    def __rich__(self):
         return lambda: Pretty(self)
 
 
@@ -351,8 +366,9 @@ class Feed(pydantic.BaseModel, JupyterMixin):
     ## Usage
 
     ``` python
-    from markata import Markata
-    m = Markata()
+    if not TYPE_CHECKING:
+        from markata import Markata
+        m = Markata()
 
     # access posts for a feed
     m.feeds.docs.posts
@@ -363,7 +379,7 @@ class Feed(pydantic.BaseModel, JupyterMixin):
     """
 
     config: FeedConfig
-    markata: Markata = pydantic.Field(exclude=True)
+    markata: Any = Field(exclude=True)
 
     model_config = ConfigDict(
         validate_assignment=False,
@@ -448,6 +464,7 @@ class MarkataTemplateCache(jinja2.BytecodeCache):
 
 class FeedsConfig(pydantic.BaseModel):
     feeds: List[FeedConfig] = [FeedConfig(slug="archive")]
+    htmx_version: str = "2.0.8"
 
     @property
     def jinja_env(self):
@@ -485,8 +502,138 @@ class PrettyList(list, JupyterMixin):
 
 
 @hook_impl(tryfirst=True)
+@register_attr("config_models")
 def config_model(markata: Markata) -> None:
     markata.config_models.append(FeedsConfig)
+
+
+@hook_impl(tryfirst=True)
+def htmx_config_model(markata: Markata) -> None:
+    """Register HTMX configuration model with validation."""
+
+    class HtmxConfig(pydantic.BaseModel):
+        version: str = "2.0.8"
+
+        model_config = ConfigDict(
+            validate_assignment=True,
+            extra="forbid",
+        )
+
+    markata.config_models.append(HtmxConfig)
+
+
+@hook_impl
+def configure(markata: Markata) -> None:
+    """
+    Configure feeds during configuration phase.
+    """
+    _download_htmx_if_needed(markata)
+
+
+def _download_htmx_if_needed(markata: Markata) -> None:
+    """
+    Download HTMX library to static directory if needed.
+    """
+    htmx_version = markata.config.htmx_version
+    htmx_filename = f"htmx.org@{htmx_version}.min.js"
+    htmx_static_path = Path(markata.config.output_dir) / "static" / "js" / htmx_filename
+    htmx_url = f"https://unpkg.com/htmx.org@{htmx_version}/dist/htmx.min.js"
+
+    # Download if file doesn't exist
+    if not htmx_static_path.exists():
+        try:
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", category=ResourceWarning)
+
+                # Ensure static/js directory exists
+                htmx_static_path.parent.mkdir(parents=True, exist_ok=True)
+
+                # Download HTMX
+                with urlopen(htmx_url) as response:
+                    content = response.read()
+                    htmx_static_path.write_bytes(content)
+
+            markata.console.print(
+                f"Downloaded HTMX {htmx_version} to {htmx_static_path}"
+            )
+
+        except Exception as e:
+            markata.console.warn(f"Failed to download HTMX: {e}")
+            # Fallback to CDN if download fails
+            return False
+
+    return True
+
+
+def _ensure_head_links(markata: Markata) -> None:
+    """
+    Ensure pagination CSS and JS links are in markata.config.head.link
+    without duplicating existing links.
+    """
+    pagination_css_href = "/static/css/pagination.css"
+    pagination_js_href = "/static/js/pagination.js"
+    htmx_version = markata.config.htmx_version
+    htmx_filename = f"htmx.org@{htmx_version}.min.js"
+    htmx_static_href = f"/static/js/{htmx_filename}"
+
+    # Try to download HTMX first
+    if not _download_htmx_if_needed(markata):
+        # Fallback to CDN if download fails
+        htmx_cdn_href = f"https://unpkg.com/htmx.org@{htmx_version}"
+    else:
+        htmx_cdn_href = htmx_static_href
+
+    # Helper function to get href from link (supports both dicts and objects)
+    def get_href(link):
+        if hasattr(link, "href"):
+            return link.href
+        return link.get("href", "")
+
+    # Helper function to get src from script (supports both dicts and objects)
+    def get_src(script):
+        if hasattr(script, "src"):
+            return script.src
+        return script.get("src", "")
+
+    # Check if pagination CSS is already in head.links
+    css_exists = any(
+        get_href(link) == pagination_css_href for link in markata.config.head.link
+    )
+
+    # Add CSS link if not already present
+    if not css_exists:
+        markata.config.head.link.append(
+            {"rel": "stylesheet", "href": pagination_css_href}
+        )
+
+    # Check if pagination JS is already in head.script
+    js_exists = any(
+        get_src(script) == pagination_js_href for script in markata.config.head.script
+    )
+
+    # Add JS link if not already present
+    if not js_exists:
+        markata.config.head.script.append({"src": pagination_js_href})
+
+    # Check if HTMX is already in head.script
+    htmx_exists = any(
+        get_src(script) in [htmx_cdn_href, htmx_static_href]
+        for script in markata.config.head.script
+    )
+
+    # Add HTMX link if not already present
+    if not htmx_exists:
+        markata.config.head.script.append({"src": htmx_cdn_href})
+
+    # Add HTMX CDN link if not already present
+    if not htmx_exists:
+        markata.config.head.script.append({"src": htmx_cdn_href})
+
+    # Add CSS link if not already present
+    if not css_exists:
+        markata.config.head.link.append(
+            {"rel": "stylesheet", "href": pagination_css_href}
+        )
 
 
 @hook_impl
@@ -522,6 +669,7 @@ def save(markata: Markata) -> None:
     """
     Creates a new feed page for each page in the config.
     """
+    _ensure_head_links(markata)
     with markata.cache as cache:
         for feed in markata.feeds.values():
             if feed.config.enabled:
@@ -774,6 +922,7 @@ def create_paginated_feed(
                 title=feed.config.title,
                 page=page_num,
                 total_pages=total_pages,
+                total_posts=total_posts,
                 has_next=pagination_context["has_next"],
                 has_prev=pagination_context["has_prev"],
                 next_page=pagination_context["next_page"],
@@ -803,6 +952,10 @@ def create_paginated_feed(
                 has_next=pagination_context["has_next"],
                 next_page=pagination_context["next_page"],
                 feed_name=feed.config.slug,
+                page=page_num,
+                total_pages=total_pages,
+                total_posts=total_posts,
+                pagination_context=pagination_context,
             )
             cache.set(html_partial_key, feed_html_partial)
         else:

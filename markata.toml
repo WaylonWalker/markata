@@ -28,6 +28,9 @@ markdown_backend = 'markdown-it-py'
 default_cache_expire = 1209600
 # subroute = "docs"
 
+# HTMX version for pagination
+htmx_version = "2.0.8"
+
 # set the subroute if you are deploying to a subroute of a site
 # make sure you enable the subroute plugin
 # subroute = "docs"
