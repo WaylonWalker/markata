@@ -196,40 +196,42 @@ import warnings
 from functools import lru_cache
 from pathlib import Path
 from typing import TYPE_CHECKING
+from typing import Any
+from typing import List
+from typing import Optional
 from urllib.request import urlopen
 
-import frontmatter
-import pydantic
-
-from markata.hookspec import hook_impl
-from markata import background
-from typing import Optional, TYPE_CHECKING, Dict, List, Union, Any
 import jinja2
-from jinja2 import Environment, Undefined
+import pydantic
+from jinja2 import Undefined
+
+from markata import background
+from markata.hookspec import hook_impl
 
 if TYPE_CHECKING:
     pass  # rich imports available at runtime
 else:
-    from rich.jupyter import JupyterMixin
-    from rich.table import Table
     from rich.console import Console
-    from rich.pretty import Pretty
     from rich.jupyter import JupyterMixin
-from rich.table import Table
+    from rich.pretty import Pretty
+    from rich.table import Table
+import typer
 from rich.console import Console
 from rich.pretty import Pretty
-import typer
+from rich.table import Table
 
 # Import JupyterMixin at runtime when needed
 if not TYPE_CHECKING:
     JupyterMixin = type("JupyterMixin", (), {})
 
-from pydantic import ConfigDict, Field, field_validator
+from pydantic import ConfigDict
+from pydantic import Field
+from pydantic import field_validator
 
 # Import Markata at module level for type annotations
 Markata = None
 if TYPE_CHECKING:
-    from markata import Markata as MarkataType
+    pass
 from markata.hookspec import register_attr
 
 if TYPE_CHECKING:
