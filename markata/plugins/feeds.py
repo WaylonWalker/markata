@@ -230,11 +230,12 @@ from pydantic import ConfigDict
 from pydantic import Field
 from pydantic import field_validator
 
+from markata.hookspec import register_attr
+
 # Import Markata at module level for type annotations
 Markata = None
 if TYPE_CHECKING:
     pass
-from markata.hookspec import register_attr
 
 if TYPE_CHECKING:
     from frontmatter import Post
