@@ -403,9 +403,21 @@ class Feed(pydantic.BaseModel, JupyterMixin):
 
     @property
     def posts(self):
-        # If this is a paginated page with specific posts, return those
-        if hasattr(self, "_page_posts"):
-            return PrettyList(self._page_posts)
+        # Get posts from instance state or compute normally
+        return self._get_posts()
+
+    def _get_posts(self, override_posts=None):
+        """
+        Get posts with optional override for pagination.
+
+        Args:
+            override_posts: If provided, returns these posts instead of computing
+
+        Returns:
+            PrettyList of posts
+        """
+        if override_posts is not None:
+            return PrettyList(override_posts)
 
         posts = self.map("post")
         if self.config.head is not None and self.config.tail is not None:
@@ -537,12 +549,25 @@ def configure(markata: Markata) -> None:
 
 def _download_htmx_if_needed(markata: Markata) -> None:
     """
-    Download HTMX library to static directory if needed.
+    Download HTMX library to static directory if needed with integrity verification.
     """
+    import hashlib
+    from urllib.request import Request
+    from urllib.error import URLError, HTTPError
+
     htmx_version = markata.config.htmx_version
     htmx_filename = f"htmx.org@{htmx_version}.min.js"
     htmx_static_path = Path(markata.config.output_dir) / "static" / "js" / htmx_filename
     htmx_url = f"https://unpkg.com/htmx.org@{htmx_version}/dist/htmx.min.js"
+
+    # Known SHA-256 hash for HTMX 1.9.10
+    HTMX_INTEGRITY_HASHES = {
+        "1.9.10": "b3bdcf5c741897a53648b1207fff0469a0d61901429ba1f6e88f98ebd84e669e"
+    }
+
+    expected_hash = HTMX_INTEGRITY_HASHES.get(htmx_version)
+    if not expected_hash:
+        raise ValueError(f"No integrity hash available for HTMX version {htmx_version}")
 
     # Download if file doesn't exist
     if not htmx_static_path.exists():
@@ -553,21 +578,71 @@ def _download_htmx_if_needed(markata: Markata) -> None:
                 # Ensure static/js directory exists
                 htmx_static_path.parent.mkdir(parents=True, exist_ok=True)
 
-                # Download HTMX
-                with urlopen(htmx_url) as response:
+                # Download HTMX with timeout and integrity verification
+                request = Request(htmx_url, headers={"User-Agent": "Markata/1.0"})
+                with urlopen(request, timeout=10) as response:
                     content = response.read()
+
+                    # Verify content integrity
+                    actual_hash = hashlib.sha256(content).hexdigest()
+                    if actual_hash != expected_hash:
+                        raise ValueError(
+                            f"HTMX integrity check failed. Expected: {expected_hash}, Got: {actual_hash}"
+                        )
+
                     htmx_static_path.write_bytes(content)
 
             markata.console.print(
-                f"Downloaded HTMX {htmx_version} to {htmx_static_path}"
+                f"Downloaded HTMX {htmx_version} to {htmx_static_path} (verified)"
             )
 
+        except (URLError, HTTPError, ValueError) as e:
+            markata.console.error(f"Failed to download HTMX: {e}")
+            # Critical security: no fallback to CDN
+            raise RuntimeError(
+                f"HTMX download failed: {e}. Cannot proceed without verified HTMX."
+            )
         except Exception as e:
-            markata.console.warn(f"Failed to download HTMX: {e}")
-            # Fallback to CDN if download fails
-            return False
+            markata.console.error(f"Unexpected error downloading HTMX: {e}")
+            raise RuntimeError(f"HTMX download failed: {e}")
 
     return True
+
+
+def _sanitize_feed_slug(slug: str) -> str:
+    """
+    Sanitize feed slug to prevent path traversal attacks.
+
+    Args:
+        slug: User-provided feed slug
+
+    Returns:
+        Sanitized slug safe for filesystem use
+
+    Raises:
+        ValueError: If slug contains dangerous characters
+    """
+    import os
+    import re
+
+    if not slug:
+        raise ValueError("Feed slug cannot be empty")
+
+    # Remove path traversal sequences
+    if ".." in slug or "/" in slug or "\\" in slug:
+        raise ValueError(f"Invalid characters in feed slug: {slug}")
+
+    # Only allow alphanumeric characters, hyphens, and underscores
+    if not re.match(r"^[a-zA-Z0-9_-]+$", slug):
+        raise ValueError(f"Feed slug contains invalid characters: {slug}")
+
+    # Use os.path.basename for additional safety
+    safe_slug = os.path.basename(slug)
+
+    if safe_slug != slug:
+        raise ValueError(f"Feed slug was modified during sanitization: {slug}")
+
+    return safe_slug
 
 
 def _ensure_head_links(markata: Markata) -> None:
@@ -629,16 +704,6 @@ def _ensure_head_links(markata: Markata) -> None:
     # Add HTMX link if not already present
     if not htmx_exists:
         markata.config.head.script.append({"src": htmx_cdn_href})
-
-    # Add HTMX CDN link if not already present
-    if not htmx_exists:
-        markata.config.head.script.append({"src": htmx_cdn_href})
-
-    # Add CSS link if not already present
-    if not css_exists:
-        markata.config.head.link.append(
-            {"rel": "stylesheet", "href": pagination_css_href}
-        )
 
 
 @hook_impl
@@ -719,7 +784,10 @@ def create_page(
 
     template = get_template(markata, feed.config.template)
     partial_template = get_template(markata, feed.config.partial_template)
-    canonical_url = f"{markata.config.url}/{feed.config.slug}/"
+
+    # Security: Sanitize feed slug to prevent path traversal attacks
+    safe_slug = _sanitize_feed_slug(feed.config.slug)
+    canonical_url = f"{markata.config.url}/{safe_slug}/"
 
     key = markata.make_hash(
         "feeds",
@@ -745,20 +813,18 @@ def create_page(
     feed_rss_from_cache = markata.precache.get(feed_rss_key)
     feed_sitemap_from_cache = markata.precache.get(feed_sitemap_key)
 
-    output_file = Path(markata.config.output_dir) / feed.config.slug / "index.html"
+    output_file = Path(markata.config.output_dir) / safe_slug / "index.html"
     output_file.parent.mkdir(exist_ok=True, parents=True)
 
     partial_output_file = (
-        Path(markata.config.output_dir) / feed.config.slug / "partial" / "index.html"
+        Path(markata.config.output_dir) / safe_slug / "partial" / "index.html"
     )
     partial_output_file.parent.mkdir(exist_ok=True, parents=True)
 
-    rss_output_file = Path(markata.config.output_dir) / feed.config.slug / "rss.xml"
+    rss_output_file = Path(markata.config.output_dir) / safe_slug / "rss.xml"
     rss_output_file.parent.mkdir(exist_ok=True, parents=True)
 
-    sitemap_output_file = (
-        Path(markata.config.output_dir) / feed.config.slug / "sitemap.xml"
-    )
+    sitemap_output_file = Path(markata.config.output_dir) / safe_slug / "sitemap.xml"
     sitemap_output_file.parent.mkdir(exist_ok=True, parents=True)
 
     from_cache = True
@@ -846,8 +912,11 @@ def create_paginated_feed(
     total_posts = len(posts)
     total_pages = (total_posts + per_page - 1) // per_page
 
+    # Security: Sanitize feed slug to prevent path traversal attacks
+    safe_slug = _sanitize_feed_slug(feed.config.slug)
+
     template = get_template(markata, feed.config.template)
-    canonical_url = f"{markata.config.url}/{feed.config.slug}/"
+    canonical_url = f"{markata.config.url}/{safe_slug}/"
 
     for page_num in range(1, total_pages + 1):
         start_idx = (page_num - 1) * per_page
@@ -867,10 +936,8 @@ def create_paginated_feed(
             "pagination_type": feed.config.pagination_type,
         }
 
-        # Create a feed object with just the posts for this page
+        # Create a feed object for this page (no state mutation)
         page_feed = Feed(config=feed.config, markata=feed.markata)
-        # Override the posts property for this page
-        page_feed._page_posts = page_posts
 
         key = markata.make_hash(
             "feeds",
@@ -892,14 +959,12 @@ def create_paginated_feed(
         # Determine output file paths
         if page_num == 1:
             # First page goes to the main feed index
-            output_file = (
-                Path(markata.config.output_dir) / feed.config.slug / "index.html"
-            )
+            output_file = Path(markata.config.output_dir) / safe_slug / "index.html"
         else:
             # Subsequent pages go to numbered subdirectories
             output_file = (
                 Path(markata.config.output_dir)
-                / feed.config.slug
+                / safe_slug
                 / str(page_num)
                 / "index.html"
             )
@@ -932,7 +997,7 @@ def create_paginated_feed(
                 has_prev=pagination_context["has_prev"],
                 next_page=pagination_context["next_page"],
                 prev_page=pagination_context["prev_page"],
-                feed_name=feed.config.slug,
+                feed_name=safe_slug,
                 posts=page_posts,
                 page_posts=page_posts,
             )
@@ -956,7 +1021,7 @@ def create_paginated_feed(
                 page_posts=page_posts,
                 has_next=pagination_context["has_next"],
                 next_page=pagination_context["next_page"],
-                feed_name=feed.config.slug,
+                feed_name=safe_slug,
                 page=page_num,
                 total_pages=total_pages,
                 total_posts=total_posts,

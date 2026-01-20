@@ -10,6 +10,7 @@
 
         {% if pagination_enabled and config.pagination_type == 'js' %}
         <script>
+        // Safe config data - only include essential pagination settings
         window.paginationData = {
             enabled: {{ pagination_enabled|tojson }},
             type: {{ config.pagination_type|tojson }},
@@ -19,7 +20,11 @@
             itemsShown: {{ posts|length|tojson }},
             feedName: {{ feed_name|tojson }},
             hasNext: {{ has_next|tojson }},
-            config: {{ config|tojson }}
+            config: {
+                pagination_type: {{ config.pagination_type|tojson }},
+                posts_per_page: {{ config.posts_per_page|tojson if config.posts_per_page is defined else 'null' }},
+                template: {{ config.template|tojson if config.template is defined else 'null' }}
+            }
         };
         </script>
         {% endif %}
