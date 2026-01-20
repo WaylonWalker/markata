@@ -203,8 +203,10 @@ from urllib.request import urlopen
 
 import jinja2
 import pydantic
+from jinja2 import Template
 from jinja2 import Undefined
 
+from markata import __version__
 from markata import background
 from markata.hookspec import hook_impl
 
