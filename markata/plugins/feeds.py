@@ -679,7 +679,7 @@ def _ensure_head_links(markata: Markata) -> None:
     """
     pagination_css_href = "/static/css/pagination.css"
     pagination_js_config_href = "/static/js/pagination-config.js"
-    pagination_js_href = "/static/js/pagination-js.js"
+    pagination_js_href = "/static/js/pagination.js"
     htmx_version = markata.config.htmx_version
     htmx_filename = f"htmx.org@{htmx_version}.min.js"
     htmx_static_href = f"/static/js/{htmx_filename}"
