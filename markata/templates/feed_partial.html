@@ -8,7 +8,7 @@
         </div>
         {% endif %}
 
-        {% if pagination_enabled and config.pagination_type == 'js' %}
+        {% if pagination_enabled and pagination_context.pagination_type == 'js' %}
         <script src="{{ pagination_js_url|default('/static/js/pagination-config.js') }}"></script>
         <script src="/static/js/pagination.js"></script>
         {% endif %}
@@ -23,8 +23,8 @@
         {% if pagination_enabled %}
         {% set pagination_config = pagination_context %}
         
-        {% if pagination_context.pagination_type == 'manual' or pagination_context.pagination_type != 'htmx' %}
-        <!-- For manual and JS pagination, show full wrapper with controls -->
+        {% if pagination_context.pagination_type == 'manual' %}
+        <!-- For manual pagination, show prev/next controls -->
         <div class="pagination-controls mt-8 flex justify-center space-x-4">
             {% if prev_page %}
             {% if page > 2 %}
@@ -68,7 +68,15 @@
           <span>Loading more...</span>
         </div>
         
-        <script src="/static/js/htmx.org@1.9.10.min.js"></script>
+        <script src="/static/js/htmx.min.js"></script>
+        <script>
+        function updatePaginationInfoForHTMX(currentPage, totalPages) {
+            const currentPageEl = document.getElementById('current-page');
+            if (currentPageEl) {
+                currentPageEl.textContent = currentPage;
+            }
+        }
+        </script>
         {% endif %}
         
         {% if pagination_context.pagination_type == 'js' %}

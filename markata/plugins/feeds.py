@@ -546,6 +546,7 @@ def configure(markata: Markata) -> None:
     Configure feeds during configuration phase.
     """
     _download_htmx_if_needed(markata)
+    _copy_pagination_static_files(markata, Path(markata.config.output_dir))
 
 
 def _download_htmx_if_needed(markata: Markata) -> None:
@@ -676,6 +677,40 @@ window.paginationData = {pagination_config};
     js_file.write_text(js_content)
 
     return "/static/js/pagination-config.js"
+
+
+def _copy_pagination_static_files(markata: Markata, output_dir: Path) -> None:
+    """
+    Copy pagination static files (JS and CSS) from markata package to output directory.
+
+    Args:
+        markata: Markata instance
+        output_dir: Output directory for static files
+    """
+    import importlib.resources
+
+    # Get the markata static directory
+    static_package = importlib.resources.files("markata") / "static"
+
+    # Copy pagination.js
+    js_src = static_package / "js" / "pagination.js"
+    js_dst_dir = output_dir / "static" / "js"
+    js_dst_dir.mkdir(parents=True, exist_ok=True)
+    js_dst = js_dst_dir / "pagination.js"
+
+    if js_src.is_file():
+        js_dst.write_text(js_src.read_text())
+        markata.console.print(f"Copied pagination.js to {js_dst}")
+
+    # Copy pagination.css
+    css_src = static_package / "css" / "pagination.css"
+    css_dst_dir = output_dir / "static" / "css"
+    css_dst_dir.mkdir(parents=True, exist_ok=True)
+    css_dst = css_dst_dir / "pagination.css"
+
+    if css_src.is_file():
+        css_dst.write_text(css_src.read_text())
+        markata.console.print(f"Copied pagination.css to {css_dst}")
 
 
 def _sanitize_feed_slug(slug: str) -> str:
@@ -1096,6 +1131,7 @@ def create_paginated_feed(
                 feed=page_feed,
                 pagination_enabled=True,
                 pagination_config=pagination_context,
+                pagination_context=pagination_context,
                 title=feed.config.title,
                 page=page_num,
                 total_pages=total_pages,
