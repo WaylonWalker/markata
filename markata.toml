@@ -295,5 +295,39 @@ plugin = "markata.plugins.md_it_wikilinks:wikilinks_plugin"
 config = { markata = "markata" }
 
 [markata.glob]
-glob_patterns = ["docs/**/*.md","CHANGELOG.md"]
+glob_patterns = [
+"docs/**/*.md",
+"pages/**/*.md",
+"CHANGELOG.md",
+]
 use_gitignore = true
+
+[[markata.feeds]]
+slug = 'tag/htmx'
+filter = "date<=today and published==True"
+sort = "date"
+reverse = true
+description = 'Test HTMX pagination feed'
+enabled = true
+items_per_page = 2
+pagination_type = 'htmx'
+
+[[markata.feeds]]
+slug = 'tag/manual'
+filter = "date<=today and published==True"
+sort = "date"
+reverse = true
+description = 'Test manual pagination feed'
+enabled = true
+items_per_page = 3
+pagination_type = 'manual'
+
+[[markata.feeds]]
+slug = 'tag/js'
+filter = "date<=today and published==True"
+sort = "date"
+reverse = true
+description = 'Test JS pagination feed'
+enabled = true
+items_per_page = 2
+pagination_type = 'js'
