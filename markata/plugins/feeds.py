@@ -482,6 +482,7 @@ class MarkataTemplateCache(jinja2.BytecodeCache):
 class FeedsConfig(pydantic.BaseModel):
     feeds: List[FeedConfig] = [FeedConfig(slug="archive")]
     htmx_version: str = "2.0.8"
+    skip_htmx_integrity_check: bool = False
 
     @property
     def jinja_env(self):
@@ -556,18 +557,55 @@ def _download_htmx_if_needed(markata: Markata) -> None:
     from urllib.error import URLError, HTTPError
 
     htmx_version = markata.config.htmx_version
-    htmx_filename = f"htmx.org@{htmx_version}.min.js"
+    htmx_filename = "htmx.min.js"
     htmx_static_path = Path(markata.config.output_dir) / "static" / "js" / htmx_filename
     htmx_url = f"https://unpkg.com/htmx.org@{htmx_version}/dist/htmx.min.js"
 
-    # Known SHA-256 hash for HTMX 1.9.10
+    # Known SHA-256 hashes for HTMX versions
     HTMX_INTEGRITY_HASHES = {
-        "1.9.10": "b3bdcf5c741897a53648b1207fff0469a0d61901429ba1f6e88f98ebd84e669e"
+        "1.9.10": "b3bdcf5c741897a53648b1207fff0469a0d61901429ba1f6e88f98ebd84e669e",
+        "2.0.8": "22283ef68cb7545914f0a88a1bdedc7256a703d1d580c1d255217d0a50d31313",
+        "2.0.7": "60231ae6ba9db3825eb15a261122d5f55921c4d53b66bf637dc18b4ee27c79f9",
+        "2.0.6": "b6768eed4f3af85b73a75054701bd60e17cac718aef2b7f6b254e5e0e2045616",
+        "2.0.5": "f601807715bde32e458b73821e16c5641a3d90dfb670f6ebd986f128b8222fcf",
+        "2.0.4": "e209dda5c8235479f3166defc7750e1dbcd5a5c1808b7792fc2e6733768fb447",
+        "2.0.3": "491955cd1810747d7d7b9ccb936400afb760e06d25d53e4572b64b6563b2784e",
+        "2.0.2": "e1746d9759ec0d43c5c284452333a310bb5fd7285ebac4b2dc9bf44d72b5a887",
+        "2.0.1": "6d4aaa4b0d3e8b4c91f8d97b92a361a19b1bd4544dea3f668fdc3e62a63995df",
+        "2.0.0": "0fc57ba0e655504d282bb6ec1c3d89240cde9f2ce1c393d5b38a95c5bc6da875",
+        "1.9.12": "449317ade7881e949510db614991e195c3a099c4c791c24dacec55f9f4a2a452",
+        "1.9.11": "d15107cc7f040a9e83b1b66176fd927ad40b5e0255813a03f8ccfeed46ee42b0",
+        "1.9.9": "96a334a9570a382cf9c61a1f86d55870ba1c65e166cc5bcae98ddd8cdabeb886",
+        "1.9.8": "c4fce4dc5cc9c8c3c9bf1aa788d54bb2cb25cd27114eb06551494ff61c30d6fb",
+        "1.9.7": "30c95cb75e7f7c9471c2bf43fa3db0a30a39077764295b15c405869fed7e5764",
+        "1.9.6": "cbb723c305cf6d6315c890909815523588509e2e092a59f8cfc4a885829689d5",
+        "1.9.5": "76a9887f1ce3bf8f88bea3b327f1e74b9d9b42e1dd9cb8237a87a74261d5d042",
+        "1.9.4": "5c88af44013df62fde8a5e4fdf524d8a16834a28b1d15e34ae0994ac27cd4c7e",
+        "1.9.3": "8f567d21cbe0553643db48866b2377a3bbb9247f8d924428002c2b847f28b23c",
+        "1.9.2": "fd346e9c8639d4624893fc455f2407a09b418301736dd18ebbb07764637fb478",
+        "1.9.1": "d7bff1d0f45e3418fa820d8a6f0de1ca5e87562f218a0f06add08652c7691a9c",
+        "1.9.0": "97df3adfbf23b873d9a3a80f7143d801a32604ba29de9a33f21a92a171076aa8",
+        "1.8.5": "705fb60063bf5270b7077409b848b57ea24d2277b806aa04efea513287bf63a6",
+        "1.8.4": "df72edb141a16578945a0356c8a6a37239015251962071639b99b0184691ed1d",
+        "1.8.3": "df811b5d27b3dddfec9a858b437b0c7302a56959450f0f9c133ef356c25fcf1c",
+        "1.8.2": "91e7fb193c4a6a5d3bb56ed0a7007933664e7803da389a696de61147a6f66058",
+        "1.8.1": "1a1c942f7bb50dcc2198b2f3c6cc64199332e32a5ba08e7bd2215aa0a1966a55",
+        "1.8.0": "914e05e274362f2e166fc5a8cf6272e2042d9b9e50647678c64c579dcb5fa441",
     }
 
     expected_hash = HTMX_INTEGRITY_HASHES.get(htmx_version)
     if not expected_hash:
-        raise ValueError(f"No integrity hash available for HTMX version {htmx_version}")
+        if markata.config.skip_htmx_integrity_check:
+            markata.console.warn(
+                f"No integrity hash available for HTMX version {htmx_version}, skipping verification"
+            )
+            expected_hash = None
+        else:
+            raise ValueError(
+                f"No integrity hash available for HTMX version {htmx_version}. "
+                f"You can add 'skip_htmx_integrity_check: true' to your config to skip verification, "
+                f"or add the hash to HTMX_INTEGRITY_HASHES in markata/plugins/feeds.py"
+            )
 
     # Download if file doesn't exist
     if not htmx_static_path.exists():
@@ -583,17 +621,21 @@ def _download_htmx_if_needed(markata: Markata) -> None:
                 with urlopen(request, timeout=10) as response:
                     content = response.read()
 
-                    # Verify content integrity
-                    actual_hash = hashlib.sha256(content).hexdigest()
-                    if actual_hash != expected_hash:
-                        raise ValueError(
-                            f"HTMX integrity check failed. Expected: {expected_hash}, Got: {actual_hash}"
-                        )
+                    # Verify content integrity if hash is available
+                    if expected_hash:
+                        actual_hash = hashlib.sha256(content).hexdigest()
+                        if actual_hash != expected_hash:
+                            raise ValueError(
+                                f"HTMX integrity check failed. Expected: {expected_hash}, Got: {actual_hash}"
+                            )
 
                     htmx_static_path.write_bytes(content)
 
+            verification_status = (
+                "verified" if expected_hash else "without verification"
+            )
             markata.console.print(
-                f"Downloaded HTMX {htmx_version} to {htmx_static_path} (verified)"
+                f"Downloaded HTMX {htmx_version} to {htmx_static_path} ({verification_status})"
             )
 
         except (URLError, HTTPError, ValueError) as e:
@@ -655,19 +697,24 @@ def _sanitize_feed_slug(slug: str) -> str:
     if not slug:
         raise ValueError("Feed slug cannot be empty")
 
-    # Remove path traversal sequences
-    if ".." in slug or "/" in slug or "\\" in slug:
+    # Remove path traversal sequences (allow forward slashes for nested paths)
+    if ".." in slug or "\\" in slug:
         raise ValueError(f"Invalid characters in feed slug: {slug}")
 
-    # Only allow alphanumeric characters, hyphens, and underscores
-    if not re.match(r"^[a-zA-Z0-9_-]+$", slug):
+    # Allow alphanumeric characters, hyphens, underscores, and forward slashes for nested paths
+    if not re.match(r"^[a-zA-Z0-9_/-]+$", slug):
         raise ValueError(f"Feed slug contains invalid characters: {slug}")
 
-    # Use os.path.basename for additional safety
-    safe_slug = os.path.basename(slug)
+    # Prevent leading or trailing slashes and double slashes
+    if slug.startswith("/") or slug.endswith("/") or "//" in slug:
+        raise ValueError(f"Feed slug has invalid slash usage: {slug}")
 
+    # Sanitize by removing any path traversal attempts
+    safe_slug = slug.replace("..", "")
+
+    # Additional safety check
     if safe_slug != slug:
-        raise ValueError(f"Feed slug was modified during sanitization: {slug}")
+        raise ValueError(f"Feed slug attempts path traversal: {slug}")
 
     return safe_slug
 
@@ -681,8 +728,8 @@ def _ensure_head_links(markata: Markata) -> None:
     pagination_js_config_href = "/static/js/pagination-config.js"
     pagination_js_href = "/static/js/pagination.js"
     htmx_version = markata.config.htmx_version
-    htmx_filename = f"htmx.org@{htmx_version}.min.js"
-    htmx_static_href = f"/static/js/{htmx_filename}"
+    htmx_filename = "htmx.min.js"
+    htmx_static_href = "/static/js/htmx.min.js"
 
     # Try to download HTMX first
     if not _download_htmx_if_needed(markata):
