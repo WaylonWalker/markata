@@ -1,3 +1,9 @@
+---
+title: Pagination Implementation Guide
+description: Guide for implementing pagination in Markata templates with manual, HTMX, and JavaScript options
+
+---
+
 # Pagination Implementation Guide
 
 This guide provides clear instructions for implementing pagination in your Markata templates. The pagination system is integrated into the feeds plugin and supports three types: manual, HTMX, and JavaScript infinite scroll.
