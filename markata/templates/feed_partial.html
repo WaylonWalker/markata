@@ -32,37 +32,12 @@
         </ul>
         
         {% if pagination_enabled %}
-        {% set pagination_config = pagination_context %}
         
-        {% if pagination_context.pagination_type == 'manual' %}
-        <!-- For manual pagination, show prev/next controls -->
-        <div class="pagination-controls mt-8 flex justify-center space-x-4">
-            {% if prev_page %}
-            {% if page > 2 %}
-            <a href="/{{ feed_name }}/{{ prev_page }}/" 
-            {% else %}
-            <a href="/{{ feed_name }}/" 
-            {% endif %}
-               class="px-4 py-2 bg-neutral-700 text-white rounded hover:bg-neutral-600 transition">
-                ← Previous
-            </a>
-            {% endif %}
-            
-            <span class="px-4 py-2 text-neutral-400">
-                {{ page }} / {{ total_pages }}
-            </span>
-            
-            {% if has_next %}
-            <a href="/{{ feed_name }}/{{ next_page }}/" 
-               class="px-4 py-2 bg-neutral-700 text-white rounded hover:bg-neutral-600 transition">
-                Next →
-            </a>
-            {% endif %}
-        </div>
-        {% endif %}
+        {# Manual pagination controls - shown for all types as fallback #}
+        {% include "pagination_controls.html" %}
         
         {% if pagination_context.pagination_type == 'htmx' %}
-        <!-- For HTMX, only show load more trigger -->
+        <!-- HTMX infinite scroll (progressive enhancement over manual) -->
         {% if has_next %}
         <div id="load-more-trigger" 
              hx-get="/{{ feed_name }}/{{ next_page }}/partial/"
@@ -87,17 +62,36 @@
                 currentPageEl.textContent = currentPage;
             }
         }
+        // Hide manual controls when HTMX is active
+        (function() {
+            var manualPagination = document.getElementById('manual-pagination');
+            if (manualPagination) {
+                manualPagination.style.display = 'none';
+            }
+        })();
         </script>
         {% endif %}
         
         {% if pagination_context.pagination_type == 'js' %}
+        <!-- JS infinite scroll (progressive enhancement over manual) -->
         <div id="scroll-trigger" style="height: 1px;"></div>
 
         <div class="loading-indicator" style="display: none;">
           <div class="spinner"></div>
           <span>Loading more...</span>
         </div>
+        
+        <script>
+        // Hide manual controls when JS infinite scroll is active
+        (function() {
+            var manualPagination = document.getElementById('manual-pagination');
+            if (manualPagination) {
+                manualPagination.style.display = 'none';
+            }
+        })();
+        </script>
         {% endif %}
+        
         {% endif %}
     </div>
 </article>
