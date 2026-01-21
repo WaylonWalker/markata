@@ -9,6 +9,10 @@ class InfiniteScroll {
     this.loading = false;
     
     this.setupObserver();
+    
+    // Check if we need to load more content initially
+    // (when initial content doesn't fill the viewport)
+    this.checkInitialFill();
   }
   
   setupObserver() {
@@ -52,6 +56,40 @@ class InfiniteScroll {
     }
   }
   
+  checkInitialFill() {
+    // Wait a frame for layout to complete
+    requestAnimationFrame(() => {
+      this.fillViewportIfNeeded();
+    });
+  }
+  
+  fillViewportIfNeeded() {
+    // If we're already loading or no more pages, stop
+    if (this.loading || this.currentPage >= this.totalPages) return;
+    
+    // Check if the trigger is visible in the viewport
+    // (meaning content doesn't fill the page)
+    if (this.isTriggerVisible()) {
+      this.loadMore().then(() => {
+        // After loading, check again if we need more
+        // Use requestAnimationFrame to wait for DOM update
+        requestAnimationFrame(() => {
+          this.fillViewportIfNeeded();
+        });
+      });
+    }
+  }
+  
+  isTriggerVisible() {
+    if (!this.persistentTrigger) return false;
+    
+    const rect = this.persistentTrigger.getBoundingClientRect();
+    const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+    
+    // Check if the trigger is within the viewport (with some margin)
+    return rect.top < viewportHeight + 100;
+  }
+  
   async loadMore() {
     if (this.currentPage >= this.totalPages) return;
     
@@ -81,13 +119,8 @@ class InfiniteScroll {
         history.pushState({}, '', `/${this.feedName}/${nextPage}/`);
       }
       
-      // Re-observe trigger for next page
-      if (this.currentPage < this.totalPages) {
-        // No need to re-observe, our persistent trigger stays in place
-        // Just ensure it's still being observed
-        this.observeTrigger();
-      } else {
-        // Remove our persistent trigger if this was the last page
+      // Remove our persistent trigger if this was the last page
+      if (this.currentPage >= this.totalPages) {
         if (this.persistentTrigger) {
           this.persistentTrigger.remove();
         }

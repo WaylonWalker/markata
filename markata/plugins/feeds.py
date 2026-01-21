@@ -666,8 +666,10 @@ def _generate_pagination_js(
     Returns:
         Path to generated JS file relative to output_dir
     """
+    import json
+
     js_content = f"""// Generated JavaScript for pagination
-window.paginationData = {pagination_config};
+window.paginationData = {json.dumps(pagination_config)};
 """
 
     js_dir = output_dir / "static" / "js"

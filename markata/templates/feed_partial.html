@@ -9,7 +9,18 @@
         {% endif %}
 
         {% if pagination_enabled and pagination_context.pagination_type == 'js' %}
-        <script src="{{ pagination_js_url|default('/static/js/pagination-config.js') }}"></script>
+        <script>
+        window.paginationData = {
+            "enabled": true,
+            "type": "js",
+            "page": {{ page }},
+            "totalPages": {{ total_pages }},
+            "totalPosts": {{ total_posts }},
+            "itemsShown": {{ posts|length }},
+            "feedName": "{{ feed_name }}",
+            "hasNext": {{ 'true' if has_next else 'false' }}
+        };
+        </script>
         <script src="/static/js/pagination.js"></script>
         {% endif %}
     </header>
