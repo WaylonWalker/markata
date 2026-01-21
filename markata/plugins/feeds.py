@@ -609,6 +609,33 @@ def _download_htmx_if_needed(markata: Markata) -> None:
     return True
 
 
+def _generate_pagination_js(
+    markata: Markata, pagination_config: dict, output_dir: Path
+) -> str:
+    """
+    Generate JavaScript file for pagination and return its path.
+
+    Args:
+        markata: Markata instance
+        pagination_config: Pagination configuration data
+        output_dir: Output directory for JS file
+
+    Returns:
+        Path to generated JS file relative to output_dir
+    """
+    js_content = f"""// Generated JavaScript for pagination
+window.paginationData = {pagination_config};
+"""
+
+    js_dir = output_dir / "static" / "js"
+    js_dir.mkdir(parents=True, exist_ok=True)
+
+    js_file = js_dir / "pagination-config.js"
+    js_file.write_text(js_content)
+
+    return "/static/js/pagination-config.js"
+
+
 def _sanitize_feed_slug(slug: str) -> str:
     """
     Sanitize feed slug to prevent path traversal attacks.
@@ -651,7 +678,8 @@ def _ensure_head_links(markata: Markata) -> None:
     without duplicating existing links.
     """
     pagination_css_href = "/static/css/pagination.css"
-    pagination_js_href = "/static/js/pagination.js"
+    pagination_js_config_href = "/static/js/pagination-config.js"
+    pagination_js_href = "/static/js/pagination-js.js"
     htmx_version = markata.config.htmx_version
     htmx_filename = f"htmx.org@{htmx_version}.min.js"
     htmx_static_href = f"/static/js/{htmx_filename}"
@@ -686,10 +714,20 @@ def _ensure_head_links(markata: Markata) -> None:
             {"rel": "stylesheet", "href": pagination_css_href}
         )
 
+    # Check if pagination JS config is already in head.script
+    js_config_exists = any(
+        get_src(script) == pagination_js_config_href
+        for script in markata.config.head.script
+    )
+
     # Check if pagination JS is already in head.script
     js_exists = any(
         get_src(script) == pagination_js_href for script in markata.config.head.script
     )
+
+    # Add JS config link if not already present
+    if not js_config_exists:
+        markata.config.head.script.append({"src": pagination_js_config_href})
 
     # Add JS link if not already present
     if not js_exists:
@@ -936,6 +974,28 @@ def create_paginated_feed(
             "pagination_type": feed.config.pagination_type,
         }
 
+        # Generate JS config file if JS pagination is used
+        pagination_js_url = None
+        if feed.config.pagination_type == "js":
+            pagination_config = {
+                "enabled": True,
+                "type": feed.config.pagination_type,
+                "page": page_num,
+                "totalPages": total_pages,
+                "totalPosts": total_posts,
+                "itemsShown": len(page_posts),
+                "feedName": safe_slug,
+                "hasNext": page_num < total_pages,
+                "config": {
+                    "pagination_type": feed.config.pagination_type,
+                    "posts_per_page": getattr(feed.config, "posts_per_page", None),
+                    "template": getattr(feed.config, "template", None),
+                },
+            }
+            pagination_js_url = _generate_pagination_js(
+                markata, pagination_config, Path(markata.config.output_dir)
+            )
+
         # Create a feed object for this page (no state mutation)
         page_feed = Feed(config=feed.config, markata=feed.markata)
 
@@ -1000,6 +1060,7 @@ def create_paginated_feed(
                 feed_name=safe_slug,
                 posts=page_posts,
                 page_posts=page_posts,
+                pagination_js_url=pagination_js_url,
             )
             cache.set(html_key, feed_html)
         else:

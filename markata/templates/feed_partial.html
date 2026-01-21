@@ -9,24 +9,8 @@
         {% endif %}
 
         {% if pagination_enabled and config.pagination_type == 'js' %}
-        <script>
-        // Safe config data - only include essential pagination settings
-        window.paginationData = {
-            enabled: {{ pagination_enabled|tojson }},
-            type: {{ config.pagination_type|tojson }},
-            page: {{ page|tojson }},
-            totalPages: {{ total_pages|tojson }},
-            totalPosts: {{ total_posts|tojson }},
-            itemsShown: {{ posts|length|tojson }},
-            feedName: {{ feed_name|tojson }},
-            hasNext: {{ has_next|tojson }},
-            config: {
-                pagination_type: {{ config.pagination_type|tojson }},
-                posts_per_page: {{ config.posts_per_page|tojson if config.posts_per_page is defined else 'null' }},
-                template: {{ config.template|tojson if config.template is defined else 'null' }}
-            }
-        };
-        </script>
+        <script src="{{ pagination_js_url|default('/static/js/pagination-config.js') }}"></script>
+        <script src="/static/js/pagination-js.js"></script>
         {% endif %}
     </header>
     <div>
@@ -37,9 +21,9 @@
         </ul>
         
         {% if pagination_enabled %}
-        {% set config = pagination_config %}
+        {% set pagination_config = pagination_context %}
         
-        {% if config.pagination_type == 'manual' or config.pagination_type != 'htmx' %}
+        {% if pagination_context.pagination_type == 'manual' or pagination_context.pagination_type != 'htmx' %}
         <!-- For manual and JS pagination, show full wrapper with controls -->
         <div class="pagination-controls mt-8 flex justify-center space-x-4">
             {% if prev_page %}
@@ -66,7 +50,7 @@
         </div>
         {% endif %}
         
-        {% if config.pagination_type == 'htmx' %}
+        {% if pagination_context.pagination_type == 'htmx' %}
         <!-- For HTMX, only show load more trigger -->
         {% if has_next %}
         <div id="load-more-trigger" 
@@ -84,10 +68,10 @@
           <span>Loading more...</span>
         </div>
         
-        <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+        <script src="/static/js/htmx.org@1.9.10.min.js"></script>
         {% endif %}
         
-        {% if config.pagination_type == 'js' %}
+        {% if pagination_context.pagination_type == 'js' %}
         <div id="scroll-trigger" style="height: 1px;"></div>
 
         <div class="loading-indicator" style="display: none;">
@@ -95,182 +79,6 @@
           <span>Loading more...</span>
         </div>
         {% endif %}
-
-        <div class="loading-indicator htmx-indicator" style="display: none;">
-          <div class="spinner"></div>
-          <span>Loading more...</span>
-        </div>
-        
-        <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-        {% endif %}
-        
-        {% if config.pagination_type == 'js' %}
-        <div id="scroll-trigger" style="height: 1px;"></div>
-
-        <div class="loading-indicator" style="display: none;">
-          <div class="spinner"></div>
-          <span>Loading more...</span>
-        </div>
-
-        <script>
-        // Feature detection and initialization
-        if ('IntersectionObserver' in window && {{ config.pagination_type|tojson }} === 'js') {
-          class InfiniteScroll {
-            constructor() {
-              this.currentPage = {{ page }};
-              this.totalPages = {{ total_pages }};
-              this.totalPosts = {{ total_posts }};
-              this.itemsShown = {{ posts|length }};
-              this.feedName = {{ feed_name|tojson }};
-              this.loading = false;
-              
-              this.setupObserver();
-            }
-            
-            setupObserver() {
-              // Create a persistent element at the bottom to observe
-              this.createPersistentTrigger();
-              
-              this.observer = new IntersectionObserver((entries) => {
-                if (entries[0].isIntersecting && !this.loading) {
-                  this.loadMore();
-                }
-              }, { 
-                rootMargin: '100px' 
-              });
-              
-              this.observeTrigger();
-            }
-            
-            createPersistentTrigger() {
-              // Create a persistent trigger that won't be replaced
-              this.persistentTrigger = document.createElement('div');
-              this.persistentTrigger.id = 'js-scroll-trigger';
-              this.persistentTrigger.style.height = '1px';
-              this.persistentTrigger.style.width = '100%';
-              
-              // Insert it before the template trigger
-              const templateTrigger = document.getElementById('scroll-trigger');
-              if (templateTrigger) {
-                templateTrigger.parentNode.insertBefore(this.persistentTrigger, templateTrigger);
-              } else {
-                // Fallback: add to end of feed container
-                const feed = document.getElementById('feed');
-                if (feed) {
-                  feed.appendChild(this.persistentTrigger);
-                }
-              }
-            }
-            
-            observeTrigger() {
-              if (this.persistentTrigger && this.observer) {
-                this.observer.observe(this.persistentTrigger);
-              }
-            }
-            
-            async loadMore() {
-              if (this.currentPage >= this.totalPages) return;
-              
-              this.loading = true;
-              this.showLoading();
-              
-              try {
-                const nextPage = this.currentPage + 1;
-                const response = await fetch(`/${this.feedName}/${nextPage}/`);
-                const html = await response.text();
-                
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
-                const newItems = doc.querySelectorAll('#feed li');
-                const container = document.getElementById('feed');
-                
-                newItems.forEach(item => container.appendChild(item));
-                
-                this.currentPage = nextPage;
-                this.itemsShown += newItems.length;
-                
-                // Update pagination info
-                this.updatePaginationInfo();
-                
-                // Update URL for bookmarkability
-                if (history.pushState) {
-                  history.pushState({}, '', `/${this.feedName}/${nextPage}/`);
-                }
-                
-        // Re-observe trigger for the next page
-        if (this.currentPage < this.totalPages) {
-          // No need to re-observe, our persistent trigger stays in place
-          // Just ensure it's still being observed
-          this.observeTrigger();
-        } else {
-          // Remove our persistent trigger if this was the last page
-          if (this.persistentTrigger) {
-            this.persistentTrigger.remove();
-          }
-        }
-                
-              } catch (error) {
-                console.error('Failed to load more content:', error);
-              } finally {
-                this.loading = false;
-                this.hideLoading();
-              }
-            }
-            
-            showLoading() {
-              const indicator = document.querySelector('.loading-indicator');
-              if (indicator) indicator.style.display = 'flex';
-            }
-            
-            hideLoading() {
-              const indicator = document.querySelector('.loading-indicator');
-              if (indicator) indicator.style.display = 'none';
-            }
-            
-            updatePaginationInfo() {
-              const currentPageEl = document.getElementById('current-page');
-              const itemsShownEl = document.getElementById('items-shown');
-              
-              if (currentPageEl) currentPageEl.textContent = this.currentPage;
-              if (itemsShownEl) itemsShownEl.textContent = this.itemsShown;
-            }
-          }
-          
-          // Initialize when DOM is ready
-          if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => {
-              new InfiniteScroll();
-            });
-          } else {
-            new InfiniteScroll();
-          }
-        }
-        </script>
-
-        <style>
-        .loading-indicator {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 0.75rem;
-          padding: 2rem;
-          color: var(--text-color-muted, #6b7280);
-        }
-
-        .spinner {
-          width: 1.5rem;
-          height: 1.5rem;
-          border: 2px solid var(--border-color, #e5e7eb);
-          border-top: 2px solid var(--primary-bg, #3b82f6);
-          border-radius: 50%;
-          animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-        </style>
         {% endif %}
     </div>
 </article>
