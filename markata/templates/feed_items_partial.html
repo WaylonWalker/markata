@@ -1,0 +1,19 @@
+{% for post in posts %}
+{% include card_template or feed.config.card_template or config.feeds.card_template %}
+{% endfor %}
+
+<script>
+// Update pagination info for HTMX infinite scroll
+updatePaginationInfoForHTMX({{ page }}, {{ posts|length }});
+</script>
+
+{% if has_next %}
+<div id="load-more-trigger" 
+     hx-get="/{{ feed_name }}/{{ next_page }}/partial/"
+     hx-target="#feed"
+     hx-swap="beforeend"
+     hx-trigger="revealed"
+     hx-indicator=".loading-indicator"
+     hx-push-url="/{{ feed_name }}/{{ next_page }}/">
+</div>
+{% endif %}

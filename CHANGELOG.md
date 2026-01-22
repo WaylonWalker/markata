@@ -61,6 +61,26 @@
 
 ## 0.10.0
 
+### Feed Pagination
+
+- Feat: Add feed pagination with three types: `htmx`, `manual`, `js`
+- Feat: HTMX infinite scroll with partial loading
+- Feat: JavaScript infinite scroll using Intersection Observer
+- Feat: Manual page navigation with prev/next controls
+- Feat: Configurable `items_per_page`, `pagination_type`, and `enabled` per feed
+
+### Security
+
+- Feat: SHA-256 integrity verification for HTMX downloads (25+ versions supported)
+- Feat: Path traversal protection for feed slugs
+- Feat: XSS prevention in templates using `|tojson` filter
+- Feat: Fail securely if HTMX download fails (no CDN fallback)
+- Feat: Comprehensive security test suite for feeds
+
+### Other
+
+- Feat: Improve feed name sanitization with Python identifier conversion
+- Feat: Add pagination implementation guide documentation
 - Fix: `auto_description` now more accurately returns plain text, does not cut off words, and add an ellipsis.
 - Fix: article_html now typed such that it may be a dict without warning
 - publish_source now only supports using post models that include a dumps command, i.e. no longer frontmatter post objects
