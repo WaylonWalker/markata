@@ -7,6 +7,8 @@ class InfiniteScroll {
     this.itemsShown = paginationData.itemsShown;
     this.feedName = paginationData.feedName;
     this.loading = false;
+    this.retryCount = 0;
+    this.maxRetries = 3;
     
     this.setupObserver();
     
@@ -64,18 +66,22 @@ class InfiniteScroll {
   }
   
   fillViewportIfNeeded() {
-    // If we're already loading or no more pages, stop
-    if (this.loading || this.currentPage >= this.totalPages) return;
+    // If we're already loading, no more pages, or exceeded retries, stop
+    if (this.loading || this.currentPage >= this.totalPages || this.retryCount >= this.maxRetries) return;
     
     // Check if the trigger is visible in the viewport
     // (meaning content doesn't fill the page)
     if (this.isTriggerVisible()) {
-      this.loadMore().then(() => {
-        // After loading, check again if we need more
-        // Use requestAnimationFrame to wait for DOM update
-        requestAnimationFrame(() => {
-          this.fillViewportIfNeeded();
-        });
+      this.loadMore().then((success) => {
+        if (success) {
+          // Reset retry count on success
+          this.retryCount = 0;
+          // After loading, check again if we need more
+          // Use requestAnimationFrame to wait for DOM update
+          requestAnimationFrame(() => {
+            this.fillViewportIfNeeded();
+          });
+        }
       });
     }
   }
@@ -91,7 +97,7 @@ class InfiniteScroll {
   }
   
   async loadMore() {
-    if (this.currentPage >= this.totalPages) return;
+    if (this.currentPage >= this.totalPages) return false;
     
     this.loading = true;
     this.showLoading();
@@ -99,12 +105,22 @@ class InfiniteScroll {
     try {
       const nextPage = this.currentPage + 1;
       const response = await fetch(`/${this.feedName}/${nextPage}/`);
+      
+      // Check if response is ok (status 200-299)
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const html = await response.text();
       
       const parser = new DOMParser();
       const doc = parser.parseFromString(html, 'text/html');
       const newItems = doc.querySelectorAll('#feed li');
       const container = document.getElementById('feed');
+      
+      if (!container) {
+        throw new Error('Feed container not found');
+      }
       
       newItems.forEach(item => container.appendChild(item));
       
@@ -120,9 +136,19 @@ class InfiniteScroll {
           this.persistentTrigger.remove();
         }
       }
+      
+      return true;
             
     } catch (error) {
       console.error('Failed to load more content:', error);
+      this.retryCount++;
+      
+      // Show error message if we've exceeded retries
+      if (this.retryCount >= this.maxRetries) {
+        this.showError('Failed to load more content. Please refresh the page.');
+      }
+      
+      return false;
     } finally {
       this.loading = false;
       this.hideLoading();
@@ -139,6 +165,16 @@ class InfiniteScroll {
     if (indicator) indicator.style.display = 'none';
   }
   
+  showError(message) {
+    const container = document.getElementById('feed');
+    if (container) {
+      const errorDiv = document.createElement('div');
+      errorDiv.className = 'error-message';
+      errorDiv.textContent = message;
+      container.appendChild(errorDiv);
+    }
+  }
+  
   updatePaginationInfo() {
     const currentPageEl = document.getElementById('current-page');
     const itemsShownEl = document.getElementById('items-shown');
@@ -146,16 +182,32 @@ class InfiniteScroll {
     if (currentPageEl) currentPageEl.textContent = this.currentPage;
     if (itemsShownEl) itemsShownEl.textContent = this.itemsShown;
   }
+  
+  // Clean up observer on page unload
+  destroy() {
+    if (this.observer) {
+      this.observer.disconnect();
+    }
+  }
 }
 
 // Feature detection and initialization
 if ('IntersectionObserver' in window && window.paginationData) {
+  let infiniteScroll;
+  
   // Initialize when DOM is ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
-      new InfiniteScroll(window.paginationData);
+      infiniteScroll = new InfiniteScroll(window.paginationData);
     });
   } else {
-    new InfiniteScroll(window.paginationData);
+    infiniteScroll = new InfiniteScroll(window.paginationData);
   }
+  
+  // Clean up on page unload to prevent memory leaks
+  window.addEventListener('beforeunload', () => {
+    if (infiniteScroll) {
+      infiniteScroll.destroy();
+    }
+  });
 }

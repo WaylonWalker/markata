@@ -13,12 +13,12 @@
         window.paginationData = {
             "enabled": true,
             "type": "js",
-            "page": {{ page }},
-            "totalPages": {{ total_pages }},
-            "totalPosts": {{ total_posts }},
-            "itemsShown": {{ posts|length }},
-            "feedName": "{{ feed_name }}",
-            "hasNext": {{ 'true' if has_next else 'false' }}
+            "page": {{ page | tojson }},
+            "totalPages": {{ total_pages | tojson }},
+            "totalPosts": {{ total_posts | tojson }},
+            "itemsShown": {{ posts|length | tojson }},
+            "feedName": {{ feed_name | tojson }},
+            "hasNext": {{ has_next | tojson }}
         };
         </script>
         <script src="/static/js/pagination.js"></script>

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 The `markata.plugins.feeds` plugin is used to create feed pages, which are lists of
 posts.  The list is generated using a `filter`, then each post in the list is
@@ -202,45 +204,28 @@ from urllib.request import urlopen
 
 import jinja2
 import pydantic
+import typer
 from jinja2 import Template
 from jinja2 import Undefined
+from pydantic import ConfigDict
+from pydantic import Field
+from pydantic import field_validator
+from rich.console import Console
+from rich.jupyter import JupyterMixin
+from rich.pretty import Pretty
+from rich.table import Table
 
 from markata import __version__
 from markata import background
 from markata.hookspec import hook_impl
-
-if TYPE_CHECKING:
-    pass  # rich imports available at runtime
-else:
-    from rich.console import Console
-    from rich.jupyter import JupyterMixin
-    from rich.pretty import Pretty
-    from rich.table import Table
-import typer
-from rich.console import Console
-from rich.pretty import Pretty
-from rich.table import Table
-
-# Import JupyterMixin at runtime when needed
-if not TYPE_CHECKING:
-    JupyterMixin = type("JupyterMixin", (), {})
-
-from pydantic import ConfigDict
-from pydantic import Field
-from pydantic import field_validator
-
 from markata.hookspec import register_attr
 from markata.plugins.jinja_env import get_template
 from markata.plugins.jinja_env import get_templates_mtime
 
-# Import Markata at module level for type annotations
-Markata = None
-if TYPE_CHECKING:
-    pass
-
 if TYPE_CHECKING:
     from frontmatter import Post
-    from rich.console import Console
+
+    from markata import Markata
 
 
 def to_pythonic_identifier(name: str) -> str:
@@ -290,13 +275,17 @@ def to_pythonic_identifier(name: str) -> str:
     return pythonic
 
 
-if TYPE_CHECKING:
+class SilentUndefined(Undefined):
+    """A Jinja2 Undefined subclass that silently returns empty string on errors."""
 
-    class SilentUndefined(Undefined):
-        def _fail_with_undefined_error(self, *args, **kwargs):
-            return ""
+    def _fail_with_undefined_error(self, *args, **kwargs):
+        return ""
 
-    class MarkataFilterError(RuntimeError): ...
+
+class MarkataFilterError(RuntimeError):
+    """Raised when a feed filter expression fails."""
+
+    ...
 
 
 class FeedConfig(pydantic.BaseModel, JupyterMixin):
@@ -1080,8 +1069,20 @@ def create_paginated_feed(
     """
     posts = feed.posts
     per_page = getattr(feed.config, "items_per_page", feed.config.per_page)
+
+    # Validate per_page to prevent division by zero
+    if per_page <= 0:
+        raise ValueError(
+            f"items_per_page must be a positive integer, got {per_page} for feed '{feed.config.slug}'"
+        )
+
     total_posts = len(posts)
-    total_pages = (total_posts + per_page - 1) // per_page
+
+    # Handle empty feeds gracefully
+    if total_posts == 0:
+        total_pages = 1  # Still create one empty page
+    else:
+        total_pages = (total_posts + per_page - 1) // per_page
 
     # Security: Sanitize feed slug to prevent path traversal attacks
     safe_slug = _sanitize_feed_slug(feed.config.slug)
