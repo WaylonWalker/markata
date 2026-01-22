@@ -1,0 +1,4471 @@
+# Static Site Generator Test Cases
+# Run these tests to verify your implementation matches the spec
+
+# =============================================================================
+# FRONTMATTER PARSING
+# =============================================================================
+frontmatter_parse:
+  - name: "basic yaml frontmatter"
+    input:
+      content: |
+        ---
+        title: Hello World
+        date: 2024-01-15
+        ---
+        Content here
+    output:
+      title: "Hello World"
+      date: "2024-01-15"
+      content: "Content here"
+
+  - name: "frontmatter with tags list"
+    input:
+      content: |
+        ---
+        title: Tagged Post
+        tags: [python, tutorial, beginner]
+        ---
+        Post content
+    output:
+      title: "Tagged Post"
+      tags: ["python", "tutorial", "beginner"]
+      content: "Post content"
+
+  - name: "frontmatter with nested object"
+    input:
+      content: |
+        ---
+        title: Custom Template
+        template:
+          name: special.html
+          layout: wide
+        ---
+        Content
+    output:
+      title: "Custom Template"
+      template:
+        name: "special.html"
+        layout: "wide"
+
+  - name: "missing frontmatter"
+    input:
+      content: |
+        # Just Markdown
+        No frontmatter here
+    output:
+      title: null
+      content: "# Just Markdown\nNo frontmatter here"
+
+  - name: "empty frontmatter"
+    input:
+      content: |
+        ---
+        ---
+        Content only
+    output:
+      content: "Content only"
+
+  - name: "frontmatter boolean values"
+    input:
+      content: |
+        ---
+        published: true
+        draft: false
+        featured: yes
+        ---
+        Post
+    output:
+      published: true
+      draft: false
+      featured: true
+
+# =============================================================================
+# SLUG GENERATION
+# =============================================================================
+slug_generation:
+  - name: "basic title to slug"
+    input:
+      title: "Hello World"
+    output: "hello-world"
+
+  - name: "title with special characters"
+    input:
+      title: "What's New in Python 3.12?"
+    output: "whats-new-in-python-312"
+
+  - name: "title with numbers"
+    input:
+      title: "10 Tips for Better Code"
+    output: "10-tips-for-better-code"
+
+  - name: "title with unicode"
+    input:
+      title: "Café & Résumé Tips"
+    output: "cafe-resume-tips"
+
+  - name: "explicit slug in frontmatter"
+    input:
+      title: "My Long Title Here"
+      slug: "short-slug"
+    output: "short-slug"
+
+  - name: "path-based slug"
+    input:
+      path: "posts/2024/my-first-post.md"
+    output: "my-first-post"
+
+  - name: "nested path slug"
+    input:
+      path: "blog/tutorials/python/getting-started.md"
+      flat_slug: false
+    output: "blog/tutorials/python/getting-started"
+
+# =============================================================================
+# FILTER EXPRESSIONS
+# =============================================================================
+filter_expressions:
+  - name: "filter by boolean true"
+    input:
+      posts:
+        - { title: "Post 1", published: true }
+        - { title: "Post 2", published: false }
+        - { title: "Post 3", published: true }
+      filter: "published == True"
+    output:
+      - { title: "Post 1", published: true }
+      - { title: "Post 3", published: true }
+
+  - name: "filter by boolean false"
+    input:
+      posts:
+        - { title: "Post 1", draft: true }
+        - { title: "Post 2", draft: false }
+      filter: "draft == False"
+    output:
+      - { title: "Post 2", draft: false }
+
+  - name: "filter by string in list"
+    input:
+      posts:
+        - { title: "Python Tips", tags: ["python", "tips"] }
+        - { title: "JS Guide", tags: ["javascript"] }
+        - { title: "Python Advanced", tags: ["python", "advanced"] }
+      filter: "'python' in tags"
+    output:
+      - { title: "Python Tips", tags: ["python", "tips"] }
+      - { title: "Python Advanced", tags: ["python", "advanced"] }
+
+  - name: "filter by date comparison"
+    input:
+      posts:
+        - { title: "Old Post", date: "2023-01-01" }
+        - { title: "New Post", date: "2024-06-15" }
+        - { title: "Future Post", date: "2025-01-01" }
+      filter: "date <= today"
+      today: "2024-07-01"
+    output:
+      - { title: "Old Post", date: "2023-01-01" }
+      - { title: "New Post", date: "2024-06-15" }
+
+  - name: "filter with compound and"
+    input:
+      posts:
+        - { title: "Post 1", published: true, featured: true }
+        - { title: "Post 2", published: true, featured: false }
+        - { title: "Post 3", published: false, featured: true }
+      filter: "published == True and featured == True"
+    output:
+      - { title: "Post 1", published: true, featured: true }
+
+  - name: "filter with compound or"
+    input:
+      posts:
+        - { title: "Draft", status: "draft" }
+        - { title: "Review", status: "review" }
+        - { title: "Published", status: "published" }
+      filter: "status == 'draft' or status == 'review'"
+    output:
+      - { title: "Draft", status: "draft" }
+      - { title: "Review", status: "review" }
+
+  - name: "filter all (True)"
+    input:
+      posts:
+        - { title: "Post 1" }
+        - { title: "Post 2" }
+      filter: "True"
+    output:
+      - { title: "Post 1" }
+      - { title: "Post 2" }
+
+  - name: "filter none (False)"
+    input:
+      posts:
+        - { title: "Post 1" }
+        - { title: "Post 2" }
+      filter: "False"
+    output: []
+
+  - name: "filter by string method"
+    input:
+      posts:
+        - { title: "How to Cook" }
+        - { title: "Why Python" }
+        - { title: "How to Code" }
+      filter: "title.startswith('How')"
+    output:
+      - { title: "How to Cook" }
+      - { title: "How to Code" }
+
+  - name: "filter with numeric comparison"
+    input:
+      posts:
+        - { title: "Short", word_count: 100 }
+        - { title: "Medium", word_count: 500 }
+        - { title: "Long", word_count: 2000 }
+      filter: "word_count > 400"
+    output:
+      - { title: "Medium", word_count: 500 }
+      - { title: "Long", word_count: 2000 }
+
+# =============================================================================
+# MAP FUNCTION
+# =============================================================================
+map_function:
+  - name: "map single field"
+    input:
+      posts:
+        - { title: "Post 1", slug: "post-1" }
+        - { title: "Post 2", slug: "post-2" }
+      field: "title"
+    output: ["Post 1", "Post 2"]
+
+  - name: "map with filter"
+    input:
+      posts:
+        - { title: "Post 1", published: true }
+        - { title: "Post 2", published: false }
+        - { title: "Post 3", published: true }
+      field: "title"
+      filter: "published == True"
+    output: ["Post 1", "Post 3"]
+
+  - name: "map with sort"
+    input:
+      posts:
+        - { title: "B Post", date: "2024-02-01" }
+        - { title: "A Post", date: "2024-01-01" }
+        - { title: "C Post", date: "2024-03-01" }
+      field: "title"
+      sort: "date"
+    output: ["A Post", "B Post", "C Post"]
+
+  - name: "map with reverse sort"
+    input:
+      posts:
+        - { title: "Old", date: "2024-01-01" }
+        - { title: "New", date: "2024-03-01" }
+        - { title: "Mid", date: "2024-02-01" }
+      field: "title"
+      sort: "date"
+      reverse: true
+    output: ["New", "Mid", "Old"]
+
+  - name: "map post objects"
+    input:
+      posts:
+        - { title: "Post 1", slug: "post-1" }
+        - { title: "Post 2", slug: "post-2" }
+      field: "post"
+    output:
+      - { title: "Post 1", slug: "post-1" }
+      - { title: "Post 2", slug: "post-2" }
+
+# =============================================================================
+# MARKDOWN RENDERING
+# =============================================================================
+markdown_render:
+  - name: "basic paragraph"
+    input:
+      content: "Hello world"
+    output: "<p>Hello world</p>"
+
+  - name: "heading levels"
+    input:
+      content: |
+        # Heading 1
+        ## Heading 2
+        ### Heading 3
+    output_contains:
+      - "<h1>Heading 1</h1>"
+      - "<h2>Heading 2</h2>"
+      - "<h3>Heading 3</h3>"
+
+  - name: "emphasis and strong"
+    input:
+      content: "This is *italic* and **bold** text"
+    output: "<p>This is <em>italic</em> and <strong>bold</strong> text</p>"
+
+  - name: "unordered list"
+    input:
+      content: |
+        - Item 1
+        - Item 2
+        - Item 3
+    output_contains:
+      - "<ul>"
+      - "<li>Item 1</li>"
+      - "<li>Item 2</li>"
+      - "<li>Item 3</li>"
+      - "</ul>"
+
+  - name: "ordered list"
+    input:
+      content: |
+        1. First
+        2. Second
+        3. Third
+    output_contains:
+      - "<ol>"
+      - "<li>First</li>"
+      - "</ol>"
+
+  - name: "code block with language"
+    input:
+      content: |
+        ```python
+        def hello():
+            print("world")
+        ```
+    output_contains:
+      - "<pre>"
+      - "<code"
+      - "def hello():"
+
+  - name: "inline code"
+    input:
+      content: "Use the `print()` function"
+    output: "<p>Use the <code>print()</code> function</p>"
+
+  - name: "link"
+    input:
+      content: "[Click here](https://example.com)"
+    output: '<p><a href="https://example.com">Click here</a></p>'
+
+  - name: "image"
+    input:
+      content: "![Alt text](/images/photo.jpg)"
+    output: '<p><img src="/images/photo.jpg" alt="Alt text" /></p>'
+
+  - name: "blockquote"
+    input:
+      content: |
+        > This is a quote
+        > spanning lines
+    output_contains:
+      - "<blockquote>"
+      - "This is a quote"
+      - "</blockquote>"
+
+  - name: "table"
+    input:
+      content: |
+        | Name | Age |
+        |------|-----|
+        | Alice | 30 |
+        | Bob | 25 |
+    output_contains:
+      - "<table>"
+      - "<th>Name</th>"
+      - "<td>Alice</td>"
+      - "</table>"
+
+  - name: "admonition note"
+    input:
+      content: |
+        !!! note "Important"
+            This is important information.
+    output_contains:
+      - "note"
+      - "Important"
+      - "This is important information"
+
+  - name: "admonition warning"
+    input:
+      content: |
+        !!! warning
+            Be careful here.
+    output_contains:
+      - "warning"
+      - "Be careful here"
+
+# =============================================================================
+# TEMPLATE RENDERING
+# =============================================================================
+template_render:
+  - name: "simple variable"
+    input:
+      template: "<h1>{{ post.title }}</h1>"
+      context:
+        post: { title: "Hello World" }
+    output: "<h1>Hello World</h1>"
+
+  - name: "nested variable"
+    input:
+      template: "<p>{{ config.site.name }}</p>"
+      context:
+        config: { site: { name: "My Blog" } }
+    output: "<p>My Blog</p>"
+
+  - name: "for loop"
+    input:
+      template: |
+        {% for tag in post.tags %}{{ tag }} {% endfor %}
+      context:
+        post: { tags: ["a", "b", "c"] }
+    output: "a b c "
+
+  - name: "if condition"
+    input:
+      template: |
+        {% if post.published %}Public{% else %}Private{% endif %}
+      context:
+        post: { published: true }
+    output: "Public"
+
+  - name: "filter pipe"
+    input:
+      template: "{{ post.title | upper }}"
+      context:
+        post: { title: "hello" }
+    output: "HELLO"
+
+  - name: "default filter"
+    input:
+      template: "{{ post.subtitle | default('No subtitle') }}"
+      context:
+        post: { title: "Test" }
+    output: "No subtitle"
+
+  - name: "include body"
+    input:
+      template: "<article>{{ body }}</article>"
+      context:
+        body: "<p>Rendered content</p>"
+    output: "<article><p>Rendered content</p></article>"
+
+# =============================================================================
+# JINJA IN MARKDOWN
+# =============================================================================
+jinja_md:
+  - name: "simple expression"
+    input:
+      content: "Total: {{ posts | length }} posts"
+      context:
+        posts: [{}, {}, {}]
+    output: "Total: 3 posts"
+
+  - name: "for loop in markdown"
+    input:
+      content: |
+        ## Posts
+        {% for p in posts %}
+        - {{ p.title }}
+        {% endfor %}
+      context:
+        posts:
+          - { title: "First" }
+          - { title: "Second" }
+    output_contains:
+      - "## Posts"
+      - "- First"
+      - "- Second"
+
+  - name: "filter call"
+    input:
+      content: |
+        {% for p in core.filter("published == True") %}
+        {{ p.title }}
+        {% endfor %}
+      context:
+        core:
+          posts:
+            - { title: "Public", published: true }
+            - { title: "Private", published: false }
+    output_contains:
+      - "Public"
+    output_not_contains:
+      - "Private"
+
+  - name: "disabled jinja (jinja: false)"
+    input:
+      content: "Show {{ literal }} brackets"
+      frontmatter:
+        jinja: false
+    output: "Show {{ literal }} brackets"
+
+# =============================================================================
+# FEED GENERATION
+# =============================================================================
+feed_generation:
+  - name: "basic feed"
+    input:
+      feed_config:
+        slug: "blog"
+        filter: "True"
+      posts:
+        - { title: "Post 1", slug: "post-1" }
+        - { title: "Post 2", slug: "post-2" }
+    output:
+      posts_count: 2
+      url: "/blog/"
+
+  - name: "filtered feed"
+    input:
+      feed_config:
+        slug: "published"
+        filter: "published == True"
+      posts:
+        - { title: "Public", published: true }
+        - { title: "Draft", published: false }
+    output:
+      posts_count: 1
+
+  - name: "sorted feed"
+    input:
+      feed_config:
+        slug: "recent"
+        filter: "True"
+        sort: "date"
+        reverse: true
+      posts:
+        - { title: "Old", date: "2024-01-01" }
+        - { title: "New", date: "2024-03-01" }
+    output:
+      first_post_title: "New"
+
+  - name: "paginated feed"
+    input:
+      feed_config:
+        slug: "archive"
+        filter: "True"
+        items_per_page: 2
+      posts:
+        - { title: "Post 1" }
+        - { title: "Post 2" }
+        - { title: "Post 3" }
+        - { title: "Post 4" }
+        - { title: "Post 5" }
+    output:
+      total_pages: 3
+      page_1_count: 2
+      page_3_count: 1
+
+  - name: "feed with orphan threshold"
+    description: "Last page with 1 item merges with previous"
+    input:
+      feed_config:
+        slug: "test"
+        filter: "True"
+        items_per_page: 3
+        orphan_threshold: 2
+      posts:
+        - { title: "Post 1" }
+        - { title: "Post 2" }
+        - { title: "Post 3" }
+        - { title: "Post 4" }
+    output:
+      total_pages: 1
+      page_1_count: 4
+
+  - name: "home page feed (empty slug)"
+    input:
+      feed_config:
+        slug: ""
+        filter: "published == True"
+        items_per_page: 5
+      posts:
+        - { title: "Post 1", published: true }
+    output:
+      url: "/"
+      output_path: "output/index.html"
+
+# =============================================================================
+# FEED OUTPUT FORMATS
+# =============================================================================
+feed_formats:
+  - name: "html format output"
+    input:
+      feed_config:
+        slug: "blog"
+        filter: "True"
+        formats: { html: true }
+      posts:
+        - { title: "Test Post", slug: "test" }
+    output:
+      files_created:
+        - "output/blog/index.html"
+
+  - name: "rss format output"
+    input:
+      feed_config:
+        slug: "blog"
+        filter: "True"
+        formats: { rss: true }
+      posts:
+        - { title: "Test", slug: "test", date: "2024-01-15" }
+    output:
+      files_created:
+        - "output/blog/rss.xml"
+      rss_valid: true
+      rss_contains:
+        - "<rss version=\"2.0\""
+        - "<title>Test</title>"
+        - "<pubDate>"
+
+  - name: "atom format output"
+    input:
+      feed_config:
+        slug: "blog"
+        filter: "True"
+        formats: { atom: true }
+      posts:
+        - { title: "Test", slug: "test", date: "2024-01-15" }
+    output:
+      files_created:
+        - "output/blog/atom.xml"
+      atom_contains:
+        - "<feed xmlns=\"http://www.w3.org/2005/Atom\">"
+        - "<entry>"
+        - "<published>"
+
+  - name: "json feed format output"
+    input:
+      feed_config:
+        slug: "blog"
+        filter: "True"
+        formats: { json: true }
+      posts:
+        - { title: "Test", slug: "test" }
+    output:
+      files_created:
+        - "output/blog/feed.json"
+      json_valid: true
+      json_contains:
+        version: "https://jsonfeed.org/version/1.1"
+
+  - name: "markdown format output"
+    input:
+      feed_config:
+        slug: "blog"
+        filter: "True"
+        formats: { markdown: true }
+      posts:
+        - { title: "Test Post", slug: "test", href: "/test/" }
+    output:
+      files_created:
+        - "output/blog/index.md"
+      content_contains:
+        - "[Test Post](/test/)"
+
+  - name: "text format output"
+    input:
+      feed_config:
+        slug: "blog"
+        filter: "True"
+        formats: { text: true }
+      posts:
+        - { title: "Test Post", slug: "test" }
+    output:
+      files_created:
+        - "output/blog/index.txt"
+
+  - name: "multiple formats simultaneously"
+    input:
+      feed_config:
+        slug: "blog"
+        filter: "True"
+        formats:
+          html: true
+          rss: true
+          atom: true
+          json: true
+      posts:
+        - { title: "Test", slug: "test", date: "2024-01-15" }
+    output:
+      files_created:
+        - "output/blog/index.html"
+        - "output/blog/rss.xml"
+        - "output/blog/atom.xml"
+        - "output/blog/feed.json"
+
+  - name: "paginated html creates multiple files"
+    input:
+      feed_config:
+        slug: "archive"
+        filter: "True"
+        items_per_page: 2
+        formats: { html: true }
+      posts:
+        - { title: "Post 1" }
+        - { title: "Post 2" }
+        - { title: "Post 3" }
+    output:
+      files_created:
+        - "output/archive/index.html"
+        - "output/archive/page/2/index.html"
+
+# =============================================================================
+# AUTO-GENERATED FEEDS
+# =============================================================================
+auto_feeds:
+  - name: "auto tag feeds"
+    input:
+      config:
+        feeds:
+          auto_tags:
+            enabled: true
+            slug_prefix: "tags"
+            formats: { html: true, rss: true }
+      posts:
+        - { title: "Python Post", tags: ["python", "tutorial"], published: true }
+        - { title: "Rust Post", tags: ["rust"], published: true }
+        - { title: "Python Advanced", tags: ["python", "advanced"], published: true }
+    output:
+      feeds_created:
+        - slug: "tags/python"
+          posts_count: 2
+        - slug: "tags/rust"
+          posts_count: 1
+        - slug: "tags/tutorial"
+          posts_count: 1
+        - slug: "tags/advanced"
+          posts_count: 1
+      files_created:
+        - "output/tags/python/index.html"
+        - "output/tags/python/rss.xml"
+        - "output/tags/rust/index.html"
+
+  - name: "auto category feeds"
+    input:
+      config:
+        feeds:
+          auto_categories:
+            enabled: true
+            slug_prefix: "category"
+            source_field: "category"
+      posts:
+        - { title: "Tech Post", category: "tech", published: true }
+        - { title: "Life Post", category: "life", published: true }
+    output:
+      feeds_created:
+        - slug: "category/tech"
+        - slug: "category/life"
+
+  - name: "auto date archives"
+    input:
+      config:
+        feeds:
+          auto_date:
+            enabled: true
+            slug_template: "{{ year }}/{{ month }}"
+      posts:
+        - { title: "Jan Post", date: "2024-01-15", published: true }
+        - { title: "Feb Post", date: "2024-02-20", published: true }
+    output:
+      feeds_created:
+        - slug: "2024/01"
+        - slug: "2024/02"
+
+# =============================================================================
+# FEED TEMPLATES
+# =============================================================================
+feed_templates:
+  - name: "custom html template"
+    input:
+      feed_config:
+        slug: "blog"
+        filter: "True"
+        templates:
+          html: "custom-feed.html"
+      templates:
+        "custom-feed.html": "<div class='custom'>{{ feed.title }}</div>"
+    output:
+      output_contains: "<div class='custom'>"
+
+  - name: "custom rss template"
+    input:
+      feed_config:
+        slug: "blog"
+        filter: "True"
+        templates:
+          rss: "custom-rss.xml"
+      templates:
+        "custom-rss.xml": "<?xml version='1.0'?><custom>{{ feed.title }}</custom>"
+    output:
+      rss_contains: "<custom>"
+
+  - name: "feed template context"
+    description: "Verify all expected variables are available"
+    input:
+      feed_config:
+        slug: "blog"
+        title: "My Blog"
+        description: "A test blog"
+        filter: "True"
+      template: |
+        Title: {{ feed.title }}
+        Desc: {{ feed.description }}
+        Slug: {{ feed.slug }}
+        Posts: {{ feed.posts | length }}
+        Page: {{ feed.pagination.current_page }}
+      posts:
+        - { title: "Post 1" }
+        - { title: "Post 2" }
+    output:
+      output_contains:
+        - "Title: My Blog"
+        - "Desc: A test blog"
+        - "Slug: blog"
+        - "Posts: 2"
+        - "Page: 1"
+
+# =============================================================================
+# RSS/ATOM SPECIFIC
+# =============================================================================
+syndication_feeds:
+  - name: "rss date format"
+    input:
+      post:
+        date: "2024-01-15T10:30:00Z"
+      template: "{{ post.date | rss_date }}"
+    output: "Mon, 15 Jan 2024 10:30:00 +0000"
+
+  - name: "atom date format"
+    input:
+      post:
+        date: "2024-01-15T10:30:00Z"
+      template: "{{ post.date | atom_date }}"
+    output: "2024-01-15T10:30:00Z"
+
+  - name: "rss max items limit"
+    input:
+      feed_config:
+        slug: "blog"
+        filter: "True"
+        formats: { rss: true }
+      config:
+        feeds:
+          syndication:
+            max_items: 5
+      posts_count: 20
+    output:
+      rss_item_count: 5
+
+  - name: "xml escape in rss"
+    input:
+      feed_config:
+        slug: "blog"
+        formats: { rss: true }
+      posts:
+        - { title: "Test & <Demo>", description: "A \"quoted\" post" }
+    output:
+      rss_contains:
+        - "Test &amp; &lt;Demo&gt;"
+        - "A &quot;quoted&quot; post"
+
+  - name: "rss guid is permalink"
+    input:
+      feed_config:
+        slug: "blog"
+        formats: { rss: true }
+      config:
+        url: "https://example.com"
+      posts:
+        - { slug: "test-post" }
+    output:
+      rss_contains:
+        - '<guid isPermaLink="true">https://example.com/test-post/</guid>'
+
+# =============================================================================
+# JSON FEED SPECIFIC
+# =============================================================================
+json_feed:
+  - name: "json feed structure"
+    input:
+      feed_config:
+        slug: "blog"
+        title: "My Blog"
+        formats: { json: true }
+      config:
+        url: "https://example.com"
+      posts:
+        - { title: "Test", slug: "test", tags: ["a", "b"] }
+    output:
+      json_structure:
+        version: "https://jsonfeed.org/version/1.1"
+        title: "My Blog"
+        home_page_url: "https://example.com"
+        feed_url: "https://example.com/blog/feed.json"
+        items:
+          - title: "Test"
+            url: "https://example.com/test/"
+            tags: ["a", "b"]
+
+  - name: "json feed includes content_html"
+    input:
+      feed_config:
+        slug: "blog"
+        formats: { json: true }
+      config:
+        feeds:
+          syndication:
+            include_content: true
+      posts:
+        - { title: "Test", article_html: "<p>Hello</p>" }
+    output:
+      json_items:
+        - content_html: "<p>Hello</p>"
+
+# =============================================================================
+# FEED CONFIGURATION INHERITANCE
+# =============================================================================
+feed_config_inheritance:
+  - name: "feed inherits global defaults"
+    input:
+      config:
+        feeds:
+          defaults:
+            items_per_page: 15
+            formats:
+              html: true
+              rss: true
+              atom: false
+      feed_config:
+        slug: "blog"
+        filter: "True"
+        # No items_per_page or formats specified
+    output:
+      items_per_page: 15
+      formats:
+        html: true
+        rss: true
+        atom: false
+
+  - name: "feed overrides items_per_page"
+    input:
+      config:
+        feeds:
+          defaults:
+            items_per_page: 10
+      feed_config:
+        slug: "blog"
+        filter: "True"
+        items_per_page: 5
+    output:
+      items_per_page: 5
+
+  - name: "feed overrides single format"
+    description: "Override one format, inherit others"
+    input:
+      config:
+        feeds:
+          defaults:
+            formats:
+              html: true
+              rss: true
+              atom: false
+              json: false
+      feed_config:
+        slug: "blog"
+        filter: "True"
+        formats: { atom: true }
+    output:
+      formats:
+        html: true
+        rss: true
+        atom: true
+        json: false
+
+  - name: "feed disables inherited format"
+    input:
+      config:
+        feeds:
+          defaults:
+            formats:
+              html: true
+              rss: true
+      feed_config:
+        slug: "api"
+        filter: "True"
+        formats: { html: false, rss: false, json: true }
+    output:
+      formats:
+        html: false
+        rss: false
+        json: true
+
+  - name: "feed inherits template defaults"
+    input:
+      config:
+        feeds:
+          defaults:
+            templates:
+              html: "custom-feed.html"
+              card: "custom-card.html"
+      feed_config:
+        slug: "blog"
+        filter: "True"
+    output:
+      templates:
+        html: "custom-feed.html"
+        card: "custom-card.html"
+
+  - name: "feed overrides single template"
+    input:
+      config:
+        feeds:
+          defaults:
+            templates:
+              html: "feed.html"
+              card: "card.html"
+      feed_config:
+        slug: "featured"
+        filter: "True"
+        templates: { html: "featured-feed.html" }
+    output:
+      templates:
+        html: "featured-feed.html"
+        card: "card.html"
+
+  - name: "built-in defaults when no config"
+    description: "Use built-in defaults when no [name.feeds.defaults] specified"
+    input:
+      config: {}
+      feed_config:
+        slug: "blog"
+        filter: "True"
+    output:
+      items_per_page: 10
+      orphan_threshold: 3
+      formats:
+        html: true
+        rss: true
+        atom: false
+        json: false
+        markdown: false
+        text: false
+
+  - name: "auto_tags inherits and overrides"
+    input:
+      config:
+        feeds:
+          defaults:
+            items_per_page: 10
+            formats:
+              html: true
+              rss: true
+              atom: true
+          auto_tags:
+            enabled: true
+            slug_prefix: "tags"
+            formats: { atom: false }
+      posts:
+        - { tags: ["python"], published: true }
+    output:
+      auto_feed_python:
+        items_per_page: 10
+        formats:
+          html: true
+          rss: true
+          atom: false
+
+  - name: "syndication settings apply to all feeds"
+    input:
+      config:
+        feeds:
+          syndication:
+            max_items: 5
+            include_content: true
+      feed_config:
+        slug: "blog"
+        formats: { rss: true }
+      posts_count: 20
+    output:
+      rss_item_count: 5
+      rss_includes_content: true
+
+  - name: "feed overrides syndication max_items"
+    input:
+      config:
+        feeds:
+          syndication:
+            max_items: 20
+      feed_config:
+        slug: "short"
+        formats: { rss: true }
+        max_items: 3
+      posts_count: 10
+    output:
+      rss_item_count: 3
+
+# =============================================================================
+# OUTPUT STRUCTURE
+# =============================================================================
+output_structure:
+  - name: "post output path"
+    input:
+      post:
+        slug: "hello-world"
+      output_dir: "public"
+    output: "public/hello-world/index.html"
+
+  - name: "nested slug output path"
+    input:
+      post:
+        slug: "blog/2024/my-post"
+      output_dir: "public"
+    output: "public/blog/2024/my-post/index.html"
+
+  - name: "feed output path"
+    input:
+      feed:
+        slug: "archive"
+      output_dir: "public"
+    output: "public/archive/index.html"
+
+  - name: "feed page 2 output path"
+    input:
+      feed:
+        slug: "blog"
+        page: 2
+      output_dir: "public"
+    output: "public/blog/page/2/index.html"
+
+  - name: "rss feed path"
+    input:
+      output_dir: "public"
+    output: "public/rss.xml"
+
+  - name: "sitemap path"
+    input:
+      output_dir: "public"
+    output: "public/sitemap.xml"
+
+# =============================================================================
+# CONFIGURATION
+# =============================================================================
+configuration:
+  - name: "default output dir"
+    input:
+      config: {}
+    output:
+      output_dir: "output"
+
+  - name: "custom output dir"
+    input:
+      config:
+        output_dir: "public"
+    output:
+      output_dir: "public"
+
+  - name: "default glob patterns"
+    input:
+      config: {}
+    output:
+      glob_patterns: ["**/*.md"]
+
+  - name: "hooks default expansion"
+    input:
+      config:
+        hooks: ["default"]
+    output_contains:
+      hooks_includes:
+        - "glob"
+        - "load"
+        - "render"
+        - "save"
+
+  - name: "disabled hooks"
+    input:
+      config:
+        hooks: ["default"]
+        disabled_hooks: ["toc", "wikilinks"]
+    output_not_contains:
+      hooks:
+        - "toc"
+        - "wikilinks"
+
+# =============================================================================
+# CONFIGURATION FILE DISCOVERY
+# =============================================================================
+config_file_discovery:
+  - name: "finds name.toml in current directory"
+    input:
+      files:
+        - { path: "./my-ssg.toml", content: '[my-ssg]\noutput_dir = "public"' }
+      cli_args: []
+    output:
+      config_file: "./my-ssg.toml"
+      output_dir: "public"
+
+  - name: "cli config overrides discovery"
+    input:
+      files:
+        - { path: "./my-ssg.toml", content: '[my-ssg]\noutput_dir = "default"' }
+        - { path: "./custom/config.toml", content: '[my-ssg]\noutput_dir = "custom"' }
+      cli_args: ["--config", "./custom/config.toml"]
+    output:
+      config_file: "./custom/config.toml"
+      output_dir: "custom"
+
+  - name: "finds yaml format"
+    input:
+      files:
+        - { path: "./my-ssg.yaml", content: "my-ssg:\n  output_dir: yaml-output" }
+    output:
+      config_file: "./my-ssg.yaml"
+      output_dir: "yaml-output"
+
+  - name: "toml preferred over yaml"
+    input:
+      files:
+        - { path: "./my-ssg.toml", content: '[my-ssg]\noutput_dir = "toml-output"' }
+        - { path: "./my-ssg.yaml", content: "my-ssg:\n  output_dir: yaml-output" }
+    output:
+      config_file: "./my-ssg.toml"
+      output_dir: "toml-output"
+
+  - name: "finds pyproject.toml"
+    input:
+      files:
+        - { path: "./pyproject.toml", content: '[tool.my-ssg]\noutput_dir = "pyproject-output"' }
+    output:
+      config_file: "./pyproject.toml"
+      output_dir: "pyproject-output"
+
+  - name: "local config preferred over pyproject.toml"
+    input:
+      files:
+        - { path: "./my-ssg.toml", content: '[my-ssg]\noutput_dir = "local"' }
+        - { path: "./pyproject.toml", content: '[tool.my-ssg]\noutput_dir = "pyproject"' }
+    output:
+      config_file: "./my-ssg.toml"
+      output_dir: "local"
+
+  - name: "finds global config"
+    input:
+      files:
+        - { path: "~/.config/my-ssg/config.toml", content: '[my-ssg]\nurl = "https://global.com"' }
+    output:
+      global_config_found: true
+      url: "https://global.com"
+
+  - name: "local config overrides global"
+    input:
+      files:
+        - { path: "./my-ssg.toml", content: '[my-ssg]\nurl = "https://local.com"' }
+        - { path: "~/.config/my-ssg/config.toml", content: '[my-ssg]\nurl = "https://global.com"' }
+    output:
+      url: "https://local.com"
+
+  - name: "json format supported"
+    input:
+      files:
+        - { path: "./my-ssg.json", content: '{"my-ssg": {"output_dir": "json-output"}}' }
+    output:
+      output_dir: "json-output"
+
+  - name: "jsonc format with comments"
+    input:
+      files:
+        - path: "./my-ssg.jsonc"
+          content: |
+            {
+              // This is a comment
+              "my-ssg": {
+                "output_dir": "jsonc-output" /* inline comment */
+              }
+            }
+    output:
+      output_dir: "jsonc-output"
+
+  - name: "no config file uses defaults"
+    input:
+      files: []
+    output:
+      output_dir: "output"
+      hooks: ["default"]
+      config_file: null
+
+# =============================================================================
+# ENVIRONMENT VARIABLE CONFIG
+# =============================================================================
+config_env_vars:
+  - name: "env var sets root config"
+    input:
+      env:
+        MY_SSG_OUTPUT_DIR: "env-output"
+    output:
+      output_dir: "env-output"
+
+  - name: "env var overrides config file"
+    input:
+      files:
+        - { path: "./my-ssg.toml", content: '[my-ssg]\noutput_dir = "file-output"' }
+      env:
+        MY_SSG_OUTPUT_DIR: "env-output"
+    output:
+      output_dir: "env-output"
+
+  - name: "env var sets nested config"
+    input:
+      env:
+        MY_SSG_GLOB_USE_GITIGNORE: "false"
+    output:
+      glob:
+        use_gitignore: false
+
+  - name: "env var deep nesting"
+    input:
+      env:
+        MY_SSG_FEEDS_DEFAULTS_ITEMS_PER_PAGE: "25"
+    output:
+      feeds:
+        defaults:
+          items_per_page: 25
+
+  - name: "env var boolean true values"
+    input:
+      env:
+        MY_SSG_GLOB_USE_GITIGNORE: "true"
+    output:
+      glob:
+        use_gitignore: true
+
+  - name: "env var boolean 1 value"
+    input:
+      env:
+        MY_SSG_GLOB_USE_GITIGNORE: "1"
+    output:
+      glob:
+        use_gitignore: true
+
+  - name: "env var boolean yes value"
+    input:
+      env:
+        MY_SSG_GLOB_USE_GITIGNORE: "yes"
+    output:
+      glob:
+        use_gitignore: true
+
+  - name: "env var boolean false values"
+    input:
+      env:
+        MY_SSG_GLOB_USE_GITIGNORE: "false"
+    output:
+      glob:
+        use_gitignore: false
+
+  - name: "env var boolean 0 value"
+    input:
+      env:
+        MY_SSG_GLOB_USE_GITIGNORE: "0"
+    output:
+      glob:
+        use_gitignore: false
+
+  - name: "env var list value comma separated"
+    input:
+      env:
+        MY_SSG_GLOB_PATTERNS: "posts/**/*.md,pages/*.md"
+    output:
+      glob:
+        patterns: ["posts/**/*.md", "pages/*.md"]
+
+  - name: "env var integer conversion"
+    input:
+      env:
+        MY_SSG_CONCURRENCY: "8"
+    output:
+      concurrency: 8
+
+  - name: "cli overrides env var"
+    input:
+      env:
+        MY_SSG_OUTPUT_DIR: "env-output"
+      cli_args: ["--output-dir", "cli-output"]
+    output:
+      output_dir: "cli-output"
+
+# =============================================================================
+# CONFIGURATION MERGE BEHAVIOR
+# =============================================================================
+config_merge:
+  - name: "scalar values later wins"
+    input:
+      global_config:
+        output_dir: "global"
+      local_config:
+        output_dir: "local"
+    output:
+      output_dir: "local"
+
+  - name: "objects deep merge"
+    input:
+      global_config:
+        feeds:
+          defaults:
+            formats:
+              html: true
+              rss: true
+      local_config:
+        feeds:
+          defaults:
+            formats:
+              atom: true
+    output:
+      feeds:
+        defaults:
+          formats:
+            html: true
+            rss: true
+            atom: true
+
+  - name: "lists replace not append"
+    input:
+      global_config:
+        glob:
+          patterns: ["**/*.md"]
+      local_config:
+        glob:
+          patterns: ["posts/*.md", "pages/*.md"]
+    output:
+      glob:
+        patterns: ["posts/*.md", "pages/*.md"]
+
+  - name: "list append syntax"
+    input:
+      global_config:
+        glob:
+          patterns: ["**/*.md"]
+      local_config:
+        glob:
+          patterns_append: ["drafts/*.md"]
+    output:
+      glob:
+        patterns: ["**/*.md", "drafts/*.md"]
+
+  - name: "null value removes field"
+    input:
+      global_config:
+        title: "Global Title"
+      local_config:
+        title: null
+    output:
+      title: null
+
+  - name: "explicit false not removed"
+    input:
+      global_config:
+        feeds:
+          defaults:
+            formats:
+              rss: true
+      local_config:
+        feeds:
+          defaults:
+            formats:
+              rss: false
+    output:
+      feeds:
+        defaults:
+          formats:
+            rss: false
+
+  - name: "plugin defaults lowest priority"
+    description: "Plugin-declared defaults are overridden by any config file"
+    input:
+      plugin_defaults:
+        glob:
+          patterns: ["**/*.md"]
+          use_gitignore: true
+      local_config:
+        glob:
+          patterns: ["posts/*.md"]
+    output:
+      glob:
+        patterns: ["posts/*.md"]
+        use_gitignore: true
+
+# =============================================================================
+# CONFIGURATION VALIDATION
+# =============================================================================
+config_validation:
+  - name: "unknown field warning"
+    input:
+      config:
+        typo_field: "value"
+    output:
+      warnings:
+        - "Unknown configuration field: typo_field"
+
+  - name: "invalid type error"
+    input:
+      config:
+        concurrency: "not-a-number"
+    error: true
+    error_type: "ConfigValidationError"
+    error_contains: "concurrency must be integer"
+
+  - name: "negative concurrency error"
+    input:
+      config:
+        concurrency: -5
+    error: true
+    error_type: "ConfigValidationError"
+    error_contains: "concurrency must be >= 0"
+
+  - name: "invalid url format error"
+    input:
+      config:
+        url: "not-a-url"
+    error: true
+    error_type: "ConfigValidationError"
+    error_contains: "url must be a valid URL"
+
+  - name: "empty patterns warning"
+    input:
+      config:
+        glob:
+          patterns: []
+    output:
+      warnings:
+        - "glob.patterns is empty, no content will be discovered"
+
+  - name: "deprecated field warning"
+    input:
+      config:
+        markdown:
+          highlight_theme: "github-dark"
+    output:
+      warnings:
+        - "markdown.highlight_theme is deprecated, use markdown.highlight.theme instead"
+
+  - name: "required field in strict mode"
+    input:
+      config:
+        feeds:
+          - slug: "blog"
+            # missing required filter
+      strict: true
+    error: true
+    error_type: "ConfigValidationError"
+    error_contains: "feeds[0].filter is required"
+
+# =============================================================================
+# CONFIGURATION CLI
+# =============================================================================
+config_cli:
+  - name: "config show displays resolved config"
+    input:
+      config:
+        output_dir: "public"
+        glob:
+          patterns: ["**/*.md"]
+      command: "config show"
+    output_contains:
+      - "output_dir = \"public\""
+      - "[glob]"
+      - "patterns = [\"**/*.md\"]"
+
+  - name: "config show --sources displays origins"
+    input:
+      files:
+        - { path: "./my-ssg.toml", content: '[my-ssg]\noutput_dir = "public"' }
+      env:
+        MY_SSG_URL: "https://example.com"
+      command: "config show --sources"
+    output_contains:
+      - 'output_dir = "public"'
+      - "# ./my-ssg.toml"
+      - 'url = "https://example.com"'
+      - "# MY_SSG_URL"
+
+  - name: "config get retrieves value"
+    input:
+      config:
+        feeds:
+          defaults:
+            items_per_page: 15
+      command: "config get feeds.defaults.items_per_page"
+    output: "15"
+
+  - name: "config get missing key"
+    input:
+      config: {}
+      command: "config get nonexistent.key"
+    error: true
+    error_contains: "Key not found: nonexistent.key"
+
+  - name: "config get --json outputs json"
+    input:
+      config:
+        glob:
+          patterns: ["**/*.md", "pages/*.md"]
+      command: "config get glob.patterns --json"
+    output: '["**/*.md", "pages/*.md"]'
+
+  - name: "config list shows all options"
+    input:
+      command: "config list"
+    output_contains:
+      - "[my-ssg]"
+      - "output_dir"
+      - "Path"
+      - "[my-ssg.glob]"
+      - "patterns"
+
+  - name: "config validate success"
+    input:
+      config:
+        output_dir: "public"
+        url: "https://example.com"
+      command: "config validate"
+    output_contains:
+      - "Configuration is valid"
+    exit_code: 0
+
+  - name: "config validate failure"
+    input:
+      config:
+        concurrency: -1
+      command: "config validate"
+    output_contains:
+      - "Configuration errors"
+      - "concurrency"
+    exit_code: 3
+
+  - name: "config init creates file"
+    input:
+      command: "config init"
+    output:
+      file_created: "./my-ssg.toml"
+      file_contains:
+        - "[my-ssg]"
+        - "output_dir"
+
+  - name: "config init --format yaml"
+    input:
+      command: "config init --format yaml"
+    output:
+      file_created: "./my-ssg.yaml"
+      file_contains:
+        - "my-ssg:"
+        - "output_dir:"
+
+  - name: "config init --full includes all options"
+    input:
+      command: "config init --full"
+    output:
+      file_created: "./my-ssg.toml"
+      file_contains:
+        - "# Glob patterns to find content files"
+        - "[my-ssg.glob]"
+        - "[my-ssg.markdown]"
+        - "[my-ssg.feeds]"
+
+# =============================================================================
+# HREF GENERATION
+# =============================================================================
+href_generation:
+  - name: "basic href"
+    input:
+      slug: "hello-world"
+    output: "/hello-world/"
+
+  - name: "nested href"
+    input:
+      slug: "blog/tutorials/python"
+    output: "/blog/tutorials/python/"
+
+  - name: "href with base url"
+    input:
+      slug: "hello-world"
+      base_url: "https://example.com"
+    output: "/hello-world/"
+    absolute_url: "https://example.com/hello-world/"
+
+# =============================================================================
+# ERROR HANDLING
+# =============================================================================
+error_handling:
+  - name: "invalid frontmatter yaml"
+    input:
+      content: |
+        ---
+        title: "unclosed quote
+        ---
+        Content
+    error: true
+    error_type: "FrontmatterParseError"
+
+  - name: "invalid filter expression"
+    input:
+      filter: "published = True"
+    error: true
+    error_type: "FilterExpressionError"
+
+  - name: "template not found"
+    input:
+      template: "nonexistent.html"
+    error: true
+    error_type: "TemplateNotFoundError"
+
+  - name: "missing required config"
+    input:
+      config: {}
+      required_field: "url"
+    error: false
+    warning: true
+    warning_message: "url not configured"
+
+# =============================================================================
+# CACHING
+# =============================================================================
+caching:
+  - name: "cache hit on unchanged content"
+    input:
+      content: "# Hello"
+      content_hash: "abc123"
+      cache_has: "abc123"
+    output:
+      cache_used: true
+
+  - name: "cache miss on changed content"
+    input:
+      content: "# Hello Updated"
+      content_hash: "def456"
+      cache_has: "abc123"
+    output:
+      cache_used: false
+
+# =============================================================================
+# LIFECYCLE STAGES
+# =============================================================================
+lifecycle:
+  - name: "stages run in order"
+    input:
+      run_to: "render"
+    output:
+      stages_ran:
+        - "config_model"
+        - "post_model"
+        - "create_models"
+        - "load_config"
+        - "configure"
+        - "validate_config"
+        - "glob"
+        - "load"
+        - "pre_render"
+        - "render"
+      stages_not_ran:
+        - "post_render"
+        - "save"
+        - "teardown"
+
+  - name: "full build runs all stages"
+    input:
+      run_to: "teardown"
+    output:
+      stages_ran_count: 13
+
+# =============================================================================
+# INTERNAL LINKS (WIKILINKS)
+# =============================================================================
+wikilinks:
+  - name: "basic wikilink"
+    input:
+      content: "Check out [[other-post]]"
+      posts:
+        - { slug: "other-post", title: "Other Post", href: "/other-post/" }
+    output_contains: '<a href="/other-post/">Other Post</a>'
+
+  - name: "wikilink with custom text"
+    input:
+      content: "See [[other-post|this article]]"
+      posts:
+        - { slug: "other-post", href: "/other-post/" }
+    output_contains: '<a href="/other-post/">this article</a>'
+
+  - name: "wikilink to missing post"
+    input:
+      content: "Link to [[nonexistent]]"
+      posts: []
+    output_contains: "[[nonexistent]]"
+    warning: "Broken wikilink: nonexistent"
+
+# =============================================================================
+# PLUGIN SYSTEM
+# =============================================================================
+plugin_system:
+  - name: "plugin can register attribute"
+    input:
+      plugin:
+        register_attr: "custom_data"
+        configure: "core.custom_data = {}"
+    output:
+      has_attribute: "custom_data"
+
+  - name: "plugin can extend config model"
+    input:
+      plugin:
+        config_model:
+          my_plugin:
+            enabled: true
+      config:
+        my_plugin:
+          enabled: false
+    output:
+      config_value: false
+
+  - name: "plugin can extend post model"
+    input:
+      plugin:
+        post_model:
+          reading_time: 0
+      post:
+        content: "Word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word"
+    output:
+      has_field: "reading_time"
+
+  - name: "plugin hook ordering tryfirst"
+    input:
+      plugins:
+        - { name: "plugin_a", hook: "configure" }
+        - { name: "plugin_b", hook: "configure", tryfirst: true }
+    output:
+      execution_order: ["plugin_b", "plugin_a"]
+
+  - name: "plugin hook ordering trylast"
+    input:
+      plugins:
+        - { name: "plugin_a", hook: "configure", trylast: true }
+        - { name: "plugin_b", hook: "configure" }
+    output:
+      execution_order: ["plugin_b", "plugin_a"]
+
+# =============================================================================
+# CONCURRENCY
+# =============================================================================
+concurrency:
+  - name: "concurrent post processing"
+    description: "Process 100 posts with 8 workers"
+    input:
+      posts_count: 100
+      concurrency: 8
+      post_content: "# Test Post\n\nSome content here."
+    output:
+      all_posts_rendered: true
+      render_stage_used_workers: true
+    notes: "Verify no race conditions, all posts rendered correctly"
+
+  - name: "concurrent processing maintains order"
+    description: "Posts maintain deterministic order after concurrent processing"
+    input:
+      posts:
+        - { slug: "post-01", title: "Post 01" }
+        - { slug: "post-02", title: "Post 02" }
+        - { slug: "post-03", title: "Post 03" }
+        - { slug: "post-04", title: "Post 04" }
+        - { slug: "post-05", title: "Post 05" }
+      concurrency: 4
+    output:
+      slugs_in_order: ["post-01", "post-02", "post-03", "post-04", "post-05"]
+
+  - name: "single threaded fallback"
+    description: "Concurrency of 1 processes sequentially"
+    input:
+      posts_count: 10
+      concurrency: 1
+    output:
+      processed_sequentially: true
+
+# =============================================================================
+# EDGE CASES - LARGE FILES
+# =============================================================================
+edge_cases_large:
+  - name: "large post content"
+    description: "Handle post with 100KB of content"
+    input:
+      content_size_bytes: 102400
+    output:
+      parsed: true
+      rendered: true
+
+  - name: "many posts"
+    description: "Handle 1000 posts"
+    input:
+      posts_count: 1000
+    output:
+      all_rendered: true
+      build_completed: true
+
+  - name: "deeply nested content directory"
+    description: "Handle content 10 levels deep"
+    input:
+      path: "a/b/c/d/e/f/g/h/i/j/post.md"
+    output:
+      discovered: true
+      output_path: "output/a/b/c/d/e/f/g/h/i/j/post/index.html"
+
+  - name: "post with many tags"
+    description: "Handle post with 100 tags"
+    input:
+      frontmatter:
+        title: "Many Tags"
+        tags: ["tag-001", "tag-002", "...", "tag-100"]
+    output:
+      parsed: true
+      tags_count: 100
+
+# =============================================================================
+# EDGE CASES - UNICODE AND SPECIAL CHARACTERS
+# =============================================================================
+edge_cases_unicode:
+  - name: "unicode filename"
+    input:
+      path: "posts/日本語ファイル.md"
+      content: |
+        ---
+        title: Japanese Post
+        ---
+        Content
+    output:
+      discovered: true
+      slug: "日本語ファイル"
+
+  - name: "unicode in title"
+    input:
+      frontmatter:
+        title: "Привет мир 你好世界 🌍"
+    output:
+      parsed: true
+      title: "Привет мир 你好世界 🌍"
+
+  - name: "emoji in content"
+    input:
+      content: |
+        ---
+        title: Emoji Post
+        ---
+        Hello 👋 World 🌍
+        
+        - Item 1 ✅
+        - Item 2 ❌
+    output:
+      rendered_contains:
+        - "👋"
+        - "🌍"
+        - "✅"
+        - "❌"
+
+  - name: "RTL content (Arabic)"
+    input:
+      content: |
+        ---
+        title: مرحبا بالعالم
+        ---
+        هذا محتوى باللغة العربية
+    output:
+      parsed: true
+      title: "مرحبا بالعالم"
+
+  - name: "mixed encoding resilience"
+    input:
+      path: "posts/post.md"
+      encoding: "utf-8"
+      content_bytes: [0xEF, 0xBB, 0xBF, 0x23, 0x20, 0x54, 0x65, 0x73, 0x74]  # BOM + "# Test"
+    output:
+      parsed: true
+      bom_stripped: true
+
+  - name: "special characters in slug"
+    input:
+      title: "C++ vs C# vs F# — Which is Best?"
+    output:
+      slug: "c-vs-c-vs-f-which-is-best"
+
+# =============================================================================
+# EDGE CASES - TEMPLATES
+# =============================================================================
+edge_cases_templates:
+  - name: "circular template inheritance"
+    description: "Detect and error on circular extends"
+    input:
+      templates:
+        "a.html": "{% extends 'b.html' %}{% block content %}A{% endblock %}"
+        "b.html": "{% extends 'c.html' %}{% block content %}B{% endblock %}"
+        "c.html": "{% extends 'a.html' %}{% block content %}C{% endblock %}"
+      post:
+        template: "a.html"
+    error: true
+    error_type: "CircularTemplateError"
+
+  - name: "deep template inheritance"
+    description: "Handle 10 levels of template inheritance"
+    input:
+      templates:
+        "base.html": "<!DOCTYPE html>{% block content %}{% endblock %}"
+        "level1.html": "{% extends 'base.html' %}{% block content %}1{% endblock %}"
+        "level2.html": "{% extends 'level1.html' %}{% block content %}2{% endblock %}"
+        # ... levels 3-9
+        "level10.html": "{% extends 'level9.html' %}{% block content %}10{% endblock %}"
+      post:
+        template: "level10.html"
+    output:
+      rendered: true
+
+  - name: "missing include file"
+    input:
+      template: "{% include 'nonexistent.html' %}"
+    error: true
+    error_type: "TemplateNotFoundError"
+
+  - name: "include with ignore missing"
+    input:
+      template: "{% include 'nonexistent.html' ignore missing %}OK"
+    output: "OK"
+
+  - name: "recursive macro"
+    input:
+      template: |
+        {% macro tree(items, depth=0) %}
+        {% for item in items %}
+        {{ '  ' * depth }}- {{ item.name }}
+        {% if item.children %}{{ tree(item.children, depth + 1) }}{% endif %}
+        {% endfor %}
+        {% endmacro %}
+        {{ tree(items) }}
+      context:
+        items:
+          - name: "Root"
+            children:
+              - name: "Child 1"
+                children:
+                  - name: "Grandchild"
+              - name: "Child 2"
+    output_contains:
+      - "- Root"
+      - "  - Child 1"
+      - "    - Grandchild"
+      - "  - Child 2"
+
+# =============================================================================
+# EDGE CASES - PLUGINS
+# =============================================================================
+edge_cases_plugins:
+  - name: "plugin error isolation"
+    description: "One plugin error doesn't crash build"
+    input:
+      plugins:
+        - name: "working_plugin"
+          hook: "pre_render"
+          action: "pass"
+        - name: "broken_plugin"
+          hook: "pre_render"
+          action: "raise Exception('Plugin failed')"
+        - name: "another_working_plugin"
+          hook: "pre_render"
+          action: "pass"
+      config:
+        plugin_error_mode: "warn"  # vs "fail"
+    output:
+      build_completed: true
+      warnings_include: "Plugin broken_plugin failed"
+      other_plugins_ran: true
+
+  - name: "plugin modifies post correctly"
+    input:
+      plugin:
+        hook: "pre_render"
+        action: "post.custom_field = 'added'"
+      post:
+        title: "Test"
+    output:
+      post_has_field: "custom_field"
+      field_value: "added"
+
+  - name: "plugin load order"
+    description: "Plugins load in config order"
+    input:
+      config:
+        hooks: ["plugin_a", "plugin_b", "plugin_c"]
+    output:
+      load_order: ["plugin_a", "plugin_b", "plugin_c"]
+
+# =============================================================================
+# EDGE CASES - EMPTY/MISSING DATA
+# =============================================================================
+edge_cases_empty:
+  - name: "empty content directory"
+    input:
+      content_dir: "posts/"
+      files: []
+    output:
+      posts_count: 0
+      build_completed: true
+      warning: "No content files found"
+
+  - name: "post with no content"
+    input:
+      content: |
+        ---
+        title: Empty Post
+        ---
+    output:
+      parsed: true
+      content: ""
+      article_html: ""
+
+  - name: "post with only whitespace content"
+    input:
+      content: |
+        ---
+        title: Whitespace Post
+        ---
+        
+           
+        
+    output:
+      parsed: true
+      content_trimmed: ""
+
+  - name: "empty tags list"
+    input:
+      frontmatter:
+        title: "No Tags"
+        tags: []
+    output:
+      tags: []
+      tags_count: 0
+
+  - name: "null values in frontmatter"
+    input:
+      content: |
+        ---
+        title: Null Test
+        description: null
+        tags: ~
+        ---
+        Content
+    output:
+      description: null
+      tags: null
+
+# =============================================================================
+# EDGE CASES - INCREMENTAL BUILDS
+# =============================================================================
+incremental_builds:
+  - name: "detect changed file"
+    input:
+      initial_build:
+        files:
+          - { path: "posts/a.md", content: "# A", mtime: 1000 }
+          - { path: "posts/b.md", content: "# B", mtime: 1000 }
+      second_build:
+        files:
+          - { path: "posts/a.md", content: "# A Modified", mtime: 2000 }
+          - { path: "posts/b.md", content: "# B", mtime: 1000 }
+    output:
+      rebuilt: ["posts/a.md"]
+      from_cache: ["posts/b.md"]
+
+  - name: "detect new file"
+    input:
+      initial_build:
+        files:
+          - { path: "posts/a.md", content: "# A" }
+      second_build:
+        files:
+          - { path: "posts/a.md", content: "# A" }
+          - { path: "posts/b.md", content: "# B" }
+    output:
+      rebuilt: ["posts/b.md"]
+      from_cache: ["posts/a.md"]
+
+  - name: "detect deleted file"
+    input:
+      initial_build:
+        files:
+          - { path: "posts/a.md", content: "# A" }
+          - { path: "posts/b.md", content: "# B" }
+      second_build:
+        files:
+          - { path: "posts/a.md", content: "# A" }
+    output:
+      removed_from_output: ["b"]
+
+  - name: "template change triggers rebuild"
+    input:
+      initial_build:
+        files:
+          - { path: "posts/a.md", content: "# A", template: "post.html" }
+        templates:
+          - { path: "templates/post.html", content: "<article>{{ body }}</article>", mtime: 1000 }
+      second_build:
+        templates:
+          - { path: "templates/post.html", content: "<main>{{ body }}</main>", mtime: 2000 }
+    output:
+      rebuilt: ["posts/a.md"]
+
+  - name: "config change triggers full rebuild"
+    input:
+      initial_build:
+        config: { output_dir: "public" }
+      second_build:
+        config: { output_dir: "dist" }
+    output:
+      full_rebuild: true
+
+# =============================================================================
+# ASSET FINGERPRINTING
+# =============================================================================
+asset_fingerprinting:
+  - name: "basic asset fingerprint"
+    input:
+      asset:
+        path: "static/css/style.css"
+        content: "body { color: red; }"
+      fingerprint_enabled: true
+      fingerprint_length: 8
+    output:
+      output_path_matches: "static/css/style.[a-f0-9]{8}.css"
+
+  - name: "asset_url filter"
+    input:
+      template: '{{ "css/style.css" | asset_url }}'
+      manifest:
+        "css/style.css": "css/style.a1b2c3d4.css"
+    output: "/css/style.a1b2c3d4.css"
+
+  - name: "asset_url with cdn"
+    input:
+      template: '{{ "css/style.css" | asset_url(cdn=True) }}'
+      manifest:
+        "css/style.css": "css/style.a1b2c3d4.css"
+      config:
+        cdn_url: "https://cdn.example.com"
+    output: "https://cdn.example.com/css/style.a1b2c3d4.css"
+
+  - name: "excluded asset not fingerprinted"
+    input:
+      asset:
+        path: "static/robots.txt"
+        content: "User-agent: *"
+      fingerprint_enabled: true
+      exclude_fingerprint: ["robots.txt"]
+    output:
+      output_path: "static/robots.txt"
+
+  - name: "unchanged asset keeps fingerprint"
+    input:
+      initial_build:
+        asset: { path: "style.css", content: "body{}" }
+      second_build:
+        asset: { path: "style.css", content: "body{}" }
+    output:
+      fingerprint_unchanged: true
+      asset_not_recopied: true
+
+# =============================================================================
+# DEV SERVER
+# =============================================================================
+dev_server:
+  - name: "serve starts on configured port"
+    input:
+      config:
+        serve:
+          port: 8080
+    output:
+      server_port: 8080
+
+  - name: "serve injects livereload script"
+    input:
+      html: "<html><body>Hello</body></html>"
+      livereload: true
+    output_contains:
+      - "livereload"
+      - "<script"
+
+  - name: "file change triggers rebuild"
+    input:
+      server_running: true
+      file_changed: "posts/test.md"
+    output:
+      rebuild_triggered: true
+      debounce_applied: true
+
+  - name: "static asset change copies only"
+    input:
+      server_running: true
+      file_changed: "static/image.png"
+    output:
+      full_rebuild: false
+      asset_copied: true
+
+# =============================================================================
+# TEMPLATE ENGINE COMPATIBILITY
+# =============================================================================
+template_engine_compat:
+  - name: "date formatting consistency"
+    input:
+      template: '{{ date | date("%Y-%m-%d") }}'
+      context:
+        date: "2024-01-15T10:30:00Z"
+    output: "2024-01-15"
+
+  - name: "empty list truthiness check"
+    description: "Use length check for cross-engine compatibility"
+    input:
+      template: '{% if items | length > 0 %}yes{% else %}no{% endif %}'
+      context:
+        items: []
+    output: "no"
+
+  - name: "undefined variable with default"
+    input:
+      template: "Hello {{ name | default('World') }}"
+      context: {}
+    output: "Hello World"
+
+  - name: "slugify filter consistency"
+    input:
+      template: "{{ title | slugify }}"
+      context:
+        title: "Hello World!"
+    output: "hello-world"
+
+  - name: "safe filter for html"
+    input:
+      template: "{{ html | safe }}"
+      context:
+        html: "<strong>Bold</strong>"
+    output: "<strong>Bold</strong>"
+
+  - name: "truncate filter"
+    input:
+      template: '{{ text | truncate(10) }}'
+      context:
+        text: "This is a long string"
+    output_matches: "This is..."
+
+# =============================================================================
+# THEMES
+# =============================================================================
+themes:
+  - name: "default theme exists"
+    input:
+      config:
+        theme:
+          name: "default"
+    output:
+      theme_found: true
+      theme_has_templates: true
+      theme_has_css: true
+
+  - name: "select built-in theme"
+    input:
+      config:
+        theme:
+          name: "minimal"
+    output:
+      theme_name: "minimal"
+      theme_found: true
+
+  - name: "custom theme from project"
+    input:
+      files:
+        - { path: "themes/custom/theme.toml", content: '[theme]\nname = "Custom"' }
+        - { path: "themes/custom/templates/base.html", content: "<!DOCTYPE html>" }
+      config:
+        theme:
+          name: "custom"
+    output:
+      theme_found: true
+      theme_location: "./themes/custom"
+
+  - name: "theme not found error"
+    input:
+      config:
+        theme:
+          name: "nonexistent"
+    error: true
+    error_type: "ThemeNotFoundError"
+    error_contains: "Theme 'nonexistent' not found"
+
+# =============================================================================
+# THEME FILE RESOLUTION
+# =============================================================================
+theme_resolution:
+  - name: "local template overrides theme"
+    input:
+      files:
+        - { path: "templates/post.html", content: "<article>LOCAL</article>" }
+      config:
+        theme:
+          name: "default"
+    output:
+      template_used: "./templates/post.html"
+      template_content_contains: "LOCAL"
+
+  - name: "local partial overrides theme"
+    input:
+      files:
+        - { path: "templates/partials/footer.html", content: "<footer>MY FOOTER</footer>" }
+      config:
+        theme:
+          name: "default"
+    output:
+      partial_used: "./templates/partials/footer.html"
+
+  - name: "local css overrides theme"
+    input:
+      files:
+        - { path: "static/css/main.css", content: "body { color: red; }" }
+      config:
+        theme:
+          name: "default"
+    output:
+      css_used: "./static/css/main.css"
+
+  - name: "theme inheritance"
+    description: "Child theme extends parent theme"
+    input:
+      files:
+        - path: "themes/child/theme.toml"
+          content: |
+            [theme]
+            name = "Child"
+            [theme.extends]
+            theme = "default"
+        - path: "themes/child/templates/partials/header.html"
+          content: "<header>CHILD HEADER</header>"
+      config:
+        theme:
+          name: "child"
+    output:
+      header_from: "child"
+      base_from: "default"
+
+  - name: "resolution order"
+    description: "Project > Theme > Parent Theme > Default"
+    input:
+      files:
+        - { path: "templates/card.html", content: "PROJECT CARD" }
+        - { path: "themes/custom/theme.toml", content: '[theme]\nname = "Custom"\n[theme.extends]\ntheme = "default"' }
+        - { path: "themes/custom/templates/post.html", content: "CUSTOM POST" }
+      config:
+        theme:
+          name: "custom"
+    output:
+      card_from: "project"
+      post_from: "custom"
+      base_from: "default"
+
+# =============================================================================
+# THEME OPTIONS
+# =============================================================================
+theme_options:
+  - name: "theme option passed to template"
+    input:
+      config:
+        theme:
+          name: "default"
+          options:
+            show_toc: false
+      template: '{% if config.theme.options.show_toc %}TOC{% endif %}CONTENT'
+    output: "CONTENT"
+
+  - name: "theme option with default"
+    input:
+      config:
+        theme:
+          name: "default"
+          # show_toc not specified, uses theme default
+    output:
+      theme_options:
+        show_toc: true
+
+  - name: "custom primary color"
+    input:
+      config:
+        theme:
+          name: "default"
+          options:
+            primary_color: "#8b5cf6"
+    output:
+      css_variable_set: true
+
+# =============================================================================
+# CSS VARIABLE OVERRIDES
+# =============================================================================
+css_variables:
+  - name: "variables injected in head"
+    input:
+      config:
+        theme:
+          variables:
+            "--color-primary": "#8b5cf6"
+            "--font-body": "Inter, system-ui"
+    output_contains:
+      - "<style>"
+      - ":root"
+      - "--color-primary: #8b5cf6"
+      - "--font-body: Inter, system-ui"
+
+  - name: "custom css file loaded"
+    input:
+      files:
+        - { path: "static/custom.css", content: ".custom { color: red; }" }
+      config:
+        theme:
+          custom_css: "custom.css"
+    output_contains:
+      - '<link rel="stylesheet" href='
+      - "custom.css"
+
+  - name: "custom css after theme css"
+    description: "Custom CSS loads after theme CSS to allow overrides"
+    input:
+      config:
+        theme:
+          name: "default"
+          custom_css: "custom.css"
+    output:
+      css_load_order:
+        - "theme/main.css"
+        - "custom.css"
+
+# =============================================================================
+# ADMONITION STYLES
+# =============================================================================
+admonition_styles:
+  - name: "note admonition has blue styling"
+    input:
+      content: |
+        !!! note "Important"
+            This is important.
+      theme: "default"
+    output:
+      html_contains:
+        - 'class="admonition note"'
+      css_defines:
+        - ".admonition.note"
+
+  - name: "all admonition types styled"
+    input:
+      theme: "default"
+    output:
+      css_defines:
+        - ".admonition.note"
+        - ".admonition.info"
+        - ".admonition.tip"
+        - ".admonition.hint"
+        - ".admonition.success"
+        - ".admonition.warning"
+        - ".admonition.caution"
+        - ".admonition.danger"
+        - ".admonition.error"
+        - ".admonition.bug"
+        - ".admonition.example"
+        - ".admonition.quote"
+        - ".admonition.abstract"
+        - "aside.admonition.aside"
+
+  - name: "collapsible admonition"
+    input:
+      content: |
+        ??? note "Click to expand"
+            Hidden content.
+      theme: "default"
+    output:
+      html_contains:
+        - "<details"
+        - "<summary"
+        - "Click to expand"
+
+  - name: "admonition dark mode styles"
+    input:
+      theme: "default"
+    output:
+      css_contains:
+        - "@media (prefers-color-scheme: dark)"
+        - ".admonition.note"
+
+# =============================================================================
+# ASIDE ADMONITIONS
+# =============================================================================
+aside_admonitions:
+  - name: "basic aside renders"
+    input:
+      content: |
+        !!! aside
+            This is a marginal note.
+    output:
+      html_contains:
+        - '<aside class="admonition aside'
+        - "This is a marginal note"
+
+  - name: "aside with title"
+    input:
+      content: |
+        !!! aside "Definition"
+            A static site generator converts source files.
+    output:
+      html_contains:
+        - 'class="admonition aside'
+        - 'class="admonition-title"'
+        - "Definition"
+        - "static site generator"
+
+  - name: "aside inline modifier"
+    input:
+      content: |
+        !!! aside inline
+            Floats left.
+    output:
+      html_contains:
+        - 'class="admonition aside aside-inline"'
+
+  - name: "aside inline end modifier"
+    input:
+      content: |
+        !!! aside inline end
+            Floats right.
+    output:
+      html_contains:
+        - 'class="admonition aside aside-inline-end"'
+
+  - name: "aside css defined"
+    input:
+      theme: "default"
+    output:
+      css_defines:
+        - "aside.admonition.aside"
+        - ".aside-inline"
+        - ".aside-inline-end"
+
+  - name: "aside responsive styles"
+    input:
+      theme: "default"
+    output:
+      css_contains:
+        - "@media (max-width: 768px)"
+        - "aside.admonition.aside"
+
+  - name: "aside dark mode styles"
+    input:
+      theme: "default"
+    output:
+      css_contains:
+        - "@media (prefers-color-scheme: dark)"
+        - "aside.admonition.aside"
+
+# =============================================================================
+# CHAT CONVERSATIONS
+# =============================================================================
+chat_conversations:
+  - name: "basic chat container"
+    input:
+      content: |
+        !!! chat
+            !!! chat-left "Alice"
+                Hello!
+            !!! chat-right "Bob"
+                Hi there!
+    output:
+      html_contains:
+        - 'class="chat-container"'
+        - 'class="chat-message chat-left"'
+        - 'class="chat-message chat-right"'
+
+  - name: "chat with author names"
+    input:
+      content: |
+        !!! chat
+            !!! chat-left "Alice"
+                Hello!
+    output:
+      html_contains:
+        - 'class="chat-author"'
+        - "Alice"
+        - 'class="chat-content"'
+        - "Hello!"
+
+  - name: "chat with timestamps"
+    input:
+      content: |
+        !!! chat
+            !!! chat-left "Alice" "10:30 AM"
+                Hello!
+    output:
+      html_contains:
+        - 'class="chat-timestamp"'
+        - "10:30 AM"
+
+  - name: "chat with avatar"
+    input:
+      content: |
+        !!! chat-left "Alice" avatar="/images/alice.jpg"
+            Hello!
+    output:
+      html_contains:
+        - 'class="chat-avatar"'
+        - "background-image"
+        - "/images/alice.jpg"
+
+  - name: "chat avatars from frontmatter"
+    input:
+      content: |
+        ---
+        chat_avatars:
+          Alice: /images/alice.jpg
+        ---
+        
+        !!! chat
+            !!! chat-left "Alice"
+                Hello!
+    output:
+      html_contains:
+        - 'class="chat-avatar"'
+        - "/images/alice.jpg"
+
+  - name: "chat system message"
+    input:
+      content: |
+        !!! chat
+            !!! chat-system
+                Alice has joined the chat
+    output:
+      html_contains:
+        - 'class="chat-message chat-system"'
+        - "Alice has joined the chat"
+
+  - name: "chat bubble styling"
+    input:
+      content: |
+        !!! chat
+            !!! chat-left "Alice"
+                Left message
+            !!! chat-right "Bob"
+                Right message
+    output:
+      html_contains:
+        - 'class="chat-bubble"'
+
+  - name: "chat left bubble distinct from right"
+    input:
+      theme: "default"
+    output:
+      css_defines:
+        - ".chat-left .chat-bubble"
+        - ".chat-right .chat-bubble"
+
+  - name: "chat css defined"
+    input:
+      theme: "default"
+    output:
+      css_defines:
+        - ".chat-container"
+        - ".chat-message"
+        - ".chat-bubble"
+        - ".chat-author"
+        - ".chat-content"
+        - ".chat-timestamp"
+        - ".chat-avatar"
+
+  - name: "chat responsive styles"
+    input:
+      theme: "default"
+    output:
+      css_contains:
+        - "@media (max-width: 480px)"
+        - ".chat-message"
+
+  - name: "chat dark mode styles"
+    input:
+      theme: "default"
+    output:
+      css_contains:
+        - "@media (prefers-color-scheme: dark)"
+        - ".chat-left .chat-bubble"
+
+  - name: "multiple messages in conversation"
+    input:
+      content: |
+        !!! chat
+            !!! chat-left "Alice"
+                First message
+            !!! chat-right "Bob"
+                Second message
+            !!! chat-left "Alice"
+                Third message
+            !!! chat-right "Bob"
+                Fourth message
+    output:
+      html_contains:
+        - "First message"
+        - "Second message"
+        - "Third message"
+        - "Fourth message"
+      chat_message_count: 4
+
+  - name: "chat content supports markdown"
+    input:
+      content: |
+        !!! chat
+            !!! chat-left "Alice"
+                Check out **this link**: [example](https://example.com)
+    output:
+      html_contains:
+        - "<strong>this link</strong>"
+        - '<a href="https://example.com">'
+
+# =============================================================================
+# THEME TEMPLATES
+# =============================================================================
+theme_templates:
+  - name: "base template has required blocks"
+    input:
+      theme: "default"
+    output:
+      template_has_blocks:
+        - "title"
+        - "meta"
+        - "head"
+        - "header"
+        - "content"
+        - "footer"
+        - "scripts"
+
+  - name: "post template extends base"
+    input:
+      theme: "default"
+    output:
+      post_extends: "base.html"
+      post_has_blocks:
+        - "title"
+        - "content"
+
+  - name: "feed template extends base"
+    input:
+      theme: "default"
+    output:
+      feed_extends: "base.html"
+
+  - name: "card template included in feed"
+    input:
+      theme: "default"
+      feed:
+        posts: [{ title: "Test" }]
+    output_contains:
+      - "card"
+
+# =============================================================================
+# THEME FILTERS
+# =============================================================================
+theme_filters:
+  - name: "theme_asset filter"
+    input:
+      template: '{{ "css/main.css" | theme_asset }}'
+      config:
+        theme:
+          name: "default"
+    output_matches: ".*/themes/default/static/css/main.css"
+
+  - name: "asset_url filter for project assets"
+    input:
+      template: '{{ "images/logo.png" | asset_url }}'
+    output: "/images/logo.png"
+
+  - name: "date filter"
+    input:
+      template: '{{ post.date | date("%B %d, %Y") }}'
+      context:
+        post:
+          date: "2024-01-15"
+    output: "January 15, 2024"
+
+  - name: "isoformat filter"
+    input:
+      template: '{{ post.date | isoformat }}'
+      context:
+        post:
+          date: "2024-01-15T10:30:00"
+    output: "2024-01-15T10:30:00"
+
+# =============================================================================
+# THEME CLI
+# =============================================================================
+theme_cli:
+  - name: "theme list shows installed"
+    input:
+      command: "theme list"
+    output_contains:
+      - "default"
+      - "built-in"
+
+  - name: "theme info shows details"
+    input:
+      command: "theme info default"
+    output_contains:
+      - "Name:"
+      - "Version:"
+      - "Features:"
+
+  - name: "theme new creates scaffold"
+    input:
+      command: "theme new my-theme"
+    output:
+      files_created:
+        - "themes/my-theme/theme.toml"
+        - "themes/my-theme/templates/base.html"
+        - "themes/my-theme/templates/post.html"
+        - "themes/my-theme/static/css/main.css"
+
+# =============================================================================
+# CODE BLOCK STYLES
+# =============================================================================
+code_styles:
+  - name: "inline code styled"
+    input:
+      content: "Use `print()` function"
+      theme: "default"
+    output:
+      html_contains:
+        - "<code>"
+      css_defines:
+        - "code"
+
+  - name: "code block styled"
+    input:
+      content: |
+        ```python
+        print("hello")
+        ```
+      theme: "default"
+    output:
+      html_contains:
+        - "<pre>"
+        - "<code"
+      css_defines:
+        - "pre"
+        - "pre code"
+
+  - name: "syntax highlighting theme applied"
+    input:
+      config:
+        markdown:
+          highlight:
+            theme: "github-dark"
+    output:
+      syntax_theme: "github-dark"
+
+  - name: "line numbers optional"
+    input:
+      config:
+        markdown:
+          highlight:
+            line_numbers: true
+      content: |
+        ```python
+        print("hello")
+        ```
+    output:
+      html_contains:
+        - "line-numbers"
+
+# =============================================================================
+# OPTIONAL PLUGINS - GLOSSARY
+# =============================================================================
+glossary_plugin:
+  - name: "glossary term linked"
+    input:
+      config:
+        glossary:
+          enabled: true
+      posts:
+        - slug: "api"
+          templateKey: "glossary"
+          title: "API"
+          description: "Application Programming Interface"
+        - slug: "test-post"
+          content: "We use the API to connect services."
+    output:
+      test_post_html_contains:
+        - '<a href="/api/"'
+        - 'class="glossary-term"'
+        - "API"
+
+  - name: "glossary term with alias"
+    input:
+      config:
+        glossary:
+          enabled: true
+      posts:
+        - slug: "javascript"
+          templateKey: "glossary"
+          title: "JavaScript"
+          aliases: ["JS", "ECMAScript"]
+        - slug: "test-post"
+          content: "I love JS for web development."
+    output:
+      test_post_html_contains:
+        - '<a href="/javascript/"'
+        - "JS"
+
+  - name: "glossary respects max_links_per_term"
+    input:
+      config:
+        glossary:
+          enabled: true
+          max_links_per_term: 1
+      posts:
+        - slug: "api"
+          templateKey: "glossary"
+          title: "API"
+        - slug: "test-post"
+          content: "API is great. API is useful. API is everywhere."
+    output:
+      link_count: 1
+
+  - name: "glossary case insensitive"
+    input:
+      config:
+        glossary:
+          enabled: true
+          case_sensitive: false
+      posts:
+        - slug: "api"
+          templateKey: "glossary"
+          title: "API"
+        - slug: "test-post"
+          content: "The api is useful."
+    output:
+      test_post_html_contains:
+        - '<a href="/api/"'
+
+  - name: "glossary excludes self-links"
+    description: "Glossary post should not link to itself"
+    input:
+      config:
+        glossary:
+          enabled: true
+      posts:
+        - slug: "api"
+          templateKey: "glossary"
+          title: "API"
+          content: "API stands for Application Programming Interface."
+    output:
+      api_post_link_count: 0
+
+  - name: "glossary exports json"
+    input:
+      config:
+        glossary:
+          enabled: true
+          export_json: true
+      posts:
+        - slug: "api"
+          templateKey: "glossary"
+          title: "API"
+          description: "Application Programming Interface"
+    output:
+      files_created:
+        - "output/glossary.json"
+      json_contains:
+        - '"term": "API"'
+        - '"slug": "api"'
+
+  - name: "glossary disabled"
+    input:
+      config:
+        glossary:
+          enabled: false
+      posts:
+        - slug: "api"
+          templateKey: "glossary"
+          title: "API"
+        - slug: "test-post"
+          content: "We use the API."
+    output:
+      test_post_html_not_contains:
+        - 'class="glossary-term"'
+
+# =============================================================================
+# OPTIONAL PLUGINS - MERMAID
+# =============================================================================
+mermaid_plugin:
+  - name: "mermaid code block converted"
+    input:
+      config:
+        mermaid:
+          enabled: true
+      content: |
+        ```mermaid
+        graph TD
+            A --> B
+        ```
+    output:
+      html_contains:
+        - '<pre class="mermaid">'
+        - "graph TD"
+        - "A --> B"
+      html_not_contains:
+        - 'class="language-mermaid"'
+
+  - name: "mermaid script injected"
+    input:
+      config:
+        mermaid:
+          enabled: true
+      content: |
+        ```mermaid
+        graph TD
+            A --> B
+        ```
+    output:
+      html_contains:
+        - "<script"
+        - "mermaid"
+
+  - name: "mermaid custom theme"
+    input:
+      config:
+        mermaid:
+          enabled: true
+          theme: "dark"
+      content: |
+        ```mermaid
+        graph TD
+            A --> B
+        ```
+    output:
+      html_contains:
+        - "theme: 'dark'"
+
+  - name: "mermaid sequence diagram"
+    input:
+      config:
+        mermaid:
+          enabled: true
+      content: |
+        ```mermaid
+        sequenceDiagram
+            Alice->>Bob: Hello
+            Bob->>Alice: Hi!
+        ```
+    output:
+      html_contains:
+        - "sequenceDiagram"
+
+  - name: "mermaid disabled"
+    input:
+      config:
+        mermaid:
+          enabled: false
+      content: |
+        ```mermaid
+        graph TD
+            A --> B
+        ```
+    output:
+      html_contains:
+        - 'class="language-mermaid"'
+      html_not_contains:
+        - '<pre class="mermaid">'
+
+  - name: "multiple mermaid blocks"
+    input:
+      config:
+        mermaid:
+          enabled: true
+      content: |
+        ```mermaid
+        graph TD
+            A --> B
+        ```
+        
+        Some text.
+        
+        ```mermaid
+        pie
+            title Votes
+            "A": 30
+            "B": 70
+        ```
+    output:
+      mermaid_block_count: 2
+      script_injection_count: 1
+
+# =============================================================================
+# OPTIONAL PLUGINS - CHARTJS
+# =============================================================================
+chartjs_plugin:
+  - name: "chartjs code block converted"
+    input:
+      config:
+        chartjs:
+          enabled: true
+      content: |
+        ```chartjs
+        {
+          "type": "bar",
+          "data": {
+            "labels": ["A", "B"],
+            "datasets": [{"data": [1, 2]}]
+          }
+        }
+        ```
+    output:
+      html_contains:
+        - "<canvas"
+        - "new Chart"
+      html_not_contains:
+        - 'class="language-chartjs"'
+
+  - name: "chartjs script injected"
+    input:
+      config:
+        chartjs:
+          enabled: true
+      content: |
+        ```chartjs
+        {"type": "bar", "data": {}}
+        ```
+    output:
+      html_contains:
+        - "chart.js"
+
+  - name: "chartjs unique canvas ids"
+    input:
+      config:
+        chartjs:
+          enabled: true
+      content: |
+        ```chartjs
+        {"type": "bar", "data": {}}
+        ```
+        
+        ```chartjs
+        {"type": "line", "data": {}}
+        ```
+    output:
+      canvas_ids_unique: true
+
+  - name: "chartjs disabled"
+    input:
+      config:
+        chartjs:
+          enabled: false
+      content: |
+        ```chartjs
+        {"type": "bar", "data": {}}
+        ```
+    output:
+      html_contains:
+        - 'class="language-chartjs"'
+      html_not_contains:
+        - "<canvas"
+
+  - name: "chartjs invalid json handled"
+    input:
+      config:
+        chartjs:
+          enabled: true
+      content: |
+        ```chartjs
+        not valid json
+        ```
+    output:
+      build_completed: true
+      warning: "Invalid JSON in chartjs block"
+
+# =============================================================================
+# OPTIONAL PLUGINS - CSV FENCE
+# =============================================================================
+csv_fence_plugin:
+  - name: "csv to table basic"
+    input:
+      config:
+        csv_fence:
+          enabled: true
+      content: |
+        ```csv
+        Name,Age,City
+        Alice,30,NYC
+        Bob,25,LA
+        ```
+    output:
+      html_contains:
+        - "<table"
+        - "<thead>"
+        - "<tbody>"
+        - "<th>Name</th>"
+        - "<td>Alice</td>"
+
+  - name: "csv with custom class"
+    input:
+      config:
+        csv_fence:
+          enabled: true
+          table_class: "data-table"
+      content: |
+        ```csv
+        A,B
+        1,2
+        ```
+    output:
+      html_contains:
+        - 'class="data-table"'
+
+  - name: "csv no header"
+    input:
+      config:
+        csv_fence:
+          enabled: true
+          has_header: false
+      content: |
+        ```csv
+        1,2,3
+        4,5,6
+        ```
+    output:
+      html_not_contains:
+        - "<thead>"
+        - "<th>"
+      html_contains:
+        - "<td>1</td>"
+
+  - name: "csv custom delimiter"
+    input:
+      config:
+        csv_fence:
+          enabled: true
+          delimiter: ";"
+      content: |
+        ```csv
+        A;B;C
+        1;2;3
+        ```
+    output:
+      html_contains:
+        - "<th>A</th>"
+        - "<th>B</th>"
+        - "<th>C</th>"
+
+  - name: "csv empty handled"
+    input:
+      config:
+        csv_fence:
+          enabled: true
+      content: |
+        ```csv
+        ```
+    output:
+      build_completed: true
+
+  - name: "csv disabled"
+    input:
+      config:
+        csv_fence:
+          enabled: false
+      content: |
+        ```csv
+        A,B
+        1,2
+        ```
+    output:
+      html_contains:
+        - 'class="language-csv"'
+      html_not_contains:
+        - "<table"
+
+# =============================================================================
+# OPTIONAL PLUGINS - MD VIDEO
+# =============================================================================
+md_video_plugin:
+  - name: "mp4 image to video"
+    input:
+      config:
+        md_video:
+          enabled: true
+      content: |
+        ![Demo video](demo.mp4)
+    output:
+      html_contains:
+        - "<video"
+        - 'src="demo.mp4"'
+        - "controls"
+      html_not_contains:
+        - "<img"
+
+  - name: "webm video converted"
+    input:
+      config:
+        md_video:
+          enabled: true
+      content: |
+        ![WebM demo](video.webm)
+    output:
+      html_contains:
+        - "<video"
+        - 'src="video.webm"'
+
+  - name: "regular image unchanged"
+    input:
+      config:
+        md_video:
+          enabled: true
+      content: |
+        ![Photo](photo.jpg)
+    output:
+      html_contains:
+        - "<img"
+        - 'src="photo.jpg"'
+      html_not_contains:
+        - "<video"
+
+  - name: "video with autoplay"
+    input:
+      config:
+        md_video:
+          enabled: true
+          autoplay: true
+      content: |
+        ![Video](video.mp4)
+    output:
+      html_contains:
+        - "autoplay"
+
+  - name: "video with loop"
+    input:
+      config:
+        md_video:
+          enabled: true
+          loop: true
+      content: |
+        ![Video](video.mp4)
+    output:
+      html_contains:
+        - "loop"
+
+  - name: "video with muted"
+    input:
+      config:
+        md_video:
+          enabled: true
+          muted: true
+      content: |
+        ![Video](video.mp4)
+    output:
+      html_contains:
+        - "muted"
+
+  - name: "video gif-like behavior"
+    description: "Autoplay, loop, muted, no controls for GIF replacement"
+    input:
+      config:
+        md_video:
+          enabled: true
+          autoplay: true
+          loop: true
+          muted: true
+          controls: false
+      content: |
+        ![Animation](animation.mp4)
+    output:
+      html_contains:
+        - "autoplay"
+        - "loop"
+        - "muted"
+      html_not_contains:
+        - "controls"
+
+  - name: "video custom class"
+    input:
+      config:
+        md_video:
+          enabled: true
+          video_class: "custom-video"
+      content: |
+        ![Video](video.mp4)
+    output:
+      html_contains:
+        - 'class="custom-video"'
+
+  - name: "video disabled"
+    input:
+      config:
+        md_video:
+          enabled: false
+      content: |
+        ![Video](video.mp4)
+    output:
+      html_contains:
+        - "<img"
+        - 'src="video.mp4"'
+
+# =============================================================================
+# OPTIONAL PLUGINS - ONE LINE LINK
+# =============================================================================
+one_line_link_plugin:
+  - name: "url on own line expanded"
+    input:
+      config:
+        one_line_link:
+          enabled: true
+      content: |
+        Check this out:
+        
+        https://example.com/article
+        
+        Cool right?
+    output:
+      html_contains:
+        - 'class="link-card"'
+        - 'href="https://example.com/article"'
+
+  - name: "inline url not expanded"
+    input:
+      config:
+        one_line_link:
+          enabled: true
+      content: |
+        Visit https://example.com for more info.
+    output:
+      html_not_contains:
+        - 'class="link-card"'
+
+  - name: "markdown link not expanded"
+    input:
+      config:
+        one_line_link:
+          enabled: true
+      content: |
+        [Link](https://example.com)
+    output:
+      html_not_contains:
+        - 'class="link-card"'
+
+  - name: "excluded pattern not expanded"
+    input:
+      config:
+        one_line_link:
+          enabled: true
+          exclude_patterns:
+            - "^https://twitter.com"
+      content: |
+        https://twitter.com/user/status/123
+    output:
+      html_not_contains:
+        - 'class="link-card"'
+
+  - name: "link card structure"
+    input:
+      config:
+        one_line_link:
+          enabled: true
+          fetch_metadata: false
+      content: |
+        https://example.com
+    output:
+      html_contains:
+        - 'class="link-card"'
+        - 'class="link-card-url"'
+
+  - name: "one line link disabled"
+    input:
+      config:
+        one_line_link:
+          enabled: false
+      content: |
+        https://example.com
+    output:
+      html_not_contains:
+        - 'class="link-card"'
+
+# =============================================================================
+# OPTIONAL PLUGINS - WIKILINK HOVER
+# =============================================================================
+wikilink_hover_plugin:
+  - name: "wikilink gets preview data"
+    input:
+      config:
+        wikilink_hover:
+          enabled: true
+          preview_length: 100
+      posts:
+        - slug: "target-post"
+          title: "Target Post"
+          content: "This is the target post content that should appear in preview."
+        - slug: "source-post"
+          content: "Check out [[target-post]]."
+    output:
+      source_post_html_contains:
+        - 'data-preview='
+        - "target post content"
+
+  - name: "wikilink preview truncated"
+    input:
+      config:
+        wikilink_hover:
+          enabled: true
+          preview_length: 20
+      posts:
+        - slug: "target"
+          content: "This is a very long content that should be truncated."
+        - slug: "source"
+          content: "See [[target]]."
+    output:
+      preview_length_max: 20
+
+  - name: "wikilink preview includes image"
+    input:
+      config:
+        wikilink_hover:
+          enabled: true
+          include_image: true
+      posts:
+        - slug: "target"
+          image: "/images/featured.jpg"
+        - slug: "source"
+          content: "See [[target]]."
+    output:
+      source_post_html_contains:
+        - 'data-preview-image="/images/featured.jpg"'
+
+  - name: "wikilink hover disabled"
+    input:
+      config:
+        wikilink_hover:
+          enabled: false
+      posts:
+        - slug: "target"
+          content: "Target content."
+        - slug: "source"
+          content: "See [[target]]."
+    output:
+      source_post_html_not_contains:
+        - "data-preview"
+
+  - name: "wikilink with screenshot service"
+    input:
+      config:
+        wikilink_hover:
+          enabled: true
+          screenshot_service: "https://screenshot.example.com/capture?url="
+        url: "https://mysite.com"
+      posts:
+        - slug: "target"
+        - slug: "source"
+          content: "See [[target]]."
+    output:
+      source_post_html_contains:
+        - 'data-preview-screenshot="https://screenshot.example.com/capture?url=https://mysite.com/target/"'
+
+# =============================================================================
+# OPTIONAL PLUGINS - QRCODE
+# =============================================================================
+qrcode_plugin:
+  - name: "qrcode generated for post"
+    input:
+      config:
+        qrcode:
+          enabled: true
+          format: "svg"
+        url: "https://example.com"
+      posts:
+        - slug: "hello-world"
+    output:
+      files_created:
+        - "output/qrcodes/hello-world.svg"
+      post_has_field: "qrcode_url"
+
+  - name: "qrcode png format"
+    input:
+      config:
+        qrcode:
+          enabled: true
+          format: "png"
+        url: "https://example.com"
+      posts:
+        - slug: "test"
+    output:
+      files_created:
+        - "output/qrcodes/test.png"
+
+  - name: "qrcode custom directory"
+    input:
+      config:
+        qrcode:
+          enabled: true
+          output_dir: "codes"
+      posts:
+        - slug: "test"
+    output:
+      files_created:
+        - "output/codes/test.svg"
+
+  - name: "qrcode encodes correct url"
+    input:
+      config:
+        qrcode:
+          enabled: true
+        url: "https://example.com"
+      posts:
+        - slug: "my-post"
+    output:
+      qrcode_encodes: "https://example.com/my-post/"
+
+  - name: "qrcode disabled"
+    input:
+      config:
+        qrcode:
+          enabled: false
+      posts:
+        - slug: "test"
+    output:
+      files_not_created:
+        - "output/qrcodes/test.svg"
+
+  - name: "qrcode custom error correction"
+    input:
+      config:
+        qrcode:
+          enabled: true
+          error_correction: "H"
+      posts:
+        - slug: "test"
+    output:
+      qrcode_error_correction: "H"
+
+  - name: "qrcode custom colors"
+    input:
+      config:
+        qrcode:
+          enabled: true
+          foreground: "#333333"
+          background: "#f0f0f0"
+      posts:
+        - slug: "test"
+    output:
+      qrcode_foreground: "#333333"
+      qrcode_background: "#f0f0f0"
+
+# =============================================================================
+# OPTIONAL PLUGINS - COMBINED
+# =============================================================================
+optional_plugins_combined:
+  - name: "multiple optional plugins enabled"
+    input:
+      config:
+        hooks:
+          - "default"
+          - "mermaid"
+          - "chartjs"
+          - "csv_fence"
+      content: |
+        # My Post
+        
+        ```mermaid
+        graph TD
+            A --> B
+        ```
+        
+        ```chartjs
+        {"type": "bar", "data": {}}
+        ```
+        
+        ```csv
+        A,B
+        1,2
+        ```
+    output:
+      html_contains:
+        - '<pre class="mermaid">'
+        - "<canvas"
+        - "<table"
+
+  - name: "glossary excludes code blocks"
+    description: "Glossary shouldn't link terms inside code blocks"
+    input:
+      config:
+        glossary:
+          enabled: true
+      posts:
+        - slug: "api"
+          templateKey: "glossary"
+          title: "API"
+        - slug: "test"
+          content: |
+            Use the API.
+            
+            ```python
+            response = API.call()
+            ```
+    output:
+      test_post_links_in_code: false
+
+  - name: "one_line_link excludes code blocks"
+    input:
+      config:
+        one_line_link:
+          enabled: true
+      content: |
+        https://example.com
+        
+        ```
+        https://example.com/in-code
+        ```
+    output:
+      link_cards_count: 1
+
+  - name: "plugin execution order"
+    description: "Plugins run in configured order"
+    input:
+      config:
+        hooks:
+          - "default"
+          - "glossary"
+          - "wikilink_hover"
+    output:
+      execution_order:
+        - "wikilinks"
+        - "glossary"
+        - "wikilink_hover"
+
+# =============================================================================
+# LINK COLLECTOR PLUGIN
+# =============================================================================
+link_collector_plugin:
+  - name: "link collector populates hrefs"
+    description: "All href values extracted from post HTML"
+    input:
+      config:
+        link_collector:
+          enabled: true
+        url: "https://example.com"
+      posts:
+        - slug: "test-post"
+          content: |
+            Check [internal](/other-post/) and [external](https://google.com).
+    output:
+      post_hrefs:
+        - "/other-post/"
+        - "https://google.com"
+
+  - name: "inlinks tracked"
+    description: "Posts linking to this post appear in inlinks"
+    input:
+      config:
+        link_collector:
+          enabled: true
+        url: "https://example.com"
+      posts:
+        - slug: "target-post"
+          title: "Target Post"
+          content: "This is the target."
+        - slug: "source-post"
+          title: "Source Post"
+          content: "Check out [target](/target-post/)."
+    output:
+      target_post_inlinks_count: 1
+      target_post_inlinks_contains:
+        source_slug: "source-post"
+
+  - name: "outlinks tracked"
+    description: "Posts this post links to appear in outlinks"
+    input:
+      config:
+        link_collector:
+          enabled: true
+        url: "https://example.com"
+      posts:
+        - slug: "target-post"
+          title: "Target Post"
+          content: "This is the target."
+        - slug: "source-post"
+          title: "Source Post"
+          content: "Check out [target](/target-post/) and [google](https://google.com)."
+    output:
+      source_post_outlinks_count: 2
+
+  - name: "self-links excluded"
+    description: "A post linking to itself is not in inlinks/outlinks"
+    input:
+      config:
+        link_collector:
+          enabled: true
+        url: "https://example.com"
+      posts:
+        - slug: "self-linking"
+          content: "See [myself](/self-linking/) for more."
+    output:
+      post_inlinks_count: 0
+      post_outlinks_count: 0
+
+  - name: "external links identified"
+    description: "External links have is_internal=false"
+    input:
+      config:
+        link_collector:
+          enabled: true
+        url: "https://example.com"
+      posts:
+        - slug: "test-post"
+          content: "Visit [google](https://google.com)."
+    output:
+      link_is_internal: false
+      link_target_domain: "google.com"
+
+  - name: "internal links identified"
+    description: "Internal links have is_internal=true"
+    input:
+      config:
+        link_collector:
+          enabled: true
+        url: "https://example.com"
+      posts:
+        - slug: "target"
+          content: "Target."
+        - slug: "source"
+          content: "See [target](/target/)."
+    output:
+      link_is_internal: true
+      link_target_post_slug: "target"
+
+  - name: "relative links resolved"
+    description: "Relative hrefs resolved to absolute URLs"
+    input:
+      config:
+        link_collector:
+          enabled: true
+        url: "https://example.com"
+      posts:
+        - slug: "deep/nested/post"
+          content: "See [other](../other/)."
+    output:
+      link_target_url: "https://example.com/deep/other/"
+
+  - name: "core.links populated"
+    description: "All links stored in core.links"
+    input:
+      config:
+        link_collector:
+          enabled: true
+        url: "https://example.com"
+      posts:
+        - slug: "post-a"
+          content: "Link to [b](/post-b/) and [c](/post-c/)."
+        - slug: "post-b"
+          content: "Link to [a](/post-a/)."
+        - slug: "post-c"
+          content: "No links."
+    output:
+      core_links_count: 3
+
+  - name: "link collector disabled"
+    input:
+      config:
+        link_collector:
+          enabled: false
+      posts:
+        - slug: "test"
+          content: "Link to [other](/other/)."
+    output:
+      post_has_inlinks: false
+      post_has_outlinks: false
+
+  - name: "wikilinks appear in links"
+    description: "Resolved wikilinks are collected"
+    input:
+      config:
+        link_collector:
+          enabled: true
+        wikilinks:
+          enabled: true
+        url: "https://example.com"
+      posts:
+        - slug: "target"
+          title: "Target Post"
+        - slug: "source"
+          content: "See [[target]]."
+    output:
+      target_post_inlinks_count: 1
+
+  - name: "duplicate inlinks deduplicated"
+    description: "Multiple links to same target counted once in inlinks"
+    input:
+      config:
+        link_collector:
+          enabled: true
+        url: "https://example.com"
+      posts:
+        - slug: "target"
+          content: "Target."
+        - slug: "source"
+          content: "Link [one](/target/) and [two](/target/) and [three](/target/)."
+    output:
+      target_post_inlinks_count: 1
+      source_post_hrefs_count: 3
+
+  - name: "link graph template data"
+    description: "Links available for Mermaid graph template"
+    input:
+      config:
+        link_collector:
+          enabled: true
+        url: "https://example.com"
+      posts:
+        - slug: "center"
+          content: "Links to [a](/a/) and [b](/b/)."
+        - slug: "a"
+          content: "Links to [center](/center/)."
+        - slug: "b"
+          content: "Links to [center](/center/)."
+    output:
+      center_inlinks_slugs:
+        - "a"
+        - "b"
+      center_outlinks_slugs:
+        - "a"
+        - "b"
+
+  - name: "link excludes feeds by default"
+    description: "Feed pages not included in inlinks unless configured"
+    input:
+      config:
+        link_collector:
+          enabled: true
+          include_feeds: false
+        url: "https://example.com"
+        feeds:
+          all:
+            filter: "True"
+      posts:
+        - slug: "post"
+          content: "A post."
+    output:
+      post_inlinks_from_feeds: 0
+
+  - name: "broken internal links tracked"
+    description: "Internal links without matching post have target_post=None"
+    input:
+      config:
+        link_collector:
+          enabled: true
+        url: "https://example.com"
+      posts:
+        - slug: "source"
+          content: "Link to [nonexistent](/does-not-exist/)."
+    output:
+      link_target_post: null
+      link_is_internal: true
+
+# =============================================================================
+# PREVNEXT PLUGIN
+# =============================================================================
+prevnext_plugin:
+  - name: "basic prev/next with first_feed strategy"
+    description: "Posts get prev/next from first feed they appear in"
+    input:
+      config:
+        prevnext:
+          enabled: true
+          strategy: "first_feed"
+        feeds:
+          blog:
+            filter: "True"
+            sort: "date"
+            reverse: true
+      posts:
+        - slug: "post-1"
+          title: "First Post"
+          date: "2024-01-01"
+        - slug: "post-2"
+          title: "Second Post"
+          date: "2024-01-02"
+        - slug: "post-3"
+          title: "Third Post"
+          date: "2024-01-03"
+    output:
+      post_1_prev: null
+      post_1_next: "post-2"
+      post_2_prev: "post-1"
+      post_2_next: "post-3"
+      post_3_prev: "post-2"
+      post_3_next: null
+
+  - name: "explicit_feed strategy"
+    description: "All posts use specified default_feed"
+    input:
+      config:
+        prevnext:
+          enabled: true
+          strategy: "explicit_feed"
+          default_feed: "tutorials"
+        feeds:
+          blog:
+            filter: "type == 'blog'"
+            sort: "date"
+          tutorials:
+            filter: "type == 'tutorial'"
+            sort: "order"
+            reverse: false
+      posts:
+        - slug: "tut-1"
+          title: "Tutorial Part 1"
+          type: "tutorial"
+          order: 1
+        - slug: "tut-2"
+          title: "Tutorial Part 2"
+          type: "tutorial"
+          order: 2
+        - slug: "blog-1"
+          title: "Blog Post"
+          type: "blog"
+    output:
+      tut_1_next: "tut-2"
+      tut_2_prev: "tut-1"
+      blog_1_prev: null
+      blog_1_next: null
+
+  - name: "series strategy with frontmatter"
+    description: "Posts use series from frontmatter"
+    input:
+      config:
+        prevnext:
+          enabled: true
+          strategy: "series"
+        series:
+          - slug: "python-basics"
+            title: "Python Basics"
+            filter: "series == 'python-basics'"
+            sort: "order"
+            reverse: false
+      posts:
+        - slug: "py-intro"
+          title: "Introduction to Python"
+          series: "python-basics"
+          order: 1
+        - slug: "py-variables"
+          title: "Variables in Python"
+          series: "python-basics"
+          order: 2
+        - slug: "py-loops"
+          title: "Loops in Python"
+          series: "python-basics"
+          order: 3
+        - slug: "unrelated"
+          title: "Unrelated Post"
+    output:
+      py_intro_prev: null
+      py_intro_next: "py-variables"
+      py_variables_prev: "py-intro"
+      py_variables_next: "py-loops"
+      py_loops_prev: "py-variables"
+      py_loops_next: null
+      unrelated_prev: null
+      unrelated_next: null
+
+  - name: "frontmatter strategy with prevnext_feed"
+    description: "Posts can specify explicit feed in frontmatter"
+    input:
+      config:
+        prevnext:
+          enabled: true
+          strategy: "frontmatter"
+        feeds:
+          announcements:
+            filter: "type == 'announcement'"
+            sort: "date"
+          blog:
+            filter: "True"
+            sort: "date"
+      posts:
+        - slug: "ann-1"
+          title: "Announcement 1"
+          type: "announcement"
+          date: "2024-01-01"
+          prevnext_feed: "announcements"
+        - slug: "ann-2"
+          title: "Announcement 2"
+          type: "announcement"
+          date: "2024-01-02"
+          prevnext_feed: "announcements"
+        - slug: "blog-1"
+          title: "Blog Post"
+          date: "2024-01-03"
+    output:
+      ann_1_next: "ann-2"
+      ann_2_prev: "ann-1"
+      blog_1_prevnext_feed: "blog"
+
+  - name: "series as feed alias"
+    description: "Series can reference existing feed"
+    input:
+      config:
+        prevnext:
+          enabled: true
+          strategy: "series"
+        feeds:
+          all-tutorials:
+            filter: "type == 'tutorial'"
+            sort: "date"
+        series:
+          - slug: "tutorials"
+            feed: "all-tutorials"
+            title: "Tutorial Series"
+      posts:
+        - slug: "tut-a"
+          title: "Tutorial A"
+          type: "tutorial"
+          date: "2024-01-01"
+          series: "tutorials"
+        - slug: "tut-b"
+          title: "Tutorial B"
+          type: "tutorial"
+          date: "2024-01-02"
+          series: "tutorials"
+    output:
+      tut_a_next: "tut-b"
+      tut_b_prev: "tut-a"
+
+  - name: "prevnext_context populated"
+    description: "Posts get full navigation context"
+    input:
+      config:
+        prevnext:
+          enabled: true
+          strategy: "series"
+        series:
+          - slug: "guide"
+            title: "Complete Guide"
+            filter: "series == 'guide'"
+            sort: "order"
+            reverse: false
+      posts:
+        - slug: "guide-1"
+          series: "guide"
+          order: 1
+        - slug: "guide-2"
+          series: "guide"
+          order: 2
+        - slug: "guide-3"
+          series: "guide"
+          order: 3
+    output:
+      guide_2_context:
+        feed_slug: "guide"
+        feed_title: "Complete Guide"
+        position: 2
+        total: 3
+
+  - name: "multiple series per site"
+    description: "Different posts can be in different series"
+    input:
+      config:
+        prevnext:
+          enabled: true
+          strategy: "series"
+        series:
+          - slug: "series-a"
+            filter: "series == 'series-a'"
+            sort: "order"
+            reverse: false
+          - slug: "series-b"
+            filter: "series == 'series-b'"
+            sort: "order"
+            reverse: false
+      posts:
+        - slug: "a1"
+          series: "series-a"
+          order: 1
+        - slug: "a2"
+          series: "series-a"
+          order: 2
+        - slug: "b1"
+          series: "series-b"
+          order: 1
+        - slug: "b2"
+          series: "series-b"
+          order: 2
+    output:
+      a1_next: "a2"
+      a2_prev: "a1"
+      a2_next: null
+      b1_next: "b2"
+      b2_prev: "b1"
+
+  - name: "fallback to first_feed when series not found"
+    description: "Strategy series falls back to first_feed"
+    input:
+      config:
+        prevnext:
+          enabled: true
+          strategy: "series"
+        feeds:
+          blog:
+            filter: "True"
+            sort: "date"
+      posts:
+        - slug: "post-1"
+          date: "2024-01-01"
+        - slug: "post-2"
+          date: "2024-01-02"
+    output:
+      post_1_next: "post-2"
+      post_1_prevnext_feed: "blog"
+
+  - name: "prevnext disabled"
+    input:
+      config:
+        prevnext:
+          enabled: false
+        feeds:
+          blog:
+            filter: "True"
+      posts:
+        - slug: "post-1"
+        - slug: "post-2"
+    output:
+      post_1_prev: null
+      post_1_next: null
+      post_2_prev: null
+      post_2_next: null
+
+  - name: "chronological series order"
+    description: "Series sorted chronologically (reverse=false) for tutorials"
+    input:
+      config:
+        prevnext:
+          enabled: true
+          strategy: "series"
+        series:
+          - slug: "tutorial"
+            filter: "series == 'tutorial'"
+            sort: "date"
+            reverse: false
+      posts:
+        - slug: "part-1"
+          series: "tutorial"
+          date: "2024-01-01"
+        - slug: "part-2"
+          series: "tutorial"
+          date: "2024-01-15"
+        - slug: "part-3"
+          series: "tutorial"
+          date: "2024-02-01"
+    output:
+      part_1_prev: null
+      part_1_next: "part-2"
+      part_3_prev: "part-2"
+      part_3_next: null
+
+  - name: "reverse chronological feed order"
+    description: "Feed sorted reverse chronologically (newest first)"
+    input:
+      config:
+        prevnext:
+          enabled: true
+          strategy: "first_feed"
+        feeds:
+          blog:
+            filter: "True"
+            sort: "date"
+            reverse: true
+      posts:
+        - slug: "old"
+          date: "2024-01-01"
+        - slug: "middle"
+          date: "2024-01-15"
+        - slug: "new"
+          date: "2024-02-01"
+    output:
+      new_prev: null
+      new_next: "middle"
+      old_prev: "middle"
+      old_next: null
+
+  - name: "custom sort field"
+    description: "Series can use custom sort field like 'order'"
+    input:
+      config:
+        prevnext:
+          enabled: true
+          strategy: "series"
+        series:
+          - slug: "chapters"
+            filter: "series == 'chapters'"
+            sort: "chapter_num"
+            reverse: false
+      posts:
+        - slug: "ch-3"
+          series: "chapters"
+          chapter_num: 3
+        - slug: "ch-1"
+          series: "chapters"
+          chapter_num: 1
+        - slug: "ch-2"
+          series: "chapters"
+          chapter_num: 2
+    output:
+      ch_1_prev: null
+      ch_1_next: "ch-2"
+      ch_2_next: "ch-3"
+      ch_3_prev: "ch-2"
+
+  - name: "post in multiple feeds uses first"
+    description: "With first_feed strategy, uses first matching feed"
+    input:
+      config:
+        prevnext:
+          enabled: true
+          strategy: "first_feed"
+        feeds:
+          featured:
+            filter: "featured == True"
+            sort: "date"
+          all:
+            filter: "True"
+            sort: "date"
+      posts:
+        - slug: "featured-1"
+          featured: true
+          date: "2024-01-01"
+        - slug: "featured-2"
+          featured: true
+          date: "2024-01-02"
+        - slug: "regular"
+          featured: false
+          date: "2024-01-03"
+    output:
+      featured_1_prevnext_feed: "featured"
+      regular_prevnext_feed: "all"
+
+  - name: "missing feed/series logs warning"
+    description: "Warning logged when referenced feed/series doesn't exist"
+    input:
+      config:
+        prevnext:
+          enabled: true
+          strategy: "frontmatter"
+      posts:
+        - slug: "post"
+          prevnext_feed: "nonexistent"
+    output:
+      warning_logged: true
+      post_prev: null
+      post_next: null
