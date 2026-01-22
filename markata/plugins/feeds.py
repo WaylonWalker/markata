@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 """
 The `markata.plugins.feeds` plugin is used to create feed pages, which are lists of
 posts.  The list is generated using a `filter`, then each post in the list is
@@ -189,6 +187,8 @@ filter="True"
 ```
 
 """
+
+from __future__ import annotations
 
 import datetime
 import re
