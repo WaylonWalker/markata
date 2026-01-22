@@ -554,8 +554,9 @@ def _download_htmx_if_needed(markata: Markata) -> None:
     Download HTMX library to static directory if needed with integrity verification.
     """
     import hashlib
+    from urllib.error import HTTPError
+    from urllib.error import URLError
     from urllib.request import Request
-    from urllib.error import URLError, HTTPError
 
     htmx_version = markata.config.htmx_version
     htmx_filename = "htmx.min.js"
@@ -728,7 +729,6 @@ def _sanitize_feed_slug(slug: str) -> str:
     Raises:
         ValueError: If slug contains dangerous characters
     """
-    import os
     import re
 
     if not slug:
@@ -765,7 +765,6 @@ def _ensure_head_links(markata: Markata) -> None:
     pagination_js_config_href = "/static/js/pagination-config.js"
     pagination_js_href = "/static/js/pagination.js"
     htmx_version = markata.config.htmx_version
-    htmx_filename = "htmx.min.js"
     htmx_static_href = "/static/js/htmx.min.js"
 
     # Try to download HTMX first
