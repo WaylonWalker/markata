@@ -64,7 +64,7 @@ description = "Static site generator plugins all the way down."
 keywords = ["static-site"]
 name = "markata"
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.10"
 
 [[project.authors]]
 name = "Waylon Walker"
@@ -206,3 +206,12 @@ unfixable = []
 
 [tool.ruff.lint.isort]
 force-single-line = true
+
+[dependency-groups]
+dev = [
+    "psutil>=7.2.1",
+    "pytest>=9.0.2",
+    "pytest-mock>=3.15.1",
+    "pytest-tmp-files>=0.0.2",
+    "ruff>=0.14.13",
+]

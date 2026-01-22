@@ -44,6 +44,42 @@ markata build [options]
 --serve         Start development server
 --profile       Profile the build process
 --debug         Enable debug mode
+-c, --config    Path to alternate config file
+-o, --output-dir  Override output directory
+-s, --set       Set config values (key=value format)
+```
+
+### Configuration Overrides
+
+Override configuration at runtime:
+
+```bash
+# Use alternate config file
+markata build -c themes/catppuccin.toml
+
+# Override output directory
+markata build -o dist/theme-everforest
+
+# Set multiple config values
+markata build -s output_dir=dist -s style.theme=nord
+
+# Combine multiple overrides
+markata build -c base.toml -s output_dir=custom -s style.theme=gruvbox
+```
+
+### Environment Variable Overrides
+
+All config can be overridden with environment variables prefixed with `MARKATA_`:
+
+```bash
+# Override output directory
+MARKATA_OUTPUT_DIR=dist markata build
+
+# Override theme
+MARKATA_STYLE__THEME=nord markata build
+
+# Use double underscore for nested config
+MARKATA_STYLE__THEME=catppuccin MARKATA_OUTPUT_DIR=dist/catppuccin markata build
 ```
 
 ### List Command
@@ -110,7 +146,9 @@ import traceback
 import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING
+from typing import Any
 from typing import Callable
+from typing import Dict
 from typing import List
 from typing import Literal
 from typing import Optional
@@ -148,6 +186,51 @@ def make_pretty() -> None:
             typer,
         ],
     )
+
+
+def parse_set_options(set_args: List[str]) -> Dict[str, Any]:
+    """Parse --set key=value arguments into a nested config dict.
+
+    Supports dot notation for nested keys:
+    - output_dir=dist -> {"output_dir": "dist"}
+    - style.theme=nord -> {"style": {"theme": "nord"}}
+    """
+    config = {}
+    for arg in set_args:
+        if "=" not in arg:
+            raise ValueError(f"Invalid --set format: {arg}. Expected key=value")
+
+        key, value = arg.split("=", 1)
+        keys = key.split(".")
+
+        # Navigate/create nested dict structure
+        current = config
+        for k in keys[:-1]:
+            if k not in current:
+                current[k] = {}
+            current = current[k]
+
+        # Set the value, attempting type conversion
+        final_key = keys[-1]
+        # Try to parse as JSON for complex types
+        try:
+            import json
+
+            current[final_key] = json.loads(value)
+        except (json.JSONDecodeError, ValueError):
+            # Keep as string if not valid JSON
+            current[final_key] = value
+
+    return config
+
+
+def _deep_merge(target: Dict, source: Dict) -> None:
+    """Deep merge source dict into target dict."""
+    for key, value in source.items():
+        if key in target and isinstance(target[key], dict) and isinstance(value, dict):
+            _deep_merge(target[key], value)
+        else:
+            target[key] = value
 
 
 @hook_impl()
@@ -309,6 +392,24 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
             "--pdb",
         ),
         profile: bool = True,
+        config_file: Optional[Path] = typer.Option(
+            None,
+            "-c",
+            "--config",
+            help="Path to alternate config file",
+        ),
+        output_dir: Optional[str] = typer.Option(
+            None,
+            "-o",
+            "--output-dir",
+            help="Override output directory",
+        ),
+        set_config: List[str] = typer.Option(
+            [],
+            "-s",
+            "--set",
+            help="Set config value (key=value, supports dot notation)",
+        ),
     ) -> None:
         """
         Markata's primary way of building your site for production.
@@ -318,6 +419,59 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
         ``` bash
         markata build
         ```
+
+        ## Configuration Overrides
+
+        Override configuration at runtime using multiple methods:
+
+        ### Alternate Config File
+        Use a different config file with `-c` or `--config`:
+        ``` bash
+        markata build -c themes/catppuccin.toml
+        ```
+
+        ### Output Directory
+        Override the output directory with `-o` or `--output-dir`:
+        ``` bash
+        markata build -o dist/theme-everforest
+        ```
+
+        ### Generic Config Override
+        Set any config value using `-s` or `--set` with dot notation:
+        ``` bash
+        # Single value
+        markata build -s output_dir=dist
+
+        # Nested config
+        markata build -s style.theme=nord
+
+        # Multiple values
+        markata build -s output_dir=dist -s style.theme=catppuccin
+
+        # Complex values (use JSON)
+        markata build -s 'nav={"home":"/","docs":"/docs"}'
+        ```
+
+        ### Environment Variables
+        Override any config with environment variables:
+        ``` bash
+        # Simple value
+        MARKATA_OUTPUT_DIR=dist markata build
+
+        # Nested value (use double underscore)
+        MARKATA_STYLE__THEME=nord markata build
+
+        # Multiple values
+        MARKATA_OUTPUT_DIR=dist MARKATA_STYLE__THEME=gruvbox markata build
+        ```
+
+        ### Combining Overrides
+        All override methods can be combined (applied in order: file -> env -> cli):
+        ``` bash
+        MARKATA_STYLE__THEME=nord markata build -c base.toml -s output_dir=custom
+        ```
+
+        ## Debugging
 
         If you are having an issue and want to pop immediately into a debugger
         upon failure you can pass the `--pdb` flag to the build command.
@@ -355,21 +509,51 @@ def cli(app: typer.Typer, markata: "Markata") -> None:
         if pretty:
             make_pretty()
 
+        # Save console reference before potential reinit
+        console = markata.console
+
         if quiet:
-            markata.console.quiet = True
+            console.quiet = True
 
         if verbose:
-            markata.console.print("console options:", markata.console.options)
+            console.print("console options:", console.options)
+
+        # Build config overrides from CLI arguments
+        config_overrides = {}
+
+        # Add output_dir if specified
+        if output_dir:
+            config_overrides["output_dir"] = output_dir
+
+        # Parse and merge --set options
+        if set_config:
+            set_overrides = parse_set_options(set_config)
+            # Deep merge set_overrides into config_overrides
+            _deep_merge(config_overrides, set_overrides)
+
+        # Reinitialize markata with overrides if any were provided
+        if config_file or config_overrides:
+            from markata import Markata
+
+            # Create a new instance with overrides
+            markata_instance = Markata(
+                console=console,
+                config_file=config_file,
+                config_overrides=config_overrides,
+            )
+        else:
+            # Use the existing instance
+            markata_instance = markata
 
         if not profile:
-            markata.config.profiler.should_profile = False
+            markata_instance.config.profiler.should_profile = False
 
         if should_pdb:
-            pdb_run(markata.run)
+            pdb_run(markata_instance.run)
 
         else:
-            markata.console.log("[purple]starting the build")
-            markata.run()
+            markata_instance.console.log("[purple]starting the build")
+            markata_instance.run()
 
     @app.command()
     def list(

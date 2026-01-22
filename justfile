@@ -45,7 +45,7 @@ serve:
 ruff-fix:
     #!/usr/bin/env bash
     set -euxo pipefail
-    ruff check markata --fix
+    uv run ruff check markata --fix
 
 lint-test: lint cov
 
