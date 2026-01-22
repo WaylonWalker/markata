@@ -104,6 +104,7 @@ from typing import Optional
 
 import pydantic
 
+from markata import __version__
 from markata.hookspec import hook_impl
 from markata.hookspec import register_attr
 from markata.plugins.md_it_highlight_code import highlight_code
@@ -288,7 +289,14 @@ def render_article_parallel(markata, config, cache, article):
         article.html = ""
         return article, ""
 
-    key = markata.make_hash("render_markdown", "render", content)
+    key = markata.make_hash(
+        "render_markdown",
+        "render",
+        content,
+        __version__,
+        markata.config.render_markdown.backend.value,
+        str(markata.config.render_markdown.extensions),
+    )
     html_from_cache = markata.precache.get(key)
 
     if html_from_cache is not None:

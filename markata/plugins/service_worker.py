@@ -129,4 +129,6 @@ def save(markata: "Markata") -> None:
     )
 
     output_file = markata.config.output_dir / "service-worker.js"
-    output_file.write_text(service_worker_js)
+    current_content = output_file.read_text() if output_file.exists() else ""
+    if current_content != service_worker_js:
+        output_file.write_text(service_worker_js)

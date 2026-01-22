@@ -61,6 +61,7 @@ def render_template(markata, content):
 - Silent undefined behavior means undefined variables render as empty strings
 """
 
+from functools import lru_cache
 from pathlib import Path
 from typing import List
 
@@ -175,11 +176,12 @@ def configure(markata: Markata) -> None:
 
     markata.config.dynamic_templates_dir.mkdir(parents=True, exist_ok=True)
     head_template = markata.config.dynamic_templates_dir / "head.html"
-    head_template.write_text(
-        env_for_dynamic_render.get_template("dynamic_head.html").render(
-            {"markata": markata}
-        ),
+    new_content = env_for_dynamic_render.get_template("dynamic_head.html").render(
+        {"markata": markata}
     )
+    current_content = head_template.read_text() if head_template.exists() else ""
+    if current_content != new_content:
+        head_template.write_text(new_content)
 
     # Set up loaders
     loaders = []
@@ -211,3 +213,86 @@ def configure(markata: Markata) -> None:
 
     # Register the environment on the config's private attribute
     markata.jinja_env = env
+
+
+def get_template_paths(env: Environment) -> list[str]:
+    """Extract template paths from Jinja2 Environment's loader.
+
+    Args:
+        env: Jinja2 Environment instance
+
+    Returns:
+        List of template directory paths from all FileSystemLoaders
+    """
+    paths = []
+    loader = env.loader
+
+    if isinstance(loader, ChoiceLoader):
+        for sub_loader in loader.loaders:
+            if isinstance(sub_loader, FileSystemLoader):
+                paths.extend(sub_loader.searchpath)
+    elif isinstance(loader, FileSystemLoader):
+        paths.extend(loader.searchpath)
+
+    return paths
+
+
+def get_templates_mtime(env: Environment) -> float:
+    """Get latest mtime from all template directories.
+
+    This tracks changes to any template file including includes, extends, and imports.
+
+    Args:
+        env: Jinja2 Environment instance
+
+    Returns:
+        Maximum modification time across all template files, or 0 if none found
+    """
+    max_mtime = 0
+    for template_dir in get_template_paths(env):
+        template_path = Path(template_dir)
+        if template_path.exists():
+            for path in template_path.rglob('*'):
+                if path.is_file():
+                    try:
+                        max_mtime = max(max_mtime, path.stat().st_mtime)
+                    except (OSError, FileNotFoundError):
+                        continue
+    return max_mtime
+
+
+@lru_cache(maxsize=128)
+def get_template(env: Environment, template: str) -> jinja2.Template:
+    """Get a template with fallback handling and caching.
+
+    Tries to load the template in the following order:
+    1. From the Jinja2 environment (template loader)
+    2. As a file path (if the string is a valid file path)
+    3. As a string template (direct template compilation)
+
+    Templates are cached after loading for performance.
+
+    Args:
+        env: Jinja2 Environment instance
+        template: Template name, file path, or template string
+
+    Returns:
+        Compiled Jinja2 Template object
+    """
+    # Try to load from environment first
+    try:
+        return env.get_template(template)
+    except jinja2.TemplateNotFound:
+        pass
+
+    # Try to load as a file
+    try:
+        template_content = Path(template).read_text()
+        return env.from_string(template_content)
+    except FileNotFoundError:
+        pass
+    except OSError:  # File name too long, etc.
+        pass
+
+    # Fall back to treating it as a string template
+    return env.from_string(template)

@@ -1,0 +1,25 @@
+{# Manual pagination controls - reusable fragment #}
+{# Used directly for manual pagination, and as fallback for js/htmx #}
+<div class="pagination-controls mt-8 flex justify-center space-x-4" id="manual-pagination">
+    {% if prev_page %}
+    {% if page > 2 %}
+    <a href="/{{ feed_name }}/{{ prev_page }}/" 
+    {% else %}
+    <a href="/{{ feed_name }}/" 
+    {% endif %}
+       class="px-4 py-2 bg-neutral-700 text-white rounded hover:bg-neutral-600 transition">
+        ← Previous
+    </a>
+    {% endif %}
+    
+    <span class="px-4 py-2 text-neutral-400">
+        {{ page }} / {{ total_pages }}
+    </span>
+    
+    {% if has_next %}
+    <a href="/{{ feed_name }}/{{ next_page }}/" 
+       class="px-4 py-2 bg-neutral-700 text-white rounded hover:bg-neutral-600 transition">
+        Next →
+    </a>
+    {% endif %}
+</div>

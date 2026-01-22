@@ -13,8 +13,6 @@
 </div>
 <script type='module'>
 // All available pages from Markata
-    // const pages =  markata.map("{'slug':slug,'title':title,'description':description,'tags':tags}", filter=config.didyoumean_filter, sort='True')|tojson;
-    // fetch pages from config.output_dir / didyoumean.json
 
     const pages = await fetch('/didyoumean.json').then(response => response.json());
     const populate_search_input = {{ (populate_search_input or False) |tojson }}

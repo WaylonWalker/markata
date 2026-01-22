@@ -241,6 +241,8 @@ from pydantic import model_validator
 
 from markata import __version__
 from markata.hookspec import hook_impl
+from markata.plugins.jinja_env import get_template
+from markata.plugins.jinja_env import get_templates_mtime
 
 if TYPE_CHECKING:
     from markata import Markata
@@ -386,27 +388,15 @@ class Config(pydantic.BaseModel):
         return templates_dir
 
 
-_template_cache = {}
-
-
-def get_template(markata, template):
-    """Get a template from the cache or compile it."""
-    cache_key = str(template)
-    if cache_key in _template_cache:
-        return _template_cache[cache_key]
-
-    if isinstance(template, str):
-        template = markata.jinja_env.get_template(template)
-    _template_cache[cache_key] = template
-    return template
-
-
 def render_article(markata, cache, article):
     """Render an article using cached templates."""
+    templates_mtime = get_templates_mtime(markata.jinja_env)
+
     key = markata.make_hash(
         "post_template",
         __version__,
         article.key,
+        str(templates_mtime),  # Track template file changes
     )
     html = markata.precache.get(key)
 
@@ -414,12 +404,12 @@ def render_article(markata, cache, article):
         return html
 
     if isinstance(article.template, str):
-        template = get_template(markata, article.template)
+        template = get_template(markata.jinja_env, article.template)
         html = render_template(markata, article, template)
 
     if isinstance(article.template, dict):
         html = {
-            slug: render_template(markata, article, get_template(markata, template))
+            slug: render_template(markata, article, get_template(markata.jinja_env, template))
             for slug, template in article.template.items()
         }
     cache.set(key, html, expire=markata.config.default_cache_expire)
@@ -458,9 +448,12 @@ def save(markata: "Markata") -> None:
         if t.endswith("css") or t.endswith("js") or t.endswith("xsl")
     ]
     for template in linked_templates:
-        template = get_template(markata, template)
+        template = get_template(markata.jinja_env, template)
         css = template.render(markata=markata, __version__=__version__)
-        Path(markata.config.output_dir / Path(template.filename).name).write_text(css)
+        output_path = Path(markata.config.output_dir / Path(template.filename).name)
+        current_content = output_path.read_text() if output_path.exists() else ""
+        if current_content != css:
+            output_path.write_text(css)
 
 
 @hook_impl()
