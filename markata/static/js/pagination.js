@@ -114,11 +114,6 @@ class InfiniteScroll {
       // Update pagination info
       this.updatePaginationInfo();
       
-      // Update URL for bookmarkability
-      if (history.pushState) {
-        history.pushState({}, '', `/${this.feedName}/${nextPage}/`);
-      }
-      
       // Remove our persistent trigger if this was the last page
       if (this.currentPage >= this.totalPages) {
         if (this.persistentTrigger) {
