@@ -625,6 +625,42 @@ func sessionCommitAtHead(root string, s Session, parent, stage string, ps []stri
 	return sha, true, nil
 }
 
+// reconcileCommittedIndex handles a crash between Git advancing HEAD with
+// our isolated index and the subsequent reset of selected paths in the user's
+// index. Only reset entries that still match the exact old HEAD; actual user
+// staging remains protected by rejectStaged.
+func reconcileCommittedIndex(root string, s Session, ps []string) error {
+	parent, stage := "", ""
+	switch s.Phase {
+	case phaseStarted:
+		parent, stage = s.BaseCommit, "content"
+	case phaseMetadataPending:
+		parent, stage = s.ContentCommit, "metadata"
+	default:
+		return nil
+	}
+	_, recognized, err := sessionCommitAtHead(root, s, parent, stage, ps)
+	if err != nil || !recognized {
+		return err
+	}
+	for _, p := range ps {
+		indexed, err := git(root, "show", ":"+p)
+		if err != nil {
+			return err
+		}
+		before, err := git(root, "show", parent+":"+p)
+		if err != nil {
+			return err
+		}
+		if indexed != before {
+			// The caller may have staged something new; do not touch it.
+			return nil
+		}
+	}
+	_, err = git(root, append([]string{"reset", "-q", "HEAD", "--"}, ps...)...)
+	return err
+}
+
 type preparedEditorialPost struct {
 	Action string
 	Before string
@@ -946,6 +982,9 @@ func Finish(o Options, id, summary string) (Session, error) {
 		ps = append(ps, p)
 	}
 	sort.Strings(ps)
+	if err := reconcileCommittedIndex(root, s, ps); err != nil {
+		return Session{}, err
+	}
 	if err := rejectStaged(root, ps); err != nil {
 		return Session{}, err
 	}
