@@ -13,7 +13,11 @@
     .shorts-viewer{position:fixed;inset:0;overflow:hidden;background:#090909}
     .shorts-slides{position:absolute;inset:0;pointer-events:none}
     .shorts-first-frame{position:absolute;inset:0;z-index:2;display:grid;place-items:center;background:#111}
-    .shorts-first-frame img{display:block;width:100%;height:100%;object-fit:contain;filter:blur(10px)}
+    .shorts-first-frame img{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:contain}
+    .shorts-first-frame .shorts-image-placeholder{filter:blur(10px);opacity:1}
+    .shorts-first-frame .shorts-image--full{filter:none;opacity:0}
+    .shorts-first-frame.shorts-media-wrap--sharp .shorts-image-placeholder{opacity:0}
+    .shorts-first-frame.shorts-media-wrap--sharp .shorts-image--full{opacity:1}
     .shorts-top,.shorts-hud{position:absolute;z-index:3}
     .shorts-top{top:0;left:0;right:0}
     .shorts-hud{bottom:0;left:0;right:0}
@@ -26,8 +30,46 @@
   <div id="shorts-slides" class="shorts-slides" aria-hidden="true">
     {% if shorts_first_frame_src %}
     <div class="shorts-first-frame" id="shorts-first-frame" data-id="{{ shorts_first_frame_id }}">
-      <img class="shorts-first-frame-image" src="{{ shorts_first_frame_src }}" alt="" aria-hidden="true" loading="eager" decoding="async" fetchpriority="high">
+      <img class="shorts-first-frame-image shorts-image-placeholder" src="{{ shorts_first_frame_src }}" alt="" aria-hidden="true" loading="eager" decoding="async" fetchpriority="high">
+      {% if shorts_first_frame_sharp_src %}
+      <img class="shorts-first-frame-sharp shorts-media shorts-image--full" data-src="{{ shorts_first_frame_sharp_src }}" alt="" aria-hidden="true" decoding="async" fetchpriority="high">
+      {% endif %}
     </div>
+    {% if shorts_first_frame_sharp_src %}
+    <script>
+      // Download the first sharp photograph immediately after the tiny
+      // placeholder arrives, rather than waiting for index + chunk JSON.
+      // Keep both images in this DOM node; moving them can repeat network
+      // requests when Chrome DevTools has Disable cache enabled.
+      (function () {
+        if (location.hash.startsWith('#id=')) return;
+        var frame = document.getElementById('shorts-first-frame');
+        var tiny = frame.querySelector('.shorts-first-frame-image');
+        var sharp = frame.querySelector('.shorts-first-frame-sharp');
+        var started = false;
+        function startSharp() {
+          if (started || !sharp || !sharp.dataset.src) return;
+          started = true;
+          sharp.src = sharp.dataset.src;
+          delete sharp.dataset.src;
+        }
+        function showSharp() {
+          var decode = sharp.decode ? sharp.decode() : Promise.resolve();
+          decode.catch(function () {}).then(function () {
+            if (sharp.isConnected) frame.classList.add('shorts-media-wrap--sharp');
+          });
+        }
+        sharp.addEventListener('load', showSharp, { once: true });
+        sharp.addEventListener('error', function () { sharp.remove(); }, { once: true });
+        if (tiny.complete && tiny.naturalWidth) startSharp();
+        else {
+          tiny.addEventListener('load', startSharp, { once: true });
+          tiny.addEventListener('error', startSharp, { once: true });
+          setTimeout(startSharp, 900);
+        }
+      })();
+    </script>
+    {% endif %}
     {% endif %}
   </div>
   <header class="shorts-top">
