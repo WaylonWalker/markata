@@ -106,6 +106,13 @@ func normalizePaths(root, base string, in []string) ([]string, error) {
 		if err != nil {
 			return nil, err
 		}
+		// Git resolves directory aliases (including macOS /var -> /private/var).
+		// Resolve the parent only so a symlinked post itself remains rejected.
+		parent, err := filepath.EvalSymlinks(filepath.Dir(abs))
+		if err != nil {
+			return nil, err
+		}
+		abs = filepath.Join(parent, filepath.Base(abs))
 		rel, err := filepath.Rel(root, abs)
 		if err != nil || rel == "." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) || rel == ".." {
 			return nil, fmt.Errorf("path must be inside the Git repository: %s", raw)
@@ -156,7 +163,7 @@ func repoRoot(root string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("not a Git repository: %w", err)
 	}
-	return strings.TrimSpace(out), nil
+	return filepath.EvalSymlinks(strings.TrimSpace(out))
 }
 func run(dir string, env []string, args ...string) (string, error) {
 	c := exec.Command("git", args...)

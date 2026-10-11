@@ -257,3 +257,21 @@ func TestEditorialSafety_AgentRecordsHumanEdits(t *testing.T) {
 		t.Fatalf("metadata commit did not credit recorder: %s", message)
 	}
 }
+
+func TestEditorialSafety_DirectoryAliasAndSymlinkedPost(t *testing.T) {
+	root := safetyRepo(t, "---\nauthor: writer\n---\nOriginal.\n")
+	alias := filepath.Join(t.TempDir(), "site")
+	if err := os.Symlink(root, alias); err != nil {
+		t.Skipf("directory symlinks unavailable: %v", err)
+	}
+	if _, err := Start(Options{Root: alias}, "editor", "copy-editor", []string{"posts/a post's.md"}); err != nil {
+		t.Fatal(err)
+	}
+	linked := filepath.Join(root, "posts", "linked.md")
+	if err := os.Symlink(filepath.Join(root, "posts", "a post's.md"), linked); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Start(Options{Root: alias}, "editor", "copy-editor", []string{"posts/linked.md"}); err == nil {
+		t.Fatal("symlinked post was accepted")
+	}
+}
