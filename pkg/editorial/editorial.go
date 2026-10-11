@@ -569,14 +569,76 @@ func recordNode(r Record) (*yaml.Node, error) {
 }
 
 // Finish commits session edits and appends revision links to frontmatter.
-func prepareStartedPost(o Options, root string, s Session, path string) (string, error) {
+// sessionCommitAtHead recognizes a completed commit when a process stops before
+// persisting the next session phase. The session marker, exact parent, and
+// selected paths must all match; unrelated HEAD movement is never adopted.
+func sessionCommitAtHead(root string, s Session, parent, stage string, ps []string) (string, bool, error) {
+	sha, err := git(root, "rev-parse", "HEAD")
+	if err != nil {
+		return "", false, err
+	}
+	sha = strings.TrimSpace(sha)
+	if sha == parent {
+		return sha, false, nil
+	}
+	actualParent, err := git(root, "rev-parse", "HEAD^")
+	if err != nil || strings.TrimSpace(actualParent) != parent {
+		return sha, false, nil
+	}
+	message, err := git(root, "show", "-s", "--format=%B", "HEAD")
+	if err != nil {
+		return "", false, err
+	}
+	if !strings.Contains(message, "Editorial-Session: "+s.ID+"\n") ||
+		!strings.Contains(message, "Editorial-Phase: "+stage+"\n") {
+		return sha, false, nil
+	}
+	changed, err := gitNames(root, "diff-tree", "--no-commit-id", "--name-only", "-r", sha)
+	if err != nil {
+		return "", false, err
+	}
+	allowed := make(map[string]bool, len(ps))
+	for _, p := range ps {
+		allowed[p] = true
+	}
+	if len(changed) == 0 {
+		return sha, false, nil
+	}
+	for _, p := range changed {
+		if !allowed[p] {
+			return sha, false, nil
+		}
+	}
+	for _, p := range ps {
+		committed, err := git(root, "show", sha+":"+p)
+		if err != nil {
+			return "", false, err
+		}
+		current, err := os.ReadFile(filepath.Join(root, p))
+		if err != nil {
+			return "", false, err
+		}
+		if string(current) != committed {
+			return "", false, fmt.Errorf("selected post changed after the %s commit: %s", stage, p)
+		}
+	}
+	return sha, true, nil
+}
+
+type preparedEditorialPost struct {
+	Action string
+	Before string
+	After  string
+}
+
+func prepareStartedPost(root string, s Session, path string) (preparedEditorialPost, error) {
 	b, err := os.ReadFile(filepath.Join(root, path))
 	if err != nil {
-		return "", err
+		return preparedEditorialPost{}, err
 	}
 	d, err := digest(string(b))
 	if err != nil {
-		return "", err
+		return preparedEditorialPost{}, err
 	}
 	action := actionReviewed
 	if d != s.Posts[path].Digest {
@@ -584,36 +646,31 @@ func prepareStartedPost(o Options, root string, s Session, path string) (string,
 	}
 	_, before, err := split(s.Posts[path].Before)
 	if err != nil {
-		return "", fmt.Errorf("%s: invalid frontmatter: %w", path, err)
+		return preparedEditorialPost{}, fmt.Errorf("%s: invalid frontmatter: %w", path, err)
 	}
 	_, after, err := split(string(b))
 	if err != nil {
-		return "", fmt.Errorf("%s: invalid frontmatter: %w", path, err)
+		return preparedEditorialPost{}, fmt.Errorf("%s: invalid frontmatter: %w", path, err)
 	}
 	if history := mapping(&after, "editorial_history"); history != nil && history.Kind != yaml.SequenceNode {
-		return "", fmt.Errorf("%s: editorial_history must be a list", path)
+		return preparedEditorialPost{}, fmt.Errorf("%s: editorial_history must be a list", path)
 	}
 	oldBytes, err := yaml.Marshal(mapping(&before, "editorial_history"))
 	if err != nil {
-		return "", err
+		return preparedEditorialPost{}, err
 	}
 	newBytes, err := yaml.Marshal(mapping(&after, "editorial_history"))
 	if err != nil {
-		return "", err
+		return preparedEditorialPost{}, err
 	}
 	if !bytes.Equal(oldBytes, newBytes) {
-		return "", fmt.Errorf("session must preserve prior editorial history: %s", path)
+		return preparedEditorialPost{}, fmt.Errorf("session must preserve prior editorial history: %s", path)
 	}
 	x, err := credit(string(b), s.Author, s.Role, s.DefaultAuthor)
 	if err != nil {
-		return "", err
+		return preparedEditorialPost{}, err
 	}
-	if !o.DryRun && x != string(b) {
-		if err := os.WriteFile(filepath.Join(root, path), []byte(x), 0o600); err != nil {
-			return "", err
-		}
-	}
-	return action, nil
+	return preparedEditorialPost{Action: action, Before: string(b), After: x}, nil
 }
 
 func finishStarted(o Options, root string, s Session, ps []string, summary string) (Session, error) {
@@ -621,19 +678,73 @@ func finishStarted(o Options, root string, s Session, ps []string, summary strin
 	if err != nil {
 		return Session{}, err
 	}
-	var e error
-
-	if strings.TrimSpace(head) != s.BaseCommit {
-		return Session{}, errors.New("HEAD changed during session; inspect and start a new session")
-	}
-	s.Actions = map[string]string{}
-	for _, p := range ps {
-		a, err := prepareStartedPost(o, root, s, p)
+	head = strings.TrimSpace(head)
+	if head != s.BaseCommit {
+		sha, recognized, err := sessionCommitAtHead(root, s, s.BaseCommit, "content", ps)
 		if err != nil {
 			return Session{}, err
 		}
-		s.Actions[p] = a
+		if !recognized {
+			return Session{}, errors.New("HEAD changed during session; inspect and start a new session")
+		}
+		s.Actions = make(map[string]string, len(ps))
+		for _, p := range ps {
+			committed, err := git(root, "show", sha+":"+p)
+			if err != nil {
+				return Session{}, err
+			}
+			d, err := digest(committed)
+			if err != nil {
+				return Session{}, err
+			}
+			s.Actions[p] = actionReviewed
+			if d != s.Posts[p].Digest {
+				s.Actions[p] = actionEdited
+			}
+		}
+		s.ContentCommit = sha
+		s.Commits = append(s.Commits, sha)
+		s.Summary = summary
+		s.Phase = phaseContentCommitted
+		if !o.DryRun {
+			if err := save(root, s); err != nil {
+				return Session{}, err
+			}
+		}
+		return s, nil
 	}
+
+	// Prepare *all* posts and validate the entire selection before changing
+	// any files. A malformed later post must not leave earlier files rewritten.
+	prepared := make(map[string]preparedEditorialPost, len(ps))
+	s.Actions = make(map[string]string, len(ps))
+	for _, p := range ps {
+		pending, err := prepareStartedPost(root, s, p)
+		if err != nil {
+			return Session{}, err
+		}
+		prepared[p] = pending
+		s.Actions[p] = pending.Action
+	}
+	if !o.DryRun {
+		for _, p := range ps {
+			current, err := os.ReadFile(filepath.Join(root, p))
+			if err != nil {
+				return Session{}, err
+			}
+			if string(current) != prepared[p].Before {
+				return Session{}, fmt.Errorf("selected post changed during validation: %s", p)
+			}
+		}
+		for _, p := range ps {
+			if prepared[p].After != prepared[p].Before {
+				if err := os.WriteFile(filepath.Join(root, p), []byte(prepared[p].After), 0o600); err != nil {
+					return Session{}, err
+				}
+			}
+		}
+	}
+
 	sha := s.BaseCommit
 	if !o.DryRun {
 		diffArgs := append([]string{"diff", "--name-only", "--"}, ps...)
@@ -642,9 +753,11 @@ func finishStarted(o Options, root string, s Session, ps []string, summary strin
 			return Session{}, err
 		}
 		if strings.TrimSpace(out) != "" {
-			sha, e = commit(root, ps, "editorial: "+s.Role+" by "+s.Author, s.Author, false)
-			if e != nil {
-				return Session{}, e
+			message := "editorial: " + s.Role + " by " + s.Author +
+				"\n\nEditorial-Session: " + s.ID + "\nEditorial-Phase: content"
+			sha, err = commit(root, ps, message, s.Author, false)
+			if err != nil {
+				return Session{}, err
 			}
 			s.Commits = append(s.Commits, sha)
 		}
@@ -657,7 +770,6 @@ func finishStarted(o Options, root string, s Session, ps []string, summary strin
 			return Session{}, err
 		}
 	}
-
 	return s, nil
 }
 
@@ -669,50 +781,59 @@ func finishContent(o Options, root string, s Session, ps []string) (Session, err
 	if strings.TrimSpace(currentHead) != s.ContentCommit {
 		return Session{}, errors.New("HEAD changed after content commit; restore the session before retrying")
 	}
-	if len(s.Pending) > 0 {
-		for p, expected := range s.Pending {
-			actual, err := os.ReadFile(filepath.Join(root, p))
-			if err != nil {
-				return Session{}, err
-			}
-			if string(actual) != expected {
-				return Session{}, fmt.Errorf("attribution interrupted or post changed: %s", p)
-			}
-		}
-		s.Phase = phaseMetadataPending
-		if !o.DryRun {
-			if err := save(root, s); err != nil {
-				return Session{}, err
-			}
-		}
-	}
 	if o.DryRun {
 		return s, nil
 	}
-	diffArgs := append([]string{"diff", "--name-only", "--"}, ps...)
-	changed, err := git(root, diffArgs...)
-	if err != nil {
-		return Session{}, err
-	}
-	if strings.TrimSpace(changed) != "" {
-		return Session{}, errors.New("selected posts changed after the content commit; restore the session before retrying")
-	}
-	s.Pending, err = buildPending(root, s, ps)
-	if err != nil {
-		return Session{}, err
-	}
-	// Persist the exact pending bytes before touching posts. This makes an
-	// interrupted attribution retryable and detects manual intervention.
-	s.Phase = phaseMetadataPending
-	if err := save(root, s); err != nil {
-		return Session{}, err
-	}
-	for p, x := range s.Pending {
-		if err := os.WriteFile(filepath.Join(root, p), []byte(x), 0o600); err != nil {
+	if len(s.Pending) == 0 {
+		diffArgs := append([]string{"diff", "--name-only", "--"}, ps...)
+		changed, err := git(root, diffArgs...)
+		if err != nil {
+			return Session{}, err
+		}
+		if strings.TrimSpace(changed) != "" {
+			return Session{}, errors.New("selected posts changed after the content commit; restore the session before retrying")
+		}
+		s.Pending, err = buildPending(root, s, ps)
+		if err != nil {
+			return Session{}, err
+		}
+		s.Phase = phaseMetadataPending
+		// Journal the intended bytes before writing them so a partial write can
+		// be safely completed on retry without overwriting intervening edits.
+		if err := save(root, s); err != nil {
 			return Session{}, err
 		}
 	}
-
+	// Verify the complete selection before writing any file. A file is safe
+	// to complete only when it is the content commit or our own pending bytes.
+	for _, p := range ps {
+		current, err := os.ReadFile(filepath.Join(root, p))
+		if err != nil {
+			return Session{}, err
+		}
+		if string(current) == s.Pending[p] {
+			continue
+		}
+		baseline, err := git(root, "show", s.ContentCommit+":"+p)
+		if err != nil {
+			return Session{}, err
+		}
+		if string(current) != baseline {
+			return Session{}, fmt.Errorf("attribution interrupted or post changed: %s", p)
+		}
+	}
+	for _, p := range ps {
+		current, err := os.ReadFile(filepath.Join(root, p))
+		if err != nil {
+			return Session{}, err
+		}
+		if string(current) != s.Pending[p] {
+			if err := os.WriteFile(filepath.Join(root, p), []byte(s.Pending[p]), 0o600); err != nil {
+				return Session{}, err
+			}
+		}
+	}
+	s.Phase = phaseMetadataPending
 	return s, nil
 }
 
@@ -753,34 +874,54 @@ func buildPending(root string, s Session, ps []string) (map[string]string, error
 }
 
 func finishMetadata(root string, s Session, ps []string) (Session, error) {
-	var e error
-
 	currentHead, err := git(root, "rev-parse", "HEAD")
 	if err != nil {
 		return Session{}, err
 	}
 	if strings.TrimSpace(currentHead) != s.ContentCommit {
-		return Session{}, errors.New("HEAD changed after content commit; restore the session before retrying")
+		sha, recognized, err := sessionCommitAtHead(root, s, s.ContentCommit, "metadata", ps)
+		if err != nil {
+			return Session{}, err
+		}
+		if !recognized {
+			return Session{}, errors.New("HEAD changed after content commit; restore the session before retrying")
+		}
+		for _, p := range ps {
+			committed, err := git(root, "show", sha+":"+p)
+			if err != nil {
+				return Session{}, err
+			}
+			if committed != s.Pending[p] {
+				return Session{}, fmt.Errorf("metadata commit does not match pending attribution: %s", p)
+			}
+		}
+		s.Commits = append(s.Commits, sha)
+		s.Phase = phaseDone
+		if err := save(root, s); err != nil {
+			return Session{}, err
+		}
+		return s, nil
 	}
-	for p, expected := range s.Pending {
+	for _, p := range ps {
 		actual, err := os.ReadFile(filepath.Join(root, p))
 		if err != nil {
 			return Session{}, err
 		}
-		if string(actual) != expected {
+		if string(actual) != s.Pending[p] {
 			return Session{}, fmt.Errorf("attribution interrupted or post changed: %s", p)
 		}
 	}
-	sha, e := commit(root, ps, "editorial: record "+s.Role+" revision links", sessionRecorder(s), false)
-	if e != nil {
-		return Session{}, e
+	message := "editorial: record " + s.Role + " revision links" +
+		"\n\nEditorial-Session: " + s.ID + "\nEditorial-Phase: metadata"
+	sha, err := commit(root, ps, message, sessionRecorder(s), false)
+	if err != nil {
+		return Session{}, err
 	}
 	s.Commits = append(s.Commits, sha)
 	s.Phase = phaseDone
 	if err := save(root, s); err != nil {
 		return Session{}, err
 	}
-
 	return s, nil
 }
 
@@ -818,7 +959,20 @@ func Finish(o Options, id, summary string) (Session, error) {
 			return Session{}, err
 		}
 	}
-	if s.Phase == phaseContentCommitted {
+	if s.Phase == phaseContentCommitted || s.Phase == phaseMetadataPending {
+		head, err := git(root, "rev-parse", "HEAD")
+		if err != nil {
+			return Session{}, err
+		}
+		// A successful metadata commit might precede the final session save.
+		// Let finishMetadata recognize that completed commit before attempting
+		// to rebuild or rewrite any pending files.
+		if s.Phase == phaseMetadataPending && strings.TrimSpace(head) != s.ContentCommit {
+			if o.DryRun {
+				return s, nil
+			}
+			return finishMetadata(root, s, ps)
+		}
 		s, err = finishContent(o, root, s, ps)
 		if err != nil {
 			return Session{}, err
