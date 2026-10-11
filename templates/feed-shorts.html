@@ -1,19 +1,35 @@
-{% extends "base.html" %}
-{% block title %}{{ feed.title | default:"Shorts" }} — Shorts{% endblock %}
-{% block description %}{{ feed.description | default:"Full-screen photos and videos" }}{% endblock %}
-{% block body_class %}shorts-body{% endblock %}
-{% block page_wrapper_class %} page-wrapper--feed-only{% endblock %}
-{% block head %}
-{{ block.Super() }}
-{% if feed_robots %}<meta name="robots" content="{{ feed_robots }}">{% endif %}
-<link rel="stylesheet" href="{{ 'css/feed-shorts.css' | theme_asset_hashed }}">
-<script defer src="{{ 'js/feed-shorts.js' | theme_asset_hashed }}"></script>
-{% endblock %}
-{% block header %}{% endblock %}
-{% block footer %}{% endblock %}
-{% block content %}
+<!doctype html>
+<html lang="{{ config.lang | default:'en' }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>{{ feed.title | default:"Shorts" }} — Shorts</title>
+  <meta name="description" content="{{ feed.description | default:"Full-screen photos and videos" }}">
+  {% if feed_robots %}<meta name="robots" content="{{ feed_robots }}">{% endif %}
+  {# Tiny critical layout keeps the initial preview visible while the CSS file loads. #}
+  <style>
+    html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#090909;color:#fff;font-family:system-ui,sans-serif}
+    .shorts-viewer{position:fixed;inset:0;overflow:hidden;background:#090909}
+    .shorts-slides{position:absolute;inset:0;pointer-events:none}
+    .shorts-first-frame{position:absolute;inset:0;z-index:2;display:grid;place-items:center;background:#111}
+    .shorts-first-frame img{display:block;width:100%;height:100%;object-fit:contain;filter:blur(10px)}
+    .shorts-top,.shorts-hud{position:absolute;z-index:3}
+    .shorts-top{top:0;left:0;right:0}
+    .shorts-hud{bottom:0;left:0;right:0}
+  </style>
+  <link rel="stylesheet" href="{{ 'css/feed-shorts.css' | theme_asset_hashed }}">
+  <script defer src="{{ 'js/feed-shorts.js' | theme_asset_hashed }}"></script>
+</head>
+<body class="shorts-body">
 <section class="shorts-viewer" id="shorts-viewer" data-manifest="{{ shorts_manifest_url }}" aria-label="Shorts media viewer">
-  <div id="shorts-slides" class="shorts-slides" aria-hidden="true"></div>
+  <div id="shorts-slides" class="shorts-slides" aria-hidden="true">
+    {% if shorts_first_frame_src %}
+    <div class="shorts-first-frame" id="shorts-first-frame" data-id="{{ shorts_first_frame_id }}">
+      <img class="shorts-first-frame-image" src="{{ shorts_first_frame_src }}" alt="" aria-hidden="true" loading="eager" decoding="async" fetchpriority="high">
+    </div>
+    {% endif %}
+  </div>
   <header class="shorts-top">
     <a href="{{ feed.base_url }}/" class="shorts-grid-link" aria-label="Return to photo grid">← Shots</a>
     <span class="shorts-counter" id="shorts-counter" aria-live="polite">Shorts</span>
@@ -39,4 +55,5 @@
   <div class="shorts-message" id="shorts-message" role="status" aria-live="polite">Loading shorts…</div>
   <noscript><div class="shorts-noscript">JavaScript is required for this full-screen view. <a href="{{ feed.base_url }}/">Browse the photo grid</a>.</div></noscript>
 </section>
-{% endblock %}
+</body>
+</html>
