@@ -49,6 +49,57 @@ that the benchmark rejects the run. The workflow uploads filmstrip artifacts
 for debugging. This is a **test of the benchmark**, not evidence of a faster
 production site.
 
+## Serve two actual generated Markata outputs
+
+The synthetic fixture is **not** a substitute for testing the generated site.
+The repository now includes `scripts/slow3g_site_server.py`, a local-only
+HTTP server that serves the full contents of one generated output directory
+with matching gzip-compressed HTML/CSS/JS/JSON, correct MIME types for images
+and fonts, and streamed byte-range responses for videos. Missing assets
+return 404 instead of accidentally returning index.html.
+
+Build **the same site content at the same revision** twice using the original
+Markata executable and the proposed patch executable. Save their *complete*
+generated output folders separately; the filenames below are placeholders,
+not prescribed Markata output paths:
+
+```sh
+# Terminal 1: unchanged build (replace with your actual generated output)
+python scripts/slow3g_site_server.py --root /tmp/markata-before --port 8000
+
+# Terminal 2: changed build (replace with your actual generated output)
+python scripts/slow3g_site_server.py --root /tmp/markata-after --port 8001
+
+# Confirm compression, MIME and missing-asset behavior before measuring:
+curl -sSI -H 'Accept-Encoding: gzip' http://127.0.0.1:8000/archive/
+curl -sSI http://127.0.0.1:8000/css/main.css
+curl -sSI http://127.0.0.1:8001/css/main.css
+
+# Terminal 3: run alternating paired measurements
+uv run --script scripts/slow3g_compare.py \
+  --before http://127.0.0.1:8000/archive/ \
+  --after http://127.0.0.1:8001/archive/ \
+  --runs 5 --observe-ms 55000 --timeout-ms 70000 \
+  --checkpoints 1000 2000 5000 8000 12000 18000 25000 35000 45000 52000 \
+  --output ./slow3g-archive
+```
+
+Run the same experiment on `/`, a representative article, `/shots/`,
+and `/reader/` *where both builds provide the same content*. Open
+`slow3g-archive/filmstrip.html` and inspect **main text readability**
+manually; do not infer first-readable time from FCP alone.
+
+**External resources are not mirrored by this server**: fonts/images hosted
+on separate domains, including Dropper and any CDN assets, still use those
+services and can vary between runs. Document which URLs differ, record
+failures and late third-party resources, and do not claim an isolated CSS
+speedup without making asset inventories comparable. This server uses gzip
+rather than production Cloudflare/Brotli; results are controlled lab
+comparisons, **not production latencies**. Do not use this test server publicly.
+
+The server has independent regression tests for `GET`, `HEAD`, gzip,
+MIME, range requests, missing assets, and symlink/path traversal safety.
+
 ## Real A/B validation
 
 Build both variants from the same pinned content revision, serve both with a
@@ -100,5 +151,6 @@ drawer behavior, dark/light themes, CLS and no-JS before opening a performance
 PR. **Do not merge or deploy a source-order change based on decoded HTML byte
 offset alone.**
 
-The standalone tool does not implement fixture-server compression or automatic
-main-text image recognition; those remain part of the controlled local setup.
+The standalone tool does not automatically label readable main-text pixels;
+review the filmstrips. The generated-site test server does implement gzip
+but does not simulate production Cloudflare edge caching.
