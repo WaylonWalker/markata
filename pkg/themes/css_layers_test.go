@@ -112,7 +112,7 @@ func TestPhotoGridUsesAvailableLayoutWidth(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	css := string(raw)
+	css := strings.ReplaceAll(string(raw), "\r\n", "\n")
 
 	for _, want := range []string{
 		".page-wrapper.page-wrapper--feed-only:has(> .main-content > .feed.h-feed.feed--photo-grid) > .main-content {",
