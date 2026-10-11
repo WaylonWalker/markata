@@ -813,7 +813,7 @@
     {% endif %}
 
     // Lite YouTube embeds (oEmbed)
-    {% if config.Extra.lite_youtube_enabled %}
+    {% if config.Extra.lite_youtube_enabled and ((post and post.Extra.needs_lite_youtube) or (body and '<lite-youtube' in body) or (post and post.ArticleHTML and '<lite-youtube' in post.ArticleHTML)) %}
     if (document.querySelector('lite-youtube')) {
     var liteYouTubeCSS = document.createElement('link');
     liteYouTubeCSS.rel = 'stylesheet';
