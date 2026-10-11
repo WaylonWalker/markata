@@ -2277,5 +2277,13 @@ a.wikilink.wikilink-missing:focus-visible {
 .post-byline__editor-count { color: var(--color-text-muted); }
 .post-byline__editor-list { display: grid; gap: var(--space-2); padding-block-start: var(--space-3); }
 .post-byline__editor-list .post-byline__name { white-space: normal; overflow-wrap: anywhere; }
+.post-byline__history {
+  border: 1px solid var(--color-border); border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-2); background: var(--color-surface);
+  color: var(--color-text-muted); font: inherit; cursor: pointer;
+}
+.post-byline__history:hover, .post-byline__history:focus-visible { color: var(--color-text); border-color: var(--color-primary); }
+.post-byline__history span { color: var(--color-primary); }
+.post-byline__history[hidden] { display: none; }
 
 }

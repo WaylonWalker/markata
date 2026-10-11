@@ -30,6 +30,7 @@ func TestEditorialHistory_LazySafeComparisonBrowser(t *testing.T) {
 		t.Skip("Chromium is unavailable")
 	}
 	sha := strings.Repeat("b", 40)
+	secondSHA := strings.Repeat("c", 40)
 	role := "copy editor"
 	writer := "author"
 	post := &models.Post{AuthorObjects: []models.Author{
@@ -38,9 +39,14 @@ func TestEditorialHistory_LazySafeComparisonBrowser(t *testing.T) {
 		{ID: "other", Name: "Another Editor", Role: &role},
 	}, Extra: map[string]interface{}{"editorial_history": []interface{}{map[string]interface{}{
 		"schema_version": 1, "author": "editor", "role": "copy-editor", "action": "edited",
-		"commit": sha, "base_commit": strings.Repeat("a", 40), "path": "pages/post.md",
+		"commit": sha, "base_commit": strings.Repeat("a", 40), "path": "pages/post.md", "recorded_at": "2026-10-02T10:00:00Z",
 		"file_url": "https://github.com/example/site/blob/" + sha + "/pages/post.md",
 		"summary":  "Corrected wording.",
+	}, map[string]interface{}{
+		"schema_version": 1, "author": "other", "role": "copy-editor", "action": "edited",
+		"commit": secondSHA, "base_commit": strings.Repeat("d", 40), "path": "pages/second.md", "recorded_at": "2026-10-01T10:00:00Z",
+		"file_url": "https://github.com/example/site/blob/" + secondSHA + "/pages/second.md",
+		"summary":  "Reviewed another passage.",
 	}}}}
 	engine, err := templates.NewEngine("")
 	if err != nil {
@@ -61,7 +67,7 @@ window.failRevision = false;
 window.fetch = async function(url) {
  window.revisionRequests++;
  if (window.failRevision) return new Response('', {status: 404});
- var before = url.includes('aaaaaaaa');
+ var before = url.includes('aaaaaaaa') || url.includes('dddddddd');
  var tail = Array(100).fill('unchanged context ').join('');
  return new Response('---\\ntitle: Revision\\n---\\n' + (before ? 'A tpyο.\\n<script>window.bad = true;<\\/script>' : 'A typo.\\n<img src=x onerror="window.bad = true">') + tail);
 };
@@ -100,7 +106,7 @@ window.fetch = async function(url) {
 	var safe bool
 	if err := chromedp.Run(browser,
 		chromedp.Navigate(server.URL),
-		chromedp.WaitReady(`[data-editorial-show]:not([hidden])`),
+		chromedp.WaitReady(`[data-editorial-open]:not([hidden])`),
 		chromedp.Evaluate(`window.revisionRequests`, &requests),
 	); err != nil {
 		t.Fatal(err)
@@ -109,30 +115,53 @@ window.fetch = async function(url) {
 		t.Fatal("revision data or viewer loaded before reader action")
 	}
 	if err := chromedp.Run(browser,
-		chromedp.Evaluate(`document.querySelector('.editorial-history > summary').focus()`, nil),
+		chromedp.Evaluate(`document.querySelector('[data-editorial-open]').focus()`, nil),
 		chromedp.KeyEvent("\r"),
-		chromedp.WaitVisible(`[data-editorial-show]`),
-		chromedp.Evaluate(`window.failRevision = true`, nil),
-		chromedp.Click(`[data-editorial-show]`),
-		chromedp.Poll(`document.querySelector('[data-editorial-show]').textContent === 'Retry changes'`, nil),
-		chromedp.Evaluate(`window.failRevision = false`, nil),
-		chromedp.Click(`[data-editorial-show]`),
-		chromedp.WaitVisible(`.editorial-history ins`),
-		chromedp.Evaluate(`!window.bad && document.querySelectorAll('[data-editorial-result] script, [data-editorial-result] img').length === 0 && document.querySelector('[data-editorial-show]').getAttribute('aria-expanded') === 'true' && document.querySelectorAll('.editorial-history__omitted').length > 0 && [...document.querySelectorAll('.editorial-history__omitted')].every(x => !x.open)`, &safe),
+		chromedp.WaitVisible(`dialog[open]`),
 	); err != nil {
-		t.Fatal(err)
+		t.Fatalf("open editorial history dialog: %v", err)
+	}
+	if err := chromedp.Run(browser, chromedp.WaitVisible(`.editorial-history__event:not([hidden]) [data-editorial-show]`)); err != nil {
+		t.Fatalf("show first revision control: %v", err)
+	}
+	if err := chromedp.Run(browser,
+		chromedp.Evaluate(`window.failRevision = true`, nil),
+		chromedp.Click(`.editorial-history__event:not([hidden]) [data-editorial-show]`),
+	); err != nil {
+		t.Fatalf("trigger first editorial comparison: %v", err)
+	}
+	if err := chromedp.Run(browser, chromedp.Poll(`document.querySelector('.editorial-history__event:not([hidden]) [data-editorial-show]').textContent === 'Retry changes'`, nil)); err != nil {
+		t.Fatalf("verify retry after unavailable revision: %v", err)
+	}
+	if err := chromedp.Run(browser,
+		chromedp.Evaluate(`window.failRevision = false`, nil),
+		chromedp.Click(`.editorial-history__event:not([hidden]) [data-editorial-show]`),
+		chromedp.Sleep(1*time.Second),
+	); err != nil {
+		t.Fatalf("load first editorial comparison: %v", err)
+	}
+	if err := chromedp.Run(browser, chromedp.Evaluate(`!window.bad && document.querySelectorAll('[data-editorial-result] script, [data-editorial-result] img').length === 0 && document.querySelector('.editorial-history__event:not([hidden]) [data-editorial-show]').getAttribute('aria-expanded') === 'true' && document.querySelectorAll('.editorial-history__omitted').length > 0 && [...document.querySelectorAll('.editorial-history__omitted')].every(x => !x.open) && document.querySelector('[data-editorial-position]').textContent === '1 of 2'`, &safe)); err != nil {
+		t.Fatalf("verify first editorial comparison: %v", err)
 	}
 	if !safe || viewerRequests.Load() != 1 {
 		t.Fatalf("unsafe render or duplicate viewer loads: safe=%v loads=%d", safe, viewerRequests.Load())
 	}
 	if err := chromedp.Run(browser,
-		chromedp.Click(`[data-editorial-show]`),
-		chromedp.Evaluate(`document.querySelector('.editorial-history__comparison').hidden`, &safe),
-		chromedp.Evaluate(`window.dispatchEvent(new Event('view-transition-complete')); window.dispatchEvent(new Event('view-transition-complete'))`, nil),
-		chromedp.Click(`[data-editorial-show]`),
-		chromedp.Evaluate(`!document.querySelector('.editorial-history__comparison').hidden`, &safe),
+		chromedp.Click(`[data-editorial-next]`),
+		chromedp.Evaluate(`document.querySelector('[data-editorial-position]').textContent === '2 of 2' && document.querySelector('[data-editorial-next]').disabled && document.querySelector('.editorial-history__event:not([hidden]) .editorial-history__credit').textContent.includes('Another Editor')`, &safe),
+		chromedp.Click(`[data-editorial-previous]`),
+		chromedp.Evaluate(`document.querySelector('[data-editorial-position]').textContent === '1 of 2' && !document.querySelector('[data-editorial-previous]').disabled`, &safe),
 	); err != nil {
-		t.Fatal(err)
+		t.Fatalf("navigate editorial history: %v", err)
+	}
+	if err := chromedp.Run(browser,
+		chromedp.Click(`.editorial-history__event:not([hidden]) [data-editorial-show]`),
+		chromedp.Evaluate(`document.querySelector('.editorial-history__event:not([hidden]) .editorial-history__comparison').hidden`, &safe),
+		chromedp.Evaluate(`window.dispatchEvent(new Event('view-transition-complete')); window.dispatchEvent(new Event('view-transition-complete'))`, nil),
+		chromedp.Click(`.editorial-history__event:not([hidden]) [data-editorial-show]`),
+		chromedp.Evaluate(`!document.querySelector('.editorial-history__event:not([hidden]) .editorial-history__comparison').hidden`, &safe),
+	); err != nil {
+		t.Fatalf("toggle comparison after revision navigation: %v", err)
 	}
 	if !safe || viewerRequests.Load() != 1 {
 		t.Fatal("toggle/view-transition initialization duplicated work")

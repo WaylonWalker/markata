@@ -1,7 +1,10 @@
 {% if post.editorial_history_view %}
-<details class="editorial-history" data-pagefind-ignore>
-    <summary>Editorial history <span class="editorial-history__count">{{ post.editorial_history_view|length }}</span></summary>
-    <ol class="editorial-history__events">
+<dialog class="editorial-history" id="editorial-history-dialog" aria-labelledby="editorial-history-title" data-pagefind-ignore>
+    <div class="editorial-history__header">
+        <h2 id="editorial-history-title">Editorial history</h2>
+        <button type="button" data-editorial-close aria-label="Close editorial history">Close</button>
+    </div>
+    <ol class="editorial-history__events" data-editorial-events>
         {% for event in post.editorial_history_view %}
         <li class="editorial-history__event">
             <div class="editorial-history__credit"><strong>{{ event.name }}</strong><span>{{ event.role }}</span><span>{{ event.action|capfirst }}</span></div>
@@ -27,5 +30,12 @@
         </li>
         {% endfor %}
     </ol>
-</details>
+    {% if post.editorial_history_view|length > 1 %}
+    <nav class="editorial-history__navigation" aria-label="Editorial history revisions">
+        <button type="button" data-editorial-previous disabled>Previous</button>
+        <span data-editorial-position aria-live="polite">1 of {{ post.editorial_history_view|length }}</span>
+        <button type="button" data-editorial-next>Next</button>
+    </nav>
+    {% endif %}
+</dialog>
 {% endif %}

@@ -1,12 +1,24 @@
 @layer components {
 .editorial-history {
-  margin-block: var(--space-6);
+  position: fixed !important;
+  inset: 0 !important;
+  margin: auto !important;
+  width: min(52rem, calc(100% - 2rem));
+  max-width: none;
+  max-height: min(85vh, 56rem);
+  overflow: auto;
   padding: var(--space-4);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   color: var(--color-text);
   background: var(--color-surface);
 }
+.editorial-history::backdrop { background: rgb(0 0 0 / 68%); backdrop-filter: blur(2px); }
+.editorial-history__header, .editorial-history__navigation { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.editorial-history__header h2 { margin: 0; font-size: var(--text-lg); }
+.editorial-history__events { list-style: none; padding-inline-start: 0; }
+.editorial-history__navigation { justify-content: center; margin-block-start: var(--space-4); }
+.editorial-history__navigation [disabled] { opacity: .5; cursor: not-allowed; }
 .editorial-history summary { cursor: pointer; font-weight: 600; }
 .editorial-history__count { color: var(--color-text-muted); font-weight: 400; }
 .editorial-history__events { padding-inline-start: var(--space-4); margin-block-end: 0; }

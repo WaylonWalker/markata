@@ -6,6 +6,10 @@
   var nextId = 0;
 
   function initialize() {
+    document.querySelectorAll('[data-editorial-open]').forEach(function (button) { button.hidden = false; });
+    document.querySelectorAll('[data-editorial-events]').forEach(function (list) {
+      list.querySelectorAll('.editorial-history__event').forEach(function (entry, index) { entry.hidden = index !== 0; });
+    });
     document.querySelectorAll('[data-editorial-show]').forEach(function (button) {
       button.hidden = false;
       if (!button.hasAttribute('aria-controls')) {
@@ -41,6 +45,33 @@
   }
 
   document.addEventListener('click', async function (event) {
+    var opener = event.target.closest('[data-editorial-open]');
+    if (opener) {
+      var dialog = document.getElementById(opener.getAttribute('aria-controls'));
+      if (dialog && !dialog.open) dialog.showModal();
+      return;
+    }
+    var closer = event.target.closest('[data-editorial-close]');
+    if (closer) {
+      closer.closest('dialog').close();
+      return;
+    }
+    var navigation = event.target.closest('[data-editorial-previous], [data-editorial-next]');
+    if (navigation) {
+      var historyDialog = navigation.closest('dialog');
+      var entries = Array.from(historyDialog.querySelectorAll('[data-editorial-events] > .editorial-history__event'));
+      var active = entries.findIndex(function (entry) { return !entry.hidden; });
+      active += navigation.hasAttribute('data-editorial-next') ? 1 : -1;
+      if (active < 0 || active >= entries.length) return;
+      entries.forEach(function (entry, index) { entry.hidden = index !== active; });
+      var previous = historyDialog.querySelector('[data-editorial-previous]');
+      var next = historyDialog.querySelector('[data-editorial-next]');
+      if (previous) previous.disabled = active === 0;
+      if (next) next.disabled = active === entries.length - 1;
+      historyDialog.querySelector('[data-editorial-position]').textContent = (active + 1) + ' of ' + entries.length;
+      historyDialog.scrollTop = 0;
+      return;
+    }
     var button = event.target.closest('[data-editorial-show]');
     if (!button || button.disabled) return;
     var panel = document.getElementById(button.getAttribute('aria-controls'));
