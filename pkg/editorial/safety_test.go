@@ -275,3 +275,120 @@ func TestEditorialSafety_DirectoryAliasAndSymlinkedPost(t *testing.T) {
 		t.Fatal("symlinked post was accepted")
 	}
 }
+
+func TestEditorialSafety_ValidateAllPostsBeforeAnyRewrite(t *testing.T) {
+	root := safetyRepo(t, "---\ntitle: Post\nauthor: writer\n---\nBody\n")
+	first := "posts/a post's.md"
+	second := "posts/zz-invalid.md"
+	safetyWrite(t, filepath.Join(root, second), "---\ntitle: Second\nauthor: writer\n---\nBody\n")
+	safetyGit(t, root, "add", second)
+	safetyGit(t, root, "commit", "-qm", "add second post")
+	s, err := Start(Options{Root: root}, "editor", "copy-editor", []string{first, second})
+	if err != nil {
+		t.Fatal(err)
+	}
+	modified := "---\ntitle: Post\nauthor: writer\n---\nHuman edit\n"
+	safetyWrite(t, filepath.Join(root, first), modified)
+	safetyWrite(t, filepath.Join(root, second), "---\ntitle: [broken\n---\nBody\n")
+	head := safetyGit(t, root, "rev-parse", "HEAD")
+	if _, err := Finish(Options{Root: root}, s.ID, "Edit both"); err == nil {
+		t.Fatal("accepted invalid second post")
+	}
+	if got := safetyRead(t, filepath.Join(root, first)); got != modified {
+		t.Fatalf("first post was rewritten before the second post validated:\n%s", got)
+	}
+	if head != safetyGit(t, root, "rev-parse", "HEAD") {
+		t.Fatal("validation failure committed some selected files")
+	}
+}
+
+func TestEditorialSafety_ResumeAfterContentCommitWithoutSavedPhase(t *testing.T) {
+	root := safetyRepo(t, "---\ntitle: Post\nauthor: writer\n---\nBody\n")
+	post := "posts/a post's.md"
+	started, err := Start(Options{Root: root}, "editor", "copy-editor", []string{post})
+	if err != nil {
+		t.Fatal(err)
+	}
+	safetyWrite(t, filepath.Join(root, post), "---\ntitle: Post\nauthor: writer\n---\nUpdated text\n")
+	done, err := Finish(Options{Root: root}, started.ID, "Edited copy")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(done.Commits) != 2 {
+		t.Fatalf("expected two commits, got %v", done.Commits)
+	}
+	// Recreate the crash window: the content commit exists, but the manifest
+	// still reports "started". The retry must adopt it, not create another.
+	safetyGit(t, root, "reset", "--hard", done.Commits[0])
+	if err := save(root, started); err != nil {
+		t.Fatal(err)
+	}
+	recovered, err := Finish(Options{Root: root}, started.ID, "Edited copy")
+	if err != nil {
+		t.Fatalf("recover content commit: %v", err)
+	}
+	if recovered.Phase != phaseDone || len(recovered.Commits) != 2 || recovered.Commits[0] != done.Commits[0] {
+		t.Fatalf("incorrect recovered session: %#v", recovered)
+	}
+}
+
+func TestEditorialSafety_ResumeAfterMetadataCommitWithoutSavedPhase(t *testing.T) {
+	root := safetyRepo(t, "---\ntitle: Post\nauthor: writer\n---\nBody\n")
+	post := "posts/a post's.md"
+	safetyWrite(t, filepath.Join(root, post), "---\ntitle: Post\nauthor: writer\n---\nUpdated text\n")
+	done, err := Commit(Options{Root: root}, "editor", "copy-editor", "Updated copy", []string{post})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Metadata committed, but its final phase transition did not persist.
+	pending := done
+	pending.Phase = phaseMetadataPending
+	pending.Commits = append([]string(nil), done.Commits[:1]...)
+	if err := save(root, pending); err != nil {
+		t.Fatal(err)
+	}
+	sha := strings.TrimSpace(safetyGit(t, root, "rev-parse", "HEAD"))
+	recovered, err := Finish(Options{Root: root}, pending.ID, "Updated copy")
+	if err != nil {
+		t.Fatalf("recover metadata commit: %v", err)
+	}
+	if recovered.Phase != phaseDone || len(recovered.Commits) != 2 ||
+		recovered.Commits[1] != sha || strings.TrimSpace(safetyGit(t, root, "rev-parse", "HEAD")) != sha {
+		t.Fatalf("retry created another metadata commit: %#v", recovered)
+	}
+}
+
+func TestEditorialSafety_ResumePartiallyWrittenMetadata(t *testing.T) {
+	root := safetyRepo(t, "---\ntitle: Post\nauthor: writer\n---\nBody\n")
+	first := "posts/a post's.md"
+	second := "posts/b.md"
+	safetyWrite(t, filepath.Join(root, second), "---\ntitle: Second\nauthor: writer\n---\nBody\n")
+	safetyGit(t, root, "add", second)
+	safetyGit(t, root, "commit", "-qm", "add second post")
+	s, err := Start(Options{Root: root}, "editor", "copy-editor", []string{first, second})
+	if err != nil {
+		t.Fatal(err)
+	}
+	safetyWrite(t, filepath.Join(root, first), "---\ntitle: Post\nauthor: writer\n---\nUpdated text\n")
+	safetyWrite(t, filepath.Join(root, second), "---\ntitle: Second\nauthor: writer\n---\nUpdated text\n")
+	done, err := Finish(Options{Root: root}, s.ID, "Edited both")
+	if err != nil {
+		t.Fatal(err)
+	}
+	safetyGit(t, root, "reset", "--hard", done.Commits[0])
+	pending := done
+	pending.Phase = phaseMetadataPending
+	pending.Commits = append([]string(nil), done.Commits[:1]...)
+	if err := save(root, pending); err != nil {
+		t.Fatal(err)
+	}
+	safetyWrite(t, filepath.Join(root, first), pending.Pending[first])
+	recovered, err := Finish(Options{Root: root}, pending.ID, "Edited both")
+	if err != nil {
+		t.Fatalf("complete partial metadata write: %v", err)
+	}
+	if recovered.Phase != phaseDone || len(recovered.Commits) != 2 ||
+		safetyRead(t, filepath.Join(root, second)) != pending.Pending[second] {
+		t.Fatalf("incomplete attribution retry: %#v", recovered)
+	}
+}
