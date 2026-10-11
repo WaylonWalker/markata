@@ -92,7 +92,12 @@
   }
 
   function previewBudget() {
-    if (connection && (connection.saveData || connection.effectiveType === 'slow-2g' || connection.effectiveType === '2g')) return 0;
+    // Save Data, Slow 3G and high-latency networks should spend their limited
+    // bandwidth on the visible photo instead of an unseen slide.
+    if (connection && (connection.saveData ||
+        ['slow-2g', '2g', '3g'].includes(connection.effectiveType) ||
+        (connection.downlink > 0 && connection.downlink < 2) ||
+        (connection.rtt > 0 && connection.rtt >= 300))) return 0;
     return 1;
   }
 
@@ -295,25 +300,43 @@
       if (node.dataset.role !== role || node.dataset.id !== item.id || node.dataset.mediaMode !== mediaMode) {
         if (active) stopVideo();
         var reusedPreview = null;
-        if (active && firstFrame) {
-          if (firstFrame.dataset.id === item.id) {
-            // Reparent the parser-loaded preview: no duplicate request, and
-            // no blank flash while the JSON manifest finishes hydrating.
-            reusedPreview = firstFrame.querySelector('img');
+        if (active && firstFrame && firstFrame.dataset.id === item.id) {
+          // Keep the first frame in place, even after JSON hydration. Moving
+          // its <img> can issue another request with Disable cache enabled.
+          // The tiny and sharp images already load directly from HTML.
+          releaseSlideMedia(node);
+          if (item.kind === 'video') {
+            var videoMedia = mediaFor(item, true, true);
+            node.replaceChildren(videoMedia);
+            loadImages(videoMedia);
+            var video = videoMedia.querySelector('video');
+            if (video) {
+              var currentFrame = firstFrame;
+              var revealVideo = function () {
+                currentFrame.remove();
+                if (firstFrame === currentFrame) firstFrame = null;
+              };
+              video.addEventListener('loadeddata', revealVideo, { once: true });
+              video.addEventListener('error', revealVideo, { once: true });
+            }
+          } else {
+            node.replaceChildren();
+          }
+        } else {
+          if (active && firstFrame) {
+            firstFrame.remove();
+            firstFrame = null;
+          }
+          if (active && item.kind === 'image' &&
+              node.dataset.mediaMode === 'preview' && node.dataset.id === item.id) {
+            reusedPreview = node.querySelector('img.shorts-media');
             if (reusedPreview) reusedPreview.remove();
           }
-          firstFrame.remove();
-          firstFrame = null;
+          releaseSlideMedia(node);
+          var media = mediaFor(item, active, loadPreview, reusedPreview);
+          node.replaceChildren(media);
+          loadImages(media);
         }
-        if (active && !reusedPreview && item.kind === 'image' &&
-            node.dataset.mediaMode === 'preview' && node.dataset.id === item.id) {
-          reusedPreview = node.querySelector('img.shorts-media');
-          if (reusedPreview) reusedPreview.remove();
-        }
-        releaseSlideMedia(node);
-        var media = mediaFor(item, active, loadPreview, reusedPreview);
-        node.replaceChildren(media);
-        loadImages(media);
         node.dataset.role = role;
         node.dataset.id = item.id;
         node.dataset.mediaMode = mediaMode;
@@ -360,6 +383,10 @@
     if (n === position && status.hidden) return;
     if (activeVideo) stopVideo();
     position = n;
+    if (firstFrame && manifest.ids[n] !== firstFrame.dataset.id) {
+      firstFrame.remove();
+      firstFrame = null;
+    }
     paused = false;
     status.hidden = true;
     if (writeHash) history.replaceState(history.state, '', location.pathname + location.search + encodedHash(position));
