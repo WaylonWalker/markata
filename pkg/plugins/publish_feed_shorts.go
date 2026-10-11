@@ -356,6 +356,11 @@ func (p *PublishFeedsPlugin) writeShortsHTML(feed *models.FeedConfig, cfg *lifec
 			ctx.Set("shorts_first_frame_src", preview)
 			ctx.Set("shorts_first_frame_id", post.Slug)
 			ctx.Set("shorts_first_frame_kind", first["kind"])
+			alt, _ := first["alt"].(string)
+			if alt == "" {
+				alt, _ = first["title"].(string)
+			}
+			ctx.Set("shorts_first_frame_alt", alt)
 			// Only expose an early sharp URL for a public still image. Video
 			// bodies must never start downloading from the HTML shell.
 			if first["kind"] == embedOptionImage {
