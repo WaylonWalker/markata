@@ -18,24 +18,34 @@ func TestLiteYouTubeAssetsPageScopedRendering(t *testing.T) {
 	plainTitle := "Plain article"
 
 	video := &models.Post{
-		Path: "video.md", Slug: "video", Title: &title,
-		Template: "post.html",
+		Path:        "video.md",
+		Slug:        "video",
+		Title:       &title,
+		Template:    "post.html",
 		ArticleHTML: `<lite-youtube videoid="dQw4w9WgXcQ"></lite-youtube>`,
-		Extra: map[string]interface{}{"needs_lite_youtube": true},
+		Extra:       map[string]interface{}{"needs_lite_youtube": true},
 	}
 	plain := &models.Post{
-		Path: "plain.md", Slug: "plain", Title: &plainTitle,
-		Template: "post.html",
+		Path:        "plain.md",
+		Slug:        "plain",
+		Title:       &plainTitle,
+		Template:    "post.html",
 		ArticleHTML: "<p>Only prose.</p>",
 	}
 	// A generated/handwritten HTML embed should work without the flag.
 	raw := &models.Post{
-		Path: "raw.md", Slug: "raw", Title: &title,
-		Template: "post.html",
+		Path:        "raw.md",
+		Slug:        "raw",
+		Title:       &title,
+		Template:    "post.html",
 		ArticleHTML: `<lite-youtube videoid="dQw4w9WgXcQ"></lite-youtube>`,
 	}
 	m.SetPosts([]*models.Post{video, plain, raw})
-	if err := NewTemplatesPlugin().Render(m); err != nil {
+	plugin := NewTemplatesPlugin()
+	if err := plugin.Configure(m); err != nil {
+		t.Fatal(err)
+	}
+	if err := plugin.Render(m); err != nil {
 		t.Fatal(err)
 	}
 
@@ -43,7 +53,9 @@ func TestLiteYouTubeAssetsPageScopedRendering(t *testing.T) {
 		post    *models.Post
 		enabled bool
 	}{
-		{video, true}, {plain, false}, {raw, true},
+		{post: video, enabled: true},
+		{post: plain, enabled: false},
+		{post: raw, enabled: true},
 	} {
 		hasLoader := strings.Contains(tc.post.HTML, "lite-yt-embed.js") &&
 			strings.Contains(tc.post.HTML, "lite-yt-embed.css")
