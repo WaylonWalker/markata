@@ -392,3 +392,47 @@ func TestEditorialSafety_ResumePartiallyWrittenMetadata(t *testing.T) {
 		t.Fatalf("incomplete attribution retry: %#v", recovered)
 	}
 }
+
+func TestEditorialSafety_ResumeAfterCommitBeforeIndexReset(t *testing.T) {
+	for _, metadata := range []bool{false, true} {
+		t.Run(map[bool]string{false: "content", true: "metadata"}[metadata], func(t *testing.T) {
+			root := safetyRepo(t, "---\ntitle: Post\nauthor: writer\n---\nBody\n")
+			post := "posts/a post's.md"
+			started, err := Start(Options{Root: root}, "editor", "copy-editor", []string{post})
+			if err != nil {
+				t.Fatal(err)
+			}
+			safetyWrite(t, filepath.Join(root, post), "---\ntitle: Post\nauthor: writer\n---\nUpdated text\n")
+			done, err := Finish(Options{Root: root}, started.ID, "Updated text")
+			if err != nil {
+				t.Fatal(err)
+			}
+			pending := started
+			parent := started.BaseCommit
+			if metadata {
+				pending = done
+				pending.Phase = phaseMetadataPending
+				pending.Commits = append([]string(nil), done.Commits[:1]...)
+				parent = done.Commits[0]
+			} else {
+				safetyGit(t, root, "reset", "--hard", done.Commits[0])
+			}
+			// Simulate interruption after commit but before the original index
+			// was reset. The index still points to the previous commit's post.
+			safetyGit(t, root, "reset", "-q", parent, "--", post)
+			if err := save(root, pending); err != nil {
+				t.Fatal(err)
+			}
+			recovered, err := Finish(Options{Root: root}, pending.ID, "Updated text")
+			if err != nil {
+				t.Fatalf("recover with stale index: %v", err)
+			}
+			if recovered.Phase != phaseDone || len(recovered.Commits) != 2 {
+				t.Fatalf("incorrect session recovery: %#v", recovered)
+			}
+			if staged := strings.TrimSpace(safetyGit(t, root, "diff", "--cached", "--name-only", "--", post)); staged != "" {
+				t.Fatalf("stale index not reconciled: %s", staged)
+			}
+		})
+	}
+}
