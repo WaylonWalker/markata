@@ -219,6 +219,41 @@ func TestBuildInternalEmbedCard_DifferentialCorpus(t *testing.T) {
 	}
 }
 
+
+// Test that the site-wide Lite YouTube capability never causes unrelated
+// posts to inherit its per-page asset requirement.
+func TestEmbedsPlugin_LiteYouTubeAssetsPerPost(t *testing.T) {
+	plugin := NewEmbedsPlugin()
+	manager := lifecycle.NewManager()
+	posts := []*models.Post{
+		{Path: "video.md", Slug: "video", Content: `Watch <lite-youtube videoid="dQw4w9WgXcQ"></lite-youtube>`},
+		{Path: "text.md", Slug: "text", Content: "A plain article."},
+		{Path: "code.md", Slug: "code", Content: "```html\\n<lite-youtube></lite-youtube>\\n```"},
+	}
+	manager.SetPosts(posts)
+	if err := plugin.Transform(manager); err != nil {
+		t.Fatal(err)
+	}
+	if posts[0].Extra["needs_lite_youtube"] != true {
+		t.Fatal("video post should require Lite YouTube assets")
+	}
+	for _, post := range posts[1:] {
+		if post.Extra != nil && post.Extra["needs_lite_youtube"] == true {
+			t.Errorf("%s should not load Lite YouTube assets", post.Slug)
+		}
+	}
+	if manager.Config().Extra["lite_youtube_enabled"] != true {
+		t.Fatal("site-wide capability must remain available")
+	}
+
+	// Reusing the same post after removing an embed must clear stale flags.
+	posts[0].Content = "Removed video."
+	markLiteYouTubeNeed(posts[0])
+	if _, ok := posts[0].Extra["needs_lite_youtube"]; ok {
+		t.Fatal("stale per-page flag retained after embed was removed")
+	}
+}
+
 func TestEmbedsPlugin_Name(t *testing.T) {
 	p := NewEmbedsPlugin()
 	if p.Name() != "embeds" {
