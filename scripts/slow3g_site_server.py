@@ -57,9 +57,9 @@ class Handler(BaseHTTPRequestHandler):
             if not candidate.is_relative_to(self.directory):
                 return None
             if candidate.is_dir():
-                candidate = candidate / "index.html"
+                candidate = (candidate / "index.html").resolve()
             elif not candidate.exists() and not candidate.suffix:
-                candidate = candidate / "index.html"
+                candidate = (candidate / "index.html").resolve()
             if candidate.is_file() and candidate.is_relative_to(self.directory):
                 return candidate
         except (OSError, UnicodeError, ValueError):
