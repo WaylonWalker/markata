@@ -10,6 +10,10 @@ body.shorts-body { overflow: hidden !important; }
 .shorts-slide--empty { background: radial-gradient(ellipse at 50% 30%, #30303c, #111 75%); }
 .shorts-blur { position: absolute; inset: -24px; filter: blur(35px) brightness(.34); object-fit: cover; width: calc(100% + 48px); height: calc(100% + 48px); opacity: .65; }
 .shorts-media { position: relative; }
+.shorts-image-placeholder { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: contain; filter: blur(10px); transform: scale(1.015); opacity: 1; transition: opacity 180ms ease; }
+.shorts-image--full { opacity: 0; transition: opacity 180ms ease; }
+.shorts-media-wrap--sharp .shorts-image-placeholder { opacity: 0; }
+.shorts-media-wrap--sharp .shorts-image--full { opacity: 1; }
 .shorts-top { position: absolute; top: 0; left: 0; right: 0; z-index: 3; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: max(16px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) 20px max(20px, env(safe-area-inset-left)); background: linear-gradient(to bottom, #0009, transparent); pointer-events: none; }
 .shorts-top > * { pointer-events: auto; }
 .shorts-top a, .shorts-counter { font-size: .94rem; font-weight: 650; text-shadow: 0 1px 5px #000b; color: white; }
@@ -32,4 +36,4 @@ body.shorts-body { overflow: hidden !important; }
 .shorts-message, .shorts-noscript { z-index: 5; position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%); text-align: center; padding: 1rem; color: white; background: #0008; border-radius: 12px; }
 .shorts-noscript a { color: #fff; text-decoration: underline; }
 @media (min-width: 850px) { .shorts-hud { padding-left: max(32px, env(safe-area-inset-left)); padding-right: max(32px, env(safe-area-inset-right)); } .shorts-media { max-width: min(100%, 1050px); } }
-@media (prefers-reduced-motion: reduce) { .shorts-slide { transition: none !important; } }
+@media (prefers-reduced-motion: reduce) { .shorts-slide, .shorts-image-placeholder, .shorts-image--full { transition: none !important; } }

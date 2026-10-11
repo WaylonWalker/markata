@@ -1,0 +1,53 @@
+name: Shorts image loading browser tests
+
+on:
+  pull_request:
+    paths:
+      - "pkg/plugins/publish_feed_shorts.go"
+      - "pkg/themes/default/static/js/feed-shorts.js"
+      - "pkg/themes/default/static/css/feed-shorts.css"
+      - "scripts/shorts-image-loading.browser.test.cjs"
+      - ".github/workflows/shorts-image-loading.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  go-shorts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Shorts manifest regression tests
+        run: go test ./pkg/plugins -run '^TestShorts' -count=1
+
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install pinned Playwright
+        run: npm install --no-save --no-package-lock playwright@1.56.1
+      - name: Install Chromium
+        run: npx --no-install playwright install --with-deps chromium
+      - name: Run browser regression tests
+        env:
+          SHORTS_EVIDENCE_DIR: ${{ runner.temp }}/shorts-evidence
+        run: |
+          node --check pkg/themes/default/static/js/feed-shorts.js
+          node --test scripts/shorts-image-loading.browser.test.cjs
+      - name: Upload browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shorts-image-loading
+          path: ${{ runner.temp }}/shorts-evidence
+          if-no-files-found: ignore

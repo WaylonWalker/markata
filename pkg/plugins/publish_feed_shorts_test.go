@@ -12,6 +12,54 @@ import (
 	"github.com/WaylonWalker/markata-go/pkg/models"
 )
 
+func TestShortsPostItemUsesBoundedDropperImageSizes(t *testing.T) {
+	imageURL := "https://dropper.waylonwalker.com/file/photo.webp?token=abc&width=900&height=600&h=300"
+	item := shortsPostItem(&models.Post{
+		Slug:  "shots/photo",
+		Extra: map[string]interface{}{"image": imageURL},
+	})
+
+	if item["src"] != "https://dropper.waylonwalker.com/file/photo.webp?token=abc&w=1280" {
+		t.Fatalf("unexpected main image URL: %v", item["src"])
+	}
+	if item["thumb"] != "https://dropper.waylonwalker.com/file/photo.webp?token=abc&w=240" {
+		t.Fatalf("unexpected preview URL: %v", item["thumb"])
+	}
+	if item["placeholder"] != "https://dropper.waylonwalker.com/file/photo.webp?token=abc&w=72" {
+		t.Fatalf("unexpected placeholder URL: %v", item["placeholder"])
+	}
+	if item["poster"] != "" {
+		t.Fatalf("image-only item should not get a video poster: %v", item["poster"])
+	}
+}
+
+func TestShortsPostItemDoesNotResizeUntrustedOrVideoMedia(t *testing.T) {
+	imageURL := "https://images.example.test/photo.webp?token=abc"
+	image := shortsPostItem(&models.Post{Extra: map[string]interface{}{"image": imageURL}})
+	if image["src"] != imageURL || image["thumb"] != "" || image["placeholder"] != "" {
+		t.Fatalf("untrusted image should stay unchanged without speculative variants: %+v", image)
+	}
+
+	videoURL := "https://dropper.waylonwalker.com/file/clip.mp4?token=video"
+	posterURL := "https://dropper.waylonwalker.com/file/poster.webp?token=poster"
+	video := shortsPostItem(&models.Post{Extra: map[string]interface{}{
+		"video":  videoURL,
+		"poster": posterURL,
+	}})
+	if video["src"] != videoURL {
+		t.Fatalf("video source must not receive image resize parameters: %v", video["src"])
+	}
+	if video["thumb"] != "https://dropper.waylonwalker.com/file/poster.webp?token=poster&w=240" {
+		t.Fatalf("unexpected video preview poster: %v", video["thumb"])
+	}
+	if video["placeholder"] != "https://dropper.waylonwalker.com/file/poster.webp?token=poster&w=72" {
+		t.Fatalf("unexpected video placeholder: %v", video["placeholder"])
+	}
+	if video["poster"] != "https://dropper.waylonwalker.com/file/poster.webp?token=poster&w=720" {
+		t.Fatalf("unexpected video poster: %v", video["poster"])
+	}
+}
+
 func TestShortsPublishesAllPagesAtRootRoute(t *testing.T) {
 	output := t.TempDir()
 	cfg := lifecycle.NewConfig()
@@ -146,6 +194,7 @@ func TestShortsIndexPrivacyAndCleanup(t *testing.T) {
 		t.Fatalf("stale shorts page after disable: %v", err)
 	}
 }
+
 func containsShortsPrivateData(s string) bool {
 	return strings.Contains(s, "shots/secret") || strings.Contains(s, "shots/draft")
 }

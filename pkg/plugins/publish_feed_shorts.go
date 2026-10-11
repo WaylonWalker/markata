@@ -15,6 +15,12 @@ import (
 
 const shortsChunkSize = 128
 
+const (
+	shortsPlaceholderWidth = 72
+	shortsPreviewWidth     = 240
+	shortsMainImageWidth   = 1280
+)
+
 // validateShortsRoutes makes an opt-in peer route a safe, unique output path.
 // It is called before any feed publisher workers start writing.
 func validateShortsRoutes(feeds []models.FeedConfig, posts []*models.Post) error {
@@ -127,6 +133,31 @@ func safeShortsMediaURL(raw string) string {
 	return raw
 }
 
+// shortsSizedImageURL applies Dropper sizing only to absolute trusted media
+// URLs. Relative site assets and untrusted external images keep their original
+// URL instead of receiving query parameters that the host may ignore.
+func shortsCanResizeImageURL(raw string) bool {
+	parsed, err := url.Parse(raw)
+	return err == nil && parsed.Host != "" && (parsed.Scheme == "http" || parsed.Scheme == "https") && templates.IsTrustedMediaURL(raw)
+}
+
+func shortsSizedImageURL(raw string, width int) string {
+	if !shortsCanResizeImageURL(raw) {
+		return raw
+	}
+	parsed, err := url.Parse(raw)
+	if err != nil {
+		return raw
+	}
+	query := parsed.Query()
+	// Dropper accepts both short and long aliases. Remove stale aliases before
+	// writing w so an earlier width value cannot conflict with the new size.
+	query.Del("width")
+	query.Del("height")
+	parsed.RawQuery = query.Encode()
+	return templates.WithSize(parsed.String(), width, 0)
+}
+
 func shortsPostItem(post *models.Post) map[string]interface{} {
 	extra := post.Extra
 	if extra == nil {
@@ -149,11 +180,24 @@ func shortsPostItem(post *models.Post) map[string]interface{} {
 			poster = image
 		}
 	}
-	thumb := templates.WithSize(media, 640, 0)
-	src := templates.WithSize(media, 1280, 0)
+	thumb := ""
+	placeholder := ""
+	src := media
+	if kind == embedOptionImage && shortsCanResizeImageURL(media) {
+		thumb = shortsSizedImageURL(media, shortsPreviewWidth)
+		placeholder = shortsSizedImageURL(media, shortsPlaceholderWidth)
+		src = shortsSizedImageURL(media, shortsMainImageWidth)
+	}
 	if kind == templateTypeVideo {
 		src = media
-		thumb = templates.WithSize(poster, 640, 0)
+		if poster != "" {
+			thumb = shortsSizedImageURL(poster, shortsPreviewWidth)
+			placeholder = shortsSizedImageURL(poster, shortsPlaceholderWidth)
+		}
+	}
+	posterSized := ""
+	if poster != "" {
+		posterSized = shortsSizedImageURL(poster, 720)
 	}
 	href := post.Href
 	if href == "" {
@@ -176,8 +220,9 @@ func shortsPostItem(post *models.Post) map[string]interface{} {
 		"kind":        kind,
 		"src":         src,
 		"thumb":       thumb,
-		"poster":     templates.WithSize(poster, 720, 0),
-		"mime":       templates.VideoMIMEType(media),
+		"placeholder": placeholder,
+		"poster":      posterSized,
+		"mime":        templates.VideoMIMEType(media),
 	}
 }
 
@@ -262,10 +307,7 @@ func (p *PublishFeedsPlugin) writeShortsManifest(feed *models.FeedConfig, dataDi
 	if err != nil {
 		return err
 	}
-	if err := p.safeWriteFile(filepath.Join(dataDir, "index.json"), append(index, '\n')); err != nil {
-		return err
-	}
-	return nil
+	return p.safeWriteFile(filepath.Join(dataDir, "index.json"), append(index, '\n'))
 }
 
 func (p *PublishFeedsPlugin) writeShortsHTML(feed *models.FeedConfig, cfg *lifecycle.Config, dir string) error {
