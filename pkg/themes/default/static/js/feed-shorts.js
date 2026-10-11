@@ -6,6 +6,13 @@
   if (!viewer) return;
 
   var slides = document.getElementById('shorts-slides');
+  var firstFrame = document.getElementById('shorts-first-frame');
+  // A deep link may target a different short; never cover it with the first
+  // feed item's server-rendered preview while its manifest is loading.
+  if (firstFrame && location.hash.startsWith('#id=')) {
+    firstFrame.remove();
+    firstFrame = null;
+  }
   var title = document.getElementById('shorts-title');
   var description = document.getElementById('shorts-description');
   var more = document.getElementById('shorts-more');
@@ -160,14 +167,14 @@
       wrap.appendChild(placeholder);
     }
     if (item.thumb && active && item.kind === 'video') {
-      var blur = document.createElement('img');
+      var blur = reusedPreview || document.createElement('img');
       blur.className = 'shorts-blur';
       blur.alt = '';
       blur.setAttribute('aria-hidden', 'true');
       blur.loading = 'eager';
       blur.decoding = 'async';
       blur.fetchPriority = 'low';
-      blur.dataset.shortsSrc = item.thumb;
+      if (!reusedPreview) blur.dataset.shortsSrc = item.thumb;
       wrap.appendChild(blur);
     }
     if (!item.src) return wrap;
@@ -288,7 +295,17 @@
       if (node.dataset.role !== role || node.dataset.id !== item.id || node.dataset.mediaMode !== mediaMode) {
         if (active) stopVideo();
         var reusedPreview = null;
-        if (active && item.kind === 'image' &&
+        if (active && firstFrame) {
+          if (firstFrame.dataset.id === item.id) {
+            // Reparent the parser-loaded preview: no duplicate request, and
+            // no blank flash while the JSON manifest finishes hydrating.
+            reusedPreview = firstFrame.querySelector('img');
+            if (reusedPreview) reusedPreview.remove();
+          }
+          firstFrame.remove();
+          firstFrame = null;
+        }
+        if (active && !reusedPreview && item.kind === 'image' &&
             node.dataset.mediaMode === 'preview' && node.dataset.id === item.id) {
           reusedPreview = node.querySelector('img.shorts-media');
           if (reusedPreview) reusedPreview.remove();
