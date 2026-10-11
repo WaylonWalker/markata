@@ -151,6 +151,18 @@
     });
   }
 
+  function createImageLoading() {
+    var indicator = document.createElement('div');
+    indicator.className = 'shorts-image-loading';
+    indicator.setAttribute('aria-hidden', 'true');
+    var spinner = document.createElement('span');
+    spinner.className = 'shorts-image-loading__spinner';
+    var text = document.createElement('span');
+    text.textContent = 'Loading full quality…';
+    indicator.append(spinner, text);
+    return indicator;
+  }
+
   function mediaFor(item, active, loadPreview, reusedPreview) {
     var wrap = document.createElement('div');
     wrap.className = 'shorts-media-wrap';
@@ -183,6 +195,9 @@
       wrap.appendChild(blur);
     }
     if (!item.src) return wrap;
+    if (active && item.kind === 'image' && (placeholder || item.thumb)) {
+      wrap.appendChild(createImageLoading());
+    }
     var el;
     if (item.kind === 'video' && active) {
       el = document.createElement('video');
@@ -245,6 +260,7 @@
         el.addEventListener('error', function () {
           if (!el.isConnected) return;
           wrap.querySelector('.shorts-image-placeholder')?.remove();
+          wrap.classList.add('shorts-media-wrap--failed');
           el.hidden = true;
           nodeFor(wrap)?.classList.add('shorts-slide--empty');
         }, { once: true });
