@@ -355,6 +355,12 @@ func (p *PublishFeedsPlugin) writeShortsHTML(feed *models.FeedConfig, cfg *lifec
 		if preview, ok := first["placeholder"].(string); ok && preview != "" {
 			ctx.Set("shorts_first_frame_src", preview)
 			ctx.Set("shorts_first_frame_id", post.Slug)
+			ctx.Set("shorts_first_frame_kind", first["kind"])
+			// Only expose an early sharp URL for a public still image. Video
+			// bodies must never start downloading from the HTML shell.
+			if first["kind"] == embedOptionImage {
+				ctx.Set("shorts_first_frame_sharp_src", first["src"])
+			}
 		}
 		break // Never show a different post while the manifest's first item loads.
 	}
