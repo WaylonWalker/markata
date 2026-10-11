@@ -88,7 +88,7 @@ func TestShortsHTMLFirstFrameIsPublicAndStandalone(t *testing.T) {
 	html := string(raw)
 	for _, want := range []string{
 		"<!doctype html>", "shorts-first-frame",
-		"data-id=\\"shots/first\\"",
+		`data-id="shots/first"`,
 		"https://dropper.waylonwalker.com/file/first.webp?w=72",
 		"feed-shorts.css", "feed-shorts.js",
 	} {
