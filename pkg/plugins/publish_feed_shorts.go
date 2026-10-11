@@ -343,6 +343,32 @@ func (p *PublishFeedsPlugin) writeShortsHTML(feed *models.FeedConfig, cfg *lifec
 	ctx := templates.NewFeedContext(&shellFeed, page, modelsConfig)
 	ctx.Set("shorts_manifest_url", route+"data/index.json")
 	ctx.Set("feed_robots", feed.Robots)
+	// Expose only the first published, public image-sized thumbnail. The HTML
+	// parser can discover it before Shorts JavaScript or JSON manifests arrive.
+	// Keep the selection identical to writeShortsManifest, which filters private,
+	// draft, skipped and unpublished posts before enumerating IDs.
+	for _, post := range feed.Posts {
+		if post == nil || post.Private || !post.Published || post.Skip || post.Draft {
+			continue
+		}
+		first := shortsPostItem(post)
+		if preview, ok := first["placeholder"].(string); ok && preview != "" {
+			ctx.Set("shorts_first_frame_src", preview)
+			ctx.Set("shorts_first_frame_id", post.Slug)
+			ctx.Set("shorts_first_frame_kind", first["kind"])
+			alt, _ := first["alt"].(string)
+			if alt == "" {
+				alt, _ = first["title"].(string)
+			}
+			ctx.Set("shorts_first_frame_alt", alt)
+			// Only expose an early sharp URL for a public still image. Video
+			// bodies must never start downloading from the HTML shell.
+			if first["kind"] == embedOptionImage {
+				ctx.Set("shorts_first_frame_sharp_src", first["src"])
+			}
+		}
+		break // Never show a different post while the manifest's first item loads.
+	}
 	rendered, err := engine.Render("feed-shorts.html", ctx)
 	if err != nil {
 		return err

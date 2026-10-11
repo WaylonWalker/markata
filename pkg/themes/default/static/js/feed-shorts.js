@@ -6,6 +6,13 @@
   if (!viewer) return;
 
   var slides = document.getElementById('shorts-slides');
+  var firstFrame = document.getElementById('shorts-first-frame');
+  // A deep link may target a different short; never cover it with the first
+  // feed item's server-rendered preview while its manifest is loading.
+  if (firstFrame && location.hash.startsWith('#id=')) {
+    firstFrame.remove();
+    firstFrame = null;
+  }
   var title = document.getElementById('shorts-title');
   var description = document.getElementById('shorts-description');
   var more = document.getElementById('shorts-more');
@@ -85,7 +92,12 @@
   }
 
   function previewBudget() {
-    if (connection && (connection.saveData || connection.effectiveType === 'slow-2g' || connection.effectiveType === '2g')) return 0;
+    // Save Data, Slow 3G and high-latency networks should spend their limited
+    // bandwidth on the visible photo instead of an unseen slide.
+    if (connection && (connection.saveData ||
+        ['slow-2g', '2g', '3g'].includes(connection.effectiveType) ||
+        (connection.downlink > 0 && connection.downlink < 2) ||
+        (connection.rtt > 0 && connection.rtt >= 300))) return 0;
     return 1;
   }
 
@@ -139,6 +151,18 @@
     });
   }
 
+  function createImageLoading() {
+    var indicator = document.createElement('div');
+    indicator.className = 'shorts-image-loading';
+    indicator.setAttribute('aria-hidden', 'true');
+    var spinner = document.createElement('span');
+    spinner.className = 'shorts-image-loading__spinner';
+    var text = document.createElement('span');
+    text.textContent = 'Loading full quality…';
+    indicator.append(spinner, text);
+    return indicator;
+  }
+
   function mediaFor(item, active, loadPreview, reusedPreview) {
     var wrap = document.createElement('div');
     wrap.className = 'shorts-media-wrap';
@@ -160,17 +184,20 @@
       wrap.appendChild(placeholder);
     }
     if (item.thumb && active && item.kind === 'video') {
-      var blur = document.createElement('img');
+      var blur = reusedPreview || document.createElement('img');
       blur.className = 'shorts-blur';
       blur.alt = '';
       blur.setAttribute('aria-hidden', 'true');
       blur.loading = 'eager';
       blur.decoding = 'async';
       blur.fetchPriority = 'low';
-      blur.dataset.shortsSrc = item.thumb;
+      if (!reusedPreview) blur.dataset.shortsSrc = item.thumb;
       wrap.appendChild(blur);
     }
     if (!item.src) return wrap;
+    if (active && item.kind === 'image' && (placeholder || item.thumb)) {
+      wrap.appendChild(createImageLoading());
+    }
     var el;
     if (item.kind === 'video' && active) {
       el = document.createElement('video');
@@ -233,6 +260,7 @@
         el.addEventListener('error', function () {
           if (!el.isConnected) return;
           wrap.querySelector('.shorts-image-placeholder')?.remove();
+          wrap.classList.add('shorts-media-wrap--failed');
           el.hidden = true;
           nodeFor(wrap)?.classList.add('shorts-slide--empty');
         }, { once: true });
@@ -288,15 +316,54 @@
       if (node.dataset.role !== role || node.dataset.id !== item.id || node.dataset.mediaMode !== mediaMode) {
         if (active) stopVideo();
         var reusedPreview = null;
-        if (active && item.kind === 'image' &&
-            node.dataset.mediaMode === 'preview' && node.dataset.id === item.id) {
-          reusedPreview = node.querySelector('img.shorts-media');
-          if (reusedPreview) reusedPreview.remove();
+        if (active && firstFrame && firstFrame.dataset.id === item.id) {
+          // Keep the first frame in place, even after JSON hydration. Moving
+          // its <img> can issue another request with Disable cache enabled.
+          // The tiny and sharp images already load directly from HTML.
+          releaseSlideMedia(node);
+          if (item.kind === 'video') {
+            var videoMedia = mediaFor(item, true, true);
+            node.replaceChildren(videoMedia);
+            loadImages(videoMedia);
+            var video = videoMedia.querySelector('video');
+            if (video) {
+              var currentFrame = firstFrame;
+              var revealVideo = function () {
+                currentFrame.remove();
+                if (firstFrame === currentFrame) firstFrame = null;
+              };
+              video.addEventListener('loadeddata', revealVideo, { once: true });
+              video.addEventListener('error', revealVideo, { once: true });
+            }
+          } else {
+            node.replaceChildren();
+            // The HTML-first image bypasses mediaFor's full-image load
+            // callback. Preserve fast-connection prefetch behavior while
+            // previewBudget still blocks all speculative loads on Slow 3G.
+            var sharp = firstFrame.querySelector('.shorts-first-frame-sharp');
+            if (sharp) {
+              if (sharp.complete && sharp.naturalWidth) {
+                prefetchSecondPreview();
+              } else {
+                sharp.addEventListener('load', prefetchSecondPreview, { once: true });
+              }
+            }
+          }
+        } else {
+          if (active && firstFrame) {
+            firstFrame.remove();
+            firstFrame = null;
+          }
+          if (active && item.kind === 'image' &&
+              node.dataset.mediaMode === 'preview' && node.dataset.id === item.id) {
+            reusedPreview = node.querySelector('img.shorts-media');
+            if (reusedPreview) reusedPreview.remove();
+          }
+          releaseSlideMedia(node);
+          var media = mediaFor(item, active, loadPreview, reusedPreview);
+          node.replaceChildren(media);
+          loadImages(media);
         }
-        releaseSlideMedia(node);
-        var media = mediaFor(item, active, loadPreview, reusedPreview);
-        node.replaceChildren(media);
-        loadImages(media);
         node.dataset.role = role;
         node.dataset.id = item.id;
         node.dataset.mediaMode = mediaMode;
@@ -343,6 +410,10 @@
     if (n === position && status.hidden) return;
     if (activeVideo) stopVideo();
     position = n;
+    if (firstFrame && manifest.ids[n] !== firstFrame.dataset.id) {
+      firstFrame.remove();
+      firstFrame = null;
+    }
     paused = false;
     status.hidden = true;
     if (writeHash) history.replaceState(history.state, '', location.pathname + location.search + encodedHash(position));
