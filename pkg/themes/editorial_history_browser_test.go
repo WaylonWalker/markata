@@ -150,4 +150,10 @@ window.fetch = async function(url) {
 	if !safe || viewerRequests.Load() != 1 {
 		t.Fatalf("view-transition initialization duplicated work: safe=%v loads=%d", safe, viewerRequests.Load())
 	}
+	if err := chromedp.Run(browser,
+		chromedp.MouseClickXY(5, 5),
+		chromedp.Poll(`!document.querySelector('dialog.editorial-history').open`, nil),
+	); err != nil {
+		t.Fatalf("close editorial history by clicking outside: %v", err)
+	}
 }

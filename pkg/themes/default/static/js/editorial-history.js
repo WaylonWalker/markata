@@ -60,6 +60,10 @@
   }
 
   document.addEventListener('click', function (event) {
+    if (event.target.matches('dialog.editorial-history')) {
+      event.target.close();
+      return;
+    }
     var opener = event.target.closest('[data-editorial-open]');
     if (opener) {
       var dialog = document.getElementById(opener.getAttribute('aria-controls'));
