@@ -228,7 +228,7 @@ func TestEmbedsPlugin_LiteYouTubeAssetsPerPost(t *testing.T) {
 	posts := []*models.Post{
 		{Path: "video.md", Slug: "video", Content: `Watch <lite-youtube videoid="dQw4w9WgXcQ"></lite-youtube>`},
 		{Path: "text.md", Slug: "text", Content: "A plain article."},
-		{Path: "code.md", Slug: "code", Content: "```html\\n<lite-youtube></lite-youtube>\\n```"},
+		{Path: "code.md", Slug: "code", Content: "```html\n<lite-youtube></lite-youtube>\n```"},
 	}
 	manager.SetPosts(posts)
 	if err := plugin.Transform(manager); err != nil {
