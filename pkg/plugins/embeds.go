@@ -219,6 +219,7 @@ func (p *EmbedsPlugin) Transform(m *lifecycle.Manager) error {
 			contentHash := buildcache.ContentHash(post.Content + cacheSignature)
 			if cached, ok := cache.GetCachedEmbedsContent(post.Path, contentHash); ok {
 				post.Content = cached
+				markLiteYouTubeNeed(post)
 				if !needsLiteYouTube && containsLiteYouTubeEmbed(post.Content) {
 					needsLiteYouTube = true
 				}
@@ -244,6 +245,7 @@ func (p *EmbedsPlugin) Transform(m *lifecycle.Manager) error {
 		content, dependencies := p.processInternalEmbeds(content, idx, post)
 		content = p.processExternalEmbeds(content, post)
 		post.Content = content
+		markLiteYouTubeNeed(post)
 
 		// Record dependencies for incremental build cache
 		for _, dep := range dependencies {
@@ -318,6 +320,27 @@ func (p *EmbedsPlugin) enableLiteYouTubeAssets(m *lifecycle.Manager) {
 	}
 
 	config.Extra["lite_youtube_enabled"] = true
+}
+
+// markLiteYouTubeNeed records per-page asset demand without changing the
+// existing site-wide capability flag. Hot builds restore transformed content
+// from cache, so this must run for both processed and cache-hit posts.
+func markLiteYouTubeNeed(post *models.Post) {
+	if post == nil {
+		return
+	}
+	needs := containsLiteYouTubeEmbed(post.Content)
+	if post.Extra == nil {
+		if !needs {
+			return
+		}
+		post.Extra = make(map[string]interface{}, 1)
+	}
+	if needs {
+		post.Extra["needs_lite_youtube"] = true
+	} else {
+		delete(post.Extra, "needs_lite_youtube")
+	}
 }
 
 func containsLiteYouTubeEmbed(content string) bool {
