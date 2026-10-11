@@ -92,6 +92,7 @@ func TestShortsHTMLFirstFrameIsPublicAndStandalone(t *testing.T) {
 		"https://dropper.waylonwalker.com/file/first.webp?w=72",
 		"https://dropper.waylonwalker.com/file/first.webp?w=1280",
 		"shorts-first-frame-sharp",
+		"shorts-image-loading", "Loading full quality",
 		"feed-shorts.css", "feed-shorts.js",
 	} {
 		if !strings.Contains(html, want) {
@@ -139,7 +140,7 @@ func TestShortsHTMLFirstFrameVideoUsesPoster(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(raw), "poster.webp?w=72") || strings.Contains(string(raw), "movie.mp4") {
+	if !strings.Contains(string(raw), "poster.webp?w=72") || strings.Contains(string(raw), "movie.mp4") || strings.Contains(string(raw), "shorts-image-loading") {
 		t.Fatal("video-first Shorts must display a tiny poster, never preload video media")
 	}
 }
