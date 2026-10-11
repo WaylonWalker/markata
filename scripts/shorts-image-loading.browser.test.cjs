@@ -170,6 +170,17 @@ test('Shorts uses a decoded blur-up and a bounded preview window', async (t) => 
   await deepLink.context.close();
 
   requests.length = 0;
+  const slow3g = await openPage(browser, origin, {saveData: false, effectiveType: '3g', downlink: 1.5, rtt: 400}, false, true);
+  await slow3g.page.waitForFunction(() =>
+    document.querySelector('.shorts-first-frame.shorts-media-wrap--sharp .shorts-first-frame-sharp')?.naturalWidth === 1280
+  );
+  await slow3g.page.waitForFunction(() => document.querySelector('#shorts-title')?.textContent === 'Photo 0');
+  assert.deepEqual(requests.filter(url => url.startsWith('/media/')).sort(), [
+    '/media/photo-0.webp?w=1280', '/media/photo-0.webp?w=72',
+  ].sort(), 'cold Slow 3G must not download the next photo while the current one loads');
+  await slow3g.context.close();
+
+  requests.length = 0;
   const normal = await openPage(browser, origin, {saveData: false, effectiveType: '4g', downlink: 3});
   const pageErrors = [];
   normal.page.on('pageerror', (error) => pageErrors.push(error.message));
