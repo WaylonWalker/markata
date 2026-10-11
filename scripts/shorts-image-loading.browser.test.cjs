@@ -33,10 +33,43 @@ items[6].src = '/media/broken.webp?w=1280';
 function pageHTML(slowManifest = false) {
   const indexURL = '/shorts/data/index.json' + (slowManifest ? '?slow=1' : '');
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <style>.shorts-first-frame{position:absolute;inset:0;z-index:2;display:grid;place-items:center;background:#111}.shorts-first-frame img{width:100%;height:100%;object-fit:contain;filter:blur(10px)}</style>
+  <style>.shorts-first-frame{position:absolute;inset:0;z-index:2;display:grid;place-items:center;background:#111}.shorts-first-frame img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}.shorts-first-frame .shorts-image-placeholder{filter:blur(10px)}.shorts-first-frame .shorts-image--full{filter:none}</style>
   <link rel="stylesheet" href="/feed-shorts.css"></head><body class="shorts-body">
   <section class="shorts-viewer" id="shorts-viewer" data-manifest="${indexURL}" aria-label="Shorts media viewer">
-    <div id="shorts-slides" class="shorts-slides" aria-hidden="true"><div id="shorts-first-frame" class="shorts-first-frame" data-id="shots/p0"><img class="shorts-first-frame-image" src="/media/photo-0.webp?w=72" alt="" aria-hidden="true" decoding="async" fetchpriority="high"></div></div>
+    <div id="shorts-slides" class="shorts-slides" aria-hidden="true">
+      <div id="shorts-first-frame" class="shorts-first-frame" data-id="shots/p0">
+        <img class="shorts-first-frame-image shorts-image-placeholder" src="/media/photo-0.webp?w=72" alt="" aria-hidden="true" decoding="async" fetchpriority="high">
+        <img class="shorts-first-frame-sharp shorts-media shorts-image--full" data-src="/media/photo-0.webp?w=1280" alt="Test photograph 0" decoding="async" fetchpriority="high">
+      </div>
+      <script>
+        (function () {
+          if (location.hash.startsWith('#id=')) return;
+          var frame = document.getElementById('shorts-first-frame');
+          var tiny = frame.querySelector('.shorts-first-frame-image');
+          var sharp = frame.querySelector('.shorts-first-frame-sharp');
+          var started = false;
+          function startSharp() {
+            if (started || !sharp.dataset.src) return;
+            started = true;
+            sharp.src = sharp.dataset.src;
+            delete sharp.dataset.src;
+          }
+          sharp.addEventListener('load', function () {
+            var decoded = sharp.decode ? sharp.decode() : Promise.resolve();
+            decoded.catch(function () {}).then(function () {
+              if (sharp.isConnected) frame.classList.add('shorts-media-wrap--sharp');
+            });
+          }, { once: true });
+          sharp.addEventListener('error', function () { sharp.remove(); }, { once: true });
+          if (tiny.complete && tiny.naturalWidth) startSharp();
+          else {
+            tiny.addEventListener('load', startSharp, { once: true });
+            tiny.addEventListener('error', startSharp, { once: true });
+            setTimeout(startSharp, 900);
+          }
+        })();
+      </script>
+    </div>
     <header class="shorts-top"><a href="/shots/">Shots</a><span id="shorts-counter" class="shorts-counter"></span></header>
     <div id="shorts-message" class="shorts-message">Loading shorts…</div>
     <div class="shorts-hud"><div class="shorts-hud-copy"><h1 id="shorts-title" class="shorts-title"></h1><p id="shorts-description" class="shorts-description"></p><button id="shorts-more" class="shorts-more">More</button><a id="shorts-permalink" class="shorts-permalink"></a></div>
@@ -89,12 +122,16 @@ function serve() {
   });
 }
 
-async function openPage(browser, origin, connection, reducedMotion = false) {
+async function openPage(browser, origin, connection, reducedMotion = false, cacheDisabled = false) {
   const context = await browser.newContext({viewport: {width: 390, height: 844}, deviceScaleFactor: 1, isMobile: true, hasTouch: true});
   await context.addInitScript((connectionValue) => {
     Object.defineProperty(navigator, 'connection', {value: connectionValue, configurable: true});
   }, connection);
   const page = await context.newPage();
+  if (cacheDisabled) {
+    const devtools = await context.newCDPSession(page);
+    await devtools.send('Network.setCacheDisabled', {cacheDisabled: true});
+  }
   if (reducedMotion) await page.emulateMedia({reducedMotion: 'reduce'});
   await page.goto(origin, {waitUntil: 'domcontentloaded'});
   return {context, page};
@@ -112,14 +149,18 @@ test('Shorts uses a decoded blur-up and a bounded preview window', async (t) => 
   t.after(async () => {await browser.close(); await new Promise((resolve) => server.close(resolve));});
 
   requests.length = 0;
-  const parser = await openPage(browser, origin + '?slow=1', {saveData: false, effectiveType: '3g', downlink: 1.5});
+  const parser = await openPage(browser, origin + '?slow=1', {saveData: false, effectiveType: '3g', downlink: 1.5}, false, true);
   // The first frame must paint without waiting for either JSON request.
   await parser.page.waitForFunction(() => document.querySelector('.shorts-first-frame-image')?.naturalWidth === 72);
   assert.equal(await parser.page.locator('#shorts-title').textContent(), '', 'JSON is still delayed while initial preview has loaded');
   await parser.page.screenshot({path: path.join(evidence, 'shorts-parser-first-frame.png')});
+  await parser.page.waitForFunction(() => document.querySelector('.shorts-first-frame-sharp')?.getAttribute('src')?.includes('w=1280'));
+  assert.ok(!requests.includes('/shorts/data/0000.json'), 'sharp first photo starts before the data chunk');
   await parser.page.waitForFunction(() => document.querySelector('.shorts-media-wrap--sharp .shorts-image--full')?.naturalWidth === 1280);
-  assert.equal(requests.filter(url => url === '/media/photo-0.webp?w=72').length, 1, 'hydration must reuse the parser-loaded thumbnail');
-  assert.equal(await parser.page.locator('#shorts-first-frame').count(), 0, 'server-first frame is removed once active');
+  await parser.page.waitForFunction(() => document.querySelector('#shorts-title')?.textContent === 'Photo 0');
+  assert.equal(requests.filter(url => url === '/media/photo-0.webp?w=72').length, 1, 'no-cache hydration must not request the tiny image twice');
+  assert.equal(requests.filter(url => url === '/media/photo-0.webp?w=1280').length, 1, 'no-cache hydration must not request the sharp image twice');
+  assert.equal(await parser.page.locator('#shorts-first-frame').count(), 1, 'server-first frame remains in its DOM node after hydration');
   await parser.context.close();
 
   requests.length = 0;
@@ -129,7 +170,7 @@ test('Shorts uses a decoded blur-up and a bounded preview window', async (t) => 
   await deepLink.context.close();
 
   requests.length = 0;
-  const normal = await openPage(browser, origin, {saveData: false, effectiveType: '3g', downlink: 1.5});
+  const normal = await openPage(browser, origin, {saveData: false, effectiveType: '4g', downlink: 3});
   const pageErrors = [];
   normal.page.on('pageerror', (error) => pageErrors.push(error.message));
   await normal.page.waitForFunction(() => {
