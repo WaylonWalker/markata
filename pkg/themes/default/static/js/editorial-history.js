@@ -3,20 +3,11 @@
   if (window.__markataEditorialHistory) return;
   window.__markataEditorialHistory = true;
   var viewerPromise = null;
-  var nextId = 0;
 
   function initialize() {
     document.querySelectorAll('[data-editorial-open]').forEach(function (button) { button.hidden = false; });
     document.querySelectorAll('[data-editorial-events]').forEach(function (list) {
       list.querySelectorAll('.editorial-history__event').forEach(function (entry, index) { entry.hidden = index !== 0; });
-    });
-    document.querySelectorAll('[data-editorial-show]').forEach(function (button) {
-      button.hidden = false;
-      if (!button.hasAttribute('aria-controls')) {
-        var panel = button.closest('.editorial-history__event').querySelector('.editorial-history__comparison');
-        panel.id = 'editorial-comparison-' + (++nextId);
-        button.setAttribute('aria-controls', panel.id);
-      }
     });
   }
 
@@ -44,11 +35,36 @@
     return viewerPromise;
   }
 
-  document.addEventListener('click', async function (event) {
+  function loadComparison(entry) {
+    var panel = entry && entry.querySelector('[data-editorial-comparison]');
+    if (!panel || panel.dataset.loaded === 'true' || panel.dataset.loading === 'true') return;
+    panel.dataset.loading = 'true';
+    panel.setAttribute('aria-busy', 'true');
+    var status = panel.querySelector('[data-editorial-status]');
+    status.textContent = 'Loading recorded changes…';
+    loadViewer(panel.dataset.viewer)
+      .then(function (viewer) {
+        return viewer.show(panel.querySelector('[data-editorial-result]'), panel.dataset.before, panel.dataset.after);
+      })
+      .then(function () {
+        panel.dataset.loaded = 'true';
+        status.textContent = 'Added text is underlined; removed text is struck through. Unchanged text is collapsed around the edits.';
+      })
+      .catch(function () {
+        status.textContent = 'Changes could not load. Open the diff in GitHub to view the revision.';
+      })
+      .finally(function () {
+        delete panel.dataset.loading;
+        panel.removeAttribute('aria-busy');
+      });
+  }
+
+  document.addEventListener('click', function (event) {
     var opener = event.target.closest('[data-editorial-open]');
     if (opener) {
       var dialog = document.getElementById(opener.getAttribute('aria-controls'));
       if (dialog && !dialog.open) dialog.showModal();
+      if (dialog) loadComparison(dialog.querySelector('.editorial-history__event:not([hidden])'));
       return;
     }
     var closer = event.target.closest('[data-editorial-close]');
@@ -70,38 +86,8 @@
       if (next) next.disabled = active === entries.length - 1;
       historyDialog.querySelector('[data-editorial-position]').textContent = (active + 1) + ' of ' + entries.length;
       historyDialog.scrollTop = 0;
+      loadComparison(entries[active]);
       return;
-    }
-    var button = event.target.closest('[data-editorial-show]');
-    if (!button || button.disabled) return;
-    var panel = document.getElementById(button.getAttribute('aria-controls'));
-    if (!panel) return;
-    if (button.dataset.loaded) {
-      panel.hidden = !panel.hidden;
-      button.setAttribute('aria-expanded', String(!panel.hidden));
-      button.textContent = panel.hidden ? 'Show changes here' : 'Hide changes';
-      return;
-    }
-    panel.hidden = false;
-    button.setAttribute('aria-expanded', 'true');
-    button.disabled = true;
-    panel.setAttribute('aria-busy', 'true');
-    var status = panel.querySelector('[data-editorial-status]');
-    status.textContent = 'Loading the recorded revisions…';
-    try {
-      var viewer = await loadViewer(button.dataset.viewer);
-      await viewer.show(panel.querySelector('[data-editorial-result]'), button.dataset.before, button.dataset.after);
-      status.textContent = 'Recorded Markdown changes. Added text is underlined; removed text is struck through. Unchanged text is collapsed around the edits.';
-      var firstChange = panel.querySelector('[data-editorial-result] ins, [data-editorial-result] del');
-      if (firstChange) firstChange.scrollIntoView({ block: 'center', behavior: 'smooth' });
-      button.dataset.loaded = 'true';
-      button.textContent = 'Hide changes';
-    } catch (_) {
-      status.textContent = 'Changes could not load. The repository may be private or the revision unavailable. Open the diff in GitHub, or retry.';
-      button.textContent = 'Retry changes';
-    } finally {
-      button.disabled = false;
-      panel.removeAttribute('aria-busy');
     }
   });
   window.addEventListener('view-transition-complete', initialize);

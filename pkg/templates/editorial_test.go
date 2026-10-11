@@ -101,7 +101,7 @@ func TestEditorialHistory_BylineAndRendering(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if !strings.Contains(history, "Open diff in GitHub") || !strings.Contains(history, "data-editorial-show") || strings.Contains(history, "javascript:") {
+		if !strings.Contains(history, "Open diff in GitHub") || !strings.Contains(history, "data-editorial-comparison") || !strings.Contains(history, "data-before=") || !strings.Contains(history, "data-after=") || strings.Contains(history, "javascript:") {
 			t.Fatalf("unsafe or missing history: %s", history)
 		}
 	}

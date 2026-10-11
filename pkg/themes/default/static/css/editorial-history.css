@@ -1,8 +1,13 @@
 @layer components {
 .editorial-history {
   position: fixed !important;
-  inset: 0 !important;
-  margin: auto !important;
+  inset: auto !important;
+  top: 50% !important;
+  left: 50% !important;
+  right: auto !important;
+  bottom: auto !important;
+  transform: translate(-50%, -50%) !important;
+  margin: 0 !important;
   width: min(52rem, calc(100% - 2rem));
   max-width: none;
   max-height: min(85vh, 56rem);
@@ -13,7 +18,7 @@
   color: var(--color-text);
   background: var(--color-surface);
 }
-.editorial-history::backdrop { background: rgb(0 0 0 / 68%); backdrop-filter: blur(2px); }
+.editorial-history::backdrop { background: rgb(0 0 0 / 72%) !important; backdrop-filter: blur(2px) !important; }
 .editorial-history__header, .editorial-history__navigation { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
 .editorial-history__header h2 { margin: 0; font-size: var(--text-lg); }
 .editorial-history__events { list-style: none; padding-inline-start: 0; }
@@ -31,6 +36,8 @@
   font-size: var(--text-sm); color: var(--color-text-muted);
 }
 .editorial-history__actions { margin-block-start: var(--space-3); font-size: var(--text-sm); }
+.editorial-history__comparison { margin-block-start: var(--space-3); }
+.editorial-history__comparison [role="status"] { margin-block: var(--space-2); font-size: var(--text-sm); color: var(--color-text-muted); }
 .editorial-history button {
   font: inherit; color: var(--color-text); background: var(--color-background);
   border: 1px solid var(--color-border); border-radius: var(--radius-sm);

@@ -17,12 +17,9 @@
             <div class="editorial-history__actions">
                 {% if event.file_url %}<a class="no-avatar" href="{{ event.file_url }}" rel="noopener noreferrer">File at this revision</a>{% endif %}
                 {% if event.diff_url %}<a class="no-avatar" href="{{ event.diff_url }}" rel="noopener noreferrer">Open diff in GitHub</a>{% endif %}
-                {% if event.before_url and event.after_url %}
-                <button type="button" hidden data-editorial-show data-before="{{ event.before_url }}" data-after="{{ event.after_url }}" data-viewer="{{ 'js/editorial-diff.js'|theme_asset_hashed }}" aria-expanded="false">Show changes here</button>
-                {% endif %}
             </div>
             {% if event.before_url and event.after_url %}
-            <div class="editorial-history__comparison" hidden>
+            <div class="editorial-history__comparison" data-editorial-comparison data-before="{{ event.before_url }}" data-after="{{ event.after_url }}" data-viewer="{{ 'js/editorial-diff.js'|theme_asset_hashed }}">
                 <p data-editorial-status role="status" aria-live="polite"></p>
                 <div data-editorial-result></div>
             </div>
