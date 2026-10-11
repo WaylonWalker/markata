@@ -40,6 +40,7 @@ function pageHTML(slowManifest = false) {
       <div id="shorts-first-frame" class="shorts-first-frame" data-id="shots/p0">
         <img class="shorts-first-frame-image shorts-image-placeholder" src="/media/photo-0.webp?w=72" alt="" aria-hidden="true" decoding="async" fetchpriority="high">
         <img class="shorts-first-frame-sharp shorts-media shorts-image--full" data-src="/media/photo-0.webp?w=1280" alt="Test photograph 0" decoding="async" fetchpriority="high">
+        <div class="shorts-image-loading" aria-hidden="true"><span class="shorts-image-loading__spinner"></span><span>Loading full quality…</span></div>
       </div>
       <script>
         (function () {
@@ -60,7 +61,7 @@ function pageHTML(slowManifest = false) {
               if (sharp.isConnected) frame.classList.add('shorts-media-wrap--sharp');
             });
           }, { once: true });
-          sharp.addEventListener('error', function () { sharp.remove(); }, { once: true });
+          sharp.addEventListener('error', function () { frame.classList.add('shorts-media-wrap--failed'); sharp.remove(); }, { once: true });
           if (tiny.complete && tiny.naturalWidth) startSharp();
           else {
             tiny.addEventListener('load', startSharp, { once: true });
@@ -153,6 +154,8 @@ test('Shorts uses a decoded blur-up and a bounded preview window', async (t) => 
   // The first frame must paint without waiting for either JSON request.
   await parser.page.waitForFunction(() => document.querySelector('.shorts-first-frame-image')?.naturalWidth === 72);
   assert.equal(await parser.page.locator('#shorts-title').textContent(), '', 'JSON is still delayed while initial preview has loaded');
+  assert.equal(await parser.page.locator('.shorts-first-frame .shorts-image-loading').textContent(), 'Loading full quality…');
+  assert.equal(await parser.page.locator('.shorts-first-frame .shorts-image-loading').evaluate(el => getComputedStyle(el).opacity), '1', 'indicator stays visible while sharp image is loading');
   await parser.page.screenshot({path: path.join(evidence, 'shorts-parser-first-frame.png')});
   await parser.page.waitForFunction(() => document.querySelector('.shorts-first-frame-sharp')?.getAttribute('src')?.includes('w=1280'));
   assert.ok(!requests.includes('/shorts/data/0000.json'), 'sharp first photo starts before the data chunk');
@@ -161,6 +164,8 @@ test('Shorts uses a decoded blur-up and a bounded preview window', async (t) => 
   assert.equal(requests.filter(url => url === '/media/photo-0.webp?w=72').length, 1, 'no-cache hydration must not request the tiny image twice');
   assert.equal(requests.filter(url => url === '/media/photo-0.webp?w=1280').length, 1, 'no-cache hydration must not request the sharp image twice');
   assert.equal(await parser.page.locator('#shorts-first-frame').count(), 1, 'server-first frame remains in its DOM node after hydration');
+  await parser.page.waitForFunction(() => getComputedStyle(document.querySelector('.shorts-first-frame .shorts-image-loading')).opacity === '0');
+  assert.equal(await parser.page.locator('.shorts-first-frame .shorts-image-loading').evaluate(el => getComputedStyle(el).opacity), '0', 'indicator fades away after sharp decode');
   await parser.context.close();
 
   requests.length = 0;
@@ -214,9 +219,12 @@ test('Shorts uses a decoded blur-up and a bounded preview window', async (t) => 
   });
   requests.length = 0;
   await normal.page.evaluate(() => window.__markataShorts.goTo(1));
+  await normal.page.waitForFunction(() => document.querySelector('.shorts-slide[aria-hidden="false"] .shorts-image-loading'));
+  assert.equal(await normal.page.locator('.shorts-slide[aria-hidden="false"] .shorts-image-loading').textContent(), 'Loading full quality…');
   await normal.page.waitForFunction(() =>
     document.querySelector('.shorts-slide[aria-hidden="false"] .shorts-media-wrap--sharp .shorts-image--full')?.naturalWidth === 1280
   );
+  await normal.page.waitForFunction(() => getComputedStyle(document.querySelector('.shorts-slide[aria-hidden="false"] .shorts-image-loading')).opacity === '0');
   const promotedPreview = await normal.page.locator('.shorts-slide[aria-hidden="false"] .shorts-image-placeholder').getAttribute('src');
   assert.equal(promotedPreview, '/media/photo-1.webp?w=240', 'reuses the loaded preview as the blurred placeholder');
   assert.ok(!requests.some((url) => url.includes('photo-1.webp?w=72')), 'must not download a redundant placeholder on swipe');
@@ -253,5 +261,6 @@ test('Shorts uses a decoded blur-up and a bounded preview window', async (t) => 
   const reduced = await openPage(browser, origin, undefined, true);
   const transitionDuration = await reduced.page.locator('.shorts-image-placeholder').evaluate((el) => getComputedStyle(el).transitionDuration);
   assert.equal(transitionDuration, '0s', 'reduced motion should disable the image crossfade');
+  assert.equal(await reduced.page.locator('.shorts-image-loading__spinner').evaluate(el => getComputedStyle(el).animationDuration), '0s', 'reduced motion must stop the spinner');
   await reduced.context.close();
 });
