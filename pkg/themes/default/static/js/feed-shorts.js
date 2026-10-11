@@ -321,6 +321,17 @@
             }
           } else {
             node.replaceChildren();
+            // The HTML-first image bypasses mediaFor's full-image load
+            // callback. Preserve fast-connection prefetch behavior while
+            // previewBudget still blocks all speculative loads on Slow 3G.
+            var sharp = firstFrame.querySelector('.shorts-first-frame-sharp');
+            if (sharp) {
+              if (sharp.complete && sharp.naturalWidth) {
+                prefetchSecondPreview();
+              } else {
+                sharp.addEventListener('load', prefetchSecondPreview, { once: true });
+              }
+            }
           }
         } else {
           if (active && firstFrame) {
