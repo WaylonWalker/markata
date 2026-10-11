@@ -51,7 +51,7 @@ class Handler(BaseHTTPRequestHandler):
     def _resolve(self) -> Path | None:
         try:
             relative_url = unquote(urlsplit(self.path).path, errors="strict")
-            if "\\x00" in relative_url or "\\" in relative_url:
+            if chr(0) in relative_url or "\\" in relative_url:
                 return None
             candidate = (self.directory / relative_url.lstrip("/")).resolve()
             if not candidate.is_relative_to(self.directory):
@@ -78,18 +78,14 @@ class Handler(BaseHTTPRequestHandler):
             mime += "; charset=utf-8"
 
         try:
-            # Compress text using the same parameters on both sides of the A/B.
-            # Media and Range requests always get uncompressed byte ranges.
+            total = path.stat().st_size
+            range_value = self.headers.get("Range")
             wants_gzip = (
                 "gzip" in self.headers.get("Accept-Encoding", "").lower()
                 and path.suffix.lower() in TEXT_EXTENSIONS
-                and not self.headers.get("Range")
+                and not range_value
             )
-            body = path.read_bytes()
-            total = len(body)
-            range_value = self.headers.get("Range")
-            start, end = 0, total - 1
-            status = 200
+            start, end, status = 0, total - 1, 200
             if range_value:
                 match = RANGE_PATTERN.fullmatch(range_value.strip())
                 if match is None or not any(match.groups()):
@@ -101,6 +97,9 @@ class Handler(BaseHTTPRequestHandler):
                     end = min(int(last), total - 1) if last else total - 1
                 else:
                     count = int(last)
+                    if count == 0:
+                        self.send_error(416, "Empty Range")
+                        return
                     start = max(total - count, 0)
                 if start >= total or start > end:
                     self.send_response(416)
@@ -108,31 +107,47 @@ class Handler(BaseHTTPRequestHandler):
                     self.send_header("Content-Length", "0")
                     self.end_headers()
                     return
-                body = body[start : end + 1]
                 status = 206
-            elif wants_gzip:
-                body = gzip.compress(body, compresslevel=6, mtime=0)
+            # Only buffer compressible text. Large videos/media are streamed in
+            # bounded chunks so a benchmark cannot consume GBs per worker.
+            compressed = (
+                gzip.compress(path.read_bytes(), compresslevel=6, mtime=0)
+                if wants_gzip else None
+            )
         except OSError:
             self.send_error(404, "Asset not found")
             return
 
+        length = len(compressed) if compressed is not None else end - start + 1
         self.send_response(status)
         self.send_header("Content-Type", mime)
-        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Content-Length", str(length))
         self.send_header("Cache-Control", "no-store")
         self.send_header("Vary", "Accept-Encoding")
         self.send_header("Accept-Ranges", "bytes")
         if status == 206:
             self.send_header("Content-Range", f"bytes {start}-{end}/{total}")
-        elif wants_gzip:
+        elif compressed is not None:
             self.send_header("Content-Encoding", "gzip")
         self.end_headers()
-        if not head_only:
-            try:
-                self.wfile.write(body)
-            except (BrokenPipeError, ConnectionResetError):
-                # A browser aborting a prefetch is normal during test teardown.
-                pass
+        if head_only:
+            return
+        try:
+            if compressed is not None:
+                self.wfile.write(compressed)
+            else:
+                remaining = length
+                with path.open("rb") as stream:
+                    stream.seek(start)
+                    while remaining > 0:
+                        data = stream.read(min(64 * 1024, remaining))
+                        if not data:
+                            break
+                        self.wfile.write(data)
+                        remaining -= len(data)
+        except (BrokenPipeError, ConnectionResetError):
+            # Aborted prefetch or media stream during test teardown is normal.
+            pass
 
     def log_message(self, _format: str, *_args: object) -> None:
         pass
