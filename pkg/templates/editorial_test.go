@@ -145,3 +145,43 @@ func TestEditorialHistory_AssetsOnlyOnPostsWithHistory(t *testing.T) {
 		}
 	}
 }
+
+func TestEditorialHistory_NoScriptFallbackAndMissingAuthorObjects(t *testing.T) {
+	for _, directory := range []string{"", "../../templates"} {
+		engine, err := NewEngine(directory)
+		if err != nil {
+			t.Fatal(err)
+		}
+		// Imported records may have no resolved author objects; the history
+		// entry point must still appear in this byline fallback.
+		post := &models.Post{Extra: map[string]interface{}{
+			"editorial_history": []interface{}{editorialFixture()},
+		}}
+		ctx := NewContext(post, "", &models.Config{})
+		byline, err := engine.Render("components/post_byline.html", ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !strings.Contains(byline, "data-editorial-open") {
+			t.Fatalf("history opener lost without resolved authors: directory=%q:\n%s", directory, byline)
+		}
+		history, err := engine.Render("components/editorial_history.html", ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		start := strings.Index(history, "<noscript>")
+		end := strings.Index(history, "</noscript>")
+		if start < 0 || end <= start {
+			t.Fatalf("missing no-script history: directory=%q:\n%s", directory, history)
+		}
+		fallback := history[start:end]
+		for _, expected := range []string{"<details", "editorial-history__fallback", "Fixed a typo.", "File at this revision", "Open diff in GitHub"} {
+			if !strings.Contains(fallback, expected) {
+				t.Fatalf("no-script fallback missing %q: directory=%q:\n%s", expected, directory, fallback)
+			}
+		}
+		if strings.Contains(fallback, "javascript:") {
+			t.Fatalf("unsafe fallback URL: directory=%q:\n%s", directory, fallback)
+		}
+	}
+}
