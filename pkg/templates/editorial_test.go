@@ -139,6 +139,9 @@ func TestEditorialHistory_AssetsOnlyOnPostsWithHistory(t *testing.T) {
 			if strings.Contains(html, `<script src="/js/editorial-diff.js"`) {
 				t.Fatal("heavy viewer loaded eagerly")
 			}
+			if hasHistory && strings.Index(html, `class="editorial-history"`) > strings.Index(html, `class="post-content e-content`) {
+				t.Fatalf("editorial history should be visible before the post body: directory=%q", directory)
+			}
 		}
 	}
 }

@@ -25,6 +25,9 @@
   padding: var(--space-1) var(--space-2); cursor: pointer;
 }
 .editorial-history__source { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.7; }
+.editorial-history__omitted { margin-block: var(--space-2); color: var(--color-text-muted); }
+.editorial-history__omitted summary { font-size: var(--text-sm); font-weight: 400; }
+.editorial-history__context { display: block; white-space: pre-wrap; overflow-wrap: anywhere; }
 .editorial-history ins { background: color-mix(in srgb, var(--color-success, var(--color-primary)) 20%, transparent); text-decoration: underline; }
 .editorial-history del { background: color-mix(in srgb, var(--color-error, var(--color-primary)) 20%, transparent); text-decoration: line-through; }
 .editorial-history :focus-visible { outline: 2px solid var(--color-primary); outline-offset: 3px; }

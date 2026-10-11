@@ -125,11 +125,11 @@
             {% include "components/post_copy.html" %}
         </header>
 
+        {% include "components/editorial_history.html" %}
+
         <div class="post-content e-content{% if post.css_class %} {{ post.css_class }}{% endif %}">
             {{ body | safe }}
         </div>
-
-        {% include "components/editorial_history.html" %}
 
         {% include "components/post_graph.html" %}
 

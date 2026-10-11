@@ -82,6 +82,61 @@
     return pieces;
   }
 
+  function appendRange(target, pieces, start, end) {
+    var offset = 0;
+    pieces.forEach(function (piece) {
+      var from = Math.max(start, offset), to = Math.min(end, offset + piece.text.length);
+      if (from < to) {
+        var text = piece.text.slice(from - offset, to - offset);
+        if (piece.kind === 'equal') target.appendChild(document.createTextNode(text));
+        else {
+          var change = document.createElement(piece.kind === 'added' ? 'ins' : 'del');
+          change.textContent = text;
+          target.appendChild(change);
+        }
+      }
+      offset += piece.text.length;
+    });
+  }
+
+  function appendFocusedComparison(target, pieces, contextSize) {
+    var changes = [], offset = 0, total = 0;
+    pieces.forEach(function (piece) {
+      var end = offset + piece.text.length;
+      if (piece.kind !== 'equal') changes.push([offset, end]);
+      offset = end;
+      total = end;
+    });
+    var ranges = changes.map(function (change) {
+      return [Math.max(0, change[0] - contextSize), Math.min(total, change[1] + contextSize)];
+    }).sort(function (a, b) { return a[0] - b[0]; });
+    var merged = [];
+    ranges.forEach(function (range) {
+      var last = merged[merged.length - 1];
+      if (last && range[0] <= last[1]) last[1] = Math.max(last[1], range[1]);
+      else merged.push(range);
+    });
+    var cursor = 0;
+    function omitted(start, end) {
+      if (start >= end) return;
+      var details = document.createElement('details');
+      details.className = 'editorial-history__omitted';
+      var summary = document.createElement('summary');
+      summary.textContent = 'Show ' + (end - start).toLocaleString() + ' unchanged characters';
+      var text = document.createElement('span');
+      text.className = 'editorial-history__context';
+      text.textContent = pieces.map(function (piece) { return piece.text; }).join('').slice(start, end);
+      details.append(summary, text);
+      target.appendChild(details);
+    }
+    merged.forEach(function (range) {
+      omitted(cursor, range[0]);
+      appendRange(target, pieces, range[0], range[1]);
+      cursor = range[1];
+    });
+    omitted(cursor, total);
+  }
+
   async function show(target, beforeURL, afterURL) {
     var controller = new AbortController();
     var timer = setTimeout(function () { controller.abort(); }, 20000);
@@ -97,14 +152,7 @@
       }
       var content = document.createElement('div');
       content.className = 'editorial-history__source';
-      compare(before, after).forEach(function (piece) {
-        if (piece.kind === 'equal') content.appendChild(document.createTextNode(piece.text));
-        else {
-          var change = document.createElement(piece.kind === 'added' ? 'ins' : 'del');
-          change.textContent = piece.text;
-          content.appendChild(change);
-        }
-      });
+      appendFocusedComparison(content, compare(before, after), 180);
       target.appendChild(content);
     } finally { clearTimeout(timer); controller.abort(); }
   }

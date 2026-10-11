@@ -60,7 +60,9 @@
     try {
       var viewer = await loadViewer(button.dataset.viewer);
       await viewer.show(panel.querySelector('[data-editorial-result]'), button.dataset.before, button.dataset.after);
-      status.textContent = 'Recorded Markdown comparison. Added text is underlined; removed text is struck through.';
+      status.textContent = 'Recorded Markdown changes. Added text is underlined; removed text is struck through. Unchanged text is collapsed around the edits.';
+      var firstChange = panel.querySelector('[data-editorial-result] ins, [data-editorial-result] del');
+      if (firstChange) firstChange.scrollIntoView({ block: 'center', behavior: 'smooth' });
       button.dataset.loaded = 'true';
       button.textContent = 'Hide changes';
     } catch (_) {

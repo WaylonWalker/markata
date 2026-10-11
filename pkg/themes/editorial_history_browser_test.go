@@ -62,7 +62,8 @@ window.fetch = async function(url) {
  window.revisionRequests++;
  if (window.failRevision) return new Response('', {status: 404});
  var before = url.includes('aaaaaaaa');
- return new Response('---\ntitle: Revision\n---\n' + (before ? 'A tpyο.\n<script>window.bad = true;<\/script>' : 'A typo.\n<img src=x onerror="window.bad = true">'));
+ var tail = Array(100).fill('unchanged context ').join('');
+ return new Response('---\\ntitle: Revision\\n---\\n' + (before ? 'A tpyο.\\n<script>window.bad = true;<\\/script>' : 'A typo.\\n<img src=x onerror="window.bad = true">') + tail);
 };
 </script><script src="/js/editorial-history.js"></script></body></html>`
 	var viewerRequests atomic.Int32
@@ -117,7 +118,7 @@ window.fetch = async function(url) {
 		chromedp.Evaluate(`window.failRevision = false`, nil),
 		chromedp.Click(`[data-editorial-show]`),
 		chromedp.WaitVisible(`.editorial-history ins`),
-		chromedp.Evaluate(`!window.bad && document.querySelectorAll('[data-editorial-result] script, [data-editorial-result] img').length === 0 && document.querySelector('[data-editorial-show]').getAttribute('aria-expanded') === 'true'`, &safe),
+		chromedp.Evaluate(`!window.bad && document.querySelectorAll('[data-editorial-result] script, [data-editorial-result] img').length === 0 && document.querySelector('[data-editorial-show]').getAttribute('aria-expanded') === 'true' && document.querySelectorAll('.editorial-history__omitted').length > 0 && [...document.querySelectorAll('.editorial-history__omitted')].every(x => !x.open)`, &safe),
 	); err != nil {
 		t.Fatal(err)
 	}
