@@ -35,4 +35,22 @@
     </nav>
     {% endif %}
 </dialog>
+{# The modal is enhanced with JS; direct revision links remain accessible without it. #}
+<noscript>
+<details class="editorial-history__fallback" data-pagefind-ignore>
+    <summary>Editorial history ({{ post.editorial_history_view|length }})</summary>
+    <ol>
+    {% for event in post.editorial_history_view %}
+        <li>
+            <strong>{{ event.name }}</strong> — {{ event.role }} ({{ event.action }})
+            {% if event.recorded_at %}<time datetime="{{ event.recorded_at }}">{{ event.recorded_at }}</time>{% endif %}
+            {% if event.summary %}<p>{{ event.summary }}</p>{% endif %}
+            {% if event.recorded_by and event.recorded_by != event.author %}<p>Attribution recorded by {{ event.recorded_by }}.</p>{% endif %}
+            {% if event.file_url %}<a href="{{ event.file_url }}" rel="noopener noreferrer">File at this revision</a>{% endif %}
+            {% if event.diff_url %}<a href="{{ event.diff_url }}" rel="noopener noreferrer">Open diff in GitHub</a>{% endif %}
+        </li>
+    {% endfor %}
+    </ol>
+</details>
+</noscript>
 {% endif %}
