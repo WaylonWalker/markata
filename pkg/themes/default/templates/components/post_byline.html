@@ -38,6 +38,12 @@
     </div>
     {% endif %}
 
+    {% if post.editorial_history_view %}
+    <button class="post-byline__history" type="button" data-editorial-open aria-haspopup="dialog" aria-controls="editorial-history-dialog" hidden>
+        History <span>{{ post.editorial_history_view|length }}</span>
+    </button>
+    {% endif %}
+
     {% if post.date or post.reading_time %}
     <div class="post-meta post-byline__meta">
         {% if post.date %}
@@ -87,8 +93,7 @@
     {% endif %}
 </div>
 {% endif %}
-
-{% if post.editorial_history_view %}
+{% if post.editorial_history_view and not post.author_objects %}
 <button class="post-byline__history" type="button" data-editorial-open aria-haspopup="dialog" aria-controls="editorial-history-dialog" hidden>
     History <span>{{ post.editorial_history_view|length }}</span>
 </button>
