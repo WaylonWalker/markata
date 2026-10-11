@@ -60,6 +60,88 @@ func TestShortsPostItemDoesNotResizeUntrustedOrVideoMedia(t *testing.T) {
 	}
 }
 
+func TestShortsHTMLFirstFrameIsPublicAndStandalone(t *testing.T) {
+	output := t.TempDir()
+	cfg := lifecycle.NewConfig()
+	cfg.OutputDir = output
+	feed := &models.FeedConfig{
+		Slug: "shots", Title: "Shots", ShortsPath: "/shorts/",
+		Views: []string{models.FeedViewDefault, models.FeedViewShorts},
+		Posts: []*models.Post{
+			{Slug: "shots/private", Private: true, Published: true,
+				Extra: map[string]interface{}{"image": "https://dropper.waylonwalker.com/file/private.webp"}},
+			{Slug: "shots/first", Published: true,
+				Extra: map[string]interface{}{"image": "https://dropper.waylonwalker.com/file/first.webp"}},
+			{Slug: "shots/second", Published: true,
+				Extra: map[string]interface{}{"image": "https://dropper.waylonwalker.com/file/second.webp"}},
+		},
+		Formats: models.FeedFormats{HTML: true},
+	}
+	plugin := NewPublishFeedsPlugin()
+	if err := plugin.publishShortsPages(feed, cfg, output); err != nil {
+		t.Fatal(err)
+	}
+	raw, err := os.ReadFile(filepath.Join(output, "shorts", "index.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	html := string(raw)
+	for _, want := range []string{
+		"<!doctype html>", "shorts-first-frame",
+		"data-id=\\"shots/first\\"",
+		"https://dropper.waylonwalker.com/file/first.webp?w=72",
+		"feed-shorts.css", "feed-shorts.js",
+	} {
+		if !strings.Contains(html, want) {
+			t.Errorf("Shorts HTML missing %q", want)
+		}
+	}
+	for _, unwanted := range []string{
+		"private.webp", "second.webp", "css/main.css", "css/fonts.css",
+		"css/variables.css", "theme-bootstrap", "js/theme-bootstrap",
+	} {
+		if strings.Contains(html, unwanted) {
+			t.Errorf("Shorts HTML unexpectedly contains %q", unwanted)
+		}
+	}
+	// A deep-link target isn't known to the server. Keep the manifest intact
+	// so the client can replace this first-frame preview after startup.
+	raw, err = os.ReadFile(filepath.Join(output, "shorts", "data", "index.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(raw), "shots/second") || strings.Contains(string(raw), "shots/private") {
+		t.Fatal("first-frame selection changed Shorts public manifest contents")
+	}
+}
+
+func TestShortsHTMLFirstFrameVideoUsesPoster(t *testing.T) {
+	output := t.TempDir()
+	cfg := lifecycle.NewConfig()
+	cfg.OutputDir = output
+	feed := &models.FeedConfig{
+		Slug: "shots", ShortsPath: "/shorts/",
+		Views: []string{models.FeedViewDefault, models.FeedViewShorts},
+		Posts: []*models.Post{
+			{Slug: "shots/video", Published: true, Extra: map[string]interface{}{
+				"video": "https://dropper.waylonwalker.com/file/movie.mp4",
+				"poster": "https://dropper.waylonwalker.com/file/poster.webp",
+			}},
+		},
+		Formats: models.FeedFormats{HTML: true},
+	}
+	if err := NewPublishFeedsPlugin().publishShortsPages(feed, cfg, output); err != nil {
+		t.Fatal(err)
+	}
+	raw, err := os.ReadFile(filepath.Join(output, "shorts", "index.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(raw), "poster.webp?w=72") || strings.Contains(string(raw), "movie.mp4") {
+		t.Fatal("video-first Shorts must display a tiny poster, never preload video media")
+	}
+}
+
 func TestShortsPublishesAllPagesAtRootRoute(t *testing.T) {
 	output := t.TempDir()
 	cfg := lifecycle.NewConfig()
