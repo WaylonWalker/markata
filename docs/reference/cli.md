@@ -2300,3 +2300,22 @@ markata-go encryption decrypt-posts --dry-run
 - [[configuration-guide|Configuration]] - Detailed configuration reference
 - [[deployment-guide|Deployment]] - Deployment guides for various platforms
 ---
+
+## Editorial authoring
+
+Commit selected post edits with transparent contributor credit and exact
+revision links. These commands preserve unrelated staged and unstaged work.
+
+```bash
+markata-go editorial start posts/article.md --author editor-id --role copy-editor
+markata-go editorial finish --session UUID --summary "Corrected grammar" --json
+markata-go editorial commit posts/article.md --author human-id \
+  --role internal-link-editor --summary "Added related links" --dry-run
+```
+
+`start` requires clean tracked posts; `commit` explicitly attributes existing
+owned changes. `finish` appends revision records after the content SHA exists.
+Use `--json` to obtain the full list of resulting commits. See
+[Editorial authoring](../../guides/editorial-authoring/) and
+[Editorial history](../../guides/editorial-history/) for ownership rules,
+primary author configuration, and the built-site comparison view.

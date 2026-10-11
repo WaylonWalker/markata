@@ -176,8 +176,8 @@ func shortsPostItem(post *models.Post) map[string]interface{} {
 		"kind":        kind,
 		"src":         src,
 		"thumb":       thumb,
-		"poster":     templates.WithSize(poster, 720, 0),
-		"mime":       templates.VideoMIMEType(media),
+		"poster":      templates.WithSize(poster, 720, 0),
+		"mime":        templates.VideoMIMEType(media),
 	}
 }
 
@@ -262,10 +262,7 @@ func (p *PublishFeedsPlugin) writeShortsManifest(feed *models.FeedConfig, dataDi
 	if err != nil {
 		return err
 	}
-	if err := p.safeWriteFile(filepath.Join(dataDir, "index.json"), append(index, '\n')); err != nil {
-		return err
-	}
-	return nil
+	return p.safeWriteFile(filepath.Join(dataDir, "index.json"), append(index, '\n'))
 }
 
 func (p *PublishFeedsPlugin) writeShortsHTML(feed *models.FeedConfig, cfg *lifecycle.Config, dir string) error {

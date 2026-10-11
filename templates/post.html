@@ -4,6 +4,10 @@
 {% block description %}{{ post.description | default:'' }}{% endblock %}
 
 {% block meta %}
+{% if post.editorial_history_view %}
+<link rel="stylesheet" href="{{ 'css/editorial-history.css'|theme_asset_hashed }}">
+<script src="{{ 'js/editorial-history.js'|theme_asset_hashed }}" defer></script>
+{% endif %}
 {{ block.Super() }}
 {# Canonical URL for SEO #}
 <link rel="canonical" href="{{ config.url }}{{ post.href }}">
@@ -124,6 +128,8 @@
         <div class="post-content e-content{% if post.css_class %} {{ post.css_class }}{% endif %}">
             {{ body | safe }}
         </div>
+
+        {% include "components/editorial_history.html" %}
 
         {% include "components/post_graph.html" %}
 

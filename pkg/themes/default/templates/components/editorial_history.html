@@ -1,0 +1,31 @@
+{% if post.editorial_history_view %}
+<details class="editorial-history" data-pagefind-ignore>
+    <summary>Editorial history <span class="editorial-history__count">{{ post.editorial_history_view|length }}</span></summary>
+    <ol class="editorial-history__events">
+        {% for event in post.editorial_history_view %}
+        <li class="editorial-history__event">
+            <div class="editorial-history__credit"><strong>{{ event.name }}</strong><span>{{ event.role }}</span><span>{{ event.action|capfirst }}</span></div>
+            {% if event.summary %}<p>{{ event.summary }}</p>{% endif %}
+            <div class="editorial-history__revision">
+                {% if event.recorded_at %}<time datetime="{{ event.recorded_at }}">{% if event.recorded_date %}{{ event.recorded_date|human_date }}{% else %}{{ event.recorded_at }}{% endif %}</time>{% endif %}
+                <code title="{{ event.commit }}">{{ event.short_commit }}</code>
+            </div>
+            {% if event.recorded_by and event.recorded_by != event.author %}<p class="editorial-history__importer">Attribution recorded by {{ event.recorded_by }}.</p>{% endif %}
+            <div class="editorial-history__actions">
+                {% if event.file_url %}<a class="no-avatar" href="{{ event.file_url }}" rel="noopener noreferrer">File at this revision</a>{% endif %}
+                {% if event.diff_url %}<a class="no-avatar" href="{{ event.diff_url }}" rel="noopener noreferrer">Open diff in GitHub</a>{% endif %}
+                {% if event.before_url and event.after_url %}
+                <button type="button" hidden data-editorial-show data-before="{{ event.before_url }}" data-after="{{ event.after_url }}" data-viewer="{{ 'js/editorial-diff.js'|theme_asset_hashed }}" aria-expanded="false">Show changes here</button>
+                {% endif %}
+            </div>
+            {% if event.before_url and event.after_url %}
+            <div class="editorial-history__comparison" hidden>
+                <p data-editorial-status role="status" aria-live="polite"></p>
+                <div data-editorial-result></div>
+            </div>
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ol>
+</details>
+{% endif %}

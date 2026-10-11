@@ -280,3 +280,24 @@ template: "landing.html"
 2. Check whether templates or feeds already read it.
 3. Prefer existing naming over introducing another alias.
 4. Decide whether the field belongs in frontmatter, config, or computed plugin output.
+
+## Editorial attribution
+
+For copy editing, internal linking, or recording a human's edits, use
+`markata-go editorial start <post...> --author ID --role copy-editor` before
+editing clean posts, then `editorial finish --session UUID --summary "..."`.
+For explicitly owned existing changes, use `editorial commit <post...>` with
+`--author`, `--role`, and `--summary`. Inspect `--dry-run` before committing.
+Use `--json` for the session and complete list of resulting commit SHAs.
+
+Use the actual contributor ID, even when an agent runs commands on a human's
+behalf. Preserve previous `authors` and append-only `editorial_history`.
+The first commit contains edits and credit; the second records exact file and
+diff links to the first. Report every resulting commit to the user. Push those
+commits before expecting the generated GitHub links to resolve.
+
+The default theme shows editorial history and groups editors under the author.
+Inline comparisons fetch public GitHub revision files only after a reader
+requests them. Custom post templates need the editorial history component and
+its conditional CSS/bootstrap assets. Full rendering and authoring contracts
+are documented in the site's Editorial history and Editorial authoring guides.
