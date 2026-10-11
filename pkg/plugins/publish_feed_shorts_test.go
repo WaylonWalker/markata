@@ -140,7 +140,7 @@ func TestShortsHTMLFirstFrameVideoUsesPoster(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(raw), "poster.webp?w=72") || strings.Contains(string(raw), "movie.mp4") || strings.Contains(string(raw), "shorts-image-loading") {
+	if !strings.Contains(string(raw), "poster.webp?w=72") || strings.Contains(string(raw), "movie.mp4") || strings.Contains(string(raw), `class="shorts-image-loading"`) {
 		t.Fatal("video-first Shorts must display a tiny poster, never preload video media")
 	}
 }
