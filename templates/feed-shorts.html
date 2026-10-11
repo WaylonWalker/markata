@@ -32,7 +32,7 @@
     <div class="shorts-first-frame" id="shorts-first-frame" data-id="{{ shorts_first_frame_id }}">
       <img class="shorts-first-frame-image shorts-image-placeholder" src="{{ shorts_first_frame_src }}" alt="" aria-hidden="true" loading="eager" decoding="async" fetchpriority="high">
       {% if shorts_first_frame_sharp_src %}
-      <img class="shorts-first-frame-sharp shorts-media shorts-image--full" data-src="{{ shorts_first_frame_sharp_src }}" alt="" aria-hidden="true" decoding="async" fetchpriority="high">
+      <img class="shorts-first-frame-sharp shorts-media shorts-image--full" data-src="{{ shorts_first_frame_sharp_src }}" alt="{{ shorts_first_frame_alt }}" decoding="async" fetchpriority="high">
       {% endif %}
     </div>
     {% if shorts_first_frame_sharp_src %}
