@@ -38,12 +38,6 @@
     </div>
     {% endif %}
 
-    {% if post.editorial_history_view %}
-    <button class="post-byline__history" type="button" data-editorial-open aria-haspopup="dialog" aria-controls="editorial-history-dialog" hidden>
-        History <span>{{ post.editorial_history_view|length }}</span>
-    </button>
-    {% endif %}
-
     {% if post.date or post.reading_time %}
     <div class="post-meta post-byline__meta">
         {% if post.date %}
@@ -92,4 +86,10 @@
     <span class="post-meta__reading-time">{{ post.reading_time }} min read</span>
     {% endif %}
 </div>
+{% endif %}
+
+{% if post.editorial_history_view %}
+<button class="post-byline__history" type="button" data-editorial-open aria-haspopup="dialog" aria-controls="editorial-history-dialog" hidden>
+    History <span>{{ post.editorial_history_view|length }}</span>
+</button>
 {% endif %}
