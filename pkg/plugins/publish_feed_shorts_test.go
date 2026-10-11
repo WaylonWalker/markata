@@ -90,6 +90,8 @@ func TestShortsHTMLFirstFrameIsPublicAndStandalone(t *testing.T) {
 		"<!doctype html>", "shorts-first-frame",
 		`data-id="shots/first"`,
 		"https://dropper.waylonwalker.com/file/first.webp?w=72",
+		"https://dropper.waylonwalker.com/file/first.webp?w=1280",
+		"shorts-first-frame-sharp",
 		"feed-shorts.css", "feed-shorts.js",
 	} {
 		if !strings.Contains(html, want) {
