@@ -219,7 +219,6 @@ func TestBuildInternalEmbedCard_DifferentialCorpus(t *testing.T) {
 	}
 }
 
-
 // Test that the site-wide Lite YouTube capability never causes unrelated
 // posts to inherit its per-page asset requirement.
 func TestEmbedsPlugin_LiteYouTubeAssetsPerPost(t *testing.T) {
