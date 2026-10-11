@@ -568,12 +568,11 @@ func recordNode(r Record) (*yaml.Node, error) {
 	return &n, nil
 }
 
-// Finish commits session edits and appends revision links to frontmatter.
 // sessionCommitAtHead recognizes a completed commit when a process stops before
 // persisting the next session phase. The session marker, exact parent, and
 // selected paths must all match; unrelated HEAD movement is never adopted.
-func sessionCommitAtHead(root string, s Session, parent, stage string, ps []string) (string, bool, error) {
-	sha, err := git(root, "rev-parse", "HEAD")
+func sessionCommitAtHead(root string, s Session, parent, stage string, ps []string) (sha string, recognized bool, err error) {
+	sha, err = git(root, "rev-parse", "HEAD")
 	if err != nil {
 		return "", false, err
 	}
@@ -709,6 +708,41 @@ func prepareStartedPost(root string, s Session, path string) (preparedEditorialP
 	return preparedEditorialPost{Action: action, Before: string(b), After: x}, nil
 }
 
+func recoverStartedCommit(o Options, root string, s Session, ps []string, summary string) (Session, error) {
+	sha, recognized, err := sessionCommitAtHead(root, s, s.BaseCommit, "content", ps)
+	if err != nil {
+		return Session{}, err
+	}
+	if !recognized {
+		return Session{}, errors.New("HEAD changed during session; inspect and start a new session")
+	}
+	s.Actions = make(map[string]string, len(ps))
+	for _, p := range ps {
+		committed, err := git(root, "show", sha+":"+p)
+		if err != nil {
+			return Session{}, err
+		}
+		d, err := digest(committed)
+		if err != nil {
+			return Session{}, err
+		}
+		s.Actions[p] = actionReviewed
+		if d != s.Posts[p].Digest {
+			s.Actions[p] = actionEdited
+		}
+	}
+	s.ContentCommit = sha
+	s.Commits = append(s.Commits, sha)
+	s.Summary = summary
+	s.Phase = phaseContentCommitted
+	if !o.DryRun {
+		if err := save(root, s); err != nil {
+			return Session{}, err
+		}
+	}
+	return s, nil
+}
+
 func finishStarted(o Options, root string, s Session, ps []string, summary string) (Session, error) {
 	head, err := git(root, "rev-parse", "HEAD")
 	if err != nil {
@@ -716,38 +750,7 @@ func finishStarted(o Options, root string, s Session, ps []string, summary strin
 	}
 	head = strings.TrimSpace(head)
 	if head != s.BaseCommit {
-		sha, recognized, err := sessionCommitAtHead(root, s, s.BaseCommit, "content", ps)
-		if err != nil {
-			return Session{}, err
-		}
-		if !recognized {
-			return Session{}, errors.New("HEAD changed during session; inspect and start a new session")
-		}
-		s.Actions = make(map[string]string, len(ps))
-		for _, p := range ps {
-			committed, err := git(root, "show", sha+":"+p)
-			if err != nil {
-				return Session{}, err
-			}
-			d, err := digest(committed)
-			if err != nil {
-				return Session{}, err
-			}
-			s.Actions[p] = actionReviewed
-			if d != s.Posts[p].Digest {
-				s.Actions[p] = actionEdited
-			}
-		}
-		s.ContentCommit = sha
-		s.Commits = append(s.Commits, sha)
-		s.Summary = summary
-		s.Phase = phaseContentCommitted
-		if !o.DryRun {
-			if err := save(root, s); err != nil {
-				return Session{}, err
-			}
-		}
-		return s, nil
+		return recoverStartedCommit(o, root, s, ps, summary)
 	}
 
 	// Prepare *all* posts and validate the entire selection before changing
@@ -999,29 +1002,30 @@ func Finish(o Options, id, summary string) (Session, error) {
 		}
 	}
 	if s.Phase == phaseContentCommitted || s.Phase == phaseMetadataPending {
-		head, err := git(root, "rev-parse", "HEAD")
-		if err != nil {
-			return Session{}, err
+		return finishAfterContent(o, root, s, ps)
+	}
+	return s, nil
+}
+
+func finishAfterContent(o Options, root string, s Session, ps []string) (Session, error) {
+	head, err := git(root, "rev-parse", "HEAD")
+	if err != nil {
+		return Session{}, err
+	}
+	// A successful metadata commit might precede the final session save.
+	// Recognize it without rewriting any pending files.
+	if s.Phase == phaseMetadataPending && strings.TrimSpace(head) != s.ContentCommit {
+		if o.DryRun {
+			return s, nil
 		}
-		// A successful metadata commit might precede the final session save.
-		// Let finishMetadata recognize that completed commit before attempting
-		// to rebuild or rewrite any pending files.
-		if s.Phase == phaseMetadataPending && strings.TrimSpace(head) != s.ContentCommit {
-			if o.DryRun {
-				return s, nil
-			}
-			return finishMetadata(root, s, ps)
-		}
-		s, err = finishContent(o, root, s, ps)
-		if err != nil {
-			return Session{}, err
-		}
+		return finishMetadata(root, s, ps)
+	}
+	s, err = finishContent(o, root, s, ps)
+	if err != nil {
+		return Session{}, err
 	}
 	if s.Phase == phaseMetadataPending && !o.DryRun {
-		s, err = finishMetadata(root, s, ps)
-		if err != nil {
-			return Session{}, err
-		}
+		return finishMetadata(root, s, ps)
 	}
 	return s, nil
 }
