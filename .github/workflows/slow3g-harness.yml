@@ -5,6 +5,9 @@ on:
     paths:
       - "scripts/slow3g_compare.py"
       - "scripts/slow3g_fixture_server.py"
+      - "scripts/slow3g_site_server.py"
+      - "scripts/test_slow3g_site_server.py"
+      - "scripts/slow3g_compare.README.md"
       - "scripts/check_slow3g_fixture.py"
       - "scripts/test_slow3g_compare.py"
       - ".github/workflows/slow3g-harness.yml"
@@ -24,8 +27,9 @@ jobs:
         run: uv run --with playwright playwright install --with-deps chromium
       - name: Validate syntax and MIME classifier
         run: |
-          python -m py_compile scripts/slow3g_compare.py scripts/slow3g_fixture_server.py scripts/check_slow3g_fixture.py
+          python -m py_compile scripts/slow3g_compare.py scripts/slow3g_fixture_server.py scripts/slow3g_site_server.py scripts/check_slow3g_fixture.py
           uv run --with playwright python -m unittest discover -s scripts -p 'test_slow3g_compare.py'
+          python -m unittest discover -s scripts -p 'test_slow3g_site_server.py'
       - name: Start gzip fixture server
         run: |
           python scripts/slow3g_fixture_server.py --port 8765 > /tmp/slow3g-fixture.log 2>&1 &
