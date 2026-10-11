@@ -30,10 +30,13 @@ const items = ids.map((id, index) => {
 });
 items[6].src = '/media/broken.webp?w=1280';
 
-function pageHTML() {
-  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/feed-shorts.css"></head><body class="shorts-body">
-  <section class="shorts-viewer" id="shorts-viewer" data-manifest="/shorts/data/index.json" aria-label="Shorts media viewer">
-    <div id="shorts-slides" class="shorts-slides" aria-hidden="true"></div>
+function pageHTML(slowManifest = false) {
+  const indexURL = '/shorts/data/index.json' + (slowManifest ? '?slow=1' : '');
+  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>.shorts-first-frame{position:absolute;inset:0;z-index:2;display:grid;place-items:center;background:#111}.shorts-first-frame img{width:100%;height:100%;object-fit:contain;filter:blur(10px)}</style>
+  <link rel="stylesheet" href="/feed-shorts.css"></head><body class="shorts-body">
+  <section class="shorts-viewer" id="shorts-viewer" data-manifest="${indexURL}" aria-label="Shorts media viewer">
+    <div id="shorts-slides" class="shorts-slides" aria-hidden="true"><div id="shorts-first-frame" class="shorts-first-frame" data-id="shots/p0"><img class="shorts-first-frame-image" src="/media/photo-0.webp?w=72" alt="" aria-hidden="true" decoding="async" fetchpriority="high"></div></div>
     <header class="shorts-top"><a href="/shots/">Shots</a><span id="shorts-counter" class="shorts-counter"></span></header>
     <div id="shorts-message" class="shorts-message">Loading shorts…</div>
     <div class="shorts-hud"><div class="shorts-hud-copy"><h1 id="shorts-title" class="shorts-title"></h1><p id="shorts-description" class="shorts-description"></p><button id="shorts-more" class="shorts-more">More</button><a id="shorts-permalink" class="shorts-permalink"></a></div>
@@ -48,11 +51,15 @@ function serve() {
     requests.push(requestURL.pathname + requestURL.search);
     if (requestURL.pathname === '/') {
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      return res.end(pageHTML());
+      return res.end(pageHTML(requestURL.searchParams.has('slow')));
     }
     if (requestURL.pathname === '/shorts/data/index.json') {
       res.setHeader('Content-Type', 'application/json');
-      return res.end(JSON.stringify({version: 1, total: ids.length, chunk_size: 128, ids}));
+      const body = JSON.stringify({version: 1, total: ids.length, chunk_size: 128, ids});
+      if (requestURL.searchParams.has('slow')) {
+        return setTimeout(() => { if (!res.destroyed) res.end(body); }, 1500);
+      }
+      return res.end(body);
     }
     if (requestURL.pathname === '/shorts/data/0000.json') {
       res.setHeader('Content-Type', 'application/json');
@@ -103,6 +110,23 @@ test('Shorts uses a decoded blur-up and a bounded preview window', async (t) => 
   const evidence = process.env.SHORTS_EVIDENCE_DIR || '/tmp/markata-shorts-browser-evidence';
   fs.mkdirSync(evidence, {recursive: true});
   t.after(async () => {await browser.close(); await new Promise((resolve) => server.close(resolve));});
+
+  requests.length = 0;
+  const parser = await openPage(browser, origin + '?slow=1', {saveData: false, effectiveType: '3g', downlink: 1.5});
+  // The first frame must paint without waiting for either JSON request.
+  await parser.page.waitForFunction(() => document.querySelector('.shorts-first-frame-image')?.naturalWidth === 72);
+  assert.equal(await parser.page.locator('#shorts-title').textContent(), '', 'JSON is still delayed while initial preview has loaded');
+  await parser.page.screenshot({path: path.join(evidence, 'shorts-parser-first-frame.png')});
+  await parser.page.waitForFunction(() => document.querySelector('.shorts-media-wrap--sharp .shorts-image--full')?.naturalWidth === 1280);
+  assert.equal(requests.filter(url => url === '/media/photo-0.webp?w=72').length, 1, 'hydration must reuse the parser-loaded thumbnail');
+  assert.equal(await parser.page.locator('#shorts-first-frame').count(), 0, 'server-first frame is removed once active');
+  await parser.context.close();
+
+  requests.length = 0;
+  const deepLink = await openPage(browser, origin + '#id=shots/p5', {saveData: false, effectiveType: '3g', downlink: 1.5});
+  await deepLink.page.waitForFunction(() => document.querySelector('#shorts-title')?.textContent === 'Photo 5');
+  assert.equal(await deepLink.page.locator('#shorts-first-frame').count(), 0, 'deep links must not retain the wrong initial frame');
+  await deepLink.context.close();
 
   requests.length = 0;
   const normal = await openPage(browser, origin, {saveData: false, effectiveType: '3g', downlink: 1.5});
