@@ -172,7 +172,21 @@ func postToMapUncached(p *models.Post) map[string]interface{} {
 			authorMaps[i] = authorToMap(&p.AuthorObjects[i])
 		}
 		m["author_objects"] = authorMaps
+		writers := make([]map[string]interface{}, 0, len(authorMaps))
+		editors := make([]map[string]interface{}, 0, len(authorMaps))
+		for i := range p.AuthorObjects {
+			if isEditorialContributor(&p.AuthorObjects[i]) {
+				editors = append(editors, authorMaps[i])
+			} else {
+				writers = append(writers, authorMaps[i])
+			}
+		}
+		m["byline_authors"] = writers
+		m["byline_editors"] = editors
+		m["additional_editor_count"] = len(editors) - 1
 	}
+
+	m["editorial_history_view"] = editorialHistoryToMaps(p)
 
 	// Add legacy author field
 	if p.Author != nil {

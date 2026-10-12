@@ -38,6 +38,8 @@ The docs explain *why* and *usage* - user-friendly guides, examples, tutorials.
 
 | Spec File | Required User Doc |
 |-----------|-------------------|
+| `EDITORIAL_HISTORY.md` | `docs/guides/editorial-history.md` |
+| `EDITORIAL_AUTHORING.md` | `docs/guides/editorial-authoring.md` |
 | `CONFIG.md` | `docs/guides/configuration.md` |
 | `AGENTS.md` | `docs/guides/agent-skills.md`, `docs/reference/cli.md` |
 | `THEMES.md` | `docs/guides/themes.md` |
@@ -59,6 +61,8 @@ The docs explain *why* and *usage* - user-friendly guides, examples, tutorials.
 |------|-------------|
 | [INSTALL.md](./spec/INSTALL.md) | Entry point with language/library choices |
 | [SPEC.md](./spec/SPEC.md) | Core architecture, CLI, concurrency |
+| [EDITORIAL_HISTORY.md](./spec/EDITORIAL_HISTORY.md) | Editorial history, lazy source comparisons, and editor credits |
+| [EDITORIAL_AUTHORING.md](./spec/EDITORIAL_AUTHORING.md) | Isolated attributed commits for humans and agents |
 | [CLI_LIST.md](./spec/CLI_LIST.md) | CLI list command and output formats |
 | [CLI_SITE_DIR.md](./spec/CLI_SITE_DIR.md) | Cross-directory site selection and agent workflows |
 | [CLI_UX.md](./spec/CLI_UX.md) | Shared CLI UX rules for streams, color, and prompts |

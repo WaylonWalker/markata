@@ -93,10 +93,17 @@ func TestShortsHTMLFirstFrameIsPublicAndStandalone(t *testing.T) {
 		"https://dropper.waylonwalker.com/file/first.webp?w=1280",
 		"shorts-first-frame-sharp",
 		"shorts-image-loading", "Loading full quality",
-		"feed-shorts.css", "feed-shorts.js",
 	} {
 		if !strings.Contains(html, want) {
 			t.Errorf("Shorts HTML missing %q", want)
+		}
+	}
+	// Standalone assets are content-hashed, so their literal source filenames
+	// should not be required in the generated HTML.
+	for _, prefix := range []string{`<link rel="stylesheet" href="`, `<script defer src="`} {
+		position := strings.Index(html, prefix)
+		if position < 0 || position+len(prefix) >= len(html) || html[position+len(prefix)] == '"' {
+			t.Errorf("Shorts HTML missing nonempty standalone asset reference %q", prefix)
 		}
 	}
 	for _, unwanted := range []string{
@@ -127,7 +134,7 @@ func TestShortsHTMLFirstFrameVideoUsesPoster(t *testing.T) {
 		Views: []string{models.FeedViewDefault, models.FeedViewShorts},
 		Posts: []*models.Post{
 			{Slug: "shots/video", Published: true, Extra: map[string]interface{}{
-				"video": "https://dropper.waylonwalker.com/file/movie.mp4",
+				"video":  "https://dropper.waylonwalker.com/file/movie.mp4",
 				"poster": "https://dropper.waylonwalker.com/file/poster.webp",
 			}},
 		},
