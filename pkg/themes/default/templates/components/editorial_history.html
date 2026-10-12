@@ -20,6 +20,7 @@
             </div>
             {% if event.before_url and event.after_url %}
             <div class="editorial-history__comparison" data-editorial-comparison data-before="{{ event.before_url }}" data-after="{{ event.after_url }}" data-viewer="{{ 'js/editorial-diff.js'|theme_asset_hashed }}">
+                <button type="button" data-editorial-show>Show changes here</button>
                 <p data-editorial-status role="status" aria-live="polite"></p>
                 <div data-editorial-result></div>
             </div>
@@ -35,9 +36,8 @@
     </nav>
     {% endif %}
 </dialog>
-{# The modal is enhanced with JS; direct revision links remain accessible without it. #}
-<noscript>
-<details class="editorial-history__fallback" data-pagefind-ignore>
+{# Keep a native fallback visible until JS successfully initializes the dialog. #}
+<details class="editorial-history__fallback" data-editorial-fallback data-pagefind-ignore>
     <summary>Editorial history ({{ post.editorial_history_view|length }})</summary>
     <ol>
     {% for event in post.editorial_history_view %}
@@ -52,5 +52,4 @@
     {% endfor %}
     </ol>
 </details>
-</noscript>
 {% endif %}

@@ -176,6 +176,31 @@ func run(dir string, env []string, args ...string) (string, error) {
 	return string(b), nil
 }
 func git(root string, args ...string) (string, error) { return run(root, nil, args...) }
+
+// sameGitContent compares worktree text using the same clean filters Git uses
+// when creating a blob. Raw git-show bytes and checked-out files are not
+// necessarily identical on Windows (core.autocrlf) or with .gitattributes.
+func sameGitContent(root, path, first, second string) (bool, error) {
+	canonicalHash := func(content string) (string, error) {
+		cmd := exec.Command("git", "hash-object", "--path", path, "--stdin")
+		cmd.Dir = root
+		cmd.Stdin = strings.NewReader(content)
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			return "", fmt.Errorf("hash editorial post %s: %v: %s", path, err, strings.TrimSpace(string(out)))
+		}
+		return strings.TrimSpace(string(out)), nil
+	}
+	firstHash, err := canonicalHash(first)
+	if err != nil {
+		return false, err
+	}
+	secondHash, err := canonicalHash(second)
+	if err != nil {
+		return false, err
+	}
+	return firstHash == secondHash, nil
+}
 func gitNames(root string, args ...string) ([]string, error) {
 	out, err := git(root, append(args, "-z")...)
 	if err != nil {
@@ -540,11 +565,12 @@ func makeRecord(root string, s Session, p, sha, action, summary string) (Record,
 	if e != nil {
 		return Record{}, e
 	}
-	b, e := os.ReadFile(filepath.Join(root, p))
+	// Digest the committed revision, not the platform-dependent worktree.
+	b, e := git(root, "show", sha+":"+p)
 	if e != nil {
 		return Record{}, e
 	}
-	d, e := digest(string(b))
+	d, e := digest(b)
 	if e != nil {
 		return Record{}, e
 	}
@@ -617,7 +643,11 @@ func sessionCommitAtHead(root string, s Session, parent, stage string, ps []stri
 		if err != nil {
 			return "", false, err
 		}
-		if string(current) != committed {
+		equal, err := sameGitContent(root, p, string(current), committed)
+		if err != nil {
+			return "", false, err
+		}
+		if !equal {
 			return "", false, fmt.Errorf("selected post changed after the %s commit: %s", stage, p)
 		}
 	}
@@ -671,12 +701,18 @@ func prepareStartedPost(root string, s Session, path string) (preparedEditorialP
 	if err != nil {
 		return preparedEditorialPost{}, err
 	}
-	d, err := digest(string(b))
+	// Compare logical Markdown content, not platform-specific checkout CRLF.
+	// The persisted v1 digest itself remains byte-exact and unchanged.
+	baselineDigest, err := digest(strings.ReplaceAll(s.Posts[path].Before, "\r\n", "\n"))
+	if err != nil {
+		return preparedEditorialPost{}, err
+	}
+	currentDigest, err := digest(strings.ReplaceAll(string(b), "\r\n", "\n"))
 	if err != nil {
 		return preparedEditorialPost{}, err
 	}
 	action := actionReviewed
-	if d != s.Posts[path].Digest {
+	if currentDigest != baselineDigest {
 		action = actionEdited
 	}
 	_, before, err := split(s.Posts[path].Before)
@@ -850,14 +886,22 @@ func finishContent(o Options, root string, s Session, ps []string) (Session, err
 		if err != nil {
 			return Session{}, err
 		}
-		if string(current) == s.Pending[p] {
+		matchesPending, err := sameGitContent(root, p, string(current), s.Pending[p])
+		if err != nil {
+			return Session{}, err
+		}
+		if matchesPending {
 			continue
 		}
 		baseline, err := git(root, "show", s.ContentCommit+":"+p)
 		if err != nil {
 			return Session{}, err
 		}
-		if string(current) != baseline {
+		matchesBaseline, err := sameGitContent(root, p, string(current), baseline)
+		if err != nil {
+			return Session{}, err
+		}
+		if !matchesBaseline {
 			return Session{}, fmt.Errorf("attribution interrupted or post changed: %s", p)
 		}
 	}
@@ -866,7 +910,11 @@ func finishContent(o Options, root string, s Session, ps []string) (Session, err
 		if err != nil {
 			return Session{}, err
 		}
-		if string(current) != s.Pending[p] {
+		equal, err := sameGitContent(root, p, string(current), s.Pending[p])
+		if err != nil {
+			return Session{}, err
+		}
+		if !equal {
 			if err := os.WriteFile(filepath.Join(root, p), []byte(s.Pending[p]), 0o600); err != nil {
 				return Session{}, err
 			}
@@ -930,7 +978,11 @@ func finishMetadata(root string, s Session, ps []string) (Session, error) {
 			if err != nil {
 				return Session{}, err
 			}
-			if committed != s.Pending[p] {
+			equal, err := sameGitContent(root, p, committed, s.Pending[p])
+			if err != nil {
+				return Session{}, err
+			}
+			if !equal {
 				return Session{}, fmt.Errorf("metadata commit does not match pending attribution: %s", p)
 			}
 		}
@@ -946,7 +998,11 @@ func finishMetadata(root string, s Session, ps []string) (Session, error) {
 		if err != nil {
 			return Session{}, err
 		}
-		if string(actual) != s.Pending[p] {
+		equal, err := sameGitContent(root, p, string(actual), s.Pending[p])
+		if err != nil {
+			return Session{}, err
+		}
+		if !equal {
 			return Session{}, fmt.Errorf("attribution interrupted or post changed: %s", p)
 		}
 	}
@@ -985,8 +1041,11 @@ func Finish(o Options, id, summary string) (Session, error) {
 		ps = append(ps, p)
 	}
 	sort.Strings(ps)
-	if err := reconcileCommittedIndex(root, s, ps); err != nil {
-		return Session{}, err
+	// A preview must never reset the caller's index, even during recovery.
+	if !o.DryRun {
+		if err := reconcileCommittedIndex(root, s, ps); err != nil {
+			return Session{}, err
+		}
 	}
 	if err := rejectStaged(root, ps); err != nil {
 		return Session{}, err

@@ -169,12 +169,15 @@ func TestEditorialHistory_NoScriptFallbackAndMissingAuthorObjects(t *testing.T) 
 		if err != nil {
 			t.Fatal(err)
 		}
-		start := strings.Index(history, "<noscript>")
-		end := strings.Index(history, "</noscript>")
+		start := strings.Index(history, `<details class="editorial-history__fallback"`)
+		end := strings.LastIndex(history, "</details>")
 		if start < 0 || end <= start {
-			t.Fatalf("missing no-script history: directory=%q:\n%s", directory, history)
+			t.Fatalf("missing script-independent history: directory=%q:\n%s", directory, history)
 		}
 		fallback := history[start:end]
+		if !strings.Contains(fallback, "data-editorial-fallback") || strings.Contains(history, "<noscript>") {
+			t.Fatalf("fallback must work when JavaScript is enabled but fails: directory=%q", directory)
+		}
 		for _, expected := range []string{"<details", "editorial-history__fallback", "Fixed a typo.", "File at this revision", "Open diff in GitHub"} {
 			if !strings.Contains(fallback, expected) {
 				t.Fatalf("no-script fallback missing %q: directory=%q:\n%s", expected, directory, fallback)

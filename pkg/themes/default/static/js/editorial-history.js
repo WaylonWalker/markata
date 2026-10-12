@@ -6,6 +6,7 @@
 
   function initialize() {
     document.querySelectorAll('[data-editorial-open]').forEach(function (button) { button.hidden = false; });
+    document.querySelectorAll('[data-editorial-fallback]').forEach(function (details) { details.hidden = true; });
     document.querySelectorAll('[data-editorial-events]').forEach(function (list) {
       list.querySelectorAll('.editorial-history__event').forEach(function (entry, index) { entry.hidden = index !== 0; });
     });
@@ -41,6 +42,8 @@
     panel.dataset.loading = 'true';
     panel.setAttribute('aria-busy', 'true');
     var status = panel.querySelector('[data-editorial-status]');
+    var trigger = panel.querySelector('[data-editorial-show]');
+    if (trigger) trigger.disabled = true;
     status.textContent = 'Loading recorded changes…';
     loadViewer(panel.dataset.viewer)
       .then(function (viewer) {
@@ -48,12 +51,15 @@
       })
       .then(function () {
         panel.dataset.loaded = 'true';
+        if (trigger) trigger.hidden = true;
         status.textContent = 'Added text is underlined; removed text is struck through. Unchanged text is collapsed around the edits.';
       })
       .catch(function () {
+        if (trigger) trigger.textContent = 'Retry showing changes';
         status.textContent = 'Changes could not load. Open the diff in GitHub to view the revision.';
       })
       .finally(function () {
+        if (trigger) trigger.disabled = false;
         delete panel.dataset.loading;
         panel.removeAttribute('aria-busy');
       });
@@ -68,7 +74,11 @@
     if (opener) {
       var dialog = document.getElementById(opener.getAttribute('aria-controls'));
       if (dialog && !dialog.open) dialog.showModal();
-      if (dialog) loadComparison(dialog.querySelector('.editorial-history__event:not([hidden])'));
+      return;
+    }
+    var showChanges = event.target.closest('[data-editorial-show]');
+    if (showChanges) {
+      loadComparison(showChanges.closest('.editorial-history__event'));
       return;
     }
     var closer = event.target.closest('[data-editorial-close]');
@@ -90,7 +100,6 @@
       if (next) next.disabled = active === entries.length - 1;
       historyDialog.querySelector('[data-editorial-position]').textContent = (active + 1) + ' of ' + entries.length;
       historyDialog.scrollTop = 0;
-      loadComparison(entries[active]);
       return;
     }
   });

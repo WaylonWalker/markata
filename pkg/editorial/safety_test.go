@@ -436,3 +436,76 @@ func TestEditorialSafety_ResumeAfterCommitBeforeIndexReset(t *testing.T) {
 		})
 	}
 }
+
+func TestEditorialSafety_CRLFCheckoutAndRecovery(t *testing.T) {
+	root := safetyRepo(t, "---\ntitle: Post\nauthor: writer\n---\nBody\n")
+	post := "posts/a post's.md"
+	safetyGit(t, root, "config", "core.autocrlf", "true")
+	safetyGit(t, root, "checkout-index", "-f", "--", post)
+	if !strings.Contains(safetyRead(t, filepath.Join(root, post)), "\r\n") {
+		t.Fatal("fixture did not check out with CRLF")
+	}
+	started, err := Start(Options{Root: root}, "editor", "copy-editor", []string{post})
+	if err != nil {
+		t.Fatal(err)
+	}
+	reviewed, err := Finish(Options{Root: root}, started.ID, "Reviewed unchanged copy")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if reviewed.Actions[post] != actionReviewed {
+		t.Fatalf("CRLF-only checkout treated as edit: %v", reviewed.Actions)
+	}
+	if len(reviewed.Commits) != 2 {
+		t.Fatalf("expected content and metadata commits: %v", reviewed.Commits)
+	}
+	// Simulate a restart after Git committed the first stage, with a CRLF
+	// checkout of that revision and an old session journal.
+	safetyGit(t, root, "reset", "--hard", reviewed.Commits[0])
+	if err := save(root, started); err != nil {
+		t.Fatal(err)
+	}
+	recovered, err := Finish(Options{Root: root}, started.ID, "Reviewed unchanged copy")
+	if err != nil {
+		t.Fatalf("resume with CRLF worktree: %v", err)
+	}
+	if recovered.Phase != phaseDone || len(recovered.Commits) != 2 {
+		t.Fatalf("failed to recover: %#v", recovered)
+	}
+}
+
+func TestEditorialSafety_DryRunDoesNotRepairStaleIndex(t *testing.T) {
+	root := safetyRepo(t, "---\ntitle: Post\nauthor: writer\n---\nBody\n")
+	post := "posts/a post's.md"
+	started, err := Start(Options{Root: root}, "editor", "copy-editor", []string{post})
+	if err != nil {
+		t.Fatal(err)
+	}
+	safetyWrite(t, filepath.Join(root, post), "---\ntitle: Post\nauthor: writer\n---\nNew text\n")
+	done, err := Finish(Options{Root: root}, started.ID, "Updated copy")
+	if err != nil {
+		t.Fatal(err)
+	}
+	safetyGit(t, root, "reset", "--hard", done.Commits[0])
+	safetyGit(t, root, "reset", "-q", started.BaseCommit, "--", post)
+	if err := save(root, started); err != nil {
+		t.Fatal(err)
+	}
+	beforeIndex := safetyGit(t, root, "ls-files", "-s", "--", post)
+	beforeHead := safetyGit(t, root, "rev-parse", "HEAD")
+	beforeFile := safetyRead(t, filepath.Join(root, post))
+	_, _ = Finish(Options{Root: root, DryRun: true}, started.ID, "Preview")
+	if got := safetyGit(t, root, "ls-files", "-s", "--", post); got != beforeIndex {
+		t.Fatalf("dry run rewrote the staged index: before=%q after=%q", beforeIndex, got)
+	}
+	if got := safetyGit(t, root, "rev-parse", "HEAD"); got != beforeHead {
+		t.Fatal("dry run created a commit")
+	}
+	if got := safetyRead(t, filepath.Join(root, post)); got != beforeFile {
+		t.Fatal("dry run changed the worktree")
+	}
+	session, err := Load(root, started.ID)
+	if err != nil || session.Phase != phaseStarted {
+		t.Fatalf("dry run changed the session: %#v: %v", session, err)
+	}
+}

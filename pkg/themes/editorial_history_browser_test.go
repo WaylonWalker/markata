@@ -122,20 +122,31 @@ window.fetch = async function(url) {
 		t.Fatalf("open editorial history dialog: %v", err)
 	}
 	if err := chromedp.Run(browser,
+		chromedp.Evaluate(`window.revisionRequests`, &requests),
+	); err != nil {
+		t.Fatalf("verify history-only view: %v", err)
+	}
+	if requests != 0 || viewerRequests.Load() != 0 {
+		t.Fatal("opening history fetched revision source without selecting Show changes")
+	}
+	if err := chromedp.Run(browser,
+		chromedp.Click(`.editorial-history__event:not([hidden]) [data-editorial-show]`),
 		chromedp.Poll(`document.querySelector('.editorial-history__event:not([hidden]) [data-editorial-status]').textContent.includes('could not load')`, nil),
 	); err != nil {
-		t.Fatalf("automatically load and report first editorial comparison: %v", err)
+		t.Fatalf("explicit load failure and fallback: %v", err)
 	}
 	if err := chromedp.Run(browser,
 		chromedp.Evaluate(`window.failRevision = false`, nil),
 		chromedp.Click(`[data-editorial-next]`),
+		chromedp.Click(`.editorial-history__event:not([hidden]) [data-editorial-show]`),
 		chromedp.Poll(`document.querySelector('.editorial-history__event:not([hidden]) [data-editorial-result] ins, .editorial-history__event:not([hidden]) [data-editorial-result] del') !== null`, nil),
 		chromedp.Evaluate(`document.querySelector('[data-editorial-position]').textContent === '2 of 2'`, &safe),
 		chromedp.Click(`[data-editorial-previous]`),
+		chromedp.Click(`.editorial-history__event:not([hidden]) [data-editorial-show]`),
 		chromedp.Poll(`document.querySelector('.editorial-history__event:not([hidden]) [data-editorial-result] ins, .editorial-history__event:not([hidden]) [data-editorial-result] del') !== null`, nil),
 		chromedp.Evaluate(`!window.bad && document.querySelectorAll('[data-editorial-result] script, [data-editorial-result] img').length === 0 && document.querySelectorAll('.editorial-history__omitted').length > 0 && [...document.querySelectorAll('.editorial-history__omitted')].every(x => !x.open) && document.querySelector('[data-editorial-position]').textContent === '1 of 2'`, &safe),
 	); err != nil {
-		t.Fatalf("verify automatic comparison and navigate history: %v", err)
+		t.Fatalf("verify opt-in comparisons and history navigation: %v", err)
 	}
 
 	if !safe || viewerRequests.Load() != 1 {
