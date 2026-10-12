@@ -310,7 +310,7 @@ func (p *PublishFeedsPlugin) writeShortsManifest(feed *models.FeedConfig, dataDi
 	return p.safeWriteFile(filepath.Join(dataDir, "index.json"), append(index, '\n'))
 }
 
-func firstPublicShortsPost(posts []*models.Post) (*models.Post, map[string]interface{}) {
+func firstPublicShortsPost(posts []*models.Post) (first *models.Post, item map[string]interface{}) {
 	for _, post := range posts {
 		if post == nil || post.Private || !post.Published || post.Skip || post.Draft {
 			continue

@@ -93,7 +93,7 @@ func TestShortsHTMLFirstFrameIsPublicAndStandalone(t *testing.T) {
 		"https://dropper.waylonwalker.com/file/first.webp?w=1280",
 		"shorts-first-frame-sharp",
 		"shorts-image-loading", "Loading full quality",
-		} {
+	} {
 		if !strings.Contains(html, want) {
 			t.Errorf("Shorts HTML missing %q", want)
 		}
