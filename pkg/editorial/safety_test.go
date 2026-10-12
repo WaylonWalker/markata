@@ -447,6 +447,9 @@ func TestEditorialSafety_CRLFCheckoutAndRecovery(t *testing.T) {
 		t.Fatal(err)
 	}
 	safetyGit(t, root, "checkout-index", "--", post)
+	// Git can retain old index normalization state after changing core.autocrlf.
+	// Refresh it without staging a content change before starting the session.
+	safetyGit(t, root, "add", "--renormalize", "--", post)
 	if !strings.Contains(safetyRead(t, filepath.Join(root, post)), "\r\n") {
 		t.Fatal("fixture did not check out with CRLF")
 	}
@@ -499,7 +502,9 @@ func TestEditorialSafety_DryRunDoesNotRepairStaleIndex(t *testing.T) {
 	beforeIndex := safetyGit(t, root, "ls-files", "-s", "--", post)
 	beforeHead := safetyGit(t, root, "rev-parse", "HEAD")
 	beforeFile := safetyRead(t, filepath.Join(root, post))
-	_, _ = Finish(Options{Root: root, DryRun: true}, started.ID, "Preview")
+	if _, err := Finish(Options{Root: root, DryRun: true}, started.ID, "Preview"); err == nil {
+		t.Fatal("expected dry run to reject a staged post without changing it")
+	}
 	if got := safetyGit(t, root, "ls-files", "-s", "--", post); got != beforeIndex {
 		t.Fatalf("dry run rewrote the staged index: before=%q after=%q", beforeIndex, got)
 	}

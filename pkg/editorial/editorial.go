@@ -187,7 +187,7 @@ func sameGitContent(root, path, first, second string) (bool, error) {
 		cmd.Stdin = strings.NewReader(content)
 		out, err := cmd.CombinedOutput()
 		if err != nil {
-			return "", fmt.Errorf("hash editorial post %s: %v: %s", path, err, strings.TrimSpace(string(out)))
+			return "", fmt.Errorf("hash editorial post %s: %w: %s", path, err, strings.TrimSpace(string(out)))
 		}
 		return strings.TrimSpace(string(out)), nil
 	}
@@ -848,6 +848,36 @@ func finishStarted(o Options, root string, s Session, ps []string, summary strin
 	return s, nil
 }
 
+// verifyPendingPosts accepts only the exact content commit or the prepared
+// metadata revision. Validate all posts before mutating any of them.
+func verifyPendingPosts(root string, s Session, ps []string) error {
+	for _, p := range ps {
+		current, err := os.ReadFile(filepath.Join(root, p))
+		if err != nil {
+			return err
+		}
+		matchesPending, err := sameGitContent(root, p, string(current), s.Pending[p])
+		if err != nil {
+			return err
+		}
+		if matchesPending {
+			continue
+		}
+		baseline, err := git(root, "show", s.ContentCommit+":"+p)
+		if err != nil {
+			return err
+		}
+		matchesBaseline, err := sameGitContent(root, p, string(current), baseline)
+		if err != nil {
+			return err
+		}
+		if !matchesBaseline {
+			return fmt.Errorf("attribution interrupted or post changed: %s", p)
+		}
+	}
+	return nil
+}
+
 func finishContent(o Options, root string, s Session, ps []string) (Session, error) {
 	currentHead, err := git(root, "rev-parse", "HEAD")
 	if err != nil {
@@ -879,31 +909,9 @@ func finishContent(o Options, root string, s Session, ps []string) (Session, err
 			return Session{}, err
 		}
 	}
-	// Verify the complete selection before writing any file. A file is safe
-	// to complete only when it is the content commit or our own pending bytes.
-	for _, p := range ps {
-		current, err := os.ReadFile(filepath.Join(root, p))
-		if err != nil {
-			return Session{}, err
-		}
-		matchesPending, err := sameGitContent(root, p, string(current), s.Pending[p])
-		if err != nil {
-			return Session{}, err
-		}
-		if matchesPending {
-			continue
-		}
-		baseline, err := git(root, "show", s.ContentCommit+":"+p)
-		if err != nil {
-			return Session{}, err
-		}
-		matchesBaseline, err := sameGitContent(root, p, string(current), baseline)
-		if err != nil {
-			return Session{}, err
-		}
-		if !matchesBaseline {
-			return Session{}, fmt.Errorf("attribution interrupted or post changed: %s", p)
-		}
+	// Verify the complete selection before writing any file.
+	if err := verifyPendingPosts(root, s, ps); err != nil {
+		return Session{}, err
 	}
 	for _, p := range ps {
 		current, err := os.ReadFile(filepath.Join(root, p))
