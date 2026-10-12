@@ -441,7 +441,12 @@ func TestEditorialSafety_CRLFCheckoutAndRecovery(t *testing.T) {
 	root := safetyRepo(t, "---\ntitle: Post\nauthor: writer\n---\nBody\n")
 	post := "posts/a post's.md"
 	safetyGit(t, root, "config", "core.autocrlf", "true")
-	safetyGit(t, root, "checkout-index", "-f", "--", post)
+	// Remove the existing LF checkout so Git actually smudges the file to
+	// CRLF when restoring it from the index.
+	if err := os.Remove(filepath.Join(root, post)); err != nil {
+		t.Fatal(err)
+	}
+	safetyGit(t, root, "checkout-index", "--", post)
 	if !strings.Contains(safetyRead(t, filepath.Join(root, post)), "\r\n") {
 		t.Fatal("fixture did not check out with CRLF")
 	}
