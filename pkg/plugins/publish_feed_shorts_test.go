@@ -12,6 +12,139 @@ import (
 	"github.com/WaylonWalker/markata-go/pkg/models"
 )
 
+func TestShortsPostItemUsesBoundedDropperImageSizes(t *testing.T) {
+	imageURL := "https://dropper.waylonwalker.com/file/photo.webp?token=abc&width=900&height=600&h=300"
+	item := shortsPostItem(&models.Post{
+		Slug:  "shots/photo",
+		Extra: map[string]interface{}{"image": imageURL},
+	})
+
+	if item["src"] != "https://dropper.waylonwalker.com/file/photo.webp?token=abc&w=1280" {
+		t.Fatalf("unexpected main image URL: %v", item["src"])
+	}
+	if item["thumb"] != "https://dropper.waylonwalker.com/file/photo.webp?token=abc&w=240" {
+		t.Fatalf("unexpected preview URL: %v", item["thumb"])
+	}
+	if item["placeholder"] != "https://dropper.waylonwalker.com/file/photo.webp?token=abc&w=72" {
+		t.Fatalf("unexpected placeholder URL: %v", item["placeholder"])
+	}
+	if item["poster"] != "" {
+		t.Fatalf("image-only item should not get a video poster: %v", item["poster"])
+	}
+}
+
+func TestShortsPostItemDoesNotResizeUntrustedOrVideoMedia(t *testing.T) {
+	imageURL := "https://images.example.test/photo.webp?token=abc"
+	image := shortsPostItem(&models.Post{Extra: map[string]interface{}{"image": imageURL}})
+	if image["src"] != imageURL || image["thumb"] != "" || image["placeholder"] != "" {
+		t.Fatalf("untrusted image should stay unchanged without speculative variants: %+v", image)
+	}
+
+	videoURL := "https://dropper.waylonwalker.com/file/clip.mp4?token=video"
+	posterURL := "https://dropper.waylonwalker.com/file/poster.webp?token=poster"
+	video := shortsPostItem(&models.Post{Extra: map[string]interface{}{
+		"video":  videoURL,
+		"poster": posterURL,
+	}})
+	if video["src"] != videoURL {
+		t.Fatalf("video source must not receive image resize parameters: %v", video["src"])
+	}
+	if video["thumb"] != "https://dropper.waylonwalker.com/file/poster.webp?token=poster&w=240" {
+		t.Fatalf("unexpected video preview poster: %v", video["thumb"])
+	}
+	if video["placeholder"] != "https://dropper.waylonwalker.com/file/poster.webp?token=poster&w=72" {
+		t.Fatalf("unexpected video placeholder: %v", video["placeholder"])
+	}
+	if video["poster"] != "https://dropper.waylonwalker.com/file/poster.webp?token=poster&w=720" {
+		t.Fatalf("unexpected video poster: %v", video["poster"])
+	}
+}
+
+func TestShortsHTMLFirstFrameIsPublicAndStandalone(t *testing.T) {
+	output := t.TempDir()
+	cfg := lifecycle.NewConfig()
+	cfg.OutputDir = output
+	feed := &models.FeedConfig{
+		Slug: "shots", Title: "Shots", ShortsPath: "/shorts/",
+		Views: []string{models.FeedViewDefault, models.FeedViewShorts},
+		Posts: []*models.Post{
+			{Slug: "shots/private", Private: true, Published: true,
+				Extra: map[string]interface{}{"image": "https://dropper.waylonwalker.com/file/private.webp"}},
+			{Slug: "shots/first", Published: true,
+				Extra: map[string]interface{}{"image": "https://dropper.waylonwalker.com/file/first.webp"}},
+			{Slug: "shots/second", Published: true,
+				Extra: map[string]interface{}{"image": "https://dropper.waylonwalker.com/file/second.webp"}},
+		},
+		Formats: models.FeedFormats{HTML: true},
+	}
+	plugin := NewPublishFeedsPlugin()
+	if err := plugin.publishShortsPages(feed, cfg, output); err != nil {
+		t.Fatal(err)
+	}
+	raw, err := os.ReadFile(filepath.Join(output, "shorts", "index.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	html := string(raw)
+	for _, want := range []string{
+		"<!doctype html>", "shorts-first-frame",
+		`data-id="shots/first"`,
+		"https://dropper.waylonwalker.com/file/first.webp?w=72",
+		"https://dropper.waylonwalker.com/file/first.webp?w=1280",
+		"shorts-first-frame-sharp",
+		"shorts-image-loading", "Loading full quality",
+		"feed-shorts.css", "feed-shorts.js",
+	} {
+		if !strings.Contains(html, want) {
+			t.Errorf("Shorts HTML missing %q", want)
+		}
+	}
+	for _, unwanted := range []string{
+		"private.webp", "second.webp", "css/main.css", "css/fonts.css",
+		"css/variables.css", "theme-bootstrap", "js/theme-bootstrap",
+	} {
+		if strings.Contains(html, unwanted) {
+			t.Errorf("Shorts HTML unexpectedly contains %q", unwanted)
+		}
+	}
+	// A deep-link target isn't known to the server. Keep the manifest intact
+	// so the client can replace this first-frame preview after startup.
+	raw, err = os.ReadFile(filepath.Join(output, "shorts", "data", "index.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(raw), "shots/second") || strings.Contains(string(raw), "shots/private") {
+		t.Fatal("first-frame selection changed Shorts public manifest contents")
+	}
+}
+
+func TestShortsHTMLFirstFrameVideoUsesPoster(t *testing.T) {
+	output := t.TempDir()
+	cfg := lifecycle.NewConfig()
+	cfg.OutputDir = output
+	feed := &models.FeedConfig{
+		Slug: "shots", ShortsPath: "/shorts/",
+		Views: []string{models.FeedViewDefault, models.FeedViewShorts},
+		Posts: []*models.Post{
+			{Slug: "shots/video", Published: true, Extra: map[string]interface{}{
+				"video": "https://dropper.waylonwalker.com/file/movie.mp4",
+				"poster": "https://dropper.waylonwalker.com/file/poster.webp",
+			}},
+		},
+		Formats: models.FeedFormats{HTML: true},
+	}
+	if err := NewPublishFeedsPlugin().publishShortsPages(feed, cfg, output); err != nil {
+		t.Fatal(err)
+	}
+	raw, err := os.ReadFile(filepath.Join(output, "shorts", "index.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(raw), "poster.webp?w=72") || strings.Contains(string(raw), "movie.mp4") || strings.Contains(string(raw), `class="shorts-image-loading"`) {
+		t.Fatal("video-first Shorts must display a tiny poster, never preload video media")
+	}
+}
+
 func TestShortsPublishesAllPagesAtRootRoute(t *testing.T) {
 	output := t.TempDir()
 	cfg := lifecycle.NewConfig()
@@ -146,6 +279,7 @@ func TestShortsIndexPrivacyAndCleanup(t *testing.T) {
 		t.Fatalf("stale shorts page after disable: %v", err)
 	}
 }
+
 func containsShortsPrivateData(s string) bool {
 	return strings.Contains(s, "shots/secret") || strings.Contains(s, "shots/draft")
 }
