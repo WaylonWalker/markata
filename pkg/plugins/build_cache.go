@@ -2,6 +2,7 @@
 package plugins
 
 import (
+	"fmt"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -10,6 +11,7 @@ import (
 	"github.com/WaylonWalker/markata-go/pkg/config"
 	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
 	"github.com/WaylonWalker/markata-go/pkg/logging"
+	"github.com/WaylonWalker/markata-go/pkg/themes"
 )
 
 var buildCacheLog = logging.Component("build_cache")
@@ -109,11 +111,18 @@ func (p *BuildCachePlugin) Configure(m *lifecycle.Manager) error {
 	if fingerprint, fingerprintErr := buildcache.HashDirectoryState(templatesDir, []string{".html", ".txt", ".md"}); fingerprintErr == nil && fingerprint != "" {
 		cache.SetTemplatesFingerprint(fingerprint)
 	}
-	if hash, err := buildcache.HashDirectory(templatesDir, []string{".html", ".txt", ".md"}); err == nil && hash != "" {
-		if cache.SetTemplatesHash(hash) {
-			// Templates changed - cache was invalidated.
-			buildCacheLog.Phase("configure").Printf("Templates changed, full rebuild required")
-		}
+	projectTemplatesHash, err := buildcache.HashDirectory(templatesDir, []string{".html", ".txt", ".md"})
+	if err != nil {
+		return fmt.Errorf("hash project templates: %w", err)
+	}
+	embeddedTemplatesHash, err := buildcache.HashFS(themes.DefaultTemplates(), []string{".html", ".txt", ".md"})
+	if err != nil {
+		return fmt.Errorf("hash embedded default templates: %w", err)
+	}
+	templatesHash := buildcache.ContentHash("project:" + projectTemplatesHash + "\nembedded:" + embeddedTemplatesHash)
+	if cache.SetTemplatesHash(templatesHash) {
+		// Project or embedded templates changed - cache was invalidated.
+		buildCacheLog.Phase("configure").Printf("Templates changed, full rebuild required")
 	}
 
 	// Reset stats for this build

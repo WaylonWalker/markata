@@ -10,6 +10,7 @@ import (
 	"github.com/WaylonWalker/markata-go/pkg/buildcache"
 	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
 	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata-go/pkg/themes"
 )
 
 func TestConfigFilesHash_ChangesWhenOverlayChanges(t *testing.T) {
@@ -166,6 +167,15 @@ func TestBuildCacheConfigure_DefaultsCacheDirToContentDir(t *testing.T) {
 	cache := GetBuildCache(manager)
 	if cache == nil {
 		t.Fatal("expected build cache to be stored on manager")
+	}
+
+	embeddedTemplatesHash, err := buildcache.HashFS(themes.DefaultTemplates(), []string{".html", ".txt", ".md"})
+	if err != nil {
+		t.Fatalf("hash embedded templates: %v", err)
+	}
+	wantTemplatesHash := buildcache.ContentHash("project:\nembedded:" + embeddedTemplatesHash)
+	if cache.TemplatesHash != wantTemplatesHash {
+		t.Fatalf("TemplatesHash = %q, want combined embedded template hash %q", cache.TemplatesHash, wantTemplatesHash)
 	}
 
 	want := filepath.Join(contentDir, ".markata", buildcache.CacheFileName)
