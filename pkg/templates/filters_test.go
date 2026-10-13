@@ -1146,7 +1146,9 @@ func TestTemplateTrees_LinkPostsExposeSourceAttribution(t *testing.T) {
 
 func TestLinkSourceTemplateFallbackToValidURL(t *testing.T) {
 	engine, err := NewEngine("")
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	const sourceTemplate = `{% set link_source_url = post.link | external_url %}{% if not link_source_url %}{% set link_source_url = post.url | external_url %}{% endif %}{{ link_source_url }}`
 	for _, tc := range []struct {
 		name string
@@ -1160,11 +1162,18 @@ func TestLinkSourceTemplateFallbackToValidURL(t *testing.T) {
 		{"both unsafe", "javascript:alert(1)", "data:text/html,bad", ""},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			ctx := NewContext(nil, "", nil)
-			ctx.Set("post", map[string]interface{}{"link": tc.link, "url": tc.url})
+			post := &models.Post{Extra: map[string]interface{}{
+				"link": tc.link,
+				"url":  tc.url,
+			}}
+			ctx := NewContext(post, "", nil)
 			got, err := engine.RenderString(sourceTemplate, ctx)
-			if err != nil { t.Fatal(err) }
-			if got != tc.want { t.Fatalf("source = %q, want %q", got, tc.want) }
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got != tc.want {
+				t.Fatalf("source = %q, want %q", got, tc.want)
+			}
 		})
 	}
 }
