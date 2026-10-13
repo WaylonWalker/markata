@@ -392,6 +392,13 @@ article.post > .post-content > .feed.h-feed {
   gap: 0.8rem;
 }
 
+.feeds-page .feed-row {
+  /* Keep the large feed directory accessible and server-rendered while
+     deferring expensive offscreen sparkline and row layout. */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 22rem;
+}
+
 .feed-row {
   display: grid;
   gap: 0.8rem;
