@@ -34,15 +34,27 @@
 </head>
 <body class="shorts-body">
 <section class="shorts-viewer" id="shorts-viewer" data-manifest="{{ shorts_manifest_url }}" aria-label="Shorts media viewer">
-  <div id="shorts-slides" class="shorts-slides" aria-hidden="true">
+  <div id="shorts-slides" class="shorts-slides">
     {% if shorts_first_frame_src %}
     <div class="shorts-first-frame" id="shorts-first-frame" data-id="{{ shorts_first_frame_id }}">
-      <img class="shorts-first-frame-image shorts-image-placeholder" src="{{ shorts_first_frame_src }}" alt="" aria-hidden="true" loading="eager" decoding="async" fetchpriority="high">
+      <img class="shorts-first-frame-image shorts-image-placeholder" data-src="{{ shorts_first_frame_src }}" alt="" aria-hidden="true" loading="eager" decoding="async" fetchpriority="high">
       {% if shorts_first_frame_sharp_src %}
       <img class="shorts-first-frame-sharp shorts-media shorts-image--full" data-src="{{ shorts_first_frame_sharp_src }}" alt="{{ shorts_first_frame_alt }}" decoding="async" fetchpriority="high">
       <div class="shorts-image-loading" aria-hidden="true"><span class="shorts-image-loading__spinner"></span><span>Loading full quality…</span></div>
       {% endif %}
     </div>
+    <script>
+      (function () {
+        var frame = document.getElementById('shorts-first-frame');
+        if (location.hash.startsWith('#id=')) {
+          frame.remove();
+          return;
+        }
+        var tiny = frame.querySelector('.shorts-first-frame-image');
+        tiny.src = tiny.dataset.src;
+        delete tiny.dataset.src;
+      })();
+    </script>
     {% if shorts_first_frame_sharp_src %}
     <script>
       // Download the first sharp photograph immediately after the tiny
