@@ -126,7 +126,7 @@
         </header>
 
         {# Link/bookmark pages keep their own permalink and explicitly credit the destination. #}
-        {% if post.template == "link" or post.template == "bookmark" or post.template == "stars" or post.template == "til" %}
+        {% if not post.private and (post.template == "link" or post.template == "bookmark" or post.template == "stars" or post.template == "til") %}
         {% set link_source_url = post.link | default:post.url %}
         {% if link_source_url %}
         <aside class="post-link-source" aria-label="Original source">
