@@ -24,3 +24,16 @@ invalid rather than meaning "inherit".
 Config layering MUST preserve an explicit empty view list so validation can
 reject it; merging MUST NOT turn that list into omitted/inherited views.
 Disabling Simple MUST remove stale generated `simple/` output on rebuild.
+
+## Shorts viewer controls
+
+The Shorts viewer MUST keep previous and next controls at a stable viewport
+position as the active feed item changes between images and videos. Playback
+controls MUST be positioned independently from navigation controls so showing
+video-only actions does not move the previous and next controls.
+
+The viewer MUST support `j`/`k` and the up/down arrows for next/previous,
+Escape to return to the source feed grid, Space to play or pause an active
+video, left/right arrows to seek five seconds, and `m` to mute or unmute.
+Keyboard shortcuts MUST NOT intercept typing in form fields or editable
+content.

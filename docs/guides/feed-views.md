@@ -56,6 +56,14 @@ shorts_path = "/shorts/"
 html = "feed-photo-grid.html"
 ```
 
-The grid remains at `/shots/`, and the full-screen player is available at `/shorts/`. A URL fragment such as `#id=shots%2Fdog` identifies an individual post. The reader traverses the complete feed using static JSON chunks, independent of normal feed pagination. Only one video plays at a time; surrounding posts are loaded as previews.
+The grid remains at `/shots/`, and the full-screen player is available at
+`/shorts/`. A URL fragment such as `#id=shots%2Fdog` identifies an individual
+post. The reader traverses the complete feed using static JSON chunks,
+independent of normal feed pagination. Only one video plays at a time;
+surrounding posts are loaded as previews. The previous and next buttons stay
+fixed at the right center of the screen, separate from the video controls. Use
+`j`/`k` or the up/down arrows to move, Escape to return to the grid, Space to
+play or pause a video, left/right arrows to seek five seconds, and `m` to mute
+or unmute.
 
 If not configured, the Shorts route defaults to `/<feed-slug>/shorts/`. Only enable Shorts on a feed that should expose a full-screen player.
