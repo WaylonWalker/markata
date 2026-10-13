@@ -727,6 +727,34 @@ func TestFilterAbsoluteURL(t *testing.T) {
 	}
 }
 
+func TestFilterExternalURL(t *testing.T) {
+	engine, err := NewEngine("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		input string
+		want  string
+	}{
+		{"https://example.com/path", "https://example.com/path"},
+		{"http://example.com", "http://example.com"},
+		{"javascript:alert(1)", ""},
+		{"//example.com/path", ""},
+		{"https://user@example.com/path", ""},
+		{"https://example.com/\nother", ""},
+	} {
+		ctx := NewContext(nil, "", nil)
+		ctx.Set("source", tc.input)
+		got, err := engine.RenderString(`{{ source | external_url }}`, ctx)
+		if err != nil {
+			t.Fatalf("RenderString(%q): %v", tc.input, err)
+		}
+		if got != tc.want {
+			t.Errorf("external_url(%q) = %q, want %q", tc.input, got, tc.want)
+		}
+	}
+}
+
 func TestFilterExcerpt(t *testing.T) {
 	engine, err := NewEngine("")
 	if err != nil {
@@ -1051,6 +1079,7 @@ func TestTemplateTrees_LinkPostsExposeSourceAttribution(t *testing.T) {
 			template := string(b)
 			for _, expected := range []string{
 				"post.link | default:post.url",
+				"| external_url",
 				"u-bookmark-of",
 				`target="_blank"`,
 				"noopener noreferrer",
