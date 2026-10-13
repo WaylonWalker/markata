@@ -1119,7 +1119,9 @@ func TestTemplateTrees_LinkPostsExposeSourceAttribution(t *testing.T) {
 			}
 			template := string(b)
 			for _, expected := range []string{
-				"post.link | default:post.url",
+				"post.link | external_url",
+				"post.url | external_url",
+				"if not link_source_url",
 				"| external_url",
 				"u-bookmark-of",
 				`target="_blank"`,
@@ -1139,5 +1141,30 @@ func TestTemplateTrees_LinkPostsExposeSourceAttribution(t *testing.T) {
 		if !strings.Contains(string(b), "{% if not post.private %}") {
 			t.Errorf("%s must not leak a private source URL", path)
 		}
+	}
+}
+
+func TestLinkSourceTemplateFallbackToValidURL(t *testing.T) {
+	engine, err := NewEngine("")
+	if err != nil { t.Fatal(err) }
+	const sourceTemplate = `{% set link_source_url = post.link | external_url %}{% if not link_source_url %}{% set link_source_url = post.url | external_url %}{% endif %}{{ link_source_url }}`
+	for _, tc := range []struct {
+		name string
+		link string
+		url  string
+		want string
+	}{
+		{"valid primary", "https://example.com/first", "https://example.com/second", "https://example.com/first"},
+		{"invalid primary", "javascript:alert(1)", "https://example.com/fallback", "https://example.com/fallback"},
+		{"missing primary", "", "https://example.com/fallback", "https://example.com/fallback"},
+		{"both unsafe", "javascript:alert(1)", "data:text/html,bad", ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := NewContext(nil, "", nil)
+			ctx.Set("post", map[string]interface{}{"link": tc.link, "url": tc.url})
+			got, err := engine.RenderString(sourceTemplate, ctx)
+			if err != nil { t.Fatal(err) }
+			if got != tc.want { t.Fatalf("source = %q, want %q", got, tc.want) }
+		})
 	}
 }
