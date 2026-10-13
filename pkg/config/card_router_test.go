@@ -52,7 +52,7 @@ custom = "custom-card"
 			format: FormatJSON,
 			ext:    ".json",
 			parse:  ParseJSON,
-			data: `{"markata-go":{"title":"Test","url":"https://example.com","components":{"card_router":{"mappings":{"note":"article","custom":"custom-card"}}}}}`,
+			data:   `{"markata-go":{"title":"Test","url":"https://example.com","components":{"card_router":{"mappings":{"note":"article","custom":"custom-card"}}}}}`,
 		},
 	}
 
