@@ -1052,7 +1052,7 @@ func TestTemplateTrees_LinkPostsExposeSourceAttribution(t *testing.T) {
 			for _, expected := range []string{
 				"post.link | default:post.url",
 				"u-bookmark-of",
-				`target="_blank"`, 
+				`target="_blank"`,
 				"noopener noreferrer",
 			} {
 				if !strings.Contains(template, expected) {
