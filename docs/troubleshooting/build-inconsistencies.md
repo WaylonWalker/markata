@@ -51,6 +51,9 @@ cached full-page HTML before the write stage. If you recreate the output
 directory while keeping `.markata/`, a normal or `--fast` build can materialize
 those pages again without clearing the build cache.
 
+The cache also hashes the embedded default theme templates. A new builder image
+that changes those templates invalidates cached pages on its next build.
+
 **Symptoms**:
 - Removing templates but still seeing cached output
 - Template changes not reflected in output

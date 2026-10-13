@@ -1554,6 +1554,47 @@ func HashDirectory(dir string, extensions []string) (string, error) {
 	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
+// HashFS computes a deterministic content hash for matching files in an fs.FS.
+// File paths are included so adding, removing, or renaming a template changes
+// the hash as well as editing its contents.
+func HashFS(fsys fs.FS, extensions []string) (string, error) {
+	if fsys == nil {
+		return "", nil
+	}
+	extMap := make(map[string]bool, len(extensions))
+	for _, ext := range extensions {
+		extMap[ext] = true
+	}
+
+	var files []string
+	if err := fs.WalkDir(fsys, ".", func(path string, entry fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if entry.IsDir() {
+			return nil
+		}
+		if len(extMap) == 0 || extMap[filepath.Ext(path)] {
+			files = append(files, path)
+		}
+		return nil
+	}); err != nil {
+		return "", err
+	}
+	sort.Strings(files)
+
+	h := sha256.New()
+	for _, path := range files {
+		content, err := fs.ReadFile(fsys, path)
+		if err != nil {
+			return "", err
+		}
+		h.Write([]byte(path))
+		h.Write(content)
+	}
+	return hex.EncodeToString(h.Sum(nil)), nil
+}
+
 // HashDirectoryState computes a cheap fingerprint for a directory tree.
 // It includes each matching file's relative path, size, and modtime so callers
 // can skip a full content hash when the tree is unchanged.

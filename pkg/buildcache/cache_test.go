@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"testing/fstest"
 )
 
 func TestNew(t *testing.T) {
@@ -688,6 +689,31 @@ func TestHashDirectoryState_Deterministic(t *testing.T) {
 	}
 	if hash1 == hash3 {
 		t.Fatalf("HashDirectoryState = %q after file change, want different hash", hash3)
+	}
+}
+
+func TestHashFS_DeterministicAndContentSensitive(t *testing.T) {
+	first := fstest.MapFS{
+		"post.html":          &fstest.MapFile{Data: []byte("<article>one</article>")},
+		"partials/card.html": &fstest.MapFile{Data: []byte("<div>card</div>")},
+	}
+	second := fstest.MapFS{
+		"partials/card.html": &fstest.MapFile{Data: []byte("<div>card</div>")},
+		"post.html":          &fstest.MapFile{Data: []byte("<article>one</article>")},
+	}
+
+	hash, err := HashFS(first, []string{".html"})
+	if err != nil {
+		t.Fatalf("HashFS() failed: %v", err)
+	}
+	if got, err := HashFS(second, []string{".html"}); err != nil || got != hash {
+		t.Fatalf("HashFS() = %q, %v; want deterministic hash %q", got, err, hash)
+	}
+	if changed, err := HashFS(fstest.MapFS{
+		"post.html":          &fstest.MapFile{Data: []byte("<article>two</article>")},
+		"partials/card.html": &fstest.MapFile{Data: []byte("<div>card</div>")},
+	}, []string{".html"}); err != nil || changed == hash {
+		t.Fatalf("HashFS() after template change = %q, %v; want changed hash", changed, err)
 	}
 }
 

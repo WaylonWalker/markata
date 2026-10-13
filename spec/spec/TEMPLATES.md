@@ -136,6 +136,11 @@ my-site/
 └── posts/
 ```
 
+The rendered-page cache MUST include a content hash for both project template
+files and the embedded default theme templates. A change to either source must
+invalidate cached page HTML, including when the builder binary changes but the
+site content and project template directory do not.
+
 ---
 
 ## Base Template
