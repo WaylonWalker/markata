@@ -1061,6 +1061,47 @@ func TestFilterSummary(t *testing.T) {
 	}
 }
 
+func TestFilterSummaryHeadingAnchors(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{
+			name:  "heading permalink does not leak hash",
+			input: `<h2>What happened <a href="#what-happened" class="heading-anchor">#</a></h2><p>is my replica pool</p>`,
+			want:  "What happened is my replica pool",
+		},
+		{
+			name:  "single quoted attributes and multiple classes",
+			input: `<h3>Intro <a class='visually-hidden heading-anchor' href='#intro'><span>#</span></a></h3><p>Body</p>`,
+			want:  "Intro Body",
+		},
+		{
+			name:  "several permalinks with other links preserved",
+			input: `<h2>First<a class="heading-anchor" href="#first">#</a></h2><p>See <a href="/more">more</a>.</p><h3>Second<a href="#second" class="heading-anchor">#</a></h3>`,
+			want:  "First See more. Second",
+		},
+		{
+			name:  "other anchors and literal hashes remain",
+			input: `<p><a class="not-heading-anchor" href="/x">#reference</a> and <a href="/tags">#tag</a></p>`,
+			want:  "#reference and #tag",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := filterSummary(pongo2.AsValue(tt.input), nil)
+			if err != nil {
+				t.Fatalf("filterSummary() error: %v", err)
+			}
+			if got.String() != tt.want {
+				t.Errorf("filterSummary() = %q, want %q", got.String(), tt.want)
+			}
+		})
+	}
+}
+
 func TestTemplateTrees_LinkPostsExposeSourceAttribution(t *testing.T) {
 	postTemplates := []string{
 		"../../templates/post.html",
