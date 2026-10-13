@@ -1061,7 +1061,6 @@ func TestFilterSummary(t *testing.T) {
 	}
 }
 
-
 func TestFilterSummaryHeadingAnchors(t *testing.T) {
 	tests := []struct {
 		name  string
