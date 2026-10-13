@@ -1885,7 +1885,9 @@ func (p *BlogrollPlugin) renderReaderTimeline(groups []map[string]interface{}, w
 					sb.WriteString(html.EscapeString(stringValue(entry, "url")))
 					sb.WriteString(`" target="_blank" rel="noopener noreferrer" class="reader-entry-image-link reader-entry-image-link--`)
 					sb.WriteString(html.EscapeString(previewKind))
-					sb.WriteString(`">
+					sb.WriteString(`" aria-label="Read `)
+					sb.WriteString(html.EscapeString(stringValue(entry, "title")))
+					sb.WriteString(` (opens in new tab)">
               <img src="`)
 					sb.WriteString(html.EscapeString(imageURL))
 					sb.WriteString(`" alt="" class="reader-entry-image reader-entry-image--`)
@@ -1896,7 +1898,9 @@ func (p *BlogrollPlugin) renderReaderTimeline(groups []map[string]interface{}, w
 				} else {
 					sb.WriteString(`            <a href="`)
 					sb.WriteString(html.EscapeString(stringValue(entry, "url")))
-					sb.WriteString(`" target="_blank" rel="noopener noreferrer" class="reader-entry-image-link reader-entry-image-link--source-tile">
+					sb.WriteString(`" target="_blank" rel="noopener noreferrer" aria-label="Read `)
+					sb.WriteString(html.EscapeString(stringValue(entry, "title")))
+					sb.WriteString(` (opens in new tab)" class="reader-entry-image-link reader-entry-image-link--source-tile">
               <span class="reader-entry-source-tile" aria-hidden="true">
                 <span class="reader-entry-source-tile-top">`)
 					if iconURL := stringValue(entry, "source_icon_url"); iconURL != "" {
