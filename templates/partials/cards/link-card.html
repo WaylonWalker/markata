@@ -9,10 +9,10 @@
     {% endif %}
 
     <div class="card-link-content">
-      {% if post.url %}
-      <span class="card-domain">{{ post.url | default:post.href }}</span>
-      {# Mark external URL as bookmark-of for IndieWeb #}
-      <data class="u-bookmark-of" value="{{ post.url }}" hidden></data>
+      {% set link_source_url = post.link | default:post.url %}
+      {% if link_source_url %}
+      <a href="{{ link_source_url }}" class="card-domain" rel="noopener noreferrer" target="_blank" aria-label="Visit {{ link_source_url | domain }}">{{ link_source_url | domain }} ↗</a>
+      <data class="u-bookmark-of" value="{{ link_source_url }}" hidden></data>
       {% endif %}
 
       <a href="{{ post.href }}" class="card-title p-name u-url">{{ post.title | default:post.slug }}</a>
