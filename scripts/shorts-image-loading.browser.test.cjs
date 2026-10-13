@@ -71,10 +71,11 @@ function pageHTML(slowManifest = false) {
         })();
       </script>
     </div>
-    <header class="shorts-top"><a href="/shots/">Shots</a><span id="shorts-counter" class="shorts-counter"></span></header>
+    <header class="shorts-top"><a class="shorts-grid-link" href="/shots/">Shots</a><span id="shorts-counter" class="shorts-counter"></span></header>
     <div id="shorts-message" class="shorts-message">Loading shorts…</div>
     <div class="shorts-hud"><div class="shorts-hud-copy"><h1 id="shorts-title" class="shorts-title"></h1><p id="shorts-description" class="shorts-description"></p><button id="shorts-more" class="shorts-more">More</button><a id="shorts-permalink" class="shorts-permalink"></a></div>
-      <div class="shorts-actions"><button id="shorts-play" class="shorts-action" hidden></button><button id="shorts-sound" class="shorts-action" hidden></button><button id="shorts-up" class="shorts-action">Previous short</button><button id="shorts-down" class="shorts-action">Next short</button></div></div>
+      </div><div class="shorts-playback-actions"><button id="shorts-play" class="shorts-action" hidden></button><button id="shorts-sound" class="shorts-action" hidden></button></div>
+    <nav class="shorts-navigation-actions"><button id="shorts-up" class="shorts-action" aria-label="Previous short">↑</button><button id="shorts-down" class="shorts-action" aria-label="Next short">↓</button></nav>
     <div id="shorts-end" class="shorts-end" hidden><button id="shorts-restart">Restart</button></div>
   </section><script defer src="/feed-shorts.js"></script></body></html>`;
 }
@@ -119,6 +120,7 @@ function serve() {
       return setTimeout(() => { if (!res.destroyed) res.end(body); }, delay);
     }
     if (requestURL.pathname === '/favicon.ico') {res.writeHead(204); return res.end();}
+    if (requestURL.pathname === '/shots/') {res.setHeader('Content-Type', 'text/html'); return res.end('<!doctype html><title>Shots</title>');}
     res.writeHead(404); res.end('not found');
   });
 }
@@ -247,6 +249,33 @@ test('Shorts uses a decoded blur-up and a bounded preview window', async (t) => 
   assert.ok(!requests.some((url) => url.includes('.mp4')), 'inactive video bodies must not be prefetched');
   assert.equal(await fast.page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches), false);
 
+  const navigationBeforeVideo = await fast.page.locator('.shorts-navigation-actions').boundingBox();
+  await fast.page.evaluate(() => window.__markataShorts.goTo(2));
+  await fast.page.waitForFunction(() => document.querySelector('#shorts-title')?.textContent === 'Video 2');
+  const navigationOnVideo = await fast.page.locator('.shorts-navigation-actions').boundingBox();
+  assert.deepEqual(navigationOnVideo, navigationBeforeVideo, 'navigation controls must not move when video controls appear');
+  await fast.page.screenshot({path: path.join(evidence, 'shorts-video-controls.png')});
+  await fast.page.evaluate(() => {
+    const video = document.querySelector('.shorts-slide[aria-hidden="false"] video');
+    Object.defineProperties(video, {
+      paused: {configurable: true, writable: true, value: false},
+      duration: {configurable: true, value: 100},
+      currentTime: {configurable: true, writable: true, value: 10},
+    });
+    video.pause = () => {video.paused = true;};
+    video.play = () => {video.paused = false; return Promise.resolve();};
+  });
+  await fast.page.keyboard.press('Space');
+  assert.equal(await fast.page.locator('#shorts-play').getAttribute('aria-label'), 'Play video', 'Space pauses the active video');
+  await fast.page.keyboard.press('m');
+  assert.equal(await fast.page.locator('#shorts-sound').getAttribute('aria-label'), 'Mute video', 'M toggles video audio');
+  await fast.page.keyboard.press('ArrowRight');
+  assert.equal(await fast.page.locator('.shorts-slide[aria-hidden="false"] video').evaluate(video => video.currentTime), 15, 'right arrow seeks five seconds');
+  await fast.page.keyboard.press('j');
+  await fast.page.waitForFunction(() => document.querySelector('#shorts-title')?.textContent === 'Photo 3');
+  await fast.page.keyboard.press('k');
+  await fast.page.waitForFunction(() => document.querySelector('#shorts-title')?.textContent === 'Video 2');
+
   requests.length = 0;
   await fast.page.evaluate(() => {window.__markataShorts.goTo(4); window.__markataShorts.goTo(5);});
   await fast.page.waitForFunction(() => document.querySelector('#shorts-title')?.textContent === 'Photo 5');
@@ -256,6 +285,8 @@ test('Shorts uses a decoded blur-up and a bounded preview window', async (t) => 
   await fast.page.evaluate(() => window.__markataShorts.goTo(6));
   await fast.page.waitForFunction(() => document.querySelector('.shorts-slide[aria-hidden="false"].shorts-slide--empty') && !document.querySelector('.shorts-image-placeholder'));
   assert.equal(await fast.page.locator('#shorts-message').isVisible(), false, 'a broken image should leave the viewer navigable without a permanent placeholder');
+  await fast.page.keyboard.press('Escape');
+  await fast.page.waitForURL('**/shots/');
   await fast.context.close();
 
   const reduced = await openPage(browser, origin, undefined, true);

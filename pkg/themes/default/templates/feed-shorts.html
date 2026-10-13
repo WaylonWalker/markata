@@ -26,6 +26,8 @@
     .shorts-top,.shorts-hud{position:absolute;z-index:3}
     .shorts-top{top:0;left:0;right:0}
     .shorts-hud{bottom:0;left:0;right:0}
+    .shorts-navigation-actions{position:absolute;z-index:4;top:50%;right:max(16px,env(safe-area-inset-right));transform:translateY(-50%);display:flex;flex-direction:column;gap:10px}
+    .shorts-playback-actions{position:absolute;z-index:4;right:max(16px,env(safe-area-inset-right));bottom:max(90px,calc(env(safe-area-inset-bottom) + 90px));display:flex;flex-direction:column;gap:10px}
   </style>
   <link rel="stylesheet" href="{{ 'css/feed-shorts.css' | theme_asset_hashed }}">
   <script defer src="{{ 'js/feed-shorts.js' | theme_asset_hashed }}"></script>
@@ -92,13 +94,15 @@
       <button type="button" class="shorts-more" id="shorts-more" hidden aria-expanded="false">More</button>
       <a id="shorts-permalink" class="shorts-permalink" href="{{ feed.base_url }}/">View post ↗</a>
     </div>
-    <div class="shorts-actions" aria-label="Playback and navigation">
-      <button type="button" class="shorts-action" id="shorts-up" aria-label="Previous short" title="Previous (↑)">↑</button>
-      <button type="button" class="shorts-action" id="shorts-down" aria-label="Next short" title="Next (↓)">↓</button>
-      <button type="button" class="shorts-action" id="shorts-play" aria-label="Pause video" title="Pause or play" hidden>Ⅱ</button>
-      <button type="button" class="shorts-action" id="shorts-sound" aria-label="Unmute video" title="Mute or unmute" hidden>♪</button>
-    </div>
   </div>
+  <div class="shorts-playback-actions" aria-label="Video playback">
+    <button type="button" class="shorts-action" id="shorts-play" aria-label="Pause video" title="Play or pause (Space)" hidden>Ⅱ</button>
+    <button type="button" class="shorts-action" id="shorts-sound" aria-label="Unmute video" title="Mute or unmute (M)" hidden>♪</button>
+  </div>
+  <nav class="shorts-navigation-actions" aria-label="Shorts navigation">
+    <button type="button" class="shorts-action" id="shorts-up" aria-label="Previous short" title="Previous (↑ or K)">↑</button>
+    <button type="button" class="shorts-action" id="shorts-down" aria-label="Next short" title="Next (↓ or J)">↓</button>
+  </nav>
   <div class="shorts-end" id="shorts-end" hidden>
     <span>You've seen every shot.</span>
     <button type="button" id="shorts-restart">Back to first</button>

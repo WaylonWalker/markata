@@ -31,7 +31,9 @@ body.shorts-body { overflow: hidden !important; }
 .shorts-description.expanded { max-height: min(42vh, 28em); overflow-y: auto; overscroll-behavior: contain; }
 .shorts-more { display: inline-flex; color: #fff; padding: 6px 10px; min-height: 44px; margin: 0 0 4px; background: #fff2; border: 0; border-radius: 6px; font: inherit; font-size: .88rem; cursor: pointer; }
 .shorts-permalink { display: inline-flex; align-items: center; color: #eee !important; min-height: 44px; font-size: .92rem; text-decoration: underline; text-underline-offset: 3px; }
-.shorts-actions { display: flex; flex-direction: column; gap: 10px; align-items: center; pointer-events: auto; }
+.shorts-navigation-actions, .shorts-playback-actions { position: absolute; z-index: 4; right: max(16px, env(safe-area-inset-right)); display: flex; flex-direction: column; gap: 10px; align-items: center; pointer-events: auto; }
+.shorts-navigation-actions { top: 50%; transform: translateY(-50%); }
+.shorts-playback-actions { bottom: max(90px, calc(env(safe-area-inset-bottom) + 90px)); }
 .shorts-action { width: 48px; height: 48px; min-height: 44px; display: grid; place-items: center; border: 1px solid #fff5; border-radius: 50%; color: #fff; background: #131313a8; backdrop-filter: blur(8px); font-size: 1.25rem; font-family: system-ui, sans-serif; cursor: pointer; }
 .shorts-action:disabled { opacity: .25; cursor: default; }
 .shorts-action[hidden], .shorts-more[hidden], .shorts-end[hidden], .shorts-message[hidden] { display: none !important; }
