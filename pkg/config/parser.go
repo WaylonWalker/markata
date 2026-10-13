@@ -3596,6 +3596,9 @@ func (c *yamlComponentsConfig) toComponentsConfig() models.ComponentsConfig {
 			Width:    c.ContentSidebar.Width,
 			Slug:     c.ContentSidebar.Slug,
 		},
+		CardRouter: models.CardRouterConfig{
+			Mappings: c.CardRouter.Mappings,
+		},
 		Share: models.ShareComponentConfig{
 			Enabled:   c.Share.Enabled,
 			Platforms: append([]string{}, c.Share.Platforms...),
@@ -5202,6 +5205,9 @@ func (c *jsonComponentsConfig) toComponentsConfig() models.ComponentsConfig {
 			Position: c.ContentSidebar.Position,
 			Width:    c.ContentSidebar.Width,
 			Slug:     c.ContentSidebar.Slug,
+		},
+		CardRouter: models.CardRouterConfig{
+			Mappings: c.CardRouter.Mappings,
 		},
 		Share: models.ShareComponentConfig{
 			Enabled:   c.Share.Enabled,
