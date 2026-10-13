@@ -41,9 +41,10 @@ cards or opening floating notes.
 
 Pins uses `image`, `cover`, `cover_image`, or `og_image`, in that order. When those
 fields are empty, it reuses image previews from already-rendered embeds, YouTube
-embed thumbnails, or images in the post body. The pins page itself does not fetch metadata for arbitrary posts. For
-`template: link` (and other bookmark-style templates), the embed pipeline
-now automatically builds a preview from the `link` or `url` field. To reuse an external preview, use the normal embed syntax in your post:
+embed thumbnails, or images in the post body. The pins page itself does
+not fetch metadata for arbitrary posts. Link-style posts automatically generate
+a preview from their `link` or `url` frontmatter destination. For other posts,
+use the normal embed syntax to supply an external preview:
 
 ```markdown
 ![[https://example.com/field-guide]]
