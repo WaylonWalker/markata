@@ -24,6 +24,7 @@
   var down = document.getElementById('shorts-down');
   var playButton = document.getElementById('shorts-play');
   var soundButton = document.getElementById('shorts-sound');
+  var galleryLink = document.querySelector('.shorts-grid-link');
 
   var indexURL = new URL(viewer.dataset.manifest, location.href);
   var manifest = null;
@@ -439,6 +440,11 @@
     }
     updatePlayback();
   }
+  function seekVideo(delta) {
+    if (!activeVideo || !Number.isFinite(activeVideo.duration)) return false;
+    activeVideo.currentTime = Math.max(0, Math.min(activeVideo.duration, activeVideo.currentTime + delta));
+    return true;
+  }
 
   up.addEventListener('click', function () { move(-1); });
   down.addEventListener('click', function () { move(1); });
@@ -452,7 +458,7 @@
   });
 
   viewer.addEventListener('wheel', function (event) {
-    if (event.target.closest('.shorts-hud, .shorts-top, .shorts-end')) return;
+    if (event.target.closest('.shorts-hud, .shorts-top, .shorts-end, .shorts-navigation-actions, .shorts-playback-actions')) return;
     if (Math.abs(event.deltaY) < 8) return;
     event.preventDefault();
     var now = performance.now();
@@ -462,7 +468,7 @@
   }, { passive: false });
 
   viewer.addEventListener('touchstart', function (event) {
-    if (event.touches.length !== 1 || event.target.closest('.shorts-hud, .shorts-top, .shorts-end')) {
+    if (event.touches.length !== 1 || event.target.closest('.shorts-hud, .shorts-top, .shorts-end, .shorts-navigation-actions, .shorts-playback-actions')) {
       touchStartY = null;
       return;
     }
@@ -476,11 +482,23 @@
   }, { passive: true });
 
   document.addEventListener('keydown', function (event) {
+    var target = event.target;
     if (event.altKey || event.ctrlKey || event.metaKey ||
-        /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) return;
-    if (event.key === 'ArrowDown' || event.key === 'PageDown') { event.preventDefault(); move(1); }
-    if (event.key === 'ArrowUp' || event.key === 'PageUp') { event.preventDefault(); move(-1); }
-    if (event.key === ' ' && !event.target.closest('button, a')) { event.preventDefault(); togglePlay(); }
+        /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName) || target.isContentEditable) return;
+    var key = event.key.toLowerCase();
+    if (event.key === 'Escape') {
+      if (galleryLink) location.assign(galleryLink.href);
+      return;
+    }
+    if (key === 'j' || event.key === 'ArrowDown' || event.key === 'PageDown') { event.preventDefault(); move(1); return; }
+    if (key === 'k' || event.key === 'ArrowUp' || event.key === 'PageUp') { event.preventDefault(); move(-1); return; }
+    if ((event.key === ' ' || event.code === 'Space') && !target.closest('button, a')) {
+      if (activeVideo) { event.preventDefault(); togglePlay(); }
+      return;
+    }
+    if (key === 'm' && activeVideo) { event.preventDefault(); toggleSound(); return; }
+    if (event.key === 'ArrowLeft' && seekVideo(-5)) { event.preventDefault(); return; }
+    if (event.key === 'ArrowRight' && seekVideo(5)) event.preventDefault();
   });
   document.addEventListener('visibilitychange', function () {
     if (!activeVideo) return;
