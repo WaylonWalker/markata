@@ -296,22 +296,33 @@ func TestShortsRouteLedgerPrunesMovedAndRemovedFeeds(t *testing.T) {
 	cfg := lifecycle.NewConfig()
 	cfg.OutputDir = output
 	feed := models.FeedConfig{
-		Slug: "shots", ShortsPath: "/shorts/",
-		Views: []string{models.FeedViewShorts},
+		Slug:      "shots",
+		ShortsPath: "/shorts/",
+		Views:     []string{models.FeedViewShorts},
 	}
 	plugin := NewPublishFeedsPlugin()
-	if err := plugin.publishShortsPages(&feed, cfg, output); err != nil { t.Fatal(err) }
-	if err := reconcileShortsRoutes(output, []models.FeedConfig{feed}, nil); err != nil { t.Fatal(err) }
+	if err := plugin.publishShortsPages(&feed, cfg, output); err != nil {
+		t.Fatal(err)
+	}
+	if err := reconcileShortsRoutes(output, []models.FeedConfig{feed}, nil); err != nil {
+		t.Fatal(err)
+	}
 	feed.ShortsPath = "/videos/"
-	if err := plugin.publishShortsPages(&feed, cfg, output); err != nil { t.Fatal(err) }
-	if err := reconcileShortsRoutes(output, []models.FeedConfig{feed}, nil); err != nil { t.Fatal(err) }
+	if err := plugin.publishShortsPages(&feed, cfg, output); err != nil {
+		t.Fatal(err)
+	}
+	if err := reconcileShortsRoutes(output, []models.FeedConfig{feed}, nil); err != nil {
+		t.Fatal(err)
+	}
 	if _, err := os.Stat(filepath.Join(output, "shorts", "index.html")); !os.IsNotExist(err) {
 		t.Fatalf("old Shorts route survived path change: %v", err)
 	}
 	if _, err := os.Stat(filepath.Join(output, "videos", "index.html")); err != nil {
 		t.Fatalf("new Shorts route missing: %v", err)
 	}
-	if err := reconcileShortsRoutes(output, nil, nil); err != nil { t.Fatal(err) }
+	if err := reconcileShortsRoutes(output, nil, nil); err != nil {
+		t.Fatal(err)
+	}
 	if _, err := os.Stat(filepath.Join(output, "videos", "index.html")); !os.IsNotExist(err) {
 		t.Fatalf("removed feed left a public Shorts page: %v", err)
 	}
@@ -321,16 +332,30 @@ func TestShortsRouteLedgerKeepsRepurposedHTML(t *testing.T) {
 	output := t.TempDir()
 	cfg := lifecycle.NewConfig()
 	cfg.OutputDir = output
-	feed := models.FeedConfig{Slug: "shots", ShortsPath: "/shorts/", Views: []string{models.FeedViewShorts}}
+	feed := models.FeedConfig{
+		Slug:      "shots",
+		ShortsPath: "/shorts/",
+		Views:     []string{models.FeedViewShorts},
+	}
 	plugin := NewPublishFeedsPlugin()
-	if err := plugin.publishShortsPages(&feed, cfg, output); err != nil { t.Fatal(err) }
-	if err := reconcileShortsRoutes(output, []models.FeedConfig{feed}, nil); err != nil { t.Fatal(err) }
+	if err := plugin.publishShortsPages(&feed, cfg, output); err != nil {
+		t.Fatal(err)
+	}
+	if err := reconcileShortsRoutes(output, []models.FeedConfig{feed}, nil); err != nil {
+		t.Fatal(err)
+	}
 	page := filepath.Join(output, "shorts", "index.html")
-	if err := os.WriteFile(page, []byte("new authored post"), 0o644); err != nil { t.Fatal(err) }
+	if err := os.WriteFile(page, []byte("new authored post"), 0o644); err != nil {
+		t.Fatal(err)
+	}
 	owner := &models.Post{Slug: "shorts", Published: true}
-	if err := reconcileShortsRoutes(output, nil, []*models.Post{owner}); err != nil { t.Fatal(err) }
+	if err := reconcileShortsRoutes(output, nil, []*models.Post{owner}); err != nil {
+		t.Fatal(err)
+	}
 	data, err := os.ReadFile(page)
-	if err != nil || string(data) != "new authored post" { t.Fatalf("new publisher's HTML was removed: %v", err) }
+	if err != nil || string(data) != "new authored post" {
+		t.Fatalf("new publisher's HTML was removed: %v", err)
+	}
 	if _, err := os.Stat(filepath.Join(output, "shorts", "data")); !os.IsNotExist(err) {
 		t.Fatalf("old Shorts data survived route reuse: %v", err)
 	}
