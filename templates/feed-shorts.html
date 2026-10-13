@@ -84,7 +84,7 @@
     {% endif %}
   </div>
   <header class="shorts-top">
-    <a href="{{ feed.base_url }}/" class="shorts-grid-link" aria-label="Return to photo grid">← Shots</a>
+    <a href="{{ feed.base_url }}/" class="shorts-grid-link" aria-label="← Shots — return to photo grid">← Shots</a>
     <span class="shorts-counter" id="shorts-counter" aria-live="polite">Shorts</span>
   </header>
   <div class="shorts-hud" id="shorts-hud">
@@ -95,7 +95,7 @@
       <a id="shorts-permalink" class="shorts-permalink" href="{{ feed.base_url }}/">View post ↗</a>
     </div>
   </div>
-  <div class="shorts-playback-actions" aria-label="Video playback">
+  <div class="shorts-playback-actions" role="group" aria-label="Video playback">
     <button type="button" class="shorts-action" id="shorts-play" aria-label="Pause video" title="Play or pause (Space)" hidden>Ⅱ</button>
     <button type="button" class="shorts-action" id="shorts-sound" aria-label="Unmute video" title="Mute or unmute (M)" hidden>♪</button>
   </div>
