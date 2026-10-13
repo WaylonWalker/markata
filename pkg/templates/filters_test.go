@@ -1032,3 +1032,42 @@ func TestFilterSummary(t *testing.T) {
 		t.Errorf("truncation: got %q", short.String())
 	}
 }
+
+func TestTemplateTrees_LinkPostsExposeSourceAttribution(t *testing.T) {
+	postTemplates := []string{
+		"../../templates/post.html",
+		"../../pkg/themes/default/templates/post.html",
+	}
+	cardTemplates := []string{
+		"../../templates/partials/cards/link-card.html",
+		"../../pkg/themes/default/templates/partials/cards/link-card.html",
+	}
+	for _, path := range append(postTemplates, cardTemplates...) {
+		t.Run(path, func(t *testing.T) {
+			b, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			template := string(b)
+			for _, expected := range []string{
+				"post.link | default:post.url",
+				"u-bookmark-of",
+				"target=\\"_blank\\"",
+				"noopener noreferrer",
+			} {
+				if !strings.Contains(template, expected) {
+					t.Errorf("%s must contain %q", path, expected)
+				}
+			}
+		})
+	}
+	for _, path := range postTemplates {
+		b, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !strings.Contains(string(b), "{% if not post.private %}") {
+			t.Errorf("%s must not leak a private source URL", path)
+		}
+	}
+}
