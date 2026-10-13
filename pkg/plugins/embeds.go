@@ -202,7 +202,7 @@ func (p *EmbedsPlugin) Transform(m *lifecycle.Manager) error {
 	cache := GetBuildCache(m)
 
 	posts := m.FilterPosts(func(post *models.Post) bool {
-		return !post.Skip && post.Content != ""
+		return !post.Skip && (post.Content != "" || linkPostDestination(post) != "")
 	})
 	affected := lifecycle.GetServeAffectedPaths(m)
 
@@ -216,7 +216,7 @@ func (p *EmbedsPlugin) Transform(m *lifecycle.Manager) error {
 				needProcessing = append(needProcessing, post)
 				continue
 			}
-			contentHash := buildcache.ContentHash(post.Content + cacheSignature)
+			contentHash := linkPostEmbedCacheHash(post, cacheSignature)
 			if cached, ok := cache.GetCachedEmbedsContent(post.Path, contentHash); ok {
 				post.Content = cached
 				if !needsLiteYouTube && containsLiteYouTubeEmbed(post.Content) {
@@ -239,10 +239,11 @@ func (p *EmbedsPlugin) Transform(m *lifecycle.Manager) error {
 
 	// Phase 2: Process posts that need updating, concurrently
 	processErr := m.ProcessPostsSliceConcurrently(needProcessing, func(post *models.Post) error {
-		contentHash := buildcache.ContentHash(post.Content + cacheSignature)
+		contentHash := linkPostEmbedCacheHash(post, cacheSignature)
 		content := p.processAttachmentEmbeds(post.Content)
 		content, dependencies := p.processInternalEmbeds(content, idx, post)
 		content = p.processExternalEmbeds(content, post)
+		content = p.embedLinkPostDestination(post, content)
 		post.Content = content
 
 		// Record dependencies for incremental build cache

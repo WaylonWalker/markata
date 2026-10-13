@@ -727,6 +727,34 @@ func TestFilterAbsoluteURL(t *testing.T) {
 	}
 }
 
+func TestFilterExternalURL(t *testing.T) {
+	engine, err := NewEngine("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		input string
+		want  string
+	}{
+		{"https://example.com/path", "https://example.com/path"},
+		{"http://example.com", "http://example.com"},
+		{"javascript:alert(1)", ""},
+		{"//example.com/path", ""},
+		{"https://user@example.com/path", ""},
+		{"https://example.com/\nother", ""},
+	} {
+		ctx := NewContext(nil, "", nil)
+		ctx.Set("source", tc.input)
+		got, err := engine.RenderString(`{{ source | external_url }}`, ctx)
+		if err != nil {
+			t.Fatalf("RenderString(%q): %v", tc.input, err)
+		}
+		if got != tc.want {
+			t.Errorf("external_url(%q) = %q, want %q", tc.input, got, tc.want)
+		}
+	}
+}
+
 func TestFilterExcerpt(t *testing.T) {
 	engine, err := NewEngine("")
 	if err != nil {
@@ -1030,5 +1058,45 @@ func TestFilterSummary(t *testing.T) {
 	}
 	if short.String() != "one two…" {
 		t.Errorf("truncation: got %q", short.String())
+	}
+}
+
+func TestTemplateTrees_LinkPostsExposeSourceAttribution(t *testing.T) {
+	postTemplates := []string{
+		"../../templates/post.html",
+		"../../pkg/themes/default/templates/post.html",
+	}
+	cardTemplates := []string{
+		"../../templates/partials/cards/link-card.html",
+		"../../pkg/themes/default/templates/partials/cards/link-card.html",
+	}
+	for _, path := range append(postTemplates, cardTemplates...) {
+		t.Run(path, func(t *testing.T) {
+			b, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			template := string(b)
+			for _, expected := range []string{
+				"post.link | default:post.url",
+				"| external_url",
+				"u-bookmark-of",
+				`target="_blank"`,
+				"noopener noreferrer",
+			} {
+				if !strings.Contains(template, expected) {
+					t.Errorf("%s must contain %q", path, expected)
+				}
+			}
+		})
+	}
+	for _, path := range postTemplates {
+		b, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !strings.Contains(string(b), "{% if not post.private %}") {
+			t.Errorf("%s must not leak a private source URL", path)
+		}
 	}
 }

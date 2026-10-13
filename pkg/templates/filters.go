@@ -149,6 +149,7 @@ func registerFilters() {
 		pongo2.RegisterFilter("urlencode", filterURLEncode)
 		pongo2.RegisterFilter("absolute_url", filterAbsoluteURL)
 		pongo2.RegisterFilter("domain", filterDomain)
+		pongo2.RegisterFilter("external_url", filterExternalURL)
 
 		// Theme/asset filters (per THEMES.md spec)
 		pongo2.RegisterFilter("theme_asset", filterThemeAsset)
@@ -735,6 +736,20 @@ func filterDomain(in, _ *pongo2.Value) (*pongo2.Value, *pongo2.Error) {
 		return in, nil
 	}
 	return pongo2.AsValue(u.Hostname()), nil
+}
+
+// filterExternalURL returns only absolute HTTP(S) URLs suitable for hrefs.
+// HTML escaping does not prevent unsafe schemes such as javascript:.
+func filterExternalURL(in, _ *pongo2.Value) (*pongo2.Value, *pongo2.Error) {
+	raw := strings.TrimSpace(in.String())
+	if raw == "" || strings.ContainsAny(raw, "\r\n\t<>") {
+		return pongo2.AsValue(""), nil
+	}
+	u, err := url.Parse(raw)
+	if err != nil || (u.Scheme != "http" && u.Scheme != editorialHTTPS) || u.Host == "" || u.User != nil {
+		return pongo2.AsValue(""), nil
+	}
+	return pongo2.AsValue(raw), nil
 }
 
 // filterThemeAsset returns a URL path for theme static assets.

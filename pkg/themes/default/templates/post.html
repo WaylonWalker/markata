@@ -125,6 +125,19 @@
             {% include "components/post_copy.html" %}
         </header>
 
+        {# Link/bookmark pages keep their own permalink and explicitly credit the destination. #}
+        {% if not post.private %}
+        {% if post.template == "link" or post.template == "bookmark" or post.template == "stars" or post.template == "til" %}
+        {% set link_source_url = post.link | default:post.url | external_url %}
+        {% if link_source_url %}
+        <aside class="post-link-source" aria-label="Original source">
+            <span class="post-link-source__label">Source:</span>
+            <a class="post-link-source__link u-bookmark-of" href="{{ link_source_url }}" target="_blank" rel="noopener noreferrer">{{ link_source_url | domain }} ↗</a>
+        </aside>
+        {% endif %}
+        {% endif %}
+        {% endif %}
+
         {% include "components/editorial_history.html" %}
 
         <div class="post-content e-content{% if post.css_class %} {{ post.css_class }}{% endif %}">

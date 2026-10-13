@@ -24,6 +24,7 @@ const (
 	nilString             = "<nil>"
 	templateTypePost      = "post"
 	templateTypeLink      = "link"
+	templateTypeBookmark  = "bookmark"
 	templateTypeNote      = "note"
 	templateTypeInline    = "inline"
 	templateTypeDefault   = "default"
@@ -511,7 +512,7 @@ func cardTypeForPost(post map[string]interface{}) string {
 		return templateTypePhoto
 	case templateTypeVideo, "clip", "cast", "stream":
 		return templateTypeVideo
-	case templateTypeLink, "bookmark", "til", "stars":
+	case templateTypeLink, templateTypeBookmark, "til", "stars":
 		return templateTypeLink
 	case templateTypeQuote, "quotation":
 		return templateTypeQuote
