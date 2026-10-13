@@ -16,7 +16,7 @@ func linkPostDestination(post *models.Post) string {
 		return ""
 	}
 	switch strings.ToLower(strings.TrimSpace(post.Template)) {
-	case "link", "bookmark", "stars", "til":
+	case templateTypeLink, templateTypeBookmark, "stars", "til":
 	default:
 		return ""
 	}
@@ -31,7 +31,7 @@ func linkPostDestination(post *models.Post) string {
 			continue
 		}
 		parsed, err := url.Parse(destination)
-		if err != nil || (parsed.Scheme != "https" && parsed.Scheme != "http") || parsed.Host == "" || parsed.User != nil {
+		if err != nil || (parsed.Scheme != schemeHTTPS && parsed.Scheme != schemeHTTP) || parsed.Host == "" || parsed.User != nil {
 			continue
 		}
 		return destination
@@ -76,7 +76,7 @@ func (p *EmbedsPlugin) embedLinkPostDestination(post *models.Post, content strin
 	}
 	resolvedURL, sourceURL := resolveHackerNewsReference(destination)
 	parsed, err := url.Parse(resolvedURL)
-	if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Host == "" {
+	if err != nil || (parsed.Scheme != schemeHTTP && parsed.Scheme != schemeHTTPS) || parsed.Host == "" {
 		return content
 	}
 	metadata := p.fetchExternalMetadata(destination)

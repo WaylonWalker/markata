@@ -746,7 +746,7 @@ func filterExternalURL(in, _ *pongo2.Value) (*pongo2.Value, *pongo2.Error) {
 		return pongo2.AsValue(""), nil
 	}
 	u, err := url.Parse(raw)
-	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" || u.User != nil {
+	if err != nil || (u.Scheme != "http" && u.Scheme != editorialHTTPS) || u.Host == "" || u.User != nil {
 		return pongo2.AsValue(""), nil
 	}
 	return pongo2.AsValue(raw), nil
