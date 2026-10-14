@@ -78,6 +78,60 @@
   }
 
   /**
+   * Lite YouTube's heavyweight assets are page-scoped. The normal inline
+   * loader does not execute when View Transitions swap the page wrapper, so
+   * inspect the newly swapped wrapper and load missing assets here as well.
+   * Asset URLs travel with the wrapper to preserve site-specific CDN overrides.
+   */
+  function ensureLiteYouTubeAssets() {
+    if (!document.querySelector('lite-youtube')) return;
+    var page = document.getElementById('view-transition-page');
+    if (!page) return;
+
+    var cssURL = page.getAttribute('data-markata-lite-youtube-css');
+    var jsURL = page.getAttribute('data-markata-lite-youtube-js');
+    if (!cssURL || !jsURL) return;
+
+    function absoluteURL(value) {
+      try {
+        return new URL(value, document.baseURI).href;
+      } catch (_) {
+        return '';
+      }
+    }
+
+    cssURL = absoluteURL(cssURL);
+    jsURL = absoluteURL(jsURL);
+    if (!cssURL || !jsURL) return;
+
+    var styles = document.querySelectorAll('link[rel="stylesheet"]');
+    var hasStyle = Array.prototype.some.call(styles, function (link) {
+      return link.href === cssURL;
+    });
+    if (!hasStyle) {
+      var style = document.createElement('link');
+      style.rel = 'stylesheet';
+      style.href = cssURL;
+      style.onerror = function () { style.remove(); };
+      document.head.appendChild(style);
+    }
+
+    // Custom element registrations persist across document transitions, even
+    // if the script node itself was removed during an earlier body swap.
+    if (window.customElements && window.customElements.get('lite-youtube')) return;
+    var scripts = document.querySelectorAll('script[src]');
+    var hasScript = Array.prototype.some.call(scripts, function (script) {
+      return script.src === jsURL;
+    });
+    if (!hasScript) {
+      var loader = document.createElement('script');
+      loader.src = jsURL;
+      loader.onerror = function () { loader.remove(); };
+      document.body.appendChild(loader);
+    }
+  }
+
+  /**
    * Scan the current DOM and inject any missing conditional CSS.
    */
   function loadConditionalCSS() {
@@ -96,6 +150,8 @@
         injectJS(scriptName);
       }
     }
+
+    ensureLiteYouTubeAssets();
 
     // Handle decryption.js for encrypted content
     if (document.querySelector('.encrypted-content, [data-encrypted]')) {
