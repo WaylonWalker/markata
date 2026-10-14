@@ -317,7 +317,11 @@ func checkMetadataTypes(filePath string, inspection FrontmatterInspection, docum
 		field := strings.ToLower(key.Value)
 		expected, ok := frontmatterFieldType(field)
 		if ok && !frontmatterFieldHasType(field, value) {
-			issues = append(issues, invalidTypeIssue(filePath, inspection, key, field, expected))
+			issue := invalidTypeIssue(filePath, inspection, key, field, expected)
+			if field == "tags" && value.Kind == yaml.ScalarNode && value.Tag == yamlStringTag {
+				issue.Message = `frontmatter field "tags" uses scalar shorthand; use a list of strings`
+			}
+			issues = append(issues, issue)
 		}
 	}
 	return issues
