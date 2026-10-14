@@ -83,11 +83,11 @@
           {% endif %}
 
           {% if entry.image_url %}
-          <a href="{{ entry.url }}" target="_blank" rel="noopener noreferrer" class="reader-entry-image-link reader-entry-image-link--{{ entry.preview_kind }}">
+          <a href="{{ entry.url }}" target="_blank" rel="noopener noreferrer" aria-label="Read {{ entry.title }} (opens in new tab)" class="reader-entry-image-link reader-entry-image-link--{{ entry.preview_kind }}">
             <img src="{{ entry.image_url }}" alt="" class="reader-entry-image reader-entry-image--{{ entry.preview_kind }}" width="960" height="540" loading="lazy">
           </a>
           {% else %}
-          <a href="{{ entry.url }}" target="_blank" rel="noopener noreferrer" class="reader-entry-image-link reader-entry-image-link--source-tile">
+          <a href="{{ entry.url }}" target="_blank" rel="noopener noreferrer" aria-label="Read {{ entry.title }} (opens in new tab)" class="reader-entry-image-link reader-entry-image-link--source-tile">
             <span class="reader-entry-source-tile" aria-hidden="true">
               <span class="reader-entry-source-tile-top">
                 {% if entry.source_icon_url %}

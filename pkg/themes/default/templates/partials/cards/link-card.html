@@ -11,12 +11,11 @@
 
       <div class="card-link-content">
       <a href="{{ post.href }}" class="card-title p-name u-url">{{ post.title | default:post.slug }}</a>
-      {% if post.link %}
-      <a href="{{ post.link }}" class="card-domain" rel="noopener noreferrer" target="_blank" aria-label="{{ post.link | domain }}">{{ post.link | domain }}</a>
-      <data class="u-bookmark-of" value="{{ post.link }}" hidden></data>
-      {% elif post.url %}
-      <a href="{{ post.url }}" class="card-domain" rel="noopener noreferrer" target="_blank" aria-label="{{ post.url | domain }}">{{ post.url | domain }}</a>
-      <data class="u-bookmark-of" value="{{ post.url }}" hidden></data>
+      {% set link_source_url = post.link | external_url %}
+        {% if not link_source_url %}{% set link_source_url = post.url | external_url %}{% endif %}
+      {% if link_source_url %}
+      <a href="{{ link_source_url }}" class="card-domain" rel="noopener noreferrer" target="_blank" aria-label="Visit {{ link_source_url | domain }}">{{ link_source_url | domain }} ↗</a>
+      <data class="u-bookmark-of" value="{{ link_source_url }}" hidden></data>
       {% endif %}
     </div>
   </div>

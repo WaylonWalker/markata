@@ -14,6 +14,13 @@ import (
 )
 
 const shortsChunkSize = 128
+const shortsIndexFile = "index.json"
+
+const (
+	shortsPlaceholderWidth = 72
+	shortsPreviewWidth     = 240
+	shortsMainImageWidth   = 1280
+)
 
 // validateShortsRoutes makes an opt-in peer route a safe, unique output path.
 // It is called before any feed publisher workers start writing.
@@ -82,7 +89,7 @@ func cleanupDisabledShorts(outputDir, route, feedSlug string) error {
 		return nil // A legacy disabled setting must not delete arbitrary files.
 	}
 	dir := filepath.Join(outputDir, strings.Trim(route, "/"))
-	marker := filepath.Join(dir, "data", "index.json")
+	marker := filepath.Join(dir, "data", shortsIndexFile)
 	raw, err := os.ReadFile(marker)
 	if err != nil {
 		return nil
@@ -127,6 +134,31 @@ func safeShortsMediaURL(raw string) string {
 	return raw
 }
 
+// shortsSizedImageURL applies Dropper sizing only to absolute trusted media
+// URLs. Relative site assets and untrusted external images keep their original
+// URL instead of receiving query parameters that the host may ignore.
+func shortsCanResizeImageURL(raw string) bool {
+	parsed, err := url.Parse(raw)
+	return err == nil && parsed.Host != "" && (parsed.Scheme == "http" || parsed.Scheme == "https") && templates.IsTrustedMediaURL(raw)
+}
+
+func shortsSizedImageURL(raw string, width int) string {
+	if !shortsCanResizeImageURL(raw) {
+		return raw
+	}
+	parsed, err := url.Parse(raw)
+	if err != nil {
+		return raw
+	}
+	query := parsed.Query()
+	// Dropper accepts both short and long aliases. Remove stale aliases before
+	// writing w so an earlier width value cannot conflict with the new size.
+	query.Del("width")
+	query.Del("height")
+	parsed.RawQuery = query.Encode()
+	return templates.WithSize(parsed.String(), width, 0)
+}
+
 func shortsPostItem(post *models.Post) map[string]interface{} {
 	extra := post.Extra
 	if extra == nil {
@@ -149,11 +181,24 @@ func shortsPostItem(post *models.Post) map[string]interface{} {
 			poster = image
 		}
 	}
-	thumb := templates.WithSize(media, 640, 0)
-	src := templates.WithSize(media, 1280, 0)
+	thumb := ""
+	placeholder := ""
+	src := media
+	if kind == embedOptionImage && shortsCanResizeImageURL(media) {
+		thumb = shortsSizedImageURL(media, shortsPreviewWidth)
+		placeholder = shortsSizedImageURL(media, shortsPlaceholderWidth)
+		src = shortsSizedImageURL(media, shortsMainImageWidth)
+	}
 	if kind == templateTypeVideo {
 		src = media
-		thumb = templates.WithSize(poster, 640, 0)
+		if poster != "" {
+			thumb = shortsSizedImageURL(poster, shortsPreviewWidth)
+			placeholder = shortsSizedImageURL(poster, shortsPlaceholderWidth)
+		}
+	}
+	posterSized := ""
+	if poster != "" {
+		posterSized = shortsSizedImageURL(poster, 720)
 	}
 	href := post.Href
 	if href == "" {
@@ -176,8 +221,9 @@ func shortsPostItem(post *models.Post) map[string]interface{} {
 		"kind":        kind,
 		"src":         src,
 		"thumb":       thumb,
-		"poster":     templates.WithSize(poster, 720, 0),
-		"mime":       templates.VideoMIMEType(media),
+		"placeholder": placeholder,
+		"poster":      posterSized,
+		"mime":        templates.VideoMIMEType(media),
 	}
 }
 
@@ -241,7 +287,7 @@ func (p *PublishFeedsPlugin) writeShortsManifest(feed *models.FeedConfig, dataDi
 	}
 	chunkCount := (len(entries) + shortsChunkSize - 1) / shortsChunkSize
 	for _, entry := range names {
-		if entry.IsDir() || entry.Name() == "index.json" || !strings.HasSuffix(entry.Name(), ".json") {
+		if entry.IsDir() || entry.Name() == shortsIndexFile || !strings.HasSuffix(entry.Name(), ".json") {
 			continue
 		}
 		var number int
@@ -262,10 +308,25 @@ func (p *PublishFeedsPlugin) writeShortsManifest(feed *models.FeedConfig, dataDi
 	if err != nil {
 		return err
 	}
-	if err := p.safeWriteFile(filepath.Join(dataDir, "index.json"), append(index, '\n')); err != nil {
-		return err
+	return p.safeWriteFile(filepath.Join(dataDir, shortsIndexFile), append(index, '\n'))
+}
+
+func firstPublicShortsPost(posts []*models.Post) (first *models.Post, item map[string]interface{}) {
+	for _, post := range posts {
+		if post == nil || post.Private || !post.Published || post.Skip || post.Draft {
+			continue
+		}
+		return post, shortsPostItem(post)
 	}
-	return nil
+	return nil, nil
+}
+
+func shortsText(value interface{}) string {
+	text, ok := value.(string)
+	if ok {
+		return text
+	}
+	return ""
 }
 
 func (p *PublishFeedsPlugin) writeShortsHTML(feed *models.FeedConfig, cfg *lifecycle.Config, dir string) error {
@@ -301,6 +362,27 @@ func (p *PublishFeedsPlugin) writeShortsHTML(feed *models.FeedConfig, cfg *lifec
 	ctx := templates.NewFeedContext(&shellFeed, page, modelsConfig)
 	ctx.Set("shorts_manifest_url", route+"data/index.json")
 	ctx.Set("feed_robots", feed.Robots)
+	// Expose only the first published, public image-sized thumbnail. The HTML
+	// parser can discover it before Shorts JavaScript or JSON manifests arrive.
+	// Keep the selection identical to writeShortsManifest, which filters private,
+	// draft, skipped and unpublished posts before enumerating IDs.
+	if post, first := firstPublicShortsPost(feed.Posts); post != nil {
+		if preview, ok := first["placeholder"].(string); ok && preview != "" {
+			ctx.Set("shorts_first_frame_src", preview)
+			ctx.Set("shorts_first_frame_id", post.Slug)
+			ctx.Set("shorts_first_frame_kind", first["kind"])
+			alt := shortsText(first["alt"])
+			if alt == "" {
+				alt = shortsText(first["title"])
+			}
+			ctx.Set("shorts_first_frame_alt", alt)
+			// Only expose an early sharp URL for a public still image. Video
+			// bodies must never start downloading from the HTML shell.
+			if first["kind"] == embedOptionImage {
+				ctx.Set("shorts_first_frame_sharp_src", first["src"])
+			}
+		}
+	}
 	rendered, err := engine.Render("feed-shorts.html", ctx)
 	if err != nil {
 		return err

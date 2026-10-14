@@ -2258,3 +2258,34 @@ a.wikilink.wikilink-missing:focus-visible {
 }
 
 }
+
+@layer components {
+/* Keep the writer prominent while making editorial credits compact. */
+.post-byline__authors .post-byline__photo { width: 44px; height: 44px; }
+.post-byline__authors .post-byline__name { color: var(--color-text); font-weight: 600; }
+.post-byline__editors { font-size: var(--text-sm); max-width: 100%; }
+.post-byline__editors .post-byline__photo { width: 28px; height: 28px; }
+.post-byline__editor-group summary { display: flex; align-items: center; gap: var(--space-2); cursor: pointer; }
+.post-byline__editor-group summary:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 3px; }
+.post-byline__editor-stack { display: flex; padding-inline-end: var(--space-1); }
+.post-byline__editor-stack img, .post-byline__editor-initial {
+  width: 28px; height: 28px; border-radius: 50%; object-fit: cover;
+  border: 2px solid var(--color-background); background: var(--color-surface);
+}
+.post-byline__editor-stack > * + * { margin-inline-start: -10px; }
+.post-byline__editor-initial { display: grid; place-items: center; }
+.post-byline__editor-count { color: var(--color-text-muted); }
+.post-byline__editor-list { display: grid; gap: var(--space-2); padding-block-start: var(--space-3); }
+.post-byline__editor-list .post-byline__name { white-space: normal; overflow-wrap: anywhere; }
+.post-byline__history {
+  border: 0 !important; border-radius: 0 !important; padding: 0 !important;
+  background: transparent !important; color: var(--color-text-muted);
+  font: inherit; font-size: 0.75rem !important; font-weight: 400 !important; line-height: 1.2; cursor: pointer;
+  text-decoration: underline; text-decoration-color: var(--color-border);
+  text-underline-offset: 3px;
+}
+.post-byline__history:hover, .post-byline__history:focus-visible { color: var(--color-text); text-decoration-color: var(--color-primary); }
+.post-byline__history span { color: inherit; }
+.post-byline__history[hidden] { display: none; }
+
+}

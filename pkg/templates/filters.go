@@ -149,6 +149,7 @@ func registerFilters() {
 		pongo2.RegisterFilter("urlencode", filterURLEncode)
 		pongo2.RegisterFilter("absolute_url", filterAbsoluteURL)
 		pongo2.RegisterFilter("domain", filterDomain)
+		pongo2.RegisterFilter("external_url", filterExternalURL)
 
 		// Theme/asset filters (per THEMES.md spec)
 		pongo2.RegisterFilter("theme_asset", filterThemeAsset)
@@ -629,7 +630,9 @@ func filterPlaintext(in, _ *pongo2.Value) (*pongo2.Value, *pongo2.Error) {
 }
 
 var (
+	// Drop rendered heading self-links while leaving normal link text intact.
 	summaryDropBlockRe  = regexp.MustCompile(`(?is)<(pre|code|script|style|figure|table|svg)\b[^>]*>.*?</\s*(pre|code|script|style|figure|table|svg)\s*>`)
+	summaryDropAnchorRe = regexp.MustCompile(`(?is)<a\b[^>]*\bclass\s*=\s*(?:"(?:[^"]*\s)?heading-anchor(?:\s[^"]*)?"|'(?:[^']*\s)?heading-anchor(?:\s[^']*)?')[^>]*>.*?</a\s*>`)
 	summaryWhitespaceRe = regexp.MustCompile(`\s+`)
 	summaryPunctGapRe   = regexp.MustCompile(` +([.,;:!?)\]])`)
 )
@@ -654,6 +657,7 @@ func filterSummary(in, param *pongo2.Value) (*pongo2.Value, *pongo2.Error) {
 	}
 
 	s = summaryDropBlockRe.ReplaceAllString(s, " ")
+	s = summaryDropAnchorRe.ReplaceAllString(s, " ")
 	s = htmlTagRe.ReplaceAllString(s, " ")
 	s = html.UnescapeString(s)
 	s = strings.TrimSpace(summaryWhitespaceRe.ReplaceAllString(s, " "))
@@ -735,6 +739,20 @@ func filterDomain(in, _ *pongo2.Value) (*pongo2.Value, *pongo2.Error) {
 		return in, nil
 	}
 	return pongo2.AsValue(u.Hostname()), nil
+}
+
+// filterExternalURL returns only absolute HTTP(S) URLs suitable for hrefs.
+// HTML escaping does not prevent unsafe schemes such as javascript:.
+func filterExternalURL(in, _ *pongo2.Value) (*pongo2.Value, *pongo2.Error) {
+	raw := strings.TrimSpace(in.String())
+	if raw == "" || strings.ContainsAny(raw, "\r\n\t<>") {
+		return pongo2.AsValue(""), nil
+	}
+	u, err := url.Parse(raw)
+	if err != nil || (u.Scheme != "http" && u.Scheme != editorialHTTPS) || u.Host == "" || u.User != nil {
+		return pongo2.AsValue(""), nil
+	}
+	return pongo2.AsValue(raw), nil
 }
 
 // filterThemeAsset returns a URL path for theme static assets.

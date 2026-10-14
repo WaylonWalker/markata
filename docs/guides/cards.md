@@ -56,6 +56,31 @@ Both `template` and `templateKey` work in markata-go frontmatter.
 | `contact` | `contact`, `character`, `person` | Person/character profile cards |
 | `default` | (any other value) | Fallback for unmapped types |
 
+## Linked posts and source previews
+
+A `link`, `bookmark`, `stars`, or `til` post with a `link` or `url`
+frontmatter destination preserves its local permalink and shows a visible
+**Source** link on the post page. Feed cards also link to the external domain.
+
+```yaml
+---
+title: "Worth watching"
+template: link
+link: "https://www.youtube.com/watch?v=R_uf5OfMGio"
+published: true
+---
+
+My thoughts on the video.
+```
+
+The destination is automatically embedded before your commentary through
+the normal external embed system. YouTube uses the site's Lite YouTube
+renderer; other URLs use cached oEmbed/Open Graph previews and fall back to
+a clickable source card when metadata is unavailable. No new Markdown is
+required. Explicit `![embed](url)` or `![[url]]` in the body is not
+duplicated. Leave the `link`/`url` field unset if the post is not sharing
+an external destination.
+
 ## Card Anatomy
 
 Each card type has different visual elements:

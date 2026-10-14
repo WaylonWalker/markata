@@ -1,21 +1,102 @@
-{% extends "base.html" %}
-{% block title %}{{ feed.title | default:"Shorts" }} — Shorts{% endblock %}
-{% block description %}{{ feed.description | default:"Full-screen photos and videos" }}{% endblock %}
-{% block body_class %}shorts-body{% endblock %}
-{% block page_wrapper_class %} page-wrapper--feed-only{% endblock %}
-{% block head %}
-{{ block.Super() }}
-{% if feed_robots %}<meta name="robots" content="{{ feed_robots }}">{% endif %}
-<link rel="stylesheet" href="{{ 'css/feed-shorts.css' | theme_asset_hashed }}">
-<script defer src="{{ 'js/feed-shorts.js' | theme_asset_hashed }}"></script>
-{% endblock %}
-{% block header %}{% endblock %}
-{% block footer %}{% endblock %}
-{% block content %}
+<!doctype html>
+<html lang="{{ config.lang | default:'en' }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>{{ feed.title | default:"Shorts" }} — Shorts</title>
+  <meta name="description" content="{{ feed.description | default:"Full-screen photos and videos" }}">
+  {% if feed_robots %}<meta name="robots" content="{{ feed_robots }}">{% endif %}
+  {# Tiny critical layout keeps the initial preview visible while the CSS file loads. #}
+  <style>
+    html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#090909;color:#fff;font-family:system-ui,sans-serif}
+    .shorts-viewer{position:fixed;inset:0;overflow:hidden;background:#090909}
+    .shorts-slides{position:absolute;inset:0;pointer-events:none}
+    .shorts-first-frame{position:absolute;inset:0;z-index:2;display:grid;place-items:center;background:#111}
+    .shorts-first-frame img{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:contain}
+    .shorts-first-frame .shorts-image-placeholder{filter:blur(10px);opacity:1}
+    .shorts-first-frame .shorts-image--full{filter:none;opacity:0}
+    .shorts-first-frame.shorts-media-wrap--sharp .shorts-image-placeholder{opacity:0}
+    .shorts-first-frame.shorts-media-wrap--sharp .shorts-image--full{opacity:1}
+    .shorts-image-loading{position:absolute;z-index:2;left:50%;bottom:max(170px,20%);transform:translateX(-50%);display:inline-flex;align-items:center;gap:9px;padding:9px 14px;border:1px solid #fff3;border-radius:999px;background:#101015d9;color:#fff;font:500 12px/1.3 system-ui,sans-serif;white-space:nowrap;pointer-events:none;transition:opacity .18s ease}
+    .shorts-image-loading__spinner{width:14px;height:14px;border:2px solid #fff5;border-top-color:#fff;border-radius:50%;animation:shorts-loading-spin .8s linear infinite}
+    @keyframes shorts-loading-spin{to{transform:rotate(360deg)}}
+    .shorts-media-wrap--sharp .shorts-image-loading,.shorts-media-wrap--failed .shorts-image-loading{opacity:0}
+    @media(prefers-reduced-motion:reduce){.shorts-image-loading{transition:none}.shorts-image-loading__spinner{animation:none}}
+    .shorts-top,.shorts-hud{position:absolute;z-index:3}
+    .shorts-top{top:0;left:0;right:0}
+    .shorts-hud{bottom:0;left:0;right:0}
+    .shorts-navigation-actions{position:absolute;z-index:4;top:50%;right:max(16px,env(safe-area-inset-right));transform:translateY(-50%);display:flex;flex-direction:column;gap:10px}
+    .shorts-playback-actions{position:absolute;z-index:4;right:max(16px,env(safe-area-inset-right));bottom:max(90px,calc(env(safe-area-inset-bottom) + 90px));display:flex;flex-direction:column;gap:10px}
+  </style>
+  <link rel="stylesheet" href="{{ 'css/feed-shorts.css' | theme_asset_hashed }}">
+  <script defer src="{{ 'js/feed-shorts.js' | theme_asset_hashed }}"></script>
+</head>
+<body class="shorts-body">
 <section class="shorts-viewer" id="shorts-viewer" data-manifest="{{ shorts_manifest_url }}" aria-label="Shorts media viewer">
-  <div id="shorts-slides" class="shorts-slides" aria-hidden="true"></div>
+  <div id="shorts-slides" class="shorts-slides">
+    {% if shorts_first_frame_src %}
+    <div class="shorts-first-frame" id="shorts-first-frame" data-id="{{ shorts_first_frame_id }}">
+      <img class="shorts-first-frame-image shorts-image-placeholder" data-src="{{ shorts_first_frame_src }}" alt="" aria-hidden="true" loading="eager" decoding="async" fetchpriority="high">
+      {% if shorts_first_frame_sharp_src %}
+      <img class="shorts-first-frame-sharp shorts-media shorts-image--full" data-src="{{ shorts_first_frame_sharp_src }}" alt="{{ shorts_first_frame_alt }}" decoding="async" fetchpriority="high">
+      <div class="shorts-image-loading" aria-hidden="true"><span class="shorts-image-loading__spinner"></span><span>Loading full quality…</span></div>
+      {% endif %}
+    </div>
+    <script>
+      (function () {
+        var frame = document.getElementById('shorts-first-frame');
+        if (location.hash.startsWith('#id=')) {
+          frame.remove();
+          return;
+        }
+        var tiny = frame.querySelector('.shorts-first-frame-image');
+        tiny.src = tiny.dataset.src;
+        delete tiny.dataset.src;
+      })();
+    </script>
+    {% if shorts_first_frame_sharp_src %}
+    <script>
+      // Download the first sharp photograph immediately after the tiny
+      // placeholder arrives, rather than waiting for index + chunk JSON.
+      // Keep both images in this DOM node; moving them can repeat network
+      // requests when Chrome DevTools has Disable cache enabled.
+      (function () {
+        if (location.hash.startsWith('#id=')) return;
+        var frame = document.getElementById('shorts-first-frame');
+        var tiny = frame.querySelector('.shorts-first-frame-image');
+        var sharp = frame.querySelector('.shorts-first-frame-sharp');
+        var started = false;
+        function startSharp() {
+          if (started || !sharp || !sharp.dataset.src) return;
+          started = true;
+          sharp.src = sharp.dataset.src;
+          delete sharp.dataset.src;
+        }
+        function showSharp() {
+          var decode = sharp.decode ? sharp.decode() : Promise.resolve();
+          decode.catch(function () {}).then(function () {
+            if (sharp.isConnected) frame.classList.add('shorts-media-wrap--sharp');
+          });
+        }
+        sharp.addEventListener('load', showSharp, { once: true });
+        sharp.addEventListener('error', function () {
+          frame.classList.add('shorts-media-wrap--failed');
+          sharp.remove();
+        }, { once: true });
+        if (tiny.complete && tiny.naturalWidth) startSharp();
+        else {
+          tiny.addEventListener('load', startSharp, { once: true });
+          tiny.addEventListener('error', startSharp, { once: true });
+          setTimeout(startSharp, 900);
+        }
+      })();
+    </script>
+    {% endif %}
+    {% endif %}
+  </div>
   <header class="shorts-top">
-    <a href="{{ feed.base_url }}/" class="shorts-grid-link" aria-label="Return to photo grid">← Shots</a>
+    <a href="{{ feed.base_url }}/" class="shorts-grid-link" aria-label="← Shots — return to photo grid">← Shots</a>
     <span class="shorts-counter" id="shorts-counter" aria-live="polite">Shorts</span>
   </header>
   <div class="shorts-hud" id="shorts-hud">
@@ -25,13 +106,15 @@
       <button type="button" class="shorts-more" id="shorts-more" hidden aria-expanded="false">More</button>
       <a id="shorts-permalink" class="shorts-permalink" href="{{ feed.base_url }}/">View post ↗</a>
     </div>
-    <div class="shorts-actions" aria-label="Playback and navigation">
-      <button type="button" class="shorts-action" id="shorts-up" aria-label="Previous short" title="Previous (↑)">↑</button>
-      <button type="button" class="shorts-action" id="shorts-down" aria-label="Next short" title="Next (↓)">↓</button>
-      <button type="button" class="shorts-action" id="shorts-play" aria-label="Pause video" title="Pause or play" hidden>Ⅱ</button>
-      <button type="button" class="shorts-action" id="shorts-sound" aria-label="Unmute video" title="Mute or unmute" hidden>♪</button>
-    </div>
   </div>
+  <div class="shorts-playback-actions" role="group" aria-label="Video playback">
+    <button type="button" class="shorts-action" id="shorts-play" aria-label="Pause video" title="Play or pause (Space)" hidden>Ⅱ</button>
+    <button type="button" class="shorts-action" id="shorts-sound" aria-label="Unmute video" title="Mute or unmute (M)" hidden>♪</button>
+  </div>
+  <nav class="shorts-navigation-actions" aria-label="Shorts navigation">
+    <button type="button" class="shorts-action" id="shorts-up" aria-label="Previous short" title="Previous (↑ or K)">↑</button>
+    <button type="button" class="shorts-action" id="shorts-down" aria-label="Next short" title="Next (↓ or J)">↓</button>
+  </nav>
   <div class="shorts-end" id="shorts-end" hidden>
     <span>You've seen every shot.</span>
     <button type="button" id="shorts-restart">Back to first</button>
@@ -39,4 +122,5 @@
   <div class="shorts-message" id="shorts-message" role="status" aria-live="polite">Loading shorts…</div>
   <noscript><div class="shorts-noscript">JavaScript is required for this full-screen view. <a href="{{ feed.base_url }}/">Browse the photo grid</a>.</div></noscript>
 </section>
-{% endblock %}
+</body>
+</html>

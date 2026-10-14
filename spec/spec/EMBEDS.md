@@ -9,6 +9,21 @@ The embeds plugin processes two types of embed syntax:
 1. **Internal embeds** (`![[slug]]`) - Embed another post from the same site as a preview card
 2. **External embeds** (`![embed](url)`, `[!embed](url)`, or `![[https://url]]`) - Embed external URLs with rich metadata (oEmbed + Open Graph)
 
+## Automatic link-post destinations
+
+Posts with `template: link`, `bookmark`, `stars`, or `til` and a valid
+HTTP(S) `link` frontmatter field (or `url` alias) automatically render an
+external preview before the authored body. This applies even when the body
+is empty. When the body already contains an embed for that destination,
+or a standalone URL handled by the render-stage URL plugins, no additional
+preview is generated. The destination is included in the transform-cache
+key so editing frontmatter invalidates stale previews.
+
+The post page and feed link card must retain the site's own permalink,
+and expose a separate, visible, accessible link to the original destination
+with `u-bookmark-of` attribution. Do not fetch private destinations.
+A missing/invalid URL or unavailable metadata must not break the build.
+
 ## Syntax
 
 ### Internal Embeds

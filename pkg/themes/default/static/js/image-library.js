@@ -126,9 +126,26 @@
         if (isVisible) visible.push(card);
       });
 
-      visible.sort(compareCards).forEach(function (card) {
-        grid.appendChild(card);
+      visible.sort(compareCards);
+      // Moving each card independently makes the large library expensive to
+      // sort, and can restart image loads. Skip unchanged order and batch
+      // actual reordering into a single DOM insertion.
+      // Hidden cards still occupy grid.children positions. Compare only the
+      // visible DOM order or an unchanged filter would repeatedly detach and
+      // reinsert every matching image on each search/sort interaction.
+      var visibleInDOM = Array.prototype.filter.call(grid.children, function (card) {
+        return !card.hidden;
       });
+      var needsReorder = visible.some(function (card, index) {
+        return visibleInDOM[index] !== card;
+      });
+      if (needsReorder) {
+        var fragment = document.createDocumentFragment();
+        visible.forEach(function (card) {
+          fragment.appendChild(card);
+        });
+        grid.appendChild(fragment);
+      }
 
       if (count) {
         count.textContent = visible.length + " of " + cards.length + " media items";

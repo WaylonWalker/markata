@@ -61,7 +61,7 @@
       <div class="image-card__media" style="--image-ratio: {{ image.AspectRatio }}">
         <a href="{{ image.Src }}" aria-label="Open {{ image.Name }}">
           {% if image.IsVideo %}<video{% if image.PosterSrc %} poster="{{ image.PosterSrc }}"{% endif %}{% if image.Width %} width="{{ image.Width }}"{% endif %}{% if image.Height %} height="{{ image.Height }}"{% endif %} controls playsinline preload="none" aria-label="{{ image.Alt }}" data-video-src="{{ image.PreviewSrc }}"{% if image.MIMEType %} data-video-type="{{ image.MIMEType }}"{% endif %}>Your browser does not support the video tag.</video>
-          {% else %}<img src="{{ image.PreviewSrc }}"{% if image.Srcset %} srcset="{{ image.Srcset }}" sizes="(max-width: 700px) 50vw, (max-width: 1200px) 33vw, 280px"{% endif %} alt="{{ image.Alt }}"{% if image.Width %} width="{{ image.Width }}"{% endif %}{% if image.Height %} height="{{ image.Height }}"{% endif %} loading="lazy" decoding="async">
+          {% else %}<img src="{{ image.PreviewSrc }}"{% if image.Srcset %} srcset="{{ image.Srcset }}" sizes="(max-width: 700px) 50vw, (max-width: 1200px) 33vw, 280px"{% endif %} alt="{{ image.Alt }}"{% if image.Width %} width="{{ image.Width }}"{% endif %}{% if image.Height %} height="{{ image.Height }}"{% endif %} loading="{% if forloop.Counter <= 4 %}eager{% else %}lazy{% endif %}"{% if forloop.First %} fetchpriority="high"{% endif %} decoding="async">
           {% endif %}
         </a>
         <div class="image-card__badges">

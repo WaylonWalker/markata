@@ -163,6 +163,10 @@
 }
 
 .image-card {
+  /* Skip style/layout/paint for off-screen media cards. The approximate
+     intrinsic size preserves scroll geometry until a card is rendered. */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 30rem;
   background: var(--image-paper);
   border: 1px solid var(--image-line);
   border-radius: .8rem;

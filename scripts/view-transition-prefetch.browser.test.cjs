@@ -12,7 +12,7 @@ const playwright = require(process.env.PLAYWRIGHT_MODULE || path.join(
 ));
 const viewTransitions = fs.readFileSync(path.join(__dirname, '../pkg/themes/default/static/js/view-transitions.js'));
 
-const state = {versions: {b: 1, etag: 1, noval: 1, fail: 1}, failedRevalidation: false, requests: []};
+const state = {versions: {b: 1, etag: 1, noval: 1, fail: 1}, failedRevalidation: false, failedPrefetch: false, requests: []};
 function pageHTML(route) {
   const content = route === 'a'
     ? '<h1>A</h1><a id="to-b" href="/b/">B</a><a id="to-etag" href="/etag/">ETag</a><a id="to-noval" href="/noval/">No validators</a><a id="to-fail" href="/fail/">Failure</a><a id="hash" href="/a/#section">Hash</a><a id="external" href="https://example.invalid/" target="_blank">External</a><a id="download" href="/file.pdf" download>Download</a><a id="blank" href="/b/?case=blank" target="_blank">New tab</a><div id="section">Section</div>'
@@ -22,11 +22,24 @@ function pageHTML(route) {
 function startServer() {
   state.requests = [];
   state.failedRevalidation = false;
+  state.failedPrefetch = false;
   const server = http.createServer((req, res) => {
     const url = new URL(req.url, 'http://localhost');
     const requestRecord = {path: url.pathname, search: url.search, at: Date.now(), mode: req.headers['sec-fetch-mode'], ifNoneMatch: req.headers['if-none-match'], cacheControl: req.headers['cache-control']};
     state.requests.push(requestRecord);
     if (url.pathname === '/view.js') {res.setHeader('content-type', 'text/javascript'); return res.end(viewTransitions);}
+    if (url.pathname === '/prefetch-fail/') {
+      res.setHeader('content-type', 'text/html; charset=utf-8');
+      res.setHeader('cache-control', 'no-store');
+      if (req.headers['sec-fetch-mode'] === 'cors' && !state.failedPrefetch) {
+        state.failedPrefetch = true;
+        requestRecord.status = 503;
+        res.statusCode = 503;
+        return res.end('speculative request failed');
+      }
+      requestRecord.status = 200;
+      return res.end(pageHTML('b'));
+    }
     if (url.pathname === '/file.pdf') {res.setHeader('content-type', 'application/pdf');res.setHeader('content-disposition', 'attachment; filename="file.pdf"');return res.end('%PDF-1.4');}
     const match = url.pathname.match(/^\/(b|etag|noval|fail)\/$/);
     if (match) {
@@ -279,6 +292,38 @@ test('Firefox smoke: transition runtime loads and hash/special links remain brow
     await page.waitForSelector('#version');
     assert.match(await page.locator('#version').innerText(), /B v1/);
     assert.deepEqual(pageErrors, [], 'Firefox smoke has no uncaught script exceptions');
+  } finally {
+    await browser.close();
+    await new Promise(resolve => server.close(resolve));
+  }
+});
+
+test('failed hover prefetch does not emit unhandled rejections and click retries', {timeout: 30000}, async t => {
+  const server = startServer();
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  const browser = await playwright.chromium.launch({headless: true, executablePath: '/usr/bin/chromium', args: ['--no-sandbox']});
+  try {
+    const page = await browser.newPage();
+    const pageErrors = [];
+    page.on('pageerror', err => pageErrors.push(err.message));
+    const origin = `http://127.0.0.1:${server.address().port}`;
+    await page.goto(`${origin}/a/`);
+    await page.evaluate(() => {
+      const a = document.createElement('a');
+      a.id = 'to-prefetch-fail';
+      a.href = '/prefetch-fail/';
+      a.textContent = 'Fail then recover';
+      document.body.appendChild(a);
+    });
+    const response = page.waitForResponse(r => new URL(r.url()).pathname === '/prefetch-fail/');
+    await page.locator('#to-prefetch-fail').hover();
+    await response;
+    await page.waitForTimeout(150);
+    assert.deepEqual(pageErrors, [], 'speculative network failures must not reject unobserved promises');
+    await page.locator('#to-prefetch-fail').click();
+    await page.waitForFunction(() => location.pathname === '/prefetch-fail/' && !!document.querySelector('#version'));
+    assert.match(await page.locator('#version').innerText(), /B v1/);
+    assert.ok(state.requests.filter(x => x.path === '/prefetch-fail/').length >= 2, 'click must retry failed speculative request');
   } finally {
     await browser.close();
     await new Promise(resolve => server.close(resolve));

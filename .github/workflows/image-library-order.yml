@@ -1,0 +1,27 @@
+name: Image library ordering
+on:
+  pull_request:
+    paths:
+      - "pkg/themes/default/static/js/image-library.js"
+      - "scripts/image-library-order.test.cjs"
+      - ".github/workflows/image-library-order.yml"
+  push:
+    branches: [main]
+    paths:
+      - "pkg/themes/default/static/js/image-library.js"
+      - "scripts/image-library-order.test.cjs"
+      - ".github/workflows/image-library-order.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  order-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: node --test scripts/image-library-order.test.cjs

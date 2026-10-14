@@ -1,0 +1,55 @@
+{% if post.editorial_history_view %}
+<dialog class="editorial-history" id="editorial-history-dialog" aria-labelledby="editorial-history-title" data-pagefind-ignore>
+    <div class="editorial-history__header">
+        <h2 id="editorial-history-title">Editorial history</h2>
+        <button type="button" data-editorial-close aria-label="Close editorial history">Close</button>
+    </div>
+    <ol class="editorial-history__events" data-editorial-events>
+        {% for event in post.editorial_history_view %}
+        <li class="editorial-history__event">
+            <div class="editorial-history__credit"><strong>{{ event.name }}</strong><span>{{ event.role }}</span><span>{{ event.action|capfirst }}</span></div>
+            {% if event.summary %}<p>{{ event.summary }}</p>{% endif %}
+            <div class="editorial-history__revision">
+                {% if event.recorded_at %}<time datetime="{{ event.recorded_at }}">{% if event.recorded_date %}{{ event.recorded_date|human_date }}{% else %}{{ event.recorded_at }}{% endif %}</time>{% endif %}
+                <code title="{{ event.commit }}">{{ event.short_commit }}</code>
+            </div>
+            {% if event.recorded_by and event.recorded_by != event.author %}<p class="editorial-history__importer">Attribution recorded by {{ event.recorded_by }}.</p>{% endif %}
+            <div class="editorial-history__actions">
+                {% if event.file_url %}<a class="no-avatar" href="{{ event.file_url }}" rel="noopener noreferrer">File at this revision</a>{% endif %}
+                {% if event.diff_url %}<a class="no-avatar" href="{{ event.diff_url }}" rel="noopener noreferrer">Open diff in GitHub</a>{% endif %}
+            </div>
+            {% if event.before_url and event.after_url %}
+            <div class="editorial-history__comparison" data-editorial-comparison data-before="{{ event.before_url }}" data-after="{{ event.after_url }}" data-viewer="{{ 'js/editorial-diff.js'|theme_asset_hashed }}">
+                <button type="button" data-editorial-show>Show changes here</button>
+                <p data-editorial-status role="status" aria-live="polite"></p>
+                <div data-editorial-result></div>
+            </div>
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ol>
+    {% if post.editorial_history_view|length > 1 %}
+    <nav class="editorial-history__navigation" aria-label="Editorial history revisions">
+        <button type="button" data-editorial-previous disabled>Previous</button>
+        <span data-editorial-position aria-live="polite">1 of {{ post.editorial_history_view|length }}</span>
+        <button type="button" data-editorial-next>Next</button>
+    </nav>
+    {% endif %}
+</dialog>
+{# Keep a native fallback visible until JS successfully initializes the dialog. #}
+<details class="editorial-history__fallback" data-editorial-fallback data-pagefind-ignore>
+    <summary>Editorial history ({{ post.editorial_history_view|length }})</summary>
+    <ol>
+    {% for event in post.editorial_history_view %}
+        <li>
+            <strong>{{ event.name }}</strong> — {{ event.role }} ({{ event.action }})
+            {% if event.recorded_at %}<time datetime="{{ event.recorded_at }}">{{ event.recorded_at }}</time>{% endif %}
+            {% if event.summary %}<p>{{ event.summary }}</p>{% endif %}
+            {% if event.recorded_by and event.recorded_by != event.author %}<p>Attribution recorded by {{ event.recorded_by }}.</p>{% endif %}
+            {% if event.file_url %}<a href="{{ event.file_url }}" rel="noopener noreferrer">File at this revision</a>{% endif %}
+            {% if event.diff_url %}<a href="{{ event.diff_url }}" rel="noopener noreferrer">Open diff in GitHub</a>{% endif %}
+        </li>
+    {% endfor %}
+    </ol>
+</details>
+{% endif %}

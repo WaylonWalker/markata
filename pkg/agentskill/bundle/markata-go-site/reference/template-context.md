@@ -261,3 +261,12 @@ Use `{{ body | safe }}` for already-rendered HTML body content.
 Use plain `{{ post.title }}` or `{{ config.title }}` for text values.
 
 Use `post.Extra.<field>` when the site relies on custom frontmatter not covered by built-in fields.
+
+### Editorial attribution
+
+- `post.byline_authors`: resolved non-editor contributors in original order.
+- `post.byline_editors`: resolved editing/reviewing contributors in original order.
+- `post.additional_editor_count`: number of editors after the first.
+- `post.editorial_history_view`: newest-first normalized schema-v1 events;
+  validated GitHub file/diff links and optional before/after raw URLs for lazy
+  inline source comparisons. Original history remains in `post.Extra`.

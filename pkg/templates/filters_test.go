@@ -727,6 +727,34 @@ func TestFilterAbsoluteURL(t *testing.T) {
 	}
 }
 
+func TestFilterExternalURL(t *testing.T) {
+	engine, err := NewEngine("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		input string
+		want  string
+	}{
+		{"https://example.com/path", "https://example.com/path"},
+		{"http://example.com", "http://example.com"},
+		{"javascript:alert(1)", ""},
+		{"//example.com/path", ""},
+		{"https://user@example.com/path", ""},
+		{"https://example.com/\nother", ""},
+	} {
+		ctx := NewContext(nil, "", nil)
+		ctx.Set("source", tc.input)
+		got, err := engine.RenderString(`{{ source | external_url }}`, ctx)
+		if err != nil {
+			t.Fatalf("RenderString(%q): %v", tc.input, err)
+		}
+		if got != tc.want {
+			t.Errorf("external_url(%q) = %q, want %q", tc.input, got, tc.want)
+		}
+	}
+}
+
 func TestFilterExcerpt(t *testing.T) {
 	engine, err := NewEngine("")
 	if err != nil {
@@ -1030,5 +1058,122 @@ func TestFilterSummary(t *testing.T) {
 	}
 	if short.String() != "one two…" {
 		t.Errorf("truncation: got %q", short.String())
+	}
+}
+
+func TestFilterSummaryHeadingAnchors(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{
+			name:  "heading permalink does not leak hash",
+			input: `<h2>What happened <a href="#what-happened" class="heading-anchor">#</a></h2><p>is my replica pool</p>`,
+			want:  "What happened is my replica pool",
+		},
+		{
+			name:  "single quoted attributes and multiple classes",
+			input: `<h3>Intro <a class='visually-hidden heading-anchor' href='#intro'><span>#</span></a></h3><p>Body</p>`,
+			want:  "Intro Body",
+		},
+		{
+			name:  "several permalinks with other links preserved",
+			input: `<h2>First<a class="heading-anchor" href="#first">#</a></h2><p>See <a href="/more">more</a>.</p><h3>Second<a href="#second" class="heading-anchor">#</a></h3>`,
+			want:  "First See more. Second",
+		},
+		{
+			name:  "other anchors and literal hashes remain",
+			input: `<p><a class="not-heading-anchor" href="/x">#reference</a> and <a href="/tags">#tag</a></p>`,
+			want:  "#reference and #tag",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := filterSummary(pongo2.AsValue(tt.input), nil)
+			if err != nil {
+				t.Fatalf("filterSummary() error: %v", err)
+			}
+			if got.String() != tt.want {
+				t.Errorf("filterSummary() = %q, want %q", got.String(), tt.want)
+			}
+		})
+	}
+}
+
+func TestTemplateTrees_LinkPostsExposeSourceAttribution(t *testing.T) {
+	postTemplates := []string{
+		"../../templates/post.html",
+		"../../pkg/themes/default/templates/post.html",
+	}
+	cardTemplates := []string{
+		"../../templates/partials/cards/link-card.html",
+		"../../pkg/themes/default/templates/partials/cards/link-card.html",
+	}
+	for _, path := range append(postTemplates, cardTemplates...) {
+		t.Run(path, func(t *testing.T) {
+			b, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			template := string(b)
+			for _, expected := range []string{
+				"post.link | external_url",
+				"post.url | external_url",
+				"if not link_source_url",
+				"| external_url",
+				"u-bookmark-of",
+				`target="_blank"`,
+				"noopener noreferrer",
+			} {
+				if !strings.Contains(template, expected) {
+					t.Errorf("%s must contain %q", path, expected)
+				}
+			}
+		})
+	}
+	for _, path := range postTemplates {
+		b, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !strings.Contains(string(b), "{% if not post.private %}") {
+			t.Errorf("%s must not leak a private source URL", path)
+		}
+	}
+}
+
+func TestLinkSourceTemplateFallbackToValidURL(t *testing.T) {
+	engine, err := NewEngine("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	const sourceTemplate = `{% set link_source_url = post.link | external_url %}{% if not link_source_url %}{% set link_source_url = post.url | external_url %}{% endif %}{{ link_source_url }}`
+	for _, tc := range []struct {
+		name string
+		link string
+		url  string
+		want string
+	}{
+		{"valid primary", "https://example.com/first", "https://example.com/second", "https://example.com/first"},
+		{"invalid primary", "javascript:alert(1)", "https://example.com/fallback", "https://example.com/fallback"},
+		{"missing primary", "", "https://example.com/fallback", "https://example.com/fallback"},
+		{"both unsafe", "javascript:alert(1)", "data:text/html,bad", ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			post := &models.Post{Extra: map[string]interface{}{
+				"link": tc.link,
+				"url":  tc.url,
+			}}
+			ctx := NewContext(post, "", nil)
+			got, err := engine.RenderString(sourceTemplate, ctx)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got != tc.want {
+				t.Fatalf("source = %q, want %q", got, tc.want)
+			}
+		})
 	}
 }

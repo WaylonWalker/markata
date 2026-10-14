@@ -14,6 +14,7 @@
   min-height: calc(100vh - 200px);
   max-width: var(--site-width, 1400px);
   margin: 0 auto;
+  align-self: center;
   padding: var(--space-6, 1.5rem) var(--space-8, 2rem) 0;
   width: 100%;
   gap: var(--space-8, 2rem);

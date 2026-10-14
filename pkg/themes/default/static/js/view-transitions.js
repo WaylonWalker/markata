@@ -569,8 +569,16 @@
       prefetchedDocuments.delete(url);
 
       if (getNow() - prefetched.prefetchedAt <= PREFETCH_FRESHNESS_MS) {
-        metrics.prefetched = true;
-        return prefetched.promise;
+        // Failed speculative requests are cache misses, not navigation failures.
+        const document = await prefetched.promise;
+        if (document) {
+          metrics.prefetched = true;
+          return document;
+        }
+        return fetchDocument(url, {
+          metrics: metrics,
+          fetchOptions: { cache: 'no-cache' },
+        });
       }
 
       // Abort any old in-flight speculative request and ask the HTTP cache to
@@ -1281,7 +1289,9 @@
         console.warn('[view-transitions] prefetch failed', url, error);
       }
 
-      throw error;
+      // A hover is not a navigation: never leave an unobserved rejection.
+      // Clicking this link will retry through the ordinary navigation path.
+      return null;
     });
 
     prefetchedDocuments.set(url, prefetched);

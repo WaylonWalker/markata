@@ -214,3 +214,14 @@ authors:
     details: wrote this guest post
 ---
 ```
+
+## Editorial credits and revision history
+
+The default byline keeps writers prominent and groups editing/reviewing roles
+below them. The first editor is displayed by name; additional editors are
+stacked behind a disclosure with all contributor names and roles.
+
+Use [Editorial history](../editorial-history/) to show recorded reviews,
+GitHub file diffs, and lazily loaded inline source changes. Humans and agents
+can use the [editorial authoring commands](../editorial-authoring/) to commit
+selected edits and record their attribution automatically.
