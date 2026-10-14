@@ -12,7 +12,6 @@ import (
 	"strings"
 
 	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/models"
 )
 
 const (
