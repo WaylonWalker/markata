@@ -345,7 +345,12 @@ func TestShortsRouteLedgerKeepsRepurposedHTML(t *testing.T) {
 		t.Fatal(err)
 	}
 	page := filepath.Join(output, "shorts", "index.html")
-	if err := os.WriteFile(page, []byte("new authored post"), 0o644); err != nil {
+	if err := os.WriteFile(page, []byte("new authored post"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	// Another publisher may own files beside the old Shorts manifest.
+	otherFile := filepath.Join(output, "shorts", "data", "other.json")
+	if err := os.WriteFile(otherFile, []byte("new publisher data"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	owner := &models.Post{Slug: "shorts", Published: true}
@@ -356,7 +361,11 @@ func TestShortsRouteLedgerKeepsRepurposedHTML(t *testing.T) {
 	if err != nil || string(data) != "new authored post" {
 		t.Fatalf("new publisher's HTML was removed: %v", err)
 	}
-	if _, err := os.Stat(filepath.Join(output, "shorts", "data")); !os.IsNotExist(err) {
-		t.Fatalf("old Shorts data survived route reuse: %v", err)
+	if _, err := os.Stat(filepath.Join(output, "shorts", "data", "index.json")); !os.IsNotExist(err) {
+		t.Fatalf("old Shorts manifest survived route reuse: %v", err)
+	}
+	data, err = os.ReadFile(otherFile)
+	if err != nil || string(data) != "new publisher data" {
+		t.Fatalf("replacement publisher data was lost: %v", err)
 	}
 }
