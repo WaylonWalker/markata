@@ -128,7 +128,8 @@
         {# Link/bookmark pages keep their own permalink and explicitly credit the destination. #}
         {% if not post.private %}
         {% if post.template == "link" or post.template == "bookmark" or post.template == "stars" or post.template == "til" %}
-        {% set link_source_url = post.link | default:post.url | external_url %}
+        {% set link_source_url = post.link | external_url %}
+        {% if not link_source_url %}{% set link_source_url = post.url | external_url %}{% endif %}
         {% if link_source_url %}
         <aside class="post-link-source" aria-label="Original source">
             <span class="post-link-source__label">Source:</span>
