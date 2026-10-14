@@ -1,6 +1,7 @@
 package plugins
 
 import (
+	"fmt"
 	"html"
 	"net/http"
 	"net/http/httptest"
@@ -216,6 +217,83 @@ func TestBuildInternalEmbedCard_DifferentialCorpus(t *testing.T) {
 				t.Fatalf("refactor changed output:\n got:\n%s\nwant:\n%s", got, want)
 			}
 		})
+	}
+}
+
+// Internal embed processing reads other posts' Extra maps from parallel workers.
+// Marking the Lite YouTube asset flag during that phase causes a map read/write race.
+func TestEmbedsPlugin_LiteYouTubeParallelInternalEmbedReads(t *testing.T) {
+	manager := lifecycle.NewManager()
+	var links strings.Builder
+	for i := 0; i < 20; i++ {
+		fmt.Fprintf(&links, "![[video-%d]] ", i)
+	}
+	var posts []*models.Post
+	// Interleave readers with target videos to ensure parallel workers can
+	// read a video's metadata while another worker transforms that video.
+	for i := 0; i < 20; i++ {
+		videoSlug := fmt.Sprintf("video-%d", i)
+		readerSlug := fmt.Sprintf("reader-%d", i)
+		posts = append(posts,
+			&models.Post{
+				Path:    videoSlug + ".md",
+				Slug:    videoSlug,
+				Content: `<lite-youtube videoid="dQw4w9WgXcQ"></lite-youtube>`,
+				Extra:   map[string]interface{}{"image": "/cover.jpg"},
+			},
+			&models.Post{
+				Path:    readerSlug + ".md",
+				Slug:    readerSlug,
+				Content: strings.Repeat(links.String(), 4),
+			},
+		)
+	}
+	manager.SetPosts(posts)
+	if err := NewEmbedsPlugin().Transform(manager); err != nil {
+		t.Fatal(err)
+	}
+	for _, post := range posts {
+		enabled := post.Extra != nil && post.Extra["needs_lite_youtube"] == true
+		if strings.HasPrefix(post.Slug, "video-") && !enabled {
+			t.Errorf("%s must request Lite YouTube assets", post.Slug)
+		}
+		if strings.HasPrefix(post.Slug, "reader-") && enabled {
+			t.Errorf("%s must not request Lite YouTube assets", post.Slug)
+		}
+	}
+}
+
+// Test that the site-wide Lite YouTube capability never causes unrelated
+// posts to inherit its per-page asset requirement.
+func TestEmbedsPlugin_LiteYouTubeAssetsPerPost(t *testing.T) {
+	plugin := NewEmbedsPlugin()
+	manager := lifecycle.NewManager()
+	posts := []*models.Post{
+		{Path: "video.md", Slug: "video", Content: `Watch <lite-youtube videoid="dQw4w9WgXcQ"></lite-youtube>`},
+		{Path: "text.md", Slug: "text", Content: "A plain article."},
+		{Path: "code.md", Slug: "code", Content: "```html\n<lite-youtube></lite-youtube>\n```"},
+	}
+	manager.SetPosts(posts)
+	if err := plugin.Transform(manager); err != nil {
+		t.Fatal(err)
+	}
+	if posts[0].Extra["needs_lite_youtube"] != true {
+		t.Fatal("video post should require Lite YouTube assets")
+	}
+	for _, post := range posts[1:] {
+		if post.Extra != nil && post.Extra["needs_lite_youtube"] == true {
+			t.Errorf("%s should not load Lite YouTube assets", post.Slug)
+		}
+	}
+	if manager.Config().Extra["lite_youtube_enabled"] != true {
+		t.Fatal("site-wide capability must remain available")
+	}
+
+	// Reusing the same post after removing an embed must clear stale flags.
+	posts[0].Content = "Removed video."
+	markLiteYouTubeNeed(posts[0])
+	if _, ok := posts[0].Extra["needs_lite_youtube"]; ok {
+		t.Fatal("stale per-page flag retained after embed was removed")
 	}
 }
 
