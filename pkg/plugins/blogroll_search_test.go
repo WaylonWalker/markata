@@ -80,7 +80,8 @@ func TestBlogrollReaderSearchBackendAssets(t *testing.T) {
 			}
 
 			bleveAssignment := "window.__markataSearchEndpoint = window.__markataSearchEndpoint || '"
-			if tt.wantEndpoint != "" {
+			switch {
+			case tt.wantEndpoint != "":
 				if !strings.Contains(html, bleveAssignment+tt.wantEndpoint+"';") {
 					t.Errorf("reader did not initialize configured Bleve endpoint %q", tt.wantEndpoint)
 				}
@@ -90,7 +91,7 @@ func TestBlogrollReaderSearchBackendAssets(t *testing.T) {
 				if strings.Contains(html, "pagefind-ui.css") || strings.Contains(html, "pagefind-ui.js") {
 					t.Error("Bleve reader still renders Pagefind asset requests")
 				}
-			} else if tt.wantPagefindDir != "" {
+			case tt.wantPagefindDir != "":
 				if strings.Contains(html, bleveAssignment) {
 					t.Error("Pagefind reader unexpectedly sets the Bleve endpoint")
 				}
@@ -100,10 +101,12 @@ func TestBlogrollReaderSearchBackendAssets(t *testing.T) {
 				if !strings.Contains(html, "pagefind-ui.css") || !strings.Contains(html, "pagefind-ui.js") {
 					t.Error("Pagefind reader omitted lazy CSS/JS asset loader")
 				}
-			} else if strings.Contains(html, bleveAssignment) ||
+			default:
+				if strings.Contains(html, bleveAssignment) ||
 				strings.Contains(html, "pagefind-ui.css") ||
 				strings.Contains(html, "pagefind-ui.js") {
-				t.Error("disabled search still renders a search loader")
+					t.Error("disabled search still renders a search loader")
+				}
 			}
 		})
 	}
