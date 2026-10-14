@@ -1755,18 +1755,18 @@ func TestParsedFeedFormatFalseAcrossFormats(t *testing.T) {
 		parse func([]byte) (*models.Config, error)
 	}{
 		{
-			name: "toml",
-			data: "[markata-go]\n[[markata-go.feeds]]\nslug = \"draft\"\n[markata-go.feeds.formats]\nsitemap = false\n",
+			name:  "toml",
+			data:  "[markata-go]\n[[markata-go.feeds]]\nslug = \"draft\"\n[markata-go.feeds.formats]\nsitemap = false\n",
 			parse: ParseTOML,
 		},
 		{
-			name: "yaml",
-			data: "markata-go:\n  feeds:\n    - slug: draft\n      formats:\n        sitemap: false\n",
+			name:  "yaml",
+			data:  "markata-go:\n  feeds:\n    - slug: draft\n      formats:\n        sitemap: false\n",
 			parse: ParseYAML,
 		},
 		{
-			name: "json",
-			data: `{"markata-go":{"feeds":[{"slug":"draft","formats":{"sitemap":false}}]}}`,
+			name:  "json",
+			data:  `{"markata-go":{"feeds":[{"slug":"draft","formats":{"sitemap":false}}]}}`,
 			parse: ParseJSON,
 		},
 	}
