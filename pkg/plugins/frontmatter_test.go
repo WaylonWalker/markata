@@ -38,6 +38,44 @@ Content here`
 	}
 }
 
+func TestParseFrontmatter_ScalarTags(t *testing.T) {
+	tests := []struct {
+		name string
+		raw  string
+		want []string
+	}{
+		{name: "single tag", raw: "tags: go", want: []string{"go"}},
+		{name: "quoted string containing comma", raw: "tags: 'go, rust'", want: []string{"go, rust"}},
+		{name: "empty tag", raw: "tags: ''", want: nil},
+		{name: "invalid numeric tag", raw: "tags: 42", want: nil},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			content := "---\n" + tt.raw + "\n---\nBody"
+			metadata, body, err := ParseFrontmatter(content)
+			if err != nil {
+				t.Fatalf("ParseFrontmatter: %v", err)
+			}
+			if body != "Body" {
+				t.Errorf("body = %q, want Body", body)
+			}
+			if got := GetStringSlice(metadata, "tags"); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("tags = %v, want %v", got, tt.want)
+			}
+			withRaw, _, raw, err := ParseFrontmatterWithRaw(content)
+			if err != nil {
+				t.Fatalf("ParseFrontmatterWithRaw: %v", err)
+			}
+			if raw != tt.raw {
+				t.Errorf("raw = %q, want %q", raw, tt.raw)
+			}
+			if got := GetStringSlice(withRaw, "tags"); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("tags with raw = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestParseFrontmatter_TagsList(t *testing.T) {
 	// Test case: "frontmatter with tags list"
 	content := `---
@@ -462,8 +500,20 @@ func TestFrontmatter_GetStringSlice(t *testing.T) {
 			expected: nil,
 		},
 		{
-			name:     "wrong type",
+			name:     "scalar shorthand",
 			metadata: map[string]interface{}{"tags": "not-a-slice"},
+			key:      "tags",
+			expected: []string{"not-a-slice"},
+		},
+		{
+			name:     "empty scalar",
+			metadata: map[string]interface{}{"tags": ""},
+			key:      "tags",
+			expected: nil,
+		},
+		{
+			name:     "wrong type",
+			metadata: map[string]interface{}{"tags": 42},
 			key:      "tags",
 			expected: nil,
 		},

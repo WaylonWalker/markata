@@ -319,6 +319,8 @@ Or inline format:
 tags: [go, concurrency, tutorial]
 ```
 
+For compatibility with older content, `tags: go` is also accepted as a single tag. Diagnostics still warns about scalar shorthand and recommends a list, which is the canonical form.
+
 - **Type:** list of strings
 - **Default:** `[]` (empty list)
 - **Used for:** Filtering, tag pages, SEO, organization
