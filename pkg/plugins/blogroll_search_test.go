@@ -103,8 +103,8 @@ func TestBlogrollReaderSearchBackendAssets(t *testing.T) {
 				}
 			default:
 				if strings.Contains(html, bleveAssignment) ||
-				strings.Contains(html, "pagefind-ui.css") ||
-				strings.Contains(html, "pagefind-ui.js") {
+					strings.Contains(html, "pagefind-ui.css") ||
+					strings.Contains(html, "pagefind-ui.js") {
 					t.Error("disabled search still renders a search loader")
 				}
 			}
