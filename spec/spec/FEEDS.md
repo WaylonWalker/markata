@@ -1286,11 +1286,21 @@ viewport breakpoints that squeeze six months into an article-width column.
 Each month SHOULD have at least 17rem of width when space allows, with a single
 column on narrow screens and readable day targets. An annual header MUST identify
 the selected year and its post count. Existing day hover/focus/click previews
-and the full-history list fallback MUST remain available.
+and the regular feed list fallback MUST remain available.
 
-This pagination bounds active calendar rendering cost. The full-history source
-payload remains available for the no-JavaScript fallback and year navigation;
-this change does not promise smaller HTML transfers.
+For primary/list feeds and calendar-enabled photo grids, calendar metadata MUST
+be published as a compact JSON sidecar and fetched only when the calendar view
+is opened. Those HTML views MUST NOT embed a duplicate full-history calendar
+list. A dedicated calendar-first feed MAY use its visible dated list as the
+calendar input and no-JavaScript fallback. Without JavaScript, the regular
+paginated feed list remains available.
+
+Feed sidebar navigation on a paginated feed MUST render only the current page's
+posts. Older and newer posts remain reachable through the feed's pagination
+controls; the sidebar MUST NOT duplicate links for every post in the feed.
+
+These rules bound initial HTML and DOM size while retaining full post cards,
+calendar years, and ordinary feed navigation.
 
 Calendar month panels and year selector options use theme surface/text colors. Dedicated calendar feeds may use the page wrapper width; containers at least 73.25rem wide show four month columns in three rows. Smaller containers retain responsive readable columns.
 

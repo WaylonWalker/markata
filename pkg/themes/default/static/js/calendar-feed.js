@@ -395,7 +395,7 @@
         if (!nodes.includes(child)) nodes.push(child);
       }
     }
-    if (nodes.length === 0) nodes.push(sourceList);
+    if (nodes.length === 0 && sourceList) nodes.push(sourceList);
     return nodes;
   }
 
@@ -403,41 +403,89 @@
     const sourceList = root.querySelector('[data-calendar-list]');
     const calendar = root.querySelector('[data-calendar-years]');
     const switcher = root.querySelector('[data-calendar-switch]');
-    if (!sourceList || !calendar || !switcher) return;
+    const calendarSource = root.getAttribute('data-calendar-src') || '';
+    const errorMessage = root.querySelector('[data-calendar-error]');
+    if ((!sourceList && !calendarSource) || !calendar || !switcher) return;
 
-    const datedPosts = [];
-    for (const item of sourceList.querySelectorAll('[data-calendar-post]')) {
-      const date = item.getAttribute('data-date') || '';
-      const link = item.querySelector('a[href]');
-      if (!parseDate(date) || !link) continue;
-      datedPosts.push({
-        date,
-        href: link.href,
-        title: link.textContent.trim() || link.href,
-        description: item.getAttribute('data-description') || '',
-        image: item.getAttribute('data-image') || ''
-      });
-    }
+    let datedPosts = null;
+    let postsPromise = null;
+    const loadDatedPosts = async () => {
+      if (datedPosts) return datedPosts;
 
-    if (datedPosts.length === 0) return;
+      if (sourceList) {
+        datedPosts = [];
+        for (const item of sourceList.querySelectorAll('[data-calendar-post]')) {
+          const date = item.getAttribute('data-date') || '';
+          const link = item.querySelector('a[href]');
+          if (!parseDate(date) || !link) continue;
+          datedPosts.push({
+            date,
+            href: link.href,
+            title: link.textContent.trim() || link.href,
+            description: item.getAttribute('data-description') || '',
+            image: item.getAttribute('data-image') || ''
+          });
+        }
+        return datedPosts;
+      }
+
+      if (!postsPromise) {
+        postsPromise = fetch(calendarSource, { headers: { Accept: 'application/json' } })
+          .then((response) => {
+            if (!response.ok) throw new Error(`Calendar request failed (${response.status})`);
+            return response.json();
+          })
+          .then((payload) => {
+            const items = Array.isArray(payload) ? payload : payload.items;
+            if (!Array.isArray(items)) throw new Error('Calendar response has no items');
+            return items.filter((item) => parseDate(item.date) && item.href).map((item) => ({
+              date: item.date,
+              href: new URL(item.href, window.location.href).href,
+              title: item.title || item.href,
+              description: item.description || '',
+              image: item.image || ''
+            }));
+          });
+      }
+
+      try {
+        datedPosts = await postsPromise;
+        return datedPosts;
+      } catch (error) {
+        postsPromise = null;
+        throw error;
+      }
+    };
 
     let calendarRendered = false;
-    const ensureCalendar = () => {
+    let calendarPromise = null;
+    const ensureCalendar = async () => {
       if (calendarRendered) return true;
-      calendarRendered = renderCalendar(root, calendar, datedPosts);
-      return calendarRendered;
+      if (!calendarPromise) {
+        calendarPromise = loadDatedPosts().then((posts) => renderCalendar(root, calendar, posts));
+      }
+      try {
+        calendarRendered = await calendarPromise;
+        if (errorMessage) errorMessage.hidden = true;
+        return calendarRendered;
+      } catch (error) {
+        calendarPromise = null;
+        if (errorMessage) errorMessage.hidden = false;
+        return false;
+      }
     };
 
     const defaultMode = root.getAttribute('data-calendar-default') === 'calendar' ? 'calendar' : 'list';
     const primaryNodes = primaryNodesFor(root, sourceList);
     const sourceIsPrimary = primaryNodes.includes(sourceList);
     const buttons = Array.from(switcher.querySelectorAll('[data-calendar-mode]'));
-    const setMode = (mode, persistURL = true) => {
+    const setMode = async (mode, persistURL = true) => {
       const calendarMode = mode === 'calendar';
-      if (calendarMode && !ensureCalendar()) return;
+      if (calendarMode && !await ensureCalendar()) return;
       calendar.hidden = !calendarMode;
       for (const node of primaryNodes) node.hidden = calendarMode;
-      if (!sourceIsPrimary) sourceList.hidden = true;
+      if (!sourceIsPrimary && sourceList) sourceList.hidden = true;
+      if (!calendarMode && errorMessage) errorMessage.hidden = true;
 
       for (const button of buttons) {
         button.setAttribute('aria-pressed', button.getAttribute('data-calendar-mode') === mode ? 'true' : 'false');
@@ -446,15 +494,17 @@
       if (persistURL && root.hasAttribute('data-calendar-url-state')) updateURLMode(mode, defaultMode);
     };
 
-    for (const button of buttons) button.addEventListener('click', () => setMode(button.getAttribute('data-calendar-mode')));
+    for (const button of buttons) button.addEventListener('click', () => {
+      void setMode(button.getAttribute('data-calendar-mode'));
+    });
 
     const initialMode = root.hasAttribute('data-calendar-url-state') ? calendarModeFromURL(defaultMode) : defaultMode;
 
     switcher.hidden = false;
-    setMode(initialMode, false);
+    void setMode(initialMode, false);
     window.addEventListener('popstate', () => {
       const mode = calendarModeFromURL(defaultMode);
-      setMode(mode, false);
+      void setMode(mode, false);
     });
   }
 

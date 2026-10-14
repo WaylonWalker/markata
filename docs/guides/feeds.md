@@ -314,6 +314,10 @@ reverse = true
 
 Feeds support three pagination strategies for different use cases.
 
+The feed sidebar lists posts on the current page. Use the feed pagination
+controls to reach older and newer pages; the sidebar does not repeat every
+post in a long feed.
+
 ### Pagination Configuration
 
 ```toml
@@ -1583,10 +1587,12 @@ columns in narrow containers. The selected year shows its post count and number
 of publishing days. Day previews still open on hover, focus, or activation.
 
 Calendar grids are built only when Calendar is opened, and only twelve months
-are built at once. The full-history source list remains in the HTML for fallback
-and navigation. Annual pagination reduces active rendering work; it does not
-split the transferred HTML by year. Ordinary feed pagination does not truncate
-the years available in Calendar.
+are built at once. On regular feeds, compact full-history metadata comes from a
+JSON sidecar fetched only when Calendar is opened. The initial feed HTML keeps
+the current page's posts without duplicating every calendar entry. With
+JavaScript disabled, the ordinary paginated feed list remains available.
+Dedicated calendar-first feeds keep their visible dated list as a fallback.
+Ordinary feed pagination does not truncate the years available in Calendar.
 
 For a calendar-first feed, set `templates.html = "calendar-feed.html"` on the
 feed. The same annual navigation applies, using `?year=2024` on its URL.

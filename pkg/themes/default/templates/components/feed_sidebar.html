@@ -93,22 +93,12 @@
         </div>{# /feed-nav-chrome #}
 
         <div id="feed-nav-collapsible">
-        {# Priority: sidebar_posts (injected for post pages) > feed.posts (feed pages) > posts (generic) #}
+        {# Priority: sidebar_posts (post pages) > posts (current feed page) #}
         {% if sidebar_posts %}
         <ul class="feed-nav-list" id="feed-nav-list">
             {% for p in sidebar_posts %}
             <li class="feed-nav-item{% if post.slug == p.slug %} feed-nav-item--active{% endif %}" data-sidebar-transition-path="{{ p.href }}">
                 <a href="{{ p.href }}{{ sidebar_feed_query | default:'' }}" class="feed-nav-link" data-sidebar-transition-title{% if post.slug == p.slug %} aria-current="page"{% endif %}>
-                    {{ p.title | default:p.slug }}
-                </a>
-            </li>
-            {% endfor %}
-        </ul>
-        {% elif feed.posts %}
-        <ul class="feed-nav-list" id="feed-nav-list">
-            {% for p in feed.posts %}
-            <li class="feed-nav-item{% if post.slug == p.slug %} feed-nav-item--active{% endif %}" data-sidebar-transition-path="{{ p.href }}">
-                <a href="{{ p.href }}" class="feed-nav-link" data-sidebar-transition-title{% if post.slug == p.slug %} aria-current="page"{% endif %}>
                     {{ p.title | default:p.slug }}
                 </a>
             </li>

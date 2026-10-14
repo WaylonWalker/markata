@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"html"
@@ -665,6 +666,9 @@ func (p *PublishFeedsPlugin) expectedFeedOutputPaths(fc *models.FeedConfig, outp
 	if fc.Formats.Sitemap {
 		add(filepath.Join(feedDir, "sitemap.xml"))
 	}
+	if fc.Formats.HTML && fc.HasView(models.FeedViewCalendar) {
+		add(filepath.Join(feedDir, "calendar.json"))
+	}
 
 	archiveDir := feedArchiveDir(feedDir)
 	if fc.Formats.RSS && shouldGenerateFeedArchive(fc, syndication) {
@@ -739,6 +743,7 @@ func (p *PublishFeedsPlugin) publishFeed(fc *models.FeedConfig, config *lifecycl
 	// Define all format publishers with their configurations
 	publishers := []feedFormatPublisher{
 		{name: "HTML", enabled: fc.Formats.HTML, publish: func() error { return p.publishHTMLPages(htmlFC, config, modelsConfig, feedDir, renderCtx) }},
+		{name: "Calendar data", enabled: fc.Formats.HTML && fc.HasView(models.FeedViewCalendar), publish: func() error { return p.publishCalendarJSON(htmlFC, feedDir) }},
 		{name: "SimpleHTML", enabled: simpleHTMLViewEnabled(fc), publish: func() error { return p.publishSimpleHTMLPages(htmlFC, config, modelsConfig, feedDir, renderCtx) }},
 		{name: "Shorts", enabled: fc.HasView(models.FeedViewShorts), publish: func() error { return p.publishShortsPages(fc, config, outputDir) }},
 		{name: "RSS", enabled: fc.Formats.RSS, publish: func() error { return p.publishRSS(syndicationFC, config, feedDir, false) }},
@@ -787,6 +792,11 @@ func cleanupDisabledFeedViewOutputs(fc *models.FeedConfig, outputDir, feedDir st
 	if !simpleHTMLViewEnabled(fc) {
 		if err := os.RemoveAll(filepath.Join(feedDir, "simple")); err != nil {
 			return fmt.Errorf("removing disabled simple feed output: %w", err)
+		}
+	}
+	if !fc.Formats.HTML || !fc.HasView(models.FeedViewCalendar) {
+		if err := os.Remove(filepath.Join(feedDir, "calendar.json")); err != nil && !os.IsNotExist(err) {
+			return fmt.Errorf("removing disabled calendar data: %w", err)
 		}
 	}
 	return nil
@@ -1429,6 +1439,77 @@ func (p *PublishFeedsPlugin) publishJSON(fc *models.FeedConfig, config *lifecycl
 
 	jsonPath := filepath.Join(feedDir, "feed.json")
 	return p.writeFile(jsonPath, []byte(jsonFeed))
+}
+
+type calendarFeedItem struct {
+	Date        string `json:"date"`
+	Href        string `json:"href"`
+	Title       string `json:"title"`
+	Description string `json:"description,omitempty"`
+	Image       string `json:"image,omitempty"`
+}
+
+// publishCalendarJSON writes only the metadata needed to build a feed calendar.
+// Keeping it out of the HTML avoids one hidden DOM row per post on initial load.
+func (p *PublishFeedsPlugin) publishCalendarJSON(fc *models.FeedConfig, feedDir string) error {
+	items := make([]calendarFeedItem, 0, len(fc.Posts))
+	for _, post := range fc.Posts {
+		if post == nil || post.Date == nil || post.Href == "" {
+			continue
+		}
+		title := post.PlainTitle()
+		if title == "" {
+			title = post.Slug
+		}
+		item := calendarFeedItem{
+			Date:  post.Date.Format("2006-01-02"),
+			Href:  post.Href,
+			Title: title,
+			Image: calendarImageForPost(post),
+		}
+		if post.Description != nil {
+			item.Description = *post.Description
+		}
+		items = append(items, item)
+	}
+
+	data, err := json.Marshal(items)
+	if err != nil {
+		return fmt.Errorf("encoding calendar metadata: %w", err)
+	}
+	return p.writeFile(filepath.Join(feedDir, "calendar.json"), data)
+}
+
+func calendarImageForPost(post *models.Post) string {
+	if post == nil {
+		return ""
+	}
+	media := postExtraString(post, "image")
+	if media == "" {
+		media = postExtraString(post, "cover")
+	}
+	if media == "" {
+		media = postExtraString(post, "video")
+	}
+	if templates.IsVideoURL(media) {
+		media = templates.PosterURLFromMap(templates.GetPostMap(post), media)
+	}
+	return media
+}
+
+func postExtraString(post *models.Post, key string) string {
+	if post == nil || post.Extra == nil {
+		return ""
+	}
+	switch value := post.Extra[key].(type) {
+	case string:
+		return strings.TrimSpace(value)
+	case *string:
+		if value != nil {
+			return strings.TrimSpace(*value)
+		}
+	}
+	return ""
 }
 
 func (p *PublishFeedsPlugin) syndicationFeedConfig(fc *models.FeedConfig, config *lifecycle.Config, archive bool) *models.FeedConfig {

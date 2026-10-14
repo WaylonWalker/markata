@@ -8,7 +8,7 @@ import (
 	"github.com/WaylonWalker/markata-go/pkg/models"
 )
 
-func TestDefaultFeedExposesCalendarPeerViewWithFullHistory(t *testing.T) {
+func TestDefaultFeedDefersCalendarHistoryToJSON(t *testing.T) {
 	engine, err := NewEngineWithTheme("", "default")
 	if err != nil {
 		t.Fatalf("NewEngineWithTheme() error = %v", err)
@@ -59,13 +59,11 @@ func TestDefaultFeedExposesCalendarPeerViewWithFullHistory(t *testing.T) {
 	for _, want := range []string{
 		`data-calendar-feed`,
 		`data-calendar-url-state`,
+		`data-calendar-src="/blog/calendar.json"`,
 		`data-calendar-primary`,
 		`data-calendar-mode="list"`,
 		`data-calendar-mode="calendar"`,
-		`data-date="2024-02-29"`,
-		`data-description="A compact summary for the calendar hover preview."`,
-		`data-image=`,
-		`/images/old.webp`,
+		`data-calendar-error`,
 		"css/calendar-feed",
 		"js/calendar-feed",
 	} {
@@ -74,8 +72,10 @@ func TestDefaultFeedExposesCalendarPeerViewWithFullHistory(t *testing.T) {
 		}
 	}
 
-	if got := strings.Count(html, oldTitle); got != 1 {
-		t.Fatalf("older post occurrences = %d, want exactly one hidden full-feed calendar source entry", got)
+	for _, excluded := range []string{oldTitle, oldDescription, "/images/old.webp", `data-calendar-post`} {
+		if strings.Contains(html, excluded) {
+			t.Fatalf("default feed embedded full-history calendar data %q", excluded)
+		}
 	}
 	if !strings.Contains(html, `href="/blog/simple/"`) || !strings.Contains(html, ">Simple</a>") {
 		t.Fatalf("default feed no longer exposes the Simple peer view")
@@ -131,5 +131,8 @@ func TestPhotoGridFeedExposesCalendarPeerView(t *testing.T) {
 	}
 	if !strings.Contains(html, `data-calendar-mode="calendar"`) || !strings.Contains(html, ">Grid</button>") {
 		t.Fatalf("photo-grid feed does not expose Grid and Calendar peer views")
+	}
+	if !strings.Contains(html, `data-calendar-src="/shots/calendar.json"`) || strings.Contains(html, `data-calendar-post`) {
+		t.Fatalf("photo-grid feed should defer full-history calendar metadata to JSON")
 	}
 }

@@ -51,8 +51,9 @@ func TestCalendarFeedPagesOneYearAtATimeAndDefersRendering(t *testing.T) {
 		"function calendarYearFromURL(years)",
 		"url.searchParams.set('year', String(year));",
 		"let calendarRendered = false;",
-		"const ensureCalendar = () => {",
-		"if (calendarMode && !ensureCalendar()) return;",
+		"const ensureCalendar = async () => {",
+		"fetch(calendarSource, { headers: { Accept: 'application/json' } })",
+		"if (calendarMode && !await ensureCalendar()) return;",
 	} {
 		if !strings.Contains(js, needle) {
 			t.Fatalf("calendar-feed.js missing year paging behavior %q", needle)
