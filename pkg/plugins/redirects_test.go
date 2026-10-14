@@ -738,7 +738,7 @@ func TestRedirectsPlugin_Write_TemplateChangeInvalidatesCache(t *testing.T) {
 func TestRedirectsPluginPreservesAuthoredHTMLAndNativeRules(t *testing.T) {
 	dir := t.TempDir()
 	file := filepath.Join(dir, "_redirects")
-	if err := os.WriteFile(file, []byte("/article /missing\n/legacy /new\n"), 0o644); err != nil {
+	if err := os.WriteFile(file, []byte("/article /missing\n/legacy /new\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	output := filepath.Join(dir, "output")
@@ -746,7 +746,7 @@ func TestRedirectsPluginPreservesAuthoredHTMLAndNativeRules(t *testing.T) {
 	if err := os.MkdirAll(filepath.Dir(page), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(page, []byte("published article"), 0o644); err != nil {
+	if err := os.WriteFile(page, []byte("published article"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	m := lifecycle.NewManager()
@@ -775,7 +775,7 @@ func TestRedirectsPluginPreservesAuthoredHTMLAndNativeRules(t *testing.T) {
 func TestRedirectsPluginProtectsPublishedRoutesBeforeHTMLExists(t *testing.T) {
 	dir := t.TempDir()
 	file := filepath.Join(dir, "_redirects")
-	if err := os.WriteFile(file, []byte("/published /missing\n/old /new\n"), 0o644); err != nil {
+	if err := os.WriteFile(file, []byte("/published /missing\n/old /new\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	m := lifecycle.NewManager()
@@ -806,7 +806,7 @@ func TestRedirectsPluginRefreshesItsOwnFallback(t *testing.T) {
 	p := NewRedirectsPlugin()
 	p.SetConfig(RedirectsConfig{RedirectsFile: file})
 	for _, dest := range []string{"/first", "/second"} {
-		if err := os.WriteFile(file, []byte("/old "+dest+"\n"), 0o644); err != nil {
+		if err := os.WriteFile(file, []byte("/old "+dest+"\n"), 0o600); err != nil {
 			t.Fatal(err)
 		}
 		if err := p.Write(m); err != nil {
