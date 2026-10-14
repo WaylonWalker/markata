@@ -296,9 +296,9 @@ func TestShortsRouteLedgerPrunesMovedAndRemovedFeeds(t *testing.T) {
 	cfg := lifecycle.NewConfig()
 	cfg.OutputDir = output
 	feed := models.FeedConfig{
-		Slug:      "shots",
+		Slug:       "shots",
 		ShortsPath: "/shorts/",
-		Views:     []string{models.FeedViewShorts},
+		Views:      []string{models.FeedViewShorts},
 	}
 	plugin := NewPublishFeedsPlugin()
 	if err := plugin.publishShortsPages(&feed, cfg, output); err != nil {
@@ -333,9 +333,9 @@ func TestShortsRouteLedgerKeepsRepurposedHTML(t *testing.T) {
 	cfg := lifecycle.NewConfig()
 	cfg.OutputDir = output
 	feed := models.FeedConfig{
-		Slug:      "shots",
+		Slug:       "shots",
 		ShortsPath: "/shorts/",
-		Views:     []string{models.FeedViewShorts},
+		Views:      []string{models.FeedViewShorts},
 	}
 	plugin := NewPublishFeedsPlugin()
 	if err := plugin.publishShortsPages(&feed, cfg, output); err != nil {
