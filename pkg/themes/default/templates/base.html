@@ -1082,49 +1082,6 @@
   </script>
 
     {% include "partials/background-scripts.html" %}
-    <script>
-      (() => {
-        // Keep <mark> in sync with the active palette's highlight tokens.
-        // Runs on load, palette/theme attribute changes, and content swaps;
-        // it only writes when values change so it never churns style.
-        let lastBackground = null;
-        let lastColor = null;
-        let markFrame = 0;
-        const applyMarkPresentation = (force) => {
-          markFrame = 0;
-          const root = getComputedStyle(document.documentElement);
-          const background = root.getPropertyValue('--color-highlight').trim();
-          const color = root.getPropertyValue('--color-highlight-text').trim();
-          const changed = background !== lastBackground || color !== lastColor;
-          if (!changed && force !== true) return;
-          lastBackground = background;
-          lastColor = color;
-          if (background) document.documentElement.style.setProperty('--heading-mark-bg', background, 'important');
-          if (color) document.documentElement.style.setProperty('--heading-mark-fg', color, 'important');
-          document.querySelectorAll('mark').forEach(mark => {
-            if (background) mark.style.setProperty('background-color', background, 'important');
-            if (color) mark.style.setProperty('color', color, 'important');
-          });
-        };
-        const scheduleMarkPresentation = (force) => {
-          if (markFrame) return;
-          markFrame = requestAnimationFrame(() => applyMarkPresentation(force));
-        };
-        applyMarkPresentation(true);
-        setTimeout(applyMarkPresentation, 100);
-        window.addEventListener('load', () => applyMarkPresentation());
-        new MutationObserver(() => scheduleMarkPresentation()).observe(document.documentElement, {
-          attributes: true,
-          attributeFilter: ['class', 'data-palette', 'data-theme', 'data-aesthetic', 'data-fontpack']
-        });
-        new MutationObserver(records => {
-          const addedMark = records.some(record => Array.from(record.addedNodes).some(node =>
-            node.nodeType === 1 && (node.nodeName === 'MARK' || node.querySelector('mark'))));
-          if (addedMark) scheduleMarkPresentation(true);
-        }).observe(document.body, { childList: true, subtree: true });
-        window.addEventListener('view-transition-complete', () => scheduleMarkPresentation(true));
-      })();
-    </script>
   {% endblock %}
 </body>
 </html>

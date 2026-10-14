@@ -114,6 +114,16 @@ func TestPaletteCSSPlugin_Write_GeneratesCSS(t *testing.T) {
 	if !strings.Contains(css, "--color-code-keyword") {
 		t.Error("expected syntax highlighting code variables in CSS")
 	}
+	// Heading contours must track palette switches AND author-defined highlight
+	// overrides without the old computed-style/inline-style updater.
+	for _, alias := range []string{
+		"--heading-mark-bg: var(--color-highlight);",
+		"--heading-mark-fg: var(--color-highlight-text);",
+	} {
+		if !strings.Contains(css, alias) {
+			t.Errorf("expected CSS-driven highlight alias %q", alias)
+		}
+	}
 }
 
 func TestPaletteCSSPlugin_Write_DefaultsToDarkWithoutSystemPreference(t *testing.T) {
