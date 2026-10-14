@@ -246,7 +246,6 @@ func (p *EmbedsPlugin) Transform(m *lifecycle.Manager) error {
 		content = p.processExternalEmbeds(content, post)
 		content = p.embedLinkPostDestination(post, content)
 		post.Content = content
-		markLiteYouTubeNeed(post)
 
 		// Record dependencies for incremental build cache
 		for _, dep := range dependencies {
@@ -261,6 +260,12 @@ func (p *EmbedsPlugin) Transform(m *lifecycle.Manager) error {
 	})
 	if processErr != nil {
 		return processErr
+	}
+
+	// Internal embeds read other posts' Extra maps during concurrent processing.
+	// Publish the per-page asset flags only after all embed workers finish.
+	for _, post := range needProcessing {
+		markLiteYouTubeNeed(post)
 	}
 
 	if !needsLiteYouTube {
