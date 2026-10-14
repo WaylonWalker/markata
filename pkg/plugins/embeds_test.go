@@ -224,36 +224,40 @@ func TestBuildInternalEmbedCard_DifferentialCorpus(t *testing.T) {
 // Marking the Lite YouTube asset flag during that phase causes a map read/write race.
 func TestEmbedsPlugin_LiteYouTubeParallelInternalEmbedReads(t *testing.T) {
 	manager := lifecycle.NewManager()
-	var posts []*models.Post
+	var links strings.Builder
 	for i := 0; i < 20; i++ {
-		slug := fmt.Sprintf("video-%d", i)
-		posts = append(posts, &models.Post{
-			Path:    slug + ".md",
-			Slug:    slug,
-			Content: `<lite-youtube videoid="dQw4w9WgXcQ"></lite-youtube>`,
-			Extra:   map[string]interface{}{"image": "/cover.jpg"},
-		})
+		fmt.Fprintf(&links, "![[video-%d]] ", i)
 	}
-	for i := 0; i < 32; i++ {
-		slug := fmt.Sprintf("reader-%d", i)
-		posts = append(posts, &models.Post{
-			Path:    slug + ".md",
-			Slug:    slug,
-			Content: strings.Repeat("![[video-0]] ![[video-1]] ![[video-2]] ", 8),
-		})
+	var posts []*models.Post
+	// Interleave readers with target videos to ensure parallel workers can
+	// read a video's metadata while another worker transforms that video.
+	for i := 0; i < 20; i++ {
+		videoSlug := fmt.Sprintf("video-%d", i)
+		readerSlug := fmt.Sprintf("reader-%d", i)
+		posts = append(posts,
+			&models.Post{
+				Path:    videoSlug + ".md",
+				Slug:    videoSlug,
+				Content: `<lite-youtube videoid="dQw4w9WgXcQ"></lite-youtube>`,
+				Extra:   map[string]interface{}{"image": "/cover.jpg"},
+			},
+			&models.Post{
+				Path:    readerSlug + ".md",
+				Slug:    readerSlug,
+				Content: strings.Repeat(links.String(), 4),
+			},
+		)
 	}
-
 	manager.SetPosts(posts)
 	if err := NewEmbedsPlugin().Transform(manager); err != nil {
 		t.Fatal(err)
 	}
-	for _, post := range posts[:20] {
-		if post.Extra["needs_lite_youtube"] != true {
+	for _, post := range posts {
+		enabled := post.Extra != nil && post.Extra["needs_lite_youtube"] == true
+		if strings.HasPrefix(post.Slug, "video-") && !enabled {
 			t.Errorf("%s must request Lite YouTube assets", post.Slug)
 		}
-	}
-	for _, post := range posts[20:] {
-		if post.Extra != nil && post.Extra["needs_lite_youtube"] == true {
+		if strings.HasPrefix(post.Slug, "reader-") && enabled {
 			t.Errorf("%s must not request Lite YouTube assets", post.Slug)
 		}
 	}
