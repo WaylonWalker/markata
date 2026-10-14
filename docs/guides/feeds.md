@@ -1587,10 +1587,11 @@ columns in narrow containers. The selected year shows its post count and number
 of publishing days. Day previews still open on hover, focus, or activation.
 
 Calendar grids are built only when Calendar is opened, and only twelve months
-are built at once. The compact full-history metadata is fetched from a JSON
-sidecar only when Calendar is opened, so the initial feed HTML contains the
-current page's posts without a duplicate list of every calendar entry. With
+are built at once. On regular feeds, compact full-history metadata comes from a
+JSON sidecar fetched only when Calendar is opened. The initial feed HTML keeps
+the current page's posts without duplicating every calendar entry. With
 JavaScript disabled, the ordinary paginated feed list remains available.
+Dedicated calendar-first feeds keep their visible dated list as a fallback.
 Ordinary feed pagination does not truncate the years available in Calendar.
 
 For a calendar-first feed, set `templates.html = "calendar-feed.html"` on the

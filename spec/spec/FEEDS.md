@@ -1288,10 +1288,12 @@ column on narrow screens and readable day targets. An annual header MUST identif
 the selected year and its post count. Existing day hover/focus/click previews
 and the regular feed list fallback MUST remain available.
 
-Calendar metadata MUST be published as a compact JSON sidecar and fetched only
-when the calendar view is opened. Primary/list feed HTML MUST NOT embed a
-duplicate full-history calendar list. Without JavaScript, the regular paginated
-feed list remains available.
+For primary/list feeds and calendar-enabled photo grids, calendar metadata MUST
+be published as a compact JSON sidecar and fetched only when the calendar view
+is opened. Those HTML views MUST NOT embed a duplicate full-history calendar
+list. A dedicated calendar-first feed MAY use its visible dated list as the
+calendar input and no-JavaScript fallback. Without JavaScript, the regular
+paginated feed list remains available.
 
 Feed sidebar navigation on a paginated feed MUST render only the current page's
 posts. Older and newer posts remain reachable through the feed's pagination
