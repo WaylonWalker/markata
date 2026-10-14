@@ -84,7 +84,7 @@ func TestBlogrollReaderSearchBackendAssets(t *testing.T) {
 				if !strings.Contains(html, bleveAssignment+tt.wantEndpoint+"';") {
 					t.Errorf("reader did not initialize configured Bleve endpoint %q", tt.wantEndpoint)
 				}
-				if !strings.Contains(html, "js/bleve-search.js") {
+				if !strings.Contains(html, "/js/bleve-search") {
 					t.Error("reader omitted Bleve client script")
 				}
 				if strings.Contains(html, "pagefind-ui.css") || strings.Contains(html, "pagefind-ui.js") {
