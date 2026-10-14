@@ -600,12 +600,6 @@ func stripBlogrollHTML(s string) string {
 	return strings.TrimSpace(stripped)
 }
 
-// Search config default constants.
-const (
-	defaultSearchPosition    = "navbar"
-	defaultSearchPlaceholder = "Search…"
-)
-
 // blogrollHTMLTagRegex matches HTML tags for stripping.
 var blogrollHTMLTagRegex = regexp.MustCompile(`<[^>]*>`)
 
@@ -2283,53 +2277,10 @@ func (p *BlogrollPlugin) extractSearchConfig(extra, result map[string]interface{
 		search = sc
 	}
 
-	// Determine enabled status (default: true)
-	searchEnabled := true
-	if search.Enabled != nil {
-		searchEnabled = *search.Enabled
-	}
-
-	// Default position to "navbar" if not set
-	position := search.Position
-	if position == "" {
-		position = defaultSearchPosition
-	}
-
-	// Default placeholder
-	placeholder := search.Placeholder
-	if placeholder == "" {
-		placeholder = defaultSearchPlaceholder
-	}
-
-	// Default show_images to true
-	showImages := true
-	if search.ShowImages != nil {
-		showImages = *search.ShowImages
-	}
-
-	// Default excerpt length
-	excerptLength := search.ExcerptLength
-	if excerptLength == 0 {
-		excerptLength = 200
-	}
-
-	// Convert pagefind config
-	// Use the actual pagefind bundle directory (defaults to _pagefind), not the blogroll output dir
-	bundleDir := search.Pagefind.BundleDir
-	if bundleDir == "" {
-		bundleDir = defaultBundleDir
-	}
-
-	result["search"] = map[string]interface{}{
-		"enabled":        searchEnabled,
-		"position":       position,
-		"placeholder":    placeholder,
-		"show_images":    showImages,
-		"excerpt_length": excerptLength,
-		"pagefind": map[string]interface{}{
-			"bundle_dir": bundleDir,
-		},
-	}
+	// Use the same normalized search context as normal pages. In particular,
+	// backend and bleve.endpoint must survive into reader.html's base template,
+	// or Bleve-only sites will request Pagefind assets that were never built.
+	result["search"] = templates.SearchToMap(&search)
 }
 
 // extractStructConfigs extracts simple struct configs from config.Extra.
