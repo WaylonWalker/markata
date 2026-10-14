@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
+	"github.com/WaylonWalker/markata-go/pkg/models"
 )
 
 // TestRedirectsPlugin_Name tests the plugin name.
@@ -731,5 +732,89 @@ func TestRedirectsPlugin_Write_TemplateChangeInvalidatesCache(t *testing.T) {
 	}
 	if !strings.Contains(string(content2), "TEMPLATE_V2") {
 		t.Errorf("second write should use template v2 (cache should be invalidated), got: %s", string(content2))
+	}
+}
+
+func TestRedirectsPluginPreservesAuthoredHTMLAndNativeRules(t *testing.T) {
+	dir := t.TempDir()
+	file := filepath.Join(dir, "_redirects")
+	if err := os.WriteFile(file, []byte("/article /missing\n/legacy /new\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	output := filepath.Join(dir, "output")
+	page := filepath.Join(output, "article", "index.html")
+	if err := os.MkdirAll(filepath.Dir(page), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(page, []byte("published article"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	m := lifecycle.NewManager()
+	m.Config().OutputDir = output
+	p := NewRedirectsPlugin()
+	p.SetConfig(RedirectsConfig{RedirectsFile: file})
+	if err := p.Write(m); err != nil {
+		t.Fatal(err)
+	}
+	got, err := os.ReadFile(page)
+	if err != nil || string(got) != "published article" {
+		t.Fatalf("redirect overwrote authored HTML: %q, %v", got, err)
+	}
+	native, err := os.ReadFile(filepath.Join(output, "redirects.conf"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(native), "/article") || !strings.Contains(string(native), "/legacy") {
+		t.Fatalf("nginx rules can shadow authored page: %s", native)
+	}
+	if _, err := os.Stat(filepath.Join(output, "legacy", "index.html")); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestRedirectsPluginProtectsPublishedRoutesBeforeHTMLExists(t *testing.T) {
+	dir := t.TempDir()
+	file := filepath.Join(dir, "_redirects")
+	if err := os.WriteFile(file, []byte("/published /missing\n/old /new\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	m := lifecycle.NewManager()
+	m.Config().OutputDir = filepath.Join(dir, "output")
+	m.SetPosts([]*models.Post{{Slug: "published", Href: "/published/", Published: true}})
+	p := NewRedirectsPlugin()
+	p.SetConfig(RedirectsConfig{RedirectsFile: file})
+	if err := p.Write(m); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(m.Config().OutputDir, "published", "index.html")); !os.IsNotExist(err) {
+		t.Fatalf("redirect claimed published route: %v", err)
+	}
+	native, err := os.ReadFile(filepath.Join(m.Config().OutputDir, "redirects.conf"))
+	if err != nil || strings.Contains(string(native), "/published") {
+		t.Fatalf("published route leaked to native config: %q, %v", native, err)
+	}
+	if _, err := os.Stat(filepath.Join(m.Config().OutputDir, "old", "index.html")); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestRedirectsPluginRefreshesItsOwnFallback(t *testing.T) {
+	dir := t.TempDir()
+	file := filepath.Join(dir, "_redirects")
+	m := lifecycle.NewManager()
+	m.Config().OutputDir = filepath.Join(dir, "output")
+	p := NewRedirectsPlugin()
+	p.SetConfig(RedirectsConfig{RedirectsFile: file})
+	for _, dest := range []string{"/first", "/second"} {
+		if err := os.WriteFile(file, []byte("/old "+dest+"\n"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		if err := p.Write(m); err != nil {
+			t.Fatal(err)
+		}
+		content, err := os.ReadFile(filepath.Join(m.Config().OutputDir, "old", "index.html"))
+		if err != nil || !strings.Contains(string(content), "url='"+dest+"'") {
+			t.Fatalf("redirect fallback did not update to %s: %q, %v", dest, content, err)
+		}
 	}
 }
