@@ -36,12 +36,21 @@ function pageHTML(slowManifest = false) {
   <style>.shorts-first-frame{position:absolute;inset:0;z-index:2;display:grid;place-items:center;background:#111}.shorts-first-frame img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}.shorts-first-frame .shorts-image-placeholder{filter:blur(10px)}.shorts-first-frame .shorts-image--full{filter:none}</style>
   <link rel="stylesheet" href="/feed-shorts.css"></head><body class="shorts-body">
   <section class="shorts-viewer" id="shorts-viewer" data-manifest="${indexURL}" aria-label="Shorts media viewer">
-    <div id="shorts-slides" class="shorts-slides" aria-hidden="true">
+    <div id="shorts-slides" class="shorts-slides">
       <div id="shorts-first-frame" class="shorts-first-frame" data-id="shots/p0">
-        <img class="shorts-first-frame-image shorts-image-placeholder" src="/media/photo-0.webp?w=72" alt="" aria-hidden="true" decoding="async" fetchpriority="high">
+        <img class="shorts-first-frame-image shorts-image-placeholder" data-src="/media/photo-0.webp?w=72" alt="" aria-hidden="true" decoding="async" fetchpriority="high">
         <img class="shorts-first-frame-sharp shorts-media shorts-image--full" data-src="/media/photo-0.webp?w=1280" alt="Test photograph 0" decoding="async" fetchpriority="high">
         <div class="shorts-image-loading" aria-hidden="true"><span class="shorts-image-loading__spinner"></span><span>Loading full quality…</span></div>
       </div>
+      <script>
+        (function () {
+          var frame = document.getElementById('shorts-first-frame');
+          if (location.hash.startsWith('#id=')) { frame.remove(); return; }
+          var tiny = frame.querySelector('.shorts-first-frame-image');
+          tiny.src = tiny.dataset.src;
+          delete tiny.dataset.src;
+        })();
+      </script>
       <script>
         (function () {
           if (location.hash.startsWith('#id=')) return;
@@ -174,6 +183,11 @@ test('Shorts uses a decoded blur-up and a bounded preview window', async (t) => 
   const deepLink = await openPage(browser, origin + '#id=shots/p5', {saveData: false, effectiveType: '3g', downlink: 1.5});
   await deepLink.page.waitForFunction(() => document.querySelector('#shorts-title')?.textContent === 'Photo 5');
   assert.equal(await deepLink.page.locator('#shorts-first-frame').count(), 0, 'deep links must not retain the wrong initial frame');
+  assert.equal(requests.filter(url => url.startsWith('/media/photo-0.webp')).length, 0, 'deep-link HTML must not eagerly request the wrong first photo');
+  assert.equal(await deepLink.page.locator('#shorts-slides').getAttribute('aria-hidden'), null, 'accessible slides must not have a hidden ancestor');
+  const active = deepLink.page.locator('.shorts-slide[aria-hidden="false"]');
+  assert.equal(await active.getAttribute('data-id'), 'shots/p5');
+  assert.equal(await active.locator('img[alt="Test photograph 5"]').count(), 1, 'active image has accessible alt text');
   await deepLink.context.close();
 
   requests.length = 0;

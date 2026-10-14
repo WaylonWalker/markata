@@ -140,22 +140,25 @@ func (p *PublishFeedsPlugin) Write(m *lifecycle.Manager) error {
 
 	config := m.Config()
 	feedConfigs := getCachedFeedConfigs(m)
-	if len(feedConfigs) == 0 {
-		return nil
-	}
-
 	if err := validateShortsRoutes(feedConfigs, m.Posts()); err != nil {
 		return err
 	}
 
-	if shouldPublishFeedsAsync(m) {
-		// The implementation uses bounded concurrency internally, but the write
-		// hook must wait so cleanup, diagnostics, and live reload observe a
-		// completed feed publication.
-		return p.publishFeedsAsync(m, feedConfigs)
+	// Reconcile routes even if the last Shorts-enabled feed was removed.
+	// Never remove stale public output until all current feeds published.
+	if len(feedConfigs) != 0 {
+		var err error
+		if shouldPublishFeedsAsync(m) {
+			// Serve workers must finish before stale routes are removed.
+			err = p.publishFeedsAsync(m, feedConfigs)
+		} else {
+			err = p.publishFeeds(m, config, feedConfigs)
+		}
+		if err != nil {
+			return err
+		}
 	}
-
-	return p.publishFeeds(m, config, feedConfigs)
+	return reconcileShortsRoutes(config.OutputDir, feedConfigs, m.Posts())
 }
 
 func getCachedFeedConfigs(m *lifecycle.Manager) []models.FeedConfig {

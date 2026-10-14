@@ -14,6 +14,7 @@ import (
 )
 
 const shortsChunkSize = 128
+const shortsIndexFile = "index.json"
 
 const (
 	shortsPlaceholderWidth = 72
@@ -88,7 +89,7 @@ func cleanupDisabledShorts(outputDir, route, feedSlug string) error {
 		return nil // A legacy disabled setting must not delete arbitrary files.
 	}
 	dir := filepath.Join(outputDir, strings.Trim(route, "/"))
-	marker := filepath.Join(dir, "data", "index.json")
+	marker := filepath.Join(dir, "data", shortsIndexFile)
 	raw, err := os.ReadFile(marker)
 	if err != nil {
 		return nil
@@ -286,7 +287,7 @@ func (p *PublishFeedsPlugin) writeShortsManifest(feed *models.FeedConfig, dataDi
 	}
 	chunkCount := (len(entries) + shortsChunkSize - 1) / shortsChunkSize
 	for _, entry := range names {
-		if entry.IsDir() || entry.Name() == "index.json" || !strings.HasSuffix(entry.Name(), ".json") {
+		if entry.IsDir() || entry.Name() == shortsIndexFile || !strings.HasSuffix(entry.Name(), ".json") {
 			continue
 		}
 		var number int
@@ -307,7 +308,7 @@ func (p *PublishFeedsPlugin) writeShortsManifest(feed *models.FeedConfig, dataDi
 	if err != nil {
 		return err
 	}
-	return p.safeWriteFile(filepath.Join(dataDir, "index.json"), append(index, '\n'))
+	return p.safeWriteFile(filepath.Join(dataDir, shortsIndexFile), append(index, '\n'))
 }
 
 func firstPublicShortsPost(posts []*models.Post) (first *models.Post, item map[string]interface{}) {
