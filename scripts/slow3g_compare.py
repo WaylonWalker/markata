@@ -304,7 +304,7 @@ async def one_run(browser: Any, args: argparse.Namespace, variant: str, run: int
         # A short smoke test may request fewer checkpoints than the usual 5.
         "valid_filmstrip": (
             len(saved_frames) >= min(args.min_frames, sum(t <= args.observe_ms for t in args.checkpoints))
-            and not error and not invalid_assets
+            and not error and not invalid_assets and not failures
         ),
     }
 
