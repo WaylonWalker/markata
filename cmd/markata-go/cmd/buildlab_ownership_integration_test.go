@@ -102,32 +102,32 @@ func writeBuildLabFixtureFile(t *testing.T, root, name, content string) {
 func runBuildLabOwnershipScenario(t *testing.T, fixture, name string, operations []buildlab.Operation) {
 	t.Helper()
 	result, err := buildlab.RunScenario(context.Background(), buildlab.ScenarioRunConfig{
-		Fixture: fixture,
-		Scenario: buildlab.Scenario{
+		Fixture:          fixture,
+		Scenario:         buildlab.Scenario{
 			ID:         name,
 			Version:    "1",
 			Operations: operations,
 		},
-		Baseline: buildlab.BuildCommand{
-			Binary: buildTestBinary(t),
-			Args: []string{"build", "-c", "markata-go.toml"},
+		Baseline:         buildlab.BuildCommand{
+			Binary:    buildTestBinary(t),
+			Args:      []string{"build", "-c", "markata-go.toml"},
 			OutputDir: "output",
-			Timeout: 5 * time.Minute,
-			Env: []string{"MARKATA_GO_ENCRYPTION_ENABLED=false"},
+			Timeout:   5 * time.Minute,
+			Env:       []string{"MARKATA_GO_ENCRYPTION_ENABLED=false"},
 		},
-		Candidate: buildlab.BuildCommand{
-			Binary: buildTestBinary(t),
-			Args: []string{"build", "-c", "markata-go.toml"},
+		Candidate:        buildlab.BuildCommand{
+			Binary:    buildTestBinary(t),
+			Args:      []string{"build", "-c", "markata-go.toml"},
 			OutputDir: "output",
-			Timeout: 5 * time.Minute,
-			Env: []string{"MARKATA_GO_ENCRYPTION_ENABLED=false"},
+			Timeout:   5 * time.Minute,
+			Env:       []string{"MARKATA_GO_ENCRYPTION_ENABLED=false"},
 		},
-		Classes: map[string]buildlab.OutputClass{
+		Classes:          map[string]buildlab.OutputClass{
 			".markata/diagnostics.json": buildlab.ClassVolatile,
-			".well-known/time": buildlab.ClassVolatile,
+			".well-known/time":         buildlab.ClassVolatile,
 		},
 		CheckDeterminism: true,
-		GOMAXPROCS: 1,
+		GOMAXPROCS:       1,
 	})
 	if err != nil {
 		t.Fatalf("Build Lab %s failed: %v; diagnostics=%+v", name, err, result.Diagnostics)
@@ -135,7 +135,8 @@ func runBuildLabOwnershipScenario(t *testing.T, fixture, name string, operations
 	if result.Verdict != buildLabPassVerdict {
 		t.Fatalf("Build Lab %s verdict=%q, diagnostics=%+v", name, result.Verdict, result.Diagnostics)
 	}
-	for _, checkpoint := range result.Checkpoints {
+	for i := range result.Checkpoints {
+		checkpoint := &result.Checkpoints[i]
 		if checkpoint.Correctness.IncrementalApplicable && !checkpoint.Correctness.IncrementalEqual {
 			t.Fatalf("%s operation %d differs from clean output: %+v", name, checkpoint.OperationIndex, checkpoint.Correctness)
 		}
