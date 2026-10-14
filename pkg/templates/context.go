@@ -773,6 +773,12 @@ func headToMap(h *models.HeadConfig) map[string]interface{} {
 	}
 }
 
+// SearchToMap exposes the normalized search template context to plugins that
+// render pages without the standard template Context (such as blogroll).
+func SearchToMap(s *models.SearchConfig) map[string]interface{} {
+	return searchToMap(s)
+}
+
 // searchToMap converts a SearchConfig to a map for template access.
 func searchToMap(s *models.SearchConfig) map[string]interface{} {
 	if s == nil {
