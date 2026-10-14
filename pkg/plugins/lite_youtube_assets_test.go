@@ -65,7 +65,6 @@ func TestLiteYouTubeAssetsPageScopedRendering(t *testing.T) {
 	}
 }
 
-
 // Hand-authored Lite YouTube markup must load even when the transform phase
 // hasn't set the site-wide capability flag (e.g. content made after Transform).
 func TestLiteYouTubeAssetsWithoutGlobalFlag(t *testing.T) {
