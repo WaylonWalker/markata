@@ -2211,7 +2211,7 @@ func (f *tomlFontConfig) toFontConfig() models.FontConfig {
 }
 
 func (f *tomlFeedConfig) toFeedConfig() models.FeedConfig {
-	return models.FeedConfig{
+	result := models.FeedConfig{
 		Slug:            f.Slug,
 		Title:           f.Title,
 		Description:     f.Description,
@@ -2232,12 +2232,13 @@ func (f *tomlFeedConfig) toFeedConfig() models.FeedConfig {
 		PaginationType:  models.PaginationType(f.PaginationType),
 		ArchiveDisabled: f.ArchiveDisabled,
 		Formats:         f.Formats.toFeedFormats(),
-		FormatOverrides: explicitFeedFormatOverrides(
-			f.Formats.HTML, f.Formats.SimpleHTML, f.Formats.RSS, f.Formats.Atom,
-			f.Formats.JSON, f.Formats.Markdown, f.Formats.Text, f.Formats.Sitemap,
-		),
 		Templates:       f.Templates.toFeedTemplates(),
 	}
+	result.SetFormatOverrides(explicitFeedFormatOverrides(
+		f.Formats.HTML, f.Formats.SimpleHTML, f.Formats.RSS, f.Formats.Atom,
+		f.Formats.JSON, f.Formats.Markdown, f.Formats.Text, f.Formats.Sitemap,
+	))
+	return result
 }
 
 func (f *tomlFeedFormats) toFeedFormats() models.FeedFormats {
@@ -3801,7 +3802,7 @@ func (f *yamlFooterConfig) toFooterConfig() models.FooterConfig {
 }
 
 func (f *yamlFeedConfig) toFeedConfig() models.FeedConfig {
-	return models.FeedConfig{
+	result := models.FeedConfig{
 		Slug:            f.Slug,
 		Title:           f.Title,
 		Description:     f.Description,
@@ -3822,12 +3823,13 @@ func (f *yamlFeedConfig) toFeedConfig() models.FeedConfig {
 		PaginationType:  models.PaginationType(f.PaginationType),
 		ArchiveDisabled: f.ArchiveDisabled,
 		Formats:         f.Formats.toFeedFormats(),
-		FormatOverrides: explicitFeedFormatOverrides(
-			f.Formats.HTML, f.Formats.SimpleHTML, f.Formats.RSS, f.Formats.Atom,
-			f.Formats.JSON, f.Formats.Markdown, f.Formats.Text, f.Formats.Sitemap,
-		),
 		Templates:       f.Templates.toFeedTemplates(),
 	}
+	result.SetFormatOverrides(explicitFeedFormatOverrides(
+		f.Formats.HTML, f.Formats.SimpleHTML, f.Formats.RSS, f.Formats.Atom,
+		f.Formats.JSON, f.Formats.Markdown, f.Formats.Text, f.Formats.Sitemap,
+	))
+	return result
 }
 
 func (f *yamlFeedFormats) toFeedFormats() models.FeedFormats {
@@ -5415,7 +5417,7 @@ func (f *jsonFooterConfig) toFooterConfig() models.FooterConfig {
 }
 
 func (f *jsonFeedConfig) toFeedConfig() models.FeedConfig {
-	return models.FeedConfig{
+	result := models.FeedConfig{
 		Slug:            f.Slug,
 		Title:           f.Title,
 		Description:     f.Description,
@@ -5436,12 +5438,13 @@ func (f *jsonFeedConfig) toFeedConfig() models.FeedConfig {
 		PaginationType:  models.PaginationType(f.PaginationType),
 		ArchiveDisabled: f.ArchiveDisabled,
 		Formats:         f.Formats.toFeedFormats(),
-		FormatOverrides: explicitFeedFormatOverrides(
-			f.Formats.HTML, f.Formats.SimpleHTML, f.Formats.RSS, f.Formats.Atom,
-			f.Formats.JSON, f.Formats.Markdown, f.Formats.Text, f.Formats.Sitemap,
-		),
 		Templates:       f.Templates.toFeedTemplates(),
 	}
+	result.SetFormatOverrides(explicitFeedFormatOverrides(
+		f.Formats.HTML, f.Formats.SimpleHTML, f.Formats.RSS, f.Formats.Atom,
+		f.Formats.JSON, f.Formats.Markdown, f.Formats.Text, f.Formats.Sitemap,
+	))
+	return result
 }
 
 func (f *jsonFeedFormats) toFeedFormats() models.FeedFormats {

@@ -1750,8 +1750,8 @@ func TestParseJSON_MentionsFromPostsDefault(t *testing.T) {
 
 func TestParsedFeedFormatFalseAcrossFormats(t *testing.T) {
 	testCases := []struct {
-		name string
-		data string
+		name  string
+		data  string
 		parse func([]byte) (*models.Config, error)
 	}{
 		{

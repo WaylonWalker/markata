@@ -632,7 +632,8 @@ func TestFeedConfigApplyDefaultsPreservesExplicitFalse(t *testing.T) {
 		{"inherit defaults", nil, true, true, true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			feed := FeedConfig{FormatOverrides: tc.overrides}
+			feed := FeedConfig{}
+			feed.SetFormatOverrides(tc.overrides)
 			feed.ApplyDefaults(defaults)
 			if feed.Formats.HTML != tc.wantHTML || feed.Formats.RSS != tc.wantRSS || feed.Formats.Sitemap != tc.wantSite {
 				t.Fatalf("formats = %+v, expected html=%v rss=%v sitemap=%v", feed.Formats, tc.wantHTML, tc.wantRSS, tc.wantSite)

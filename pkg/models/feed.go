@@ -110,7 +110,7 @@ type FeedConfig struct {
 	// FormatOverrides preserves presence as well as values from parsed config.
 	// An explicit false must not be mistaken for an omitted format.
 	// Runtime-only: serializers still expose the original formats object.
-	FormatOverrides map[string]bool `json:"-" yaml:"-" toml:"-"`
+	formatOverrides map[string]bool
 
 	// Templates specifies custom templates for each format
 	Templates FeedTemplates `json:"templates" yaml:"templates" toml:"templates"`
@@ -399,34 +399,7 @@ func (f *FeedConfig) ApplyDefaults(defaults FeedDefaults) {
 		f.Views = append([]string(nil), views...)
 	}
 
-	// Parsed formats inherit unspecified defaults while preserving explicit
-	// true and false values. Direct Go-created configs retain legacy behavior.
-	if len(f.FormatOverrides) > 0 {
-		formats := defaults.Formats
-		for name, enabled := range f.FormatOverrides {
-			switch name {
-			case "html":
-				formats.HTML = enabled
-			case "simple_html":
-				formats.SimpleHTML = enabled
-			case "rss":
-				formats.RSS = enabled
-			case "atom":
-				formats.Atom = enabled
-			case "json":
-				formats.JSON = enabled
-			case "markdown":
-				formats.Markdown = enabled
-			case "text":
-				formats.Text = enabled
-			case "sitemap":
-				formats.Sitemap = enabled
-			}
-		}
-		f.Formats = formats
-	} else if !f.Formats.HasAnyEnabled() {
-		f.Formats = defaults.Formats
-	}
+	f.applyFormatDefaults(defaults.Formats)
 
 	// Apply template defaults for any empty template paths
 	if f.Templates.HTML == "" {
@@ -450,6 +423,43 @@ func (f *FeedConfig) ApplyDefaults(defaults FeedDefaults) {
 	if f.Templates.Sitemap == "" {
 		f.Templates.Sitemap = defaults.Templates.Sitemap
 	}
+}
+
+// SetFormatOverrides retains explicit parsed values without exposing parser
+// bookkeeping as a configuration field or changing config documentation.
+func (f *FeedConfig) SetFormatOverrides(values map[string]bool) {
+	f.formatOverrides = values
+}
+
+func (f *FeedConfig) applyFormatDefaults(defaults FeedFormats) {
+	if len(f.formatOverrides) == 0 {
+		if !f.Formats.HasAnyEnabled() {
+			f.Formats = defaults
+		}
+		return
+	}
+	formats := defaults
+	for name, enabled := range f.formatOverrides {
+		switch name {
+		case "html":
+			formats.HTML = enabled
+		case "simple_html":
+			formats.SimpleHTML = enabled
+		case "rss":
+			formats.RSS = enabled
+		case "atom":
+			formats.Atom = enabled
+		case "json":
+			formats.JSON = enabled
+		case "markdown":
+			formats.Markdown = enabled
+		case "text":
+			formats.Text = enabled
+		case "sitemap":
+			formats.Sitemap = enabled
+		}
+	}
+	f.Formats = formats
 }
 
 // Paginate divides the Posts slice into pages based on ItemsPerPage and OrphanThreshold.
