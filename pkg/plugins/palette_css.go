@@ -1073,14 +1073,15 @@ func (p *PaletteCSSPlugin) writeMarkColors(buf *bytes.Buffer, palette *palettes.
 	if highlightText != "" {
 		fmt.Fprintf(buf, "%s--color-highlight-text: %s;\n", indent, highlightText)
 	}
-	// Heading contour/mark styles historically read --heading-mark-bg, which
-	// could retain the Web Awesome warning yellow even when the canonical
-	// semantic token changed. Emit the resolved presentation roles together.
+	// Keep heading contours in sync with the *effective* highlight tokens,
+	// including author overrides applied after palette.css loads. The old
+	// mark-presentation script did this by reading computed styles and writing
+	// inline !important variables; CSS aliases avoid that forced reflow.
 	if highlightBg != "" {
-		fmt.Fprintf(buf, "%s--heading-mark-bg: %s;\n", indent, highlightBg)
+		fmt.Fprintf(buf, "%s--heading-mark-bg: var(--color-highlight);\n", indent)
 	}
 	if highlightText != "" {
-		fmt.Fprintf(buf, "%s--heading-mark-fg: %s;\n", indent, highlightText)
+		fmt.Fprintf(buf, "%s--heading-mark-fg: var(--color-highlight-text);\n", indent)
 	}
 
 	// Try explicit mark colors first
