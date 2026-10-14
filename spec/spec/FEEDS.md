@@ -1722,3 +1722,12 @@ When a private-enabled feed is listed, the listing page may show feed titles,
 descriptions, counts, and feed variant links, but the underlying feed outputs remain
 responsible for rendering private post content through the encryption flow rather than
 exposing plaintext content.
+
+Feed listing pages MAY show a monthly publishing-rhythm sparkline for each feed.
+The chart MUST keep its accessible summary and allow users to inspect monthly counts
+with pointer movement and keyboard navigation. Implementations SHOULD keep the
+initial SVG DOM constant in size per chart rather than creating SVG nodes for every
+month. The monthly values MAY be stored as compact chart data on the SVG and used to
+update a single guide and marker. Keyboard users MUST be able to focus each chart
+and use the arrow keys to inspect values; the live readout MUST announce the selected
+month and count. Pointer exit MUST restore the chart's latest-month summary.

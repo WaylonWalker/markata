@@ -128,15 +128,11 @@
                 {% if feed.SparklinePoints %}
                 <div class="feed-sparkline-wrap">
                   <span class="feed-sparkline-label">Publishing rhythm</span>
-                  <svg class="feed-sparkline" viewBox="0 0 96 28" role="img" aria-label="{{ feed.SparklineTitle }}">
+                  <svg class="feed-sparkline" viewBox="0 0 96 28" role="group" tabindex="0" aria-label="{{ feed.SparklineTitle }}. Use the arrow keys to inspect each month." data-values="{{ feed.SparklineValues }}" data-start-month="{{ feed.SparklineStartISO }}">
+                    <rect class="feed-sparkline-hit" x="0" y="0" width="96" height="28"></rect>
                     <polyline points="{{ feed.SparklinePoints }}"></polyline>
-                    {% for point in feed.SparklineData %}
-                    <g class="feed-sparkline-point" data-label="{{ point.Month }} | {{ point.Value }} posts">
-                      <line class="feed-sparkline-guide" x1="{{ point.X }}" y1="0" x2="{{ point.X }}" y2="28"></line>
-                      <circle class="feed-sparkline-dot" cx="{{ point.X }}" cy="{{ point.Y }}" r="2.2"></circle>
-                      <rect class="feed-sparkline-hit" x="{{ point.HitX }}" y="0" width="5.2" height="28"></rect>
-                    </g>
-                    {% endfor %}
+                    <line class="feed-sparkline-guide"></line>
+                    <circle class="feed-sparkline-dot" r="2.2"></circle>
                   </svg>
                   <div class="feed-sparkline-meta" aria-live="polite">
                     <span class="feed-sparkline-value">{{ feed.SparklineSummary }}</span>

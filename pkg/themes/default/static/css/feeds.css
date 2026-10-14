@@ -625,10 +625,9 @@ article.post > .post-content > .feed.h-feed {
   pointer-events: all;
 }
 
-.feed-sparkline-point,
-.feed-header-sparkline-point {
+.feed-sparkline,
+.feed-header-sparkline-chart {
   cursor: crosshair;
-  pointer-events: all;
 }
 
 .feed-sparkline-guide,
@@ -651,15 +650,17 @@ article.post > .post-content > .feed.h-feed {
   fill: var(--color-primary, #007bff);
 }
 
-.feed-sparkline-point:hover .feed-sparkline-guide,
-.feed-sparkline-point:hover .feed-sparkline-dot,
-.feed-sparkline-point:focus-within .feed-sparkline-guide,
-.feed-sparkline-point:focus-within .feed-sparkline-dot,
-.feed-header-sparkline-point:hover .feed-header-sparkline-guide,
-.feed-header-sparkline-point:hover .feed-header-sparkline-dot,
-.feed-header-sparkline-point:focus-within .feed-header-sparkline-guide,
-.feed-header-sparkline-point:focus-within .feed-header-sparkline-dot {
+.feed-sparkline.is-active .feed-sparkline-guide,
+.feed-sparkline.is-active .feed-sparkline-dot,
+.feed-header-sparkline-chart.is-active .feed-header-sparkline-guide,
+.feed-header-sparkline-chart.is-active .feed-header-sparkline-dot {
   opacity: 1;
+}
+
+.feed-sparkline:focus-visible,
+.feed-header-sparkline-chart:focus-visible {
+  outline: 2px solid var(--color-primary, #007bff);
+  outline-offset: 3px;
 }
 
 @media (max-width: 720px) {

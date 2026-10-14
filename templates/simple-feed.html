@@ -31,15 +31,11 @@
       {% if feed_sparkline_points %}
       <div class="feed-header-sparkline">
         <span class="feed-header-sparkline-label">Publishing rhythm</span>
-        <svg class="feed-header-sparkline-chart" viewBox="0 0 96 28" role="img" aria-label="{{ feed_sparkline_title }}">
+        <svg class="feed-header-sparkline-chart" viewBox="0 0 96 28" role="group" tabindex="0" aria-label="{{ feed_sparkline_title }}. Use the arrow keys to inspect each month." data-values="{{ feed_sparkline_values }}" data-start-month="{{ feed_sparkline_start_iso }}">
+          <rect class="feed-header-sparkline-hit" x="0" y="0" width="96" height="28"></rect>
           <polyline points="{{ feed_sparkline_points }}"></polyline>
-          {% for point in feed_sparkline_data %}
-          <g class="feed-header-sparkline-point" data-label="{{ point.Month }} | {{ point.Value }} posts">
-            <line class="feed-header-sparkline-guide" x1="{{ point.X }}" y1="0" x2="{{ point.X }}" y2="28"></line>
-            <circle class="feed-header-sparkline-dot" cx="{{ point.X }}" cy="{{ point.Y }}" r="2.2"></circle>
-            <rect class="feed-header-sparkline-hit" x="{{ point.HitX }}" y="0" width="5.2" height="28"></rect>
-          </g>
-          {% endfor %}
+          <line class="feed-header-sparkline-guide"></line>
+          <circle class="feed-header-sparkline-dot" r="2.2"></circle>
         </svg>
         <div class="feed-header-sparkline-meta" aria-live="polite">
           <span class="feed-header-sparkline-value">{{ feed_sparkline_summary }}</span>
