@@ -64,3 +64,31 @@ func TestLiteYouTubeAssetsPageScopedRendering(t *testing.T) {
 		}
 	}
 }
+
+
+// Hand-authored Lite YouTube markup must load even when the transform phase
+// hasn't set the site-wide capability flag (e.g. content made after Transform).
+func TestLiteYouTubeAssetsWithoutGlobalFlag(t *testing.T) {
+	m := lifecycle.NewManager()
+	m.Config().Extra["templates_dir"] = "/nonexistent"
+	m.Config().Extra["lite_youtube_enabled"] = false
+	title := "Video"
+	video := &models.Post{
+		Path:        "raw.md",
+		Slug:        "raw",
+		Title:       &title,
+		Template:    "post.html",
+		ArticleHTML: `<lite-youtube videoid="dQw4w9WgXcQ"></lite-youtube>`,
+	}
+	m.SetPosts([]*models.Post{video})
+	plugin := NewTemplatesPlugin()
+	if err := plugin.Configure(m); err != nil {
+		t.Fatal(err)
+	}
+	if err := plugin.Render(m); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(video.HTML, "lite-yt-embed.js") || !strings.Contains(video.HTML, "lite-yt-embed.css") {
+		t.Fatal("hand-authored Lite YouTube must load even without the global feature flag")
+	}
+}
