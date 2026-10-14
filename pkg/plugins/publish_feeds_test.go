@@ -1,6 +1,7 @@
 package plugins
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -18,6 +19,51 @@ func TestPublishFeedsPlugin_Name(t *testing.T) {
 	p := NewPublishFeedsPlugin()
 	if got := p.Name(); got != "publish_feeds" {
 		t.Errorf("Name() = %q, want %q", got, "publish_feeds")
+	}
+}
+
+func TestPublishCalendarJSONWritesDatedPostMetadata(t *testing.T) {
+	outputDir := t.TempDir()
+	title := "Calendar entry"
+	description := "Preview text"
+	date := time.Date(2026, time.October, 13, 23, 15, 0, 0, time.UTC)
+	undatedTitle := "Undated"
+	feed := &models.FeedConfig{Posts: []*models.Post{
+		{
+			Slug:        "calendar-entry",
+			Href:        "/calendar-entry/",
+			Title:       &title,
+			Description: &description,
+			Date:        &date,
+			Extra:       map[string]interface{}{"image": "/images/calendar-entry.webp"},
+		},
+		{Slug: "undated", Href: "/undated/", Title: &undatedTitle},
+		{Slug: "missing-href", Title: &title, Date: &date},
+	}}
+
+	if err := NewPublishFeedsPlugin().publishCalendarJSON(feed, outputDir); err != nil {
+		t.Fatalf("publishCalendarJSON() error = %v", err)
+	}
+	data, err := os.ReadFile(filepath.Join(outputDir, "calendar.json"))
+	if err != nil {
+		t.Fatalf("ReadFile(calendar.json) error = %v", err)
+	}
+	var got []calendarFeedItem
+	if err := json.Unmarshal(data, &got); err != nil {
+		t.Fatalf("Unmarshal(calendar.json) error = %v", err)
+	}
+	if len(got) != 1 {
+		t.Fatalf("calendar items = %d, want only the dated post with an href", len(got))
+	}
+	want := calendarFeedItem{
+		Date:        "2026-10-13",
+		Href:        "/calendar-entry/",
+		Title:       title,
+		Description: description,
+		Image:       "/images/calendar-entry.webp",
+	}
+	if got[0] != want {
+		t.Fatalf("calendar item = %+v, want %+v", got[0], want)
 	}
 }
 
