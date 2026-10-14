@@ -1,0 +1,73 @@
+name: Slow 3G filmstrip smoke
+
+on:
+  pull_request:
+    paths:
+      - "scripts/slow3g_compare.py"
+      - "scripts/slow3g_fixture_server.py"
+      - "scripts/slow3g_site_server.py"
+      - "scripts/test_slow3g_site_server.py"
+      - "scripts/slow3g_compare.README.md"
+      - "scripts/check_slow3g_fixture.py"
+      - "scripts/test_slow3g_compare.py"
+      - ".github/workflows/slow3g-harness.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+      - name: Install browser and OS dependencies
+        run: uv run --with playwright playwright install --with-deps chromium
+      - name: Validate syntax and MIME classifier
+        run: |
+          python -m py_compile scripts/slow3g_compare.py scripts/slow3g_fixture_server.py scripts/slow3g_site_server.py scripts/check_slow3g_fixture.py
+          uv run --with playwright python -m unittest discover -s scripts -p 'test_slow3g_compare.py'
+          python -m unittest discover -s scripts -p 'test_slow3g_site_server.py'
+      - name: Start gzip fixture server
+        run: |
+          python scripts/slow3g_fixture_server.py --port 8765 > /tmp/slow3g-fixture.log 2>&1 &
+          echo $! > /tmp/slow3g-fixture.pid
+          for i in $(seq 1 30); do
+            if curl -fsS -H 'Accept-Encoding: gzip' -o /dev/null http://127.0.0.1:8765/before/archive/; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/slow3g-fixture.log
+          exit 1
+      - name: Compare valid HTTP variants
+        run: |
+          uv run --script scripts/slow3g_compare.py \
+            --before http://127.0.0.1:8765/before/archive/ \
+            --after http://127.0.0.1:8765/after/archive/ \
+            --runs 1 --observe-ms 6500 --checkpoints 1000 2000 3000 5000 \
+            --min-frames 3 --output ./slow3g-http-smoke
+          python scripts/check_slow3g_fixture.py ./slow3g-http-smoke
+      - name: Reject intentionally broken CSS response
+        run: |
+          set +e
+          uv run --script scripts/slow3g_compare.py \
+            --before http://127.0.0.1:8765/bad/archive/ \
+            --runs 1 --observe-ms 4500 --checkpoints 1000 2000 3000 \
+            --min-frames 2 --output ./slow3g-bad-css
+          code=$?
+          set -e
+          if [ "$code" -eq 0 ]; then
+            echo "Benchmark incorrectly accepted a bad CSS response"
+            exit 1
+          fi
+          python scripts/check_slow3g_fixture.py ./slow3g-bad-css --expect-bad-css
+      - name: Upload diagnostic filmstrips
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: slow3g-smoke-filmstrips
+          path: |
+            slow3g-http-smoke/
+            slow3g-bad-css/
+          retention-days: 7

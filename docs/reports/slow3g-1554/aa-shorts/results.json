@@ -1,0 +1,1452 @@
+[
+  {
+    "variant": "before",
+    "run": 1,
+    "url": "http://127.0.0.1:8000/shorts/",
+    "http_status": 200,
+    "metrics": {
+      "fcp": 968,
+      "lcp": 2848,
+      "lcpTag": "IMG",
+      "lcpURL": "https://dropper.waylonwalker.com/file/bfbaec0c-b842-42df-be91-251e3f27bf21.webp?w=1280",
+      "cls": 0.006163874912962422
+    },
+    "frames": [
+      {
+        "requested_checkpoint_ms": 1000,
+        "snapshot_at_ms": 1000.43,
+        "frame_received_at_ms": 985.55,
+        "cdp_frame_timestamp": 1791943151.34435,
+        "file": "filmstrips/before-01/checkpoint-1000ms-snapshot-1000ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 2000,
+        "snapshot_at_ms": 2000.54,
+        "frame_received_at_ms": 1983.3,
+        "cdp_frame_timestamp": 1791943152.343126,
+        "file": "filmstrips/before-01/checkpoint-2000ms-snapshot-2001ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 5000,
+        "snapshot_at_ms": 5002.03,
+        "frame_received_at_ms": 2902.23,
+        "cdp_frame_timestamp": 1791943153.261936,
+        "file": "filmstrips/before-01/checkpoint-5000ms-snapshot-5002ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 8000,
+        "snapshot_at_ms": 8003.02,
+        "frame_received_at_ms": 5530.61,
+        "cdp_frame_timestamp": 1791943155.889179,
+        "file": "filmstrips/before-01/checkpoint-8000ms-snapshot-8003ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 12000,
+        "snapshot_at_ms": 12004.02,
+        "frame_received_at_ms": 5530.61,
+        "cdp_frame_timestamp": 1791943155.889179,
+        "file": "filmstrips/before-01/checkpoint-12000ms-snapshot-12004ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 15000,
+        "snapshot_at_ms": 15003.01,
+        "frame_received_at_ms": 5530.61,
+        "cdp_frame_timestamp": 1791943155.889179,
+        "file": "filmstrips/before-01/checkpoint-15000ms-snapshot-15003ms.jpg"
+      }
+    ],
+    "frame_count": 6,
+    "received_cdp_frame_count": 117,
+    "missing_checkpoints_ms": [],
+    "requests": [
+      {
+        "url": "http://127.0.0.1:8000/shorts/",
+        "type": "Document",
+        "bytesDecodedChunks": 7361,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 2739,
+        "http_status": 200,
+        "mime_type": "text/html"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/feed-shorts.064f14fb.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 5966,
+        "bytesEncodedChunks": 1910,
+        "bytesEncodedFinished": 2157,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/feed-shorts.8368b826.js",
+        "type": "Script",
+        "bytesDecodedChunks": 11286,
+        "bytesEncodedChunks": 4091,
+        "bytesEncodedFinished": 4345,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/bfbaec0c-b842-42df-be91-251e3f27bf21.webp?w=72",
+        "type": "Image",
+        "bytesDecodedChunks": 602,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 1170,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "http://127.0.0.1:8000/shorts/data/index.json",
+        "type": "Fetch",
+        "bytesDecodedChunks": 9186,
+        "bytesEncodedChunks": 3237,
+        "bytesEncodedFinished": 3477,
+        "http_status": 200,
+        "mime_type": "application/json"
+      },
+      {
+        "url": "http://127.0.0.1:8000/shorts/data/0000.json",
+        "type": "Fetch",
+        "bytesDecodedChunks": 74138,
+        "bytesEncodedChunks": 13514,
+        "bytesEncodedFinished": 13755,
+        "http_status": 200,
+        "mime_type": "application/json"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/bfbaec0c-b842-42df-be91-251e3f27bf21.webp?w=1280",
+        "type": "Image",
+        "bytesDecodedChunks": 20674,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 21046,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "http://127.0.0.1:8000/favicon.ico",
+        "type": "Other",
+        "bytesDecodedChunks": 4286,
+        "bytesEncodedChunks": 4286,
+        "bytesEncodedFinished": 4510,
+        "http_status": 200,
+        "mime_type": "image/vnd.microsoft.icon"
+      }
+    ],
+    "network_failures": [],
+    "invalid_asset_responses": [],
+    "document_delivery": {
+      "status": 200,
+      "protocol": "http/1.1",
+      "content_encoding": "gzip",
+      "mime_type": "text/html"
+    },
+    "encoded_bytes_completed": 53199,
+    "error": null,
+    "valid_filmstrip": true
+  },
+  {
+    "variant": "after",
+    "run": 1,
+    "url": "http://127.0.0.1:8001/shorts/",
+    "http_status": 200,
+    "metrics": {
+      "fcp": 972,
+      "lcp": 2852,
+      "lcpTag": "IMG",
+      "lcpURL": "https://dropper.waylonwalker.com/file/bfbaec0c-b842-42df-be91-251e3f27bf21.webp?w=1280",
+      "cls": 0.006163874912962422
+    },
+    "frames": [
+      {
+        "requested_checkpoint_ms": 1000,
+        "snapshot_at_ms": 1000.09,
+        "frame_received_at_ms": 990.35,
+        "cdp_frame_timestamp": 1791943167.527882,
+        "file": "filmstrips/after-01/checkpoint-1000ms-snapshot-1000ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 2000,
+        "snapshot_at_ms": 2000.81,
+        "frame_received_at_ms": 1990.08,
+        "cdp_frame_timestamp": 1791943168.526406,
+        "file": "filmstrips/after-01/checkpoint-2000ms-snapshot-2001ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 5000,
+        "snapshot_at_ms": 5002.37,
+        "frame_received_at_ms": 2923.43,
+        "cdp_frame_timestamp": 1791943169.459721,
+        "file": "filmstrips/after-01/checkpoint-5000ms-snapshot-5002ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 8000,
+        "snapshot_at_ms": 8002.4,
+        "frame_received_at_ms": 5506.14,
+        "cdp_frame_timestamp": 1791943172.041067,
+        "file": "filmstrips/after-01/checkpoint-8000ms-snapshot-8002ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 12000,
+        "snapshot_at_ms": 12004.36,
+        "frame_received_at_ms": 5506.14,
+        "cdp_frame_timestamp": 1791943172.041067,
+        "file": "filmstrips/after-01/checkpoint-12000ms-snapshot-12004ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 15000,
+        "snapshot_at_ms": 15003.67,
+        "frame_received_at_ms": 5506.14,
+        "cdp_frame_timestamp": 1791943172.041067,
+        "file": "filmstrips/after-01/checkpoint-15000ms-snapshot-15004ms.jpg"
+      }
+    ],
+    "frame_count": 6,
+    "received_cdp_frame_count": 117,
+    "missing_checkpoints_ms": [],
+    "requests": [
+      {
+        "url": "http://127.0.0.1:8001/shorts/",
+        "type": "Document",
+        "bytesDecodedChunks": 7361,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 2739,
+        "http_status": 200,
+        "mime_type": "text/html"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/feed-shorts.064f14fb.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 5966,
+        "bytesEncodedChunks": 1910,
+        "bytesEncodedFinished": 2157,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/feed-shorts.8368b826.js",
+        "type": "Script",
+        "bytesDecodedChunks": 11286,
+        "bytesEncodedChunks": 4091,
+        "bytesEncodedFinished": 4345,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/bfbaec0c-b842-42df-be91-251e3f27bf21.webp?w=72",
+        "type": "Image",
+        "bytesDecodedChunks": 602,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 1173,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "http://127.0.0.1:8001/shorts/data/index.json",
+        "type": "Fetch",
+        "bytesDecodedChunks": 9186,
+        "bytesEncodedChunks": 3237,
+        "bytesEncodedFinished": 3477,
+        "http_status": 200,
+        "mime_type": "application/json"
+      },
+      {
+        "url": "http://127.0.0.1:8001/shorts/data/0000.json",
+        "type": "Fetch",
+        "bytesDecodedChunks": 74138,
+        "bytesEncodedChunks": 13514,
+        "bytesEncodedFinished": 13755,
+        "http_status": 200,
+        "mime_type": "application/json"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/bfbaec0c-b842-42df-be91-251e3f27bf21.webp?w=1280",
+        "type": "Image",
+        "bytesDecodedChunks": 20674,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 21045,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "http://127.0.0.1:8001/favicon.ico",
+        "type": "Other",
+        "bytesDecodedChunks": 4286,
+        "bytesEncodedChunks": 4286,
+        "bytesEncodedFinished": 4510,
+        "http_status": 200,
+        "mime_type": "image/vnd.microsoft.icon"
+      }
+    ],
+    "network_failures": [],
+    "invalid_asset_responses": [],
+    "document_delivery": {
+      "status": 200,
+      "protocol": "http/1.1",
+      "content_encoding": "gzip",
+      "mime_type": "text/html"
+    },
+    "encoded_bytes_completed": 53201,
+    "error": null,
+    "valid_filmstrip": true
+  },
+  {
+    "variant": "after",
+    "run": 2,
+    "url": "http://127.0.0.1:8001/shorts/",
+    "http_status": 200,
+    "metrics": {
+      "fcp": 996,
+      "lcp": 2868,
+      "lcpTag": "IMG",
+      "lcpURL": "https://dropper.waylonwalker.com/file/bfbaec0c-b842-42df-be91-251e3f27bf21.webp?w=1280",
+      "cls": 0.006163874912962422
+    },
+    "frames": [
+      {
+        "requested_checkpoint_ms": 1000,
+        "snapshot_at_ms": 1000.23,
+        "frame_received_at_ms": 21.77,
+        "cdp_frame_timestamp": 1791943182.746106,
+        "file": "filmstrips/after-02/checkpoint-1000ms-snapshot-1000ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 2000,
+        "snapshot_at_ms": 2000.62,
+        "frame_received_at_ms": 1984.18,
+        "cdp_frame_timestamp": 1791943184.709552,
+        "file": "filmstrips/after-02/checkpoint-2000ms-snapshot-2001ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 5000,
+        "snapshot_at_ms": 5002.33,
+        "frame_received_at_ms": 2902.6,
+        "cdp_frame_timestamp": 1791943185.628522,
+        "file": "filmstrips/after-02/checkpoint-5000ms-snapshot-5002ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 8000,
+        "snapshot_at_ms": 8002.65,
+        "frame_received_at_ms": 5533.18,
+        "cdp_frame_timestamp": 1791943188.258871,
+        "file": "filmstrips/after-02/checkpoint-8000ms-snapshot-8003ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 12000,
+        "snapshot_at_ms": 12003.43,
+        "frame_received_at_ms": 5533.18,
+        "cdp_frame_timestamp": 1791943188.258871,
+        "file": "filmstrips/after-02/checkpoint-12000ms-snapshot-12003ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 15000,
+        "snapshot_at_ms": 15003.9,
+        "frame_received_at_ms": 5533.18,
+        "cdp_frame_timestamp": 1791943188.258871,
+        "file": "filmstrips/after-02/checkpoint-15000ms-snapshot-15004ms.jpg"
+      }
+    ],
+    "frame_count": 6,
+    "received_cdp_frame_count": 116,
+    "missing_checkpoints_ms": [],
+    "requests": [
+      {
+        "url": "http://127.0.0.1:8001/shorts/",
+        "type": "Document",
+        "bytesDecodedChunks": 7361,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 2739,
+        "http_status": 200,
+        "mime_type": "text/html"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/feed-shorts.064f14fb.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 5966,
+        "bytesEncodedChunks": 1910,
+        "bytesEncodedFinished": 2157,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/feed-shorts.8368b826.js",
+        "type": "Script",
+        "bytesDecodedChunks": 11286,
+        "bytesEncodedChunks": 4091,
+        "bytesEncodedFinished": 4345,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/bfbaec0c-b842-42df-be91-251e3f27bf21.webp?w=72",
+        "type": "Image",
+        "bytesDecodedChunks": 602,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 1175,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "http://127.0.0.1:8001/shorts/data/index.json",
+        "type": "Fetch",
+        "bytesDecodedChunks": 9186,
+        "bytesEncodedChunks": 3237,
+        "bytesEncodedFinished": 3477,
+        "http_status": 200,
+        "mime_type": "application/json"
+      },
+      {
+        "url": "http://127.0.0.1:8001/shorts/data/0000.json",
+        "type": "Fetch",
+        "bytesDecodedChunks": 74138,
+        "bytesEncodedChunks": 13514,
+        "bytesEncodedFinished": 13755,
+        "http_status": 200,
+        "mime_type": "application/json"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/bfbaec0c-b842-42df-be91-251e3f27bf21.webp?w=1280",
+        "type": "Image",
+        "bytesDecodedChunks": 20674,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 21020,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "http://127.0.0.1:8001/favicon.ico",
+        "type": "Other",
+        "bytesDecodedChunks": 4286,
+        "bytesEncodedChunks": 4286,
+        "bytesEncodedFinished": 4510,
+        "http_status": 200,
+        "mime_type": "image/vnd.microsoft.icon"
+      }
+    ],
+    "network_failures": [],
+    "invalid_asset_responses": [],
+    "document_delivery": {
+      "status": 200,
+      "protocol": "http/1.1",
+      "content_encoding": "gzip",
+      "mime_type": "text/html"
+    },
+    "encoded_bytes_completed": 53178,
+    "error": null,
+    "valid_filmstrip": true
+  },
+  {
+    "variant": "before",
+    "run": 2,
+    "url": "http://127.0.0.1:8000/shorts/",
+    "http_status": 200,
+    "metrics": {
+      "fcp": 976,
+      "lcp": 2828,
+      "lcpTag": "IMG",
+      "lcpURL": "https://dropper.waylonwalker.com/file/bfbaec0c-b842-42df-be91-251e3f27bf21.webp?w=1280",
+      "cls": 0.006163874912962422
+    },
+    "frames": [
+      {
+        "requested_checkpoint_ms": 1000,
+        "snapshot_at_ms": 1000.85,
+        "frame_received_at_ms": 997.11,
+        "cdp_frame_timestamp": 1791943199.876165,
+        "file": "filmstrips/before-02/checkpoint-1000ms-snapshot-1001ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 2000,
+        "snapshot_at_ms": 2000.9,
+        "frame_received_at_ms": 1997.04,
+        "cdp_frame_timestamp": 1791943200.875726,
+        "file": "filmstrips/before-02/checkpoint-2000ms-snapshot-2001ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 5000,
+        "snapshot_at_ms": 5002.13,
+        "frame_received_at_ms": 2885.04,
+        "cdp_frame_timestamp": 1791943201.762465,
+        "file": "filmstrips/before-02/checkpoint-5000ms-snapshot-5002ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 8000,
+        "snapshot_at_ms": 8003.48,
+        "frame_received_at_ms": 5506.08,
+        "cdp_frame_timestamp": 1791943204.385384,
+        "file": "filmstrips/before-02/checkpoint-8000ms-snapshot-8003ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 12000,
+        "snapshot_at_ms": 12004.92,
+        "frame_received_at_ms": 5506.08,
+        "cdp_frame_timestamp": 1791943204.385384,
+        "file": "filmstrips/before-02/checkpoint-12000ms-snapshot-12005ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 15000,
+        "snapshot_at_ms": 15003.13,
+        "frame_received_at_ms": 5506.08,
+        "cdp_frame_timestamp": 1791943204.385384,
+        "file": "filmstrips/before-02/checkpoint-15000ms-snapshot-15003ms.jpg"
+      }
+    ],
+    "frame_count": 6,
+    "received_cdp_frame_count": 115,
+    "missing_checkpoints_ms": [],
+    "requests": [
+      {
+        "url": "http://127.0.0.1:8000/shorts/",
+        "type": "Document",
+        "bytesDecodedChunks": 7361,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 2739,
+        "http_status": 200,
+        "mime_type": "text/html"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/feed-shorts.064f14fb.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 5966,
+        "bytesEncodedChunks": 1910,
+        "bytesEncodedFinished": 2157,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/feed-shorts.8368b826.js",
+        "type": "Script",
+        "bytesDecodedChunks": 11286,
+        "bytesEncodedChunks": 4091,
+        "bytesEncodedFinished": 4345,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/bfbaec0c-b842-42df-be91-251e3f27bf21.webp?w=72",
+        "type": "Image",
+        "bytesDecodedChunks": 602,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 1167,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "http://127.0.0.1:8000/shorts/data/index.json",
+        "type": "Fetch",
+        "bytesDecodedChunks": 9186,
+        "bytesEncodedChunks": 3237,
+        "bytesEncodedFinished": 3477,
+        "http_status": 200,
+        "mime_type": "application/json"
+      },
+      {
+        "url": "http://127.0.0.1:8000/shorts/data/0000.json",
+        "type": "Fetch",
+        "bytesDecodedChunks": 74138,
+        "bytesEncodedChunks": 13514,
+        "bytesEncodedFinished": 13755,
+        "http_status": 200,
+        "mime_type": "application/json"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/bfbaec0c-b842-42df-be91-251e3f27bf21.webp?w=1280",
+        "type": "Image",
+        "bytesDecodedChunks": 20674,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 21020,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "http://127.0.0.1:8000/favicon.ico",
+        "type": "Other",
+        "bytesDecodedChunks": 4286,
+        "bytesEncodedChunks": 4286,
+        "bytesEncodedFinished": 4510,
+        "http_status": 200,
+        "mime_type": "image/vnd.microsoft.icon"
+      }
+    ],
+    "network_failures": [],
+    "invalid_asset_responses": [],
+    "document_delivery": {
+      "status": 200,
+      "protocol": "http/1.1",
+      "content_encoding": "gzip",
+      "mime_type": "text/html"
+    },
+    "encoded_bytes_completed": 53170,
+    "error": null,
+    "valid_filmstrip": true
+  },
+  {
+    "variant": "before",
+    "run": 3,
+    "url": "http://127.0.0.1:8000/shorts/",
+    "http_status": 200,
+    "metrics": {
+      "fcp": 964,
+      "lcp": 2796,
+      "lcpTag": "IMG",
+      "lcpURL": "https://dropper.waylonwalker.com/file/bfbaec0c-b842-42df-be91-251e3f27bf21.webp?w=1280",
+      "cls": 0.006163874912962422
+    },
+    "frames": [
+      {
+        "requested_checkpoint_ms": 1000,
+        "snapshot_at_ms": 1000.25,
+        "frame_received_at_ms": 984.14,
+        "cdp_frame_timestamp": 1791943216.025963,
+        "file": "filmstrips/before-03/checkpoint-1000ms-snapshot-1000ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 2000,
+        "snapshot_at_ms": 2001.81,
+        "frame_received_at_ms": 1986.78,
+        "cdp_frame_timestamp": 1791943217.027013,
+        "file": "filmstrips/before-03/checkpoint-2000ms-snapshot-2002ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 5000,
+        "snapshot_at_ms": 5002.59,
+        "frame_received_at_ms": 2869.15,
+        "cdp_frame_timestamp": 1791943217.909642,
+        "file": "filmstrips/before-03/checkpoint-5000ms-snapshot-5003ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 8000,
+        "snapshot_at_ms": 8002.86,
+        "frame_received_at_ms": 5475.04,
+        "cdp_frame_timestamp": 1791943220.515548,
+        "file": "filmstrips/before-03/checkpoint-8000ms-snapshot-8003ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 12000,
+        "snapshot_at_ms": 12003.58,
+        "frame_received_at_ms": 5475.04,
+        "cdp_frame_timestamp": 1791943220.515548,
+        "file": "filmstrips/before-03/checkpoint-12000ms-snapshot-12004ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 15000,
+        "snapshot_at_ms": 15002.97,
+        "frame_received_at_ms": 5475.04,
+        "cdp_frame_timestamp": 1791943220.515548,
+        "file": "filmstrips/before-03/checkpoint-15000ms-snapshot-15003ms.jpg"
+      }
+    ],
+    "frame_count": 6,
+    "received_cdp_frame_count": 114,
+    "missing_checkpoints_ms": [],
+    "requests": [
+      {
+        "url": "http://127.0.0.1:8000/shorts/",
+        "type": "Document",
+        "bytesDecodedChunks": 7361,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 2739,
+        "http_status": 200,
+        "mime_type": "text/html"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/feed-shorts.064f14fb.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 5966,
+        "bytesEncodedChunks": 1910,
+        "bytesEncodedFinished": 2157,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/feed-shorts.8368b826.js",
+        "type": "Script",
+        "bytesDecodedChunks": 11286,
+        "bytesEncodedChunks": 4091,
+        "bytesEncodedFinished": 4345,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/bfbaec0c-b842-42df-be91-251e3f27bf21.webp?w=72",
+        "type": "Image",
+        "bytesDecodedChunks": 602,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 1165,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "http://127.0.0.1:8000/shorts/data/index.json",
+        "type": "Fetch",
+        "bytesDecodedChunks": 9186,
+        "bytesEncodedChunks": 3237,
+        "bytesEncodedFinished": 3477,
+        "http_status": 200,
+        "mime_type": "application/json"
+      },
+      {
+        "url": "http://127.0.0.1:8000/shorts/data/0000.json",
+        "type": "Fetch",
+        "bytesDecodedChunks": 74138,
+        "bytesEncodedChunks": 13514,
+        "bytesEncodedFinished": 13755,
+        "http_status": 200,
+        "mime_type": "application/json"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/bfbaec0c-b842-42df-be91-251e3f27bf21.webp?w=1280",
+        "type": "Image",
+        "bytesDecodedChunks": 20674,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 21018,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "http://127.0.0.1:8000/favicon.ico",
+        "type": "Other",
+        "bytesDecodedChunks": 4286,
+        "bytesEncodedChunks": 4286,
+        "bytesEncodedFinished": 4510,
+        "http_status": 200,
+        "mime_type": "image/vnd.microsoft.icon"
+      }
+    ],
+    "network_failures": [],
+    "invalid_asset_responses": [],
+    "document_delivery": {
+      "status": 200,
+      "protocol": "http/1.1",
+      "content_encoding": "gzip",
+      "mime_type": "text/html"
+    },
+    "encoded_bytes_completed": 53166,
+    "error": null,
+    "valid_filmstrip": true
+  },
+  {
+    "variant": "after",
+    "run": 3,
+    "url": "http://127.0.0.1:8001/shorts/",
+    "http_status": 200,
+    "metrics": {
+      "fcp": 972,
+      "lcp": 2836,
+      "lcpTag": "IMG",
+      "lcpURL": "https://dropper.waylonwalker.com/file/bfbaec0c-b842-42df-be91-251e3f27bf21.webp?w=1280",
+      "cls": 0.006163874912962422
+    },
+    "frames": [
+      {
+        "requested_checkpoint_ms": 1000,
+        "snapshot_at_ms": 1000.86,
+        "frame_received_at_ms": 988.69,
+        "cdp_frame_timestamp": 1791943232.191184,
+        "file": "filmstrips/after-03/checkpoint-1000ms-snapshot-1001ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 2000,
+        "snapshot_at_ms": 2000.23,
+        "frame_received_at_ms": 1992.2,
+        "cdp_frame_timestamp": 1791943233.193139,
+        "file": "filmstrips/after-03/checkpoint-2000ms-snapshot-2000ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 5000,
+        "snapshot_at_ms": 5001.69,
+        "frame_received_at_ms": 2891.28,
+        "cdp_frame_timestamp": 1791943234.094126,
+        "file": "filmstrips/after-03/checkpoint-5000ms-snapshot-5002ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 8000,
+        "snapshot_at_ms": 8002.68,
+        "frame_received_at_ms": 5502.21,
+        "cdp_frame_timestamp": 1791943236.704584,
+        "file": "filmstrips/after-03/checkpoint-8000ms-snapshot-8003ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 12000,
+        "snapshot_at_ms": 12003.73,
+        "frame_received_at_ms": 5502.21,
+        "cdp_frame_timestamp": 1791943236.704584,
+        "file": "filmstrips/after-03/checkpoint-12000ms-snapshot-12004ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 15000,
+        "snapshot_at_ms": 15003.68,
+        "frame_received_at_ms": 5502.21,
+        "cdp_frame_timestamp": 1791943236.704584,
+        "file": "filmstrips/after-03/checkpoint-15000ms-snapshot-15004ms.jpg"
+      }
+    ],
+    "frame_count": 6,
+    "received_cdp_frame_count": 116,
+    "missing_checkpoints_ms": [],
+    "requests": [
+      {
+        "url": "http://127.0.0.1:8001/shorts/",
+        "type": "Document",
+        "bytesDecodedChunks": 7361,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 2739,
+        "http_status": 200,
+        "mime_type": "text/html"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/feed-shorts.064f14fb.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 5966,
+        "bytesEncodedChunks": 1910,
+        "bytesEncodedFinished": 2157,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/feed-shorts.8368b826.js",
+        "type": "Script",
+        "bytesDecodedChunks": 11286,
+        "bytesEncodedChunks": 4091,
+        "bytesEncodedFinished": 4345,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/bfbaec0c-b842-42df-be91-251e3f27bf21.webp?w=72",
+        "type": "Image",
+        "bytesDecodedChunks": 602,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 1161,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "http://127.0.0.1:8001/shorts/data/index.json",
+        "type": "Fetch",
+        "bytesDecodedChunks": 9186,
+        "bytesEncodedChunks": 3237,
+        "bytesEncodedFinished": 3477,
+        "http_status": 200,
+        "mime_type": "application/json"
+      },
+      {
+        "url": "http://127.0.0.1:8001/shorts/data/0000.json",
+        "type": "Fetch",
+        "bytesDecodedChunks": 74138,
+        "bytesEncodedChunks": 13514,
+        "bytesEncodedFinished": 13755,
+        "http_status": 200,
+        "mime_type": "application/json"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/bfbaec0c-b842-42df-be91-251e3f27bf21.webp?w=1280",
+        "type": "Image",
+        "bytesDecodedChunks": 20674,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 21033,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "http://127.0.0.1:8001/favicon.ico",
+        "type": "Other",
+        "bytesDecodedChunks": 4286,
+        "bytesEncodedChunks": 4286,
+        "bytesEncodedFinished": 4510,
+        "http_status": 200,
+        "mime_type": "image/vnd.microsoft.icon"
+      }
+    ],
+    "network_failures": [],
+    "invalid_asset_responses": [],
+    "document_delivery": {
+      "status": 200,
+      "protocol": "http/1.1",
+      "content_encoding": "gzip",
+      "mime_type": "text/html"
+    },
+    "encoded_bytes_completed": 53177,
+    "error": null,
+    "valid_filmstrip": true
+  },
+  {
+    "variant": "after",
+    "run": 4,
+    "url": "http://127.0.0.1:8001/shorts/",
+    "http_status": 200,
+    "metrics": {
+      "fcp": 948,
+      "lcp": 2832,
+      "lcpTag": "IMG",
+      "lcpURL": "https://dropper.waylonwalker.com/file/bfbaec0c-b842-42df-be91-251e3f27bf21.webp?w=1280",
+      "cls": 0.006163874912962422
+    },
+    "frames": [
+      {
+        "requested_checkpoint_ms": 1000,
+        "snapshot_at_ms": 1000.64,
+        "frame_received_at_ms": 983.68,
+        "cdp_frame_timestamp": 1791943248.340714,
+        "file": "filmstrips/after-04/checkpoint-1000ms-snapshot-1001ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 2000,
+        "snapshot_at_ms": 2000.36,
+        "frame_received_at_ms": 1999.66,
+        "cdp_frame_timestamp": 1791943249.357043,
+        "file": "filmstrips/after-04/checkpoint-2000ms-snapshot-2000ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 5000,
+        "snapshot_at_ms": 5001.87,
+        "frame_received_at_ms": 2885.83,
+        "cdp_frame_timestamp": 1791943250.241834,
+        "file": "filmstrips/after-04/checkpoint-5000ms-snapshot-5002ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 8000,
+        "snapshot_at_ms": 8001.87,
+        "frame_received_at_ms": 5475.37,
+        "cdp_frame_timestamp": 1791943252.832012,
+        "file": "filmstrips/after-04/checkpoint-8000ms-snapshot-8002ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 12000,
+        "snapshot_at_ms": 12003.86,
+        "frame_received_at_ms": 5475.37,
+        "cdp_frame_timestamp": 1791943252.832012,
+        "file": "filmstrips/after-04/checkpoint-12000ms-snapshot-12004ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 15000,
+        "snapshot_at_ms": 15002.86,
+        "frame_received_at_ms": 5475.37,
+        "cdp_frame_timestamp": 1791943252.832012,
+        "file": "filmstrips/after-04/checkpoint-15000ms-snapshot-15003ms.jpg"
+      }
+    ],
+    "frame_count": 6,
+    "received_cdp_frame_count": 117,
+    "missing_checkpoints_ms": [],
+    "requests": [
+      {
+        "url": "http://127.0.0.1:8001/shorts/",
+        "type": "Document",
+        "bytesDecodedChunks": 7361,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 2739,
+        "http_status": 200,
+        "mime_type": "text/html"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/feed-shorts.064f14fb.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 5966,
+        "bytesEncodedChunks": 1910,
+        "bytesEncodedFinished": 2157,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/feed-shorts.8368b826.js",
+        "type": "Script",
+        "bytesDecodedChunks": 11286,
+        "bytesEncodedChunks": 4091,
+        "bytesEncodedFinished": 4345,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/bfbaec0c-b842-42df-be91-251e3f27bf21.webp?w=72",
+        "type": "Image",
+        "bytesDecodedChunks": 602,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 1166,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "http://127.0.0.1:8001/shorts/data/index.json",
+        "type": "Fetch",
+        "bytesDecodedChunks": 9186,
+        "bytesEncodedChunks": 3237,
+        "bytesEncodedFinished": 3477,
+        "http_status": 200,
+        "mime_type": "application/json"
+      },
+      {
+        "url": "http://127.0.0.1:8001/shorts/data/0000.json",
+        "type": "Fetch",
+        "bytesDecodedChunks": 74138,
+        "bytesEncodedChunks": 13514,
+        "bytesEncodedFinished": 13755,
+        "http_status": 200,
+        "mime_type": "application/json"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/bfbaec0c-b842-42df-be91-251e3f27bf21.webp?w=1280",
+        "type": "Image",
+        "bytesDecodedChunks": 20674,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 21041,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "http://127.0.0.1:8001/favicon.ico",
+        "type": "Other",
+        "bytesDecodedChunks": 4286,
+        "bytesEncodedChunks": 4286,
+        "bytesEncodedFinished": 4510,
+        "http_status": 200,
+        "mime_type": "image/vnd.microsoft.icon"
+      }
+    ],
+    "network_failures": [],
+    "invalid_asset_responses": [],
+    "document_delivery": {
+      "status": 200,
+      "protocol": "http/1.1",
+      "content_encoding": "gzip",
+      "mime_type": "text/html"
+    },
+    "encoded_bytes_completed": 53190,
+    "error": null,
+    "valid_filmstrip": true
+  },
+  {
+    "variant": "before",
+    "run": 4,
+    "url": "http://127.0.0.1:8000/shorts/",
+    "http_status": 200,
+    "metrics": {
+      "fcp": 972,
+      "lcp": 2868,
+      "lcpTag": "IMG",
+      "lcpURL": "https://dropper.waylonwalker.com/file/bfbaec0c-b842-42df-be91-251e3f27bf21.webp?w=1280",
+      "cls": 0.006163874912962422
+    },
+    "frames": [
+      {
+        "requested_checkpoint_ms": 1000,
+        "snapshot_at_ms": 1000.38,
+        "frame_received_at_ms": 988.64,
+        "cdp_frame_timestamp": 1791943264.48876,
+        "file": "filmstrips/before-04/checkpoint-1000ms-snapshot-1000ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 2000,
+        "snapshot_at_ms": 2000.46,
+        "frame_received_at_ms": 1989.58,
+        "cdp_frame_timestamp": 1791943265.490248,
+        "file": "filmstrips/before-04/checkpoint-2000ms-snapshot-2000ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 5000,
+        "snapshot_at_ms": 5002.42,
+        "frame_received_at_ms": 2925.2,
+        "cdp_frame_timestamp": 1791943266.424588,
+        "file": "filmstrips/before-04/checkpoint-5000ms-snapshot-5002ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 8000,
+        "snapshot_at_ms": 8002.72,
+        "frame_received_at_ms": 5503.17,
+        "cdp_frame_timestamp": 1791943269.00416,
+        "file": "filmstrips/before-04/checkpoint-8000ms-snapshot-8003ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 12000,
+        "snapshot_at_ms": 12005.06,
+        "frame_received_at_ms": 5503.17,
+        "cdp_frame_timestamp": 1791943269.00416,
+        "file": "filmstrips/before-04/checkpoint-12000ms-snapshot-12005ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 15000,
+        "snapshot_at_ms": 15003.39,
+        "frame_received_at_ms": 5503.17,
+        "cdp_frame_timestamp": 1791943269.00416,
+        "file": "filmstrips/before-04/checkpoint-15000ms-snapshot-15003ms.jpg"
+      }
+    ],
+    "frame_count": 6,
+    "received_cdp_frame_count": 118,
+    "missing_checkpoints_ms": [],
+    "requests": [
+      {
+        "url": "http://127.0.0.1:8000/shorts/",
+        "type": "Document",
+        "bytesDecodedChunks": 7361,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 2739,
+        "http_status": 200,
+        "mime_type": "text/html"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/feed-shorts.064f14fb.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 5966,
+        "bytesEncodedChunks": 1910,
+        "bytesEncodedFinished": 2157,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/feed-shorts.8368b826.js",
+        "type": "Script",
+        "bytesDecodedChunks": 11286,
+        "bytesEncodedChunks": 4091,
+        "bytesEncodedFinished": 4345,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/bfbaec0c-b842-42df-be91-251e3f27bf21.webp?w=72",
+        "type": "Image",
+        "bytesDecodedChunks": 602,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 1167,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "http://127.0.0.1:8000/shorts/data/index.json",
+        "type": "Fetch",
+        "bytesDecodedChunks": 9186,
+        "bytesEncodedChunks": 3237,
+        "bytesEncodedFinished": 3477,
+        "http_status": 200,
+        "mime_type": "application/json"
+      },
+      {
+        "url": "http://127.0.0.1:8000/shorts/data/0000.json",
+        "type": "Fetch",
+        "bytesDecodedChunks": 74138,
+        "bytesEncodedChunks": 13514,
+        "bytesEncodedFinished": 13755,
+        "http_status": 200,
+        "mime_type": "application/json"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/bfbaec0c-b842-42df-be91-251e3f27bf21.webp?w=1280",
+        "type": "Image",
+        "bytesDecodedChunks": 20674,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 21046,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "http://127.0.0.1:8000/favicon.ico",
+        "type": "Other",
+        "bytesDecodedChunks": 4286,
+        "bytesEncodedChunks": 4286,
+        "bytesEncodedFinished": 4510,
+        "http_status": 200,
+        "mime_type": "image/vnd.microsoft.icon"
+      }
+    ],
+    "network_failures": [],
+    "invalid_asset_responses": [],
+    "document_delivery": {
+      "status": 200,
+      "protocol": "http/1.1",
+      "content_encoding": "gzip",
+      "mime_type": "text/html"
+    },
+    "encoded_bytes_completed": 53196,
+    "error": null,
+    "valid_filmstrip": true
+  },
+  {
+    "variant": "before",
+    "run": 5,
+    "url": "http://127.0.0.1:8000/shorts/",
+    "http_status": 200,
+    "metrics": {
+      "fcp": 972,
+      "lcp": 2852,
+      "lcpTag": "IMG",
+      "lcpURL": "https://dropper.waylonwalker.com/file/bfbaec0c-b842-42df-be91-251e3f27bf21.webp?w=1280",
+      "cls": 0.006163874912962422
+    },
+    "frames": [
+      {
+        "requested_checkpoint_ms": 1000,
+        "snapshot_at_ms": 1000.43,
+        "frame_received_at_ms": 993.02,
+        "cdp_frame_timestamp": 1791943280.656848,
+        "file": "filmstrips/before-05/checkpoint-1000ms-snapshot-1000ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 2000,
+        "snapshot_at_ms": 2001.17,
+        "frame_received_at_ms": 1990.44,
+        "cdp_frame_timestamp": 1791943281.655645,
+        "file": "filmstrips/before-05/checkpoint-2000ms-snapshot-2001ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 5000,
+        "snapshot_at_ms": 5001.7,
+        "frame_received_at_ms": 2912.41,
+        "cdp_frame_timestamp": 1791943282.575598,
+        "file": "filmstrips/before-05/checkpoint-5000ms-snapshot-5002ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 8000,
+        "snapshot_at_ms": 8002.69,
+        "frame_received_at_ms": 5505.19,
+        "cdp_frame_timestamp": 1791943285.168249,
+        "file": "filmstrips/before-05/checkpoint-8000ms-snapshot-8003ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 12000,
+        "snapshot_at_ms": 12003.68,
+        "frame_received_at_ms": 5505.19,
+        "cdp_frame_timestamp": 1791943285.168249,
+        "file": "filmstrips/before-05/checkpoint-12000ms-snapshot-12004ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 15000,
+        "snapshot_at_ms": 15004.07,
+        "frame_received_at_ms": 5505.19,
+        "cdp_frame_timestamp": 1791943285.168249,
+        "file": "filmstrips/before-05/checkpoint-15000ms-snapshot-15004ms.jpg"
+      }
+    ],
+    "frame_count": 6,
+    "received_cdp_frame_count": 117,
+    "missing_checkpoints_ms": [],
+    "requests": [
+      {
+        "url": "http://127.0.0.1:8000/shorts/",
+        "type": "Document",
+        "bytesDecodedChunks": 7361,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 2739,
+        "http_status": 200,
+        "mime_type": "text/html"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/feed-shorts.064f14fb.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 5966,
+        "bytesEncodedChunks": 1910,
+        "bytesEncodedFinished": 2157,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/feed-shorts.8368b826.js",
+        "type": "Script",
+        "bytesDecodedChunks": 11286,
+        "bytesEncodedChunks": 4091,
+        "bytesEncodedFinished": 4345,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/bfbaec0c-b842-42df-be91-251e3f27bf21.webp?w=72",
+        "type": "Image",
+        "bytesDecodedChunks": 602,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 1165,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "http://127.0.0.1:8000/shorts/data/index.json",
+        "type": "Fetch",
+        "bytesDecodedChunks": 9186,
+        "bytesEncodedChunks": 3237,
+        "bytesEncodedFinished": 3477,
+        "http_status": 200,
+        "mime_type": "application/json"
+      },
+      {
+        "url": "http://127.0.0.1:8000/shorts/data/0000.json",
+        "type": "Fetch",
+        "bytesDecodedChunks": 74138,
+        "bytesEncodedChunks": 13514,
+        "bytesEncodedFinished": 13755,
+        "http_status": 200,
+        "mime_type": "application/json"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/bfbaec0c-b842-42df-be91-251e3f27bf21.webp?w=1280",
+        "type": "Image",
+        "bytesDecodedChunks": 20674,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 21037,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "http://127.0.0.1:8000/favicon.ico",
+        "type": "Other",
+        "bytesDecodedChunks": 4286,
+        "bytesEncodedChunks": 4286,
+        "bytesEncodedFinished": 4510,
+        "http_status": 200,
+        "mime_type": "image/vnd.microsoft.icon"
+      }
+    ],
+    "network_failures": [],
+    "invalid_asset_responses": [],
+    "document_delivery": {
+      "status": 200,
+      "protocol": "http/1.1",
+      "content_encoding": "gzip",
+      "mime_type": "text/html"
+    },
+    "encoded_bytes_completed": 53185,
+    "error": null,
+    "valid_filmstrip": true
+  },
+  {
+    "variant": "after",
+    "run": 5,
+    "url": "http://127.0.0.1:8001/shorts/",
+    "http_status": 200,
+    "metrics": {
+      "fcp": 976,
+      "lcp": 2820,
+      "lcpTag": "IMG",
+      "lcpURL": "https://dropper.waylonwalker.com/file/bfbaec0c-b842-42df-be91-251e3f27bf21.webp?w=1280",
+      "cls": 0.006163874912962422
+    },
+    "frames": [
+      {
+        "requested_checkpoint_ms": 1000,
+        "snapshot_at_ms": 1000.85,
+        "frame_received_at_ms": 990.49,
+        "cdp_frame_timestamp": 1791943296.803779,
+        "file": "filmstrips/after-05/checkpoint-1000ms-snapshot-1001ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 2000,
+        "snapshot_at_ms": 2000.93,
+        "frame_received_at_ms": 1995.2,
+        "cdp_frame_timestamp": 1791943297.807496,
+        "file": "filmstrips/after-05/checkpoint-2000ms-snapshot-2001ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 5000,
+        "snapshot_at_ms": 5001.68,
+        "frame_received_at_ms": 2894.99,
+        "cdp_frame_timestamp": 1791943298.706427,
+        "file": "filmstrips/after-05/checkpoint-5000ms-snapshot-5002ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 8000,
+        "snapshot_at_ms": 8003.36,
+        "frame_received_at_ms": 5501.14,
+        "cdp_frame_timestamp": 1791943301.313971,
+        "file": "filmstrips/after-05/checkpoint-8000ms-snapshot-8003ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 12000,
+        "snapshot_at_ms": 12004.55,
+        "frame_received_at_ms": 5501.14,
+        "cdp_frame_timestamp": 1791943301.313971,
+        "file": "filmstrips/after-05/checkpoint-12000ms-snapshot-12005ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 15000,
+        "snapshot_at_ms": 15001.34,
+        "frame_received_at_ms": 5501.14,
+        "cdp_frame_timestamp": 1791943301.313971,
+        "file": "filmstrips/after-05/checkpoint-15000ms-snapshot-15001ms.jpg"
+      }
+    ],
+    "frame_count": 6,
+    "received_cdp_frame_count": 115,
+    "missing_checkpoints_ms": [],
+    "requests": [
+      {
+        "url": "http://127.0.0.1:8001/shorts/",
+        "type": "Document",
+        "bytesDecodedChunks": 7361,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 2739,
+        "http_status": 200,
+        "mime_type": "text/html"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/feed-shorts.064f14fb.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 5966,
+        "bytesEncodedChunks": 1910,
+        "bytesEncodedFinished": 2157,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/feed-shorts.8368b826.js",
+        "type": "Script",
+        "bytesDecodedChunks": 11286,
+        "bytesEncodedChunks": 4091,
+        "bytesEncodedFinished": 4345,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/bfbaec0c-b842-42df-be91-251e3f27bf21.webp?w=72",
+        "type": "Image",
+        "bytesDecodedChunks": 602,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 1168,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "http://127.0.0.1:8001/shorts/data/index.json",
+        "type": "Fetch",
+        "bytesDecodedChunks": 9186,
+        "bytesEncodedChunks": 3237,
+        "bytesEncodedFinished": 3477,
+        "http_status": 200,
+        "mime_type": "application/json"
+      },
+      {
+        "url": "http://127.0.0.1:8001/shorts/data/0000.json",
+        "type": "Fetch",
+        "bytesDecodedChunks": 74138,
+        "bytesEncodedChunks": 13514,
+        "bytesEncodedFinished": 13755,
+        "http_status": 200,
+        "mime_type": "application/json"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/bfbaec0c-b842-42df-be91-251e3f27bf21.webp?w=1280",
+        "type": "Image",
+        "bytesDecodedChunks": 20674,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 21021,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "http://127.0.0.1:8001/favicon.ico",
+        "type": "Other",
+        "bytesDecodedChunks": 4286,
+        "bytesEncodedChunks": 4286,
+        "bytesEncodedFinished": 4510,
+        "http_status": 200,
+        "mime_type": "image/vnd.microsoft.icon"
+      }
+    ],
+    "network_failures": [],
+    "invalid_asset_responses": [],
+    "document_delivery": {
+      "status": 200,
+      "protocol": "http/1.1",
+      "content_encoding": "gzip",
+      "mime_type": "text/html"
+    },
+    "encoded_bytes_completed": 53172,
+    "error": null,
+    "valid_filmstrip": true
+  }
+]
