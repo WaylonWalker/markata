@@ -600,12 +600,6 @@ func stripBlogrollHTML(s string) string {
 	return strings.TrimSpace(stripped)
 }
 
-// Search config default constants.
-const (
-	defaultSearchPosition    = "navbar"
-	defaultSearchPlaceholder = "Search…"
-)
-
 // blogrollHTMLTagRegex matches HTML tags for stripping.
 var blogrollHTMLTagRegex = regexp.MustCompile(`<[^>]*>`)
 
