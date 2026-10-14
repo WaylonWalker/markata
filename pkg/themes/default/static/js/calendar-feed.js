@@ -1,6 +1,12 @@
 (() => {
   'use strict';
 
+  // View Transitions may remove and later reinsert this head script. Keep one
+  // persistent initializer and only bind handlers to newly swapped roots.
+  if (window.__markataCalendarFeedBootstrapped) return;
+  window.__markataCalendarFeedBootstrapped = true;
+  const calendarControllers = new WeakMap();
+
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
@@ -400,6 +406,7 @@
   }
 
   function initialize(root) {
+    if (calendarControllers.has(root)) return;
     const sourceList = root.querySelector('[data-calendar-list]');
     const calendar = root.querySelector('[data-calendar-years]');
     const switcher = root.querySelector('[data-calendar-switch]');
@@ -466,11 +473,9 @@
       }
       try {
         calendarRendered = await calendarPromise;
-        if (errorMessage) errorMessage.hidden = true;
         return calendarRendered;
       } catch (error) {
         calendarPromise = null;
-        if (errorMessage) errorMessage.hidden = false;
         return false;
       }
     };
@@ -479,9 +484,20 @@
     const primaryNodes = primaryNodesFor(root, sourceList);
     const sourceIsPrimary = primaryNodes.includes(sourceList);
     const buttons = Array.from(switcher.querySelectorAll('[data-calendar-mode]'));
+    let modeRequest = 0;
     const setMode = async (mode, persistURL = true) => {
+      const request = ++modeRequest;
       const calendarMode = mode === 'calendar';
-      if (calendarMode && !await ensureCalendar()) return;
+      if (calendarMode) {
+        const ready = await ensureCalendar();
+        // A later click or navigation wins over an outstanding JSON request.
+        if (request !== modeRequest || !root.isConnected) return;
+        if (!ready) {
+          if (errorMessage) errorMessage.hidden = false;
+          return;
+        }
+      }
+      if (request !== modeRequest || !root.isConnected) return;
       calendar.hidden = !calendarMode;
       for (const node of primaryNodes) node.hidden = calendarMode;
       if (!sourceIsPrimary && sourceList) sourceList.hidden = true;
@@ -500,13 +516,30 @@
 
     const initialMode = root.hasAttribute('data-calendar-url-state') ? calendarModeFromURL(defaultMode) : defaultMode;
 
-    switcher.hidden = false;
-    void setMode(initialMode, false);
-    window.addEventListener('popstate', () => {
+    calendarControllers.set(root, () => {
       const mode = calendarModeFromURL(defaultMode);
       void setMode(mode, false);
     });
+    switcher.hidden = false;
+    void setMode(initialMode, false);
   }
 
-  for (const root of document.querySelectorAll('[data-calendar-feed]')) initialize(root);
+  function initializeAll() {
+    for (const root of document.querySelectorAll('[data-calendar-feed]')) initialize(root);
+  }
+
+  // A single popstate listener avoids retaining detached calendar roots after
+  // repeated SPA navigations. The WeakMap contains only live root controllers.
+  window.addEventListener('popstate', () => {
+    for (const root of document.querySelectorAll('[data-calendar-feed]')) {
+      const restoreMode = calendarControllers.get(root);
+      if (restoreMode) restoreMode();
+    }
+  });
+  window.addEventListener('view-transition-complete', initializeAll);
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeAll, { once: true });
+  } else {
+    initializeAll();
+  }
 })();
