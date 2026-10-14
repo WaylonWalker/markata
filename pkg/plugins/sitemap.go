@@ -142,8 +142,7 @@ func (p *SitemapPlugin) generatedIndexPages(m *lifecycle.Manager, siteURL string
 
 	for i := range feedConfigs {
 		fc := &feedConfigs[i]
-		if fc.Slug == "" || !fc.Formats.HTML || !fc.Formats.Sitemap ||
-			fc.IncludesPrivate() || sitemapNoindex(fc.Robots) {
+		if !eligibleFeedLandingForSitemap(fc) {
 			continue
 		}
 
@@ -176,6 +175,11 @@ func (p *SitemapPlugin) generatedIndexPages(m *lifecycle.Manager, siteURL string
 	}
 
 	return urls
+}
+
+func eligibleFeedLandingForSitemap(feed *models.FeedConfig) bool {
+	return feed != nil && feed.Slug != "" && feed.Formats.HTML && feed.Formats.Sitemap &&
+		!feed.IncludesPrivate() && !sitemapNoindex(feed.Robots)
 }
 
 // sitemapNoindex accepts a comma- or whitespace-separated robots directive.
