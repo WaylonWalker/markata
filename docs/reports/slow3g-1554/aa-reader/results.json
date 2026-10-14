@@ -1,0 +1,3582 @@
+[
+  {
+    "variant": "before",
+    "run": 1,
+    "url": "http://127.0.0.1:8000/reader/",
+    "http_status": 200,
+    "metrics": {
+      "fcp": 3040,
+      "lcp": 3040,
+      "lcpTag": "P",
+      "lcpURL": null,
+      "cls": 0
+    },
+    "frames": [
+      {
+        "requested_checkpoint_ms": 1000,
+        "snapshot_at_ms": 1000.53,
+        "frame_received_at_ms": 19.38,
+        "cdp_frame_timestamp": 1791943312.803283,
+        "file": "filmstrips/before-01/checkpoint-1000ms-snapshot-1001ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 2000,
+        "snapshot_at_ms": 2000.64,
+        "frame_received_at_ms": 19.38,
+        "cdp_frame_timestamp": 1791943312.803283,
+        "file": "filmstrips/before-01/checkpoint-2000ms-snapshot-2001ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 5000,
+        "snapshot_at_ms": 5001.22,
+        "frame_received_at_ms": 3220.53,
+        "cdp_frame_timestamp": 1791943316.004765,
+        "file": "filmstrips/before-01/checkpoint-5000ms-snapshot-5001ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 8000,
+        "snapshot_at_ms": 8003.22,
+        "frame_received_at_ms": 3220.53,
+        "cdp_frame_timestamp": 1791943316.004765,
+        "file": "filmstrips/before-01/checkpoint-8000ms-snapshot-8003ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 12000,
+        "snapshot_at_ms": 12004.23,
+        "frame_received_at_ms": 3220.53,
+        "cdp_frame_timestamp": 1791943316.004765,
+        "file": "filmstrips/before-01/checkpoint-12000ms-snapshot-12004ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 15000,
+        "snapshot_at_ms": 15003.69,
+        "frame_received_at_ms": 3220.53,
+        "cdp_frame_timestamp": 1791943316.004765,
+        "file": "filmstrips/before-01/checkpoint-15000ms-snapshot-15004ms.jpg"
+      }
+    ],
+    "frame_count": 6,
+    "received_cdp_frame_count": 4,
+    "missing_checkpoints_ms": [],
+    "requests": [
+      {
+        "url": "http://127.0.0.1:8000/reader/",
+        "type": "Document",
+        "bytesDecodedChunks": 63001,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 14218,
+        "http_status": 200,
+        "mime_type": "text/html"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/variables.08e33724.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 3723,
+        "bytesEncodedChunks": 1290,
+        "bytesEncodedFinished": 1537,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/palette.36d9eaf5.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 171045,
+        "bytesEncodedChunks": 30539,
+        "bytesEncodedFinished": 30787,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/main.d20ef4df.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 39850,
+        "bytesEncodedChunks": 7732,
+        "bytesEncodedFinished": 7979,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/components.45436e70.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 76763,
+        "bytesEncodedChunks": 13215,
+        "bytesEncodedFinished": 13463,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/text-size.a7cdb148.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 579,
+        "bytesEncodedChunks": 212,
+        "bytesEncodedFinished": 458,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/cards.bba89fe5.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 17860,
+        "bytesEncodedChunks": 3308,
+        "bytesEncodedFinished": 3555,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/palette-switcher.0f00e25e.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 20887,
+        "bytesEncodedChunks": 4429,
+        "bytesEncodedFinished": 4676,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/search.0f0c0c81.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 11118,
+        "bytesEncodedChunks": 2293,
+        "bytesEncodedFinished": 2540,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/markata-tailwind.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 8492,
+        "bytesEncodedChunks": 2033,
+        "bytesEncodedFinished": 2280,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/link-avatars.ab8178f9.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 679,
+        "bytesEncodedChunks": 283,
+        "bytesEncodedFinished": 529,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/aesthetic.fd1f2276.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 18818,
+        "bytesEncodedChunks": 3231,
+        "bytesEncodedFinished": 3478,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/adaptive-loading.fea7d7d6.js",
+        "type": "Script",
+        "bytesDecodedChunks": 6408,
+        "bytesEncodedChunks": 2399,
+        "bytesEncodedFinished": 2653,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/palette-switcher.b69367b1.js",
+        "type": "Script",
+        "bytesDecodedChunks": 33578,
+        "bytesEncodedChunks": 10518,
+        "bytesEncodedFinished": 10773,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/text-size.939ab303.js",
+        "type": "Script",
+        "bytesDecodedChunks": 1159,
+        "bytesEncodedChunks": 531,
+        "bytesEncodedFinished": 784,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/heading-highlights.ce5a7302.js",
+        "type": "Script",
+        "bytesDecodedChunks": 2988,
+        "bytesEncodedChunks": 1337,
+        "bytesEncodedFinished": 1591,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/fit-post-titles.a8799b3f.js",
+        "type": "Script",
+        "bytesDecodedChunks": 1075,
+        "bytesEncodedChunks": 595,
+        "bytesEncodedFinished": 848,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/scroll-spy.1bf62692.js",
+        "type": "Script",
+        "bytesDecodedChunks": 5571,
+        "bytesEncodedChunks": 2270,
+        "bytesEncodedFinished": 2524,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/tooltips.5c989f85.js",
+        "type": "Script",
+        "bytesDecodedChunks": 8281,
+        "bytesEncodedChunks": 2950,
+        "bytesEncodedFinished": 3204,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/view-transitions.743e29a4.js",
+        "type": "Script",
+        "bytesDecodedChunks": 23818,
+        "bytesEncodedChunks": 7032,
+        "bytesEncodedFinished": 7286,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/conditional-css.86777e3d.js",
+        "type": "Script",
+        "bytesDecodedChunks": 3715,
+        "bytesEncodedChunks": 1485,
+        "bytesEncodedFinished": 1739,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/w.svg",
+        "type": "Image",
+        "bytesDecodedChunks": 373,
+        "bytesEncodedChunks": 266,
+        "bytesEncodedFinished": 502,
+        "http_status": 200,
+        "mime_type": "image/svg+xml"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/shortcuts-registry.47e34d14.js",
+        "type": "Script",
+        "bytesDecodedChunks": 3775,
+        "bytesEncodedChunks": 1476,
+        "bytesEncodedFinished": 1730,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/_pagefind/pagefind-ui.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 404,
+        "mime_type": "text/html"
+      },
+      {
+        "url": "http://127.0.0.1:8000/_pagefind/pagefind-ui.js",
+        "type": "Script",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 404,
+        "mime_type": "text/html"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/search-shortcuts.dbacfc75.js",
+        "type": "Script",
+        "bytesDecodedChunks": 4892,
+        "bytesEncodedChunks": 1609,
+        "bytesEncodedFinished": 1863,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/scrolling-shortcuts.b3e4e8fa.js",
+        "type": "Script",
+        "bytesDecodedChunks": 2410,
+        "bytesEncodedChunks": 862,
+        "bytesEncodedFinished": 1115,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/history-shortcuts.06ade051.js",
+        "type": "Script",
+        "bytesDecodedChunks": 645,
+        "bytesEncodedChunks": 327,
+        "bytesEncodedFinished": 580,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/favicon.ico",
+        "type": "Other",
+        "bytesDecodedChunks": 4286,
+        "bytesEncodedChunks": 4286,
+        "bytesEncodedFinished": 4510,
+        "http_status": 200,
+        "mime_type": "image/vnd.microsoft.icon"
+      }
+    ],
+    "network_failures": [
+      {
+        "url": "http://127.0.0.1:8000/_pagefind/pagefind-ui.css",
+        "error": "net::ERR_ABORTED"
+      },
+      {
+        "url": "http://127.0.0.1:8000/_pagefind/pagefind-ui.js",
+        "error": "net::ERR_ABORTED"
+      }
+    ],
+    "invalid_asset_responses": [
+      {
+        "url": "http://127.0.0.1:8000/_pagefind/pagefind-ui.css",
+        "type": "Stylesheet",
+        "status": 404,
+        "mime_type": "text/html",
+        "problem": "HTTP 404"
+      },
+      {
+        "url": "http://127.0.0.1:8000/_pagefind/pagefind-ui.js",
+        "type": "Script",
+        "status": 404,
+        "mime_type": "text/html",
+        "problem": "HTTP 404"
+      }
+    ],
+    "document_delivery": {
+      "status": 200,
+      "protocol": "http/1.1",
+      "content_encoding": "gzip",
+      "mime_type": "text/html"
+    },
+    "encoded_bytes_completed": 127202,
+    "error": null,
+    "valid_filmstrip": false
+  },
+  {
+    "variant": "after",
+    "run": 1,
+    "url": "http://127.0.0.1:8001/reader/",
+    "http_status": 200,
+    "metrics": {
+      "fcp": 3008,
+      "lcp": 3008,
+      "lcpTag": "P",
+      "lcpURL": null,
+      "cls": 0
+    },
+    "frames": [
+      {
+        "requested_checkpoint_ms": 1000,
+        "snapshot_at_ms": 1000.83,
+        "frame_received_at_ms": 13.05,
+        "cdp_frame_timestamp": 1791943328.957771,
+        "file": "filmstrips/after-01/checkpoint-1000ms-snapshot-1001ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 2000,
+        "snapshot_at_ms": 2001.84,
+        "frame_received_at_ms": 13.05,
+        "cdp_frame_timestamp": 1791943328.957771,
+        "file": "filmstrips/after-01/checkpoint-2000ms-snapshot-2002ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 5000,
+        "snapshot_at_ms": 5000.87,
+        "frame_received_at_ms": 3332.0,
+        "cdp_frame_timestamp": 1791943332.276626,
+        "file": "filmstrips/after-01/checkpoint-5000ms-snapshot-5001ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 8000,
+        "snapshot_at_ms": 8002.86,
+        "frame_received_at_ms": 3332.0,
+        "cdp_frame_timestamp": 1791943332.276626,
+        "file": "filmstrips/after-01/checkpoint-8000ms-snapshot-8003ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 12000,
+        "snapshot_at_ms": 12004.06,
+        "frame_received_at_ms": 3332.0,
+        "cdp_frame_timestamp": 1791943332.276626,
+        "file": "filmstrips/after-01/checkpoint-12000ms-snapshot-12004ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 15000,
+        "snapshot_at_ms": 15002.87,
+        "frame_received_at_ms": 3332.0,
+        "cdp_frame_timestamp": 1791943332.276626,
+        "file": "filmstrips/after-01/checkpoint-15000ms-snapshot-15003ms.jpg"
+      }
+    ],
+    "frame_count": 6,
+    "received_cdp_frame_count": 4,
+    "missing_checkpoints_ms": [],
+    "requests": [
+      {
+        "url": "http://127.0.0.1:8001/reader/",
+        "type": "Document",
+        "bytesDecodedChunks": 63001,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 14218,
+        "http_status": 200,
+        "mime_type": "text/html"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/variables.08e33724.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 3723,
+        "bytesEncodedChunks": 1290,
+        "bytesEncodedFinished": 1537,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/palette.36d9eaf5.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 171045,
+        "bytesEncodedChunks": 30539,
+        "bytesEncodedFinished": 30787,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/main.d20ef4df.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 39850,
+        "bytesEncodedChunks": 7732,
+        "bytesEncodedFinished": 7979,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/components.45436e70.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 76763,
+        "bytesEncodedChunks": 13215,
+        "bytesEncodedFinished": 13463,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/text-size.a7cdb148.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 579,
+        "bytesEncodedChunks": 212,
+        "bytesEncodedFinished": 458,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/cards.bba89fe5.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 17860,
+        "bytesEncodedChunks": 3308,
+        "bytesEncodedFinished": 3555,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/palette-switcher.0f00e25e.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 20887,
+        "bytesEncodedChunks": 4429,
+        "bytesEncodedFinished": 4676,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/search.0f0c0c81.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 11118,
+        "bytesEncodedChunks": 2293,
+        "bytesEncodedFinished": 2540,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/markata-tailwind.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 8492,
+        "bytesEncodedChunks": 2033,
+        "bytesEncodedFinished": 2280,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/link-avatars.ab8178f9.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 679,
+        "bytesEncodedChunks": 283,
+        "bytesEncodedFinished": 529,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/aesthetic.fd1f2276.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 18818,
+        "bytesEncodedChunks": 3231,
+        "bytesEncodedFinished": 3478,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/adaptive-loading.fea7d7d6.js",
+        "type": "Script",
+        "bytesDecodedChunks": 6408,
+        "bytesEncodedChunks": 2399,
+        "bytesEncodedFinished": 2653,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/palette-switcher.b69367b1.js",
+        "type": "Script",
+        "bytesDecodedChunks": 33578,
+        "bytesEncodedChunks": 10518,
+        "bytesEncodedFinished": 10773,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/text-size.939ab303.js",
+        "type": "Script",
+        "bytesDecodedChunks": 1159,
+        "bytesEncodedChunks": 531,
+        "bytesEncodedFinished": 784,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/heading-highlights.ce5a7302.js",
+        "type": "Script",
+        "bytesDecodedChunks": 2988,
+        "bytesEncodedChunks": 1337,
+        "bytesEncodedFinished": 1591,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/fit-post-titles.a8799b3f.js",
+        "type": "Script",
+        "bytesDecodedChunks": 1075,
+        "bytesEncodedChunks": 595,
+        "bytesEncodedFinished": 848,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/scroll-spy.1bf62692.js",
+        "type": "Script",
+        "bytesDecodedChunks": 5571,
+        "bytesEncodedChunks": 2270,
+        "bytesEncodedFinished": 2524,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/tooltips.5c989f85.js",
+        "type": "Script",
+        "bytesDecodedChunks": 8281,
+        "bytesEncodedChunks": 2950,
+        "bytesEncodedFinished": 3204,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/view-transitions.743e29a4.js",
+        "type": "Script",
+        "bytesDecodedChunks": 23818,
+        "bytesEncodedChunks": 7032,
+        "bytesEncodedFinished": 7286,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/conditional-css.86777e3d.js",
+        "type": "Script",
+        "bytesDecodedChunks": 3715,
+        "bytesEncodedChunks": 1485,
+        "bytesEncodedFinished": 1739,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/shortcuts-registry.47e34d14.js",
+        "type": "Script",
+        "bytesDecodedChunks": 3775,
+        "bytesEncodedChunks": 1476,
+        "bytesEncodedFinished": 1730,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/w.svg",
+        "type": "Image",
+        "bytesDecodedChunks": 373,
+        "bytesEncodedChunks": 266,
+        "bytesEncodedFinished": 502,
+        "http_status": 200,
+        "mime_type": "image/svg+xml"
+      },
+      {
+        "url": "http://127.0.0.1:8001/_pagefind/pagefind-ui.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 404,
+        "mime_type": "text/html"
+      },
+      {
+        "url": "http://127.0.0.1:8001/_pagefind/pagefind-ui.js",
+        "type": "Script",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 404,
+        "mime_type": "text/html"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/search-shortcuts.dbacfc75.js",
+        "type": "Script",
+        "bytesDecodedChunks": 4892,
+        "bytesEncodedChunks": 1609,
+        "bytesEncodedFinished": 1863,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/scrolling-shortcuts.b3e4e8fa.js",
+        "type": "Script",
+        "bytesDecodedChunks": 2410,
+        "bytesEncodedChunks": 862,
+        "bytesEncodedFinished": 1115,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/history-shortcuts.06ade051.js",
+        "type": "Script",
+        "bytesDecodedChunks": 645,
+        "bytesEncodedChunks": 327,
+        "bytesEncodedFinished": 580,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/favicon.ico",
+        "type": "Other",
+        "bytesDecodedChunks": 4286,
+        "bytesEncodedChunks": 4286,
+        "bytesEncodedFinished": 4510,
+        "http_status": 200,
+        "mime_type": "image/vnd.microsoft.icon"
+      }
+    ],
+    "network_failures": [
+      {
+        "url": "http://127.0.0.1:8001/_pagefind/pagefind-ui.css",
+        "error": "net::ERR_ABORTED"
+      },
+      {
+        "url": "http://127.0.0.1:8001/_pagefind/pagefind-ui.js",
+        "error": "net::ERR_ABORTED"
+      }
+    ],
+    "invalid_asset_responses": [
+      {
+        "url": "http://127.0.0.1:8001/_pagefind/pagefind-ui.css",
+        "type": "Stylesheet",
+        "status": 404,
+        "mime_type": "text/html",
+        "problem": "HTTP 404"
+      },
+      {
+        "url": "http://127.0.0.1:8001/_pagefind/pagefind-ui.js",
+        "type": "Script",
+        "status": 404,
+        "mime_type": "text/html",
+        "problem": "HTTP 404"
+      }
+    ],
+    "document_delivery": {
+      "status": 200,
+      "protocol": "http/1.1",
+      "content_encoding": "gzip",
+      "mime_type": "text/html"
+    },
+    "encoded_bytes_completed": 127202,
+    "error": null,
+    "valid_filmstrip": false
+  },
+  {
+    "variant": "after",
+    "run": 2,
+    "url": "http://127.0.0.1:8001/reader/",
+    "http_status": 200,
+    "metrics": {
+      "fcp": 3036,
+      "lcp": 3036,
+      "lcpTag": "P",
+      "lcpURL": null,
+      "cls": 0
+    },
+    "frames": [
+      {
+        "requested_checkpoint_ms": 1000,
+        "snapshot_at_ms": 1001.08,
+        "frame_received_at_ms": 20.15,
+        "cdp_frame_timestamp": 1791943345.120349,
+        "file": "filmstrips/after-02/checkpoint-1000ms-snapshot-1001ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 2000,
+        "snapshot_at_ms": 2001.9,
+        "frame_received_at_ms": 20.15,
+        "cdp_frame_timestamp": 1791943345.120349,
+        "file": "filmstrips/after-02/checkpoint-2000ms-snapshot-2002ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 5000,
+        "snapshot_at_ms": 5001.5,
+        "frame_received_at_ms": 3247.1,
+        "cdp_frame_timestamp": 1791943348.346078,
+        "file": "filmstrips/after-02/checkpoint-5000ms-snapshot-5002ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 8000,
+        "snapshot_at_ms": 8003.97,
+        "frame_received_at_ms": 3247.1,
+        "cdp_frame_timestamp": 1791943348.346078,
+        "file": "filmstrips/after-02/checkpoint-8000ms-snapshot-8004ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 12000,
+        "snapshot_at_ms": 12002.65,
+        "frame_received_at_ms": 3247.1,
+        "cdp_frame_timestamp": 1791943348.346078,
+        "file": "filmstrips/after-02/checkpoint-12000ms-snapshot-12003ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 15000,
+        "snapshot_at_ms": 15003.02,
+        "frame_received_at_ms": 3247.1,
+        "cdp_frame_timestamp": 1791943348.346078,
+        "file": "filmstrips/after-02/checkpoint-15000ms-snapshot-15003ms.jpg"
+      }
+    ],
+    "frame_count": 6,
+    "received_cdp_frame_count": 4,
+    "missing_checkpoints_ms": [],
+    "requests": [
+      {
+        "url": "http://127.0.0.1:8001/reader/",
+        "type": "Document",
+        "bytesDecodedChunks": 63001,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 14218,
+        "http_status": 200,
+        "mime_type": "text/html"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/variables.08e33724.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 3723,
+        "bytesEncodedChunks": 1290,
+        "bytesEncodedFinished": 1537,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/palette.36d9eaf5.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 171045,
+        "bytesEncodedChunks": 30539,
+        "bytesEncodedFinished": 30787,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/main.d20ef4df.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 39850,
+        "bytesEncodedChunks": 7732,
+        "bytesEncodedFinished": 7979,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/components.45436e70.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 76763,
+        "bytesEncodedChunks": 13215,
+        "bytesEncodedFinished": 13463,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/text-size.a7cdb148.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 579,
+        "bytesEncodedChunks": 212,
+        "bytesEncodedFinished": 458,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/cards.bba89fe5.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 17860,
+        "bytesEncodedChunks": 3308,
+        "bytesEncodedFinished": 3555,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/palette-switcher.0f00e25e.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 20887,
+        "bytesEncodedChunks": 4429,
+        "bytesEncodedFinished": 4676,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/search.0f0c0c81.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 11118,
+        "bytesEncodedChunks": 2293,
+        "bytesEncodedFinished": 2540,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/markata-tailwind.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 8492,
+        "bytesEncodedChunks": 2033,
+        "bytesEncodedFinished": 2280,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/link-avatars.ab8178f9.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 679,
+        "bytesEncodedChunks": 283,
+        "bytesEncodedFinished": 529,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/aesthetic.fd1f2276.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 18818,
+        "bytesEncodedChunks": 3231,
+        "bytesEncodedFinished": 3478,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/adaptive-loading.fea7d7d6.js",
+        "type": "Script",
+        "bytesDecodedChunks": 6408,
+        "bytesEncodedChunks": 2399,
+        "bytesEncodedFinished": 2653,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/palette-switcher.b69367b1.js",
+        "type": "Script",
+        "bytesDecodedChunks": 33578,
+        "bytesEncodedChunks": 10518,
+        "bytesEncodedFinished": 10773,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/text-size.939ab303.js",
+        "type": "Script",
+        "bytesDecodedChunks": 1159,
+        "bytesEncodedChunks": 531,
+        "bytesEncodedFinished": 784,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/heading-highlights.ce5a7302.js",
+        "type": "Script",
+        "bytesDecodedChunks": 2988,
+        "bytesEncodedChunks": 1337,
+        "bytesEncodedFinished": 1591,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/fit-post-titles.a8799b3f.js",
+        "type": "Script",
+        "bytesDecodedChunks": 1075,
+        "bytesEncodedChunks": 595,
+        "bytesEncodedFinished": 848,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/scroll-spy.1bf62692.js",
+        "type": "Script",
+        "bytesDecodedChunks": 5571,
+        "bytesEncodedChunks": 2270,
+        "bytesEncodedFinished": 2524,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/tooltips.5c989f85.js",
+        "type": "Script",
+        "bytesDecodedChunks": 8281,
+        "bytesEncodedChunks": 2950,
+        "bytesEncodedFinished": 3204,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/view-transitions.743e29a4.js",
+        "type": "Script",
+        "bytesDecodedChunks": 23818,
+        "bytesEncodedChunks": 7032,
+        "bytesEncodedFinished": 7286,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/conditional-css.86777e3d.js",
+        "type": "Script",
+        "bytesDecodedChunks": 3715,
+        "bytesEncodedChunks": 1485,
+        "bytesEncodedFinished": 1739,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/w.svg",
+        "type": "Image",
+        "bytesDecodedChunks": 373,
+        "bytesEncodedChunks": 266,
+        "bytesEncodedFinished": 502,
+        "http_status": 200,
+        "mime_type": "image/svg+xml"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/shortcuts-registry.47e34d14.js",
+        "type": "Script",
+        "bytesDecodedChunks": 3775,
+        "bytesEncodedChunks": 1476,
+        "bytesEncodedFinished": 1730,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/_pagefind/pagefind-ui.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 404,
+        "mime_type": "text/html"
+      },
+      {
+        "url": "http://127.0.0.1:8001/_pagefind/pagefind-ui.js",
+        "type": "Script",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 404,
+        "mime_type": "text/html"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/search-shortcuts.dbacfc75.js",
+        "type": "Script",
+        "bytesDecodedChunks": 4892,
+        "bytesEncodedChunks": 1609,
+        "bytesEncodedFinished": 1863,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/scrolling-shortcuts.b3e4e8fa.js",
+        "type": "Script",
+        "bytesDecodedChunks": 2410,
+        "bytesEncodedChunks": 862,
+        "bytesEncodedFinished": 1115,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/history-shortcuts.06ade051.js",
+        "type": "Script",
+        "bytesDecodedChunks": 645,
+        "bytesEncodedChunks": 327,
+        "bytesEncodedFinished": 580,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/favicon.ico",
+        "type": "Other",
+        "bytesDecodedChunks": 4286,
+        "bytesEncodedChunks": 4286,
+        "bytesEncodedFinished": 4510,
+        "http_status": 200,
+        "mime_type": "image/vnd.microsoft.icon"
+      }
+    ],
+    "network_failures": [
+      {
+        "url": "http://127.0.0.1:8001/_pagefind/pagefind-ui.css",
+        "error": "net::ERR_ABORTED"
+      },
+      {
+        "url": "http://127.0.0.1:8001/_pagefind/pagefind-ui.js",
+        "error": "net::ERR_ABORTED"
+      }
+    ],
+    "invalid_asset_responses": [
+      {
+        "url": "http://127.0.0.1:8001/_pagefind/pagefind-ui.css",
+        "type": "Stylesheet",
+        "status": 404,
+        "mime_type": "text/html",
+        "problem": "HTTP 404"
+      },
+      {
+        "url": "http://127.0.0.1:8001/_pagefind/pagefind-ui.js",
+        "type": "Script",
+        "status": 404,
+        "mime_type": "text/html",
+        "problem": "HTTP 404"
+      }
+    ],
+    "document_delivery": {
+      "status": 200,
+      "protocol": "http/1.1",
+      "content_encoding": "gzip",
+      "mime_type": "text/html"
+    },
+    "encoded_bytes_completed": 127202,
+    "error": null,
+    "valid_filmstrip": false
+  },
+  {
+    "variant": "before",
+    "run": 2,
+    "url": "http://127.0.0.1:8000/reader/",
+    "http_status": 200,
+    "metrics": {
+      "fcp": 3000,
+      "lcp": 3000,
+      "lcpTag": "P",
+      "lcpURL": null,
+      "cls": 0
+    },
+    "frames": [
+      {
+        "requested_checkpoint_ms": 1000,
+        "snapshot_at_ms": 1000.22,
+        "frame_received_at_ms": 16.33,
+        "cdp_frame_timestamp": 1791943361.270955,
+        "file": "filmstrips/before-02/checkpoint-1000ms-snapshot-1000ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 2000,
+        "snapshot_at_ms": 2000.79,
+        "frame_received_at_ms": 16.33,
+        "cdp_frame_timestamp": 1791943361.270955,
+        "file": "filmstrips/before-02/checkpoint-2000ms-snapshot-2001ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 5000,
+        "snapshot_at_ms": 5000.85,
+        "frame_received_at_ms": 3192.82,
+        "cdp_frame_timestamp": 1791943364.446702,
+        "file": "filmstrips/before-02/checkpoint-5000ms-snapshot-5001ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 8000,
+        "snapshot_at_ms": 8002.99,
+        "frame_received_at_ms": 3192.82,
+        "cdp_frame_timestamp": 1791943364.446702,
+        "file": "filmstrips/before-02/checkpoint-8000ms-snapshot-8003ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 12000,
+        "snapshot_at_ms": 12003.97,
+        "frame_received_at_ms": 3192.82,
+        "cdp_frame_timestamp": 1791943364.446702,
+        "file": "filmstrips/before-02/checkpoint-12000ms-snapshot-12004ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 15000,
+        "snapshot_at_ms": 15001.37,
+        "frame_received_at_ms": 3192.82,
+        "cdp_frame_timestamp": 1791943364.446702,
+        "file": "filmstrips/before-02/checkpoint-15000ms-snapshot-15001ms.jpg"
+      }
+    ],
+    "frame_count": 6,
+    "received_cdp_frame_count": 4,
+    "missing_checkpoints_ms": [],
+    "requests": [
+      {
+        "url": "http://127.0.0.1:8000/reader/",
+        "type": "Document",
+        "bytesDecodedChunks": 63001,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 14218,
+        "http_status": 200,
+        "mime_type": "text/html"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/variables.08e33724.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 3723,
+        "bytesEncodedChunks": 1290,
+        "bytesEncodedFinished": 1537,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/palette.36d9eaf5.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 171045,
+        "bytesEncodedChunks": 30539,
+        "bytesEncodedFinished": 30787,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/main.d20ef4df.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 39850,
+        "bytesEncodedChunks": 7732,
+        "bytesEncodedFinished": 7979,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/components.45436e70.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 76763,
+        "bytesEncodedChunks": 13215,
+        "bytesEncodedFinished": 13463,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/text-size.a7cdb148.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 579,
+        "bytesEncodedChunks": 212,
+        "bytesEncodedFinished": 458,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/cards.bba89fe5.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 17860,
+        "bytesEncodedChunks": 3308,
+        "bytesEncodedFinished": 3555,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/palette-switcher.0f00e25e.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 20887,
+        "bytesEncodedChunks": 4429,
+        "bytesEncodedFinished": 4676,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/search.0f0c0c81.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 11118,
+        "bytesEncodedChunks": 2293,
+        "bytesEncodedFinished": 2540,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/markata-tailwind.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 8492,
+        "bytesEncodedChunks": 2033,
+        "bytesEncodedFinished": 2280,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/link-avatars.ab8178f9.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 679,
+        "bytesEncodedChunks": 283,
+        "bytesEncodedFinished": 529,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/aesthetic.fd1f2276.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 18818,
+        "bytesEncodedChunks": 3231,
+        "bytesEncodedFinished": 3478,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/adaptive-loading.fea7d7d6.js",
+        "type": "Script",
+        "bytesDecodedChunks": 6408,
+        "bytesEncodedChunks": 2399,
+        "bytesEncodedFinished": 2653,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/palette-switcher.b69367b1.js",
+        "type": "Script",
+        "bytesDecodedChunks": 33578,
+        "bytesEncodedChunks": 10518,
+        "bytesEncodedFinished": 10773,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/text-size.939ab303.js",
+        "type": "Script",
+        "bytesDecodedChunks": 1159,
+        "bytesEncodedChunks": 531,
+        "bytesEncodedFinished": 784,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/heading-highlights.ce5a7302.js",
+        "type": "Script",
+        "bytesDecodedChunks": 2988,
+        "bytesEncodedChunks": 1337,
+        "bytesEncodedFinished": 1591,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/fit-post-titles.a8799b3f.js",
+        "type": "Script",
+        "bytesDecodedChunks": 1075,
+        "bytesEncodedChunks": 595,
+        "bytesEncodedFinished": 848,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/scroll-spy.1bf62692.js",
+        "type": "Script",
+        "bytesDecodedChunks": 5571,
+        "bytesEncodedChunks": 2270,
+        "bytesEncodedFinished": 2524,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/tooltips.5c989f85.js",
+        "type": "Script",
+        "bytesDecodedChunks": 8281,
+        "bytesEncodedChunks": 2950,
+        "bytesEncodedFinished": 3204,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/view-transitions.743e29a4.js",
+        "type": "Script",
+        "bytesDecodedChunks": 23818,
+        "bytesEncodedChunks": 7032,
+        "bytesEncodedFinished": 7286,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/conditional-css.86777e3d.js",
+        "type": "Script",
+        "bytesDecodedChunks": 3715,
+        "bytesEncodedChunks": 1485,
+        "bytesEncodedFinished": 1739,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/w.svg",
+        "type": "Image",
+        "bytesDecodedChunks": 373,
+        "bytesEncodedChunks": 266,
+        "bytesEncodedFinished": 502,
+        "http_status": 200,
+        "mime_type": "image/svg+xml"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/shortcuts-registry.47e34d14.js",
+        "type": "Script",
+        "bytesDecodedChunks": 3775,
+        "bytesEncodedChunks": 1476,
+        "bytesEncodedFinished": 1730,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/_pagefind/pagefind-ui.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 404,
+        "mime_type": "text/html"
+      },
+      {
+        "url": "http://127.0.0.1:8000/_pagefind/pagefind-ui.js",
+        "type": "Script",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 404,
+        "mime_type": "text/html"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/search-shortcuts.dbacfc75.js",
+        "type": "Script",
+        "bytesDecodedChunks": 4892,
+        "bytesEncodedChunks": 1609,
+        "bytesEncodedFinished": 1863,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/scrolling-shortcuts.b3e4e8fa.js",
+        "type": "Script",
+        "bytesDecodedChunks": 2410,
+        "bytesEncodedChunks": 862,
+        "bytesEncodedFinished": 1115,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/history-shortcuts.06ade051.js",
+        "type": "Script",
+        "bytesDecodedChunks": 645,
+        "bytesEncodedChunks": 327,
+        "bytesEncodedFinished": 580,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/favicon.ico",
+        "type": "Other",
+        "bytesDecodedChunks": 4286,
+        "bytesEncodedChunks": 4286,
+        "bytesEncodedFinished": 4510,
+        "http_status": 200,
+        "mime_type": "image/vnd.microsoft.icon"
+      }
+    ],
+    "network_failures": [
+      {
+        "url": "http://127.0.0.1:8000/_pagefind/pagefind-ui.css",
+        "error": "net::ERR_ABORTED"
+      },
+      {
+        "url": "http://127.0.0.1:8000/_pagefind/pagefind-ui.js",
+        "error": "net::ERR_ABORTED"
+      }
+    ],
+    "invalid_asset_responses": [
+      {
+        "url": "http://127.0.0.1:8000/_pagefind/pagefind-ui.css",
+        "type": "Stylesheet",
+        "status": 404,
+        "mime_type": "text/html",
+        "problem": "HTTP 404"
+      },
+      {
+        "url": "http://127.0.0.1:8000/_pagefind/pagefind-ui.js",
+        "type": "Script",
+        "status": 404,
+        "mime_type": "text/html",
+        "problem": "HTTP 404"
+      }
+    ],
+    "document_delivery": {
+      "status": 200,
+      "protocol": "http/1.1",
+      "content_encoding": "gzip",
+      "mime_type": "text/html"
+    },
+    "encoded_bytes_completed": 127202,
+    "error": null,
+    "valid_filmstrip": false
+  },
+  {
+    "variant": "before",
+    "run": 3,
+    "url": "http://127.0.0.1:8000/reader/",
+    "http_status": 200,
+    "metrics": {
+      "fcp": 3016,
+      "lcp": 3016,
+      "lcpTag": "P",
+      "lcpURL": null,
+      "cls": 0
+    },
+    "frames": [
+      {
+        "requested_checkpoint_ms": 1000,
+        "snapshot_at_ms": 1000.67,
+        "frame_received_at_ms": 15.59,
+        "cdp_frame_timestamp": 1791943377.422531,
+        "file": "filmstrips/before-03/checkpoint-1000ms-snapshot-1001ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 2000,
+        "snapshot_at_ms": 2002.56,
+        "frame_received_at_ms": 15.59,
+        "cdp_frame_timestamp": 1791943377.422531,
+        "file": "filmstrips/before-03/checkpoint-2000ms-snapshot-2003ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 5000,
+        "snapshot_at_ms": 5001.0,
+        "frame_received_at_ms": 3226.93,
+        "cdp_frame_timestamp": 1791943380.633729,
+        "file": "filmstrips/before-03/checkpoint-5000ms-snapshot-5001ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 8000,
+        "snapshot_at_ms": 8003.0,
+        "frame_received_at_ms": 3226.93,
+        "cdp_frame_timestamp": 1791943380.633729,
+        "file": "filmstrips/before-03/checkpoint-8000ms-snapshot-8003ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 12000,
+        "snapshot_at_ms": 12004.48,
+        "frame_received_at_ms": 3226.93,
+        "cdp_frame_timestamp": 1791943380.633729,
+        "file": "filmstrips/before-03/checkpoint-12000ms-snapshot-12004ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 15000,
+        "snapshot_at_ms": 15003.05,
+        "frame_received_at_ms": 3226.93,
+        "cdp_frame_timestamp": 1791943380.633729,
+        "file": "filmstrips/before-03/checkpoint-15000ms-snapshot-15003ms.jpg"
+      }
+    ],
+    "frame_count": 6,
+    "received_cdp_frame_count": 4,
+    "missing_checkpoints_ms": [],
+    "requests": [
+      {
+        "url": "http://127.0.0.1:8000/reader/",
+        "type": "Document",
+        "bytesDecodedChunks": 63001,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 14218,
+        "http_status": 200,
+        "mime_type": "text/html"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/variables.08e33724.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 3723,
+        "bytesEncodedChunks": 1290,
+        "bytesEncodedFinished": 1537,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/palette.36d9eaf5.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 171045,
+        "bytesEncodedChunks": 30539,
+        "bytesEncodedFinished": 30787,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/main.d20ef4df.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 39850,
+        "bytesEncodedChunks": 7732,
+        "bytesEncodedFinished": 7979,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/components.45436e70.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 76763,
+        "bytesEncodedChunks": 13215,
+        "bytesEncodedFinished": 13463,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/text-size.a7cdb148.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 579,
+        "bytesEncodedChunks": 212,
+        "bytesEncodedFinished": 458,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/cards.bba89fe5.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 17860,
+        "bytesEncodedChunks": 3308,
+        "bytesEncodedFinished": 3555,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/palette-switcher.0f00e25e.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 20887,
+        "bytesEncodedChunks": 4429,
+        "bytesEncodedFinished": 4676,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/search.0f0c0c81.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 11118,
+        "bytesEncodedChunks": 2293,
+        "bytesEncodedFinished": 2540,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/markata-tailwind.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 8492,
+        "bytesEncodedChunks": 2033,
+        "bytesEncodedFinished": 2280,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/link-avatars.ab8178f9.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 679,
+        "bytesEncodedChunks": 283,
+        "bytesEncodedFinished": 529,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/aesthetic.fd1f2276.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 18818,
+        "bytesEncodedChunks": 3231,
+        "bytesEncodedFinished": 3478,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/adaptive-loading.fea7d7d6.js",
+        "type": "Script",
+        "bytesDecodedChunks": 6408,
+        "bytesEncodedChunks": 2399,
+        "bytesEncodedFinished": 2653,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/palette-switcher.b69367b1.js",
+        "type": "Script",
+        "bytesDecodedChunks": 33578,
+        "bytesEncodedChunks": 10518,
+        "bytesEncodedFinished": 10773,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/text-size.939ab303.js",
+        "type": "Script",
+        "bytesDecodedChunks": 1159,
+        "bytesEncodedChunks": 531,
+        "bytesEncodedFinished": 784,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/heading-highlights.ce5a7302.js",
+        "type": "Script",
+        "bytesDecodedChunks": 2988,
+        "bytesEncodedChunks": 1337,
+        "bytesEncodedFinished": 1591,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/fit-post-titles.a8799b3f.js",
+        "type": "Script",
+        "bytesDecodedChunks": 1075,
+        "bytesEncodedChunks": 595,
+        "bytesEncodedFinished": 848,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/scroll-spy.1bf62692.js",
+        "type": "Script",
+        "bytesDecodedChunks": 5571,
+        "bytesEncodedChunks": 2270,
+        "bytesEncodedFinished": 2524,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/tooltips.5c989f85.js",
+        "type": "Script",
+        "bytesDecodedChunks": 8281,
+        "bytesEncodedChunks": 2950,
+        "bytesEncodedFinished": 3204,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/view-transitions.743e29a4.js",
+        "type": "Script",
+        "bytesDecodedChunks": 23818,
+        "bytesEncodedChunks": 7032,
+        "bytesEncodedFinished": 7286,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/conditional-css.86777e3d.js",
+        "type": "Script",
+        "bytesDecodedChunks": 3715,
+        "bytesEncodedChunks": 1485,
+        "bytesEncodedFinished": 1739,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/w.svg",
+        "type": "Image",
+        "bytesDecodedChunks": 373,
+        "bytesEncodedChunks": 266,
+        "bytesEncodedFinished": 502,
+        "http_status": 200,
+        "mime_type": "image/svg+xml"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/shortcuts-registry.47e34d14.js",
+        "type": "Script",
+        "bytesDecodedChunks": 3775,
+        "bytesEncodedChunks": 1476,
+        "bytesEncodedFinished": 1730,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/_pagefind/pagefind-ui.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 404,
+        "mime_type": "text/html"
+      },
+      {
+        "url": "http://127.0.0.1:8000/_pagefind/pagefind-ui.js",
+        "type": "Script",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 404,
+        "mime_type": "text/html"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/search-shortcuts.dbacfc75.js",
+        "type": "Script",
+        "bytesDecodedChunks": 4892,
+        "bytesEncodedChunks": 1609,
+        "bytesEncodedFinished": 1863,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/scrolling-shortcuts.b3e4e8fa.js",
+        "type": "Script",
+        "bytesDecodedChunks": 2410,
+        "bytesEncodedChunks": 862,
+        "bytesEncodedFinished": 1115,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/history-shortcuts.06ade051.js",
+        "type": "Script",
+        "bytesDecodedChunks": 645,
+        "bytesEncodedChunks": 327,
+        "bytesEncodedFinished": 580,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/favicon.ico",
+        "type": "Other",
+        "bytesDecodedChunks": 4286,
+        "bytesEncodedChunks": 4286,
+        "bytesEncodedFinished": 4510,
+        "http_status": 200,
+        "mime_type": "image/vnd.microsoft.icon"
+      }
+    ],
+    "network_failures": [
+      {
+        "url": "http://127.0.0.1:8000/_pagefind/pagefind-ui.css",
+        "error": "net::ERR_ABORTED"
+      },
+      {
+        "url": "http://127.0.0.1:8000/_pagefind/pagefind-ui.js",
+        "error": "net::ERR_ABORTED"
+      }
+    ],
+    "invalid_asset_responses": [
+      {
+        "url": "http://127.0.0.1:8000/_pagefind/pagefind-ui.css",
+        "type": "Stylesheet",
+        "status": 404,
+        "mime_type": "text/html",
+        "problem": "HTTP 404"
+      },
+      {
+        "url": "http://127.0.0.1:8000/_pagefind/pagefind-ui.js",
+        "type": "Script",
+        "status": 404,
+        "mime_type": "text/html",
+        "problem": "HTTP 404"
+      }
+    ],
+    "document_delivery": {
+      "status": 200,
+      "protocol": "http/1.1",
+      "content_encoding": "gzip",
+      "mime_type": "text/html"
+    },
+    "encoded_bytes_completed": 127202,
+    "error": null,
+    "valid_filmstrip": false
+  },
+  {
+    "variant": "after",
+    "run": 3,
+    "url": "http://127.0.0.1:8001/reader/",
+    "http_status": 200,
+    "metrics": {
+      "fcp": 2980,
+      "lcp": 2980,
+      "lcpTag": "P",
+      "lcpURL": null,
+      "cls": 0
+    },
+    "frames": [
+      {
+        "requested_checkpoint_ms": 1000,
+        "snapshot_at_ms": 1000.78,
+        "frame_received_at_ms": 12.03,
+        "cdp_frame_timestamp": 1791943393.572176,
+        "file": "filmstrips/after-03/checkpoint-1000ms-snapshot-1001ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 2000,
+        "snapshot_at_ms": 2000.38,
+        "frame_received_at_ms": 12.03,
+        "cdp_frame_timestamp": 1791943393.572176,
+        "file": "filmstrips/after-03/checkpoint-2000ms-snapshot-2000ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 5000,
+        "snapshot_at_ms": 5001.44,
+        "frame_received_at_ms": 3244.16,
+        "cdp_frame_timestamp": 1791943396.803078,
+        "file": "filmstrips/after-03/checkpoint-5000ms-snapshot-5001ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 8000,
+        "snapshot_at_ms": 8003.44,
+        "frame_received_at_ms": 3244.16,
+        "cdp_frame_timestamp": 1791943396.803078,
+        "file": "filmstrips/after-03/checkpoint-8000ms-snapshot-8003ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 12000,
+        "snapshot_at_ms": 12001.15,
+        "frame_received_at_ms": 3244.16,
+        "cdp_frame_timestamp": 1791943396.803078,
+        "file": "filmstrips/after-03/checkpoint-12000ms-snapshot-12001ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 15000,
+        "snapshot_at_ms": 15003.41,
+        "frame_received_at_ms": 3244.16,
+        "cdp_frame_timestamp": 1791943396.803078,
+        "file": "filmstrips/after-03/checkpoint-15000ms-snapshot-15003ms.jpg"
+      }
+    ],
+    "frame_count": 6,
+    "received_cdp_frame_count": 4,
+    "missing_checkpoints_ms": [],
+    "requests": [
+      {
+        "url": "http://127.0.0.1:8001/reader/",
+        "type": "Document",
+        "bytesDecodedChunks": 63001,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 14218,
+        "http_status": 200,
+        "mime_type": "text/html"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/variables.08e33724.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 3723,
+        "bytesEncodedChunks": 1290,
+        "bytesEncodedFinished": 1537,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/palette.36d9eaf5.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 171045,
+        "bytesEncodedChunks": 30539,
+        "bytesEncodedFinished": 30787,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/main.d20ef4df.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 39850,
+        "bytesEncodedChunks": 7732,
+        "bytesEncodedFinished": 7979,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/components.45436e70.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 76763,
+        "bytesEncodedChunks": 13215,
+        "bytesEncodedFinished": 13463,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/text-size.a7cdb148.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 579,
+        "bytesEncodedChunks": 212,
+        "bytesEncodedFinished": 458,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/cards.bba89fe5.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 17860,
+        "bytesEncodedChunks": 3308,
+        "bytesEncodedFinished": 3555,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/palette-switcher.0f00e25e.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 20887,
+        "bytesEncodedChunks": 4429,
+        "bytesEncodedFinished": 4676,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/search.0f0c0c81.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 11118,
+        "bytesEncodedChunks": 2293,
+        "bytesEncodedFinished": 2540,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/markata-tailwind.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 8492,
+        "bytesEncodedChunks": 2033,
+        "bytesEncodedFinished": 2280,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/link-avatars.ab8178f9.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 679,
+        "bytesEncodedChunks": 283,
+        "bytesEncodedFinished": 529,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/aesthetic.fd1f2276.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 18818,
+        "bytesEncodedChunks": 3231,
+        "bytesEncodedFinished": 3478,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/adaptive-loading.fea7d7d6.js",
+        "type": "Script",
+        "bytesDecodedChunks": 6408,
+        "bytesEncodedChunks": 2399,
+        "bytesEncodedFinished": 2653,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/palette-switcher.b69367b1.js",
+        "type": "Script",
+        "bytesDecodedChunks": 33578,
+        "bytesEncodedChunks": 10518,
+        "bytesEncodedFinished": 10773,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/text-size.939ab303.js",
+        "type": "Script",
+        "bytesDecodedChunks": 1159,
+        "bytesEncodedChunks": 531,
+        "bytesEncodedFinished": 784,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/heading-highlights.ce5a7302.js",
+        "type": "Script",
+        "bytesDecodedChunks": 2988,
+        "bytesEncodedChunks": 1337,
+        "bytesEncodedFinished": 1591,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/fit-post-titles.a8799b3f.js",
+        "type": "Script",
+        "bytesDecodedChunks": 1075,
+        "bytesEncodedChunks": 595,
+        "bytesEncodedFinished": 848,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/scroll-spy.1bf62692.js",
+        "type": "Script",
+        "bytesDecodedChunks": 5571,
+        "bytesEncodedChunks": 2270,
+        "bytesEncodedFinished": 2524,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/tooltips.5c989f85.js",
+        "type": "Script",
+        "bytesDecodedChunks": 8281,
+        "bytesEncodedChunks": 2950,
+        "bytesEncodedFinished": 3204,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/view-transitions.743e29a4.js",
+        "type": "Script",
+        "bytesDecodedChunks": 23818,
+        "bytesEncodedChunks": 7032,
+        "bytesEncodedFinished": 7286,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/conditional-css.86777e3d.js",
+        "type": "Script",
+        "bytesDecodedChunks": 3715,
+        "bytesEncodedChunks": 1485,
+        "bytesEncodedFinished": 1739,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/w.svg",
+        "type": "Image",
+        "bytesDecodedChunks": 373,
+        "bytesEncodedChunks": 266,
+        "bytesEncodedFinished": 502,
+        "http_status": 200,
+        "mime_type": "image/svg+xml"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/shortcuts-registry.47e34d14.js",
+        "type": "Script",
+        "bytesDecodedChunks": 3775,
+        "bytesEncodedChunks": 1476,
+        "bytesEncodedFinished": 1730,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/_pagefind/pagefind-ui.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 404,
+        "mime_type": "text/html"
+      },
+      {
+        "url": "http://127.0.0.1:8001/_pagefind/pagefind-ui.js",
+        "type": "Script",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 404,
+        "mime_type": "text/html"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/search-shortcuts.dbacfc75.js",
+        "type": "Script",
+        "bytesDecodedChunks": 4892,
+        "bytesEncodedChunks": 1609,
+        "bytesEncodedFinished": 1863,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/scrolling-shortcuts.b3e4e8fa.js",
+        "type": "Script",
+        "bytesDecodedChunks": 2410,
+        "bytesEncodedChunks": 862,
+        "bytesEncodedFinished": 1115,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/history-shortcuts.06ade051.js",
+        "type": "Script",
+        "bytesDecodedChunks": 645,
+        "bytesEncodedChunks": 327,
+        "bytesEncodedFinished": 580,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/favicon.ico",
+        "type": "Other",
+        "bytesDecodedChunks": 4286,
+        "bytesEncodedChunks": 4286,
+        "bytesEncodedFinished": 4510,
+        "http_status": 200,
+        "mime_type": "image/vnd.microsoft.icon"
+      }
+    ],
+    "network_failures": [
+      {
+        "url": "http://127.0.0.1:8001/_pagefind/pagefind-ui.css",
+        "error": "net::ERR_ABORTED"
+      },
+      {
+        "url": "http://127.0.0.1:8001/_pagefind/pagefind-ui.js",
+        "error": "net::ERR_ABORTED"
+      }
+    ],
+    "invalid_asset_responses": [
+      {
+        "url": "http://127.0.0.1:8001/_pagefind/pagefind-ui.css",
+        "type": "Stylesheet",
+        "status": 404,
+        "mime_type": "text/html",
+        "problem": "HTTP 404"
+      },
+      {
+        "url": "http://127.0.0.1:8001/_pagefind/pagefind-ui.js",
+        "type": "Script",
+        "status": 404,
+        "mime_type": "text/html",
+        "problem": "HTTP 404"
+      }
+    ],
+    "document_delivery": {
+      "status": 200,
+      "protocol": "http/1.1",
+      "content_encoding": "gzip",
+      "mime_type": "text/html"
+    },
+    "encoded_bytes_completed": 127202,
+    "error": null,
+    "valid_filmstrip": false
+  },
+  {
+    "variant": "after",
+    "run": 4,
+    "url": "http://127.0.0.1:8001/reader/",
+    "http_status": 200,
+    "metrics": {
+      "fcp": 2976,
+      "lcp": 2976,
+      "lcpTag": "P",
+      "lcpURL": null,
+      "cls": 0
+    },
+    "frames": [
+      {
+        "requested_checkpoint_ms": 1000,
+        "snapshot_at_ms": 1000.46,
+        "frame_received_at_ms": 15.87,
+        "cdp_frame_timestamp": 1791943409.719027,
+        "file": "filmstrips/after-04/checkpoint-1000ms-snapshot-1000ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 2000,
+        "snapshot_at_ms": 2000.2,
+        "frame_received_at_ms": 15.87,
+        "cdp_frame_timestamp": 1791943409.719027,
+        "file": "filmstrips/after-04/checkpoint-2000ms-snapshot-2000ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 5000,
+        "snapshot_at_ms": 5000.88,
+        "frame_received_at_ms": 3220.29,
+        "cdp_frame_timestamp": 1791943412.92217,
+        "file": "filmstrips/after-04/checkpoint-5000ms-snapshot-5001ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 8000,
+        "snapshot_at_ms": 8002.88,
+        "frame_received_at_ms": 3220.29,
+        "cdp_frame_timestamp": 1791943412.92217,
+        "file": "filmstrips/after-04/checkpoint-8000ms-snapshot-8003ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 12000,
+        "snapshot_at_ms": 12004.32,
+        "frame_received_at_ms": 3220.29,
+        "cdp_frame_timestamp": 1791943412.92217,
+        "file": "filmstrips/after-04/checkpoint-12000ms-snapshot-12004ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 15000,
+        "snapshot_at_ms": 15002.88,
+        "frame_received_at_ms": 3220.29,
+        "cdp_frame_timestamp": 1791943412.92217,
+        "file": "filmstrips/after-04/checkpoint-15000ms-snapshot-15003ms.jpg"
+      }
+    ],
+    "frame_count": 6,
+    "received_cdp_frame_count": 4,
+    "missing_checkpoints_ms": [],
+    "requests": [
+      {
+        "url": "http://127.0.0.1:8001/reader/",
+        "type": "Document",
+        "bytesDecodedChunks": 63001,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 14218,
+        "http_status": 200,
+        "mime_type": "text/html"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/variables.08e33724.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 3723,
+        "bytesEncodedChunks": 1290,
+        "bytesEncodedFinished": 1537,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/palette.36d9eaf5.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 171045,
+        "bytesEncodedChunks": 30539,
+        "bytesEncodedFinished": 30787,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/main.d20ef4df.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 39850,
+        "bytesEncodedChunks": 7732,
+        "bytesEncodedFinished": 7979,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/components.45436e70.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 76763,
+        "bytesEncodedChunks": 13215,
+        "bytesEncodedFinished": 13463,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/text-size.a7cdb148.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 579,
+        "bytesEncodedChunks": 212,
+        "bytesEncodedFinished": 458,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/cards.bba89fe5.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 17860,
+        "bytesEncodedChunks": 3308,
+        "bytesEncodedFinished": 3555,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/palette-switcher.0f00e25e.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 20887,
+        "bytesEncodedChunks": 4429,
+        "bytesEncodedFinished": 4676,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/search.0f0c0c81.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 11118,
+        "bytesEncodedChunks": 2293,
+        "bytesEncodedFinished": 2540,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/markata-tailwind.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 8492,
+        "bytesEncodedChunks": 2033,
+        "bytesEncodedFinished": 2280,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/link-avatars.ab8178f9.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 679,
+        "bytesEncodedChunks": 283,
+        "bytesEncodedFinished": 529,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/aesthetic.fd1f2276.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 18818,
+        "bytesEncodedChunks": 3231,
+        "bytesEncodedFinished": 3478,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/adaptive-loading.fea7d7d6.js",
+        "type": "Script",
+        "bytesDecodedChunks": 6408,
+        "bytesEncodedChunks": 2399,
+        "bytesEncodedFinished": 2653,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/palette-switcher.b69367b1.js",
+        "type": "Script",
+        "bytesDecodedChunks": 33578,
+        "bytesEncodedChunks": 10518,
+        "bytesEncodedFinished": 10773,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/text-size.939ab303.js",
+        "type": "Script",
+        "bytesDecodedChunks": 1159,
+        "bytesEncodedChunks": 531,
+        "bytesEncodedFinished": 784,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/heading-highlights.ce5a7302.js",
+        "type": "Script",
+        "bytesDecodedChunks": 2988,
+        "bytesEncodedChunks": 1337,
+        "bytesEncodedFinished": 1591,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/fit-post-titles.a8799b3f.js",
+        "type": "Script",
+        "bytesDecodedChunks": 1075,
+        "bytesEncodedChunks": 595,
+        "bytesEncodedFinished": 848,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/scroll-spy.1bf62692.js",
+        "type": "Script",
+        "bytesDecodedChunks": 5571,
+        "bytesEncodedChunks": 2270,
+        "bytesEncodedFinished": 2524,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/tooltips.5c989f85.js",
+        "type": "Script",
+        "bytesDecodedChunks": 8281,
+        "bytesEncodedChunks": 2950,
+        "bytesEncodedFinished": 3204,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/view-transitions.743e29a4.js",
+        "type": "Script",
+        "bytesDecodedChunks": 23818,
+        "bytesEncodedChunks": 7032,
+        "bytesEncodedFinished": 7286,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/conditional-css.86777e3d.js",
+        "type": "Script",
+        "bytesDecodedChunks": 3715,
+        "bytesEncodedChunks": 1485,
+        "bytesEncodedFinished": 1739,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/w.svg",
+        "type": "Image",
+        "bytesDecodedChunks": 373,
+        "bytesEncodedChunks": 266,
+        "bytesEncodedFinished": 502,
+        "http_status": 200,
+        "mime_type": "image/svg+xml"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/shortcuts-registry.47e34d14.js",
+        "type": "Script",
+        "bytesDecodedChunks": 3775,
+        "bytesEncodedChunks": 1476,
+        "bytesEncodedFinished": 1730,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/_pagefind/pagefind-ui.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 404,
+        "mime_type": "text/html"
+      },
+      {
+        "url": "http://127.0.0.1:8001/_pagefind/pagefind-ui.js",
+        "type": "Script",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 404,
+        "mime_type": "text/html"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/search-shortcuts.dbacfc75.js",
+        "type": "Script",
+        "bytesDecodedChunks": 4892,
+        "bytesEncodedChunks": 1609,
+        "bytesEncodedFinished": 1863,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/scrolling-shortcuts.b3e4e8fa.js",
+        "type": "Script",
+        "bytesDecodedChunks": 2410,
+        "bytesEncodedChunks": 862,
+        "bytesEncodedFinished": 1115,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/history-shortcuts.06ade051.js",
+        "type": "Script",
+        "bytesDecodedChunks": 645,
+        "bytesEncodedChunks": 327,
+        "bytesEncodedFinished": 580,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/favicon.ico",
+        "type": "Other",
+        "bytesDecodedChunks": 4286,
+        "bytesEncodedChunks": 4286,
+        "bytesEncodedFinished": 4510,
+        "http_status": 200,
+        "mime_type": "image/vnd.microsoft.icon"
+      }
+    ],
+    "network_failures": [
+      {
+        "url": "http://127.0.0.1:8001/_pagefind/pagefind-ui.css",
+        "error": "net::ERR_ABORTED"
+      },
+      {
+        "url": "http://127.0.0.1:8001/_pagefind/pagefind-ui.js",
+        "error": "net::ERR_ABORTED"
+      }
+    ],
+    "invalid_asset_responses": [
+      {
+        "url": "http://127.0.0.1:8001/_pagefind/pagefind-ui.css",
+        "type": "Stylesheet",
+        "status": 404,
+        "mime_type": "text/html",
+        "problem": "HTTP 404"
+      },
+      {
+        "url": "http://127.0.0.1:8001/_pagefind/pagefind-ui.js",
+        "type": "Script",
+        "status": 404,
+        "mime_type": "text/html",
+        "problem": "HTTP 404"
+      }
+    ],
+    "document_delivery": {
+      "status": 200,
+      "protocol": "http/1.1",
+      "content_encoding": "gzip",
+      "mime_type": "text/html"
+    },
+    "encoded_bytes_completed": 127202,
+    "error": null,
+    "valid_filmstrip": false
+  },
+  {
+    "variant": "before",
+    "run": 4,
+    "url": "http://127.0.0.1:8000/reader/",
+    "http_status": 200,
+    "metrics": {
+      "fcp": 2956,
+      "lcp": 2956,
+      "lcpTag": "P",
+      "lcpURL": null,
+      "cls": 0
+    },
+    "frames": [
+      {
+        "requested_checkpoint_ms": 1000,
+        "snapshot_at_ms": 1000.15,
+        "frame_received_at_ms": 21.67,
+        "cdp_frame_timestamp": 1791943425.882051,
+        "file": "filmstrips/before-04/checkpoint-1000ms-snapshot-1000ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 2000,
+        "snapshot_at_ms": 2001.5,
+        "frame_received_at_ms": 21.67,
+        "cdp_frame_timestamp": 1791943425.882051,
+        "file": "filmstrips/before-04/checkpoint-2000ms-snapshot-2002ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 5000,
+        "snapshot_at_ms": 5001.69,
+        "frame_received_at_ms": 3219.33,
+        "cdp_frame_timestamp": 1791943429.079577,
+        "file": "filmstrips/before-04/checkpoint-5000ms-snapshot-5002ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 8000,
+        "snapshot_at_ms": 8002.57,
+        "frame_received_at_ms": 3219.33,
+        "cdp_frame_timestamp": 1791943429.079577,
+        "file": "filmstrips/before-04/checkpoint-8000ms-snapshot-8003ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 12000,
+        "snapshot_at_ms": 12004.6,
+        "frame_received_at_ms": 3219.33,
+        "cdp_frame_timestamp": 1791943429.079577,
+        "file": "filmstrips/before-04/checkpoint-12000ms-snapshot-12005ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 15000,
+        "snapshot_at_ms": 15002.17,
+        "frame_received_at_ms": 3219.33,
+        "cdp_frame_timestamp": 1791943429.079577,
+        "file": "filmstrips/before-04/checkpoint-15000ms-snapshot-15002ms.jpg"
+      }
+    ],
+    "frame_count": 6,
+    "received_cdp_frame_count": 4,
+    "missing_checkpoints_ms": [],
+    "requests": [
+      {
+        "url": "http://127.0.0.1:8000/reader/",
+        "type": "Document",
+        "bytesDecodedChunks": 63001,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 14218,
+        "http_status": 200,
+        "mime_type": "text/html"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/variables.08e33724.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 3723,
+        "bytesEncodedChunks": 1290,
+        "bytesEncodedFinished": 1537,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/palette.36d9eaf5.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 171045,
+        "bytesEncodedChunks": 30539,
+        "bytesEncodedFinished": 30787,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/main.d20ef4df.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 39850,
+        "bytesEncodedChunks": 7732,
+        "bytesEncodedFinished": 7979,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/components.45436e70.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 76763,
+        "bytesEncodedChunks": 13215,
+        "bytesEncodedFinished": 13463,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/text-size.a7cdb148.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 579,
+        "bytesEncodedChunks": 212,
+        "bytesEncodedFinished": 458,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/cards.bba89fe5.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 17860,
+        "bytesEncodedChunks": 3308,
+        "bytesEncodedFinished": 3555,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/palette-switcher.0f00e25e.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 20887,
+        "bytesEncodedChunks": 4429,
+        "bytesEncodedFinished": 4676,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/search.0f0c0c81.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 11118,
+        "bytesEncodedChunks": 2293,
+        "bytesEncodedFinished": 2540,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/markata-tailwind.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 8492,
+        "bytesEncodedChunks": 2033,
+        "bytesEncodedFinished": 2280,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/link-avatars.ab8178f9.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 679,
+        "bytesEncodedChunks": 283,
+        "bytesEncodedFinished": 529,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/aesthetic.fd1f2276.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 18818,
+        "bytesEncodedChunks": 3231,
+        "bytesEncodedFinished": 3478,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/adaptive-loading.fea7d7d6.js",
+        "type": "Script",
+        "bytesDecodedChunks": 6408,
+        "bytesEncodedChunks": 2399,
+        "bytesEncodedFinished": 2653,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/palette-switcher.b69367b1.js",
+        "type": "Script",
+        "bytesDecodedChunks": 33578,
+        "bytesEncodedChunks": 10518,
+        "bytesEncodedFinished": 10773,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/text-size.939ab303.js",
+        "type": "Script",
+        "bytesDecodedChunks": 1159,
+        "bytesEncodedChunks": 531,
+        "bytesEncodedFinished": 784,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/heading-highlights.ce5a7302.js",
+        "type": "Script",
+        "bytesDecodedChunks": 2988,
+        "bytesEncodedChunks": 1337,
+        "bytesEncodedFinished": 1591,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/fit-post-titles.a8799b3f.js",
+        "type": "Script",
+        "bytesDecodedChunks": 1075,
+        "bytesEncodedChunks": 595,
+        "bytesEncodedFinished": 848,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/scroll-spy.1bf62692.js",
+        "type": "Script",
+        "bytesDecodedChunks": 5571,
+        "bytesEncodedChunks": 2270,
+        "bytesEncodedFinished": 2524,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/tooltips.5c989f85.js",
+        "type": "Script",
+        "bytesDecodedChunks": 8281,
+        "bytesEncodedChunks": 2950,
+        "bytesEncodedFinished": 3204,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/view-transitions.743e29a4.js",
+        "type": "Script",
+        "bytesDecodedChunks": 23818,
+        "bytesEncodedChunks": 7032,
+        "bytesEncodedFinished": 7286,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/conditional-css.86777e3d.js",
+        "type": "Script",
+        "bytesDecodedChunks": 3715,
+        "bytesEncodedChunks": 1485,
+        "bytesEncodedFinished": 1739,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/w.svg",
+        "type": "Image",
+        "bytesDecodedChunks": 373,
+        "bytesEncodedChunks": 266,
+        "bytesEncodedFinished": 502,
+        "http_status": 200,
+        "mime_type": "image/svg+xml"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/shortcuts-registry.47e34d14.js",
+        "type": "Script",
+        "bytesDecodedChunks": 3775,
+        "bytesEncodedChunks": 1476,
+        "bytesEncodedFinished": 1730,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/_pagefind/pagefind-ui.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 404,
+        "mime_type": "text/html"
+      },
+      {
+        "url": "http://127.0.0.1:8000/_pagefind/pagefind-ui.js",
+        "type": "Script",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 404,
+        "mime_type": "text/html"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/search-shortcuts.dbacfc75.js",
+        "type": "Script",
+        "bytesDecodedChunks": 4892,
+        "bytesEncodedChunks": 1609,
+        "bytesEncodedFinished": 1863,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/scrolling-shortcuts.b3e4e8fa.js",
+        "type": "Script",
+        "bytesDecodedChunks": 2410,
+        "bytesEncodedChunks": 862,
+        "bytesEncodedFinished": 1115,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/history-shortcuts.06ade051.js",
+        "type": "Script",
+        "bytesDecodedChunks": 645,
+        "bytesEncodedChunks": 327,
+        "bytesEncodedFinished": 580,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/favicon.ico",
+        "type": "Other",
+        "bytesDecodedChunks": 4286,
+        "bytesEncodedChunks": 4286,
+        "bytesEncodedFinished": 4510,
+        "http_status": 200,
+        "mime_type": "image/vnd.microsoft.icon"
+      }
+    ],
+    "network_failures": [
+      {
+        "url": "http://127.0.0.1:8000/_pagefind/pagefind-ui.js",
+        "error": "net::ERR_ABORTED"
+      },
+      {
+        "url": "http://127.0.0.1:8000/_pagefind/pagefind-ui.css",
+        "error": "net::ERR_ABORTED"
+      }
+    ],
+    "invalid_asset_responses": [
+      {
+        "url": "http://127.0.0.1:8000/_pagefind/pagefind-ui.js",
+        "type": "Script",
+        "status": 404,
+        "mime_type": "text/html",
+        "problem": "HTTP 404"
+      },
+      {
+        "url": "http://127.0.0.1:8000/_pagefind/pagefind-ui.css",
+        "type": "Stylesheet",
+        "status": 404,
+        "mime_type": "text/html",
+        "problem": "HTTP 404"
+      }
+    ],
+    "document_delivery": {
+      "status": 200,
+      "protocol": "http/1.1",
+      "content_encoding": "gzip",
+      "mime_type": "text/html"
+    },
+    "encoded_bytes_completed": 127202,
+    "error": null,
+    "valid_filmstrip": false
+  },
+  {
+    "variant": "before",
+    "run": 5,
+    "url": "http://127.0.0.1:8000/reader/",
+    "http_status": 200,
+    "metrics": {
+      "fcp": 3056,
+      "lcp": 3056,
+      "lcpTag": "P",
+      "lcpURL": null,
+      "cls": 0
+    },
+    "frames": [
+      {
+        "requested_checkpoint_ms": 1000,
+        "snapshot_at_ms": 1000.27,
+        "frame_received_at_ms": 12.31,
+        "cdp_frame_timestamp": 1791943442.020586,
+        "file": "filmstrips/before-05/checkpoint-1000ms-snapshot-1000ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 2000,
+        "snapshot_at_ms": 2000.25,
+        "frame_received_at_ms": 12.31,
+        "cdp_frame_timestamp": 1791943442.020586,
+        "file": "filmstrips/before-05/checkpoint-2000ms-snapshot-2000ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 5000,
+        "snapshot_at_ms": 5002.2,
+        "frame_received_at_ms": 3304.65,
+        "cdp_frame_timestamp": 1791943445.312914,
+        "file": "filmstrips/before-05/checkpoint-5000ms-snapshot-5002ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 8000,
+        "snapshot_at_ms": 8003.7,
+        "frame_received_at_ms": 3304.65,
+        "cdp_frame_timestamp": 1791943445.312914,
+        "file": "filmstrips/before-05/checkpoint-8000ms-snapshot-8004ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 12000,
+        "snapshot_at_ms": 12004.19,
+        "frame_received_at_ms": 3304.65,
+        "cdp_frame_timestamp": 1791943445.312914,
+        "file": "filmstrips/before-05/checkpoint-12000ms-snapshot-12004ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 15000,
+        "snapshot_at_ms": 15002.71,
+        "frame_received_at_ms": 3304.65,
+        "cdp_frame_timestamp": 1791943445.312914,
+        "file": "filmstrips/before-05/checkpoint-15000ms-snapshot-15003ms.jpg"
+      }
+    ],
+    "frame_count": 6,
+    "received_cdp_frame_count": 4,
+    "missing_checkpoints_ms": [],
+    "requests": [
+      {
+        "url": "http://127.0.0.1:8000/reader/",
+        "type": "Document",
+        "bytesDecodedChunks": 63001,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 14218,
+        "http_status": 200,
+        "mime_type": "text/html"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/variables.08e33724.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 3723,
+        "bytesEncodedChunks": 1290,
+        "bytesEncodedFinished": 1537,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/palette.36d9eaf5.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 171045,
+        "bytesEncodedChunks": 30539,
+        "bytesEncodedFinished": 30787,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/main.d20ef4df.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 39850,
+        "bytesEncodedChunks": 7732,
+        "bytesEncodedFinished": 7979,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/components.45436e70.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 76763,
+        "bytesEncodedChunks": 13215,
+        "bytesEncodedFinished": 13463,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/text-size.a7cdb148.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 579,
+        "bytesEncodedChunks": 212,
+        "bytesEncodedFinished": 458,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/cards.bba89fe5.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 17860,
+        "bytesEncodedChunks": 3308,
+        "bytesEncodedFinished": 3555,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/palette-switcher.0f00e25e.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 20887,
+        "bytesEncodedChunks": 4429,
+        "bytesEncodedFinished": 4676,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/search.0f0c0c81.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 11118,
+        "bytesEncodedChunks": 2293,
+        "bytesEncodedFinished": 2540,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/markata-tailwind.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 8492,
+        "bytesEncodedChunks": 2033,
+        "bytesEncodedFinished": 2280,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/link-avatars.ab8178f9.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 679,
+        "bytesEncodedChunks": 283,
+        "bytesEncodedFinished": 529,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/aesthetic.fd1f2276.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 18818,
+        "bytesEncodedChunks": 3231,
+        "bytesEncodedFinished": 3478,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/adaptive-loading.fea7d7d6.js",
+        "type": "Script",
+        "bytesDecodedChunks": 6408,
+        "bytesEncodedChunks": 2399,
+        "bytesEncodedFinished": 2653,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/palette-switcher.b69367b1.js",
+        "type": "Script",
+        "bytesDecodedChunks": 33578,
+        "bytesEncodedChunks": 10518,
+        "bytesEncodedFinished": 10773,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/text-size.939ab303.js",
+        "type": "Script",
+        "bytesDecodedChunks": 1159,
+        "bytesEncodedChunks": 531,
+        "bytesEncodedFinished": 784,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/heading-highlights.ce5a7302.js",
+        "type": "Script",
+        "bytesDecodedChunks": 2988,
+        "bytesEncodedChunks": 1337,
+        "bytesEncodedFinished": 1591,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/fit-post-titles.a8799b3f.js",
+        "type": "Script",
+        "bytesDecodedChunks": 1075,
+        "bytesEncodedChunks": 595,
+        "bytesEncodedFinished": 848,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/scroll-spy.1bf62692.js",
+        "type": "Script",
+        "bytesDecodedChunks": 5571,
+        "bytesEncodedChunks": 2270,
+        "bytesEncodedFinished": 2524,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/tooltips.5c989f85.js",
+        "type": "Script",
+        "bytesDecodedChunks": 8281,
+        "bytesEncodedChunks": 2950,
+        "bytesEncodedFinished": 3204,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/view-transitions.743e29a4.js",
+        "type": "Script",
+        "bytesDecodedChunks": 23818,
+        "bytesEncodedChunks": 7032,
+        "bytesEncodedFinished": 7286,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/conditional-css.86777e3d.js",
+        "type": "Script",
+        "bytesDecodedChunks": 3715,
+        "bytesEncodedChunks": 1485,
+        "bytesEncodedFinished": 1739,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/shortcuts-registry.47e34d14.js",
+        "type": "Script",
+        "bytesDecodedChunks": 3775,
+        "bytesEncodedChunks": 1476,
+        "bytesEncodedFinished": 1730,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/w.svg",
+        "type": "Image",
+        "bytesDecodedChunks": 373,
+        "bytesEncodedChunks": 266,
+        "bytesEncodedFinished": 502,
+        "http_status": 200,
+        "mime_type": "image/svg+xml"
+      },
+      {
+        "url": "http://127.0.0.1:8000/_pagefind/pagefind-ui.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 404,
+        "mime_type": "text/html"
+      },
+      {
+        "url": "http://127.0.0.1:8000/_pagefind/pagefind-ui.js",
+        "type": "Script",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 404,
+        "mime_type": "text/html"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/search-shortcuts.dbacfc75.js",
+        "type": "Script",
+        "bytesDecodedChunks": 4892,
+        "bytesEncodedChunks": 1609,
+        "bytesEncodedFinished": 1863,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/scrolling-shortcuts.b3e4e8fa.js",
+        "type": "Script",
+        "bytesDecodedChunks": 2410,
+        "bytesEncodedChunks": 862,
+        "bytesEncodedFinished": 1115,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/history-shortcuts.06ade051.js",
+        "type": "Script",
+        "bytesDecodedChunks": 645,
+        "bytesEncodedChunks": 327,
+        "bytesEncodedFinished": 580,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/favicon.ico",
+        "type": "Other",
+        "bytesDecodedChunks": 4286,
+        "bytesEncodedChunks": 4286,
+        "bytesEncodedFinished": 4510,
+        "http_status": 200,
+        "mime_type": "image/vnd.microsoft.icon"
+      }
+    ],
+    "network_failures": [
+      {
+        "url": "http://127.0.0.1:8000/_pagefind/pagefind-ui.css",
+        "error": "net::ERR_ABORTED"
+      },
+      {
+        "url": "http://127.0.0.1:8000/_pagefind/pagefind-ui.js",
+        "error": "net::ERR_ABORTED"
+      }
+    ],
+    "invalid_asset_responses": [
+      {
+        "url": "http://127.0.0.1:8000/_pagefind/pagefind-ui.css",
+        "type": "Stylesheet",
+        "status": 404,
+        "mime_type": "text/html",
+        "problem": "HTTP 404"
+      },
+      {
+        "url": "http://127.0.0.1:8000/_pagefind/pagefind-ui.js",
+        "type": "Script",
+        "status": 404,
+        "mime_type": "text/html",
+        "problem": "HTTP 404"
+      }
+    ],
+    "document_delivery": {
+      "status": 200,
+      "protocol": "http/1.1",
+      "content_encoding": "gzip",
+      "mime_type": "text/html"
+    },
+    "encoded_bytes_completed": 127202,
+    "error": null,
+    "valid_filmstrip": false
+  },
+  {
+    "variant": "after",
+    "run": 5,
+    "url": "http://127.0.0.1:8001/reader/",
+    "http_status": 200,
+    "metrics": {
+      "fcp": 2984,
+      "lcp": 2984,
+      "lcpTag": "P",
+      "lcpURL": null,
+      "cls": 0
+    },
+    "frames": [
+      {
+        "requested_checkpoint_ms": 1000,
+        "snapshot_at_ms": 1000.57,
+        "frame_received_at_ms": 13.24,
+        "cdp_frame_timestamp": 1791943458.180389,
+        "file": "filmstrips/after-05/checkpoint-1000ms-snapshot-1001ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 2000,
+        "snapshot_at_ms": 2000.14,
+        "frame_received_at_ms": 13.24,
+        "cdp_frame_timestamp": 1791943458.180389,
+        "file": "filmstrips/after-05/checkpoint-2000ms-snapshot-2000ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 5000,
+        "snapshot_at_ms": 5000.89,
+        "frame_received_at_ms": 3236.65,
+        "cdp_frame_timestamp": 1791943461.403468,
+        "file": "filmstrips/after-05/checkpoint-5000ms-snapshot-5001ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 8000,
+        "snapshot_at_ms": 8001.86,
+        "frame_received_at_ms": 3236.65,
+        "cdp_frame_timestamp": 1791943461.403468,
+        "file": "filmstrips/after-05/checkpoint-8000ms-snapshot-8002ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 12000,
+        "snapshot_at_ms": 12004.21,
+        "frame_received_at_ms": 3236.65,
+        "cdp_frame_timestamp": 1791943461.403468,
+        "file": "filmstrips/after-05/checkpoint-12000ms-snapshot-12004ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 15000,
+        "snapshot_at_ms": 15003.41,
+        "frame_received_at_ms": 3236.65,
+        "cdp_frame_timestamp": 1791943461.403468,
+        "file": "filmstrips/after-05/checkpoint-15000ms-snapshot-15003ms.jpg"
+      }
+    ],
+    "frame_count": 6,
+    "received_cdp_frame_count": 4,
+    "missing_checkpoints_ms": [],
+    "requests": [
+      {
+        "url": "http://127.0.0.1:8001/reader/",
+        "type": "Document",
+        "bytesDecodedChunks": 63001,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 14218,
+        "http_status": 200,
+        "mime_type": "text/html"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/variables.08e33724.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 3723,
+        "bytesEncodedChunks": 1290,
+        "bytesEncodedFinished": 1537,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/palette.36d9eaf5.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 171045,
+        "bytesEncodedChunks": 30539,
+        "bytesEncodedFinished": 30787,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/main.d20ef4df.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 39850,
+        "bytesEncodedChunks": 7732,
+        "bytesEncodedFinished": 7979,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/components.45436e70.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 76763,
+        "bytesEncodedChunks": 13215,
+        "bytesEncodedFinished": 13463,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/text-size.a7cdb148.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 579,
+        "bytesEncodedChunks": 212,
+        "bytesEncodedFinished": 458,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/cards.bba89fe5.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 17860,
+        "bytesEncodedChunks": 3308,
+        "bytesEncodedFinished": 3555,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/palette-switcher.0f00e25e.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 20887,
+        "bytesEncodedChunks": 4429,
+        "bytesEncodedFinished": 4676,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/search.0f0c0c81.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 11118,
+        "bytesEncodedChunks": 2293,
+        "bytesEncodedFinished": 2540,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/markata-tailwind.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 8492,
+        "bytesEncodedChunks": 2033,
+        "bytesEncodedFinished": 2280,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/link-avatars.ab8178f9.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 679,
+        "bytesEncodedChunks": 283,
+        "bytesEncodedFinished": 529,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/aesthetic.fd1f2276.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 18818,
+        "bytesEncodedChunks": 3231,
+        "bytesEncodedFinished": 3478,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/adaptive-loading.fea7d7d6.js",
+        "type": "Script",
+        "bytesDecodedChunks": 6408,
+        "bytesEncodedChunks": 2399,
+        "bytesEncodedFinished": 2653,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/palette-switcher.b69367b1.js",
+        "type": "Script",
+        "bytesDecodedChunks": 33578,
+        "bytesEncodedChunks": 10518,
+        "bytesEncodedFinished": 10773,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/text-size.939ab303.js",
+        "type": "Script",
+        "bytesDecodedChunks": 1159,
+        "bytesEncodedChunks": 531,
+        "bytesEncodedFinished": 784,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/heading-highlights.ce5a7302.js",
+        "type": "Script",
+        "bytesDecodedChunks": 2988,
+        "bytesEncodedChunks": 1337,
+        "bytesEncodedFinished": 1591,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/fit-post-titles.a8799b3f.js",
+        "type": "Script",
+        "bytesDecodedChunks": 1075,
+        "bytesEncodedChunks": 595,
+        "bytesEncodedFinished": 848,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/scroll-spy.1bf62692.js",
+        "type": "Script",
+        "bytesDecodedChunks": 5571,
+        "bytesEncodedChunks": 2270,
+        "bytesEncodedFinished": 2524,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/tooltips.5c989f85.js",
+        "type": "Script",
+        "bytesDecodedChunks": 8281,
+        "bytesEncodedChunks": 2950,
+        "bytesEncodedFinished": 3204,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/view-transitions.743e29a4.js",
+        "type": "Script",
+        "bytesDecodedChunks": 23818,
+        "bytesEncodedChunks": 7032,
+        "bytesEncodedFinished": 7286,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/conditional-css.86777e3d.js",
+        "type": "Script",
+        "bytesDecodedChunks": 3715,
+        "bytesEncodedChunks": 1485,
+        "bytesEncodedFinished": 1739,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/w.svg",
+        "type": "Image",
+        "bytesDecodedChunks": 373,
+        "bytesEncodedChunks": 266,
+        "bytesEncodedFinished": 502,
+        "http_status": 200,
+        "mime_type": "image/svg+xml"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/shortcuts-registry.47e34d14.js",
+        "type": "Script",
+        "bytesDecodedChunks": 3775,
+        "bytesEncodedChunks": 1476,
+        "bytesEncodedFinished": 1730,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/_pagefind/pagefind-ui.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 404,
+        "mime_type": "text/html"
+      },
+      {
+        "url": "http://127.0.0.1:8001/_pagefind/pagefind-ui.js",
+        "type": "Script",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 404,
+        "mime_type": "text/html"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/search-shortcuts.dbacfc75.js",
+        "type": "Script",
+        "bytesDecodedChunks": 4892,
+        "bytesEncodedChunks": 1609,
+        "bytesEncodedFinished": 1863,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/scrolling-shortcuts.b3e4e8fa.js",
+        "type": "Script",
+        "bytesDecodedChunks": 2410,
+        "bytesEncodedChunks": 862,
+        "bytesEncodedFinished": 1115,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/history-shortcuts.06ade051.js",
+        "type": "Script",
+        "bytesDecodedChunks": 645,
+        "bytesEncodedChunks": 327,
+        "bytesEncodedFinished": 580,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/favicon.ico",
+        "type": "Other",
+        "bytesDecodedChunks": 4286,
+        "bytesEncodedChunks": 4286,
+        "bytesEncodedFinished": 4510,
+        "http_status": 200,
+        "mime_type": "image/vnd.microsoft.icon"
+      }
+    ],
+    "network_failures": [
+      {
+        "url": "http://127.0.0.1:8001/_pagefind/pagefind-ui.css",
+        "error": "net::ERR_ABORTED"
+      },
+      {
+        "url": "http://127.0.0.1:8001/_pagefind/pagefind-ui.js",
+        "error": "net::ERR_ABORTED"
+      }
+    ],
+    "invalid_asset_responses": [
+      {
+        "url": "http://127.0.0.1:8001/_pagefind/pagefind-ui.css",
+        "type": "Stylesheet",
+        "status": 404,
+        "mime_type": "text/html",
+        "problem": "HTTP 404"
+      },
+      {
+        "url": "http://127.0.0.1:8001/_pagefind/pagefind-ui.js",
+        "type": "Script",
+        "status": 404,
+        "mime_type": "text/html",
+        "problem": "HTTP 404"
+      }
+    ],
+    "document_delivery": {
+      "status": 200,
+      "protocol": "http/1.1",
+      "content_encoding": "gzip",
+      "mime_type": "text/html"
+    },
+    "encoded_bytes_completed": 127202,
+    "error": null,
+    "valid_filmstrip": false
+  }
+]

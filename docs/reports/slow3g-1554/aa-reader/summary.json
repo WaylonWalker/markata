@@ -1,0 +1,38 @@
+[
+  {
+    "variant": "before",
+    "valid_filmstrips": 0,
+    "attempted": 5,
+    "failed_network_requests": 10,
+    "invalid_asset_responses": 10,
+    "median_fcp_ms": null,
+    "p90_fcp_ms": null,
+    "median_lcp_ms": null,
+    "p90_lcp_ms": null,
+    "median_cls": null,
+    "p90_cls": null,
+    "median_encoded_bytes_completed": null,
+    "p90_encoded_bytes_completed": null,
+    "median_request_count": null,
+    "p90_request_count": null,
+    "note": "readable content requires filmstrip review; no inferred timing"
+  },
+  {
+    "variant": "after",
+    "valid_filmstrips": 0,
+    "attempted": 5,
+    "failed_network_requests": 10,
+    "invalid_asset_responses": 10,
+    "median_fcp_ms": null,
+    "p90_fcp_ms": null,
+    "median_lcp_ms": null,
+    "p90_lcp_ms": null,
+    "median_cls": null,
+    "p90_cls": null,
+    "median_encoded_bytes_completed": null,
+    "p90_encoded_bytes_completed": null,
+    "median_request_count": null,
+    "p90_request_count": null,
+    "note": "readable content requires filmstrip review; no inferred timing"
+  }
+]

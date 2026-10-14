@@ -84,10 +84,19 @@ uv run --script scripts/slow3g_compare.py \
   --output ./slow3g-archive
 ```
 
-Run the same experiment on `/`, a representative article, `/shots/`,
+Run the same experiment on `/`, a representative article, `/shorts/`,
 and `/reader/` *where both builds provide the same content*. Open
 `slow3g-archive/filmstrip.html` and inspect **main text readability**
 manually; do not infer first-readable time from FCP alone.
+
+Before an A/B run, establish measurement noise with an A/A run: serve the same
+freshly generated output from two ports, point `--before` and `--after` at the
+same route, use `--runs 5`, and keep the fresh-context/cache-disabled settings.
+Repeat this for each route being compared. Preserve each route's complete
+output directory, including `results.json`, both summaries, and all filmstrip
+frames. Treat any failed request or invalid asset response as an invalid run;
+fix the generated output or report that route as unmeasurable instead of
+ignoring the failure.
 
 **External resources are not mirrored by this server**: fonts/images hosted
 on separate domains, including Dropper and any CDN assets, still use those
@@ -127,7 +136,9 @@ Results:
 
 - `results.json`: request accounting, network failures, FCP/LCP/CLS,
   checkpoint/actual frame-receipt timestamps, and per-run diagnostics.
-- `summary.json` and `summary.csv`: valid-run counts and FCP/LCP median/p90.
+- `summary.json` and `summary.csv`: valid-run counts, failed request and
+  invalid asset totals, plus FCP/LCP, CLS, completed encoded bytes, and request
+  count median/p90 for valid runs.
 - `filmstrip.html`: visual frame comparisons.
 
 **Manually mark first visibly readable main content using the images.** FCP
@@ -145,7 +156,7 @@ shifts, or inconsistent page content as invalid comparisons. Repeat warm-cache
 tests separately if needed. The script's `--no-js` option is a separate
 visual smoke check; PerformanceObserver metrics are unavailable in that mode.
 
-For the sidebar-order experiment, review `/archive/`, `/shots/`,
+For the sidebar-order experiment, review `/archive/`, `/shorts/`,
 `/reader/`, and a text-heavy article; validate skip links, tab order,
 drawer behavior, dark/light themes, CLS and no-JS before opening a performance
 PR. **Do not merge or deploy a source-order change based on decoded HTML byte
@@ -154,3 +165,7 @@ offset alone.**
 The standalone tool does not automatically label readable main-text pixels;
 review the filmstrips. The generated-site test server does implement gzip
 but does not simulate production Cloudflare edge caching.
+
+See the [real WaylonWalker.com A/A validation report](../docs/reports/slow3g-1554/README.md)
+for pinned build revisions, five alternating pairs per route, manual
+readability observations, measurement noise and preserved filmstrips.

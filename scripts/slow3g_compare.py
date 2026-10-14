@@ -319,6 +319,9 @@ def write_report(results: list[dict[str, Any]], output: Path, args: argparse.Nam
         usable = [r for r in subset if r["valid_filmstrip"]]
         fcps = [float(r["metrics"]["fcp"]) for r in usable if r["metrics"].get("fcp") is not None]
         lcps = [float(r["metrics"]["lcp"]) for r in usable if r["metrics"].get("lcp") is not None]
+        clss = [float(r["metrics"]["cls"]) for r in usable if r["metrics"].get("cls") is not None]
+        encoded_bytes = [float(r["encoded_bytes_completed"]) for r in usable]
+        request_counts = [float(len(r.get("requests", []))) for r in usable]
         summary.append({
             "variant": variant,
             "valid_filmstrips": len(usable),
@@ -329,6 +332,12 @@ def write_report(results: list[dict[str, Any]], output: Path, args: argparse.Nam
             "p90_fcp_ms": ms(percentile_nearest_rank(fcps, .9)),
             "median_lcp_ms": ms(statistics.median(lcps)) if lcps else None,
             "p90_lcp_ms": ms(percentile_nearest_rank(lcps, .9)),
+            "median_cls": round(statistics.median(clss), 6) if clss else None,
+            "p90_cls": round(percentile_nearest_rank(clss, .9), 6) if clss else None,
+            "median_encoded_bytes_completed": ms(statistics.median(encoded_bytes)) if encoded_bytes else None,
+            "p90_encoded_bytes_completed": ms(percentile_nearest_rank(encoded_bytes, .9)),
+            "median_request_count": ms(statistics.median(request_counts)) if request_counts else None,
+            "p90_request_count": ms(percentile_nearest_rank(request_counts, .9)),
             "note": "readable content requires filmstrip review; no inferred timing",
         })
     (output / "summary.json").write_text(json.dumps(summary, indent=2), encoding="utf8")
@@ -344,8 +353,8 @@ def write_report(results: list[dict[str, Any]], output: Path, args: argparse.Nam
              ".frames{display:flex;flex-wrap:wrap;gap:8px}.frame{width:175px}",
              "img{width:175px;height:auto;border:1px solid #555}.meta{color:#c6cede}",
              "</style></head><body><h1>Slow 3G filmstrip</h1>",
-             "<p>Frame labels show the <strong>actual receipt time</strong>, not an assumed screenshot time. ",
-             "Inspect images manually for first <em>readable main content</em>.</p>"]
+             "<p>Frame labels show the <strong>actual receipt time</strong>, not an assumed screenshot time.</p>",
+             "<p>Inspect images manually for first <em>readable main content</em>.</p>"]
     for r in results:
         lines.append(f"<article><h2>{escape(r['variant'])} run {r['run']} – {len(r['frames'])} frames</h2>")
         lines.append(f"<p class='meta'>FCP: {r['metrics'].get('fcp')} ms; LCP: {r['metrics'].get('lcp')} ms; "

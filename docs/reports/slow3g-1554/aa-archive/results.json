@@ -1,0 +1,4326 @@
+[
+  {
+    "variant": "before",
+    "run": 1,
+    "url": "http://127.0.0.1:8000/archive/",
+    "http_status": 200,
+    "metrics": {
+      "fcp": 5296,
+      "lcp": 7600,
+      "lcpTag": "A",
+      "lcpURL": null,
+      "cls": 0.0003367706674831929
+    },
+    "frames": [
+      {
+        "requested_checkpoint_ms": 1000,
+        "snapshot_at_ms": 1000.57,
+        "frame_received_at_ms": 20.91,
+        "cdp_frame_timestamp": 1791942820.427213,
+        "file": "filmstrips/before-01/checkpoint-1000ms-snapshot-1001ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 2000,
+        "snapshot_at_ms": 2000.26,
+        "frame_received_at_ms": 20.91,
+        "cdp_frame_timestamp": 1791942820.427213,
+        "file": "filmstrips/before-01/checkpoint-2000ms-snapshot-2000ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 5000,
+        "snapshot_at_ms": 5001.22,
+        "frame_received_at_ms": 20.91,
+        "cdp_frame_timestamp": 1791942820.427213,
+        "file": "filmstrips/before-01/checkpoint-5000ms-snapshot-5001ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 8000,
+        "snapshot_at_ms": 8000.22,
+        "frame_received_at_ms": 7607.78,
+        "cdp_frame_timestamp": 1791942828.014335,
+        "file": "filmstrips/before-01/checkpoint-8000ms-snapshot-8000ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 12000,
+        "snapshot_at_ms": 12000.36,
+        "frame_received_at_ms": 11202.39,
+        "cdp_frame_timestamp": 1791942831.60819,
+        "file": "filmstrips/before-01/checkpoint-12000ms-snapshot-12000ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 15000,
+        "snapshot_at_ms": 15000.66,
+        "frame_received_at_ms": 14770.55,
+        "cdp_frame_timestamp": 1791942835.177868,
+        "file": "filmstrips/before-01/checkpoint-15000ms-snapshot-15001ms.jpg"
+      }
+    ],
+    "frame_count": 6,
+    "received_cdp_frame_count": 17,
+    "missing_checkpoints_ms": [],
+    "requests": [
+      {
+        "url": "http://127.0.0.1:8000/archive/",
+        "type": "Document",
+        "bytesDecodedChunks": 1703356,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 266979,
+        "http_status": 200,
+        "mime_type": "text/html"
+      },
+      {
+        "url": "http://127.0.0.1:8000/assets/fonts/source-sans-3-prose-core.woff2",
+        "type": "Font",
+        "bytesDecodedChunks": 79284,
+        "bytesEncodedChunks": 79284,
+        "bytesEncodedFinished": 79495,
+        "http_status": 200,
+        "mime_type": "font/woff2"
+      },
+      {
+        "url": "http://127.0.0.1:8000/assets/fonts/kalam-display-core.woff2",
+        "type": "Font",
+        "bytesDecodedChunks": 9336,
+        "bytesEncodedChunks": 9336,
+        "bytesEncodedFinished": 9546,
+        "http_status": 200,
+        "mime_type": "font/woff2"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/variables.08e33724.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 3723,
+        "bytesEncodedChunks": 1290,
+        "bytesEncodedFinished": 1537,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/palette.36d9eaf5.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 171045,
+        "bytesEncodedChunks": 30539,
+        "bytesEncodedFinished": 30787,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/main.d20ef4df.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 39850,
+        "bytesEncodedChunks": 7732,
+        "bytesEncodedFinished": 7979,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/components.45436e70.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 76763,
+        "bytesEncodedChunks": 13215,
+        "bytesEncodedFinished": 13463,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/text-size.a7cdb148.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 579,
+        "bytesEncodedChunks": 212,
+        "bytesEncodedFinished": 458,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/fonts.004799be.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 80361,
+        "bytesEncodedChunks": 5550,
+        "bytesEncodedFinished": 5797,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/cards.bba89fe5.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 17860,
+        "bytesEncodedChunks": 3308,
+        "bytesEncodedFinished": 3555,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/feeds.958625d6.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 13507,
+        "bytesEncodedChunks": 2910,
+        "bytesEncodedFinished": 3157,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/palette-switcher.0f00e25e.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 20887,
+        "bytesEncodedChunks": 4429,
+        "bytesEncodedFinished": 4676,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/search.0f0c0c81.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 11118,
+        "bytesEncodedChunks": 2293,
+        "bytesEncodedFinished": 2540,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/markata-tailwind.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 8492,
+        "bytesEncodedChunks": 2033,
+        "bytesEncodedFinished": 2280,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/link-avatars.ab8178f9.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 679,
+        "bytesEncodedChunks": 283,
+        "bytesEncodedFinished": 529,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/aesthetic.fd1f2276.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 18818,
+        "bytesEncodedChunks": 3231,
+        "bytesEncodedFinished": 3478,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/calendar-feed.2c5792bf.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 8648,
+        "bytesEncodedChunks": 2225,
+        "bytesEncodedFinished": 2472,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/calendar-feed.9fa8e025.js",
+        "type": "Script",
+        "bytesDecodedChunks": 9232,
+        "bytesEncodedChunks": 3232,
+        "bytesEncodedFinished": 3486,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/adaptive-loading.fea7d7d6.js",
+        "type": "Script",
+        "bytesDecodedChunks": 6408,
+        "bytesEncodedChunks": 2399,
+        "bytesEncodedFinished": 2653,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/w.svg",
+        "type": "Image",
+        "bytesDecodedChunks": 373,
+        "bytesEncodedChunks": 266,
+        "bytesEncodedFinished": 502,
+        "http_status": 200,
+        "mime_type": "image/svg+xml"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/f02fce45-8df5-4aae-a3ca-9c77f3cc2ae1.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 11512,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 12084,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/d0ba0314-76cc-4f83-8a51-c45a8db1b3db.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 9448,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 9756,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "http://127.0.0.1:8000/assets/fonts/caveat-brush-display-core.woff2",
+        "type": "Font",
+        "bytesDecodedChunks": 47672,
+        "bytesEncodedChunks": 47672,
+        "bytesEncodedFinished": 47883,
+        "http_status": 200,
+        "mime_type": "font/woff2"
+      },
+      {
+        "url": "https://i.ytimg.com/vi/1hd5hgqryKA/maxresdefault.jpg",
+        "type": "Image",
+        "bytesDecodedChunks": 85500,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 200,
+        "mime_type": "image/jpeg"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/bfbaec0c-b842-42df-be91-251e3f27bf21.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 8722,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 9084,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/96452478-6642-41ac-a28a-1bd0697f6be0.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 7522,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 7845,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/8821d407-8812-4d19-b9e0-58b3e6dbb901.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 8808,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 9144,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "https://ascii.rest/og.png",
+        "type": "Image",
+        "bytesDecodedChunks": 85500,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 200,
+        "mime_type": "image/png"
+      },
+      {
+        "url": "https://i.ytimg.com/vi/HuJB97hUPWk/maxresdefault.jpg",
+        "type": "Image",
+        "bytesDecodedChunks": 84000,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 200,
+        "mime_type": "image/jpeg"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/c438a7d8-ffa5-465b-9ad0-b449b756ce29.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 5982,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 6312,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/0725c3de-ff89-4258-84ca-14f10f2fbd94.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 13782,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 14111,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "http://127.0.0.1:8000/assets/fonts/dm-mono-code-core.woff2",
+        "type": "Font",
+        "bytesDecodedChunks": 6776,
+        "bytesEncodedChunks": 6776,
+        "bytesEncodedFinished": 6986,
+        "http_status": 200,
+        "mime_type": "font/woff2"
+      },
+      {
+        "url": "http://127.0.0.1:8000/assets/vendor/htmx/htmx.min.js",
+        "type": "Script",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/variables.08e33724.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/palette.36d9eaf5.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/main.d20ef4df.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/components.45436e70.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/text-size.a7cdb148.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/fonts.004799be.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/cards.bba89fe5.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/feeds.958625d6.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/palette-switcher.0f00e25e.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/search.0f0c0c81.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8000/markata-tailwind.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/link-avatars.ab8178f9.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/aesthetic.fd1f2276.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/calendar-feed.2c5792bf.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/calendar-feed.9fa8e025.js",
+        "type": "Script",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/adaptive-loading.fea7d7d6.js",
+        "type": "Script",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/palette-switcher.b69367b1.js",
+        "type": "Script",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/text-size.939ab303.js",
+        "type": "Script",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/heading-highlights.ce5a7302.js",
+        "type": "Script",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/fit-post-titles.a8799b3f.js",
+        "type": "Script",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/scroll-spy.1bf62692.js",
+        "type": "Script",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/tooltips.5c989f85.js",
+        "type": "Script",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/view-transitions.743e29a4.js",
+        "type": "Script",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/conditional-css.86777e3d.js",
+        "type": "Script",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      }
+    ],
+    "network_failures": [],
+    "invalid_asset_responses": [],
+    "document_delivery": {
+      "status": 200,
+      "protocol": "http/1.1",
+      "content_encoding": "gzip",
+      "mime_type": "text/html"
+    },
+    "encoded_bytes_completed": 568574,
+    "error": null,
+    "valid_filmstrip": true
+  },
+  {
+    "variant": "after",
+    "run": 1,
+    "url": "http://127.0.0.1:8001/archive/",
+    "http_status": 200,
+    "metrics": {
+      "fcp": 5208,
+      "lcp": 7800,
+      "lcpTag": "A",
+      "lcpURL": null,
+      "cls": 0.0003367706674831929
+    },
+    "frames": [
+      {
+        "requested_checkpoint_ms": 1000,
+        "snapshot_at_ms": 1001.05,
+        "frame_received_at_ms": 8.28,
+        "cdp_frame_timestamp": 1791942837.626185,
+        "file": "filmstrips/after-01/checkpoint-1000ms-snapshot-1001ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 2000,
+        "snapshot_at_ms": 2001.35,
+        "frame_received_at_ms": 8.28,
+        "cdp_frame_timestamp": 1791942837.626185,
+        "file": "filmstrips/after-01/checkpoint-2000ms-snapshot-2001ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 5000,
+        "snapshot_at_ms": 5000.83,
+        "frame_received_at_ms": 8.28,
+        "cdp_frame_timestamp": 1791942837.626185,
+        "file": "filmstrips/after-01/checkpoint-5000ms-snapshot-5001ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 8000,
+        "snapshot_at_ms": 8001.03,
+        "frame_received_at_ms": 7805.25,
+        "cdp_frame_timestamp": 1791942845.423694,
+        "file": "filmstrips/after-01/checkpoint-8000ms-snapshot-8001ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 12000,
+        "snapshot_at_ms": 12001.04,
+        "frame_received_at_ms": 11901.31,
+        "cdp_frame_timestamp": 1791942849.517199,
+        "file": "filmstrips/after-01/checkpoint-12000ms-snapshot-12001ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 15000,
+        "snapshot_at_ms": 15000.26,
+        "frame_received_at_ms": 14504.19,
+        "cdp_frame_timestamp": 1791942852.12075,
+        "file": "filmstrips/after-01/checkpoint-15000ms-snapshot-15000ms.jpg"
+      }
+    ],
+    "frame_count": 6,
+    "received_cdp_frame_count": 16,
+    "missing_checkpoints_ms": [],
+    "requests": [
+      {
+        "url": "http://127.0.0.1:8001/archive/",
+        "type": "Document",
+        "bytesDecodedChunks": 1703356,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 266979,
+        "http_status": 200,
+        "mime_type": "text/html"
+      },
+      {
+        "url": "http://127.0.0.1:8001/assets/fonts/source-sans-3-prose-core.woff2",
+        "type": "Font",
+        "bytesDecodedChunks": 79284,
+        "bytesEncodedChunks": 79284,
+        "bytesEncodedFinished": 79495,
+        "http_status": 200,
+        "mime_type": "font/woff2"
+      },
+      {
+        "url": "http://127.0.0.1:8001/assets/fonts/kalam-display-core.woff2",
+        "type": "Font",
+        "bytesDecodedChunks": 9336,
+        "bytesEncodedChunks": 9336,
+        "bytesEncodedFinished": 9546,
+        "http_status": 200,
+        "mime_type": "font/woff2"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/variables.08e33724.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 3723,
+        "bytesEncodedChunks": 1290,
+        "bytesEncodedFinished": 1537,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/palette.36d9eaf5.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 171045,
+        "bytesEncodedChunks": 30539,
+        "bytesEncodedFinished": 30787,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/main.d20ef4df.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 39850,
+        "bytesEncodedChunks": 7732,
+        "bytesEncodedFinished": 7979,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/components.45436e70.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 76763,
+        "bytesEncodedChunks": 13215,
+        "bytesEncodedFinished": 13463,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/text-size.a7cdb148.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 579,
+        "bytesEncodedChunks": 212,
+        "bytesEncodedFinished": 458,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/fonts.004799be.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 80361,
+        "bytesEncodedChunks": 5550,
+        "bytesEncodedFinished": 5797,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/cards.bba89fe5.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 17860,
+        "bytesEncodedChunks": 3308,
+        "bytesEncodedFinished": 3555,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/feeds.958625d6.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 13507,
+        "bytesEncodedChunks": 2910,
+        "bytesEncodedFinished": 3157,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/palette-switcher.0f00e25e.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 20887,
+        "bytesEncodedChunks": 4429,
+        "bytesEncodedFinished": 4676,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/search.0f0c0c81.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 11118,
+        "bytesEncodedChunks": 2293,
+        "bytesEncodedFinished": 2540,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/markata-tailwind.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 8492,
+        "bytesEncodedChunks": 2033,
+        "bytesEncodedFinished": 2280,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/link-avatars.ab8178f9.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 679,
+        "bytesEncodedChunks": 283,
+        "bytesEncodedFinished": 529,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/aesthetic.fd1f2276.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 18818,
+        "bytesEncodedChunks": 3231,
+        "bytesEncodedFinished": 3478,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/calendar-feed.2c5792bf.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 8648,
+        "bytesEncodedChunks": 2225,
+        "bytesEncodedFinished": 2472,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/calendar-feed.9fa8e025.js",
+        "type": "Script",
+        "bytesDecodedChunks": 9232,
+        "bytesEncodedChunks": 3232,
+        "bytesEncodedFinished": 3486,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/adaptive-loading.fea7d7d6.js",
+        "type": "Script",
+        "bytesDecodedChunks": 6408,
+        "bytesEncodedChunks": 2399,
+        "bytesEncodedFinished": 2653,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/w.svg",
+        "type": "Image",
+        "bytesDecodedChunks": 373,
+        "bytesEncodedChunks": 266,
+        "bytesEncodedFinished": 502,
+        "http_status": 200,
+        "mime_type": "image/svg+xml"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/f02fce45-8df5-4aae-a3ca-9c77f3cc2ae1.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 11512,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 11821,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/d0ba0314-76cc-4f83-8a51-c45a8db1b3db.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 9448,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 10025,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "http://127.0.0.1:8001/assets/fonts/caveat-brush-display-core.woff2",
+        "type": "Font",
+        "bytesDecodedChunks": 47672,
+        "bytesEncodedChunks": 47672,
+        "bytesEncodedFinished": 47883,
+        "http_status": 200,
+        "mime_type": "font/woff2"
+      },
+      {
+        "url": "https://i.ytimg.com/vi/1hd5hgqryKA/maxresdefault.jpg",
+        "type": "Image",
+        "bytesDecodedChunks": 78000,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 200,
+        "mime_type": "image/jpeg"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/bfbaec0c-b842-42df-be91-251e3f27bf21.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 8722,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 9058,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/96452478-6642-41ac-a28a-1bd0697f6be0.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 7522,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 7843,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/8821d407-8812-4d19-b9e0-58b3e6dbb901.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 8808,
+        "bytesEncodedChunks": 8813,
+        "bytesEncodedFinished": 9418,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/c438a7d8-ffa5-465b-9ad0-b449b756ce29.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 5982,
+        "bytesEncodedChunks": 5984,
+        "bytesEncodedFinished": 6554,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/0725c3de-ff89-4258-84ca-14f10f2fbd94.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 13782,
+        "bytesEncodedChunks": 13787,
+        "bytesEncodedFinished": 14351,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "https://ascii.rest/og.png",
+        "type": "Image",
+        "bytesDecodedChunks": 43500,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 200,
+        "mime_type": "image/png"
+      },
+      {
+        "url": "https://i.ytimg.com/vi/HuJB97hUPWk/maxresdefault.jpg",
+        "type": "Image",
+        "bytesDecodedChunks": 30000,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 200,
+        "mime_type": "image/jpeg"
+      },
+      {
+        "url": "http://127.0.0.1:8001/assets/fonts/dm-mono-code-core.woff2",
+        "type": "Font",
+        "bytesDecodedChunks": 6776,
+        "bytesEncodedChunks": 6776,
+        "bytesEncodedFinished": 6986,
+        "http_status": 200,
+        "mime_type": "font/woff2"
+      },
+      {
+        "url": "http://127.0.0.1:8001/assets/vendor/htmx/htmx.min.js",
+        "type": "Script",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/variables.08e33724.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 3723,
+        "bytesEncodedChunks": 1290,
+        "bytesEncodedFinished": 1537,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/palette.36d9eaf5.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 47228,
+        "bytesEncodedChunks": 6848,
+        "bytesEncodedFinished": null,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/main.d20ef4df.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 39850,
+        "bytesEncodedChunks": 7732,
+        "bytesEncodedFinished": 7979,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/components.45436e70.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 46566,
+        "bytesEncodedChunks": 6848,
+        "bytesEncodedFinished": null,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/text-size.a7cdb148.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 579,
+        "bytesEncodedChunks": 212,
+        "bytesEncodedFinished": 458,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/fonts.004799be.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 57708,
+        "bytesEncodedChunks": 1500,
+        "bytesEncodedFinished": null,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/cards.bba89fe5.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 17860,
+        "bytesEncodedChunks": 3308,
+        "bytesEncodedFinished": 3555,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/feeds.958625d6.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/palette-switcher.0f00e25e.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/search.0f0c0c81.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8001/markata-tailwind.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/link-avatars.ab8178f9.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/aesthetic.fd1f2276.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/calendar-feed.2c5792bf.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/calendar-feed.9fa8e025.js",
+        "type": "Script",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/adaptive-loading.fea7d7d6.js",
+        "type": "Script",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/palette-switcher.b69367b1.js",
+        "type": "Script",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/text-size.939ab303.js",
+        "type": "Script",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/heading-highlights.ce5a7302.js",
+        "type": "Script",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/fit-post-titles.a8799b3f.js",
+        "type": "Script",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/scroll-spy.1bf62692.js",
+        "type": "Script",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/tooltips.5c989f85.js",
+        "type": "Script",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/view-transitions.743e29a4.js",
+        "type": "Script",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/conditional-css.86777e3d.js",
+        "type": "Script",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      }
+    ],
+    "network_failures": [],
+    "invalid_asset_responses": [],
+    "document_delivery": {
+      "status": 200,
+      "protocol": "http/1.1",
+      "content_encoding": "gzip",
+      "mime_type": "text/html"
+    },
+    "encoded_bytes_completed": 582837,
+    "error": null,
+    "valid_filmstrip": true
+  },
+  {
+    "variant": "after",
+    "run": 2,
+    "url": "http://127.0.0.1:8001/archive/",
+    "http_status": 200,
+    "metrics": {
+      "fcp": 5136,
+      "lcp": 6660,
+      "lcpTag": "A",
+      "lcpURL": null,
+      "cls": 0.0010570094919553953
+    },
+    "frames": [
+      {
+        "requested_checkpoint_ms": 1000,
+        "snapshot_at_ms": 1000.84,
+        "frame_received_at_ms": 15.05,
+        "cdp_frame_timestamp": 1791942853.77768,
+        "file": "filmstrips/after-02/checkpoint-1000ms-snapshot-1001ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 2000,
+        "snapshot_at_ms": 2000.2,
+        "frame_received_at_ms": 15.05,
+        "cdp_frame_timestamp": 1791942853.77768,
+        "file": "filmstrips/after-02/checkpoint-2000ms-snapshot-2000ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 5000,
+        "snapshot_at_ms": 5001.88,
+        "frame_received_at_ms": 15.05,
+        "cdp_frame_timestamp": 1791942853.77768,
+        "file": "filmstrips/after-02/checkpoint-5000ms-snapshot-5002ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 8000,
+        "snapshot_at_ms": 8000.52,
+        "frame_received_at_ms": 7942.6,
+        "cdp_frame_timestamp": 1791942861.705086,
+        "file": "filmstrips/after-02/checkpoint-8000ms-snapshot-8001ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 12000,
+        "snapshot_at_ms": 12000.26,
+        "frame_received_at_ms": 11231.97,
+        "cdp_frame_timestamp": 1791942864.99528,
+        "file": "filmstrips/after-02/checkpoint-12000ms-snapshot-12000ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 15000,
+        "snapshot_at_ms": 15001.13,
+        "frame_received_at_ms": 14571.16,
+        "cdp_frame_timestamp": 1791942868.333475,
+        "file": "filmstrips/after-02/checkpoint-15000ms-snapshot-15001ms.jpg"
+      }
+    ],
+    "frame_count": 6,
+    "received_cdp_frame_count": 15,
+    "missing_checkpoints_ms": [],
+    "requests": [
+      {
+        "url": "http://127.0.0.1:8001/archive/",
+        "type": "Document",
+        "bytesDecodedChunks": 1487202,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 200,
+        "mime_type": "text/html"
+      },
+      {
+        "url": "http://127.0.0.1:8001/assets/fonts/source-sans-3-prose-core.woff2",
+        "type": "Font",
+        "bytesDecodedChunks": 79284,
+        "bytesEncodedChunks": 79284,
+        "bytesEncodedFinished": 79495,
+        "http_status": 200,
+        "mime_type": "font/woff2"
+      },
+      {
+        "url": "http://127.0.0.1:8001/assets/fonts/kalam-display-core.woff2",
+        "type": "Font",
+        "bytesDecodedChunks": 9336,
+        "bytesEncodedChunks": 9336,
+        "bytesEncodedFinished": 9546,
+        "http_status": 200,
+        "mime_type": "font/woff2"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/variables.08e33724.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 3723,
+        "bytesEncodedChunks": 1290,
+        "bytesEncodedFinished": 1537,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/palette.36d9eaf5.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 171045,
+        "bytesEncodedChunks": 30539,
+        "bytesEncodedFinished": 30787,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/main.d20ef4df.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 39850,
+        "bytesEncodedChunks": 7732,
+        "bytesEncodedFinished": 7979,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/components.45436e70.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 76763,
+        "bytesEncodedChunks": 13215,
+        "bytesEncodedFinished": 13463,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/text-size.a7cdb148.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 579,
+        "bytesEncodedChunks": 212,
+        "bytesEncodedFinished": 458,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/fonts.004799be.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 80361,
+        "bytesEncodedChunks": 5550,
+        "bytesEncodedFinished": 5797,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/cards.bba89fe5.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 17860,
+        "bytesEncodedChunks": 3308,
+        "bytesEncodedFinished": 3555,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/feeds.958625d6.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 13507,
+        "bytesEncodedChunks": 2910,
+        "bytesEncodedFinished": 3157,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/palette-switcher.0f00e25e.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 20887,
+        "bytesEncodedChunks": 4429,
+        "bytesEncodedFinished": 4676,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/search.0f0c0c81.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 11118,
+        "bytesEncodedChunks": 2293,
+        "bytesEncodedFinished": 2540,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/markata-tailwind.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 8492,
+        "bytesEncodedChunks": 2033,
+        "bytesEncodedFinished": 2280,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/link-avatars.ab8178f9.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 679,
+        "bytesEncodedChunks": 283,
+        "bytesEncodedFinished": 529,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/aesthetic.fd1f2276.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 18818,
+        "bytesEncodedChunks": 3231,
+        "bytesEncodedFinished": 3478,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/calendar-feed.2c5792bf.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 8648,
+        "bytesEncodedChunks": 2225,
+        "bytesEncodedFinished": 2472,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/calendar-feed.9fa8e025.js",
+        "type": "Script",
+        "bytesDecodedChunks": 9232,
+        "bytesEncodedChunks": 3232,
+        "bytesEncodedFinished": 3486,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/adaptive-loading.fea7d7d6.js",
+        "type": "Script",
+        "bytesDecodedChunks": 6408,
+        "bytesEncodedChunks": 2399,
+        "bytesEncodedFinished": 2653,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/w.svg",
+        "type": "Image",
+        "bytesDecodedChunks": 373,
+        "bytesEncodedChunks": 266,
+        "bytesEncodedFinished": 502,
+        "http_status": 200,
+        "mime_type": "image/svg+xml"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/f02fce45-8df5-4aae-a3ca-9c77f3cc2ae1.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 11512,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 11816,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/d0ba0314-76cc-4f83-8a51-c45a8db1b3db.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 9448,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 10015,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "http://127.0.0.1:8001/assets/fonts/caveat-brush-display-core.woff2",
+        "type": "Font",
+        "bytesDecodedChunks": 47672,
+        "bytesEncodedChunks": 47672,
+        "bytesEncodedFinished": 47883,
+        "http_status": 200,
+        "mime_type": "font/woff2"
+      },
+      {
+        "url": "https://i.ytimg.com/vi/1hd5hgqryKA/maxresdefault.jpg",
+        "type": "Image",
+        "bytesDecodedChunks": 85500,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 200,
+        "mime_type": "image/jpeg"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/bfbaec0c-b842-42df-be91-251e3f27bf21.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 8722,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 9053,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/96452478-6642-41ac-a28a-1bd0697f6be0.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 7522,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 7844,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/8821d407-8812-4d19-b9e0-58b3e6dbb901.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 8808,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 9145,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "https://ascii.rest/og.png",
+        "type": "Image",
+        "bytesDecodedChunks": 87000,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 200,
+        "mime_type": "image/png"
+      },
+      {
+        "url": "https://i.ytimg.com/vi/HuJB97hUPWk/maxresdefault.jpg",
+        "type": "Image",
+        "bytesDecodedChunks": 85500,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 200,
+        "mime_type": "image/jpeg"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/c438a7d8-ffa5-465b-9ad0-b449b756ce29.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 5982,
+        "bytesEncodedChunks": 5984,
+        "bytesEncodedFinished": 6589,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/0725c3de-ff89-4258-84ca-14f10f2fbd94.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 13782,
+        "bytesEncodedChunks": 13787,
+        "bytesEncodedFinished": 14357,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "http://127.0.0.1:8001/assets/fonts/dm-mono-code-core.woff2",
+        "type": "Font",
+        "bytesDecodedChunks": 6776,
+        "bytesEncodedChunks": 6776,
+        "bytesEncodedFinished": 6986,
+        "http_status": 200,
+        "mime_type": "font/woff2"
+      }
+    ],
+    "network_failures": [],
+    "invalid_asset_responses": [],
+    "document_delivery": {
+      "status": 200,
+      "protocol": "http/1.1",
+      "content_encoding": "gzip",
+      "mime_type": "text/html"
+    },
+    "encoded_bytes_completed": 302078,
+    "error": null,
+    "valid_filmstrip": true
+  },
+  {
+    "variant": "before",
+    "run": 2,
+    "url": "http://127.0.0.1:8000/archive/",
+    "http_status": 200,
+    "metrics": {
+      "fcp": 4672,
+      "lcp": 7504,
+      "lcpTag": "A",
+      "lcpURL": null,
+      "cls": 0.0003367706674831929
+    },
+    "frames": [
+      {
+        "requested_checkpoint_ms": 1000,
+        "snapshot_at_ms": 1000.21,
+        "frame_received_at_ms": 16.2,
+        "cdp_frame_timestamp": 1791942870.273767,
+        "file": "filmstrips/before-02/checkpoint-1000ms-snapshot-1000ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 2000,
+        "snapshot_at_ms": 2000.18,
+        "frame_received_at_ms": 16.2,
+        "cdp_frame_timestamp": 1791942870.273767,
+        "file": "filmstrips/before-02/checkpoint-2000ms-snapshot-2000ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 5000,
+        "snapshot_at_ms": 5000.67,
+        "frame_received_at_ms": 4901.51,
+        "cdp_frame_timestamp": 1791942875.157925,
+        "file": "filmstrips/before-02/checkpoint-5000ms-snapshot-5001ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 8000,
+        "snapshot_at_ms": 8000.33,
+        "frame_received_at_ms": 7889.51,
+        "cdp_frame_timestamp": 1791942878.145175,
+        "file": "filmstrips/before-02/checkpoint-8000ms-snapshot-8000ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 12000,
+        "snapshot_at_ms": 12001.2,
+        "frame_received_at_ms": 11106.34,
+        "cdp_frame_timestamp": 1791942881.361433,
+        "file": "filmstrips/before-02/checkpoint-12000ms-snapshot-12001ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 15000,
+        "snapshot_at_ms": 15000.8,
+        "frame_received_at_ms": 14431.18,
+        "cdp_frame_timestamp": 1791942884.686449,
+        "file": "filmstrips/before-02/checkpoint-15000ms-snapshot-15001ms.jpg"
+      }
+    ],
+    "frame_count": 6,
+    "received_cdp_frame_count": 16,
+    "missing_checkpoints_ms": [],
+    "requests": [
+      {
+        "url": "http://127.0.0.1:8000/archive/",
+        "type": "Document",
+        "bytesDecodedChunks": 1703356,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 266979,
+        "http_status": 200,
+        "mime_type": "text/html"
+      },
+      {
+        "url": "http://127.0.0.1:8000/assets/fonts/source-sans-3-prose-core.woff2",
+        "type": "Font",
+        "bytesDecodedChunks": 79284,
+        "bytesEncodedChunks": 79284,
+        "bytesEncodedFinished": 79495,
+        "http_status": 200,
+        "mime_type": "font/woff2"
+      },
+      {
+        "url": "http://127.0.0.1:8000/assets/fonts/kalam-display-core.woff2",
+        "type": "Font",
+        "bytesDecodedChunks": 9336,
+        "bytesEncodedChunks": 9336,
+        "bytesEncodedFinished": 9546,
+        "http_status": 200,
+        "mime_type": "font/woff2"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/variables.08e33724.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 3723,
+        "bytesEncodedChunks": 1290,
+        "bytesEncodedFinished": 1537,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/palette.36d9eaf5.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 171045,
+        "bytesEncodedChunks": 30539,
+        "bytesEncodedFinished": 30787,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/main.d20ef4df.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 39850,
+        "bytesEncodedChunks": 7732,
+        "bytesEncodedFinished": 7979,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/components.45436e70.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 76763,
+        "bytesEncodedChunks": 13215,
+        "bytesEncodedFinished": 13463,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/text-size.a7cdb148.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 579,
+        "bytesEncodedChunks": 212,
+        "bytesEncodedFinished": 458,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/fonts.004799be.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 80361,
+        "bytesEncodedChunks": 5550,
+        "bytesEncodedFinished": 5797,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/cards.bba89fe5.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 17860,
+        "bytesEncodedChunks": 3308,
+        "bytesEncodedFinished": 3555,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/feeds.958625d6.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 13507,
+        "bytesEncodedChunks": 2910,
+        "bytesEncodedFinished": 3157,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/palette-switcher.0f00e25e.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 20887,
+        "bytesEncodedChunks": 4429,
+        "bytesEncodedFinished": 4676,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/search.0f0c0c81.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 11118,
+        "bytesEncodedChunks": 2293,
+        "bytesEncodedFinished": 2540,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/markata-tailwind.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 8492,
+        "bytesEncodedChunks": 2033,
+        "bytesEncodedFinished": 2280,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/link-avatars.ab8178f9.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 679,
+        "bytesEncodedChunks": 283,
+        "bytesEncodedFinished": 529,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/aesthetic.fd1f2276.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 18818,
+        "bytesEncodedChunks": 3231,
+        "bytesEncodedFinished": 3478,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/calendar-feed.2c5792bf.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 8648,
+        "bytesEncodedChunks": 2225,
+        "bytesEncodedFinished": 2472,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/calendar-feed.9fa8e025.js",
+        "type": "Script",
+        "bytesDecodedChunks": 9232,
+        "bytesEncodedChunks": 3232,
+        "bytesEncodedFinished": 3486,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/adaptive-loading.fea7d7d6.js",
+        "type": "Script",
+        "bytesDecodedChunks": 6408,
+        "bytesEncodedChunks": 2399,
+        "bytesEncodedFinished": 2653,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/w.svg",
+        "type": "Image",
+        "bytesDecodedChunks": 373,
+        "bytesEncodedChunks": 266,
+        "bytesEncodedFinished": 502,
+        "http_status": 200,
+        "mime_type": "image/svg+xml"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/f02fce45-8df5-4aae-a3ca-9c77f3cc2ae1.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 11512,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 11830,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/d0ba0314-76cc-4f83-8a51-c45a8db1b3db.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 9448,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 10027,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "http://127.0.0.1:8000/assets/fonts/caveat-brush-display-core.woff2",
+        "type": "Font",
+        "bytesDecodedChunks": 47672,
+        "bytesEncodedChunks": 47672,
+        "bytesEncodedFinished": 47883,
+        "http_status": 200,
+        "mime_type": "font/woff2"
+      },
+      {
+        "url": "https://i.ytimg.com/vi/1hd5hgqryKA/maxresdefault.jpg",
+        "type": "Image",
+        "bytesDecodedChunks": 79500,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 200,
+        "mime_type": "image/jpeg"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/bfbaec0c-b842-42df-be91-251e3f27bf21.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 8722,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 9059,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/96452478-6642-41ac-a28a-1bd0697f6be0.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 7522,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 7846,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/8821d407-8812-4d19-b9e0-58b3e6dbb901.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 8808,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 9146,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "https://ascii.rest/og.png",
+        "type": "Image",
+        "bytesDecodedChunks": 82500,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 200,
+        "mime_type": "image/png"
+      },
+      {
+        "url": "https://i.ytimg.com/vi/HuJB97hUPWk/maxresdefault.jpg",
+        "type": "Image",
+        "bytesDecodedChunks": 79500,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 200,
+        "mime_type": "image/jpeg"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/c438a7d8-ffa5-465b-9ad0-b449b756ce29.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 5982,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 6311,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/0725c3de-ff89-4258-84ca-14f10f2fbd94.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 13782,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 14113,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "http://127.0.0.1:8000/assets/fonts/dm-mono-code-core.woff2",
+        "type": "Font",
+        "bytesDecodedChunks": 6776,
+        "bytesEncodedChunks": 6776,
+        "bytesEncodedFinished": 6986,
+        "http_status": 200,
+        "mime_type": "font/woff2"
+      },
+      {
+        "url": "http://127.0.0.1:8000/assets/vendor/htmx/htmx.min.js",
+        "type": "Script",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/variables.08e33724.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/palette.36d9eaf5.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/main.d20ef4df.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/components.45436e70.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/text-size.a7cdb148.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/fonts.004799be.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/cards.bba89fe5.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/feeds.958625d6.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/palette-switcher.0f00e25e.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/search.0f0c0c81.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8000/markata-tailwind.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/link-avatars.ab8178f9.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/aesthetic.fd1f2276.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/calendar-feed.2c5792bf.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/calendar-feed.9fa8e025.js",
+        "type": "Script",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/adaptive-loading.fea7d7d6.js",
+        "type": "Script",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/palette-switcher.b69367b1.js",
+        "type": "Script",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/text-size.939ab303.js",
+        "type": "Script",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/heading-highlights.ce5a7302.js",
+        "type": "Script",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/fit-post-titles.a8799b3f.js",
+        "type": "Script",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/scroll-spy.1bf62692.js",
+        "type": "Script",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/tooltips.5c989f85.js",
+        "type": "Script",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/view-transitions.743e29a4.js",
+        "type": "Script",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/conditional-css.86777e3d.js",
+        "type": "Script",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      }
+    ],
+    "network_failures": [],
+    "invalid_asset_responses": [],
+    "document_delivery": {
+      "status": 200,
+      "protocol": "http/1.1",
+      "content_encoding": "gzip",
+      "mime_type": "text/html"
+    },
+    "encoded_bytes_completed": 568570,
+    "error": null,
+    "valid_filmstrip": true
+  },
+  {
+    "variant": "before",
+    "run": 3,
+    "url": "http://127.0.0.1:8000/archive/",
+    "http_status": 200,
+    "metrics": {
+      "fcp": 5176,
+      "lcp": 7332,
+      "lcpTag": "A",
+      "lcpURL": null,
+      "cls": 0.0006704987992917777
+    },
+    "frames": [
+      {
+        "requested_checkpoint_ms": 1000,
+        "snapshot_at_ms": 1001.52,
+        "frame_received_at_ms": 18.12,
+        "cdp_frame_timestamp": 1791942887.189867,
+        "file": "filmstrips/before-03/checkpoint-1000ms-snapshot-1002ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 2000,
+        "snapshot_at_ms": 2001.08,
+        "frame_received_at_ms": 18.12,
+        "cdp_frame_timestamp": 1791942887.189867,
+        "file": "filmstrips/before-03/checkpoint-2000ms-snapshot-2001ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 5000,
+        "snapshot_at_ms": 5000.91,
+        "frame_received_at_ms": 18.12,
+        "cdp_frame_timestamp": 1791942887.189867,
+        "file": "filmstrips/before-03/checkpoint-5000ms-snapshot-5001ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 8000,
+        "snapshot_at_ms": 8000.73,
+        "frame_received_at_ms": 7866.0,
+        "cdp_frame_timestamp": 1791942895.037448,
+        "file": "filmstrips/before-03/checkpoint-8000ms-snapshot-8001ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 12000,
+        "snapshot_at_ms": 12001.17,
+        "frame_received_at_ms": 11307.84,
+        "cdp_frame_timestamp": 1791942898.47844,
+        "file": "filmstrips/before-03/checkpoint-12000ms-snapshot-12001ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 15000,
+        "snapshot_at_ms": 15000.29,
+        "frame_received_at_ms": 13941.26,
+        "cdp_frame_timestamp": 1791942901.112206,
+        "file": "filmstrips/before-03/checkpoint-15000ms-snapshot-15000ms.jpg"
+      }
+    ],
+    "frame_count": 6,
+    "received_cdp_frame_count": 16,
+    "missing_checkpoints_ms": [],
+    "requests": [
+      {
+        "url": "http://127.0.0.1:8000/archive/",
+        "type": "Document",
+        "bytesDecodedChunks": 1646146,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 200,
+        "mime_type": "text/html"
+      },
+      {
+        "url": "http://127.0.0.1:8000/assets/fonts/source-sans-3-prose-core.woff2",
+        "type": "Font",
+        "bytesDecodedChunks": 79284,
+        "bytesEncodedChunks": 79284,
+        "bytesEncodedFinished": 79495,
+        "http_status": 200,
+        "mime_type": "font/woff2"
+      },
+      {
+        "url": "http://127.0.0.1:8000/assets/fonts/kalam-display-core.woff2",
+        "type": "Font",
+        "bytesDecodedChunks": 9336,
+        "bytesEncodedChunks": 9336,
+        "bytesEncodedFinished": 9546,
+        "http_status": 200,
+        "mime_type": "font/woff2"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/variables.08e33724.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 3723,
+        "bytesEncodedChunks": 1290,
+        "bytesEncodedFinished": 1537,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/palette.36d9eaf5.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 171045,
+        "bytesEncodedChunks": 30539,
+        "bytesEncodedFinished": 30787,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/main.d20ef4df.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 39850,
+        "bytesEncodedChunks": 7732,
+        "bytesEncodedFinished": 7979,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/components.45436e70.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 76763,
+        "bytesEncodedChunks": 13215,
+        "bytesEncodedFinished": 13463,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/text-size.a7cdb148.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 579,
+        "bytesEncodedChunks": 212,
+        "bytesEncodedFinished": 458,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/fonts.004799be.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 80361,
+        "bytesEncodedChunks": 5550,
+        "bytesEncodedFinished": 5797,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/cards.bba89fe5.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 17860,
+        "bytesEncodedChunks": 3308,
+        "bytesEncodedFinished": 3555,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/feeds.958625d6.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 13507,
+        "bytesEncodedChunks": 2910,
+        "bytesEncodedFinished": 3157,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/palette-switcher.0f00e25e.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 20887,
+        "bytesEncodedChunks": 4429,
+        "bytesEncodedFinished": 4676,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/search.0f0c0c81.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 11118,
+        "bytesEncodedChunks": 2293,
+        "bytesEncodedFinished": 2540,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/markata-tailwind.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 8492,
+        "bytesEncodedChunks": 2033,
+        "bytesEncodedFinished": 2280,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/link-avatars.ab8178f9.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 679,
+        "bytesEncodedChunks": 283,
+        "bytesEncodedFinished": 529,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/aesthetic.fd1f2276.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 18818,
+        "bytesEncodedChunks": 3231,
+        "bytesEncodedFinished": 3478,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/calendar-feed.2c5792bf.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 8648,
+        "bytesEncodedChunks": 2225,
+        "bytesEncodedFinished": 2472,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/calendar-feed.9fa8e025.js",
+        "type": "Script",
+        "bytesDecodedChunks": 9232,
+        "bytesEncodedChunks": 3232,
+        "bytesEncodedFinished": 3486,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/adaptive-loading.fea7d7d6.js",
+        "type": "Script",
+        "bytesDecodedChunks": 6408,
+        "bytesEncodedChunks": 2399,
+        "bytesEncodedFinished": 2653,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/w.svg",
+        "type": "Image",
+        "bytesDecodedChunks": 373,
+        "bytesEncodedChunks": 266,
+        "bytesEncodedFinished": 502,
+        "http_status": 200,
+        "mime_type": "image/svg+xml"
+      },
+      {
+        "url": "http://127.0.0.1:8000/assets/fonts/caveat-brush-display-core.woff2",
+        "type": "Font",
+        "bytesDecodedChunks": 47672,
+        "bytesEncodedChunks": 47672,
+        "bytesEncodedFinished": 47883,
+        "http_status": 200,
+        "mime_type": "font/woff2"
+      },
+      {
+        "url": "https://i.ytimg.com/vi/1hd5hgqryKA/maxresdefault.jpg",
+        "type": "Image",
+        "bytesDecodedChunks": 75000,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 200,
+        "mime_type": "image/jpeg"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/f02fce45-8df5-4aae-a3ca-9c77f3cc2ae1.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 11512,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 12091,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/d0ba0314-76cc-4f83-8a51-c45a8db1b3db.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 9448,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 9758,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/bfbaec0c-b842-42df-be91-251e3f27bf21.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 8722,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 9049,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/96452478-6642-41ac-a28a-1bd0697f6be0.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 7522,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 7874,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/8821d407-8812-4d19-b9e0-58b3e6dbb901.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 8808,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 9146,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "https://ascii.rest/og.png",
+        "type": "Image",
+        "bytesDecodedChunks": 72000,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 200,
+        "mime_type": "image/png"
+      },
+      {
+        "url": "https://i.ytimg.com/vi/HuJB97hUPWk/maxresdefault.jpg",
+        "type": "Image",
+        "bytesDecodedChunks": 72000,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 200,
+        "mime_type": "image/jpeg"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/c438a7d8-ffa5-465b-9ad0-b449b756ce29.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 5982,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 6316,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/0725c3de-ff89-4258-84ca-14f10f2fbd94.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 13782,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 14116,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "http://127.0.0.1:8000/assets/fonts/dm-mono-code-core.woff2",
+        "type": "Font",
+        "bytesDecodedChunks": 6776,
+        "bytesEncodedChunks": 6776,
+        "bytesEncodedFinished": 6986,
+        "http_status": 200,
+        "mime_type": "font/woff2"
+      }
+    ],
+    "network_failures": [],
+    "invalid_asset_responses": [],
+    "document_delivery": {
+      "status": 200,
+      "protocol": "http/1.1",
+      "content_encoding": "gzip",
+      "mime_type": "text/html"
+    },
+    "encoded_bytes_completed": 301609,
+    "error": null,
+    "valid_filmstrip": true
+  },
+  {
+    "variant": "after",
+    "run": 3,
+    "url": "http://127.0.0.1:8001/archive/",
+    "http_status": 200,
+    "metrics": {
+      "fcp": 5124,
+      "lcp": 7392,
+      "lcpTag": "A",
+      "lcpURL": null,
+      "cls": 0.0003367706674831929
+    },
+    "frames": [
+      {
+        "requested_checkpoint_ms": 1000,
+        "snapshot_at_ms": 1000.16,
+        "frame_received_at_ms": 17.61,
+        "cdp_frame_timestamp": 1791942903.502404,
+        "file": "filmstrips/after-03/checkpoint-1000ms-snapshot-1000ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 2000,
+        "snapshot_at_ms": 2000.37,
+        "frame_received_at_ms": 17.61,
+        "cdp_frame_timestamp": 1791942903.502404,
+        "file": "filmstrips/after-03/checkpoint-2000ms-snapshot-2000ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 5000,
+        "snapshot_at_ms": 5001.82,
+        "frame_received_at_ms": 17.61,
+        "cdp_frame_timestamp": 1791942903.502404,
+        "file": "filmstrips/after-03/checkpoint-5000ms-snapshot-5002ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 8000,
+        "snapshot_at_ms": 8000.14,
+        "frame_received_at_ms": 7396.6,
+        "cdp_frame_timestamp": 1791942910.879983,
+        "file": "filmstrips/after-03/checkpoint-8000ms-snapshot-8000ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 12000,
+        "snapshot_at_ms": 12000.65,
+        "frame_received_at_ms": 11200.64,
+        "cdp_frame_timestamp": 1791942914.684875,
+        "file": "filmstrips/after-03/checkpoint-12000ms-snapshot-12001ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 15000,
+        "snapshot_at_ms": 15000.64,
+        "frame_received_at_ms": 14547.0,
+        "cdp_frame_timestamp": 1791942918.030247,
+        "file": "filmstrips/after-03/checkpoint-15000ms-snapshot-15001ms.jpg"
+      }
+    ],
+    "frame_count": 6,
+    "received_cdp_frame_count": 15,
+    "missing_checkpoints_ms": [],
+    "requests": [
+      {
+        "url": "http://127.0.0.1:8001/archive/",
+        "type": "Document",
+        "bytesDecodedChunks": 1703356,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 200,
+        "mime_type": "text/html"
+      },
+      {
+        "url": "http://127.0.0.1:8001/assets/fonts/source-sans-3-prose-core.woff2",
+        "type": "Font",
+        "bytesDecodedChunks": 79284,
+        "bytesEncodedChunks": 79284,
+        "bytesEncodedFinished": 79495,
+        "http_status": 200,
+        "mime_type": "font/woff2"
+      },
+      {
+        "url": "http://127.0.0.1:8001/assets/fonts/kalam-display-core.woff2",
+        "type": "Font",
+        "bytesDecodedChunks": 9336,
+        "bytesEncodedChunks": 9336,
+        "bytesEncodedFinished": 9546,
+        "http_status": 200,
+        "mime_type": "font/woff2"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/variables.08e33724.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 3723,
+        "bytesEncodedChunks": 1290,
+        "bytesEncodedFinished": 1537,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/palette.36d9eaf5.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 171045,
+        "bytesEncodedChunks": 30539,
+        "bytesEncodedFinished": 30787,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/main.d20ef4df.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 39850,
+        "bytesEncodedChunks": 7732,
+        "bytesEncodedFinished": 7979,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/components.45436e70.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 76763,
+        "bytesEncodedChunks": 13215,
+        "bytesEncodedFinished": 13463,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/text-size.a7cdb148.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 579,
+        "bytesEncodedChunks": 212,
+        "bytesEncodedFinished": 458,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/fonts.004799be.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 80361,
+        "bytesEncodedChunks": 5550,
+        "bytesEncodedFinished": 5797,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/cards.bba89fe5.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 17860,
+        "bytesEncodedChunks": 3308,
+        "bytesEncodedFinished": 3555,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/feeds.958625d6.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 13507,
+        "bytesEncodedChunks": 2910,
+        "bytesEncodedFinished": 3157,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/palette-switcher.0f00e25e.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 20887,
+        "bytesEncodedChunks": 4429,
+        "bytesEncodedFinished": 4676,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/search.0f0c0c81.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 11118,
+        "bytesEncodedChunks": 2293,
+        "bytesEncodedFinished": 2540,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/markata-tailwind.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 8492,
+        "bytesEncodedChunks": 2033,
+        "bytesEncodedFinished": 2280,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/link-avatars.ab8178f9.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 679,
+        "bytesEncodedChunks": 283,
+        "bytesEncodedFinished": 529,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/aesthetic.fd1f2276.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 18818,
+        "bytesEncodedChunks": 3231,
+        "bytesEncodedFinished": 3478,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/calendar-feed.2c5792bf.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 8648,
+        "bytesEncodedChunks": 2225,
+        "bytesEncodedFinished": 2472,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/calendar-feed.9fa8e025.js",
+        "type": "Script",
+        "bytesDecodedChunks": 9232,
+        "bytesEncodedChunks": 3232,
+        "bytesEncodedFinished": 3486,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/adaptive-loading.fea7d7d6.js",
+        "type": "Script",
+        "bytesDecodedChunks": 6408,
+        "bytesEncodedChunks": 2399,
+        "bytesEncodedFinished": 2653,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/w.svg",
+        "type": "Image",
+        "bytesDecodedChunks": 373,
+        "bytesEncodedChunks": 266,
+        "bytesEncodedFinished": 502,
+        "http_status": 200,
+        "mime_type": "image/svg+xml"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/f02fce45-8df5-4aae-a3ca-9c77f3cc2ae1.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 11512,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 11823,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/d0ba0314-76cc-4f83-8a51-c45a8db1b3db.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 9448,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 10021,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "http://127.0.0.1:8001/assets/fonts/caveat-brush-display-core.woff2",
+        "type": "Font",
+        "bytesDecodedChunks": 47672,
+        "bytesEncodedChunks": 47672,
+        "bytesEncodedFinished": 47883,
+        "http_status": 200,
+        "mime_type": "font/woff2"
+      },
+      {
+        "url": "https://i.ytimg.com/vi/1hd5hgqryKA/maxresdefault.jpg",
+        "type": "Image",
+        "bytesDecodedChunks": 82500,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 200,
+        "mime_type": "image/jpeg"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/bfbaec0c-b842-42df-be91-251e3f27bf21.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 8722,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 9061,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/96452478-6642-41ac-a28a-1bd0697f6be0.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 7522,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 7844,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/8821d407-8812-4d19-b9e0-58b3e6dbb901.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 8808,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 9147,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/c438a7d8-ffa5-465b-9ad0-b449b756ce29.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 5982,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 6306,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/0725c3de-ff89-4258-84ca-14f10f2fbd94.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 13782,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 14121,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "http://127.0.0.1:8001/assets/fonts/dm-mono-code-core.woff2",
+        "type": "Font",
+        "bytesDecodedChunks": 6776,
+        "bytesEncodedChunks": 6776,
+        "bytesEncodedFinished": 6986,
+        "http_status": 200,
+        "mime_type": "font/woff2"
+      },
+      {
+        "url": "https://ascii.rest/og.png",
+        "type": "Image",
+        "bytesDecodedChunks": 79500,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 200,
+        "mime_type": "image/png"
+      },
+      {
+        "url": "https://i.ytimg.com/vi/HuJB97hUPWk/maxresdefault.jpg",
+        "type": "Image",
+        "bytesDecodedChunks": 81000,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 200,
+        "mime_type": "image/jpeg"
+      },
+      {
+        "url": "http://127.0.0.1:8001/assets/vendor/htmx/htmx.min.js",
+        "type": "Script",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/variables.08e33724.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/palette.36d9eaf5.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/main.d20ef4df.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/components.45436e70.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/text-size.a7cdb148.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/fonts.004799be.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/cards.bba89fe5.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/feeds.958625d6.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/palette-switcher.0f00e25e.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/search.0f0c0c81.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8001/markata-tailwind.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/link-avatars.ab8178f9.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/aesthetic.fd1f2276.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/calendar-feed.2c5792bf.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/calendar-feed.9fa8e025.js",
+        "type": "Script",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/adaptive-loading.fea7d7d6.js",
+        "type": "Script",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/palette-switcher.b69367b1.js",
+        "type": "Script",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/text-size.939ab303.js",
+        "type": "Script",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/heading-highlights.ce5a7302.js",
+        "type": "Script",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/fit-post-titles.a8799b3f.js",
+        "type": "Script",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/scroll-spy.1bf62692.js",
+        "type": "Script",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/tooltips.5c989f85.js",
+        "type": "Script",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/view-transitions.743e29a4.js",
+        "type": "Script",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/conditional-css.86777e3d.js",
+        "type": "Script",
+        "bytesDecodedChunks": 0,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null
+      }
+    ],
+    "network_failures": [],
+    "invalid_asset_responses": [],
+    "document_delivery": {
+      "status": 200,
+      "protocol": "http/1.1",
+      "content_encoding": "gzip",
+      "mime_type": "text/html"
+    },
+    "encoded_bytes_completed": 301582,
+    "error": null,
+    "valid_filmstrip": true
+  },
+  {
+    "variant": "after",
+    "run": 4,
+    "url": "http://127.0.0.1:8001/archive/",
+    "http_status": 200,
+    "metrics": {
+      "fcp": 5132,
+      "lcp": 7296,
+      "lcpTag": "A",
+      "lcpURL": null,
+      "cls": 0.0006704987992917777
+    },
+    "frames": [
+      {
+        "requested_checkpoint_ms": 1000,
+        "snapshot_at_ms": 1000.75,
+        "frame_received_at_ms": 12.32,
+        "cdp_frame_timestamp": 1791942920.457042,
+        "file": "filmstrips/after-04/checkpoint-1000ms-snapshot-1001ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 2000,
+        "snapshot_at_ms": 2000.47,
+        "frame_received_at_ms": 12.32,
+        "cdp_frame_timestamp": 1791942920.457042,
+        "file": "filmstrips/after-04/checkpoint-2000ms-snapshot-2000ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 5000,
+        "snapshot_at_ms": 5002.06,
+        "frame_received_at_ms": 12.32,
+        "cdp_frame_timestamp": 1791942920.457042,
+        "file": "filmstrips/after-04/checkpoint-5000ms-snapshot-5002ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 8000,
+        "snapshot_at_ms": 8000.33,
+        "frame_received_at_ms": 7802.8,
+        "cdp_frame_timestamp": 1791942928.247158,
+        "file": "filmstrips/after-04/checkpoint-8000ms-snapshot-8000ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 12000,
+        "snapshot_at_ms": 12001.09,
+        "frame_received_at_ms": 10633.37,
+        "cdp_frame_timestamp": 1791942931.07882,
+        "file": "filmstrips/after-04/checkpoint-12000ms-snapshot-12001ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 15000,
+        "snapshot_at_ms": 15002.06,
+        "frame_received_at_ms": 14363.48,
+        "cdp_frame_timestamp": 1791942934.806679,
+        "file": "filmstrips/after-04/checkpoint-15000ms-snapshot-15002ms.jpg"
+      }
+    ],
+    "frame_count": 6,
+    "received_cdp_frame_count": 17,
+    "missing_checkpoints_ms": [],
+    "requests": [
+      {
+        "url": "http://127.0.0.1:8001/archive/",
+        "type": "Document",
+        "bytesDecodedChunks": 1605867,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 200,
+        "mime_type": "text/html"
+      },
+      {
+        "url": "http://127.0.0.1:8001/assets/fonts/source-sans-3-prose-core.woff2",
+        "type": "Font",
+        "bytesDecodedChunks": 79284,
+        "bytesEncodedChunks": 79284,
+        "bytesEncodedFinished": 79495,
+        "http_status": 200,
+        "mime_type": "font/woff2"
+      },
+      {
+        "url": "http://127.0.0.1:8001/assets/fonts/kalam-display-core.woff2",
+        "type": "Font",
+        "bytesDecodedChunks": 9336,
+        "bytesEncodedChunks": 9336,
+        "bytesEncodedFinished": 9546,
+        "http_status": 200,
+        "mime_type": "font/woff2"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/variables.08e33724.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 3723,
+        "bytesEncodedChunks": 1290,
+        "bytesEncodedFinished": 1537,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/palette.36d9eaf5.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 171045,
+        "bytesEncodedChunks": 30539,
+        "bytesEncodedFinished": 30787,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/main.d20ef4df.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 39850,
+        "bytesEncodedChunks": 7732,
+        "bytesEncodedFinished": 7979,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/components.45436e70.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 76763,
+        "bytesEncodedChunks": 13215,
+        "bytesEncodedFinished": 13463,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/text-size.a7cdb148.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 579,
+        "bytesEncodedChunks": 212,
+        "bytesEncodedFinished": 458,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/fonts.004799be.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 80361,
+        "bytesEncodedChunks": 5550,
+        "bytesEncodedFinished": 5797,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/cards.bba89fe5.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 17860,
+        "bytesEncodedChunks": 3308,
+        "bytesEncodedFinished": 3555,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/feeds.958625d6.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 13507,
+        "bytesEncodedChunks": 2910,
+        "bytesEncodedFinished": 3157,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/palette-switcher.0f00e25e.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 20887,
+        "bytesEncodedChunks": 4429,
+        "bytesEncodedFinished": 4676,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/search.0f0c0c81.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 11118,
+        "bytesEncodedChunks": 2293,
+        "bytesEncodedFinished": 2540,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/markata-tailwind.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 8492,
+        "bytesEncodedChunks": 2033,
+        "bytesEncodedFinished": 2280,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/link-avatars.ab8178f9.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 679,
+        "bytesEncodedChunks": 283,
+        "bytesEncodedFinished": 529,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/aesthetic.fd1f2276.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 18818,
+        "bytesEncodedChunks": 3231,
+        "bytesEncodedFinished": 3478,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/calendar-feed.2c5792bf.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 8648,
+        "bytesEncodedChunks": 2225,
+        "bytesEncodedFinished": 2472,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/calendar-feed.9fa8e025.js",
+        "type": "Script",
+        "bytesDecodedChunks": 9232,
+        "bytesEncodedChunks": 3232,
+        "bytesEncodedFinished": 3486,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/adaptive-loading.fea7d7d6.js",
+        "type": "Script",
+        "bytesDecodedChunks": 6408,
+        "bytesEncodedChunks": 2399,
+        "bytesEncodedFinished": 2653,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/w.svg",
+        "type": "Image",
+        "bytesDecodedChunks": 373,
+        "bytesEncodedChunks": 266,
+        "bytesEncodedFinished": 502,
+        "http_status": 200,
+        "mime_type": "image/svg+xml"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/f02fce45-8df5-4aae-a3ca-9c77f3cc2ae1.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 11512,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 12088,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/d0ba0314-76cc-4f83-8a51-c45a8db1b3db.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 9448,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 9754,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "http://127.0.0.1:8001/assets/fonts/caveat-brush-display-core.woff2",
+        "type": "Font",
+        "bytesDecodedChunks": 47672,
+        "bytesEncodedChunks": 47672,
+        "bytesEncodedFinished": 47883,
+        "http_status": 200,
+        "mime_type": "font/woff2"
+      },
+      {
+        "url": "https://i.ytimg.com/vi/1hd5hgqryKA/maxresdefault.jpg",
+        "type": "Image",
+        "bytesDecodedChunks": 84000,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 200,
+        "mime_type": "image/jpeg"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/bfbaec0c-b842-42df-be91-251e3f27bf21.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 8722,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 9062,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/96452478-6642-41ac-a28a-1bd0697f6be0.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 7522,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 7840,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/8821d407-8812-4d19-b9e0-58b3e6dbb901.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 8808,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 9147,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "https://ascii.rest/og.png",
+        "type": "Image",
+        "bytesDecodedChunks": 85500,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 200,
+        "mime_type": "image/png"
+      },
+      {
+        "url": "https://i.ytimg.com/vi/HuJB97hUPWk/maxresdefault.jpg",
+        "type": "Image",
+        "bytesDecodedChunks": 84000,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 200,
+        "mime_type": "image/jpeg"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/c438a7d8-ffa5-465b-9ad0-b449b756ce29.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 5982,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 6310,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/0725c3de-ff89-4258-84ca-14f10f2fbd94.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 13782,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 14116,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "http://127.0.0.1:8001/assets/fonts/dm-mono-code-core.woff2",
+        "type": "Font",
+        "bytesDecodedChunks": 6776,
+        "bytesEncodedChunks": 6776,
+        "bytesEncodedFinished": 6986,
+        "http_status": 200,
+        "mime_type": "font/woff2"
+      }
+    ],
+    "network_failures": [],
+    "invalid_asset_responses": [],
+    "document_delivery": {
+      "status": 200,
+      "protocol": "http/1.1",
+      "content_encoding": "gzip",
+      "mime_type": "text/html"
+    },
+    "encoded_bytes_completed": 301576,
+    "error": null,
+    "valid_filmstrip": true
+  },
+  {
+    "variant": "before",
+    "run": 4,
+    "url": "http://127.0.0.1:8000/archive/",
+    "http_status": 200,
+    "metrics": {
+      "fcp": 4856,
+      "lcp": 7520,
+      "lcpTag": "A",
+      "lcpURL": null,
+      "cls": 0.0003367706674831929
+    },
+    "frames": [
+      {
+        "requested_checkpoint_ms": 1000,
+        "snapshot_at_ms": 1000.83,
+        "frame_received_at_ms": 18.38,
+        "cdp_frame_timestamp": 1791942937.304636,
+        "file": "filmstrips/before-04/checkpoint-1000ms-snapshot-1001ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 2000,
+        "snapshot_at_ms": 2000.73,
+        "frame_received_at_ms": 18.38,
+        "cdp_frame_timestamp": 1791942937.304636,
+        "file": "filmstrips/before-04/checkpoint-2000ms-snapshot-2001ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 5000,
+        "snapshot_at_ms": 5000.84,
+        "frame_received_at_ms": 4858.48,
+        "cdp_frame_timestamp": 1791942942.14449,
+        "file": "filmstrips/before-04/checkpoint-5000ms-snapshot-5001ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 8000,
+        "snapshot_at_ms": 8000.87,
+        "frame_received_at_ms": 7523.56,
+        "cdp_frame_timestamp": 1791942944.810546,
+        "file": "filmstrips/before-04/checkpoint-8000ms-snapshot-8001ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 12000,
+        "snapshot_at_ms": 12002.22,
+        "frame_received_at_ms": 11263.79,
+        "cdp_frame_timestamp": 1791942948.546784,
+        "file": "filmstrips/before-04/checkpoint-12000ms-snapshot-12002ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 15000,
+        "snapshot_at_ms": 15001.09,
+        "frame_received_at_ms": 14637.76,
+        "cdp_frame_timestamp": 1791942951.923948,
+        "file": "filmstrips/before-04/checkpoint-15000ms-snapshot-15001ms.jpg"
+      }
+    ],
+    "frame_count": 6,
+    "received_cdp_frame_count": 17,
+    "missing_checkpoints_ms": [],
+    "requests": [
+      {
+        "url": "http://127.0.0.1:8000/archive/",
+        "type": "Document",
+        "bytesDecodedChunks": 1691342,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 200,
+        "mime_type": "text/html"
+      },
+      {
+        "url": "http://127.0.0.1:8000/assets/fonts/source-sans-3-prose-core.woff2",
+        "type": "Font",
+        "bytesDecodedChunks": 79284,
+        "bytesEncodedChunks": 79284,
+        "bytesEncodedFinished": 79495,
+        "http_status": 200,
+        "mime_type": "font/woff2"
+      },
+      {
+        "url": "http://127.0.0.1:8000/assets/fonts/kalam-display-core.woff2",
+        "type": "Font",
+        "bytesDecodedChunks": 9336,
+        "bytesEncodedChunks": 9336,
+        "bytesEncodedFinished": 9546,
+        "http_status": 200,
+        "mime_type": "font/woff2"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/variables.08e33724.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 3723,
+        "bytesEncodedChunks": 1290,
+        "bytesEncodedFinished": 1537,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/palette.36d9eaf5.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 171045,
+        "bytesEncodedChunks": 30539,
+        "bytesEncodedFinished": 30787,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/main.d20ef4df.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 39850,
+        "bytesEncodedChunks": 7732,
+        "bytesEncodedFinished": 7979,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/components.45436e70.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 76763,
+        "bytesEncodedChunks": 13215,
+        "bytesEncodedFinished": 13463,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/text-size.a7cdb148.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 579,
+        "bytesEncodedChunks": 212,
+        "bytesEncodedFinished": 458,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/fonts.004799be.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 80361,
+        "bytesEncodedChunks": 5550,
+        "bytesEncodedFinished": 5797,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/cards.bba89fe5.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 17860,
+        "bytesEncodedChunks": 3308,
+        "bytesEncodedFinished": 3555,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/feeds.958625d6.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 13507,
+        "bytesEncodedChunks": 2910,
+        "bytesEncodedFinished": 3157,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/palette-switcher.0f00e25e.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 20887,
+        "bytesEncodedChunks": 4429,
+        "bytesEncodedFinished": 4676,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/search.0f0c0c81.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 11118,
+        "bytesEncodedChunks": 2293,
+        "bytesEncodedFinished": 2540,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/markata-tailwind.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 8492,
+        "bytesEncodedChunks": 2033,
+        "bytesEncodedFinished": 2280,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/link-avatars.ab8178f9.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 679,
+        "bytesEncodedChunks": 283,
+        "bytesEncodedFinished": 529,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/aesthetic.fd1f2276.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 18818,
+        "bytesEncodedChunks": 3231,
+        "bytesEncodedFinished": 3478,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/calendar-feed.2c5792bf.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 8648,
+        "bytesEncodedChunks": 2225,
+        "bytesEncodedFinished": 2472,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/calendar-feed.9fa8e025.js",
+        "type": "Script",
+        "bytesDecodedChunks": 9232,
+        "bytesEncodedChunks": 3232,
+        "bytesEncodedFinished": 3486,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/adaptive-loading.fea7d7d6.js",
+        "type": "Script",
+        "bytesDecodedChunks": 6408,
+        "bytesEncodedChunks": 2399,
+        "bytesEncodedFinished": 2653,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/w.svg",
+        "type": "Image",
+        "bytesDecodedChunks": 373,
+        "bytesEncodedChunks": 266,
+        "bytesEncodedFinished": 502,
+        "http_status": 200,
+        "mime_type": "image/svg+xml"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/f02fce45-8df5-4aae-a3ca-9c77f3cc2ae1.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 11512,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 12091,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/d0ba0314-76cc-4f83-8a51-c45a8db1b3db.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 9448,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 9760,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "http://127.0.0.1:8000/assets/fonts/caveat-brush-display-core.woff2",
+        "type": "Font",
+        "bytesDecodedChunks": 47672,
+        "bytesEncodedChunks": 47672,
+        "bytesEncodedFinished": 47883,
+        "http_status": 200,
+        "mime_type": "font/woff2"
+      },
+      {
+        "url": "https://i.ytimg.com/vi/1hd5hgqryKA/maxresdefault.jpg",
+        "type": "Image",
+        "bytesDecodedChunks": 75000,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 200,
+        "mime_type": "image/jpeg"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/bfbaec0c-b842-42df-be91-251e3f27bf21.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 8722,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 9049,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/96452478-6642-41ac-a28a-1bd0697f6be0.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 7522,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 7848,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/8821d407-8812-4d19-b9e0-58b3e6dbb901.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 8808,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 9148,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "https://ascii.rest/og.png",
+        "type": "Image",
+        "bytesDecodedChunks": 75000,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 200,
+        "mime_type": "image/png"
+      },
+      {
+        "url": "https://i.ytimg.com/vi/HuJB97hUPWk/maxresdefault.jpg",
+        "type": "Image",
+        "bytesDecodedChunks": 73500,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 200,
+        "mime_type": "image/jpeg"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/c438a7d8-ffa5-465b-9ad0-b449b756ce29.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 5982,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 6310,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/0725c3de-ff89-4258-84ca-14f10f2fbd94.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 13782,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 14117,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "http://127.0.0.1:8000/assets/fonts/dm-mono-code-core.woff2",
+        "type": "Font",
+        "bytesDecodedChunks": 6776,
+        "bytesEncodedChunks": 6776,
+        "bytesEncodedFinished": 6986,
+        "http_status": 200,
+        "mime_type": "font/woff2"
+      }
+    ],
+    "network_failures": [],
+    "invalid_asset_responses": [],
+    "document_delivery": {
+      "status": 200,
+      "protocol": "http/1.1",
+      "content_encoding": "gzip",
+      "mime_type": "text/html"
+    },
+    "encoded_bytes_completed": 301582,
+    "error": null,
+    "valid_filmstrip": true
+  },
+  {
+    "variant": "before",
+    "run": 5,
+    "url": "http://127.0.0.1:8000/archive/",
+    "http_status": 200,
+    "metrics": {
+      "fcp": 5120,
+      "lcp": 7256,
+      "lcpTag": "A",
+      "lcpURL": null,
+      "cls": 0.0006704987992917777
+    },
+    "frames": [
+      {
+        "requested_checkpoint_ms": 1000,
+        "snapshot_at_ms": 1000.61,
+        "frame_received_at_ms": 15.06,
+        "cdp_frame_timestamp": 1791942953.850424,
+        "file": "filmstrips/before-05/checkpoint-1000ms-snapshot-1001ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 2000,
+        "snapshot_at_ms": 2000.58,
+        "frame_received_at_ms": 15.06,
+        "cdp_frame_timestamp": 1791942953.850424,
+        "file": "filmstrips/before-05/checkpoint-2000ms-snapshot-2001ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 5000,
+        "snapshot_at_ms": 5000.6,
+        "frame_received_at_ms": 15.06,
+        "cdp_frame_timestamp": 1791942953.850424,
+        "file": "filmstrips/before-05/checkpoint-5000ms-snapshot-5001ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 8000,
+        "snapshot_at_ms": 8000.22,
+        "frame_received_at_ms": 7705.94,
+        "cdp_frame_timestamp": 1791942961.538875,
+        "file": "filmstrips/before-05/checkpoint-8000ms-snapshot-8000ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 12000,
+        "snapshot_at_ms": 12001.32,
+        "frame_received_at_ms": 11640.75,
+        "cdp_frame_timestamp": 1791942965.473993,
+        "file": "filmstrips/before-05/checkpoint-12000ms-snapshot-12001ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 15000,
+        "snapshot_at_ms": 15000.22,
+        "frame_received_at_ms": 13872.32,
+        "cdp_frame_timestamp": 1791942967.705592,
+        "file": "filmstrips/before-05/checkpoint-15000ms-snapshot-15000ms.jpg"
+      }
+    ],
+    "frame_count": 6,
+    "received_cdp_frame_count": 16,
+    "missing_checkpoints_ms": [],
+    "requests": [
+      {
+        "url": "http://127.0.0.1:8000/archive/",
+        "type": "Document",
+        "bytesDecodedChunks": 1613590,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 200,
+        "mime_type": "text/html"
+      },
+      {
+        "url": "http://127.0.0.1:8000/assets/fonts/source-sans-3-prose-core.woff2",
+        "type": "Font",
+        "bytesDecodedChunks": 79284,
+        "bytesEncodedChunks": 79284,
+        "bytesEncodedFinished": 79495,
+        "http_status": 200,
+        "mime_type": "font/woff2"
+      },
+      {
+        "url": "http://127.0.0.1:8000/assets/fonts/kalam-display-core.woff2",
+        "type": "Font",
+        "bytesDecodedChunks": 9336,
+        "bytesEncodedChunks": 9336,
+        "bytesEncodedFinished": 9546,
+        "http_status": 200,
+        "mime_type": "font/woff2"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/variables.08e33724.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 3723,
+        "bytesEncodedChunks": 1290,
+        "bytesEncodedFinished": 1537,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/palette.36d9eaf5.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 171045,
+        "bytesEncodedChunks": 30539,
+        "bytesEncodedFinished": 30787,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/main.d20ef4df.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 39850,
+        "bytesEncodedChunks": 7732,
+        "bytesEncodedFinished": 7979,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/components.45436e70.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 76763,
+        "bytesEncodedChunks": 13215,
+        "bytesEncodedFinished": 13463,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/text-size.a7cdb148.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 579,
+        "bytesEncodedChunks": 212,
+        "bytesEncodedFinished": 458,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/fonts.004799be.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 80361,
+        "bytesEncodedChunks": 5550,
+        "bytesEncodedFinished": 5797,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/cards.bba89fe5.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 17860,
+        "bytesEncodedChunks": 3308,
+        "bytesEncodedFinished": 3555,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/feeds.958625d6.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 13507,
+        "bytesEncodedChunks": 2910,
+        "bytesEncodedFinished": 3157,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/palette-switcher.0f00e25e.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 20887,
+        "bytesEncodedChunks": 4429,
+        "bytesEncodedFinished": 4676,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/search.0f0c0c81.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 11118,
+        "bytesEncodedChunks": 2293,
+        "bytesEncodedFinished": 2540,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/markata-tailwind.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 8492,
+        "bytesEncodedChunks": 2033,
+        "bytesEncodedFinished": 2280,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/link-avatars.ab8178f9.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 679,
+        "bytesEncodedChunks": 283,
+        "bytesEncodedFinished": 529,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/aesthetic.fd1f2276.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 18818,
+        "bytesEncodedChunks": 3231,
+        "bytesEncodedFinished": 3478,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/css/calendar-feed.2c5792bf.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 8648,
+        "bytesEncodedChunks": 2225,
+        "bytesEncodedFinished": 2472,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/calendar-feed.9fa8e025.js",
+        "type": "Script",
+        "bytesDecodedChunks": 9232,
+        "bytesEncodedChunks": 3232,
+        "bytesEncodedFinished": 3486,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/js/adaptive-loading.fea7d7d6.js",
+        "type": "Script",
+        "bytesDecodedChunks": 6408,
+        "bytesEncodedChunks": 2399,
+        "bytesEncodedFinished": 2653,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8000/w.svg",
+        "type": "Image",
+        "bytesDecodedChunks": 373,
+        "bytesEncodedChunks": 266,
+        "bytesEncodedFinished": 502,
+        "http_status": 200,
+        "mime_type": "image/svg+xml"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/f02fce45-8df5-4aae-a3ca-9c77f3cc2ae1.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 11512,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 12095,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "http://127.0.0.1:8000/assets/fonts/caveat-brush-display-core.woff2",
+        "type": "Font",
+        "bytesDecodedChunks": 47672,
+        "bytesEncodedChunks": 47672,
+        "bytesEncodedFinished": 47883,
+        "http_status": 200,
+        "mime_type": "font/woff2"
+      },
+      {
+        "url": "https://i.ytimg.com/vi/1hd5hgqryKA/maxresdefault.jpg",
+        "type": "Image",
+        "bytesDecodedChunks": 81000,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 200,
+        "mime_type": "image/jpeg"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/bfbaec0c-b842-42df-be91-251e3f27bf21.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 8722,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 9088,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/96452478-6642-41ac-a28a-1bd0697f6be0.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 7522,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 7843,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/8821d407-8812-4d19-b9e0-58b3e6dbb901.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 8808,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 9140,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/d0ba0314-76cc-4f83-8a51-c45a8db1b3db.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 9448,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 9758,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/c438a7d8-ffa5-465b-9ad0-b449b756ce29.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 5982,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 6310,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/0725c3de-ff89-4258-84ca-14f10f2fbd94.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 13782,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 14127,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "https://ascii.rest/og.png",
+        "type": "Image",
+        "bytesDecodedChunks": 79500,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 200,
+        "mime_type": "image/png"
+      },
+      {
+        "url": "https://i.ytimg.com/vi/HuJB97hUPWk/maxresdefault.jpg",
+        "type": "Image",
+        "bytesDecodedChunks": 79500,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 200,
+        "mime_type": "image/jpeg"
+      },
+      {
+        "url": "http://127.0.0.1:8000/assets/fonts/dm-mono-code-core.woff2",
+        "type": "Font",
+        "bytesDecodedChunks": 6776,
+        "bytesEncodedChunks": 6776,
+        "bytesEncodedFinished": 6986,
+        "http_status": 200,
+        "mime_type": "font/woff2"
+      }
+    ],
+    "network_failures": [],
+    "invalid_asset_responses": [],
+    "document_delivery": {
+      "status": 200,
+      "protocol": "http/1.1",
+      "content_encoding": "gzip",
+      "mime_type": "text/html"
+    },
+    "encoded_bytes_completed": 301620,
+    "error": null,
+    "valid_filmstrip": true
+  },
+  {
+    "variant": "after",
+    "run": 5,
+    "url": "http://127.0.0.1:8001/archive/",
+    "http_status": 200,
+    "metrics": {
+      "fcp": 5136,
+      "lcp": 7536,
+      "lcpTag": "A",
+      "lcpURL": null,
+      "cls": 0.0003367706674831929
+    },
+    "frames": [
+      {
+        "requested_checkpoint_ms": 1000,
+        "snapshot_at_ms": 1000.48,
+        "frame_received_at_ms": 21.51,
+        "cdp_frame_timestamp": 1791942970.411972,
+        "file": "filmstrips/after-05/checkpoint-1000ms-snapshot-1000ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 2000,
+        "snapshot_at_ms": 2000.38,
+        "frame_received_at_ms": 21.51,
+        "cdp_frame_timestamp": 1791942970.411972,
+        "file": "filmstrips/after-05/checkpoint-2000ms-snapshot-2000ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 5000,
+        "snapshot_at_ms": 5000.76,
+        "frame_received_at_ms": 21.51,
+        "cdp_frame_timestamp": 1791942970.411972,
+        "file": "filmstrips/after-05/checkpoint-5000ms-snapshot-5001ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 8000,
+        "snapshot_at_ms": 8000.41,
+        "frame_received_at_ms": 7540.6,
+        "cdp_frame_timestamp": 1791942977.931467,
+        "file": "filmstrips/after-05/checkpoint-8000ms-snapshot-8000ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 12000,
+        "snapshot_at_ms": 12000.74,
+        "frame_received_at_ms": 11096.09,
+        "cdp_frame_timestamp": 1791942981.486593,
+        "file": "filmstrips/after-05/checkpoint-12000ms-snapshot-12001ms.jpg"
+      },
+      {
+        "requested_checkpoint_ms": 15000,
+        "snapshot_at_ms": 15002.0,
+        "frame_received_at_ms": 14031.27,
+        "cdp_frame_timestamp": 1791942984.420381,
+        "file": "filmstrips/after-05/checkpoint-15000ms-snapshot-15002ms.jpg"
+      }
+    ],
+    "frame_count": 6,
+    "received_cdp_frame_count": 16,
+    "missing_checkpoints_ms": [],
+    "requests": [
+      {
+        "url": "http://127.0.0.1:8001/archive/",
+        "type": "Document",
+        "bytesDecodedChunks": 1684463,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 200,
+        "mime_type": "text/html"
+      },
+      {
+        "url": "http://127.0.0.1:8001/assets/fonts/source-sans-3-prose-core.woff2",
+        "type": "Font",
+        "bytesDecodedChunks": 79284,
+        "bytesEncodedChunks": 79284,
+        "bytesEncodedFinished": 79495,
+        "http_status": 200,
+        "mime_type": "font/woff2"
+      },
+      {
+        "url": "http://127.0.0.1:8001/assets/fonts/kalam-display-core.woff2",
+        "type": "Font",
+        "bytesDecodedChunks": 9336,
+        "bytesEncodedChunks": 9336,
+        "bytesEncodedFinished": 9546,
+        "http_status": 200,
+        "mime_type": "font/woff2"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/variables.08e33724.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 3723,
+        "bytesEncodedChunks": 1290,
+        "bytesEncodedFinished": 1537,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/palette.36d9eaf5.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 171045,
+        "bytesEncodedChunks": 30539,
+        "bytesEncodedFinished": 30787,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/main.d20ef4df.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 39850,
+        "bytesEncodedChunks": 7732,
+        "bytesEncodedFinished": 7979,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/components.45436e70.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 76763,
+        "bytesEncodedChunks": 13215,
+        "bytesEncodedFinished": 13463,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/text-size.a7cdb148.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 579,
+        "bytesEncodedChunks": 212,
+        "bytesEncodedFinished": 458,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/fonts.004799be.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 80361,
+        "bytesEncodedChunks": 5550,
+        "bytesEncodedFinished": 5797,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/cards.bba89fe5.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 17860,
+        "bytesEncodedChunks": 3308,
+        "bytesEncodedFinished": 3555,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/feeds.958625d6.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 13507,
+        "bytesEncodedChunks": 2910,
+        "bytesEncodedFinished": 3157,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/palette-switcher.0f00e25e.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 20887,
+        "bytesEncodedChunks": 4429,
+        "bytesEncodedFinished": 4676,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/search.0f0c0c81.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 11118,
+        "bytesEncodedChunks": 2293,
+        "bytesEncodedFinished": 2540,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/markata-tailwind.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 8492,
+        "bytesEncodedChunks": 2033,
+        "bytesEncodedFinished": 2280,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/link-avatars.ab8178f9.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 679,
+        "bytesEncodedChunks": 283,
+        "bytesEncodedFinished": 529,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/aesthetic.fd1f2276.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 18818,
+        "bytesEncodedChunks": 3231,
+        "bytesEncodedFinished": 3478,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/css/calendar-feed.2c5792bf.css",
+        "type": "Stylesheet",
+        "bytesDecodedChunks": 8648,
+        "bytesEncodedChunks": 2225,
+        "bytesEncodedFinished": 2472,
+        "http_status": 200,
+        "mime_type": "text/css"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/calendar-feed.9fa8e025.js",
+        "type": "Script",
+        "bytesDecodedChunks": 9232,
+        "bytesEncodedChunks": 3232,
+        "bytesEncodedFinished": 3486,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/js/adaptive-loading.fea7d7d6.js",
+        "type": "Script",
+        "bytesDecodedChunks": 6408,
+        "bytesEncodedChunks": 2399,
+        "bytesEncodedFinished": 2653,
+        "http_status": 200,
+        "mime_type": "text/javascript"
+      },
+      {
+        "url": "http://127.0.0.1:8001/w.svg",
+        "type": "Image",
+        "bytesDecodedChunks": 373,
+        "bytesEncodedChunks": 266,
+        "bytesEncodedFinished": 502,
+        "http_status": 200,
+        "mime_type": "image/svg+xml"
+      },
+      {
+        "url": "https://i.ytimg.com/vi/1hd5hgqryKA/maxresdefault.jpg",
+        "type": "Image",
+        "bytesDecodedChunks": 81000,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 200,
+        "mime_type": "image/jpeg"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/f02fce45-8df5-4aae-a3ca-9c77f3cc2ae1.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 11512,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 11821,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/d0ba0314-76cc-4f83-8a51-c45a8db1b3db.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 9448,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 10022,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "http://127.0.0.1:8001/assets/fonts/caveat-brush-display-core.woff2",
+        "type": "Font",
+        "bytesDecodedChunks": 47672,
+        "bytesEncodedChunks": 47672,
+        "bytesEncodedFinished": 47883,
+        "http_status": 200,
+        "mime_type": "font/woff2"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/bfbaec0c-b842-42df-be91-251e3f27bf21.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 8722,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 9056,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/96452478-6642-41ac-a28a-1bd0697f6be0.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 7522,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 7847,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/8821d407-8812-4d19-b9e0-58b3e6dbb901.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 8808,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 9143,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "https://ascii.rest/og.png",
+        "type": "Image",
+        "bytesDecodedChunks": 76500,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 200,
+        "mime_type": "image/png"
+      },
+      {
+        "url": "https://i.ytimg.com/vi/HuJB97hUPWk/maxresdefault.jpg",
+        "type": "Image",
+        "bytesDecodedChunks": 76500,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": null,
+        "http_status": 200,
+        "mime_type": "image/jpeg"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/c438a7d8-ffa5-465b-9ad0-b449b756ce29.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 5982,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 6304,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "https://dropper.waylonwalker.com/file/0725c3de-ff89-4258-84ca-14f10f2fbd94.webp?w=600",
+        "type": "Image",
+        "bytesDecodedChunks": 13782,
+        "bytesEncodedChunks": 0,
+        "bytesEncodedFinished": 14114,
+        "http_status": 200,
+        "mime_type": "image/webp"
+      },
+      {
+        "url": "http://127.0.0.1:8001/assets/fonts/dm-mono-code-core.woff2",
+        "type": "Font",
+        "bytesDecodedChunks": 6776,
+        "bytesEncodedChunks": 6776,
+        "bytesEncodedFinished": 6986,
+        "http_status": 200,
+        "mime_type": "font/woff2"
+      }
+    ],
+    "network_failures": [],
+    "invalid_asset_responses": [],
+    "document_delivery": {
+      "status": 200,
+      "protocol": "http/1.1",
+      "content_encoding": "gzip",
+      "mime_type": "text/html"
+    },
+    "encoded_bytes_completed": 301566,
+    "error": null,
+    "valid_filmstrip": true
+  }
+]
