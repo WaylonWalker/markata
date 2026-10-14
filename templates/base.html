@@ -841,6 +841,7 @@
         script.src = '{{ 'js/bleve-search.js' | theme_asset_hashed }}';
         document.body.appendChild(script);
       })();
+    {% if config.search.backend != "bleve" and not config.search.bleve.endpoint %}
     } else {
     // Expose globally so view transitions can re-initialize after DOM swap.
     window.initPagefindSearch = function initPagefindSearch() {
@@ -932,6 +933,9 @@
       window.loadPagefind = loadPagefind;
     })();
     } // end else (pagefind)
+    {% else %}
+    } // end Bleve-only search
+    {% endif %}
   </script>
   {% endif %}
 
