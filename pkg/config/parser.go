@@ -288,6 +288,23 @@ type templatesConverter interface {
 	toTemplatesConfig() models.TemplatesConfig
 }
 
+// explicitFeedFormatOverrides preserves the distinction between an omitted
+// format and a deliberately false format across TOML, YAML and JSON parsing.
+func explicitFeedFormatOverrides(values ...*bool) map[string]bool {
+	names := [...]string{"html", "simple_html", "rss", "atom", "json", "markdown", "text", "sitemap"}
+	var result map[string]bool
+	for i, value := range values {
+		if value == nil {
+			continue
+		}
+		if result == nil {
+			result = make(map[string]bool)
+		}
+		result[names[i]] = *value
+	}
+	return result
+}
+
 // buildConfig constructs a models.Config from a configSource.
 // This helper eliminates code duplication across TOML, YAML, and JSON config converters.
 func buildConfig(src configSource) *models.Config {
@@ -2215,6 +2232,10 @@ func (f *tomlFeedConfig) toFeedConfig() models.FeedConfig {
 		PaginationType:  models.PaginationType(f.PaginationType),
 		ArchiveDisabled: f.ArchiveDisabled,
 		Formats:         f.Formats.toFeedFormats(),
+		FormatOverrides: explicitFeedFormatOverrides(
+			f.Formats.HTML, f.Formats.SimpleHTML, f.Formats.RSS, f.Formats.Atom,
+			f.Formats.JSON, f.Formats.Markdown, f.Formats.Text, f.Formats.Sitemap,
+		),
 		Templates:       f.Templates.toFeedTemplates(),
 	}
 }
@@ -3801,6 +3822,10 @@ func (f *yamlFeedConfig) toFeedConfig() models.FeedConfig {
 		PaginationType:  models.PaginationType(f.PaginationType),
 		ArchiveDisabled: f.ArchiveDisabled,
 		Formats:         f.Formats.toFeedFormats(),
+		FormatOverrides: explicitFeedFormatOverrides(
+			f.Formats.HTML, f.Formats.SimpleHTML, f.Formats.RSS, f.Formats.Atom,
+			f.Formats.JSON, f.Formats.Markdown, f.Formats.Text, f.Formats.Sitemap,
+		),
 		Templates:       f.Templates.toFeedTemplates(),
 	}
 }
@@ -5411,6 +5436,10 @@ func (f *jsonFeedConfig) toFeedConfig() models.FeedConfig {
 		PaginationType:  models.PaginationType(f.PaginationType),
 		ArchiveDisabled: f.ArchiveDisabled,
 		Formats:         f.Formats.toFeedFormats(),
+		FormatOverrides: explicitFeedFormatOverrides(
+			f.Formats.HTML, f.Formats.SimpleHTML, f.Formats.RSS, f.Formats.Atom,
+			f.Formats.JSON, f.Formats.Markdown, f.Formats.Text, f.Formats.Sitemap,
+		),
 		Templates:       f.Templates.toFeedTemplates(),
 	}
 }

@@ -107,6 +107,11 @@ type FeedConfig struct {
 	// Formats specifies which output formats to generate
 	Formats FeedFormats `json:"formats" yaml:"formats" toml:"formats"`
 
+	// FormatOverrides preserves presence as well as values from parsed config.
+	// An explicit false must not be mistaken for an omitted format.
+	// Runtime-only: serializers still expose the original formats object.
+	FormatOverrides map[string]bool `json:"-" yaml:"-" toml:"-"`
+
 	// Templates specifies custom templates for each format
 	Templates FeedTemplates `json:"templates" yaml:"templates" toml:"templates"`
 
@@ -394,8 +399,32 @@ func (f *FeedConfig) ApplyDefaults(defaults FeedDefaults) {
 		f.Views = append([]string(nil), views...)
 	}
 
-	// Apply format defaults if no formats are explicitly enabled
-	if !f.Formats.HasAnyEnabled() {
+	// Parsed formats inherit unspecified defaults while preserving explicit
+	// true and false values. Direct Go-created configs retain legacy behavior.
+	if len(f.FormatOverrides) > 0 {
+		formats := defaults.Formats
+		for name, enabled := range f.FormatOverrides {
+			switch name {
+			case "html":
+				formats.HTML = enabled
+			case "simple_html":
+				formats.SimpleHTML = enabled
+			case "rss":
+				formats.RSS = enabled
+			case "atom":
+				formats.Atom = enabled
+			case "json":
+				formats.JSON = enabled
+			case "markdown":
+				formats.Markdown = enabled
+			case "text":
+				formats.Text = enabled
+			case "sitemap":
+				formats.Sitemap = enabled
+			}
+		}
+		f.Formats = formats
+	} else if !f.Formats.HasAnyEnabled() {
 		f.Formats = defaults.Formats
 	}
 
