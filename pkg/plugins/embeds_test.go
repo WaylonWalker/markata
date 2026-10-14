@@ -1,6 +1,7 @@
 package plugins
 
 import (
+	"fmt"
 	"html"
 	"net/http"
 	"net/http/httptest"
@@ -216,6 +217,45 @@ func TestBuildInternalEmbedCard_DifferentialCorpus(t *testing.T) {
 				t.Fatalf("refactor changed output:\n got:\n%s\nwant:\n%s", got, want)
 			}
 		})
+	}
+}
+
+// Internal embed processing reads other posts' Extra maps from parallel workers.
+// Marking the Lite YouTube asset flag during that phase causes a map read/write race.
+func TestEmbedsPlugin_LiteYouTubeParallelInternalEmbedReads(t *testing.T) {
+	manager := lifecycle.NewManager()
+	var posts []*models.Post
+	for i := 0; i < 20; i++ {
+		slug := fmt.Sprintf("video-%d", i)
+		posts = append(posts, &models.Post{
+			Path:    slug + ".md",
+			Slug:    slug,
+			Content: `<lite-youtube videoid="dQw4w9WgXcQ"></lite-youtube>`,
+			Extra:   map[string]interface{}{"image": "/cover.jpg"},
+		})
+	}
+	for i := 0; i < 32; i++ {
+		slug := fmt.Sprintf("reader-%d", i)
+		posts = append(posts, &models.Post{
+			Path:    slug + ".md",
+			Slug:    slug,
+			Content: strings.Repeat("![[video-0]] ![[video-1]] ![[video-2]] ", 8),
+		})
+	}
+
+	manager.SetPosts(posts)
+	if err := NewEmbedsPlugin().Transform(manager); err != nil {
+		t.Fatal(err)
+	}
+	for _, post := range posts[:20] {
+		if post.Extra["needs_lite_youtube"] != true {
+			t.Errorf("%s must request Lite YouTube assets", post.Slug)
+		}
+	}
+	for _, post := range posts[20:] {
+		if post.Extra != nil && post.Extra["needs_lite_youtube"] == true {
+			t.Errorf("%s must not request Lite YouTube assets", post.Slug)
+		}
 	}
 }
 
