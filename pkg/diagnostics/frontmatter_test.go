@@ -124,6 +124,42 @@ func TestAnalyzeFrontmatter_MetadataTypes(t *testing.T) {
 	}
 }
 
+func TestAnalyzeFrontmatter_ScalarTagsWarning(t *testing.T) {
+	tests := []struct {
+		name, value, wantMessage string
+		wantIssues               int
+	}{
+		{
+			name: "scalar shorthand", value: "go", wantIssues: 1,
+			wantMessage: `frontmatter field "tags" uses scalar shorthand; use a list of strings`,
+		},
+		{
+			name: "numeric tags", value: "42", wantIssues: 1,
+			wantMessage: `frontmatter field "tags" must be a list of strings`,
+		},
+		{name: "list", value: "[go, rust]", wantIssues: 0},
+		{name: "empty", value: "null", wantIssues: 0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			analysis := AnalyzeFrontmatter("post.md", "---\ntags: "+tt.value+"\n---\nBody")
+			if !analysis.Valid {
+				t.Fatal("valid YAML frontmatter rejected")
+			}
+			if got := countIssuesWithCode(analysis.Issues, ReasonFrontmatterInvalidType); got != tt.wantIssues {
+				t.Fatalf("invalid type issues = %d, want %d: %#v", got, tt.wantIssues, analysis.Issues)
+			}
+			if tt.wantIssues == 0 {
+				return
+			}
+			issue := issueWithCode(analysis.Issues, ReasonFrontmatterInvalidType)
+			if issue.Message != tt.wantMessage || issue.Severity != SeverityWarning || issue.Range.StartLine != 1 {
+				t.Errorf("issue = %+v, want message %q, warning on second line", *issue, tt.wantMessage)
+			}
+		})
+	}
+}
+
 func TestAnalyzeFrontmatter_InvalidDate(t *testing.T) {
 	analysis := AnalyzeFrontmatter("post.md", "---\ndate: 2020-1-15T00:00:00\n---\nBody")
 

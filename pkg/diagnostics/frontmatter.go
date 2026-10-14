@@ -15,7 +15,10 @@ type FrontmatterProblem string
 
 const frontmatterDelimiter = "---"
 
-const yamlStringTag = "!!str"
+const (
+	yamlStringTag        = "!!str"
+	frontmatterTagsField = "tags"
+)
 
 const (
 	// FrontmatterProblemNone means that no structural problem was found.
@@ -317,7 +320,11 @@ func checkMetadataTypes(filePath string, inspection FrontmatterInspection, docum
 		field := strings.ToLower(key.Value)
 		expected, ok := frontmatterFieldType(field)
 		if ok && !frontmatterFieldHasType(field, value) {
-			issues = append(issues, invalidTypeIssue(filePath, inspection, key, field, expected))
+			issue := invalidTypeIssue(filePath, inspection, key, field, expected)
+			if field == frontmatterTagsField && value.Kind == yaml.ScalarNode && value.Tag == yamlStringTag {
+				issue.Message = `frontmatter field "tags" uses scalar shorthand; use a list of strings`
+			}
+			issues = append(issues, issue)
 		}
 	}
 	return issues
@@ -329,7 +336,7 @@ func frontmatterFieldType(field string) (string, bool) {
 		return "a string", true
 	case field == "published" || field == "draft" || field == "private" || field == "skip":
 		return "a boolean", true
-	case field == "tags":
+	case field == frontmatterTagsField:
 		return "a list of strings", true
 	case dateKeyRegex.MatchString(field):
 		return "a supported date", true
@@ -346,7 +353,7 @@ func frontmatterFieldHasType(field string, node *yaml.Node) bool {
 		return isStringOrNull(node)
 	case field == "published" || field == "draft" || field == "private" || field == "skip":
 		return isBooleanNode(node)
-	case field == "tags":
+	case field == frontmatterTagsField:
 		return isStringListNode(node) || isNullNode(node)
 	case dateKeyRegex.MatchString(field):
 		return isDateNode(node)

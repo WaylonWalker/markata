@@ -210,7 +210,8 @@ func GetBool(metadata map[string]interface{}, key string, defaultVal bool) bool 
 }
 
 // GetStringSlice extracts a string slice from metadata.
-// Handles both []interface{} (common from YAML) and []string.
+// Handles scalar strings as one-item lists, plus []interface{} (common from
+// YAML) and []string.
 func GetStringSlice(metadata map[string]interface{}, key string) []string {
 	v, ok := metadata[key]
 	if !ok {
@@ -218,6 +219,11 @@ func GetStringSlice(metadata map[string]interface{}, key string) []string {
 	}
 
 	switch s := v.(type) {
+	case string:
+		if s == "" {
+			return nil
+		}
+		return []string{s}
 	case []string:
 		return s
 	case []interface{}:
