@@ -111,8 +111,9 @@ async function clickThrough(page, target, marker) {
       Boolean(document.querySelector(marker)),
     {target, marker}
   );
-  assert.equal(await page.evaluate(() => Boolean(window.__lastViewTransitionMetrics)), true,
-    'Navigation should be handled by the View Transition runtime');
+  // History and the new DOM can update before the transition's finish hook
+  // publishes metrics, so wait for completion rather than racing that hook.
+  await page.waitForFunction(() => Boolean(window.__lastViewTransitionMetrics), null, { timeout: 6000 });
 }
 
 test('Lite YouTube initializes only when needed, including after an SPA navigation', {timeout:60000}, async () => {
