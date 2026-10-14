@@ -254,9 +254,9 @@ func TestPagesSitemapExcludesNoindexAndDuplicateLandingPages(t *testing.T) {
 }
 
 func TestSitemapNoindexDirectiveParsing(t *testing.T) {
-	for _, tc := range []struct{
+	for _, tc := range []struct {
 		input string
-		want bool
+		want  bool
 	}{
 		{"noindex,follow", true},
 		{"NOINDEX", true},
