@@ -694,14 +694,16 @@ type feedFormatPublisher struct {
 }
 
 type feedRenderContext struct {
-	totalPosts       int
-	latestPostDate   string
-	sparklinePoints  string
-	sparklineData    []SparklinePoint
-	sparklineTitle   string
-	sparklineSummary string
-	sparklineStart   string
-	sparklineEnd     string
+	totalPosts        int
+	latestPostDate    string
+	sparklinePoints   string
+	sparklineData     []SparklinePoint
+	sparklineValues   string
+	sparklineTitle    string
+	sparklineSummary  string
+	sparklineStart    string
+	sparklineStartISO string
+	sparklineEnd      string
 }
 
 // publishFeed publishes a single feed in all configured formats.
@@ -1282,15 +1284,18 @@ func buildFeedRenderContext(fc *models.FeedConfig) *feedRenderContext {
 	}
 	totalPosts, latestPostDate, _ := feedStats(fc.Posts, fc.IncludesPrivate())
 	window := computeSparklineWindow(fc.Posts, fc.IncludesPrivate())
+	sparklineData := buildFeedSparklineData(fc.Posts, window, fc.IncludesPrivate())
 	return &feedRenderContext{
-		totalPosts:       totalPosts,
-		latestPostDate:   latestPostDate,
-		sparklinePoints:  buildFeedSparkline(fc.Posts, window, fc.IncludesPrivate()),
-		sparklineData:    buildFeedSparklineData(fc.Posts, window, fc.IncludesPrivate()),
-		sparklineTitle:   buildFeedSparklineTitle(fc.Posts, window, fc.IncludesPrivate()),
-		sparklineSummary: buildFeedSparklineSummary(fc.Posts, window, fc.IncludesPrivate()),
-		sparklineStart:   buildFeedSparklineStart(window),
-		sparklineEnd:     buildFeedSparklineEnd(window),
+		totalPosts:        totalPosts,
+		latestPostDate:    latestPostDate,
+		sparklinePoints:   buildFeedSparkline(fc.Posts, window, fc.IncludesPrivate()),
+		sparklineData:     sparklineData,
+		sparklineValues:   encodeFeedSparklineValues(sparklineData),
+		sparklineTitle:    buildFeedSparklineTitle(fc.Posts, window, fc.IncludesPrivate()),
+		sparklineSummary:  buildFeedSparklineSummary(fc.Posts, window, fc.IncludesPrivate()),
+		sparklineStart:    buildFeedSparklineStart(window),
+		sparklineStartISO: buildFeedSparklineStartISO(window),
+		sparklineEnd:      buildFeedSparklineEnd(window),
 	}
 }
 
@@ -1302,9 +1307,11 @@ func (p *PublishFeedsPlugin) addFeedStatsContext(ctx *templates.Context, fc *mod
 	ctx.Set("feed_stats_latest_post", renderCtx.latestPostDate)
 	ctx.Set("feed_sparkline_points", renderCtx.sparklinePoints)
 	ctx.Set("feed_sparkline_data", renderCtx.sparklineData)
+	ctx.Set("feed_sparkline_values", renderCtx.sparklineValues)
 	ctx.Set("feed_sparkline_title", renderCtx.sparklineTitle)
 	ctx.Set("feed_sparkline_summary", renderCtx.sparklineSummary)
 	ctx.Set("feed_sparkline_start", renderCtx.sparklineStart)
+	ctx.Set("feed_sparkline_start_iso", renderCtx.sparklineStartISO)
 	ctx.Set("feed_sparkline_end", renderCtx.sparklineEnd)
 }
 

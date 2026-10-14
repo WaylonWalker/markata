@@ -74,26 +74,28 @@ type SparklinePoint struct {
 
 // FeedListingInfo contains the data rendered on the /feeds page.
 type FeedListingInfo struct {
-	Title            string
-	Slug             string
-	Description      string
-	Href             string
-	PostCount        int
-	LatestPostDate   string
-	SubscribeCount   int
-	ArchiveCount     int
-	DisplayVariants  []FeedVariantLink
-	PrimaryVariants  []FeedVariantLink
-	ArchiveVariants  []FeedVariantLink
-	UtilityVariants  []FeedVariantLink
-	LatestPostTime   time.Time
-	SparklinePoints  string
-	SparklineData    []SparklinePoint
-	SparklineTitle   string
-	SparklineSummary string
-	SparklineStart   string
-	SparklineEnd     string
-	GeneratedBySite  bool
+	Title             string
+	Slug              string
+	Description       string
+	Href              string
+	PostCount         int
+	LatestPostDate    string
+	SubscribeCount    int
+	ArchiveCount      int
+	DisplayVariants   []FeedVariantLink
+	PrimaryVariants   []FeedVariantLink
+	ArchiveVariants   []FeedVariantLink
+	UtilityVariants   []FeedVariantLink
+	LatestPostTime    time.Time
+	SparklinePoints   string
+	SparklineData     []SparklinePoint
+	SparklineValues   string
+	SparklineTitle    string
+	SparklineSummary  string
+	SparklineStart    string
+	SparklineStartISO string
+	SparklineEnd      string
+	GeneratedBySite   bool
 }
 
 // FeedsListingPlugin generates a feeds listing page at /feeds.
@@ -367,27 +369,30 @@ func (p *FeedsListingPlugin) collectFeedSections(
 		postCount, latestDate, latestTime := feedStats(fc.Posts, fc.IncludesPrivate())
 		display, primary, archive, utility := splitFeedVariants(fc, syndication)
 		_, isConfigured := configuredSlugs[fc.Slug]
+		sparklineData := buildFeedSparklineData(fc.Posts, sparklineRange, fc.IncludesPrivate())
 		info := FeedListingInfo{
-			Title:            feedDisplayTitle(fc),
-			Slug:             fc.Slug,
-			Description:      fc.Description,
-			Href:             feedHTMLHref(fc),
-			PostCount:        postCount,
-			LatestPostDate:   latestDate,
-			LatestPostTime:   latestTime,
-			SubscribeCount:   feedSubscribeCount(fc, syndication, postCount),
-			ArchiveCount:     postCount,
-			DisplayVariants:  display,
-			PrimaryVariants:  primary,
-			ArchiveVariants:  archive,
-			UtilityVariants:  utility,
-			SparklinePoints:  buildFeedSparkline(fc.Posts, sparklineRange, fc.IncludesPrivate()),
-			SparklineData:    buildFeedSparklineData(fc.Posts, sparklineRange, fc.IncludesPrivate()),
-			SparklineTitle:   buildFeedSparklineTitle(fc.Posts, sparklineRange, fc.IncludesPrivate()),
-			SparklineSummary: buildFeedSparklineSummary(fc.Posts, sparklineRange, fc.IncludesPrivate()),
-			SparklineStart:   buildFeedSparklineStart(sparklineRange),
-			SparklineEnd:     buildFeedSparklineEnd(sparklineRange),
-			GeneratedBySite:  !isConfigured,
+			Title:             feedDisplayTitle(fc),
+			Slug:              fc.Slug,
+			Description:       fc.Description,
+			Href:              feedHTMLHref(fc),
+			PostCount:         postCount,
+			LatestPostDate:    latestDate,
+			LatestPostTime:    latestTime,
+			SubscribeCount:    feedSubscribeCount(fc, syndication, postCount),
+			ArchiveCount:      postCount,
+			DisplayVariants:   display,
+			PrimaryVariants:   primary,
+			ArchiveVariants:   archive,
+			UtilityVariants:   utility,
+			SparklinePoints:   buildFeedSparkline(fc.Posts, sparklineRange, fc.IncludesPrivate()),
+			SparklineData:     sparklineData,
+			SparklineValues:   encodeFeedSparklineValues(sparklineData),
+			SparklineTitle:    buildFeedSparklineTitle(fc.Posts, sparklineRange, fc.IncludesPrivate()),
+			SparklineSummary:  buildFeedSparklineSummary(fc.Posts, sparklineRange, fc.IncludesPrivate()),
+			SparklineStart:    buildFeedSparklineStart(sparklineRange),
+			SparklineStartISO: buildFeedSparklineStartISO(sparklineRange),
+			SparklineEnd:      buildFeedSparklineEnd(sparklineRange),
+			GeneratedBySite:   !isConfigured,
 		}
 
 		if isConfigured {
@@ -701,6 +706,24 @@ func buildFeedSparklineStart(window sparklineWindow) string {
 		return ""
 	}
 	return window.Start.Format("Jan 2006")
+}
+
+func buildFeedSparklineStartISO(window sparklineWindow) string {
+	if window.Start.IsZero() {
+		return ""
+	}
+	return window.Start.Format("2006-01")
+}
+
+func encodeFeedSparklineValues(data []SparklinePoint) string {
+	if len(data) == 0 {
+		return ""
+	}
+	values := make([]string, len(data))
+	for i, point := range data {
+		values[i] = fmt.Sprint(point.Value)
+	}
+	return strings.Join(values, ",")
 }
 
 func buildFeedSparklineEnd(window sparklineWindow) string {

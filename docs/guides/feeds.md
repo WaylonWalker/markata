@@ -1599,6 +1599,14 @@ feed. The same annual navigation applies, using `?year=2024` on its URL.
 
 Calendar panels and the year selector follow the active theme surface and text colors. On wide calendar pages, twelve months form four columns and three rows; smaller containers keep fewer, readable columns.
 
+## Publishing Rhythm Charts
+
+The built-in `/feeds/` directory can show a compact monthly publishing-rhythm chart
+for each feed. Hover over a chart to read a month's post count. Keyboard users can
+focus a chart and use the left and right arrow keys to move between months; Home and
+End jump to the first and latest month. The chart's line and overall appearance stay
+the same while its month details are available on demand.
+
 ## See Also
 
 - [Configuration Guide](/docs/guides/configuration/) - Full configuration reference
