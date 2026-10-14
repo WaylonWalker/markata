@@ -26,7 +26,7 @@
   };
 
   var conditionalJS = {
-    'feed-sparklines': '.feed-sparkline-wrap, .feed-header-sparkline'
+    'feed-sparklines-v2': '.feed-sparkline-wrap, .feed-header-sparkline'
   };
 
   var navHoverSuppressed = false;

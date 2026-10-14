@@ -80,6 +80,11 @@
     });
   }
 
-  document.addEventListener('DOMContentLoaded', init);
   window.addEventListener('view-transition-complete', init);
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init, { once: true });
+  } else {
+    init();
+  }
 })();
