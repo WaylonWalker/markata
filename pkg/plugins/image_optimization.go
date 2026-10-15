@@ -6,6 +6,10 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"image"
+	"image/jpeg"
+	"image/png"
+	"io"
 	"net/url"
 	"os"
 	"os/exec"
@@ -21,6 +25,8 @@ import (
 	"github.com/WaylonWalker/markata-go/pkg/logging"
 	"github.com/WaylonWalker/markata-go/pkg/models"
 	markatatemplates "github.com/WaylonWalker/markata-go/pkg/templates"
+	xdraw "golang.org/x/image/draw"
+	"golang.org/x/image/webp"
 )
 
 var imageOptimizationLog = logging.Component("image_optimization").Phase("write")
@@ -52,6 +58,7 @@ type ImageOptimizationConfig struct {
 type imageOptimizationTarget struct {
 	Src      string
 	PostSlug string
+	Widths   []int
 }
 
 type imageOptimizationVariant struct {
@@ -100,7 +107,7 @@ func (p *ImageOptimizationPlugin) Priority(stage lifecycle.Stage) int {
 	case lifecycle.StageRender:
 		return 75
 	case lifecycle.StageWrite:
-		return lifecycle.PriorityLate
+		return lifecycle.PriorityEarly + 1
 	default:
 		return lifecycle.PriorityDefault
 	}
@@ -158,55 +165,70 @@ func (p *ImageOptimizationPlugin) Write(m *lifecycle.Manager) error {
 
 	outputDir := m.Config().OutputDir
 	for _, target := range targets {
-		outputPath, err := resolveImageOutputPath(outputDir, target)
-		if err != nil {
-			imageOptimizationLog.Warnf("%v", err)
-			continue
-		}
-
-		info, err := os.Stat(outputPath)
-		if err != nil {
-			imageOptimizationLog.Warnf("source image not found: %s", outputPath)
-			continue
-		}
-
-		for _, format := range p.availableFormats {
-			if shouldSkipFormat(outputPath, format) {
-				continue
-			}
-			quality := p.qualityForFormat(format)
-			encoder := p.encoderPathForFormat(format)
-			if encoder == "" {
-				p.warnMissingEncoder(format)
-				continue
-			}
-
-			variants := buildImageVariants(outputPath, format, p.config.Widths)
-			for _, variant := range variants {
-				if variant.Path == "" {
-					continue
-				}
-				if err := os.MkdirAll(filepath.Dir(variant.Path), 0o755); err != nil {
-					return fmt.Errorf("create output dir: %w", err)
-				}
-
-				cachePath := imageOptimizationCachePath(cacheDir, outputPath, format, variant.Width, quality, encoder)
-				if isImageCacheValid(cachePath, outputPath, info, format, variant.Width, quality, encoder, variant.Path) {
-					continue
-				}
-
-				if err := p.encodeImage(outputPath, variant.Path, format, quality, encoder, variant.Width); err != nil {
-					imageOptimizationLog.Warnf("%v", err)
-					continue
-				}
-
-				if err := writeImageCache(cachePath, outputPath, info, format, variant.Width, quality, encoder); err != nil {
-					imageOptimizationLog.Warnf("cache write failed: %v", err)
-				}
-			}
+		if err := p.optimizeTarget(outputDir, cacheDir, target); err != nil {
+			return err
 		}
 	}
 
+	return nil
+}
+
+func (p *ImageOptimizationPlugin) optimizeTarget(outputDir, cacheDir string, target imageOptimizationTarget) error {
+	outputPath, err := resolveImageOutputPath(outputDir, target)
+	if err != nil {
+		imageOptimizationLog.Warnf("%v", err)
+		return nil
+	}
+
+	info, err := os.Stat(outputPath)
+	if err != nil {
+		imageOptimizationLog.Warnf("source image not found: %s", outputPath)
+		return nil
+	}
+
+	widths := target.Widths
+	if len(widths) == 0 {
+		widths = p.config.Widths
+	}
+	for _, format := range p.availableFormats {
+		if err := p.optimizeImageFormat(outputPath, cacheDir, info, format, widths); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (p *ImageOptimizationPlugin) optimizeImageFormat(outputPath, cacheDir string, info os.FileInfo, format string, widths []int) error {
+	if shouldSkipFormat(outputPath, format) {
+		return nil
+	}
+	quality := p.qualityForFormat(format)
+	encoder := p.encoderPathForFormat(format)
+	if encoder == "" {
+		p.warnMissingEncoder(format)
+		return nil
+	}
+
+	for _, variant := range buildImageVariants(outputPath, format, widths) {
+		if variant.Path == "" {
+			continue
+		}
+		if err := os.MkdirAll(filepath.Dir(variant.Path), 0o755); err != nil {
+			return fmt.Errorf("create output dir: %w", err)
+		}
+
+		cachePath := imageOptimizationCachePath(cacheDir, outputPath, format, variant.Width, quality, encoder)
+		if isImageCacheValid(cachePath, outputPath, info, format, variant.Width, quality, encoder, variant.Path) {
+			continue
+		}
+		if err := p.encodeImage(outputPath, variant.Path, format, quality, encoder, variant.Width); err != nil {
+			imageOptimizationLog.Warnf("%v", err)
+			continue
+		}
+		if err := writeImageCache(cachePath, outputPath, info, format, variant.Width, quality, encoder); err != nil {
+			imageOptimizationLog.Warnf("cache write failed: %v", err)
+		}
+	}
 	return nil
 }
 
@@ -556,7 +578,8 @@ func (p *ImageOptimizationPlugin) processImageNode(parent, img *html.Node, post 
 		return false, nil
 	}
 
-	sources := buildPictureSources(src, p.availableFormats, p.config.Widths, p.config.Sizes)
+	widths, sizes := localImageResponsiveSettings(img, p.config.Widths, p.config.Sizes)
+	sources := buildPictureSources(src, p.availableFormats, widths, sizes)
 	if len(sources) == 0 {
 		return false, nil
 	}
@@ -576,7 +599,31 @@ func (p *ImageOptimizationPlugin) processImageNode(parent, img *html.Node, post 
 	if post.Slug == "" {
 		post.GenerateSlug()
 	}
-	return true, &imageOptimizationTarget{Src: src, PostSlug: post.Slug}
+	return true, &imageOptimizationTarget{Src: src, PostSlug: post.Slug, Widths: widths}
+}
+
+func localImageResponsiveSettings(img *html.Node, configuredWidths []int, configuredSizes string) (widths []int, sizes string) {
+	widths = normalizeWidths(configuredWidths)
+	sizes = strings.TrimSpace(getAttr(img, "sizes"))
+	if sizes == "" {
+		sizes = strings.TrimSpace(configuredSizes)
+	}
+	if width, err := strconv.Atoi(strings.TrimSpace(getAttr(img, "width"))); err == nil && width > 0 {
+		filtered := make([]int, 0, len(widths))
+		for _, candidate := range widths {
+			if candidate <= width {
+				filtered = append(filtered, candidate)
+			}
+		}
+		if len(filtered) == 0 {
+			filtered = append(filtered, width)
+		}
+		widths = filtered
+		if getAttr(img, "sizes") == "" {
+			sizes = strconv.Itoa(width) + "px"
+		}
+	}
+	return widths, sizes
 }
 
 func addResponsiveRemoteImageAttrs(img *html.Node, src string) bool {
@@ -936,11 +983,12 @@ func (p *ImageOptimizationPlugin) encodeImage(sourcePath, destPath, format strin
 	}
 	switch format {
 	case formatAVIF:
-		args := []string{"--quality", fmt.Sprintf("%d", quality)}
-		if width > 0 {
-			args = append(args, "--resize", fmt.Sprintf("%d", width), "0")
+		inputPath, cleanup, err := prepareAVIFInput(sourcePath, width)
+		if err != nil {
+			return fmt.Errorf("prepare AVIF input %s: %w", sourcePath, err)
 		}
-		args = append(args, sourcePath, destPath)
+		defer cleanup()
+		args := avifEncoderArgs(inputPath, destPath, quality)
 		// #nosec G204 -- encoder comes from config or LookPath and is validated.
 		cmd := exec.Command(encoder, args...)
 		if output, err := cmd.CombinedOutput(); err != nil {
@@ -961,5 +1009,82 @@ func (p *ImageOptimizationPlugin) encodeImage(sourcePath, destPath, format strin
 		return nil
 	default:
 		return fmt.Errorf("unsupported image format: %s", format)
+	}
+}
+
+func avifEncoderArgs(sourcePath, destPath string, quality int) []string {
+	return []string{"-q", strconv.Itoa(quality), sourcePath, destPath}
+}
+
+func prepareAVIFInput(sourcePath string, width int) (inputPath string, cleanup func(), err error) {
+	noCleanup := func() {}
+	file, err := os.Open(sourcePath)
+	if err != nil {
+		return "", noCleanup, err
+	}
+	source, decodeErr := decodeImageForAVIF(file, sourcePath)
+	closeErr := file.Close()
+	if decodeErr != nil {
+		return "", noCleanup, decodeErr
+	}
+	if closeErr != nil {
+		return "", noCleanup, closeErr
+	}
+
+	bounds := source.Bounds()
+	sourceWidth := bounds.Dx()
+	sourceHeight := bounds.Dy()
+	if sourceWidth <= 0 || sourceHeight <= 0 {
+		return "", noCleanup, fmt.Errorf("invalid image bounds %v", bounds)
+	}
+	if width <= 0 || width >= sourceWidth {
+		if strings.EqualFold(filepath.Ext(sourcePath), extWebP) {
+			width = 0
+		} else {
+			return sourcePath, noCleanup, nil
+		}
+	}
+
+	resizedWidth := sourceWidth
+	resizedHeight := sourceHeight
+	if width > 0 {
+		resizedWidth = width
+		resizedHeight = (sourceHeight*width + sourceWidth/2) / sourceWidth
+		if resizedHeight < 1 {
+			resizedHeight = 1
+		}
+	}
+	resized := image.NewNRGBA(image.Rect(0, 0, resizedWidth, resizedHeight))
+	xdraw.CatmullRom.Scale(resized, resized.Bounds(), source, bounds, xdraw.Src, nil)
+
+	temp, err := os.CreateTemp(filepath.Dir(sourcePath), ".markata-avif-*.png")
+	if err != nil {
+		return "", noCleanup, err
+	}
+	tempPath := temp.Name()
+	removeTemp := func() { _ = os.Remove(tempPath) }
+	if err := png.Encode(temp, resized); err != nil {
+		_ = temp.Close()
+		removeTemp()
+		return "", noCleanup, err
+	}
+	if err := temp.Close(); err != nil {
+		removeTemp()
+		return "", noCleanup, err
+	}
+	return tempPath, removeTemp, nil
+}
+
+func decodeImageForAVIF(reader io.Reader, sourcePath string) (image.Image, error) {
+	switch strings.ToLower(filepath.Ext(sourcePath)) {
+	case extJPG, extJPEG:
+		return jpeg.Decode(reader)
+	case extPNG:
+		return png.Decode(reader)
+	case extWebP:
+		return webp.Decode(reader)
+	default:
+		decoded, _, err := image.Decode(reader)
+		return decoded, err
 	}
 }
