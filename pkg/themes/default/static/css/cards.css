@@ -356,11 +356,12 @@
   overflow: hidden;
 }
 
-/* Give responsive photo previews a stable display width. With width-descriptor
-   srcset images, fit-content can shrink to the density-adjusted intrinsic width
-   (e.g. a 600w image displays at ~300 CSS px on a 2x screen). Let media height
-   follow its natural aspect ratio instead of squashing or cropping it. */
-.feed .posts-list > .photo-figure {
+/* The display slot is independent of the srcset candidate selected by DPR.
+   Match photo figures within optional card_classes wrappers as well as direct
+   children: otherwise those images can collapse to their density-adjusted
+   intrinsic widths (e.g. a 160w source on a 2x display looks 80px wide).
+   This is deliberately separate from the dedicated Shots grid. */
+.feed .posts-list .photo-figure {
   width: min(100%, 600px);
   max-width: 100%;
   display: grid;
@@ -371,14 +372,14 @@
   text-align: center;
 }
 
-.feed .posts-list > .photo-figure > a {
+.feed .posts-list .photo-figure > a {
   display: grid;
   place-items: center;
   width: 100%;
   max-width: 100%;
 }
 
-.feed .posts-list > .photo-figure picture {
+.feed .posts-list .photo-figure picture {
   display: block;
   width: 100%;
   max-width: 100%;
@@ -386,8 +387,8 @@
   margin-right: auto;
 }
 
-.feed .posts-list > .photo-figure img,
-.feed .posts-list > .photo-figure video {
+.feed .posts-list .photo-figure img,
+.feed .posts-list .photo-figure video {
   display: block;
   width: 100%;
   max-width: 100%;
