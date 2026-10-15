@@ -117,7 +117,7 @@ func blogrollRawFeeds(raw map[string]any) []map[string]any {
 	if !ok {
 		return nil
 	}
-	var result []map[string]any
+	result := make([]map[string]any, 0, len(entries))
 	for _, entry := range entries {
 		if feed, ok := entry.(map[string]any); ok {
 			result = append(result, feed)
