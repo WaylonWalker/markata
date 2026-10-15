@@ -122,12 +122,18 @@ func TestFeedHelpers_RenderFeedPhotoCard(t *testing.T) {
 func TestFeedHelpers_RenderPhotoFigureAddsAccessibleName(t *testing.T) {
 	output := renderPhotoFigure(map[string]interface{}{
 		"href":        "/lab/",
-		"image":       "/lab.webp",
+		"image":       "https://dropper.waylonwalker.com/lab.webp?token=abc&w=400&h=200",
 		"description": "Wicket in his lab",
 	})
 
 	if !strings.Contains(output, `aria-label="Wicket in his lab"`) {
 		t.Fatalf("expected aria-label on fallback media anchor, got: %s", output)
+	}
+	if !strings.Contains(output, `src="https://dropper.waylonwalker.com/lab.webp?token=abc&amp;w=1200"`) {
+		t.Fatalf("expected width-only image variant with access token preserved, got: %s", output)
+	}
+	if strings.Contains(output, `height="675"`) || strings.Contains(output, `h=675`) {
+		t.Fatalf("photo fallback must not force a 16:9 aspect ratio: %s", output)
 	}
 }
 

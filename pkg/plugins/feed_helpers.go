@@ -604,10 +604,11 @@ func renderPhotoFigure(post map[string]interface{}) string {
 		return ""
 	}
 	caption := firstNonEmpty(post, "description", "title", "slug")
-	image = templates.WithSize(image, 1200, 675)
+	// Photo previews should keep the source aspect ratio, unlike intentional cover crops.
+	image = templates.WithSize(image, 1200, 0)
 	builder := &strings.Builder{}
 	builder.WriteString("<figure class=\"photo-figure h-entry\">")
-	fmt.Fprintf(builder, "<a href=\"%s\" aria-label=\"%s\"><img src=\"%s\" alt=\"%s\" loading=\"lazy\" width=\"1200\" height=\"675\"></a>", html.EscapeString(href), html.EscapeString(caption), html.EscapeString(image), html.EscapeString(caption))
+	fmt.Fprintf(builder, "<a href=\"%s\" aria-label=\"%s\"><img src=\"%s\" alt=\"%s\" loading=\"lazy\" width=\"1200\"></a>", html.EscapeString(href), html.EscapeString(caption), html.EscapeString(image), html.EscapeString(caption))
 	fmt.Fprintf(builder, "<figcaption class=\"p-summary\">%s</figcaption>", html.EscapeString(caption))
 	builder.WriteString("</figure>")
 	return builder.String()

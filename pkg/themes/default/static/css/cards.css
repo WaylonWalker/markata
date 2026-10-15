@@ -356,11 +356,13 @@
   overflow: hidden;
 }
 
-/* Standalone photo figures rendered directly in feed lists should center
-   their media and caption within the feed column, not hug the left edge. */
+/* Give responsive photo previews a stable display width. With width-descriptor
+   srcset images, fit-content can shrink to the density-adjusted intrinsic width
+   (e.g. a 600w image displays at ~300 CSS px on a 2x screen). Let media height
+   follow its natural aspect ratio instead of squashing or cropping it. */
 .feed .posts-list > .photo-figure {
-  width: fit-content;
-  max-width: min(100%, 600px);
+  width: min(100%, 600px);
+  max-width: 100%;
   display: grid;
   justify-items: center;
   align-self: center;
@@ -372,13 +374,13 @@
 .feed .posts-list > .photo-figure > a {
   display: grid;
   place-items: center;
-  width: fit-content;
+  width: 100%;
   max-width: 100%;
 }
 
 .feed .posts-list > .photo-figure picture {
   display: block;
-  width: fit-content;
+  width: 100%;
   max-width: 100%;
   margin-left: auto;
   margin-right: auto;
@@ -387,8 +389,10 @@
 .feed .posts-list > .photo-figure img,
 .feed .posts-list > .photo-figure video {
   display: block;
-  width: auto;
+  width: 100%;
   max-width: 100%;
+  height: auto;
+  object-fit: contain;
   margin-left: auto;
   margin-right: auto;
 }
