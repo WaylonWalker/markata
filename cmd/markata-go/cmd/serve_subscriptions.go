@@ -201,7 +201,7 @@ func describeSubscriptions(state *settingsState) subscriptionResponse {
 	for i := range state.cfg.Blogroll.Feeds {
 		item := &state.cfg.Blogroll.Feeds[i]
 		src, err := feedOwner(state, item.URL)
-		view := subscriptionView{ExternalFeedConfig: item, Editable: err == nil}
+		view := subscriptionView{ExternalFeedConfig: *item, Editable: err == nil}
 		if err == nil {
 			view.Source = displayConfigPath(src)
 		} else {
