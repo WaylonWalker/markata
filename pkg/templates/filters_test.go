@@ -1009,8 +1009,10 @@ func TestPhotoCardRendersResponsiveRemoteCandidatesAndCanonicalLightboxURL(t *te
 
 	trusted := render("https://dropper.waylonwalker.com/photo.webp?token=abc&w=600")
 	for _, want := range []string{
+		`width="600"`,
+		`loading="lazy" decoding="async"`,
 		`srcset="https://dropper.waylonwalker.com/photo.webp?token=abc&amp;w=160 160w`,
-		`sizes="auto, (max-width: 600px) 100vw, 600px"`,
+		`sizes="auto, (max-width: 632px) calc(100vw - 2rem), 600px"`,
 		`data-href="https://dropper.waylonwalker.com/photo.webp?token=abc"`,
 	} {
 		if !strings.Contains(trusted, want) {
@@ -1021,6 +1023,9 @@ func TestPhotoCardRendersResponsiveRemoteCandidatesAndCanonicalLightboxURL(t *te
 	untrusted := render("https://example.com/photo.webp")
 	if strings.Contains(untrusted, "srcset=") || strings.Contains(untrusted, "data-href=") {
 		t.Fatalf("untrusted photo card unexpectedly changed: %s", untrusted)
+	}
+	if !strings.Contains(untrusted, `width="600"`) {
+		t.Fatalf("untrusted photo card must still reserve the same display slot: %s", untrusted)
 	}
 }
 
