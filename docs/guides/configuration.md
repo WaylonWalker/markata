@@ -626,6 +626,20 @@ custom_css = "my-styles.css"
 
 See the [[themes-and-styling|Themes Guide]] for detailed customization options.
 
+### Page CSS Bundles (`[markata-go.css_bundle]`)
+
+```toml
+[markata-go.css_bundle]
+enabled = true
+pages = ["index.html"]
+```
+
+`pages` defaults to an empty list. Each entry names an HTML file relative to
+`output_dir`. Production builds bundle eligible head styles in cascade order
+after CSS optimization. Fast builds skip page bundling. Existing `bundles`
+definitions continue to work independently. See [CSS optimization](themes/#css-optimization)
+for stylesheet boundaries and runtime behavior.
+
 ### CSS Purge (`[markata-go.css_purge]`)
 
 ```toml

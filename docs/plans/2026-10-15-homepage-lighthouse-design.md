@@ -1,3 +1,11 @@
+---
+title: Homepage Lighthouse improvements
+description: Local homepage performance design and validation approach.
+date: 2026-10-15
+published: false
+tags: [performance]
+---
+
 # Homepage Lighthouse improvements
 
 The local waylonwalker.com homepage already scores 100 for accessibility,
@@ -15,6 +23,12 @@ Removing the picker would lose functionality. Inlining all theme CSS would
 increase every HTML response. Splitting its stylesheet keeps the feature and
 preserves browser caching. Use the baseline trace to select further changes.
 Avoid editing post copy or reducing feed content without evidence.
+
+The trace also shows full-size photo downloads and eager media inside inline
+TIL cards. Add responsive candidates for resize-capable hosts, bounded TIL
+summaries, and deferred rendering for the offscreen feed section. Consolidate
+the homepage's stylesheets in cascade order. Load image zoom assets only when
+the visitor opens an image. Keep the original posts and all eight TIL links.
 
 Build the engine and complete site before and after. Serve both outputs with
 the same gzip/cache policy. Run three cold mobile and desktop Lighthouse audits

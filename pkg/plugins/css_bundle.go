@@ -84,6 +84,18 @@ func (p *CSSBundlePlugin) parseConfigFromMap(m map[string]interface{}) models.CS
 		cfg.AddSourceComments = &addComments
 	}
 
+	// Parse page selection.
+	switch pages := m["pages"].(type) {
+	case []string:
+		cfg.Pages = pages
+	case []interface{}:
+		for _, page := range pages {
+			if path, ok := page.(string); ok {
+				cfg.Pages = append(cfg.Pages, path)
+			}
+		}
+	}
+
 	// Parse exclude list
 	if exclude, ok := m["exclude"].([]interface{}); ok {
 		cfg.Exclude = make([]string, 0, len(exclude))
@@ -357,6 +369,9 @@ func (p *CSSBundlePlugin) storeBundlePaths(m *lifecycle.Manager) {
 // Should run after other CSS-generating plugins (palette_css, chroma_css)
 // so all CSS files are available for bundling.
 func (p *CSSBundlePlugin) Priority(stage lifecycle.Stage) int {
+	if stage == lifecycle.StageCleanup {
+		return lifecycle.PriorityLast + 10 // After CSS purge and minification.
+	}
 	if stage == lifecycle.StageWrite {
 		// Run late in Write stage, after CSS generators
 		return lifecycle.PriorityLate
@@ -369,5 +384,6 @@ var (
 	_ lifecycle.Plugin          = (*CSSBundlePlugin)(nil)
 	_ lifecycle.ConfigurePlugin = (*CSSBundlePlugin)(nil)
 	_ lifecycle.WritePlugin     = (*CSSBundlePlugin)(nil)
+	_ lifecycle.CleanupPlugin   = (*CSSBundlePlugin)(nil)
 	_ lifecycle.PriorityPlugin  = (*CSSBundlePlugin)(nil)
 )

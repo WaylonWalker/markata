@@ -40,6 +40,15 @@ Any unlayered rule outranks all layered rules, so custom CSS that must lose to
 palette tokens should be wrapped in `@layer components { ... }`, and a rule
 that should win everything belongs in `@layer overrides`.
 
+## Page Stylesheet Performance
+
+For a page with many blocking stylesheets, consider
+`[markata-go.css_bundle] enabled = true` with `pages = ["index.html"]`.
+Validate with a full build: fast mode skips page bundles. Measure before and
+after through the same server and compression policy, and check theme controls
+and view-transition navigation. Keep asset URLs root-relative when bundling;
+files with relative URLs remain separate to preserve their meaning.
+
 ## Canonical Theme Configuration
 
 Keep theme-level keys in `[markata-go.theme]`. Put each nested group under its

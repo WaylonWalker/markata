@@ -87,6 +87,7 @@ var settingDocs = map[string]string{
 	"CSSBundleConfig.Enabled":                      "Enabled controls whether CSS bundling is active (default: false)",
 	"CSSBundleConfig.Exclude":                      "Exclude is a list of CSS file patterns to exclude from bundling",
 	"CSSBundleConfig.Minify":                       "Minify controls whether bundled CSS is minified (default: false) Note: minification is not yet implemented",
+	"CSSBundleConfig.Pages":                        "Pages lists output-relative HTML files whose head styles are bundled after cleanup.",
 	"CSSMinifyConfig.Enabled":                      "Enabled controls whether CSS minification is active (default: true)",
 	"CSSMinifyConfig.Exclude":                      "Exclude is a list of CSS file patterns to skip during minification. Useful for files that should not be modified (e.g., already minified vendor CSS). Example: [\"variables.css\", \"vendor/*.css\"]",
 	"CSSMinifyConfig.PreserveComments":             "PreserveComments is a list of comment patterns to preserve during minification. Comments containing any of these strings will not be removed. Example: [\"/*! Copyright */\", \"/*! License */\"]",

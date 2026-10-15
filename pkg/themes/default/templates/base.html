@@ -31,7 +31,11 @@
   <!-- Core CSS (always loaded) -->
   <link rel="stylesheet" href="{{ 'css/variables.css' | theme_asset_hashed }}">
   {% if config.theme.palette or config.theme.palette_light or config.theme.palette_dark or config.theme.seed_color %}
+  {% if config.Extra.palette_core_enabled %}
+  <link rel="stylesheet" href="{{ 'css/palette-core.css' | theme_asset_hashed }}">
+  {% else %}
   <link rel="stylesheet" href="{{ 'css/palette.css' | theme_asset_hashed }}" onerror="this.onerror=null;this.href='/css/palette.css'">
+  {% endif %}
   {% endif %}
   <link rel="stylesheet" href="{{ 'css/main.css' | theme_asset_hashed }}">
   <link rel="stylesheet" href="{{ 'css/components.css' | theme_asset_hashed }}">
@@ -67,9 +71,6 @@
   <link rel="stylesheet" href="{{ 'css/search.css' | theme_asset_hashed }}">
   {% endif %}
 
-{% if config.Extra.glightbox_enabled and needs_image_zoom %}
-  <link rel="stylesheet" href="{% if config.Extra.asset_urls.glightbox-css %}{{ config.Extra.asset_urls.glightbox-css }}{% elif config.Extra.glightbox_cdn %}https://cdn.jsdelivr.net/npm/glightbox@3.3.0/dist/css/glightbox.min.css{% else %}/assets/vendor/glightbox/glightbox.min.css{% endif %}">
-{% endif %}
 
   {% if needs_webawesome %}
   <link rel="stylesheet" href="{{ config.Extra.webawesome_css_url }}">
@@ -769,12 +770,13 @@
       document.body.appendChild(feedCyclingScript);
     }
 
-    // GLightbox - load when page has zoomable images
+    // GLightbox - load on the first zoom interaction.
     {% if config.Extra.glightbox_enabled and needs_image_zoom %}
-    const glightboxScript = document.createElement('script');
-    glightboxScript.src = '{% if config.Extra.asset_urls.glightbox-js %}{{ config.Extra.asset_urls.glightbox-js }}{% elif config.Extra.glightbox_cdn %}https://cdn.jsdelivr.net/npm/glightbox@3.3.0/dist/js/glightbox.min.js{% else %}/assets/vendor/glightbox/glightbox.min.js{% endif %}';
-    glightboxScript.onload = function() {
-      window.initGLightbox = function initGLightbox() {
+    window.initGLightbox = function initGLightbox() {
+      if (!window.GLightbox) return;
+      if (window.__glightboxInstance) {
+        window.__glightboxInstance.reload();
+      } else {
         window.__glightboxInstance = GLightbox({
           selector: '{{ config.Extra.glightbox_options.selector | default:".glightbox" }}',
           openEffect: '{{ config.Extra.glightbox_options.openEffect | default:"zoom" }}',
@@ -784,11 +786,53 @@
           loop: {{ config.Extra.glightbox_options.loop | default:false | yesno:"true,false" }},
           draggable: {{ config.Extra.glightbox_options.draggable | default:true | yesno:"true,false" }}
         });
-      };
-      window.initGLightbox();
-      window.dispatchEvent(new CustomEvent('glightbox-ready'));
+      }
     };
-    document.body.appendChild(glightboxScript);
+    if (!window.__markataLightboxClickBound) {
+      window.__markataLightboxClickBound = true;
+      var lightboxAssetsPending = null;
+      document.addEventListener('click', function(event) {
+        var selector = '{{ config.Extra.glightbox_options.selector | default:".glightbox" }}';
+        var target = event.target.closest && event.target.closest(selector);
+        if (!target || window.__glightboxInstance || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        if (!lightboxAssetsPending) {
+          lightboxAssetsPending = Promise.all([
+            new Promise(function(resolve, reject) {
+              var css = document.createElement('link');
+              css.rel = 'stylesheet';
+              css.href = '{% if config.Extra.asset_urls.glightbox-css %}{{ config.Extra.asset_urls.glightbox-css }}{% elif config.Extra.glightbox_cdn %}https://cdn.jsdelivr.net/npm/glightbox@3.3.0/dist/css/glightbox.min.css{% else %}/assets/vendor/glightbox/glightbox.min.css{% endif %}';
+              css.setAttribute('data-markata-persist', '');
+              css.onload = resolve;
+              css.onerror = function() { css.remove(); reject(new Error('Could not load image zoom styles')); };
+              document.head.appendChild(css);
+            }),
+            new Promise(function(resolve, reject) {
+              var script = document.createElement('script');
+              script.src = '{% if config.Extra.asset_urls.glightbox-js %}{{ config.Extra.asset_urls.glightbox-js }}{% elif config.Extra.glightbox_cdn %}https://cdn.jsdelivr.net/npm/glightbox@3.3.0/dist/js/glightbox.min.js{% else %}/assets/vendor/glightbox/glightbox.min.js{% endif %}';
+              script.onload = resolve;
+              script.onerror = function() { script.remove(); reject(new Error('Could not load image zoom')); };
+              document.body.appendChild(script);
+            })
+          ]).then(function() {
+            window.initGLightbox();
+            window.dispatchEvent(new CustomEvent('glightbox-ready'));
+          }).catch(function(error) {
+            lightboxAssetsPending = null;
+            throw error;
+          });
+        }
+        lightboxAssetsPending.then(function() {
+          var index = Array.from(document.querySelectorAll(selector)).indexOf(target);
+          if (index >= 0) window.__glightboxInstance.openAt(index);
+        }).catch(function() {
+          var link = target.closest('a[href]');
+          var fallback = link ? link.href : (target.getAttribute('data-href') || target.getAttribute('src'));
+          if (fallback) window.location.assign(fallback);
+        });
+      }, true);
+    }
     {% endif %}
 
     // Lite YouTube embeds (oEmbed)

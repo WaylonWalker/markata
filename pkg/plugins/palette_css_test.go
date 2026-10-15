@@ -1,6 +1,9 @@
 package plugins
 
 import (
+	"bytes"
+	"crypto/sha256"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -9,6 +12,63 @@ import (
 	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
 	"github.com/WaylonWalker/markata-go/pkg/models"
 )
+
+func TestPaletteCSSPlugin_CorePreservesDefaultsAndDefersOtherPalettes(t *testing.T) {
+	includeAll := true
+	for _, enabled := range []bool{false, true} {
+		t.Run(fmt.Sprint(enabled), func(t *testing.T) {
+			m := lifecycle.NewManager()
+			m.SetConfig(&lifecycle.Config{OutputDir: t.TempDir(), Extra: map[string]interface{}{
+				"theme": models.ThemeConfig{
+					Palette: "ayu-dark", PaletteLight: "ayu-light", PaletteDark: "ayu-dark",
+					Switcher:  models.ThemeSwitcherConfig{Enabled: &enabled, IncludeAll: &includeAll},
+					Variables: map[string]string{"--test-override": "42px"},
+				},
+			}})
+			p := NewPaletteCSSPlugin()
+			if err := p.Configure(m); err != nil {
+				t.Fatal(err)
+			}
+			if err := p.Write(m); err != nil {
+				t.Fatal(err)
+			}
+			corePath := filepath.Join(m.Config().OutputDir, "css", "palette-core.css")
+			core, err := os.ReadFile(corePath)
+			if !enabled {
+				if !os.IsNotExist(err) || m.Config().Extra["palette_core_enabled"] == true {
+					t.Fatal("switcher disabled must retain the single stylesheet")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			full, err := os.ReadFile(filepath.Join(m.Config().OutputDir, "css", "palette.css"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, want := range []string{`[data-palette="ayu-dark"]`, `[data-palette="ayu-light"]`, "--palette-manifest:", "--test-override: 42px"} {
+				if !strings.Contains(string(core), want) {
+					t.Errorf("core missing %s", want)
+				}
+			}
+			if strings.Contains(string(core), `[data-palette="1bit-monitor-glow"]`) || !strings.Contains(string(full), `[data-palette="1bit-monitor-glow"]`) {
+				t.Error("optional palette blocks must remain in the full stylesheet only")
+			}
+			if len(core)*2 >= len(full) {
+				t.Errorf("core %d bytes should be less than half of full %d", len(core), len(full))
+			}
+			hash := fmt.Sprintf("%x", sha256.Sum256(core))[:8]
+			if hash != m.GetAssetHash("css/palette-core.css") {
+				t.Fatal("registered core hash differs from the emitted bytes")
+			}
+			hashed, err := os.ReadFile(filepath.Join(m.Config().OutputDir, "css", "palette-core."+hash+".css"))
+			if err != nil || !bytes.Equal(hashed, core) {
+				t.Fatal("hashed core artifact must match the unversioned stylesheet")
+			}
+		})
+	}
+}
 
 func TestPaletteCSSPlugin_Name(t *testing.T) {
 	p := NewPaletteCSSPlugin()

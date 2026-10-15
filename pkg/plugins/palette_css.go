@@ -54,6 +54,8 @@ func (p *PaletteCSSPlugin) Name() string {
 // before templates are rendered in Render stage.
 func (p *PaletteCSSPlugin) Configure(m *lifecycle.Manager) error {
 	config := m.Config()
+	delete(config.Extra, "palette_core_css")
+	delete(config.Extra, "palette_core_enabled")
 
 	// Get palette configuration from config.Extra["theme"].
 	paletteName, paletteLight, paletteDark, seedColor := p.getPaletteConfig(config.Extra)
@@ -105,6 +107,14 @@ func (p *PaletteCSSPlugin) Configure(m *lifecycle.Manager) error {
 		css = p.generateSinglePaletteCSS(loader, paletteName, paletteLight, paletteDark, userVariables, fallbackMode)
 	}
 	css += p.generateContractPaletteCSS(config)
+	if core, ok := config.Extra["palette_core_css"].(string); ok && switcherEnabled {
+		core += p.generateContractPaletteCSS(config)
+		config.Extra["palette_core_css"] = core
+		coreHash := fmt.Sprintf("%x", sha256.Sum256([]byte(core)))[:8]
+		m.SetAssetHash("css/palette-core.css", coreHash)
+		templates.SetAssetHashes(map[string]string{"css/palette-core.css": coreHash})
+		config.Extra["palette_core_enabled"] = true
+	}
 
 	// Compute hash of generated CSS
 	hash := fmt.Sprintf("%x", sha256.Sum256([]byte(css)))[:8]
@@ -122,7 +132,8 @@ func (p *PaletteCSSPlugin) Configure(m *lifecycle.Manager) error {
 func (p *PaletteCSSPlugin) Write(m *lifecycle.Manager) error {
 	config := m.Config()
 	outputDir := config.OutputDir
-	if hashedAssetReadyInFastMode(m, "css/palette.css") {
+	if hashedAssetReadyInFastMode(m, "css/palette.css") &&
+		(config.Extra["palette_core_enabled"] != true || hashedAssetReadyInFastMode(m, "css/palette-core.css")) {
 		return nil
 	}
 
@@ -182,6 +193,12 @@ func (p *PaletteCSSPlugin) Write(m *lifecycle.Manager) error {
 		css = p.generateSinglePaletteCSS(loader, paletteName, paletteLight, paletteDark, userVariables, fallbackMode)
 	}
 	css += p.generateContractPaletteCSS(config)
+	if core, ok := config.Extra["palette_core_css"].(string); ok && switcherEnabled {
+		core += p.generateContractPaletteCSS(config)
+		if err := writePaletteCoreCSS(outputDir, core, m.GetAssetHash("css/palette-core.css")); err != nil {
+			return err
+		}
+	}
 
 	// Write to output directory
 	cssDir := filepath.Join(outputDir, "css")
@@ -337,7 +354,7 @@ func (p *PaletteCSSPlugin) generateContractPaletteCSS(config *lifecycle.Config) 
 		builder.WriteString("}\n")
 	}
 	for _, palette := range contract.Palettes {
-		fmt.Fprintf(&builder, "[data-palette=%q] {\n", palette.ID)
+		fmt.Fprintf(&builder, "[data-palette=%q], :root[data-palette=%q] {\n", palette.ID, palette.ID)
 		write(&builder, &palette)
 		builder.WriteString("}\n")
 	}
@@ -469,6 +486,7 @@ func (p *PaletteCSSPlugin) generateMultiPaletteCSS(loader *palettes.Loader, extr
 	// element, which lets the theme picker render true-color preview cards.
 	candidates := p.generatePaletteManifest(filteredPalettes, normalizePaletteName(lightName), normalizePaletteName(darkName))
 	var blocks bytes.Buffer
+	var coreBlocks bytes.Buffer
 	manifest := make([]PaletteManifestEntry, 0, len(candidates))
 	for _, entry := range candidates {
 		palette, err := loader.Load(entry.loadName)
@@ -479,9 +497,14 @@ func (p *PaletteCSSPlugin) generateMultiPaletteCSS(loader *palettes.Loader, extr
 			continue
 		}
 		blocks.WriteString(fmt.Sprintf("/* Palette: %s (%s) */\n", entry.Name, entry.Variant))
-		blocks.WriteString(fmt.Sprintf("[data-palette=%q] {\n", entry.Name))
+		fmt.Fprintf(&blocks, "[data-palette=%q], :root[data-palette=%q] {\n", entry.Name, entry.Name)
 		p.writePaletteVariablesIndented(&blocks, palette, "  ")
 		blocks.WriteString("}\n\n")
+		if entry.Name == normalizePaletteName(lightName) || entry.Name == normalizePaletteName(darkName) {
+			fmt.Fprintf(&coreBlocks, "[data-palette=%q], :root[data-palette=%q] {\n", entry.Name, entry.Name)
+			p.writePaletteVariablesIndented(&coreBlocks, palette, "  ")
+			coreBlocks.WriteString("}\n\n")
+		}
 		manifest = append(manifest, entry)
 	}
 	manifest = linkCounterparts(manifest)
@@ -561,8 +584,30 @@ func (p *PaletteCSSPlugin) generateMultiPaletteCSS(loader *palettes.Loader, extr
 
 	buf.WriteString("}\n\n")
 	p.writeThemeOverrides(&buf, overrides)
+	if extra != nil && blocks.Len() > 0 {
+		extra["palette_core_css"] = strings.Replace(buf.String(), blocks.String(), coreBlocks.String(), 1)
+	}
 
 	return buf.String()
+}
+
+// writePaletteCoreCSS keeps the legacy full stylesheet intact while publishing
+// a content-addressed entry point for the default light/dark pair.
+func writePaletteCoreCSS(outputDir, css, hash string) error {
+	if hash == "" {
+		hash = fmt.Sprintf("%x", sha256.Sum256([]byte(css)))[:8]
+	}
+	dir := filepath.Join(outputDir, "css")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return fmt.Errorf("creating palette core directory: %w", err)
+	}
+	for _, name := range []string{"palette-core.css", "palette-core." + hash + ".css"} {
+		//nolint:gosec // Public stylesheet, readable by the web server.
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(css), 0o644); err != nil {
+			return fmt.Errorf("writing palette core CSS: %w", err)
+		}
+	}
+	return nil
 }
 
 // filterPalettes filters palettes based on switcher configuration.
