@@ -1012,7 +1012,7 @@ func TestPhotoCardRendersResponsiveRemoteCandidatesAndCanonicalLightboxURL(t *te
 		`width="600"`,
 		`loading="lazy" decoding="async"`,
 		`srcset="https://dropper.waylonwalker.com/photo.webp?token=abc&amp;w=160 160w`,
-		`sizes="auto, (max-width: 632px) calc(100vw - 2rem), 600px"`,
+		`sizes="(max-width: 632px) calc(100vw - 2rem), 600px"`,
 		`data-href="https://dropper.waylonwalker.com/photo.webp?token=abc"`,
 	} {
 		if !strings.Contains(trusted, want) {
@@ -1026,6 +1026,9 @@ func TestPhotoCardRendersResponsiveRemoteCandidatesAndCanonicalLightboxURL(t *te
 	}
 	if !strings.Contains(untrusted, `width="600"`) {
 		t.Fatalf("untrusted photo card must still reserve the same display slot: %s", untrusted)
+	}
+	if strings.Contains(trusted, `sizes="auto,`) {
+		t.Fatalf("auto sizes activates Chromium's 300x150 containment placeholder without an intrinsic height: %s", trusted)
 	}
 }
 
