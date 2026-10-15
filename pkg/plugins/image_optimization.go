@@ -165,59 +165,70 @@ func (p *ImageOptimizationPlugin) Write(m *lifecycle.Manager) error {
 
 	outputDir := m.Config().OutputDir
 	for _, target := range targets {
-		outputPath, err := resolveImageOutputPath(outputDir, target)
-		if err != nil {
-			imageOptimizationLog.Warnf("%v", err)
-			continue
-		}
-
-		info, err := os.Stat(outputPath)
-		if err != nil {
-			imageOptimizationLog.Warnf("source image not found: %s", outputPath)
-			continue
-		}
-
-		for _, format := range p.availableFormats {
-			if shouldSkipFormat(outputPath, format) {
-				continue
-			}
-			quality := p.qualityForFormat(format)
-			encoder := p.encoderPathForFormat(format)
-			if encoder == "" {
-				p.warnMissingEncoder(format)
-				continue
-			}
-
-			widths := target.Widths
-			if len(widths) == 0 {
-				widths = p.config.Widths
-			}
-			variants := buildImageVariants(outputPath, format, widths)
-			for _, variant := range variants {
-				if variant.Path == "" {
-					continue
-				}
-				if err := os.MkdirAll(filepath.Dir(variant.Path), 0o755); err != nil {
-					return fmt.Errorf("create output dir: %w", err)
-				}
-
-				cachePath := imageOptimizationCachePath(cacheDir, outputPath, format, variant.Width, quality, encoder)
-				if isImageCacheValid(cachePath, outputPath, info, format, variant.Width, quality, encoder, variant.Path) {
-					continue
-				}
-
-				if err := p.encodeImage(outputPath, variant.Path, format, quality, encoder, variant.Width); err != nil {
-					imageOptimizationLog.Warnf("%v", err)
-					continue
-				}
-
-				if err := writeImageCache(cachePath, outputPath, info, format, variant.Width, quality, encoder); err != nil {
-					imageOptimizationLog.Warnf("cache write failed: %v", err)
-				}
-			}
+		if err := p.optimizeTarget(outputDir, cacheDir, target); err != nil {
+			return err
 		}
 	}
 
+	return nil
+}
+
+func (p *ImageOptimizationPlugin) optimizeTarget(outputDir, cacheDir string, target imageOptimizationTarget) error {
+	outputPath, err := resolveImageOutputPath(outputDir, target)
+	if err != nil {
+		imageOptimizationLog.Warnf("%v", err)
+		return nil
+	}
+
+	info, err := os.Stat(outputPath)
+	if err != nil {
+		imageOptimizationLog.Warnf("source image not found: %s", outputPath)
+		return nil
+	}
+
+	widths := target.Widths
+	if len(widths) == 0 {
+		widths = p.config.Widths
+	}
+	for _, format := range p.availableFormats {
+		if err := p.optimizeImageFormat(outputPath, cacheDir, info, format, widths); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (p *ImageOptimizationPlugin) optimizeImageFormat(outputPath, cacheDir string, info os.FileInfo, format string, widths []int) error {
+	if shouldSkipFormat(outputPath, format) {
+		return nil
+	}
+	quality := p.qualityForFormat(format)
+	encoder := p.encoderPathForFormat(format)
+	if encoder == "" {
+		p.warnMissingEncoder(format)
+		return nil
+	}
+
+	for _, variant := range buildImageVariants(outputPath, format, widths) {
+		if variant.Path == "" {
+			continue
+		}
+		if err := os.MkdirAll(filepath.Dir(variant.Path), 0o755); err != nil {
+			return fmt.Errorf("create output dir: %w", err)
+		}
+
+		cachePath := imageOptimizationCachePath(cacheDir, outputPath, format, variant.Width, quality, encoder)
+		if isImageCacheValid(cachePath, outputPath, info, format, variant.Width, quality, encoder, variant.Path) {
+			continue
+		}
+		if err := p.encodeImage(outputPath, variant.Path, format, quality, encoder, variant.Width); err != nil {
+			imageOptimizationLog.Warnf("%v", err)
+			continue
+		}
+		if err := writeImageCache(cachePath, outputPath, info, format, variant.Width, quality, encoder); err != nil {
+			imageOptimizationLog.Warnf("cache write failed: %v", err)
+		}
+	}
 	return nil
 }
 

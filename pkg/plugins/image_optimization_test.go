@@ -307,7 +307,7 @@ func TestImageOptimization_WriteAddsLocalTemplateImagesToOptimizationTargets(t *
 	if err := plugin.processRenderedHTML(post); err != nil {
 		t.Fatalf("processRenderedHTML() error = %v", err)
 	}
-	if !strings.Contains(post.HTML, `<picture>`) || !strings.Contains(post.HTML, `srcset="/8bitcc-480w.avif 480w`) {
+	if !strings.Contains(post.HTML, `<picture>`) || !strings.Contains(post.HTML, `srcset="/8bitcc-160w.avif 160w`) {
 		t.Fatalf("expected optimized picture markup for local template image, got: %s", post.HTML)
 	}
 	targets := imageOptimizationTargetsFrom(post.Extra["image_optimization"])
