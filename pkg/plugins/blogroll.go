@@ -430,7 +430,7 @@ func parseRSS2Feed(data []byte) (*blogrollParsedFeed, []*models.ExternalEntry, e
 			Author:      author,
 			Content:     content,
 			Description: stripBlogrollHTML(item.Description),
-			ImageURL:    normalizeExternalURL(imageURL),
+			ImageURL:    normalizeReaderImageURL(imageURL, resolvedURL),
 			Categories:  item.Categories,
 		}
 
@@ -539,7 +539,7 @@ func parseAtomFeed(data []byte) (*blogrollParsedFeed, []*models.ExternalEntry, e
 			Author:      entry.Author.Name,
 			Content:     content,
 			Description: stripBlogrollHTML(entry.Summary),
-			ImageURL:    normalizeExternalURL(imageURL),
+			ImageURL:    normalizeReaderImageURL(imageURL, resolvedURL),
 			Categories:  tags,
 		}
 
