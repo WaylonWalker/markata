@@ -1,0 +1,26 @@
+name: Temporary format subscription branch
+on:
+  push:
+    branches:
+      - feat/local-subscription-manager-20261015
+permissions:
+  contents: write
+jobs:
+  format:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Format Go files
+        run: gofmt -w cmd/markata-go/cmd/serve_subscriptions.go cmd/markata-go/cmd/serve_subscriptions_test.go
+      - name: Commit formatting
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add cmd/markata-go/cmd/serve_subscriptions.go cmd/markata-go/cmd/serve_subscriptions_test.go
+          if ! git diff --cached --quiet; then
+            git commit -m "style: gofmt local subscription manager"
+            git push origin HEAD:feat/local-subscription-manager-20261015
+          fi
