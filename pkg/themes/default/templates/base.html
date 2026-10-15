@@ -934,10 +934,9 @@
   </script>
   {% endif %}
 
-   <!-- Palette Switcher JS (when enabled) -->
-   {# Note: Must load AFTER shortcuts-registry for keyboard shortcut registration #}
+   <!-- Responsive theme controls: mode works immediately, picker JS loads on intent. -->
    {% if config.theme.switcher.enabled or (config.theme.switcher.mode_toggle and config.header.show_theme_toggle) %}
-   <script src="{{ 'js/palette-switcher.js' | theme_asset_hashed }}" defer></script>
+   {% include "partials/theme-controls-loader.html" %}
    {% endif %}
    {% if config.theme.show_text_size_control | default:true %}
    <script src="{{ 'js/text-size.js' | theme_asset_hashed }}" defer></script>
