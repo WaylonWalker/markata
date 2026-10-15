@@ -56,7 +56,10 @@ func redditOutboundArticleURL(discussionURL, feedContent string) string {
 	if !isHTTPArticleURL(candidate) || isRedditDiscussionURL(candidate) {
 		return ""
 	}
-	parsed, _ := url.Parse(candidate) // already validated
+	parsed, err := url.Parse(candidate)
+	if err != nil {
+		return ""
+	}
 	host := strings.TrimPrefix(strings.ToLower(parsed.Hostname()), "www.")
 	if host == "reddit.com" || strings.HasSuffix(host, ".reddit.com") {
 		return ""
