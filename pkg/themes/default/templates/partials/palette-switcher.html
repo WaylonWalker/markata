@@ -1,12 +1,12 @@
 {# Theme controls: dark/light toggle plus the visitor theme picker. #}
-{# The header stays minimal (two icon buttons). The picker popover has Colors, #}
+{# The full picker combines the header actions. The popover has Colors, #}
 {# Style, and Font tabs (text size lives under Font); palette-switcher.js fills them. #}
 
 {% set show_mode_toggle = (config.theme.switcher.mode_toggle | default:true) and (config.header.show_theme_toggle | default:true) %}
 {% set show_full_switcher = config.theme.switcher.enabled %}
 {% set show_text_size_control = config.theme.show_text_size_control | default:true %}
 {% if show_mode_toggle or show_full_switcher or show_text_size_control %}
-<div class="theme-switcher{% if not show_full_switcher %} theme-switcher--mode-only{% endif %}" data-pagefind-ignore>
+<div class="theme-switcher{% if show_full_switcher %} theme-switcher--combined{% else %} theme-switcher--mode-only{% endif %}" data-pagefind-ignore>
   {% if show_mode_toggle %}
   <button class="palette-mode-toggle" type="button" aria-label="Toggle dark/light mode" title="Toggle dark/light mode (\)">
     <span class="mode-icon" aria-hidden="true">
@@ -30,8 +30,8 @@
 
   {% if show_full_switcher %}
   <div class="theme-picker" data-theme-picker>
-    <button class="theme-picker-toggle" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="theme-picker-panel" aria-label="Change theme" title="Change theme (t)">
-      <svg class="theme-picker-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false"><path d="M12 3a9 9 0 1 0 0 18c1.1 0 1.8-.8 1.8-1.8 0-.5-.2-.9-.5-1.2-.3-.3-.5-.7-.5-1.2 0-1 .8-1.8 1.8-1.8H16.5A4.5 4.5 0 0 0 21 10.5C21 6.4 17 3 12 3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"></path><circle class="theme-picker-dot theme-picker-dot--a" cx="7.5" cy="11.5" r="1.6"></circle><circle class="theme-picker-dot theme-picker-dot--b" cx="10" cy="7.5" r="1.6"></circle><circle class="theme-picker-dot theme-picker-dot--c" cx="14.5" cy="7.5" r="1.6"></circle></svg>
+    <button class="theme-picker-toggle" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="theme-picker-panel" aria-label="Appearance and loading preferences" title="Appearance and preferences (t)">
+      <svg class="theme-picker-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false"><path d="M4 6h9m4 0h3M4 12h2m4 0h10M4 18h11m4 0h1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="15" cy="6" r="2" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="8" cy="12" r="2" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="17" cy="18" r="2" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
     </button>
     <div class="theme-picker-panel" id="theme-picker-panel" role="dialog" aria-label="Customize appearance" hidden>
       <div class="theme-picker-top">
@@ -90,6 +90,8 @@
         {% endif %}
         <div class="theme-picker-grid theme-picker-grid--font" data-picker-font-grid role="listbox" aria-label="Fonts"></div>
       </div>
+
+      {% include "partials/adaptive-loading.html" %}
 
       <div class="theme-picker-bar">
         <p class="theme-picker-hint" aria-hidden="true"><kbd>&larr;</kbd><kbd>&rarr;</kbd><kbd>&uarr;</kbd><kbd>&darr;</kbd> preview <span>&middot;</span> <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> tabs <span>&middot;</span> <kbd>Enter</kbd> done</p>

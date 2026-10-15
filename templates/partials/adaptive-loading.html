@@ -1,0 +1,20 @@
+{# Reused in the appearance panel, or standalone when the picker is disabled. #}
+<div class="adaptive-loading" data-adaptive-loading>
+  <details>
+    <summary><span data-loading-label>Loading: Auto</span></summary>
+    <div class="adaptive-loading__panel">
+      <p class="adaptive-loading__message" data-loading-mismatch role="status" aria-live="polite" hidden></p>
+      <fieldset>
+        <legend>Media loading preference</legend>
+        <label><input type="radio" name="loading-mode" value="auto" checked> Auto <span>Recommended</span></label>
+        <label><input type="radio" name="loading-mode" value="save-data"> Save Data</label>
+        <label><input type="radio" name="loading-mode" value="full-quality"> Full Quality</label>
+      </fieldset>
+      <div class="adaptive-loading__actions" data-loading-actions hidden>
+        <button type="button" data-loading-use-auto>Use Auto</button>
+        <button type="button" data-loading-keep>Keep my choice</button>
+      </div>
+    </div>
+  </details>
+  <button class="adaptive-loading__status" type="button" data-loading-status aria-label="A connection suggestion is available" hidden>Suggestion</button>
+</div>

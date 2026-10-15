@@ -14,6 +14,26 @@ Themes control the visual appearance of the generated site. The system supports:
 5. **Readable by default** - Typography, contrast, and spacing optimized for reading
 6. **Accessible first** - WCAG 2.1 AA compliant colors, focus states, and compact touch targets
 
+## Compact Header Preferences
+
+When the default theme's full palette switcher is enabled, the header MUST show
+a single compact preferences button beside the search input, instead of
+separate mode, palette, and loading buttons. The popover MUST continue to
+provide light/dark color mode, palettes, aesthetics, fonts, reading size, and
+adaptive media-loading preferences (Auto, Save Data, Full Quality).
+
+The loading control MUST retain its local persistence, automatic recommendations,
+and mismatch/action announcements. The existing `t` theme-picker and `\\`
+mode-toggle shortcuts MUST remain available. When the palette manifest is
+missing or the full switcher is disabled, a standalone loading control MUST
+remain accessible and the dark/light fallback SHOULD remain visible where
+configured. Keyboard focus and Escape MUST work within the popover, including
+its nested loading inputs, without triggering theme-grid shortcuts.
+
+The navbar search MUST remain accessible and keyboard operable with either
+Pagefind or Bleve, and remain lazy-loaded where it was before. CSS changes
+SHOULD use existing palette tokens and MUST NOT add extra network resources.
+
 ## Reader Mode
 
 On post pages, `s` toggles reader mode; on dedicated feed pages it still switches
