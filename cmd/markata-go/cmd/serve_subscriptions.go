@@ -34,6 +34,11 @@ const (
 	serveSubscriptionsPage = "/_markata/subscriptions"
 	serveSubscriptionsAPI  = "/_markata/subscriptions/api"
 	serveSubscriptionsFind = "/_markata/subscriptions/discover"
+	subscriptionActionAdd = "add"
+	subscriptionActionUpdate = "update"
+	subscriptionActionRemove = "remove"
+	subscriptionTOMLExt = ".toml"
+	subscriptionHTTPS = "https"
 )
 
 type subscriptionView struct {
@@ -75,7 +80,9 @@ func subscriptionJSON(w http.ResponseWriter, status int, payload any) {
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(payload)
+	if err := json.NewEncoder(w).Encode(payload); err != nil {
+		warnf("subscription response write failed: %v", err)
+	}
 }
 
 func handleSubscriptionsPage(w http.ResponseWriter, r *http.Request) {
@@ -86,7 +93,9 @@ func handleSubscriptionsPage(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
-	_, _ = w.Write(subscriptionPage)
+	if _, err := w.Write(subscriptionPage); err != nil {
+		warnf("subscription page write failed: %v", err)
+	}
 }
 
 func subscriptionReadRequest(w http.ResponseWriter, r *http.Request, dst any) bool {
@@ -151,7 +160,7 @@ func feedOwner(state *settingsState, address string) (string, error) {
 	if state.kinds[owner] != "" {
 		return "", fmt.Errorf("feed belongs to a %s config (%s); edit that source manually", state.kinds[owner], displayConfigPath(owner))
 	}
-	if strings.ToLower(filepath.Ext(owner)) != ".toml" {
+	if strings.ToLower(filepath.Ext(owner)) != subscriptionTOMLExt {
 		return "", fmt.Errorf("editing %s is not yet supported in the browser; use the config file directly", filepath.Ext(owner))
 	}
 	return owner, nil
@@ -176,7 +185,7 @@ func newFeedTarget(state *settingsState) (string, error) {
 	if state.kinds[owner] != "" {
 		return "", fmt.Errorf("blogroll lives in a %s config (%s); choose an editable site config", state.kinds[owner], displayConfigPath(owner))
 	}
-	if strings.ToLower(filepath.Ext(owner)) != ".toml" {
+	if strings.ToLower(filepath.Ext(owner)) != subscriptionTOMLExt {
 		return "", fmt.Errorf("browser subscriptions require an owning TOML file, found %s", displayConfigPath(owner))
 	}
 	return owner, nil
@@ -189,7 +198,8 @@ func describeSubscriptions(state *settingsState) subscriptionResponse {
 	} else {
 		resp.Error = err.Error()
 	}
-	for _, item := range state.cfg.Blogroll.Feeds {
+	for i := range state.cfg.Blogroll.Feeds {
+		item := &state.cfg.Blogroll.Feeds[i]
 		src, err := feedOwner(state, item.URL)
 		view := subscriptionView{ExternalFeedConfig: item, Editable: err == nil}
 		if err == nil {
@@ -252,8 +262,8 @@ type subscriptionBlock struct {
 }
 
 func subscriptionBlocks(content string) []subscriptionBlock {
-	var result []subscriptionBlock
 	headers := feedHeader.FindAllStringIndex(content, -1)
+	result := make([]subscriptionBlock, 0, len(headers))
 	for _, header := range headers {
 		end := len(content)
 		if following := anyTableHeader.FindStringIndex(content[header[1]:]); following != nil {
@@ -326,19 +336,21 @@ func enableSubscriptions(content string) string {
 	return strings.TrimRight(content, "\r\n") + "\n\n[markata-go.blogroll]\nenabled = true\n"
 }
 
+//nolint:gocyclo // A single atomic operation validates, edits, verifies, and rolls back the config.
 func changeSubscription(state *settingsState, req subscriptionRequest) error {
-	if req.Action != "add" && req.Action != "update" && req.Action != "remove" {
+	if req.Action != subscriptionActionAdd && req.Action != subscriptionActionUpdate && req.Action != subscriptionActionRemove {
 		return errors.New("invalid subscription action")
 	}
 	u, err := url.Parse(req.URL)
-	if err != nil || u.Scheme != "https" && u.Scheme != "http" || u.Host == "" || u.User != nil {
+	if err != nil || u.Scheme != subscriptionHTTPS && u.Scheme != "http" || u.Host == "" || u.User != nil {
 		return errors.New("expected an absolute HTTP(S) feed URL")
 	}
 	var target string
-	if req.Action == "add" {
+	if req.Action == subscriptionActionAdd {
 		target, err = newFeedTarget(state)
 		if err == nil {
-			for _, existing := range state.cfg.Blogroll.Feeds {
+			for i := range state.cfg.Blogroll.Feeds {
+				existing := &state.cfg.Blogroll.Feeds[i]
 				if existing.URL == req.URL {
 					return fmt.Errorf("already subscribed to %s", req.URL)
 				}
@@ -351,13 +363,14 @@ func changeSubscription(state *settingsState, req subscriptionRequest) error {
 		return err
 	}
 	fields := map[string]string{}
-	if req.Action != "remove" {
+	if req.Action != subscriptionActionRemove {
 		fields, err = subscriptionFields(req)
 		if err != nil {
 			return err
 		}
-		if req.Action == "add" {
-			for _, f := range state.cfg.Blogroll.Feeds {
+		if req.Action == subscriptionActionAdd {
+			for i := range state.cfg.Blogroll.Feeds {
+				f := &state.cfg.Blogroll.Feeds[i]
 				if req.Handle != "" && f.Handle == req.Handle {
 					return fmt.Errorf("handle %q already belongs to %s", req.Handle, f.Title)
 				}
@@ -365,7 +378,7 @@ func changeSubscription(state *settingsState, req subscriptionRequest) error {
 		}
 	}
 	original, err := os.ReadFile(target)
-	if errors.Is(err, os.ErrNotExist) && req.Action == "add" {
+	if errors.Is(err, os.ErrNotExist) && req.Action == subscriptionActionAdd {
 		original = nil
 		err = nil
 	}
@@ -374,7 +387,7 @@ func changeSubscription(state *settingsState, req subscriptionRequest) error {
 	}
 	content := string(original)
 	switch req.Action {
-	case "add":
+	case subscriptionActionAdd:
 		if !state.cfg.Blogroll.Enabled {
 			content = enableSubscriptions(content)
 		}
@@ -386,13 +399,13 @@ func changeSubscription(state *settingsState, req subscriptionRequest) error {
 			block.WriteString(name + " = " + fields[name] + "\n")
 		}
 		content = strings.TrimRight(content, "\r\n") + block.String()
-	case "update", "remove":
+	case subscriptionActionUpdate, subscriptionActionRemove:
 		selected, findErr := uniqueBlock(content, req.URL)
 		if findErr != nil {
 			return findErr
 		}
 		replacement := ""
-		if req.Action == "update" {
+		if req.Action == subscriptionActionUpdate {
 			replacement = content[selected.start:selected.end]
 			for _, name := range []string{"title", "description", "category", "type", "tags", "handle", "active"} {
 				replacement = subscriptionField(replacement, name, fields[name])
@@ -416,26 +429,31 @@ func changeSubscription(state *settingsState, req subscriptionRequest) error {
 	updated, verifyErr := loadSettingsState()
 	if verifyErr == nil {
 		var present bool
-		for _, f := range updated.cfg.Blogroll.Feeds {
+		for i := range updated.cfg.Blogroll.Feeds {
+			f := &updated.cfg.Blogroll.Feeds[i]
 			if f.URL == req.URL {
 				present = true
-				if req.Action == "update" && (f.Title != req.Title || f.Category != req.Category || string(f.Type) != req.Type || f.IsActive() != req.Active) {
+				if req.Action == subscriptionActionUpdate && (f.Title != req.Title || f.Category != req.Category || string(f.Type) != req.Type || f.IsActive() != req.Active) {
 					verifyErr = errors.New("saved subscription did not take effect in composed configuration")
 				}
 			}
 		}
-		if (req.Action == "remove" && present) || (req.Action != "remove" && !present) {
+		if (req.Action == subscriptionActionRemove && present) || (req.Action != subscriptionActionRemove && !present) {
 			verifyErr = errors.New("saved subscriptions were shadowed by another config file")
 		}
-		if req.Action == "add" && !updated.cfg.Blogroll.Enabled {
+		if req.Action == subscriptionActionAdd && !updated.cfg.Blogroll.Enabled {
 			verifyErr = errors.New("blogroll remains disabled")
 		}
 	}
 	if verifyErr != nil {
+		var rollbackErr error
 		if len(original) == 0 && errors.Is(statErr, os.ErrNotExist) {
-			_ = os.Remove(target)
+			rollbackErr = os.Remove(target)
 		} else {
-			_ = writeSubscriptionFile(target, original, mode)
+			rollbackErr = writeSubscriptionFile(target, original, mode)
+		}
+		if rollbackErr != nil {
+			return fmt.Errorf("subscription change failed: %w (rollback failed: %v)", verifyErr, rollbackErr)
 		}
 		return fmt.Errorf("subscription change rolled back: %w", verifyErr)
 	}
@@ -452,7 +470,7 @@ func requestSubscriptionRefresh(cfg models.BlogrollConfig, req subscriptionReque
 	if rebuild == nil {
 		return
 	}
-	if req.Action == "remove" || !req.Active {
+	if req.Action == subscriptionActionRemove || !req.Active {
 		rebuild()
 		return
 	}
@@ -536,7 +554,7 @@ func safeSubscriptionClient() *http.Client {
 }
 
 func validSubscriptionURL(u *url.URL) error {
-	if u == nil || (u.Scheme != "http" && u.Scheme != "https") || u.Hostname() == "" || u.User != nil {
+	if u == nil || (u.Scheme != "http" && u.Scheme != subscriptionHTTPS) || u.Hostname() == "" || u.User != nil {
 		return errors.New("use a public HTTP(S) website or feed URL")
 	}
 	if u.Port() != "" && u.Port() != "443" && u.Port() != "80" {
@@ -545,7 +563,7 @@ func validSubscriptionURL(u *url.URL) error {
 	return nil
 }
 
-func fetchSubscriptionURL(ctx context.Context, client *http.Client, address string) ([]byte, string, error) {
+func fetchSubscriptionURL(ctx context.Context, client *http.Client, address string) (body []byte, finalURL string, err error) {
 	u, err := url.Parse(address)
 	if err != nil {
 		return nil, "", err
@@ -553,7 +571,7 @@ func fetchSubscriptionURL(ctx context.Context, client *http.Client, address stri
 	if err := validSubscriptionURL(u); err != nil {
 		return nil, "", err
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, address, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, address, http.NoBody)
 	if err != nil {
 		return nil, "", err
 	}
@@ -566,7 +584,7 @@ func fetchSubscriptionURL(ctx context.Context, client *http.Client, address stri
 	if res.StatusCode < 200 || res.StatusCode >= 300 {
 		return nil, "", fmt.Errorf("website returned %s", res.Status)
 	}
-	body, err := io.ReadAll(io.LimitReader(res.Body, 1<<20+1))
+	body, err = io.ReadAll(io.LimitReader(res.Body, 1<<20+1))
 	if len(body) > 1<<20 {
 		return nil, "", errors.New("feed discovery response is too large")
 	}
@@ -601,7 +619,10 @@ func discoverSubscription(ctx context.Context, address string) (discoveredSubscr
 			return out, nil
 		}
 	}
-	base, _ := url.Parse(finalURL)
+	base, err := url.Parse(finalURL)
+	if err != nil {
+		return out, fmt.Errorf("parse final site URL: %w", err)
+	}
 	var feeds []string
 	doc.Find("link[rel~='alternate']").Each(func(_ int, s *goquery.Selection) {
 		typ, _ := s.Attr("type")
