@@ -31,7 +31,7 @@
   <!-- Core CSS (always loaded) -->
   <link rel="stylesheet" href="{{ 'css/variables.css' | theme_asset_hashed }}">
   {% if config.theme.palette or config.theme.palette_light or config.theme.palette_dark or config.theme.seed_color %}
-  <link rel="stylesheet" href="{{ 'css/palette.css' | theme_asset_hashed }}">
+  <link rel="stylesheet" href="{{ 'css/palette.css' | theme_asset_hashed }}" onerror="this.onerror=null;this.href='/css/palette.css'">
   {% endif %}
   <link rel="stylesheet" href="{{ 'css/main.css' | theme_asset_hashed }}">
   <link rel="stylesheet" href="{{ 'css/components.css' | theme_asset_hashed }}">
