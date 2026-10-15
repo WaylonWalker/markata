@@ -100,7 +100,7 @@ function editing(value) {
   for (const id of ids) {
     const el=$(id), v=value?.[id];
     if (id==='active') el.checked=v===undefined||v===null?true:v;
-    else el.value=v===undefined||v===null?(id==='type'?'written':''):Array.isArray(v)?v.join(', '):v;
+    else el.value=(id==='type'&&!v)?'written':(v===undefined||v===null?'':Array.isArray(v)?v.join(', '):v);
   }
   $('discovery').textContent='';
   $('url').focus();
@@ -110,7 +110,7 @@ async function request(path, payload) {
     headers:payload?{'Content-Type':'application/json'}:{},body:payload?JSON.stringify(payload):undefined,
     credentials:'same-origin',cache:'no-store'});
   const data=await res.json();
-  if (!res.ok||data.error) throw Error(data.error||'Request failed ('+res.status+')');
+  if (!res.ok) throw Error(data.error||'Request failed ('+res.status+')');
   return data;
 }
 function row(feed) {
@@ -160,6 +160,7 @@ async function load() {
 $('new').addEventListener('click',()=>editing(null));
 $('cancel').addEventListener('click',()=>editing(null));
 $('filter').addEventListener('input',render);
+$('url').addEventListener('input',()=>{$('discovery').textContent=''});
 $('discover').addEventListener('click',async()=>{
   const address=$('url').value.trim();if(!address){$('url').focus();return}
   $('discover').disabled=true;$('discovery').textContent='Discovering…';
