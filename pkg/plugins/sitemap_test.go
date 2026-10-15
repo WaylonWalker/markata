@@ -219,3 +219,54 @@ func TestSitemapPlugin_ImplementsInterfaces(_ *testing.T) {
 	var _ lifecycle.WritePlugin = (*SitemapPlugin)(nil)
 	var _ lifecycle.PriorityPlugin = (*SitemapPlugin)(nil)
 }
+
+func TestPagesSitemapExcludesNoindexAndDuplicateLandingPages(t *testing.T) {
+	m := lifecycle.NewManager()
+	m.Config().Extra = map[string]interface{}{
+		"feeds_page": models.FeedsPageConfig{SlugPrefix: "feeds", Robots: "noindex,follow"},
+	}
+	m.SetPosts([]*models.Post{
+		{Slug: "blog", Href: "/blog/", Published: true},
+		{Slug: "noindex", Href: "/noindex/", Published: true, Extra: map[string]interface{}{"robots": "noindex, follow"}},
+		{Slug: "public", Href: "/public/", Published: true},
+	})
+	m.Cache().Set("feed_configs", []models.FeedConfig{
+		{Slug: "blog", Formats: models.FeedFormats{HTML: true, Sitemap: true}},
+		{Slug: "draft", Robots: "noindex,follow", Formats: models.FeedFormats{HTML: true, Sitemap: true}},
+		{Slug: "all", Formats: models.FeedFormats{HTML: true, Sitemap: false}},
+		{Slug: "public-feed", Formats: models.FeedFormats{HTML: true, Sitemap: true}},
+	})
+	got := NewSitemapPlugin().buildPagesSitemap(m, "https://example.com")
+	seen := make(map[string]int)
+	for _, entry := range got.URLs {
+		seen[entry.Loc]++
+	}
+	for _, forbidden := range []string{"/noindex/", "/draft/", "/all/", "/feeds/"} {
+		if seen["https://example.com"+forbidden] != 0 {
+			t.Errorf("included excluded landing: %s", forbidden)
+		}
+	}
+	for _, included := range []string{"/blog/", "/public/", "/public-feed/"} {
+		if seen["https://example.com"+included] != 1 {
+			t.Errorf("wanted one %s, got %d", included, seen["https://example.com"+included])
+		}
+	}
+}
+
+func TestSitemapNoindexDirectiveParsing(t *testing.T) {
+	for _, tc := range []struct {
+		input string
+		want  bool
+	}{
+		{"noindex,follow", true},
+		{"NOINDEX", true},
+		{"index,follow", false},
+		{"noimageindex", false},
+		{"follow noindex", true},
+		{"", false},
+	} {
+		if got := sitemapNoindex(tc.input); got != tc.want {
+			t.Errorf("sitemapNoindex(%q)=%v, want %v", tc.input, got, tc.want)
+		}
+	}
+}

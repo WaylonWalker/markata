@@ -62,6 +62,11 @@ func TestLiteYouTubeAssetsPageScopedRendering(t *testing.T) {
 		if hasLoader != tc.enabled {
 			t.Errorf("post %s loader = %v, want %v", tc.post.Slug, hasLoader, tc.enabled)
 		}
+		hasTransitionHints := strings.Contains(tc.post.HTML, `data-markata-lite-youtube-css="`) &&
+			strings.Contains(tc.post.HTML, `data-markata-lite-youtube-js="`)
+		if hasTransitionHints != tc.enabled {
+			t.Errorf("post %s transition asset hints = %v, want %v", tc.post.Slug, hasTransitionHints, tc.enabled)
+		}
 	}
 }
 

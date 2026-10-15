@@ -15,6 +15,7 @@
 {% elif page.pagination_type == "js" %}
 <script src="{{ 'js/pagination.js' | theme_asset }}" defer></script>
 {% endif %}
+<script src="{{ 'js/reader-image-fallback.js' | theme_asset_hashed }}" defer></script>
 {% endblock %}
 
 {% block content %}
