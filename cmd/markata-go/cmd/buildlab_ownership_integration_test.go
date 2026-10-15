@@ -122,15 +122,16 @@ func runBuildLabOwnershipScenario(t *testing.T, fixture, name string, operations
 			Timeout:   5 * time.Minute,
 			Env:       []string{"MARKATA_GO_ENCRYPTION_ENABLED=false"},
 		},
-		Classes: map[string]buildlab.OutputClass{".markata/diagnostics.json": buildlab.ClassVolatile, ".well-known/time": buildlab.ClassVolatile},
+		Classes:          map[string]buildlab.OutputClass{".markata/diagnostics.json": buildlab.ClassVolatile, ".well-known/time": buildlab.ClassVolatile},
 		CheckDeterminism: true,
-		GOMAXPROCS: 1,
+		GOMAXPROCS:       1,
 	})
 	if err != nil {
 		t.Fatalf("Build Lab %s failed: %v; diagnostics=%+v", name, err, result.Diagnostics)
 	}
 	if result.Verdict != buildLabPassVerdict {
-		for _, checkpoint := range result.Checkpoints {
+		for i := range result.Checkpoints {
+			checkpoint := &result.Checkpoints[i]
 			t.Logf("%s operation %d (%s): incremental=%v applicable=%v determinism=%v diff=%+v diagnostics=%+v",
 				name, checkpoint.OperationIndex, checkpoint.Operation, checkpoint.Correctness.IncrementalEqual,
 				checkpoint.Correctness.IncrementalApplicable, checkpoint.Correctness.DeterministicEqual,
