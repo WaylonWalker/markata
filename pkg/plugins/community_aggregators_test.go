@@ -119,3 +119,17 @@ func TestRedditOutboundExtractionRejectsUnrelatedLinks(t *testing.T) {
 		t.Fatal("Reddit discussion label missing")
 	}
 }
+
+func TestLemmyTextOnlyPostStaysOnDiscussion(t *testing.T) {
+	permalink := "https://programming.dev/post/12345"
+	feed := []byte(`<rss><channel><item><title>Discussion</title>
+		<link>https://programming.dev/post/12345</link>
+		<guid>https://programming.dev/post/12345</guid></item></channel></rss>`)
+	_, entries, err := parseRSS2Feed(feed)
+	if err != nil {
+		t.Fatalf("parseRSS2Feed: %v", err)
+	}
+	if len(entries) != 1 || entries[0].URL != permalink || entries[0].OriginalURL != "" {
+		t.Fatalf("text-only Lemmy post should stay on community: %+v", entries)
+	}
+}
