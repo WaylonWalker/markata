@@ -128,15 +128,21 @@ func TestFeedPhotoResponsiveLayout_Browser(t *testing.T) {
 	defer cancelTimeout()
 
 	type geometry struct {
-		Width  int    `json:"width"`
-		Height int    `json:"height"`
-		Figure int    `json:"figure"`
-		Chosen string `json:"chosen"`
+		Width         int    `json:"width"`
+		Height        int    `json:"height"`
+		Figure        int    `json:"figure"`
+		NaturalWidth  int    `json:"naturalWidth"`
+		NaturalHeight int    `json:"naturalHeight"`
+		CSSHeight     string `json:"cssHeight"`
+		Chosen        string `json:"chosen"`
 	}
 	const inspect = `[...document.querySelectorAll(".photo-figure img")].map(img => ({
 		width: Math.round(img.getBoundingClientRect().width),
 		height: Math.round(img.getBoundingClientRect().height),
 		figure: Math.round(img.closest(".photo-figure").getBoundingClientRect().width),
+		naturalWidth: img.naturalWidth,
+		naturalHeight: img.naturalHeight,
+		cssHeight: getComputedStyle(img).height,
 		chosen: img.currentSrc
 	}))`
 
@@ -154,6 +160,9 @@ func TestFeedPhotoResponsiveLayout_Browser(t *testing.T) {
 				emulation.SetDeviceMetricsOverride(tc.viewport, 900, 2, false),
 				chromedp.Navigate(server.URL),
 				chromedp.Poll(`[...document.querySelectorAll(".photo-figure img")].length === 2 && [...document.querySelectorAll(".photo-figure img")].every(img => img.complete && img.naturalWidth > 0)`, nil),
+				// decoding="async" deliberately allows the decoder to complete
+				// after fetch; inspect only after both raster decodes finish.
+				chromedp.Evaluate(`Promise.all([...document.querySelectorAll(".photo-figure img")].map(img => img.decode())).then(() => true)`, nil),
 				chromedp.Evaluate(inspect, &measured),
 			)
 			if err != nil {
@@ -175,7 +184,7 @@ func TestFeedPhotoResponsiveLayout_Browser(t *testing.T) {
 						want = 1.5
 					}
 					if ratio < want-0.03 || ratio > want+0.03 {
-						t.Errorf("photo %d aspect ratio %0.2f, want %0.2f", i, ratio, want)
+						t.Errorf("photo %d aspect ratio %0.2f, want %0.2f: %+v", i, ratio, want, img)
 					}
 				}
 				// The CDN variant should approximately track the actual display
