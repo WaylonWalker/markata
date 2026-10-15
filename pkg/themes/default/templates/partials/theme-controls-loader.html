@@ -1,0 +1,160 @@
+{# Keep the lightweight mode toggle interactive without loading the full palette picker.
+   The heavyweight picker is fetched only on explicit theme interaction. #}
+<script>
+(function () {
+  'use strict';
+  if (window.__markataLazyThemeControls) return;
+  window.__markataLazyThemeControls = true;
+
+  var root = document.documentElement;
+  var url = '{{ 'js/palette-switcher.js' | theme_asset_hashed }}';
+  var loading = false;
+  var callbacks = [];
+
+  function switcher() {
+    return window.markata && window.markata.paletteSwitcher;
+  }
+
+  function syncModeButtons() {
+    var label = root.dataset.theme === 'light' ? 'Light' : 'Dark';
+    document.querySelectorAll('.palette-mode-toggle').forEach(function (button) {
+      button.title = label + ' mode - click to toggle (\\)';
+      button.setAttribute('aria-label', 'Current: ' + label + ' mode. Click to switch.');
+    });
+  }
+
+  function toggleMode() {
+    var mode = root.dataset.theme === 'dark' ? 'light' : 'dark';
+    var picked = '';
+    try {
+      localStorage.setItem('color-mode', mode);
+      localStorage.setItem('theme', mode);
+      if (document.querySelector('[data-theme-picker]')) {
+        picked = localStorage.getItem('theme-palette-' + mode) || '';
+      }
+    } catch (_) { /* private browsing/storage denial must not break switching */ }
+    if (picked === 'seasonal') {
+      var seasonal = typeof window.__markataSeasonalPick === 'function'
+        ? window.__markataSeasonalPick(mode) : null;
+      picked = seasonal ? seasonal.name : '';
+    }
+    var defaults = window.__markataThemeDefaults || {};
+    root.dataset.theme = mode;
+    root.classList.toggle('dark', mode === 'dark');
+    if (picked || defaults[mode]) root.dataset.palette = picked || defaults[mode];
+    syncModeButtons();
+    window.dispatchEvent(new CustomEvent('color-mode-change', { detail: { mode: mode } }));
+    return mode;
+  }
+
+  function finish(error) {
+    loading = false;
+    document.querySelectorAll('.theme-picker-toggle').forEach(function (button) {
+      button.removeAttribute('aria-busy');
+    });
+    var pending = callbacks.splice(0);
+    if (error) {
+      console.warn('[theme-picker] Could not load picker; dark/light remains available.', error);
+      return;
+    }
+    pending.forEach(function (callback) { callback(); });
+  }
+
+  function loadPicker(callback) {
+    if (switcher()) {
+      if (callback) callback();
+      return;
+    }
+    if (callback) callbacks.push(callback);
+    if (loading) return;
+    loading = true;
+    document.querySelectorAll('.theme-picker-toggle').forEach(function (button) {
+      button.setAttribute('aria-busy', 'true');
+    });
+
+    function attempt(src, fallback) {
+      var script = document.createElement('script');
+      script.src = src;
+      script.async = true;
+      script.onload = function () {
+        if (switcher()) finish(null);
+        else if (fallback) attempt('/js/palette-switcher.js', false);
+        else finish(new Error('Theme picker did not initialize'));
+      };
+      script.onerror = function () {
+        script.remove();
+        if (fallback) attempt('/js/palette-switcher.js', false);
+        else finish(new Error('Theme picker asset unavailable'));
+      };
+      document.body.appendChild(script);
+    }
+    attempt(url, url !== '/js/palette-switcher.js');
+  }
+
+  // Capture clicks before the picker is loaded, without changing its
+  // normal event handlers once it has been loaded.
+  document.addEventListener('click', function (event) {
+    if (switcher() || !event.target.closest) return;
+    if (event.target.closest('.palette-mode-toggle, .theme-toggle')) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      toggleMode();
+    } else if (event.target.closest('.theme-picker-toggle')) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      loadPicker(function () { switcher().open(); });
+    }
+  }, true);
+
+  // Preload on intent, never on initial paint or an unrelated page interaction.
+  document.addEventListener('pointerover', function (event) {
+    if (!switcher() && event.target.closest && event.target.closest('.theme-picker-toggle')) {
+      loadPicker();
+    }
+  }, { passive: true });
+  document.addEventListener('focusin', function (event) {
+    if (!switcher() && event.target.closest && event.target.closest('.theme-picker-toggle')) {
+      loadPicker();
+    }
+  });
+
+  // Keyboard controls must not depend on the large picker bundle being loaded.
+  // Once loaded, its shortcuts-registry handlers take over as before.
+  document.addEventListener('keydown', function (event) {
+    if (switcher() || event.altKey || event.ctrlKey || event.metaKey ||
+        event.defaultPrevented || event.isComposing) return;
+    var target = event.target;
+    if (target.closest && target.closest('input, textarea, select, [contenteditable], [role="textbox"]')) return;
+    var key = event.key;
+    if (key === '\\' && document.querySelector('.palette-mode-toggle')) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      toggleMode();
+      return;
+    }
+    var pickerButton = document.querySelector('.theme-picker-toggle');
+    if (!pickerButton) return;
+    var actions = {
+      t: function (api) { api.open(); },
+      ',': function (api) { api.prevFamily(); },
+      '.': function (api) { api.nextFamily(); },
+      '<': function (api) { api.prevAesthetic(); },
+      '>': function (api) { api.nextAesthetic(); },
+      F: function (api) { api.prevFont(); },
+      f: function (api) { api.nextFont(); }
+    };
+    if (!actions[key] || (event.shiftKey && key !== '<' && key !== '>' && key !== 'F')) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    loadPicker(function () { actions[key](switcher()); });
+  }, true);
+
+  // Updates icons and accessible names on every full or SPA navigation.
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', syncModeButtons, { once: true });
+  } else {
+    syncModeButtons();
+  }
+  window.addEventListener('view-transition-complete', syncModeButtons);
+})();
+</script>
