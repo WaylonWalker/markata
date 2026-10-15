@@ -1435,8 +1435,6 @@
       fontObserver: null,
     };
     panel.tabIndex = -1;
-    renderStyleGrid();
-    renderFontGrid();
 
     if (container.dataset.themePickerBound === 'true') {
       syncUI();
