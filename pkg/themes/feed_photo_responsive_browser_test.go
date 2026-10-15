@@ -124,9 +124,9 @@ func TestFeedPhotoResponsiveLayout_Browser(t *testing.T) {
 	}))`
 
 	for _, tc := range []struct {
-		name        string
-		viewport    int64
-		minWidth    int
+		name     string
+		viewport int64
+		minWidth int
 	}{
 		{name: "desktop-2x", viewport: 1280, minWidth: 590},
 		{name: "mobile-2x", viewport: 390, minWidth: 300},
