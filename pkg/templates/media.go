@@ -111,7 +111,7 @@ func OriginalMediaURL(raw string) string {
 // actual files instead of relying on a remote resizing service.
 func ResponsiveSrcset(raw string, widths []int) string {
 	u, err := url.Parse(strings.TrimSpace(raw))
-	if err != nil || u.Host == "" || !IsTrustedMediaURL(raw) {
+	if err != nil || u.Host == "" || (u.Scheme != "http" && u.Scheme != editorialHTTPS) || !IsTrustedMediaURL(raw) {
 		return ""
 	}
 
@@ -258,7 +258,7 @@ func normalizeTrustedMediaURL(raw string) string {
 	if !isTrustedURL(u) {
 		return raw
 	}
-	if u.Host != "" && u.Scheme != "https" {
+	if u.Host != "" && u.Scheme != editorialHTTPS {
 		u.Scheme = "https"
 		return u.String()
 	}

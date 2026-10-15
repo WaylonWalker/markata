@@ -37,7 +37,7 @@ func TestResponsiveSrcsetUsesTrustedRemoteWidthsAndPreservesQuery(t *testing.T) 
 }
 
 func TestResponsiveSrcsetSkipsLocalAndUntrustedURLs(t *testing.T) {
-	for _, raw := range []string{"/images/photo.jpg", "https://example.com/photo.jpg"} {
+	for _, raw := range []string{"/images/photo.jpg", "https://example.com/photo.jpg", "ftp://dropper.waylonwalker.com/photo.jpg", "data:image/png;base64,abc"} {
 		if got := ResponsiveSrcset(raw, []int{160, 320}); got != "" {
 			t.Errorf("ResponsiveSrcset(%q) = %q, want empty", raw, got)
 		}

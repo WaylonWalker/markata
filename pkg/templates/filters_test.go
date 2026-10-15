@@ -1010,7 +1010,7 @@ func TestPhotoCardRendersResponsiveRemoteCandidatesAndCanonicalLightboxURL(t *te
 	trusted := render("https://dropper.waylonwalker.com/photo.webp?token=abc&w=600")
 	for _, want := range []string{
 		`srcset="https://dropper.waylonwalker.com/photo.webp?token=abc&amp;w=160 160w`,
-		`sizes="(max-width: 480px) 50vw`,
+		`sizes="auto, (max-width: 600px) 100vw, 600px"`,
 		`data-href="https://dropper.waylonwalker.com/photo.webp?token=abc"`,
 	} {
 		if !strings.Contains(trusted, want) {
