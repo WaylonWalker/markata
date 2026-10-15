@@ -584,11 +584,16 @@ func (p *PaletteCSSPlugin) generateMultiPaletteCSS(loader *palettes.Loader, extr
 
 	buf.WriteString("}\n\n")
 	p.writeThemeOverrides(&buf, overrides)
-	if extra != nil && blocks.Len() > 0 {
-		extra["palette_core_css"] = strings.Replace(buf.String(), blocks.String(), coreBlocks.String(), 1)
-	}
+	setPaletteCoreCSS(extra, buf.String(), blocks.String(), coreBlocks.String())
 
 	return buf.String()
+}
+
+// setPaletteCoreCSS substitutes the configured pair for the full pickable set.
+func setPaletteCoreCSS(extra map[string]interface{}, fullCSS, paletteBlocks, coreBlocks string) {
+	if extra != nil && paletteBlocks != "" {
+		extra["palette_core_css"] = strings.Replace(fullCSS, paletteBlocks, coreBlocks, 1)
+	}
 }
 
 // writePaletteCoreCSS keeps the legacy full stylesheet intact while publishing
