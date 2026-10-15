@@ -211,9 +211,33 @@ func createManagerWithPlugins(cfgPath string, pluginSet func() []lifecycle.Plugi
 		m.SetConcurrency(cfg.Concurrency)
 	}
 
-	m.RegisterPlugins(pluginSet()...)
+	registerConfiguredPlugins(m, cfg, pluginSet())
 
 	return m, nil
+}
+
+// registerConfiguredPlugins always loads the standard set and appends any
+// registered optional hooks named in the site configuration.
+func registerConfiguredPlugins(m *lifecycle.Manager, cfg *models.Config, defaults []lifecycle.Plugin) {
+	registered := make(map[string]struct{}, len(defaults))
+	for _, plugin := range defaults {
+		m.RegisterPlugin(plugin)
+		registered[plugin.Name()] = struct{}{}
+	}
+	for _, name := range cfg.Hooks {
+		if name == sourceDefault || !cfg.IsHookEnabled(name) {
+			continue
+		}
+		if _, ok := registered[name]; ok {
+			continue
+		}
+		plugin, ok := plugins.PluginByName(name)
+		if !ok {
+			continue
+		}
+		m.RegisterPlugin(plugin)
+		registered[name] = struct{}{}
+	}
 }
 
 // createSinglePageManager configures the normal renderer for one Markdown

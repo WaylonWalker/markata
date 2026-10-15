@@ -12,6 +12,7 @@ import (
 	"github.com/WaylonWalker/markata-go/pkg/buildstats"
 	"github.com/WaylonWalker/markata-go/pkg/diagnostics"
 	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata-go/pkg/plugins"
 	"github.com/spf13/cobra"
 )
 
@@ -95,6 +96,63 @@ func TestCreateManagerPreservesAbsoluteFontpacksFile(t *testing.T) {
 	}
 	if got := manager.Config().Extra["fontpacks_file"]; got != catalogPath {
 		t.Fatalf("fontpacks_file = %q, want %q", got, catalogPath)
+	}
+}
+
+func TestCreateManagerRegistersConfiguredOptionalHook(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "markata-go.toml")
+	config := "[markata-go]\nhooks = [\"default\", \"image_optimization\"]\n"
+	if err := os.WriteFile(configPath, []byte(config), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	manager, err := createManager(configPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, plugin := range manager.Plugins() {
+		if plugin.Name() == "image_optimization" {
+			if _, ok := plugin.(*plugins.ImageOptimizationPlugin); !ok {
+				t.Fatalf("image_optimization plugin = %T, want *ImageOptimizationPlugin", plugin)
+			}
+			return
+		}
+	}
+	t.Fatal("configured image_optimization hook was not registered")
+}
+
+func TestCreateManagerDoesNotRegisterUnconfiguredOptionalHook(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "markata-go.toml")
+	if err := os.WriteFile(configPath, []byte("[markata-go]\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	manager, err := createManager(configPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, plugin := range manager.Plugins() {
+		if plugin.Name() == "image_optimization" {
+			t.Fatal("unconfigured image_optimization hook was registered")
+		}
+	}
+}
+
+func TestCreateManagerHonorsDisabledOptionalHook(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "markata-go.toml")
+	config := "[markata-go]\nhooks = [\"default\", \"image_optimization\"]\ndisabled_hooks = [\"image_optimization\"]\n"
+	if err := os.WriteFile(configPath, []byte(config), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	manager, err := createManager(configPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, plugin := range manager.Plugins() {
+		if plugin.Name() == "image_optimization" {
+			t.Fatal("disabled image_optimization hook was registered")
+		}
 	}
 }
 
