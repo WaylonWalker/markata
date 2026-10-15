@@ -341,7 +341,7 @@ The reader page shows the latest posts from all feeds in reverse chronological o
 - Two-column entry grid on desktop, single column on mobile
 - Each entry shows: source favicon, source name, date, title, description, optional image
 - Links to the original article
-- Hacker News discussion URLs are normalized to the outbound article URL when one is available, while the source feed label stays visible and the original discussion link remains available as "Found on HN"
+- Hacker News and Lobsters discussion URLs are normalized to the outbound article URL when one is available. Lobsters RSS feeds that already link directly to articles retain their discussion permalinks from the GUID or comments field. The original discussions remain available as "Found on HN" or "Found on Lobsters", alongside the feed source label
 - Pagination navigation (when more than one page)
 
 If you assign feed types, markata-go also generates typed reader pages:
