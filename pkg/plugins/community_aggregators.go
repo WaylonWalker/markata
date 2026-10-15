@@ -10,7 +10,7 @@ import (
 var (
 	lemmyPostIDRegex    = regexp.MustCompile(`^[0-9]+$`)
 	redditPostIDRegex   = regexp.MustCompile(`^[a-zA-Z0-9]+$`)
-	redditFeedLinkRegex = regexp.MustCompile(`(?is)<a\\b[^>]*href=["']([^"']+)["'][^>]*>\\s*\\[link\\]\\s*</a>`)
+	redditFeedLinkRegex = regexp.MustCompile(`(?is)<a\b[^>]*href=["']([^"']+)["'][^>]*>\s*\[link\]\s*</a>`)
 )
 
 func isLemmyDiscussionURL(rawURL string) bool {
