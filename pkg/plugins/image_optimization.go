@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 
 	"golang.org/x/net/html"
@@ -19,6 +20,7 @@ import (
 	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
 	"github.com/WaylonWalker/markata-go/pkg/logging"
 	"github.com/WaylonWalker/markata-go/pkg/models"
+	markatatemplates "github.com/WaylonWalker/markata-go/pkg/templates"
 )
 
 var imageOptimizationLog = logging.Component("image_optimization").Phase("write")
@@ -67,6 +69,10 @@ type imageOptimizationCacheEntry struct {
 	Encoder       string `json:"encoder"`
 }
 
+var responsiveRemoteImageWidths = []int{32, 48, 64, 88, 96, 120, 160, 240, 320, 480, 600, 800, 960, 1200, 1600}
+
+const responsiveRemoteImageSizes = "(max-width: 760px) 100vw, 760px"
+
 const (
 	formatAVIF = "avif"
 	formatWebP = "webp"
@@ -107,7 +113,7 @@ func (p *ImageOptimizationPlugin) Configure(m *lifecycle.Manager) error {
 }
 
 func (p *ImageOptimizationPlugin) Render(m *lifecycle.Manager) error {
-	if !p.config.Enabled || len(p.availableFormats) == 0 {
+	if !p.config.Enabled {
 		return nil
 	}
 
@@ -436,45 +442,17 @@ func (p *ImageOptimizationPlugin) processPost(post *models.Post) error {
 	}
 
 	targets := make([]imageOptimizationTarget, 0)
+	updatedHTML := false
 	var walk func(*html.Node)
 	walk = func(node *html.Node) {
 		for child := node.FirstChild; child != nil; {
 			next := child.NextSibling
 			if child.Type == html.ElementNode && child.Data == "img" {
-				if node.Type == html.ElementNode && node.Data == "picture" {
-					child = next
-					continue
+				changed, target := p.processImageNode(node, child, post)
+				updatedHTML = updatedHTML || changed
+				if target != nil {
+					targets = append(targets, *target)
 				}
-				src := strings.TrimSpace(getAttr(child, "src"))
-				if src == "" || !isLocalImageSrc(src) || !isOptimizableImageSrc(src) {
-					child = next
-					continue
-				}
-				sources := buildPictureSources(src, p.availableFormats, p.config.Widths, p.config.Sizes)
-				if len(sources) == 0 {
-					child = next
-					continue
-				}
-
-				picture := &html.Node{Type: html.ElementNode, Data: "picture"}
-				for _, source := range sources {
-					sourceNode, parseErr := parseSingleNode(source)
-					if parseErr == nil {
-						picture.AppendChild(sourceNode)
-					}
-				}
-
-				node.InsertBefore(picture, child)
-				node.RemoveChild(child)
-				picture.AppendChild(child)
-
-				if post.Slug == "" {
-					post.GenerateSlug()
-				}
-				targets = append(targets, imageOptimizationTarget{
-					Src:      src,
-					PostSlug: post.Slug,
-				})
 				child = next
 				continue
 			}
@@ -484,7 +462,7 @@ func (p *ImageOptimizationPlugin) processPost(post *models.Post) error {
 	}
 	walk(root)
 
-	if len(targets) == 0 {
+	if !updatedHTML {
 		return nil
 	}
 
@@ -497,9 +475,96 @@ func (p *ImageOptimizationPlugin) processPost(post *models.Post) error {
 	if post.Extra == nil {
 		post.Extra = make(map[string]any)
 	}
-	post.Extra["image_optimization"] = targets
+	if len(targets) > 0 {
+		post.Extra["image_optimization"] = targets
+	}
 
 	return nil
+}
+
+func (p *ImageOptimizationPlugin) processImageNode(parent, img *html.Node, post *models.Post) (bool, *imageOptimizationTarget) {
+	if parent.Data == "picture" {
+		return false, nil
+	}
+
+	src := strings.TrimSpace(getAttr(img, "src"))
+	if src == "" {
+		return false, nil
+	}
+	if !isLocalImageSrc(src) {
+		return addResponsiveRemoteImageAttrs(img, src), nil
+	}
+	if !isOptimizableImageSrc(src) {
+		return false, nil
+	}
+
+	sources := buildPictureSources(src, p.availableFormats, p.config.Widths, p.config.Sizes)
+	if len(sources) == 0 {
+		return false, nil
+	}
+
+	picture := &html.Node{Type: html.ElementNode, Data: "picture"}
+	for _, source := range sources {
+		sourceNode, parseErr := parseSingleNode(source)
+		if parseErr == nil {
+			picture.AppendChild(sourceNode)
+		}
+	}
+
+	parent.InsertBefore(picture, img)
+	parent.RemoveChild(img)
+	picture.AppendChild(img)
+
+	if post.Slug == "" {
+		post.GenerateSlug()
+	}
+	return true, &imageOptimizationTarget{Src: src, PostSlug: post.Slug}
+}
+
+func addResponsiveRemoteImageAttrs(img *html.Node, src string) bool {
+	if getAttr(img, "srcset") != "" {
+		return false
+	}
+	sizes := getAttr(img, "sizes")
+	if sizes == "" {
+		var ok bool
+		sizes, ok = responsiveRemoteImageSizesFor(img)
+		if !ok {
+			return false
+		}
+	}
+	srcset := markatatemplates.ResponsiveSrcset(src, responsiveRemoteImageWidths)
+	if srcset == "" {
+		return false
+	}
+	setAttr(img, "srcset", srcset)
+	setAttr(img, "sizes", sizes)
+	return true
+}
+
+func responsiveRemoteImageSizesFor(img *html.Node) (string, bool) {
+	width := strings.TrimSpace(getAttr(img, "width"))
+	if width != "" {
+		if widthPx, err := strconv.Atoi(width); err == nil && widthPx > 0 {
+			return strconv.Itoa(widthPx) + "px", true
+		}
+	}
+	if height := strings.TrimSpace(getAttr(img, "height")); height != "" {
+		if heightPx, err := strconv.Atoi(height); err == nil && heightPx > 0 && heightPx <= 64 {
+			return "", false
+		}
+	}
+	return responsiveRemoteImageSizes, true
+}
+
+func setAttr(node *html.Node, key, value string) {
+	for i := range node.Attr {
+		if node.Attr[i].Key == key {
+			node.Attr[i].Val = value
+			return
+		}
+	}
+	node.Attr = append(node.Attr, html.Attribute{Key: key, Val: value})
 }
 
 func (p *ImageOptimizationPlugin) collectTargets(m *lifecycle.Manager) []imageOptimizationTarget {

@@ -1415,7 +1415,11 @@ widths = [480, 768, 1200]
 sizes = "100vw"
 ```
 
-The plugin only processes local images and skips external URLs or data URIs. Missing encoders do not fail the build.
+The plugin generates local AVIF/WebP variants when an encoder is available. Trusted
+Dropper image URLs receive responsive `srcset` candidates that use Dropper's width
+parameter; the build does not download or generate those remote variants. Other
+external URLs and data URIs remain unchanged. Missing local encoders do not fail
+the build.
 
 ### Layout System (`[markata-go.layout]`)
 
