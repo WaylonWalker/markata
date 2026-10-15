@@ -204,3 +204,26 @@ func TestAggregatorDiscussionURLValidationAndLabels(t *testing.T) {
 		}
 	}
 }
+
+func TestHackerNewsDiscussionRemainsInReaderPartial(t *testing.T) {
+	plugin := NewBlogrollPlugin()
+	entry := &models.ExternalEntry{
+		FeedURL: "https://hnrss.org/frontpage",
+		FeedTitle: "Hacker News",
+		Title: "Article",
+		URL: "https://example.com/article",
+		OriginalURL: "https://news.ycombinator.com/item?id=456",
+	}
+	entryMap := plugin.readerEntryMap(entry, nil, models.BlogrollConfig{})
+	if got := entryMap["discussion_source"]; got != "HN" {
+		t.Fatalf("discussion_source = %v, want HN", got)
+	}
+	markup := plugin.renderReaderTimeline([]map[string]interface{}{{
+		"count": 1,
+		"entries": []map[string]interface{}{entryMap},
+	}}, false)
+	if !strings.Contains(markup, "Found on HN:") ||
+		!strings.Contains(markup, "https://news.ycombinator.com/item?id=456") {
+		t.Fatalf("HN discussion missing from partial: %s", markup)
+	}
+}
