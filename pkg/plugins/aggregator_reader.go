@@ -114,6 +114,9 @@ func resolveAggregatorFeedReference(link, discussionHint string) (resolved, orig
 }
 
 func enrichAggregatorFeedEntry(link, discussionHint string) (resolved, original string, metadata *hackerNewsMetadata) {
+	if isHackerNewsDiscussionURL(link) {
+		return enrichHackerNewsFeedEntry(link)
+	}
 	resolved, original = resolveAggregatorFeedReference(link, discussionHint)
 	if original == "" {
 		return resolved, original, nil
