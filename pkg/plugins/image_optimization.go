@@ -596,7 +596,7 @@ func (p *ImageOptimizationPlugin) processImageNode(parent, img *html.Node, post 
 	parent.RemoveChild(img)
 	picture.AppendChild(img)
 
-	if post.Slug == "" {
+	if post.Slug == "" && !post.Has("_slug_explicit") {
 		post.GenerateSlug()
 	}
 	return true, &imageOptimizationTarget{Src: src, PostSlug: post.Slug, Widths: widths}

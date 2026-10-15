@@ -330,3 +330,24 @@ func TestImageOptimization_ResolveOutputPath_Relative(t *testing.T) {
 		t.Fatalf("unexpected output path: %s", path)
 	}
 }
+
+func TestImageOptimization_PreservesExplicitHomepageSlug(t *testing.T) {
+	plugin := NewImageOptimizationPlugin()
+	plugin.config = defaultImageOptimizationConfig()
+	plugin.availableFormats = []string{formatAVIF}
+	post := &models.Post{
+		Path: "pages/post/index.md",
+		HTML: `<html><body><img src="/8bitcc.png" width="160" height="160"></body></html>`,
+	}
+	post.Set("_slug_explicit", true)
+	if err := plugin.processRenderedHTML(post); err != nil {
+		t.Fatal(err)
+	}
+	if post.Slug != "" {
+		t.Fatalf("explicit homepage slug changed to %q", post.Slug)
+	}
+	targets := imageOptimizationTargetsFrom(post.Extra["image_optimization"])
+	if len(targets) != 1 || targets[0].PostSlug != "" {
+		t.Fatalf("homepage target must retain empty slug: %#v", targets)
+	}
+}
