@@ -1,8 +1,11 @@
 package themes_test
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"image"
+	"image/png"
 	"net/http"
 	"net/http/httptest"
 	"os/exec"
@@ -41,7 +44,7 @@ func TestFeedPhotoResponsiveLayout_Browser(t *testing.T) {
 		t.Helper()
 		got, renderErr := engine.RenderToString("partials/cards/photo-card.html", map[string]interface{}{
 			"post": map[string]interface{}{
-				"image": "https://dropper.waylonwalker.com/" + name + ".webp?token=abc",
+				"image": "https://dropper.waylonwalker.com/" + name + ".png?token=abc",
 				"href":  "/shots/" + name + "/",
 				"title": name,
 			},
@@ -50,6 +53,18 @@ func TestFeedPhotoResponsiveLayout_Browser(t *testing.T) {
 			t.Fatal(renderErr)
 		}
 		return got
+	}
+
+	// Use decoded raster fixtures with known natural aspect ratios. An SVG
+	// response behind a .webp URL can expose its fallback 300x150 viewport
+	// instead, testing the SVG decoder rather than responsive CSS geometry.
+	var imageBytes [2][]byte
+	for i, dimensions := range [][2]int{{60, 40}, {40, 60}} {
+		var encoded bytes.Buffer
+		if encodeErr := png.Encode(&encoded, image.NewRGBA(image.Rect(0, 0, dimensions[0], dimensions[1]))); encodeErr != nil {
+			t.Fatal(encodeErr)
+		}
+		imageBytes[i] = encoded.Bytes()
 	}
 
 	var fixture string
@@ -61,20 +76,20 @@ func TestFeedPhotoResponsiveLayout_Browser(t *testing.T) {
 				return
 			}
 			w.Header().Set("Content-Type", "text/css")
-			_, _ = w.Write(css)
+			if _, writeErr := w.Write(css); writeErr != nil {
+				t.Errorf("write CSS fixture: %v", writeErr)
+			}
 			return
 		}
-		if strings.HasSuffix(r.URL.Path, ".webp") {
-			width, parseErr := strconv.Atoi(r.URL.Query().Get("w"))
-			if parseErr != nil || width <= 0 {
-				width = 600
-			}
-			height := width * 2 / 3
+		if strings.HasSuffix(r.URL.Path, ".png") {
+			imageIndex := 0
 			if strings.Contains(r.URL.Path, "portrait") {
-				height = width * 3 / 2
+				imageIndex = 1
 			}
-			w.Header().Set("Content-Type", "image/svg+xml")
-			_, _ = fmt.Fprintf(w, `<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" viewBox="0 0 %d %d"><rect width="100%%" height="100%%" fill="#6688bb"/></svg>`, width, height, width, height)
+			w.Header().Set("Content-Type", "image/png")
+			if _, writeErr := w.Write(imageBytes[imageIndex]); writeErr != nil {
+				t.Errorf("write PNG fixture: %v", writeErr)
+			}
 			return
 		}
 		if r.URL.Path == "/favicon.ico" {
@@ -82,7 +97,9 @@ func TestFeedPhotoResponsiveLayout_Browser(t *testing.T) {
 			return
 		}
 		w.Header().Set("Content-Type", "text/html")
-		_, _ = fmt.Fprint(w, fixture)
+		if _, writeErr := fmt.Fprint(w, fixture); writeErr != nil {
+			t.Errorf("write HTML fixture: %v", writeErr)
+		}
 	}))
 	defer server.Close()
 
