@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark"><title>Subscriptions · Markata</title>
+<style>
+:root{font-family:system-ui,-apple-system,sans-serif;color-scheme:light dark;background:Canvas;color:CanvasText}
+*{box-sizing:border-box}body{margin:0}a{color:LinkText}button,input,select,textarea{font:inherit}
+button{cursor:pointer}button:disabled{cursor:wait;opacity:.55}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid Highlight;outline-offset:2px}
+header{border-bottom:1px solid color-mix(in srgb,CanvasText 20%,transparent);padding:16px max(20px,calc((100vw - 1080px)/2));display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+header a{text-decoration:none}.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;opacity:.7}
+main{max-width:1100px;padding:30px 20px 80px;margin:auto}
+h1{font-size:clamp(30px,4vw,46px);margin:4px 0 8px;letter-spacing:-.04em}
+h2{font-size:20px;margin:0 0 10px}p{line-height:1.5}.muted{opacity:.72}
+.layout{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(300px,1fr);gap:24px;align-items:start}
+.panel{border:1px solid color-mix(in srgb,CanvasText 22%,transparent);border-radius:12px;overflow:hidden}
+.panel-header{padding:17px 20px;border-bottom:1px solid color-mix(in srgb,CanvasText 16%,transparent)}
+.panel-body{padding:20px}
+label{display:grid;gap:5px;font-weight:600;font-size:13px}
+input,textarea,select{width:100%;padding:10px;border:1px solid color-mix(in srgb,CanvasText 35%,transparent);border-radius:7px;color:inherit;background:Canvas}
+textarea{min-height:80px;resize:vertical}
+fieldset{border:0;padding:0;margin:0;display:grid;gap:14px;min-width:0}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.row>*{min-width:0}
+button,.button{border:1px solid color-mix(in srgb,CanvasText 30%,transparent);border-radius:7px;padding:10px 14px;background:Canvas;color:CanvasText;font-size:13px;font-weight:650;text-decoration:none}
+button.primary{background:Highlight;color:HighlightText;border-color:Highlight}
+button:hover{filter:brightness(.94)}
+.small{font-size:12px}
+.feed{display:grid;grid-template-columns:1fr auto;gap:8px;padding:15px 18px;border-top:1px solid color-mix(in srgb,CanvasText 14%,transparent)}
+.feed:first-child{border-top:0}
+.feed h3{font-size:15px;margin:0 0 4px;overflow-wrap:anywhere}
+.feed small{opacity:.7;overflow-wrap:anywhere}.feed p{margin:5px 0 0;font-size:12px}
+.feed .actions{display:flex;gap:6px;align-items:start}.feed .actions button{padding:6px 10px}
+.feed.inactive{opacity:.62}
+.tags{font-size:11px;display:flex;gap:6px;flex-wrap:wrap;margin-top:5px}
+.tag{border:1px solid color-mix(in srgb,CanvasText 22%,transparent);border-radius:5px;padding:2px 5px}
+#notice{margin:16px 0;padding:12px;border-radius:7px;display:none;background:color-mix(in srgb,Highlight 10%,Canvas)}
+#notice.show{display:block}#notice.error{background:color-mix(in srgb,red 12%,Canvas)}
+.hint{font-size:12px;opacity:.7;overflow-wrap:anywhere}
+.empty{padding:32px 20px;text-align:center;opacity:.75}
+.check{display:flex;flex-direction:row;align-items:center;gap:8px}.check input{width:auto}
+.section-title{display:flex;align-items:center;justify-content:space-between;gap:8px}
+#source{font-size:12px;word-break:break-all}
+#results{max-height:70vh;overflow:auto}
+footer{font-size:12px;margin-top:30px;opacity:.7}
+@media(max-width:800px){.layout{grid-template-columns:1fr}#results{max-height:none}}
+</style></head>
+<body>
+<header><a href="/_markata/">← Serve Control Center</a><span class="eyebrow">Local development only</span><div class="row"><a href="/reader/">Reader ↗</a><a href="/blogroll/">Blogroll ↗</a></div></header>
+<main>
+<div class="eyebrow">Your reading list</div>
+<h1>Subscriptions</h1>
+<p class="muted">Follow independent blogs, podcasts, and videos. Paste a website URL and Markata will find its feed. Changes go to the effective config source; your site updates automatically.</p>
+<div id="notice" role="status" aria-live="polite"></div>
+<div class="layout">
+  <section class="panel" aria-labelledby="list-title">
+    <div class="panel-header"><div class="section-title"><h2 id="list-title">Following <span id="count"></span></h2><button id="new" type="button">+ Add feed</button></div><label for="filter">Find a subscription</label><input id="filter" type="search" placeholder="Search titles, categories and URLs"></div>
+    <div id="results" aria-live="polite"><div class="empty">Loading subscriptions…</div></div>
+  </section>
+  <section class="panel" aria-labelledby="editor-title">
+    <div class="panel-header"><h2 id="editor-title">Add a feed</h2><div class="hint">Saving to <span id="source">your site's blogroll config</span></div></div>
+    <div class="panel-body">
+      <form id="form"><fieldset>
+        <label>Website or feed URL
+          <input id="url" type="url" required placeholder="https://example.com/" autocomplete="url">
+        </label>
+        <div class="row"><button id="discover" type="button">Find feed</button><span id="discovery" class="hint" aria-live="polite"></span></div>
+        <label>Title<input id="title" maxlength="200" required placeholder="Blog name"></label>
+        <label>Description<textarea id="description" maxlength="1000" placeholder="What is this site about?"></textarea></label>
+        <label>Category<input id="category" maxlength="100" placeholder="Technology"></label>
+        <label>Type<select id="type"><option value="written">Written</option><option value="video">Video</option><option value="podcast">Podcast</option></select></label>
+        <label>Tags<input id="tags" maxlength="600" placeholder="go, indie-web"></label>
+        <details><summary>Advanced · mention handle</summary><label>Handle<input id="handle" maxlength="100" placeholder="blogname"></label></details>
+        <label class="check"><input type="checkbox" id="active" checked> Include in reader</label>
+        <div class="row"><button id="save" type="submit" class="primary">Subscribe</button><button type="button" id="cancel" hidden>Cancel</button></div>
+      </fieldset></form>
+      <p class="hint">Existing feeds can be edited without changing their original config owner. The site is static in production; this editor exists only while <code>markata-go serve</code> is running.</p>
+    </div>
+  </section>
+</div>
+<footer id="file-hint"></footer>
+</main>
+<script>
+(() => {
+'use strict';
+const base = '/_markata/subscriptions';
+const $ = id => document.getElementById(id);
+const ids = ['url','title','description','category','type','tags','handle','active'];
+let feeds = [], mode = 'add', originalURL = '', saving = false;
+function status(message, error=false) {
+  const node = $('notice'); node.textContent=message; node.className='show'+(error?' error':'');
+}
+function editing(value) {
+  mode=value?'update':'add'; originalURL=value?.url||'';
+  $('editor-title').textContent=value?'Edit subscription':'Add a feed';
+  $('save').textContent=value?'Save changes':'Subscribe';
+  $('cancel').hidden=!value;
+  $('url').readOnly=!!value; $('discover').hidden=!!value;
+  for (const id of ids) {
+    const el=$(id), v=value?.[id];
+    if (id==='active') el.checked=v===undefined||v===null?true:v;
+    else el.value=v===undefined||v===null?(id==='type'?'written':''):Array.isArray(v)?v.join(', '):v;
+  }
+  $('discovery').textContent='';
+  $('url').focus();
+}
+async function request(path, payload) {
+  const res=await fetch(base+path, {method:payload?'POST':'GET',
+    headers:payload?{'Content-Type':'application/json'}:{},body:payload?JSON.stringify(payload):undefined,
+    credentials:'same-origin',cache:'no-store'});
+  const data=await res.json();
+  if (!res.ok||data.error) throw Error(data.error||'Request failed ('+res.status+')');
+  return data;
+}
+function row(feed) {
+  const item=document.createElement('article'); item.className='feed'+(feed.active===false?' inactive':'');
+  const left=document.createElement('div');
+  const title=document.createElement('h3');title.textContent=feed.title||feed.url;left.appendChild(title);
+  const url=document.createElement('small');url.textContent=feed.url;left.appendChild(url);
+  const tags=document.createElement('div'); tags.className='tags';
+  for(const val of [feed.category,feed.type,...(feed.tags||[])].filter(Boolean)){
+    const span=document.createElement('span');span.className='tag';span.textContent=val;tags.appendChild(span);
+  }
+  left.appendChild(tags);
+  const src=document.createElement('p');src.className='hint';src.textContent=feed.source;left.appendChild(src);
+  const actions=document.createElement('div');actions.className='actions';
+  if(feed.editable) {
+    const edit=document.createElement('button');edit.textContent='Edit';edit.type='button';
+    edit.addEventListener('click',()=>{editing(feed);window.scrollTo({top:0,behavior:'smooth'})});
+    actions.appendChild(edit);
+    const remove=document.createElement('button');remove.textContent='Remove';remove.type='button';
+    remove.setAttribute('aria-label','Remove '+(feed.title||feed.url));
+    remove.addEventListener('click',async()=>{
+      if (!confirm('Remove '+(feed.title||feed.url)+' from your blogroll?')) return;
+      try {const result=await request('/api',{action:'remove',url:feed.url});status(result.message);await load();if(originalURL===feed.url)editing(null)}
+      catch(e){status(e.message,true)}
+    });
+    actions.appendChild(remove);
+  }
+  item.append(left,actions);return item;
+}
+function render() {
+  const query=$('filter').value.toLowerCase().trim();
+  const matches=feeds.filter(f=>[f.title,f.url,f.category,f.type,...(f.tags||[])].join(' ').toLowerCase().includes(query));
+  $('count').textContent='('+feeds.length+')';
+  $('results').replaceChildren(...(matches.map(row)));
+  if(!matches.length) {const empty=document.createElement('div');empty.className='empty';empty.textContent=feeds.length?'No matching subscriptions':'No subscriptions yet. Add your first feed →';$('results').appendChild(empty)}
+}
+async function load() {
+  try {
+    const data=await request('/api');feeds=data.feeds||[];
+    $('source').textContent=data.target||'read-only';
+    $('file-hint').textContent=data.target?'Effective feed configuration: '+data.target:'Subscription edits are unavailable: '+data.error;
+    $('save').disabled=!data.target;
+    if (data.error) status(data.error,true);
+    render();
+  } catch(e) {status(e.message,true)}
+}
+$('new').addEventListener('click',()=>editing(null));
+$('cancel').addEventListener('click',()=>editing(null));
+$('filter').addEventListener('input',render);
+$('discover').addEventListener('click',async()=>{
+  const address=$('url').value.trim();if(!address){$('url').focus();return}
+  $('discover').disabled=true;$('discovery').textContent='Discovering…';
+  try{
+    const found=await request('/discover',{url:address});
+    $('url').value=found.url;
+    if(found.title) $('title').value=found.title;
+    if(found.description) $('description').value=found.description;
+    $('discovery').textContent='Feed found ✓';
+  }catch(e){$('discovery').textContent=e.message;status(e.message,true)}
+  finally{$('discover').disabled=false}
+});
+$('form').addEventListener('submit',async e=>{
+  e.preventDefault();if(saving)return;
+  const payload={action:mode,url:mode==='update'?originalURL:$('url').value.trim()};
+  for(const id of ids.slice(1)) payload[id]=id==='active'?$(id).checked:$(id).value.trim();
+  if (!payload.title) {status('Give this feed a title before saving.',true);return}
+  if(mode==='add' && !$('discovery').textContent.includes('✓')){
+    status('Use “Find feed” first to resolve the website into a working RSS, Atom or JSON Feed.',true);return;
+  }
+  saving=true;$('save').disabled=true;
+  try{const result=await request('/api',payload);status(result.message);editing(null);await load()}
+  catch(err){status(err.message,true)}
+  finally{saving=false;$('save').disabled=false}
+});
+load();
+})();
+</script>
+</body></html>
