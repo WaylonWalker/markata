@@ -2,12 +2,12 @@
 {# NOTE: No indentation on media elements — indented HTML inside pongo2 {% %} #}
 {# blocks creates blank-line + 4-space patterns that goldmark treats as code blocks #}
 {# when this template is used inside render_feed() (output injected into markdown). #}
-{% with post.image|media_url:post.video as media_src %}{% if media_src %}{% with media_src|with_size:"600" as sized_media %}<figure class="photo-figure h-entry" data-card>
+{% with post.image|media_url:post.video as media_src %}{% if media_src %}{% with media_src|with_size:"600" as sized_media %}{% with media_src|responsive_srcset:"160,240,320,480,600,800" as media_srcset %}<figure class="photo-figure h-entry" data-card>
 <a href="{{ post.href }}" class="u-url" aria-label="{{ post.description | default:post.title | default:'Photo' }}">
 {% if media_src|is_video %}{% set poster_candidate = post | poster_url:media_src %}<video class="u-video" muted loop playsinline preload="none" data-adaptive-preview{% if poster_candidate %} poster="{{ poster_candidate | with_size:"600" }}"{% endif %}>
 <source src="{{ sized_media }}"{% with media_src|video_mime as mime %}{% if mime %} type="{{ mime }}"{% endif %}{% endwith %}>
 </video>
-{% else %}<img src="{{ sized_media }}" alt="{{ post.title | default:post.description | default:'Photo' }}" class="u-photo" loading="lazy">
+{% else %}<img src="{{ sized_media }}" alt="{{ post.title | default:post.description | default:'Photo' }}" class="u-photo" loading="lazy"{% if media_srcset %} srcset="{{ media_srcset }}" sizes="(max-width: 480px) 50vw, (max-width: 960px) 33vw, (max-width: 1600px) calc((100vw - 400px) / 3), 400px" data-href="{{ media_src|original_media_url }}"{% endif %}>
 {% endif %}</a>
 <figcaption class="p-summary">{{ post.description | default:post.title | default:'Photo' }}</figcaption>
-</figure>{% endwith %}{% endif %}{% endwith %}
+</figure>{% endwith %}{% endwith %}{% endif %}{% endwith %}

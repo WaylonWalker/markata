@@ -903,6 +903,7 @@ If a specified template doesn't exist, markata-go falls back to:
 OG, feed, and embed cards share the same media helpers so the image/video preview feels identical everywhere. When rendering card media:
 
 - Pass the URL through `with_size(width, height)` so the helper appends explicit `w` and `h` query parameters that match the printed dimensions of the card. Correct query params keep downstream screenshotters and feed readers aligned with the rendered size. Trusted media URLs are normalized to `https` first so browser pages do not hit mixed-content errors.
+- For trusted remote image hosts that support width-based resizing, use `responsive_srcset` with candidate widths and a matching `sizes` attribute so browsers download an image close to the rendered size. The filter skips local paths and unknown hosts; use `image_optimization` for local files. Use `original_media_url` for a deferred lightbox URL when the reader should open the original image.
 - Use `media_url` when you only need the first non-empty media field or a search thumbnail URL. It keeps trusted media URLs on `https` without adding sizing parameters.
 - Use the fragment/query-safe `is_video` filter to decide between `<video>` and `<img>`, and call `poster_url(post)` to resolve the poster. `poster_url` enforces the alias precedence (`poster_image`, `poster`, `video_poster`, `video_thumbnail`, `thumbnail`, `thumb`) before falling back to deriving a `.webp` thumbnail from the video URL when the host is trusted.
 

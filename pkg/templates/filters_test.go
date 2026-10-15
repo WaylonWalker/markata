@@ -961,6 +961,69 @@ func TestFilterWithSizeTrustedRelativeAndUntrusted(t *testing.T) {
 	}
 }
 
+func TestFilterResponsiveSrcsetTrustedAndUntrusted(t *testing.T) {
+	engine, err := NewEngine("")
+	if err != nil {
+		t.Fatalf("NewEngine() error: %v", err)
+	}
+	ctx := NewContext(nil, "", nil)
+
+	got, err := engine.RenderString(`{{ "https://dropper.waylonwalker.com/photo.webp?token=abc&w=600"|responsive_srcset:"320,160,320" }}`, ctx)
+	if err != nil {
+		t.Fatalf("RenderString() error: %v", err)
+	}
+	want := "https://dropper.waylonwalker.com/photo.webp?token=abc&amp;w=160 160w, https://dropper.waylonwalker.com/photo.webp?token=abc&amp;w=320 320w"
+	if got != want {
+		t.Fatalf("responsive_srcset output = %q, want %q", got, want)
+	}
+
+	got, err = engine.RenderString(`{{ "https://example.com/photo.webp"|responsive_srcset:"160,320" }}`, ctx)
+	if err != nil {
+		t.Fatalf("RenderString() for untrusted URL error: %v", err)
+	}
+	if got != "" {
+		t.Fatalf("untrusted responsive_srcset output = %q, want empty", got)
+	}
+}
+
+func TestPhotoCardRendersResponsiveRemoteCandidatesAndCanonicalLightboxURL(t *testing.T) {
+	engine, err := NewEngine("")
+	if err != nil {
+		t.Fatalf("NewEngine() error: %v", err)
+	}
+
+	render := func(image string) string {
+		t.Helper()
+		got, err := engine.RenderToString("partials/cards/photo-card.html", map[string]interface{}{
+			"post": map[string]interface{}{
+				"image": image,
+				"href":  "/shots/test-photo/",
+				"title": "Test photo",
+			},
+		})
+		if err != nil {
+			t.Fatalf("RenderToString() error: %v", err)
+		}
+		return got
+	}
+
+	trusted := render("https://dropper.waylonwalker.com/photo.webp?token=abc&w=600")
+	for _, want := range []string{
+		`srcset="https://dropper.waylonwalker.com/photo.webp?token=abc&amp;w=160 160w`,
+		`sizes="(max-width: 480px) 50vw`,
+		`data-href="https://dropper.waylonwalker.com/photo.webp?token=abc"`,
+	} {
+		if !strings.Contains(trusted, want) {
+			t.Errorf("trusted photo card missing %q in %s", want, trusted)
+		}
+	}
+
+	untrusted := render("https://example.com/photo.webp")
+	if strings.Contains(untrusted, "srcset=") || strings.Contains(untrusted, "data-href=") {
+		t.Fatalf("untrusted photo card unexpectedly changed: %s", untrusted)
+	}
+}
+
 func TestFilterMediaURLNormalizesTrustedHTTP(t *testing.T) {
 	engine, err := NewEngine("")
 	if err != nil {

@@ -26,6 +26,47 @@ func TestMediaDimensionsFromURL(t *testing.T) {
 	}
 }
 
+func TestResponsiveSrcsetUsesTrustedRemoteWidthsAndPreservesQuery(t *testing.T) {
+	got := ResponsiveSrcset("http://dropper.waylonwalker.com/image.webp?token=abc&w=600#preview", []int{480, 160, 320, 320, -1})
+	want := "https://dropper.waylonwalker.com/image.webp?token=abc&w=160#preview 160w, " +
+		"https://dropper.waylonwalker.com/image.webp?token=abc&w=320#preview 320w, " +
+		"https://dropper.waylonwalker.com/image.webp?token=abc&w=480#preview 480w"
+	if got != want {
+		t.Fatalf("ResponsiveSrcset() = %q, want %q", got, want)
+	}
+}
+
+func TestResponsiveSrcsetSkipsLocalAndUntrustedURLs(t *testing.T) {
+	for _, raw := range []string{"/images/photo.jpg", "https://example.com/photo.jpg"} {
+		if got := ResponsiveSrcset(raw, []int{160, 320}); got != "" {
+			t.Errorf("ResponsiveSrcset(%q) = %q, want empty", raw, got)
+		}
+	}
+}
+
+func TestResponsiveSrcsetRequiresTwoDistinctPositiveWidths(t *testing.T) {
+	for _, widths := range [][]int{{320}, {0, -1}, {320, 320}} {
+		if got := ResponsiveSrcset("https://dropper.waylonwalker.com/photo.jpg", widths); got != "" {
+			t.Errorf("ResponsiveSrcset(%v) = %q, want empty", widths, got)
+		}
+	}
+}
+
+func TestOriginalMediaURLRemovesSizeAndPreservesOtherQuery(t *testing.T) {
+	got := OriginalMediaURL("http://dropper.waylonwalker.com/photo.webp?token=abc&w=600&h=400&width=500#preview")
+	want := "https://dropper.waylonwalker.com/photo.webp?token=abc#preview"
+	if got != want {
+		t.Fatalf("OriginalMediaURL() = %q, want %q", got, want)
+	}
+}
+
+func TestOriginalMediaURLLeavesUnknownHostsUntouched(t *testing.T) {
+	raw := "https://example.com/photo.webp?w=600&token=abc"
+	if got := OriginalMediaURL(raw); got != raw {
+		t.Fatalf("OriginalMediaURL() = %q, want %q", got, raw)
+	}
+}
+
 func TestVideoMediaHelpers_HandleWindowsPaths(t *testing.T) {
 	for _, path := range []string{`C:\Users\runner\static\clip.Mp4`, `C:/Users/runner/static/clip.Mp4`} {
 		if !IsVideoURL(path) {

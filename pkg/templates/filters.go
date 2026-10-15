@@ -182,6 +182,8 @@ func registerFilters() {
 		pongo2.RegisterFilter("is_video", filterIsVideo)
 		pongo2.RegisterFilter("media_url", filterMediaURL)
 		pongo2.RegisterFilter("with_size", filterWithSize)
+		pongo2.RegisterFilter("responsive_srcset", filterResponsiveSrcset)
+		pongo2.RegisterFilter("original_media_url", filterOriginalMediaURL)
 		pongo2.RegisterFilter("video_mime", filterVideoMIME)
 		pongo2.RegisterFilter("poster_url", filterPosterURL)
 	})
@@ -1372,6 +1374,30 @@ func filterWithSize(in, param *pongo2.Value) (*pongo2.Value, *pongo2.Error) {
 		}
 	}
 	return pongo2.AsValue(WithSize(in.String(), width, height)), nil
+}
+
+// filterResponsiveSrcset creates width-descriptor candidates for trusted
+// remote media services from a comma-separated list of widths.
+func filterResponsiveSrcset(in, param *pongo2.Value) (*pongo2.Value, *pongo2.Error) {
+	if in.IsNil() || param == nil || param.IsNil() {
+		return pongo2.AsValue(""), nil
+	}
+
+	widths := make([]int, 0)
+	for _, item := range strings.Split(param.String(), ",") {
+		width, err := strconv.Atoi(strings.TrimSpace(item))
+		if err == nil && width > 0 {
+			widths = append(widths, width)
+		}
+	}
+	return pongo2.AsValue(ResponsiveSrcset(in.String(), widths)), nil
+}
+
+func filterOriginalMediaURL(in, _ *pongo2.Value) (*pongo2.Value, *pongo2.Error) {
+	if in.IsNil() {
+		return in, nil
+	}
+	return pongo2.AsValue(OriginalMediaURL(in.String())), nil
 }
 
 // filterVideoMIME infers the video MIME type.
