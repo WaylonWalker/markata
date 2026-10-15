@@ -27,21 +27,21 @@ func TestFeedPhotoGeometry(t *testing.T) {
 		return match[1]
 	}
 
-	figure := rule(".feed .posts-list > .photo-figure")
+	figure := rule(".feed .posts-list .photo-figure")
 	if !strings.Contains(figure, "width: min(100%, 600px);") || strings.Contains(figure, "fit-content") {
 		t.Errorf("feed photo figure should have stable responsive width, got %q", figure)
 	}
 
 	for _, selector := range []string{
-		".feed .posts-list > .photo-figure > a",
-		".feed .posts-list > .photo-figure picture",
+		".feed .posts-list .photo-figure > a",
+		".feed .posts-list .photo-figure picture",
 	} {
 		if !strings.Contains(rule(selector), "width: 100%;") {
 			t.Errorf("%s must fill the stable photo figure width", selector)
 		}
 	}
 
-	media := rule(".feed .posts-list > .photo-figure img,\n.feed .posts-list > .photo-figure video")
+	media := rule(".feed .posts-list .photo-figure img,\n.feed .posts-list .photo-figure video")
 	for _, want := range []string{"width: 100%;", "max-width: 100%;", "height: auto;", "object-fit: contain;"} {
 		if !strings.Contains(media, want) {
 			t.Errorf("feed photo media must preserve natural geometry; missing %q", want)
