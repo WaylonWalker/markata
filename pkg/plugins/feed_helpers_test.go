@@ -76,7 +76,7 @@ func TestFeedHelpers_RenderFeedPhotoCard(t *testing.T) {
 		Title:       &title,
 		Description: &description,
 		Extra: map[string]interface{}{
-			"image": "/lab.webp",
+			"image": "https://dropper.waylonwalker.com/lab.webp?token=abc&w=600",
 		},
 	}
 	feed := models.FeedConfig{
@@ -110,6 +110,12 @@ func TestFeedHelpers_RenderFeedPhotoCard(t *testing.T) {
 	}
 	if !strings.Contains(output, description) {
 		t.Fatalf("expected photo description in figcaption, got: %s", output)
+	}
+	if !strings.Contains(output, `srcset="https://dropper.waylonwalker.com/lab.webp?token=abc&amp;w=160 160w`) {
+		t.Fatalf("expected responsive candidates for trusted remote image, got: %s", output)
+	}
+	if !strings.Contains(output, `data-href="https://dropper.waylonwalker.com/lab.webp?token=abc"`) {
+		t.Fatalf("expected full-size URL for the lightbox, got: %s", output)
 	}
 }
 

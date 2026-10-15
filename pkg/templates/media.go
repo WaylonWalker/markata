@@ -3,6 +3,7 @@ package templates
 import (
 	"net/url"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -86,6 +87,56 @@ func WithSize(raw string, width, height int) string {
 	}
 	u.RawQuery = qs.Encode()
 	return u.String()
+}
+
+// OriginalMediaURL removes resizing parameters from trusted media URLs while
+// preserving access tokens and other query parameters. Unknown URLs are left
+// unchanged.
+func OriginalMediaURL(raw string) string {
+	raw = normalizeTrustedMediaURL(raw)
+	u, err := url.Parse(raw)
+	if err != nil || !isTrustedURL(u) {
+		return raw
+	}
+	query := u.Query()
+	for _, key := range []string{"w", "h", "width", "height"} {
+		query.Del(key)
+	}
+	u.RawQuery = query.Encode()
+	return u.String()
+}
+
+// ResponsiveSrcset returns width-descriptor candidates for trusted remote
+// media URLs. Local paths are handled by image_optimization, which generates
+// actual files instead of relying on a remote resizing service.
+func ResponsiveSrcset(raw string, widths []int) string {
+	u, err := url.Parse(strings.TrimSpace(raw))
+	if err != nil || u.Host == "" || (u.Scheme != "http" && u.Scheme != editorialHTTPS) || !IsTrustedMediaURL(raw) {
+		return ""
+	}
+
+	unique := make(map[int]struct{}, len(widths))
+	ordered := make([]int, 0, len(widths))
+	for _, width := range widths {
+		if width <= 0 {
+			continue
+		}
+		if _, exists := unique[width]; exists {
+			continue
+		}
+		unique[width] = struct{}{}
+		ordered = append(ordered, width)
+	}
+	if len(ordered) < 2 {
+		return ""
+	}
+	sort.Ints(ordered)
+
+	candidates := make([]string, 0, len(ordered))
+	for _, width := range ordered {
+		candidates = append(candidates, WithSize(raw, width, 0)+" "+strconv.Itoa(width)+"w")
+	}
+	return strings.Join(candidates, ", ")
 }
 
 // MediaDimensionsFromURL extracts known width/height query parameters from a media URL.
@@ -207,7 +258,7 @@ func normalizeTrustedMediaURL(raw string) string {
 	if !isTrustedURL(u) {
 		return raw
 	}
-	if u.Host != "" && u.Scheme != "https" {
+	if u.Host != "" && u.Scheme != editorialHTTPS {
 		u.Scheme = "https"
 		return u.String()
 	}
