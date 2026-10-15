@@ -36,7 +36,7 @@ const categoryUncategorized = "Uncategorized"
 const (
 	defaultBlogrollSlug  = "blogroll"
 	defaultReaderSlug    = "reader"
-	blogrollCacheVersion = "hn-meta-v2"
+	blogrollCacheVersion = "aggregator-meta-v3"
 	aggregateCacheFile   = "blogroll-aggregate-v1.json"
 )
 
@@ -251,6 +251,7 @@ type rss2Item struct {
 	Content      string               `xml:"http://purl.org/rss/1.0/modules/content/ encoded"`
 	PubDate      string               `xml:"pubDate"`
 	GUID         string               `xml:"guid"`
+	Comments     string               `xml:"comments"`
 	Author       string               `xml:"author"`
 	Creator      string               `xml:"http://purl.org/dc/elements/1.1/ creator"`
 	Categories   []string             `xml:"category"`
@@ -405,7 +406,11 @@ func parseRSS2Feed(data []byte) (*blogrollParsedFeed, []*models.ExternalEntry, e
 
 		// Extract image from various sources (priority order)
 		imageURL := extractEntryImage(item)
-		resolvedURL, originalURL, metadata := enrichHackerNewsFeedEntry(item.Link)
+		discussionURL := item.GUID
+		if isLobstersDiscussionURL(item.Comments) {
+			discussionURL = item.Comments
+		}
+		resolvedURL, originalURL, metadata := enrichAggregatorFeedEntry(item.Link, discussionURL)
 		if metadata != nil {
 			if metadata.Title != "" {
 				item.Title = metadata.Title
@@ -515,7 +520,7 @@ func parseAtomFeed(data []byte) (*blogrollParsedFeed, []*models.ExternalEntry, e
 
 		// Extract first image from content
 		imageURL := extractAtomEntryImage(entry)
-		resolvedURL, originalURL, metadata := enrichHackerNewsFeedEntry(entryURL)
+		resolvedURL, originalURL, metadata := enrichAggregatorFeedEntry(entryURL, entry.ID)
 		if metadata != nil {
 			if metadata.Title != "" {
 				entry.Title = metadata.Title
@@ -1990,6 +1995,7 @@ func (p *BlogrollPlugin) readerEntryMap(entry *models.ExternalEntry, feed *model
 		"id":               entry.ID,
 		"url":              entry.URL,
 		"original_url":     entry.OriginalURL,
+		"discussion_source": aggregatorDiscussionLabel(entry.OriginalURL),
 		"title":            entry.Title,
 		"description":      entry.Description,
 		"content":          entry.Content,
