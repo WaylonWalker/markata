@@ -134,6 +134,7 @@ func TestFeedPhotoResponsiveLayout_Browser(t *testing.T) {
 		NaturalWidth  int    `json:"naturalWidth"`
 		NaturalHeight int    `json:"naturalHeight"`
 		CSSHeight     string `json:"cssHeight"`
+		Contain       string `json:"contain"`
 		Chosen        string `json:"chosen"`
 	}
 	const inspect = `[...document.querySelectorAll(".photo-figure img")].map(img => ({
@@ -143,6 +144,7 @@ func TestFeedPhotoResponsiveLayout_Browser(t *testing.T) {
 		naturalWidth: img.naturalWidth,
 		naturalHeight: img.naturalHeight,
 		cssHeight: getComputedStyle(img).height,
+		contain: getComputedStyle(img).contain,
 		chosen: img.currentSrc
 	}))`
 
@@ -174,6 +176,9 @@ func TestFeedPhotoResponsiveLayout_Browser(t *testing.T) {
 			for i, img := range measured {
 				if img.Width < tc.minWidth || img.Width > 600 || img.Figure != img.Width {
 					t.Errorf("photo %d has collapsed or overflowing display slot: %+v", i, img)
+				}
+				if img.Contain == "size" {
+					t.Errorf("photo %d is size-contained by sizes=auto, forcing a 300x150 fallback: %+v", i, img)
 				}
 				if img.Height <= 0 {
 					t.Errorf("photo %d has zero rendered height", i)
