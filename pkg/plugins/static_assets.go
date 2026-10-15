@@ -488,11 +488,11 @@ func (p *StaticAssetsPlugin) createHashedCopiesWithRoot(m *lifecycle.Manager, ou
 	return nil
 }
 
-// Priority returns the plugin priority for the write stage.
+// Priority runs static assets before plugins that consume copied media.
 func (p *StaticAssetsPlugin) Priority(stage lifecycle.Stage) int {
-	// Run early in Configure to register asset hashes before other plugins
-	// (e.g., chroma_css) that also register hashes
-	if stage == lifecycle.StageConfigure {
+	// Configure registers asset hashes; Write copies source images before
+	// image optimization reads them.
+	if stage == lifecycle.StageConfigure || stage == lifecycle.StageWrite {
 		return lifecycle.PriorityEarly
 	}
 	return lifecycle.PriorityDefault

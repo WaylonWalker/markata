@@ -1,9 +1,16 @@
 package plugins
 
 import (
+	"image"
+	"image/color"
+	"image/png"
+	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
+
+	"golang.org/x/net/html"
 
 	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
 	"github.com/WaylonWalker/markata-go/pkg/models"
@@ -125,6 +132,105 @@ func TestImageOptimization_RenderHandlesRemoteImagesWithoutLocalEncoders(t *test
 	}
 	if !strings.Contains(post.ArticleHTML, `?w=320 320w`) {
 		t.Fatalf("expected responsive candidates without local encoders, got: %s", post.ArticleHTML)
+	}
+}
+
+func TestImageOptimizationWriteRunsBeforeHTMLPublication(t *testing.T) {
+	outputDir := t.TempDir()
+	manager := lifecycle.NewManager()
+	config := manager.Config()
+	config.OutputDir = outputDir
+	config.Extra["image_optimization"] = map[string]any{
+		"enabled": true,
+		"formats": []any{""},
+	}
+
+	post := models.NewPost("post.md")
+	post.Slug = "post"
+	post.Published = true
+	post.HTML = `<html><body><img src="https://dropper.waylonwalker.com/photo.webp" alt="Photo"></body></html>`
+	manager.SetPosts([]*models.Post{post})
+	manager.RegisterPlugins(NewImageOptimizationPlugin(), NewPublishHTMLPlugin())
+
+	if err := manager.RunTo(lifecycle.StageWrite); err != nil {
+		t.Fatalf("RunTo(write) error = %v", err)
+	}
+
+	output, err := os.ReadFile(filepath.Join(outputDir, "post", "index.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(output), `srcset="https://dropper.waylonwalker.com/photo.webp?w=32 32w`) {
+		t.Fatalf("published HTML is missing responsive image candidates: %s", output)
+	}
+}
+
+func TestImageOptimizationWritePriorityFollowsStaticAssetsAndPrecedesPublishHTML(t *testing.T) {
+	staticAssets := NewStaticAssetsPlugin().Priority(lifecycle.StageWrite)
+	imageOptimization := NewImageOptimizationPlugin().Priority(lifecycle.StageWrite)
+	if !(staticAssets < imageOptimization && imageOptimization < lifecycle.PriorityDefault) {
+		t.Fatalf("write priorities are static_assets=%d image_optimization=%d publish_html=%d, want static_assets < image_optimization < publish_html", staticAssets, imageOptimization, lifecycle.PriorityDefault)
+	}
+}
+
+func TestLocalImageResponsiveSettingsRespectDeclaredWidth(t *testing.T) {
+	image := &html.Node{Type: html.ElementNode, Data: "img"}
+	setAttr(image, "width", "160")
+
+	widths, sizes := localImageResponsiveSettings(image, []int{480, 768, 1200}, "100vw")
+	if !reflect.DeepEqual(widths, []int{160}) {
+		t.Fatalf("responsive widths = %v, want [160]", widths)
+	}
+	if sizes != "160px" {
+		t.Fatalf("sizes = %q, want 160px", sizes)
+	}
+}
+
+func TestPrepareAVIFInputResizesToPNG(t *testing.T) {
+	sourcePath := filepath.Join(t.TempDir(), "source.png")
+	source := image.NewNRGBA(image.Rect(0, 0, 4, 2))
+	for y := 0; y < 2; y++ {
+		for x := 0; x < 4; x++ {
+			source.Set(x, y, color.NRGBA{R: 255, A: 255})
+		}
+	}
+	file, err := os.Create(sourcePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := png.Encode(file, source); err != nil {
+		t.Fatal(err)
+	}
+	if err := file.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	resizedPath, cleanup, err := prepareAVIFInput(sourcePath, 2)
+	if err != nil {
+		t.Fatalf("prepareAVIFInput() error = %v", err)
+	}
+	defer cleanup()
+	resized, err := os.Open(resizedPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	config, err := png.DecodeConfig(resized)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := resized.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if config.Width != 2 || config.Height != 1 {
+		t.Fatalf("resized dimensions = %dx%d, want 2x1", config.Width, config.Height)
+	}
+}
+
+func TestAVIFEncoderArgsUseSupportedQualityFlag(t *testing.T) {
+	args := avifEncoderArgs("input.png", "output.avif", 80)
+	want := []string{"-q", "80", "input.png", "output.avif"}
+	if !reflect.DeepEqual(args, want) {
+		t.Fatalf("avifEncoderArgs() = %v, want %v", args, want)
 	}
 }
 
