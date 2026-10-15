@@ -36,7 +36,7 @@ const categoryUncategorized = "Uncategorized"
 const (
 	defaultBlogrollSlug  = "blogroll"
 	defaultReaderSlug    = "reader"
-	blogrollCacheVersion = "hn-meta-v2"
+	blogrollCacheVersion = "aggregator-meta-v3"
 	aggregateCacheFile   = "blogroll-aggregate-v1.json"
 )
 
@@ -251,6 +251,7 @@ type rss2Item struct {
 	Content      string               `xml:"http://purl.org/rss/1.0/modules/content/ encoded"`
 	PubDate      string               `xml:"pubDate"`
 	GUID         string               `xml:"guid"`
+	Comments     string               `xml:"comments"`
 	Author       string               `xml:"author"`
 	Creator      string               `xml:"http://purl.org/dc/elements/1.1/ creator"`
 	Categories   []string             `xml:"category"`
@@ -405,7 +406,11 @@ func parseRSS2Feed(data []byte) (*blogrollParsedFeed, []*models.ExternalEntry, e
 
 		// Extract image from various sources (priority order)
 		imageURL := extractEntryImage(item)
-		resolvedURL, originalURL, metadata := enrichHackerNewsFeedEntry(item.Link)
+		discussionURL := item.GUID
+		if isLobstersDiscussionURL(item.Comments) {
+			discussionURL = item.Comments
+		}
+		resolvedURL, originalURL, metadata := enrichAggregatorFeedEntry(item.Link, discussionURL)
 		if metadata != nil {
 			if metadata.Title != "" {
 				item.Title = metadata.Title
@@ -430,7 +435,7 @@ func parseRSS2Feed(data []byte) (*blogrollParsedFeed, []*models.ExternalEntry, e
 			Author:      author,
 			Content:     content,
 			Description: stripBlogrollHTML(item.Description),
-			ImageURL:    normalizeExternalURL(imageURL),
+			ImageURL:    normalizeReaderImageURL(imageURL, resolvedURL),
 			Categories:  item.Categories,
 		}
 
@@ -515,7 +520,7 @@ func parseAtomFeed(data []byte) (*blogrollParsedFeed, []*models.ExternalEntry, e
 
 		// Extract first image from content
 		imageURL := extractAtomEntryImage(entry)
-		resolvedURL, originalURL, metadata := enrichHackerNewsFeedEntry(entryURL)
+		resolvedURL, originalURL, metadata := enrichAggregatorFeedEntry(entryURL, entry.ID)
 		if metadata != nil {
 			if metadata.Title != "" {
 				entry.Title = metadata.Title
@@ -539,7 +544,7 @@ func parseAtomFeed(data []byte) (*blogrollParsedFeed, []*models.ExternalEntry, e
 			Author:      entry.Author.Name,
 			Content:     content,
 			Description: stripBlogrollHTML(entry.Summary),
-			ImageURL:    normalizeExternalURL(imageURL),
+			ImageURL:    normalizeReaderImageURL(imageURL, resolvedURL),
 			Categories:  tags,
 		}
 
@@ -1860,7 +1865,19 @@ func (p *BlogrollPlugin) renderReaderTimeline(groups []map[string]interface{}, w
 
 				sb.WriteString(`
             </div>
-            <h2 class="reader-entry-title"><a href="`)
+`)
+				if originalURL := stringValue(entry, "original_url"); originalURL != "" {
+					if discussionSource := stringValue(entry, "discussion_source"); discussionSource != "" {
+						sb.WriteString(`
+            <div class="reader-entry-found-on">Found on `)
+						sb.WriteString(html.EscapeString(discussionSource))
+						sb.WriteString(`: <a href="`)
+						sb.WriteString(html.EscapeString(originalURL))
+						sb.WriteString(`" target="_blank" rel="noopener noreferrer">discussion</a></div>
+`)
+					}
+				}
+				sb.WriteString(`            <h2 class="reader-entry-title"><a href="`)
 				sb.WriteString(html.EscapeString(stringValue(entry, "url")))
 				sb.WriteString(`" target="_blank" rel="noopener noreferrer">`)
 				sb.WriteString(html.EscapeString(stringValue(entry, "title")))
@@ -1984,24 +2001,25 @@ func (p *BlogrollPlugin) readerEntryMap(entry *models.ExternalEntry, feed *model
 	}
 
 	result := map[string]interface{}{
-		"feed_url":         entry.FeedURL,
-		"feed_title":       sourceTitle,
-		"feed_type":        string(feedType),
-		"id":               entry.ID,
-		"url":              entry.URL,
-		"original_url":     entry.OriginalURL,
-		"title":            entry.Title,
-		"description":      entry.Description,
-		"content":          entry.Content,
-		"author":           entry.Author,
-		"updated":          entry.Updated,
-		"categories":       entry.Categories,
-		"image_url":        previewURL,
-		"preview_url":      previewURL,
-		"preview_kind":     previewKind,
-		"source_image_url": sourceImageURL,
-		"source_site_url":  sourceSiteURL,
-		"reading_time":     entry.ReadingTime,
+		"feed_url":          entry.FeedURL,
+		"feed_title":        sourceTitle,
+		"feed_type":         string(feedType),
+		"id":                entry.ID,
+		"url":               entry.URL,
+		"original_url":      entry.OriginalURL,
+		"discussion_source": aggregatorDiscussionLabel(entry.OriginalURL),
+		"title":             entry.Title,
+		"description":       entry.Description,
+		"content":           entry.Content,
+		"author":            entry.Author,
+		"updated":           entry.Updated,
+		"categories":        entry.Categories,
+		"image_url":         previewURL,
+		"preview_url":       previewURL,
+		"preview_kind":      previewKind,
+		"source_image_url":  sourceImageURL,
+		"source_site_url":   sourceSiteURL,
+		"reading_time":      entry.ReadingTime,
 	}
 
 	if date := entryDate(entry); date != nil {

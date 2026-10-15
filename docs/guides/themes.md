@@ -31,6 +31,19 @@ That's it! Your entire site now uses the Catppuccin Mocha color scheme.
 
 ---
 
+## Header Preferences
+
+The default header keeps search prominent and groups secondary settings under
+the **Appearance and preferences** sliders icon. Open it to select a light or
+dark palette, customize the style and font, or change reading size. Expand
+**Loading: Auto** at the bottom to choose **Auto** (recommended),
+**Save Data**, or **Full Quality** for media. The browser remembers your
+preferences, and Auto can suggest a better choice based on the connection.
+
+Press `/` to focus search, `t` to open the appearance panel, or `\\` to
+toggle light/dark mode. The panel closes with Escape. On sites where the full
+palette picker is disabled, the loading control stays available in the header.
+
 ## Available Palettes
 
 markata-go includes 10 built-in color palettes. Use `markata-go palette list` to see them all:

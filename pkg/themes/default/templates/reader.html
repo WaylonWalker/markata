@@ -14,6 +14,7 @@
 {% elif page.pagination_type == "js" %}
 <script src="{{ 'js/pagination.js' | theme_asset }}" defer></script>
 {% endif %}
+<script src="{{ 'js/reader-image-fallback.js' | theme_asset_hashed }}" defer></script>
 {% endblock %}
 
 {% block content %}
@@ -70,7 +71,7 @@
           </div>
 
           {% if entry.original_url %}
-          <div class="reader-entry-found-on">Found on HN: <a href="{{ entry.original_url }}" target="_blank" rel="noopener noreferrer">discussion</a></div>
+          <div class="reader-entry-found-on">Found on {{ entry.discussion_source }}: <a href="{{ entry.original_url }}" target="_blank" rel="noopener noreferrer">discussion</a></div>
           {% endif %}
 
           <h2 class="reader-entry-title">
