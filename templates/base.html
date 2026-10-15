@@ -643,7 +643,7 @@
     {% block progress %}{% endblock %}
   </div>
 
-  <div class="page-wrapper{% block page_wrapper_class %}{% if not config.components.feed_sidebar.enabled and not resolved_content_sidebar.enabled and not resolved_doc_sidebar.enabled %} page-wrapper--content-only{% endif %}{% endblock %}" id="view-transition-page" style="--feed-sidebar-width: {{ config.components.feed_sidebar.width | default:'250px' }}; --doc-sidebar-width: {{ resolved_doc_sidebar.width | default:'250px' }}">
+  <div class="page-wrapper{% block page_wrapper_class %}{% if not config.components.feed_sidebar.enabled and not resolved_content_sidebar.enabled and not resolved_doc_sidebar.enabled %} page-wrapper--content-only{% endif %}{% endblock %}" id="view-transition-page"{% if (post and post.Extra.needs_lite_youtube) or (body and '<lite-youtube' in body) or (post and post.article_html and '<lite-youtube' in post.article_html) %} data-markata-lite-youtube-css="{% if config.Extra.asset_urls.lite-youtube-css %}{{ config.Extra.asset_urls.lite-youtube-css }}{% else %}https://cdn.jsdelivr.net/npm/lite-youtube-embed@0.3.4/src/lite-yt-embed.css{% endif %}" data-markata-lite-youtube-js="{% if config.Extra.asset_urls.lite-youtube-js %}{{ config.Extra.asset_urls.lite-youtube-js }}{% else %}https://cdn.jsdelivr.net/npm/lite-youtube-embed@0.3.4/src/lite-yt-embed.js{% endif %}"{% endif %} style="--feed-sidebar-width: {{ config.components.feed_sidebar.width | default:'250px' }}; --doc-sidebar-width: {{ resolved_doc_sidebar.width | default:'250px' }}">
     {% block main %}
       {% if config.components.feed_sidebar.enabled and config.components.feed_sidebar.position == 'left' %}
       {% endif %}

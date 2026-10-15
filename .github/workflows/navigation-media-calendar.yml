@@ -1,0 +1,36 @@
+name: Navigation media and calendar browser regressions
+
+on:
+  pull_request:
+    paths:
+      - "pkg/themes/default/static/js/calendar-feed.js"
+      - "pkg/themes/default/static/js/conditional-css.js"
+      - "pkg/themes/default/static/js/view-transitions.js"
+      - "pkg/themes/default/templates/base.html"
+      - "templates/base.html"
+      - "scripts/navigation-media-calendar.browser.test.cjs"
+      - ".github/workflows/navigation-media-calendar.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+      - name: Install pinned Playwright
+        run: npm install --no-save --no-package-lock playwright@1.56.1
+      - name: Install Chromium
+        run: npx --no-install playwright install --with-deps chromium
+      - name: Run navigation browser regression tests
+        run: |
+          node --check pkg/themes/default/static/js/calendar-feed.js
+          node --check pkg/themes/default/static/js/conditional-css.js
+          node --check scripts/navigation-media-calendar.browser.test.cjs
+          node --test scripts/navigation-media-calendar.browser.test.cjs
