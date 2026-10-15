@@ -130,7 +130,16 @@ func (p *ImageOptimizationPlugin) Render(m *lifecycle.Manager) error {
 }
 
 func (p *ImageOptimizationPlugin) Write(m *lifecycle.Manager) error {
-	if !p.config.Enabled || len(p.availableFormats) == 0 {
+	if !p.config.Enabled {
+		return nil
+	}
+	posts := m.FilterPosts(func(post *models.Post) bool {
+		return !post.Skip && strings.Contains(post.HTML, "<img")
+	})
+	if err := m.ProcessPostsSliceConcurrently(posts, p.processRenderedHTML); err != nil {
+		return err
+	}
+	if len(p.availableFormats) == 0 {
 		return nil
 	}
 
@@ -441,6 +450,45 @@ func (p *ImageOptimizationPlugin) processPost(post *models.Post) error {
 		root.AppendChild(node)
 	}
 
+	updatedHTML, targets := p.rewriteImages(root, post)
+	if !updatedHTML {
+		return nil
+	}
+
+	updated, err := renderFragment(root)
+	if err != nil {
+		return err
+	}
+	post.ArticleHTML = updated
+	p.appendImageOptimizationTargets(post, targets)
+	return nil
+}
+
+// processRenderedHTML applies image rewriting after the page template has been
+// restored or rendered. This catches cached full-page HTML and images authored
+// by templates, both of which are outside ArticleHTML during the Render stage.
+func (p *ImageOptimizationPlugin) processRenderedHTML(post *models.Post) error {
+	if post.HTML == "" {
+		return nil
+	}
+	root, err := html.Parse(strings.NewReader(post.HTML))
+	if err != nil {
+		return err
+	}
+	updatedHTML, targets := p.rewriteImages(root, post)
+	if !updatedHTML {
+		return nil
+	}
+	updated, err := renderFragment(root)
+	if err != nil {
+		return err
+	}
+	post.HTML = updated
+	p.appendImageOptimizationTargets(post, targets)
+	return nil
+}
+
+func (p *ImageOptimizationPlugin) rewriteImages(root *html.Node, post *models.Post) (bool, []imageOptimizationTarget) {
 	targets := make([]imageOptimizationTarget, 0)
 	updatedHTML := false
 	var walk func(*html.Node)
@@ -461,25 +509,35 @@ func (p *ImageOptimizationPlugin) processPost(post *models.Post) error {
 		}
 	}
 	walk(root)
+	return updatedHTML, targets
+}
 
-	if !updatedHTML {
-		return nil
+func (p *ImageOptimizationPlugin) appendImageOptimizationTargets(post *models.Post, targets []imageOptimizationTarget) {
+	if len(targets) == 0 {
+		return
 	}
-
-	updated, err := renderFragment(root)
-	if err != nil {
-		return err
-	}
-	post.ArticleHTML = updated
-
 	if post.Extra == nil {
 		post.Extra = make(map[string]any)
 	}
-	if len(targets) > 0 {
-		post.Extra["image_optimization"] = targets
-	}
+	combined := imageOptimizationTargetsFrom(post.Extra["image_optimization"])
+	post.Extra["image_optimization"] = append(combined, targets...)
+}
 
-	return nil
+func imageOptimizationTargetsFrom(raw any) []imageOptimizationTarget {
+	switch items := raw.(type) {
+	case []imageOptimizationTarget:
+		return append([]imageOptimizationTarget(nil), items...)
+	case []any:
+		targets := make([]imageOptimizationTarget, 0, len(items))
+		for _, item := range items {
+			if target, ok := item.(imageOptimizationTarget); ok {
+				targets = append(targets, target)
+			}
+		}
+		return targets
+	default:
+		return nil
+	}
 }
 
 func (p *ImageOptimizationPlugin) processImageNode(parent, img *html.Node, post *models.Post) (bool, *imageOptimizationTarget) {

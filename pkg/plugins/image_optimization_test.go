@@ -164,6 +164,52 @@ func TestImageOptimization_RenderSkipsSmallRemoteImagesWithoutWidth(t *testing.T
 	}
 }
 
+func TestImageOptimization_WriteAddsResponsiveCandidatesToCachedFullPageHTML(t *testing.T) {
+	plugin := NewImageOptimizationPlugin()
+	plugin.config = defaultImageOptimizationConfig()
+	plugin.availableFormats = nil
+	post := &models.Post{
+		ArticleHTML: `<p>original article body</p>`,
+		HTML:        `<!doctype html><html><head><title>Home</title></head><body><img src="https://dropper.waylonwalker.com/file/home.webp" width="160" height="160"><p>Home body</p></body></html>`,
+	}
+	manager := lifecycle.NewManager()
+	manager.SetPosts([]*models.Post{post})
+
+	if err := plugin.Write(manager); err != nil {
+		t.Fatalf("Write() error = %v", err)
+	}
+	if !strings.Contains(post.HTML, `https://dropper.waylonwalker.com/file/home.webp?w=320 320w`) {
+		t.Fatalf("expected responsive candidates on rendered page image, got: %s", post.HTML)
+	}
+	if !strings.Contains(post.HTML, `<title>Home</title>`) || !strings.Contains(post.HTML, `<p>Home body</p>`) {
+		t.Fatalf("expected full-page document content to be preserved, got: %s", post.HTML)
+	}
+	if post.ArticleHTML != `<p>original article body</p>` {
+		t.Fatalf("ArticleHTML changed while processing cached full-page HTML: %s", post.ArticleHTML)
+	}
+}
+
+func TestImageOptimization_WriteAddsLocalTemplateImagesToOptimizationTargets(t *testing.T) {
+	plugin := NewImageOptimizationPlugin()
+	plugin.config = defaultImageOptimizationConfig()
+	plugin.availableFormats = []string{formatAVIF}
+	post := &models.Post{
+		Slug: "home",
+		HTML: `<!doctype html><html><body><img class="home-avatar" src="/8bitcc.png" width="160" height="160"></body></html>`,
+	}
+
+	if err := plugin.processRenderedHTML(post); err != nil {
+		t.Fatalf("processRenderedHTML() error = %v", err)
+	}
+	if !strings.Contains(post.HTML, `<picture>`) || !strings.Contains(post.HTML, `srcset="/8bitcc-480w.avif 480w`) {
+		t.Fatalf("expected optimized picture markup for local template image, got: %s", post.HTML)
+	}
+	targets := imageOptimizationTargetsFrom(post.Extra["image_optimization"])
+	if len(targets) != 1 || targets[0].Src != "/8bitcc.png" || targets[0].PostSlug != "home" {
+		t.Fatalf("local template optimization targets = %#v, want one homepage avatar target", targets)
+	}
+}
+
 func TestImageOptimization_ResolveOutputPath_Relative(t *testing.T) {
 	target := imageOptimizationTarget{
 		Src:      "images/cat.jpg",
