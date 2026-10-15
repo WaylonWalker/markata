@@ -14,6 +14,9 @@ import (
 )
 
 func TestPaletteCSSPlugin_CorePreservesDefaultsAndDefersOtherPalettes(t *testing.T) {
+	// Exercise only shipped palettes, independent of the developer's collection.
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	t.Setenv("APPDATA", t.TempDir())
 	includeAll := true
 	for _, enabled := range []bool{false, true} {
 		t.Run(fmt.Sprint(enabled), func(t *testing.T) {
@@ -52,7 +55,7 @@ func TestPaletteCSSPlugin_CorePreservesDefaultsAndDefersOtherPalettes(t *testing
 					t.Errorf("core missing %s", want)
 				}
 			}
-			if strings.Contains(string(core), `[data-palette="1bit-monitor-glow"]`) || !strings.Contains(string(full), `[data-palette="1bit-monitor-glow"]`) {
+			if strings.Contains(string(core), `[data-palette="nord-dark"]`) || !strings.Contains(string(full), `[data-palette="nord-dark"]`) {
 				t.Error("optional palette blocks must remain in the full stylesheet only")
 			}
 			if len(core)*2 >= len(full) {
