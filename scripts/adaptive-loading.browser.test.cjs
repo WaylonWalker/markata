@@ -8,8 +8,9 @@ const path = require('node:path');
 const {execFileSync} = require('node:child_process');
 const playwright = require(process.env.PLAYWRIGHT_MODULE || path.join(execFileSync('npm', ['root', '-g'], {encoding:'utf8'}).trim(), 'agent-browser/node_modules/playwright-core'));
 const controller = fs.readFileSync(path.join(__dirname, '../pkg/themes/default/static/js/adaptive-loading.js'));
-const base = fs.readFileSync(path.join(__dirname, '../pkg/themes/default/templates/base.html'), 'utf8');
-const control = base.slice(base.indexOf('<div class="adaptive-loading"'), base.indexOf('</div>\n        </div>', base.indexOf('<div class="adaptive-loading"')) + 6);
+// Loading controls now live in a shared partial, included either in the
+// appearance dialog or directly in the header when the picker is disabled.
+const control = fs.readFileSync(path.join(__dirname, '../pkg/themes/default/templates/partials/adaptive-loading.html'), 'utf8');
 const svg = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="160" height="90"><rect width="160" height="90" fill="blue"/><!--' + 'x'.repeat(80000) + '--></svg>');
 
 function serve() {

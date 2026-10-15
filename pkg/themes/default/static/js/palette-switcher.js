@@ -1564,6 +1564,7 @@
       const onTab = target.getAttribute && target.getAttribute('role') === 'tab';
       const onCard = target.classList && target.classList.contains('theme-card');
 
+      if (target.closest && target.closest('.adaptive-loading')) return;
       if (!inSearch && /^[1-3]$/.test(key)) {
         const tab = availableTabs()[Number(key) - 1];
         if (tab) {
@@ -1720,12 +1721,19 @@
     bindGlobalListeners();
     const container = document.querySelector('[data-theme-picker]');
     if (container && isPickerEnabled()) {
+      const panel = container.querySelector('.theme-picker-panel');
+      const fallback = document.querySelector('.header-action-controls > [data-adaptive-loading]');
+      if (panel && fallback) panel.insertBefore(fallback, panel.querySelector('.theme-picker-bar'));
       container.hidden = false;
       mountPicker(container);
     } else {
-      // Without a palette manifest there is nothing to pick; hide the swatch
-      // instead of leaving a dead button in the header.
-      if (container) container.hidden = true;
+      // Keep loading preferences accessible without a palette manifest.
+      if (container) {
+        const loading = container.querySelector('[data-adaptive-loading]');
+        const actions = container.closest('.header-action-controls');
+        if (loading && actions) actions.appendChild(loading);
+        container.hidden = true;
+      }
       picker = null;
       syncUI();
     }
