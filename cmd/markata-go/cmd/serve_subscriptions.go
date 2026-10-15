@@ -16,11 +16,13 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/BurntSushi/toml"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata-go/pkg/plugins"
 )
 
 // The subscription editor is serve-only; it is never copied to the output site.
@@ -401,8 +403,36 @@ func changeSubscription(state *settingsState, req subscriptionRequest) error {
 		if len(original) == 0 && errors.Is(statErr, os.ErrNotExist) { _ = os.Remove(target) } else { _ = writeSubscriptionFile(target, original, mode) }
 		return fmt.Errorf("subscription change rolled back: %w", verifyErr)
 	}
-	if serveRequestFullRebuild != nil { serveRequestFullRebuild() }
+	// Keep fast serve builds lazy, but fetch the affected source explicitly.
+	// The normal blogroll build deliberately avoids remote refresh by default.
+	requestSubscriptionRefresh(updated.cfg.Blogroll, req)
 	return nil
+}
+
+var subscriptionRefreshMu sync.Mutex
+
+func requestSubscriptionRefresh(cfg models.BlogrollConfig, req subscriptionRequest) {
+	rebuild := serveRequestFullRebuild
+	if rebuild == nil { return }
+	if req.Action == "remove" || !req.Active { rebuild(); return }
+	var feed *models.ExternalFeedConfig
+	for i := range cfg.Feeds {
+		if cfg.Feeds[i].URL == req.URL {
+			feed = &cfg.Feeds[i]
+			break
+		}
+	}
+	if feed == nil { rebuild(); return }
+	one := *feed
+	go func() {
+		subscriptionRefreshMu.Lock()
+		defer subscriptionRefreshMu.Unlock()
+		cfg.Feeds = []models.ExternalFeedConfig{one}
+		if _, err := plugins.RefreshBlogrollCache(cfg); err != nil {
+			warnf("Subscription refresh failed for %s: %v", req.URL, err)
+		}
+		rebuild()
+	}()
 }
 
 func writeSubscriptionFile(path string, data []byte, mode os.FileMode) error {
