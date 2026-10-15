@@ -212,11 +212,11 @@ func TestAggregatorDiscussionURLValidationAndLabels(t *testing.T) {
 func TestHackerNewsDiscussionRemainsInReaderPartial(t *testing.T) {
 	plugin := NewBlogrollPlugin()
 	entry := &models.ExternalEntry{
-		FeedURL: "https://hnrss.org/frontpage",
-		FeedTitle: "Hacker News",
-		Title: "Article",
-		URL: "https://example.com/article",
-		OriginalURL: "https://news.ycombinator.com/item?id=456",
+		FeedURL:     "https://hnrss.org/frontpage",
+		FeedTitle:    "Hacker News",
+		Title:        "Article",
+		URL:          "https://example.com/article",
+		OriginalURL:  "https://news.ycombinator.com/item?id=456",
 	}
 	entryMap := plugin.readerEntryMap(entry, nil, models.BlogrollConfig{})
 	if got := entryMap["discussion_source"]; got != "HN" {
