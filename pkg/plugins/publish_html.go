@@ -299,6 +299,11 @@ func (p *PublishHTMLPlugin) markChangedPosts(cache *buildcache.Cache, m *lifecyc
 	changed := cache.ShouldRebuildBatch(batch)
 	for path := range changed {
 		slug := slugByPath[path]
+		// An explicit slug rename invalidates links and backlinks pointing at
+		// both the old and the new route. Invalidate before updating the graph.
+		if oldSlug := cache.Graph.SlugForPath(path); oldSlug != "" && oldSlug != slug {
+			cache.MarkSlugChanged(oldSlug)
+		}
 		cache.MarkSlugChanged(slug)
 	}
 	for _, removedPath := range removed {
