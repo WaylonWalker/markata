@@ -146,30 +146,30 @@ func fetchHackerNewsArticleURL(rawURL string) (string, bool) {
 	return strings.TrimSpace(item.URL), true
 }
 
-func fetchHackerNewsArticleMetadata(articleURL string) (*hackerNewsMetadata, bool) {
+func fetchHackerNewsArticleMetadata(articleURL string) *hackerNewsMetadata {
 	if articleURL == "" {
-		return nil, false
+		return nil
 	}
 
 	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, articleURL, http.NoBody)
 	if err != nil {
-		return nil, false
+		return nil
 	}
 	req.Header.Set("User-Agent", "markata-go/1.0 (+https://github.com/WaylonWalker/markata-go)")
 
 	resp, err := hackerNewsHTTPClient.Do(req)
 	if err != nil {
-		return nil, false
+		return nil
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, false
+		return nil
 	}
 
 	body, err := io.ReadAll(io.LimitReader(resp.Body, 1024*1024))
 	if err != nil {
-		return nil, false
+		return nil
 	}
 
 	htmlContent := string(body)
@@ -185,7 +185,7 @@ func fetchHackerNewsArticleMetadata(articleURL string) (*hackerNewsMetadata, boo
 		metadata.Description = extractHackerNewsDescription(htmlContent)
 	}
 
-	return metadata, true
+	return metadata
 }
 
 func enrichHackerNewsFeedEntry(rawURL string) (resolvedURL, originalURL string, metadata *hackerNewsMetadata) {
@@ -194,7 +194,7 @@ func enrichHackerNewsFeedEntry(rawURL string) (resolvedURL, originalURL string, 
 		return resolvedURL, originalURL, nil
 	}
 
-	metadata, _ = fetchHackerNewsArticleMetadata(resolvedURL)
+	metadata = fetchHackerNewsArticleMetadata(resolvedURL)
 	return resolvedURL, originalURL, metadata
 }
 
