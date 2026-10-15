@@ -149,9 +149,10 @@ func (p *GardenViewPlugin) Write(m *lifecycle.Manager) error {
 	}
 
 	if cache != nil {
-		if !cache.GardenDirty() {
-			return nil
-		}
+		// Content-only dirty flags do not capture deleted posts until cache
+		// cleanup, which runs after this Write stage. The semantic fingerprint
+		// is cheap to calculate and includes the current membership, so compare
+		// it even when the per-post change flag is clear.
 		gardenHash := computeGardenHash(m.Posts(), &gardenConfig, cache)
 		if cached := cache.GetGardenHash(); cached != "" && cached == gardenHash {
 			return nil
