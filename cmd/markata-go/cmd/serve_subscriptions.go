@@ -31,14 +31,14 @@ import (
 var subscriptionPage []byte
 
 const (
-	serveSubscriptionsPage = "/_markata/subscriptions"
-	serveSubscriptionsAPI  = "/_markata/subscriptions/api"
-	serveSubscriptionsFind = "/_markata/subscriptions/discover"
-	subscriptionActionAdd = "add"
+	serveSubscriptionsPage   = "/_markata/subscriptions"
+	serveSubscriptionsAPI    = "/_markata/subscriptions/api"
+	serveSubscriptionsFind   = "/_markata/subscriptions/discover"
+	subscriptionActionAdd    = "add"
 	subscriptionActionUpdate = "update"
 	subscriptionActionRemove = "remove"
-	subscriptionTOMLExt = ".toml"
-	subscriptionHTTPS = "https"
+	subscriptionTOMLExt      = ".toml"
+	subscriptionHTTPS        = "https"
 )
 
 type subscriptionView struct {

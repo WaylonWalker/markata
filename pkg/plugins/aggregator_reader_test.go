@@ -223,7 +223,7 @@ func TestHackerNewsDiscussionRemainsInReaderPartial(t *testing.T) {
 		t.Fatalf("discussion_source = %v, want HN", got)
 	}
 	markup := plugin.renderReaderTimeline([]map[string]interface{}{{
-		"count": 1,
+		"count":   1,
 		"entries": []map[string]interface{}{entryMap},
 	}}, false)
 	if !strings.Contains(markup, "Found on HN:") ||
