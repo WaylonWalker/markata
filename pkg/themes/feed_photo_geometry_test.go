@@ -15,7 +15,7 @@ func TestFeedPhotoGeometry(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	css := string(raw)
+	css := strings.ReplaceAll(string(raw), "\r\n", "\n")
 
 	rule := func(selector string) string {
 		t.Helper()
