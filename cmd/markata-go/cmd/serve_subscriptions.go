@@ -281,10 +281,7 @@ func subscriptionField(body, name, value string) string {
 	if pattern.MatchString(body) {
 		return pattern.ReplaceAllStringFunc(body, func(string) string { return replacement })
 	}
-	return strings.TrimRight(body, "
-") + "
-" + replacement + "
-"
+	return strings.TrimRight(body, "\r\n") + "\n" + replacement + "\n"
 }
 
 func subscriptionFields(req subscriptionRequest) (map[string]string, error) {
@@ -313,12 +310,7 @@ func enableSubscriptions(content string) string {
 		body := subscriptionField(content[loc[1]:end], "enabled", "true")
 		return content[:loc[1]] + body + content[end:]
 	}
-	return strings.TrimRight(content, "
-") + "
-
-[markata-go.blogroll]
-enabled = true
-"
+	return strings.TrimRight(content, "\r\n") + "\n\n[markata-go.blogroll]\nenabled = true\n"
 }
 
 func changeSubscription(state *settingsState, req subscriptionRequest) error {
@@ -362,18 +354,12 @@ func changeSubscription(state *settingsState, req subscriptionRequest) error {
 		if !state.cfg.Blogroll.Enabled { content = enableSubscriptions(content) }
 		prefix := detectBlogrollTablePrefix(content)
 		var block strings.Builder
-		block.WriteString("
-
-[[" + prefix + ".feeds]]
-")
-		block.WriteString("url = " + strconv.Quote(req.URL) + "
-")
+		block.WriteString("\n\n[[" + prefix + ".feeds]]\n")
+		block.WriteString("url = " + strconv.Quote(req.URL) + "\n")
 		for _, name := range []string{"title", "description", "category", "type", "tags", "handle", "active"} {
-			block.WriteString(name + " = " + fields[name] + "
-")
+			block.WriteString(name + " = " + fields[name] + "\n")
 		}
-		content = strings.TrimRight(content, "
-") + block.String()
+		content = strings.TrimRight(content, "\r\n") + block.String()
 	case "update", "remove":
 		selected, findErr := uniqueBlock(content, req.URL)
 		if findErr != nil { return findErr }
