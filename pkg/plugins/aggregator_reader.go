@@ -56,7 +56,10 @@ func normalizeLobstersURL(rawURL string) string {
 		return rawURL
 	}
 	if cached, ok := lobstersURLCache.Load(rawURL); ok {
-		return cached.(string)
+		if resolved, ok := cached.(string); ok {
+			return resolved
+		}
+		return rawURL
 	}
 
 	parsed, err := url.Parse(rawURL)
@@ -75,7 +78,7 @@ func normalizeLobstersURL(rawURL string) string {
 	if err != nil {
 		return rawURL
 	}
-	defer resp.Body.Close() //nolint:errcheck // response body close is best-effort
+	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		return rawURL
 	}
