@@ -110,6 +110,11 @@ func resolveAggregatorFeedReference(link, discussionHint string) (resolved, orig
 		}
 		return resolved, ""
 	}
+	if isLemmyDiscussionURL(discussionHint) {
+		if isHTTPArticleURL(link) && link != discussionHint {
+			return link, discussionHint
+		}
+	}
 	if isLobstersDiscussionURL(discussionHint) {
 		if isHTTPArticleURL(link) && link != discussionHint {
 			return link, discussionHint
@@ -121,11 +126,16 @@ func resolveAggregatorFeedReference(link, discussionHint string) (resolved, orig
 	return resolved, ""
 }
 
-func enrichAggregatorFeedEntry(link, discussionHint string) (resolved, original string, metadata *hackerNewsMetadata) {
+func enrichAggregatorFeedEntry(link, discussionHint, feedContent string) (resolved, original string, metadata *hackerNewsMetadata) {
 	if isHackerNewsDiscussionURL(link) {
 		return enrichHackerNewsFeedEntry(link)
 	}
 	resolved, original = resolveAggregatorFeedReference(link, discussionHint)
+	if original == "" {
+		if outbound := redditOutboundArticleURL(link, feedContent); outbound != "" {
+			resolved, original = outbound, link
+		}
+	}
 	if original == "" {
 		return resolved, original, nil
 	}
@@ -139,6 +149,10 @@ func aggregatorDiscussionLabel(rawURL string) string {
 		return "HN"
 	case isLobstersDiscussionURL(rawURL):
 		return lobstersSourceName
+	case isLemmyDiscussionURL(rawURL):
+		return "Lemmy"
+	case isRedditDiscussionURL(rawURL):
+		return "Reddit"
 	default:
 		return ""
 	}
