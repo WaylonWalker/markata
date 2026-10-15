@@ -288,6 +288,23 @@ type templatesConverter interface {
 	toTemplatesConfig() models.TemplatesConfig
 }
 
+// explicitFeedFormatOverrides preserves the distinction between an omitted
+// format and a deliberately false format across TOML, YAML and JSON parsing.
+func explicitFeedFormatOverrides(values ...*bool) map[string]bool {
+	names := [...]string{"html", "simple_html", "rss", "atom", "json", "markdown", "text", "sitemap"}
+	var result map[string]bool
+	for i, value := range values {
+		if value == nil {
+			continue
+		}
+		if result == nil {
+			result = make(map[string]bool)
+		}
+		result[names[i]] = *value
+	}
+	return result
+}
+
 // buildConfig constructs a models.Config from a configSource.
 // This helper eliminates code duplication across TOML, YAML, and JSON config converters.
 func buildConfig(src configSource) *models.Config {
@@ -2194,7 +2211,7 @@ func (f *tomlFontConfig) toFontConfig() models.FontConfig {
 }
 
 func (f *tomlFeedConfig) toFeedConfig() models.FeedConfig {
-	return models.FeedConfig{
+	result := models.FeedConfig{
 		Slug:            f.Slug,
 		Title:           f.Title,
 		Description:     f.Description,
@@ -2217,6 +2234,11 @@ func (f *tomlFeedConfig) toFeedConfig() models.FeedConfig {
 		Formats:         f.Formats.toFeedFormats(),
 		Templates:       f.Templates.toFeedTemplates(),
 	}
+	result.SetFormatOverrides(explicitFeedFormatOverrides(
+		f.Formats.HTML, f.Formats.SimpleHTML, f.Formats.RSS, f.Formats.Atom,
+		f.Formats.JSON, f.Formats.Markdown, f.Formats.Text, f.Formats.Sitemap,
+	))
+	return result
 }
 
 func (f *tomlFeedFormats) toFeedFormats() models.FeedFormats {
@@ -3780,7 +3802,7 @@ func (f *yamlFooterConfig) toFooterConfig() models.FooterConfig {
 }
 
 func (f *yamlFeedConfig) toFeedConfig() models.FeedConfig {
-	return models.FeedConfig{
+	result := models.FeedConfig{
 		Slug:            f.Slug,
 		Title:           f.Title,
 		Description:     f.Description,
@@ -3803,6 +3825,11 @@ func (f *yamlFeedConfig) toFeedConfig() models.FeedConfig {
 		Formats:         f.Formats.toFeedFormats(),
 		Templates:       f.Templates.toFeedTemplates(),
 	}
+	result.SetFormatOverrides(explicitFeedFormatOverrides(
+		f.Formats.HTML, f.Formats.SimpleHTML, f.Formats.RSS, f.Formats.Atom,
+		f.Formats.JSON, f.Formats.Markdown, f.Formats.Text, f.Formats.Sitemap,
+	))
+	return result
 }
 
 func (f *yamlFeedFormats) toFeedFormats() models.FeedFormats {
@@ -5390,7 +5417,7 @@ func (f *jsonFooterConfig) toFooterConfig() models.FooterConfig {
 }
 
 func (f *jsonFeedConfig) toFeedConfig() models.FeedConfig {
-	return models.FeedConfig{
+	result := models.FeedConfig{
 		Slug:            f.Slug,
 		Title:           f.Title,
 		Description:     f.Description,
@@ -5413,6 +5440,11 @@ func (f *jsonFeedConfig) toFeedConfig() models.FeedConfig {
 		Formats:         f.Formats.toFeedFormats(),
 		Templates:       f.Templates.toFeedTemplates(),
 	}
+	result.SetFormatOverrides(explicitFeedFormatOverrides(
+		f.Formats.HTML, f.Formats.SimpleHTML, f.Formats.RSS, f.Formats.Atom,
+		f.Formats.JSON, f.Formats.Markdown, f.Formats.Text, f.Formats.Sitemap,
+	))
+	return result
 }
 
 func (f *jsonFeedFormats) toFeedFormats() models.FeedFormats {
