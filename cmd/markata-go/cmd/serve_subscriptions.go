@@ -239,7 +239,7 @@ func handleSubscriptionsAPI(w http.ResponseWriter, r *http.Request) {
 }
 
 var feedHeader = regexp.MustCompile(`(?m)^[ \t]*\[\[(?:markata-go\.)?blogroll\.feeds\]\][ \t]*(?:\r?\n|$)`)
-var anyTableHeader = regexp.MustCompile(`(?m)^[ \t]*\[)
+var anyTableHeader = regexp.MustCompile(`(?m)^[ \t]*\[`)
 var feedURLLine = regexp.MustCompile(`(?m)^[ \t]*url[ \t]*=[ \t]*(?:"([^"]+)"|'([^']+)')[ \t]*(?:#.*)?$`)
 var blogrollTable = regexp.MustCompile(`(?m)^[ \t]*\[(?:markata-go\.)?blogroll\][ \t]*(?:\r?\n|$)`)
 
