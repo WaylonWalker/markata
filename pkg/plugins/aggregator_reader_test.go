@@ -214,8 +214,8 @@ func TestHackerNewsDiscussionRemainsInReaderPartial(t *testing.T) {
 	entry := &models.ExternalEntry{
 		FeedURL:     "https://hnrss.org/frontpage",
 		FeedTitle:   "Hacker News",
-		Title:        "Article",
-		URL:          "https://example.com/article",
+		Title:       "Article",
+		URL:         "https://example.com/article",
 		OriginalURL: "https://news.ycombinator.com/item?id=456",
 	}
 	entryMap := plugin.readerEntryMap(entry, nil, models.BlogrollConfig{})
