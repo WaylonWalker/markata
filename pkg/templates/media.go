@@ -34,8 +34,6 @@ var (
 	}
 )
 
-const mediaSchemeHTTPS = "https"
-
 // SetTrustedMediaDomains replaces the trusted domains allowlist for media helpers.
 func SetTrustedMediaDomains(domains []string) {
 	trustedMediaMu.Lock()
