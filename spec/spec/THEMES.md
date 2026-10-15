@@ -1297,6 +1297,22 @@ include = []            # or an explicit allow-list
 exclude = []
 ```
 
+### Initial palette stylesheet
+
+When the switcher is enabled, `css/palette-core.css` MUST contain the configured
+light/dark pair, picker manifest, fallback rules, and site overrides. The full
+`css/palette.css` MUST remain available for custom templates and picker previews.
+Both artifacts MUST have content hashes registered before HTML rendering.
+
+The default template MUST load the core stylesheet initially. Its theme
+bootstrap MUST request the full stylesheet with render blocking when restoring
+a saved or seasonal palette outside the configured pair. Opening the picker
+MUST load the full stylesheet before rendering palette previews. Direct palette
+selection and keyboard shortcuts MUST also request it when necessary. Failed
+requests MUST be retryable, with the configured pair remaining usable.
+
+Sites without a switcher MUST retain their existing single stylesheet behavior.
+
 ### Header UI
 
 The header renders one compact button (a painter's-palette icon whose dots use
