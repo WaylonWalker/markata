@@ -64,7 +64,7 @@ func TestLobstersRSSArticleAndDiscussion(t *testing.T) {
 		t.Fatalf("discussion_source = %v, want Lobsters", got)
 	}
 	groups := []map[string]interface{}{{
-		"count": 1,
+		"count":   1,
 		"entries": []map[string]interface{}{entryMap},
 	}}
 	markup := plugin.renderReaderTimeline(groups, false)
@@ -125,7 +125,9 @@ func TestLobstersDiscussionOnlyFeedResolvesAPI(t *testing.T) {
 			t.Errorf("unexpected Lobsters API path: %s", r.URL.Path)
 		}
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = fmt.Fprintf(w, `{"url":%q}`, article.URL)
+		if _, err := fmt.Fprintf(w, `{"url":%q}`, article.URL); err != nil {
+			t.Errorf("write article json: %v", err)
+		}
 	}))
 	defer api.Close()
 
@@ -160,7 +162,9 @@ func TestLobstersTextPostAndFailureStayOnDiscussion(t *testing.T) {
 	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/s/tex123.json" {
 			w.Header().Set("Content-Type", "application/json")
-			_, _ = w.Write([]byte(`{"url":null}`))
+			if _, err := w.Write([]byte(`{"url":null}`)); err != nil {
+				t.Errorf("write text story json: %v", err)
+			}
 			return
 		}
 		w.WriteHeader(http.StatusServiceUnavailable)
