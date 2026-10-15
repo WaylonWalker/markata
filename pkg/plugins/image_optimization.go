@@ -448,52 +448,11 @@ func (p *ImageOptimizationPlugin) processPost(post *models.Post) error {
 		for child := node.FirstChild; child != nil; {
 			next := child.NextSibling
 			if child.Type == html.ElementNode && child.Data == "img" {
-				if node.Type == html.ElementNode && node.Data == "picture" {
-					child = next
-					continue
+				changed, target := p.processImageNode(node, child, post)
+				updatedHTML = updatedHTML || changed
+				if target != nil {
+					targets = append(targets, *target)
 				}
-				src := strings.TrimSpace(getAttr(child, "src"))
-				if src == "" {
-					child = next
-					continue
-				}
-				if !isLocalImageSrc(src) {
-					if addResponsiveRemoteImageAttrs(child, src) {
-						updatedHTML = true
-					}
-					child = next
-					continue
-				}
-				if !isOptimizableImageSrc(src) {
-					child = next
-					continue
-				}
-				sources := buildPictureSources(src, p.availableFormats, p.config.Widths, p.config.Sizes)
-				if len(sources) == 0 {
-					child = next
-					continue
-				}
-
-				picture := &html.Node{Type: html.ElementNode, Data: "picture"}
-				for _, source := range sources {
-					sourceNode, parseErr := parseSingleNode(source)
-					if parseErr == nil {
-						picture.AppendChild(sourceNode)
-					}
-				}
-
-				node.InsertBefore(picture, child)
-				node.RemoveChild(child)
-				picture.AppendChild(child)
-
-				if post.Slug == "" {
-					post.GenerateSlug()
-				}
-				targets = append(targets, imageOptimizationTarget{
-					Src:      src,
-					PostSlug: post.Slug,
-				})
-				updatedHTML = true
 				child = next
 				continue
 			}
@@ -521,6 +480,45 @@ func (p *ImageOptimizationPlugin) processPost(post *models.Post) error {
 	}
 
 	return nil
+}
+
+func (p *ImageOptimizationPlugin) processImageNode(parent, img *html.Node, post *models.Post) (bool, *imageOptimizationTarget) {
+	if parent.Data == "picture" {
+		return false, nil
+	}
+
+	src := strings.TrimSpace(getAttr(img, "src"))
+	if src == "" {
+		return false, nil
+	}
+	if !isLocalImageSrc(src) {
+		return addResponsiveRemoteImageAttrs(img, src), nil
+	}
+	if !isOptimizableImageSrc(src) {
+		return false, nil
+	}
+
+	sources := buildPictureSources(src, p.availableFormats, p.config.Widths, p.config.Sizes)
+	if len(sources) == 0 {
+		return false, nil
+	}
+
+	picture := &html.Node{Type: html.ElementNode, Data: "picture"}
+	for _, source := range sources {
+		sourceNode, parseErr := parseSingleNode(source)
+		if parseErr == nil {
+			picture.AppendChild(sourceNode)
+		}
+	}
+
+	parent.InsertBefore(picture, img)
+	parent.RemoveChild(img)
+	picture.AppendChild(img)
+
+	if post.Slug == "" {
+		post.GenerateSlug()
+	}
+	return true, &imageOptimizationTarget{Src: src, PostSlug: post.Slug}
 }
 
 func addResponsiveRemoteImageAttrs(img *html.Node, src string) bool {
