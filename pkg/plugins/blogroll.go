@@ -1865,7 +1865,19 @@ func (p *BlogrollPlugin) renderReaderTimeline(groups []map[string]interface{}, w
 
 				sb.WriteString(`
             </div>
-            <h2 class="reader-entry-title"><a href="`)
+`)
+				if originalURL := stringValue(entry, "original_url"); originalURL != "" {
+					if discussionSource := stringValue(entry, "discussion_source"); discussionSource != "" {
+						sb.WriteString(`
+            <div class="reader-entry-found-on">Found on `)
+						sb.WriteString(html.EscapeString(discussionSource))
+						sb.WriteString(`: <a href="`)
+						sb.WriteString(html.EscapeString(originalURL))
+						sb.WriteString(`" target="_blank" rel="noopener noreferrer">discussion</a></div>
+`)
+					}
+				}
+				sb.WriteString(`            <h2 class="reader-entry-title"><a href="`)
 				sb.WriteString(html.EscapeString(stringValue(entry, "url")))
 				sb.WriteString(`" target="_blank" rel="noopener noreferrer">`)
 				sb.WriteString(html.EscapeString(stringValue(entry, "title")))
