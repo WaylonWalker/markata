@@ -79,7 +79,7 @@ function pageHTML() {
           }
         })();
       </script>
-      <link rel="stylesheet" href="/palette.css">
+      <link rel="stylesheet" href="/palette.hash.css" onerror="this.onerror=null;this.href='/palette.css'">
     </head><body>
       <main><div id="view-transition-page">${controls()}</div></main>
       ${loader}
@@ -91,7 +91,7 @@ async function browserCase(options, fn) {
   const server = http.createServer((req, res) => {
     const pathname = new URL(req.url, 'http://localhost').pathname;
     requests.push(pathname);
-    if (pathname === '/palette.css') {
+    if (pathname === '/palette.css' || (pathname === '/palette.hash.css' && !options.missingCSS)) {
       res.setHeader('content-type', 'text/css');
       return res.end(css);
     }
@@ -178,5 +178,17 @@ test('picker hash 404 falls back to unhashed JS; controls survive a DOM swap', {
     await page.locator('.theme-picker-toggle').click();
     await page.locator('.theme-picker-panel').waitFor({ state: 'visible' });
     assert.equal(pickerRequests(requests).length, 2, 'No duplicate picker downloads on navigation');
+  });
+});
+
+test('missing fingerprinted palette CSS recovers without fetching picker JS', {timeout: 60000}, async () => {
+  await browserCase({ missingCSS: true }, async (page, origin, requests) => {
+    await page.goto(origin + '/');
+    assert.ok(requests.includes('/palette.hash.css'));
+    assert.ok(requests.includes('/palette.css'), 'Unhashed stylesheet fallback must load');
+    assert.equal(await page.locator('html').evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(17, 24, 39)');
+    await page.locator('.palette-mode-toggle').click();
+    assert.equal(await page.locator('html').evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(250, 250, 250)');
+    assert.deepEqual(pickerRequests(requests), [], 'CSS recovery and mode click remain picker-JS-free');
   });
 });
