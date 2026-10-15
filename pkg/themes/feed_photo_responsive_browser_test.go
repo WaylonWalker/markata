@@ -124,7 +124,7 @@ func TestFeedPhotoResponsiveLayout_Browser(t *testing.T) {
 	}))`
 
 	for _, tc := range []struct {
-		name, width string
+		name        string
 		viewport    int64
 		minWidth    int
 	}{
@@ -170,8 +170,13 @@ func TestFeedPhotoResponsiveLayout_Browser(t *testing.T) {
 					continue
 				}
 				selected, parseErr := strconv.Atoi(strings.SplitN(img.Chosen[idx+2:], "&", 2)[0])
-				if parseErr != nil || selected < img.Width || selected > 1200 {
-					t.Errorf("photo %d chose inappropriate source %q for %d CSS px", i, img.Chosen, img.Width)
+				minPixels := img.Width * 3 / 2
+				maxPixels := img.Width * 5 / 2
+				if maxPixels > 1200 {
+					maxPixels = 1200
+				}
+				if parseErr != nil || selected < minPixels || selected > maxPixels {
+					t.Errorf("photo %d chose inappropriate source %q for %d CSS px at 2x density (want %d..%d source px)", i, img.Chosen, img.Width, minPixels, maxPixels)
 				}
 			}
 		})
