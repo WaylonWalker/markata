@@ -16,7 +16,11 @@
     {% else %}
     <div class="posts posts-list" id="posts-list">
         {% for post in posts %}
+        {% if variant == "summary" %}
+        {% include "partials/cards/summary-card.html" %}
+        {% else %}
         {% include "partials/cards/card-router.html" %}
+        {% endif %}
         {% endfor %}
     </div>
     {% endif %}

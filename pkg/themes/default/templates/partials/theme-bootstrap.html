@@ -87,6 +87,39 @@
     if (modePalette) {
       document.documentElement.dataset.palette = modePalette;
     }
+    {% if config.Extra.palette_core_enabled %}
+    // The configured pair is in the small initial stylesheet. Other colors
+    // are needed only for a restored choice or an explicit picker action.
+    window.__markataPaletteStylesReady = window.__markataPaletteStylesReady || false;
+    var paletteStylesPending = null;
+    window.__markataLoadPaletteStyles = function() {
+      if (window.__markataPaletteStylesReady) return Promise.resolve();
+      if (paletteStylesPending) return paletteStylesPending;
+      paletteStylesPending = new Promise(function(resolve, reject) {
+        var link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = '{{ "css/palette.css" | theme_asset_hashed }}';
+        link.setAttribute('blocking', 'render');
+        link.setAttribute('data-markata-persist', '');
+        link.onload = function() {
+          window.__markataPaletteStylesReady = true;
+          resolve();
+        };
+        link.onerror = function() {
+          link.remove();
+          paletteStylesPending = null;
+          reject(new Error('Could not load theme colors. Please try again.'));
+        };
+        document.head.appendChild(link);
+      });
+      return paletteStylesPending;
+    };
+    if (modePalette && modePalette !== palettes.light && modePalette !== palettes.dark) {
+      window.__markataLoadPaletteStyles().catch(function() {
+        document.documentElement.dataset.palette = palettes[mode];
+      });
+    }
+    {% endif %}
     if (aesthetic) {
       document.documentElement.dataset.aesthetic = aesthetic;
     }

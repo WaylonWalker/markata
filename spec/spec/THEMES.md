@@ -1297,6 +1297,42 @@ include = []            # or an explicit allow-list
 exclude = []
 ```
 
+### Initial palette stylesheet
+
+When the switcher is enabled, `css/palette-core.css` MUST contain the configured
+light/dark pair, picker manifest, fallback rules, and site overrides. The full
+`css/palette.css` MUST remain available for custom templates and picker previews.
+Both artifacts MUST have content hashes registered before HTML rendering.
+
+The default template MUST load the core stylesheet initially. Its theme
+bootstrap MUST request the full stylesheet with render blocking when restoring
+a saved or seasonal palette outside the configured pair. Opening the picker
+MUST load the full stylesheet before rendering palette previews. Direct palette
+selection and keyboard shortcuts MUST also request it when necessary. Failed
+requests MUST be retryable, with the configured pair remaining usable.
+
+Sites without a switcher MUST retain their existing single stylesheet behavior.
+
+Palette blocks MUST style both preview cards and the selected document root.
+Root palette selectors MUST outrank generic `:root` defaults so a deferred
+library keeps its selected colors when page bundles change during navigation.
+
+Image zoom assets MUST load on the first zoom interaction rather than page
+startup. The first interaction MUST open the selected image after assets load.
+Subsequent zooms and view-transition navigation MUST reuse the loaded library.
+
+### Page stylesheet bundles
+
+`css_bundle.pages` MAY list output-relative HTML files, such as `index.html`.
+With CSS bundling enabled, production builds MUST consolidate eligible local
+head stylesheets and inline styles for these pages into content-hashed CSS.
+The cascade order MUST remain unchanged. Synchronous scripts and ineligible
+stylesheets MUST form bundle boundaries. External, conditional, integrity-
+protected, missing, imported, or relative-URL stylesheets MUST remain intact.
+Bundling MUST run after CSS generation, purging, and minification. Empty page
+lists and fast builds MUST preserve existing behavior. All paths MUST remain
+inside the output directory. A second pass MUST be idempotent.
+
 ### Header UI
 
 The header renders one compact button (a painter's-palette icon whose dots use

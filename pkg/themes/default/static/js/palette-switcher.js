@@ -185,6 +185,7 @@
 
   function applyPalette(name) {
     if (!name) return;
+    loadPaletteStyles(name);
     withoutTransitions(() => {
       root.dataset.palette = name;
     });
@@ -192,6 +193,12 @@
     window.dispatchEvent(new CustomEvent('palette-change', {
       detail: { palette: name, family: labelFor(name) },
     }));
+  }
+
+  function loadPaletteStyles(name) {
+    const defaults = getDefaults();
+    if (!window.__markataLoadPaletteStyles || name === defaults.light || name === defaults.dark) return;
+    window.__markataLoadPaletteStyles().catch((error) => showNotification(error.message));
   }
 
   function setModeAttributes(mode) {
@@ -363,6 +370,7 @@
     store.set(MODE_KEY, mode);
     store.set(LEGACY_MODE_KEY, mode);
     const palette = paletteForMode(mode);
+    loadPaletteStyles(palette);
     withoutTransitions(() => {
       setModeAttributes(mode);
       if (palette) root.dataset.palette = palette;
@@ -1368,6 +1376,17 @@
 
   function openPicker(options) {
     if (!picker || !picker.panel.hidden) return;
+    if (window.__markataLoadPaletteStyles && !window.__markataPaletteStylesReady) {
+      picker.toggle.setAttribute('aria-busy', 'true');
+      window.__markataLoadPaletteStyles().then(() => {
+        if (picker) picker.toggle.removeAttribute('aria-busy');
+        openPicker(options);
+      }).catch((error) => {
+        if (picker) picker.toggle.removeAttribute('aria-busy');
+        showNotification(error.message);
+      });
+      return;
+    }
     picker.viewMode = getColorMode();
     renderStyleGrid();
     renderFontGrid();

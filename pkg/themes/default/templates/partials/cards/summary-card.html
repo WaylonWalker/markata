@@ -1,0 +1,7 @@
+<article class="card card-note h-entry">
+<header class="card-header">
+<h3 class="card-title p-name"><a class="u-url" href="{{ post.href }}">{{ post.title | default:post.slug }}</a></h3>
+</header>
+<div class="card-body"><p class="card-text p-summary">{{ post.description | default:post.article_html | plaintext | truncatechars:320 }}</p></div>
+<footer class="card-meta">{% if post.date %}<time class="dt-published" datetime="{{ post.date | atom_date }}">{{ post.date | human_date }}</time>{% endif %}</footer>
+</article>

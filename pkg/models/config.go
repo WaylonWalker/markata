@@ -3269,6 +3269,9 @@ type CSSBundleConfig struct {
 	// Bundles is list of bundle configurations
 	Bundles []BundleConfig `json:"bundles" yaml:"bundles" toml:"bundles"`
 
+	// Pages lists output-relative HTML files whose head styles are bundled after cleanup.
+	Pages []string `json:"pages" yaml:"pages" toml:"pages"`
+
 	// Exclude is a list of CSS file patterns to exclude from bundling
 	Exclude []string `json:"exclude" yaml:"exclude" toml:"exclude"`
 
