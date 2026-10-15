@@ -591,6 +591,16 @@ func discoverSubscription(ctx context.Context, address string) (discoveredSubscr
 	}
 	out.Title = strings.TrimSpace(doc.Find("head title").First().Text())
 	out.Description, _ = doc.Find("meta[name='description']").First().Attr("content")
+	if parsed, err := url.Parse(finalURL); err == nil && isYouTubeURL(parsed) {
+		channelID := extractYouTubeChannelIDFromURL(finalURL)
+		if channelID == "" {
+			channelID = extractYouTubeChannelIDFromHTML(string(body))
+		}
+		if channelID != "" {
+			out.URL = youtubeFeedBaseURL + channelID
+			return out, nil
+		}
+	}
 	base, _ := url.Parse(finalURL)
 	var feeds []string
 	doc.Find("link[rel~='alternate']").Each(func(_ int, s *goquery.Selection) {
