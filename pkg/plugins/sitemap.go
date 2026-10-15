@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
@@ -84,7 +85,7 @@ func (p *SitemapPlugin) buildPagesSitemap(m *lifecycle.Manager, siteURL string) 
 	sitemap.URLs = append(sitemap.URLs, homeURL)
 
 	for _, post := range posts {
-		if !post.Published || post.Draft || post.Skip || post.Private {
+		if !post.Published || post.Draft || post.Skip || post.Private || sitemapPostNoindex(post) {
 			continue
 		}
 		url := SitemapURL{Loc: siteURL + post.Href, ChangeFreq: "weekly", Priority: "0.8"}
@@ -95,6 +96,7 @@ func (p *SitemapPlugin) buildPagesSitemap(m *lifecycle.Manager, siteURL string) 
 	}
 
 	sitemap.URLs = append(sitemap.URLs, p.generatedIndexPages(m, siteURL)...)
+	sitemap.URLs = dedupeSitemapURLs(sitemap.URLs)
 
 	return sitemap
 }
@@ -140,7 +142,7 @@ func (p *SitemapPlugin) generatedIndexPages(m *lifecycle.Manager, siteURL string
 
 	for i := range feedConfigs {
 		fc := &feedConfigs[i]
-		if fc.Slug == "" || !fc.Formats.HTML || fc.IncludesPrivate() {
+		if !eligibleFeedLandingForSitemap(fc) {
 			continue
 		}
 
@@ -165,7 +167,7 @@ func (p *SitemapPlugin) generatedIndexPages(m *lifecycle.Manager, siteURL string
 		urls = append(urls, SitemapURL{Loc: siteURL + "/" + tagsConfig.SlugPrefix + "/", ChangeFreq: "weekly", Priority: "0.5"})
 	}
 	feedsPage := getFeedsPageConfig(m.Config())
-	if feedsPage.IsEnabled() {
+	if feedsPage.IsEnabled() && !sitemapNoindex(feedsPage.Robots) {
 		urls = append(urls, SitemapURL{Loc: siteURL + "/" + feedsPage.SlugPrefix + "/", ChangeFreq: "weekly", Priority: "0.5"})
 		if hasGeneratedFeeds(feedConfigs, m.Config()) {
 			urls = append(urls, SitemapURL{Loc: siteURL + "/" + feedsPage.SlugPrefix + "/generated/", ChangeFreq: "weekly", Priority: "0.4"})
@@ -173,6 +175,45 @@ func (p *SitemapPlugin) generatedIndexPages(m *lifecycle.Manager, siteURL string
 	}
 
 	return urls
+}
+
+func eligibleFeedLandingForSitemap(feed *models.FeedConfig) bool {
+	return feed != nil && feed.Slug != "" && feed.Formats.HTML && feed.Formats.Sitemap &&
+		!feed.IncludesPrivate() && !sitemapNoindex(feed.Robots)
+}
+
+// sitemapNoindex accepts a comma- or whitespace-separated robots directive.
+// Do not confuse "noindex" with "index" or "noimageindex".
+func sitemapNoindex(value string) bool {
+	for _, token := range strings.FieldsFunc(strings.ToLower(value), func(r rune) bool {
+		return r == ',' || r == ';' || r == ' ' || r == '\t' || r == '\n'
+	}) {
+		if token == "noindex" {
+			return true
+		}
+	}
+	return false
+}
+
+func sitemapPostNoindex(post *models.Post) bool {
+	if post == nil || post.Extra == nil {
+		return false
+	}
+	robots, ok := post.Extra["robots"].(string)
+	return ok && sitemapNoindex(robots)
+}
+
+func dedupeSitemapURLs(urls []SitemapURL) []SitemapURL {
+	seen := make(map[string]struct{}, len(urls))
+	unique := urls[:0]
+	for _, item := range urls {
+		if _, present := seen[item.Loc]; present {
+			continue
+		}
+		seen[item.Loc] = struct{}{}
+		unique = append(unique, item)
+	}
+	return unique
 }
 
 func hasGeneratedFeeds(feedConfigs []models.FeedConfig, config *lifecycle.Config) bool {
