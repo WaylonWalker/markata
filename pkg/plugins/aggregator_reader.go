@@ -19,6 +19,8 @@ var (
 	lobstersShortIDRegex    = regexp.MustCompile(`^[a-zA-Z0-9]{6}$`)
 )
 
+const lobstersSourceName = "Lobsters"
+
 type lobstersStory struct {
 	URL string `json:"url"`
 }
@@ -27,7 +29,7 @@ type lobstersStory struct {
 // human-readable slug, rather than arbitrary URLs on the Lobsters domain.
 func isLobstersDiscussionURL(rawURL string) bool {
 	parsed, err := url.Parse(rawURL)
-	if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") {
+	if err != nil || (parsed.Scheme != schemeHTTP && parsed.Scheme != schemeHTTPS) {
 		return false
 	}
 	host := strings.TrimPrefix(strings.ToLower(parsed.Hostname()), "www.")
@@ -42,7 +44,7 @@ func isLobstersDiscussionURL(rawURL string) bool {
 func isHTTPArticleURL(rawURL string) bool {
 	parsed, err := url.Parse(rawURL)
 	return err == nil &&
-		(parsed.Scheme == "http" || parsed.Scheme == "https") &&
+		(parsed.Scheme == schemeHTTP || parsed.Scheme == schemeHTTPS) &&
 		parsed.Hostname() != ""
 }
 
@@ -57,7 +59,10 @@ func normalizeLobstersURL(rawURL string) string {
 		return cached.(string)
 	}
 
-	parsed, _ := url.Parse(rawURL) // already validated
+	parsed, err := url.Parse(rawURL)
+	if err != nil {
+		return rawURL
+	}
 	shortID := strings.Split(strings.Trim(parsed.Path, "/"), "/")[1]
 	apiURL := fmt.Sprintf(lobstersStoryAPIBaseURL, shortID)
 	req, err := http.NewRequestWithContext(
@@ -70,7 +75,7 @@ func normalizeLobstersURL(rawURL string) string {
 	if err != nil {
 		return rawURL
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck // response body close is best-effort
 	if resp.StatusCode != http.StatusOK {
 		return rawURL
 	}
@@ -121,7 +126,7 @@ func enrichAggregatorFeedEntry(link, discussionHint string) (resolved, original 
 	if original == "" {
 		return resolved, original, nil
 	}
-	metadata, _ = fetchHackerNewsArticleMetadata(resolved)
+	metadata = fetchHackerNewsArticleMetadata(resolved)
 	return resolved, original, metadata
 }
 
@@ -130,7 +135,7 @@ func aggregatorDiscussionLabel(rawURL string) string {
 	case isHackerNewsDiscussionURL(rawURL):
 		return "HN"
 	case isLobstersDiscussionURL(rawURL):
-		return "Lobsters"
+		return lobstersSourceName
 	default:
 		return ""
 	}
