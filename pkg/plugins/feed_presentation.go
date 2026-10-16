@@ -10,18 +10,19 @@ import (
 )
 
 const (
-	presentationClassic = "classic"
-	presentationEditorial = "editorial"
-	presentationGallery = "gallery"
-	presentationReading = "reading"
-	presentationTimeline = "timeline"
-	presentationResources = "resources"
-	presentationAuto = "auto"
-	presentationFeatured = "featured"
-	presentationOther = "other"
-	presentationUndated = "undated"
+	presentationClassic      = "classic"
+	presentationEditorial    = "editorial"
+	presentationGallery      = "gallery"
+	presentationReading      = "reading"
+	presentationTimeline     = "timeline"
+	presentationResources    = "resources"
+	presentationAuto         = "auto"
+	presentationFeatured     = "featured"
+	presentationOther        = "other"
+	presentationUndated      = "undated"
 	presentationFeedTemplate = "feed.html"
 )
+
 // EditorialFeedItem is a post or a collection of same-day shots. Grouped shots
 // retain individual permalinks and render through the normal card router.
 type EditorialFeedItem struct {
@@ -54,7 +55,7 @@ func presentationKind(post *models.Post) string {
 	case tpl == templateTypeVideo, strings.Contains(path, "/video/"):
 		return templateTypeVideo
 	case strings.Contains(path, "/blog/"), strings.Contains(path, "/til/"),
-		tpl == "post", tpl == templateTypeArticle, tpl == "guide", tpl == "tutorial":
+		tpl == "post", tpl == templateTypeArticle, tpl == "guide", tpl == templateTypeTutorial:
 		return templateTypeArticle
 	default:
 		return presentationOther
@@ -135,7 +136,7 @@ func editorialRank(post *models.Post) int {
 
 func editorialWeek(post *models.Post) (key, label string) {
 	if post == nil || post.Date == nil {
-		return presentationUndated, "Undated"
+		return presentationUndated, strings.ToUpper(presentationUndated[:1]) + presentationUndated[1:]
 	}
 	date := *post.Date
 	start := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, date.Location())

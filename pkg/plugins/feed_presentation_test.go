@@ -1,12 +1,12 @@
 package plugins
 
 import (
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/WaylonWalker/markata-go/pkg/models"
 	"github.com/WaylonWalker/markata-go/pkg/templates"
-	"strings"
 )
 
 func presentationTestPost(day int, template string) *models.Post {
