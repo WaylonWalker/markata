@@ -2224,16 +2224,20 @@ func (s *Service) discoverReleases() []ReleaseView {
 	current := s.currentReleaseID()
 	type releaseBuildMeta struct {
 		id       string
-		status   string
-		finished time.Time
+		status        string
+		finished      time.Time
+		builderCommit string
+		sourceCommit  string
 	}
 	buildByRelease := make(map[string]releaseBuildMeta)
 	for _, record := range s.viewState().Builds {
 		if record.ReleaseID != "" && buildByRelease[record.ReleaseID].id == "" {
 			buildByRelease[record.ReleaseID] = releaseBuildMeta{
 				id:       record.ID,
-				status:   record.Status,
-				finished: record.FinishedAt,
+				status:        record.Status,
+				finished:      record.FinishedAt,
+				builderCommit: record.BuilderCommit,
+				sourceCommit:  record.SourceCommit,
 			}
 		}
 	}
@@ -2260,6 +2264,8 @@ func (s *Service) discoverReleases() []ReleaseView {
 			Current:      entry.Name() == current,
 			BuildID:      meta.id,
 			BuildStatus:  meta.status,
+			BuilderCommit: meta.builderCommit,
+			SourceCommit:  meta.sourceCommit,
 			RollbackOnly: true,
 		})
 	}
