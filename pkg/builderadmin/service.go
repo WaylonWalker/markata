@@ -98,6 +98,7 @@ type State struct {
 type QueuedOperation struct {
 	ID          string    `json:"id"`
 	Kind        string    `json:"kind"`
+	ActorID     string    `json:"actor_id,omitempty"`
 	Label       string    `json:"label"`
 	TriggerType string    `json:"trigger_type"`
 	Detail      string    `json:"detail,omitempty"`
@@ -111,6 +112,7 @@ type QueuedOperation struct {
 type RunningOperation struct {
 	ID          string    `json:"id"`
 	Kind        string    `json:"kind"`
+	ActorID     string    `json:"actor_id,omitempty"`
 	Label       string    `json:"label"`
 	TriggerType string    `json:"trigger_type"`
 	Detail      string    `json:"detail,omitempty"`
@@ -123,6 +125,7 @@ type RunningOperation struct {
 type BuildRecord struct {
 	ID              string                    `json:"id"`
 	Kind            string                    `json:"kind"`
+	ActorID         string                    `json:"actor_id,omitempty"`
 	Status          string                    `json:"status"`
 	TriggerType     string                    `json:"trigger_type"`
 	TriggerDetail   string                    `json:"trigger_detail,omitempty"`
@@ -149,6 +152,7 @@ type BuildRecord struct {
 
 type RefreshRecord struct {
 	ID                    string                    `json:"id"`
+	ActorID               string                    `json:"actor_id,omitempty"`
 	TaskName              string                    `json:"task_name"`
 	Status                string                    `json:"status"`
 	TriggerType           string                    `json:"trigger_type"`
@@ -528,6 +532,21 @@ func (s *Service) queueRequestFromQueued(queued QueuedOperation) (queueRequest, 
 func (s *Service) registerRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/health", s.handleHealth)
 	mux.HandleFunc("/webhook", s.handleWebhook)
+	api := http.NewServeMux()
+	api.HandleFunc("/state", s.handleAPIState)
+	api.HandleFunc("/builds", s.handleAPIBuilds)
+	api.HandleFunc("/builds/", s.handleAPIBuildDetail)
+	api.HandleFunc("/refresh/", s.handleAPIRefresh)
+	api.HandleFunc("/refreshes/", s.handleAPIRefreshDetail)
+	api.HandleFunc("/releases/", s.handleAPIReleaseAction)
+	api.HandleFunc("/logs/", s.handleAPILogs)
+	api.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
+		writeAPIError(w, http.StatusNotFound, "not_found", "API resource not found.")
+	})
+	mux.Handle("/api/v1", s.requireBearerOperator(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		writeAPIError(w, http.StatusNotFound, "not_found", "API resource not found.")
+	})))
+	mux.Handle("/api/v1/", s.requireBearerOperator(http.StripPrefix("/api/v1", api)))
 	protected := http.NewServeMux()
 	protected.HandleFunc("/builds/", s.handleBuildDetail)
 	protected.HandleFunc("/", s.handleIndex)
@@ -695,26 +714,21 @@ func (s *Service) handleHealth(w http.ResponseWriter, _ *http.Request) {
 	})
 }
 
-func (s *Service) handleState(w http.ResponseWriter, _ *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	state := s.viewState()
-	_ = json.NewEncoder(w).Encode(struct {
-		State         State                 `json:"state"`
-		Releases      []ReleaseView         `json:"releases"`
-		CurrentID     string                `json:"current_release_id,omitempty"`
-		CurrentPath   string                `json:"current_release_path,omitempty"`
-		Config        Config                `json:"config"`
-		RefreshTasks  []string              `json:"refresh_tasks"`
-		ControlCenter servecontrol.Snapshot `json:"control_center"`
-	}{
-		State:         state,
+func (s *Service) stateResponse() adminStateResponse {
+	return adminStateResponse{
+		State:         s.viewState(),
 		Releases:      s.discoverReleases(),
 		CurrentID:     s.currentReleaseID(),
 		CurrentPath:   s.currentReleasePath(),
 		Config:        s.cfg,
 		RefreshTasks:  s.refreshTaskNames(),
 		ControlCenter: s.controlRuntime.Snapshot(),
-	})
+	}
+}
+
+func (s *Service) handleState(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(s.stateResponse())
 }
 
 func (s *Service) handleBuilds(w http.ResponseWriter, r *http.Request) {
@@ -725,7 +739,8 @@ func (s *Service) handleBuilds(w http.ResponseWriter, r *http.Request) {
 		if !s.validateCSRF(w, r) {
 			return
 		}
-		if err := s.enqueueBuild("manual-ui", "Manual build from admin UI", nil); err != nil {
+		profile, _ := operatorProfileFromHeaders(r.Header, s.cfg.AuthHeaders)
+		if _, err := s.enqueueBuildAs("manual-ui", "Manual build from admin UI", nil, profile.UserID); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -751,7 +766,8 @@ func (s *Service) handleRefreshRun(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "missing task name", http.StatusBadRequest)
 		return
 	}
-	if err := s.enqueueRefresh(name, "manual-ui", "Manual refresh from admin UI"); err != nil {
+	profile, _ := operatorProfileFromHeaders(r.Header, s.cfg.AuthHeaders)
+	if _, err := s.enqueueRefreshAs(name, "manual-ui", "Manual refresh from admin UI", profile.UserID); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -775,7 +791,8 @@ func (s *Service) handleReleaseAction(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "unsupported release action", http.StatusBadRequest)
 		return
 	}
-	if err := s.enqueueRollback(parts[0], "manual-ui", "Rollback from admin UI"); err != nil {
+	profile, _ := operatorProfileFromHeaders(r.Header, s.cfg.AuthHeaders)
+	if _, err := s.enqueueRollbackAs(parts[0], "manual-ui", "Rollback from admin UI", profile.UserID); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -984,9 +1001,15 @@ func (s *Service) process(ctx context.Context, req queueRequest) {
 }
 
 func (s *Service) enqueueBuild(triggerType, detail string, changed []string) error {
+	_, err := s.enqueueBuildAs(triggerType, detail, changed, "")
+	return err
+}
+
+func (s *Service) enqueueBuildAs(triggerType, detail string, changed []string, actorID string) (QueuedOperation, error) {
 	queued := QueuedOperation{
 		ID:          nextID("build"),
 		Kind:        "build",
+		ActorID:     actorID,
 		Label:       "Build",
 		TriggerType: triggerType,
 		Detail:      detail,
@@ -997,10 +1020,10 @@ func (s *Service) enqueueBuild(triggerType, detail string, changed []string) err
 	request := queueRequest{QueuedOperation: queued}
 	select {
 	case s.queueCh <- request:
-		return nil
+		return queued, nil
 	default:
 		s.removeQueued(queued.ID)
-		return ErrBuildQueueFull
+		return QueuedOperation{}, ErrBuildQueueFull
 	}
 }
 
@@ -1042,13 +1065,19 @@ func (s *Service) finishWebhookSyncFailure(req queueRequest, err error) {
 }
 
 func (s *Service) enqueueRefresh(name, triggerType, detail string) error {
+	_, err := s.enqueueRefreshAs(name, triggerType, detail, "")
+	return err
+}
+
+func (s *Service) enqueueRefreshAs(name, triggerType, detail, actorID string) (QueuedOperation, error) {
 	task, ok := s.findRefreshTask(name)
 	if !ok {
-		return fmt.Errorf("unknown refresh task %q", name)
+		return QueuedOperation{}, fmt.Errorf("unknown refresh task %q", name)
 	}
 	queued := QueuedOperation{
 		ID:          nextID("refresh"),
 		Kind:        "refresh",
+		ActorID:     actorID,
 		Label:       "Refresh " + task.Name,
 		TriggerType: triggerType,
 		Detail:      detail,
@@ -1056,17 +1085,28 @@ func (s *Service) enqueueRefresh(name, triggerType, detail string) error {
 		TaskName:    task.Name,
 	}
 	s.pushQueued(queued)
-	s.queueCh <- queueRequest{QueuedOperation: queued, commandArgs: append([]string(nil), task.Args...)}
-	return nil
+	select {
+	case s.queueCh <- queueRequest{QueuedOperation: queued, commandArgs: append([]string(nil), task.Args...)}:
+		return queued, nil
+	default:
+		s.removeQueued(queued.ID)
+		return QueuedOperation{}, ErrBuildQueueFull
+	}
 }
 
 func (s *Service) enqueueRollback(releaseID, triggerType, detail string) error {
+	_, err := s.enqueueRollbackAs(releaseID, triggerType, detail, "")
+	return err
+}
+
+func (s *Service) enqueueRollbackAs(releaseID, triggerType, detail, actorID string) (QueuedOperation, error) {
 	if releaseID == "" {
-		return fmt.Errorf("release id is required")
+		return QueuedOperation{}, fmt.Errorf("release id is required")
 	}
 	queued := QueuedOperation{
 		ID:          nextID("rollback"),
 		Kind:        "rollback",
+		ActorID:     actorID,
 		Label:       "Rollback " + releaseID,
 		TriggerType: triggerType,
 		Detail:      detail,
@@ -1074,8 +1114,13 @@ func (s *Service) enqueueRollback(releaseID, triggerType, detail string) error {
 		ReleaseID:   releaseID,
 	}
 	s.pushQueued(queued)
-	s.queueCh <- queueRequest{QueuedOperation: queued}
-	return nil
+	select {
+	case s.queueCh <- queueRequest{QueuedOperation: queued}:
+		return queued, nil
+	default:
+		s.removeQueued(queued.ID)
+		return QueuedOperation{}, ErrBuildQueueFull
+	}
 }
 
 func (s *Service) runBuild(ctx context.Context, req queueRequest) {
@@ -1083,6 +1128,7 @@ func (s *Service) runBuild(ctx context.Context, req queueRequest) {
 	record := BuildRecord{
 		ID:            req.ID,
 		Kind:          req.Kind,
+		ActorID:       req.ActorID,
 		Status:        "running",
 		TriggerType:   req.TriggerType,
 		TriggerDetail: req.Detail,
@@ -1181,6 +1227,7 @@ func (s *Service) runRefresh(ctx context.Context, req queueRequest) {
 	started := time.Now().UTC()
 	record := RefreshRecord{
 		ID:                    req.ID,
+		ActorID:               req.ActorID,
 		TaskName:              req.TaskName,
 		Status:                "running",
 		TriggerType:           req.TriggerType,
@@ -1226,6 +1273,7 @@ func (s *Service) runRefresh(ctx context.Context, req queueRequest) {
 		queued := QueuedOperation{
 			ID:          buildID,
 			Kind:        "build",
+			ActorID:     req.ActorID,
 			Label:       "Build",
 			TriggerType: "scheduled-refresh",
 			Detail:      "Build enqueued by refresh task " + task.Name,
@@ -1245,6 +1293,7 @@ func (s *Service) runRollback(req queueRequest) {
 	record := BuildRecord{
 		ID:              req.ID,
 		Kind:            req.Kind,
+		ActorID:         req.ActorID,
 		Status:          "running",
 		TriggerType:     req.TriggerType,
 		TriggerDetail:   req.Detail,
@@ -1691,6 +1740,7 @@ func (s *Service) setRunning(req queueRequest) {
 	s.state.Running = &RunningOperation{
 		ID:          req.ID,
 		Kind:        req.Kind,
+		ActorID:     req.ActorID,
 		Label:       req.Label,
 		TriggerType: req.TriggerType,
 		Detail:      req.Detail,

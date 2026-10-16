@@ -725,6 +725,7 @@ type BuilderAdminAuthHeadersConfig struct {
 	Groups      *string `json:"groups" yaml:"groups" toml:"groups"`
 	Roles       *string `json:"roles" yaml:"roles" toml:"roles"`
 	Scopes      *string `json:"scopes" yaml:"scopes" toml:"scopes"`
+	AuthMethod  *string `json:"auth_method" yaml:"auth_method" toml:"auth_method"`
 }
 
 // DefaultTrustedMediaDomains is the default allowlist for media helpers.

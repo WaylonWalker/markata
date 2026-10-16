@@ -42,6 +42,7 @@ var (
 	builderAdminAuthGroupsHeader      string
 	builderAdminAuthRolesHeader       string
 	builderAdminAuthScopesHeader      string
+	builderAdminAuthMethodHeader      string
 	builderAdminPublicAuthOrigin      string
 	builderAdminPublicOrigin          string
 	builderAdminPreviewOrigin         string
@@ -87,6 +88,7 @@ func init() {
 	builderAdminCmd.Flags().StringVar(&builderAdminAuthGroupsHeader, "auth-groups-header", "X-Hlab-Groups", "trusted proxy header containing operator groups")
 	builderAdminCmd.Flags().StringVar(&builderAdminAuthRolesHeader, "auth-roles-header", "X-Hlab-Roles", "trusted proxy header containing operator roles")
 	builderAdminCmd.Flags().StringVar(&builderAdminAuthScopesHeader, "auth-scopes-header", "X-Hlab-Scopes", "trusted proxy header containing operator scopes")
+	builderAdminCmd.Flags().StringVar(&builderAdminAuthMethodHeader, "auth-method-header", "X-Hlab-Auth-Method", "trusted proxy header identifying bearer-authenticated machine API requests")
 	builderAdminCmd.Flags().StringVar(&builderAdminPublicAuthOrigin, "public-auth-origin", "", "optional HTTPS hlab-auth origin used for the signed-in operator profile picture")
 	builderAdminCmd.Flags().StringVar(&builderAdminPublicOrigin, "public-origin", "", "exact HTTPS public origin used to validate browser mutations")
 	builderAdminCmd.Flags().StringVar(&builderAdminPreviewOrigin, "preview-origin", "", "HTTPS site origin used for retained release previews")
@@ -275,6 +277,7 @@ func resolveBuilderAdminAuthHeaders(cmd *cobra.Command, configPath string) (buil
 		{"auth-groups-header", builderAdminAuthGroupsHeader, &headers.Groups},
 		{"auth-roles-header", builderAdminAuthRolesHeader, &headers.Roles},
 		{"auth-scopes-header", builderAdminAuthScopesHeader, &headers.Scopes},
+		{"auth-method-header", builderAdminAuthMethodHeader, &headers.AuthMethod},
 	} {
 		if cmd.Flags().Changed(flag.name) {
 			*flag.target = flag.value
@@ -295,6 +298,7 @@ func applyBuilderAdminConfigHeaders(headers *builderadmin.AuthHeaders, configure
 		{configured.Groups, &headers.Groups},
 		{configured.Roles, &headers.Roles},
 		{configured.Scopes, &headers.Scopes},
+		{configured.AuthMethod, &headers.AuthMethod},
 	} {
 		if field.source != nil {
 			*field.target = *field.source
