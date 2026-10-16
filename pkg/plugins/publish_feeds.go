@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"html"
 	"html/template"
+	"io"
 	"os"
 	"path"
 	"path/filepath"
@@ -575,6 +576,17 @@ func (p *PublishFeedsPlugin) shouldSkipFeedWithConfigAndChanges(
 
 	for _, path := range p.expectedFeedOutputPaths(fc, outputDir, config) {
 		if _, err := os.Stat(path); err != nil {
+			return false, currentHash
+		}
+	}
+
+	// A prior build may have cached a classic/fallback HTML page despite an
+	// editorial opt-in. Existence and a matching feed hash do not prove the
+	// expected template actually made it into the published release.
+	if resolveFeedPresentation(fc) == presentationEditorial && fc.PaginationType != models.PaginationJS {
+		indexPath := filepath.Join(p.determineFeedDir(outputDir, fc.Slug), "index.html")
+		if !editorialHTMLPublished(indexPath) {
+			publishFeedsLog.Infof("feed %q cached index lacks editorial markup; rebuilding", fc.Slug)
 			return false, currentHash
 		}
 	}
@@ -1215,6 +1227,11 @@ func (p *PublishFeedsPlugin) generateSimpleFeedPageHTML(fc *models.FeedConfig, p
 
 // generateFeedPageHTML generates HTML for a feed page.
 func (p *PublishFeedsPlugin) generateFeedPageHTML(fc *models.FeedConfig, page *models.FeedPage, config *lifecycle.Config, modelsConfig *models.Config, renderCtx *feedRenderContext) (string, error) {
+	presentation := resolveFeedPresentation(fc)
+	// JS pagination requires direct children and cannot render nested weeks.
+	if page.PaginationType == models.PaginationJS && presentation == presentationEditorial {
+		presentation = presentationClassic
+	}
 	templateName := fc.Templates.HTML
 	if templateName == "" {
 		templateName = "feed.html"
@@ -1260,12 +1277,6 @@ func (p *PublishFeedsPlugin) generateFeedPageHTML(fc *models.FeedConfig, page *m
 		ctx := templates.NewFeedContext(fc, page, modelsConfig)
 		ctx.Set("nav_previews", p.navPreviews)
 		ctx.Set("feed_robots", fc.Robots)
-		presentation := resolveFeedPresentation(fc)
-		// The JS paginator assumes individual direct-child cards, so retain
-		// the classic markup rather than nesting posts inside weekly sections.
-		if page.PaginationType == models.PaginationJS && presentation == presentationEditorial {
-			presentation = presentationClassic
-		}
 		ctx.Set("feed_presentation", presentation)
 		if presentation == presentationEditorial {
 			ctx.Set("feed_sections", buildEditorialFeedSections(page.Posts))
@@ -1278,17 +1289,33 @@ func (p *PublishFeedsPlugin) generateFeedPageHTML(fc *models.FeedConfig, page *m
 		// If any post on this page has encrypted content, load decryption JS/CSS
 		setEncryptedFeedContext(&ctx, page)
 
-		// Render with pongo2 template
-		html, err := engine.Render(templateName, ctx)
-		if err != nil {
-			// Log template rendering errors to help debug issues
-			publishFeedsLog.Warnf("template rendering failed for %s: %v (falling back to built-in template)", templateName, err)
+		// Render with pongo2 template. An explicitly selected editorial feed
+		// must not silently degrade to the legacy HTML after a template error.
+		html, renderErr := engine.Render(templateName, ctx)
+		if renderErr != nil {
+			if presentation == presentationEditorial {
+				return "", fmt.Errorf("editorial feed %q page %d template %q failed: %w", fc.Slug, page.Number, templateName, renderErr)
+			}
+			publishFeedsLog.Warnf("template rendering failed for %s: %v (falling back to built-in template)", templateName, renderErr)
 		} else {
+			if presentation == presentationEditorial && !editorialHTMLMarkupValid(html) {
+				return "", fmt.Errorf("editorial feed %q page %d template %q rendered without editorial markers; check theme/template overrides", fc.Slug, page.Number, templateName)
+			}
+			if page.Number == 1 && presentation == presentationEditorial {
+				publishFeedsLog.Infof("feed %q rendered with editorial presentation and %d weekly sections", fc.Slug, len(buildEditorialFeedSections(page.Posts)))
+			}
 			return html, nil
 		}
 	}
 
-	// Fallback: Use built-in Go template
+	if presentation == presentationEditorial {
+		if err != nil {
+			return "", fmt.Errorf("editorial feed %q template engine unavailable: %w", fc.Slug, err)
+		}
+		return "", fmt.Errorf("editorial feed %q template %q not found; cannot use classic fallback", fc.Slug, templateName)
+	}
+
+	// Legacy feeds continue to support the built-in Go template fallback.
 	return p.generateFeedPageHTMLFallback(fc, page, config)
 }
 

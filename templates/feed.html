@@ -24,7 +24,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="feed{% if feed.views.calendar %} calendar-feed{% endif %} h-feed{% if feed.type == 'guide' %} feed--guide{% elif feed.type == 'series' %} feed--series{% endif %}{% if feed_presentation and feed_presentation != "classic" %} feed--{{ feed_presentation }}{% endif %}"{% if feed.views.calendar %} data-calendar-feed data-calendar-default="list" data-calendar-url-state{% endif %}>
+<div class="feed{% if feed.views.calendar %} calendar-feed{% endif %} h-feed{% if feed.type == 'guide' %} feed--guide{% elif feed.type == 'series' %} feed--series{% endif %}{% if feed_presentation and feed_presentation != "classic" %} feed--{{ feed_presentation }}{% endif %}" data-feed-presentation="{{ feed_presentation }}"{% if feed.views.calendar %} data-calendar-feed data-calendar-default="list" data-calendar-url-state{% endif %}>
   <header class="feed-header">
     <div class="feed-header-top">
       <div class="feed-header-copy">
