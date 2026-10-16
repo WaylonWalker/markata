@@ -7,15 +7,19 @@
       {% for item in section.Items %}
       {% if item.Kind == "shots" %}
       <section class="editorial-shot-collection" aria-label="Photo collection">
-        <header class="editorial-collection-header"><h3>Shots <span>({{ item.Posts|length }})</span></h3></header>
-        <div class="editorial-shot-grid">
+        <header class="editorial-collection-header">
+          <p class="editorial-collection-kicker">Photo journal · {{ item.DateLabel }}</p>
+          <h3>In pictures <span>{{ item.Posts|length }} photographs</span></h3>
+        </header>
+        <div class="editorial-shot-grid{% if item.Mosaic %} editorial-shot-grid--mosaic{% endif %}">
           {% for post in item.Posts %}
           {% include "partials/cards/card-router.html" %}
           {% endfor %}
         </div>
       </section>
       {% else %}
-      <div class="editorial-entry editorial-entry--{{ item.Importance }}">
+      <div class="editorial-entry editorial-entry--{{ item.Importance }}{% if item.Lead %} editorial-entry--lead{% endif %}">
+        <p class="editorial-entry-kicker">{% if item.Lead %}<span class="editorial-lead-marker">Featured this week</span><span aria-hidden="true"> / </span>{% endif %}{{ item.TypeLabel }}</p>
         {% for post in item.Posts %}
         {% include "partials/cards/card-router.html" %}
         {% endfor %}
