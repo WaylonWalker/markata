@@ -20,7 +20,7 @@ func TestAnalyzePostAndActionableFindings(t *testing.T) {
 		t.Fatalf("missing inline measurements: %+v", page)
 	}
 	want := []string{"HTML_OVER_BUDGET", "EMBEDDED_JSON_OVER_BUDGET", "INLINE_JS_OVER_BUDGET", "SIDEBAR_JSON_OVER_BUDGET"}
-	var codes []string
+	codes := make([]string, 0, len(page.Findings))
 	for _, f := range page.Findings {
 		if f.Advice == "" || f.BudgetBytes <= 0 || f.Bytes <= f.BudgetBytes {
 			t.Fatalf("invalid finding: %+v", f)
@@ -35,32 +35,46 @@ func TestAnalyzePostAndActionableFindings(t *testing.T) {
 func TestScanDeterministicAndReportNotScanned(t *testing.T) {
 	root := t.TempDir()
 	for name, body := range map[string]string{
-		"b/index.html": "<html><body>short</body></html>",
-		"a/index.html": "<html><body>" + strings.Repeat("x", 150) + "</body></html>",
+		"b/index.html":          "<html><body>short</body></html>",
+		"a/index.html":          "<html><body>" + strings.Repeat("x", 150) + "</body></html>",
 		".markata/ignored.html": strings.Repeat("x", 100000),
-		"binary.txt": "not HTML",
+		"binary.txt":            "not HTML",
 	} {
 		path := filepath.Join(root, filepath.FromSlash(name))
-		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil { t.Fatal(err) }
-		if err := os.WriteFile(path, []byte(body), 0644); err != nil { t.Fatal(err) }
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte(body), 0o600); err != nil {
+			t.Fatal(err)
+		}
 	}
 	limits := Limits{OtherHTMLBytes: 100}
 	first, err := Scan(root, limits)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	if first.Summary.Pages != 2 || first.Summary.WarnedPages != 1 || first.Pages[0].Path != "a/index.html" {
 		t.Fatalf("unexpected report: %+v", first)
 	}
 	out := filepath.Join(root, ".markata", "page-weight.json")
-	if err := WriteJSON(out, first); err != nil { t.Fatal(err) }
+	if err := WriteJSON(out, first); err != nil {
+		t.Fatal(err)
+	}
 	second, err := Scan(root, limits)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	if !reflect.DeepEqual(first, second) {
 		t.Fatalf("reports are not deterministic")
 	}
 	data, err := os.ReadFile(out)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	var decoded Report
-	if err := json.Unmarshal(data, &decoded); err != nil { t.Fatal(err) }
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		t.Fatal(err)
+	}
 	if decoded.Measurement != "uncompressed_generated_html_source" || decoded.SchemaVersion != SchemaVersion {
 		t.Fatalf("unexpected serialized report: %+v", decoded)
 	}

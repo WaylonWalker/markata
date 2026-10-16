@@ -49,7 +49,7 @@ var (
 	buildBenchmarkDetailed bool
 
 	// Build-time analysis of generated HTML (not browser transfer or Lighthouse).
-	buildPageWeight = true
+	buildPageWeight       = true
 	buildPageWeightHTMLKB = 160
 )
 
@@ -115,11 +115,8 @@ func runBuildCommand(cmd *cobra.Command, args []string) error {
 	if err := validateDAGEnvironment(cmd); err != nil {
 		return err
 	}
-	if buildBenchmarkJSON != "" && buildBenchmarkSummaryJSON != "" {
-		return fmt.Errorf("--benchmark-json and --benchmark-summary-json cannot be used together")
-	}
-	if buildPageWeight && (buildPageWeightHTMLKB < 1 || buildPageWeightHTMLKB > 10240) {
-		return fmt.Errorf("--page-weight-html-kb must be between 1 and 10240")
+	if err := validateBuildOptions(); err != nil {
+		return err
 	}
 	startTime := time.Now()
 
@@ -189,6 +186,15 @@ func runBuildCommand(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+func validateBuildOptions() error {
+	if buildBenchmarkJSON != "" && buildBenchmarkSummaryJSON != "" {
+		return fmt.Errorf("--benchmark-json and --benchmark-summary-json cannot be used together")
+	}
+	if buildPageWeight && (buildPageWeightHTMLKB < 1 || buildPageWeightHTMLKB > 10240) {
+		return fmt.Errorf("--page-weight-html-kb must be between 1 and 10240")
+	}
+	return nil
+}
 
 func reportGeneratedPageWeight(outputDir string) error {
 	if outputDir == "" {
@@ -207,7 +213,8 @@ func reportGeneratedPageWeight(outputDir string) error {
 	errlnf("Page weight: %d HTML pages, %d over budget; report: %s",
 		report.Summary.Pages, report.Summary.WarnedPages, reportPath)
 	shown := 0
-	for _, page := range report.Pages {
+	for i := range report.Pages {
+		page := &report.Pages[i]
 		for _, finding := range page.Findings {
 			if shown >= 5 {
 				break

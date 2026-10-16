@@ -13,7 +13,10 @@ import (
 	"strings"
 )
 
+// SchemaVersion identifies the JSON diagnostic schema.
 const SchemaVersion = 1
+
+const pageKindPost = "post"
 
 var (
 	scriptPattern = regexp.MustCompile(`(?is)<script\b([^>]*)>(.*?)</script\s*>`)
@@ -27,13 +30,14 @@ var (
 
 // Limits are uncompressed HTML-source budgets, in bytes.
 type Limits struct {
-	PostHTMLBytes int `json:"post_html_bytes"`
-	OtherHTMLBytes int `json:"other_html_bytes"`
+	PostHTMLBytes     int `json:"post_html_bytes"`
+	OtherHTMLBytes    int `json:"other_html_bytes"`
 	EmbeddedJSONBytes int `json:"embedded_json_bytes"`
-	InlineJSBytes int `json:"inline_js_bytes"`
-	SidebarJSONBytes int `json:"sidebar_json_bytes"`
+	InlineJSBytes     int `json:"inline_js_bytes"`
+	SidebarJSONBytes  int `json:"sidebar_json_bytes"`
 }
 
+// DefaultLimits returns the non-failing initial warning thresholds.
 func DefaultLimits() Limits {
 	return Limits{
 		PostHTMLBytes: 160 * 1024,
@@ -44,46 +48,51 @@ func DefaultLimits() Limits {
 	}
 }
 
+// Finding is an actionable budget violation with a stable code.
 type Finding struct {
-	Code string `json:"code"`
-	Bytes int `json:"bytes"`
-	BudgetBytes int `json:"budget_bytes"`
-	Advice string `json:"advice"`
+	Code        string `json:"code"`
+	Bytes       int    `json:"bytes"`
+	BudgetBytes int    `json:"budget_bytes"`
+	Advice      string `json:"advice"`
 }
 
+// Page contains per-document counters from the emitted HTML source.
 type Page struct {
-	Path string `json:"path"`
-	Kind string `json:"kind"`
-	HTMLBytes int `json:"html_bytes"`
-	EmbeddedJSONBytes int `json:"embedded_json_bytes"`
-	InlineJSBytes int `json:"inline_js_bytes"`
-	InlineCSSBytes int `json:"inline_css_bytes"`
-	PostCopyJSONBytes int `json:"post_copy_json_bytes"`
-	SidebarJSONBytes int `json:"sidebar_json_bytes"`
-	GraphAttributeBytes int `json:"graph_attribute_bytes"`
-	StylesheetLinks int `json:"stylesheet_links"`
-	ExternalScripts int `json:"external_scripts"`
-	ImageElements int `json:"image_elements"`
-	IframeElements int `json:"iframe_elements"`
-	Findings []Finding `json:"findings"`
+	Path                string    `json:"path"`
+	Kind                string    `json:"kind"`
+	HTMLBytes           int       `json:"html_bytes"`
+	EmbeddedJSONBytes   int       `json:"embedded_json_bytes"`
+	InlineJSBytes       int       `json:"inline_js_bytes"`
+	InlineCSSBytes      int       `json:"inline_css_bytes"`
+	PostCopyJSONBytes   int       `json:"post_copy_json_bytes"`
+	SidebarJSONBytes    int       `json:"sidebar_json_bytes"`
+	GraphAttributeBytes int       `json:"graph_attribute_bytes"`
+	StylesheetLinks     int       `json:"stylesheet_links"`
+	ExternalScripts     int       `json:"external_scripts"`
+	ImageElements       int       `json:"image_elements"`
+	IframeElements      int       `json:"iframe_elements"`
+	Findings            []Finding `json:"findings"`
 }
 
+// Summary aggregates generated HTML analysis.
 type Summary struct {
-	Pages int `json:"pages"`
-	WarnedPages int `json:"warned_pages"`
-	Findings int `json:"findings"`
-	TotalHTMLBytes int64 `json:"total_html_bytes"`
-	LargestHTMLBytes int `json:"largest_html_bytes"`
+	Pages            int   `json:"pages"`
+	WarnedPages      int   `json:"warned_pages"`
+	Findings         int   `json:"findings"`
+	TotalHTMLBytes   int64 `json:"total_html_bytes"`
+	LargestHTMLBytes int   `json:"largest_html_bytes"`
 }
 
+// Report is a deterministic, local machine-readable build artifact.
 type Report struct {
-	SchemaVersion int `json:"schema_version"`
-	Measurement string `json:"measurement"`
-	Limits Limits `json:"limits"`
-	Summary Summary `json:"summary"`
-	Pages []Page `json:"pages"`
+	SchemaVersion int     `json:"schema_version"`
+	Measurement   string  `json:"measurement"`
+	Limits        Limits  `json:"limits"`
+	Summary       Summary `json:"summary"`
+	Pages         []Page  `json:"pages"`
 }
 
+// Analyze counts emitted markup and identifies violations for one page.
 func Analyze(path string, html []byte, limits Limits) Page {
 	p := Page{
 		Path: filepath.ToSlash(path),
@@ -92,7 +101,7 @@ func Analyze(path string, html []byte, limits Limits) Page {
 		Findings: []Finding{},
 	}
 	if bytes.Contains(html, []byte(`class="post h-entry`)) {
-		p.Kind = "post"
+		p.Kind = pageKindPost
 	} else if bytes.Contains(html, []byte(`feed h-feed`)) {
 		p.Kind = "feed"
 	}
@@ -129,8 +138,14 @@ func Analyze(path string, html []byte, limits Limits) Page {
 	p.ImageElements = len(imagePattern.FindAllIndex(html, -1))
 	p.IframeElements = len(iframePattern.FindAllIndex(html, -1))
 
+	addFindings(&p, limits)
+	return p
+}
+
+// addFindings evaluates the markup budgets separately from collection.
+func addFindings(p *Page, limits Limits) {
 	htmlBudget := limits.OtherHTMLBytes
-	if p.Kind == "post" {
+	if p.Kind == pageKindPost {
 		htmlBudget = limits.PostHTMLBytes
 	}
 	if htmlBudget > 0 && p.HTMLBytes > htmlBudget {
@@ -149,7 +164,6 @@ func Analyze(path string, html []byte, limits Limits) Page {
 		p.Findings = append(p.Findings, Finding{"SIDEBAR_JSON_OVER_BUDGET", p.SidebarJSONBytes, limits.SidebarJSONBytes,
 			"Ship the current feed navigation in HTML, and fetch other feed membership lists only when selected."})
 	}
-	return p
 }
 
 // Scan checks generated HTML artifacts. It deliberately does not fetch assets or
@@ -214,8 +228,8 @@ func WriteJSON(path string, report Report) error {
 		return err
 	}
 	data = append(data, '\n')
-	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err
 	}
-	return os.WriteFile(path, data, 0644)
+	return os.WriteFile(path, data, 0o600)
 }
