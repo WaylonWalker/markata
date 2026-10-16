@@ -17,3 +17,14 @@ Regular builds warn without failing. Use `--page-weight=false` only to skip
 the scan; `--page-weight-html-kb=96` changes the post-size warning threshold.
 Run a clean site rebuild after shared template changes because incremental
 output may retain earlier HTML. Both template trees may require edits.
+
+
+## Plain post card stylesheet
+
+Stock `post.html` reading pages with no feed/card markup omit
+`css/cards.css` on initial paint. Embedded feeds/cards, custom templates,
+and unknown markup must preserve their styles. Inspect generated HTML
+`<link rel="stylesheet">` tags and check real navigations from plain posts
+to card-heavy feeds; conditional-css.js handles the existing SPA lane.
+Run clean builds and compare actual Lighthouse LCP rather than assuming
+that one skipped stylesheet guarantees a score improvement.
