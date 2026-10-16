@@ -28,6 +28,9 @@ import (
 
 var publishFeedsLog = logging.Component("publish_feeds").Phase("write")
 
+// sidebarNavChunkSize bounds the bytes fetched and DOM work when browsing long sidebars.
+const sidebarNavChunkSize = 64
+
 // PublishFeedsPlugin writes feeds to multiple output formats during the write stage.
 // It also registers synthetic posts in the Configure stage so they can be resolved by wikilinks.
 type PublishFeedsPlugin struct {
@@ -670,6 +673,13 @@ func (p *PublishFeedsPlugin) expectedFeedOutputPaths(fc *models.FeedConfig, outp
 	if fc.Formats.HTML && fc.HasView(models.FeedViewCalendar) {
 		add(filepath.Join(feedDir, "calendar.json"))
 	}
+	if sidebarChunksEnabled(fc) {
+		count := len(publicSidebarChunkPosts(fc))
+		if count > 0 {
+			add(filepath.Join(feedDir, "_sidebar", "0000.json"))
+			add(filepath.Join(feedDir, "_sidebar", fmt.Sprintf("%04d.json", (count-1)/sidebarNavChunkSize)))
+		}
+	}
 
 	archiveDir := feedArchiveDir(feedDir)
 	if fc.Formats.RSS && shouldGenerateFeedArchive(fc, syndication) {
@@ -747,6 +757,7 @@ func (p *PublishFeedsPlugin) publishFeed(fc *models.FeedConfig, config *lifecycl
 	publishers := []feedFormatPublisher{
 		{name: "HTML", enabled: fc.Formats.HTML, publish: func() error { return p.publishHTMLPages(htmlFC, config, modelsConfig, feedDir, renderCtx) }},
 		{name: "Calendar data", enabled: fc.Formats.HTML && fc.HasView(models.FeedViewCalendar), publish: func() error { return p.publishCalendarJSON(htmlFC, feedDir) }},
+		{name: "Sidebar chunks", enabled: sidebarChunksEnabled(fc), publish: func() error { return p.publishSidebarChunks(fc, feedDir) }},
 		{name: "SimpleHTML", enabled: simpleHTMLViewEnabled(fc), publish: func() error { return p.publishSimpleHTMLPages(htmlFC, config, modelsConfig, feedDir, renderCtx) }},
 		{name: "Shorts", enabled: fc.HasView(models.FeedViewShorts), publish: func() error { return p.publishShortsPages(fc, config, outputDir) }},
 		{name: "RSS", enabled: fc.Formats.RSS, publish: func() error { return p.publishRSS(syndicationFC, config, feedDir, false) }},
@@ -800,6 +811,11 @@ func cleanupDisabledFeedViewOutputs(fc *models.FeedConfig, outputDir, feedDir st
 	if !fc.Formats.HTML || !fc.HasView(models.FeedViewCalendar) {
 		if err := os.Remove(filepath.Join(feedDir, "calendar.json")); err != nil && !os.IsNotExist(err) {
 			return fmt.Errorf("removing disabled calendar data: %w", err)
+		}
+	}
+	if !sidebarChunksEnabled(fc) {
+		if err := os.RemoveAll(filepath.Join(feedDir, "_sidebar")); err != nil {
+			return fmt.Errorf("removing disabled sidebar chunks: %w", err)
 		}
 	}
 	return nil
@@ -1465,6 +1481,64 @@ type calendarFeedItem struct {
 	Title       string `json:"title"`
 	Description string `json:"description,omitempty"`
 	Image       string `json:"image,omitempty"`
+}
+
+// sidebarChunksEnabled excludes private feeds: static JSON must never reveal private
+// titles or URLs. All public HTML feeds get chunks, including one-feed sidebars.
+func sidebarChunksEnabled(fc *models.FeedConfig) bool {
+	return fc != nil && fc.Formats.HTML && !fc.IncludesPrivate()
+}
+
+func publicSidebarChunkPosts(fc *models.FeedConfig) []*models.Post {
+	if !sidebarChunksEnabled(fc) {
+		return nil
+	}
+	pagePosts, _ := splitFeedRenderablePosts(fc.Posts, false)
+	return pagePosts
+}
+
+type sidebarNavChunk struct {
+	Start int               `json:"start"`
+	Posts []sidebarPostJSON `json:"posts"`
+}
+
+// publishSidebarChunks writes bounded, cacheable static navigation data. It
+// never includes article bodies or unpublished/private posts. Delete obsolete
+// tail chunks when a feed shrinks, and rebuild them with the feed's content hash.
+func (p *PublishFeedsPlugin) publishSidebarChunks(fc *models.FeedConfig, feedDir string) error {
+	if !sidebarChunksEnabled(fc) {
+		return nil
+	}
+	dir := filepath.Join(feedDir, "_sidebar")
+	if err := os.RemoveAll(dir); err != nil {
+		return fmt.Errorf("cleaning old sidebar chunks: %w", err)
+	}
+	posts := publicSidebarChunkPosts(fc)
+	if len(posts) == 0 {
+		return nil
+	}
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return fmt.Errorf("creating sidebar chunk directory: %w", err)
+	}
+	for start := 0; start < len(posts); start += sidebarNavChunkSize {
+		end := start + sidebarNavChunkSize
+		if end > len(posts) {
+			end = len(posts)
+		}
+		chunk := sidebarNavChunk{Start: start, Posts: make([]sidebarPostJSON, 0, end-start)}
+		for _, post := range posts[start:end] {
+			chunk.Posts = append(chunk.Posts, sidebarPostFromKey(sidebarKey(post, fc.Slug), false))
+		}
+		data, err := json.Marshal(chunk)
+		if err != nil {
+			return fmt.Errorf("encoding sidebar chunk: %w", err)
+		}
+		name := fmt.Sprintf("%04d.json", start/sidebarNavChunkSize)
+		if err := p.writeFile(filepath.Join(dir, name), data); err != nil {
+			return fmt.Errorf("writing sidebar chunk %s: %w", name, err)
+		}
+	}
+	return nil
 }
 
 // publishCalendarJSON writes only the metadata needed to build a feed calendar.

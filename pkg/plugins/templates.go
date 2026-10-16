@@ -1171,6 +1171,9 @@ type sidebarFeedJSON struct {
 	Calendar            bool              `json:"calendar"`
 	Posts               []sidebarPostJSON `json:"posts"`
 	TotalPosts          int               `json:"totalPosts"`
+	ChunkBase           string            `json:"chunkBase,omitempty"`
+	ChunkSize           int               `json:"chunkSize,omitempty"`
+	WindowStart         int               `json:"windowStart,omitempty"`
 	Prev                *sidebarPostJSON  `json:"prev,omitempty"`
 	Next                *sidebarPostJSON  `json:"next,omitempty"`
 }
@@ -1227,7 +1230,12 @@ func (p *TemplatesPlugin) getAllCandidateFeeds(
 			return
 		}
 		seen[fc.Slug] = true
-		feeds = append(feeds, p.buildSidebarFeedEntry(post, fc, posts, priority, syndication, postFormats, maxPosts))
+		entry := p.buildSidebarFeedEntry(post, fc, posts, priority, syndication, postFormats, maxPosts)
+		entry.ChunkBase = sidebarChunkBase(fc, posts, m)
+		if entry.ChunkBase != "" {
+			entry.ChunkSize = sidebarNavChunkSize
+		}
+		feeds = append(feeds, entry)
 	}
 
 	// 1. Series
@@ -1316,6 +1324,14 @@ func (p *TemplatesPlugin) buildSidebarFeedEntry(
 		Posts:               make([]sidebarPostJSON, 0, len(windowedPosts)),
 	}
 
+	if len(windowedPosts) > 0 {
+		for i, fp := range posts {
+			if fp.Slug == windowedPosts[0].Slug {
+				feed.WindowStart = i
+				break
+			}
+		}
+	}
 	for _, fp := range windowedPosts {
 		feed.Posts = append(feed.Posts, p.postToSidebarJSON(fp, fp.Slug == currentPost.Slug, fc.Slug))
 	}
@@ -1595,10 +1611,10 @@ func (p *TemplatesPlugin) buildSidebarFeedsJSON(
 	seen := makeSidebarFeedSet(feeds)
 	feeds = p.appendMissingPrimarySidebarFeeds(feeds, seen, post, config, m, postFormats)
 
-	if len(feeds) <= 1 {
-		// No point in cycling with only 0 or 1 feed
+	if len(feeds) == 0 {
 		return ""
 	}
+	// Keep one-feed metadata: lazy navigation works even without feed cycling.
 
 	rotationFeedSlugs := p.buildRotationFeedSlugs(m, seen)
 
@@ -1625,6 +1641,43 @@ func (p *TemplatesPlugin) buildSidebarFeedsJSON(
 		return ""
 	}
 	return string(b)
+}
+
+// sidebarChunkBase only advertises a sidecar when its emitted public entries
+// match the navigation feed exactly. Synthetic tag/series feeds can have a
+// different order or may not be published at all; retain their HTML fallback.
+func sidebarChunkBase(fc *models.FeedConfig, posts []*models.Post, m *lifecycle.Manager) string {
+	if !sidebarChunksEnabled(fc) || m == nil {
+		return ""
+	}
+	cached, ok := m.Cache().Get("feed_configs")
+	if !ok {
+		return ""
+	}
+	configs, ok := cached.([]models.FeedConfig)
+	if !ok {
+		return ""
+	}
+	for i := range configs {
+		candidate := &configs[i]
+		if candidate.Slug != fc.Slug || !sidebarChunksEnabled(candidate) {
+			continue
+		}
+		published := publicSidebarChunkPosts(candidate)
+		if len(published) != len(posts) || len(posts) == 0 {
+			return ""
+		}
+		for j := range posts {
+			if posts[j] == nil || published[j] == nil || posts[j].Slug != published[j].Slug {
+				return ""
+			}
+		}
+		if fc.Slug == "" {
+			return "/_sidebar/"
+		}
+		return "/" + strings.Trim(fc.Slug, "/") + "/_sidebar/"
+	}
+	return ""
 }
 
 func filterPublicSidebarFeeds(feeds []sidebarFeedJSON) []sidebarFeedJSON {
@@ -1674,7 +1727,12 @@ func (p *TemplatesPlugin) appendMissingPrimarySidebarFeeds(
 		if !sidebarExplicit && !fc.Primary {
 			continue
 		}
-		feeds = append(feeds, p.buildSidebarFeedEntry(post, fc, fc.Posts, "primary", syndication, postFormats, maxPosts))
+		entry := p.buildSidebarFeedEntry(post, fc, fc.Posts, "primary", syndication, postFormats, maxPosts)
+		entry.ChunkBase = sidebarChunkBase(fc, fc.Posts, m)
+		if entry.ChunkBase != "" {
+			entry.ChunkSize = sidebarNavChunkSize
+		}
+		feeds = append(feeds, entry)
 		seen[fc.Slug] = true
 	}
 

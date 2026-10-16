@@ -860,7 +860,7 @@ Series/collection navigation sidebar for posts in the same feed.
 | `width` | string | `"250px"` | Sidebar width |
 | `title` | string | `""` | Custom title (defaults to feed title) |
 | `feeds` | array | `[]` | Feed slugs to show navigation for |
-| `max_posts` | integer | `0` | Limit rendered sidebar items; when set, keeps a window around the current post |
+| `max_posts` | integer | `0` | Initial server-rendered sidebar window; public HTML feeds can progressively load the rest from static chunks |
 
 ```toml
 [markata-go.components.feed_sidebar]
