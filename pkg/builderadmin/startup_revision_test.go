@@ -13,8 +13,8 @@ func TestStartupRevisionBuildReason(t *testing.T) {
 	newer := BuildRecord{Kind: "build", Status: "success", BuilderCommit: revisionNewSHA, FinishedAt: at.Add(time.Hour)}
 	tests := []struct {
 		name, current, published string
-		builds                    []BuildRecord
-		want                      bool
+		builds                   []BuildRecord
+		want                     bool
 	}{
 		{"upgrade", revisionNewSHA, "", []BuildRecord{old}, true},
 		{"unchanged restart", revisionOldSHA, "", []BuildRecord{old}, false},
