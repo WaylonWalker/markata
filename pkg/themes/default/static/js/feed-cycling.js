@@ -146,11 +146,15 @@
     if (!counter || !feedState.data) return;
 
     var rotationIndexes = getRotationFeedIndexes();
-    if (!rotationIndexes.length) {
+    if (rotationIndexes.length <= 1) {
       counter.textContent = '';
       counter.hidden = true;
+      var cycle = document.getElementById('feed-nav-cycle');
+      if (cycle) cycle.hidden = true;
       return;
     }
+    var cycle = document.getElementById('feed-nav-cycle');
+    if (cycle) cycle.hidden = false;
 
     var rotationPosition = rotationIndexes.indexOf(feedState.currentIndex);
     if (rotationPosition === -1) {
@@ -218,6 +222,191 @@
     }
   }
 
+  // Keep a bounded sliding list in the DOM; the complete list lives in
+  // generated /<feed>/_sidebar/NNNN.json files, not in article HTML.
+  var chunkCache = new Map();
+  var maxRenderedPosts = 192;
+
+  function activeFeed() {
+    return feedState.data && feedState.data.feeds[feedState.currentIndex];
+  }
+
+  function windowStart(feed) {
+    if (typeof feed._windowStart !== 'number') {
+      feed._windowStart = feed.windowStart || 0;
+    }
+    return feed._windowStart;
+  }
+
+  function sidebarScrollAnchor() {
+    var aside = document.querySelector('.feed-sidebar');
+    var list = document.getElementById('feed-nav-list');
+    if (!aside || !list) return null;
+    var bound = aside.getBoundingClientRect();
+    var children = list.children;
+    for (var i = 0; i < children.length; i++) {
+      var rect = children[i].getBoundingClientRect();
+      if (rect.bottom >= bound.top + 50 && rect.top <= bound.bottom) {
+        return { aside: aside, path: children[i].getAttribute('data-sidebar-transition-path'), top: rect.top };
+      }
+    }
+    return null;
+  }
+
+  function restoreSidebarAnchor(anchor) {
+    if (!anchor || !document.contains(anchor.aside)) return;
+    var list = document.getElementById('feed-nav-list');
+    if (!list) return;
+    for (var i = 0; i < list.children.length; i++) {
+      if (list.children[i].getAttribute('data-sidebar-transition-path') === anchor.path) {
+        anchor.aside.scrollTop += list.children[i].getBoundingClientRect().top - anchor.top;
+        break;
+      }
+    }
+  }
+
+  function renderNavPosts(feed) {
+    var listEl = document.getElementById('feed-nav-list');
+    if (!listEl) return;
+    var html = '';
+    var selectedFeedSlug = currentFeedQuerySlug(feed);
+    for (var i = 0; i < feed.posts.length; i++) {
+      var p = feed.posts[i];
+      var isActive = p.slug === feedState.data.currentPostSlug;
+      var href = appendFeedParam(p.href, selectedFeedSlug);
+      html += '<li class="feed-nav-item' + (isActive ? ' feed-nav-item--active' : '') + '" data-sidebar-transition-path="' + escapeHtml(p.href.replace(/\\?.*$/, '')) + '">';
+      html += '<a href="' + escapeHtml(href) + '" class="feed-nav-link" data-sidebar-transition-title';
+      if (isActive) html += ' aria-current="page"';
+      html += '>' + escapeHtml(p.title) + '</a></li>';
+    }
+    listEl.innerHTML = html;
+    updateLoadControls(feed);
+  }
+
+  function lazyButton(id, text, list, before) {
+    var button = document.getElementById(id);
+    if (!button) {
+      button = document.createElement('button');
+      button.type = 'button';
+      button.id = id;
+      button.className = 'feed-nav-load';
+      button.textContent = text;
+      button.addEventListener('click', function() {
+        loadAdjacentChunk(before ? -1 : 1);
+      });
+      if (before) list.parentNode.insertBefore(button, list);
+      else list.parentNode.insertBefore(button, list.nextSibling);
+    }
+    return button;
+  }
+
+  function updateLoadControls(feed) {
+    var list = document.getElementById('feed-nav-list');
+    if (!list) return;
+    var newer = lazyButton('feed-nav-load-newer', '↑ Load newer posts', list, true);
+    var older = lazyButton('feed-nav-load-older', '↓ Load older posts', list, false);
+    var enabled = !!(feed.chunkBase && feed.chunkSize && feed.totalPosts);
+    newer.hidden = !enabled || windowStart(feed) === 0;
+    older.hidden = !enabled || windowStart(feed) + feed.posts.length >= feed.totalPosts;
+    newer.disabled = older.disabled = !!feed._loading;
+  }
+
+  function fetchSidebarChunk(url) {
+    if (chunkCache.has(url)) return chunkCache.get(url);
+    var request = fetch(url, { credentials: 'same-origin' }).then(function(response) {
+      if (!response.ok) throw new Error('HTTP ' + response.status);
+      return response.json();
+    }).then(function(data) {
+      if (!data || !Number.isInteger(data.start) || !Array.isArray(data.posts)) {
+        throw new Error('Invalid sidebar chunk');
+      }
+      return data;
+    });
+    chunkCache.set(url, request);
+    if (chunkCache.size > 32) chunkCache.delete(chunkCache.keys().next().value);
+    request.catch(function() { chunkCache.delete(url); });
+    return request;
+  }
+
+  function loadAdjacentChunk(direction) {
+    var feed = activeFeed();
+    if (!feed || !feed.chunkBase || !feed.chunkSize || feed._loading) return;
+    var start = windowStart(feed);
+    var target = direction < 0 ? start - 1 : start + feed.posts.length;
+    if (target < 0 || target >= feed.totalPosts) return;
+    var chunkNumber = Math.floor(target / feed.chunkSize);
+    var filename = String(chunkNumber).padStart(4, '0') + '.json';
+    var url = feed.chunkBase + filename;
+    feed._loading = true;
+    updateLoadControls(feed);
+    fetchSidebarChunk(url).then(function(chunk) {
+      var anchor = sidebarScrollAnchor();
+      var end = start + feed.posts.length;
+      if (direction < 0) {
+        var added = chunk.posts.slice(0, Math.max(0, start - chunk.start));
+        feed.posts = added.concat(feed.posts);
+        feed._windowStart = start - added.length;
+      } else {
+        var offset = Math.max(0, end - chunk.start);
+        feed.posts = feed.posts.concat(chunk.posts.slice(offset));
+        feed._windowStart = start;
+      }
+      if (feed.posts.length > maxRenderedPosts) {
+        var excess = feed.posts.length - maxRenderedPosts;
+        if (direction < 0) feed.posts.splice(feed.posts.length - excess, excess);
+        else {
+          feed.posts.splice(0, excess);
+          feed._windowStart += excess;
+        }
+      }
+      if (activeFeed() === feed && document.querySelector('.feed-sidebar')) {
+        renderNavPosts(feed);
+        restoreSidebarAnchor(anchor);
+      }
+    }).catch(function(error) {
+      // Keep the existing server-rendered links usable when a sidecar is absent
+      // (e.g. during a staggered deployment), and allow a manual retry.
+      if (activeFeed() === feed) {
+        var status = document.getElementById('feed-nav-lazy-status');
+        if (status) status.textContent = 'Unable to load more posts. Try again.';
+      }
+    }).finally(function() {
+      feed._loading = false;
+      if (activeFeed() === feed) updateLoadControls(feed);
+    });
+  }
+
+  function checkLazyScroll() {
+    var aside = document.querySelector('.feed-sidebar');
+    var feed = activeFeed();
+    var list = document.getElementById('feed-nav-list');
+    if (!aside || !feed || !list || !aside.classList.contains('sidebar--pinned')) return;
+    if (!feed.chunkBase || feed._loading) return;
+    var rect = list.getBoundingClientRect();
+    var viewport = aside.getBoundingClientRect();
+    if (windowStart(feed) > 0 && rect.top >= viewport.top - 220) loadAdjacentChunk(-1);
+    else if (windowStart(feed) + feed.posts.length < feed.totalPosts && rect.bottom <= viewport.bottom + 220) loadAdjacentChunk(1);
+  }
+
+  function bindLazySidebar() {
+    var aside = document.querySelector('.feed-sidebar');
+    if (!aside || aside.dataset.lazySidebarBound) return;
+    aside.dataset.lazySidebarBound = 'true';
+    aside.addEventListener('scroll', checkLazyScroll, { passive: true });
+    new MutationObserver(function() {
+      if (aside.classList.contains('sidebar--pinned')) checkLazyScroll();
+    }).observe(aside, { attributes: true, attributeFilter: ['class'] });
+    var list = document.getElementById('feed-nav-list');
+    if (list) {
+      var status = document.createElement('p');
+      status.id = 'feed-nav-lazy-status';
+      status.className = 'visually-hidden';
+      status.setAttribute('role', 'status');
+      status.setAttribute('aria-live', 'polite');
+      list.parentNode.appendChild(status);
+    }
+  }
+
   /**
    * Re-render the sidebar with the feed at the given index.
    */
@@ -243,23 +432,7 @@
       }
     }
 
-    // Update post list
-    var listEl = document.getElementById('feed-nav-list');
-    if (listEl) {
-      var html = '';
-      var selectedFeedSlug = currentFeedQuerySlug(feed);
-      for (var i = 0; i < feed.posts.length; i++) {
-        var p = feed.posts[i];
-        var isActive = p.active;
-        var href = appendFeedParam(p.href, selectedFeedSlug);
-        html += '<li class="feed-nav-item' + (isActive ? ' feed-nav-item--active' : '') + '" data-sidebar-transition-path="' + escapeHtml(p.href.replace(/\?.*$/, '')) + '">';
-        html += '<a href="' + escapeHtml(href) + '" class="feed-nav-link" data-sidebar-transition-title';
-        if (isActive) html += ' aria-current="page"';
-        html += '>' + escapeHtml(p.title) + '</a>';
-        html += '</li>';
-      }
-      listEl.innerHTML = html;
-    }
+    renderNavPosts(feed);
 
     // Update prev/next navigation links in .post-nav
     updatePrevNextLinks(feed);
@@ -445,7 +618,7 @@
   function init() {
     feedState.data = parseData();
     feedState.shortcutsRegistered = false;
-    if (!feedState.data || feedState.data.feeds.length <= 1) {
+    if (!feedState.data || !feedState.data.feeds.length) {
       feedState.initialized = false;
       return;
     }
@@ -470,6 +643,7 @@
     // Always render the selected feed so sidebar title, picker, and controls
     // match the current feed even when the server rendered fallback chrome.
     renderFeed(feedState.currentIndex, { forceFeedParam: feedState.explicitFeedSelection });
+    bindLazySidebar();
 
     // Register keyboard shortcuts
     registerShortcuts();
