@@ -17,17 +17,3 @@ Regular builds warn without failing. Use `--page-weight=false` only to skip
 the scan; `--page-weight-html-kb=96` changes the post-size warning threshold.
 Run a clean site rebuild after shared template changes because incremental
 output may retain earlier HTML. Both template trees may require edits.
-
-
-## Browser-native navigation experiment
-
-To compare the existing SPA transition engine with cross-document navigation,
-set `[markata-go.view_transitions] native = true` and keep `enabled = true`.
-The generated page opts into CSS `@view-transition { navigation: auto; }`,
-emits a conservative intent-only Speculation Rules prefetch for sidebar and
-post-navigation links, and **does not ship the custom view-transitions.js
-DOM-swap runtime or its conditional-css.js companion**. Browsers without
-native support use ordinary full-document link navigation. This is an opt-in
-experiment until cold-mobile Lighthouse, browser-navigation and theme tests
-show it is appropriate as the default. Setting `enabled = false` disables
-both modes.
