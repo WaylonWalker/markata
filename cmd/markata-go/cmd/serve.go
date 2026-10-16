@@ -622,6 +622,9 @@ func mountServeAdmin(site http.Handler, runtime *servecontrol.Runtime, sourceRoo
 		return site
 	}
 	mux := http.NewServeMux()
+	mux.HandleFunc(serveSubscriptionsPage, handleSubscriptionsPage)
+	mux.HandleFunc(serveSubscriptionsAPI, handleSubscriptionsAPI)
+	mux.HandleFunc(serveSubscriptionsFind, handleSubscriptionsDiscover)
 	mux.Handle("/_markata/", servecontrol.NewWebHandlerWithFixHooks(runtime, sourceRoot, func(previews []servefix.FilePreview) {
 		registerExpectedServeFixWrites(sourceRoot, previews)
 	}))
@@ -930,6 +933,10 @@ func injectDevScripts(html string, status BuildStatus) string {
 		`window.__markataThemeBakeEndpoint = "` + serveThemeBakeEndpoint + `";` +
 		`window.__markataSettingsEndpoint = "` + serveSettingsEndpoint + `";</script>`
 	bodyInjection := devScript + `<script src="` + serveSettingsScriptPath + `" defer></script>`
+	if serveLoopbackHost(serveHost) && !serveNoAdmin {
+		bodyInjection = `<a href="/_markata/subscriptions" aria-label="Manage reader subscriptions" style="position:fixed;bottom:14px;right:14px;z-index:2147482900;display:inline-block;padding:8px 12px;background:Canvas;color:CanvasText;border:1px solid currentColor;border-radius:20px;font:600 13px/1.3 system-ui,sans-serif;text-decoration:none;box-shadow:0 3px 12px #0003">RSS · Subscriptions</a>` + bodyInjection
+	}
+
 	headInjection := searchScript
 
 	if strings.Contains(html, "</head>") {

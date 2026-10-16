@@ -38,6 +38,23 @@ Run `markata-go build` and you'll have:
 - `/blogroll/` - Lists Simon Willison's blog
 - `/reader/` - Shows his latest posts
 
+## Manage subscriptions in your browser
+
+Start the local development server with `markata-go serve`, then open
+[`/_markata/subscriptions`](http://localhost:8000/_markata/subscriptions).
+The Serve Control Center and local preview pages also link to this editor.
+Paste a public website URL and select **Find feed** to discover its advertised
+RSS/Atom/JSON Feed; review its title, category, type and tags, then subscribe.
+You can search, edit or remove existing subscriptions without editing TOML.
+
+The editor writes only the **effective owning TOML config file**, including
+when blogroll subscriptions live in an included config. It preserves other
+sections and comments. When a later included/merge config replaces the feed
+list, the editor never silently writes to a shadowed earlier file. Global
+configs, merge overrides and non-TOML owners are read-only; edit those source
+files directly. The editor is only served to local loopback sessions, not
+included in production site output.
+
 ## Configuration
 
 ### Basic Settings
