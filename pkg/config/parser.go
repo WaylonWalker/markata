@@ -2266,6 +2266,7 @@ func (f *tomlFeedConfig) toFeedConfig() models.FeedConfig {
 	return result
 }
 
+
 func (f *tomlFeedFormats) toFeedFormats() models.FeedFormats {
 	formats := models.FeedFormats{}
 	if f.HTML != nil {
@@ -3862,6 +3863,7 @@ func (f *yamlFeedConfig) toFeedConfig() models.FeedConfig {
 	))
 	return result
 }
+
 
 func (f *yamlFeedFormats) toFeedFormats() models.FeedFormats {
 	formats := models.FeedFormats{}
@@ -5483,6 +5485,7 @@ func (f *jsonFeedConfig) toFeedConfig() models.FeedConfig {
 	))
 	return result
 }
+
 
 func (f *jsonFeedFormats) toFeedFormats() models.FeedFormats {
 	formats := models.FeedFormats{}
