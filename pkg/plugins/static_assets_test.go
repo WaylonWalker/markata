@@ -137,3 +137,45 @@ func TestStaticAssets_RejectsSymlinkedDestinationComponent(t *testing.T) {
 		t.Fatalf("symlink target was written, stat error = %v", err)
 	}
 }
+
+func TestVersionedFeedCSSIntegrity(t *testing.T) {
+	rootDir := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(rootDir, "css"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	root, err := os.OpenRoot(rootDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer root.Close()
+	if err := verifyVersionedFeedCSS(root, ""); err != nil {
+		t.Fatalf("custom theme without feeds.css should be allowed: %v", err)
+	}
+	css := []byte(".feed--editorial .editorial-shot-grid { display: grid; }")
+	hash := fmt.Sprintf("%x", sha256.Sum256(css))[:8]
+	if err := os.WriteFile(filepath.Join(rootDir, "css", "feeds.css"), css, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := verifyVersionedFeedCSS(root, ""); err == nil {
+		t.Fatal("unversioned default feed CSS should fail")
+	}
+	if err := verifyVersionedFeedCSS(root, "deadbeef"); err == nil {
+		t.Fatal("incorrect content hash should fail")
+	}
+	if err := verifyVersionedFeedCSS(root, hash); err == nil {
+		t.Fatal("missing hashed feed CSS should fail")
+	}
+	hashed := filepath.Join(rootDir, "css", "feeds."+hash+".css")
+	if err := os.WriteFile(hashed, []byte("old stylesheet"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := verifyVersionedFeedCSS(root, hash); err == nil {
+		t.Fatal("stale hashed CSS content should fail")
+	}
+	if err := os.WriteFile(hashed, css, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := verifyVersionedFeedCSS(root, hash); err != nil {
+		t.Fatalf("correctly versioned feed CSS should pass: %v", err)
+	}
+}
