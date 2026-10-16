@@ -90,6 +90,9 @@ builderAdmin:
   watch:
     enabled: true
     debounce: 2s
+  # Build immediately on rollout when the executable's embedded commit differs
+  # from the last successful published build. Only the active leader enqueues.
+  buildOnStartupRevisionChange: true
   # Queued builder-admin builds default to full builds so blogroll, mentions, and other
   # user-facing outputs stay live unless an environment explicitly opts into faster previews.
   fast: false
