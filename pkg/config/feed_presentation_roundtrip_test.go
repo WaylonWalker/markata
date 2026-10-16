@@ -16,19 +16,19 @@ func TestFeedPresentationParsesAcrossFormats(t *testing.T) {
 		data  string
 	}{
 		{
-			name: "toml",
+			name:  "toml",
 			parse: ParseTOML,
-			data: "[markata-go.feed_defaults]\npresentation = \"timeline\"\n[[markata-go.feeds]]\nslug = \"archive\"\npresentation = \"editorial\"\npagination_type = \"htmx\"\n[[markata-go.feeds]]\nslug = \"ping\"\n",
+			data:  "[markata-go.feed_defaults]\npresentation = \"timeline\"\n[[markata-go.feeds]]\nslug = \"archive\"\npresentation = \"editorial\"\npagination_type = \"htmx\"\n[[markata-go.feeds]]\nslug = \"ping\"\n",
 		},
 		{
-			name: "yaml",
+			name:  "yaml",
 			parse: ParseYAML,
-			data: "markata-go:\n  feed_defaults:\n    presentation: timeline\n  feeds:\n    - slug: archive\n      presentation: editorial\n      pagination_type: htmx\n    - slug: ping\n",
+			data:  "markata-go:\n  feed_defaults:\n    presentation: timeline\n  feeds:\n    - slug: archive\n      presentation: editorial\n      pagination_type: htmx\n    - slug: ping\n",
 		},
 		{
-			name: "json",
+			name:  "json",
 			parse: ParseJSON,
-			data: "{\"markata-go\":{\"feed_defaults\":{\"presentation\":\"timeline\"},\"feeds\":[{\"slug\":\"archive\",\"presentation\":\"editorial\",\"pagination_type\":\"htmx\"},{\"slug\":\"ping\"}]}}",
+			data:  "{\"markata-go\":{\"feed_defaults\":{\"presentation\":\"timeline\"},\"feeds\":[{\"slug\":\"archive\",\"presentation\":\"editorial\",\"pagination_type\":\"htmx\"},{\"slug\":\"ping\"}]}}",
 		},
 	}
 	for _, tt := range tests {
