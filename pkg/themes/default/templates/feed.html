@@ -6,6 +6,16 @@
 {% block head %}
 {{ block.Super() }}
 {% if feed_robots %}<meta name="robots" content="{{ feed_robots }}">{% endif %}
+{% if feed_presentation == "editorial" %}
+{# Essential mobile shot layout on first paint, even if a CDN stylesheet is unavailable. #}
+<style id="editorial-gallery-critical">
+.feed--editorial .editorial-shot-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .5rem; align-items: start; }
+.feed--editorial .editorial-shot-grid > *,
+.feed--editorial .editorial-shot-grid .photo-figure { min-width: 0; width: 100%; max-width: 100%; margin: 0; }
+.feed--editorial .editorial-shot-grid img,
+.feed--editorial .editorial-shot-grid video { display: block; width: 100%; height: auto; aspect-ratio: 1; object-fit: cover; }
+</style>
+{% endif %}
 {% if feed.views.calendar %}
 <link rel="stylesheet" href="{{ 'css/calendar-feed.css' | theme_asset_hashed }}">
 <script src="{{ 'js/calendar-feed.js' | theme_asset_hashed }}" defer></script>

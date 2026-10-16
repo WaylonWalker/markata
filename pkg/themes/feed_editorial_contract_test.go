@@ -23,3 +23,21 @@ func TestEditorialFeedPreservesPaginationAndCalendarHooks(t *testing.T) {
 		}
 	}
 }
+
+func TestEditorialFeedKeepsMobileGridWithoutExternalCSS(t *testing.T) {
+	content, err := ReadTemplate("feed.html")
+	if err != nil {
+		t.Fatal(err)
+	}
+	markup := string(content)
+	for _, want := range []string{
+		`{% if feed_presentation == "editorial" %}`,
+		`id="editorial-gallery-critical"`,
+		`grid-template-columns: repeat(3, minmax(0, 1fr))`,
+		`aspect-ratio: 1; object-fit: cover;`,
+	} {
+		if !strings.Contains(markup, want) {
+			t.Errorf("mobile editorial grid missing critical rule %q", want)
+		}
+	}
+}

@@ -762,6 +762,7 @@ article.post > .post-content > .feed.h-feed {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: .6rem;
+  align-items: start;
 }
 .feed--editorial .editorial-shot-grid > *,
 .feed--editorial .editorial-shot-grid .photo-figure {
@@ -778,6 +779,7 @@ article.post > .post-content > .feed.h-feed {
   border-radius: var(--radius-md, 8px);
   background: var(--color-surface);
 }
+.feed--editorial .editorial-shot-grid .card img,
 .feed--editorial .editorial-shot-grid .photo-figure img,
 .feed--editorial .editorial-shot-grid .photo-figure video {
   display: block;

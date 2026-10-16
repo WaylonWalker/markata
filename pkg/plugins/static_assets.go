@@ -1,6 +1,7 @@
 package plugins
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"fmt"
 	"io"
@@ -182,7 +183,48 @@ func (p *StaticAssetsPlugin) Cleanup(m *lifecycle.Manager) error {
 	if err := p.createHashedCopiesWithRoot(m, outputDir, outputFS); err != nil {
 		return fmt.Errorf("creating hashed asset copies: %w", err)
 	}
+	// A cache-busted feed stylesheet must actually exist with matching bytes.
+	// Otherwise a successful build can publish HTML whose CSS URL returns 404
+	// (or whose old hash points to stale content on the CDN).
+	if err := verifyVersionedFeedCSS(outputFS, m.GetAssetHash("css/feeds.css")); err != nil {
+		return fmt.Errorf("feed CSS asset integrity: %w", err)
+	}
 
+	return nil
+}
+
+// verifyVersionedFeedCSS checks the link target emitted by theme_asset_hashed.
+// It is intentionally limited to the feed stylesheet; other generated assets
+// may have separate, plugin-specific hashing and transformation rules.
+func verifyVersionedFeedCSS(root *os.Root, registeredHash string) error {
+	const sourcePath = "css/feeds.css"
+	original, err := root.ReadFile(sourcePath)
+	if os.IsNotExist(err) && registeredHash == "" {
+		// Custom themes may not ship the default feed stylesheet.
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("reading %s: %w", sourcePath, err)
+	}
+	if registeredHash == "" {
+		return fmt.Errorf("%s exists but has no registered content hash", sourcePath)
+	}
+	actualHash := fmt.Sprintf("%x", sha256.Sum256(original))[:8]
+	if registeredHash != actualHash {
+		return fmt.Errorf("%s registered hash %s does not match published bytes %s", sourcePath, registeredHash, actualHash)
+	}
+	hashedPath := "css/feeds." + registeredHash + ".css"
+	published, err := root.ReadFile(hashedPath)
+	if err != nil {
+		return fmt.Errorf("missing versioned stylesheet %s: %w", hashedPath, err)
+	}
+	if !bytes.Equal(original, published) {
+		return fmt.Errorf("versioned stylesheet %s differs from %s", hashedPath, sourcePath)
+	}
+	if strings.Contains(string(original), ".feed--editorial") &&
+		!strings.Contains(string(published), ".editorial-shot-grid") {
+		return fmt.Errorf("versioned stylesheet %s lacks the editorial shot grid", hashedPath)
+	}
 	return nil
 }
 
