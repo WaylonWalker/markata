@@ -8,7 +8,17 @@ import (
 )
 
 var (
-	lemmyPostIDRegex    = regexp.MustCompile(`^[0-9]+$`)
+	lemmyPostIDRegex    = regexp.MustCompile(`^\d+package plugins
+
+import (
+	"html"
+	"net/url"
+	"regexp"
+	"strings"
+)
+
+var (
+	lemmyPostIDRegex    = regexp.MustCompile()
 	redditPostIDRegex   = regexp.MustCompile(`^[a-zA-Z0-9]+$`)
 	redditFeedLinkRegex = regexp.MustCompile(`(?is)<a\b[^>]*href=["']([^"']+)["'][^>]*>\s*\[link\]\s*</a>`)
 )
@@ -19,7 +29,7 @@ func isLemmyDiscussionURL(rawURL string) bool {
 		return false
 	}
 	parts := strings.Split(strings.Trim(parsed.Path, "/"), "/")
-	return len(parts) == 2 && parts[0] == "post" && lemmyPostIDRegex.MatchString(parts[1])
+	return len(parts) == 2 && parts[0] == "post" && lemmyPostIDRegex.MatchString(parts[1]) //nolint:goconst // URL path segment, unrelated to garden node type
 }
 
 func isRedditDiscussionURL(rawURL string) bool {
@@ -40,7 +50,7 @@ func isRedditDiscussionURL(rawURL string) bool {
 }
 
 // Reddit's temporary Atom feeds link to the discussion page. For external
-// link posts the entry HTML commonly contains an explicitly labelled [link]
+// link posts the entry HTML commonly contains an explicitly labeled [link]
 // anchor. Prefer only this anchor, not the first arbitrary URL in the post.
 // This is best-effort; self, media and unrecognized posts stay on Reddit.
 func redditOutboundArticleURL(discussionURL, feedContent string) string {
