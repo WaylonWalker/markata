@@ -1632,6 +1632,8 @@ func TestCanSkipPostCardStyles(t *testing.T) {
 		{name: "plain post", templateName: "post.html", html: "<p>Simple post</p>", want: true},
 		{name: "feed card markup", templateName: "post.html", html: "<section class=\"card card-note\">Hi</section>"},
 		{name: "feed shortcode", templateName: "post.html", content: "{% render_feed 'blog' %}"},
+		{name: "card as secondary class", templateName: "post.html", html: "<section class=\"callout card\">Hi</section>"},
+		{name: "feed as secondary class", templateName: "post.html", html: "<section class=\"layout feed\">Hi</section>"},
 		{name: "custom template", templateName: "custom.html", html: "<p>Simple post</p>"},
 		{name: "feed layout", templateName: "post.html", html: "<div class=\"feed-layout-grid\"></div>"},
 	} {

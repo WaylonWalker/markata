@@ -679,7 +679,7 @@ func canSkipPostCardStyles(post *models.Post, templateName string) bool {
 	for _, marker := range []string{
 		"class=\"card", "class='card", "class=\"feed", "class='feed",
 		"posts-list", "feed-layout", "render_feed", "render_slashes",
-		"include_post", "data-card", "post-card",
+		"include_post", "data-card", "post-card", " card", " feed",
 	} {
 		if strings.Contains(content, marker) {
 			return false
