@@ -22,6 +22,7 @@
   var feedState = {
     data: null,        // Parsed sidebarFeedsDataJSON
     currentIndex: 0,   // Current feed index
+    renderedIndex: 0,  // Index represented by the visible list
     initialized: false,
     shortcutsRegistered: false,
     explicitFeedSelection: false
@@ -416,6 +417,42 @@
   }
 
   /**
+   * Load a feed's initial window only if the reader selects it. Keep the
+   * previously rendered sidebar usable while the fetch is outstanding.
+   */
+  function hydrateAlternateFeed(feed, index, options) {
+    var data = feedState.data;
+    var priorIndex = feedState.renderedIndex;
+    feedState.currentIndex = index;
+    var status = document.getElementById('feed-nav-lazy-status');
+    if (status) status.textContent = 'Loading feed navigation…';
+
+    var chunkNumber = Math.floor((feed.windowStart || 0) / feed.chunkSize);
+    var url = feed.chunkBase + String(chunkNumber).padStart(4, '0') + '.json';
+    if (!feed._initialWindow) {
+      feed._initialWindow = fetchSidebarChunk(url).then(function(chunk) {
+        if (!chunk.posts.length) throw new Error('Empty sidebar chunk');
+        feed.posts = chunk.posts;
+        feed._windowStart = chunk.start;
+      }).catch(function(error) {
+        feed._initialWindow = null; // permit retries
+        throw error;
+      });
+    }
+
+    feed._initialWindow.then(function() {
+      // Ignore completions belonging to an earlier document/selection.
+      if (feedState.data !== data || feedState.currentIndex !== index) return;
+      if (status) status.textContent = '';
+      renderFeed(index, options);
+    }).catch(function() {
+      if (feedState.data !== data || feedState.currentIndex !== index) return;
+      feedState.currentIndex = priorIndex;
+      if (status) status.textContent = 'Unable to load this feed. Select it again to retry.';
+    });
+  }
+
+  /**
    * Re-render the sidebar with the feed at the given index.
    */
   function renderFeed(index, options) {
@@ -425,6 +462,13 @@
 
     var feed = feedState.data.feeds[index];
     if (!feed) return;
+
+    // Only build pages with matching _sidebar sidecars can omit this window.
+    // Never render an empty list or destroy usable server links during fetch.
+    if ((!feed.posts || !feed.posts.length) && feed.chunkBase && feed.chunkSize && feed.totalPosts) {
+      hydrateAlternateFeed(feed, index, renderOptions);
+      return;
+    }
 
     // Update title (include total post count if feed is windowed)
     var titleEl = document.getElementById('feed-nav-title');
@@ -453,6 +497,7 @@
 
     // Update counter
     feedState.currentIndex = index;
+    feedState.renderedIndex = index;
     updateCounter();
     updateFeedPicker();
 
@@ -633,6 +678,7 @@
 
     // Default to the server-rendered feed
     feedState.currentIndex = feedState.data.currentFeedIndex;
+    feedState.renderedIndex = feedState.data.currentFeedIndex;
 
     // Check URL for ?feed= param (set by prev/next navigation)
     var requestedFeed = getFeedParam();

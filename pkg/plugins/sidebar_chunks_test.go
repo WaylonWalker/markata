@@ -98,3 +98,20 @@ func TestSidebarChunkBaseAndSingleFeedHydration(t *testing.T) {
 		t.Fatalf("private post should make sidecar offsets unsafe: %q", source)
 	}
 }
+
+func TestCompactAlternateSidebarPosts(t *testing.T) {
+	t.Parallel()
+	feeds := []sidebarFeedJSON{
+		{Slug: "current", ChunkBase: "/current/_sidebar/", ChunkSize: 64, TotalPosts: 2, Posts: []sidebarPostJSON{{Slug: "first"}}},
+		{Slug: "other", ChunkBase: "/other/_sidebar/", ChunkSize: 64, TotalPosts: 2, WindowStart: 1, Posts: []sidebarPostJSON{{Slug: "second"}}},
+		{Slug: "synthetic", TotalPosts: 3, Posts: []sidebarPostJSON{{Slug: "third"}}},
+		{Slug: "unsafe", ChunkBase: "/unsafe/_sidebar/", TotalPosts: 3, Posts: []sidebarPostJSON{{Slug: "fourth"}}},
+	}
+	compactAlternateSidebarPosts(feeds, 0)
+	if len(feeds[0].Posts) != 1 || len(feeds[1].Posts) != 0 || len(feeds[2].Posts) != 1 || len(feeds[3].Posts) != 1 {
+		t.Fatalf("unexpected alternate feed windows: %#v", feeds)
+	}
+	if feeds[1].WindowStart != 1 || feeds[1].ChunkBase != "/other/_sidebar/" {
+		t.Fatalf("lost alternate hydration metadata: %#v", feeds[1])
+	}
+}
