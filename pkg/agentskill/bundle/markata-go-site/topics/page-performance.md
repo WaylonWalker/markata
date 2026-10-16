@@ -17,3 +17,14 @@ Regular builds warn without failing. Use `--page-weight=false` only to skip
 the scan; `--page-weight-html-kb=96` changes the post-size warning threshold.
 Run a clean site rebuild after shared template changes because incremental
 output may retain earlier HTML. Both template trees may require edits.
+
+
+## Alternative feed sidebar hydration
+
+When a post is in several feeds, the generator includes the current feed's
+navigation list as normal HTML. Other feeds with verified static
+`/<feed>/_sidebar/NNNN.json` sidecars contribute only metadata until someone
+selects them. The browser fetches the relevant window on selection, and leaves
+existing links intact if a sidecar request fails. Synthetic feeds without a
+verified sidecar continue to embed their first window. This avoids trimming
+the content a reader can explore and reduces duplicated article HTML.

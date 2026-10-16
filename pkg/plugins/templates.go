@@ -1629,6 +1629,11 @@ func (p *TemplatesPlugin) buildSidebarFeedsJSON(
 		}
 	}
 
+	// Keep the current feed's full server-rendered fallback. For alternate
+	// feeds with a verified public sidecar, send only metadata until selected.
+	// Feeds without a safe sidecar retain their embedded post window.
+	compactAlternateSidebarPosts(feeds, currentIndex)
+
 	data := sidebarFeedsDataJSON{
 		Feeds:             feeds,
 		RotationFeedSlugs: rotationFeedSlugs,
@@ -1641,6 +1646,18 @@ func (p *TemplatesPlugin) buildSidebarFeedsJSON(
 		return ""
 	}
 	return string(b)
+}
+
+// compactAlternateSidebarPosts trims duplicate alternate feed lists from
+// every article. The visible/current feed and unsafe/synthetic feeds keep
+// their full initial window so no-JS navigation stays usable.
+func compactAlternateSidebarPosts(feeds []sidebarFeedJSON, currentIndex int) {
+	for i := range feeds {
+		if i == currentIndex || feeds[i].ChunkBase == "" || feeds[i].ChunkSize <= 0 || feeds[i].TotalPosts == 0 {
+			continue
+		}
+		feeds[i].Posts = []sidebarPostJSON{}
+	}
 }
 
 // sidebarChunkBase only advertises a sidecar when its emitted public entries
