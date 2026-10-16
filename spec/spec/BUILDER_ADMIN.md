@@ -50,6 +50,7 @@ Required trigger sources:
 - scheduled refresh completion when configured to enqueue a build
 - rollback action
 - signed GitHub or Forgejo push webhook after a successful source update
+- Helm startup/leadership acquisition when the running Builder commit differs from the latest successful build; this MUST go through the serialized queue rather than a direct build
 
 ## Leadership And Handoff
 
