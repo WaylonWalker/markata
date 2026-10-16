@@ -75,7 +75,6 @@ func TestEditorialMissingTemplateIsError(t *testing.T) {
 	}
 }
 
-
 func TestCachedEditorialFeedRepublishesClassicHTML(t *testing.T) {
 	plugin := NewPublishFeedsPlugin()
 	outputDir := t.TempDir()
