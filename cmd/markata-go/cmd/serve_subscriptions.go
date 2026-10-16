@@ -39,6 +39,7 @@ const (
 	subscriptionActionRemove = "remove"
 	subscriptionTOMLExt      = ".toml"
 	subscriptionHTTPS        = "https"
+	subscriptionHTTP         = "http"
 )
 
 type subscriptionView struct {
@@ -342,7 +343,7 @@ func changeSubscription(state *settingsState, req subscriptionRequest) error {
 		return errors.New("invalid subscription action")
 	}
 	u, err := url.Parse(req.URL)
-	if err != nil || u.Scheme != subscriptionHTTPS && u.Scheme != "http" || u.Host == "" || u.User != nil {
+	if err != nil || u.Scheme != subscriptionHTTPS && u.Scheme != subscriptionHTTP || u.Host == "" || u.User != nil {
 		return errors.New("expected an absolute HTTP(S) feed URL")
 	}
 	var target string
@@ -554,7 +555,7 @@ func safeSubscriptionClient() *http.Client {
 }
 
 func validSubscriptionURL(u *url.URL) error {
-	if u == nil || (u.Scheme != "http" && u.Scheme != subscriptionHTTPS) || u.Hostname() == "" || u.User != nil {
+	if u == nil || (u.Scheme != subscriptionHTTP && u.Scheme != subscriptionHTTPS) || u.Hostname() == "" || u.User != nil {
 		return errors.New("use a public HTTP(S) website or feed URL")
 	}
 	if u.Port() != "" && u.Port() != "443" && u.Port() != "80" {
@@ -591,6 +592,7 @@ func fetchSubscriptionURL(ctx context.Context, client *http.Client, address stri
 	return body, res.Request.URL.String(), err
 }
 
+//nolint:gocyclo // Feed discovery intentionally handles redirects, HTML alternatives, and response validation together.
 func discoverSubscription(ctx context.Context, address string) (discoveredSubscription, error) {
 	client := safeSubscriptionClient()
 	body, finalURL, err := fetchSubscriptionURL(ctx, client, address)
