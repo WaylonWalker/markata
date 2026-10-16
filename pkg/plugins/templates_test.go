@@ -1623,11 +1623,11 @@ func TestCollectPrivatePaths(t *testing.T) {
 
 func TestCanSkipPostCardStyles(t *testing.T) {
 	for _, tc := range []struct {
-		name string
+		name         string
 		templateName string
-		html string
-		content string
-		want bool
+		html         string
+		content      string
+		want         bool
 	}{
 		{name: "plain post", templateName: "post.html", html: "<p>Simple post</p>", want: true},
 		{name: "feed card markup", templateName: "post.html", html: "<section class=\"card card-note\">Hi</section>"},
