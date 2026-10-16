@@ -677,9 +677,10 @@ func canSkipPostCardStyles(post *models.Post, templateName string) bool {
 	}
 	content := strings.ToLower(post.ArticleHTML + " " + post.Content)
 	for _, marker := range []string{
-		"class=\"card", "class='card", "class=\"feed", "class='feed",
-		"posts-list", "feed-layout", "render_feed", "render_slashes",
-		"include_post", "data-card", "post-card", " card", " feed",
+		// Intentionally favor extra CSS over a styling regression. The file
+		// also styles photo-card, simple-list and span/aspect utilities.
+		"card", "feed", "simple-list", "simple-item", "col-span",
+		"row-span", "aspect-auto", "render_slashes", "include_post",
 	} {
 		if strings.Contains(content, marker) {
 			return false

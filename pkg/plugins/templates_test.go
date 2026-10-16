@@ -1636,6 +1636,9 @@ func TestCanSkipPostCardStyles(t *testing.T) {
 		{name: "feed as secondary class", templateName: "post.html", html: "<section class=\"layout feed\">Hi</section>"},
 		{name: "custom template", templateName: "custom.html", html: "<p>Simple post</p>"},
 		{name: "feed layout", templateName: "post.html", html: "<div class=\"feed-layout-grid\"></div>"},
+		{name: "photo card", templateName: "post.html", html: "<div class=\"photo-card\"></div>"},
+		{name: "simple list", templateName: "post.html", html: "<div class=\"simple-list\"></div>"},
+		{name: "span utilities", templateName: "post.html", html: "<div class=\"col-span-2\"></div>"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			post := &models.Post{ArticleHTML: tc.html, Content: tc.content}
