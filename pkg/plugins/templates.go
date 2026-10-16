@@ -668,6 +668,27 @@ func lookupFeedMembershipHash(post *models.Post, feedMembershipHashes map[string
 	return ""
 }
 
+// canSkipPostCardStyles is intentionally conservative: only the stock reading
+// template with no card/feed/component markers can safely skip cards.css.
+// This avoids changing custom templates or a post embedding a feed widget.
+func canSkipPostCardStyles(post *models.Post, templateName string) bool {
+	if post == nil || templateName != defaultTemplate {
+		return false
+	}
+	content := strings.ToLower(post.ArticleHTML + " " + post.Content)
+	for _, marker := range []string{
+		// Intentionally favor extra CSS over a styling regression. The file
+		// also styles photo-card, simple-list and span/aspect utilities.
+		"card", "feed", "simple-list", "simple-item", "col-span",
+		"row-span", "aspect-auto", "render_slashes", "include_post",
+	} {
+		if strings.Contains(content, marker) {
+			return false
+		}
+	}
+	return true
+}
+
 // renderPost renders a single post using the appropriate template.
 func (p *TemplatesPlugin) renderPost(post *models.Post, config *lifecycle.Config, m *lifecycle.Manager, privatePaths []string) (string, error) {
 	// Determine which template to use
@@ -694,6 +715,9 @@ func (p *TemplatesPlugin) renderPost(post *models.Post, config *lifecycle.Config
 	ctx.Set("tag_preview_json", tagPreviews)
 	ctx = ctx.WithCore(m).WithBlogLayout(templateName == models.LayoutToTemplate("blog"))
 	ctx.Set("canonical_rendering_fixture", isCanonicalRenderingFixture(post))
+	// Feed card CSS is not on a normal article's critical rendering path.
+	// Unknown/custom templates and embedded card/feed markup keep the CSS.
+	ctx.Set("skip_cards_css", canSkipPostCardStyles(post, templateName))
 	ctx.Set("feed_posts", createFeedPostsFunc(m))
 	ctx.Set("render_feed", createRenderFeedFunc(m))
 	ctx.Set("render_slashes", createRenderSlashesFunc(m))

@@ -64,7 +64,10 @@
   <link rel="stylesheet" href="{{ 'css/code.css' | theme_asset_hashed }}">
   <link rel="stylesheet" href="{{ 'css/chroma.css' | theme_asset_hashed }}">
   {% endif %}
+  {# Plain post pages do not need feed-card styles on first paint. #}
+  {% if not skip_cards_css %}
   <link rel="stylesheet" href="{{ 'css/cards.css' | theme_asset_hashed }}">
+  {% endif %}
   {% if feed or (body and 'feed h-feed' in body) %}
   <link rel="stylesheet" href="{{ 'css/feeds.css' | theme_asset_hashed }}">
   {% endif %}

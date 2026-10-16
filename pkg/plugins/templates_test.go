@@ -1620,3 +1620,31 @@ func TestCollectPrivatePaths(t *testing.T) {
 		})
 	}
 }
+
+func TestCanSkipPostCardStyles(t *testing.T) {
+	for _, tc := range []struct {
+		name         string
+		templateName string
+		html         string
+		content      string
+		want         bool
+	}{
+		{name: "plain post", templateName: "post.html", html: "<p>Simple post</p>", want: true},
+		{name: "feed card markup", templateName: "post.html", html: "<section class=\"card card-note\">Hi</section>"},
+		{name: "feed shortcode", templateName: "post.html", content: "{% render_feed 'blog' %}"},
+		{name: "card as secondary class", templateName: "post.html", html: "<section class=\"callout card\">Hi</section>"},
+		{name: "feed as secondary class", templateName: "post.html", html: "<section class=\"layout feed\">Hi</section>"},
+		{name: "custom template", templateName: "custom.html", html: "<p>Simple post</p>"},
+		{name: "feed layout", templateName: "post.html", html: "<div class=\"feed-layout-grid\"></div>"},
+		{name: "photo card", templateName: "post.html", html: "<div class=\"photo-card\"></div>"},
+		{name: "simple list", templateName: "post.html", html: "<div class=\"simple-list\"></div>"},
+		{name: "span utilities", templateName: "post.html", html: "<div class=\"col-span-2\"></div>"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			post := &models.Post{ArticleHTML: tc.html, Content: tc.content}
+			if got := canSkipPostCardStyles(post, tc.templateName); got != tc.want {
+				t.Fatalf("canSkipPostCardStyles(%q) = %v, want %v", tc.name, got, tc.want)
+			}
+		})
+	}
+}
