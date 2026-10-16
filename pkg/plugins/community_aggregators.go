@@ -29,7 +29,8 @@ func isLemmyDiscussionURL(rawURL string) bool {
 		return false
 	}
 	parts := strings.Split(strings.Trim(parsed.Path, "/"), "/")
-	return len(parts) == 2 && parts[0] == "post" && lemmyPostIDRegex.MatchString(parts[1]) //nolint:goconst // URL path segment, unrelated to garden node type
+	//nolint:goconst // "post" is a protocol URL segment, not a garden graph node type.
+	return len(parts) == 2 && parts[0] == "post" && lemmyPostIDRegex.MatchString(parts[1])
 }
 
 func isRedditDiscussionURL(rawURL string) bool {
