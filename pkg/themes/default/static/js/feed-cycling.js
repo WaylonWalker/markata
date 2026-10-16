@@ -290,6 +290,14 @@
       button.type = 'button';
       button.id = id;
       button.className = 'feed-nav-load';
+      button.style.width = '100%';
+      button.style.padding = '0.5rem';
+      button.style.margin = '0.3rem 0';
+      button.style.border = '1px solid var(--color-border)';
+      button.style.borderRadius = '4px';
+      button.style.background = 'transparent';
+      button.style.color = 'var(--color-text-muted)';
+      button.style.cursor = 'pointer';
       button.textContent = text;
       button.addEventListener('click', function() {
         loadAdjacentChunk(before ? -1 : 1);
