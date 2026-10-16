@@ -811,7 +811,11 @@ article.post > .post-content > .feed.h-feed {
 .feed--resources .posts-list > .card:hover { box-shadow: none; }
 .feed--timeline .posts-list { gap: .65rem !important; }
 .feed--timeline .posts-list > .card { padding: 1rem; }
-.feed--resources .posts-list { gap: .75rem !important; }
+.feed--resources .posts-list {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: .75rem !important;
+}
 .feed--resources .posts-list > .card { padding: 0; }
 @media (max-width: 520px) {
   .feed--editorial .editorial-shot-grid { gap: .35rem; }

@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata-go/pkg/templates"
+	"strings"
 )
 
 func presentationTestPost(day int, template string) *models.Post {
@@ -77,5 +79,46 @@ func TestSingleShotNotMadeIntoOneItemGrid(t *testing.T) {
 	})
 	if len(sections) != 2 || sections[0].Items[0].Kind != "post" {
 		t.Fatalf("unexpected clustering across weeks: %+v", sections)
+	}
+}
+
+
+func TestEditorialTemplateRendersEveryShotThroughCardRouter(t *testing.T) {
+	engine, err := templates.NewEngine("../../templates")
+	if err != nil {
+		t.Fatal(err)
+	}
+	date := time.Date(2026, 10, 12, 12, 0, 0, 0, time.UTC)
+	a := "Bat Cap"
+	b := "Ghost Cap"
+	posts := []*models.Post{
+		{Slug: "bat-cap", Href: "/shots/bat-cap/", Template: "photo", Date: &date, Title: &a,
+			Extra: map[string]interface{}{"image": "https://dropper.waylonwalker.com/bat.webp"}},
+		{Slug: "ghost-cap", Href: "/shots/ghost-cap/", Template: "photo", Date: &date, Title: &b,
+			Extra: map[string]interface{}{"image": "https://dropper.waylonwalker.com/ghost.webp"}},
+	}
+	ctx := map[string]interface{}{
+		"feed_sections": buildEditorialFeedSections(posts),
+		"config": map[string]interface{}{
+			"components": map[string]interface{}{
+				"card_router": map[string]interface{}{
+					"mappings": map[string]interface{}{"photo": "photo"},
+				},
+			},
+		},
+	}
+	html, err := engine.RenderToString("partials/feed-editorial.html", ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{
+		`class="editorial-feed posts-list"`,
+		`class="editorial-shot-grid"`,
+		`href="/shots/bat-cap/"`,
+		`href="/shots/ghost-cap/"`,
+	} {
+		if !strings.Contains(html, want) {
+			t.Errorf("missing %q in rendered editorial gallery: %s", want, html)
+		}
 	}
 }
