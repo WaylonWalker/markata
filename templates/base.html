@@ -5,6 +5,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="view-transition" content="same-origin">
+  {# Optional comparison lane: native full-document navigation with no SPA interception. #}
+  {% if config.view_transitions.native and config.view_transitions.enabled | default:true %}
+  <style>
+    @view-transition { navigation: auto; }
+    @media (prefers-reduced-motion: reduce) {
+      ::view-transition-old(root), ::view-transition-new(root) { animation: none; }
+    }
+  </style>
+  <script type="speculationrules">
+  {"prefetch":[{"where":{"selector_matches":".post-nav a[href], .feed-nav-list a[href]"},"eagerness":"conservative"}]}
+  </script>
+  {% endif %}
 
   {% block meta %}
   <title>{% block title %}{{ config.title | default:'My Site' }}{% endblock %}</title>
@@ -989,7 +1001,7 @@
     {% endif %}
 
   <!-- View Transitions API - Global Navigation Interceptor -->
-  {% if config.view_transitions.enabled | default:true %}
+  {% if config.view_transitions.enabled | default:true and not config.view_transitions.native %}
   <script>
     // View Transitions Configuration
     window.VIEW_TRANSITIONS_CONFIG = {

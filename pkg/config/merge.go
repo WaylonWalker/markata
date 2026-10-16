@@ -185,6 +185,9 @@ func mergeViewTransitionsConfig(base, override models.ViewTransitionsConfig) mod
 	if override.Enabled != nil {
 		result.Enabled = override.Enabled
 	}
+	if override.Native != nil {
+		result.Native = override.Native
+	}
 	if override.Debug != nil {
 		result.Debug = override.Debug
 	}

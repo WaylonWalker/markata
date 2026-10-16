@@ -1081,6 +1081,7 @@ type tomlShortcutsConfig struct {
 
 type tomlViewTransitionsConfig struct {
 	Enabled       *bool    `toml:"enabled"`
+	Native        *bool    `toml:"native"`
 	Debug         *bool    `toml:"debug"`
 	Duration      int      `toml:"duration"`
 	UpdateMeta    *bool    `toml:"update_meta"`
@@ -1103,6 +1104,7 @@ func (v *tomlViewTransitionsConfig) toViewTransitionsConfig() models.ViewTransit
 	defaults := models.NewViewTransitionsConfig()
 	config := models.ViewTransitionsConfig{
 		Enabled:       v.Enabled,
+		Native:        v.Native,
 		Debug:         v.Debug,
 		Duration:      v.Duration,
 		UpdateMeta:    v.UpdateMeta,
@@ -2730,6 +2732,7 @@ type yamlShortcutsConfig struct {
 
 type yamlViewTransitionsConfig struct {
 	Enabled       *bool    `yaml:"enabled"`
+	Native        *bool    `yaml:"native"`
 	Debug         *bool    `yaml:"debug"`
 	Duration      int      `yaml:"duration"`
 	UpdateMeta    *bool    `yaml:"update_meta"`
@@ -2752,6 +2755,7 @@ func (v *yamlViewTransitionsConfig) toViewTransitionsConfig() models.ViewTransit
 	defaults := models.NewViewTransitionsConfig()
 	config := models.ViewTransitionsConfig{
 		Enabled:       v.Enabled,
+		Native:        v.Native,
 		Debug:         v.Debug,
 		Duration:      v.Duration,
 		UpdateMeta:    v.UpdateMeta,
@@ -4340,6 +4344,7 @@ type jsonShortcutsConfig struct {
 
 type jsonViewTransitionsConfig struct {
 	Enabled       *bool    `json:"enabled"`
+	Native        *bool    `json:"native"`
 	Debug         *bool    `json:"debug"`
 	Duration      int      `json:"duration"`
 	UpdateMeta    *bool    `json:"update_meta"`
@@ -4362,6 +4367,7 @@ func (v *jsonViewTransitionsConfig) toViewTransitionsConfig() models.ViewTransit
 	defaults := models.NewViewTransitionsConfig()
 	config := models.ViewTransitionsConfig{
 		Enabled:       v.Enabled,
+		Native:        v.Native,
 		Debug:         v.Debug,
 		Duration:      v.Duration,
 		UpdateMeta:    v.UpdateMeta,

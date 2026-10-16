@@ -2780,8 +2780,12 @@ func NewShortcutsConfig() ShortcutsConfig {
 
 // ViewTransitionsConfig configures client-side page transition behavior.
 type ViewTransitionsConfig struct {
-	// Enabled controls whether the transition script is injected.
+	// Enabled controls whether page transitions are enabled.
 	Enabled *bool `json:"enabled,omitempty" yaml:"enabled,omitempty" toml:"enabled,omitempty"`
+
+	// Native enables browser-native cross-document transitions instead of SPA interception.
+	// This is experimental and opt-in; unsupported browsers use normal links.
+	Native *bool `json:"native,omitempty" yaml:"native,omitempty" toml:"native,omitempty"`
 
 	// Debug enables browser console logging and timing output.
 	Debug *bool `json:"debug,omitempty" yaml:"debug,omitempty" toml:"debug,omitempty"`

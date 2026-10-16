@@ -1747,3 +1747,43 @@ func TestParseJSON_MentionsFromPostsDefault(t *testing.T) {
 			config.Mentions.FromPosts[0].Filter, "template == 'contact'")
 	}
 }
+
+func TestViewTransitionsNativeIsOptInAcrossFormats(t *testing.T) {
+	config, err := ParseTOML([]byte(`
+[markata-go.view_transitions]
+enabled = true
+native = true
+`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if config.ViewTransitions.Native == nil || !*config.ViewTransitions.Native {
+		t.Fatalf("native navigation setting was not parsed: %+v", config.ViewTransitions)
+	}
+
+	enabled := true
+	for name, got := range map[string]models.ViewTransitionsConfig{
+		"toml": (&tomlViewTransitionsConfig{Native: &enabled}).toViewTransitionsConfig(),
+		"yaml": (&yamlViewTransitionsConfig{Native: &enabled}).toViewTransitionsConfig(),
+		"json": (&jsonViewTransitionsConfig{Native: &enabled}).toViewTransitionsConfig(),
+	} {
+		if got.Native == nil || !*got.Native {
+			t.Fatalf("%s native navigation missing: %+v", name, got)
+		}
+	}
+
+	defaults := models.NewViewTransitionsConfig()
+	if defaults.Native != nil && *defaults.Native {
+		t.Fatalf("native navigation must be opt-in: %+v", defaults)
+	}
+
+	disabled := false
+	merged := mergeViewTransitionsConfig(defaults, models.ViewTransitionsConfig{Native: &enabled})
+	if merged.Native == nil || !*merged.Native {
+		t.Fatalf("native flag lost during merge: %+v", merged)
+	}
+	merged = mergeViewTransitionsConfig(merged, models.ViewTransitionsConfig{Native: &disabled})
+	if merged.Native == nil || *merged.Native {
+		t.Fatalf("explicit native=false ignored during merge: %+v", merged)
+	}
+}
