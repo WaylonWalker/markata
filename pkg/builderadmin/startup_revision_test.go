@@ -123,4 +123,13 @@ func TestNewLeaderReloadsSuccessfulBuildHistory(t *testing.T) {
 	if len(state.Queue) != 0 {
 		t.Fatalf("enqueued duplicate startup build after recent success: %+v", state.Queue)
 	}
+	found := false
+	for _, job := range standby.controlRuntime.Snapshot().Jobs {
+		if job.ID == "finished-after-standby-start" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("leader control snapshot did not refresh from persisted history")
+	}
 }
