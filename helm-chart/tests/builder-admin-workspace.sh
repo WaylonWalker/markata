@@ -32,6 +32,9 @@ fi
 if grep -q 'name: workspace' "$tmp_dir/default.yaml"; then
   fail "disabled workspace emitted a workspace mount or volume"
 fi
+grep -q -- '--build-on-startup-revision-change=true' "$tmp_dir/default.yaml" || fail "Helm default must enable startup revision builds"
+helm template workspace-test "$chart" "${common[@]}" --set builderAdmin.buildOnStartupRevisionChange=false >"$tmp_dir/startup-disabled.yaml"
+grep -q -- '--build-on-startup-revision-change=false' "$tmp_dir/startup-disabled.yaml" || fail "disabled startup revision builds not reflected in Helm template"
 if grep -q -- '--dag' "$tmp_dir/default.yaml"; then
   fail "default builder admin unexpectedly enabled --dag"
 fi
