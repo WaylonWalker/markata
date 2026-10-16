@@ -557,6 +557,10 @@ func mergeMarkdownConfig(base, override models.MarkdownConfig) models.MarkdownCo
 func mergeFeedDefaults(base, override models.FeedDefaults) models.FeedDefaults {
 	result := base
 
+	if override.Presentation != "" {
+		result.Presentation = override.Presentation
+	}
+
 	if override.ItemsPerPage != 0 {
 		result.ItemsPerPage = override.ItemsPerPage
 	}
