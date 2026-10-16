@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/WaylonWalker/markata-go/pkg/buildcache"
 	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
 	"github.com/WaylonWalker/markata-go/pkg/models"
 )
@@ -71,5 +72,54 @@ func TestEditorialMissingTemplateIsError(t *testing.T) {
 	_, err := NewPublishFeedsPlugin().generateFeedPageHTML(fc, page, cfg, nil, buildFeedRenderContext(fc))
 	if err == nil || !strings.Contains(err.Error(), "cannot use classic fallback") {
 		t.Fatalf("expected actionable error, got %v", err)
+	}
+}
+
+
+func TestCachedEditorialFeedRepublishesClassicHTML(t *testing.T) {
+	plugin := NewPublishFeedsPlugin()
+	outputDir := t.TempDir()
+	config := lifecycle.NewConfig()
+	config.OutputDir = outputDir
+	config.Extra = map[string]interface{}{
+		"url": "https://example.com",
+		"title": "Test Site",
+	}
+	title := "A post"
+	date := time.Date(2026, 10, 12, 12, 0, 0, 0, time.UTC)
+	post := &models.Post{
+		Path: "pages/post.md", Slug: "post", Href: "/post/",
+		Title: &title, Published: true, Template: "post", Date: &date,
+		ArticleHTML: "<p>hello</p>",
+	}
+	feed := &models.FeedConfig{
+		Slug: "archive", Title: "Archive", Presentation: "editorial",
+		ItemsPerPage: 10, Formats: models.FeedFormats{HTML: true},
+		Posts: []*models.Post{post},
+	}
+	feed.Pages = []models.FeedPage{{
+		Number: 1, Posts: feed.Posts, TotalPages: 1,
+		TotalItems: 1, ItemsPerPage: 10, PageURLs: []string{"/archive/"},
+	}}
+	if err := plugin.publishFeed(feed, config, outputDir); err != nil {
+		t.Fatalf("editorial publication: %v", err)
+	}
+	index := filepath.Join(outputDir, "archive", "index.html")
+	if !editorialHTMLPublished(index) {
+		t.Fatal("published archive lacks editorial markup")
+	}
+	cache := buildcache.New(t.TempDir())
+	hash := plugin.computeFeedHash(feed)
+	cache.SetFeedHash(feed.Slug, hash)
+	skip, _ := plugin.shouldSkipFeed(feed, cache, outputDir)
+	if !skip {
+		t.Fatal("valid editorial archive should be reused")
+	}
+	if err := os.WriteFile(index, []byte("<div class=\"posts-list\">classic fallback</div>"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	skip, _ = plugin.shouldSkipFeed(feed, cache, outputDir)
+	if skip {
+		t.Fatal("cached classic fallback must be rebuilt despite matching feed hash")
 	}
 }

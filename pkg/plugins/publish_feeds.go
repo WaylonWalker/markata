@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"html"
 	"html/template"
-	"io"
 	"os"
 	"path"
 	"path/filepath"
