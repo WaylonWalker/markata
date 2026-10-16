@@ -36,7 +36,7 @@ const categoryUncategorized = "Uncategorized"
 const (
 	defaultBlogrollSlug  = "blogroll"
 	defaultReaderSlug    = "reader"
-	blogrollCacheVersion = "aggregator-meta-v3"
+	blogrollCacheVersion = "community-meta-v4"
 	aggregateCacheFile   = "blogroll-aggregate-v1.json"
 )
 
@@ -407,10 +407,10 @@ func parseRSS2Feed(data []byte) (*blogrollParsedFeed, []*models.ExternalEntry, e
 		// Extract image from various sources (priority order)
 		imageURL := extractEntryImage(item)
 		discussionURL := item.GUID
-		if isLobstersDiscussionURL(item.Comments) {
+		if isLobstersDiscussionURL(item.Comments) || isLemmyDiscussionURL(item.Comments) {
 			discussionURL = item.Comments
 		}
-		resolvedURL, originalURL, metadata := enrichAggregatorFeedEntry(item.Link, discussionURL)
+		resolvedURL, originalURL, metadata := enrichAggregatorFeedEntry(item.Link, discussionURL, content)
 		if metadata != nil {
 			if metadata.Title != "" {
 				item.Title = metadata.Title
@@ -520,7 +520,7 @@ func parseAtomFeed(data []byte) (*blogrollParsedFeed, []*models.ExternalEntry, e
 
 		// Extract first image from content
 		imageURL := extractAtomEntryImage(entry)
-		resolvedURL, originalURL, metadata := enrichAggregatorFeedEntry(entryURL, entry.ID)
+		resolvedURL, originalURL, metadata := enrichAggregatorFeedEntry(entryURL, entry.ID, content)
 		if metadata != nil {
 			if metadata.Title != "" {
 				entry.Title = metadata.Title

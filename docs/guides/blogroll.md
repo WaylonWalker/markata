@@ -361,6 +361,24 @@ The reader page shows the latest posts from all feeds in reverse chronological o
 - Hacker News and Lobsters discussion URLs are normalized to the outbound article URL when one is available. Lobsters RSS feeds that already link directly to articles retain their discussion permalinks from the GUID or comments field. The original discussions remain available as "Found on HN" or "Found on Lobsters", alongside the feed source label
 - Pagination navigation (when more than one page)
 
+### Community aggregators: Lobsters, Lemmy and Reddit
+
+The reader preserves the original discussion permalink alongside a linked external article. For Lemmy community RSS feeds, `<link>` normally points to the article, and a `<guid>` or `<comments>` permalink can point to the Lemmy discussion. For Reddit's Atom feeds, posts remain linked to Reddit unless an explicit `[link]` anchor in the entry content provides an external article URL; text-only posts remain on Reddit. Unknown or blocked feeds retain the normal fallback behavior, and arbitrary links in a post body are not promoted to articles.
+
+Example subscriptions:
+
+```toml
+[[markata-go.blogroll.feeds]]
+url = "https://lemmy.world/feeds/c/selfhosted.xml"
+title = "Lemmy: Selfhosted"
+
+[[markata-go.blogroll.feeds]]
+url = "https://www.reddit.com/r/selfhosted/.rss"
+title = "Reddit: Selfhosted"
+```
+
+**Reddit deprecation:** Reddit [announced](https://www.reddit.com/r/modnews/comments/1wubgvt/) that its native RSS feeds will stop working on **November 13, 2026**. The Reddit example is temporary and should not be relied on for new long-term subscriptions; no unauthenticated replacement is promised. Lemmy provides supported native RSS feeds. Feed refreshes may also be rate-limited by individual communities.
+
 If you assign feed types, markata-go also generates typed reader pages:
 
 ```text
