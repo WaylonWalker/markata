@@ -21,6 +21,10 @@ ldflags := "-s -w -X github.com/WaylonWalker/markata-go/cmd/markata-go/cmd.Versi
 build:
     go build -ldflags '{{ldflags}}' -o {{project}} {{main}}
 
+# Canonical command alongside the historical markata-go development binary
+build-markata:
+    go build -ldflags '{{ldflags}}' -o markata ./cmd/markata
+
 # Build with race detector (slower but catches race conditions)
 build-race:
     go build -race -ldflags '{{ldflags}}' -o {{project}} {{main}}

@@ -1,14 +1,14 @@
 #!/bin/bash
 #
-# markata-go install script
+# Markata installer (supports legacy markata-go releases)
 # https://github.com/WaylonWalker/markata-go
 #
 # Usage:
 #   curl -sSL https://raw.githubusercontent.com/WaylonWalker/markata-go/main/install.sh | bash
 #
 # Environment variables:
-#   MARKATA_GO_INSTALL_DIR - Custom install directory (default: /usr/local/bin or ~/.local/bin)
-#   MARKATA_GO_VERSION     - Specific version to install (default: latest)
+#   MARKATA_INSTALL_DIR    - Custom install directory (legacy: MARKATA_GO_INSTALL_DIR)
+#   MARKATA_VERSION        - Specific version (legacy: MARKATA_GO_VERSION)
 #
 # This script:
 #   1. Detects OS (Linux, macOS, Windows/WSL) and architecture (amd64, arm64)
@@ -20,7 +20,7 @@ set -e
 
 # Configuration
 REPO="WaylonWalker/markata-go"
-BINARY_NAME="markata-go"
+BINARY_NAME="markata"
 GITHUB_API="https://api.github.com/repos/${REPO}"
 GITHUB_RELEASES="https://github.com/${REPO}/releases"
 
@@ -137,8 +137,8 @@ get_latest_version() {
 # Determine the install directory
 get_install_dir() {
     # Use custom install dir if specified
-    if [ -n "${MARKATA_GO_INSTALL_DIR}" ]; then
-        echo "${MARKATA_GO_INSTALL_DIR}"
+    if [ -n "${MARKATA_INSTALL_DIR:-${MARKATA_GO_INSTALL_DIR:-}}" ]; then
+        echo "${MARKATA_INSTALL_DIR:-${MARKATA_GO_INSTALL_DIR}}"
         return
     fi
 
@@ -172,92 +172,97 @@ ensure_install_dir() {
     fi
 }
 
-# Download and extract the binary
+# Download the preferred Markata artifact, falling back to historical releases.
+# Both executable names are installed so existing scripts keep working.
 download_and_install() {
     local os="$1"
     local arch="$2"
     local version="$3"
     local install_dir="$4"
-
-    # Strip 'v' prefix for archive naming
     local version_num="${version#v}"
-
-    # Determine archive extension
     local ext="tar.gz"
     if [ "${os}" = "windows" ]; then
         ext="zip"
     fi
 
-    # Build download URL
-    local archive_name="${BINARY_NAME}_${version_num}_${os}_${arch}.${ext}"
-    local download_url="${GITHUB_RELEASES}/download/${version}/${archive_name}"
-
-    log_info "Downloading ${BINARY_NAME} ${version} for ${os}/${arch}..."
-    log_info "URL: ${download_url}"
-
-    # Create temporary directory
     local tmp_dir
     tmp_dir=$(mktemp -d)
-    trap "rm -rf ${tmp_dir}" EXIT
+    trap "rm -rf -- '${tmp_dir}'" EXIT
 
-    local archive_path="${tmp_dir}/${archive_name}"
-
-    # Download the archive
-    if command_exists curl; then
-        if ! curl -fsSL "${download_url}" -o "${archive_path}"; then
-            log_error "Failed to download ${archive_name}"
-            log_error "Check if the version and platform are available at:"
-            log_error "${GITHUB_RELEASES}"
-            exit 1
-        fi
-    elif command_exists wget; then
-        if ! wget -q "${download_url}" -O "${archive_path}"; then
-            log_error "Failed to download ${archive_name}"
-            log_error "Check if the version and platform are available at:"
-            log_error "${GITHUB_RELEASES}"
-            exit 1
-        fi
-    fi
-
-    log_success "Downloaded ${archive_name}"
-
-    # Extract the archive
-    log_info "Extracting..."
-
-    if [ "${ext}" = "tar.gz" ]; then
-        tar -xzf "${archive_path}" -C "${tmp_dir}"
-    elif [ "${ext}" = "zip" ]; then
-        if command_exists unzip; then
-            unzip -q "${archive_path}" -d "${tmp_dir}"
+    local variant archive_name archive_path download_url=""
+    for variant in markata markata-go; do
+        archive_name="${variant}_${version_num}_${os}_${arch}.${ext}"
+        archive_path="${tmp_dir}/${archive_name}"
+        download_url="${GITHUB_RELEASES}/download/${version}/${archive_name}"
+        log_info "Trying ${archive_name}..."
+        if command_exists curl; then
+            if curl -fsSL "${download_url}" -o "${archive_path}"; then
+                break
+            fi
+        elif command_exists wget; then
+            if wget -q "${download_url}" -O "${archive_path}"; then
+                break
+            fi
         else
-            log_error "unzip command not found. Please install it to extract Windows archives."
+            log_error "Neither curl nor wget found."
             exit 1
         fi
-    fi
+        archive_path=""
+    done
 
-    # Find and install the binary
-    local binary_path="${tmp_dir}/${BINARY_NAME}"
-    if [ "${os}" = "windows" ]; then
-        binary_path="${tmp_dir}/${BINARY_NAME}.exe"
-    fi
-
-    if [ ! -f "${binary_path}" ]; then
-        log_error "Binary not found in archive"
+    if [ -z "${archive_path}" ]; then
+        log_error "Could not download either Markata or legacy markata-go archive for ${version} (${os}/${arch})."
+        log_error "Browse available releases at ${GITHUB_RELEASES}"
         exit 1
     fi
 
-    # Install the binary
-    log_info "Installing to ${install_dir}..."
-
-    local dest="${install_dir}/${BINARY_NAME}"
-    if [ "${os}" = "windows" ]; then
-        dest="${install_dir}/${BINARY_NAME}.exe"
+    log_success "Downloaded ${archive_name}"
+    if [ "${ext}" = "tar.gz" ]; then
+        tar -xzf "${archive_path}" -C "${tmp_dir}"
+    elif command_exists unzip; then
+        unzip -q "${archive_path}" -d "${tmp_dir}"
+    else
+        log_error "unzip command not found."
+        exit 1
     fi
 
-    mv "${binary_path}" "${dest}"
-    chmod +x "${dest}"
+    local suffix=""
+    if [ "${os}" = "windows" ]; then
+        suffix=".exe"
+    fi
+    local binary_path="${tmp_dir}/${variant}${suffix}"
+    if [ ! -f "${binary_path}" ]; then
+        log_error "Expected ${variant}${suffix} inside ${archive_name}."
+        exit 1
+    fi
 
-    log_success "Installed ${BINARY_NAME} to ${dest}"
+    local canonical="${install_dir}/markata${suffix}"
+    local legacy="${install_dir}/markata-go${suffix}"
+
+    # The old Python distribution also owns a `markata` command. Never
+    # silently overwrite it (or another unrelated executable).
+    local target
+    for target in "${canonical}" "${legacy}"; do
+        if [ -e "${target}" ] || [ -L "${target}" ]; then
+            if ! "${target}" version 2>/dev/null | grep -q '^  go:'; then
+                log_error "Refusing to overwrite non-Go executable: ${target}"
+                log_error "Move or uninstall the conflicting command before installing Markata."
+                exit 1
+            fi
+        fi
+    done
+
+    # Stage and rename each command to avoid truncating a running executable.
+    # A copy (rather than a symlink) also supports Windows-compatible shells.
+    local canonical_tmp="${install_dir}/.markata-install-$${suffix}"
+    local legacy_tmp="${install_dir}/.markata-go-install-$${suffix}"
+    cp "${binary_path}" "${canonical_tmp}"
+    chmod +x "${canonical_tmp}"
+    cp "${canonical_tmp}" "${legacy_tmp}"
+    chmod +x "${legacy_tmp}"
+    mv -f "${canonical_tmp}" "${canonical}"
+    mv -f "${legacy_tmp}" "${legacy}"
+    log_success "Installed ${canonical} and compatibility command ${legacy}"
 }
 
 # Check if install dir is in PATH
@@ -330,7 +335,7 @@ verify_installation() {
 # Main installation function
 main() {
     echo ""
-    echo "markata-go installer"
+    echo "Markata installer"
     echo "===================="
     echo ""
 
@@ -349,8 +354,8 @@ main() {
 
     # Get version to install
     local version
-    if [ -n "${MARKATA_GO_VERSION}" ]; then
-        version="${MARKATA_GO_VERSION}"
+    if [ -n "${MARKATA_VERSION:-${MARKATA_GO_VERSION:-}}" ]; then
+        version="${MARKATA_VERSION:-${MARKATA_GO_VERSION}}"
         # Add 'v' prefix if missing
         if [[ "${version}" != v* ]]; then
             version="v${version}"
@@ -389,6 +394,7 @@ main() {
     echo "  ${BINARY_NAME} new \"My First Post\""
     echo "  ${BINARY_NAME} build"
     echo "  ${BINARY_NAME} serve"
+    echo "  markata-go build   # Backward-compatible alias"
     echo ""
 }
 

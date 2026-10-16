@@ -313,3 +313,14 @@ jobs:
           distribution: goreleaser
           version: "~> v2"
           args: check
+      - name: Test canonical and legacy install paths
+        run: |
+          bash -n install.sh
+          bash scripts/test-install-identity.sh
+      - name: Build and inspect both CLI identities
+        run: |
+          go build -o "$RUNNER_TEMP/markata" ./cmd/markata
+          go build -o "$RUNNER_TEMP/markata-go" ./cmd/markata-go
+          "$RUNNER_TEMP/markata" version | grep -q '^markata '
+          "$RUNNER_TEMP/markata-go" version | grep -q '^markata-go '
+          "$RUNNER_TEMP/markata" --help | grep -q 'markata build'

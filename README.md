@@ -1,4 +1,4 @@
-# markata-go
+# Markata
 
 A fast, plugin-driven static site generator with a powerful feed system.
 
@@ -8,9 +8,9 @@ A fast, plugin-driven static site generator with a powerful feed system.
 
 ## Overview
 
-markata-go is a static site generator written in Go that processes Markdown files with YAML frontmatter and generates a complete static website. It features a flexible plugin architecture, a powerful feed system for creating archives and syndication feeds, and Jinja2-like templating.
+**Markata** (formerly **markata-go**) is a static site generator written in Go that processes Markdown files with YAML frontmatter and generates a complete static website. It features a flexible plugin architecture, a powerful feed system for creating archives and syndication feeds, and Jinja2-like templating.
 
-> **Status:** Beta (0.x) - API may change between minor versions
+> **Status:** Go implementation is pre-1.0. The `markata` executable is the preferred entry point; `markata-go` remains supported during migration. The historical Python project still occupies the `WaylonWalker/markata` repository until the coordinated cutover.
 
 ### Key Features
 
@@ -42,9 +42,13 @@ mise use -g github:WaylonWalker/markata-go
 
 ### Go Install
 
+Until a tagged release contains the new entry point, install the canonical binary from `main`:
+
 ```bash
-go install github.com/WaylonWalker/markata-go/cmd/markata-go@latest
+go install github.com/WaylonWalker/markata-go/cmd/markata@main
 ```
+
+Existing tagged versions remain available with `go install github.com/WaylonWalker/markata-go/cmd/markata-go@latest`.
 
 ### Manual Download
 
@@ -58,16 +62,18 @@ See [docs/installation.md](docs/installation.md) for detailed installation instr
 
 ```bash
 # Create a new post
-markata-go new "Hello World"
+markata new "Hello World"
 
 # Build the site
-markata-go build
+markata build
 
 # Serve with live reload
-markata-go serve
+markata serve
 ```
 
 ## Configuration
+
+The existing `markata-go.toml`, `[markata-go]`, and `MARKATA_GO_*` configuration contracts remain supported. Do **not** rename these to `markata` yet: that namespace is also used by the historical Python product. See [the name migration guide](docs/guides/name-migration.md).
 
 markata-go uses TOML configuration (also supports YAML and JSON). Create a `markata-go.toml` in your project root:
 
