@@ -1171,7 +1171,6 @@ type sidebarFeedJSON struct {
 	Calendar            bool              `json:"calendar"`
 	Posts               []sidebarPostJSON `json:"posts"`
 	TotalPosts          int               `json:"totalPosts"`
-	// ChunkBase is set only for a matching, public, emitted HTML feed.
 	ChunkBase           string            `json:"chunkBase,omitempty"`
 	ChunkSize           int               `json:"chunkSize,omitempty"`
 	WindowStart         int               `json:"windowStart,omitempty"`
