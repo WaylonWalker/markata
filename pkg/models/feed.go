@@ -73,8 +73,7 @@ type FeedConfig struct {
 	// Type is the feed type (blog, series, guide)
 	Type FeedType `json:"type" yaml:"type" toml:"type"`
 
-	// Presentation controls the default HTML layout without changing syndication.
-	// classic (default), auto, editorial, gallery, reading, timeline, resources.
+	// Presentation selects the HTML feed layout (classic, auto, editorial, gallery, reading, timeline, resources).
 	Presentation string `json:"presentation,omitempty" yaml:"presentation,omitempty" toml:"presentation,omitempty"`
 
 	// Filter is the filter expression for selecting posts
@@ -287,6 +286,7 @@ type FeedPage struct {
 
 // FeedDefaults provides default values that feeds inherit.
 type FeedDefaults struct {
+	// Presentation is the default HTML feed layout.
 	Presentation string `json:"presentation,omitempty" yaml:"presentation,omitempty" toml:"presentation,omitempty"`
 	// ItemsPerPage is the default number of items per page
 	ItemsPerPage int `json:"items_per_page" yaml:"items_per_page" toml:"items_per_page"`

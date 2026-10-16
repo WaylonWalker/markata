@@ -1247,11 +1247,11 @@ func (p *PublishFeedsPlugin) generateFeedPageHTML(fc *models.FeedConfig, page *m
 		presentation := resolveFeedPresentation(fc)
 		// The JS paginator assumes individual direct-child cards, so retain
 		// the classic markup rather than nesting posts inside weekly sections.
-		if page.PaginationType == models.PaginationJS && presentation == "editorial" {
-			presentation = "classic"
+		if page.PaginationType == models.PaginationJS && presentation == presentationEditorial {
+			presentation = presentationClassic
 		}
 		ctx.Set("feed_presentation", presentation)
-		if presentation == "editorial" {
+		if presentation == presentationEditorial {
 			ctx.Set("feed_sections", buildEditorialFeedSections(page.Posts))
 		}
 		p.addFeedStatsContext(&ctx, fc, renderCtx)

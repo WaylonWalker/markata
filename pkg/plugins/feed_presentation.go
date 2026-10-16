@@ -9,6 +9,19 @@ import (
 	"github.com/WaylonWalker/markata-go/pkg/templates"
 )
 
+const (
+	presentationClassic = "classic"
+	presentationEditorial = "editorial"
+	presentationGallery = "gallery"
+	presentationReading = "reading"
+	presentationTimeline = "timeline"
+	presentationResources = "resources"
+	presentationAuto = "auto"
+	presentationFeatured = "featured"
+	presentationOther = "other"
+	presentationUndated = "undated"
+	presentationFeedTemplate = "feed.html"
+)
 // EditorialFeedItem is a post or a collection of same-day shots. Grouped shots
 // retain individual permalinks and render through the normal card router.
 type EditorialFeedItem struct {
@@ -26,25 +39,25 @@ type EditorialFeedSection struct {
 
 func presentationKind(post *models.Post) string {
 	if post == nil {
-		return "other"
+		return presentationOther
 	}
 	tpl := strings.ToLower(strings.TrimSuffix(post.Template, ".html"))
 	path := strings.ToLower(post.Path)
 	switch {
-	case strings.Contains(path, "/shots/"), tpl == "photo", tpl == "shot":
-		return "photo"
-	case strings.Contains(path, "/ping/"), tpl == "ping", tpl == "note", tpl == "inline":
-		return "note"
+	case strings.Contains(path, "/shots/"), tpl == templateTypePhoto, tpl == "shot":
+		return templateTypePhoto
+	case strings.Contains(path, "/ping/"), tpl == "ping", tpl == templateTypeNote, tpl == "inline":
+		return templateTypeNote
 	case strings.Contains(path, "/stars/"), strings.Contains(path, "/link/"), strings.Contains(path, "/thoughts/"),
-		tpl == "link", tpl == "bookmark", tpl == "thought":
-		return "link"
-	case tpl == "video", strings.Contains(path, "/video/"):
-		return "video"
+		tpl == templateTypeLink, tpl == "bookmark", tpl == "thought":
+		return templateTypeLink
+	case tpl == templateTypeVideo, strings.Contains(path, "/video/"):
+		return templateTypeVideo
 	case strings.Contains(path, "/blog/"), strings.Contains(path, "/til/"),
-		tpl == "post", tpl == "article", tpl == "guide", tpl == "tutorial":
-		return "article"
+		tpl == "post", tpl == templateTypeArticle, tpl == "guide", tpl == "tutorial":
+		return templateTypeArticle
 	default:
-		return "other"
+		return presentationOther
 	}
 }
 
@@ -52,18 +65,18 @@ func presentationKind(post *models.Post) string {
 // The default is classic, so older sites and custom templates retain their UI.
 func resolveFeedPresentation(fc *models.FeedConfig) string {
 	if fc == nil {
-		return "classic"
+		return presentationClassic
 	}
 	switch fc.Presentation {
-	case "classic", "editorial", "gallery", "reading", "timeline", "resources":
+	case presentationClassic, presentationEditorial, presentationGallery, presentationReading, presentationTimeline, presentationResources:
 		return fc.Presentation
-	case "auto":
+	case presentationAuto:
 		// Custom layout templates, such as feed-photo-grid.html, own rendering.
-		if fc.Templates.HTML != "" && fc.Templates.HTML != "feed.html" {
-			return "classic"
+		if fc.Templates.HTML != "" && fc.Templates.HTML != presentationFeedTemplate {
+			return presentationClassic
 		}
 	default:
-		return "classic"
+		return presentationClassic
 	}
 
 	counts := make(map[string]int)
@@ -76,44 +89,44 @@ func resolveFeedPresentation(fc *models.FeedConfig) string {
 		total++
 	}
 	if total < 8 {
-		return "classic"
+		return presentationClassic
 	}
 	for _, option := range []struct{ kind, view string }{
-		{"photo", "gallery"},
-		{"note", "timeline"},
-		{"link", "resources"},
-		{"article", "reading"},
+		{templateTypePhoto, presentationGallery},
+		{templateTypeNote, presentationTimeline},
+		{templateTypeLink, presentationResources},
+		{templateTypeArticle, presentationReading},
 	} {
 		if counts[option.kind]*100 >= total*80 {
 			return option.view
 		}
 	}
 	distinct := 0
-	for _, kind := range []string{"photo", "note", "link", "video", "article"} {
+	for _, kind := range []string{templateTypePhoto, templateTypeNote, templateTypeLink, templateTypeVideo, templateTypeArticle} {
 		if counts[kind] >= 2 {
 			distinct++
 		}
 	}
 	if total >= 12 && distinct >= 3 {
-		return "editorial"
+		return presentationEditorial
 	}
-	return "classic"
+	return presentationClassic
 }
 
 func editorialRank(post *models.Post) int {
 	if post != nil && post.Extra != nil {
-		if featured, ok := post.Extra["featured"].(bool); ok && featured {
+		if featured, ok := post.Extra[presentationFeatured].(bool); ok && featured {
 			return 0
 		}
 	}
 	switch presentationKind(post) {
-	case "article":
+	case templateTypeArticle:
 		return 1
-	case "video", "link":
+	case templateTypeVideo, templateTypeLink:
 		return 2
-	case "photo":
+	case templateTypePhoto:
 		return 3
-	case "note":
+	case templateTypeNote:
 		return 4
 	default:
 		return 3
@@ -122,7 +135,7 @@ func editorialRank(post *models.Post) int {
 
 func editorialWeek(post *models.Post) (key, label string) {
 	if post == nil || post.Date == nil {
-		return "undated", "Undated"
+		return presentationUndated, "Undated"
 	}
 	date := *post.Date
 	start := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, date.Location())
@@ -132,7 +145,7 @@ func editorialWeek(post *models.Post) (key, label string) {
 
 func editorialDay(post *models.Post) string {
 	if post == nil || post.Date == nil {
-		return "undated"
+		return presentationUndated
 	}
 	return post.Date.Format("2006-01-02")
 }
@@ -162,14 +175,14 @@ func buildEditorialFeedSections(posts []*models.Post) []EditorialFeedSection {
 	for i, postsInWeek := range weeks {
 		photos := make(map[string][]*models.Post)
 		for _, post := range postsInWeek {
-			if presentationKind(post) == "photo" {
+			if presentationKind(post) == templateTypePhoto {
 				day := editorialDay(post)
 				photos[day] = append(photos[day], post)
 			}
 		}
 		emitted := make(map[string]bool)
 		for position, post := range postsInWeek {
-			if presentationKind(post) == "photo" {
+			if presentationKind(post) == templateTypePhoto {
 				day := editorialDay(post)
 				if len(photos[day]) > 1 {
 					if emitted[day] {
@@ -177,7 +190,7 @@ func buildEditorialFeedSections(posts []*models.Post) []EditorialFeedSection {
 					}
 					emitted[day] = true
 					sections[i].Items = append(sections[i].Items, EditorialFeedItem{
-						Kind: "shots", Importance: "gallery",
+						Kind: "shots", Importance: presentationGallery,
 						Posts: templates.PostsToMaps(photos[day]), rank: 3, order: position,
 					})
 					continue
@@ -187,7 +200,7 @@ func buildEditorialFeedSections(posts []*models.Post) []EditorialFeedSection {
 			rank := editorialRank(post)
 			importance := "standard"
 			if rank <= 1 {
-				importance = "featured"
+				importance = presentationFeatured
 			} else if rank == 4 {
 				importance = "quiet"
 			}
