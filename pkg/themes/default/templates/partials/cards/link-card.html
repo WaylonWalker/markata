@@ -5,7 +5,13 @@
   <div class="card-link-wrapper">
     {% if post.image %}
     <div class="card-link-image">
+      {% if feed_presentation == "editorial" %}
+      {% with post.image|responsive_srcset:"160,240,320,480,600,720" as thumbset %}
+      <img src="{% if item.Lead %}{{ post.image | with_size:"720,450" }}{% else %}{{ post.image | with_size:"480,300" }}{% endif %}"{% if thumbset %} srcset="{{ thumbset }}" sizes="(max-width: 480px) 92vw, (max-width: 760px) 40vw, 330px"{% endif %} alt="" class="u-photo" width="720" height="450" loading="lazy" decoding="async">
+      {% endwith %}
+      {% else %}
       <img src="{{ post.image | with_size:"120,80" }}" alt="" class="u-photo" width="120" height="80" loading="lazy">
+      {% endif %}
     </div>
     {% endif %}
 

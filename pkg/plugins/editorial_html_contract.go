@@ -11,7 +11,8 @@ import (
 // regressions visible to authors and agents.
 func editorialHTMLMarkupValid(html string) bool {
 	return strings.Contains(html, `data-feed-presentation="editorial"`) &&
-		strings.Contains(html, `class="editorial-feed posts-list"`)
+		strings.Contains(html, `class="editorial-feed posts-list"`) &&
+		strings.Contains(html, `data-editorial-version="2"`)
 }
 
 // editorialHTMLPublished inspects only the beginning of the existing HTML

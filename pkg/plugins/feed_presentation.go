@@ -20,6 +20,7 @@ const (
 	presentationFeatured     = "featured"
 	presentationOther        = "other"
 	presentationUndated      = "undated"
+	presentationQuiet        = "quiet"
 	presentationFeedTemplate = "feed.html"
 )
 
@@ -28,6 +29,10 @@ const (
 type EditorialFeedItem struct {
 	Kind       string
 	Importance string
+	TypeLabel  string
+	DateLabel  string
+	Lead       bool
+	Mosaic     bool
 	Posts      []map[string]interface{}
 	order      int
 	rank       int
@@ -47,10 +52,11 @@ func presentationKind(post *models.Post) string {
 	switch {
 	case strings.Contains(path, "/shots/"), tpl == templateTypePhoto, tpl == "shot":
 		return templateTypePhoto
-	case strings.Contains(path, "/ping/"), tpl == "ping", tpl == templateTypeNote, tpl == "inline":
+	case strings.Contains(path, "/ping/"), strings.Contains(path, "/thoughts/"),
+		tpl == "ping", tpl == templateTypeNote, tpl == "inline", tpl == "thought":
 		return templateTypeNote
-	case strings.Contains(path, "/stars/"), strings.Contains(path, "/link/"), strings.Contains(path, "/thoughts/"),
-		tpl == templateTypeLink, tpl == "bookmark", tpl == "thought":
+	case strings.Contains(path, "/stars/"), strings.Contains(path, "/link/"),
+		tpl == templateTypeLink, tpl == "bookmark":
 		return templateTypeLink
 	case tpl == templateTypeVideo, strings.Contains(path, "/video/"):
 		return templateTypeVideo
@@ -144,6 +150,31 @@ func editorialWeek(post *models.Post) (key, label string) {
 	return start.Format("2006-01-02"), start.Format("Jan 2") + " – " + start.AddDate(0, 0, 6).Format("Jan 2, 2006")
 }
 
+// editorialTypeLabel is display-only: shared card routing and syndication stay unchanged.
+func editorialTypeLabel(post *models.Post) string {
+	switch presentationKind(post) {
+	case templateTypeArticle:
+		return "Writing"
+	case templateTypeVideo:
+		return strings.ToUpper(templateTypeVideo[:1]) + templateTypeVideo[1:]
+	case templateTypeLink:
+		return "Link"
+	case templateTypePhoto:
+		return "Photograph"
+	case templateTypeNote:
+		return "Note"
+	default:
+		return "From the archive"
+	}
+}
+
+func editorialPhotoDate(post *models.Post) string {
+	if post == nil || post.Date == nil {
+		return strings.ToUpper(presentationUndated[:1]) + presentationUndated[1:]
+	}
+	return post.Date.Format("January 2, 2006")
+}
+
 func editorialDay(post *models.Post) string {
 	if post == nil || post.Date == nil {
 		return presentationUndated
@@ -191,8 +222,9 @@ func buildEditorialFeedSections(posts []*models.Post) []EditorialFeedSection {
 					}
 					emitted[day] = true
 					sections[i].Items = append(sections[i].Items, EditorialFeedItem{
-						Kind: "shots", Importance: presentationGallery,
+						Kind: embedOptionShots, Importance: presentationGallery,
 						Posts: templates.PostsToMaps(photos[day]), rank: 3, order: position,
+						DateLabel: editorialPhotoDate(post), Mosaic: len(photos[day]) == 3,
 					})
 					continue
 				}
@@ -203,10 +235,10 @@ func buildEditorialFeedSections(posts []*models.Post) []EditorialFeedSection {
 			if rank <= 1 {
 				importance = presentationFeatured
 			} else if rank == 4 {
-				importance = "quiet"
+				importance = presentationQuiet
 			}
 			sections[i].Items = append(sections[i].Items, EditorialFeedItem{
-				Kind: "post", Importance: importance,
+				Kind: "post", Importance: importance, TypeLabel: editorialTypeLabel(post),
 				Posts: templates.PostsToMaps([]*models.Post{post}), rank: rank, order: position,
 			})
 		}
@@ -218,6 +250,16 @@ func buildEditorialFeedSections(posts []*models.Post) []EditorialFeedSection {
 			}
 			return left.order < right.order
 		})
+		// Every week gets at most one leading article/link/video. Short
+		// notes never become artificial lead stories; explicit featured
+		// content already sorts before ordinary articles and links.
+		for j := range sections[i].Items {
+			item := &sections[i].Items[j]
+			if item.Kind == "post" && item.rank <= 2 {
+				item.Lead = true
+				break
+			}
+		}
 	}
 	return sections
 }
