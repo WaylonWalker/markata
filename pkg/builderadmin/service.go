@@ -423,6 +423,9 @@ func (s *Service) tryBecomeLeader(ctx context.Context) {
 	// or compare the new executable against stale successful-build history.
 	s.stateMu.Lock()
 	err := s.loadState()
+	if err == nil {
+		s.refreshControlStateWithFiles(s.state)
+	}
 	s.stateMu.Unlock()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "builder-admin: reload state on leader handoff: %v\n", err)
