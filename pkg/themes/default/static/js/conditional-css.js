@@ -40,7 +40,8 @@
   function hasCSS(baseName) {
     var links = document.querySelectorAll('link[rel="stylesheet"]');
     for (var i = 0; i < links.length; i++) {
-      if (links[i].href && links[i].href.indexOf(baseName) !== -1) {
+      var sources = links[i].getAttribute('data-css-sources') || '';
+      if ((links[i].href && links[i].href.indexOf(baseName) !== -1) || sources.indexOf('/' + baseName + '.') !== -1) {
         return true;
       }
     }

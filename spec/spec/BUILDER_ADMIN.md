@@ -290,6 +290,23 @@ disable their display-only assertions.
 Direct Service access and `kubectl port-forward` cannot establish proxy provenance and MUST fail
 closed. They are not supported operator-access paths for authenticated deployments.
 
+### Bearer Machine API
+
+The service MUST expose a versioned JSON API under `/api/v1/` for non-interactive operator clients.
+Every machine API request MUST pass through the configured trusted ForwardAuth proxy, include the
+durable operator ID, and include exactly one configured auth-method header whose value is `bearer`.
+The auth-method header MUST be removed from client requests before ForwardAuth and copied to the
+service only from a successful ForwardAuth response. The service MUST NOT infer bearer validation
+from a client-supplied `Authorization` header or from display-only scope headers.
+
+The API MUST expose state, build and refresh detail, and operation logs; it MUST enqueue builds,
+refresh tasks, and release rollbacks through the existing serialized queue and leader handoff. The
+ForwardAuth route for `/api/v1/` MUST require the app's configured operator-access scope. Mutations
+MUST record the authenticated durable user ID on the queued operation and resulting history record.
+Successful enqueue responses MUST use HTTP 202 and return the operation ID and queued status. API
+errors MUST be JSON with a stable error code and message. Queue-full responses MUST include a
+retryable status and `Retry-After` header.
+
 ### Operator UI Theme
 
 The operator UI MUST derive its default color scheme from the site theme configured for the
@@ -314,7 +331,7 @@ median/MAD band to apply restrained fast, slow, and extreme-slow emphasis.
 
 An authenticated `GET /` MUST mint a cryptographically random double-submit CSRF token. It MUST
 set the token in a host-only `__Host-` cookie with `Secure`, `HttpOnly`, `SameSite=Strict`, and
-`Path=/`, and embed the same token in every browser mutation form. Every mutation MUST execute
+`Path=/`, and embed the same token in every browser mutation form. Every browser mutation MUST execute
 only after the active leader validates a cookie token against either the submitted form token or
 `X-CSRF-Token` using a constant-time comparison. It MUST also require an exact `Origin` match to
 the configured HTTPS public origin and reject a present `Sec-Fetch-Site` other than `same-origin`.

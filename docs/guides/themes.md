@@ -1154,6 +1154,34 @@ Then style it:
 
 ## CSS Optimization
 
+### Bundle a homepage
+
+To reduce stylesheet requests on a specific page, enable page bundling:
+
+```toml
+[markata-go.css_bundle]
+enabled = true
+pages = ["index.html"]
+```
+
+Use output-relative HTML paths. Production builds combine local head
+stylesheets and inline styles in their original order into hashed CSS files.
+Scripts and special stylesheets separate bundles. Remote stylesheets, media
+conditions, integrity attributes, CSS imports, and relative asset URLs stay
+untouched. Fast builds skip this step. Original CSS files remain available for
+navigation and custom templates. The runtime loader recognizes bundled sources
+and avoids downloading them again.
+
+With the built-in theme picker, the default template initially loads
+`palette-core.css` for the configured light/dark pair. Other colors load when
+opening the picker or restoring a saved or seasonal choice. Custom templates
+can continue loading the complete `palette.css` stylesheet.
+
+Image zoom CSS and JavaScript load on the first image click. The first click
+opens that image once the library is ready; later clicks reuse the library.
+Photo and article cards use responsive image candidates on trusted resize
+hosts. For text-only feed previews, use `render_feed("til", 8, "summary")`.
+
 markata-go automatically optimizes CSS loading by only including stylesheets that are actually needed for each page. This reduces page size and improves load times.
 
 ### How It Works

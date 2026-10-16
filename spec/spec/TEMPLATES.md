@@ -12,6 +12,16 @@ Local Markdown links and wikilinks in a post also resolve against public generat
 
 ## Overview
 
+The `render_feed` helper's `summary` variant MUST render linked titles, bounded
+plain-text summaries, and dates without embedding article media or code blocks.
+The default `card` variant MUST retain its existing routing behavior.
+
+The `media_srcset` filter MUST emit width candidates only for trusted remote
+resize services. Relative and untrusted URLs MUST return an empty srcset. It
+MUST preserve unrelated query parameters and remove fixed-height parameters.
+Default photo and article cards SHOULD use these candidates with native lazy
+loading and `sizes="auto, ..."` so small cards do not request full-size media.
+
 Templates wrap rendered markdown content in HTML layouts. The system supports:
 
 - Template inheritance (base templates)

@@ -17,6 +17,7 @@ import (
 const (
 	csrfCookieName        = "__Host-markata-builder-admin-csrf"
 	forwardedLeaderHeader = "X-Markata-Builder-Admin-Forwarded"
+	apiAuthMethodBearer   = "bearer"
 )
 
 var forbiddenTrustedProxyPrefixes = []netip.Prefix{
@@ -77,9 +78,9 @@ type OperatorProfile struct {
 	Scopes      string
 }
 
-// AuthHeaders maps identity assertions supplied by a trusted ForwardAuth proxy.
-// Empty optional header names disable that assertion. The default preserves the
-// stable hlab-auth header contract.
+// AuthHeaders maps identity assertions and the machine-authentication marker
+// supplied by a trusted ForwardAuth proxy. Empty optional header names disable
+// that assertion. The default preserves the stable hlab-auth header contract.
 type AuthHeaders struct {
 	UserID      string
 	Username    string
@@ -88,6 +89,7 @@ type AuthHeaders struct {
 	Groups      string
 	Roles       string
 	Scopes      string
+	AuthMethod  string
 }
 
 // DefaultAuthHeaders returns the header contract used by hlab-auth.
@@ -100,6 +102,7 @@ func DefaultAuthHeaders() AuthHeaders {
 		Groups:      "X-Hlab-Groups",
 		Roles:       "X-Hlab-Roles",
 		Scopes:      "X-Hlab-Scopes",
+		AuthMethod:  "X-Hlab-Auth-Method",
 	}
 }
 
@@ -120,9 +123,25 @@ func normalizeAuthHeaders(headers AuthHeaders) (AuthHeaders, error) {
 		{"groups", headers.Groups},
 		{"roles", headers.Roles},
 		{"scopes", headers.Scopes},
+		{"auth method", headers.AuthMethod},
 	} {
 		if field.value != "" && !validHTTPHeaderName(field.value) {
 			return AuthHeaders{}, fmt.Errorf("invalid auth %s header %q", field.name, field.value)
+		}
+	}
+	if headers.AuthMethod != "" {
+		for _, identityHeader := range []string{
+			headers.UserID,
+			headers.Username,
+			headers.DisplayName,
+			headers.Email,
+			headers.Groups,
+			headers.Roles,
+			headers.Scopes,
+		} {
+			if identityHeader != "" && strings.EqualFold(headers.AuthMethod, identityHeader) {
+				return AuthHeaders{}, fmt.Errorf("auth method header must differ from identity header %q", identityHeader)
+			}
 		}
 	}
 	return headers, nil
@@ -193,6 +212,29 @@ func (s *Service) requireTrustedOperator(next http.Handler) http.Handler {
 		}
 		if _, err := operatorProfileFromHeaders(r.Header, s.cfg.AuthHeaders); err != nil {
 			http.Error(w, "unauthenticated", http.StatusUnauthorized)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+// requireBearerOperator protects the machine API with a bearer-authentication
+// assertion returned by ForwardAuth. The configured header is stripped at the
+// public proxy before authentication and only copied from a successful auth
+// response. Local headers and scope display assertions never grant access.
+func (s *Service) requireBearerOperator(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !s.isTrustedProxyRequest(r) {
+			writeAPIError(w, http.StatusUnauthorized, "authentication_required", "A trusted ForwardAuth identity is required.")
+			return
+		}
+		if _, err := operatorProfileFromHeaders(r.Header, s.cfg.AuthHeaders); err != nil {
+			writeAPIError(w, http.StatusUnauthorized, "authentication_required", "A trusted ForwardAuth identity is required.")
+			return
+		}
+		method, err := singleTrustedHeader(r.Header, s.cfg.AuthHeaders.AuthMethod, true)
+		if err != nil || !strings.EqualFold(method, apiAuthMethodBearer) {
+			writeAPIError(w, http.StatusUnauthorized, "authentication_required", "A validated bearer token is required.")
 			return
 		}
 		next.ServeHTTP(w, r)

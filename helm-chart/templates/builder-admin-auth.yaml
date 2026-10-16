@@ -1,8 +1,8 @@
 {{- if and .Values.builderAdmin.enabled .Values.builderAdmin.ingress.enabled .Values.builderAdmin.ingress.auth.enabled }}
 {{- include "markata-notes.validateBuilderAdminAuthInternalURL" . }}
 {{- $authInternalURL := .Values.builderAdmin.ingress.auth.internalUrl }}
-{{- $authHeaders := list .Values.builderAdmin.auth.headers.userID .Values.builderAdmin.auth.headers.username .Values.builderAdmin.auth.headers.displayName .Values.builderAdmin.auth.headers.email .Values.builderAdmin.auth.headers.groups .Values.builderAdmin.auth.headers.roles .Values.builderAdmin.auth.headers.scopes }}
-{{- $identityHeaders := uniq (concat $authHeaders (list "X-Hlab-User-Id" "X-Hlab-Username" "X-Hlab-Display-Name" "X-Hlab-Email" "X-Hlab-Groups" "X-Hlab-Roles" "X-Hlab-Scopes")) }}
+{{- $authHeaders := list .Values.builderAdmin.auth.headers.userID .Values.builderAdmin.auth.headers.username .Values.builderAdmin.auth.headers.displayName .Values.builderAdmin.auth.headers.email .Values.builderAdmin.auth.headers.groups .Values.builderAdmin.auth.headers.roles .Values.builderAdmin.auth.headers.scopes .Values.builderAdmin.auth.headers.authMethod }}
+{{- $identityHeaders := uniq (concat $authHeaders (list "X-Hlab-User-Id" "X-Hlab-Username" "X-Hlab-Display-Name" "X-Hlab-Email" "X-Hlab-Groups" "X-Hlab-Roles" "X-Hlab-Scopes" "X-Hlab-Auth-Method")) }}
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:

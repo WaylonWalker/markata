@@ -67,3 +67,45 @@ play or pause a video, left/right arrows to seek five seconds, and `m` to mute
 or unmute.
 
 If not configured, the Shorts route defaults to `/<feed-slug>/shorts/`. Only enable Shorts on a feed that should expose a full-screen player.
+
+## Adaptive HTML layouts
+
+The main HTML feed can use `classic`, `editorial`, `gallery`, `reading`,
+`timeline`, or `resources`. Select `auto` to choose from the feed's post
+types. The default is **classic** to preserve existing sites.
+
+```toml
+[[markata-go.feeds]]
+slug = "archive"
+presentation = "editorial"
+
+[[markata-go.feeds]]
+slug = "ping"
+presentation = "timeline"
+
+[[markata-go.feeds]]
+slug = "stars"
+presentation = "resources"
+```
+
+Site-wide defaults may be set in `[markata-go.feed_defaults]` with
+`presentation = "classic"` (or a different layout). A feed's own
+`presentation` overrides that default.
+
+`auto` chooses a specialized layout when at least 80% of eight or more
+posts are photos, notes, links, or articles. Feeds with at least twelve
+posts and three content types represented by two posts each use editorial
+grouping. Smaller or unclassified feeds retain the classic view.
+Custom HTML templates, such as `feed-photo-grid.html`, take precedence
+over automatic layout detection.
+
+Editorial grouping uses Monday-start publishing weeks. Articles are
+emphasized, substantial links and video follow, same-day shots appear
+as a responsive gallery when there are at least two, and brief notes
+are visually quieter. `featured: true` on a post explicitly elevates it
+within its week. Each post retains its permalink, date, and HTML card.
+
+Presentation never modifies RSS, Atom, JSON, Simple, Calendar, source
+ordering, or the existing pagination boundaries. Weeks that span two
+HTML pagination pages continue on the next page. JS-pagination feeds
+keep classic markup because the JS paginator requires direct child cards.

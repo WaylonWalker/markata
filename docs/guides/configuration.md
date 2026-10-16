@@ -626,6 +626,20 @@ custom_css = "my-styles.css"
 
 See the [[themes-and-styling|Themes Guide]] for detailed customization options.
 
+### Page CSS Bundles (`[markata-go.css_bundle]`)
+
+```toml
+[markata-go.css_bundle]
+enabled = true
+pages = ["index.html"]
+```
+
+`pages` defaults to an empty list. Each entry names an HTML file relative to
+`output_dir`. Production builds bundle eligible head styles in cascade order
+after CSS optimization. Fast builds skip page bundling. Existing `bundles`
+definitions continue to work independently. See [CSS optimization](themes/#css-optimization)
+for stylesheet boundaries and runtime behavior.
+
 ### CSS Purge (`[markata-go.css_purge]`)
 
 ```toml
@@ -846,7 +860,7 @@ Series/collection navigation sidebar for posts in the same feed.
 | `width` | string | `"250px"` | Sidebar width |
 | `title` | string | `""` | Custom title (defaults to feed title) |
 | `feeds` | array | `[]` | Feed slugs to show navigation for |
-| `max_posts` | integer | `0` | Limit rendered sidebar items; when set, keeps a window around the current post |
+| `max_posts` | integer | `0` | Initial server-rendered sidebar window; public HTML feeds can progressively load the rest from static chunks |
 
 ```toml
 [markata-go.components.feed_sidebar]

@@ -256,6 +256,38 @@ picture. The URL is derived from the authenticated stable user ID; a `No image` 
 visible when it is unset, unavailable, or cannot load. Do not use this setting to change hlab-auth's
 primary public auth origin, cookies/sessions, or primary WebAuthn RP.
 
+### Agent API
+
+Builder admin exposes a machine API at `/api/v1/` for reading state and logs, inspecting build and
+refresh operations, enqueueing builds and refreshes, and rolling back releases. Successful
+mutations return HTTP 202 with an operation ID and queued status. Poll the operation detail endpoint
+or `/api/v1/state` until it completes. The API records the trusted operator ID on operations.
+
+The API is restricted to requests that pass through ForwardAuth with a trusted `bearer` auth-method
+assertion. The default header is `X-Hlab-Auth-Method`; the chart strips any client-supplied copy and
+only accepts the value when ForwardAuth returns it. The ForwardAuth route for `/api/v1/` must
+require the site's operator-access scope (for example, `gobuilder:access`). Hlab-auth ForwardAuth
+validates personal bearer tokens on `/api/` routes against the matched route's required scopes and
+returns the identity plus auth-method headers. Deploy a hlab-auth release with bearer ForwardAuth
+support before enabling this API. Browser UI requests continue to use passkey sessions and CSRF
+validation.
+
+Use the API with the same credential used for `hlab`:
+
+```sh
+curl -fsS -H "Authorization: Bearer $HLAB_TOKEN" \
+  https://builder.example.com/api/v1/state
+
+curl -fsS -X POST -H "Authorization: Bearer $HLAB_TOKEN" \
+  https://builder.example.com/api/v1/builds
+```
+
+The API also provides `GET /api/v1/builds/{id}`, `GET /api/v1/refreshes/{id}`,
+`GET /api/v1/logs/{filename}`, `POST /api/v1/refresh/{task}`, and
+`POST /api/v1/releases/{release-id}/rollback`. It returns JSON errors; queue saturation returns
+503 with `Retry-After`. The browser UI remains CSRF-protected, and bearer API authentication does
+not grant access to the API unless ForwardAuth validates the token and returns the trusted marker.
+
 When `builderAdmin.enabled` is true, Helm fails unless the protected ingress, TLS secret, ingress
 host/class, ForwardAuth URL, trusted proxy CIDRs, and builder-admin ingress NetworkPolicy are all
 configured. The service receives its CSRF public origin as exactly `https://<ingress host>` from
@@ -429,3 +461,27 @@ stay immutable. Do not edit retained releases in place. Delete the workspace's
 Manifest write failures leave publication usable but disable cache reuse. Logs
 report `cached_source_hashes`, `cached_release_hashes`, and `manifest_saved`.
 The manifest contains file identities and digests and never appears in a release.
+
+
+## Revision provenance and new-build status
+
+Builder Admin shows the running **Builder executable revision** beside the
+revision used by the latest successful build, as well as the current site Git
+HEAD. Its top status banner highlights **New Builder revision has not built
+yet** when the running commit differs from every retained successful build
+(and there is reliable previous-build provenance). A queued or running build
+shows a pending state. Once a successful build using that Builder revision is
+recorded the warning clears.
+
+New build records persist `builder_version`, `builder_commit`, and
+`source_commit`. These are visible in Jobs details, build detail pages and
+the authenticated `/api/v1/state` response under `revision`. Retained
+releases also show recorded revisions where available. Older build records may
+lack these fields; the current release's diagnostics artifact provides a
+best-effort fallback. Unknown revision identity is explicitly reported as
+**unknown**, not mistaken for an unbuilt revision.
+
+Source revision comparison is Git HEAD based. Uncommitted edits can require a
+rebuild even if HEAD matches; this status does not claim to fingerprint dirty
+source files. The displayed Builder revision is taken from the running binary's
+build metadata, not the site's Git HEAD or a mutable image tag.

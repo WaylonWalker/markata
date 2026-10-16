@@ -150,6 +150,8 @@ spec:
             - {{ .Values.builderAdmin.auth.headers.roles | quote }}
             - --auth-scopes-header
             - {{ .Values.builderAdmin.auth.headers.scopes | quote }}
+            - --auth-method-header
+            - {{ .Values.builderAdmin.auth.headers.authMethod | quote }}
             {{- if .Values.builderAdmin.ingress.auth.publicAuthOrigin }}
             - --public-auth-origin
             - {{ .Values.builderAdmin.ingress.auth.publicAuthOrigin | quote }}

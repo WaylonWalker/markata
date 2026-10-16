@@ -725,6 +725,7 @@ type BuilderAdminAuthHeadersConfig struct {
 	Groups      *string `json:"groups" yaml:"groups" toml:"groups"`
 	Roles       *string `json:"roles" yaml:"roles" toml:"roles"`
 	Scopes      *string `json:"scopes" yaml:"scopes" toml:"scopes"`
+	AuthMethod  *string `json:"auth_method" yaml:"auth_method" toml:"auth_method"`
 }
 
 // DefaultTrustedMediaDomains is the default allowlist for media helpers.
@@ -3268,6 +3269,9 @@ type CSSBundleConfig struct {
 
 	// Bundles is list of bundle configurations
 	Bundles []BundleConfig `json:"bundles" yaml:"bundles" toml:"bundles"`
+
+	// Pages lists output-relative HTML files whose head styles are bundled after cleanup.
+	Pages []string `json:"pages" yaml:"pages" toml:"pages"`
 
 	// Exclude is a list of CSS file patterns to exclude from bundling
 	Exclude []string `json:"exclude" yaml:"exclude" toml:"exclude"`

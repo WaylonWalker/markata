@@ -124,3 +124,12 @@ If the repository is a very small or first-time site and does not yet have clear
 ## Escalation Rule
 
 If the task cannot be done with frontmatter, config, templates, CSS, feeds, or existing commands, then read `topics/plugin-creation.md` and decide whether the work belongs in a custom plugin or in `markata-go` itself.
+
+## Page-weight diagnostics for agents
+
+A normal `markata-go build` writes `<output_dir>/.markata/page-weight.json`.
+Consult it when optimizing large posts: stable finding codes, raw HTML bytes,
+embedded JSON/JS/CSS bytes, and concrete advice are documented in
+`topics/page-performance.md`. These are source measurements, not Lighthouse
+scores or network transfer. Avoid removing useful user content merely to
+silence warnings.

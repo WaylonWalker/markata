@@ -179,6 +179,8 @@
 /* ── Feed sections area ── */
 
 .home-feeds {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 5000px;
   position: relative;
   z-index: 10;
   padding: var(--space-10) 0 var(--space-12);

@@ -542,6 +542,7 @@ markata-go builder-admin [flags]
 | `--auth-groups-header` | Trusted header containing operator groups | `X-Hlab-Groups` |
 | `--auth-roles-header` | Trusted header containing operator roles | `X-Hlab-Roles` |
 | `--auth-scopes-header` | Trusted header containing operator scopes | `X-Hlab-Scopes` |
+| `--auth-method-header` | Trusted ForwardAuth assertion for bearer-authenticated API requests | `X-Hlab-Auth-Method` |
 
 Header mappings may also be set in `[markata-go.builder_admin.auth.headers]` or with
 `MARKATA_GO_BUILDER_ADMIN_AUTH_HEADERS_*` environment variables. Explicit CLI flags override

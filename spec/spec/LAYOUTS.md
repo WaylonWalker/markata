@@ -338,6 +338,8 @@ The feed sidebar component renders navigation for posts that share a feed with t
 
 Automatic discovery MUST choose the smallest matching feed as the most specific navigation set. When two matching feeds have the same size, a primary feed wins the tie.
 
+`max_posts` limits the **initial server-rendered sidebar window**. With JavaScript, public HTML feeds progressively fetch additional static navigation chunks as the reader scrolls; the setting does not limit how many posts can eventually be reached. Without JavaScript, the initial links remain available and the full feed page remains linked.
+
 `max_posts` limits the rendered sidebar items. A value of `0` or less means no limit. When `max_posts` is positive and the matching feed has more posts than the limit, implementations MUST render a contiguous window that includes the current post and SHOULD center that window around the current post when possible. If the current post cannot be found in the selected feed, implementations SHOULD render the first `max_posts` entries.
 
 ---

@@ -15,6 +15,7 @@ import (
 	"github.com/WaylonWalker/markata-go/pkg/diagnostics"
 	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
 	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata-go/pkg/pageweight"
 	"github.com/spf13/cobra"
 )
 
@@ -46,6 +47,10 @@ var (
 
 	// buildBenchmarkDetailed prints per-stage benchmark detail.
 	buildBenchmarkDetailed bool
+
+	// Build-time analysis of generated HTML (not browser transfer or Lighthouse).
+	buildPageWeight       = true
+	buildPageWeightHTMLKB = 160
 )
 
 // buildCmd represents the build command.
@@ -102,14 +107,16 @@ func init() {
 	buildCmd.Flags().StringVar(&buildBenchmarkSummaryJSON, "benchmark-summary-json", "", "write compact benchmark JSON without content entries (use '-' for stdout)")
 	buildCmd.Flags().Lookup("benchmark-summary-json").NoOptDefVal = "-"
 	buildCmd.Flags().BoolVar(&buildBenchmarkDetailed, "benchmark-detailed", false, "print per-stage benchmark resource summaries")
+	buildCmd.Flags().BoolVar(&buildPageWeight, "page-weight", true, "write per-page HTML weight telemetry and emit budget warnings")
+	buildCmd.Flags().IntVar(&buildPageWeightHTMLKB, "page-weight-html-kb", 160, "warn when a post exceeds this many KiB of generated HTML")
 }
 
 func runBuildCommand(cmd *cobra.Command, args []string) error {
 	if err := validateDAGEnvironment(cmd); err != nil {
 		return err
 	}
-	if buildBenchmarkJSON != "" && buildBenchmarkSummaryJSON != "" {
-		return fmt.Errorf("--benchmark-json and --benchmark-summary-json cannot be used together")
+	if err := validateBuildOptions(); err != nil {
+		return err
 	}
 	startTime := time.Now()
 
@@ -162,6 +169,11 @@ func runBuildCommand(cmd *cobra.Command, args []string) error {
 	if err := writeBuildReport(result); err != nil {
 		return err
 	}
+	if buildPageWeight {
+		if err := reportGeneratedPageWeight(m.Config().OutputDir); err != nil {
+			return err
+		}
+	}
 
 	// Print warnings
 	if len(result.Warnings) > 0 && verbose {
@@ -171,6 +183,53 @@ func runBuildCommand(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	return nil
+}
+
+func validateBuildOptions() error {
+	if buildBenchmarkJSON != "" && buildBenchmarkSummaryJSON != "" {
+		return fmt.Errorf("--benchmark-json and --benchmark-summary-json cannot be used together")
+	}
+	if buildPageWeight && (buildPageWeightHTMLKB < 1 || buildPageWeightHTMLKB > 10240) {
+		return fmt.Errorf("--page-weight-html-kb must be between 1 and 10240")
+	}
+	return nil
+}
+
+func reportGeneratedPageWeight(outputDir string) error {
+	if outputDir == "" {
+		outputDir = defaultOutputDir
+	}
+	limits := pageweight.DefaultLimits()
+	limits.PostHTMLBytes = buildPageWeightHTMLKB * 1024
+	report, err := pageweight.Scan(outputDir, limits)
+	if err != nil {
+		return fmt.Errorf("page weight diagnostics: %w", err)
+	}
+	reportPath := filepath.Join(outputDir, ".markata", "page-weight.json")
+	if err := pageweight.WriteJSON(reportPath, report); err != nil {
+		return fmt.Errorf("write page weight diagnostics: %w", err)
+	}
+	errlnf("Page weight: %d HTML pages, %d over budget; report: %s",
+		report.Summary.Pages, report.Summary.WarnedPages, reportPath)
+	shown := 0
+	for i := range report.Pages {
+		page := &report.Pages[i]
+		for _, finding := range page.Findings {
+			if shown >= 5 {
+				break
+			}
+			errlnf("  [page-weight:%s] %s: %d B (budget %d B) — %s",
+				finding.Code, page.Path, finding.Bytes, finding.BudgetBytes, finding.Advice)
+			shown++
+		}
+		if shown >= 5 {
+			break
+		}
+	}
+	if report.Summary.Findings > shown {
+		errlnf("  ... %d more findings in %s", report.Summary.Findings-shown, reportPath)
+	}
 	return nil
 }
 

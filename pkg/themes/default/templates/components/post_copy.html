@@ -161,7 +161,7 @@
 
         return {
             html: wrapper.innerHTML,
-            text: data.text || url
+            text: data.text || fallbackPlainText(root)
         };
     }
 
@@ -174,6 +174,68 @@
             return {};
         }
     }
+
+
+    function fallbackPlainText(root) {
+        var data = readPayload(root);
+        var article = document.querySelector('.post .post-content');
+        var body = article ? (article.innerText || article.textContent || '') : '';
+        return (data.title || document.title) + '\n\n' + body + '\n\nSource: ' + (data.url || window.location.href);
+    }
+
+    // Retain the request promise per page. Nothing is fetched on page load;
+    // pointer/focus intent can prewarm the selected format before clipboard use.
+    function exportBody(root, ext) {
+        var cache = root.__markataCopyExports || (root.__markataCopyExports = {});
+        if (!cache[ext]) {
+            cache[ext] = fetch(buildFormatPath(ext), { credentials: 'same-origin' })
+                .then(function(response) {
+                    if (!response.ok) throw new Error('export unavailable: ' + response.status);
+                    return response.text();
+                });
+        }
+        return cache[ext];
+    }
+
+    function copyExport(root, url, ext, fallback) {
+        if (!url) return copyText(fallback || fallbackPlainText(root));
+        var content = exportBody(root, ext).catch(function() {
+            return fallback || fallbackPlainText(root);
+        });
+
+        // Invoke clipboard.write synchronously inside the trusted click. The
+        // promised Blob resolves after fetch without losing user activation.
+        if (navigator.clipboard && navigator.clipboard.write && window.ClipboardItem) {
+            try {
+                var item = new ClipboardItem({
+                    'text/plain': content.then(function(text) {
+                        return new Blob([text], { type: 'text/plain' });
+                    })
+                });
+                return navigator.clipboard.write([item]).catch(function() {
+                    return content.then(copyText);
+                });
+            } catch (_) {
+                // Older browsers fall back to the text-only clipboard API.
+            }
+        }
+        return content.then(copyText);
+    }
+
+    function prewarmCopyExport(event) {
+        var button = event.target.closest && event.target.closest('.post-copy__option');
+        if (!button) return;
+        var ext = button.dataset.copyKind === 'markdown' ? '.md' : button.dataset.copyKind === 'text' ? '.txt' : '';
+        if (!ext) return;
+        var root = button.closest('[data-post-copy]');
+        if (!root) return;
+        var data = readPayload(root);
+        if (ext === '.md' && !data.markdown_url) return;
+        if (ext === '.txt' && !data.text_url) return;
+        exportBody(root, ext).catch(function() {});
+    }
+    document.addEventListener('pointerover', prewarmCopyExport, true);
+    document.addEventListener('focusin', prewarmCopyExport, true);
 
     function copyRich(root) {
         var payload = buildRichPayload(root);
@@ -258,11 +320,11 @@
         } else if (kind === 'rich') {
             action = copyRich(root);
         } else if (kind === 'markdown') {
-            action = copyText(data.markdown || '');
+            action = copyExport(root, data.markdown_url, '.md', data.markdown || '');
         } else if (kind === 'ansi-curl') {
             action = copyText(data.ansi_curl || '');
         } else {
-            action = copyText(data.text || '');
+            action = copyExport(root, data.text_url, '.txt', data.text || '');
         }
 
         action.then(function() {

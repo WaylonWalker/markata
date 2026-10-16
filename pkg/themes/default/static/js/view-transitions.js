@@ -705,6 +705,7 @@
     const nextKeys = new Set(nextNodes.map(stylesheetKey).filter(Boolean));
 
     currentNodes.forEach((node) => {
+      if (node.hasAttribute('data-markata-persist')) return;
       const key = stylesheetKey(node);
       if (key && !nextKeys.has(key)) {
         node.remove();

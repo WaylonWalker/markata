@@ -1,6 +1,6 @@
 ---
 title: "Installation"
-description: "How to install markata-go on your system"
+description: "How to install Markata and preserve markata-go compatibility"
 date: 2024-01-15
 published: true
 tags:
@@ -9,6 +9,8 @@ tags:
 ---
 
 # Installation
+
+**Markata** is the new command name for the Go static site generator. The installer installs both `markata` and the backward-compatible `markata-go` alias. Existing configuration files and environment variables continue to work; see [the name migration guide](guides/name-migration.md).
 
 markata-go is distributed as a single binary with no dependencies. Choose the installation method that works best for you.
 
@@ -19,7 +21,7 @@ markata-go is distributed as a single binary with no dependencies. Choose the in
 The easiest way to install markata-go on Linux and macOS:
 
 ```bash
-curl -sSL https://waylonwalker.github.io/markata-go/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/WaylonWalker/markata-go/main/install.sh | bash
 ```
 
 This script:
@@ -31,13 +33,13 @@ This script:
 **Custom installation directory:**
 
 ```bash
-INSTALL_DIR=/opt/bin curl -sSL https://waylonwalker.github.io/markata-go/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/WaylonWalker/markata-go/main/install.sh | MARKATA_INSTALL_DIR=/opt/bin bash
 ```
 
 **Install a specific version:**
 
 ```bash
-VERSION=v0.1.0 curl -sSL https://waylonwalker.github.io/markata-go/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/WaylonWalker/markata-go/main/install.sh | MARKATA_VERSION=v0.1.0 bash
 ```
 
 ### Using jpillora/installer
@@ -89,11 +91,13 @@ Coming soon! For now, use one of the methods above.
 
 ### Go Install
 
-If you have Go 1.22+ installed:
+The `markata` entry point is available from the current development branch until it appears in a tagged release:
 
 ```bash
-go install github.com/WaylonWalker/markata-go/cmd/markata-go@latest
+go install github.com/WaylonWalker/markata-go/cmd/markata@main
 ```
+
+Previously tagged versions support `go install github.com/WaylonWalker/markata-go/cmd/markata-go@latest`.
 
 Note: This installs to `$GOPATH/bin` (usually `~/go/bin`). Ensure this is in your `PATH`.
 
