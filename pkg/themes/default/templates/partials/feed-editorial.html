@@ -1,0 +1,28 @@
+{# Server-rendered weekly digest. Each post uses the existing card router. #}
+<div class="editorial-feed" id="posts-list" data-calendar-primary>
+  {% for section in feed_sections %}
+  <section class="editorial-week" aria-label="{{ section.Label }}">
+    <h2 class="editorial-week-heading"><span class="editorial-week-eyebrow">The week of</span>{{ section.Label }}</h2>
+    <div class="editorial-week-entries">
+      {% for item in section.Items %}
+      {% if item.Kind == "shots" %}
+      <section class="editorial-shot-collection" aria-label="Photo collection">
+        <header class="editorial-collection-header"><h3>Shots <span>({{ item.Posts|length }})</span></h3></header>
+        <div class="editorial-shot-grid">
+          {% for post in item.Posts %}
+          {% include "partials/cards/card-router.html" %}
+          {% endfor %}
+        </div>
+      </section>
+      {% else %}
+      <div class="editorial-entry editorial-entry--{{ item.Importance }}">
+        {% for post in item.Posts %}
+        {% include "partials/cards/card-router.html" %}
+        {% endfor %}
+      </div>
+      {% endif %}
+      {% endfor %}
+    </div>
+  </section>
+  {% endfor %}
+</div>
