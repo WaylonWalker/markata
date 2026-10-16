@@ -13,6 +13,7 @@ import (
 
 type adminStateResponse struct {
 	State         State                 `json:"state"`
+	Revision      RevisionStatus        `json:"revision"`
 	Releases      []ReleaseView         `json:"releases"`
 	CurrentID     string                `json:"current_release_id,omitempty"`
 	CurrentPath   string                `json:"current_release_path,omitempty"`

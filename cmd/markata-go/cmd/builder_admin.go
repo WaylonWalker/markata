@@ -118,6 +118,8 @@ func runBuilderAdmin(cmd *cobra.Command, _ []string) error {
 		Host:                 builderAdminHost,
 		Port:                 builderAdminPort,
 		SourceDir:            builderAdminSourceDir,
+		BuilderVersion:       Version,
+		BuilderCommit:        Commit,
 		SiteDir:              builderAdminSiteDir,
 		WorkDir:              builderAdminWorkDir,
 		ConfigPath:           configPath,
