@@ -1094,11 +1094,6 @@ func (s *Service) enqueueRefreshAs(name, triggerType, detail, actorID string) (Q
 	}
 }
 
-func (s *Service) enqueueRollback(releaseID, triggerType, detail string) error {
-	_, err := s.enqueueRollbackAs(releaseID, triggerType, detail, "")
-	return err
-}
-
 func (s *Service) enqueueRollbackAs(releaseID, triggerType, detail, actorID string) (QueuedOperation, error) {
 	if releaseID == "" {
 		return QueuedOperation{}, fmt.Errorf("release id is required")
