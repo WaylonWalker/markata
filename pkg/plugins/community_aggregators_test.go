@@ -66,8 +66,8 @@ func TestRedditAtomExternalLinkAndSelfPost(t *testing.T) {
 	defer article.Close()
 
 	discussion := "https://www.reddit.com/r/selfhosted/comments/abcdef/an_article/"
-	// Reddit Atom includes an explicitly labelled [link] for external articles.
-	content := fmt.Sprintf(`&lt;div&gt;&lt;a href="%s"&gt;[link]&lt;/a&gt; &lt;a href="%s"&gt;[comments]&lt;/a&gt;&lt;/div&gt;`, article.URL, discussion)
+	// Reddit Atom includes an explicitly labeled [link] for external articles.
+	content := fmt.Sprintf(`&lt;div&gt;&lt;a href=%q&gt;[link]&lt;/a&gt; &lt;a href=%q&gt;[comments]&lt;/a&gt;&lt;/div&gt;`, article.URL, discussion)
 	feed := []byte(fmt.Sprintf(`<feed xmlns="http://www.w3.org/2005/Atom">
 		<title>r/selfhosted</title>
 		<entry><id>t3_abcdef</id><title>Article</title>
