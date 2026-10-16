@@ -48,6 +48,8 @@ type Config struct {
 	Host                 string
 	Port                 int
 	SourceDir            string
+	BuilderVersion       string
+	BuilderCommit        string
 	SiteDir              string
 	WorkDir              string
 	ConfigPath           string
@@ -148,6 +150,9 @@ type BuildRecord struct {
 	PerfSummary     []string                  `json:"perf_summary,omitempty"`
 	Error           string                    `json:"error,omitempty"`
 	RollbackRelease string                    `json:"rollback_release,omitempty"`
+	BuilderVersion  string                    `json:"builder_version,omitempty"`
+	BuilderCommit   string                    `json:"builder_commit,omitempty"`
+	SourceCommit    string                    `json:"source_commit,omitempty"`
 }
 
 type RefreshRecord struct {
@@ -178,6 +183,8 @@ type ReleaseView struct {
 	Current      bool      `json:"current"`
 	BuildID      string    `json:"build_id,omitempty"`
 	BuildStatus  string    `json:"build_status,omitempty"`
+	BuilderCommit string `json:"builder_commit,omitempty"`
+	SourceCommit  string `json:"source_commit,omitempty"`
 	RollbackOnly bool      `json:"rollback_only"`
 }
 
@@ -715,8 +722,10 @@ func (s *Service) handleHealth(w http.ResponseWriter, _ *http.Request) {
 }
 
 func (s *Service) stateResponse() adminStateResponse {
+	state := s.viewState()
 	return adminStateResponse{
-		State:         s.viewState(),
+		State:         state,
+		Revision:      s.revisionStatus(state),
 		Releases:      s.discoverReleases(),
 		CurrentID:     s.currentReleaseID(),
 		CurrentPath:   s.currentReleasePath(),
@@ -870,6 +879,7 @@ func (s *Service) handleIndex(w http.ResponseWriter, r *http.Request) {
 	data := struct {
 		State         State
 		Releases      []ReleaseView
+		Revision      RevisionStatus
 		CurrentID     string
 		CurrentPath   string
 		CSRFToken     string
@@ -883,6 +893,7 @@ func (s *Service) handleIndex(w http.ResponseWriter, r *http.Request) {
 	}{
 		State:         state,
 		Releases:      s.discoverReleases(),
+		Revision:      s.revisionStatus(state),
 		CurrentID:     s.currentReleaseID(),
 		CurrentPath:   s.currentReleasePath(),
 		CSRFToken:     csrfToken,
@@ -1125,6 +1136,8 @@ func (s *Service) runBuild(ctx context.Context, req queueRequest) {
 		Kind:          req.Kind,
 		ActorID:       req.ActorID,
 		Status:        "running",
+		BuilderVersion: s.cfg.BuilderVersion,
+		BuilderCommit: reliableBuilderRevision(s.cfg.BuilderCommit),
 		TriggerType:   req.TriggerType,
 		TriggerDetail: req.Detail,
 		ChangedPaths:  append([]string(nil), req.Changed...),
@@ -1161,6 +1174,9 @@ func (s *Service) runBuild(ctx context.Context, req queueRequest) {
 		return
 	}
 	record.PrepareMS = time.Since(phaseStart).Milliseconds()
+	if sourceCommit, gitErr := sourcegit.Head(ctx, s.cfg.SourceDir); gitErr == nil {
+		record.SourceCommit = reliableBuilderRevision(sourceCommit)
+	}
 
 	buildWork := s.cfg.WorkDir
 	phaseStart = time.Now()
@@ -2511,6 +2527,17 @@ const indexHTML = `<!doctype html>
       letter-spacing: 0;
       font-size: 0.78rem;
     }
+    .revision-banner { border: 1px solid var(--line-soft); border-left: 4px solid var(--accent); border-radius: 8px; background: var(--panel); padding: 16px 18px; margin: 0 0 20px; }
+    .revision-banner[data-revision-status="unbuilt"] { border-left-color: var(--warning); background: color-mix(in srgb, var(--warning) 7%, var(--panel)); }
+    .revision-banner[data-revision-status="built"] { border-left-color: var(--success); }
+    .revision-head { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; justify-content: space-between; margin-bottom: 13px; }
+    .revision-head strong { font-size: 1rem; }
+    .revision-comparison { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 13px; }
+    .revision-comparison > div { min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+    .revision-comparison span { font-size: .67rem; font-weight: 700; color: var(--muted); letter-spacing: .08em; }
+    .revision-comparison code { align-self: flex-start; font-size: .86rem; max-width: 100%; }
+    .revision-comparison small, #revision-detail { color: var(--muted); font-size: .78rem; }
+    #revision-detail { margin-top: 12px; }
     .hero {
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto;
@@ -2701,10 +2728,12 @@ const indexHTML = `<!doctype html>
     .tab-panel.is-active { display: block; }
     @media (max-width: 1200px) {
       .hero, .section-grid { grid-template-columns: 1fr 1fr; }
+      .revision-comparison { grid-template-columns: 1fr 1fr; }
     }
     @media (max-width: 800px) {
       main { padding: 18px 14px 36px; }
       .topbar, .hero, .section-grid { grid-template-columns: 1fr; display: grid; }
+      .revision-comparison { grid-template-columns: 1fr; }
       .topbar { gap: 14px; }
       .operator-identity { justify-content: flex-start; text-align: left; }
       .operator-profile { text-align: left; }
@@ -2745,6 +2774,12 @@ const indexHTML = `<!doctype html>
     </div>
     <div class="sync-status" id="sync-status">Live polling every 2s</div>
   </div>
+
+  <section id="revision-banner" class="revision-banner" role="status" aria-live="polite" data-revision-status="{{ .Revision.Status }}">
+    <div class="revision-head"><strong id="revision-title">{{ if eq .Revision.Status "unbuilt" }}New Builder revision has not built yet{{ else if eq .Revision.Status "built" }}Current Builder revision has built successfully{{ else }}Builder revision status not yet verified{{ end }}</strong><span id="revision-marker" class="pill {{ if eq .Revision.Status "unbuilt" }}status-queued{{ else if eq .Revision.Status "built" }}status-success{{ else }}status-neutral{{ end }}">{{ .Revision.Status }}</span></div>
+    <div class="revision-comparison"><div><span>RUNNING BUILDER</span><code id="revision-current">{{ if .Revision.BuilderCommit }}{{ .Revision.BuilderCommit }}{{ else }}Unknown{{ end }}</code><small id="revision-version">{{ .Revision.BuilderVersion }}</small></div><div><span>LAST SUCCESSFUL BUILD</span><code id="revision-last-built">{{ if .Revision.LastBuiltCommit }}{{ .Revision.LastBuiltCommit }}{{ else }}Unknown{{ end }}</code><small id="revision-built-time">{{ if .Revision.LastBuiltAt.IsZero }}No dated build record{{ else }}{{ since .Revision.LastBuiltAt }}{{ end }}</small></div><div><span>SITE SOURCE</span><code id="revision-source">{{ if .Revision.SourceCommit }}{{ .Revision.SourceCommit }}{{ else }}Unavailable{{ end }}</code><small id="revision-source-status"></small></div></div>
+    <p id="revision-detail" class="muted">A successful build from this Builder revision will clear the unbuilt notice.</p>
+  </section>
 
   <div class="hero" aria-labelledby="live-work-heading">
     <section>
@@ -2845,6 +2880,7 @@ const indexHTML = `<!doctype html>
   const favicon = document.getElementById('app-favicon');
   const syncStatus = document.getElementById('sync-status');
   const currentRelease = document.getElementById('current-release');
+  const revisionBanner = document.getElementById('revision-banner');
   const activeWork = document.getElementById('active-work');
   const activeWorkDetail = document.getElementById('active-work-detail');
   const queueCount = document.getElementById('queue-count');
@@ -3111,7 +3147,7 @@ const indexHTML = `<!doctype html>
         '<div><strong>Prepare:</strong> ' + escapeHtml(fmtSeconds(item.prepare_ms)) + ' · <strong>Promote:</strong> ' + escapeHtml(fmtSeconds(item.promote_ms)) + ' · <strong>Prune:</strong> ' + escapeHtml(fmtSeconds(item.prune_ms)) + '</div>';
       const changed = (item.changed_paths || []).map((path) => '<code>' + escapeHtml(path) + '</code>').join(' ');
       const summary = summaryPreview(item.perf_summary || []).map(escapeHtml).join('\n');
-      const details = '<details class="build-details"><summary>More</summary><div class="detail-list"><div><strong>Build ID:</strong> <code>' + escapeHtml(item.id) + '</code></div>' + timings +
+      const details = '<details class="build-details"><summary>More</summary><div class="detail-list"><div><strong>Build ID:</strong> <code>' + escapeHtml(item.id) + '</code></div>' + (item.builder_commit ? '<div><strong>Builder revision:</strong> <code title="' + escapeHtml(item.builder_commit) + '">' + escapeHtml(revisionAbbrev(item.builder_commit)) + '</code></div>' : '') + (item.source_commit ? '<div><strong>Source revision:</strong> <code title="' + escapeHtml(item.source_commit) + '">' + escapeHtml(revisionAbbrev(item.source_commit)) + '</code></div>' : '') + timings +
         (item.trigger_detail ? '<div><strong>Reason:</strong> ' + escapeHtml(item.trigger_detail) + '</div>' : '') +
         (changed ? '<div><strong>Changed:</strong> ' + changed + '</div>' : '') +
         (item.log_path ? '<div><a href="/logs/' + encodeURIComponent(item.log_path) + '">Open raw log</a></div>' : '') +
@@ -3119,7 +3155,7 @@ const indexHTML = `<!doctype html>
       return '<tr class="work-row" data-expandable tabindex="0" aria-expanded="false" data-finished="' + escapeHtml(item.finished_at) + '">' +
         '<td data-label="Status">' + statusPill(item.status) + '</td>' +
         '<td data-label="Job"><a class="record-link" href="/builds/' + encodeURIComponent(item.id) + '">' + (item.rollback_release ? 'View promotion record →' : 'View build record →') + '</a></td>' +
-        '<td data-label="Source">' + escapeHtml(item.trigger_type) + '</td>' +
+        '<td data-label="Source">' + escapeHtml(item.trigger_type) + (item.builder_commit ? '<br><code title="Builder ' + escapeHtml(item.builder_commit) + '">' + escapeHtml(revisionAbbrev(item.builder_commit)) + '</code>' : '') + '</td>' +
         '<td data-label="When" class="time-stamp">' + escapeHtml(fmtTime(item.finished_at)) + '</td>' +
         '<td data-label="Wait">' + escapeHtml(fmtSeconds(item.queue_wait_ms)) + '</td>' +
         '<td data-label="Run">' + (item.status === 'success' ? buildTimeCell(item.build_ms, baseline) : escapeHtml(fmtSeconds(item.build_ms))) + '</td>' +
@@ -3193,7 +3229,7 @@ const indexHTML = `<!doctype html>
       const action = item.current || !capabilities.promoteRelease ? '' : '<form method="post" data-capability="promoteRelease" action="/api/releases/' + encodeURIComponent(item.id) + '/rollback"><input type="hidden" name="csrf_token" value="' + csrfToken + '"><button class="secondary" type="submit">Promote</button></form>';
       const created = new Date(item.created_at);
       const label = Number.isNaN(created.getTime()) ? 'Release' : created.toLocaleString(undefined, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
-      const detail = '<tr class="detail-row"><td colspan="6"><div class="row-detail"><div class="row-detail-meta"><span>Created ' + escapeHtml(fmtTime(item.created_at)) + '</span><code>' + escapeHtml(item.id) + '</code>' + (item.build_id ? '<code>' + escapeHtml(item.build_id) + '</code>' : '') + '</div>' + (item.build_id ? '<a class="record-link" href="/builds/' + encodeURIComponent(item.build_id) + '">Open full build details →</a>' : '') + '</div></td></tr>';
+      const detail = '<tr class="detail-row"><td colspan="6"><div class="row-detail"><div class="row-detail-meta"><span>Created ' + escapeHtml(fmtTime(item.created_at)) + '</span><code>' + escapeHtml(item.id) + '</code>' + (item.build_id ? '<code>' + escapeHtml(item.build_id) + '</code>' : '') + (item.builder_commit ? '<code title="Builder revision ' + escapeHtml(item.builder_commit) + '">' + escapeHtml(revisionAbbrev(item.builder_commit)) + '</code>' : '') + (item.source_commit ? '<code title="Source revision ' + escapeHtml(item.source_commit) + '">' + escapeHtml(revisionAbbrev(item.source_commit)) + '</code>' : '') + '</div>' + (item.build_id ? '<a class="record-link" href="/builds/' + encodeURIComponent(item.build_id) + '">Open full build details →</a>' : '') + '</div></td></tr>';
       return '<tr class="work-row" data-expandable tabindex="0" aria-expanded="false">' +
         '<td data-label="Release"><span class="release-name">' + escapeHtml(label) + '</span><span class="release-ref">release record</span></td>' +
         '<td data-label="Current">' + (item.current ? statusPill('live') : '') + '</td>' +
@@ -3210,9 +3246,36 @@ const indexHTML = `<!doctype html>
     }
   }
 
+  function revisionAbbrev(value) { return value && value.length > 12 ? value.slice(0, 12) : (value || 'Unknown'); }
+
+  function renderRevision(revision, state) {
+    if (!revision) return;
+    revisionBanner.dataset.revisionStatus = revision.status || 'unknown';
+    const pending = (state.running && state.running.kind === 'build') || (state.queue || []).some((item) => item.kind === 'build');
+    const unbuilt = revision.status === 'unbuilt';
+    document.getElementById('revision-title').textContent = unbuilt ? (pending ? 'New Builder revision — build pending' : 'New Builder revision has not built yet') : revision.status === 'built' ? 'Current Builder revision has built successfully' : 'Builder revision status not yet verified';
+    const marker = document.getElementById('revision-marker');
+    marker.textContent = unbuilt ? (pending ? 'waiting for build' : 'not built yet') : revision.status === 'built' ? 'built' : 'unknown';
+    marker.className = 'pill ' + (unbuilt ? 'status-queued' : revision.status === 'built' ? 'status-success' : 'status-neutral');
+    const current = document.getElementById('revision-current');
+    current.textContent = revisionAbbrev(revision.builder_commit);
+    current.title = revision.builder_commit || 'Unknown Builder revision';
+    const previous = document.getElementById('revision-last-built');
+    previous.textContent = revisionAbbrev(revision.last_built_commit);
+    previous.title = revision.last_built_commit || 'Previous builds did not record a Builder revision';
+    document.getElementById('revision-version').textContent = revision.builder_version || '';
+    document.getElementById('revision-built-time').textContent = revision.last_built_at ? fmtTime(revision.last_built_at) : 'No dated build record';
+    const source = document.getElementById('revision-source');
+    source.textContent = revision.source_commit ? revisionAbbrev(revision.source_commit) : 'Unavailable';
+    source.title = revision.source_commit || 'No Git source revision available';
+    document.getElementById('revision-source-status').textContent = revision.source_changed ? 'Not yet built into the live release' : revision.live_source_commit ? 'Matches published source' : 'No published source revision';
+    document.getElementById('revision-detail').textContent = unbuilt ? 'No retained successful build used the running Builder revision; trigger a build to validate it.' : revision.status === 'built' ? 'A successful build with this Builder revision is recorded.' : 'Builder or previous build revision is unavailable; this is not proof of an unbuilt revision.';
+  }
+
   function renderState(payload) {
     const state = payload.state || {};
     currentRelease.textContent = payload.current_release_id ? 'Live' : 'Not published';
+    renderRevision(payload.revision, state);
     queueCount.textContent = (state.queue || []).length;
     queueOverview.textContent = (state.queue || []).length;
     buildCount.textContent = (state.builds || []).length;
