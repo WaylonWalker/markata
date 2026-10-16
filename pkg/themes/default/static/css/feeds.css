@@ -1072,3 +1072,196 @@ article.post > .post-content > .feed.h-feed {
     overflow-wrap: anywhere;
   }
 }
+
+/*
+ * Editorial issue hierarchy: one primary story, dated photo essays and a
+ * deliberately concise notebook. Scope exclusively to editorial feeds; card
+ * templates, syndication and site-wide CSS remain unchanged.
+ */
+.feed--editorial .editorial-entry-kicker,
+.feed--editorial .editorial-collection-kicker {
+  margin: 0 0 .65rem;
+  font: 650 .69rem/1.45 var(--font-mono, ui-monospace, monospace);
+  letter-spacing: .11em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.feed--editorial .editorial-entry-kicker .editorial-lead-marker {
+  color: var(--color-primary, var(--color-text));
+}
+
+.feed--editorial .editorial-entry--lead {
+  min-width: 0;
+  padding: clamp(1rem, 2.1vw, 1.6rem) 0 clamp(.8rem, 1.5vw, 1.15rem);
+  border-top: 2px solid var(--color-primary, var(--color-text));
+}
+
+.feed--editorial .editorial-entry--lead > .card {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.feed--editorial .editorial-entry--lead .card-title,
+.feed--editorial .editorial-entry--lead .card-link .card-title {
+  font-size: clamp(1.5rem, 2.9vw, 2.4rem);
+  line-height: 1.15;
+  letter-spacing: -.03em;
+  min-height: 0;
+  -webkit-line-clamp: 3;
+}
+
+.feed--editorial .editorial-entry--lead .card-link .card-link-wrapper {
+  gap: clamp(.8rem, 2.5vw, 1.7rem);
+  align-items: start;
+}
+
+.feed--editorial .editorial-entry--lead .card-link .card-link-content {
+  padding: 0;
+}
+
+.feed--editorial .editorial-entry--lead .card-link .card-link-image {
+  width: min(40%, 330px);
+  height: auto;
+  aspect-ratio: 16 / 10;
+  border-radius: var(--radius-md, 8px);
+}
+
+.feed--editorial .editorial-entry--lead .card-link .card-link-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.feed--editorial .editorial-entry--lead .card-link .card-body {
+  padding: .7rem 0 0;
+}
+
+/* Clamp secondary previews visually without deleting article text or
+ * affecting full posts. Only the featured lead gets a longer summary. */
+.feed--editorial .editorial-entry:not(.editorial-entry--lead) .card-excerpt {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
+
+.feed--editorial .editorial-entry--lead .card-excerpt {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 5;
+  overflow: hidden;
+  max-width: 76ch;
+}
+
+.feed--editorial .editorial-entry--quiet .card-text,
+.feed--editorial .editorial-entry--quiet .card-description {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
+
+.feed--editorial .editorial-entry--quiet .editorial-entry-kicker {
+  margin-bottom: .3rem;
+}
+
+/* Photo essays get their own heading and an asymmetric mosaic when there
+ * are exactly three images and ample width. Media retain original links. */
+.feed--editorial .editorial-collection-header {
+  margin-bottom: clamp(.8rem, 1.5vw, 1.2rem);
+}
+
+.feed--editorial .editorial-collection-kicker {
+  margin-bottom: .25rem;
+}
+
+.feed--editorial .editorial-collection-header h3 {
+  margin-bottom: 0;
+  font-size: clamp(1.35rem, 2.15vw, 1.85rem);
+  letter-spacing: -.025em;
+}
+
+.feed--editorial .editorial-collection-header h3 span {
+  margin-left: .5rem;
+  font: 500 .8rem/1.5 var(--font-body, system-ui, sans-serif);
+  letter-spacing: normal;
+  color: var(--color-text-muted);
+}
+
+.feed--editorial .editorial-shot-grid figcaption {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  font-size: clamp(.7rem, 1vw, .8rem);
+}
+
+@media (min-width: 900px) {
+  .feed--editorial .editorial-shot-grid--mosaic {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+    aspect-ratio: 1.65;
+    align-items: stretch;
+  }
+
+  .feed--editorial .editorial-shot-grid--mosaic > .photo-figure {
+    height: 100%;
+    min-height: 0;
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
+
+  .feed--editorial .editorial-shot-grid--mosaic > .photo-figure:first-child {
+    grid-row: span 2;
+  }
+
+  .feed--editorial .editorial-shot-grid--mosaic .photo-figure > a {
+    aspect-ratio: auto;
+    height: 100%;
+    min-height: 0;
+  }
+
+  .feed--editorial .editorial-shot-grid--mosaic .photo-figure img,
+  .feed--editorial .editorial-shot-grid--mosaic .photo-figure video {
+    aspect-ratio: auto;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+@media (max-width: 760px) {
+  .feed--editorial .editorial-entry--lead .card-link .card-link-wrapper {
+    flex-direction: row;
+  }
+
+  .feed--editorial .editorial-entry--lead .card-link .card-link-image {
+    width: min(38%, 180px);
+  }
+
+  .feed--editorial .editorial-entry--lead .card-title,
+  .feed--editorial .editorial-entry--lead .card-link .card-title {
+    font-size: clamp(1.35rem, 5vw, 1.8rem);
+  }
+}
+
+@media (max-width: 480px) {
+  .feed--editorial .editorial-entry--lead .card-link .card-link-wrapper {
+    flex-direction: column;
+  }
+
+  .feed--editorial .editorial-entry--lead .card-link .card-link-image {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+  }
+
+  .feed--editorial .editorial-entry--lead .card-link .card-link-content {
+    width: 100%;
+  }
+
+  .feed--editorial .editorial-collection-header h3 span {
+    display: inline;
+    margin-left: .25rem;
+  }
+}
