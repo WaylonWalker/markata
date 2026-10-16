@@ -31,23 +31,8 @@ func TestBuildPostCopyPayloads(t *testing.T) {
 	if payloads.ANSICurl != "" {
 		t.Fatalf("unexpected ansi curl payload: %q", payloads.ANSICurl)
 	}
-	if !strings.Contains(payloads.Markdown, "# Hello World") {
-		t.Fatalf("expected markdown payload to contain title, got %q", payloads.Markdown)
-	}
-	if !strings.Contains(payloads.Markdown, "Source: https://example.com/hello-world/") {
-		t.Fatalf("expected markdown payload to contain source url, got %q", payloads.Markdown)
-	}
-	if !strings.Contains(payloads.Markdown, "```python") {
-		t.Fatalf("expected markdown payload to preserve code fences, got %q", payloads.Markdown)
-	}
-	if !strings.Contains(payloads.Text, "Source: https://example.com/hello-world/") {
-		t.Fatalf("expected text payload to contain source url, got %q", payloads.Text)
-	}
-	if strings.Contains(payloads.Text, "# <#intro>") {
-		t.Fatalf("expected text payload to omit heading anchors, got %q", payloads.Text)
-	}
-	if !strings.Contains(payloads.Text, "```python") {
-		t.Fatalf("expected text payload to use fenced code blocks, got %q", payloads.Text)
+	if payloads.Markdown != "" || payloads.Text != "" {
+		t.Fatalf("published formats should not duplicate full post content in HTML, got markdown=%q text=%q", payloads.Markdown, payloads.Text)
 	}
 }
 
@@ -80,6 +65,9 @@ func TestBuildPostCopyPayloads_HidesDisabledFormatRoutes(t *testing.T) {
 	}
 	if payloads.ANSICurl != "" {
 		t.Fatalf("expected ansi route to be hidden, got %q", payloads.ANSICurl)
+	}
+	if !strings.Contains(payloads.Markdown, "# Hello World") || !strings.Contains(payloads.Text, "Source: https://example.com/hello-world/") {
+		t.Fatalf("disabled formats need inline fallback, markdown=%q text=%q", payloads.Markdown, payloads.Text)
 	}
 }
 
