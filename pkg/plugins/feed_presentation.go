@@ -51,10 +51,11 @@ func presentationKind(post *models.Post) string {
 	switch {
 	case strings.Contains(path, "/shots/"), tpl == templateTypePhoto, tpl == "shot":
 		return templateTypePhoto
-	case strings.Contains(path, "/ping/"), tpl == "ping", tpl == templateTypeNote, tpl == "inline":
+	case strings.Contains(path, "/ping/"), strings.Contains(path, "/thoughts/"),
+		tpl == "ping", tpl == templateTypeNote, tpl == "inline", tpl == "thought":
 		return templateTypeNote
-	case strings.Contains(path, "/stars/"), strings.Contains(path, "/link/"), strings.Contains(path, "/thoughts/"),
-		tpl == templateTypeLink, tpl == "bookmark", tpl == "thought":
+	case strings.Contains(path, "/stars/"), strings.Contains(path, "/link/"),
+		tpl == templateTypeLink, tpl == "bookmark":
 		return templateTypeLink
 	case tpl == templateTypeVideo, strings.Contains(path, "/video/"):
 		return templateTypeVideo

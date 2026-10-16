@@ -121,3 +121,57 @@ func TestEditorialTemplateRendersEveryShotThroughCardRouter(t *testing.T) {
 		}
 	}
 }
+
+func TestEditorialLeadPhotoEssayAndNotebook(t *testing.T) {
+	featured := presentationTestPost(12, "post")
+	featured.Extra = map[string]interface{}{"featured": true}
+	article := presentationTestPost(13, "post")
+	link := presentationTestPost(14, "link")
+	thought := presentationTestPost(14, "thought")
+	thought.Path = "pages/thoughts/note.md"
+	posts := []*models.Post{
+		thought, link,
+		presentationTestPost(16, "photo"),
+		presentationTestPost(16, "photo"),
+		presentationTestPost(16, "photo"),
+		article, featured,
+	}
+	sections := buildEditorialFeedSections(posts)
+	if len(sections) != 1 {
+		t.Fatalf("sections = %d, want 1", len(sections))
+	}
+	leadCount, photoCount, quietCount := 0, 0, 0
+	for i, item := range sections[0].Items {
+		if item.Lead {
+			leadCount++
+			if i != 0 || item.TypeLabel != "Writing" {
+				t.Errorf("expected leading featured writing, got item %d: %+v", i, item)
+			}
+		}
+		if item.Kind == "shots" {
+			photoCount++
+			if !item.Mosaic || item.DateLabel != "October 16, 2026" || len(item.Posts) != 3 {
+				t.Errorf("wrong photo essay: %+v", item)
+			}
+		}
+		if item.Importance == "quiet" {
+			quietCount++
+			if item.TypeLabel != "Note" {
+				t.Errorf("thought misclassified: %+v", item)
+			}
+		}
+	}
+	if leadCount != 1 || photoCount != 1 || quietCount != 1 {
+		t.Fatalf("weekly lead count %d, photo essays %d, quiet thoughts %d", leadCount, photoCount, quietCount)
+	}
+	if len(sections[0].Items) != 5 {
+		t.Fatalf("weekly items = %d, want 5", len(sections[0].Items))
+	}
+}
+
+func TestEditorialNoArtificialNoteLead(t *testing.T) {
+	sections := buildEditorialFeedSections([]*models.Post{presentationTestPost(12, "note")})
+	if len(sections) != 1 || len(sections[0].Items) != 1 || sections[0].Items[0].Lead {
+		t.Fatalf("note-only week should not invent lead story: %+v", sections)
+	}
+}

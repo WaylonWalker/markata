@@ -72,3 +72,41 @@ func TestEditorialArchiveHasDistinctDesktopAndMobileComposition(t *testing.T) {
 		t.Fatal("editorial sizing must not depend on whether sidebars are present")
 	}
 }
+
+func TestEditorialLeadAndPhotoEssayTemplateContract(t *testing.T) {
+	content, err := ReadTemplate("partials/feed-editorial.html")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tmpl := string(content)
+	for _, want := range []string{
+		`editorial-entry--lead`,
+		`Featured this week`,
+		`{{ item.TypeLabel }}`,
+		`{{ item.DateLabel }}`,
+		`editorial-shot-grid--mosaic`,
+		`Photo journal`,
+	} {
+		if !strings.Contains(tmpl, want) {
+			t.Errorf("editorial template missing %q", want)
+		}
+	}
+	raw, err := fs.ReadFile(DefaultStatic(), "css/feeds.css")
+	if err != nil {
+		t.Fatal(err)
+	}
+	css := string(raw)
+	for _, want := range []string{
+		".feed--editorial .editorial-entry--lead",
+		".feed--editorial .editorial-entry-kicker",
+		".feed--editorial .editorial-shot-grid--mosaic",
+		"@media (min-width: 900px)",
+		"@media (max-width: 480px)",
+		"-webkit-line-clamp: 3;",
+		"-webkit-line-clamp: 5;",
+	} {
+		if !strings.Contains(css, want) {
+			t.Errorf("editorial CSS missing %q", want)
+		}
+	}
+}
