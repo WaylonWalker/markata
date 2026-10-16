@@ -32,3 +32,16 @@ func TestVersionCommand_ShortUsesStdoutOnly(t *testing.T) {
 		t.Fatalf("expected no stderr output, got %q", stderr.String())
 	}
 }
+
+func TestCanonicalVersionBranding(t *testing.T) {
+	previousName := activeCLIName
+	activeCLIName = "markata"
+	defer func() { activeCLIName = previousName }()
+
+	if got := GetVersionInfo(); !strings.HasPrefix(got, "markata "+Version+"\n") {
+		t.Fatalf("canonical version output = %q", got)
+	}
+	if got := GetShortVersionInfo(); !strings.HasPrefix(got, "markata/"+Version+" ") {
+		t.Fatalf("canonical short version = %q", got)
+	}
+}

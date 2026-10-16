@@ -23,6 +23,9 @@ var (
 	Date = "unknown"
 )
 
+// activeCLIName controls human-facing and User-Agent branding for each entry point.
+var activeCLIName = "markata-go"
+
 // versionCmd represents the version command.
 var versionCmd = &cobra.Command{
 	Use:   "version",
@@ -57,7 +60,7 @@ func GetVersion() string {
 func GetVersionInfo() string {
 	var sb strings.Builder
 
-	sb.WriteString(fmt.Sprintf("markata-go %s\n", Version))
+	sb.WriteString(fmt.Sprintf("%s %s\n", activeCLIName, Version))
 	sb.WriteString(fmt.Sprintf("  commit:    %s\n", Commit))
 	sb.WriteString(fmt.Sprintf("  built:     %s\n", Date))
 	sb.WriteString(fmt.Sprintf("  go:        %s\n", runtime.Version()))
@@ -86,7 +89,7 @@ func GetVersionInfo() string {
 
 // GetShortVersionInfo returns a one-line version string suitable for User-Agent etc.
 func GetShortVersionInfo() string {
-	return fmt.Sprintf("markata-go/%s (%s; %s/%s)", Version, Commit[:minInt(7, len(Commit))], runtime.GOOS, runtime.GOARCH)
+	return fmt.Sprintf("%s/%s (%s; %s/%s)", activeCLIName, Version, Commit[:minInt(7, len(Commit))], runtime.GOOS, runtime.GOARCH)
 }
 
 func minInt(a, b int) int {

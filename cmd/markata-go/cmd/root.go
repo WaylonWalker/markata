@@ -194,6 +194,24 @@ func unknownCommandError(parent *cobra.Command, name string) error {
 	})
 }
 
+// ExecuteAs invokes the shared CLI under a selected executable name.
+// The legacy executable retains its historical spelling and output.
+func ExecuteAs(name string) error {
+	if name != "markata" {
+		return Execute()
+	}
+
+	previousUse, previousLong, previousName := rootCmd.Use, rootCmd.Long, activeCLIName
+	rootCmd.Use = "markata"
+	rootCmd.Long = strings.ReplaceAll(rootCmd.Long, "Markata-go is", "Markata is")
+	rootCmd.Long = strings.ReplaceAll(rootCmd.Long, "markata-go ", "markata ")
+	activeCLIName = "markata"
+	defer func() {
+		rootCmd.Use, rootCmd.Long, activeCLIName = previousUse, previousLong, previousName
+	}()
+	return Execute()
+}
+
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() error {
