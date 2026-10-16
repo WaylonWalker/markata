@@ -73,6 +73,9 @@ type FeedConfig struct {
 	// Type is the feed type (blog, series, guide)
 	Type FeedType `json:"type" yaml:"type" toml:"type"`
 
+	// Presentation selects the HTML feed layout (classic, auto, editorial, gallery, reading, timeline, resources).
+	Presentation string `json:"presentation,omitempty" yaml:"presentation,omitempty" toml:"presentation,omitempty"`
+
 	// Filter is the filter expression for selecting posts
 	Filter string `json:"filter" yaml:"filter" toml:"filter"`
 
@@ -283,6 +286,8 @@ type FeedPage struct {
 
 // FeedDefaults provides default values that feeds inherit.
 type FeedDefaults struct {
+	// Presentation is the default HTML feed layout.
+	Presentation string `json:"presentation,omitempty" yaml:"presentation,omitempty" toml:"presentation,omitempty"`
 	// ItemsPerPage is the default number of items per page
 	ItemsPerPage int `json:"items_per_page" yaml:"items_per_page" toml:"items_per_page"`
 
@@ -323,6 +328,7 @@ type SyndicationConfig struct {
 // NewFeedDefaults creates FeedDefaults with sensible default values.
 func NewFeedDefaults() FeedDefaults {
 	return FeedDefaults{
+		Presentation:    "classic",
 		ItemsPerPage:    10,
 		OrphanThreshold: 3,
 		PaginationType:  PaginationManual,
@@ -360,6 +366,7 @@ func NewFeedConfig(defaults FeedDefaults) *FeedConfig {
 		views = DefaultFeedViews()
 	}
 	return &FeedConfig{
+		Presentation:    defaults.Presentation,
 		ItemsPerPage:    defaults.ItemsPerPage,
 		OrphanThreshold: defaults.OrphanThreshold,
 		PaginationType:  defaults.PaginationType,
@@ -374,6 +381,9 @@ func NewFeedConfig(defaults FeedDefaults) *FeedConfig {
 // ApplyDefaults applies default values from FeedDefaults to a FeedConfig
 // for any fields that are not explicitly set.
 func (f *FeedConfig) ApplyDefaults(defaults FeedDefaults) {
+	if f.Presentation == "" {
+		f.Presentation = defaults.Presentation
+	}
 	if f.Private {
 		f.IncludePrivate = true
 	}

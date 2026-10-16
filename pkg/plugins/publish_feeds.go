@@ -446,6 +446,7 @@ func (p *PublishFeedsPlugin) computeFeedHashWithConfigAndCache(fc *models.FeedCo
 	writeStringField(fc.SidebarTitle)
 	writeIntField(fc.SidebarOrder)
 	writeStringField(fc.SidebarGroupBy)
+	writeStringField(fc.Presentation)
 
 	// Hash format flags
 	writeBoolField(fc.Formats.HTML)
@@ -1243,6 +1244,16 @@ func (p *PublishFeedsPlugin) generateFeedPageHTML(fc *models.FeedConfig, page *m
 		ctx := templates.NewFeedContext(fc, page, modelsConfig)
 		ctx.Set("nav_previews", p.navPreviews)
 		ctx.Set("feed_robots", fc.Robots)
+		presentation := resolveFeedPresentation(fc)
+		// The JS paginator assumes individual direct-child cards, so retain
+		// the classic markup rather than nesting posts inside weekly sections.
+		if page.PaginationType == models.PaginationJS && presentation == presentationEditorial {
+			presentation = presentationClassic
+		}
+		ctx.Set("feed_presentation", presentation)
+		if presentation == presentationEditorial {
+			ctx.Set("feed_sections", buildEditorialFeedSections(page.Posts))
+		}
 		p.addFeedStatsContext(&ctx, fc, renderCtx)
 
 		// Feed pages always need cards CSS
