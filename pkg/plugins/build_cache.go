@@ -168,6 +168,11 @@ func (p *BuildCachePlugin) Load(m *lifecycle.Manager) error {
 		affected = make(map[string]bool, len(changedPaths))
 	}
 	for path := range changedPaths {
+		// The previous slug must be invalidated before transform refreshes the
+		// graph's path-to-slug entry, otherwise inbound links keep old routes.
+		if oldSlug := p.cache.Graph.SlugForPath(path); oldSlug != "" {
+			p.cache.MarkSlugChanged(oldSlug)
+		}
 		for _, identity := range identitiesByPath[path] {
 			p.cache.MarkSlugChanged(identity)
 		}
