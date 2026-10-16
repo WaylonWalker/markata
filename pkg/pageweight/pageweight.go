@@ -40,11 +40,11 @@ type Limits struct {
 // DefaultLimits returns the non-failing initial warning thresholds.
 func DefaultLimits() Limits {
 	return Limits{
-		PostHTMLBytes: 160 * 1024,
-		OtherHTMLBytes: 320 * 1024,
+		PostHTMLBytes:     160 * 1024,
+		OtherHTMLBytes:    320 * 1024,
 		EmbeddedJSONBytes: 32 * 1024,
-		InlineJSBytes: 24 * 1024,
-		SidebarJSONBytes: 16 * 1024,
+		InlineJSBytes:     24 * 1024,
+		SidebarJSONBytes:  16 * 1024,
 	}
 }
 
@@ -95,10 +95,10 @@ type Report struct {
 // Analyze counts emitted markup and identifies violations for one page.
 func Analyze(path string, html []byte, limits Limits) Page {
 	p := Page{
-		Path: filepath.ToSlash(path),
-		Kind: "page",
+		Path:      filepath.ToSlash(path),
+		Kind:      "page",
 		HTMLBytes: len(html),
-		Findings: []Finding{},
+		Findings:  []Finding{},
 	}
 	if bytes.Contains(html, []byte(`class="post h-entry`)) {
 		p.Kind = pageKindPost
@@ -171,9 +171,9 @@ func addFindings(p *Page, limits Limits) {
 func Scan(outputDir string, limits Limits) (Report, error) {
 	report := Report{
 		SchemaVersion: SchemaVersion,
-		Measurement: "uncompressed_generated_html_source",
-		Limits: limits,
-		Pages: []Page{},
+		Measurement:   "uncompressed_generated_html_source",
+		Limits:        limits,
+		Pages:         []Page{},
 	}
 	err := filepath.WalkDir(outputDir, func(path string, entry os.DirEntry, walkErr error) error {
 		if walkErr != nil {
