@@ -52,11 +52,22 @@ func buildPostCopyPayloads(post *models.Post, config *lifecycle.Config, baseURL 
 		}
 	}
 
+	// Generated export files are fetched only if the reader requests a copy.
+	// Keep the inline payload as a fallback only when the format is disabled.
+	markdown := ""
+	if markdownURL == "" {
+		markdown = buildPostCopyMarkdown(post, postURL)
+	}
+	text := ""
+	if textURL == "" {
+		text = buildPostCopyText(post, config, postURL)
+	}
+
 	return postCopyPayloads{
 		Title:       title,
 		URL:         postURL,
-		Markdown:    buildPostCopyMarkdown(post, postURL),
-		Text:        buildPostCopyText(post, config, postURL),
+		Markdown:    markdown,
+		Text:        text,
 		MarkdownURL: markdownURL,
 		TextURL:     textURL,
 		ANSICurl:    ansiCurl,
