@@ -824,3 +824,251 @@ article.post > .post-content > .feed.h-feed {
   .feed--editorial .editorial-shot-grid figcaption { font-size: .7rem; }
   .feed--editorial .editorial-week { padding-block: 1.2rem; }
 }
+
+/*
+ * Editorial is a full-page composition, not the 750px stacked-card feed.
+ * Keep the classic feed, custom Shots gallery, and embedded article feeds
+ * unchanged. The pinned sidebar offsets use the same mechanism as Shots.
+ */
+.page-wrapper.page-wrapper--feed-only:has(> .main-content > .feed.h-feed.feed--editorial) {
+  width: min(100%, 1240px);
+  max-width: 1240px;
+  padding-inline: clamp(1rem, 2.8vw, 2.5rem);
+}
+
+.page-wrapper.page-wrapper--feed-only:has(> .main-content > .feed.h-feed.feed--editorial) > .main-content {
+  width: max(0px, calc(100% - var(--push-left, 0px) - var(--push-right, 0px)));
+  max-width: max(0px, calc(100% - var(--push-left, 0px) - var(--push-right, 0px)));
+  margin-left: var(--push-left, 0px);
+  margin-right: 0;
+  min-width: 0;
+}
+
+.main-content > .feed.h-feed.feed--editorial {
+  --feed-content-width: 100%;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.feed.h-feed.feed--editorial > .editorial-feed.posts-list {
+  width: 100%;
+  max-width: none;
+  display: block;
+  margin: 0;
+}
+
+.feed--editorial > .feed-header {
+  padding-bottom: clamp(1.25rem, 2vw, 2rem);
+  margin-bottom: .25rem;
+  border-bottom: 1px solid var(--color-border-soft);
+}
+
+.feed--editorial .editorial-week {
+  min-width: 0;
+  padding-block: clamp(1.7rem, 3vw, 3rem);
+  border-bottom: 1px solid var(--color-border-soft);
+}
+
+.feed--editorial .editorial-week-heading {
+  margin: 0 0 1.5rem;
+  font-size: clamp(1.45rem, 2.35vw, 2rem);
+  letter-spacing: -.025em;
+}
+
+.feed--editorial .editorial-week-eyebrow {
+  font-size: .72rem;
+  letter-spacing: .13em;
+}
+
+.feed--editorial .editorial-week-entries {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: clamp(1.15rem, 2.5vw, 2.25rem);
+  row-gap: clamp(1.5rem, 2.8vw, 2.75rem);
+  align-items: start;
+  min-width: 0;
+}
+
+/* Major stories and photographs run across the editorial column.
+ * Small thoughts become a compact, two-column notebook on larger screens. */
+.feed--editorial .editorial-week-entries > :not(.editorial-entry--quiet) {
+  grid-column: 1 / -1;
+}
+
+.feed--editorial .editorial-entry {
+  min-width: 0;
+}
+
+.feed--editorial .editorial-entry > .card {
+  padding: 0 0 1.4rem;
+  border-bottom: 1px solid var(--color-border-soft);
+  max-width: 100%;
+}
+
+.feed--editorial .editorial-entry .card-title {
+  line-height: 1.25;
+}
+
+.feed--editorial .editorial-entry--featured .card-title {
+  font-size: clamp(1.55rem, 2.65vw, 2.25rem);
+  font-family: var(--font-heading, var(--font-body, system-ui, sans-serif));
+}
+
+.feed--editorial .editorial-entry--featured .card-article.has-cover .card-cover {
+  width: min(38%, 310px);
+  min-height: 220px;
+}
+
+.feed--editorial .editorial-entry--featured .card-article.has-cover .card-content {
+  padding: .65rem clamp(.75rem, 2.5vw, 1.5rem);
+}
+
+.feed--editorial .editorial-entry--standard .card-link .card-link-image {
+  width: clamp(140px, 23vw, 220px);
+  aspect-ratio: 16 / 10;
+}
+
+.feed--editorial .editorial-entry--standard .card-link .card-title {
+  font-size: clamp(1.18rem, 2.1vw, 1.65rem);
+  line-height: 1.22;
+  min-height: 0;
+  -webkit-line-clamp: 3;
+}
+
+.feed--editorial .editorial-entry--standard .card-link .card-excerpt {
+  -webkit-line-clamp: 3;
+  font-size: .94rem;
+  line-height: 1.55;
+}
+
+.feed--editorial .editorial-entry--standard .card-link .card-body {
+  padding-inline: 0;
+}
+
+/* Notebook entries are readable without the chrome of a full article card. */
+.feed--editorial .editorial-entry--quiet > .card {
+  padding: .9rem 0 1.1rem;
+  border-top: 1px solid var(--color-border-soft);
+  border-bottom: 0;
+  border-radius: 0;
+}
+
+.feed--editorial .editorial-entry--quiet .card-title {
+  font-family: var(--font-body, system-ui, sans-serif);
+  font-size: clamp(1rem, 1.3vw, 1.16rem);
+  font-weight: 650;
+  line-height: 1.3;
+  margin-bottom: .45rem;
+}
+
+.feed--editorial .editorial-entry--quiet .card-text,
+.feed--editorial .editorial-entry--quiet .card-description {
+  font-size: .95rem;
+  line-height: 1.55;
+}
+
+.feed--editorial .editorial-entry--quiet .card-meta {
+  margin-top: .85rem;
+}
+
+.feed--editorial .editorial-shot-collection {
+  padding-block: .3rem .7rem;
+}
+
+.feed--editorial .editorial-collection-header h3 {
+  font-family: var(--font-body, system-ui, sans-serif);
+  font-size: clamp(1.03rem, 1.7vw, 1.3rem);
+  font-weight: 650;
+  letter-spacing: -.015em;
+  margin-bottom: 1rem;
+}
+
+.feed--editorial .editorial-shot-grid {
+  gap: clamp(.4rem, 1vw, .9rem);
+}
+
+.feed--editorial .editorial-shot-grid .photo-figure > a {
+  border-radius: var(--radius-md, 8px);
+}
+
+.feed--editorial .editorial-shot-grid figcaption {
+  margin-top: .5rem;
+  line-height: 1.35;
+}
+
+/* Week/date rail makes the archive read like an issue of a journal. */
+@media (min-width: 880px) {
+  .feed--editorial .editorial-week {
+    display: grid;
+    grid-template-columns: minmax(180px, 22%) minmax(0, 1fr);
+    column-gap: clamp(2rem, 4vw, 4rem);
+    align-items: start;
+  }
+
+  .feed--editorial .editorial-week-heading {
+    position: sticky;
+    top: 5.5rem;
+    align-self: start;
+    padding: .15rem 0 .25rem 1.1rem;
+    border-left: 2px solid var(--color-primary, currentColor);
+    margin: 0;
+  }
+}
+
+/* Preserve a single easy-to-read column on small screens; only photos stay
+ * in the proven 3-up responsive gallery. */
+@media (max-width: 760px) {
+  .feed--editorial .editorial-week-entries {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 1.3rem;
+  }
+
+  .feed--editorial .editorial-week-heading {
+    margin-bottom: 1.1rem;
+  }
+
+  .feed--editorial .editorial-entry--featured .card-article.has-cover {
+    flex-direction: column;
+  }
+
+  .feed--editorial .editorial-entry--featured .card-article.has-cover .card-cover {
+    width: 100%;
+    min-height: 0;
+    aspect-ratio: 16 / 9;
+  }
+
+  .feed--editorial .editorial-entry--standard .card-link .card-link-image {
+    width: 120px;
+    aspect-ratio: 3 / 2;
+    height: auto;
+  }
+
+  .feed--editorial .editorial-entry--standard .card-link .card-link-wrapper {
+    flex-direction: row;
+  }
+
+  .feed--editorial .editorial-entry--quiet > .card {
+    padding-block: .6rem 1rem;
+  }
+}
+
+@media (max-width: 420px) {
+  .feed--editorial .editorial-entry--standard .card-link .card-link-wrapper {
+    flex-direction: column;
+  }
+
+  .feed--editorial .editorial-entry--standard .card-link .card-link-image {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+  }
+
+  .feed--editorial .editorial-shot-grid {
+    gap: .3rem;
+  }
+
+  .feed--editorial .editorial-shot-grid figcaption {
+    font-size: .68rem;
+    overflow-wrap: anywhere;
+  }
+}
