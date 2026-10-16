@@ -1225,6 +1225,7 @@ func (p *PublishFeedsPlugin) generateSimpleFeedPageHTML(fc *models.FeedConfig, p
 }
 
 // generateFeedPageHTML generates HTML for a feed page.
+//
 //nolint:gocyclo // Template selection, pagination and fail-closed presentation validation share the render path.
 func (p *PublishFeedsPlugin) generateFeedPageHTML(fc *models.FeedConfig, page *models.FeedPage, config *lifecycle.Config, modelsConfig *models.Config, renderCtx *feedRenderContext) (string, error) {
 	presentation := resolveFeedPresentation(fc)

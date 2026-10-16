@@ -81,7 +81,7 @@ func TestCachedEditorialFeedRepublishesClassicHTML(t *testing.T) {
 	config := lifecycle.NewConfig()
 	config.OutputDir = outputDir
 	config.Extra = map[string]interface{}{
-		"url": "https://example.com",
+		"url":   "https://example.com",
 		"title": "Test Site",
 	}
 	title := "A post"
