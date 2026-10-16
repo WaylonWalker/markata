@@ -22,6 +22,7 @@
   var feedState = {
     data: null,        // Parsed sidebarFeedsDataJSON
     currentIndex: 0,   // Current feed index
+    renderedIndex: 0,  // Index represented by the visible list
     initialized: false,
     shortcutsRegistered: false,
     explicitFeedSelection: false
@@ -421,7 +422,7 @@
    */
   function hydrateAlternateFeed(feed, index, options) {
     var data = feedState.data;
-    var priorIndex = feedState.currentIndex;
+    var priorIndex = feedState.renderedIndex;
     feedState.currentIndex = index;
     var status = document.getElementById('feed-nav-lazy-status');
     if (status) status.textContent = 'Loading feed navigation…';
@@ -496,6 +497,7 @@
 
     // Update counter
     feedState.currentIndex = index;
+    feedState.renderedIndex = index;
     updateCounter();
     updateFeedPicker();
 
@@ -676,6 +678,7 @@
 
     // Default to the server-rendered feed
     feedState.currentIndex = feedState.data.currentFeedIndex;
+    feedState.renderedIndex = feedState.data.currentFeedIndex;
 
     // Check URL for ?feed= param (set by prev/next navigation)
     var requestedFeed = getFeedParam();
