@@ -8,17 +8,7 @@ import (
 )
 
 var (
-	lemmyPostIDRegex    = regexp.MustCompile(`^\d+package plugins
-
-import (
-	"html"
-	"net/url"
-	"regexp"
-	"strings"
-)
-
-var (
-	lemmyPostIDRegex    = regexp.MustCompile()
+	lemmyPostIDRegex    = regexp.MustCompile(`^\d+$`)
 	redditPostIDRegex   = regexp.MustCompile(`^[a-zA-Z0-9]+$`)
 	redditFeedLinkRegex = regexp.MustCompile(`(?is)<a\b[^>]*href=["']([^"']+)["'][^>]*>\s*\[link\]\s*</a>`)
 )
