@@ -179,7 +179,7 @@ type feedValues struct {
 // validateFeedURL validates that the URL is a valid HTTP/HTTPS URL.
 func validateFeedURL(feedURL string) error {
 	parsedURL, err := url.Parse(feedURL)
-	if err != nil || (parsedURL.Scheme != "http" && parsedURL.Scheme != "https") || parsedURL.Host == "" {
+	if err != nil || (parsedURL.Scheme != subscriptionHTTP && parsedURL.Scheme != "https") || parsedURL.Host == "" {
 		return fmt.Errorf("invalid feed URL: must be a valid HTTP/HTTPS URL")
 	}
 	return nil
