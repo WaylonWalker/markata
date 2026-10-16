@@ -20,6 +20,7 @@ const (
 	presentationFeatured     = "featured"
 	presentationOther        = "other"
 	presentationUndated      = "undated"
+	presentationQuiet        = "quiet"
 	presentationFeedTemplate = "feed.html"
 )
 
@@ -155,7 +156,7 @@ func editorialTypeLabel(post *models.Post) string {
 	case templateTypeArticle:
 		return "Writing"
 	case templateTypeVideo:
-		return "Video"
+		return strings.ToUpper(templateTypeVideo[:1]) + templateTypeVideo[1:]
 	case templateTypeLink:
 		return "Link"
 	case templateTypePhoto:
@@ -169,7 +170,7 @@ func editorialTypeLabel(post *models.Post) string {
 
 func editorialPhotoDate(post *models.Post) string {
 	if post == nil || post.Date == nil {
-		return "Undated"
+		return strings.ToUpper(presentationUndated[:1]) + presentationUndated[1:]
 	}
 	return post.Date.Format("January 2, 2006")
 }
@@ -221,7 +222,7 @@ func buildEditorialFeedSections(posts []*models.Post) []EditorialFeedSection {
 					}
 					emitted[day] = true
 					sections[i].Items = append(sections[i].Items, EditorialFeedItem{
-						Kind: "shots", Importance: presentationGallery,
+						Kind: embedOptionShots, Importance: presentationGallery,
 						Posts: templates.PostsToMaps(photos[day]), rank: 3, order: position,
 						DateLabel: editorialPhotoDate(post), Mosaic: len(photos[day]) == 3,
 					})
@@ -234,7 +235,7 @@ func buildEditorialFeedSections(posts []*models.Post) []EditorialFeedSection {
 			if rank <= 1 {
 				importance = presentationFeatured
 			} else if rank == 4 {
-				importance = "quiet"
+				importance = presentationQuiet
 			}
 			sections[i].Items = append(sections[i].Items, EditorialFeedItem{
 				Kind: "post", Importance: importance, TypeLabel: editorialTypeLabel(post),

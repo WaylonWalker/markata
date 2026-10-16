@@ -31,7 +31,7 @@ func TestEditorialGroupsDailyShotsAndPreservesEveryPost(t *testing.T) {
 	for _, section := range sections {
 		for _, item := range section.Items {
 			total += len(item.Posts)
-			if item.Kind == "shots" {
+			if item.Kind == embedOptionShots {
 				clusters++
 				if len(item.Posts) != 3 {
 					t.Fatalf("shot cluster size = %d; want 3", len(item.Posts))
@@ -148,13 +148,13 @@ func TestEditorialLeadPhotoEssayAndNotebook(t *testing.T) {
 				t.Errorf("expected leading featured writing, got item %d: %+v", i, item)
 			}
 		}
-		if item.Kind == "shots" {
+		if item.Kind == embedOptionShots {
 			photoCount++
 			if !item.Mosaic || item.DateLabel != "October 16, 2026" || len(item.Posts) != 3 {
 				t.Errorf("wrong photo essay: %+v", item)
 			}
 		}
-		if item.Importance == "quiet" {
+		if item.Importance == presentationQuiet {
 			quietCount++
 			if item.TypeLabel != "Note" {
 				t.Errorf("thought misclassified: %+v", item)
