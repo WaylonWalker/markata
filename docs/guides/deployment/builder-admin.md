@@ -266,14 +266,13 @@ or `/api/v1/state` until it completes. The API records the trusted operator ID o
 The API is restricted to requests that pass through ForwardAuth with a trusted `bearer` auth-method
 assertion. The default header is `X-Hlab-Auth-Method`; the chart strips any client-supplied copy and
 only accepts the value when ForwardAuth returns it. The ForwardAuth route for `/api/v1/` must
-require the site's operator-access scope (for example, `gobuilder:access`). The SSO integration must
-validate the CLI bearer token and return the identity and auth-method headers. The current
-hlab-auth browser-session ForwardAuth flow does not yet provide this bearer assertion, so this
-machine API remains unavailable through that integration until its matching auth change is
-deployed. Browser UI requests continue to use passkey sessions and CSRF validation.
+require the site's operator-access scope (for example, `gobuilder:access`). Hlab-auth ForwardAuth
+validates personal bearer tokens on `/api/` routes against the matched route's required scopes and
+returns the identity plus auth-method headers. Deploy a hlab-auth release with bearer ForwardAuth
+support before enabling this API. Browser UI requests continue to use passkey sessions and CSRF
+validation.
 
-Once the ForwardAuth provider supports the bearer assertion, use the API with the same credential
-used for `hlab`:
+Use the API with the same credential used for `hlab`:
 
 ```sh
 curl -fsS -H "Authorization: Bearer $HLAB_TOKEN" \
