@@ -274,7 +274,7 @@
       var p = feed.posts[i];
       var isActive = p.slug === feedState.data.currentPostSlug;
       var href = appendFeedParam(p.href, selectedFeedSlug);
-      html += '<li class="feed-nav-item' + (isActive ? ' feed-nav-item--active' : '') + '" data-sidebar-transition-path="' + escapeHtml(p.href.replace(/\\?.*$/, '')) + '">';
+      html += '<li class="feed-nav-item' + (isActive ? ' feed-nav-item--active' : '') + '" data-sidebar-transition-path="' + escapeHtml(p.href.replace(/\?.*$/, '')) + '">';
       html += '<a href="' + escapeHtml(href) + '" class="feed-nav-link" data-sidebar-transition-title';
       if (isActive) html += ' aria-current="page"';
       html += '>' + escapeHtml(p.title) + '</a></li>';
