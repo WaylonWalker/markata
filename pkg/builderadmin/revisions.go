@@ -20,17 +20,17 @@ const (
 // RevisionStatus compares the running Builder executable with successful build
 // provenance. Unknown is intentional for legacy records without reliable SHA.
 type RevisionStatus struct {
-	BuilderVersion   string    `json:"builder_version,omitempty"`
-	BuilderCommit    string    `json:"builder_commit,omitempty"`
-	SourceCommit     string    `json:"source_commit,omitempty"`
-	LastBuiltCommit  string    `json:"last_built_commit,omitempty"`
-	LastBuiltSource  string    `json:"last_built_source,omitempty"`
-	LastBuiltAt      time.Time `json:"last_built_at,omitempty"`
-	LastBuildID      string    `json:"last_build_id,omitempty"`
-	LiveBuilderCommit string   `json:"live_builder_commit,omitempty"`
-	LiveSourceCommit string    `json:"live_source_commit,omitempty"`
-	SourceChanged    bool      `json:"source_changed"`
-	Status           string    `json:"status"`
+	BuilderVersion    string    `json:"builder_version,omitempty"`
+	BuilderCommit     string    `json:"builder_commit,omitempty"`
+	SourceCommit      string    `json:"source_commit,omitempty"`
+	LastBuiltCommit   string    `json:"last_built_commit,omitempty"`
+	LastBuiltSource   string    `json:"last_built_source,omitempty"`
+	LastBuiltAt       time.Time `json:"last_built_at,omitempty"`
+	LastBuildID       string    `json:"last_build_id,omitempty"`
+	LiveBuilderCommit string    `json:"live_builder_commit,omitempty"`
+	LiveSourceCommit  string    `json:"live_source_commit,omitempty"`
+	SourceChanged     bool      `json:"source_changed"`
+	Status            string    `json:"status"`
 }
 
 // reliableBuilderRevision must not treat dev, none, branch names or version tags

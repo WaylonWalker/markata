@@ -1,6 +1,7 @@
 package builderadmin
 
 import (
+	"strings"
 	"testing"
 	"time"
 )
@@ -46,5 +47,29 @@ func TestRevisionStringValidation(t *testing.T) {
 	}
 	if got := reliableBuilderRevision(" ABCDEF0123456 "); got != "abcdef0123456" {
 		t.Fatalf("normalized SHA = %q", got)
+	}
+}
+
+
+func TestBuilderIndexShowsRevisionComparison(t *testing.T) {
+	for _, text := range []string{
+		`id="revision-banner"`,
+		`id="revision-current"`,
+		`id="revision-last-built"`,
+		`id="revision-source"`,
+		`renderRevision(payload.revision, state);`,
+		`New Builder revision has not built yet`,
+	} {
+		if !strings.Contains(indexHTML, text) {
+			t.Errorf("Builder dashboard missing revision marker %q", text)
+		}
+	}
+	for _, text := range []string{
+		`id="report-builder-revision"`,
+		`id="report-source-revision"`,
+	} {
+		if !strings.Contains(buildDetailHTML, text) {
+			t.Errorf("build details missing revision marker %q", text)
+		}
 	}
 }
