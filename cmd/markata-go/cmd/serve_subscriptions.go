@@ -453,7 +453,7 @@ func changeSubscription(state *settingsState, req subscriptionRequest) error {
 			rollbackErr = writeSubscriptionFile(target, original, mode)
 		}
 		if rollbackErr != nil {
-			return fmt.Errorf("subscription change failed: %w (rollback failed: %v)", verifyErr, rollbackErr)
+			return fmt.Errorf("subscription change failed: %w (rollback failed: %w)", verifyErr, rollbackErr)
 		}
 		return fmt.Errorf("subscription change rolled back: %w", verifyErr)
 	}
