@@ -111,7 +111,6 @@ spec:
             - --history-dir
             - {{ .Values.builderAdmin.historyDir | quote }}
             - --watch={{ ternary "true" "false" .Values.builderAdmin.watch.enabled }}
-            - --build-on-startup-revision-change={{ ternary "true" "false" .Values.builderAdmin.buildOnStartupRevisionChange }}
             - --watch-debounce
             - {{ .Values.builderAdmin.watch.debounce | quote }}
             {{- if .Values.builderAdmin.webhook.enabled }}
@@ -185,6 +184,10 @@ spec:
                 name: {{ .Values.markataEncryption.secretName | quote }}
           {{- end }}
           env:
+            # Environment injection is backward-compatible with older builder images:
+            # they ignore this setting until the new executable is rolled out.
+            - name: MARKATA_GO_BUILDER_ADMIN_STARTUP_REBUILD
+              value: {{ ternary "true" "false" .Values.builderAdmin.buildOnStartupRevisionChange | quote }}
             - name: POD_NAME
               valueFrom:
                 fieldRef:
