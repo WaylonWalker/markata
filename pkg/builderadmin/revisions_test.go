@@ -17,7 +17,7 @@ func TestBuilderRevisionComparison(t *testing.T) {
 	current := BuildRecord{ID: "build-two", Kind: "build", Status: "success", BuilderCommit: revisionNewSHA, FinishedAt: at.Add(time.Hour)}
 	tests := []struct {
 		name, revision, published, want string
-		builds                           []BuildRecord
+		builds                          []BuildRecord
 	}{
 		{"new not built", revisionNewSHA, revisionOldSHA, revisionUnbuilt, []BuildRecord{prior}},
 		{"current built", revisionNewSHA, revisionOldSHA, revisionBuilt, []BuildRecord{current, prior}},
@@ -49,7 +49,6 @@ func TestRevisionStringValidation(t *testing.T) {
 		t.Fatalf("normalized SHA = %q", got)
 	}
 }
-
 
 func TestBuilderIndexShowsRevisionComparison(t *testing.T) {
 	for _, text := range []string{

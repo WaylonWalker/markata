@@ -177,15 +177,15 @@ type RefreshRecord struct {
 }
 
 type ReleaseView struct {
-	ID           string    `json:"id"`
-	Path         string    `json:"path"`
-	CreatedAt    time.Time `json:"created_at"`
-	Current      bool      `json:"current"`
-	BuildID      string    `json:"build_id,omitempty"`
-	BuildStatus  string    `json:"build_status,omitempty"`
-	BuilderCommit string `json:"builder_commit,omitempty"`
-	SourceCommit  string `json:"source_commit,omitempty"`
-	RollbackOnly bool      `json:"rollback_only"`
+	ID            string    `json:"id"`
+	Path          string    `json:"path"`
+	CreatedAt     time.Time `json:"created_at"`
+	Current       bool      `json:"current"`
+	BuildID       string    `json:"build_id,omitempty"`
+	BuildStatus   string    `json:"build_status,omitempty"`
+	BuilderCommit string    `json:"builder_commit,omitempty"`
+	SourceCommit  string    `json:"source_commit,omitempty"`
+	RollbackOnly  bool      `json:"rollback_only"`
 }
 
 type completedJobView struct {
@@ -1132,19 +1132,19 @@ func (s *Service) enqueueRollbackAs(releaseID, triggerType, detail, actorID stri
 func (s *Service) runBuild(ctx context.Context, req queueRequest) {
 	started := time.Now().UTC()
 	record := BuildRecord{
-		ID:            req.ID,
-		Kind:          req.Kind,
-		ActorID:       req.ActorID,
-		Status:        "running",
-		BuilderVersion: s.cfg.BuilderVersion,
-		BuilderCommit: reliableBuilderRevision(s.cfg.BuilderCommit),
-		TriggerType:   req.TriggerType,
-		TriggerDetail: req.Detail,
-		ChangedPaths:  append([]string(nil), req.Changed...),
-		Impact:        classifyBuildImpact(req.Changed),
-		EnqueuedAt:    req.EnqueuedAt,
-		StartedAt:     started,
-		QueueWaitMS:   started.Sub(req.EnqueuedAt).Milliseconds(),
+		ID:              req.ID,
+		Kind:            req.Kind,
+		ActorID:         req.ActorID,
+		Status:          "running",
+		BuilderVersion:  s.cfg.BuilderVersion,
+		BuilderCommit:   reliableBuilderRevision(s.cfg.BuilderCommit),
+		TriggerType:     req.TriggerType,
+		TriggerDetail:   req.Detail,
+		ChangedPaths:    append([]string(nil), req.Changed...),
+		Impact:          classifyBuildImpact(req.Changed),
+		EnqueuedAt:      req.EnqueuedAt,
+		StartedAt:       started,
+		QueueWaitMS:     started.Sub(req.EnqueuedAt).Milliseconds(),
 	}
 	logPath, logFile, err := s.createLogFile(req.ID)
 	if err != nil {
@@ -2223,7 +2223,7 @@ func (s *Service) discoverReleases() []ReleaseView {
 	}
 	current := s.currentReleaseID()
 	type releaseBuildMeta struct {
-		id       string
+		id            string
 		status        string
 		finished      time.Time
 		builderCommit string
@@ -2233,11 +2233,11 @@ func (s *Service) discoverReleases() []ReleaseView {
 	for _, record := range s.viewState().Builds {
 		if record.ReleaseID != "" && buildByRelease[record.ReleaseID].id == "" {
 			buildByRelease[record.ReleaseID] = releaseBuildMeta{
-				id:       record.ID,
-				status:        record.Status,
-				finished:      record.FinishedAt,
-				builderCommit: record.BuilderCommit,
-				sourceCommit:  record.SourceCommit,
+				id:             record.ID,
+				status:         record.Status,
+				finished:       record.FinishedAt,
+				builderCommit:  record.BuilderCommit,
+				sourceCommit:   record.SourceCommit,
 			}
 		}
 	}
@@ -2258,15 +2258,15 @@ func (s *Service) discoverReleases() []ReleaseView {
 			createdAt = parsed
 		}
 		views = append(views, ReleaseView{
-			ID:           entry.Name(),
-			Path:         filepath.Join(releasesDir, entry.Name()),
-			CreatedAt:    createdAt,
-			Current:      entry.Name() == current,
-			BuildID:      meta.id,
-			BuildStatus:  meta.status,
-			BuilderCommit: meta.builderCommit,
-			SourceCommit:  meta.sourceCommit,
-			RollbackOnly: true,
+			ID:             entry.Name(),
+			Path:           filepath.Join(releasesDir, entry.Name()),
+			CreatedAt:      createdAt,
+			Current:        entry.Name() == current,
+			BuildID:        meta.id,
+			BuildStatus:    meta.status,
+			BuilderCommit:  meta.builderCommit,
+			SourceCommit:   meta.sourceCommit,
+			RollbackOnly:   true,
 		})
 	}
 	sort.Slice(views, func(i, j int) bool {
