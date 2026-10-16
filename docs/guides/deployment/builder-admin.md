@@ -84,7 +84,10 @@ executable without a reliable Git commit SHA does not automatically
 build based on a mutable image tag or development version.
 
 Set `builderAdmin.buildOnStartupRevisionChange: false` to disable the
-Helm behavior. Direct CLI use is opt-in via
+Helm behavior. Helm injects `MARKATA_GO_BUILDER_ADMIN_STARTUP_REBUILD` as an
+environment variable instead of passing a new flag; older builder images
+ignore the variable, avoiding startup failures during staggered rollouts.
+Direct CLI use is opt-in via
 `markata-go builder-admin --build-on-startup-revision-change`.
 
 ### Put transient build work on node-local storage
