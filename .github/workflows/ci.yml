@@ -313,3 +313,7 @@ jobs:
           distribution: goreleaser
           version: "~> v2"
           args: check
+      - name: Test canonical and legacy install paths
+        run: |
+          bash -n install.sh
+          bash scripts/test-install-identity.sh

@@ -238,11 +238,30 @@ download_and_install() {
 
     local canonical="${install_dir}/markata${suffix}"
     local legacy="${install_dir}/markata-go${suffix}"
-    # A copy rather than a symlink also supports Windows-compatible shells.
-    cp "${binary_path}" "${canonical}"
-    chmod +x "${canonical}"
-    cp "${canonical}" "${legacy}"
-    chmod +x "${legacy}"
+
+    # The old Python distribution also owns a `markata` command. Never
+    # silently overwrite it (or another unrelated executable).
+    local target
+    for target in "${canonical}" "${legacy}"; do
+        if [ -e "${target}" ] || [ -L "${target}" ]; then
+            if ! "${target}" version 2>/dev/null | grep -q '^  go:'; then
+                log_error "Refusing to overwrite non-Go executable: ${target}"
+                log_error "Move or uninstall the conflicting command before installing Markata."
+                exit 1
+            fi
+        fi
+    done
+
+    # Stage and rename each command to avoid truncating a running executable.
+    # A copy (rather than a symlink) also supports Windows-compatible shells.
+    local canonical_tmp="${install_dir}/.markata-install-$${suffix}"
+    local legacy_tmp="${install_dir}/.markata-go-install-$${suffix}"
+    cp "${binary_path}" "${canonical_tmp}"
+    chmod +x "${canonical_tmp}"
+    cp "${canonical_tmp}" "${legacy_tmp}"
+    chmod +x "${legacy_tmp}"
+    mv -f "${canonical_tmp}" "${canonical}"
+    mv -f "${legacy_tmp}" "${legacy}"
     log_success "Installed ${canonical} and compatibility command ${legacy}"
 }
 

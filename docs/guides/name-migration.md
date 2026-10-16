@@ -19,7 +19,7 @@ be called **markata-py** after the repositories and packages are coordinated.
 New development builds provide the preferred `markata` executable. The legacy
 `markata-go` command remains supported, including existing tagged downloads.
 The official install script attempts a canonical archive and falls back to a
-legacy release where needed, installing both command names.
+legacy release where needed, installing both command names. If a different application (including Python Markata) already owns the `markata` command at the destination, the installer stops rather than overwriting it. Move the conflicting executable or choose a separate install directory.
 
 ```bash
 curl -sSL https://raw.githubusercontent.com/WaylonWalker/markata-go/main/install.sh | bash
