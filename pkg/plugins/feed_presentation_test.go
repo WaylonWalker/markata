@@ -82,7 +82,6 @@ func TestSingleShotNotMadeIntoOneItemGrid(t *testing.T) {
 	}
 }
 
-
 func TestEditorialTemplateRendersEveryShotThroughCardRouter(t *testing.T) {
 	engine, err := templates.NewEngine("../../templates")
 	if err != nil {

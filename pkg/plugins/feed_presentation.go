@@ -55,7 +55,7 @@ func presentationKind(post *models.Post) string {
 	case tpl == templateTypeVideo, strings.Contains(path, "/video/"):
 		return templateTypeVideo
 	case strings.Contains(path, "/blog/"), strings.Contains(path, "/til/"),
-		tpl == "post", tpl == templateTypeArticle, tpl == "guide", tpl == templateTypeTutorial:
+		tpl == templateTypePost, tpl == templateTypeArticle, tpl == "guide", tpl == templateTypeTutorial:
 		return templateTypeArticle
 	default:
 		return presentationOther
