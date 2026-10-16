@@ -853,6 +853,7 @@ type tomlMarkdownConfig struct {
 
 type tomlFeedConfig struct {
 	Slug            string            `toml:"slug"`
+	Presentation    string            `toml:"presentation"`
 	Title           string            `toml:"title"`
 	Description     string            `toml:"description"`
 	Robots          string            `toml:"robots"`
@@ -898,6 +899,7 @@ type tomlFeedTemplates struct {
 
 type tomlFeedDefaults struct {
 	ItemsPerPage    int                   `toml:"items_per_page"`
+	Presentation    string                `toml:"presentation"`
 	OrphanThreshold int                   `toml:"orphan_threshold"`
 	PaginationType  string                `toml:"pagination_type"`
 	Views           []string              `toml:"views"`
@@ -2198,6 +2200,7 @@ func (f *tomlFontConfig) toFontConfig() models.FontConfig {
 func (f *tomlFeedConfig) toFeedConfig() models.FeedConfig {
 	return models.FeedConfig{
 		Slug:            f.Slug,
+		Presentation:    f.Presentation,
 		Title:           f.Title,
 		Description:     f.Description,
 		Robots:          f.Robots,
@@ -2265,6 +2268,7 @@ func (t *tomlFeedTemplates) toFeedTemplates() models.FeedTemplates {
 func (d *tomlFeedDefaults) toFeedDefaults() models.FeedDefaults {
 	return models.FeedDefaults{
 		ItemsPerPage:    d.ItemsPerPage,
+		Presentation:    d.Presentation,
 		OrphanThreshold: d.OrphanThreshold,
 		PaginationType:  models.PaginationType(d.PaginationType),
 		Views:           d.Views,
@@ -2386,6 +2390,7 @@ type yamlMarkdownConfig struct {
 
 type yamlFeedConfig struct {
 	Slug            string            `yaml:"slug"`
+	Presentation    string            `yaml:"presentation"`
 	Title           string            `yaml:"title"`
 	Description     string            `yaml:"description"`
 	Robots          string            `yaml:"robots"`
@@ -2431,6 +2436,7 @@ type yamlFeedTemplates struct {
 
 type yamlFeedDefaults struct {
 	ItemsPerPage    int                   `yaml:"items_per_page"`
+	Presentation    string                `yaml:"presentation"`
 	OrphanThreshold int                   `yaml:"orphan_threshold"`
 	PaginationType  string                `yaml:"pagination_type"`
 	Views           []string              `yaml:"views"`
@@ -3786,6 +3792,7 @@ func (f *yamlFooterConfig) toFooterConfig() models.FooterConfig {
 func (f *yamlFeedConfig) toFeedConfig() models.FeedConfig {
 	return models.FeedConfig{
 		Slug:            f.Slug,
+		Presentation:    f.Presentation,
 		Title:           f.Title,
 		Description:     f.Description,
 		Robots:          f.Robots,
@@ -3853,6 +3860,7 @@ func (t *yamlFeedTemplates) toFeedTemplates() models.FeedTemplates {
 func (d *yamlFeedDefaults) toFeedDefaults() models.FeedDefaults {
 	return models.FeedDefaults{
 		ItemsPerPage:    d.ItemsPerPage,
+		Presentation:    d.Presentation,
 		OrphanThreshold: d.OrphanThreshold,
 		PaginationType:  models.PaginationType(d.PaginationType),
 		Views:           d.Views,
@@ -3998,6 +4006,7 @@ func (g jsonGlobConfig) toSlugRules() []models.SlugRule {
 
 type jsonFeedConfig struct {
 	Slug            string            `json:"slug"`
+	Presentation    string            `json:"presentation"`
 	Title           string            `json:"title"`
 	Description     string            `json:"description"`
 	Robots          string            `json:"robots"`
@@ -4043,6 +4052,7 @@ type jsonFeedTemplates struct {
 
 type jsonFeedDefaults struct {
 	ItemsPerPage    int                   `json:"items_per_page"`
+	Presentation    string                `json:"presentation"`
 	OrphanThreshold int                   `json:"orphan_threshold"`
 	PaginationType  string                `json:"pagination_type"`
 	Views           []string              `json:"views"`
@@ -5398,6 +5408,7 @@ func (f *jsonFooterConfig) toFooterConfig() models.FooterConfig {
 func (f *jsonFeedConfig) toFeedConfig() models.FeedConfig {
 	return models.FeedConfig{
 		Slug:            f.Slug,
+		Presentation:    f.Presentation,
 		Title:           f.Title,
 		Description:     f.Description,
 		Robots:          f.Robots,
@@ -5465,6 +5476,7 @@ func (t *jsonFeedTemplates) toFeedTemplates() models.FeedTemplates {
 func (d *jsonFeedDefaults) toFeedDefaults() models.FeedDefaults {
 	return models.FeedDefaults{
 		ItemsPerPage:    d.ItemsPerPage,
+		Presentation:    d.Presentation,
 		OrphanThreshold: d.OrphanThreshold,
 		PaginationType:  models.PaginationType(d.PaginationType),
 		Views:           d.Views,
