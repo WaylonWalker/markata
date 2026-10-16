@@ -24,7 +24,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="feed{% if feed.views.calendar %} calendar-feed{% endif %} h-feed{% if feed.type == 'guide' %} feed--guide{% elif feed.type == 'series' %} feed--series{% endif %}"{% if feed.views.calendar %} data-calendar-feed data-calendar-default="list" data-calendar-url-state{% endif %}>
+<div class="feed{% if feed.views.calendar %} calendar-feed{% endif %} h-feed{% if feed.type == 'guide' %} feed--guide{% elif feed.type == 'series' %} feed--series{% endif %}{% if feed_presentation and feed_presentation != "classic" %} feed--{{ feed_presentation }}{% endif %}"{% if feed.views.calendar %} data-calendar-feed data-calendar-default="list" data-calendar-url-state{% endif %}>
   <header class="feed-header">
     <div class="feed-header-top">
       <div class="feed-header-copy">
@@ -87,6 +87,9 @@
   </div>
   {% endif %}
 
+  {% if feed_presentation == "editorial" %}
+  {% include "partials/feed-editorial.html" %}
+  {% else %}
   <div class="posts posts-list" id="posts-list"{% if feed.views.calendar %} data-calendar-primary{% endif %}>
     {% if page.pagination_type == "js" %}
     {# For JS pagination, render ALL posts - JavaScript will handle showing/hiding #}
@@ -100,6 +103,7 @@
     {% endfor %}
     {% endif %}
   </div>
+  {% endif %}
   {% if not feed.posts %}
   <p class="feed-empty"{% if feed.views.calendar %} data-calendar-primary{% endif %}>No published posts yet. Set <code>published: true</code> in a post's frontmatter to add it here.</p>
   {% endif %}
