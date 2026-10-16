@@ -287,6 +287,8 @@ func applyBuilderAdminEnvOverride(config *models.Config, key, value string) {
 		config.BuilderAdmin.Auth.Headers.Roles = valuePointer
 	case "builder_admin_auth_headers_scopes":
 		config.BuilderAdmin.Auth.Headers.Scopes = valuePointer
+	case "builder_admin_auth_headers_auth_method":
+		config.BuilderAdmin.Auth.Headers.AuthMethod = valuePointer
 	case "builder_admin_webhook_enabled":
 		config.BuilderAdmin.Webhook.Enabled = boolPointer(value)
 	case "builder_admin_webhook_branch":

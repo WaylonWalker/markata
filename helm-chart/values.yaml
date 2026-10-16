@@ -138,6 +138,9 @@ builderAdmin:
       groups: X-Hlab-Groups
       roles: X-Hlab-Roles
       scopes: X-Hlab-Scopes
+      # Set only when the ForwardAuth provider returns a trusted auth-method
+      # assertion for validated bearer-token requests.
+      authMethod: X-Hlab-Auth-Method
   ingress:
     enabled: false
     host: ""
