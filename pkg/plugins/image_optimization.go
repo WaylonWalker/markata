@@ -153,6 +153,8 @@ func (p *ImageOptimizationPlugin) Write(m *lifecycle.Manager) error {
 		return err
 	}
 	if len(p.availableFormats) == 0 {
+		// Even a build without encoders should report its cache activity.
+		p.logSummary()
 		return nil
 	}
 
@@ -241,7 +243,6 @@ func (p *ImageOptimizationPlugin) optimizeImageFormat(outputPath, cacheDir strin
 			continue
 		}
 		p.stats.cacheMisses++
-		p.stats.encoderCalls++
 		if err := p.encodeImage(outputPath, variant.Path, format, quality, encoder, variant.Width); err != nil {
 			p.stats.encoderFailures++
 			imageOptimizationLog.Warnf("%v", err)
@@ -1013,6 +1014,7 @@ func (p *ImageOptimizationPlugin) encodeImage(sourcePath, destPath, format strin
 		args := avifEncoderArgs(inputPath, destPath, quality)
 		// #nosec G204 -- encoder comes from config or LookPath and is validated.
 		cmd := exec.Command(encoder, args...)
+		p.stats.encoderCalls++
 		if output, err := cmd.CombinedOutput(); err != nil {
 			return fmt.Errorf("avifenc failed for %s: %w (output: %s)", sourcePath, err, string(output))
 		}
@@ -1025,6 +1027,7 @@ func (p *ImageOptimizationPlugin) encodeImage(sourcePath, destPath, format strin
 		args = append(args, sourcePath, "-o", destPath)
 		// #nosec G204 -- encoder comes from config or LookPath and is validated.
 		cmd := exec.Command(encoder, args...)
+		p.stats.encoderCalls++
 		if output, err := cmd.CombinedOutput(); err != nil {
 			return fmt.Errorf("cwebp failed for %s: %w (output: %s)", sourcePath, err, string(output))
 		}
