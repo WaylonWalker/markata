@@ -1189,6 +1189,16 @@ article.post > .post-content > .feed.h-feed {
   color: var(--color-text-muted);
 }
 
+.feed--editorial .editorial-shot-grid .editorial-shot-date {
+  display: block;
+  margin-bottom: .22rem;
+  color: var(--color-text-muted);
+  font-size: .7rem;
+  font-style: normal;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .015em;
+}
+
 .feed--editorial .editorial-shot-grid figcaption {
   display: -webkit-box;
   -webkit-box-orient: vertical;

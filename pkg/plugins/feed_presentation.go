@@ -24,7 +24,7 @@ const (
 	presentationFeedTemplate = "feed.html"
 )
 
-// EditorialFeedItem is a post or a collection of same-day shots. Grouped shots
+// EditorialFeedItem is a post or a collection of shots from one calendar week. Grouped shots
 // retain individual permalinks and render through the normal card router.
 type EditorialFeedItem struct {
 	Kind       string
@@ -175,13 +175,6 @@ func editorialPhotoDate(post *models.Post) string {
 	return post.Date.Format("January 2, 2006")
 }
 
-func editorialDay(post *models.Post) string {
-	if post == nil || post.Date == nil {
-		return presentationUndated
-	}
-	return post.Date.Format("2006-01-02")
-}
-
 // Only regroup the visible HTML page. Publishing metadata, syndication,
 // Simple, Calendar, and existing pagination are never reordered or replaced.
 func buildEditorialFeedSections(posts []*models.Post) []EditorialFeedSection {
@@ -205,29 +198,38 @@ func buildEditorialFeedSections(posts []*models.Post) []EditorialFeedSection {
 	}
 
 	for i, postsInWeek := range weeks {
-		photos := make(map[string][]*models.Post)
-		for _, post := range postsInWeek {
-			if presentationKind(post) == templateTypePhoto {
-				day := editorialDay(post)
-				photos[day] = append(photos[day], post)
+		// Collect every visible photo from the week into one gallery, even
+		// when a single date has only one photo. The first photo's position
+		// determines where the collection appears relative to other items.
+		photos := make([]*models.Post, 0)
+		firstPhoto := -1
+		for position, post := range postsInWeek {
+			if presentationKind(post) != templateTypePhoto {
+				continue
 			}
+			if firstPhoto < 0 {
+				firstPhoto = position
+			}
+			photos = append(photos, post)
 		}
-		emitted := make(map[string]bool)
 		for position, post := range postsInWeek {
 			if presentationKind(post) == templateTypePhoto {
-				day := editorialDay(post)
-				if len(photos[day]) > 1 {
-					if emitted[day] {
-						continue
-					}
-					emitted[day] = true
-					sections[i].Items = append(sections[i].Items, EditorialFeedItem{
-						Kind: embedOptionShots, Importance: presentationGallery,
-						Posts: templates.PostsToMaps(photos[day]), rank: 3, order: position,
-						DateLabel: editorialPhotoDate(post), Mosaic: len(photos[day]) == 3,
-					})
+				if position != firstPhoto {
 					continue
 				}
+				photoMaps := templates.PostsToMaps(photos)
+				for j, photo := range photos {
+					photoMaps[j]["editorial_photo_date"] = editorialPhotoDate(photo)
+					if photo.Date != nil {
+						photoMaps[j]["editorial_photo_date_iso"] = photo.Date.Format("2006-01-02")
+					}
+				}
+				sections[i].Items = append(sections[i].Items, EditorialFeedItem{
+					Kind: embedOptionShots, Importance: presentationGallery,
+					Posts: photoMaps, rank: 3, order: firstPhoto,
+					DateLabel: sections[i].Label, Mosaic: len(photos) == 3,
+				})
+				continue
 			}
 
 			rank := editorialRank(post)
