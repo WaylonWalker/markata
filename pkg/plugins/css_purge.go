@@ -196,7 +196,9 @@ type cssFileResult struct {
 type cssPurgeCacheEntry struct {
 	SelectorHash string `json:"selector_hash"`
 	OptionsHash  string `json:"options_hash"`
+	InputHash    string `json:"input_hash"`
 	OutputHash   string `json:"output_hash"`
+	OutputCSS    string `json:"output_css"`
 	OriginalSize int    `json:"original_size"`
 	PurgedSize   int    `json:"purged_size"`
 	Rules        int    `json:"rules"`
@@ -204,8 +206,16 @@ type cssPurgeCacheEntry struct {
 }
 
 func cssPurgeHash(value any) string {
-	b, _ := json.Marshal(value)
-	sum := sha256.Sum256(b)
+	b, err := json.Marshal(value)
+	if err != nil {
+		// An unhashable configuration must never produce a reusable cache key.
+		return ""
+	}
+	return cssPurgeBytesHash(b)
+}
+
+func cssPurgeBytesHash(content []byte) string {
+	sum := sha256.Sum256(content)
 	return hex.EncodeToString(sum[:])
 }
 
@@ -222,6 +232,12 @@ func loadCSSPurgeCache(path string) (cssPurgeCacheEntry, bool) {
 	var entry cssPurgeCacheEntry
 	b, err := os.ReadFile(path)
 	if err != nil || json.Unmarshal(b, &entry) != nil {
+		return entry, false
+	}
+	// Reject partially written or tampered entries. Legacy entries without
+	// source bytes also miss safely and are regenerated on the next purge.
+	if entry.InputHash == "" || entry.OutputHash != cssPurgeBytesHash([]byte(entry.OutputCSS)) ||
+		entry.OriginalSize < 0 || entry.PurgedSize < 0 || entry.Rules < 0 || entry.Removed < 0 {
 		return entry, false
 	}
 	return entry, true
@@ -268,6 +284,9 @@ func processCSSFilesConcurrently(cssFiles []string, outputDir, cacheDir string, 
 	results := make(chan cssFileResult, len(cssFiles))
 	errors := make(chan error, len(cssFiles))
 
+	selectorsHash, optionsHash := cssPurgeHash(used), cssPurgeHash(opts)
+	cacheable := selectorsHash != "" && optionsHash != ""
+
 	var wg sync.WaitGroup
 
 	for i := 0; i < concurrency; i++ {
@@ -288,13 +307,25 @@ func processCSSFilesConcurrently(cssFiles []string, outputDir, cacheDir string, 
 				}
 
 				cachePath := cssPurgeCachePath(cacheDir, outputDir, cssFile)
-				selectorsHash, optionsHash := cssPurgeHash(used), cssPurgeHash(opts)
-				inputHash := cssPurgeHash(string(content))
-				if cached, ok := loadCSSPurgeCache(cachePath); ok && cached.SelectorHash == selectorsHash && cached.OptionsHash == optionsHash && cached.OutputHash == inputHash {
-					result.origSize, result.purgedSize = cached.OriginalSize, cached.PurgedSize
-					result.rules, result.removed, result.cacheHit = cached.Rules, cached.Removed, true
-					results <- result
-					continue
+				inputHash := cssPurgeBytesHash(content)
+				if cacheable {
+					if cached, ok := loadCSSPurgeCache(cachePath); ok &&
+						cached.SelectorHash == selectorsHash && cached.OptionsHash == optionsHash &&
+						(cached.InputHash == inputHash || cached.OutputHash == inputHash) {
+						// An already-purged output needs no write. A freshly generated
+						// original stylesheet can reuse the cached purge result.
+						if cached.OutputHash != inputHash {
+							//nolint:gosec // G306: generated CSS must be web-readable
+							if err := os.WriteFile(cssFile, []byte(cached.OutputCSS), 0o644); err != nil {
+								errors <- fmt.Errorf("restoring cached CSS %s: %w", relPath, err)
+								continue
+							}
+						}
+						result.origSize, result.purgedSize = cached.OriginalSize, cached.PurgedSize
+						result.rules, result.removed, result.cacheHit = cached.Rules, cached.Removed, true
+						results <- result
+						continue
+					}
 				}
 				purged, purgeStats := csspurge.PurgeCSS(string(content), used, opts)
 
@@ -310,7 +341,21 @@ func processCSSFilesConcurrently(cssFiles []string, outputDir, cacheDir string, 
 						continue
 					}
 				}
-				saveCSSPurgeCache(cachePath, cssPurgeCacheEntry{SelectorHash: selectorsHash, OptionsHash: optionsHash, OutputHash: cssPurgeHash(purged), OriginalSize: purgeStats.OriginalSize, PurgedSize: purgeStats.PurgedSize, Rules: purgeStats.TotalRules, Removed: purgeStats.RemovedRules})
+				if cacheable {
+					// The original is left byte-for-byte unchanged when no rules
+					// were removed; cache the actual bytes on disk in that case.
+					outputCSS := string(content)
+					if purgeStats.RemovedRules > 0 {
+						outputCSS = purged
+					}
+					saveCSSPurgeCache(cachePath, cssPurgeCacheEntry{
+						SelectorHash: selectorsHash, OptionsHash: optionsHash,
+						InputHash: inputHash, OutputHash: cssPurgeBytesHash([]byte(outputCSS)),
+						OutputCSS: outputCSS,
+						OriginalSize: purgeStats.OriginalSize, PurgedSize: purgeStats.PurgedSize,
+						Rules: purgeStats.TotalRules, Removed: purgeStats.RemovedRules,
+					})
+				}
 
 				results <- result
 			}
