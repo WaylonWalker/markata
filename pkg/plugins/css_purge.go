@@ -269,6 +269,69 @@ func saveCSSPurgeCache(path string, entry cssPurgeCacheEntry) {
 	}
 }
 
+// processSingleCSSPurgeFile either restores validated output or purges the
+// current input. Rebuilt originals and already-purged files both hit the cache.
+func processSingleCSSPurgeFile(cssFile, outputDir, cacheDir string, used *csspurge.UsedSelectors, opts csspurge.PurgeOptions, selectorsHash, optionsHash string) (cssFileResult, error) {
+	relPath, err := filepath.Rel(outputDir, cssFile)
+	if err != nil {
+		relPath = cssFile
+	}
+	result := cssFileResult{cssFile: cssFile, relPath: relPath}
+	content, err := os.ReadFile(cssFile)
+	if err != nil {
+		return result, fmt.Errorf("reading %s: %w", relPath, err)
+	}
+
+	cachePath := cssPurgeCachePath(cacheDir, outputDir, cssFile)
+	inputHash := cssPurgeBytesHash(content)
+	cacheable := selectorsHash != "" && optionsHash != ""
+	if cacheable {
+		cached, ok := loadCSSPurgeCache(cachePath)
+		if ok && cached.SelectorHash == selectorsHash && cached.OptionsHash == optionsHash &&
+			(cached.InputHash == inputHash || cached.OutputHash == inputHash) {
+			if cached.OutputHash != inputHash {
+				//nolint:gosec // G306: generated CSS must be web-readable
+				if err := os.WriteFile(cssFile, []byte(cached.OutputCSS), 0o644); err != nil {
+					return result, fmt.Errorf("restoring cached CSS %s: %w", relPath, err)
+				}
+			}
+			result.origSize, result.purgedSize = cached.OriginalSize, cached.PurgedSize
+			result.rules, result.removed, result.cacheHit = cached.Rules, cached.Removed, true
+			return result, nil
+		}
+	}
+
+	purged, purgeStats := csspurge.PurgeCSS(string(content), used, opts)
+	result.origSize = purgeStats.OriginalSize
+	result.purgedSize = purgeStats.PurgedSize
+	result.rules = purgeStats.TotalRules
+	result.removed = purgeStats.RemovedRules
+
+	// Avoid overwriting the original bytes if nothing was actually removed.
+	outputCSS := string(content)
+	if purgeStats.RemovedRules > 0 {
+		outputCSS = purged
+		//nolint:gosec // G306: generated CSS must be web-readable
+		if err := os.WriteFile(cssFile, []byte(purged), 0o644); err != nil {
+			return result, fmt.Errorf("writing %s: %w", relPath, err)
+		}
+	}
+	if cacheable {
+		saveCSSPurgeCache(cachePath, cssPurgeCacheEntry{
+			SelectorHash: selectorsHash,
+			OptionsHash:  optionsHash,
+			InputHash:    inputHash,
+			OutputHash:   cssPurgeBytesHash([]byte(outputCSS)),
+			OutputCSS:    outputCSS,
+			OriginalSize: purgeStats.OriginalSize,
+			PurgedSize:   purgeStats.PurgedSize,
+			Rules:        purgeStats.TotalRules,
+			Removed:      purgeStats.RemovedRules,
+		})
+	}
+	return result, nil
+}
+
 // processCSSFilesConcurrently processes CSS files using a worker pool.
 func processCSSFilesConcurrently(cssFiles []string, outputDir, cacheDir string, used *csspurge.UsedSelectors, opts csspurge.PurgeOptions, verbose bool, skippedCount int) purgeProcessingStats {
 	concurrency := len(cssFiles)
@@ -294,69 +357,11 @@ func processCSSFilesConcurrently(cssFiles []string, outputDir, cacheDir string, 
 		go func() {
 			defer wg.Done()
 			for cssFile := range jobs {
-				relPath, err := filepath.Rel(outputDir, cssFile)
+				result, err := processSingleCSSPurgeFile(cssFile, outputDir, cacheDir, used, opts, selectorsHash, optionsHash)
 				if err != nil {
-					relPath = cssFile
-				}
-
-				result := cssFileResult{cssFile: cssFile, relPath: relPath}
-				content, err := os.ReadFile(cssFile)
-				if err != nil {
-					errors <- fmt.Errorf("reading %s: %w", relPath, err)
+					errors <- err
 					continue
 				}
-
-				cachePath := cssPurgeCachePath(cacheDir, outputDir, cssFile)
-				inputHash := cssPurgeBytesHash(content)
-				if cacheable {
-					if cached, ok := loadCSSPurgeCache(cachePath); ok &&
-						cached.SelectorHash == selectorsHash && cached.OptionsHash == optionsHash &&
-						(cached.InputHash == inputHash || cached.OutputHash == inputHash) {
-						// An already-purged output needs no write. A freshly generated
-						// original stylesheet can reuse the cached purge result.
-						if cached.OutputHash != inputHash {
-							//nolint:gosec // G306: generated CSS must be web-readable
-							if err := os.WriteFile(cssFile, []byte(cached.OutputCSS), 0o644); err != nil {
-								errors <- fmt.Errorf("restoring cached CSS %s: %w", relPath, err)
-								continue
-							}
-						}
-						result.origSize, result.purgedSize = cached.OriginalSize, cached.PurgedSize
-						result.rules, result.removed, result.cacheHit = cached.Rules, cached.Removed, true
-						results <- result
-						continue
-					}
-				}
-				purged, purgeStats := csspurge.PurgeCSS(string(content), used, opts)
-
-				result.origSize = purgeStats.OriginalSize
-				result.purgedSize = purgeStats.PurgedSize
-				result.rules = purgeStats.TotalRules
-				result.removed = purgeStats.RemovedRules
-
-				if purgeStats.RemovedRules > 0 {
-					//nolint:gosec // G306: CSS output files need 0644 for web serving
-					if err := os.WriteFile(cssFile, []byte(purged), 0o644); err != nil {
-						errors <- fmt.Errorf("writing %s: %w", relPath, err)
-						continue
-					}
-				}
-				if cacheable {
-					// The original is left byte-for-byte unchanged when no rules
-					// were removed; cache the actual bytes on disk in that case.
-					outputCSS := string(content)
-					if purgeStats.RemovedRules > 0 {
-						outputCSS = purged
-					}
-					saveCSSPurgeCache(cachePath, cssPurgeCacheEntry{
-						SelectorHash: selectorsHash, OptionsHash: optionsHash,
-						InputHash: inputHash, OutputHash: cssPurgeBytesHash([]byte(outputCSS)),
-						OutputCSS: outputCSS,
-						OriginalSize: purgeStats.OriginalSize, PurgedSize: purgeStats.PurgedSize,
-						Rules: purgeStats.TotalRules, Removed: purgeStats.RemovedRules,
-					})
-				}
-
 				results <- result
 			}
 		}()
