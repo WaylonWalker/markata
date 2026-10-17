@@ -53,6 +53,8 @@ Output HTML:
 The generated `.avif` and `.webp` files are written next to the original image in the output folder.
 
 The optimizer reuses the image cache in `.markata/image-cache` and skips re-encoding unchanged inputs across rebuilds.
+Each build logs a summary of targets, missing sources, variants checked, cache hits and misses,
+and encoder calls and failures. This makes cache reuse distinguishable from actual image work.
 
 ## Configuration
 
