@@ -1,6 +1,7 @@
 package plugins
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"testing"
@@ -167,7 +168,7 @@ func TestCSSPurgeCache_NoRemovalPreservesOriginalBytes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if string(content) != string(original) {
+	if !bytes.Equal(content, original) {
 		t.Fatalf("CSS changed without removed rules: %q", content)
 	}
 }
