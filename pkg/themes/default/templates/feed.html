@@ -101,7 +101,7 @@
       {% endif %}
       {% endif %}
       {% if page.total_pages > 1 and page.pagination_type == "manual" %}
-      <nav class="pagination pagination--top" aria-label="Archive top pagination">
+      <nav class="pagination pagination--top" aria-label="Archive top pagination"{% if feed.views.calendar %} data-calendar-primary{% endif %}>
         {% if page.has_prev %}
         <a href="{{ page.prev_url }}" class="pagination-prev" rel="prev">&larr; Newer</a>
         {% endif %}
