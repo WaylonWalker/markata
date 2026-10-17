@@ -1248,3 +1248,82 @@ func TestLinkSourceTemplateFallbackToValidURL(t *testing.T) {
 		})
 	}
 }
+
+func TestEditorialCardImageReducesOnlyYouTubeMaxresPosters(t *testing.T) {
+	tcs := []struct {
+		name, input string
+		lead        bool
+		want        string
+	}{
+		{
+			name: "secondary youtube jpeg",
+			input: "https://i.ytimg.com/vi/abc123/maxresdefault.jpg",
+			want: "https://i.ytimg.com/vi/abc123/mqdefault.jpg",
+		},
+		{
+			name: "featured youtube jpeg",
+			input: "https://i.ytimg.com/vi/abc123/maxresdefault.jpg",
+			lead: true,
+			want: "https://i.ytimg.com/vi/abc123/sddefault.jpg",
+		},
+		{
+			name: "youtube alias with query",
+			input: "https://img.youtube.com/vi/abc123/maxresdefault.jpg?foo=bar",
+			want: "https://img.youtube.com/vi/abc123/mqdefault.jpg?foo=bar",
+		},
+		{
+			name: "other youtube thumbnail already sized",
+			input: "https://i.ytimg.com/vi/abc123/hqdefault.jpg",
+			want: "https://i.ytimg.com/vi/abc123/hqdefault.jpg",
+		},
+		{
+			name: "unrelated site same filename",
+			input: "https://photos.example.org/maxresdefault.jpg",
+			want: "https://photos.example.org/maxresdefault.jpg",
+		},
+		{
+			name: "similar hostname is not youtube",
+			input: "https://i.ytimg.com.attacker.invalid/vi/a/maxresdefault.jpg",
+			want: "https://i.ytimg.com.attacker.invalid/vi/a/maxresdefault.jpg",
+		},
+		{
+			name: "dropper responsive URL retained",
+			input: "https://dropper.waylonwalker.com/file/abc.webp?width=720",
+			want: "https://dropper.waylonwalker.com/file/abc.webp?width=720",
+		},
+		{
+			name: "only https is eligible",
+			input: "http://i.ytimg.com/vi/abc123/maxresdefault.jpg",
+			want: "http://i.ytimg.com/vi/abc123/maxresdefault.jpg",
+		},
+	}
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := filterEditorialCardImage(pongo2.AsValue(tc.input), pongo2.AsValue(tc.lead))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got.String() != tc.want {
+				t.Fatalf("poster = %q, want %q", got.String(), tc.want)
+			}
+		})
+	}
+}
+
+func TestEditorialCardImageRegisteredWithPongo(t *testing.T) {
+	engine, err := NewEngine("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	rendered, err := engine.RenderString(`{{ url | editorial_card_image:lead }}`,
+		map[string]interface{}{
+			"url": "https://i.ytimg.com/vi/id/maxresdefault.jpg",
+			"lead": true,
+		})
+	if err != nil {
+		t.Fatalf("filter could not render: %v", err)
+	}
+	if rendered != "https://i.ytimg.com/vi/id/sddefault.jpg" {
+		t.Fatalf("rendered poster = %q", rendered)
+	}
+}
