@@ -151,3 +151,35 @@ func TestEditorialArchiveDefersOnlyNonCriticalSearchCSS(t *testing.T) {
 		}
 	}
 }
+
+func TestEditorialArchiveDefersCalendarStylesAndPrioritizesLeadImage(t *testing.T) {
+	feed, err := ReadTemplate("feed.html")
+	if err != nil {
+		t.Fatal(err)
+	}
+	markup := string(feed)
+	for _, want := range []string{
+		`{% if feed_presentation == "editorial" %}`,
+		`'css/calendar-feed.css' | theme_asset_hashed }}" media="print" onload="this.media='all'"`,
+		`<noscript><link rel="stylesheet" href="{{ 'css/calendar-feed.css' | theme_asset_hashed }}"></noscript>`,
+		`'js/calendar-feed.js' | theme_asset_hashed`,
+	} {
+		if !strings.Contains(markup, want) {
+			t.Errorf("calendar nonblocking contract missing %q", want)
+		}
+	}
+	link, err := ReadTemplate("partials/cards/link-card.html")
+	if err != nil {
+		t.Fatal(err)
+	}
+	card := string(link)
+	for _, want := range []string{
+		`{% if item.Lead %} loading="eager" fetchpriority="high"`,
+		`{% else %} loading="lazy"`,
+		`editorial_card_image:item.Lead`,
+	} {
+		if !strings.Contains(card, want) {
+			t.Errorf("link thumbnail priority contract missing %q", want)
+		}
+	}
+}
