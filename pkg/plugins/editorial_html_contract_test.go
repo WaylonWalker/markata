@@ -16,8 +16,8 @@ func TestEditorialHTMLContractAndCachedFallback(t *testing.T) {
 	dir := t.TempDir()
 	file := filepath.Join(dir, "index.html")
 	classic := `<div class="posts posts-list">old fallback</div>`
-	editorial := `<div class="feed feed--editorial" data-feed-presentation="editorial"><div class="editorial-feed posts-list" data-editorial-version="2"></div></div>`
-	priorEditorial := `<div class="feed feed--editorial" data-feed-presentation="editorial"><div class="editorial-feed posts-list"></div></div>`
+	editorial := `<div class="feed feed--editorial" data-feed-presentation="editorial"><div class="editorial-feed posts-list" data-editorial-version="3"></div></div>`
+	priorEditorial := `<div class="feed feed--editorial" data-feed-presentation="editorial"><div class="editorial-feed posts-list" data-editorial-version="2"></div></div>`
 	if editorialHTMLMarkupValid(priorEditorial) {
 		t.Fatal("prior editorial markup must be rebuilt for the new layout")
 	}
@@ -118,7 +118,7 @@ func TestCachedEditorialFeedRepublishesClassicHTML(t *testing.T) {
 	if !skip {
 		t.Fatal("valid editorial archive should be reused")
 	}
-	if err := os.WriteFile(index, []byte("<div class=\"feed--editorial\" data-feed-presentation=\"editorial\"><div class=\"editorial-feed posts-list\">stale editorial layout</div></div>"), 0o600); err != nil {
+	if err := os.WriteFile(index, []byte("<div class=\"feed--editorial\" data-feed-presentation=\"editorial\"><div class=\"editorial-feed posts-list\" data-editorial-version=\"2\">stale editorial layout</div></div>"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	skip, _ = plugin.shouldSkipFeed(feed, cache, outputDir)

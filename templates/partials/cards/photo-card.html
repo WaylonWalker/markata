@@ -9,5 +9,5 @@
 </video>
 {% else %}<img src="{{ sized_media }}" alt="{{ post.title | default:post.description | default:'Photo' }}" class="u-photo" width="600" loading="lazy" decoding="async"{% if media_srcset %} srcset="{{ media_srcset }}" sizes="(max-width: 632px) calc(100vw - 2rem), 600px" data-href="{{ media_src|original_media_url }}"{% endif %}>
 {% endif %}</a>
-<figcaption class="p-summary">{{ post.description | default:post.title | default:'Photo' }}</figcaption>
+<figcaption class="p-summary">{% if post.editorial_photo_date %}<time class="editorial-shot-date"{% if post.editorial_photo_date_iso %} datetime="{{ post.editorial_photo_date_iso }}"{% endif %}>{{ post.editorial_photo_date }}</time>{% endif %}{{ post.description | default:post.title | default:'Photo' }}</figcaption>
 </figure>{% endwith %}{% endwith %}{% endif %}{% endwith %}

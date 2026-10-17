@@ -14,13 +14,13 @@ func presentationTestPost(day int, template string) *models.Post {
 	return &models.Post{Date: &date, Template: template}
 }
 
-func TestEditorialGroupsDailyShotsAndPreservesEveryPost(t *testing.T) {
+func TestEditorialGroupsWeeklyShotsAndPreservesEveryPost(t *testing.T) {
 	posts := []*models.Post{
 		presentationTestPost(13, "ping"),
 		presentationTestPost(12, "photo"),
 		presentationTestPost(12, "post"),
-		presentationTestPost(12, "photo"),
-		presentationTestPost(12, "photo"),
+		presentationTestPost(14, "photo"),
+		presentationTestPost(16, "photo"),
 		presentationTestPost(5, "post"),
 	}
 	sections := buildEditorialFeedSections(posts)
@@ -35,6 +35,14 @@ func TestEditorialGroupsDailyShotsAndPreservesEveryPost(t *testing.T) {
 				clusters++
 				if len(item.Posts) != 3 {
 					t.Fatalf("shot cluster size = %d; want 3", len(item.Posts))
+				}
+				if !item.Mosaic || item.DateLabel != section.Label {
+					t.Fatalf("weekly photo collection lost its week label or mosaic: %+v", item)
+				}
+				for j, want := range []string{"October 12, 2026", "October 14, 2026", "October 16, 2026"} {
+					if got := item.Posts[j]["editorial_photo_date"]; got != want {
+						t.Errorf("photo %d date = %v, want %s", j, got, want)
+					}
 				}
 			}
 		}
@@ -73,12 +81,18 @@ func TestAdaptiveFeedClassificationAndLegacyDefault(t *testing.T) {
 	}
 }
 
-func TestSingleShotNotMadeIntoOneItemGrid(t *testing.T) {
+func TestSingleShotKeepsGallerySizingWithinItsWeek(t *testing.T) {
 	sections := buildEditorialFeedSections([]*models.Post{
 		presentationTestPost(12, "photo"), presentationTestPost(5, "photo"),
 	})
-	if len(sections) != 2 || sections[0].Items[0].Kind != "post" {
-		t.Fatalf("unexpected clustering across weeks: %+v", sections)
+	if len(sections) != 2 {
+		t.Fatalf("weekly sections = %d, want 2", len(sections))
+	}
+	for _, section := range sections {
+		if len(section.Items) != 1 || section.Items[0].Kind != embedOptionShots ||
+			len(section.Items[0].Posts) != 1 || section.Items[0].Mosaic {
+			t.Fatalf("single photo should remain a one-cell gallery, not a full-width card: %+v", section)
+		}
 	}
 }
 
@@ -88,12 +102,13 @@ func TestEditorialTemplateRendersEveryShotThroughCardRouter(t *testing.T) {
 		t.Fatal(err)
 	}
 	date := time.Date(2026, 10, 12, 12, 0, 0, 0, time.UTC)
+	otherDate := time.Date(2026, 10, 14, 12, 0, 0, 0, time.UTC)
 	a := "Bat Cap"
 	b := "Ghost Cap"
 	posts := []*models.Post{
 		{Slug: "bat-cap", Href: "/shots/bat-cap/", Template: "photo", Date: &date, Title: &a,
 			Extra: map[string]interface{}{"image": "https://dropper.waylonwalker.com/bat.webp"}},
-		{Slug: "ghost-cap", Href: "/shots/ghost-cap/", Template: "photo", Date: &date, Title: &b,
+		{Slug: "ghost-cap", Href: "/shots/ghost-cap/", Template: "photo", Date: &otherDate, Title: &b,
 			Extra: map[string]interface{}{"image": "https://dropper.waylonwalker.com/ghost.webp"}},
 	}
 	ctx := map[string]interface{}{
@@ -115,6 +130,10 @@ func TestEditorialTemplateRendersEveryShotThroughCardRouter(t *testing.T) {
 		`class="editorial-shot-grid"`,
 		`href="/shots/bat-cap/"`,
 		`href="/shots/ghost-cap/"`,
+		`datetime="2026-10-12"`,
+		`datetime="2026-10-14"`,
+		`October 12, 2026`,
+		`October 14, 2026`,
 	} {
 		if !strings.Contains(html, want) {
 			t.Errorf("missing %q in rendered editorial gallery: %s", want, html)
@@ -150,7 +169,7 @@ func TestEditorialLeadPhotoEssayAndNotebook(t *testing.T) {
 		}
 		if item.Kind == embedOptionShots {
 			photoCount++
-			if !item.Mosaic || item.DateLabel != "October 16, 2026" || len(item.Posts) != 3 {
+			if !item.Mosaic || item.DateLabel != "Oct 12 – Oct 18, 2026" || len(item.Posts) != 3 {
 				t.Errorf("wrong photo essay: %+v", item)
 			}
 		}

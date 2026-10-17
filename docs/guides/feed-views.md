@@ -100,10 +100,13 @@ Custom HTML templates, such as `feed-photo-grid.html`, take precedence
 over automatic layout detection.
 
 Editorial grouping uses Monday-start publishing weeks. Articles are
-emphasized, substantial links and video follow, same-day shots appear
-as a responsive gallery when there are at least two, and brief notes
-are visually quieter. `featured: true` on a post explicitly elevates it
-within its week. Each post retains its permalink, date, and HTML card.
+emphasized, substantial links and video follow, and all photos from a
+publishing week appear together in a single responsive gallery. One-photo
+weeks also use the gallery layout rather than stretching a photo into a
+full-width card. Each photograph retains its own publication date, caption,
+and permalink, even when photos come from different days. Brief notes are
+visually quieter. `featured: true` on a post explicitly elevates it
+within its week. Each post retains its original HTML card and metadata.
 
 Presentation never modifies RSS, Atom, JSON, Simple, Calendar, source
 ordering, or the existing pagination boundaries. Weeks that span two
