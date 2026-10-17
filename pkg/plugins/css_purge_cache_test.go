@@ -17,7 +17,7 @@ func TestCSSPurgeCache_ReusesOnlyMatchingInputs(t *testing.T) {
 		t.Fatal(err)
 	}
 	css := filepath.Join(output, "site.css")
-	if err := os.WriteFile(css, []byte(".used{color:blue}.unused{color:red}"), 0o644); err != nil {
+	if err := os.WriteFile(css, []byte(".used{color:blue}.unused{color:red}"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	selectors := csspurge.NewUsedSelectors()
@@ -33,7 +33,23 @@ func TestCSSPurgeCache_ReusesOnlyMatchingInputs(t *testing.T) {
 	if second.cacheHits != 1 {
 		t.Fatalf("second run had %d cache hits, want 1", second.cacheHits)
 	}
-	if err := os.WriteFile(css, []byte(".used{color:blue}.new{color:green}"), 0o644); err != nil {
+	// A full rebuild rewrites the original (unpurged) CSS. This must be a
+	// cache hit too, and must restore the previous purged bytes.
+	if err := os.WriteFile(css, []byte(".used{color:blue}.unused{color:red}"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	rebuilt := processCSSFiles([]string{css}, output, cache, selectors, options, config, false)
+	if rebuilt.cacheHits != 1 {
+		t.Fatalf("full rebuild had %d cache hits, want 1", rebuilt.cacheHits)
+	}
+	restored, err := os.ReadFile(css)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(restored) != ".used{color:blue}\n" {
+		t.Fatalf("cache did not restore purged CSS: %q", restored)
+	}
+	if err := os.WriteFile(css, []byte(".used{color:blue}.new{color:green}"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	changed := processCSSFiles([]string{css}, output, cache, selectors, options, config, false)
@@ -62,14 +78,14 @@ func TestCSSPurgeCache_CorruptEntryFallsBackToPurge(t *testing.T) {
 		t.Fatal(err)
 	}
 	css := filepath.Join(output, "site.css")
-	if err := os.WriteFile(css, []byte(".used{color:blue}.unused{color:red}"), 0o644); err != nil {
+	if err := os.WriteFile(css, []byte(".used{color:blue}.unused{color:red}"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	entry := cssPurgeCachePath(cache, output, css)
 	if err := os.MkdirAll(filepath.Dir(entry), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(entry, []byte("not json"), 0o644); err != nil {
+	if err := os.WriteFile(entry, []byte("not json"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	selectors := csspurge.NewUsedSelectors()
@@ -85,5 +101,73 @@ func TestCSSPurgeCache_CorruptEntryFallsBackToPurge(t *testing.T) {
 	}
 	if string(content) != ".used{color:blue}\n" {
 		t.Fatalf("CSS was not purged: %q", content)
+	}
+}
+
+func TestCSSPurgeCache_TamperedOutputFallsBackToPurge(t *testing.T) {
+	root := t.TempDir()
+	output, cache := filepath.Join(root, "output"), filepath.Join(root, "cache")
+	if err := os.MkdirAll(output, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	css := filepath.Join(output, "site.css")
+	original := []byte(".used{color:blue}.unused{color:red}")
+	if err := os.WriteFile(css, original, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	selectors := csspurge.NewUsedSelectors()
+	selectors.Classes["used"] = true
+	config := models.NewCSSPurgeConfig()
+	opts := buildPurgeOptions(config, false)
+	if first := processCSSFiles([]string{css}, output, cache, selectors, opts, config, false); first.cacheHits != 0 {
+		t.Fatal("first pass unexpectedly hit cache")
+	}
+	entryPath := cssPurgeCachePath(cache, output, css)
+	entry, ok := loadCSSPurgeCache(entryPath)
+	if !ok {
+		t.Fatal("expected a valid cache entry")
+	}
+	entry.OutputCSS = ".tampered{color:red}"
+	saveCSSPurgeCache(entryPath, entry)
+	if err := os.WriteFile(css, original, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if again := processCSSFiles([]string{css}, output, cache, selectors, opts, config, false); again.cacheHits != 0 {
+		t.Fatal("tampered cached CSS was reused")
+	}
+	content, err := os.ReadFile(css)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(content) != ".used{color:blue}\n" {
+		t.Fatalf("bad output after corrupted cache: %q", content)
+	}
+}
+
+func TestCSSPurgeCache_NoRemovalPreservesOriginalBytes(t *testing.T) {
+	root := t.TempDir()
+	output, cache := filepath.Join(root, "output"), filepath.Join(root, "cache")
+	if err := os.MkdirAll(output, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	css := filepath.Join(output, "site.css")
+	original := []byte(".used { color: blue; }")
+	if err := os.WriteFile(css, original, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	selectors := csspurge.NewUsedSelectors()
+	selectors.Classes["used"] = true
+	config := models.NewCSSPurgeConfig()
+	opts := buildPurgeOptions(config, false)
+	processCSSFiles([]string{css}, output, cache, selectors, opts, config, false)
+	if again := processCSSFiles([]string{css}, output, cache, selectors, opts, config, false); again.cacheHits != 1 {
+		t.Fatal("expected cache hit on unchanged CSS")
+	}
+	content, err := os.ReadFile(css)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(content) != string(original) {
+		t.Fatalf("CSS changed without removed rules: %q", content)
 	}
 }
