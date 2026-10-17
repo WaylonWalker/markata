@@ -2,8 +2,8 @@
 (function () {
   "use strict";
 
-  // canonical-document-v1 contour input; never infer this from consumer CSS.
-  var canonicalHighlightRadius = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--canonical-highlight-radius")) || 10.08;
+  // Do not query computed styles at module evaluation time: feed pages have
+  // no highlighted post headings, and this forced an unnecessary reflow.
 
   var selector = "html[data-fontpack] :is(.post-header h1, .post-content h1, .post-content h2) .heading-highlight";
   var scheduled = false;
@@ -69,7 +69,7 @@
         bottom: rect.bottom - base.top
       };
     });
-    var radius = canonicalHighlightRadius;
+    var radius = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--canonical-highlight-radius")) || 10.08;
     var paths = [];
 
     rects.forEach(function (rect, index) {

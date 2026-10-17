@@ -183,6 +183,7 @@ func registerFilters() {
 		pongo2.RegisterFilter("media_url", filterMediaURL)
 		pongo2.RegisterFilter("with_size", filterWithSize)
 		pongo2.RegisterFilter("responsive_srcset", filterResponsiveSrcset)
+		pongo2.RegisterFilter("editorial_card_image", filterEditorialCardImage)
 		pongo2.RegisterFilter("original_media_url", filterOriginalMediaURL)
 		pongo2.RegisterFilter("video_mime", filterVideoMIME)
 		pongo2.RegisterFilter("poster_url", filterPosterURL)
@@ -1374,6 +1375,33 @@ func filterWithSize(in, param *pongo2.Value) (*pongo2.Value, *pongo2.Error) {
 		}
 	}
 	return pongo2.AsValue(WithSize(in.String(), width, height)), nil
+}
+
+// filterEditorialCardImage avoids downloading full-resolution YouTube posters
+// for tiny archive cards. The transformation is strictly host/path-scoped;
+// every non-YouTube image URL retains its existing CDN responsive behavior.
+func filterEditorialCardImage(in, param *pongo2.Value) (*pongo2.Value, *pongo2.Error) {
+	if in.IsNil() {
+		return in, nil
+	}
+	thumbnail := strings.TrimSpace(in.String())
+	u, err := url.Parse(thumbnail)
+	if err != nil || u.Scheme != "https" {
+		return in, nil
+	}
+	switch strings.ToLower(u.Hostname()) {
+	case "i.ytimg.com", "img.youtube.com":
+		// Do not rewrite arbitrary paths or query strings on other hosts.
+		if strings.HasPrefix(u.Path, "/vi/") && strings.HasSuffix(u.Path, "/maxresdefault.jpg") {
+			size := "mqdefault.jpg" // 320px: secondary link previews.
+			if param != nil && param.IsTrue() {
+				size = "sddefault.jpg" // 640px: featured lead previews.
+			}
+			u.Path = strings.TrimSuffix(u.Path, "maxresdefault.jpg") + size
+			return pongo2.AsValue(u.String()), nil
+		}
+	}
+	return in, nil
 }
 
 // filterResponsiveSrcset creates width-descriptor candidates for trusted
