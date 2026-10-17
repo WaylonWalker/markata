@@ -60,23 +60,23 @@ func (p *LLMsTXTPlugin) Write(m *lifecycle.Manager) error {
 	// Preserve manually managed output/llms.txt, but refresh generated content
 	// on every build. In particular, never mistake a previous build for a
 	// hand-authored file on a warm/incremental build.
-	if data, err := os.ReadFile(output); err == nil {
+	if info, err := os.Lstat(output); err == nil {
+		// Do not follow a symlink placed at the generated file's path.
+		if !info.Mode().IsRegular() {
+			return fmt.Errorf("llms_txt: refusing to replace non-regular output %q", output)
+		}
+		data, err := os.ReadFile(output)
+		if err != nil {
+			return fmt.Errorf("llms_txt: reading existing output: %w", err)
+		}
 		if !strings.Contains(string(data), llmsTXTMarker) {
 			return nil
 		}
 	} else if !os.IsNotExist(err) {
-		return fmt.Errorf("llms_txt: reading existing output: %w", err)
+		return fmt.Errorf("llms_txt: inspecting output: %w", err)
 	}
 	if err := os.MkdirAll(cfg.OutputDir, 0o755); err != nil {
 		return fmt.Errorf("llms_txt: creating output directory: %w", err)
-	}
-	// Do not follow a symlink placed at the generated file's path.
-	if info, err := os.Lstat(output); err == nil {
-		if !info.Mode().IsRegular() {
-			return fmt.Errorf("llms_txt: refusing to replace non-regular output %q", output)
-		}
-	} else if !os.IsNotExist(err) {
-		return fmt.Errorf("llms_txt: inspecting output: %w", err)
 	}
 
 	content := buildLLMsTXT(m, maxPages)
@@ -173,6 +173,10 @@ func buildLLMsTXT(m *lifecycle.Manager, maxPages int) string {
 		}
 		u, err := url.Parse(href)
 		if err != nil || u.Host != "" || u.Scheme != "" || u.RawQuery != "" || u.Fragment != "" {
+			continue
+		}
+		formats := resolvePostFormats(post, cfg)
+		if !formats.Markdown && !formats.IsHTMLEnabled() {
 			continue
 		}
 		seen[href] = true
