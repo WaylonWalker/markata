@@ -241,7 +241,7 @@ func DefaultPlugins() []lifecycle.Plugin {
 		NewGardenViewPlugin(),   // Generate knowledge graph + garden page
 		// NewResourceHintsPlugin(), // Inject resource hints (after HTML written) // DISABLED: Performance issue on large sites
 		NewSitemapPlugin(),
-		NewLLMsTXTPlugin(),  // Generate a curated /llms.txt from published pages
+		NewLLMsTXTPlugin(), // Generate a curated /llms.txt from published pages
 		NewContentIndexPlugin(),
 
 		// Cleanup stage plugins
