@@ -348,7 +348,6 @@ func processCSSFilesConcurrently(cssFiles []string, outputDir, cacheDir string, 
 	errors := make(chan error, len(cssFiles))
 
 	selectorsHash, optionsHash := cssPurgeHash(used), cssPurgeHash(opts)
-	cacheable := selectorsHash != "" && optionsHash != ""
 
 	var wg sync.WaitGroup
 
