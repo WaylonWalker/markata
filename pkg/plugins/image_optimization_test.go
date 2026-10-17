@@ -65,6 +65,17 @@ func TestImageOptimization_Render_WrapsLocalImages(t *testing.T) {
 	}
 }
 
+func TestImageOptimization_StatsCountMissingSource(t *testing.T) {
+	plugin := NewImageOptimizationPlugin()
+	plugin.config = defaultImageOptimizationConfig()
+	if err := plugin.optimizeTarget(t.TempDir(), t.TempDir(), imageOptimizationTarget{Src: "/images/missing.jpg"}); err != nil {
+		t.Fatalf("optimizeTarget error: %v", err)
+	}
+	if plugin.stats.targets != 1 || plugin.stats.missingSources != 1 {
+		t.Fatalf("unexpected image stats: %+v", plugin.stats)
+	}
+}
+
 func TestImageOptimization_Render_SkipsExistingPicture(t *testing.T) {
 	plugin := NewImageOptimizationPlugin()
 	plugin.config = defaultImageOptimizationConfig()

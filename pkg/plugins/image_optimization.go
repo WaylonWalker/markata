@@ -39,6 +39,11 @@ type ImageOptimizationPlugin struct {
 	avifencPath      string
 	cwebpPath        string
 	warnedEncoders   map[string]bool
+	stats            imageOptimizationStats
+}
+
+type imageOptimizationStats struct {
+	targets, missingSources, variantsChecked, cacheHits, cacheMisses, encoderCalls, encoderFailures int
 }
 
 // ImageOptimizationConfig holds configuration for image optimization.
@@ -137,6 +142,7 @@ func (p *ImageOptimizationPlugin) Render(m *lifecycle.Manager) error {
 }
 
 func (p *ImageOptimizationPlugin) Write(m *lifecycle.Manager) error {
+	p.stats = imageOptimizationStats{}
 	if !p.config.Enabled {
 		return nil
 	}
@@ -152,6 +158,7 @@ func (p *ImageOptimizationPlugin) Write(m *lifecycle.Manager) error {
 
 	targets := p.collectTargets(m)
 	if len(targets) == 0 {
+		p.logSummary()
 		return nil
 	}
 
@@ -169,19 +176,23 @@ func (p *ImageOptimizationPlugin) Write(m *lifecycle.Manager) error {
 			return err
 		}
 	}
+	p.logSummary()
 
 	return nil
 }
 
 func (p *ImageOptimizationPlugin) optimizeTarget(outputDir, cacheDir string, target imageOptimizationTarget) error {
+	p.stats.targets++
 	outputPath, err := resolveImageOutputPath(outputDir, target)
 	if err != nil {
+		p.stats.missingSources++
 		imageOptimizationLog.Warnf("%v", err)
 		return nil
 	}
 
 	info, err := os.Stat(outputPath)
 	if err != nil {
+		p.stats.missingSources++
 		imageOptimizationLog.Warnf("source image not found: %s", outputPath)
 		return nil
 	}
@@ -196,6 +207,12 @@ func (p *ImageOptimizationPlugin) optimizeTarget(outputDir, cacheDir string, tar
 		}
 	}
 	return nil
+}
+
+func (p *ImageOptimizationPlugin) logSummary() {
+	imageOptimizationLog.Printf("targets=%d missing_sources=%d variants=%d cache_hits=%d cache_misses=%d encoder_calls=%d encoder_failures=%d",
+		p.stats.targets, p.stats.missingSources, p.stats.variantsChecked, p.stats.cacheHits,
+		p.stats.cacheMisses, p.stats.encoderCalls, p.stats.encoderFailures)
 }
 
 func (p *ImageOptimizationPlugin) optimizeImageFormat(outputPath, cacheDir string, info os.FileInfo, format string, widths []int) error {
@@ -218,10 +235,15 @@ func (p *ImageOptimizationPlugin) optimizeImageFormat(outputPath, cacheDir strin
 		}
 
 		cachePath := imageOptimizationCachePath(cacheDir, outputPath, format, variant.Width, quality, encoder)
+		p.stats.variantsChecked++
 		if isImageCacheValid(cachePath, outputPath, info, format, variant.Width, quality, encoder, variant.Path) {
+			p.stats.cacheHits++
 			continue
 		}
+		p.stats.cacheMisses++
+		p.stats.encoderCalls++
 		if err := p.encodeImage(outputPath, variant.Path, format, quality, encoder, variant.Width); err != nil {
+			p.stats.encoderFailures++
 			imageOptimizationLog.Warnf("%v", err)
 			continue
 		}
