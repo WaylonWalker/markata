@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -73,6 +74,45 @@ func TestImageOptimization_StatsCountMissingSource(t *testing.T) {
 	}
 	if plugin.stats.targets != 1 || plugin.stats.missingSources != 1 {
 		t.Fatalf("unexpected image stats: %+v", plugin.stats)
+	}
+}
+
+func TestImageOptimization_StatsCountEncoderCallsAndCacheHits(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("test fake encoder requires a POSIX shell")
+	}
+	root := t.TempDir()
+	source := filepath.Join(root, "photo.jpg")
+	cache := filepath.Join(root, "cache")
+	if err := os.WriteFile(source, []byte("fake JPEG for subprocess test"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(cache, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	encoder := filepath.Join(root, "fake-cwebp")
+	script := "#!/bin/sh\nwhile [ \"$#\" -gt 1 ]; do shift; done\nprintf 'webp' > \"$1\"\n"
+	if err := os.WriteFile(encoder, []byte(script), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(encoder, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	plugin := NewImageOptimizationPlugin()
+	plugin.cwebpPath = encoder
+	info, err := os.Stat(source)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := plugin.optimizeImageFormat(source, cache, info, formatWebP, nil); err != nil {
+		t.Fatal(err)
+	}
+	if err := plugin.optimizeImageFormat(source, cache, info, formatWebP, nil); err != nil {
+		t.Fatal(err)
+	}
+	if plugin.stats.variantsChecked != 2 || plugin.stats.cacheMisses != 1 ||
+		plugin.stats.cacheHits != 1 || plugin.stats.encoderCalls != 1 || plugin.stats.encoderFailures != 0 {
+		t.Fatalf("unexpected image optimization stats: %+v", plugin.stats)
 	}
 }
 
