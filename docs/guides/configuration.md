@@ -1856,6 +1856,30 @@ OG card pages automatically include:
 
 See the [[post-formats|Post Output Formats Guide]] for detailed usage including social image generation and content negotiation.
 
+### LLM-Friendly Site Index (`[markata-go.llms_txt]`)
+
+Full-site builds generate a concise `/llms.txt` Markdown index by default.
+It lists the site overview, up to 30 public documentation/recent pages, and
+a sitemap link if available. Private, draft, unpublished, skipped, and
+`noindex` posts are excluded. Links prefer the generated `.md` version
+of pages when enabled and fall back to HTML URLs otherwise.
+
+```toml
+[markata-go.llms_txt]
+enabled = true
+max_pages = 30
+```
+
+- `enabled`: defaults to `true`; set `false` to disable the generator.
+- `max_pages`: defaults to `30`, clamped to `1-100` (invalid values
+  use the default).
+- A hand-authored `llms.md` (published with text format), project
+  `static/llms.txt`, or unmanaged `output/llms.txt` takes precedence.
+- Single-page builds never generate this site-wide index.
+- `llms.txt` is a content guide, **not** a robots/training permission policy.
+
+See [Standard Web Txt Files](/docs/guides/standard-txt-files/).
+
 ### Well-Known Files (`[markata-go.well_known]`)
 
 | Field | Type | Default | Description |
