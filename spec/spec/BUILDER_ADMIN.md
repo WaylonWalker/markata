@@ -290,6 +290,30 @@ disable their display-only assertions.
 Direct Service access and `kubectl port-forward` cannot establish proxy provenance and MUST fail
 closed. They are not supported operator-access paths for authenticated deployments.
 
+### Machine-Readable Operator Guide
+
+Builder Admin MUST serve an embedded, plain-text Markdown operator guide at
+`GET /llms.txt` (browser/SSO identity) and
+`GET /api/v1/llms.txt` (bearer-authenticated machine API). `HEAD` MUST be
+supported for both. The guide MUST be protected by the existing trusted
+ForwardAuth provenance and operator identity checks, with the versioned
+machine endpoint additionally requiring a bearer-authentication marker
+asserted by ForwardAuth. Neither endpoint MAY be an anonymous exception to
+the protected ingress.
+
+The guide MUST describe the real sign-in methods (browser SSO and
+operator-scoped personal bearer credentials), read-only state and history
+endpoints, mutation endpoints and asynchronous `202` behavior, queue-full
+responses, and approval and secrecy precautions. It MUST NOT contain
+credentials, recommend forging trusted headers, or suggest accessing the
+service by port-forward. It MUST NOT confuse the Builder Admin guide with
+user-site `llms.txt` output.
+
+Responses MUST use `text/plain; charset=utf-8`,
+`Cache-Control: private, no-store` and `X-Content-Type-Options: nosniff`.
+Mutation methods MUST return `405 Method Not Allowed`. Serving the guide
+MUST NOT mint a browser session or CSRF cookie or enqueue work.
+
 ### Bearer Machine API
 
 The service MUST expose a versioned JSON API under `/api/v1/` for non-interactive operator clients.
