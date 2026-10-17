@@ -256,6 +256,43 @@ picture. The URL is derived from the authenticated stable user ID; a `No image` 
 visible when it is unset, unavailable, or cannot load. Do not use this setting to change hlab-auth's
 primary public auth origin, cookies/sessions, or primary WebAuthn RP.
 
+### Builder Admin llms.txt for agents
+
+Builder Admin serves a **service-specific** `llms.txt` directly from its
+binary. This is separate from the `llms.txt` files generated for published
+sites by markata-go. Both entry points contain the same operator guide:
+
+- `GET /llms.txt`: protected by the browser operator/SSO route.
+- `GET /api/v1/llms.txt`: protected by the existing trusted bearer API route,
+  so agent clients can fetch the guide using the same bearer token as
+  `/api/v1/state`.
+
+Both endpoints support `HEAD`, reject writes, return `text/plain`, and set
+`Cache-Control: private, no-store`. They do not grant anonymous read access,
+mint session cookies, or expose a way to bypass ForwardAuth. The ingress
+continues to protect both paths with the same operator-access policy.
+
+**Browser login:** open the configured HTTPS Builder Admin ingress host. Its
+SSO/ForwardAuth provider handles login; complete the configured passkey or
+session flow and then browse `/llms.txt` or the dashboard. There is no
+separate Builder Admin username/password endpoint.
+
+**Agent login:** obtain a personal bearer token approved for the app's operator
+scope (for example `gobuilder:access`) from the configured auth provider.
+For hlab-auth use the same token as the `hlab` CLI, supplied as
+`HLAB_TOKEN` in the agent's secure environment:
+
+```sh
+curl -fsS -H "Authorization: Bearer $HLAB_TOKEN" \
+  https://builder.example.com/api/v1/llms.txt
+```
+
+The hostname is an example; use the actual deployed ingress. Never paste
+tokens into the guide, put them in source control, spoof identity headers, or
+use port-forward to bypass the trusted proxy. The guide recommends inspecting
+state and logs first and getting approval before queueing builds, refreshes, or
+rollbacks.
+
 ### Agent API
 
 Builder admin exposes a machine API at `/api/v1/` for reading state and logs, inspecting build and
