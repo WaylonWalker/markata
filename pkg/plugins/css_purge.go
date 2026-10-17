@@ -1,6 +1,9 @@
 package plugins
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -86,7 +89,7 @@ func (p *CSSPurgePlugin) Cleanup(m *lifecycle.Manager) error {
 	opts := buildPurgeOptions(purgeConfig, verbose)
 
 	// Step 4: Process CSS files
-	stats := processCSSFiles(cssFiles, outputDir, used, opts, purgeConfig, verbose)
+	stats := processCSSFiles(cssFiles, outputDir, filepath.Join(config.ContentDir, ".markata-cache", "css-purge"), used, opts, purgeConfig, verbose)
 
 	// Step 5: Report summary
 	reportPurgeSummary(stats, purgeConfig, verbose)
@@ -100,6 +103,7 @@ type purgeProcessingStats struct {
 	totalPurged    int
 	filesProcessed int
 	filesSkipped   int
+	cacheHits      int
 }
 
 // scanHTMLFilesForSelectors finds and scans HTML files for used selectors.
@@ -150,7 +154,7 @@ func buildPurgeOptions(purgeConfig models.CSSPurgeConfig, verbose bool) csspurge
 }
 
 // processCSSFiles processes each CSS file concurrently and returns statistics.
-func processCSSFiles(cssFiles []string, outputDir string, used *csspurge.UsedSelectors, opts csspurge.PurgeOptions, purgeConfig models.CSSPurgeConfig, verbose bool) purgeProcessingStats {
+func processCSSFiles(cssFiles []string, outputDir, cacheDir string, used *csspurge.UsedSelectors, opts csspurge.PurgeOptions, purgeConfig models.CSSPurgeConfig, verbose bool) purgeProcessingStats {
 	filteredFiles := make([]string, 0, len(cssFiles))
 	skippedCount := 0
 
@@ -175,7 +179,7 @@ func processCSSFiles(cssFiles []string, outputDir string, used *csspurge.UsedSel
 		return purgeProcessingStats{filesSkipped: skippedCount}
 	}
 
-	return processCSSFilesConcurrently(filteredFiles, outputDir, used, opts, verbose, skippedCount)
+	return processCSSFilesConcurrently(filteredFiles, outputDir, cacheDir, used, opts, verbose, skippedCount)
 }
 
 // cssFileResult holds the result of processing a single CSS file.
@@ -186,10 +190,71 @@ type cssFileResult struct {
 	purgedSize int
 	rules      int
 	removed    int
+	cacheHit   bool
+}
+
+type cssPurgeCacheEntry struct {
+	SelectorHash string `json:"selector_hash"`
+	OptionsHash  string `json:"options_hash"`
+	OutputHash   string `json:"output_hash"`
+	OriginalSize int    `json:"original_size"`
+	PurgedSize   int    `json:"purged_size"`
+	Rules        int    `json:"rules"`
+	Removed      int    `json:"removed"`
+}
+
+func cssPurgeHash(value any) string {
+	b, _ := json.Marshal(value)
+	sum := sha256.Sum256(b)
+	return hex.EncodeToString(sum[:])
+}
+
+func cssPurgeCachePath(cacheDir, outputDir, cssFile string) string {
+	rel, err := filepath.Rel(outputDir, cssFile)
+	if err != nil {
+		rel = filepath.Base(cssFile)
+	}
+	sum := sha256.Sum256([]byte(filepath.Clean(rel)))
+	return filepath.Join(cacheDir, hex.EncodeToString(sum[:])+".json")
+}
+
+func loadCSSPurgeCache(path string) (cssPurgeCacheEntry, bool) {
+	var entry cssPurgeCacheEntry
+	b, err := os.ReadFile(path)
+	if err != nil || json.Unmarshal(b, &entry) != nil {
+		return entry, false
+	}
+	return entry, true
+}
+
+func saveCSSPurgeCache(path string, entry cssPurgeCacheEntry) {
+	b, err := json.Marshal(entry)
+	if err != nil {
+		return
+	}
+	if os.MkdirAll(filepath.Dir(path), 0o755) != nil {
+		return
+	}
+	tmp, err := os.CreateTemp(filepath.Dir(path), ".css-purge-*.tmp")
+	if err != nil {
+		return
+	}
+	name := tmp.Name()
+	defer os.Remove(name)
+	if _, err = tmp.Write(b); err != nil {
+		_ = tmp.Close()
+		return
+	}
+	if err = tmp.Close(); err != nil {
+		return
+	}
+	if err := replaceDiagnosticsArtifact(name, path); err != nil {
+		cssPurgeLog.Printf("could not update purge cache %s: %v", filepath.Base(path), err)
+	}
 }
 
 // processCSSFilesConcurrently processes CSS files using a worker pool.
-func processCSSFilesConcurrently(cssFiles []string, outputDir string, used *csspurge.UsedSelectors, opts csspurge.PurgeOptions, verbose bool, skippedCount int) purgeProcessingStats {
+func processCSSFilesConcurrently(cssFiles []string, outputDir, cacheDir string, used *csspurge.UsedSelectors, opts csspurge.PurgeOptions, verbose bool, skippedCount int) purgeProcessingStats {
 	concurrency := len(cssFiles)
 	if concurrency > 16 {
 		concurrency = 16
@@ -222,6 +287,15 @@ func processCSSFilesConcurrently(cssFiles []string, outputDir string, used *cssp
 					continue
 				}
 
+				cachePath := cssPurgeCachePath(cacheDir, outputDir, cssFile)
+				selectorsHash, optionsHash := cssPurgeHash(used), cssPurgeHash(opts)
+				inputHash := cssPurgeHash(string(content))
+				if cached, ok := loadCSSPurgeCache(cachePath); ok && cached.SelectorHash == selectorsHash && cached.OptionsHash == optionsHash && cached.OutputHash == inputHash {
+					result.origSize, result.purgedSize = cached.OriginalSize, cached.PurgedSize
+					result.rules, result.removed, result.cacheHit = cached.Rules, cached.Removed, true
+					results <- result
+					continue
+				}
 				purged, purgeStats := csspurge.PurgeCSS(string(content), used, opts)
 
 				result.origSize = purgeStats.OriginalSize
@@ -236,6 +310,7 @@ func processCSSFilesConcurrently(cssFiles []string, outputDir string, used *cssp
 						continue
 					}
 				}
+				saveCSSPurgeCache(cachePath, cssPurgeCacheEntry{SelectorHash: selectorsHash, OptionsHash: optionsHash, OutputHash: cssPurgeHash(purged), OriginalSize: purgeStats.OriginalSize, PurgedSize: purgeStats.PurgedSize, Rules: purgeStats.TotalRules, Removed: purgeStats.RemovedRules})
 
 				results <- result
 			}
@@ -262,6 +337,9 @@ func processCSSFilesConcurrently(cssFiles []string, outputDir string, used *cssp
 		stats.totalOriginal += result.origSize
 		stats.totalPurged += result.purgedSize
 		stats.filesProcessed++
+		if result.cacheHit {
+			stats.cacheHits++
+		}
 
 		if verbose && result.removed > 0 {
 			savings := float64(result.origSize-result.purgedSize) / float64(result.origSize) * 100
@@ -279,8 +357,8 @@ func processCSSFilesConcurrently(cssFiles []string, outputDir string, used *cssp
 func reportPurgeSummary(stats purgeProcessingStats, purgeConfig models.CSSPurgeConfig, verbose bool) {
 	if stats.filesProcessed > 0 {
 		savings := float64(stats.totalOriginal-stats.totalPurged) / float64(stats.totalOriginal) * 100
-		cssPurgeLog.Printf("Processed %d CSS files: %d -> %d bytes (%.1f%% reduction)",
-			stats.filesProcessed, stats.totalOriginal, stats.totalPurged, savings)
+		cssPurgeLog.Printf("Processed %d CSS files (%d cache hits): %d -> %d bytes (%.1f%% reduction)",
+			stats.filesProcessed, stats.cacheHits, stats.totalOriginal, stats.totalPurged, savings)
 
 		if purgeConfig.WarningThreshold > 0 && int(savings) > purgeConfig.WarningThreshold {
 			cssPurgeLog.Warnf("Removed %.1f%% of CSS (threshold: %d%%). This might indicate overly aggressive purging. Consider adding patterns to 'preserve' config.",
