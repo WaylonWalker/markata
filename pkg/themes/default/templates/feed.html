@@ -86,6 +86,23 @@
     </div>
   </header>
   {% endif %}
+  {# Editorial archive pages may be long; keep native page links reachable before the weekly digest. #}
+  {% if feed_presentation == "editorial" and page.total_pages > 1 and page.pagination_type == "manual" %}
+  <nav class="pagination pagination--top" aria-label="Archive top pagination">
+    {% if page.has_prev %}
+    <a href="{{ page.prev_url }}" class="pagination-prev" rel="prev">&laquo; Newer</a>
+    {% else %}
+    <span class="pagination-prev disabled">&laquo; Newer</span>
+    {% endif %}
+    <span class="pagination-page current" aria-current="page">Page {{ page.number }} of {{ page.total_pages }}</span>
+    {% if page.has_next %}
+    <a href="{{ page.next_url }}" class="pagination-next" rel="next">Older &raquo;</a>
+    {% else %}
+    <span class="pagination-next disabled">Older &raquo;</span>
+    {% endif %}
+  </nav>
+  {% endif %}
+
   {% if config.author %}
   <div class="feed-author-card p-author h-card visually-hidden">
     {% if config.seo.author_image %}
