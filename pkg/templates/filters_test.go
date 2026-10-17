@@ -1316,10 +1316,10 @@ func TestEditorialCardImageRegisteredWithPongo(t *testing.T) {
 		t.Fatal(err)
 	}
 	rendered, err := engine.RenderString(`{{ url | editorial_card_image:lead }}`,
-		map[string]interface{}{
-			"url": "https://i.ytimg.com/vi/id/maxresdefault.jpg",
+		Context{Extra: map[string]interface{}{
+			"url":  "https://i.ytimg.com/vi/id/maxresdefault.jpg",
 			"lead": true,
-		})
+		}})
 	if err != nil {
 		t.Fatalf("filter could not render: %v", err)
 	}
