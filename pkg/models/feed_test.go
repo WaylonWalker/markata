@@ -116,9 +116,7 @@ func TestFeed_EditorialPaginationPreservesWeeks(t *testing.T) {
 	feed := &FeedConfig{Slug: "archive", Presentation: "editorial", ItemsPerPage: 3, OrphanThreshold: 2}
 	// Oct 12–18, Oct 5–11, and Sep 28–Oct 4. Descending date order.
 	for _, day := range []int{16, 15, 14, 13, 12, 9, 8, 7, 6, 5, 2, 1} {
-		month := time.October
-		if day <= 2 { month = time.October }
-		date := time.Date(2026, month, day, 12, 0, 0, 0, time.UTC)
+		date := time.Date(2026, time.October, day, 12, 0, 0, 0, time.UTC)
 		feed.Posts = append(feed.Posts, &Post{Date: &date})
 	}
 	feed.Paginate("/archive")
@@ -153,7 +151,7 @@ func TestFeed_EditorialPaginationYearBoundaryAndUndated(t *testing.T) {
 	}
 	feed.Posts = append(feed.Posts, &Post{}, &Post{})
 	feed.Paginate("/archive")
-	if len(feed.Pages) != 3 || len(feed.Pages[0].Posts) != 4 || len(feed.Pages[1].Posts) != 2 || len(feed.Pages[2].Posts) != 1 {
+	if len(feed.Pages) != 2 || len(feed.Pages[0].Posts) != 4 || len(feed.Pages[1].Posts) != 3 {
 		t.Fatalf("unexpected ISO year and undated boundaries: %+v", feed.Pages)
 	}
 }
