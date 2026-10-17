@@ -455,7 +455,7 @@ func (f *FeedConfig) Paginate(baseURL string) {
 	totalPosts := len(f.Posts)
 	var pages []FeedPage
 
-	for i := 0; i < totalPosts; i += itemsPerPage {
+	for i := 0; i < totalPosts; {
 		end := i + itemsPerPage
 		if end > totalPosts {
 			end = totalPosts
@@ -486,9 +486,9 @@ func (f *FeedConfig) Paginate(baseURL string) {
 
 		pages = append(pages, page)
 
-		if end >= totalPosts {
-			break
-		}
+		// Advance by the actual boundary, which may include extra posts
+		// from the trailing editorial week or orphan merge.
+		i = end
 	}
 
 	totalPages := len(pages)
