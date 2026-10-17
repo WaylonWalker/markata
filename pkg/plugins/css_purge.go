@@ -196,7 +196,7 @@ type htmlFingerprintResult struct {
 	err  error
 }
 
-func fingerprintHTMLFiles(files []string, outputDir string, concurrency int) (string, int64, bool) {
+func fingerprintHTMLFiles(files []string, outputDir string, concurrency int) (fingerprint string, scannedBytes int64, ok bool) {
 	if concurrency < 1 {
 		concurrency = 1
 	}

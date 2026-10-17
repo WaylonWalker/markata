@@ -11,7 +11,7 @@ func writeHTML(t *testing.T, path, content string) {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -71,7 +71,7 @@ func TestCSSPurgeHTMLCache_CorruptCacheFallsBackToScan(t *testing.T) {
 	if err := os.MkdirAll(filepath.Dir(cachePath), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(cachePath, []byte("invalid json"), 0o644); err != nil {
+	if err := os.WriteFile(cachePath, []byte("invalid json"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	selectors, hit, err := scanHTMLFilesForSelectors(output, cache, 1, false)
