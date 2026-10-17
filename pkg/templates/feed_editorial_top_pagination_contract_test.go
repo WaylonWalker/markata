@@ -15,7 +15,8 @@ func TestEditorialFeedsExposeTopAndBottomManualPagination(t *testing.T) {
 		}
 		html := string(data)
 		for _, expected := range []string{
-			`feed_presentation == "editorial" and page.total_pages > 1 and page.pagination_type == "manual"`,
+			`feed_presentation == "editorial"`,
+			`page.total_pages > 1 and page.pagination_type == "manual"`,
 			`class="pagination pagination--top"`,
 			`class="editorial-feed-tools"`,
 			`aria-label="Archive top pagination"{% if feed.views.calendar %} data-calendar-primary{% endif %}`,
