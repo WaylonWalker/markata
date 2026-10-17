@@ -8,22 +8,22 @@ import (
 
 func TestParseLLMsTXTPluginOptionsAcrossFormats(t *testing.T) {
 	cases := []struct {
-		name string
+		name  string
 		parse func([]byte) (*models.Config, error)
 		input string
 	}{
 		{
-			name: "TOML",
+			name:  "TOML",
 			parse: ParseTOML,
 			input: "[markata-go]\ntitle = \"Test\"\n[markata-go.llms_txt]\nenabled = false\nmax_pages = 7\n",
 		},
 		{
-			name: "YAML",
+			name:  "YAML",
 			parse: ParseYAML,
 			input: "markata-go:\n  title: Test\n  llms_txt:\n    enabled: false\n    max_pages: 7\n",
 		},
 		{
-			name: "JSON",
+			name:  "JSON",
 			parse: ParseJSON,
 			input: "{\"markata-go\":{\"title\":\"Test\",\"llms_txt\":{\"enabled\":false,\"max_pages\":7}}}",
 		},
