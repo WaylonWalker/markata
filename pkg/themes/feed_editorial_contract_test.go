@@ -144,11 +144,16 @@ func TestEditorialArchiveDefersOnlyNonCriticalSearchCSS(t *testing.T) {
 		`<noscript><link rel="stylesheet" href="{{ 'css/search.css' | theme_asset_hashed }}"></noscript>`,
 		`'css/cards.css' | theme_asset_hashed`,
 		`'css/feeds.css' | theme_asset_hashed`,
-		`js/heading-highlights.js`,
 	} {
 		if !strings.Contains(s, want) {
 			t.Errorf("expected deferred search and preserved initial archive styles: missing %q", want)
 		}
+	}
+	if strings.Contains(s, `{% if feed_presentation == "editorial" %}`+"\n"+`   <script src="{{ 'js/heading-highlights.js' | theme_asset_hashed }}" defer></script>`) {
+		t.Fatal("editorial archives must not load the heading highlight controller")
+	}
+	if !strings.Contains(s, `{% if feed_presentation != "editorial" %}`+"\n"+`   <script src="{{ 'js/heading-highlights.js' | theme_asset_hashed }}" defer></script>`+"\n"+`   {% endif %}`) {
+		t.Fatal("heading highlight controller must stay available outside editorial feeds")
 	}
 }
 
