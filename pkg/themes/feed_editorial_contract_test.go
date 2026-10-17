@@ -86,6 +86,7 @@ func TestEditorialLeadAndPhotoEssayTemplateContract(t *testing.T) {
 		`{{ item.DateLabel }}`,
 		`editorial-shot-grid--mosaic`,
 		`Photo journal`,
+		`data-editorial-version="3"`,
 	} {
 		if !strings.Contains(tmpl, want) {
 			t.Errorf("editorial template missing %q", want)
@@ -107,6 +108,26 @@ func TestEditorialLeadAndPhotoEssayTemplateContract(t *testing.T) {
 	} {
 		if !strings.Contains(css, want) {
 			t.Errorf("editorial CSS missing %q", want)
+		}
+	}
+}
+
+func TestEditorialPhotoDatesAreOnlyAddedInsideWeeklyGallery(t *testing.T) {
+	for _, name := range []string{"partials/cards/photo-card.html", "partials/feed-editorial.html"} {
+		tmpl, err := ReadTemplate(name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		switch name {
+		case "partials/cards/photo-card.html":
+			if !strings.Contains(string(tmpl), "post.editorial_photo_date") ||
+				!strings.Contains(string(tmpl), "editorial-shot-date") {
+				t.Fatalf("photo card missing optional dated caption")
+			}
+		case "partials/feed-editorial.html":
+			if !strings.Contains(string(tmpl), "data-editorial-version=\"3\"") {
+				t.Fatal("editorial HTML version must invalidate old gallery caches")
+			}
 		}
 	}
 }
