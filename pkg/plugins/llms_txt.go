@@ -149,7 +149,7 @@ func buildLLMsTXT(m *lifecycle.Manager, maxPages int) string {
 	if cfg.Extra != nil {
 		if raw, ok := cfg.Extra["url"].(string); ok {
 			u, err := url.Parse(strings.TrimSpace(raw))
-			if err == nil && (u.Scheme == "https" || u.Scheme == schemeHTTP) && u.Host != "" &&
+			if err == nil && (u.Scheme == schemeHTTPS || u.Scheme == schemeHTTP) && u.Host != "" &&
 				u.RawQuery == "" && u.Fragment == "" {
 				siteURL = strings.TrimRight(u.String(), "/")
 			}
