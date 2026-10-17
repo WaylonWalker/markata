@@ -63,6 +63,15 @@ Use `markata-go config show` or `markata-go config get <key>` to inspect the
 resolved typed values. Explicit `false` values are valid settings and must not
 be replaced by defaults.
 
+Full-site builds automatically write `/llms.txt` from the site description
+and a short list of published, indexable pages. Configure it via
+`[markata-go.llms_txt]` (`enabled = true`, `max_pages = 30` by default).
+Prefer a published `llms.md` with `slug: llms` or a project
+`static/llms.txt` when you need a hand-curated index; those override the
+built-in generator. This file helps agents discover content; it is not an
+AI training/crawling policy. Do not include draft, skipped, unpublished,
+noindex, or private posts in publicly distributed indexes.
+
 The optional Content Index is enabled with `[markata-go.content_index]`. It
 writes resolved metadata and feed membership, including safe metadata-only
 records for private posts. It never writes article bodies or encryption keys.
