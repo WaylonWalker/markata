@@ -997,8 +997,7 @@
    {% if config.theme.show_text_size_control | default:true %}
    <script src="{{ 'js/text-size.js' | theme_asset_hashed }}" defer></script>
    {% endif %}
-   {# Editorial feed cards have no measured post headings, so keep this script
-      off the archive's initial request path. #}
+   {# Editorial feeds have no measured post headings. #}
    {% if feed_presentation != "editorial" %}
    <script src="{{ 'js/heading-highlights.js' | theme_asset_hashed }}" defer></script>
    {% endif %}
