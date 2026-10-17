@@ -7,7 +7,7 @@
 {% if media_src|is_video %}{% set poster_candidate = post | poster_url:media_src %}<video class="u-video" muted loop playsinline preload="none" data-adaptive-preview{% if poster_candidate %} poster="{{ poster_candidate | with_size:"600" }}"{% endif %}>
 <source src="{{ sized_media }}"{% with media_src|video_mime as mime %}{% if mime %} type="{{ mime }}"{% endif %}{% endwith %}>
 </video>
-{% else %}<img src="{{ sized_media }}" alt="{{ post.title | default:post.description | default:'Photo' }}" class="u-photo" width="600" loading="lazy" decoding="async"{% if media_srcset %} srcset="{{ media_srcset }}" sizes="(max-width: 632px) calc(100vw - 2rem), 600px" data-href="{{ media_src|original_media_url }}"{% endif %}>
+{% else %}<img src="{{ sized_media }}" alt="{{ post.title | default:post.description | default:'Photo' }}" class="u-photo" width="600"{% if feed_presentation == "editorial" %} height="600"{% endif %} loading="lazy" decoding="async"{% if media_srcset %} srcset="{{ media_srcset }}" sizes="(max-width: 632px) calc(100vw - 2rem), 600px" data-href="{{ media_src|original_media_url }}"{% endif %}>
 {% endif %}</a>
 <figcaption class="p-summary">{% if post.editorial_photo_date %}<time class="editorial-shot-date"{% if post.editorial_photo_date_iso %} datetime="{{ post.editorial_photo_date_iso }}"{% endif %}>{{ post.editorial_photo_date }}</time>{% endif %}{{ post.description | default:post.title | default:'Photo' }}</figcaption>
 </figure>{% endwith %}{% endwith %}{% endif %}{% endwith %}

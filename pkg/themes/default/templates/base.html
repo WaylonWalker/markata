@@ -83,7 +83,13 @@
 
   <!-- Search CSS: layout styles load eagerly, pagefind UI loads on interaction -->
   {% if config.search.enabled %}
+  {% if feed_presentation == "editorial" %}
+  {# Search is a closed interaction surface on the archive; do not block the initial article paint. #}
+  <link rel="stylesheet" href="{{ 'css/search.css' | theme_asset_hashed }}" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="{{ 'css/search.css' | theme_asset_hashed }}"></noscript>
+  {% else %}
   <link rel="stylesheet" href="{{ 'css/search.css' | theme_asset_hashed }}">
+  {% endif %}
   {% endif %}
 
 
@@ -985,8 +991,11 @@
    {% if config.theme.show_text_size_control | default:true %}
    <script src="{{ 'js/text-size.js' | theme_asset_hashed }}" defer></script>
    {% endif %}
+   {# Post title measurement is not used by the standalone feed/archive. #}
+   {% if not feed %}
    <script src="{{ 'js/heading-highlights.js' | theme_asset_hashed }}" defer></script>
    <script src="{{ 'js/fit-post-titles.js' | theme_asset_hashed }}" defer></script>
+   {% endif %}
    {# Always loaded: view transitions can reach TOC/wikilink pages from pages without them. #}
    <script src="{{ 'js/scroll-spy.js' | theme_asset_hashed }}" defer></script>
    <script src="{{ 'js/tooltips.js' | theme_asset_hashed }}" defer></script>
