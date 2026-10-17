@@ -13,6 +13,10 @@ tags:
 
 For a photo-first shots archive, set `html = "feed-photo-grid.html"` under the feed's `[markata-go.feeds.templates]` table. See the [photo galleries guide](/docs/guides/galleries/).
 
+Editorial feed cards keep thumbnails lazy loaded, including featured weekly
+leads. Use eager loading and high fetch priority only when a page's actual
+above-the-fold image is likely to be its Largest Contentful Paint element.
+
 Feeds are the core differentiator of markata-go. A feed is a **filtered, sorted, paginated collection of posts** that can output to **multiple formats** simultaneously from a single definition.
 
 Feeds only include posts that produced renderable page output. If a page is skipped, remains a draft, or has no rendered HTML because its content is empty, markata-go omits it from feed pages and syndication outputs instead of publishing a broken entry.
