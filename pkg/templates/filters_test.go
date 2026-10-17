@@ -69,12 +69,12 @@ func TestFilterDateFormat(t *testing.T) {
 		expected string
 	}{
 		{
-			name:     "default format",
+			name:      "default format",
 			template: "{{ post.date | date_format }}",
 			expected: "2024-01-15",
 		},
 		{
-			name:     "custom format",
+			name:      "custom format",
 			template: "{{ post.date | date_format:\"January 2, 2006\" }}",
 			expected: "January 15, 2024",
 		},
@@ -274,12 +274,12 @@ func TestFilterTruncate(t *testing.T) {
 		expected string
 	}{
 		{
-			name:     "short string",
+			name:      "short string",
 			template: "{{ \"Hello\" | truncate:10 }}",
 			expected: "Hello",
 		},
 		{
-			name:     "truncate",
+			name:      "truncate",
 			template: "{{ \"Hello World Today\" | truncate:12 }}",
 			expected: "Hello World...",
 		},
@@ -311,12 +311,12 @@ func TestFilterTruncateWords(t *testing.T) {
 		expected string
 	}{
 		{
-			name:     "fewer words than limit",
+			name:      "fewer words than limit",
 			template: "{{ \"Hello World\" | truncatewords:5 }}",
 			expected: "Hello World",
 		},
 		{
-			name:     "truncate words",
+			name:      "truncate words",
 			template: "{{ \"One Two Three Four Five Six\" | truncatewords:3 }}",
 			expected: "One Two Three ...",
 		},
@@ -432,13 +432,13 @@ func TestFilterLength(t *testing.T) {
 		expected string
 	}{
 		{
-			name:     "string",
+			name:      "string",
 			template: "{{ \"hello\" | length }}",
 			ctx:      NewContext(nil, "", nil),
 			expected: "5",
 		},
 		{
-			name:     "slice",
+			name:      "slice",
 			template: "{{ post.tags | length }}",
 			ctx:      NewContext(&models.Post{Tags: []string{"a", "b", "c"}}, "", nil),
 			expected: "3",
@@ -473,12 +473,12 @@ func TestFilterJoin(t *testing.T) {
 		expected string
 	}{
 		{
-			name:     "with separator",
+			name:      "with separator",
 			template: "{{ post.tags | join:\", \" }}",
 			expected: "a, b, c",
 		},
 		{
-			name:     "with pipe separator",
+			name:      "with pipe separator",
 			template: "{{ post.tags | join:\" | \" }}",
 			expected: "a | b | c",
 		},
@@ -512,12 +512,12 @@ func TestFilterFirstLast(t *testing.T) {
 		expected string
 	}{
 		{
-			name:     "first",
+			name:      "first",
 			template: "{{ post.tags | first }}",
 			expected: "first",
 		},
 		{
-			name:     "last",
+			name:      "last",
 			template: "{{ post.tags | last }}",
 			expected: "last",
 		},
@@ -569,62 +569,62 @@ func TestFilterStripTags(t *testing.T) {
 		expected string
 	}{
 		{
-			name:     "simple tag",
+			name:      "simple tag",
 			input:    "<p>Hello</p>",
 			expected: "Hello",
 		},
 		{
-			name:     "nested tags",
+			name:      "nested tags",
 			input:    "<div><p>Hello <strong>World</strong></p></div>",
 			expected: "Hello World",
 		},
 		{
-			name:     "no tags",
+			name:      "no tags",
 			input:    "Plain text",
 			expected: "Plain text",
 		},
 		{
-			name:     "html entities nbsp",
+			name:      "html entities nbsp",
 			input:    "Hello&nbsp;World",
 			expected: "Hello World",
 		},
 		{
-			name:     "html entities amp - re-escaped for html safety",
+			name:      "html entities amp - re-escaped for html safety",
 			input:    "Tom &amp; Jerry",
 			expected: "Tom &amp; Jerry", // pongo2 re-escapes & for HTML safety
 		},
 		{
-			name:     "html entities lt gt - re-escaped for html safety",
+			name:      "html entities lt gt - re-escaped for html safety",
 			input:    "&lt;code&gt;",
 			expected: "&lt;code&gt;", // pongo2 re-escapes < > for HTML safety
 		},
 		{
-			name:     "html entities quot - re-escaped for html safety",
+			name:      "html entities quot - re-escaped for html safety",
 			input:    "He said &quot;hello&quot;",
 			expected: "He said &quot;hello&quot;", // pongo2 re-escapes quotes
 		},
 		{
-			name:     "html entities apos",
+			name:      "html entities apos",
 			input:    "It&#39;s a test",
 			expected: "It&#39;s a test", // pongo2 re-escapes apostrophes
 		},
 		{
-			name:     "multiple whitespace collapse",
+			name:      "multiple whitespace collapse",
 			input:    "Hello    World",
 			expected: "Hello World",
 		},
 		{
-			name:     "whitespace with newlines",
+			name:      "whitespace with newlines",
 			input:    "Hello\n\n  World",
 			expected: "Hello World",
 		},
 		{
-			name:     "leading trailing whitespace",
+			name:      "leading trailing whitespace",
 			input:    "  Hello World  ",
 			expected: "Hello World",
 		},
 		{
-			name:     "combined scenario - tags removed, nbsp decoded, whitespace collapsed",
+			name:      "combined scenario - tags removed, nbsp decoded, whitespace collapsed",
 			input:    "<p>Hello&nbsp;&nbsp;World</p>  <br/>  <span>Test</span>",
 			expected: "Hello World Test",
 		},
@@ -676,12 +676,12 @@ func TestFilterURLEncode(t *testing.T) {
 		expected string
 	}{
 		{
-			name:     "spaces (uses + for form encoding)",
+			name:      "spaces (uses + for form encoding)",
 			template: "{{ \"hello world\" | urlencode }}",
 			expected: "hello+world", // pongo2 default behavior
 		},
 		{
-			name:     "ampersand",
+			name:      "ampersand",
 			template: "{{ \"a&b\" | urlencode }}",
 			expected: "a%26b",
 		},
@@ -1139,24 +1139,24 @@ func TestFilterSummaryHeadingAnchors(t *testing.T) {
 		want  string
 	}{
 		{
-			name:  "heading permalink does not leak hash",
+			name:   "heading permalink does not leak hash",
 			input: `<h2>What happened <a href="#what-happened" class="heading-anchor">#</a></h2><p>is my replica pool</p>`,
-			want:  "What happened is my replica pool",
+			want:   "What happened is my replica pool",
 		},
 		{
-			name:  "single quoted attributes and multiple classes",
+			name:   "single quoted attributes and multiple classes",
 			input: `<h3>Intro <a class='visually-hidden heading-anchor' href='#intro'><span>#</span></a></h3><p>Body</p>`,
-			want:  "Intro Body",
+			want:   "Intro Body",
 		},
 		{
-			name:  "several permalinks with other links preserved",
+			name:   "several permalinks with other links preserved",
 			input: `<h2>First<a class="heading-anchor" href="#first">#</a></h2><p>See <a href="/more">more</a>.</p><h3>Second<a href="#second" class="heading-anchor">#</a></h3>`,
-			want:  "First See more. Second",
+			want:   "First See more. Second",
 		},
 		{
-			name:  "other anchors and literal hashes remain",
+			name:   "other anchors and literal hashes remain",
 			input: `<p><a class="not-heading-anchor" href="/x">#reference</a> and <a href="/tags">#tag</a></p>`,
-			want:  "#reference and #tag",
+			want:   "#reference and #tag",
 		},
 	}
 
@@ -1256,45 +1256,45 @@ func TestEditorialCardImageReducesOnlyYouTubeMaxresPosters(t *testing.T) {
 		want        string
 	}{
 		{
-			name: "secondary youtube jpeg",
+			name:  "secondary youtube jpeg",
 			input: "https://i.ytimg.com/vi/abc123/maxresdefault.jpg",
-			want: "https://i.ytimg.com/vi/abc123/mqdefault.jpg",
+			want:  "https://i.ytimg.com/vi/abc123/mqdefault.jpg",
 		},
 		{
-			name: "featured youtube jpeg",
+			name:  "featured youtube jpeg",
 			input: "https://i.ytimg.com/vi/abc123/maxresdefault.jpg",
-			lead: true,
-			want: "https://i.ytimg.com/vi/abc123/sddefault.jpg",
+			lead:  true,
+			want:  "https://i.ytimg.com/vi/abc123/sddefault.jpg",
 		},
 		{
-			name: "youtube alias with query",
+			name:  "youtube alias with query",
 			input: "https://img.youtube.com/vi/abc123/maxresdefault.jpg?foo=bar",
-			want: "https://img.youtube.com/vi/abc123/mqdefault.jpg?foo=bar",
+			want:  "https://img.youtube.com/vi/abc123/mqdefault.jpg?foo=bar",
 		},
 		{
-			name: "other youtube thumbnail already sized",
+			name:  "other youtube thumbnail already sized",
 			input: "https://i.ytimg.com/vi/abc123/hqdefault.jpg",
-			want: "https://i.ytimg.com/vi/abc123/hqdefault.jpg",
+			want:  "https://i.ytimg.com/vi/abc123/hqdefault.jpg",
 		},
 		{
-			name: "unrelated site same filename",
+			name:  "unrelated site same filename",
 			input: "https://photos.example.org/maxresdefault.jpg",
-			want: "https://photos.example.org/maxresdefault.jpg",
+			want:  "https://photos.example.org/maxresdefault.jpg",
 		},
 		{
-			name: "similar hostname is not youtube",
+			name:  "similar hostname is not youtube",
 			input: "https://i.ytimg.com.attacker.invalid/vi/a/maxresdefault.jpg",
-			want: "https://i.ytimg.com.attacker.invalid/vi/a/maxresdefault.jpg",
+			want:  "https://i.ytimg.com.attacker.invalid/vi/a/maxresdefault.jpg",
 		},
 		{
-			name: "dropper responsive URL retained",
+			name:  "dropper responsive URL retained",
 			input: "https://dropper.waylonwalker.com/file/abc.webp?width=720",
-			want: "https://dropper.waylonwalker.com/file/abc.webp?width=720",
+			want:  "https://dropper.waylonwalker.com/file/abc.webp?width=720",
 		},
 		{
-			name: "only https is eligible",
+			name:  "only https is eligible",
 			input: "http://i.ytimg.com/vi/abc123/maxresdefault.jpg",
-			want: "http://i.ytimg.com/vi/abc123/maxresdefault.jpg",
+			want:  "http://i.ytimg.com/vi/abc123/maxresdefault.jpg",
 		},
 	}
 	for _, tc := range tcs {
