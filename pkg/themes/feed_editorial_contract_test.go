@@ -137,7 +137,7 @@ func TestEditorialArchiveDefersOnlyNonCriticalSearchCSS(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s := string(base)
+	s := strings.ReplaceAll(string(base), "\r\n", "\n")
 	for _, want := range []string{
 		`{% if feed_presentation == "editorial" %}`,
 		`'css/search.css' | theme_asset_hashed }}" media="print" onload="this.media='all'"`,
