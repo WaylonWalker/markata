@@ -24,7 +24,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="feed{% if feed.views.calendar %} calendar-feed{% endif %} h-feed feed--photo-grid"{% if feed.views.calendar %} data-calendar-feed data-calendar-default="list" data-calendar-url-state{% endif %}>
+<div class="feed{% if feed.views.calendar %} calendar-feed{% endif %} h-feed feed--photo-grid"{% if feed.views.calendar %} data-calendar-feed data-calendar-default="list" data-calendar-url-state data-calendar-src="{% if feed.slug %}/{{ feed.slug }}/calendar.json{% else %}/calendar.json{% endif %}"{% endif %}>
   {% if feed.title %}
   <header class="feed-header">
     <div class="feed-header-top">
@@ -142,15 +142,7 @@
 
   {% if feed.posts and feed.views.calendar %}
   <div class="calendar-feed-years" data-calendar-years hidden aria-label="Publishing calendar"></div>
-  <ul class="calendar-feed-list" data-calendar-list hidden aria-hidden="true">
-    {% for post in feed.posts %}
-      {% if post.date %}
-      <li data-calendar-post data-date="{{ post.date | date_format:"2006-01-02" }}">
-        <a href="{{ post.href }}">{{ post.title | default:post.slug }}</a>
-      </li>
-      {% endif %}
-    {% endfor %}
-  </ul>
+  <p class="calendar-load-error" data-calendar-error role="status" hidden>Calendar data could not load. Try again.</p>
   {% endif %}
 </div>
 {% endblock %}
