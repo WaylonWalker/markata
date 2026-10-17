@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 
@@ -64,7 +65,8 @@ func (p *CSSPurgePlugin) Cleanup(m *lifecycle.Manager) error {
 	}
 
 	// Step 1: Find and scan HTML files
-	used, err := scanHTMLFilesForSelectors(outputDir, m.Concurrency(), verbose)
+	cacheDir := filepath.Join(config.ContentDir, ".markata-cache", "css-purge")
+	used, _, err := scanHTMLFilesForSelectors(outputDir, cacheDir, m.Concurrency(), verbose)
 	if err != nil {
 		return err
 	}
@@ -89,7 +91,7 @@ func (p *CSSPurgePlugin) Cleanup(m *lifecycle.Manager) error {
 	opts := buildPurgeOptions(purgeConfig, verbose)
 
 	// Step 4: Process CSS files
-	stats := processCSSFiles(cssFiles, outputDir, filepath.Join(config.ContentDir, ".markata-cache", "css-purge"), used, opts, purgeConfig, verbose)
+	stats := processCSSFiles(cssFiles, outputDir, cacheDir, used, opts, purgeConfig, verbose)
 
 	// Step 5: Report summary
 	reportPurgeSummary(stats, purgeConfig, verbose)
@@ -107,31 +109,147 @@ type purgeProcessingStats struct {
 }
 
 // scanHTMLFilesForSelectors finds and scans HTML files for used selectors.
-func scanHTMLFilesForSelectors(outputDir string, concurrency int, verbose bool) (*csspurge.UsedSelectors, error) {
+func scanHTMLFilesForSelectors(outputDir, cacheDir string, concurrency int, verbose bool) (*csspurge.UsedSelectors, bool, error) {
 	htmlFiles, err := findHTMLFiles(outputDir)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find HTML files: %w", err)
+		return nil, false, fmt.Errorf("failed to find HTML files: %w", err)
 	}
 
 	if len(htmlFiles) == 0 {
 		if verbose {
 			cssPurgeLog.Printf("No HTML files found, skipping")
 		}
-		return nil, nil
+		return nil, false, nil
 	}
 
 	if verbose {
 		cssPurgeLog.Printf("Found %d HTML files to analyze", len(htmlFiles))
 	}
 
-	used := scanHTMLFilesConcurrently(htmlFiles, concurrency)
+	fingerprint, scannedBytes, fingerprintOK := fingerprintHTMLFiles(htmlFiles, outputDir, concurrency)
+	cachePath := filepath.Join(cacheDir, "html-selectors.json")
+	if fingerprintOK {
+		if cached, ok := loadCSSPurgeHTMLCache(cachePath); ok && cached.Schema == cssPurgeHTMLCacheSchema && cached.Fingerprint == fingerprint && cached.Selectors.Classes != nil && cached.Selectors.IDs != nil && cached.Selectors.Elements != nil && cached.Selectors.Attributes != nil {
+			cssPurgeLog.Printf("HTML selector cache hit: files=%d bytes=%d", len(htmlFiles), scannedBytes)
+			return &cached.Selectors, true, nil
+		}
+	}
+
+	used, complete := scanHTMLFilesConcurrently(htmlFiles, concurrency)
+	if fingerprintOK && complete {
+		saveCSSPurgeHTMLCache(cachePath, cssPurgeHTMLCache{Schema: cssPurgeHTMLCacheSchema, Fingerprint: fingerprint, Selectors: *used})
+	}
+	cssPurgeLog.Printf("HTML selector scan: files=%d bytes=%d cache_hit=false", len(htmlFiles), scannedBytes)
 
 	if verbose {
 		cssPurgeLog.Printf("Found %d classes, %d IDs, %d elements, %d attributes",
 			len(used.Classes), len(used.IDs), len(used.Elements), len(used.Attributes))
 	}
 
-	return used, nil
+	return used, false, nil
+}
+
+const cssPurgeHTMLCacheSchema = 1
+
+type cssPurgeHTMLCache struct {
+	Schema      int                    `json:"schema"`
+	Fingerprint string                 `json:"fingerprint"`
+	Selectors   csspurge.UsedSelectors `json:"selectors"`
+}
+
+func loadCSSPurgeHTMLCache(path string) (cssPurgeHTMLCache, bool) {
+	var entry cssPurgeHTMLCache
+	b, err := os.ReadFile(path)
+	if err != nil || json.Unmarshal(b, &entry) != nil {
+		return entry, false
+	}
+	return entry, true
+}
+
+func saveCSSPurgeHTMLCache(path string, entry cssPurgeHTMLCache) {
+	b, err := json.Marshal(entry)
+	if err != nil || os.MkdirAll(filepath.Dir(path), 0o755) != nil {
+		return
+	}
+	tmp, err := os.CreateTemp(filepath.Dir(path), ".html-selectors-*.tmp")
+	if err != nil {
+		return
+	}
+	name := tmp.Name()
+	defer os.Remove(name)
+	if _, err = tmp.Write(b); err != nil {
+		_ = tmp.Close()
+		return
+	}
+	if err = tmp.Close(); err != nil {
+		return
+	}
+	if err := replaceDiagnosticsArtifact(name, path); err != nil {
+		cssPurgeLog.Printf("could not update HTML selector cache: %v", err)
+	}
+}
+
+type htmlFingerprintResult struct {
+	path string
+	sum  [sha256.Size]byte
+	size int64
+	err  error
+}
+
+func fingerprintHTMLFiles(files []string, outputDir string, concurrency int) (string, int64, bool) {
+	if concurrency < 1 {
+		concurrency = 1
+	}
+	if concurrency > len(files) {
+		concurrency = len(files)
+	}
+	jobs := make(chan string, len(files))
+	results := make(chan htmlFingerprintResult, len(files))
+	var wg sync.WaitGroup
+	for i := 0; i < concurrency; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for path := range jobs {
+				content, err := os.ReadFile(path)
+				result := htmlFingerprintResult{path: path, err: err}
+				if err == nil {
+					result.sum = sha256.Sum256(content)
+					result.size = int64(len(content))
+				}
+				results <- result
+			}
+		}()
+	}
+	for _, path := range files {
+		jobs <- path
+	}
+	close(jobs)
+	wg.Wait()
+	close(results)
+
+	items := make([]htmlFingerprintResult, 0, len(files))
+	var totalBytes int64
+	for result := range results {
+		if result.err != nil {
+			cssPurgeLog.Warnf("fingerprinting %s: %v", result.path, result.err)
+			return "", totalBytes, false
+		}
+		totalBytes += result.size
+		items = append(items, result)
+	}
+	sort.Slice(items, func(i, j int) bool { return items[i].path < items[j].path })
+	input := sha256.New()
+	for _, item := range items {
+		rel, err := filepath.Rel(outputDir, item.path)
+		if err != nil {
+			rel = item.path
+		}
+		_, _ = input.Write([]byte(filepath.ToSlash(rel)))
+		_, _ = input.Write([]byte{0})
+		_, _ = input.Write(item.sum[:])
+	}
+	return hex.EncodeToString(input.Sum(nil)), totalBytes, true
 }
 
 // buildPurgeOptions creates PurgeOptions from configuration.
@@ -461,7 +579,7 @@ func findCSSFiles(dir string) ([]string, error) {
 }
 
 // scanHTMLFilesConcurrently scans HTML files using a worker pool.
-func scanHTMLFilesConcurrently(files []string, concurrency int) *csspurge.UsedSelectors {
+func scanHTMLFilesConcurrently(files []string, concurrency int) (*csspurge.UsedSelectors, bool) {
 	if concurrency < 1 {
 		concurrency = 1
 	}
@@ -504,9 +622,11 @@ func scanHTMLFilesConcurrently(files []string, concurrency int) *csspurge.UsedSe
 	close(errors)
 
 	// Check for errors
+	complete := true
 	for err := range errors {
 		// Log but don't fail - partial analysis is still useful
 		cssPurgeLog.Warnf("%v", err)
+		complete = false
 	}
 
 	// Merge results
@@ -515,7 +635,7 @@ func scanHTMLFilesConcurrently(files []string, concurrency int) *csspurge.UsedSe
 		combined.Merge(used)
 	}
 
-	return combined
+	return combined, complete
 }
 
 // shouldSkipCSSFile checks if a CSS file matches any skip pattern.

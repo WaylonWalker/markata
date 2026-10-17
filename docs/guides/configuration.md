@@ -655,9 +655,11 @@ warning_threshold = 0
 CSS purge removes unused rules by scanning generated HTML and keeping only selectors
 that are actually present. The purge logic always preserves key @-rules and keeps
 pseudo-only selectors like `:root` or `::selection` to avoid dropping base/theme styles.
-Full builds cache purged CSS under `.markata-cache/css-purge` in the content directory.
-Cached output is reused only when the current stylesheet bytes, discovered HTML selectors,
-and purge options match. Missing or invalid cache entries fall back to normal purging.
+Full builds cache the discovered selector set and purged CSS under
+`.markata-cache/css-purge` in the content directory. The selector cache checks a content
+fingerprint of generated HTML paths and bytes. Purged CSS is reused only when stylesheet
+bytes, discovered selectors, and purge options match. Missing or invalid cache entries
+fall back to the normal scan or purge path.
 
 ### Tailwind (`[markata-go.tailwind]`)
 
