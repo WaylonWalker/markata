@@ -50,7 +50,7 @@ func TestLLMsTXTPlugin_GeneratesPublicIndex(t *testing.T) {
 	if err := os.MkdirAll(cfg.OutputDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(cfg.OutputDir, "sitemap.xml"), []byte("xml"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(cfg.OutputDir, "sitemap.xml"), []byte("xml"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	plugin := NewLLMsTXTPlugin()
@@ -133,7 +133,7 @@ func TestLLMsTXTPlugin_PreservesManualAndStaticSources(t *testing.T) {
 		m.SetConfig(cfg)
 		m.SetPosts([]*models.Post{llmsTXTTestPost("llms", "Manual", nil)})
 		file := filepath.Join(cfg.OutputDir, "llms.txt")
-		if err := os.WriteFile(file, []byte("# My hand-written file\n"), 0o644); err != nil {
+		if err := os.WriteFile(file, []byte("# My hand-written file\n"), 0o600); err != nil {
 			t.Fatal(err)
 		}
 		if err := NewLLMsTXTPlugin().Write(m); err != nil {
@@ -156,7 +156,7 @@ func TestLLMsTXTPlugin_PreservesManualAndStaticSources(t *testing.T) {
 		if err := os.MkdirAll(filepath.Join(root, "public-assets"), 0o755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(filepath.Join(root, "public-assets", "llms.txt"), []byte("# Static\n"), 0o644); err != nil {
+		if err := os.WriteFile(filepath.Join(root, "public-assets", "llms.txt"), []byte("# Static\n"), 0o600); err != nil {
 			t.Fatal(err)
 		}
 		m := lifecycle.NewManager()
@@ -172,7 +172,7 @@ func TestLLMsTXTPlugin_PreservesManualAndStaticSources(t *testing.T) {
 		cfg := lifecycle.NewConfig()
 		cfg.OutputDir = t.TempDir()
 		file := filepath.Join(cfg.OutputDir, "llms.txt")
-		if err := os.WriteFile(file, []byte("# Hand-managed output\n"), 0o644); err != nil {
+		if err := os.WriteFile(file, []byte("# Hand-managed output\n"), 0o600); err != nil {
 			t.Fatal(err)
 		}
 		m := lifecycle.NewManager()
@@ -204,7 +204,7 @@ func TestLLMsTXTPlugin_DisabledCleansOnlyGeneratedFile(t *testing.T) {
 	if _, err := os.Stat(output); !os.IsNotExist(err) {
 		t.Fatalf("generated file should be removed when disabled: %v", err)
 	}
-	if err := os.WriteFile(output, []byte("# Manual\n"), 0o644); err != nil {
+	if err := os.WriteFile(output, []byte("# Manual\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	if err := plugin.Write(m); err != nil {
