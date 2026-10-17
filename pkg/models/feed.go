@@ -461,6 +461,15 @@ func (f *FeedConfig) Paginate(baseURL string) {
 			end = totalPosts
 		}
 
+		// Editorial feeds present entire calendar weeks as a single section.
+		// Expand the page at its boundary instead of splitting the final week.
+		// Other layouts keep exact item-count pagination.
+		if f.Presentation == "editorial" && paginationType != PaginationJS {
+			for end < totalPosts && sameFeedCalendarWeek(f.Posts[end-1], f.Posts[end]) {
+				end++
+			}
+		}
+
 		// Check orphan threshold: if remaining items are below threshold,
 		// add them to the current page instead of creating a new page
 		remaining := totalPosts - end
@@ -517,6 +526,20 @@ func (f *FeedConfig) Paginate(baseURL string) {
 	}
 
 	f.Pages = pages
+}
+
+// sameFeedCalendarWeek uses ISO week boundaries, including year transitions.
+// Posts without dates stay together in the editorial "Undated" section.
+func sameFeedCalendarWeek(left, right *Post) bool {
+	if left == nil || right == nil {
+		return false
+	}
+	if left.Date == nil || right.Date == nil {
+		return left.Date == nil && right.Date == nil
+	}
+	leftYear, leftWeek := left.Date.ISOWeek()
+	rightYear, rightWeek := right.Date.ISOWeek()
+	return leftYear == rightYear && leftWeek == rightWeek
 }
 
 // itoa converts an integer to a string without importing strconv
