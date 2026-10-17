@@ -17,7 +17,13 @@
 </style>
 {% endif %}
 {% if feed.views.calendar %}
+{% if feed_presentation == "editorial" %}
+{# The archive opens in Posts mode; calendar styling must not block the initial article. #}
+<link rel="stylesheet" href="{{ 'css/calendar-feed.css' | theme_asset_hashed }}" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="{{ 'css/calendar-feed.css' | theme_asset_hashed }}"></noscript>
+{% else %}
 <link rel="stylesheet" href="{{ 'css/calendar-feed.css' | theme_asset_hashed }}">
+{% endif %}
 <script src="{{ 'js/calendar-feed.js' | theme_asset_hashed }}" defer></script>
 {% endif %}
 {% endblock %}
