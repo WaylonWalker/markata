@@ -157,7 +157,7 @@ func TestEditorialArchiveDefersOnlyNonCriticalSearchCSS(t *testing.T) {
 	}
 }
 
-func TestEditorialArchiveDefersCalendarStylesAndPrioritizesLeadImage(t *testing.T) {
+func TestEditorialArchiveDefersCalendarStylesAndLeadImages(t *testing.T) {
 	feed, err := ReadTemplate("feed.html")
 	if err != nil {
 		t.Fatal(err)
@@ -179,12 +179,19 @@ func TestEditorialArchiveDefersCalendarStylesAndPrioritizesLeadImage(t *testing.
 	}
 	card := string(link)
 	for _, want := range []string{
-		`{% if item.Lead %} loading="eager" fetchpriority="high"`,
-		`{% else %} loading="lazy"`,
+		`loading="lazy" decoding="async"`,
 		`editorial_card_image:item.Lead`,
 	} {
 		if !strings.Contains(card, want) {
 			t.Errorf("link thumbnail priority contract missing %q", want)
+		}
+	}
+	for _, unwanted := range []string{
+		`loading="eager"`,
+		`fetchpriority="high"`,
+	} {
+		if strings.Contains(card, unwanted) {
+			t.Errorf("editorial link thumbnails must not include %q", unwanted)
 		}
 	}
 }

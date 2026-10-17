@@ -1546,8 +1546,8 @@ body:has(.background-decoration) div.feed {
 }
 
 .pagination-page.current {
-  background: var(--color-primary);
-  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 45%, #000 55%);
+  border-color: color-mix(in srgb, var(--color-primary) 45%, #000 55%);
   color: white;
   font-weight: 600;
 }

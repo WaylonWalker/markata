@@ -1707,6 +1707,19 @@ alias for `include_private = true`.
 The title for each state SHOULD use a distinct semantic color so the inventory
 can be scanned quickly.
 
+## Editorial Feed Images
+
+Editorial feed cards MUST defer thumbnail loading, including featured weekly
+lead cards. The leading content on an editorial archive can be text, so weekly
+lead status alone is not enough evidence to prioritize an image request. A
+template SHOULD reserve eager loading and high fetch priority for a verified
+above-the-fold image that is the page's likely Largest Contentful Paint element.
+
+The current pagination page marker MUST maintain readable text contrast across
+theme palettes. When the primary palette color is too bright for white text,
+the marker background SHOULD darken that color enough to retain at least 4.5:1
+contrast.
+
 ## Feed Listings
 
 The generated `/feeds/` listing MUST hide feeds with `include_private = true` by default.
