@@ -1356,6 +1356,10 @@ article.post > .post-content > .feed.h-feed {
   background: transparent;
 }
 
+.feed--editorial .editorial-feed-tools .pagination--top[hidden] {
+  display: none;
+}
+
 .feed--editorial .editorial-feed-tools .pagination--top {
   display: flex;
   align-items: center;
