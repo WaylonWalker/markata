@@ -47,10 +47,17 @@ There is no immediate need to rename configuration:
 output_dir = "output"
 ```
 
-`MARKATA_GO_OUTPUT_DIR`, `MARKATA_GO_SITE_DIR` and all other existing
-`MARKATA_GO_*` overrides continue working. Renaming the file to
-`markata.toml` or the TOML section to `[markata]` is **not yet supported**
-by the Go CLI, and may be confused with a Python Markata configuration.
+`MARKATA_GO_OUTPUT_DIR`, `MARKATA_GO_SITE_DIR` and other existing
+`MARKATA_GO_*` overrides continue working. Configuration overrides applied by
+the Go config loader also accept the canonical `MARKATA_*` aliases, for example
+`MARKATA_OUTPUT_DIR`. The canonical name takes precedence if both are set;
+conflicting values record `name_migration_warnings` on the loaded config
+(without exposing the values). Other runtime-specific settings may still use
+legacy names; migrate those only after their individual support is verified.
+
+Renaming the config file to `markata.toml` or the TOML section to `[markata]`
+is **not yet supported** by the Go CLI, and may be confused with an original
+Python Markata configuration. Keep existing TOML filenames/sections for now.
 
 For the installer, `MARKATA_INSTALL_DIR` and `MARKATA_VERSION` are preferred;
 the legacy `MARKATA_GO_INSTALL_DIR` and `MARKATA_GO_VERSION` still work.
