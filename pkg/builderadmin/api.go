@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/WaylonWalker/markata-go/pkg/servecontrol"
+	"github.com/WaylonWalker/markata/pkg/servecontrol"
 )
 
 type adminStateResponse struct {

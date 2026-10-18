@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/WaylonWalker/markata-go/pkg/palettes"
+	"github.com/WaylonWalker/markata/pkg/palettes"
 )
 
 const ansiReset = "\033[0m"

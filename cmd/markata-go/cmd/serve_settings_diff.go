@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/WaylonWalker/markata-go/pkg/config"
+	"github.com/WaylonWalker/markata/pkg/config"
 )
 
 const (

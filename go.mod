@@ -1,4 +1,4 @@
-module github.com/WaylonWalker/markata-go
+module github.com/WaylonWalker/markata
 
 go 1.26.0
 

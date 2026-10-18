@@ -3,7 +3,7 @@ package plugins
 import (
 	"strings"
 
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 // dependencyIdentityKeys returns the lookup identities that can resolve a

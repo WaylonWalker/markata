@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/WaylonWalker/markata-go/internal/configdocs"
+	"github.com/WaylonWalker/markata/internal/configdocs"
 )
 
 func main() {

@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/builddag"
-	"github.com/WaylonWalker/markata-go/pkg/buildstats"
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/templates"
+	"github.com/WaylonWalker/markata/pkg/builddag"
+	"github.com/WaylonWalker/markata/pkg/buildstats"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/templates"
 )
 
 type dagPluginExpander func(*lifecycle.Manager, lifecycle.Stage, builddag.TaskSpec) []builddag.TaskSpec

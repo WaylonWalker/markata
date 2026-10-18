@@ -13,7 +13,7 @@ import (
 	"github.com/alecthomas/chroma/v2/styles"
 	"golang.org/x/net/html"
 
-	"github.com/WaylonWalker/markata-go/pkg/palettes"
+	"github.com/WaylonWalker/markata/pkg/palettes"
 )
 
 var (

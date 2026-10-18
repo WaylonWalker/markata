@@ -11,7 +11,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/WaylonWalker/markata-go/pkg/themes"
+	"github.com/WaylonWalker/markata/pkg/themes"
 
 	"github.com/flosch/pongo2/v6"
 )

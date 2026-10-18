@@ -6,8 +6,8 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 // DescriptionPlugin auto-generates descriptions for posts that don't have one.

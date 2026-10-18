@@ -8,7 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/WaylonWalker/markata-go/pkg/renderingrecipe"
+	"github.com/WaylonWalker/markata/pkg/renderingrecipe"
 )
 
 func main() {

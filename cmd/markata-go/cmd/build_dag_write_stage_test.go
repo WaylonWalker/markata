@@ -6,8 +6,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/WaylonWalker/markata-go/pkg/builddag"
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/builddag"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
 )
 
 type dagWriteStageTestPlugin struct {

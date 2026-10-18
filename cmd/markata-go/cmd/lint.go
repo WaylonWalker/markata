@@ -8,8 +8,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/WaylonWalker/markata-go/pkg/config"
-	"github.com/WaylonWalker/markata-go/pkg/lint"
+	"github.com/WaylonWalker/markata/pkg/config"
+	"github.com/WaylonWalker/markata/pkg/lint"
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/spf13/cobra"
 )

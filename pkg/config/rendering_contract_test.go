@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 func TestLoadRenderingContract_FontpackWarnings(t *testing.T) {

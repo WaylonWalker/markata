@@ -5,7 +5,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/WaylonWalker/markata-go/pkg/logging"
+	"github.com/WaylonWalker/markata/pkg/logging"
 	"github.com/spf13/cobra"
 )
 

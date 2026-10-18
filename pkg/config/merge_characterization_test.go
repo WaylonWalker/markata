@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 // TestMergeConfigs_CharacterizesTopLevelFields records the complete result of

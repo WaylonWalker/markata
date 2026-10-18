@@ -9,11 +9,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/models"
-	"github.com/WaylonWalker/markata-go/pkg/renderingcontract"
-	"github.com/WaylonWalker/markata-go/pkg/renderingrecipe"
-	"github.com/WaylonWalker/markata-go/pkg/themes"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/renderingcontract"
+	"github.com/WaylonWalker/markata/pkg/renderingrecipe"
+	"github.com/WaylonWalker/markata/pkg/themes"
 )
 
 func TestAestheticCSSPlugin_VariablesAreCanonical(t *testing.T) {

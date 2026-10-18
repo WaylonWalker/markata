@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/WaylonWalker/markata-go/pkg/migrate"
+	"github.com/WaylonWalker/markata/pkg/migrate"
 	"github.com/spf13/cobra"
 )
 

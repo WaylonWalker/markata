@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/WaylonWalker/markata-go/pkg/suggest"
+	"github.com/WaylonWalker/markata/pkg/suggest"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )

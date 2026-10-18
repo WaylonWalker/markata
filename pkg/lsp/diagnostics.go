@@ -1,7 +1,7 @@
 package lsp
 
 import (
-	"github.com/WaylonWalker/markata-go/pkg/diagnostics"
+	"github.com/WaylonWalker/markata/pkg/diagnostics"
 )
 
 // indexResolver adapts the Index to the diagnostics.Resolver interface.

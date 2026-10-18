@@ -13,7 +13,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
 	htmlparser "golang.org/x/net/html"
 	"golang.org/x/net/html/atom"
 )
