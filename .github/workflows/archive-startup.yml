@@ -22,7 +22,7 @@ jobs:
         with:
           node-version: "22"
       - name: Install pinned Playwright
-        run: npm install --no-save --no-package-lock playwright@1.56.1
+        run: npm install --no-save --no-package-lock playwright@1.64.1
       - name: Install Chromium
         run: npx --no-install playwright install --with-deps chromium
       - name: Check archive startup and progressive rendering
