@@ -22,7 +22,7 @@ The official install script attempts a canonical archive and falls back to a
 legacy release where needed, installing both command names. If a different application (including Python Markata) already owns the `markata` command at the destination, the installer stops rather than overwriting it. Move the conflicting executable or choose a separate install directory.
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/WaylonWalker/markata-go/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/WaylonWalker/markata/main/install.sh | bash
 markata --help
 markata build
 
@@ -62,19 +62,32 @@ Python Markata configuration. Keep existing TOML filenames/sections for now.
 For the installer, `MARKATA_INSTALL_DIR` and `MARKATA_VERSION` are preferred;
 the legacy `MARKATA_GO_INSTALL_DIR` and `MARKATA_GO_VERSION` still work.
 
-Before renaming GitHub repositories, use the [owner cutover runbook](repository-cutover.md) and its guarded preflight script. The repository swap does **not** migrate Go import paths, Python distributions, or live deployments on its own.
+## GitHub repository cutover completed
 
-## Future 1.0 cutover
+The repository swap was completed on October 18, 2026. The Go implementation
+is now [WaylonWalker/markata](https://github.com/WaylonWalker/markata)
+(repository ID `1140034778`); the original Python implementation is
+[WaylonWalker/markata-py](https://github.com/WaylonWalker/markata-py)
+(repository ID `333449359`). The old Go GitHub URL may redirect to the
+canonical Go repository, but use the new URL explicitly in new automation.
+Old Python bookmarks targeting `WaylonWalker/markata` now land on Go.
 
-The Go GitHub repository is still
-[WaylonWalker/markata-go](https://github.com/WaylonWalker/markata-go),
-because [WaylonWalker/markata](https://github.com/WaylonWalker/markata) is
-the historical Python repository. Their names will swap only after Python
-moves to `markata-py`, with explicit link and dependency migration.
+Read the [repository cutover runbook](repository-cutover.md) for the owner
+rename checks and post-cutover infrastructure audit. The GitHub rename alone
+**does not** migrate the Go module import path, Python PyPI ownership,
+legacy configuration names, container registry permissions, or live sites.
 
-Do not change Go import paths, container references, Helm releases or Python
-dependencies just because the CLI is now named `markata`. Versioned upgrade
-guidance for those surfaces will follow the repository and package cutover.
+## Package and production migration
 
-For now: use `markata` interactively, retain old config and deployments, and
-keep `markata-go` anywhere exact compatibility is essential.
+The Go module is still declared as `github.com/WaylonWalker/markata-go`
+until the separate module/import migration passes tests. During that
+transition, pinned old Go imports may continue referencing older releases;
+avoid mixing both module paths in a single module's dependency graph.
+For the first Go 1.0 release, new imports should use
+`github.com/WaylonWalker/markata`.
+
+Existing `markata-go.toml`, `[markata-go]`, `MARKATA_GO_*`,
+`markata-go` binaries and legacy GHCR builder references are intentionally
+preserved. Do not rename Kubernetes PVCs, Helm release names or secrets merely
+to match branding. Audit Argo CD chart repo URLs and permissions separately,
+and validate a release candidate before touching production images.
