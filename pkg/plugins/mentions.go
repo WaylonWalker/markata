@@ -839,8 +839,7 @@ func (p *MentionsPlugin) replaceMentionsInText(text string, handleMap map[string
 		marker := groups[2]
 		handle := strings.ToLower(groups[3])
 		suffix := groups[4]
-		markerPos := strings.Index(match, marker)
-		prefix := match[:markerPos]
+		prefix, _, _ := strings.Cut(match, marker)
 
 		// Look up the handle
 		entry, found := handleMap[handle]
