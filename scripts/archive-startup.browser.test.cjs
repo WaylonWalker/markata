@@ -45,7 +45,10 @@ test('archive leaves adjacent pages idle and preserves deferred weeks', async ()
     assert.equal(requests.includes('/older/'), false, 'setup must not fetch another page');
     assert.equal(await page.locator('#week-0').evaluate(e => getComputedStyle(e).contentVisibility), 'visible');
     assert.equal(await page.locator('#week-6').evaluate(e => getComputedStyle(e).contentVisibility), 'auto');
-    assert.equal(await page.evaluate(() => window.find('Extra 6', false, false, true)), true, 'browser find must reach deferred content');
+    // Finding skipped content can schedule its layout for a subsequent frame.
+    // Wait for a real selection instead of requiring synchronous discovery.
+    await page.waitForFunction(() => window.find('Extra 6', false, false, true), null, {timeout: 5000});
+    assert.equal(await page.evaluate(() => getSelection().toString()), 'Extra 6');
     await page.locator('#week-6 a').first().focus();
     assert.equal(await page.locator('#week-6 a').first().evaluate(e => {
       const rect = e.getBoundingClientRect();
