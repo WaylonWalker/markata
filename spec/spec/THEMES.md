@@ -4092,3 +4092,8 @@ $palette: (
 - [CONFIG.md](./CONFIG.md) - Theme configuration
 - [CONTENT.md](./CONTENT.md) - Admonition syntax
 - [SPEC.md](./SPEC.md) - Core specification
+
+Font preloads include each distinct body, display, and heading source once.
+A separate display role must not suppress the heading face used by ordinary
+page titles. Code and extended coverage remain demand-loaded. The configured
+tier selection and returning visitor font-pack choice are preserved.

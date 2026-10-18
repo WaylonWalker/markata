@@ -193,6 +193,14 @@ func TestFontpackPreloadURLs(t *testing.T) {
 	if strings.Join(got, ",") != strings.Join(want, ",") {
 		t.Fatalf("preloads = %v, want %v", got, want)
 	}
+
+	assets = append(assets, fontpacks.Asset{Source: "heading", Tier: "display-core", URL: "/assets/fonts/heading-core.woff2"})
+	pack.Roles["heading"] = fontpacks.Role{Source: "heading", Tier: "display-core"}
+	if got := fontpackPreloadURLs(pack, assets); strings.Join(got, ",") != strings.Join(append(want, "/assets/fonts/heading-core.woff2"), ",") {
+		t.Fatalf("distinct heading face was suppressed by display role: %v", got)
+	}
+	pack.Roles["heading"] = fontpacks.Role{Source: "body", Tier: "prose-core"}
+
 	if got := fontpackPreloadURLs(fontpacks.FontPack{Roles: map[string]fontpacks.Role{"body": {Stack: "sans"}}}, assets); len(got) != 0 {
 		t.Fatalf("system pack preloads = %v", got)
 	}

@@ -389,6 +389,11 @@ The **Style** tab switches the aesthetic, which sets the shape and depth of code
 
 The **Font** tab lists every bundled font pack as a preview card with its heading, body, and code faces. The default pack is `brush`: **Knewave** headings, **Space Grotesk** body text, and **DM Mono** code. Fonts are self-hosted, and a card only loads its fonts once it scrolls into view. Offering every pack therefore adds CSS, not downloads (the build copies all pack files, about 4MB, to `assets/fonts/`). Set `fontpack` in `[markata-go.theme]` to change the site default.
 
+The active font pack preloads its distinct body, display, and heading faces.
+Packs with separate display and heading fonts keep both ready for the first
+paint. Shared faces are fetched once; code fonts and extended character
+coverage load when needed.
+
 ### No flash on load
 
 A visitor's choice is restored by a tiny inline script in `<head>` before any stylesheet paints, so return visits render in the chosen theme from the first frame. Transitions are suppressed during a switch, and view-transition navigation keeps the chosen theme.
