@@ -21,6 +21,7 @@ const (
 	presentationFeatured     = "featured"
 	presentationOther        = "other"
 	presentationUndated      = "undated"
+	presentationUndatedLabel = "Undated"
 	presentationQuiet        = "quiet"
 	presentationFeedTemplate = "feed.html"
 )
@@ -158,11 +159,11 @@ func editorialWeek(post *models.Post) (key, label string) {
 // build-time fallback when a cached static page is viewed on a later date.
 func editorialRelativeWeekLabel(startKey string, now time.Time) string {
 	if startKey == presentationUndated {
-		return "Undated"
+		return presentationUndatedLabel
 	}
 	start, err := time.Parse("2006-01-02", startKey)
 	if err != nil {
-		return "Undated"
+		return presentationUndatedLabel
 	}
 
 	// Normalize both dates to UTC calendar midnights. Differences between
