@@ -1352,6 +1352,8 @@
   window.initFeedSidebarScroll = function() {
     var active = document.querySelector('.feed-nav-item--active');
     if (!active) return;
+    var drawer = active.closest('.feed-sidebar');
+    if (drawer && !drawer.classList.contains('sidebar--pinned')) return;
     var container = document.getElementById('feed-nav-collapsible');
     if (!container) return;
     var activeTop = active.offsetTop - container.offsetTop;
@@ -1456,7 +1458,8 @@
   }
 
   function focusDrawerStart(sidebar) {
-    var target = sidebar.querySelector('.toc-link--active, .feed-nav-item--active a, .toc a[href], .feed-nav a[href], a[href], button:not(.sidebar-toggle)');
+    var target = sidebar.querySelector('.toc-link--active, .feed-nav-item--active a') ||
+      sidebar.querySelector('.toc a[href], .feed-nav a[href], a[href], button:not(.sidebar-toggle)');
     if (target && typeof target.focus === 'function') {
       target.focus({ preventScroll: true });
     }
@@ -1473,6 +1476,10 @@
     }
     sidebar.classList.toggle('sidebar--pinned', open);
     syncSidebarToggle(sidebar);
+    if (open) {
+      updateSidebarTop();
+      window.initFeedSidebarScroll();
+    }
     if (open && overlay) {
       // Wait for visibility to flip before moving focus into the drawer.
       requestAnimationFrame(function() { focusDrawerStart(sidebar); });
@@ -1508,17 +1515,22 @@
 
   // Keep fixed drawers flush with the bottom edge of the header while it is
   // on screen, then let them grow to the top once the header scrolls away.
-  // Writing a root custom property restyles the whole document, so only
-  // write when the value actually changes.
+  // Overlay drawers fill the viewport and need no header geometry. Scope the
+  // offset to drawers so updates do not invalidate the article subtree.
   var sidebarTopFrame = null;
   var sidebarTopValue = null;
   function updateSidebarTop() {
     sidebarTopFrame = null;
+    if (isSidebarOverlayMode()) return;
+    var drawers = document.querySelectorAll(DRAWER_SELECTOR);
+    if (!drawers.length) return;
     var header = document.querySelector('.site-header');
     var bottom = header ? Math.max(0, Math.round(header.getBoundingClientRect().bottom)) : 0;
     if (bottom === sidebarTopValue) return;
     sidebarTopValue = bottom;
-    document.documentElement.style.setProperty('--sidebar-top', bottom + 'px');
+    drawers.forEach(function(drawer) {
+      drawer.style.setProperty('--sidebar-top', bottom + 'px');
+    });
   }
   function scheduleSidebarTop() {
     if (sidebarTopFrame === null) {
@@ -1550,6 +1562,8 @@
       }
       syncSidebarToggle(sidebar);
     });
+    updateSidebarTop();
+    window.initFeedSidebarScroll();
   };
 
   window.initSidebarPinButtons = function() {
