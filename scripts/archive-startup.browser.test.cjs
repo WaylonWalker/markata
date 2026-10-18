@@ -49,11 +49,23 @@ test('archive leaves adjacent pages idle and preserves deferred weeks', async ()
     // Wait for a real selection instead of requiring synchronous discovery.
     await page.waitForFunction(() => window.find('Extra 6', false, false, true), null, {timeout: 5000});
     assert.equal(await page.evaluate(() => getSelection().toString()), 'Extra 6');
+    // Test focus from a fresh document with skipped weeks, independently of
+    // Find's selection and scroll anchoring. Allow one CSS pixel of rounding.
+    await page.goto(origin + '/?focus-check');
     await page.locator('#week-6 a').first().focus();
-    assert.equal(await page.locator('#week-6 a').first().evaluate(e => {
+    await page.waitForFunction(() => {
+      const link = document.querySelector('#week-6 a');
+      const rect = link.getBoundingClientRect();
+      const visible = document.activeElement === link && rect.top >= -1 && rect.bottom <= innerHeight + 1;
+      window.focusVisibleFrames = visible ? (window.focusVisibleFrames || 0) + 1 : 0;
+      return window.focusVisibleFrames >= 3;
+    }, null, {timeout: 5000});
+    const focused = await page.locator('#week-6 a').first().evaluate(e => {
       const rect = e.getBoundingClientRect();
-      return rect.top >= 0 && rect.bottom <= innerHeight;
-    }), true, 'keyboard focus must reveal offscreen stories');
+      return {top: rect.top, bottom: rect.bottom, viewport: innerHeight};
+    });
+    assert.ok(focused.top >= -1 && focused.bottom <= focused.viewport + 1,
+      'keyboard focus must keep stories visible: ' + JSON.stringify(focused));
     await page.emulateMedia({media: 'print'});
     assert.equal(await page.locator('#week-6').evaluate(e => getComputedStyle(e).contentVisibility), 'visible');
     await page.evaluate(() => window.preloadNavigationShortcuts());

@@ -1987,6 +1987,27 @@
   position: relative;
 }
 
+/* Search results may load later, but the visible navbar row needs space now. */
+.header-controls .search-container--navbar,
+.header-controls .search--navbar {
+  min-height: 2.125rem;
+}
+
+@media (max-width: 768px) {
+  .header-controls .search-container--navbar,
+  .header-controls .search--navbar {
+    margin-top: 0.5rem;
+  }
+}
+
+.header-controls .pagefind-ui__search-input,
+.header-controls .bleve-search__input {
+  display: block;
+  box-sizing: border-box;
+  height: 2.125rem;
+  min-height: 2.125rem;
+}
+
 /* Navbar positioning */
 .search--navbar {
   display: flex;

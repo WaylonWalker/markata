@@ -33,6 +33,10 @@ its nested loading inputs, without triggering theme-grid shortcuts.
 The navbar search MUST remain accessible and keyboard operable with either
 Pagefind or Bleve, and remain lazy-loaded where it was before. CSS changes
 SHOULD use existing palette tokens and MUST NOT add extra network resources.
+Core styles MUST reserve the navbar search input height and mobile spacing
+before deferred search styles or either search renderer hydrate the placeholder.
+Loading search styles MUST NOT move the header or following content. Editorial
+feed header spacing MUST remain stable when deferred calendar styles load.
 
 ## Reader Mode
 
