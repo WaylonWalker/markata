@@ -62,6 +62,8 @@ Python Markata configuration. Keep existing TOML filenames/sections for now.
 For the installer, `MARKATA_INSTALL_DIR` and `MARKATA_VERSION` are preferred;
 the legacy `MARKATA_GO_INSTALL_DIR` and `MARKATA_GO_VERSION` still work.
 
+Before renaming GitHub repositories, use the [owner cutover runbook](repository-cutover.md) and its guarded preflight script. The repository swap does **not** migrate Go import paths, Python distributions, or live deployments on its own.
+
 ## Future 1.0 cutover
 
 The Go GitHub repository is still
