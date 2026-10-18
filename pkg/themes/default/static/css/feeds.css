@@ -1451,3 +1451,9 @@ article.post > .post-content > .feed.h-feed {
     contain-intrinsic-block-size: auto 1000px;
   }
 }
+
+/* Calendar styles are deferred in editorial list mode. Keep the intended
+   compact header margin when those styles arrive. */
+.feed.feed--editorial > .feed-header {
+  margin-block-end: 0;
+}

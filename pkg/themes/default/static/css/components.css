@@ -2000,6 +2000,14 @@
   }
 }
 
+.header-controls .pagefind-ui__search-input,
+.header-controls .bleve-search__input {
+  display: block;
+  box-sizing: border-box;
+  height: 2.125rem;
+  min-height: 2.125rem;
+}
+
 /* Navbar positioning */
 .search--navbar {
   display: flex;

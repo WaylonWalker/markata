@@ -50,6 +50,11 @@ test('archive leaves adjacent pages idle and preserves deferred weeks', async ()
     await page.waitForFunction(() => window.find('Extra 6', false, false, true), null, {timeout: 5000});
     assert.equal(await page.evaluate(() => getSelection().toString()), 'Extra 6');
     await page.locator('#week-6 a').first().focus();
+    await page.waitForFunction(() => {
+      const link = document.querySelector('#week-6 a');
+      const rect = link.getBoundingClientRect();
+      return document.activeElement === link && rect.top >= 0 && rect.bottom <= innerHeight;
+    }, null, {timeout: 5000});
     assert.equal(await page.locator('#week-6 a').first().evaluate(e => {
       const rect = e.getBoundingClientRect();
       return rect.top >= 0 && rect.bottom <= innerHeight;
