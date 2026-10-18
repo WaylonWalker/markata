@@ -52,6 +52,7 @@
           <span><strong>{{ feed_stats_total_posts }}</strong> posts</span>
           {% if feed_stats_latest_post %}<span>latest post {{ feed_stats_latest_post }}</span>{% endif %}
         </div>
+        {% if feed_presentation != "editorial" %}
         {% if feed.posts %}
         {% if feed.views.calendar %}
         <nav class="calendar-view-switch" data-calendar-switch hidden aria-label="Feed views">
@@ -61,6 +62,7 @@
         </nav>
         {% elif feed.views.simple and feed.formats.simple_html %}
         <nav class="feed-view-links" aria-label="Feed views"><span aria-current="page">Posts</span> <a class="feed-view-link" href="{% if feed.slug %}/{{ feed.slug }}/simple/{% else %}/simple/{% endif %}">Simple</a></nav>
+        {% endif %}
         {% endif %}
         {% endif %}
         {% if feed.type == "guide" or feed.type == "series" %}
@@ -90,24 +92,35 @@
       </div>
       {% endif %}
     </div>
+    {% if feed_presentation == "editorial" %}
+    {# A single, unobtrusive toolbar for archive display modes and page links. #}
+    <div class="editorial-feed-tools">
+      {% if feed.posts %}
+      {% if feed.views.calendar %}
+      <nav class="calendar-view-switch" data-calendar-switch hidden aria-label="Feed views">
+        <button type="button" data-calendar-mode="list" aria-pressed="true">Posts</button>
+        {% if feed.views.simple and feed.formats.simple_html %}<a class="feed-view-link" href="{% if feed.slug %}/{{ feed.slug }}/simple/{% else %}/simple/{% endif %}">Simple</a>{% endif %}
+        <button type="button" data-calendar-mode="calendar" aria-pressed="false">Calendar</button>
+      </nav>
+      {% elif feed.views.simple and feed.formats.simple_html %}
+      <nav class="feed-view-links" aria-label="Feed views"><span aria-current="page">Posts</span> <a class="feed-view-link" href="{% if feed.slug %}/{{ feed.slug }}/simple/{% else %}/simple/{% endif %}">Simple</a></nav>
+      {% endif %}
+      {% endif %}
+      {% if page.total_pages > 1 and page.pagination_type == "manual" %}
+      <nav class="pagination pagination--top" aria-label="Archive top pagination"{% if feed.views.calendar %} data-calendar-primary{% endif %}>
+        {% if page.has_prev %}
+        <a href="{{ page.prev_url }}" class="pagination-prev" rel="prev">&larr; Newer</a>
+        {% endif %}
+        <span class="pagination-page current" aria-current="page">Page {{ page.number }} of {{ page.total_pages }}</span>
+        {% if page.has_next %}
+        <a href="{{ page.next_url }}" class="pagination-next" rel="next">Older &rarr;</a>
+        {% endif %}
+      </nav>
+      {% endif %}
+    </div>
+    {% endif %}
   </header>
   {# Author h-card for the feed (representative) #}
-  {# Editorial archive pages may be long; keep native page links reachable before the weekly digest. #}
-  {% if feed_presentation == "editorial" and page.total_pages > 1 and page.pagination_type == "manual" %}
-  <nav class="pagination pagination--top" aria-label="Archive top pagination">
-    {% if page.has_prev %}
-    <a href="{{ page.prev_url }}" class="pagination-prev" rel="prev">&laquo; Newer</a>
-    {% else %}
-    <span class="pagination-prev disabled">&laquo; Newer</span>
-    {% endif %}
-    <span class="pagination-page current" aria-current="page">Page {{ page.number }} of {{ page.total_pages }}</span>
-    {% if page.has_next %}
-    <a href="{{ page.next_url }}" class="pagination-next" rel="next">Older &raquo;</a>
-    {% else %}
-    <span class="pagination-next disabled">Older &raquo;</span>
-    {% endif %}
-  </nav>
-  {% endif %}
 
   {% if config.author %}
   <div class="feed-author-card p-author h-card visually-hidden">
