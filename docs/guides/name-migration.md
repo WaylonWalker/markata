@@ -10,9 +10,10 @@ tags:
 
 # Markata naming migration
 
-The Go static site generator previously known as **markata-go** is becoming
-**Markata** for the 1.0 release line. The existing Python implementation will
-be called **markata-py** after the repositories and packages are coordinated.
+The Go static site generator formerly known as **markata-go** is now **Markata**.
+The repository rename is complete, but Markata remains on the **0.x** release
+line; the name change does not imply a 1.0 release. The original Python
+implementation is now at **WaylonWalker/markata-py**.
 
 ## What works now
 
@@ -92,4 +93,5 @@ Existing `markata-go.toml`, `[markata-go]`, `MARKATA_GO_*`,
 `markata-go` binaries and legacy GHCR builder references are intentionally
 preserved. Do not rename Kubernetes PVCs, Helm release names or secrets merely
 to match branding. Audit Argo CD chart repo URLs and permissions separately,
-and validate a release candidate before touching production images.
+and verify published image compatibility and live workloads before changing
+production images. No new release tag is implied by the rename.
