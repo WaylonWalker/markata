@@ -470,8 +470,8 @@
     // Apply reader mode from URL param (persists across view transitions)
     applyReaderModeFromURL();
 
-    // Preload adjacent pages for instant pagination via keyboard shortcuts
-    preloadAdjacentPages();
+    // Adjacent pages are fetched on link hover/focus or explicit feed cycling.
+    // Initializing keyboard controls is not navigation intent.
 
     // Initialize cards -- but do NOT auto-highlight or scroll on page load.
     // The first card will be highlighted when the user presses j/k.
