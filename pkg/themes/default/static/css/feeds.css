@@ -1442,3 +1442,12 @@ article.post > .post-content > .feed.h-feed {
     margin-left: 0;
   }
 }
+
+/* Keep startup layout proportional to the visible digest, not every week.
+   auto preserves browser find and accessibility, and remembers measured height. */
+@media screen {
+  .feed--editorial .editorial-week ~ .editorial-week {
+    content-visibility: auto;
+    contain-intrinsic-block-size: auto 1000px;
+  }
+}

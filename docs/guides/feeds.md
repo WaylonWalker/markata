@@ -1617,3 +1617,14 @@ the same while its month details are available on demand.
 - [Templates Guide](/docs/guides/templates/) - Template system documentation
 - [Frontmatter Guide](/docs/guides/frontmatter/) - Post metadata for filtering
 - [Quick Reference](/docs/guides/quick-reference/) - Filter expression cheat sheet
+
+### Editorial loading
+
+Editorial archives render the first week immediately and let the browser defer
+layout for later weeks until they approach the viewport. All posts are still in
+the HTML, including when JavaScript is disabled. Browser find and printing keep
+access to the complete page. Browsers without content visibility support render
+the complete page normally.
+
+Keyboard navigation setup does not download the next archive page. Link hover,
+focus, and explicit feed cycling can still prepare the next navigation.

@@ -1744,3 +1744,15 @@ month. The monthly values MAY be stored as compact chart data on the SVG and use
 update a single guide and marker. Keyboard users MUST be able to focus each chart
 and use the arrow keys to inspect values; the live readout MUST announce the selected
 month and count. Pointer exit MUST restore the chart's latest-month summary.
+
+### Editorial startup work
+
+Editorial weeks after the first use native `content-visibility: auto` with a
+remembered intrinsic block size. All content remains server rendered and
+available without JavaScript, to browser find, and to assistive technology.
+Printing must render every week without containment. The first week renders
+normally so its initial paint does not depend on visibility observation.
+
+Navigation shortcut initialization must not fetch adjacent pages. Adjacent
+documents may be prefetched on explicit navigation intent (link hover/focus or
+feed cycling), respecting the existing Save Data policy.
