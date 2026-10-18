@@ -360,6 +360,7 @@ The reader page shows the latest posts from all feeds in reverse chronological o
 - Links to the original article
 - Hacker News and Lobsters discussion URLs are normalized to the outbound article URL when one is available. Lobsters RSS feeds that already link directly to articles retain their discussion permalinks from the GUID or comments field. The original discussions remain available as "Found on HN" or "Found on Lobsters", alongside the feed source label
 - Pagination navigation (when more than one page)
+- Offscreen reader cards after the first four in each day group may skip layout and paint in supporting browsers via CSS `content-visibility`; the full HTML, links, and no-JavaScript navigation remain available. Preview images and source icons load lazily and decode asynchronously.
 
 ### Community aggregators: Lobsters, Lemmy and Reddit
 
