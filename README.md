@@ -10,7 +10,7 @@ A fast, plugin-driven static site generator with a powerful feed system.
 
 **Markata** (formerly **markata-go**) is a static site generator written in Go that processes Markdown files with YAML frontmatter and generates a complete static website. It features a flexible plugin architecture, a powerful feed system for creating archives and syndication feeds, and Jinja2-like templating.
 
-> **Status:** Go implementation is pre-1.0. The `markata` executable is the preferred entry point; `markata-go` remains supported during migration. The historical Python project still occupies the `WaylonWalker/markata` repository until the coordinated cutover.
+> **Status:** Markata remains a **0.x** Go project; the rename is not a 1.0 release decision. The `markata` executable is preferred and `markata-go` remains supported. The original Python project is at [WaylonWalker/markata-py](https://github.com/WaylonWalker/markata-py); this repository is the Go implementation.
 
 ### Key Features
 
