@@ -3,6 +3,7 @@ name: Theme controls browser regressions
 on:
   pull_request:
     paths:
+      - "pkg/plugins/palette_css.go"
       - "pkg/themes/default/templates/partials/theme-controls-loader.html"
       - "pkg/themes/default/templates/base.html"
       - "templates/base.html"

@@ -64,7 +64,7 @@ function controls() {
     </div>`;
 }
 
-function pageHTML() {
+function pageHTML(options = {}) {
   return `<!doctype html>
     <html data-theme="dark" data-palette="ayu-dark" data-aesthetic="minimal" data-fontpack="default">
     <head><meta charset="UTF-8">
@@ -79,7 +79,19 @@ function pageHTML() {
           }
         })();
       </script>
-      <link rel="stylesheet" href="/palette.hash.css" onerror="this.onerror=null;this.href='/palette.css'">
+      ${options.lazyCSS ? `<link rel="stylesheet" href="/palette-core.css"><script>
+        window.__markataPaletteStylesReady = false;
+        window.__markataLoadPaletteStyles = function () {
+          if (window.palettePromise) return window.palettePromise;
+          window.palettePromise = new Promise(function (resolve, reject) {
+            var link = document.createElement('link');
+            link.rel = 'stylesheet'; link.href = '/palette.css';
+            link.onload = function () {window.__markataPaletteStylesReady = true; resolve();};
+            link.onerror = reject; document.head.appendChild(link);
+          });
+          return window.palettePromise;
+        };
+      </script>` : `<link rel="stylesheet" href="/palette.hash.css" onerror="this.onerror=null;this.href='/palette.css'">`}
     </head><body>
       <main><div id="view-transition-page">${controls()}</div></main>
       ${loader}
@@ -91,6 +103,10 @@ async function browserCase(options, fn) {
   const server = http.createServer((req, res) => {
     const pathname = new URL(req.url, 'http://localhost').pathname;
     requests.push(pathname);
+    if (pathname === '/palette-core.css') {
+      res.setHeader('content-type', 'text/css');
+      return res.end(css.replace(JSON.stringify(manifest), JSON.stringify(manifest.slice(0, 2))));
+    }
     if (pathname === '/palette.css' || (pathname === '/palette.hash.css' && !options.missingCSS)) {
       res.setHeader('content-type', 'text/css');
       return res.end(css);
@@ -102,7 +118,7 @@ async function browserCase(options, fn) {
     }
     if (pathname === '/') {
       res.setHeader('content-type', 'text/html; charset=utf-8');
-      return res.end(pageHTML());
+      return res.end(pageHTML(options));
     }
     res.writeHead(404);
     return res.end('Not found');
@@ -190,5 +206,27 @@ test('missing fingerprinted palette CSS recovers without fetching picker JS', {t
     await page.locator('.palette-mode-toggle').click();
     assert.equal(await page.locator('html').evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(250, 250, 250)');
     assert.deepEqual(pickerRequests(requests), [], 'CSS recovery and mode click remain picker-JS-free');
+  });
+});
+
+
+test('first picker opening upgrades the cached core catalog after lazy CSS', {timeout: 60000}, async () => {
+  await browserCase({lazyCSS: true}, async (page, origin, requests) => {
+    await page.goto(origin + '/');
+    const countCatalog = () => page.evaluate(() => {
+      const raw = getComputedStyle(document.documentElement).getPropertyValue('--palette-manifest').trim();
+      return JSON.parse(raw.slice(1, -1)).length;
+    });
+    assert.equal(await countCatalog(), 2, 'initial catalog contains only the configured pair');
+    assert.equal(requests.includes('/palette.css'), false);
+    await page.locator('.palette-mode-toggle').click();
+    assert.equal(requests.includes('/palette.css'), false, 'dark/light remains eager without the catalog');
+    await page.locator('.theme-picker-toggle').click();
+    await page.locator('.theme-picker-panel').waitFor({state: 'visible'});
+    assert.equal(await countCatalog(), 4);
+    assert.equal(await page.locator('.palette-card').count(), 2, 'both light palettes appear on the first opening');
+    await page.locator('.palette-card[data-name="nord-light"]').click();
+    assert.equal(await page.locator('html').getAttribute('data-palette'), 'nord-light');
+    assert.equal(requests.filter(p => p === '/palette.css').length, 1, 'full catalog loads once on intent');
   });
 });
