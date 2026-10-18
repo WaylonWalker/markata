@@ -56,6 +56,7 @@ type Config struct {
 	CacheMount           string
 	HistoryDir           string
 	WatchEnabled         bool
+	AutoBuildOnUpgrade   bool
 	WatchDebounce        time.Duration
 	Fast                 bool
 	MermaidMode          string
@@ -417,6 +418,20 @@ func (s *Service) tryBecomeLeader(ctx context.Context) {
 	if err := tryLockFile(s.leaderLock); err != nil {
 		return
 	}
+	// A standby pod can outlive multiple successful builds by the old leader.
+	// Reload after acquiring the exclusive lock so we do not overwrite state
+	// or compare the new executable against stale successful-build history.
+	s.stateMu.Lock()
+	err := s.loadState()
+	if err == nil {
+		s.refreshControlStateWithFiles(s.state)
+	}
+	s.stateMu.Unlock()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "builder-admin: reload state on leader handoff: %v\n", err)
+		_ = unlockFile(s.leaderLock)
+		return
+	}
 	if err := s.writeLeaderRecord(); err != nil {
 		_ = unlockFile(s.leaderLock)
 		return
@@ -506,6 +521,34 @@ func (s *Service) resumeLeaderSession() {
 			s.queueCh <- req
 		}
 	}
+	s.enqueueStartupRevisionBuild()
+}
+
+// Called only after taking leadership. An already-queued ordinary build uses
+// the newly running executable, so adding another would be redundant.
+func (s *Service) enqueueStartupRevisionBuild() {
+	if !s.cfg.AutoBuildOnUpgrade {
+		return
+	}
+	state := s.snapshotState()
+	if state.Running != nil && state.Running.Kind == "build" {
+		return
+	}
+	for _, pending := range state.Queue {
+		if pending.Kind == "build" && !pending.SyncSource {
+			return
+		}
+	}
+	liveCommit, _ := s.liveReleaseRevisions()
+	reason, needed := startupRevisionBuildReason(s.cfg.BuilderCommit, state, liveCommit)
+	if !needed {
+		return
+	}
+	if err := s.enqueueBuild("startup-revision", reason, nil); err != nil {
+		fmt.Fprintf(os.Stderr, "builder-admin: enqueue startup revision build: %v\n", err)
+		return
+	}
+	fmt.Fprintf(os.Stderr, "builder-admin: queued startup revision build: %s\n", reason)
 }
 
 func (s *Service) recoverQueuedState() []QueuedOperation {

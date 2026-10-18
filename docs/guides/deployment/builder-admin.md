@@ -62,6 +62,34 @@ builderAdmin:
         - update
 ```
 
+### Build automatically after a new Builder image starts
+
+Helm enables `builderAdmin.buildOnStartupRevisionChange: true` by default.
+When the replacement Builder Admin pod acquires leadership, it compares the
+running binary's embedded Git commit against the **last successful real build**.
+If the revisions differ, it immediately enqueues a normal full build with
+trigger `startup-revision` and records the comparison in build history.
+Publication remains atomic: a failed build keeps the last live release.
+
+An unchanged restart does not enqueue another build. Existing pending normal
+builds suppress duplicates, and standby pods never enqueue during rolling
+updates. Before comparing revisions, the new leader reloads the previous
+leader's persisted state. Rollbacks and failed builds do not count as
+successful builds for this comparison.
+
+For older build records without a commit, Builder Admin checks the live
+diagnostics artifact. If neither source supplies a reliable previous
+revision, it performs one build to establish a baseline. A running
+executable without a reliable Git commit SHA does not automatically
+build based on a mutable image tag or development version.
+
+Set `builderAdmin.buildOnStartupRevisionChange: false` to disable the
+Helm behavior. Helm injects `MARKATA_GO_BUILDER_ADMIN_STARTUP_REBUILD` as an
+environment variable instead of passing a new flag; older builder images
+ignore the variable, avoiding startup failures during staggered rollouts.
+Direct CLI use is opt-in via
+`markata-go builder-admin --build-on-startup-revision-change`.
+
 ### Put transient build work on node-local storage
 
 By default Builder Admin preserves the historical behavior and creates `.build-work` under the

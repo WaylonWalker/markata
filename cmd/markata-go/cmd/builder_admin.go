@@ -51,6 +51,8 @@ var (
 	builderAdminWebhookSecret         string
 )
 
+var builderAdminAutoBuildOnUpgrade bool
+
 var builderAdminCmd = &cobra.Command{
 	Use:   "builder-admin",
 	Short: "Run the long-lived builder admin HTTP service",
@@ -71,6 +73,7 @@ func init() {
 	builderAdminCmd.Flags().StringVar(&builderAdminCacheMount, "cache-mount", "", "optional dedicated cache mount for .markata symlinks")
 	builderAdminCmd.Flags().StringVar(&builderAdminHistoryDir, "history-dir", "", "directory for persisted builder-admin state and logs")
 	builderAdminCmd.Flags().BoolVar(&builderAdminWatch, "watch", true, "enable recursive file watching")
+	builderAdminCmd.Flags().BoolVar(&builderAdminAutoBuildOnUpgrade, "build-on-startup-revision-change", os.Getenv("MARKATA_GO_BUILDER_ADMIN_STARTUP_REBUILD") == "true", "build on leader startup when the builder revision differs from the last successful build")
 	builderAdminCmd.Flags().DurationVar(&builderAdminWatchDebounce, "watch-debounce", 2*time.Second, "debounce window for file-watch rebuilds")
 	builderAdminCmd.Flags().BoolVar(&builderAdminFast, "fast", false, "run queued builds with --fast")
 	builderAdminCmd.Flags().StringVar(&builderAdminMermaidMode, "mermaid-mode", "", "override [markata-go.mermaid].mode for queued builds")
@@ -126,6 +129,7 @@ func runBuilderAdmin(cmd *cobra.Command, _ []string) error {
 		CacheMount:           builderAdminCacheMount,
 		HistoryDir:           builderAdminHistoryDir,
 		WatchEnabled:         builderAdminWatch,
+		AutoBuildOnUpgrade:   builderAdminAutoBuildOnUpgrade,
 		WatchDebounce:        builderAdminWatchDebounce,
 		Fast:                 builderAdminFast,
 		MermaidMode:          builderAdminMermaidMode,
