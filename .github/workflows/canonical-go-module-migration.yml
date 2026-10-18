@@ -1,0 +1,58 @@
+name: Canonical Go Module Path Migration
+
+on:
+  push:
+    branches:
+      - chore/markata-canonical-module
+    paths:
+      - scripts/migrate-go-module-path.py
+      - .github/workflows/canonical-go-module-migration.yml
+  pull_request:
+    paths:
+      - 'go.mod'
+      - '**/*.go'
+      - '.goreleaser.yml'
+      - 'scripts/migrate-go-module-path.py'
+      - '.github/workflows/canonical-go-module-migration.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  # One-time mass rename: commits changes ONLY to this isolated migration
+  # branch; no PR or default branch is granted write permission by this job.
+  rewrite-branch:
+    if: github.event_name == 'push' && github.ref_name == 'chore/markata-canonical-module' && github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Check out isolated migration branch
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: true
+      - name: Rewrite tracked module references
+        run: |
+          python3 scripts/migrate-go-module-path.py --apply
+          python3 scripts/migrate-go-module-path.py --check
+          git diff --check
+      - name: Commit generated migration on isolated branch
+        shell: bash
+        run: |
+          git add -- '*.go' 'go.mod' '.goreleaser.yml'
+          if git diff --cached --quiet; then
+            echo 'No module paths needed replacement'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'refactor(module): migrate Go imports and module to github.com/WaylonWalker/markata'
+          git push origin HEAD:chore/markata-canonical-module
+
+  verify:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Assert no legacy Go import references
+        run: python3 scripts/migrate-go-module-path.py --check
