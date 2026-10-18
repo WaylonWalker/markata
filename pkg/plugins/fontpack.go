@@ -21,7 +21,7 @@ import (
 const (
 	fontpackCacheFile        = ".markata-fontpack-cache"
 	fontpackPreloadCacheFile = ".markata-fontpack-preloads.json"
-	fontpackCacheVersion     = "10"
+	fontpackCacheVersion     = "11"
 )
 
 const fontpackRoleHeading = "heading"
