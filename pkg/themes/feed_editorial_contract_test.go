@@ -88,7 +88,7 @@ func TestEditorialLeadAndPhotoEssayTemplateContract(t *testing.T) {
 		`{{ item.DateLabel }}`,
 		`editorial-shot-grid--mosaic`,
 		`Photo journal`,
-		`data-editorial-version="3"`,
+		`data-editorial-version="4"`,
 	} {
 		if !strings.Contains(tmpl, want) {
 			t.Errorf("editorial template missing %q", want)
@@ -127,7 +127,7 @@ func TestEditorialPhotoDatesAreOnlyAddedInsideWeeklyGallery(t *testing.T) {
 				t.Fatalf("photo card missing optional dated caption")
 			}
 		case "partials/feed-editorial.html":
-			if !strings.Contains(string(tmpl), "data-editorial-version=\"3\"") {
+			if !strings.Contains(string(tmpl), "data-editorial-version=\"4\"") {
 				t.Fatal("editorial HTML version must invalidate old gallery caches")
 			}
 		}
