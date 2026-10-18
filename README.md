@@ -2,7 +2,7 @@
 
 A fast, plugin-driven static site generator with a powerful feed system.
 
-[![CI](https://github.com/WaylonWalker/markata-go/actions/workflows/ci.yml/badge.svg)](https://github.com/WaylonWalker/markata-go/actions/workflows/ci.yml)
+[![CI](https://github.com/WaylonWalker/markata/actions/workflows/ci.yml/badge.svg)](https://github.com/WaylonWalker/markata/actions/workflows/ci.yml)
 [![Go Version](https://img.shields.io/badge/Go-1.22+-00ADD8?style=flat&logo=go)](https://go.dev/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
@@ -28,16 +28,16 @@ A fast, plugin-driven static site generator with a powerful feed system.
 
 ```bash
 # One-liner install script (Linux/macOS)
-curl -sSL https://raw.githubusercontent.com/WaylonWalker/markata-go/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/WaylonWalker/markata/main/install.sh | bash
 
 # Using jpillora/installer (Linux/macOS)
-curl -sL https://i.jpillora.com/WaylonWalker/markata-go | bash
+curl -sL https://i.jpillora.com/WaylonWalker/markata | bash
 
 # Using eget
-eget WaylonWalker/markata-go
+eget WaylonWalker/markata
 
 # Using mise (installs from GitHub releases)
-mise use -g github:WaylonWalker/markata-go
+mise use -g github:WaylonWalker/markata
 ```
 
 ### Go Install
@@ -52,7 +52,7 @@ Existing tagged versions remain available with `go install github.com/WaylonWalk
 
 ### Manual Download
 
-Download pre-built binaries from [GitHub Releases](https://github.com/WaylonWalker/markata-go/releases).
+Download pre-built binaries from [GitHub Releases](https://github.com/WaylonWalker/markata/releases).
 
 Available platforms: Linux (amd64, arm64, armv7), macOS (Intel, Apple Silicon), Windows (amd64), FreeBSD (amd64), Android (arm64/Termux).
 
@@ -335,7 +335,7 @@ markata-go --version         # Short version flag
 
 ```bash
 # Clone the repository
-git clone https://github.com/WaylonWalker/markata-go.git
+git clone https://github.com/WaylonWalker/markata.git
 cd markata-go
 
 # Build
