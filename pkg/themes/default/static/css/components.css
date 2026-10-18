@@ -4898,8 +4898,6 @@ body.reader-mode::after {
   }
 }
 
-}
-
 
 /* Quote attributions (~handle) use the same theme tokens in every palette.
    Keep these understated so the attribution doesn't compete with the quote. */
@@ -4937,4 +4935,6 @@ body.reader-mode::after {
 .post-content .mention--attribution.mention--unresolved,
 .prose .mention--attribution.mention--unresolved {
   border-style: dashed;
+}
+
 }
