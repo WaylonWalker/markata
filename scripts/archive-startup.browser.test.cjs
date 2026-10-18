@@ -23,7 +23,7 @@ test('archive leaves adjacent pages idle and preserves deferred weeks', async ()
     res.end(`<!doctype html><html><head><link rel="stylesheet" href="/feeds.css"></head>
       <body><nav><a class="pagination-next" href="/older/">Older</a></nav>
       <main class="feed feed--editorial"><div class="editorial-feed">
-      ${Array.from({length: 7}, (_, i) => `<section class="editorial-week" id="week-${i}">
+      ${Array.from({length: 7}, (_, i) => `<section class="editorial-week" id="week-${i}" style="--editorial-week-items:${i===6 ? 10 : 3}">
         <h2>Week ${i}</h2><div class="editorial-week-entries">
         <div class="editorial-entry" style="height:1800px"><a href="/post-${i}/">Story ${i}</a></div>
         <div class="editorial-entry" style="height:1800px"><a href="/extra-${i}/">Extra ${i}</a></div>
@@ -45,6 +45,8 @@ test('archive leaves adjacent pages idle and preserves deferred weeks', async ()
     assert.equal(requests.includes('/older/'), false, 'setup must not fetch another page');
     assert.equal(await page.locator('#week-0').evaluate(e => getComputedStyle(e).contentVisibility), 'visible');
     assert.equal(await page.locator('#week-6').evaluate(e => getComputedStyle(e).contentVisibility), 'auto');
+    const reserved = await page.evaluate(() => [5,6].map(i => document.getElementById('week-'+i).getBoundingClientRect().height));
+    assert.ok(reserved[1] > reserved[0], 'larger skipped weeks must reserve more room than smaller weeks');
     // Finding skipped content can schedule its layout for a subsequent frame.
     // Wait for a real selection instead of requiring synchronous discovery.
     await page.waitForFunction(() => window.find('Extra 6', false, false, true), null, {timeout: 5000});

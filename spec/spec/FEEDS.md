@@ -1758,3 +1758,9 @@ normally so its initial paint does not depend on visibility observation.
 Navigation shortcut initialization must not fetch adjacent pages. Adjacent
 documents may be prefetched on explicit navigation intent (link hover/focus or
 feed cycling), respecting the existing Save Data policy.
+
+Offscreen editorial weeks reserve an intrinsic height scaled to their editorial
+item count, with a conservative fallback for custom templates. The estimate
+should avoid geometric overlap with following sections while actual heights
+are unknown. Native reveal remembers measured heights. Find, focus, print and
+no-JavaScript access remain available.
