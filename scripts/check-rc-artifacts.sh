@@ -34,7 +34,7 @@ for os in linux darwin windows; do
         exit 1
       }
     else
-      tar -tzf "$archive" | grep -E "(^|/)${expected}$" || {
+      tar -tzf "$archive" | grep -E "(^|/)${expected}$" >/dev/null || {
         printf 'Missing executable %s in %s\n' "$expected" "$archive" >&2
         exit 1
       }
