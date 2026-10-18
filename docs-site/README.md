@@ -29,6 +29,8 @@ The older `kubernetes/markata-go-docs.yaml` is historical and is **not** the act
 To validate local runtime without deploying:
 
 ```bash
+python -m pip install 'Markdown==3.8.2'
+DOCS_BASE_PATH=/ python scripts/build_docs_site.py
 docker build -f docs-site/Dockerfile -t markata-docs:local .
 docker run --rm -p 8080:8080 markata-docs:local
 ```
