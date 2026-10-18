@@ -140,6 +140,17 @@ Issues: https://github.com/WaylonWalker/markata-go/issues
 
 ## Commands
 
+### version
+
+Print the version, commit, build date, Go runtime, and platform for this CLI
+binary. Release and container builds inject the version, commit, and build date
+at compile time. Use `--short` when a script needs only the version string.
+
+```bash
+markata-go version
+markata-go version --short
+```
+
 ### lsp
 
 Start the Markdown language server, check its local prerequisites, or print
