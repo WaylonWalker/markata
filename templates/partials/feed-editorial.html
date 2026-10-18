@@ -1,7 +1,7 @@
 {# Server-rendered weekly digest. Each post uses the existing card router. #}
 <div class="editorial-feed posts-list" id="posts-list" data-calendar-primary data-editorial-version="4">
   {% for section in feed_sections %}
-  <section class="editorial-week" aria-label="{{ section.Label }}">
+  <section class="editorial-week" aria-label="{{ section.Label }}" style="--editorial-week-items: {{ section.Items|length }}">
     <h2 class="editorial-week-heading"><span class="editorial-week-eyebrow">{{ section.Label }}</span><span data-editorial-relative-week data-week-start="{{ section.Start }}">{{ section.RelativeLabel }}</span></h2>
     <div class="editorial-week-entries">
       {% for item in section.Items %}

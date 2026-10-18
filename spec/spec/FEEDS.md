@@ -1766,3 +1766,11 @@ eager styles before the first paint. Applying deferred calendar/search styles
 or hydrating either search provider MUST preserve the visible header, feed,
 and story positions and widths at mobile and desktop sizes, including feeds
 with a closed sidebar. Deferred styles MAY supply optional control appearance.
+
+## Offscreen Editorial Week Sizing
+
+Offscreen editorial weeks reserve an intrinsic height scaled to their editorial
+item count, with a conservative fallback for custom templates. The estimate
+should avoid geometric overlap with following sections while actual heights
+are unknown. Native reveal remembers measured heights. Find, focus, print and
+no-JavaScript access remain available.

@@ -1464,7 +1464,7 @@ article.post > .post-content > .feed.h-feed {
 @media screen {
   .feed--editorial .editorial-week ~ .editorial-week {
     content-visibility: auto;
-    contain-intrinsic-block-size: auto 1000px;
+    contain-intrinsic-block-size: auto calc(var(--editorial-week-items, 6) * 700px);
   }
 }
 

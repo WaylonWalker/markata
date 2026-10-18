@@ -1632,3 +1632,7 @@ focus, and explicit feed cycling can still prepare the next navigation.
 Calendar feeds reserve their full list width before optional calendar styles
 arrive. Navbar search also reserves its final width before search hydration,
 so opening an archive does not move the content as those styles finish loading.
+
+Editorial weeks below the first viewport reserve space according to the number
+of items they contain. This keeps unrendered weeks from crowding following
+sections. The browser remembers their actual height after revealing them.
