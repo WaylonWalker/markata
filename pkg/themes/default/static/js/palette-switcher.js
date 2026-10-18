@@ -62,10 +62,13 @@
 
   let manifestCache = null;
   let manifestIndex = null;
+  let manifestHasFullStyles = false;
 
   function getManifest() {
-    if (manifestCache && manifestCache.length) return manifestCache;
+    const fullStyles = !!window.__markataPaletteStylesReady;
+    if (manifestCache && manifestCache.length && manifestHasFullStyles === fullStyles) return manifestCache;
     manifestCache = readCSSJSON('--palette-manifest');
+    manifestHasFullStyles = fullStyles;
     manifestIndex = new Map(manifestCache.map((entry) => [entry.name, entry]));
     return manifestCache;
   }

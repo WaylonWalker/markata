@@ -1173,7 +1173,8 @@ navigation and custom templates. The runtime loader recognizes bundled sources
 and avoids downloading them again.
 
 With the built-in theme picker, the default template initially loads
-`palette-core.css` for the configured light/dark pair. Other colors load when
+`palette-core.css` with colors and picker metadata for the configured light/dark
+pair. The remaining palette catalog and colors load when
 opening the picker or restoring a saved or seasonal choice. Custom templates
 can continue loading the complete `palette.css` stylesheet.
 

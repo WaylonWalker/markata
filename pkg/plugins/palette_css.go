@@ -488,6 +488,7 @@ func (p *PaletteCSSPlugin) generateMultiPaletteCSS(loader *palettes.Loader, extr
 	var blocks bytes.Buffer
 	var coreBlocks bytes.Buffer
 	manifest := make([]PaletteManifestEntry, 0, len(candidates))
+	coreManifest := make([]PaletteManifestEntry, 0, 2)
 	for _, entry := range candidates {
 		palette, err := loader.Load(entry.loadName)
 		if err != nil && entry.loadName != entry.Name {
@@ -501,6 +502,7 @@ func (p *PaletteCSSPlugin) generateMultiPaletteCSS(loader *palettes.Loader, extr
 		p.writePaletteVariablesIndented(&blocks, palette, "  ")
 		blocks.WriteString("}\n\n")
 		if entry.Name == normalizePaletteName(lightName) || entry.Name == normalizePaletteName(darkName) {
+			coreManifest = append(coreManifest, entry)
 			fmt.Fprintf(&coreBlocks, "[data-palette=%q], :root[data-palette=%q] {\n", entry.Name, entry.Name)
 			p.writePaletteVariablesIndented(&coreBlocks, palette, "  ")
 			coreBlocks.WriteString("}\n\n")
@@ -508,6 +510,10 @@ func (p *PaletteCSSPlugin) generateMultiPaletteCSS(loader *palettes.Loader, extr
 		manifest = append(manifest, entry)
 	}
 	manifest = linkCounterparts(manifest)
+	coreManifest = linkCounterparts(coreManifest)
+	if len(coreManifest) == 0 {
+		coreManifest = manifest
+	}
 	if extra != nil {
 		extra["palette_seasonal_json"] = seasonalScheduleJSON(manifest, time.Now())
 	}
@@ -518,12 +524,8 @@ func (p *PaletteCSSPlugin) generateMultiPaletteCSS(loader *palettes.Loader, extr
 	buf.WriteString(fmt.Sprintf("/* Default: Light=%s, Dark=%s */\n\n", lightName, darkName))
 
 	// Generate palette manifest for JavaScript
-	manifestJSON, err := json.Marshal(manifest)
-	if err != nil {
-		manifestJSON = []byte("[]")
-	}
-	// Escape single quotes in the JSON for CSS single-quoted string
-	escapedManifest := strings.ReplaceAll(string(manifestJSON), "'", "\\'")
+	escapedManifest := paletteManifestCSS(manifest)
+	coreManifestCSS := paletteManifestCSS(coreManifest)
 
 	// Write non-color variables and palette manifest in :root
 	buf.WriteString("/* Global configuration and non-color variables */\n")
@@ -584,15 +586,25 @@ func (p *PaletteCSSPlugin) generateMultiPaletteCSS(loader *palettes.Loader, extr
 
 	buf.WriteString("}\n\n")
 	p.writeThemeOverrides(&buf, overrides)
-	setPaletteCoreCSS(extra, buf.String(), blocks.String(), coreBlocks.String())
+	setPaletteCoreCSS(extra, buf.String(), blocks.String(), coreBlocks.String(), escapedManifest, coreManifestCSS)
 
 	return buf.String()
 }
 
+// paletteManifestCSS escapes catalog metadata for a single-quoted CSS value.
+func paletteManifestCSS(manifest []PaletteManifestEntry) string {
+	encoded, err := json.Marshal(manifest)
+	if err != nil {
+		return "[]"
+	}
+	return strings.ReplaceAll(string(encoded), "'", "\\'")
+}
+
 // setPaletteCoreCSS substitutes the configured pair for the full pickable set.
-func setPaletteCoreCSS(extra map[string]interface{}, fullCSS, paletteBlocks, coreBlocks string) {
+func setPaletteCoreCSS(extra map[string]interface{}, fullCSS, paletteBlocks, coreBlocks, manifest, coreManifest string) {
 	if extra != nil && paletteBlocks != "" {
-		extra["palette_core_css"] = strings.Replace(fullCSS, paletteBlocks, coreBlocks, 1)
+		core := strings.Replace(fullCSS, paletteBlocks, coreBlocks, 1)
+		extra["palette_core_css"] = strings.Replace(core, "--palette-manifest: '"+manifest+"';", "--palette-manifest: '"+coreManifest+"';", 1)
 	}
 }
 
