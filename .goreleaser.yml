@@ -171,10 +171,9 @@ changelog:
     - title: "Other"
       order: 999
 
+# Infer the release repository from the checked-out git origin.
+# Hard-coding markata-go here would target the old URL after the GitHub rename.
 release:
-  github:
-    owner: WaylonWalker
-    name: markata-go
   draft: false
   prerelease: auto
   mode: replace
