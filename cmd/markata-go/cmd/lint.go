@@ -372,7 +372,8 @@ func processFile(file string, stats *lintStats, mentionResolver *blogrollMention
 	}
 
 	var result *lint.Result
-	if lintFix {
+	switch {
+	case lintFix:
 		result = lint.Fix(file, string(content))
 		if mentionResolver != nil {
 			for _, issue := range lint.WithResolver(file, string(content), mentionResolver).Issues {
@@ -381,9 +382,9 @@ func processFile(file string, stats *lintStats, mentionResolver *blogrollMention
 				}
 			}
 		}
-	} else if mentionResolver != nil {
+	case mentionResolver != nil:
 		result = lint.WithResolver(file, string(content), mentionResolver)
-	} else {
+	default:
 		result = lint.Lint(file, string(content))
 	}
 
