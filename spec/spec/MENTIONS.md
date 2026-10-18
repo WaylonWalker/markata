@@ -420,3 +420,40 @@ If the handle does not resolve, the title remains as plain text (e.g., `@alice`)
 - **Blogroll** - Source of external handles
 - **Wikilinks** (`[[slug]]`) - Internal links by slug
 - **Filter Expressions** - Query language for selecting posts
+
+
+## Quote Attribution Syntax
+
+A leading tilde marks the source of quoted words:
+
+```markdown
+If an agent cannot verify its own work, nothing else matters.
+
+~poteto
+```
+
+Both `@handle` and `~handle` use the **same blogroll-first** lookup.
+`@handle` remains a standard mention link; `~handle` is a quote
+attribution and emits `class="mention mention--attribution"` with
+the visible `~` prefix. An unresolved tilde attribution is styled as
+a noninteractive `span.mention--attribution.mention--unresolved` and
+MUST NOT link to a guessed social account. Unresolved `@handle`
+continues to render as plain text.
+
+The renderer uses no social-account lookups. Caching must invalidate on
+mention syntax changes (cache signature version and/or source changes).
+
+### Offline author warnings
+
+When a site has an enabled blogroll, `markata-go lint` checks both
+`@handle` and `~handle` against configured active feed handles,
+domain aliases, and explicit aliases. Unknown references are reported
+as warnings with their source location and a suggestion to add a handle
+or alias to the blogroll. Lint never contacts X, GitHub, Bluesky or other
+social sites to guess identity. Default lint preserves its historical
+behavior for sites where the blogroll is disabled.
+
+An explicit, interactive discovery tool may later offer candidates in
+this priority: configured blogroll, X/Twitter, GitHub, Bluesky. Candidate
+links require the author's approval and identity evidence before
+becoming blogroll entries; a handle match alone is insufficient.

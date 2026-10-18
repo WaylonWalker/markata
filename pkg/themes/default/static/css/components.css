@@ -4922,4 +4922,43 @@ body.reader-mode::after {
   }
 }
 
+
+/* Quote attributions (~handle) use the same theme tokens in every palette.
+   Keep these understated so the attribution doesn't compete with the quote. */
+.post-content .mention--attribution,
+.prose .mention--attribution {
+  display: inline;
+  padding: 0.1em 0.42em;
+  border-radius: 0.45em;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: 0.875em;
+  font-weight: 550;
+  line-height: 1.65;
+  text-decoration: none;
+  white-space: nowrap;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+.post-content a.mention--attribution:hover,
+.prose a.mention--attribution:hover {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+  text-decoration: underline;
+  text-underline-offset: 0.14em;
+}
+
+.post-content a.mention--attribution:focus-visible,
+.prose a.mention--attribution:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.post-content .mention--attribution.mention--unresolved,
+.prose .mention--attribution.mention--unresolved {
+  border-style: dashed;
+}
+
 }
