@@ -48,6 +48,11 @@ jobs:
           grep -F 'href="/assets/site.css"' docs-site/_site/index.html
           grep -F 'href="/docs/quickstart/"' docs-site/_site/index.html
           python -m compileall -q scripts/build_docs_site.py
+      - name: Test homelab builder
+        run: |
+          python docs-site/test_builder_admin.py
+          docker build -f docs-site/Dockerfile.builder -t markata-docs-builder:verify .
+          docker run --rm --entrypoint python markata-docs-builder:verify -m py_compile /app/builder_admin.py
       - name: Build nginx image for smoke test
         run: docker build -f docs-site/Dockerfile -t markata-docs:verify .
       - name: Smoke test nginx and deep links
@@ -91,6 +96,22 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish live builder image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docs-site/Dockerfile.builder
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ghcr.io/waylonwalker/markata-docs-builder:0.0.${{ github.run_number }}
+            ghcr.io/waylonwalker/markata-docs-builder:sha-${{ github.sha }}
+            ghcr.io/waylonwalker/markata-docs-builder:latest
+          labels: |
+            org.opencontainers.image.source=https://github.com/WaylonWalker/markata
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha,scope=markata-docs-builder
+          cache-to: type=gha,mode=max,scope=markata-docs-builder
       - name: Publish versioned and commit-pinned image
         uses: docker/build-push-action@v6
         with:
