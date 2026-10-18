@@ -405,6 +405,7 @@ func checkWikilinks(filePath, body string, hasFrontmatter bool, frontmatter stri
 					Message:  fmt.Sprintf("broken wikilink: target post %q not found", slug),
 					Fixable:  false,
 				})
+			}
 		}
 	}
 
