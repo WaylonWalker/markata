@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	envPrefix = "MARKATA_GO_" // Historical prefix, retained for old sites.
+	envPrefix          = "MARKATA_GO_" // Historical prefix, retained for old sites.
 	canonicalEnvPrefix = "MARKATA_"
 )
 
