@@ -29,12 +29,12 @@ for os in linux darwin windows; do
     expected="$executable"
     if [[ "$os" == windows ]]; then
       expected="${executable}.exe"
-      unzip -Z1 "$archive" | grep -Eq "(^|/)${expected}$" || {
+      unzip -Z1 "$archive" | grep -E "(^|/)${expected}$" >/dev/null || {
         printf 'Missing executable %s in %s\n' "$expected" "$archive" >&2
         exit 1
       }
     else
-      tar -tzf "$archive" | grep -Eq "(^|/)${expected}$" || {
+      tar -tzf "$archive" | grep -E "(^|/)${expected}$" || {
         printf 'Missing executable %s in %s\n' "$expected" "$archive" >&2
         exit 1
       }
