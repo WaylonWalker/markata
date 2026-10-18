@@ -477,18 +477,18 @@ func checkMentions(filePath, body string, hasFrontmatter bool, frontmatter strin
 			}
 
 			issues = append(issues, Issue{
-					File: filePath,
-					Range: Range{
-						StartLine: lineNum + lineOffset,
-						StartCol:  match[0],
-						EndLine:   lineNum + lineOffset,
-						EndCol:    match[1],
-					},
-					Code:     diagnosticCodeUnknownMention,
-					Severity: SeverityWarning,
-					Message:  fmt.Sprintf("unknown mention: %s%s not found in blogroll; add a handle or alias to your blogroll", marker, handle),
-					Fixable:  false,
-				})
+				File: filePath,
+				Range: Range{
+					StartLine: lineNum + lineOffset,
+					StartCol:  match[0],
+					EndLine:   lineNum + lineOffset,
+					EndCol:    match[1],
+				},
+				Code:     diagnosticCodeUnknownMention,
+				Severity: SeverityWarning,
+				Message:  fmt.Sprintf("unknown mention: %s%s not found in blogroll; add a handle or alias to your blogroll", marker, handle),
+				Fixable:  false,
+			})
 		}
 	}
 
