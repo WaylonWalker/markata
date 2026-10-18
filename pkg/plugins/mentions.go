@@ -862,7 +862,7 @@ func (p *MentionsPlugin) replaceMentionsInText(text string, handleMap map[string
 			if !found {
 				if marker == "~" {
 					return prefix + fmt.Sprintf(`<span class=%q data-handle=%q>%s%s</span>`,
-						p.cssClass+" mention--attribution mention--unresolved",
+						html.EscapeString(p.cssClass+" mention--attribution mention--unresolved"),
 						html.EscapeString("~"+handle), marker, html.EscapeString(handle)) + suffix
 				}
 				return match
