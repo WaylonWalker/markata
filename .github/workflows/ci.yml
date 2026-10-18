@@ -204,7 +204,7 @@ jobs:
           )
           for excluded in "${expected_exclusions[@]}"; do
             if ! grep -Fxq "$excluded" "$RUNNER_TEMP/all-packages.txt"; then
-              printf 'Expected package missing from CI shard exclusions: %s\\n' "$excluded" >&2
+              printf 'Expected package missing from CI shard exclusions: %s\n' "$excluded" >&2
               exit 1
             fi
           done
