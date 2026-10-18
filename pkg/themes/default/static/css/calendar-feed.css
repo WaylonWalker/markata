@@ -1,18 +1,3 @@
-/* Photo grids manage their own responsive main-content width and pinned drawer offsets. */
-.page-wrapper.page-wrapper--feed-only:has(> .main-content > .feed.h-feed.calendar-feed:not(.feed--photo-grid)) > .main-content {
-  width: 100%;
-  max-width: 100%;
-}
-/* Calendar pages have room for readable months, independent of article width. */
-.main-content > .feed.h-feed.calendar-feed {
-  width: 100%;
-  max-width: 100%;
-  --feed-content-width: 100%;
-}
-.feed.h-feed.calendar-feed > .feed-header {
-  width: 100%;
-  max-width: none;
-}
 .calendar-feed {
   --calendar-border: color-mix(in srgb, currentColor 18%, transparent);
   --calendar-muted: color-mix(in srgb, currentColor 62%, transparent);

@@ -139,12 +139,16 @@ func TestPhotoGridUsesAvailableLayoutWidth(t *testing.T) {
 	}
 
 	// Both classes appear together on photo-grid feeds that enable the Calendar
-	// peer view. The shared Calendar stylesheet must not override this width.
+	// peer view. The eager calendar sizing rule must exclude photo grids, and
+	// the deferred stylesheet must not reintroduce a competing wrapper width.
 	calendarCSS, err := fs.ReadFile(DefaultStatic(), "css/calendar-feed.css")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(calendarCSS), "calendar-feed:not(.feed--photo-grid)") {
+	if !strings.Contains(css, "calendar-feed:not(.feed--photo-grid)") {
 		t.Error("calendar feed width rule must exclude photo grids")
+	}
+	if strings.Contains(string(calendarCSS), ".page-wrapper.page-wrapper--feed-only:has(") {
+		t.Error("deferred calendar CSS must not change the page wrapper width")
 	}
 }
