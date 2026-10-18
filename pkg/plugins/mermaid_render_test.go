@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/WaylonWalker/markata-go/pkg/runtimeenv"
+	"github.com/WaylonWalker/markata/pkg/runtimeenv"
 )
 
 func TestLoadOrDownloadJSSource_UsesBundledMermaidDir(t *testing.T) {

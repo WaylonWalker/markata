@@ -49,9 +49,9 @@ builds:
         goarch: arm
     ldflags:
       - -s -w
-      - -X github.com/WaylonWalker/markata-go/cmd/markata-go/cmd.Version={{.Version}}
-      - -X github.com/WaylonWalker/markata-go/cmd/markata-go/cmd.Commit={{.Commit}}
-      - -X github.com/WaylonWalker/markata-go/cmd/markata-go/cmd.Date={{.Date}}
+      - -X github.com/WaylonWalker/markata/cmd/markata-go/cmd.Version={{.Version}}
+      - -X github.com/WaylonWalker/markata/cmd/markata-go/cmd.Commit={{.Commit}}
+      - -X github.com/WaylonWalker/markata/cmd/markata-go/cmd.Date={{.Date}}
     mod_timestamp: "{{ .CommitTimestamp }}"
 
   - id: markata
@@ -89,9 +89,9 @@ builds:
         goarch: arm
     ldflags:
       - -s -w
-      - -X github.com/WaylonWalker/markata-go/cmd/markata-go/cmd.Version={{.Version}}
-      - -X github.com/WaylonWalker/markata-go/cmd/markata-go/cmd.Commit={{.Commit}}
-      - -X github.com/WaylonWalker/markata-go/cmd/markata-go/cmd.Date={{.Date}}
+      - -X github.com/WaylonWalker/markata/cmd/markata-go/cmd.Version={{.Version}}
+      - -X github.com/WaylonWalker/markata/cmd/markata-go/cmd.Commit={{.Commit}}
+      - -X github.com/WaylonWalker/markata/cmd/markata-go/cmd.Date={{.Date}}
     mod_timestamp: "{{ .CommitTimestamp }}"
 
 archives:

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/WaylonWalker/markata-go/pkg/palettes"
+	"github.com/WaylonWalker/markata/pkg/palettes"
 )
 
 func TestWriterNormalizesBracketedComponent(t *testing.T) {

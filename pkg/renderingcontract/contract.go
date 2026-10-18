@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/WaylonWalker/markata-go/pkg/palettes"
+	"github.com/WaylonWalker/markata/pkg/palettes"
 )
 
 const (

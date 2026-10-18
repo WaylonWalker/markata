@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/WaylonWalker/markata-go/pkg/agentskill"
+	"github.com/WaylonWalker/markata/pkg/agentskill"
 	"github.com/spf13/cobra"
 )
 

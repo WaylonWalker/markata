@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/WaylonWalker/markata-go/pkg/buildlab"
+	"github.com/WaylonWalker/markata/pkg/buildlab"
 )
 
 func TestBuildLabCLI_OnlyExposesReviewedDAGOptIn(t *testing.T) {

@@ -16,7 +16,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
 )
 
 const (

@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/WaylonWalker/markata-go/pkg/renderingcontract"
+	"github.com/WaylonWalker/markata/pkg/renderingcontract"
 )
 
 func TestCompile_CanonicalBundleHasRealHashes(t *testing.T) {

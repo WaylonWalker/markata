@@ -10,9 +10,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/builderadmin"
-	"github.com/WaylonWalker/markata-go/pkg/config"
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/builderadmin"
+	"github.com/WaylonWalker/markata/pkg/config"
+	"github.com/WaylonWalker/markata/pkg/models"
 	"github.com/spf13/cobra"
 )
 

@@ -3,9 +3,9 @@ package plugins
 import (
 	"testing"
 
-	"github.com/WaylonWalker/markata-go/pkg/filter"
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/filter"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 func TestSubscriptionFeedsPlugin_Collect_AddsPinsFeed(t *testing.T) {

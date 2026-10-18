@@ -34,7 +34,7 @@ If you install from Go source rather than binary releases, the new command is
 available from `main` until the first tagged version with the new entry point:
 
 ```bash
-go install github.com/WaylonWalker/markata-go/cmd/markata@main
+go install github.com/WaylonWalker/markata/cmd/markata@main
 ```
 
 ## Configuration stays as-is for now
@@ -79,12 +79,14 @@ legacy configuration names, container registry permissions, or live sites.
 
 ## Package and production migration
 
-The Go module is still declared as `github.com/WaylonWalker/markata-go`
-until the separate module/import migration passes tests. During that
-transition, pinned old Go imports may continue referencing older releases;
-avoid mixing both module paths in a single module's dependency graph.
-For the first Go 1.0 release, new imports should use
-`github.com/WaylonWalker/markata`.
+The Go module now declares `github.com/WaylonWalker/markata`,
+and tracked Go imports have migrated to that path. Pinned pre-cutover
+releases may still be available under the old
+`github.com/WaylonWalker/markata-go` module identity.
+Avoid mixing both module paths in a single dependency graph.
+For new Go code and `go install`, use
+`github.com/WaylonWalker/markata`. See the
+[Go module cutover guide](go-module-cutover.md) for migration details.
 
 Existing `markata-go.toml`, `[markata-go]`, `MARKATA_GO_*`,
 `markata-go` binaries and legacy GHCR builder references are intentionally

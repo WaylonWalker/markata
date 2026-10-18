@@ -3,7 +3,7 @@ package lifecycle
 import (
 	"path/filepath"
 
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 func normalizeServePath(path string) string {

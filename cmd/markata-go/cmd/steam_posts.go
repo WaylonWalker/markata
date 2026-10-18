@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/models"
 	"gopkg.in/yaml.v3"
 )
 

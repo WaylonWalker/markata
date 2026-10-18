@@ -21,7 +21,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/WaylonWalker/markata-go/pkg/lsp"
+	"github.com/WaylonWalker/markata/pkg/lsp"
 )
 
 var (

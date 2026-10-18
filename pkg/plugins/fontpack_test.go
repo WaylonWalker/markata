@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/WaylonWalker/markata-go/pkg/fontpacks"
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/fontpacks"
+	"github.com/WaylonWalker/markata/pkg/models"
 
 	htmlparser "golang.org/x/net/html"
 )

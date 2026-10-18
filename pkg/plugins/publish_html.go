@@ -9,13 +9,13 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/WaylonWalker/markata-go/pkg/buildcache"
-	"github.com/WaylonWalker/markata-go/pkg/diagnostics"
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/logging"
-	"github.com/WaylonWalker/markata-go/pkg/models"
-	"github.com/WaylonWalker/markata-go/pkg/palettes"
-	"github.com/WaylonWalker/markata-go/pkg/templates"
+	"github.com/WaylonWalker/markata/pkg/buildcache"
+	"github.com/WaylonWalker/markata/pkg/diagnostics"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/logging"
+	"github.com/WaylonWalker/markata/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/palettes"
+	"github.com/WaylonWalker/markata/pkg/templates"
 )
 
 var publishHTMLLog = logging.Component("publish_html").Phase("write")
@@ -830,7 +830,7 @@ func inferPaletteVariant(paletteName string) palettes.Variant {
 // If skipSlugRedirect is true, the /slug/index.html redirect is skipped
 // (used when HTML format is also enabled, since /slug/index.html has the main HTML content).
 //
-// Fixes: https://github.com/WaylonWalker/markata-go/issues/465
+// Fixes: https://github.com/WaylonWalker/markata/issues/465
 func (p *PublishHTMLPlugin) writeReversedFormatOutput(slug, ext, content, outputDir string, skipSlugRedirect bool) error {
 	// The homepage (empty slug) lives at the output root, so its alternate
 	// formats are /index.<ext>. There is no /<slug>.<ext> location or redirect

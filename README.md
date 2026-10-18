@@ -45,10 +45,10 @@ mise use -g github:WaylonWalker/markata
 Until a tagged release contains the new entry point, install the canonical binary from `main`:
 
 ```bash
-go install github.com/WaylonWalker/markata-go/cmd/markata@main
+go install github.com/WaylonWalker/markata/cmd/markata@main
 ```
 
-Existing tagged versions remain available with `go install github.com/WaylonWalker/markata-go/cmd/markata-go@latest`.
+Existing historical tagged versions remain available under the former `github.com/WaylonWalker/markata-go` module path when pinned explicitly. For current source, use `go install github.com/WaylonWalker/markata/cmd/markata-go@main` to install the legacy-named executable.
 
 ### Manual Download
 

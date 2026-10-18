@@ -14,7 +14,7 @@ import (
 	"github.com/chromedp/chromedp"
 	"github.com/chromedp/chromedp/kb"
 
-	"github.com/WaylonWalker/markata-go/pkg/servefix"
+	"github.com/WaylonWalker/markata/pkg/servefix"
 )
 
 func TestBrowserKeyboardNavigationAndHistory(t *testing.T) {

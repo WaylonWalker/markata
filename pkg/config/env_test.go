@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 func TestApplyEnvOverrides_StringFields(t *testing.T) {
