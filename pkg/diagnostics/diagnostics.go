@@ -489,7 +489,6 @@ func checkMentions(filePath, body string, hasFrontmatter bool, frontmatter strin
 					Message:  fmt.Sprintf("unknown mention: %s%s not found in blogroll; add a handle or alias to your blogroll", marker, handle),
 					Fixable:  false,
 				})
-			}
 		}
 	}
 
