@@ -99,7 +99,12 @@ grouping. Smaller or unclassified feeds retain the classic view.
 Custom HTML templates, such as `feed-photo-grid.html`, take precedence
 over automatic layout detection.
 
-Editorial grouping uses Monday-start publishing weeks. Articles are
+Editorial grouping uses Monday-start publishing weeks. Weekly headings show relative
+calendar time (This week, Last week, 2 weeks ago, 2 months ago, 2 years ago)
+with the exact week range as a smaller caption. Relative labels are rendered
+at build time and refreshed in the browser so long-cached static pages remain
+accurate without a rebuild. Dates and weekly grouping remain unchanged.
+Articles are
 emphasized, substantial links and video follow, and all photos from a
 publishing week appear together in a single responsive gallery. One-photo
 weeks also use the gallery layout rather than stretching a photo into a
