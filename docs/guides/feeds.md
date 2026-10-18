@@ -1628,3 +1628,7 @@ the complete page normally.
 
 Keyboard navigation setup does not download the next archive page. Link hover,
 focus, and explicit feed cycling can still prepare the next navigation.
+
+Editorial weeks below the first viewport reserve space according to the number
+of items they contain. This keeps unrendered weeks from crowding following
+sections. The browser remembers their actual height after revealing them.
