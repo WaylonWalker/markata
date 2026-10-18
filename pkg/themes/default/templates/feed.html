@@ -7,6 +7,8 @@
 {{ block.Super() }}
 {% if feed_robots %}<meta name="robots" content="{{ feed_robots }}">{% endif %}
 {% if feed_presentation == "editorial" %}
+{# Relative headings are rendered at build time and refreshed for cached pages. #}
+<script src="{{ 'js/editorial-relative-weeks.js' | theme_asset_hashed }}" defer></script>
 {# Essential mobile shot layout on first paint, even if a CDN stylesheet is unavailable. #}
 <style id="editorial-gallery-critical">
 .feed--editorial .editorial-shot-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .5rem; align-items: start; }
