@@ -405,7 +405,6 @@ func checkWikilinks(filePath, body string, hasFrontmatter bool, frontmatter stri
 					Message:  fmt.Sprintf("broken wikilink: target post %q not found", slug),
 					Fixable:  false,
 				})
-			}
 		}
 	}
 
@@ -414,6 +413,19 @@ func checkWikilinks(filePath, body string, hasFrontmatter bool, frontmatter stri
 
 // mentionRegex matches @mentions and ~quote attributions.
 var mentionRegex = regexp.MustCompile(`([@~])([a-zA-Z][a-zA-Z0-9_.-]*)`)
+
+// resolveMentionForLint checks the complete handle first, allowing valid
+// domain-style names, then retries without trailing sentence punctuation.
+func resolveMentionForLint(resolver Resolver, handle string) (string, bool) {
+	if resolver.ResolveHandle(handle) {
+		return handle, true
+	}
+	stripped := strings.TrimRight(handle, ".,;:!?")
+	if stripped == "" || stripped == handle {
+		return handle, false
+	}
+	return stripped, resolver.ResolveHandle(stripped)
+}
 
 // checkMentions finds unknown mentions in content.
 func checkMentions(filePath, body string, hasFrontmatter bool, frontmatter string, resolver Resolver) []Issue {
@@ -459,21 +471,12 @@ func checkMentions(filePath, body string, hasFrontmatter bool, frontmatter strin
 			handleStart := match[4]
 			handleEnd := match[5]
 			handle := strings.ToLower(line[handleStart:handleEnd])
-			if resolver.ResolveHandle(handle) {
+			handle, known := resolveMentionForLint(resolver, handle)
+			if known {
 				continue
-			}
-			// A trailing dot belongs to the sentence unless a complete
-			// domain-style handle resolves in the blogroll.
-			stripped := strings.TrimRight(handle, ".,;:!?")
-			if stripped != handle && resolver.ResolveHandle(stripped) {
-				continue
-			}
-			if stripped != "" {
-				handle = stripped
 			}
 
-			if !resolver.ResolveHandle(handle) {
-				issues = append(issues, Issue{
+			issues = append(issues, Issue{
 					File: filePath,
 					Range: Range{
 						StartLine: lineNum + lineOffset,
