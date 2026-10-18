@@ -1180,6 +1180,10 @@ and avoids downloading them again.
 The navbar reserves space for its search input before deferred search styles
 load, so the header stays in place while search initializes.
 
+Mobile drawers center the active feed item when opened without measuring
+closed-drawer geometry during startup. Desktop drawers
+continue to restore their saved state and follow the visible header edge.
+
 With the built-in theme picker, the default template initially loads
 `palette-core.css` with colors and picker metadata for the configured light/dark
 pair. Generated palette changes also invalidate cached HTML, so warm builds

@@ -4112,3 +4112,10 @@ Font preloads include each distinct body, display, and heading source once.
 A separate display role must not suppress the heading face used by ordinary
 page titles. Code and extended coverage remain demand-loaded. The configured
 tier selection and returning visitor font-pack choice are preserved.
+
+Closed overlay drawers must not measure header or active navigation geometry
+during startup. Opening a drawer centers the active feed item. Full-height overlay drawers
+need no header offset; desktop offsets are scoped to drawer elements, preserving
+desktop persistence and resize/scroll behavior without restyling article trees.
+An overlay drawer focuses its active navigation link when available, otherwise
+its first interactive content, and Escape returns focus to the drawer handle.
