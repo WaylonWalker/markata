@@ -3304,6 +3304,16 @@
     0 1px 0 color-mix(in srgb, var(--color-border) 55%, transparent);
 }
 
+/* Skip layout and paint inside distant reader cards while preserving server-rendered
+   content and grid space. Keep the first four cards of each day fully laid out
+   for first paint and keyboard/navigation predictability. */
+@supports (content-visibility: auto) {
+  .reader-day-entries > .reader-entry:nth-child(n+5) {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 24rem;
+  }
+}
+
 .reader-entry-meta-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
