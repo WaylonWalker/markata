@@ -1174,7 +1174,8 @@ and avoids downloading them again.
 
 With the built-in theme picker, the default template initially loads
 `palette-core.css` with colors and picker metadata for the configured light/dark
-pair. The remaining palette catalog and colors load when
+pair. Generated palette changes also invalidate cached HTML, so warm builds
+reference the current stylesheet. The remaining palette catalog and colors load when
 opening the picker or restoring a saved or seasonal choice. Custom templates
 can continue loading the complete `palette.css` stylesheet.
 
