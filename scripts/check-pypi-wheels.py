@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
-"""Check Go Markata wheels without publishing or modifying the Python PyPI project."""
+"""Validate all of Simon Willison's Go binary wheel targets before PyPI upload."""
 
 from __future__ import annotations
 
+import os
 import sys
 import zipfile
 from pathlib import Path
 
-VERSION = "0.0.0.dev0"
+VERSION = os.environ.get("MARKATA_WHEEL_VERSION", "0.14.0.dev0")
 NAME = "markata"
 PLATFORMS = {
     "manylinux_2_17_x86_64": b"\x7fELF",
@@ -66,7 +67,7 @@ def check_wheels(folder: Path) -> None:
                 raise AssertionError(f"{wheel.name} has no Mach-O executable")
         print(f"OK: {wheel.name}")
 
-    print("Eight valid Go executable wheels; PyPI was not contacted.")
+    print("Eight valid Go executable wheels verified; no upload in this step.")
 
 
 if __name__ == "__main__":
