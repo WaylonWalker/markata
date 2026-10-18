@@ -21,7 +21,7 @@ import (
 const (
 	fontpackCacheFile        = ".markata-fontpack-cache"
 	fontpackPreloadCacheFile = ".markata-fontpack-preloads.json"
-	fontpackCacheVersion     = "10"
+	fontpackCacheVersion     = "11"
 )
 
 const fontpackRoleHeading = "heading"
@@ -260,9 +260,6 @@ func fontpackPreloadURLs(pack fontpacks.FontPack, assets []fontpacks.Asset) []st
 	urls := []string{}
 	seen := map[string]bool{}
 	for _, role := range []string{"body", "display", fontpackRoleHeading} {
-		if role == fontpackRoleHeading && pack.Roles["display"].Source != "" {
-			continue
-		}
 		source := pack.Roles[role].Source
 		tier := pack.Roles[role].Tier
 		if source == "" || seen[source] {
