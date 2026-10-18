@@ -1176,7 +1176,9 @@ The navbar reserves space for its search input before deferred search styles
 load, so the header stays in place while search initializes.
 
 With the built-in theme picker, the default template initially loads
-`palette-core.css` for the configured light/dark pair. Other colors load when
+`palette-core.css` with colors and picker metadata for the configured light/dark
+pair. Generated palette changes also invalidate cached HTML, so warm builds
+reference the current stylesheet. The remaining palette catalog and colors load when
 opening the picker or restoring a saved or seasonal choice. Custom templates
 can continue loading the complete `palette.css` stylesheet.
 

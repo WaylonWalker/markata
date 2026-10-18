@@ -4092,3 +4092,18 @@ $palette: (
 - [CONFIG.md](./CONFIG.md) - Theme configuration
 - [CONTENT.md](./CONTENT.md) - Admonition syntax
 - [SPEC.md](./SPEC.md) - Core specification
+
+### Deferred palette catalog
+
+The default theme's initial palette-core stylesheet MUST include only configured
+light/dark palette metadata and colors. The full palette stylesheet MUST retain
+the complete catalog for custom templates and lazy picker loading. If the
+configured pair cannot be resolved, retain the full manifest as a fallback.
+The picker MUST refresh a previously cached core manifest after full palette
+styles become ready, so every color remains available on the first opening.
+
+Generated palette hashes participate in HTML cache invalidation after all
+Configure hooks finish. Consecutive full builds must update cached archive
+stylesheet URLs when generated colors or metadata change, even if source
+content, templates, and static files are unchanged. Unchanged generated
+assets preserve warm page and feed caches.
