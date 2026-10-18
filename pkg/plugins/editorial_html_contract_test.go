@@ -60,7 +60,8 @@ func TestEditorialPageRendersMarkupNotFallback(t *testing.T) {
 	if err != nil {
 		t.Fatalf("editorial page failed: %v", err)
 	}
-	if !editorialHTMLMarkupValid(html) || !strings.Contains(html, "The week of") {
+	if !editorialHTMLMarkupValid(html) || !strings.Contains(html, "data-editorial-relative-week") ||
+		!strings.Contains(html, "data-week-start=\"2026-10-12\"") {
 		t.Fatal("editorial page rendered without weekly markup")
 	}
 }
