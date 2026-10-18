@@ -188,13 +188,13 @@ release:
 
     ```bash
     # Using jpillora/installer (Linux/macOS)
-    curl -sL https://i.jpillora.com/WaylonWalker/markata-go | bash
+    curl -sL https://i.jpillora.com/WaylonWalker/markata | bash
 
     # Using eget
-    eget WaylonWalker/markata-go
+    eget WaylonWalker/markata
 
     # Using mise (from GitHub releases)
-    mise use -g github:WaylonWalker/markata-go
+    mise use -g github:WaylonWalker/markata
     ```
 
     ### Manual Download
