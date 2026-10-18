@@ -756,3 +756,13 @@ The search implementation MUST add regression coverage for:
 4. implement `read-only-index` mode
 5. implement `watch-content` mode
 6. add deployment docs and regression tests
+
+## Search startup geometry
+
+The conditional asset loader MUST initialize search after the initial DOM
+load and after SPA navigation without reading navbar geometry or dispatching
+a synthetic global resize. Eager CSS reserves the search dimensions. Native
+viewport resize events MUST continue to reach consumers normally. Both the
+Pagefind lazy-loader callback and the legacy Pagefind initializer retain
+their existing priority and invocation behavior. Other providers keep their
+existing initialization paths.
