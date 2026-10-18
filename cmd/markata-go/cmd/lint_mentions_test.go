@@ -10,9 +10,9 @@ func TestBlogrollMentionResolver(t *testing.T) {
 	cfg := models.BlogrollConfig{
 		Enabled: true,
 		Feeds: []models.ExternalFeedConfig{{
-			URL: "https://example.com/feed.xml",
+			URL:     "https://example.com/feed.xml",
 			SiteURL: "https://example.com",
-			Handle: "Poteto",
+			Handle:  "Poteto",
 			Aliases: []string{"Lauren"},
 		}, {
 			URL: "https://simonwillison.net/atom/everything/",
