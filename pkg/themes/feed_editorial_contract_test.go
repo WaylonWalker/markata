@@ -17,6 +17,8 @@ func TestEditorialFeedPreservesPaginationAndCalendarHooks(t *testing.T) {
 	for _, want := range []string{
 		`class="editorial-feed posts-list" id="posts-list"`,
 		`data-calendar-primary`,
+		`data-editorial-relative-week data-week-start="{{ section.Start }}"`,
+		`{{ section.RelativeLabel }}`,
 		`{% include "partials/cards/card-router.html" %}`,
 	} {
 		if !strings.Contains(template, want) {
@@ -193,5 +195,30 @@ func TestEditorialArchiveDefersCalendarStylesAndLeadImages(t *testing.T) {
 		if strings.Contains(card, unwanted) {
 			t.Errorf("editorial link thumbnails must not include %q", unwanted)
 		}
+	}
+}
+
+func TestEditorialRelativeHeadingsScriptIsDeferred(t *testing.T) {
+	for _, path := range []string{"feed.html", "partials/feed-editorial.html"} {
+		tmpl, err := ReadTemplate(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if path == "feed.html" && !strings.Contains(string(tmpl),
+			`'js/editorial-relative-weeks.js' | theme_asset_hashed }}" defer`) {
+			t.Fatal("editorial week labels need a deferred hashed script")
+		}
+		if path != "feed.html" && !strings.Contains(string(tmpl),
+			`data-editorial-relative-week data-week-start="{{ section.Start }}"`) {
+			t.Fatal("editorial week start must be present for runtime labels")
+		}
+	}
+	js, err := fs.ReadFile(DefaultStatic(), "js/editorial-relative-weeks.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(js), "htmx:afterSwap") ||
+		!strings.Contains(string(js), "view-transition-complete") {
+		t.Fatal("relative labels must refresh after partial navigation")
 	}
 }
