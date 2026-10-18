@@ -52,7 +52,7 @@ jobs:
         run: |
           python docs-site/test_builder_admin.py
           docker build -f docs-site/Dockerfile.builder -t markata-docs-builder:verify .
-          docker run --rm --entrypoint python markata-docs-builder:verify -m py_compile /app/builder_admin.py
+          docker run --rm --entrypoint python markata-docs-builder:verify -c "import ast,pathlib; ast.parse(pathlib.Path('/app/builder_admin.py').read_text())"
       - name: Build nginx image for smoke test
         run: docker build -f docs-site/Dockerfile -t markata-docs:verify .
       - name: Smoke test nginx and deep links
