@@ -1,8 +1,13 @@
 # Markata GitHub repository cutover — owner runbook
 
-> **No 1.0 tag, PyPI overwrite, Go import-path rewrite, or production deployment**
-> is implied by the repository rename. The GitHub swap and the subsequent
-> package/deployment migrations are separate gates.
+> **Historical runbook:** The GitHub repository swap was completed on
+> October 18, 2026. Do **not** rerun the rename command. Go is at
+> `WaylonWalker/markata` and Python at `WaylonWalker/markata-py`; the Go
+> project remains on **0.x** without a release tag planned by this migration.
+
+> **No release tag, PyPI overwrite, or production deployment** is implied
+> by a repository rename. Source-path, package and deployment migrations
+> are separate gates.
 
 ## Identity and sequencing
 
@@ -23,15 +28,15 @@ permissions.
 
 ## Before moving either repository
 
-- Confirm [Python PR #175](https://github.com/WaylonWalker/markata/pull/175)
-  (identity notice) and [#176](https://github.com/WaylonWalker/markata/pull/176)
+- Confirm [Python PR #175](https://github.com/WaylonWalker/markata-py/pull/175)
+  (identity notice) and [#176](https://github.com/WaylonWalker/markata-py/pull/176)
   (disable automatic PyPI publishing, stabilize Python source URLs) are merged.
-- Confirm Go [#1629](https://github.com/WaylonWalker/markata-go/pull/1629)
-  (dual CLI), [#1671](https://github.com/WaylonWalker/markata-go/pull/1671)
+- Confirm Go [#1629](https://github.com/WaylonWalker/markata/pull/1629)
+  (dual CLI), [#1671](https://github.com/WaylonWalker/markata/pull/1671)
   (canonical/legacy config environment aliases),
-  [#1672](https://github.com/WaylonWalker/markata-go/pull/1672)
+  [#1672](https://github.com/WaylonWalker/markata/pull/1672)
   (legacy/canonical GHCR images), and
-  [#1673](https://github.com/WaylonWalker/markata-go/pull/1673)
+  [#1673](https://github.com/WaylonWalker/markata/pull/1673)
   (GoReleaser release target) are merged.
 - Verify GitHub Actions, branch rulesets, collaborators, Cloudflare Pages
   integrations, GitHub Apps and registry publication rights for both repos.
@@ -77,7 +82,7 @@ bash scripts/markata-repo-cutover.sh postcheck
 For Python checkouts, point `origin` to
 `https://github.com/WaylonWalker/markata-py.git`.
 
-## Post-swap work — required before the first Go 1.0 RC
+## Post-swap compatibility work — while remaining on 0.x
 
 1. **Go source/module:** migrate `go.mod`, import paths, generated code,
    build/linker flags, GoReleaser import targets, CI, embedded paths, and
@@ -105,8 +110,9 @@ For Python checkouts, point `origin` to
    - `argo-apps/apps/wyattbubbylee-com-prod.yaml`
    - `argo-apps/apps/rhiannonwalker-com-prod.yaml`
 
-   These reference `WaylonWalker/markata-go.git` and may require explicit
-   `repoURL` changes and credential verification. Also audit
+   Their Git repository URLs were updated by [homelab-argo#111](https://github.com/WaylonWalker/homelab-argo/pull/111).
+   Verify actual Argo CD repository access and application health rather than
+   treating a PR merge as successful production reconciliation. Also audit
    `k8s/recipes-waylonwalker-com/` and `k8s/rhiannonwalker/source-seed-job.yaml`
    for historical builder images. Separate cosmetic renaming from functional
    Kubernetes resource changes.
@@ -115,10 +121,11 @@ For Python checkouts, point `origin` to
    import namespace and current installations. Plan PyPI `markata-py`
    distribution/alias separately rather than overwriting `markata` with
    an untested Go wrapper.
-6. **RC gate:** old/new CLI output parity on representative sites, installer
-   versions + archive formats, Go consumers, Docker/Helm production smoke,
-   verified registry permission, and GitHub source paths. Tag
-   `v1.0.0-rc.1` **only after** these tests and infrastructure references
-   are audited.
+6. **Ongoing 0.x validation:** check old/new CLI parity on representative
+   sites, installer compatibility, archive formats, Go consumers,
+   Docker/Helm production smoke, registry permissions and GitHub source paths.
+   Snapshot packaging can be tested without publishing a release. Any
+   versioned tag requires a separate explicit decision; **no 1.0 release or
+   release candidate is planned as part of the rename**.
 
-Tracker: https://github.com/WaylonWalker/markata-go/issues/1628
+Tracker: https://github.com/WaylonWalker/markata/issues/1628

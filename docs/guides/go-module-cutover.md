@@ -1,6 +1,6 @@
 # Go module import path cutover
 
-The canonical Go source module for **Markata 1.0** is
+The canonical Go source module for **Markata** (still on the 0.x line) is
 `github.com/WaylonWalker/markata`, following the October 18, 2026
 GitHub repository swap. It is independent of the original Python module,
 which now lives at [WaylonWalker/markata-py](https://github.com/WaylonWalker/markata-py).
@@ -15,7 +15,7 @@ which now lives at [WaylonWalker/markata-py](https://github.com/WaylonWalker/mar
   `github.com/WaylonWalker/markata-go/` with
   `github.com/WaylonWalker/markata/`, and run `go mod tidy`.
   The Go module's own declaration has changed as well.
-- **Pinned pre-1.0 consumers:** existing historical tags for
+- **Pinned historical Go consumers:** existing historical tags for
   `github.com/WaylonWalker/markata-go` have not been deleted.
   Avoid depending on both the historical and new module paths in the
   same dependency graph; they describe the same source with different
@@ -34,10 +34,11 @@ go install github.com/WaylonWalker/markata/cmd/markata@main
 go install github.com/WaylonWalker/markata/cmd/markata-go@main
 ```
 
-For reproducible installations, pin a verified release tag rather than
-`@main`. Do not tag 1.0 until canonical Go imports, builder images,
-release archives, installer URLs, Argo CD source references and representative
-site builds are validated.
+For reproducible installations, pin an already published, verified release
+tag rather than `@main` when that tag supports your command and module path.
+The name migration does **not** authorize any new release, prerelease or tag.
+Validate Go imports, installer compatibility, builder images, Argo CD sources
+and representative site builds independently while remaining on 0.x.
 
 ## Change control
 
