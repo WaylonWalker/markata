@@ -4,8 +4,12 @@ on:
   pull_request:
     paths:
       - "pkg/themes/default/static/css/feeds.css"
+      - "pkg/themes/default/static/css/main.css"
+      - "pkg/themes/default/static/css/components.css"
+      - "pkg/themes/default/static/css/search.css"
       - "pkg/themes/default/static/js/navigation-shortcuts.js"
       - "scripts/archive-startup.browser.test.cjs"
+      - "scripts/navbar-search-layout.browser.test.cjs"
       - ".github/workflows/archive-startup.yml"
   workflow_dispatch:
 
@@ -29,4 +33,4 @@ jobs:
         run: |
           node --check pkg/themes/default/static/js/navigation-shortcuts.js
           node --check scripts/archive-startup.browser.test.cjs
-          node --test scripts/archive-startup.browser.test.cjs
+          node --test scripts/archive-startup.browser.test.cjs scripts/navbar-search-layout.browser.test.cjs

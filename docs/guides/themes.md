@@ -1172,6 +1172,9 @@ untouched. Fast builds skip this step. Original CSS files remain available for
 navigation and custom templates. The runtime loader recognizes bundled sources
 and avoids downloading them again.
 
+The navbar reserves space for its search input before deferred search styles
+load, so the header stays in place while search initializes.
+
 With the built-in theme picker, the default template initially loads
 `palette-core.css` for the configured light/dark pair. Other colors load when
 opening the picker or restoring a saved or seasonal choice. Custom templates
