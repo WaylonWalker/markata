@@ -26,7 +26,8 @@ func newBlogrollMentionResolver(cfg models.BlogrollConfig) *blogrollMentionResol
 		}
 	}
 
-	for _, feed := range cfg.Feeds {
+	for i := range cfg.Feeds {
+		feed := &cfg.Feeds[i]
 		if !feed.IsActive() {
 			continue
 		}
