@@ -16,8 +16,8 @@ func TestEditorialHTMLContractAndCachedFallback(t *testing.T) {
 	dir := t.TempDir()
 	file := filepath.Join(dir, "index.html")
 	classic := `<div class="posts posts-list">old fallback</div>`
-	editorial := `<div class="feed feed--editorial" data-feed-presentation="editorial"><div class="editorial-feed posts-list" data-editorial-version="3"></div></div>`
-	priorEditorial := `<div class="feed feed--editorial" data-feed-presentation="editorial"><div class="editorial-feed posts-list" data-editorial-version="2"></div></div>`
+	editorial := `<div class="feed feed--editorial" data-feed-presentation="editorial"><div class="editorial-feed posts-list" data-editorial-version="4"></div></div>`
+	priorEditorial := `<div class="feed feed--editorial" data-feed-presentation="editorial"><div class="editorial-feed posts-list" data-editorial-version="3"></div></div>`
 	if editorialHTMLMarkupValid(priorEditorial) {
 		t.Fatal("prior editorial markup must be rebuilt for the new layout")
 	}
