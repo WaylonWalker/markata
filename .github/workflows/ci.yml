@@ -194,10 +194,24 @@ jobs:
           start=$SECONDS
           go list ./... > "$RUNNER_TEMP/all-packages.txt"
           mapfile -t all_packages < "$RUNNER_TEMP/all-packages.txt"
+          # Fail visibly if the module name changes again: otherwise these
+          # test packages would silently fall into the core shard as duplicates.
+          expected_exclusions=(
+            github.com/WaylonWalker/markata/cmd/markata-go/cmd
+            github.com/WaylonWalker/markata/pkg/search
+            github.com/WaylonWalker/markata/pkg/searchapi
+            github.com/WaylonWalker/markata/tests
+          )
+          for excluded in "${expected_exclusions[@]}"; do
+            if ! grep -Fxq "$excluded" "$RUNNER_TEMP/all-packages.txt"; then
+              printf 'Expected package missing from CI shard exclusions: %s\n' "$excluded" >&2
+              exit 1
+            fi
+          done
           packages=()
           for package in "${all_packages[@]}"; do
             case "$package" in
-              github.com/WaylonWalker/markata-go/cmd/markata-go/cmd|github.com/WaylonWalker/markata-go/pkg/search|github.com/WaylonWalker/markata-go/pkg/searchapi|github.com/WaylonWalker/markata-go/tests) continue ;;
+              github.com/WaylonWalker/markata/cmd/markata-go/cmd|github.com/WaylonWalker/markata/pkg/search|github.com/WaylonWalker/markata/pkg/searchapi|github.com/WaylonWalker/markata/tests) continue ;;
             esac
             packages+=("$package")
           done

@@ -3,7 +3,7 @@ package lsp
 import (
 	"strings"
 
-	"github.com/WaylonWalker/markata-go/pkg/renderingcontract"
+	"github.com/WaylonWalker/markata/pkg/renderingcontract"
 )
 
 const themePaletteDetail = "palette"

@@ -7,8 +7,8 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/assets"
-	"github.com/WaylonWalker/markata-go/pkg/config"
+	"github.com/WaylonWalker/markata/pkg/assets"
+	"github.com/WaylonWalker/markata/pkg/config"
 	"github.com/spf13/cobra"
 )
 

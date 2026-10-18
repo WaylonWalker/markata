@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/WaylonWalker/markata-go/pkg/servefix"
+	"github.com/WaylonWalker/markata/pkg/servefix"
 )
 
 // NewWebHandler serves a local view of the same runtime consumed by the TUI.

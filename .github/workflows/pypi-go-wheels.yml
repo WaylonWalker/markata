@@ -1,0 +1,72 @@
+name: Go CLI PyPI Wheel Smoke
+
+# Build and inspect platform wheels without a release or PyPI credentials.
+# The public "markata" distribution remains the *Python* implementation.
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/pypi-go-wheels.yml'
+      - 'scripts/check-pypi-wheels.py'
+      - 'cmd/markata/**'
+      - 'cmd/markata-go/**'
+      - 'go.mod'
+      - 'go.sum'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  wheels:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version: '1.26'
+          cache: true
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+
+      # Pin the audited upstream v1.0.3 commit, not a moving tag.
+      # Unlike go-to-wheel, this tool directly supports ./cmd/markata.
+      - name: Cross-compile Go CLI into platform-specific Python wheels
+        uses: deadnews/go-wheel-action@35c6f5b9ffdd11dbdc7043ea3ef71372aa6f2fe7 # v1.0.3
+        with:
+          name: markata
+          package: ./cmd/markata
+          version: 0.0.0.dev0
+          description: Markata static-site generator (Go command-line binary)
+          license: MIT
+          url: https://github.com/WaylonWalker/markata
+          ldflags: -s -w -X github.com/WaylonWalker/markata/cmd/markata-go/cmd.Version=0.0.0.dev0
+          output-dir: ./dist/pypi-wheels
+
+      - name: Inspect wheel tags, metadata, and executables
+        run: python scripts/check-pypi-wheels.py dist/pypi-wheels
+
+      - name: Install Linux wheel in a clean virtualenv and smoke-test CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m venv "${RUNNER_TEMP}/markata-wheel-venv"
+          "${RUNNER_TEMP}/markata-wheel-venv/bin/python" -m pip install --no-deps --no-index dist/pypi-wheels/markata-0.0.0.dev0-py3-none-manylinux_2_17_x86_64.whl
+          "${RUNNER_TEMP}/markata-wheel-venv/bin/markata" version
+          "${RUNNER_TEMP}/markata-wheel-venv/bin/markata" --help
+
+      - name: Save inspected wheel artifacts (not a PyPI publication)
+        uses: actions/upload-artifact@v7
+        with:
+          name: markata-go-wheel-smoke
+          path: dist/pypi-wheels/*.whl
+          retention-days: 7

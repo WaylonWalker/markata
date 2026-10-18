@@ -1,12 +1,13 @@
 package plugins
 
 import (
+	"fmt"
 	"sort"
 	"strings"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/models"
-	"github.com/WaylonWalker/markata-go/pkg/templates"
+	"github.com/WaylonWalker/markata/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/templates"
 )
 
 const (
@@ -20,6 +21,7 @@ const (
 	presentationFeatured     = "featured"
 	presentationOther        = "other"
 	presentationUndated      = "undated"
+	presentationUndatedLabel = "Undated"
 	presentationQuiet        = "quiet"
 	presentationFeedTemplate = "feed.html"
 )
@@ -39,8 +41,10 @@ type EditorialFeedItem struct {
 }
 
 type EditorialFeedSection struct {
-	Label string
-	Items []EditorialFeedItem
+	Label         string
+	Start         string
+	RelativeLabel string
+	Items         []EditorialFeedItem
 }
 
 func presentationKind(post *models.Post) string {
@@ -150,6 +154,56 @@ func editorialWeek(post *models.Post) (key, label string) {
 	return start.Format("2006-01-02"), start.Format("Jan 2") + " – " + start.AddDate(0, 0, 6).Format("Jan 2, 2006")
 }
 
+// editorialRelativeWeekLabel describes a Monday-start calendar week, relative to
+// today rather than to the build's content. Browser enhancement updates this
+// build-time fallback when a cached static page is viewed on a later date.
+func editorialRelativeWeekLabel(startKey string, now time.Time) string {
+	if startKey == presentationUndated {
+		return presentationUndatedLabel
+	}
+	start, err := time.Parse("2006-01-02", startKey)
+	if err != nil {
+		return presentationUndatedLabel
+	}
+
+	// Normalize both dates to UTC calendar midnights. Differences between
+	// Mondays are always whole weeks, including across DST transitions.
+	monday := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+	monday = monday.AddDate(0, 0, -((int(now.Weekday()) + 6) % 7))
+	weeksAgo := int(monday.Sub(start).Hours() / (24 * 7))
+	if weeksAgo < 0 {
+		if weeksAgo == -1 {
+			return "Next week"
+		}
+		return fmt.Sprintf("In %d weeks", -weeksAgo)
+	}
+	switch weeksAgo {
+	case 0:
+		return "This week"
+	case 1:
+		return "Last week"
+	}
+	if weeksAgo < 5 {
+		return fmt.Sprintf("%d weeks ago", weeksAgo)
+	}
+
+	monthsAgo := (now.Year()-start.Year())*12 + int(now.Month()-start.Month())
+	if monthsAgo < 1 {
+		return fmt.Sprintf("%d weeks ago", weeksAgo)
+	}
+	if monthsAgo < 12 {
+		if monthsAgo == 1 {
+			return "1 month ago"
+		}
+		return fmt.Sprintf("%d months ago", monthsAgo)
+	}
+	yearsAgo := monthsAgo / 12
+	if yearsAgo == 1 {
+		return "1 year ago"
+	}
+	return fmt.Sprintf("%d years ago", yearsAgo)
+}
+
 // editorialTypeLabel is display-only: shared card routing and syndication stay unchanged.
 func editorialTypeLabel(post *models.Post) string {
 	switch presentationKind(post) {
@@ -181,6 +235,7 @@ func buildEditorialFeedSections(posts []*models.Post) []EditorialFeedSection {
 	sections := make([]EditorialFeedSection, 0)
 	index := make(map[string]int)
 	weeks := make([][]*models.Post, 0)
+	now := time.Now()
 
 	for _, post := range posts {
 		if post == nil {
@@ -191,7 +246,9 @@ func buildEditorialFeedSections(posts []*models.Post) []EditorialFeedSection {
 		if !exists {
 			i = len(sections)
 			index[key] = i
-			sections = append(sections, EditorialFeedSection{Label: label})
+			sections = append(sections, EditorialFeedSection{
+				Label: label, Start: key, RelativeLabel: editorialRelativeWeekLabel(key, now),
+			})
 			weeks = append(weeks, nil)
 		}
 		weeks[i] = append(weeks[i], post)

@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/buildlab"
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/buildlab"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
 )
 
 func TestDAGCLISelection(t *testing.T) {

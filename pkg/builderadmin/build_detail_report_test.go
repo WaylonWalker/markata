@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/servecontrol"
+	"github.com/WaylonWalker/markata/pkg/servecontrol"
 )
 
 func TestBuildDetailIncludesPortableDiagnosticHandoff(t *testing.T) {

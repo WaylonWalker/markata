@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/WaylonWalker/markata-go/pkg/logging"
+	"github.com/WaylonWalker/markata/pkg/logging"
 )
 
 func TestSubprocessLineWriter_TruncatesOversizedLine(t *testing.T) {

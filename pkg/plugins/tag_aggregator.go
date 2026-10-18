@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
 )
 
 // TagAggregatorPlugin normalizes tags using synonyms and expands them with hierarchical relationships.

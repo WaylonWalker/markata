@@ -39,8 +39,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Set lowercase image name
-        run: echo "IMAGE_NAME=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+      - name: Set image targets (preserve legacy tags after rename)
+        shell: bash
+        run: |
+          repo="${GITHUB_REPOSITORY,,}"
+          echo "IMAGE_NAME=$repo" >> "$GITHUB_ENV"
+          {
+            echo 'IMAGE_TARGETS<<EOF'
+            echo "$REGISTRY/$repo"
+            # Only publish the legacy alias after Go occupies the canonical repo.
+            # Prior to the GitHub rename, avoid publishing to the Python identity.
+            if [[ "$repo" == "waylonwalker/markata" ]]; then
+              echo "$REGISTRY/waylonwalker/markata-go"
+            fi
+            echo 'EOF'
+          } >> "$GITHUB_ENV"
 
       - name: Set Trivy cache directory
         run: echo "TRIVY_CACHE_DIR=${{ runner.temp }}/trivy-cache" >> $GITHUB_ENV
@@ -70,7 +83,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v6
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.IMAGE_TARGETS }}
           tags: |
             # Set latest tag for default branch
             type=raw,value=latest,enable={{is_default_branch}}
@@ -138,8 +151,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Set lowercase image name
-        run: echo "IMAGE_NAME=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+      - name: Set builder image targets (preserve legacy tags after rename)
+        shell: bash
+        run: |
+          repo="${GITHUB_REPOSITORY,,}"
+          echo "IMAGE_NAME=$repo" >> "$GITHUB_ENV"
+          {
+            echo 'BUILDER_IMAGE_TARGETS<<EOF'
+            echo "$REGISTRY/${repo}-builder"
+            if [[ "$repo" == "waylonwalker/markata" ]]; then
+              echo "$REGISTRY/waylonwalker/markata-go-builder"
+            fi
+            echo 'EOF'
+          } >> "$GITHUB_ENV"
 
       - name: Set Trivy cache directory
         run: echo "TRIVY_CACHE_DIR=${{ runner.temp }}/trivy-cache" >> $GITHUB_ENV
@@ -169,7 +193,7 @@ jobs:
         id: meta_builder
         uses: docker/metadata-action@v6
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-builder
+          images: ${{ env.BUILDER_IMAGE_TARGETS }}
           tags: |
             # Set latest tag for default branch
             type=raw,value=latest,enable={{is_default_branch}}

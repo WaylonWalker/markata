@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/buildlab"
+	"github.com/WaylonWalker/markata/pkg/buildlab"
 )
 
 func TestBuildDAGMatchesLegacyInBuildLab(t *testing.T) {

@@ -2,7 +2,7 @@
 
 A fast, plugin-driven static site generator with a powerful feed system.
 
-[![CI](https://github.com/WaylonWalker/markata-go/actions/workflows/ci.yml/badge.svg)](https://github.com/WaylonWalker/markata-go/actions/workflows/ci.yml)
+[![CI](https://github.com/WaylonWalker/markata/actions/workflows/ci.yml/badge.svg)](https://github.com/WaylonWalker/markata/actions/workflows/ci.yml)
 [![Go Version](https://img.shields.io/badge/Go-1.22+-00ADD8?style=flat&logo=go)](https://go.dev/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
@@ -10,7 +10,7 @@ A fast, plugin-driven static site generator with a powerful feed system.
 
 **Markata** (formerly **markata-go**) is a static site generator written in Go that processes Markdown files with YAML frontmatter and generates a complete static website. It features a flexible plugin architecture, a powerful feed system for creating archives and syndication feeds, and Jinja2-like templating.
 
-> **Status:** Go implementation is pre-1.0. The `markata` executable is the preferred entry point; `markata-go` remains supported during migration. The historical Python project still occupies the `WaylonWalker/markata` repository until the coordinated cutover.
+> **Status:** Markata remains a **0.x** Go project; the rename is not a 1.0 release decision. The `markata` executable is preferred and `markata-go` remains supported. The original Python project is at [WaylonWalker/markata-py](https://github.com/WaylonWalker/markata-py); this repository is the Go implementation.
 
 ### Key Features
 
@@ -28,16 +28,16 @@ A fast, plugin-driven static site generator with a powerful feed system.
 
 ```bash
 # One-liner install script (Linux/macOS)
-curl -sSL https://raw.githubusercontent.com/WaylonWalker/markata-go/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/WaylonWalker/markata/main/install.sh | bash
 
 # Using jpillora/installer (Linux/macOS)
-curl -sL https://i.jpillora.com/WaylonWalker/markata-go | bash
+curl -sL https://i.jpillora.com/WaylonWalker/markata | bash
 
 # Using eget
-eget WaylonWalker/markata-go
+eget WaylonWalker/markata
 
 # Using mise (installs from GitHub releases)
-mise use -g github:WaylonWalker/markata-go
+mise use -g github:WaylonWalker/markata
 ```
 
 ### Go Install
@@ -45,14 +45,14 @@ mise use -g github:WaylonWalker/markata-go
 Until a tagged release contains the new entry point, install the canonical binary from `main`:
 
 ```bash
-go install github.com/WaylonWalker/markata-go/cmd/markata@main
+go install github.com/WaylonWalker/markata/cmd/markata@main
 ```
 
-Existing tagged versions remain available with `go install github.com/WaylonWalker/markata-go/cmd/markata-go@latest`.
+Existing historical tagged versions remain available under the former `github.com/WaylonWalker/markata-go` module path when pinned explicitly. For current source, use `go install github.com/WaylonWalker/markata/cmd/markata-go@main` to install the legacy-named executable.
 
 ### Manual Download
 
-Download pre-built binaries from [GitHub Releases](https://github.com/WaylonWalker/markata-go/releases).
+Download pre-built binaries from [GitHub Releases](https://github.com/WaylonWalker/markata/releases).
 
 Available platforms: Linux (amd64, arm64, armv7), macOS (Intel, Apple Silicon), Windows (amd64), FreeBSD (amd64), Android (arm64/Termux).
 
@@ -335,7 +335,7 @@ markata-go --version         # Short version flag
 
 ```bash
 # Clone the repository
-git clone https://github.com/WaylonWalker/markata-go.git
+git clone https://github.com/WaylonWalker/markata.git
 cd markata-go
 
 # Build

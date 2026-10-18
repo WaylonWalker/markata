@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/WaylonWalker/markata-go/internal/testbinary"
+	"github.com/WaylonWalker/markata/internal/testbinary"
 )
 
 func TestInstalledBinaryUsesEmbeddedFontpackOutsideCheckout(t *testing.T) {

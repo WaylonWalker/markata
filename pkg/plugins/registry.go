@@ -4,7 +4,7 @@ package plugins
 import (
 	"sync"
 
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
 )
 
 // pluginRegistry holds all registered plugin constructors.

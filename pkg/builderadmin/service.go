@@ -24,9 +24,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/diagnostics"
-	"github.com/WaylonWalker/markata-go/pkg/servecontrol"
-	"github.com/WaylonWalker/markata-go/pkg/sourcegit"
+	"github.com/WaylonWalker/markata/pkg/diagnostics"
+	"github.com/WaylonWalker/markata/pkg/servecontrol"
+	"github.com/WaylonWalker/markata/pkg/sourcegit"
 	"github.com/fsnotify/fsnotify"
 )
 

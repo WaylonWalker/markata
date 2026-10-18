@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"strings"
 
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/models"
 
 	"golang.org/x/net/html"
 	"golang.org/x/net/html/atom"

@@ -7,8 +7,8 @@ import (
 	"runtime/pprof"
 	"strings"
 
-	"github.com/WaylonWalker/markata-go/pkg/logging"
-	"github.com/WaylonWalker/markata-go/pkg/suggest"
+	"github.com/WaylonWalker/markata/pkg/logging"
+	"github.com/WaylonWalker/markata/pkg/suggest"
 	"github.com/spf13/cobra"
 )
 
@@ -73,10 +73,10 @@ Common help:
   markata-go explain content # Agent workflow for site content
 
 Documentation:
-  https://github.com/WaylonWalker/markata-go/tree/main/docs
+  https://github.com/WaylonWalker/markata/tree/main/docs
 
 Issues:
-  https://github.com/WaylonWalker/markata-go/issues
+  https://github.com/WaylonWalker/markata/issues
 
 Profiling:
   markata-go build --cpuprofile cpu.prof   # Write CPU profile

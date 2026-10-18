@@ -4,13 +4,17 @@ import (
 	"bufio"
 	"os"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
-const envPrefix = "MARKATA_GO_"
+const (
+	envPrefix          = "MARKATA_GO_" // Historical prefix, retained for old sites.
+	canonicalEnvPrefix = "MARKATA_"
+)
 
 // Common string constants used in environment variable processing.
 const (
@@ -19,30 +23,52 @@ const (
 	envKeyJSON        = "json"
 )
 
-// ApplyEnvOverrides applies environment variable overrides to a config.
-// Environment variables are expected to follow the format MARKATA_GO_*.
-// Nested keys use underscores: MARKATA_GO_FEEDS_DEFAULTS_ITEMS_PER_PAGE
-// Boolean values: "true", "1", "yes" -> true; "false", "0", "no" -> false
-// List values: comma-separated strings
+// ApplyEnvOverrides applies MARKATA_* configuration overrides with
+// MARKATA_GO_* as a backward-compatible alias. When both prefixes set a key,
+// the canonical value wins and a value-free migration warning is recorded.
+// Nested keys use underscores: MARKATA_FEEDS_DEFAULTS_ITEMS_PER_PAGE.
+// Boolean values: "true", "1", "yes" -> true; "false", "0", "no" -> false.
+// List values: comma-separated strings.
 func ApplyEnvOverrides(config *models.Config) error {
-	env := os.Environ()
-	overrides := make(map[string]string)
-
-	for _, e := range env {
-		if strings.HasPrefix(e, envPrefix) {
-			parts := strings.SplitN(e, "=", 2)
-			if len(parts) == 2 {
-				key := strings.TrimPrefix(parts[0], envPrefix)
-				overrides[key] = parts[1]
-			}
+	legacy := make(map[string]string)
+	canonical := make(map[string]string)
+	for _, entry := range os.Environ() {
+		name, value, ok := strings.Cut(entry, "=")
+		if !ok {
+			continue
+		}
+		switch {
+		case strings.HasPrefix(name, envPrefix):
+			legacy[strings.TrimPrefix(name, envPrefix)] = value
+		case strings.HasPrefix(name, canonicalEnvPrefix):
+			canonical[strings.TrimPrefix(name, canonicalEnvPrefix)] = value
 		}
 	}
 
-	// Apply simple overrides
+	// Copy legacy values first, then canonical values. Never depend on the
+	// (unspecified) iteration order of os.Environ or the maps for precedence.
+	overrides := make(map[string]string, len(legacy)+len(canonical))
+	for key, value := range legacy {
+		overrides[key] = value
+	}
+	var warnings []string
+	for key, value := range canonical {
+		if old, exists := legacy[key]; exists && old != value {
+			// Do not log values: configuration can contain secrets.
+			warnings = append(warnings, canonicalEnvPrefix+key+" overrides "+envPrefix+key)
+		}
+		overrides[key] = value
+	}
+	if len(warnings) > 0 {
+		sort.Strings(warnings)
+		config.Extra = ensureExtra(config.Extra)
+		config.Extra["name_migration_warnings"] = warnings
+	}
+
+	// Apply simple overrides. Every recognized key uses existing parsing.
 	for key, value := range overrides {
 		applyEnvOverride(config, key, value)
 	}
-
 	return nil
 }
 
@@ -334,9 +360,14 @@ func parseStringList(s string) []string {
 	return result
 }
 
-// GetEnvValue returns the value of an environment variable with the MARKATA_GO_ prefix.
+// GetEnvValue prefers a canonical MARKATA_* variable over its legacy
+// MARKATA_GO_* alias, retaining the old lookup as a fallback.
 func GetEnvValue(key string) (string, bool) {
-	return os.LookupEnv(envPrefix + strings.ToUpper(key))
+	key = strings.ToUpper(key)
+	if value, ok := os.LookupEnv(canonicalEnvPrefix + key); ok {
+		return value, true
+	}
+	return os.LookupEnv(envPrefix + key)
 }
 
 // SetEnvValue sets an environment variable with the MARKATA_GO_ prefix.

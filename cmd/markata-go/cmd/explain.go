@@ -837,7 +837,7 @@ Plugins read from config sections:
 
     package myplugin
 
-    import "github.com/WaylonWalker/markata-go/pkg/lifecycle"
+    import "github.com/WaylonWalker/markata/pkg/lifecycle"
 
     type MyPlugin struct{}
 

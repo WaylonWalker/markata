@@ -513,6 +513,8 @@ The reader page aggregates the latest posts from all followed feeds into a curat
 - Each entry shows a source favicon up front, the source name, publish date, title, description, and optional image.
 - When a feed item points at a Hacker News or Lobsters discussion URL, the collector resolves the outbound article URL for the main card when one exists, preserves the original discussion permalink, and keeps the feed source label visible. Lobsters RSS items commonly provide the article in `<link>` and the discussion in `<guid>` or `<comments>`; these must be preserved without an unnecessary API lookup. Reader discussion labels reflect the actual aggregator.
 - The layout collapses to a single column on small screens.
+- On paginated reader grids, cards after the first four in each day group SHOULD use `content-visibility: auto` with a reasonable `contain-intrinsic-size` fallback, so offscreen card contents can skip initial layout/paint without client-side rendering. The first four cards remain normally rendered to preserve first paint; browsers without support render all cards normally.
+- Reader preview and source images SHOULD use asynchronous decoding while keeping native lazy loading and explicit dimensions.
 
 ### Template Context
 

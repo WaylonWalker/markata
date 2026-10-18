@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/WaylonWalker/markata-go/pkg/suggest"
+	"github.com/WaylonWalker/markata/pkg/suggest"
 )
 
 // likelyConfigTypo detects close spellings of known keys while preserving

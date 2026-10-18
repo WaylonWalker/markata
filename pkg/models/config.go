@@ -2036,7 +2036,7 @@ func NewWebMentionsConfig() WebMentionsConfig {
 	return WebMentionsConfig{
 		Enabled:            false,
 		Outgoing:           true,
-		UserAgent:          "markata-go/1.0 (WebMention Sender; +https://github.com/WaylonWalker/markata-go)",
+		UserAgent:          "markata-go/1.0 (WebMention Sender; +https://github.com/WaylonWalker/markata)",
 		Timeout:            "30s",
 		CacheDir:           ".cache/webmentions",
 		ConcurrentRequests: 5,

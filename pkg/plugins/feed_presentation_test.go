@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/models"
-	"github.com/WaylonWalker/markata-go/pkg/templates"
+	"github.com/WaylonWalker/markata/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/templates"
 )
 
 func presentationTestPost(day int, template string) *models.Post {
@@ -52,6 +52,9 @@ func TestEditorialGroupsWeeklyShotsAndPreservesEveryPost(t *testing.T) {
 	}
 	if sections[0].Items[0].Importance != "featured" {
 		t.Fatalf("expected article ahead of ordinary posts: %+v", sections[0].Items)
+	}
+	if sections[1].Start != "2026-10-05" || sections[1].RelativeLabel == "" {
+		t.Fatalf("section missing week start or relative label: %+v", sections[1])
 	}
 	if got := sections[1].Label; got != "Oct 5 – Oct 11, 2026" {
 		t.Fatalf("previous week label = %q", got)
@@ -192,5 +195,32 @@ func TestEditorialNoArtificialNoteLead(t *testing.T) {
 	sections := buildEditorialFeedSections([]*models.Post{presentationTestPost(12, "note")})
 	if len(sections) != 1 || len(sections[0].Items) != 1 || sections[0].Items[0].Lead {
 		t.Fatalf("note-only week should not invent lead story: %+v", sections)
+	}
+}
+
+func TestEditorialRelativeWeekLabels(t *testing.T) {
+	now := time.Date(2026, 10, 18, 12, 0, 0, 0, time.UTC)
+	for _, tc := range []struct{ start, want string }{
+		{"2026-10-12", "This week"},
+		{"2026-10-05", "Last week"},
+		{"2026-09-28", "2 weeks ago"},
+		{"2026-09-14", "4 weeks ago"},
+		{"2026-08-17", "2 months ago"},
+		{"2025-10-13", "1 year ago"},
+		{"2024-10-14", "2 years ago"},
+		{"2026-10-19", "Next week"},
+		{"2026-10-26", "In 2 weeks"},
+		{"undated", "Undated"},
+	} {
+		t.Run(tc.start, func(t *testing.T) {
+			if got := editorialRelativeWeekLabel(tc.start, now); got != tc.want {
+				t.Fatalf("relative label for %q = %q, want %q", tc.start, got, tc.want)
+			}
+		})
+	}
+	// Calendar weeks, not elapsed seven-day periods, define the boundary.
+	monday := now.AddDate(0, 0, 1)
+	if got := editorialRelativeWeekLabel("2026-10-12", monday); got != "Last week" {
+		t.Fatalf("Monday boundary = %q, want Last week", got)
 	}
 }

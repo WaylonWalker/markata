@@ -1,6 +1,6 @@
 package plugins
 
-import "github.com/WaylonWalker/markata-go/pkg/models"
+import "github.com/WaylonWalker/markata/pkg/models"
 
 // BlogrollCacheRefreshProgress reports per-feed refresh progress.
 type BlogrollCacheRefreshProgress struct {

@@ -7,10 +7,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/WaylonWalker/markata-go/pkg/buildcache"
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/models"
-	"github.com/WaylonWalker/markata-go/pkg/terminalpage"
+	"github.com/WaylonWalker/markata/pkg/buildcache"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/terminalpage"
 )
 
 // createTestManager creates a minimal lifecycle manager for testing.
@@ -721,9 +721,9 @@ func TestPublishHTMLPlugin_ShadowPagesDocumentation(t *testing.T) {
 // use the directory-based structure with redirects at /slug.ext/index.html pointing
 // to content at /slug/index.ext.
 // This ensures web servers serve the redirect as HTML at /slug.ext (without trailing slash).
-// Fixes: https://github.com/WaylonWalker/markata-go/issues/395
-// Fixes: https://github.com/WaylonWalker/markata-go/issues/437
-// Fixes: https://github.com/WaylonWalker/markata-go/issues/465
+// Fixes: https://github.com/WaylonWalker/markata/issues/395
+// Fixes: https://github.com/WaylonWalker/markata/issues/437
+// Fixes: https://github.com/WaylonWalker/markata/issues/465
 func TestPublishHTMLPlugin_FormatRedirectsCreateDirectories(t *testing.T) {
 	// Test each format independently to avoid redirect file overwrites
 	// (when both formats are enabled, they share the same slug directory)
@@ -863,8 +863,8 @@ func TestPublishHTMLPlugin_FormatRedirectsCreateDirectories(t *testing.T) {
 // TestPublishHTMLPlugin_StandardWebTxtFiles tests that standard web txt files
 // (robots.txt, llms.txt, humans.txt) are accessible via redirects from their expected URLs.
 // Content is at /slug/index.txt, redirect at /slug.txt/index.html points there.
-// Fixes: https://github.com/WaylonWalker/markata-go/issues/395
-// Fixes: https://github.com/WaylonWalker/markata-go/issues/465
+// Fixes: https://github.com/WaylonWalker/markata/issues/395
+// Fixes: https://github.com/WaylonWalker/markata/issues/465
 func TestPublishHTMLPlugin_StandardWebTxtFiles(t *testing.T) {
 	tempDir := t.TempDir()
 	plugin := NewPublishHTMLPlugin()
@@ -953,7 +953,7 @@ func TestPublishHTMLPlugin_StandardWebTxtFiles(t *testing.T) {
 
 // TestPublishHTMLPlugin_PostFormatsDefaultEnabled tests that Markdown and Text
 // formats are enabled by default.
-// Fixes: https://github.com/WaylonWalker/markata-go/issues/395
+// Fixes: https://github.com/WaylonWalker/markata/issues/395
 func TestPublishHTMLPlugin_PostFormatsDefaultEnabled(t *testing.T) {
 	defaults := models.NewPostFormatsConfig()
 
@@ -976,7 +976,7 @@ func TestPublishHTMLPlugin_PostFormatsDefaultEnabled(t *testing.T) {
 
 // TestPublishHTMLPlugin_TxtTemplateRendering tests that txt output uses templates
 // when a template engine is available.
-// Fixes: https://github.com/WaylonWalker/markata-go/issues/397
+// Fixes: https://github.com/WaylonWalker/markata/issues/397
 func TestPublishHTMLPlugin_TxtTemplateRendering(t *testing.T) {
 	tempDir := t.TempDir()
 	plugin := NewPublishHTMLPlugin()
@@ -1102,7 +1102,7 @@ func TestPublishHTMLPlugin_TerminalOutputsIncludeFrontmatterMediaLinks(t *testin
 // are created at /slug.ext/index.html (e.g., /test.txt/index.html) even when HTML
 // format is enabled. This allows users to navigate to /test.txt/ and be redirected
 // to /test/index.txt.
-// Fixes: https://github.com/WaylonWalker/markata-go/issues/465
+// Fixes: https://github.com/WaylonWalker/markata/issues/465
 func TestPublishHTMLPlugin_FormatExtRedirectsWithHTMLEnabled(t *testing.T) {
 	tempDir := t.TempDir()
 	plugin := NewPublishHTMLPlugin()
@@ -1228,7 +1228,7 @@ func TestPublishHTMLPlugin_FormatExtRedirectsWithHTMLEnabled(t *testing.T) {
 
 // TestPublishHTMLPlugin_RawTxtForSpecialFiles tests that special files
 // (robots.txt, llms.txt, etc.) can use a raw.txt template for content-only output.
-// Fixes: https://github.com/WaylonWalker/markata-go/issues/397
+// Fixes: https://github.com/WaylonWalker/markata/issues/397
 func TestPublishHTMLPlugin_RawTxtForSpecialFiles(t *testing.T) {
 	tempDir := t.TempDir()
 	plugin := NewPublishHTMLPlugin()

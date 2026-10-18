@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/buildstats"
+	"github.com/WaylonWalker/markata/pkg/buildstats"
 )
 
 // Pre-compiled regex patterns for HTML metadata extraction.

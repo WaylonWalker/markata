@@ -1,67 +1,75 @@
 ---
 title: "Quickstart"
-description: "Get a markata-go site running in under 5 minutes"
-date: 2024-01-15
+description: "Build your first Markata site, install the agent skill, and write a post."
+date: 2026-10-18
 published: true
-tags:
-  - documentation
-  - getting-started
+tags: [documentation, getting-started]
 ---
 
 # Quickstart
 
-Get a site running in under 5 minutes.
+Already installed? This is the shortest path from an empty directory to a local website.
 
-## Install
+If not, start with [Installation](/docs/installation/).
 
-Install the latest release on Linux or macOS:
-
-```bash
-curl -sSL https://raw.githubusercontent.com/WaylonWalker/markata-go/main/install.sh | bash
-```
-
-Other supported installation methods are covered in the [[installation|Installation Guide]].
-
-Verify the binary is available:
+## 1. Create your site
 
 ```bash
-markata-go version
+mkdir my-site && cd my-site
+markata config init
+markata new "Hello World"
 ```
 
-## Create Your Site
+`config init` creates **`markata-go.toml`**. That's the correct filename for the Go project today, despite the new command name.
+
+## 2. Preview it
 
 ```bash
-mkdir my-site
-cd my-site
-markata-go config init
-markata-go new "Hello World"
+markata serve
 ```
 
-This creates:
-- `markata-go.toml` - Site configuration
-- `pages/post/hello-world.md` - Your first post
+Open [http://localhost:8000](http://localhost:8000). The development server watches for changes and rebuilds your site as you edit.
 
-## Preview
+## 3. Teach your agent
 
 ```bash
-markata-go serve
+markata agent list-agents
+markata agent install
+markata agent doctor
 ```
 
-Open [http://localhost:8000](http://localhost:8000) in your browser.
-
-## Build
+The default project install detects a supported agent or uses `.agents/skills/markata-go-site/`. For a specific harness:
 
 ```bash
-markata-go build
+markata agent install --agent opencode
+# or: markata agent install --agent claude-code
 ```
 
-Output is written to `./output/` by default.
+See the [agent guide](/docs/guides/agent-skills/) for Codex, Cursor, Claude Code, OpenCode, and global installs.
 
-## Next Steps
+## 4. Write
 
-- [[getting-started|Getting Started]] - Full tutorial
-- [[configuration-guide|Configuration]] - Customize your site
-- [[frontmatter-guide|Frontmatter]] - Content metadata
-- [[feeds-guide|Feeds]] - Create archives and RSS
-- [[templates-guide|Templates]] - Customize appearance
-- [[deployment-guide|Deployment]] - Go live
+Open `pages/post/hello-world.md`. Edit the Markdown below its YAML frontmatter and save. Your browser should update.
+
+Prefer a draft while working? Run:
+
+```bash
+markata new "My draft" --draft
+```
+
+See [Authoring](/docs/guides/authoring/) for a complete walk-through.
+
+## 5. Build for production
+
+```bash
+markata build
+```
+
+The output is in `output/` by default. Deploy that **generated** folder to any static host. Start with the [deployment guide](/docs/guides/deployment/).
+
+## Need help?
+
+- `markata --help`
+- `markata config validate`
+- `markata agent doctor`
+- [Troubleshooting](/docs/troubleshooting/)

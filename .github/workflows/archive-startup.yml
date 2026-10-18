@@ -8,6 +8,8 @@ on:
       - "pkg/themes/default/static/css/components.css"
       - "pkg/themes/default/static/css/search.css"
       - "pkg/themes/default/static/js/navigation-shortcuts.js"
+      - "pkg/themes/default/static/js/view-transitions.js"
+      - "scripts/drawer-startup.browser.test.cjs"
       - "scripts/archive-startup.browser.test.cjs"
       - "scripts/navbar-search-layout.browser.test.cjs"
       - ".github/workflows/archive-startup.yml"
@@ -33,4 +35,4 @@ jobs:
         run: |
           node --check pkg/themes/default/static/js/navigation-shortcuts.js
           node --check scripts/archive-startup.browser.test.cjs
-          node --test scripts/archive-startup.browser.test.cjs scripts/navbar-search-layout.browser.test.cjs
+          node --test scripts/archive-startup.browser.test.cjs scripts/navbar-search-layout.browser.test.cjs scripts/drawer-startup.browser.test.cjs

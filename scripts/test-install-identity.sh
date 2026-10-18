@@ -3,6 +3,16 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# The GoReleaser brand must be canonical without dropping old archive names.
+grep -Fxq 'project_name: markata' "${repo_root}/.goreleaser.yml"
+grep -Fxq '      markata-go_' "${repo_root}/.goreleaser.yml"
+grep -Fxq '      markata_' "${repo_root}/.goreleaser.yml"
+# GitHub repo was renamed; installer must use the canonical release URL.
+grep -Fq 'REPO="WaylonWalker/markata"' "${repo_root}/install.sh"
+if grep -Fq 'REPO="WaylonWalker/markata-go"' "${repo_root}/install.sh"; then
+    echo "Installer unexpectedly targets the legacy repository" >&2
+    exit 1
+fi
 test_dir="$(mktemp -d)"
 trap 'rm -rf "${test_dir}"' EXIT
 mkdir -p "${test_dir}/bin" "${test_dir}/assets" "${test_dir}/install"

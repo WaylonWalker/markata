@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/WaylonWalker/markata-go/pkg/agentskill"
+	"github.com/WaylonWalker/markata/pkg/agentskill"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )

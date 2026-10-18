@@ -3,8 +3,8 @@ package plugins
 import (
 	"sync"
 
-	"github.com/WaylonWalker/markata-go/pkg/buildcache"
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/buildcache"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
 )
 
 const semanticHashBaselineKey = "load_semantic_hash_baseline"
