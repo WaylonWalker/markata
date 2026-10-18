@@ -1709,7 +1709,19 @@ func sidebarChunkBase(fc *models.FeedConfig, posts []*models.Post, m *lifecycle.
 			return ""
 		}
 		for j := range posts {
-			if posts[j] == nil || published[j] == nil || posts[j].Slug != published[j].Slug {
+			if posts[j] == nil || published[j] == nil {
+				return ""
+			}
+			// Most feeds share the same immutable Post pointers. Avoid
+			// recomputing display titles for these common matches.
+			if posts[j] == published[j] {
+				continue
+			}
+			// The slug alone is insufficient: synthetic/sidebar copies can
+			// differ from what the publisher emitted at the same position.
+			// Never discard embedded navigation in favor of stale URLs or
+			// titles from a chunk that no longer represents this feed.
+			if sidebarKey(posts[j], fc.Slug) != sidebarKey(published[j], candidate.Slug) {
 				return ""
 			}
 		}
