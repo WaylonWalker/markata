@@ -186,19 +186,6 @@
     }
   }
 
-  function refreshNavbarSearchLayout() {
-    var root = document.getElementById('pagefind-search');
-    if (!root) return;
-
-    var container = root.closest('.search-container--navbar, .search--navbar');
-    if (!container) return;
-
-    window.requestAnimationFrame(function() {
-      void container.offsetWidth;
-      window.dispatchEvent(new Event('resize'));
-    });
-  }
-
   function ensureNavHoverResetStyle() {
     if (document.getElementById(NAV_HOVER_STYLE_ID)) return;
 
@@ -282,12 +269,10 @@
   // Run after view transitions complete
   document.addEventListener('DOMContentLoaded', function() {
     loadConditionalCSS();
-    refreshNavbarSearchLayout();
     ensureNavHoverResetStyle();
   });
   window.addEventListener('view-transition-complete', function() {
     loadConditionalCSS();
-    refreshNavbarSearchLayout();
     ensureNavHoverResetStyle();
     if (navHoverSuppressed) {
       applyNavHoverSuppression();

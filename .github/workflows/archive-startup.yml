@@ -7,6 +7,7 @@ on:
       - "pkg/themes/default/static/css/main.css"
       - "pkg/themes/default/static/css/components.css"
       - "pkg/themes/default/static/css/search.css"
+      - "pkg/themes/default/static/js/conditional-css.js"
       - "pkg/themes/default/static/js/navigation-shortcuts.js"
       - "pkg/themes/default/static/js/view-transitions.js"
       - "scripts/drawer-startup.browser.test.cjs"

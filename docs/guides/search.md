@@ -682,3 +682,7 @@ Planned future modes:
 - [Configuration Reference](/docs/guides/configuration/) - Full configuration options
 - [Themes](/docs/guides/themes/) - Customize search appearance
 - [Pagefind Documentation](https://pagefind.app/docs/) - Official Pagefind docs
+
+Navbar search reserves its dimensions in the initial stylesheet. Search
+initialization and SPA navigation do not force a layout read or broadcast a
+resize event. Real viewport changes still resize the navbar normally.
