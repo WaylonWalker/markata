@@ -21,7 +21,7 @@ import (
 const (
 	fontpackCacheFile        = ".markata-fontpack-cache"
 	fontpackPreloadCacheFile = ".markata-fontpack-preloads.json"
-	fontpackCacheVersion     = "11"
+	fontpackCacheVersion     = "12"
 )
 
 const fontpackRoleHeading = "heading"
@@ -281,7 +281,7 @@ func fontpackPreloadURLs(pack fontpacks.FontPack, assets []fontpacks.Asset) []st
 				full = a
 				continue
 			}
-			if best == nil && (a.Tier == "prose-core" || a.Tier == "display-core" || a.Tier == "code-core") {
+			if best == nil && (a.Tier == "prose-basic" || a.Tier == "prose-core" || a.Tier == "display-core" || a.Tier == "code-core") {
 				best = a
 			}
 		}

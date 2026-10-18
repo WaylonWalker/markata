@@ -40,6 +40,18 @@ tiers:
     - U+2C60-2C7F
     - U+A720-A7FF
     - U+AB30-AB6F
+  prose-basic:
+    file: source-sans-3-prose-basic.woff2
+    profile: prose-basic
+    sha256: f05762a43bcc21e03f580e8840d8560fcdb8871fba0d0cd38e79857aecd75a7d
+    bytes: 46688
+    unicode_range:
+    - U+0020-007E
+    - U+00A0-00FF
+    - U+2000-206F
+    - U+20AC
+    - U+2122
+    - U+2150-21FF
   prose-core:
     file: source-sans-3-prose-core.woff2
     profile: prose-core
@@ -56,3 +68,15 @@ tiers:
     - U+2100-214F
     - U+2190-21FF
     - U+2150-218F
+  prose-extra:
+    file: source-sans-3-prose-extra.woff2
+    profile: prose-extra
+    sha256: 6a4f692983782c6df3a8aecf0c25277ee77e2b8366c55035abf3d883a311f377
+    bytes: 44800
+    unicode_range:
+    - U+0100-024F
+    - U+1E00-1EFF
+    - U+20A0-20AB
+    - U+20AD-20CF
+    - U+2100-2121
+    - U+2123-214F

@@ -9,6 +9,10 @@ on:
       - "pkg/themes/default/static/css/search.css"
       - "pkg/themes/default/static/js/navigation-shortcuts.js"
       - "pkg/themes/default/static/js/view-transitions.js"
+      - "internal/fontcatalog/**"
+      - "pkg/fontpacks/**"
+      - "pkg/plugins/fontpack*.go"
+      - "scripts/font-partitions.browser.test.cjs"
       - "scripts/drawer-startup.browser.test.cjs"
       - "scripts/archive-startup.browser.test.cjs"
       - "scripts/navbar-search-layout.browser.test.cjs"
@@ -28,11 +32,11 @@ jobs:
         with:
           node-version: "22"
       - name: Install pinned Playwright
-        run: npm install --no-save --no-package-lock playwright@1.64.1
+        run: npm install --no-save --no-package-lock playwright@1.64.1 yaml@2.8.2
       - name: Install Chromium
         run: npx --no-install playwright install --with-deps chromium
       - name: Check archive startup and progressive rendering
         run: |
           node --check pkg/themes/default/static/js/navigation-shortcuts.js
           node --check scripts/archive-startup.browser.test.cjs
-          node --test scripts/archive-startup.browser.test.cjs scripts/navbar-search-layout.browser.test.cjs scripts/drawer-startup.browser.test.cjs
+          node --test scripts/archive-startup.browser.test.cjs scripts/navbar-search-layout.browser.test.cjs scripts/drawer-startup.browser.test.cjs scripts/font-partitions.browser.test.cjs

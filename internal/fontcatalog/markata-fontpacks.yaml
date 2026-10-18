@@ -91,6 +91,26 @@ subset_profiles:
       - U+2190-21FF
       - U+2150-218F
 
+  prose-basic:
+    description: Common Latin prose, punctuation, and arrows for the first font transfer.
+    unicode:
+      - U+0020-007E
+      - U+00A0-00FF
+      - U+2000-206F
+      - U+20AC
+      - U+2122
+      - U+2150-21FF
+
+  prose-extra:
+    description: Disjoint remainder of prose-core, loaded for extended text.
+    unicode:
+      - U+0100-024F
+      - U+1E00-1EFF
+      - U+20A0-20AB
+      - U+20AD-20CF
+      - U+2100-2121
+      - U+2123-214F
+
   code-core:
     description: ASCII, programming punctuation, arrows, math, box drawing, and block characters.
     unicode:

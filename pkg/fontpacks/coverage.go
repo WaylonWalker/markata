@@ -96,6 +96,9 @@ func requiredTiers(pack FontPack, coverage Coverage, profiles map[string]compile
 	for source, tiers := range result {
 		if !tiers["full"] {
 			for _, r := range coverage.runes {
+				if tiers["prose-extra"] && inAnyCompiledProfile(profiles, tiers, r) {
+					continue // the partition already covers this extended character
+				}
 				if compiledProfileContains(profiles["latin-ext"], r) {
 					// A source without a latin-ext tier can use the browser's
 					// normal family fallback for these characters. Loading its
@@ -131,6 +134,14 @@ func tiersForManifests(requested map[string]map[string]bool, manifests map[strin
 		manifest := manifests[source]
 		selected := make(map[string]bool)
 		for tier := range tiers {
+			_, basic := manifest.Tiers["prose-basic"]
+			_, extra := manifest.Tiers["prose-extra"]
+			_, display := manifest.Tiers["display-core"]
+			if basic && extra && (tier == "prose-core" || (tier == "display-core" && !display)) {
+				selected["prose-basic"] = true
+				selected["prose-extra"] = true
+				continue
+			}
 			if _, ok := manifest.Tiers[tier]; ok {
 				selected[tier] = true
 			} else if tier == "display-core" {
