@@ -125,9 +125,9 @@ func TestSidebarChunkBaseRequiresMatchingPublicURLsAndTitles(t *testing.T) {
 		{Slug: "two", Href: "/two/", Published: true},
 	}
 	published := models.FeedConfig{
-		Slug: "blog",
+		Slug:    "blog",
 		Formats: models.FeedFormats{HTML: true},
-		Posts: feedPosts,
+		Posts:   feedPosts,
 	}
 	m.Cache().Set("feed_configs", []models.FeedConfig{published})
 
