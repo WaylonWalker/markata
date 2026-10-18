@@ -188,20 +188,20 @@ release:
 
     ```bash
     # Using jpillora/installer (Linux/macOS)
-    curl -sL https://i.jpillora.com/WaylonWalker/markata-go | bash
+    curl -sL https://i.jpillora.com/WaylonWalker/markata | bash
 
     # Using eget
-    eget WaylonWalker/markata-go
+    eget WaylonWalker/markata
 
     # Using mise (from GitHub releases)
-    mise use -g github:WaylonWalker/markata-go
+    mise use -g github:WaylonWalker/markata
     ```
 
     ### Manual Download
 
     Download the appropriate archive for your platform from the assets below.
 
-    **Full Changelog**: https://github.com/WaylonWalker/markata-go/compare/{{ .PreviousTag }}...{{ .Tag }}
+    **Full Changelog**: https://github.com/WaylonWalker/markata/compare/{{ .PreviousTag }}...{{ .Tag }}
 
 # sbom generation
 sboms:
@@ -228,7 +228,7 @@ signs:
 #       owner: WaylonWalker
 #       name: homebrew-tap
 #     directory: Formula
-#     homepage: "https://github.com/WaylonWalker/markata-go"
+#     homepage: "https://github.com/WaylonWalker/markata"
 #     description: "A plugin-driven static site generator"
 #     license: "MIT"
 #     test: |
