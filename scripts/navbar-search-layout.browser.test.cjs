@@ -21,12 +21,13 @@ for (const width of [412, 1440]) {
         <nav class="site-nav site-nav--header site-nav--horizontal"><a href="/archive/">Archive</a></nav>
         <div class="header-controls"><div class="search-container search-container--navbar">
         <div id="pagefind-search"></div></div><div class="header-action-controls"><button>Theme</button></div></div>
-        </div></header><div class="page-wrapper page-wrapper--feed-only"><main class="main-content" id="main-content"><div class="feed h-feed calendar-feed feed--editorial"><header class="feed-header"><h1>Archive</h1></header><div id="stories">Stories</div></div></main></div></body></html>`);
-      const geometry = () => page.evaluate(() => ({
-        header: document.querySelector('.site-header').getBoundingClientRect().height,
-        main: document.querySelector('main').getBoundingClientRect().top,
-        stories: document.querySelector('#stories').getBoundingClientRect().top,
-      }));
+        </div></header><div class="page-wrapper page-wrapper--feed-only"><aside class="feed-sidebar feed-sidebar--left"><nav class="feed-nav">Series</nav></aside><main class="main-content" id="main-content"><div class="feed h-feed calendar-feed feed--editorial"><header class="feed-header"><h1>Archive</h1></header><div id="stories">Stories</div></div></main></div></body></html>`);
+      const geometry = () => page.evaluate(() => Object.fromEntries(
+        ['.site-header', '.site-nav', '.header-controls', '.search-container', 'main', '.feed', '#stories'].map(selector => {
+          const r = document.querySelector(selector).getBoundingClientRect();
+          return [selector, {x:r.x, y:r.y, width:r.width, height: selector === '.site-header' ? r.height : undefined}];
+        })
+      ));
       const before = await geometry();
       await page.addStyleTag({content: calendarCSS});
       assert.deepEqual(await geometry(), before, 'calendar CSS must not shift the header or content');

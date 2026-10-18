@@ -1628,3 +1628,7 @@ the complete page normally.
 
 Keyboard navigation setup does not download the next archive page. Link hover,
 focus, and explicit feed cycling can still prepare the next navigation.
+
+Calendar feeds reserve their full list width before optional calendar styles
+arrive. Navbar search also reserves its final width before search hydration,
+so opening an archive does not move the content as those styles finish loading.

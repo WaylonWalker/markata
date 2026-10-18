@@ -1758,3 +1758,11 @@ normally so its initial paint does not depend on visibility observation.
 Navigation shortcut initialization must not fetch adjacent pages. Adjacent
 documents may be prefetched on explicit navigation intent (link hover/focus or
 feed cycling), respecting the existing Save Data policy.
+
+## Deferred Feed Style Geometry
+
+Calendar/list feed widths and navbar search widths MUST be established by
+eager styles before the first paint. Applying deferred calendar/search styles
+or hydrating either search provider MUST preserve the visible header, feed,
+and story positions and widths at mobile and desktop sizes, including feeds
+with a closed sidebar. Deferred styles MAY supply optional control appearance.
