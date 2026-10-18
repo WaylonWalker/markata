@@ -11,7 +11,7 @@
   }
 
   function relativeLabel(startKey, now) {
-    var match = /^(\\d{4})-(\\d{2})-(\\d{2})$/.exec(startKey || '');
+    var match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(startKey || '');
     if (!match) return null;
     var year = Number(match[1]);
     var month = Number(match[2]) - 1;
