@@ -108,7 +108,7 @@ func (p *PaletteCSSPlugin) Configure(m *lifecycle.Manager) error {
 	}
 	css += p.generateContractPaletteCSS(config)
 	if core, ok := config.Extra["palette_core_css"].(string); ok && switcherEnabled {
-		core += p.generateContractPaletteCSS(config)
+		core += p.generateContractPaletteCSS(config, normalizePaletteName(effectiveLight), normalizePaletteName(effectiveDark))
 		config.Extra["palette_core_css"] = core
 		coreHash := fmt.Sprintf("%x", sha256.Sum256([]byte(core)))[:8]
 		m.SetAssetHash("css/palette-core.css", coreHash)
@@ -194,7 +194,7 @@ func (p *PaletteCSSPlugin) Write(m *lifecycle.Manager) error {
 	}
 	css += p.generateContractPaletteCSS(config)
 	if core, ok := config.Extra["palette_core_css"].(string); ok && switcherEnabled {
-		core += p.generateContractPaletteCSS(config)
+		core += p.generateContractPaletteCSS(config, normalizePaletteName(effectiveLight), normalizePaletteName(effectiveDark))
 		if err := writePaletteCoreCSS(outputDir, core, m.GetAssetHash("css/palette-core.css")); err != nil {
 			return err
 		}
@@ -260,7 +260,7 @@ func canonicalPaletteName(name string) string {
 }
 
 //nolint:gocyclo // Palette projection has separate fallback and variant branches.
-func (p *PaletteCSSPlugin) generateContractPaletteCSS(config *lifecycle.Config) string {
+func (p *PaletteCSSPlugin) generateContractPaletteCSS(config *lifecycle.Config, paletteIDs ...string) string {
 	modelsConfig, ok := config.Extra["models_config"].(*models.Config)
 	if !ok {
 		return ""
@@ -354,6 +354,15 @@ func (p *PaletteCSSPlugin) generateContractPaletteCSS(config *lifecycle.Config) 
 		builder.WriteString("}\n")
 	}
 	for _, palette := range contract.Palettes {
+		if len(paletteIDs) > 0 {
+			include := false
+			for _, id := range paletteIDs {
+				include = include || palette.ID == resolve(id)
+			}
+			if !include {
+				continue
+			}
+		}
 		fmt.Fprintf(&builder, "[data-palette=%q], :root[data-palette=%q] {\n", palette.ID, palette.ID)
 		write(&builder, &palette)
 		builder.WriteString("}\n")

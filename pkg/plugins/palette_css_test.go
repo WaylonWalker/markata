@@ -23,6 +23,7 @@ func TestPaletteCSSPlugin_CorePreservesDefaultsAndDefersOtherPalettes(t *testing
 		t.Run(fmt.Sprint(enabled), func(t *testing.T) {
 			m := lifecycle.NewManager()
 			m.SetConfig(&lifecycle.Config{OutputDir: t.TempDir(), Extra: map[string]interface{}{
+				"models_config": &models.Config{Theme: models.ThemeConfig{Palette: "ayu-dark", Aesthetic: "precision"}},
 				"theme": models.ThemeConfig{
 					Palette: "ayu-dark", PaletteLight: "ayu-light", PaletteDark: "ayu-dark",
 					Switcher:  models.ThemeSwitcherConfig{Enabled: &enabled, IncludeAll: &includeAll},
@@ -51,7 +52,7 @@ func TestPaletteCSSPlugin_CorePreservesDefaultsAndDefersOtherPalettes(t *testing
 			if err != nil {
 				t.Fatal(err)
 			}
-			for _, want := range []string{`[data-palette="ayu-dark"]`, `[data-palette="ayu-light"]`, "--palette-manifest:", "--test-override: 42px"} {
+			for _, want := range []string{`[data-palette="ayu-dark"]`, `[data-palette="ayu-light"]`, "--palette-manifest:", "--test-override: 42px", `--aesthetic: "precision"`, "--color-border-strong:"} {
 				if !strings.Contains(string(core), want) {
 					t.Errorf("core missing %s", want)
 				}
