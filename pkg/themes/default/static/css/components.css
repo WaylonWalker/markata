@@ -1991,17 +1991,31 @@
 .header-controls .search-container--navbar,
 .header-controls .search--navbar {
   min-height: 2.125rem;
+  width: clamp(10rem, 18vw, 16rem);
+  max-width: 100%;
+  flex-shrink: 0;
+  margin-left: 0;
+}
+
+.header-controls .search-container--navbar #pagefind-search,
+.header-controls .search-container--navbar .pagefind-ui {
+  width: 100%;
 }
 
 @media (max-width: 768px) {
   .header-controls .search-container--navbar,
   .header-controls .search--navbar {
     margin-top: 0.5rem;
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 0;
   }
 }
 
 .header-controls .pagefind-ui__search-input,
 .header-controls .bleve-search__input {
+  width: 100%;
+  max-width: 100%;
   display: block;
   box-sizing: border-box;
   height: 2.125rem;
