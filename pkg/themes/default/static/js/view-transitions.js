@@ -716,7 +716,9 @@
     const staged = [];
     const loads = [];
 
-    newDoc.head.querySelectorAll('link[rel="stylesheet"]').forEach(node => {
+    const nextStyles = Array.from(newDoc.head.querySelectorAll('link[rel="stylesheet"], style'));
+    nextStyles.forEach((node, index) => {
+      if (node.tagName !== 'LINK') return;
       const key = stylesheetKey(node);
       if (!key || alreadyLoaded.has(key)) return;
 
@@ -733,7 +735,21 @@
       });
       staged.push(link);
       loads.push(loaded);
-      document.head.appendChild(link);
+
+      // A stylesheet link can lose its CSSOM when moved after load. Put
+      // destination-only links into final cascade order BEFORE loading them.
+      const existingFor = desired => Array.from(document.head.querySelectorAll('link[rel="stylesheet"], style'))
+        .find(candidate => stylesheetKey(candidate) === stylesheetKey(desired) ||
+          candidate.getAttribute(STAGED_STYLESHEET_ATTR) === stylesheetKey(desired));
+      const following = nextStyles.slice(index + 1).map(existingFor).find(Boolean);
+      const preceding = nextStyles.slice(0, index).reverse().map(existingFor).find(Boolean);
+      if (following) {
+        document.head.insertBefore(link, following);
+      } else if (preceding) {
+        preceding.insertAdjacentElement('afterend', link);
+      } else {
+        document.head.appendChild(link);
+      }
     });
 
     if (!loads.length) return;
@@ -794,14 +810,17 @@
         }
       }
 
-      if (previousInserted && previousInserted.parentNode === head) {
-        if (previousInserted.nextElementSibling !== replacement) {
+      // Never detach/reinsert an existing <link>: Chromium unloads its
+      // CSSOM during that move, causing a one-frame flash. Prepared links
+      // were already inserted at their destination cascade position.
+      if (!replacement.parentNode) {
+        if (previousInserted && previousInserted.parentNode === head) {
           previousInserted.insertAdjacentElement('afterend', replacement);
+        } else if (firstCurrent && firstCurrent.parentNode === head) {
+          head.insertBefore(replacement, firstCurrent);
+        } else {
+          head.appendChild(replacement);
         }
-      } else if (firstCurrent && firstCurrent !== replacement && firstCurrent.parentNode === head) {
-        head.insertBefore(replacement, firstCurrent);
-      } else if (!replacement.parentNode) {
-        head.appendChild(replacement);
       }
       previousInserted = replacement;
     });
