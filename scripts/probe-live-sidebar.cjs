@@ -1,3 +1,4 @@
+// Recheck live CSS after waylonwalker.com PR #44 hotfix.
 // Production-only browser probe. Reports the actual deployed markup and script
 // failures before and after a physical click on the sidebar handle.
 const { chromium } = require('playwright');
@@ -64,5 +65,11 @@ const fs = require('node:fs');
       await context.close();
     }
   } finally {await browser.close();}
-  if (reports.some(r=>r.exception || r.stateBefore?.missing || r.click?.startsWith('failed') || r.stateAfter?.pinned!==true)) process.exitCode=1;
+  if (reports.some(r=>{
+    if(r.exception || r.stateBefore?.missing || r.click?.startsWith('failed'))return true;
+    const shouldOpen=!r.stateBefore.asideClass.includes('sidebar--pinned');
+    if(r.stateAfter?.pinned!==shouldOpen)return true;
+    if(shouldOpen && (r.stateAfter.visibility!=='visible' || r.stateAfter.transform!=='none'))return true;
+    return false;
+  })) process.exitCode=1;
 })().catch(e=>{console.error(e);process.exitCode=1});
