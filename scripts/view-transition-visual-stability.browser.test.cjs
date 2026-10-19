@@ -72,8 +72,8 @@ test('delayed destination CSS is ready before the new snapshot, without hidden d
     await page.evaluate(() => {
       const original = document.startViewTransition.bind(document);
       document.startViewTransition = update => {
-        const transition = original(() => {
-          const result = update();
+        const transition = original(async () => {
+          const result = await update();
           window.__destinationLinks = Array.from(document.querySelectorAll('link[rel="stylesheet"]')).map(link => ({
             href: link.href, media: link.media, loaded: !!link.sheet,
             pending: link.getAttribute('data-markata-staged-stylesheet'),
