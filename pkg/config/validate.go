@@ -154,6 +154,12 @@ func ValidateConfig(config *models.Config) []error {
 
 func validateImageLibraryConfig(config *models.Config) []error {
 	var errs []error
+	if config.Images.PageSize < 0 {
+		errs = append(errs, ValidationError{
+			Field:   "images.page_size",
+			Message: "must be a nonnegative integer (0 disables pagination)",
+		})
+	}
 	if path := strings.TrimSpace(config.Images.Path); path != "" && imagePathEscapesRoot(path) {
 		errs = append(errs, ValidationError{
 			Field:   "images.path",
