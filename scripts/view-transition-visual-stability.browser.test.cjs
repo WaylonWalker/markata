@@ -74,6 +74,10 @@ test('delayed destination CSS is ready before the new snapshot, without hidden d
       document.startViewTransition = update => {
         const transition = original(() => {
           const result = update();
+          window.__destinationLinks = Array.from(document.querySelectorAll('link[rel="stylesheet"]')).map(link => ({
+            href: link.href, media: link.media, loaded: !!link.sheet,
+            pending: link.getAttribute('data-markata-staged-stylesheet'),
+          }));
           window.__destinationSnapshot = {
             pathname: location.pathname,
             hiddenDrawer: !!document.querySelector('[data-sidebar-hydrating]'),
@@ -107,7 +111,8 @@ test('delayed destination CSS is ready before the new snapshot, without hidden d
       pathname: '/target/',
       hiddenDrawer: false,
       incomingStylesheetActive: true,
-    }, 'the incoming stylesheet is active and sidebar visible before snapshot capture');
+    }, 'the incoming stylesheet is active and sidebar visible before snapshot capture: ' +
+      JSON.stringify(await page.evaluate(() => window.__destinationLinks)));
     await page.waitForFunction(() => !!window.__readyFrameBackground);
     assert.equal(await page.evaluate(() => window.__readyFrameBackground),
       'rgb(0, 120, 0)', 'the first rendered destination frame has correct CSS');
