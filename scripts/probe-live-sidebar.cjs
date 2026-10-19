@@ -1,4 +1,4 @@
-// Recheck live CSS after waylonwalker.com PR #44 hotfix.
+// Verify current production CSS after main-branch site hotfix was published.
 // Production-only browser probe. Reports the actual deployed markup and script
 // failures before and after a physical click on the sidebar handle.
 const { chromium } = require('playwright');
