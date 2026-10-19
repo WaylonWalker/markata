@@ -1577,7 +1577,6 @@ func TestImageLibraryPaginationTemplateContract(t *testing.T) {
 	}
 }
 
-
 func TestImageLibraryPlugin_PaginatedOutputsAndStaleCleanup(t *testing.T) {
 	root := t.TempDir()
 	output := filepath.Join(root, "output")
