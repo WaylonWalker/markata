@@ -123,8 +123,13 @@ data:
         }
 
         location ~* \.html?$ {
+          {{- if .Values.site.cacheHtmlAtEdge }}
+          expires off;
+          add_header Cache-Control "public, max-age=0, s-maxage=60";
+          {{- else }}
           expires -1;
           add_header Cache-Control "no-cache, no-store, must-revalidate";
+          {{- end }}
           {{- if $corsEnabled }}
           add_header Access-Control-Allow-Origin "*" always;
           {{- end }}

@@ -190,6 +190,8 @@ site:
     tag: "1.27.5-alpine"
     pullPolicy: IfNotPresent
   use404Page: false
+  # Opt public HTML into a 60-second shared-cache TTL while browsers revalidate.
+  cacheHtmlAtEdge: false
   # HTTP path that must return a successful response before the site is ready.
   healthPath: /
   cors:
