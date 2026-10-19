@@ -42,6 +42,8 @@
   // Keep hover/focus work useful for an ordinary click, but revalidate a
   // document left in the in-memory cache for longer than this window.
   const PREFETCH_FRESHNESS_MS = 5000;
+  const STAGED_STYLESHEET_ATTR = 'data-markata-staged-stylesheet';
+  const STYLESHEET_READY_TIMEOUT_MS = 3500;
   // Visitor-controlled theme state must survive in-site navigation; the new
   // document only carries server defaults.
   const RUNTIME_HTML_ATTRIBUTES = new Set(['data-theme', 'data-text-size', 'data-palette', 'data-aesthetic']);
@@ -696,42 +698,115 @@
     return true;
   }
 
+  /**
+   * Load destination-only, render-blocking styles before taking the new view
+   * transition snapshot. With media="not all" the CSS downloads and parses,
+   * but cannot restyle the outgoing page. A failed or stalled stylesheet
+   * triggers the caller's normal-navigation fallback instead of a FOUC.
+   */
+  async function prepareHeadStyles(newDoc) {
+    if (!newDoc || !newDoc.head) return;
+
+    const alreadyLoaded = new Set(
+      Array.from(document.head.querySelectorAll('link[rel="stylesheet"]'))
+        .filter(node => !node.hasAttribute(STAGED_STYLESHEET_ATTR))
+        .map(stylesheetKey)
+    );
+    const staged = [];
+    const loads = [];
+
+    newDoc.head.querySelectorAll('link[rel="stylesheet"]').forEach(node => {
+      const key = stylesheetKey(node);
+      if (!key || alreadyLoaded.has(key)) return;
+
+      // Print/on-demand styles must retain their intentional lazy loading.
+      const media = node.getAttribute('media');
+      if (media && window.matchMedia && !window.matchMedia(media).matches) return;
+
+      const link = node.cloneNode(true);
+      link.removeAttribute('onload');
+      link.setAttribute(STAGED_STYLESHEET_ATTR, key);
+      link.media = 'not all';
+      const loaded = new Promise((resolve, reject) => {
+        link.addEventListener('load', resolve, { once: true });
+        link.addEventListener('error', () => reject(new Error('Stylesheet failed: ' + node.href)), { once: true });
+      });
+      staged.push(link);
+      loads.push(loaded);
+      document.head.appendChild(link);
+    });
+
+    if (!loads.length) return;
+    let timeout;
+    try {
+      await Promise.race([
+        Promise.all(loads),
+        new Promise((_, reject) => {
+          timeout = setTimeout(() => reject(new Error('Stylesheet preparation timed out')), STYLESHEET_READY_TIMEOUT_MS);
+        })
+      ]);
+    } catch (error) {
+      staged.forEach(node => node.remove());
+      throw error;
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
   function syncHeadStyles(newDoc) {
     if (!newDoc || !newDoc.head) return;
 
     const selector = 'link[rel="stylesheet"], style';
-    const currentNodes = Array.from(document.head.querySelectorAll(selector));
+    const head = document.head;
+    const currentNodes = Array.from(head.querySelectorAll(selector));
     const nextNodes = Array.from(newDoc.head.querySelectorAll(selector));
     const nextKeys = new Set(nextNodes.map(stylesheetKey).filter(Boolean));
 
-    currentNodes.forEach((node) => {
-      if (node.hasAttribute('data-markata-persist')) return;
-      const key = stylesheetKey(node);
-      if (key && !nextKeys.has(key)) {
-        node.remove();
-      }
-    });
-
-    const head = document.head;
+    // Activate prepared styles before removing outgoing ones. Both operations
+    // happen inside the synchronous DOM swap for an atomic destination frame.
     let previousInserted = null;
-
-    nextNodes.forEach((node) => {
+    nextNodes.forEach(node => {
       const key = stylesheetKey(node);
       if (!key) return;
 
-      const existing = Array.from(head.querySelectorAll(selector)).find((candidate) => stylesheetKey(candidate) === key);
+      const existing = Array.from(head.querySelectorAll(selector)).find(candidate =>
+        !candidate.hasAttribute(STAGED_STYLESHEET_ATTR) && stylesheetKey(candidate) === key
+      );
       if (existing) {
         previousInserted = existing;
         return;
       }
 
-      const clone = node.cloneNode(true);
-      if (previousInserted && previousInserted.parentNode === head) {
-        previousInserted.insertAdjacentElement('afterend', clone);
+      let replacement = currentNodes.find(candidate =>
+        candidate.getAttribute(STAGED_STYLESHEET_ATTR) === key
+      );
+      if (replacement) {
+        if (node.hasAttribute('media')) {
+          replacement.setAttribute('media', node.getAttribute('media'));
+        } else {
+          replacement.removeAttribute('media');
+        }
+        if (node.hasAttribute('onload')) {
+          replacement.setAttribute('onload', node.getAttribute('onload'));
+        }
+        replacement.removeAttribute(STAGED_STYLESHEET_ATTR);
       } else {
-        head.appendChild(clone);
+        // Non-blocking media (such as print) can still be loaded on demand.
+        replacement = node.cloneNode(true);
       }
-      previousInserted = clone;
+
+      if (previousInserted && previousInserted.parentNode === head) {
+        previousInserted.insertAdjacentElement('afterend', replacement);
+      } else {
+        head.appendChild(replacement);
+      }
+      previousInserted = replacement;
+    });
+
+    currentNodes.forEach(node => {
+      if (node.hasAttribute('data-markata-persist')) return;
+      const key = stylesheetKey(node);
+      if (key && !nextKeys.has(key)) node.remove();
     });
   }
 
@@ -940,10 +1015,12 @@
   }
 
   function hydrateCriticalLayoutScripts() {
-    // Feed cycling rewrites visible sidebar chrome from the embedded JSON. Run
-    // it during the transition swap so the captured new state is not the
-    // server-rendered fallback sidebar.
+    // The destination snapshot must contain hydrated, visible sidebars.
+    // Revealing them only after transition.finished flashes empty drawers.
     callOptionalInit('initFeedCycling', window.initFeedCycling);
+    document.querySelectorAll('[data-sidebar-hydrating]').forEach(el => {
+      el.removeAttribute('data-sidebar-hydrating');
+    });
   }
 
   /**
@@ -1100,6 +1177,7 @@
     if (navOptions.bypassTransition) {
       const metrics = createNavigationMetrics(targetURL.href, navOptions.source);
       const newDoc = await resolveDocument(targetURL.href, metrics);
+      await prepareHeadStyles(newDoc);
       updateDocument(newDoc, metrics);
 
       if (navOptions.pushState) {
@@ -1114,19 +1192,20 @@
     navigationInFlight = true;
 
     const metrics = createNavigationMetrics(targetURL.href, navOptions.source);
-    const newDoc = await resolveDocument(targetURL.href, metrics);
-    const sharedContext = getSidebarSharedTransitionContext(navOptions.triggerElement, targetURL) || getSharedTransitionContext(navOptions.triggerElement, targetURL);
-    const postNavigationContext = getPostNavigationContext(navOptions.triggerElement);
-
-    if (sharedContext) {
-      activateSharedTransitionContext(sharedContext);
-    }
-
-    if (postNavigationContext) {
-      setPostNavigationState(postNavigationContext);
-    }
-
     try {
+      const newDoc = await resolveDocument(targetURL.href, metrics);
+      await prepareHeadStyles(newDoc);
+      const sharedContext = getSidebarSharedTransitionContext(navOptions.triggerElement, targetURL) || getSharedTransitionContext(navOptions.triggerElement, targetURL);
+      const postNavigationContext = getPostNavigationContext(navOptions.triggerElement);
+
+      if (sharedContext) {
+        activateSharedTransitionContext(sharedContext);
+      }
+
+      if (postNavigationContext) {
+        setPostNavigationState(postNavigationContext);
+      }
+
       const transition = document.startViewTransition(() => {
         prepareIncomingSharedTransition(newDoc, sharedContext);
         updateDocument(newDoc, metrics, { reinitialize: false, hydrateCritical: true });
@@ -1212,6 +1291,7 @@
       const url = window.location.href;
       const metrics = createNavigationMetrics(url, 'popstate');
       const newDoc = await resolveDocument(url, metrics);
+      await prepareHeadStyles(newDoc);
 
       const transition = document.startViewTransition(() => {
         updateDocument(newDoc, metrics, { reinitialize: false, hydrateCritical: true });
