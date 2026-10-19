@@ -3,6 +3,8 @@ package cmd
 import (
 	"os"
 	"strings"
+
+	"golang.org/x/term"
 )
 
 func inputIsTerminal() bool {
@@ -30,7 +32,8 @@ func fileLikeTerminal(stream any) bool {
 	if err != nil {
 		return false
 	}
-	return (stat.Mode() & os.ModeCharDevice) != 0
+	// Character devices include /dev/null. Check that the descriptor is an actual terminal.
+	return (stat.Mode()&os.ModeCharDevice) != 0 && term.IsTerminal(int(file.Fd()))
 }
 
 func colorEnabledOnOutput() bool {
