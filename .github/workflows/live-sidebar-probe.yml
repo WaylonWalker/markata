@@ -20,5 +20,16 @@ jobs:
           node-version: "22"
       - run: npm install --no-save --no-package-lock playwright@1.64.1
       - run: npx --no-install playwright install --with-deps chromium
+      - name: Check merged builder image publication
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag=sha-53e7f0d
+          token="$(curl --fail --silent --show-error 'https://ghcr.io/token?service=ghcr.io&scope=repository:waylonwalker/markata-go-builder:pull' | jq -er .token)"
+          status="$(curl --silent --show-error -o /dev/null -w '%{http_code}' --head \
+            -H "Authorization: Bearer $token" \
+            -H 'Accept: application/vnd.oci.image.index.v1+json, application/vnd.oci.image.manifest.v1+json' \
+            "https://ghcr.io/v2/waylonwalker/markata-go-builder/manifests/$tag")"
+          echo "PUBLISHED_BUILDER $tag HTTP $status"
       - name: Audit actual waylonwalker.com sidebar interaction and assets
         run: node scripts/probe-live-sidebar.cjs
