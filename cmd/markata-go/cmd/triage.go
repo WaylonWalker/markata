@@ -16,12 +16,12 @@ import (
 )
 
 const (
-	triageStdout = "stdout"
-	triageAuto = "auto"
+	triageStdout      = "stdout"
+	triageAuto        = "auto"
 	triageUnavailable = "(unavailable)"
-	triageCodex = "codex"
-	triageDumb = "dumb"
-	triageLinux = "linux"
+	triageCodex       = "codex"
+	triageDumb        = "dumb"
+	triageLinux       = "linux"
 )
 
 var (
