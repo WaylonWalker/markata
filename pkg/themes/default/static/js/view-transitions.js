@@ -699,10 +699,11 @@
   }
 
   /**
-   * Load destination-only, render-blocking styles before taking the new view
-   * transition snapshot. With media="not all" the CSS downloads and parses,
-   * but cannot restyle the outgoing page. A failed or stalled stylesheet
-   * triggers the caller's normal-navigation fallback instead of a FOUC.
+   * Load destination-only styles INSIDE the View Transition update callback.
+   * The browser has already captured the outgoing page at that point, so
+   * enabling the incoming CSS cannot flash or restyle what visitors see.
+   * Wait for real CSSOM readiness before capturing the destination frame.
+   * A failed/stalled stylesheet falls back to ordinary navigation.
    */
   async function prepareHeadStyles(newDoc) {
     if (!newDoc || !newDoc.head) return;
@@ -726,7 +727,6 @@
       const link = node.cloneNode(true);
       link.removeAttribute('onload');
       link.setAttribute(STAGED_STYLESHEET_ATTR, key);
-      link.media = 'not all';
       const loaded = new Promise((resolve, reject) => {
         link.addEventListener('load', resolve, { once: true });
         link.addEventListener('error', () => reject(new Error('Stylesheet failed: ' + node.href)), { once: true });
@@ -1180,7 +1180,16 @@
     if (navOptions.bypassTransition) {
       const metrics = createNavigationMetrics(targetURL.href, navOptions.source);
       const newDoc = await resolveDocument(targetURL.href, metrics);
-      await prepareHeadStyles(newDoc);
+      // This fast path does not capture an old snapshot. If new render-
+      // blocking CSS is required, prefer an ordinary page load to a FOUC.
+      const currentStyles = new Set(Array.from(document.head.querySelectorAll('link[rel="stylesheet"]')).map(stylesheetKey));
+      const hasNewStyles = Array.from(newDoc.head.querySelectorAll('link[rel="stylesheet"]'))
+        .some(node => (!node.media || !window.matchMedia || window.matchMedia(node.media).matches) &&
+          !currentStyles.has(stylesheetKey(node)));
+      if (hasNewStyles) {
+        window.location.href = targetURL.href;
+        return false;
+      }
       updateDocument(newDoc, metrics);
 
       if (navOptions.pushState) {
@@ -1197,7 +1206,6 @@
     const metrics = createNavigationMetrics(targetURL.href, navOptions.source);
     try {
       const newDoc = await resolveDocument(targetURL.href, metrics);
-      await prepareHeadStyles(newDoc);
       const sharedContext = getSidebarSharedTransitionContext(navOptions.triggerElement, targetURL) || getSharedTransitionContext(navOptions.triggerElement, targetURL);
       const postNavigationContext = getPostNavigationContext(navOptions.triggerElement);
 
@@ -1209,7 +1217,8 @@
         setPostNavigationState(postNavigationContext);
       }
 
-      const transition = document.startViewTransition(() => {
+      const transition = document.startViewTransition(async () => {
+        await prepareHeadStyles(newDoc);
         prepareIncomingSharedTransition(newDoc, sharedContext);
         updateDocument(newDoc, metrics, { reinitialize: false, hydrateCritical: true });
         if (navOptions.pushState) {
@@ -1294,9 +1303,9 @@
       const url = window.location.href;
       const metrics = createNavigationMetrics(url, 'popstate');
       const newDoc = await resolveDocument(url, metrics);
-      await prepareHeadStyles(newDoc);
 
-      const transition = document.startViewTransition(() => {
+      const transition = document.startViewTransition(async () => {
+        await prepareHeadStyles(newDoc);
         updateDocument(newDoc, metrics, { reinitialize: false, hydrateCritical: true });
         markRenderedLocation();
       });
