@@ -435,6 +435,7 @@ var settingDocs = map[string]string{
 	"ImagesConfig.Enabled":                         "Enabled controls whether the image index and authoring page are generated.",
 	"ImagesConfig.ExportJSON":                      "ExportJSON controls whether path/index.json and output_dir/images.json are written.",
 	"ImagesConfig.IncludeUnreferenced":             "IncludeUnreferenced includes image and video files found in the static asset directory even when no public post references them. It is opt-in because enabling it makes every supported asset centrally enumerable. The default, including a nil configuration value, is false.",
+	"ImagesConfig.PageSize":                        "PageSize opts into server-rendered pagination of the image library. Zero retains the historical complete-page behavior.",
 	"ImagesConfig.Path":                            "Path is the output path prefix, relative to output_dir.",
 	"ImagesConfig.Template":                        "Template is the template used for the authoring page.",
 	"IndieAuthConfig.AuthorizationEndpoint":        "AuthorizationEndpoint is the URL of your authorization endpoint Example: \"https://indieauth.com/auth\"",
