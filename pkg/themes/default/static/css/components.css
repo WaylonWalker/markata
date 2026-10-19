@@ -3657,6 +3657,11 @@ article.kb-highlighted {
     container, header, body, sections, tables, and footer.
     ========================================================================== */
 
+/* Keep the closed dialog out of document flow even with alternate display rules. */
+.shortcuts-modal[hidden] {
+   display: none;
+}
+
 /* Modal backdrop - semi-transparent overlay */
 .shortcuts-modal {
    position: fixed;
