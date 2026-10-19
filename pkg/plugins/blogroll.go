@@ -1843,7 +1843,7 @@ func (p *BlogrollPlugin) renderReaderTimeline(groups []map[string]interface{}, w
 				if iconURL := stringValue(entry, "source_icon_url"); iconURL != "" {
 					sb.WriteString(`                <img src="`)
 					sb.WriteString(html.EscapeString(iconURL))
-					sb.WriteString(`" alt="" class="reader-entry-source-icon" width="16" height="16" loading="lazy">
+					sb.WriteString(`" alt="" class="reader-entry-source-icon" width="16" height="16" loading="lazy" decoding="async">
 `)
 				} else {
 					sb.WriteString(`                <span class="reader-entry-source-icon reader-entry-source-icon--fallback" aria-hidden="true"></span>
@@ -1901,9 +1901,14 @@ func (p *BlogrollPlugin) renderReaderTimeline(groups []map[string]interface{}, w
 					sb.WriteString(` (opens in new tab)">
               <img src="`)
 					sb.WriteString(html.EscapeString(imageURL))
+					if srcset := stringValue(entry, "image_srcset"); srcset != "" {
+						sb.WriteString(`" srcset="`)
+						sb.WriteString(html.EscapeString(srcset))
+						sb.WriteString(`" sizes="100vw`)
+					}
 					sb.WriteString(`" alt="" class="reader-entry-image reader-entry-image--`)
 					sb.WriteString(html.EscapeString(previewKind))
-					sb.WriteString(`" width="960" height="540" loading="lazy">
+					sb.WriteString(`" width="960" height="540" loading="lazy" decoding="async">
             </a>
 `)
 				} else {
@@ -1917,7 +1922,7 @@ func (p *BlogrollPlugin) renderReaderTimeline(groups []map[string]interface{}, w
 					if iconURL := stringValue(entry, "source_icon_url"); iconURL != "" {
 						sb.WriteString(`<img src="`)
 						sb.WriteString(html.EscapeString(iconURL))
-						sb.WriteString(`" alt="" class="reader-entry-source-tile-icon" width="20" height="20" loading="lazy">`)
+						sb.WriteString(`" alt="" class="reader-entry-source-tile-icon" width="20" height="20" loading="lazy" decoding="async">`)
 					} else {
 						sb.WriteString(`<span class="reader-entry-source-tile-badge">`)
 						sb.WriteString(html.EscapeString(stringValue(entry, "source_initial")))
@@ -2015,6 +2020,7 @@ func (p *BlogrollPlugin) readerEntryMap(entry *models.ExternalEntry, feed *model
 		"updated":           entry.Updated,
 		"categories":        entry.Categories,
 		"image_url":         previewURL,
+		"image_srcset":      readerImageSrcset(previewURL),
 		"preview_url":       previewURL,
 		"preview_kind":      previewKind,
 		"source_image_url":  sourceImageURL,
