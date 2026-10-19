@@ -440,3 +440,24 @@
     transition: none;
   }
 }
+
+
+/* Native links remain usable without JavaScript; enhanced full-library
+   filtering may hide them once all server pages have been hydrated. */
+.image-library__pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: .4rem;
+  flex-wrap: wrap;
+  margin: 1.5rem 0;
+}
+.image-library__pagination a,
+.image-library__pagination [aria-current="page"] {
+  display: inline-block;
+  padding: .4rem .65rem;
+  border: 1px solid var(--border-color, currentColor);
+  border-radius: .35rem;
+}
+.image-library__pagination [aria-current="page"] { font-weight: 700; }
+.image-library__pagination[hidden] { display: none; }
