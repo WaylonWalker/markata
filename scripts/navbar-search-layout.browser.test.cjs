@@ -74,12 +74,15 @@ for (const width of [412, 1440]) for (const provider of ['loadPagefind', 'initPa
         <main><div class="feed h-feed">Archive</div></main><script>${conditionalJS}</script></body></html>`);
       const settle = () => page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
       await settle();
-      assert.deepEqual(await page.evaluate(() => ({reads:layoutReads,resizes,searchCalls,fallbackCalls})), {reads:0,resizes:[],searchCalls:1,fallbackCalls:0});
+      assert.deepEqual(await page.evaluate(() => ({reads:layoutReads,resizes,searchCalls,fallbackCalls})), {reads:0,resizes:[],searchCalls:0,fallbackCalls:0}, 'cold startup must leave lazy search unloaded');
       const before = await page.locator('.search-container').boundingBox();
       await page.addStyleTag({content:searchCSS});
       await page.evaluate(() => dispatchEvent(new Event('view-transition-complete')));
       await settle();
-      assert.deepEqual(await page.evaluate(() => ({reads:layoutReads,resizes,searchCalls,fallbackCalls})), {reads:0,resizes:[],searchCalls:2,fallbackCalls:0});
+      assert.deepEqual(await page.evaluate(() => ({reads:layoutReads,resizes,searchCalls,fallbackCalls})), {reads:0,resizes:[],searchCalls:0,fallbackCalls:0}, 'conditional CSS transition handling must preserve lazy search');
+      await page.evaluate(provider => window[provider](), provider);
+      await settle();
+      assert.deepEqual(await page.evaluate(() => ({reads:layoutReads,resizes,searchCalls,fallbackCalls})), {reads:0,resizes:[],searchCalls:1,fallbackCalls:0}, 'SPA navigation must initialize search once');
       assert.deepEqual(await page.locator('.search-container').boundingBox(), before, 'SPA search hydration must keep its dimensions');
       await page.setViewportSize({width:width+24,height:900});
       await page.waitForFunction(() => window.resizes.some(trusted => trusted));
