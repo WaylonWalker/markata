@@ -71,16 +71,27 @@ test('delayed destination CSS is ready before the new snapshot, without hidden d
     // Capture exactly what the browser will use as its new snapshot.
     await page.evaluate(() => {
       const original = document.startViewTransition.bind(document);
-      document.startViewTransition = update => original(() => {
-        const result = update();
-        const surface = document.querySelector('#surface');
-        window.__destinationSnapshot = {
-          pathname: location.pathname,
-          background: surface && getComputedStyle(surface).backgroundColor,
-          hiddenDrawer: !!document.querySelector('[data-sidebar-hydrating]'),
-        };
-        return result;
-      });
+      document.startViewTransition = update => {
+        const transition = original(() => {
+          const result = update();
+          window.__destinationSnapshot = {
+            pathname: location.pathname,
+            hiddenDrawer: !!document.querySelector('[data-sidebar-hydrating]'),
+            incomingStylesheetActive: Array.from(document.querySelectorAll('link[rel="stylesheet"]')).some(link =>
+              link.href.endsWith('/target.css') && !link.hasAttribute('data-markata-staged-stylesheet') &&
+              (!link.media || link.media === 'all') && !!link.sheet
+            ),
+          };
+          return result;
+        });
+        // The browser has completed its layout and created the destination
+        // snapshot when ready resolves. Reading computed style in the update
+        // callback itself is premature during a stylesheet media switch.
+        transition.ready.then(() => {
+          window.__readyFrameBackground = getComputedStyle(document.querySelector('#surface')).backgroundColor;
+        });
+        return transition;
+      };
     });
 
     const requested = page.waitForRequest(req => req.url().endsWith('/target.css'));
@@ -94,9 +105,12 @@ test('delayed destination CSS is ready before the new snapshot, without hidden d
     const captured = await page.evaluate(() => window.__destinationSnapshot);
     assert.deepEqual(captured, {
       pathname: '/target/',
-      background: 'rgb(0, 120, 0)',
       hiddenDrawer: false,
-    }, 'the first destination frame is styled and its sidebar already visible');
+      incomingStylesheetActive: true,
+    }, 'the incoming stylesheet is active and sidebar visible before snapshot capture');
+    await page.waitForFunction(() => !!window.__readyFrameBackground);
+    assert.equal(await page.evaluate(() => window.__readyFrameBackground),
+      'rgb(0, 120, 0)', 'the first rendered destination frame has correct CSS');
     await page.waitForFunction(() => !!window.__lastViewTransitionMetrics);
     assert.equal(await page.locator('[data-sidebar-hydrating]').count(), 0);
     assert.equal(requests.filter(r => r === '/target.css').length, 1);
