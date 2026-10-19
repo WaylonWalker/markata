@@ -9,7 +9,7 @@ const fs = require('node:fs');
   try {
     for (const width of [412, 1440]) {
       const context = await browser.newContext({viewport:{width,height:850},ignoreHTTPSErrors:false});
-      for (const route of ['/', '/archive/']) {
+      for (const route of ['/archive/', '/have-you-taken-the-agentic-pill-yet/']) {
         const page = await context.newPage();
         const errors = [], failed = [], scripts = [];
         page.on('pageerror',e=>errors.push(String(e).slice(0,600)));
@@ -22,7 +22,7 @@ const fs = require('node:fs');
           await page.waitForTimeout(2000);
           report.status=response.status();
           report.url=page.url();
-          const selector=route==='/'?'.content-sidebar > .sidebar-toggle':'.feed-sidebar > .sidebar-toggle';
+          const selector='.feed-sidebar > .sidebar-toggle';
           report.stateBefore=await page.evaluate(sel=>{
             const b=document.querySelector(sel);
             if(!b)return {missing:sel,available:[...document.querySelectorAll('.sidebar-toggle')].map(x=>x.outerHTML.slice(0,300))};
