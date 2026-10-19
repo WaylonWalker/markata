@@ -99,23 +99,31 @@ func triageIsInteractive() bool {
 	return !noInput && os.Getenv("TERM") != triageDumb && inputIsTerminal() && outputIsTerminal()
 }
 
+type triageOption struct{ target, label string }
+
 func triageSelectTarget(agents []triageHarness) (string, error) {
-	type option struct{ target, label string }
-	options := make([]option, 0, len(agents)+2)
+	options := make([]triageOption, 0, len(agents)+2)
 	for _, agent := range agents {
-		options = append(options, option{agent.Name, agent.Label + " (installed)"})
+		options = append(options, triageOption{agent.Name, agent.Label + " (installed)"})
 	}
 	options = append(options,
-		option{"clipboard", "Copy prompt to clipboard"},
-		option{triageStdout, "Print prompt to stdout"},
+		triageOption{"clipboard", "Copy prompt to clipboard"},
+		triageOption{triageStdout, "Print prompt to stdout"},
 	)
 	index, err := fuzzyfinder.Find(options, func(i int) string { return options[i].label })
+	return triagePickerResult(options, index, err)
+}
+
+// An aborted picker (Esc or an interrupted UI) never chooses a destination.
+func triagePickerResult(options []triageOption, index int, err error) (string, error) {
+	if errors.Is(err, fuzzyfinder.ErrAbort) {
+		return "", nil
+	}
 	if err != nil {
-		if errors.Is(err, fuzzyfinder.ErrAbort) {
-			// Esc or picker cancellation is not a CLI error and must never launch an agent.
-			return "", nil
-		}
 		return "", fmt.Errorf("triage selection: %w", err)
+	}
+	if index < 0 || index >= len(options) {
+		return "", fmt.Errorf("triage selection returned an invalid index")
 	}
 	return options[index].target, nil
 }
