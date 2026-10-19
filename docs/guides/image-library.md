@@ -191,3 +191,27 @@ feedback, and video loading.
 
 See the [configuration reference](/docs/guides/configuration/) and [built-in
 plugin reference](/docs/reference/plugins/) for related settings.
+
+
+## Optional server-side pagination
+
+For large libraries, avoid sending every image card on the initial request:
+
+```toml
+[markata-go.images]
+page_size = 48
+```
+
+With this opt-in setting, `/images/` renders up to 48 cards and emits native
+`/images/page/2/`, `/images/page/3/`, etc. links. The JSON inventory still
+contains all public media; no published media relationships are lost. The
+page links work without JavaScript. Global search, filters, and sort are still
+available with JavaScript: on the first interaction the browser retrieves the
+other *static HTML* pages and searches across the complete collection, instead
+of loading all their DOM nodes during first paint. Until that interaction, the
+initial page stays light and usable. If another page fails to load, the links
+remain available for ordinary browsing.
+
+A setting of `page_size = 0` (default) preserves the existing single-page
+library. Sites with a custom `images.html` should update their template
+to honor `image_library.PageLinks` before enabling pagination.
