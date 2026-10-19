@@ -219,3 +219,24 @@ func TestTriageAgentLaunchForwardsPromptAndStreams(t *testing.T) {
 		t.Fatalf("unexpected agent stderr %q", stderr.String())
 	}
 }
+
+func TestTriageCancelledContextDoesNotLaunchAgent(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	cmd := &cobra.Command{Use: "triage"}
+	cmd.SetContext(ctx)
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	agent := triageHarness{
+		Name:       "fake-agent",
+		Label:      "Fake agent",
+		Path:       os.Args[0],
+		PromptFlag: "-test.run=^TestTriageAgentSubprocessStub$",
+	}
+	if err := runTriageHarness(cmd, agent, "do not launch"); err == nil {
+		t.Fatal("expected canceled context to stop the subprocess")
+	}
+	if out.Len() != 0 {
+		t.Fatalf("canceled subprocess produced output: %q", out.String())
+	}
+}
