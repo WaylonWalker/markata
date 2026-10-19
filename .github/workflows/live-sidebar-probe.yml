@@ -1,0 +1,24 @@
+name: Live sidebar production probe
+on:
+  pull_request:
+    paths:
+      - "scripts/probe-live-sidebar.cjs"
+      - ".github/workflows/live-sidebar-probe.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm install --no-save --no-package-lock playwright@1.64.1
+      - run: npx --no-install playwright install --with-deps chromium
+      - name: Audit actual waylonwalker.com sidebar interaction and assets
+        run: node scripts/probe-live-sidebar.cjs
