@@ -35,9 +35,15 @@
 
   {% if config.Extra.fontpack_css %}
   {% if not config.Extra.fontpack_preloads_json %}
+  {% if feed_presentation == "editorial" and feed_sections %}
+  {% for url in config.Extra.fontpack_editorial_preload_urls %}
+  <link rel="preload" href="{{ url }}" as="font" type="font/woff2" crossorigin>
+  {% endfor %}
+  {% else %}
   {% for url in post.Extra._fontpack_preload_urls | default:config.Extra.fontpack_preload_urls %}
   <link rel="preload" href="{{ url }}" as="font" type="font/woff2" crossorigin>
   {% endfor %}
+  {% endif %}
   {% endif %}
   {% endif %}
   <!-- Core CSS (always loaded) -->
