@@ -762,8 +762,9 @@
     const nextNodes = Array.from(newDoc.head.querySelectorAll(selector));
     const nextKeys = new Set(nextNodes.map(stylesheetKey).filter(Boolean));
 
-    // Activate prepared styles before removing outgoing ones. Both operations
-    // happen inside the synchronous DOM swap for an atomic destination frame.
+    // Activate prepared styles before removing outgoing ones. Preserve the
+    // destination cascade order within the synchronous transition callback.
+    const firstCurrent = currentNodes.find(node => !node.hasAttribute(STAGED_STYLESHEET_ATTR));
     let previousInserted = null;
     nextNodes.forEach(node => {
       const key = stylesheetKey(node);
@@ -772,32 +773,34 @@
       const existing = Array.from(head.querySelectorAll(selector)).find(candidate =>
         !candidate.hasAttribute(STAGED_STYLESHEET_ATTR) && stylesheetKey(candidate) === key
       );
-      if (existing) {
-        previousInserted = existing;
-        return;
-      }
-
-      let replacement = currentNodes.find(candidate =>
-        candidate.getAttribute(STAGED_STYLESHEET_ATTR) === key
-      );
-      if (replacement) {
-        if (node.hasAttribute('media')) {
-          replacement.setAttribute('media', node.getAttribute('media'));
+      let replacement = existing;
+      if (!replacement) {
+        replacement = currentNodes.find(candidate =>
+          candidate.getAttribute(STAGED_STYLESHEET_ATTR) === key
+        );
+        if (replacement) {
+          if (node.hasAttribute('media')) {
+            replacement.setAttribute('media', node.getAttribute('media'));
+          } else {
+            replacement.removeAttribute('media');
+          }
+          if (node.hasAttribute('onload')) {
+            replacement.setAttribute('onload', node.getAttribute('onload'));
+          }
+          replacement.removeAttribute(STAGED_STYLESHEET_ATTR);
         } else {
-          replacement.removeAttribute('media');
+          // Non-blocking media (such as print) can still load on demand.
+          replacement = node.cloneNode(true);
         }
-        if (node.hasAttribute('onload')) {
-          replacement.setAttribute('onload', node.getAttribute('onload'));
-        }
-        replacement.removeAttribute(STAGED_STYLESHEET_ATTR);
-      } else {
-        // Non-blocking media (such as print) can still be loaded on demand.
-        replacement = node.cloneNode(true);
       }
 
       if (previousInserted && previousInserted.parentNode === head) {
-        previousInserted.insertAdjacentElement('afterend', replacement);
-      } else {
+        if (previousInserted.nextElementSibling !== replacement) {
+          previousInserted.insertAdjacentElement('afterend', replacement);
+        }
+      } else if (firstCurrent && firstCurrent !== replacement && firstCurrent.parentNode === head) {
+        head.insertBefore(replacement, firstCurrent);
+      } else if (!replacement.parentNode) {
         head.appendChild(replacement);
       }
       previousInserted = replacement;
