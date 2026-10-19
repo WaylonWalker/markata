@@ -19,7 +19,6 @@ const (
 	triageStdout      = "stdout"
 	triageAuto        = "auto"
 	triageUnavailable = "(unavailable)"
-	triageCodex       = "codex"
 	triageDumb        = "dumb"
 	triageLinux       = "linux"
 )
@@ -64,7 +63,7 @@ type triageHarness struct {
 var triageHarnesses = []triageHarness{
 	{Name: "opencode", Label: "OpenCode", Executable: "opencode", PromptFlag: "--prompt"},
 	{Name: "claude", Label: "Claude Code", Executable: "claude"},
-	{Name: triageCodex, Label: "Codex", Executable: triageCodex},
+	{Name: agentNameCodex, Label: "Codex", Executable: agentNameCodex},
 	{Name: "gemini", Label: "Gemini CLI", Executable: "gemini", PromptFlag: "-i"},
 	{Name: "cursor", Label: "Cursor Agent", Executable: "cursor-agent"},
 }
@@ -215,8 +214,9 @@ func triageClipboardCommands(goos string) []clipboardCommand {
 }
 
 func writeTriageClipboard(prompt string, lookPath func(string) (string, error)) error {
-	var attempts []string
-	for _, candidate := range triageClipboardCommands(runtime.GOOS) {
+	commands := triageClipboardCommands(runtime.GOOS)
+	attempts := make([]string, 0, len(commands))
+	for _, candidate := range commands {
 		binary, err := lookPath(candidate.Binary)
 		if err != nil {
 			continue
