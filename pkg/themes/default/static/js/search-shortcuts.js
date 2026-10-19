@@ -375,6 +375,15 @@
     updateModifierKeyDisplay();
   }
 
+  // Delegate on document: the footer is replaced during SPA transitions.
+  // A direct listener on the original button would stop working after a swap.
+  document.addEventListener('click', function(e) {
+    var button = e.target.closest && e.target.closest('[data-shortcuts-trigger]');
+    if (!button) return;
+    e.preventDefault();
+    showShortcutsModal();
+  });
+
   // Capture the 404 recovery submit before the generated template's legacy
   // redirect handler. This keeps the user on the recovery page and opens the
   // same Pagefind/bleve search used by the site's normal header search.
