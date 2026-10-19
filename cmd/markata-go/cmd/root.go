@@ -105,7 +105,9 @@ Profiling:
 		// Build Lab resolves and binds every child to its copied workspace. Do
 		// not let the caller's site-directory selection change the parent
 		// process's fixture resolution or child command setup.
-		if !isBuildLabCommand(cmd) {
+		// Triage must still work when a requested site directory is broken.
+		// It reports the inaccessible path rather than failing before diagnostics.
+		if !isBuildLabCommand(cmd) && cmd != triageCmd {
 			if err := activateSiteDir(); err != nil {
 				return err
 			}
