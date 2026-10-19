@@ -1499,6 +1499,14 @@
    Overlay drawers (<= 1200px)
    ========================================================================== */
 @media (max-width: 1200px) {
+  /* Only the open overlay drawer may offer a handle: the closed drawer's
+     protruding handle can otherwise intercept taps on the active close tab. */
+  .page-wrapper:has(> :is(.feed-sidebar, .doc-sidebar).sidebar--pinned)
+    > :is(.feed-sidebar, .doc-sidebar):not(.sidebar--pinned) > .sidebar-toggle {
+    pointer-events: none;
+    visibility: hidden;
+  }
+
   .feed-sidebar,
   .doc-sidebar {
     top: 0;

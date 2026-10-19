@@ -1041,6 +1041,13 @@
   <script src="{{ 'js/conditional-css.js' | theme_asset_hashed }}" defer></script>
   {% endif %}
 
+  {# Drawer controls must work with native navigation, without view transitions,
+     and if that optional bundle fails to load. This tiny fallback is inert
+     when the main drawer controller is healthy. #}
+  {% if config.components.feed_sidebar.enabled or resolved_doc_sidebar.enabled or resolved_content_sidebar.enabled %}
+  <script src="{{ 'js/sidebar-rescue.js' | theme_asset_hashed }}" defer></script>
+  {% endif %}
+
   <!-- Decryption JS (only loaded for encrypted posts) -->
   {% if has_encrypted_content %}
   <script src="{{ 'js/decryption.js' | theme_asset_hashed }}" defer></script>
