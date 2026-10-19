@@ -43,7 +43,6 @@ func TestShortcutsModalHiddenWithoutCSS(t *testing.T) {
 	}
 }
 
-
 func TestFooterShortcutsTriggerIsCompactAndClickable(t *testing.T) {
 	footer, err := ReadTemplate("components/footer.html")
 	if err != nil {
