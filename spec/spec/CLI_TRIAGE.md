@@ -37,7 +37,9 @@ The agent SHOULD distinguish problems in site content/config/templates, the loca
 
 ## Stream and security contract
 
-`--to stdout` writes **only** the Markdown prompt (ending in a newline) to stdout, with no success banners, ANSI escapes, picker output, or diagnostics. Failures and copy-status messages go to stderr. Noninteractive `auto` must be equivalent to `--to stdout`.
+`--to stdout` writes **only** the Markdown prompt (ending in a newline) to stdout, with no success banners, ANSI escapes, picker output, or diagnostics. Failures and copy-status messages go to stderr. Noninteractive `auto` must be equivalent to `--to stdout`. If the consumer closes its pipe early, the command MUST exit quietly without treating expected EPIPE as a diagnostic.
+
+Escape/picker cancellation must exit without an agent launch or emitted prompt. A Ctrl+C interruption must not leave an orphaned child agent process. `--quiet` suppresses clipboard success chatter but never suppresses prompt stdout. `--no-color` and `NO_COLOR` do not style the piped Markdown prompt. A missing or invalid selected site directory must be reported as a diagnostic instead of preventing triage from starting.
 
 No agent is launched without an explicit selection by the user or an explicit routing flag. The agent is launched as a subprocess using an argument array, **not through a shell**. The command does not infer or pass authorization credentials. Clipboard handoffs use stdin to the helper process without a shell.
 
@@ -51,5 +53,7 @@ The generated prompt and user-provided issue text are context, not higher-priori
 4. Affected-version confirmation is explicitly requested, even when a CLI version is present.
 5. Clipboard availability and command routing work across supported platforms.
 6. Both CLI entry points expose the command; no major-version upgrade required.
+7. CLI pre-run supports broken/absent site directories and unreadable config paths without reading config contents.
+8. Tests cover Escape cancellation, pipes closed by consumers, `--no-input`, `--quiet`, `--no-color`, and agent argv forwarding with a local stub (no network or API calls).
 
 User guide: [Triage a site issue](../../docs/guides/triage.md). CLI reference: [CLI reference](../../docs/reference/cli.md).
