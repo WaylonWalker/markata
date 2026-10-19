@@ -341,6 +341,12 @@ func parseImageLibraryConfig(extra map[string]interface{}) (ImageLibraryConfig, 
 	if !ok {
 		return ImageLibraryConfig{}, fmt.Errorf("images must be a table")
 	}
+	return parseImageLibraryConfigFields(config, values)
+}
+
+// Keep individual field validation separate from the dispatch path so the
+// parser stays straightforward as optional image-library features grow.
+func parseImageLibraryConfigFields(config ImageLibraryConfig, values map[string]interface{}) (ImageLibraryConfig, error) {
 	if value, exists := values["enabled"]; exists {
 		parsed, ok := value.(bool)
 		if !ok {
