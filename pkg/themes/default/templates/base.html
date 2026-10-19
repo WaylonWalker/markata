@@ -1122,14 +1122,17 @@
           raf(refresh);
         }
 
+        var resizeObserver = window.ResizeObserver ? new ResizeObserver(schedule) : null;
+        if (resizeObserver) resizeObserver.observe(article);
         window.addEventListener('scroll', schedule, { passive: true });
         window.addEventListener('resize', schedule);
         window.__articleProgressCleanup = function() {
+          if (resizeObserver) resizeObserver.disconnect();
           window.removeEventListener('scroll', schedule);
           window.removeEventListener('resize', schedule);
         };
 
-        schedule();
+        if (!resizeObserver) schedule();
       }
 
       window.initArticleProgressIndicator = initArticleProgressIndicator;
