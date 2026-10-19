@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"testing/fstest"
 	"time"
 
 	"github.com/WaylonWalker/markata/pkg/models"
@@ -40,6 +41,74 @@ func TestNewEngine(t *testing.T) {
 				t.Error("NewEngine() returned nil engine")
 			}
 		})
+	}
+}
+
+func TestSearchPathLoader_EmbeddedIncludesPreferProjectOverride(t *testing.T) {
+	directory := t.TempDir()
+	projectTemplate := filepath.Join(directory, "partials", "card.html")
+	if err := os.MkdirAll(filepath.Dir(projectTemplate), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(projectTemplate, []byte("project"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	loader := &searchPathLoader{
+		searchPaths: []string{directory},
+		embeddedFS: fstest.MapFS{
+			"partials/card.html": &fstest.MapFile{Data: []byte("embedded")},
+		},
+	}
+
+	got := loader.Abs("embedded:feed.html", "partials/card.html")
+	want, err := filepath.Abs(projectTemplate)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != want {
+		t.Fatalf("Abs() = %q, want project override %q", got, want)
+	}
+}
+
+func TestSearchPathLoader_EmbeddedSiblingIncludesPreferProjectOverride(t *testing.T) {
+	directory := t.TempDir()
+	projectTemplate := filepath.Join(directory, "partials", "card.html")
+	if err := os.MkdirAll(filepath.Dir(projectTemplate), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(projectTemplate, []byte("project"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	loader := &searchPathLoader{
+		searchPaths: []string{directory},
+		embeddedFS: fstest.MapFS{
+			"partials/feed.html": &fstest.MapFile{Data: []byte("{% include \"card.html\" %}")},
+			"partials/card.html": &fstest.MapFile{Data: []byte("embedded")},
+		},
+	}
+
+	got := loader.Abs("embedded:partials/feed.html", "card.html")
+	want, err := filepath.Abs(projectTemplate)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != want {
+		t.Fatalf("Abs() = %q, want project sibling override %q", got, want)
+	}
+}
+
+func TestSearchPathLoader_EmbeddedIncludesFallBackToEmbeddedTemplate(t *testing.T) {
+	loader := &searchPathLoader{
+		searchPaths: []string{t.TempDir()},
+		embeddedFS: fstest.MapFS{
+			"partials/card.html": &fstest.MapFile{Data: []byte("embedded")},
+		},
+	}
+
+	if got, want := loader.Abs("embedded:feed.html", "partials/card.html"), "embedded:partials/card.html"; got != want {
+		t.Fatalf("Abs() = %q, want embedded fallback %q", got, want)
 	}
 }
 
