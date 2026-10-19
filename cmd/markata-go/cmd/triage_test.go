@@ -96,7 +96,9 @@ func TestTriageClipboardCandidates(t *testing.T) {
 
 func TestTriageStdoutIsPromptOnly(t *testing.T) {
 	beforeTo, beforeAgent, beforeIssue, beforeNoInput := triageTo, triageAgent, triageIssue, noInput
-	defer func() { triageTo, triageAgent, triageIssue, noInput = beforeTo, beforeAgent, beforeIssue, beforeNoInput }()
+	defer func() {
+		triageTo, triageAgent, triageIssue, noInput = beforeTo, beforeAgent, beforeIssue, beforeNoInput
+	}()
 
 	triageTo, triageAgent, triageIssue, noInput = "auto", "", "", true
 	var stdout, stderr bytes.Buffer
@@ -120,7 +122,9 @@ func TestTriageStdoutIsPromptOnly(t *testing.T) {
 
 func TestTriageInitialIssueBounded(t *testing.T) {
 	beforeTo, beforeAgent, beforeIssue := triageTo, triageAgent, triageIssue
-	defer func() { triageTo, triageAgent, triageIssue = beforeTo, beforeAgent, beforeIssue }()
+	defer func() {
+		triageTo, triageAgent, triageIssue = beforeTo, beforeAgent, beforeIssue
+	}()
 	triageTo, triageAgent, triageIssue = "stdout", "", strings.Repeat("x", 4001)
 	cmd := &cobra.Command{Use: "triage"}
 	err := runTriageCommand(cmd, nil)
