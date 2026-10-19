@@ -96,6 +96,7 @@ func TestTriageConfigDiscoversSelectedSite(t *testing.T) {
 
 func TestTriageChildCLIWithInvalidConfiguration(t *testing.T) {
 	missing := filepath.Join(t.TempDir(), "missing")
+	// #nosec G204 -- Executes this Go test binary with a fixed test name, not user input.
 	proc := exec.Command(os.Args[0], "-test.run=^TestTriageCLISubprocess$")
 	proc.Env = append(os.Environ(),
 		"MARKATA_TRIAGE_CLI_TEST=1",
@@ -123,7 +124,7 @@ func TestTriageChildCLIWithInvalidConfiguration(t *testing.T) {
 
 // Run the real Cobra root as a subprocess so global CLI flags and pre-run
 // validation are tested independently of test-package state.
-func TestTriageCLISubprocess(t *testing.T) {
+func TestTriageCLISubprocess(_ *testing.T) {
 	if os.Getenv("MARKATA_TRIAGE_CLI_TEST") != "1" {
 		return
 	}
@@ -185,7 +186,7 @@ func TestTriageStdioRespectsNoInputNoColorAndQuiet(t *testing.T) {
 	}
 }
 
-func TestTriageAgentSubprocessStub(t *testing.T) {
+func TestTriageAgentSubprocessStub(_ *testing.T) {
 	if os.Getenv("MARKATA_TRIAGE_AGENT_STUB") != "1" {
 		return
 	}
