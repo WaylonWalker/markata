@@ -33,7 +33,29 @@ const fs = require('node:fs');
           if(!report.stateBefore.missing){
             try{await page.locator(selector).click({timeout:5000}); report.click='passed';}
             catch(e){report.click='failed: '+String(e).slice(0,700); }
-            report.stateAfter=await page.evaluate(sel=>{const b=document.querySelector(sel);const a=b?.closest('aside');return {expanded:b?.getAttribute('aria-expanded'),pinned:a?.classList.contains('sidebar--pinned'),visibility:a&&getComputedStyle(a).visibility,transform:a&&getComputedStyle(a).transform};},selector);
+            await page.waitForTimeout(700);
+            report.stateAfter=await page.evaluate(sel=>{
+              const b=document.querySelector(sel), a=b?.closest('aside');
+              const pinnedStyles=[],stylesheets=[];
+              function checkRules(rules,href){
+                if(!rules)return;
+                for (const rule of rules) {
+                  if(rule.selectorText && rule.selectorText.includes('sidebar--pinned')) {
+                    pinnedStyles.push({href,selector:rule.selectorText.slice(0,220),visibility:rule.style?.visibility,transform:rule.style?.transform});
+                  }
+                  if(rule.cssRules)checkRules(rule.cssRules,href);
+                }
+              }
+              for(const s of document.styleSheets){
+                stylesheets.push(s.href);
+                try{checkRules(s.cssRules,s.href)}catch(e){}
+              }
+              return {expanded:b?.getAttribute('aria-expanded'),pinned:a?.classList.contains('sidebar--pinned'),
+                visibility:a&&getComputedStyle(a).visibility,transform:a&&getComputedStyle(a).transform,
+                rect:a&&{x:a.getBoundingClientRect().x,width:a.getBoundingClientRect().width},
+                styleSheets:stylesheets.filter(x=>x&&/components|main|palette/.test(x)),pinnedRuleCount:pinnedStyles.length,
+                pinnedRules:pinnedStyles.slice(0,16)};
+            },selector);
           }
         }catch(e){report.exception=String(e).slice(0,900);}
         report.errors=errors.slice(0,15);report.failedRequests=failed.slice(0,20);report.scriptResponses=scripts.slice(0,40);
