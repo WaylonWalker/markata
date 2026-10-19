@@ -6,13 +6,14 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path/filepath"
 	"runtime"
 	"strings"
+	"syscall"
 
 	fuzzyfinder "github.com/ktr0731/go-fuzzyfinder"
 	"github.com/spf13/cobra"
-	"golang.org/x/term"
 )
 
 const (
@@ -95,8 +96,7 @@ func detectTriageHarnesses(lookPath func(string) (string, error)) []triageHarnes
 }
 
 func triageIsInteractive() bool {
-	return !noInput && os.Getenv("TERM") != triageDumb &&
-		term.IsTerminal(int(os.Stdin.Fd())) && term.IsTerminal(int(os.Stdout.Fd()))
+	return !noInput && os.Getenv("TERM") != triageDumb && inputIsTerminal() && outputIsTerminal()
 }
 
 func triageSelectTarget(agents []triageHarness) (string, error) {
@@ -112,7 +112,8 @@ func triageSelectTarget(agents []triageHarness) (string, error) {
 	index, err := fuzzyfinder.Find(options, func(i int) string { return options[i].label })
 	if err != nil {
 		if errors.Is(err, fuzzyfinder.ErrAbort) {
-			return "", fmt.Errorf("triage selection canceled")
+			// Esc or picker cancellation is not a CLI error and must never launch an agent.
+			return "", nil
 		}
 		return "", fmt.Errorf("triage selection: %w", err)
 	}
@@ -120,6 +121,10 @@ func triageSelectTarget(agents []triageHarness) (string, error) {
 }
 
 func runTriageCommand(cmd *cobra.Command, _ []string) error {
+	previous := currentCmd
+	currentCmd = cmd
+	defer func() { currentCmd = previous }()
+
 	target := strings.ToLower(strings.TrimSpace(triageTo))
 	if triageAgent != "" {
 		if cmd.Flags().Changed("to") {
@@ -143,16 +148,27 @@ func runTriageCommand(cmd *cobra.Command, _ []string) error {
 			if err != nil {
 				return err
 			}
+			if target == "" {
+				return nil // User canceled the picker; do not launch or print anything.
+			}
 		}
 	}
 
 	switch target {
 	case triageStdout:
 		_, err := io.WriteString(cmd.OutOrStdout(), prompt)
+		// A downstream consumer may close its end of a pipe early (for example, head).
+		// This is a normal scripting scenario, not a user-facing diagnostic failure.
+		if errors.Is(err, syscall.EPIPE) || errors.Is(err, io.ErrClosedPipe) {
+			return nil
+		}
 		return err
 	case "clipboard":
 		if err := writeTriageClipboard(prompt, exec.LookPath); err != nil {
 			return err
+		}
+		if quiet {
+			return nil
 		}
 		_, err := fmt.Fprintln(cmd.ErrOrStderr(), "Triage prompt copied. Paste it into your preferred coding agent.")
 		return err
@@ -174,18 +190,23 @@ func runTriageCommand(cmd *cobra.Command, _ []string) error {
 	}
 }
 
-func runTriageHarness(cmd *cobra.Command, agent triageHarness, prompt string) error {
-	args := []string{prompt}
+func triageHarnessArgs(agent triageHarness, prompt string) []string {
 	if agent.PromptFlag != "" {
-		args = []string{agent.PromptFlag, prompt}
+		return []string{agent.PromptFlag, prompt}
 	}
+	return []string{prompt}
+}
+
+func runTriageHarness(cmd *cobra.Command, agent triageHarness, prompt string) error {
+	ctx, cancel := signal.NotifyContext(cmd.Context(), os.Interrupt)
+	defer cancel()
 	// Do not invoke a shell or interpret the prompt as commands.
 	// #nosec G204 -- the executable comes from a fixed allowlist and PATH lookup;
 	// the user explicitly selects the agent. Arguments are never shell-expanded.
-	process := exec.CommandContext(cmd.Context(), agent.Path, args...)
-	process.Stdin = os.Stdin
-	process.Stdout = os.Stdout
-	process.Stderr = os.Stderr
+	process := exec.CommandContext(ctx, agent.Path, triageHarnessArgs(agent, prompt)...)
+	process.Stdin = cmd.InOrStdin()
+	process.Stdout = cmd.OutOrStdout()
+	process.Stderr = cmd.ErrOrStderr()
 	if err := process.Run(); err != nil {
 		return fmt.Errorf("%s failed: %w", agent.Label, err)
 	}
@@ -240,10 +261,7 @@ func collectTriageFacts() triageFacts {
 	if err != nil {
 		executable = triageUnavailable
 	}
-	cwd, err := os.Getwd()
-	if err != nil {
-		cwd = triageUnavailable
-	}
+	project, projectDir := triageProjectEvidence()
 	return triageFacts{
 		Version:    Version,
 		Commit:     Commit,
@@ -254,8 +272,8 @@ func collectTriageFacts() triageFacts {
 		Distro:     triageDistroName(),
 		Executable: triageSafePath(executable),
 		Install:    triageInstallHint(executable),
-		Project:    triageSafePath(cwd),
-		Config:     triageConfigEvidence(),
+		Project:    project,
+		Config:     triageConfigEvidence(projectDir),
 		Env:        triageEnvironmentEvidence(),
 	}
 }
@@ -308,14 +326,39 @@ func triageSafePath(path string) string {
 	return triageShort(clean, 320)
 }
 
-func triageConfigEvidence() string {
+// triageProjectEvidence never refuses a missing site directory: fixing that
+// problem is one of the reasons a user may need the triage command.
+func triageProjectEvidence() (label, directory string) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return triageUnavailable, ""
+	}
+	requested, selected := requestedSiteDir()
+	if !selected {
+		return triageSafePath(cwd), cwd
+	}
+	path, err := filepath.Abs(requested)
+	if err != nil {
+		return triageSafePath(requested) + " (requested site directory cannot be resolved)", ""
+	}
+	info, err := os.Stat(path)
+	if err != nil || !info.IsDir() {
+		return triageSafePath(path) + " (requested site directory missing or inaccessible)", ""
+	}
+	return triageSafePath(path) + " (selected site directory)", path
+}
+
+func triageConfigEvidence(directory string) string {
 	if cfgFile != "" {
 		return "explicit config flag: " + triageSafePath(cfgFile) + " (contents not collected)"
 	}
+	if directory == "" {
+		return "site directory unavailable; config discovery skipped"
+	}
 	names := []string{"markata.toml", "markata-go.toml", "markata-go.yaml", "markata-go.yml", "markata-go.json", "markata.yaml", "markata.yml"}
-	var present []string
+	present := make([]string, 0, len(names))
 	for _, name := range names {
-		if info, err := os.Stat(name); err == nil && !info.IsDir() {
+		if info, err := os.Stat(filepath.Join(directory, name)); err == nil && !info.IsDir() {
 			present = append(present, name)
 		}
 	}
