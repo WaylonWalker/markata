@@ -196,6 +196,7 @@
       shortcutsModalOpener = null;
       modal.setAttribute('inert', '');
       modal.setAttribute('aria-hidden', 'true');
+      modal.setAttribute('hidden', '');
       document.body.style.overflow = '';
       return true;
     }
