@@ -15,7 +15,7 @@ func TestShortcutsModalHiddenWithoutCSS(t *testing.T) {
 	}
 
 	// The browser's native hidden attribute works without JavaScript or CSS.
-	if !regexp.MustCompile(`<div id="shortcuts-modal"[^>]*\\bhidden\\b`).Match(tmpl) {
+	if !regexp.MustCompile(`<div id="shortcuts-modal"[^>]*\bhidden\b`).Match(tmpl) {
 		t.Fatal("closed shortcuts dialog must have native hidden attribute")
 	}
 
@@ -23,7 +23,7 @@ func TestShortcutsModalHiddenWithoutCSS(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !regexp.MustCompile(`(?s)\\.shortcuts-modal\\[hidden\\]\\s*\\{\\s*display:\\s*none;`).Match(css) {
+	if !regexp.MustCompile(`(?s)\.shortcuts-modal\[hidden\]\s*\{\s*display:\s*none;`).Match(css) {
 		t.Fatal("author CSS must respect hidden even though the dialog uses display:flex")
 	}
 
