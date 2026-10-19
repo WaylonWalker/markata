@@ -1212,7 +1212,11 @@ func (p *ImageLibraryPlugin) renderPage(m *lifecycle.Manager, config *ImageLibra
 	}
 	title := "Image Library"
 	description := "Browse the images and videos used by this site."
-	syntheticPost := &models.Post{Slug: pathPrefix, Href: "/" + pathPrefix + "/", Published: true, Extra: make(map[string]interface{})}
+	syntheticSlug := pathPrefix
+	if page.PageNumber > 1 {
+		syntheticSlug += "/page/" + strconv.Itoa(page.PageNumber)
+	}
+	syntheticPost := &models.Post{Slug: syntheticSlug, Href: page.PageLinks[page.PageNumber-1].Href, Published: true, Extra: make(map[string]interface{})}
 	syntheticPost.Title = &title
 	syntheticPost.Description = &description
 	modelsConfig, ok := getModelsConfig(m.Config())
@@ -1349,6 +1353,7 @@ func imageLibraryPaginate(full ImageLibraryPage, pageSize int, pathPrefix string
 
 // ImageCard contains the presentation-only values derived from one image.
 type ImageCard struct {
+	Anchor         string
 	Src            string
 	PreviewSrc     string
 	PosterSrc      string
@@ -1385,6 +1390,7 @@ func newImageLibraryPage(index imageindex.Index) ImageLibraryPage {
 			srcset = imageSrcset(image.Src)
 		}
 		card := ImageCard{
+			Anchor:      "image-" + strconv.Itoa(i+1),
 			Src:         image.Src,
 			PreviewSrc:  imagePreviewURL(image.Src),
 			PosterSrc:   imagePosterURL(*image, isVideo),
