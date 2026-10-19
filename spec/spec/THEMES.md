@@ -4133,3 +4133,10 @@ need no header offset; desktop offsets are scoped to drawer elements, preserving
 desktop persistence and resize/scroll behavior without restyling article trees.
 An overlay drawer focuses its active navigation link when available, otherwise
 its first interactive content, and Escape returns focus to the drawer handle.
+
+Where content visibility and discrete transitions are supported, closed feed
+and TOC drawers skip rendering their contents. Opening restores rendering
+immediately before focus and active-item measurements. Closing keeps contents
+rendered through the slide. Saved-open desktop drawers render immediately.
+Reduced motion and startup restoration disable the content transition with the
+drawer transition. Other browsers retain the existing drawer rendering.

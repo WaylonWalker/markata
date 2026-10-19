@@ -17,6 +17,7 @@ on:
       - "pkg/themes/default/templates/base.html"
       - "templates/base.html"
       - "scripts/drawer-startup.browser.test.cjs"
+      - "scripts/drawer-rendering.browser.test.cjs"
       - "scripts/sidebar-rescue.browser.test.cjs"
       - "scripts/archive-startup.browser.test.cjs"
       - "scripts/admonition-contrast.browser.test.cjs"
@@ -46,4 +47,4 @@ jobs:
           node --check scripts/archive-startup.browser.test.cjs
           node --check scripts/admonition-contrast.browser.test.cjs
           node --check pkg/themes/default/static/js/sidebar-rescue.js
-          node --test scripts/archive-startup.browser.test.cjs scripts/admonition-contrast.browser.test.cjs scripts/navbar-search-layout.browser.test.cjs scripts/drawer-startup.browser.test.cjs scripts/sidebar-rescue.browser.test.cjs scripts/font-startup.browser.test.cjs
+          node --test scripts/archive-startup.browser.test.cjs scripts/admonition-contrast.browser.test.cjs scripts/navbar-search-layout.browser.test.cjs scripts/drawer-startup.browser.test.cjs scripts/drawer-rendering.browser.test.cjs scripts/sidebar-rescue.browser.test.cjs scripts/font-startup.browser.test.cjs
