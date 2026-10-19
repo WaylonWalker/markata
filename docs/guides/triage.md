@@ -61,7 +61,9 @@ markata triage --to stdout > triage-prompt.md
 
 Piped agent commands may be **noninteractive**. If you want the agent to ask questions back-and-forth in a terminal, use `--to opencode`, `--to claude`, etc., or select an agent from the fuzzy picker.
 
-With `--no-input`, or if stdin or stdout is not a terminal, the default `--to auto` prints to stdout; it never unexpectedly launches an agent. Explicit interactive agent launch requires a terminal.
+With `--no-input`, or if stdin or stdout is not a terminal, the default `--to auto` prints to stdout; it never unexpectedly launches an agent. Explicit interactive agent launch requires a terminal. Press Escape to cancel the fuzzy picker without launching anything. Closing a pipe early (for example, `markata triage | head`) exits quietly. The primary prompt remains plain and pipeable with `--no-color`, `NO_COLOR`, and `--quiet`.
+
+Triage remains available even when a requested `--site-dir` or `MARKATA_GO_SITE_DIR` directory is missing or inaccessible; it records that problem in its diagnostics instead of failing before collecting context. Config file contents are never parsed as part of triage.
 
 ## What is collected
 
