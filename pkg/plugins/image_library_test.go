@@ -3,6 +3,7 @@ package plugins
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"image"
 	"image/color"
 	"image/png"
@@ -1500,4 +1501,79 @@ func imageLibraryTestImageBySrc(t *testing.T, index imageindex.Index, src string
 	}
 	t.Fatalf("image %q not found in %#v", src, index.Images)
 	return imageindex.Image{}
+}
+
+
+func TestImageLibraryPaginate_PreservesInventoryAndNativeLinks(t *testing.T) {
+	index := imageindex.Index{Images: make([]imageindex.Image, 105)}
+	for i := range index.Images {
+		index.Images[i].Src = fmt.Sprintf("/static/picture-%03d.webp", i)
+	}
+	full := newImageLibraryPage(index)
+	pages := imageLibraryPaginate(full, 48, "images")
+	if len(pages) != 3 || len(pages[0].Images) != 48 || len(pages[1].Images) != 48 || len(pages[2].Images) != 9 {
+		t.Fatalf("page sizes: %v", []int{len(pages[0].Images), len(pages[1].Images), len(pages[2].Images)})
+	}
+	for i, page := range pages {
+		if page.Count != 105 || page.PageNumber != i+1 || page.TotalPages != 3 || len(page.PageLinks) != 3 {
+			t.Fatalf("page %d metadata: %#v", i+1, page)
+		}
+		if !page.PageLinks[i].Current {
+			t.Fatalf("page %d current marker missing", i+1)
+		}
+	}
+	if pages[1].PreviousURL != "/images/" || pages[1].NextURL != "/images/page/3/" {
+		t.Fatalf("page 2 navigation: %#v", pages[1])
+	}
+	if pages[1].Images[0].Anchor != "image-49" || pages[2].Images[0].Anchor != "image-97" {
+		t.Fatalf("unstable anchors across page boundaries")
+	}
+	if len(full.Images) != 105 {
+		t.Fatal("pagination mutated the full source inventory")
+	}
+	legacy := imageLibraryPaginate(full, 0, "images")
+	if len(legacy) != 1 || len(legacy[0].Images) != 105 || legacy[0].TotalPages != 1 {
+		t.Fatal("legacy unpaginated behavior changed")
+	}
+}
+
+func TestParseImageLibraryConfig_PageSize(t *testing.T) {
+	got, err := parseImageLibraryConfig(map[string]interface{}{
+		"images": map[string]interface{}{"page_size": int64(48)},
+	})
+	if err != nil || got.PageSize != 48 {
+		t.Fatalf("page_size parse: %d, %v", got.PageSize, err)
+	}
+	for _, invalid := range []interface{}{-1, 1.5, "48", true} {
+		_, err := parseImageLibraryConfig(map[string]interface{}{
+			"images": map[string]interface{}{"page_size": invalid},
+		})
+		if err == nil {
+			t.Errorf("accepted invalid page_size %#v", invalid)
+		}
+	}
+}
+
+func TestImageLibraryPaginationTemplateContract(t *testing.T) {
+	for _, path := range []string{
+		filepath.Join("..", "..", "templates", "images.html"),
+		filepath.Join("..", "themes", "default", "templates", "images.html"),
+	} {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, marker := range []string{"data-image-total-pages", "data-image-pagination", "image.Anchor", "image_library.PageLinks"} {
+			if !strings.Contains(string(data), marker) {
+				t.Errorf("%s missing pagination contract %q", path, marker)
+			}
+		}
+	}
+	data, err := os.ReadFile(filepath.Join("..", "themes", "default", "static", "js", "image-library.js"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(data), "hydrateAllPages") || !strings.Contains(string(data), "scheduleApply") {
+		t.Fatal("image library has no on-demand cross-page search hydration")
+	}
 }
