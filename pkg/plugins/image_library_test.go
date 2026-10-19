@@ -1606,7 +1606,7 @@ func TestImageLibraryPlugin_PaginatedOutputsAndStaleCleanup(t *testing.T) {
 	manager.SetConfig(&lifecycle.Config{
 		ContentDir: root, OutputDir: output,
 		Extra: map[string]interface{}{
-			"assets_dir": assets,
+			"assets_dir":    assets,
 			"models_config": modelsConfig,
 		},
 	})
