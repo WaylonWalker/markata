@@ -42,3 +42,48 @@ func TestShortcutsModalHiddenWithoutCSS(t *testing.T) {
 		}
 	}
 }
+
+
+func TestFooterShortcutsTriggerIsCompactAndClickable(t *testing.T) {
+	footer, err := ReadTemplate("components/footer.html")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, needle := range []string{
+		`type="button"`,
+		`class="footer-shortcuts-trigger"`,
+		`data-shortcuts-trigger`,
+		`aria-label="Show keyboard shortcuts"`,
+		`aria-controls="shortcuts-modal"`,
+		`<kbd aria-hidden="true">?</kbd>`,
+	} {
+		if !strings.Contains(string(footer), needle) {
+			t.Errorf("footer missing compact keyboard shortcut trigger: %s", needle)
+		}
+	}
+	if strings.Contains(string(footer), `shortcuts-modal-body`) {
+		t.Error("expanded shortcuts list must not live in footer")
+	}
+
+	js, err := ReadStatic("js/search-shortcuts.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, needle := range []string{
+		`document.addEventListener('click', function(e)`,
+		`e.target.closest('[data-shortcuts-trigger]')`,
+		`showShortcutsModal();`,
+	} {
+		if !strings.Contains(string(js), needle) {
+			t.Errorf("shortcut button must survive SPA footer replacement: missing %s", needle)
+		}
+	}
+
+	css, err := ReadStatic("css/components.css")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(css), ".footer-shortcuts-trigger {") {
+		t.Fatal("footer shortcut button missing minimal styling")
+	}
+}
