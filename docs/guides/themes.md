@@ -1186,6 +1186,12 @@ page resizes, keeping the same typography with less synchronous startup work.
 The article progress indicator also refreshes as images or other content change
 the article's height.
 
+Closed feed and table-of-contents drawers skip rendering their contents when
+the browser supports content visibility and discrete transitions. Opening
+restores the contents immediately, while closing preserves the slide.
+Reduced-motion preferences remain supported. Other browsers keep the existing
+rendering behavior.
+
 Mobile drawers center the active feed item when opened without measuring
 closed-drawer geometry during startup. Desktop drawers
 continue to restore their saved state and follow the visible header edge.

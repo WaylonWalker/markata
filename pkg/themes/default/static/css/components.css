@@ -1177,9 +1177,27 @@
   box-shadow: -12px 0 40px -18px rgba(0, 0, 0, 0.35);
 }
 
+/* Skip closed drawer contents while preserving the closing slide. */
+@supports (transition-behavior: allow-discrete) and (content-visibility: hidden) {
+  .feed-sidebar > .feed-nav,
+  .doc-sidebar > .toc {
+    content-visibility: hidden;
+    transition: content-visibility var(--sidebar-duration, 0.26s) allow-discrete;
+  }
+
+  .feed-sidebar.sidebar--pinned > .feed-nav,
+  .doc-sidebar.sidebar--pinned > .toc {
+    content-visibility: visible;
+    /* Opening measurements and focus need rendered contents immediately. */
+    transition: none;
+  }
+}
+
 /* Skip the slide when the page loads with a drawer already open */
 .sidebar--no-motion,
 .sidebar--no-motion > .sidebar-toggle,
+.sidebar--no-motion > .feed-nav,
+.sidebar--no-motion > .toc,
 .page-wrapper:has(> .sidebar--no-motion) > .main-content {
   transition: none !important;
 }
@@ -1644,6 +1662,8 @@
 @media (prefers-reduced-motion: reduce) {
   .feed-sidebar,
   .doc-sidebar,
+  .feed-sidebar > .feed-nav,
+  .doc-sidebar > .toc,
   .content-sidebar,
   .sidebar-toggle__icon,
   .sidebar-toggle__kbd,
