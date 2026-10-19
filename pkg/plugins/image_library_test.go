@@ -1577,3 +1577,96 @@ func TestImageLibraryPaginationTemplateContract(t *testing.T) {
 		t.Fatal("image library has no on-demand cross-page search hydration")
 	}
 }
+
+
+func TestImageLibraryPlugin_PaginatedOutputsAndStaleCleanup(t *testing.T) {
+	root := t.TempDir()
+	output := filepath.Join(root, "output")
+	assets := filepath.Join(root, "static")
+	if err := os.MkdirAll(assets, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	post := models.NewPost("posts/album.md")
+	post.Slug = "album"
+	post.Href = "/album/"
+	post.Published = true
+	post.Title = stringPointerImages("Album")
+	post.Content = strings.Join([]string{
+		"![A](https://dropper.wayl.one/file/a.webp)",
+		"![B](https://dropper.wayl.one/file/b.webp)",
+		"![C](https://dropper.wayl.one/file/c.webp)",
+		"![D](https://dropper.wayl.one/file/d.webp)",
+		"![E](https://dropper.wayl.one/file/e.webp)",
+	}, "\n")
+
+	modelsConfig := models.NewConfig()
+	modelsConfig.OutputDir = output
+	modelsConfig.AssetsDir = assets
+	modelsConfig.Images = models.NewImagesConfig()
+	modelsConfig.Images.PageSize = 2
+	manager := lifecycle.NewManager()
+	manager.SetConfig(&lifecycle.Config{
+		ContentDir: root, OutputDir: output,
+		Extra: map[string]interface{}{
+			"assets_dir": assets,
+			"models_config": modelsConfig,
+		},
+	})
+	manager.SetPosts([]*models.Post{post})
+	cache := buildcache.New(filepath.Join(root, "cache"))
+	manager.Cache().Set("build_cache", cache)
+	plugin := NewImageLibraryPlugin()
+
+	if err := plugin.Write(manager); err != nil {
+		t.Fatalf("first paginated build: %v", err)
+	}
+	paths := []string{
+		filepath.Join(output, "images", "index.html"),
+		filepath.Join(output, "images", "page", "2", "index.html"),
+		filepath.Join(output, "images", "page", "3", "index.html"),
+	}
+	for index, path := range paths {
+		page, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatalf("page %d missing: %v", index+1, err)
+		}
+		want := 2
+		if index == 2 {
+			want = 1
+		}
+		if got := strings.Count(string(page), "data-image-card"); got != want {
+			t.Errorf("page %d has %d cards, want %d", index+1, got, want)
+		}
+		if !strings.Contains(string(page), "data-image-pagination") {
+			t.Errorf("page %d has no no-JS pagination links", index+1)
+		}
+	}
+	jsonData, err := os.ReadFile(filepath.Join(output, "images.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := strings.Count(string(jsonData), `"src":`); got != 5 {
+		t.Fatalf("canonical index lost entries: %d", got)
+	}
+	if err := plugin.Write(manager); err != nil {
+		t.Fatalf("same-input rebuild: %v", err)
+	}
+	if _, err := os.Stat(paths[2]); err != nil {
+		t.Fatalf("cached page 3 vanished: %v", err)
+	}
+
+	modelsConfig.Images.PageSize = 3
+	if err := plugin.Write(manager); err != nil {
+		t.Fatalf("page size reduction rebuild: %v", err)
+	}
+	if _, err := os.Stat(paths[2]); !os.IsNotExist(err) {
+		t.Fatalf("stale page 3 still present, stat error=%v", err)
+	}
+	page2, err := os.ReadFile(paths[1])
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := strings.Count(string(page2), "data-image-card"); got != 2 {
+		t.Fatalf("page 2 with page_size=3 has %d cards, want 2", got)
+	}
+}
