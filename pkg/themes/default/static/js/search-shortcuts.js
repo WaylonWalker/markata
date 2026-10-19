@@ -165,7 +165,8 @@
     var modal = document.getElementById('shortcuts-modal');
     if (modal) {
       shortcutsModalOpener = document.activeElement;
-      // Reveal the dialog to keyboard users before moving focus inside.
+      // Restore the dialog to the document before moving focus inside.
+      modal.removeAttribute('hidden');
       modal.removeAttribute('inert');
       modal.classList.add('shortcuts-modal--open');
       modal.setAttribute('aria-hidden', 'false');
