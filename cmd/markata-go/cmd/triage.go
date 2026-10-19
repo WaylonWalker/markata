@@ -15,6 +15,15 @@ import (
 	"golang.org/x/term"
 )
 
+const (
+	triageStdout = "stdout"
+	triageAuto = "auto"
+	triageUnavailable = "(unavailable)"
+	triageCodex = "codex"
+	triageDumb = "dumb"
+	triageLinux = "linux"
+)
+
 var (
 	triageTo    string
 	triageAgent string
@@ -39,7 +48,7 @@ var triageCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(triageCmd)
-	triageCmd.Flags().StringVar(&triageTo, "to", "auto", "destination: auto, stdout, clipboard, codex, claude, opencode, gemini, or cursor")
+	triageCmd.Flags().StringVar(&triageTo, "to", triageAuto, "destination: auto, stdout, clipboard, codex, claude, opencode, gemini, or cursor")
 	triageCmd.Flags().StringVar(&triageAgent, "agent", "", "shortcut for --to <installed-agent>")
 	triageCmd.Flags().StringVar(&triageIssue, "issue", "", "optional initial description of the problem")
 }
@@ -55,7 +64,7 @@ type triageHarness struct {
 var triageHarnesses = []triageHarness{
 	{Name: "opencode", Label: "OpenCode", Executable: "opencode", PromptFlag: "--prompt"},
 	{Name: "claude", Label: "Claude Code", Executable: "claude"},
-	{Name: "codex", Label: "Codex", Executable: "codex"},
+	{Name: triageCodex, Label: "Codex", Executable: triageCodex},
 	{Name: "gemini", Label: "Gemini CLI", Executable: "gemini", PromptFlag: "-i"},
 	{Name: "cursor", Label: "Cursor Agent", Executable: "cursor-agent"},
 }
@@ -87,7 +96,7 @@ func detectTriageHarnesses(lookPath func(string) (string, error)) []triageHarnes
 }
 
 func triageIsInteractive() bool {
-	return !noInput && os.Getenv("TERM") != "dumb" &&
+	return !noInput && os.Getenv("TERM") != triageDumb &&
 		term.IsTerminal(int(os.Stdin.Fd())) && term.IsTerminal(int(os.Stdout.Fd()))
 }
 
@@ -99,12 +108,12 @@ func triageSelectTarget(agents []triageHarness) (string, error) {
 	}
 	options = append(options,
 		option{"clipboard", "Copy prompt to clipboard"},
-		option{"stdout", "Print prompt to stdout"},
+		option{triageStdout, "Print prompt to stdout"},
 	)
 	index, err := fuzzyfinder.Find(options, func(i int) string { return options[i].label })
 	if err != nil {
 		if errors.Is(err, fuzzyfinder.ErrAbort) {
-			return "", fmt.Errorf("triage selection cancelled")
+			return "", fmt.Errorf("triage selection canceled")
 		}
 		return "", fmt.Errorf("triage selection: %w", err)
 	}
@@ -126,9 +135,9 @@ func runTriageCommand(cmd *cobra.Command, _ []string) error {
 	prompt := buildTriagePrompt(collectTriageFacts(), triageIssue)
 	agents := detectTriageHarnesses(exec.LookPath)
 	interactive := triageIsInteractive()
-	if target == "" || target == "auto" {
+	if target == "" || target == triageAuto {
 		if !interactive {
-			target = "stdout"
+			target = triageStdout
 		} else {
 			var err error
 			target, err = triageSelectTarget(agents)
@@ -139,7 +148,7 @@ func runTriageCommand(cmd *cobra.Command, _ []string) error {
 	}
 
 	switch target {
-	case "stdout":
+	case triageStdout:
 		_, err := io.WriteString(cmd.OutOrStdout(), prompt)
 		return err
 	case "clipboard":
@@ -172,6 +181,8 @@ func runTriageHarness(cmd *cobra.Command, agent triageHarness, prompt string) er
 		args = []string{agent.PromptFlag, prompt}
 	}
 	// Do not invoke a shell or interpret the prompt as commands.
+	// #nosec G204 -- the executable comes from a fixed allowlist and PATH lookup;
+	// the user explicitly selects the agent. Arguments are never shell-expanded.
 	process := exec.CommandContext(cmd.Context(), agent.Path, args...)
 	process.Stdin = os.Stdin
 	process.Stdout = os.Stdout
@@ -212,11 +223,11 @@ func writeTriageClipboard(prompt string, lookPath func(string) (string, error)) 
 		}
 		process := exec.Command(binary, candidate.Args...)
 		process.Stdin = strings.NewReader(prompt)
-		if output, err := process.CombinedOutput(); err == nil {
+		output, err := process.CombinedOutput()
+		if err == nil {
 			return nil
-		} else {
-			attempts = append(attempts, fmt.Sprintf("%s: %v (%s)", candidate.Binary, err, triageShort(string(output), 120)))
 		}
+		attempts = append(attempts, fmt.Sprintf("%s: %v (%s)", candidate.Binary, err, triageShort(string(output), 120)))
 	}
 	if len(attempts) > 0 {
 		return fmt.Errorf("could not copy triage prompt: %s; try --to stdout", strings.Join(attempts, "; "))
@@ -227,11 +238,11 @@ func writeTriageClipboard(prompt string, lookPath func(string) (string, error)) 
 func collectTriageFacts() triageFacts {
 	executable, err := os.Executable()
 	if err != nil {
-		executable = "(unavailable)"
+		executable = triageUnavailable
 	}
 	cwd, err := os.Getwd()
 	if err != nil {
-		cwd = "(unavailable)"
+		cwd = triageUnavailable
 	}
 	return triageFacts{
 		Version:    Version,
@@ -266,23 +277,23 @@ func triageInstallHint(path string) string {
 }
 
 func triageDistroName() string {
-	if runtime.GOOS != "linux" {
+	if runtime.GOOS != triageLinux {
 		return "(not applicable)"
 	}
 	data, err := os.ReadFile("/etc/os-release")
 	if err != nil {
-		return "(unavailable)"
+		return triageUnavailable
 	}
 	for _, line := range strings.Split(string(data), "\n") {
 		if strings.HasPrefix(line, "PRETTY_NAME=") {
 			return triageShort(strings.Trim(strings.TrimPrefix(line, "PRETTY_NAME="), "\"'"), 120)
 		}
 	}
-	return "(unavailable)"
+	return triageUnavailable
 }
 
 func triageSafePath(path string) string {
-	if path == "" || path == "(unavailable)" {
+	if path == "" || path == triageUnavailable {
 		return path
 	}
 	clean := filepath.Clean(path)
