@@ -3890,16 +3890,13 @@ kbd.kbd {
    View Transitions API Styles
    ============================================ */
 
-/* Default cross-fade for everything (fixes old+new overlap flash). */
-::view-transition-old(root) {
-   animation: fade-out 80ms ease both;
-}
-
-::view-transition-new(root) {
-   animation: fade-in 100ms ease both;
-}
-
-/* Root transition container */
+/*
+ * Navigation swaps are atomic, not theatrical. The content already changes
+ * inside startViewTransition(); interpolating entire page snapshots or
+ * shared elements causes flashes and large motion across different layouts.
+ * Keep the performance and state benefits of SPA navigation without animating
+ * the snapshots. Local hover/drawer animations remain unaffected.
+ */
 ::view-transition {
    pointer-events: none;
 }
@@ -3907,48 +3904,7 @@ kbd.kbd {
 ::view-transition-group(*),
 ::view-transition-old(*),
 ::view-transition-new(*) {
-   overflow: visible;
-}
-
-/* Keyframe animations for view transitions */
-@keyframes fade-out {
-   to {
-      opacity: 0;
-   }
-}
-
-@keyframes fade-in {
-   from {
-      opacity: 0;
-   }
-}
-
-@keyframes slide-up {
-   from {
-      transform: translateY(8px);
-   }
-}
-
-@keyframes slide-down {
-   from {
-      transform: translateY(-8px);
-   }
-}
-
-/* Main content gets a slightly more directional motion. */
-::view-transition-old(main-content) {
-   animation: fade-out 70ms ease both;
-}
-
-::view-transition-new(main-content) {
-   animation: fade-in 110ms ease both, slide-up 120ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
-}
-
-/* Keep the broad article snapshot underneath shared title/header morphs. */
-::view-transition-group(main-content),
-::view-transition-old(main-content),
-::view-transition-new(main-content) {
-   z-index: 1;
+   animation: none !important;
 }
 
 /* ==========================================================================
@@ -4103,31 +4059,6 @@ kbd.kbd {
    .share-button {
       width: 2rem;
       height: 2rem;
-   }
-}
-
-/* Keep global chrome stable (no morphing). */
-::view-transition-old(site-nav),
-::view-transition-new(site-nav),
-::view-transition-old(site-footer),
-::view-transition-new(site-footer),
-::view-transition-old(breadcrumbs),
-::view-transition-new(breadcrumbs),
-::view-transition-old(pagination),
-::view-transition-new(pagination),
-::view-transition-old(feed-sidebar),
-::view-transition-new(feed-sidebar),
-::view-transition-old(post-nav),
-::view-transition-new(post-nav) {
-   animation: none;
-}
-
-/* Respect reduced motion - disable view transitions */
-@media (prefers-reduced-motion: reduce) {
-   ::view-transition-group(*),
-   ::view-transition-old(*),
-   ::view-transition-new(*) {
-      animation: none !important;
    }
 }
 
