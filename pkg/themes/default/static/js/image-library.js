@@ -15,10 +15,10 @@
 
     var grid = root.querySelector("[data-image-grid]");
     var cards = Array.prototype.slice.call(root.querySelectorAll("[data-image-card]"));
-    var baseHref = root.getAttribute("data-image-base") || "/images/";
-    var currentPage = Number(root.getAttribute("data-image-page") || 1);
-    var totalPages = Number(root.getAttribute("data-image-total-pages") || 1);
-    var totalCount = Number(root.getAttribute("data-image-total-count") || cards.length);
+    var baseHref = (root.getAttribute ? root.getAttribute("data-image-base") : null) || "/images/";
+    var currentPage = Number((root.getAttribute ? root.getAttribute("data-image-page") : null) || 1);
+    var totalPages = Number((root.getAttribute ? root.getAttribute("data-image-total-pages") : null) || 1);
+    var totalCount = Number((root.getAttribute ? root.getAttribute("data-image-total-count") : null) || cards.length);
     var allPagesLoaded = totalPages <= 1;
     var loadPromise = null;
     var search = root.querySelector("[data-image-search]");
