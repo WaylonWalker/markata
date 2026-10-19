@@ -199,7 +199,6 @@ func TestPurgeStats(t *testing.T) {
 	}
 }
 
-
 func TestDefaultPurgePreservesInteractiveSidebarState(t *testing.T) {
 	// Generated static HTML ships the drawer closed. The open and expanded
 	// classes are added by JS, so they never occur in build-time HTML.
