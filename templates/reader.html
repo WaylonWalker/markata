@@ -85,7 +85,7 @@
 
           {% if entry.image_url %}
           <a href="{{ entry.url }}" target="_blank" rel="noopener noreferrer" aria-label="Read {{ entry.title }} (opens in new tab)" class="reader-entry-image-link reader-entry-image-link--{{ entry.preview_kind }}">
-            <img src="{{ entry.image_url }}" alt="" class="reader-entry-image reader-entry-image--{{ entry.preview_kind }}" width="960" height="540" loading="lazy" decoding="async">
+            <img src="{{ entry.image_url }}"{% if entry.image_srcset %} srcset="{{ entry.image_srcset }}" sizes="100vw"{% endif %} alt="" class="reader-entry-image reader-entry-image--{{ entry.preview_kind }}" width="960" height="540" loading="lazy" decoding="async">
           </a>
           {% else %}
           <a href="{{ entry.url }}" target="_blank" rel="noopener noreferrer" aria-label="Read {{ entry.title }} (opens in new tab)" class="reader-entry-image-link reader-entry-image-link--source-tile">
