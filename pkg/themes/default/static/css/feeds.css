@@ -1334,6 +1334,13 @@ article.post > .post-content > .feed.h-feed {
   display: none;
 }
 
+/* Keep the enhanced controls' space before their deferred controller is ready.
+ * Visibility keeps them inaccessible until initialization removes hidden. */
+.editorial-calendar-js .feed--editorial .editorial-feed-tools .calendar-view-switch[hidden] {
+  display: inline-flex !important;
+  visibility: hidden;
+}
+
 .feed--editorial .editorial-feed-tools .calendar-view-switch button,
 .feed--editorial .editorial-feed-tools .calendar-view-switch a,
 .feed--editorial .editorial-feed-tools .feed-view-links a,

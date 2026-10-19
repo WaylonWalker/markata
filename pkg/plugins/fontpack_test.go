@@ -254,7 +254,7 @@ func TestFontpackHTMLCacheHashIsIndependentOfMapOrder(t *testing.T) {
 func TestValidFontpackPreloadCache(t *testing.T) {
 	output := t.TempDir()
 	catalog := &fontpacks.Catalog{FontPacks: map[string]fontpacks.FontPack{"system": {}}}
-	cache := fontpackPreloadCache{Hash: "1234abcd", URLs: map[string][]string{"system": {}}}
+	cache := fontpackPreloadCache{Hash: "1234abcd", URLs: map[string][]string{"system": {}}, EditorialURLs: map[string][]string{"system": {}}}
 	if !validFontpackPreloadCache(output, []string{"system"}, catalog, cache) {
 		t.Fatal("empty system pack should have a valid cached preload list")
 	}
@@ -270,5 +270,63 @@ func TestValidFontpackPreloadCache(t *testing.T) {
 	cache.Hash = "invalid!"
 	if validFontpackPreloadCache(output, []string{"system"}, catalog, cache) {
 		t.Fatal("invalid hash accepted")
+	}
+}
+
+func TestFontpackEditorialPreloadsCodeWithoutDuplicatingSharedSources(t *testing.T) {
+	assets := []fontpacks.Asset{
+		{Source: "body", Tier: "prose-core", URL: "/assets/fonts/body.woff2"},
+		{Source: "code", Tier: "code-core", URL: "/assets/fonts/code.woff2"},
+		{Source: "code", Tier: "full", URL: "/assets/fonts/code-full.woff2"},
+	}
+	pack := fontpacks.FontPack{Roles: map[string]fontpacks.Role{
+		"body": {Source: "body", Tier: "prose-core"},
+		"code": {Source: "code", Tier: "code-core"},
+	}}
+	if got := fontpackEditorialPreloadURLs(pack, assets); strings.Join(got, ",") != "/assets/fonts/body.woff2,/assets/fonts/code.woff2" {
+		t.Fatalf("editorial preloads = %v", got)
+	}
+	if got := fontpackPreloadURLs(pack, assets); len(got) != 1 {
+		t.Fatalf("ordinary pages unexpectedly preload code: %v", got)
+	}
+	pack.Roles["code"] = fontpacks.Role{Source: "code", Tier: "full"}
+	if got := fontpackEditorialPreloadURLs(pack, assets); got[1] != "/assets/fonts/code-full.woff2" {
+		t.Fatalf("requested full code tier not selected: %v", got)
+	}
+	pack.Roles["code"] = fontpacks.Role{Source: "body", Tier: "code-core"}
+	if got := fontpackEditorialPreloadURLs(pack, assets); len(got) != 1 {
+		t.Fatalf("shared source was duplicated: %v", got)
+	}
+	pack.Roles["code"] = fontpacks.Role{Stack: "mono"}
+	if got := fontpackEditorialPreloadURLs(pack, assets); len(got) != 1 {
+		t.Fatalf("system code stack added a preload: %v", got)
+	}
+}
+
+func TestFontpackEditorialMetadataInvalidatesHTMLAndRequiresIntactOutput(t *testing.T) {
+	cache := fontpackPreloadCache{Hash: "1234abcd", URLs: map[string][]string{"system": {}}, EditorialURLs: map[string][]string{"system": {}}}
+	before := fontpackHTMLCacheHash(cache)
+	cache.EditorialURLs["system"] = []string{"/assets/fonts/code.woff2"}
+	if before == fontpackHTMLCacheHash(cache) {
+		t.Fatal("changed editorial preload failed to invalidate HTML")
+	}
+	output := t.TempDir()
+	catalog := &fontpacks.Catalog{FontPacks: map[string]fontpacks.FontPack{"system": {}}}
+	if validFontpackPreloadCache(output, []string{"system"}, catalog, cache) {
+		t.Fatal("missing editorial font output accepted")
+	}
+	fonts := filepath.Join(output, "assets", "fonts")
+	if err := os.MkdirAll(fonts, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(fonts, "code.woff2"), []byte("font"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if !validFontpackPreloadCache(output, []string{"system"}, catalog, cache) {
+		t.Fatal("intact editorial font output rejected")
+	}
+	delete(cache.EditorialURLs, "system")
+	if validFontpackPreloadCache(output, []string{"system"}, catalog, cache) {
+		t.Fatal("old or incomplete editorial metadata accepted")
 	}
 }

@@ -85,3 +85,58 @@ test('archive leaves adjacent pages idle and preserves deferred weeks', async ()
     await new Promise(resolve => server.close(resolve));
   }
 });
+
+for (const width of [320, 412, 1440]) {
+  test(`editorial pagination stays put while calendar controls initialize at ${width}px`, async () => {
+    const browser = await chromium.launch({headless: true,
+      executablePath: process.env.CHROMIUM_EXECUTABLE || undefined, args: ['--no-sandbox']});
+    try {
+      const css = ['variables', 'main', 'components', 'feeds', 'calendar-feed']
+        .map(name => fs.readFileSync(path.join(root, `css/${name}.css`), 'utf8')).join('\n');
+      const bootstrap = fs.readFileSync(path.join(root, '../templates/partials/theme-bootstrap.html'), 'utf8');
+      const marker = bootstrap.match(/document\.documentElement\.classList\.add\('editorial-calendar-js'\);/);
+      assert.ok(marker, 'the real bootstrap must install its pre-paint calendar marker');
+      for (const javaScriptEnabled of [false, true]) {
+        const context = await browser.newContext({viewport: {width, height: 823}, javaScriptEnabled});
+        try {
+          const page = await context.newPage();
+          await page.setContent(`<!doctype html><html><head><script>${marker[0]}</script><style>${css}</style></head>
+            <body><div class="feed feed--editorial calendar-feed" style="width:calc(100vw - 64px);margin:32px">
+            <header class="feed-header"><div class="editorial-feed-tools">
+            <nav class="calendar-view-switch" data-calendar-switch hidden aria-label="Feed views">
+            <button type="button">Posts</button><a href="/simple/">Simple</a><button type="button">Calendar</button></nav>
+            <nav class="pagination pagination--top"><span class="pagination-page current">Page 1 of 49</span>
+            <a class="pagination-next" href="/page/2/">Older →</a></nav>
+            </div></header></div></body></html>`);
+          const state = await page.locator('.calendar-view-switch').evaluate(el => {
+            el.querySelector('button').focus();
+            return {display: getComputedStyle(el).display, visibility: getComputedStyle(el).visibility,
+              focused: el.contains(document.activeElement)};
+          });
+          if (!javaScriptEnabled) {
+            assert.equal(state.display, 'none', 'no-JavaScript controls retain their original hidden layout');
+            continue;
+          }
+          assert.equal(state.display, 'flex', 'inline flex containers are blockified as toolbar flex items');
+          assert.equal(state.visibility, 'hidden');
+          assert.equal(state.focused, false, 'pending controls must stay non-interactive');
+          const geometry = () => page.locator('.pagination--top').evaluate(el => {
+            const r = el.getBoundingClientRect();
+            return [r.x, r.y, r.width, r.height];
+          });
+          const before = await geometry();
+          // The deferred calendar controller removes hidden after wiring controls.
+          await page.locator('.calendar-view-switch').evaluate(el => { el.hidden = false; });
+          assert.deepEqual(await geometry(), before, 'initialization must not move pagination');
+          assert.equal(await page.locator('.calendar-view-switch').evaluate(el => getComputedStyle(el).visibility), 'visible');
+          await page.evaluate(() => document.documentElement.classList.remove('editorial-calendar-js'));
+          assert.deepEqual(await geometry(), before, 'the marker must not change the final toolbar layout');
+        } finally {
+          await context.close();
+        }
+      }
+    } finally {
+      await browser.close();
+    }
+  });
+}

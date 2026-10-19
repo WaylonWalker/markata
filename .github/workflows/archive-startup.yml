@@ -16,6 +16,8 @@ on:
       - "scripts/font-startup.browser.test.cjs"
       - "pkg/themes/default/templates/base.html"
       - "templates/base.html"
+      - "pkg/themes/default/templates/partials/theme-bootstrap.html"
+      - "templates/partials/theme-bootstrap.html"
       - "scripts/drawer-startup.browser.test.cjs"
       - "scripts/drawer-rendering.browser.test.cjs"
       - "scripts/sidebar-rescue.browser.test.cjs"
