@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -368,6 +369,24 @@ func parseImageLibraryConfig(extra map[string]interface{}) (ImageLibraryConfig, 
 			return ImageLibraryConfig{}, fmt.Errorf("images.include_unreferenced must be boolean")
 		}
 		config.IncludeUnreferenced = &parsed
+	}
+	if value, exists := values["page_size"]; exists {
+		switch parsed := value.(type) {
+		case int:
+			config.PageSize = parsed
+		case int64:
+			config.PageSize = int(parsed)
+		case float64:
+			if parsed != math.Trunc(parsed) || parsed > float64(math.MaxInt) || parsed < 0 {
+				return ImageLibraryConfig{}, fmt.Errorf("images.page_size must be a nonnegative integer")
+			}
+			config.PageSize = int(parsed)
+		default:
+			return ImageLibraryConfig{}, fmt.Errorf("images.page_size must be a nonnegative integer")
+		}
+		if config.PageSize < 0 {
+			return ImageLibraryConfig{}, fmt.Errorf("images.page_size must be nonnegative")
+		}
 	}
 	return normalizeImageLibraryConfig(config), nil
 }
