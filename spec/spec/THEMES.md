@@ -135,6 +135,7 @@ as pills; cards and the article container use `--radius-lg`/`--radius-xl`.
 ### Contrast Guarantees
 
 - Default theme text in compact UI surfaces such as home metadata, card metadata, and admonition titles MUST use text tokens that maintain WCAG 2.1 AA contrast at their rendered size.
+- Generic container classes such as `warning`, `note`, `info`, `success`, `error`, and `danger` MUST NOT override the palette-specific surface or foreground styles of `.admonition` elements that share those class names. Admonition body text and titles MUST maintain WCAG 2.1 AA contrast against their rendered palette surface.
 - Built-in palette regression tests MUST validate the default theme's concrete foreground/background combinations, not only abstract palette token pairs, so regressions in selector usage are caught across every shipped palette.
 
 ---

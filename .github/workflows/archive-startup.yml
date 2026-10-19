@@ -14,6 +14,7 @@ on:
       - "scripts/drawer-startup.browser.test.cjs"
       - "scripts/sidebar-rescue.browser.test.cjs"
       - "scripts/archive-startup.browser.test.cjs"
+      - "scripts/admonition-contrast.browser.test.cjs"
       - "scripts/navbar-search-layout.browser.test.cjs"
       - ".github/workflows/archive-startup.yml"
   workflow_dispatch:
@@ -38,5 +39,6 @@ jobs:
         run: |
           node --check pkg/themes/default/static/js/navigation-shortcuts.js
           node --check scripts/archive-startup.browser.test.cjs
+          node --check scripts/admonition-contrast.browser.test.cjs
           node --check pkg/themes/default/static/js/sidebar-rescue.js
-          node --test scripts/archive-startup.browser.test.cjs scripts/navbar-search-layout.browser.test.cjs scripts/drawer-startup.browser.test.cjs scripts/sidebar-rescue.browser.test.cjs
+          node --test scripts/archive-startup.browser.test.cjs scripts/admonition-contrast.browser.test.cjs scripts/navbar-search-layout.browser.test.cjs scripts/drawer-startup.browser.test.cjs scripts/sidebar-rescue.browser.test.cjs

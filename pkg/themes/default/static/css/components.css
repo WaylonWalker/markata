@@ -4572,7 +4572,7 @@ main .container {
 }
 
 /* Warning container */
-.warning {
+.warning:not(.admonition) {
   padding: 1rem;
   margin: 1rem 0;
   background-color: var(--color-warning-bg, #fff3cd);
@@ -4581,7 +4581,7 @@ main .container {
 }
 
 /* Info container */
-.info {
+.info:not(.admonition) {
   padding: 1rem;
   margin: 1rem 0;
   background-color: var(--color-info-bg, #cff4fc);
@@ -4590,7 +4590,7 @@ main .container {
 }
 
 /* Success container */
-.success {
+.success:not(.admonition) {
   padding: 1rem;
   margin: 1rem 0;
   background-color: var(--color-success-bg, #d1e7dd);
@@ -4599,8 +4599,8 @@ main .container {
 }
 
 /* Error/Danger container */
-.error,
-.danger {
+.error:not(.admonition),
+.danger:not(.admonition) {
   padding: 1rem;
   margin: 1rem 0;
   background-color: var(--color-danger-bg, #f8d7da);
@@ -4609,7 +4609,7 @@ main .container {
 }
 
 /* Note container */
-.note {
+.note:not(.admonition) {
   padding: 1rem;
   margin: 1rem 0;
   background-color: var(--color-note-bg, #e7e9eb);
@@ -4619,24 +4619,24 @@ main .container {
 
 /* Dark mode for containers */
 @media (prefers-color-scheme: dark) {
-  .warning {
+  .warning:not(.admonition) {
     background-color: var(--color-warning-bg, #332d1a);
   }
 
-  .info {
+  .info:not(.admonition) {
     background-color: var(--color-info-bg, #1a2e33);
   }
 
-  .success {
+  .success:not(.admonition) {
     background-color: var(--color-success-bg, #1a2e22);
   }
 
-  .error,
-  .danger {
+  .error:not(.admonition),
+  .danger:not(.admonition) {
     background-color: var(--color-danger-bg, #331a1d);
   }
 
-  .note {
+  .note:not(.admonition) {
     background-color: var(--color-note-bg, #2d2d2d);
   }
 }
