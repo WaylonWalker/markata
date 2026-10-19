@@ -27,9 +27,38 @@ env:
   REGISTRY: ghcr.io
 
 jobs:
+  verify-publish:
+    name: Verify source and embedded revision
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      # Do not advance the mutable main-channel tag until tests have passed.
+      - name: Test source before publish
+        run: go test ./...
+
+      - name: Verify the builder's embedded commit
+        if: github.event_name != 'pull_request'
+        env:
+          EXPECTED_COMMIT: ${{ github.sha }}
+        shell: bash
+        run: |
+          go build -ldflags="-X github.com/WaylonWalker/markata/cmd/markata-go/cmd.Commit=${EXPECTED_COMMIT}" -o /tmp/markata-go ./cmd/markata-go
+          /tmp/markata-go version | grep -F "commit:    ${EXPECTED_COMMIT}"
+
   build-minimal:
     name: Build and Push (minimal)
     runs-on: ubuntu-latest
+    needs: verify-publish
     if: github.event_name != 'pull_request'
     permissions:
       contents: read
@@ -134,7 +163,7 @@ jobs:
         # SARIF upload because the workflow ref no longer exists. Keep upload
         # alerts on the durable default branch while still scanning every image.
         if: github.ref == 'refs/heads/main'
-        uses: github/codeql-action/upload-sarif@v4.38.3
+        uses: github/codeql-action/upload-sarif@v4.39.0
         with:
           sarif_file: "trivy-results.sarif"
           category: trivy-minimal
@@ -142,6 +171,7 @@ jobs:
   build-builder:
     name: Build and Push (builder)
     runs-on: ubuntu-latest
+    needs: verify-publish
     if: github.event_name != 'pull_request'
     permissions:
       contents: read
@@ -241,7 +271,7 @@ jobs:
 
       - name: Upload Trivy scan results (builder)
         if: github.ref == 'refs/heads/main'
-        uses: github/codeql-action/upload-sarif@v4.38.3
+        uses: github/codeql-action/upload-sarif@v4.39.0
         with:
           sarif_file: "trivy-results-builder.sarif"
           category: trivy-builder

@@ -345,6 +345,13 @@ func DefaultPreservePatterns() []string {
 		"theme-*",
 		"palette-*",
 
+		// Sidebar drawer state is applied only after user interaction.
+		// Without these, CSS purge can leave the toggle working while the
+		// closed drawer stays visibility:hidden and translated off-screen.
+		"sidebar--pinned",
+		"sidebar--no-motion",
+		"feed-sidebar--expanded",
+
 		// Animation classes
 		"fade-*",
 		"slide-*",

@@ -17,6 +17,7 @@ const (
 	agentScopeGlobal  = "global"
 
 	agentNameOpencode = "opencode"
+	agentNameCodex    = "codex"
 	envValueDisabled  = "false"
 )
 
@@ -36,7 +37,7 @@ var supportedAgentTargets = []agentInstallTarget{
 	{Name: "claude-code", ProjectPath: ".claude/skills", GlobalPath: ".claude/skills", Aliases: []string{agentLegacyClaude}},
 	{Name: "cline", ProjectPath: ".agents/skills", GlobalPath: ".agents/skills"},
 	{Name: "codebuddy", ProjectPath: ".codebuddy/skills", GlobalPath: ".codebuddy/skills"},
-	{Name: "codex", ProjectPath: ".agents/skills", GlobalPath: ".codex/skills"},
+	{Name: agentNameCodex, ProjectPath: ".agents/skills", GlobalPath: ".codex/skills"},
 	{Name: "command-code", ProjectPath: ".commandcode/skills", GlobalPath: ".commandcode/skills"},
 	{Name: "continue", ProjectPath: ".continue/skills", GlobalPath: ".continue/skills"},
 	{Name: "cortex", ProjectPath: ".cortex/skills", GlobalPath: ".snowflake/cortex/skills"},
@@ -145,7 +146,7 @@ func detectDefaultAgent() string {
 	case envVarEnabled("CLAUDECODE"), envVarEnabled("CLAUDE_CODE"):
 		return "claude-code"
 	case envVarEnabled("CODEX"), envVarEnabled("OPENAI_CODEX"):
-		return "codex"
+		return agentNameCodex
 	case envVarEnabled("CURSOR_AGENT"), os.Getenv("CURSOR_TRACE_ID") != "":
 		return "cursor"
 	case envVarEnabled("GEMINI_CLI"):

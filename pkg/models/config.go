@@ -3129,6 +3129,10 @@ type ImagesConfig struct {
 	// enabling it makes every supported asset centrally enumerable. The default,
 	// including a nil configuration value, is false.
 	IncludeUnreferenced *bool `json:"include_unreferenced,omitempty" yaml:"include_unreferenced,omitempty" toml:"include_unreferenced,omitempty"`
+
+	// PageSize opts into server-rendered pagination of the image library.
+	// Zero retains the historical complete-page behavior.
+	PageSize int `json:"page_size,omitempty" yaml:"page_size,omitempty" toml:"page_size,omitempty"`
 }
 
 // NewImagesConfig returns the default image-library configuration.

@@ -1177,9 +1177,27 @@
   box-shadow: -12px 0 40px -18px rgba(0, 0, 0, 0.35);
 }
 
+/* Skip closed drawer contents while preserving the closing slide. */
+@supports (transition-behavior: allow-discrete) and (content-visibility: hidden) {
+  .feed-sidebar > .feed-nav,
+  .doc-sidebar > .toc {
+    content-visibility: hidden;
+    transition: content-visibility var(--sidebar-duration, 0.26s) allow-discrete;
+  }
+
+  .feed-sidebar.sidebar--pinned > .feed-nav,
+  .doc-sidebar.sidebar--pinned > .toc {
+    content-visibility: visible;
+    /* Opening measurements and focus need rendered contents immediately. */
+    transition: none;
+  }
+}
+
 /* Skip the slide when the page loads with a drawer already open */
 .sidebar--no-motion,
 .sidebar--no-motion > .sidebar-toggle,
+.sidebar--no-motion > .feed-nav,
+.sidebar--no-motion > .toc,
 .page-wrapper:has(> .sidebar--no-motion) > .main-content {
   transition: none !important;
 }
@@ -1499,6 +1517,14 @@
    Overlay drawers (<= 1200px)
    ========================================================================== */
 @media (max-width: 1200px) {
+  /* Only the open overlay drawer may offer a handle: the closed drawer's
+     protruding handle can otherwise intercept taps on the active close tab. */
+  .page-wrapper:has(> :is(.feed-sidebar, .doc-sidebar).sidebar--pinned)
+    > :is(.feed-sidebar, .doc-sidebar):not(.sidebar--pinned) > .sidebar-toggle {
+    pointer-events: none;
+    visibility: hidden;
+  }
+
   .feed-sidebar,
   .doc-sidebar {
     top: 0;
@@ -1636,6 +1662,8 @@
 @media (prefers-reduced-motion: reduce) {
   .feed-sidebar,
   .doc-sidebar,
+  .feed-sidebar > .feed-nav,
+  .doc-sidebar > .toc,
   .content-sidebar,
   .sidebar-toggle__icon,
   .sidebar-toggle__kbd,
@@ -3890,16 +3918,13 @@ kbd.kbd {
    View Transitions API Styles
    ============================================ */
 
-/* Default cross-fade for everything (fixes old+new overlap flash). */
-::view-transition-old(root) {
-   animation: fade-out 80ms ease both;
-}
-
-::view-transition-new(root) {
-   animation: fade-in 100ms ease both;
-}
-
-/* Root transition container */
+/*
+ * Navigation swaps are atomic, not theatrical. The content already changes
+ * inside startViewTransition(); interpolating entire page snapshots or
+ * shared elements causes flashes and large motion across different layouts.
+ * Keep the performance and state benefits of SPA navigation without animating
+ * the snapshots. Local hover/drawer animations remain unaffected.
+ */
 ::view-transition {
    pointer-events: none;
 }
@@ -3907,48 +3932,7 @@ kbd.kbd {
 ::view-transition-group(*),
 ::view-transition-old(*),
 ::view-transition-new(*) {
-   overflow: visible;
-}
-
-/* Keyframe animations for view transitions */
-@keyframes fade-out {
-   to {
-      opacity: 0;
-   }
-}
-
-@keyframes fade-in {
-   from {
-      opacity: 0;
-   }
-}
-
-@keyframes slide-up {
-   from {
-      transform: translateY(8px);
-   }
-}
-
-@keyframes slide-down {
-   from {
-      transform: translateY(-8px);
-   }
-}
-
-/* Main content gets a slightly more directional motion. */
-::view-transition-old(main-content) {
-   animation: fade-out 70ms ease both;
-}
-
-::view-transition-new(main-content) {
-   animation: fade-in 110ms ease both, slide-up 120ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
-}
-
-/* Keep the broad article snapshot underneath shared title/header morphs. */
-::view-transition-group(main-content),
-::view-transition-old(main-content),
-::view-transition-new(main-content) {
-   z-index: 1;
+   animation: none !important;
 }
 
 /* ==========================================================================
@@ -4103,31 +4087,6 @@ kbd.kbd {
    .share-button {
       width: 2rem;
       height: 2rem;
-   }
-}
-
-/* Keep global chrome stable (no morphing). */
-::view-transition-old(site-nav),
-::view-transition-new(site-nav),
-::view-transition-old(site-footer),
-::view-transition-new(site-footer),
-::view-transition-old(breadcrumbs),
-::view-transition-new(breadcrumbs),
-::view-transition-old(pagination),
-::view-transition-new(pagination),
-::view-transition-old(feed-sidebar),
-::view-transition-new(feed-sidebar),
-::view-transition-old(post-nav),
-::view-transition-new(post-nav) {
-   animation: none;
-}
-
-/* Respect reduced motion - disable view transitions */
-@media (prefers-reduced-motion: reduce) {
-   ::view-transition-group(*),
-   ::view-transition-old(*),
-   ::view-transition-new(*) {
-      animation: none !important;
    }
 }
 
@@ -4633,7 +4592,7 @@ main .container {
 }
 
 /* Warning container */
-.warning {
+.warning:not(.admonition) {
   padding: 1rem;
   margin: 1rem 0;
   background-color: var(--color-warning-bg, #fff3cd);
@@ -4642,7 +4601,7 @@ main .container {
 }
 
 /* Info container */
-.info {
+.info:not(.admonition) {
   padding: 1rem;
   margin: 1rem 0;
   background-color: var(--color-info-bg, #cff4fc);
@@ -4651,7 +4610,7 @@ main .container {
 }
 
 /* Success container */
-.success {
+.success:not(.admonition) {
   padding: 1rem;
   margin: 1rem 0;
   background-color: var(--color-success-bg, #d1e7dd);
@@ -4660,8 +4619,8 @@ main .container {
 }
 
 /* Error/Danger container */
-.error,
-.danger {
+.error:not(.admonition),
+.danger:not(.admonition) {
   padding: 1rem;
   margin: 1rem 0;
   background-color: var(--color-danger-bg, #f8d7da);
@@ -4670,7 +4629,7 @@ main .container {
 }
 
 /* Note container */
-.note {
+.note:not(.admonition) {
   padding: 1rem;
   margin: 1rem 0;
   background-color: var(--color-note-bg, #e7e9eb);
@@ -4680,24 +4639,24 @@ main .container {
 
 /* Dark mode for containers */
 @media (prefers-color-scheme: dark) {
-  .warning {
+  .warning:not(.admonition) {
     background-color: var(--color-warning-bg, #332d1a);
   }
 
-  .info {
+  .info:not(.admonition) {
     background-color: var(--color-info-bg, #1a2e33);
   }
 
-  .success {
+  .success:not(.admonition) {
     background-color: var(--color-success-bg, #1a2e22);
   }
 
-  .error,
-  .danger {
+  .error:not(.admonition),
+  .danger:not(.admonition) {
     background-color: var(--color-danger-bg, #331a1d);
   }
 
-  .note {
+  .note:not(.admonition) {
     background-color: var(--color-note-bg, #2d2d2d);
   }
 }
@@ -4920,6 +4879,45 @@ body.reader-mode::after {
   .hidden-print {
     display: none !important;
   }
+}
+
+
+/* Quote attributions (~handle) use the same theme tokens in every palette.
+   Keep these understated so the attribution doesn't compete with the quote. */
+.post-content .mention--attribution,
+.prose .mention--attribution {
+  display: inline;
+  padding: 0.1em 0.42em;
+  border-radius: 0.45em;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: 0.875em;
+  font-weight: 550;
+  line-height: 1.65;
+  text-decoration: none;
+  white-space: nowrap;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+.post-content a.mention--attribution:hover,
+.prose a.mention--attribution:hover {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+  text-decoration: underline;
+  text-underline-offset: 0.14em;
+}
+
+.post-content a.mention--attribution:focus-visible,
+.prose a.mention--attribution:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.post-content .mention--attribution.mention--unresolved,
+.prose .mention--attribution.mention--unresolved {
+  border-style: dashed;
 }
 
 }

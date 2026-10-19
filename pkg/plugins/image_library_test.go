@@ -3,6 +3,7 @@ package plugins
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"image"
 	"image/color"
 	"image/png"
@@ -1500,4 +1501,170 @@ func imageLibraryTestImageBySrc(t *testing.T, index imageindex.Index, src string
 	}
 	t.Fatalf("image %q not found in %#v", src, index.Images)
 	return imageindex.Image{}
+}
+
+func TestImageLibraryPaginate_PreservesInventoryAndNativeLinks(t *testing.T) {
+	index := imageindex.Index{Images: make([]imageindex.Image, 105)}
+	for i := range index.Images {
+		index.Images[i].Src = fmt.Sprintf("/static/picture-%03d.webp", i)
+	}
+	full := newImageLibraryPage(index)
+	pages := imageLibraryPaginate(full, 48, "images")
+	if len(pages) != 3 || len(pages[0].Images) != 48 || len(pages[1].Images) != 48 || len(pages[2].Images) != 9 {
+		t.Fatalf("page sizes: %v", []int{len(pages[0].Images), len(pages[1].Images), len(pages[2].Images)})
+	}
+	for i, page := range pages {
+		if page.Count != 105 || page.PageNumber != i+1 || page.TotalPages != 3 || len(page.PageLinks) != 3 {
+			t.Fatalf("page %d metadata: %#v", i+1, page)
+		}
+		if !page.PageLinks[i].Current {
+			t.Fatalf("page %d current marker missing", i+1)
+		}
+	}
+	if pages[1].PreviousURL != "/images/" || pages[1].NextURL != "/images/page/3/" {
+		t.Fatalf("page 2 navigation: %#v", pages[1])
+	}
+	if pages[1].Images[0].Anchor != "image-49" || pages[2].Images[0].Anchor != "image-97" {
+		t.Fatalf("unstable anchors across page boundaries")
+	}
+	if len(full.Images) != 105 {
+		t.Fatal("pagination mutated the full source inventory")
+	}
+	legacy := imageLibraryPaginate(full, 0, "images")
+	if len(legacy) != 1 || len(legacy[0].Images) != 105 || legacy[0].TotalPages != 1 {
+		t.Fatal("legacy unpaginated behavior changed")
+	}
+}
+
+func TestParseImageLibraryConfig_PageSize(t *testing.T) {
+	got, err := parseImageLibraryConfig(map[string]interface{}{
+		"images": map[string]interface{}{"page_size": int64(48)},
+	})
+	if err != nil || got.PageSize != 48 {
+		t.Fatalf("page_size parse: %d, %v", got.PageSize, err)
+	}
+	for _, invalid := range []interface{}{-1, 1.5, "48", true} {
+		_, err := parseImageLibraryConfig(map[string]interface{}{
+			"images": map[string]interface{}{"page_size": invalid},
+		})
+		if err == nil {
+			t.Errorf("accepted invalid page_size %#v", invalid)
+		}
+	}
+}
+
+func TestImageLibraryPaginationTemplateContract(t *testing.T) {
+	for _, path := range []string{
+		filepath.Join("..", "..", "templates", "images.html"),
+		filepath.Join("..", "themes", "default", "templates", "images.html"),
+	} {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, marker := range []string{"data-image-total-pages", "data-image-pagination", "image.Anchor", "image_library.PageLinks"} {
+			if !strings.Contains(string(data), marker) {
+				t.Errorf("%s missing pagination contract %q", path, marker)
+			}
+		}
+	}
+	data, err := os.ReadFile(filepath.Join("..", "themes", "default", "static", "js", "image-library.js"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(data), "hydrateAllPages") || !strings.Contains(string(data), "scheduleApply") {
+		t.Fatal("image library has no on-demand cross-page search hydration")
+	}
+}
+
+func TestImageLibraryPlugin_PaginatedOutputsAndStaleCleanup(t *testing.T) {
+	root := t.TempDir()
+	output := filepath.Join(root, "output")
+	assets := filepath.Join(root, "static")
+	if err := os.MkdirAll(assets, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	post := models.NewPost("posts/album.md")
+	post.Slug = "album"
+	post.Href = "/album/"
+	post.Published = true
+	post.Title = stringPointerImages("Album")
+	post.Content = strings.Join([]string{
+		"![A](https://dropper.wayl.one/file/a.webp)",
+		"![B](https://dropper.wayl.one/file/b.webp)",
+		"![C](https://dropper.wayl.one/file/c.webp)",
+		"![D](https://dropper.wayl.one/file/d.webp)",
+		"![E](https://dropper.wayl.one/file/e.webp)",
+	}, "\n")
+
+	modelsConfig := models.NewConfig()
+	modelsConfig.OutputDir = output
+	modelsConfig.AssetsDir = assets
+	modelsConfig.Images = models.NewImagesConfig()
+	modelsConfig.Images.PageSize = 2
+	manager := lifecycle.NewManager()
+	manager.SetConfig(&lifecycle.Config{
+		ContentDir: root, OutputDir: output,
+		Extra: map[string]interface{}{
+			"assets_dir":    assets,
+			"models_config": modelsConfig,
+		},
+	})
+	manager.SetPosts([]*models.Post{post})
+	cache := buildcache.New(filepath.Join(root, "cache"))
+	manager.Cache().Set("build_cache", cache)
+	plugin := NewImageLibraryPlugin()
+
+	if err := plugin.Write(manager); err != nil {
+		t.Fatalf("first paginated build: %v", err)
+	}
+	paths := []string{
+		filepath.Join(output, "images", "index.html"),
+		filepath.Join(output, "images", "page", "2", "index.html"),
+		filepath.Join(output, "images", "page", "3", "index.html"),
+	}
+	for index, path := range paths {
+		page, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatalf("page %d missing: %v", index+1, err)
+		}
+		want := 2
+		if index == 2 {
+			want = 1
+		}
+		if got := strings.Count(string(page), "data-image-card"); got != want {
+			t.Errorf("page %d has %d cards, want %d", index+1, got, want)
+		}
+		if !strings.Contains(string(page), "data-image-pagination") {
+			t.Errorf("page %d has no no-JS pagination links", index+1)
+		}
+	}
+	jsonData, err := os.ReadFile(filepath.Join(output, "images.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := strings.Count(string(jsonData), `"src":`); got != 5 {
+		t.Fatalf("canonical index lost entries: %d", got)
+	}
+	if err := plugin.Write(manager); err != nil {
+		t.Fatalf("same-input rebuild: %v", err)
+	}
+	if _, err := os.Stat(paths[2]); err != nil {
+		t.Fatalf("cached page 3 vanished: %v", err)
+	}
+
+	modelsConfig.Images.PageSize = 3
+	if err := plugin.Write(manager); err != nil {
+		t.Fatalf("page size reduction rebuild: %v", err)
+	}
+	if _, err := os.Stat(paths[2]); !os.IsNotExist(err) {
+		t.Fatalf("stale page 3 still present, stat error=%v", err)
+	}
+	page2, err := os.ReadFile(paths[1])
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := strings.Count(string(page2), "data-image-card"); got != 2 {
+		t.Fatalf("page 2 with page_size=3 has %d cards, want 2", got)
+	}
 }

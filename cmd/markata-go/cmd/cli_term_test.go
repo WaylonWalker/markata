@@ -1,6 +1,9 @@
 package cmd
 
-import "testing"
+import (
+	"os"
+	"testing"
+)
 
 func TestColorEnabledFor_NoColorEnv(t *testing.T) {
 	originalNoColor := noColor
@@ -131,5 +134,17 @@ func TestColorEnabledFor_PlainLogFormat(t *testing.T) {
 
 	if colorEnabledFor(true) {
 		t.Fatal("expected plain log format to disable color")
+	}
+}
+
+// A character device is not necessarily an interactive terminal.
+func TestFileLikeTerminalRejectsNullDevice(t *testing.T) {
+	file, err := os.Open(os.DevNull)
+	if err != nil {
+		t.Skipf("null device unavailable: %v", err)
+	}
+	defer file.Close()
+	if fileLikeTerminal(file) {
+		t.Fatal("null device must not activate terminal UI")
 	}
 }

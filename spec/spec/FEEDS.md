@@ -66,6 +66,18 @@ For YouTube Atom feeds, reader entries should resolve the per-video thumbnail fr
 
 Reader template contexts may expose `preview_url`, `preview_kind`, `source_image_url`, and existing source metadata so themes can style each preview type differently.
 
+Reader entries MAY expose `image_srcset` for a supported image resizing service.
+Ghost CDN raster previews on `storage.ghost.io` with an existing
+`/content/images/size/w<width>/` path SHOULD include smaller width candidates,
+without exceeding the original requested width. The original `image_url` MUST
+remain the `src` fallback. Unknown services and GIF/SVG images MUST
+retain their original URLs without invented resizing parameters. Query strings
+and escaped path segments MUST be preserved. Templates and built-in fallback
+rendering MUST use the same candidates, retain lazy loading and async decoding,
+and use a conservative `100vw` size hint that does not introduce intrinsic-size
+containment or alter existing preview geometry.
+Image selection MUST work without JavaScript and retain existing error tiles.
+
 ## Blogroll Add Metadata
 
 When `markata-go blogroll add <feed-url>` fetches metadata for a new external feed, the command MUST use site-level HTML or OpenGraph metadata for the editable title, description, and tags shown to the user.

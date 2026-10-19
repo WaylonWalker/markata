@@ -33,6 +33,8 @@
   var navHoverReleaseArmed = false;
   var NAV_HOVER_ATTRIBUTE = 'data-nav-hover-suppressed';
   var NAV_HOVER_STYLE_ID = 'markata-nav-hover-reset-style';
+  var deferredCSS = { admonitions: true, code: true, chroma: true };
+  var deferredCSSObservers = {};
 
   /**
    * Check if a stylesheet containing the given base name is already loaded.
@@ -59,6 +61,41 @@
     link.rel = 'stylesheet';
     link.href = href;
     document.head.appendChild(link);
+  }
+
+  function injectCSSWhenNearViewport(baseName, selector) {
+    var previousObserver = deferredCSSObservers[baseName];
+    if (previousObserver) previousObserver.disconnect();
+
+    var elements = document.querySelectorAll(selector);
+    if (!elements.length) return;
+
+    if (!window.IntersectionObserver) {
+      injectCSS(baseName);
+      return;
+    }
+
+    var observer = new IntersectionObserver(function(entries) {
+      for (var i = 0; i < entries.length; i++) {
+        if (!entries[i].isIntersecting) continue;
+        observer.disconnect();
+        if (deferredCSSObservers[baseName] === observer) delete deferredCSSObservers[baseName];
+        if (!hasCSS(baseName)) injectCSS(baseName);
+        return;
+      }
+    }, { rootMargin: '2400px 0px' });
+
+    deferredCSSObservers[baseName] = observer;
+    for (var i = 0; i < elements.length; i++) observer.observe(elements[i]);
+  }
+
+  function isFeedCardContent(selector) {
+    var elements = document.querySelectorAll(selector);
+    if (!elements.length) return false;
+    for (var i = 0; i < elements.length; i++) {
+      if (!elements[i].closest || !elements[i].closest('.card')) return false;
+    }
+    return true;
   }
 
   function hasScript(baseName) {
@@ -139,8 +176,17 @@
     for (var baseName in conditionalCSS) {
       if (!conditionalCSS.hasOwnProperty(baseName)) continue;
       var selector = conditionalCSS[baseName];
-      if (document.querySelector(selector) && !hasCSS(baseName)) {
-        injectCSS(baseName);
+      var hasMatchingElements = !!document.querySelector(selector);
+      if (deferredCSSObservers[baseName] && (!hasMatchingElements || hasCSS(baseName))) {
+        deferredCSSObservers[baseName].disconnect();
+        delete deferredCSSObservers[baseName];
+      }
+      if (hasMatchingElements && !hasCSS(baseName)) {
+        if (deferredCSS[baseName] && isFeedCardContent(selector)) {
+          injectCSSWhenNearViewport(baseName, selector);
+        } else {
+          injectCSS(baseName);
+        }
       }
     }
 
@@ -172,31 +218,21 @@
       }
     }
 
-    // Handle pagefind re-initialization after navigation
-    if (window.loadPagefind && document.getElementById('pagefind-search')) {
-      // Pagefind lazy loader already handles this
-      window.loadPagefind();
-    } else if (window.initPagefindSearch) {
-      window.initPagefindSearch();
-    }
-
     // Handle GLightbox re-initialization after navigation
     if (window.initGLightbox && document.querySelector('.glightbox')) {
       window.initGLightbox();
     }
   }
 
-  function refreshNavbarSearchLayout() {
-    var root = document.getElementById('pagefind-search');
-    if (!root) return;
+  function applyNavHoverSuppression() {
+    ensureNavHoverResetStyle();
+    document.documentElement.setAttribute(NAV_HOVER_ATTRIBUTE, 'true');
+  }
 
-    var container = root.closest('.search-container--navbar, .search--navbar');
-    if (!container) return;
-
-    window.requestAnimationFrame(function() {
-      void container.offsetWidth;
-      window.dispatchEvent(new Event('resize'));
-    });
+  function clearNavHoverSuppression() {
+    navHoverSuppressed = false;
+    navHoverReleaseArmed = false;
+    document.documentElement.removeAttribute(NAV_HOVER_ATTRIBUTE);
   }
 
   function ensureNavHoverResetStyle() {
@@ -221,17 +257,6 @@
     ].join('\n');
     style.setAttribute('data-markata-persist', 'true');
     document.head.appendChild(style);
-  }
-
-  function applyNavHoverSuppression() {
-    ensureNavHoverResetStyle();
-    document.documentElement.setAttribute(NAV_HOVER_ATTRIBUTE, 'true');
-  }
-
-  function clearNavHoverSuppression() {
-    navHoverSuppressed = false;
-    navHoverReleaseArmed = false;
-    document.documentElement.removeAttribute(NAV_HOVER_ATTRIBUTE);
   }
 
   function suppressNavHoverUntilPointerMoves() {
@@ -279,15 +304,14 @@
     clearNavHoverSuppression();
   }, true);
 
-  // Run after view transitions complete
+  // Feed embeds and generated card excerpts can require conditional styles
+  // that are not visible to the post-level template markers.
   document.addEventListener('DOMContentLoaded', function() {
     loadConditionalCSS();
-    refreshNavbarSearchLayout();
     ensureNavHoverResetStyle();
   });
   window.addEventListener('view-transition-complete', function() {
     loadConditionalCSS();
-    refreshNavbarSearchLayout();
     ensureNavHoverResetStyle();
     if (navHoverSuppressed) {
       applyNavHoverSuppression();

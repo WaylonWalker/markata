@@ -295,3 +295,13 @@ Unknown commands, flags, and close config key typos report possible matches.
 Treat each suggestion as a hint and use the fully spelled command or key.
 Run the specific command's `--help` when no suggestion fits. A bare Markdown
 path such as `markata-go post.md` still runs a one-file build.
+
+
+### Mention attribution and lint warnings
+
+In Markdown, `@handle` refers to a person and `~handle` attributes a
+quote. Both resolve from active, configured blogroll feeds and aliases.
+When blogroll is enabled, `markata-go lint` reports
+`unknown-mention` warnings for unresolved handles. Add a verified
+entry or alias to the blogroll before linking: CLI lint/build never
+searches social networks or guesses a person's identity.

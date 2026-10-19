@@ -20,6 +20,18 @@ the same files for a stored `theme-fontpack` choice instead, without preloading
 every pack on every visit. Preloads use `as="font"`, `type="font/woff2"` and
 `crossorigin` so the CSS fetch can reuse them. The shared stylesheet has a
 content-hashed URL and retains `font-display: swap`.
+Nonempty editorial feeds MUST also preload the active pack's code face, because
+their first visible week label uses the monospace role. The preload MUST use the
+same emitted tier as CSS, deduplicate sources shared with body/headings, respect
+a stored picker choice, and add no font hint for system-stack code roles.
+JavaScript-enabled editorial calendars MUST reserve the view switcher's space
+before its deferred controller initializes, preventing the earlier first paint
+from exposing a pagination shift. Pending controls remain invisible and
+non-interactive; no-JavaScript layout and the final toolbar remain unchanged.
+Empty editorial feeds, classic/simple feeds, and article pages retain their
+existing preload selection. Code-face preload metadata MUST be cached and
+validated with the ordinary preload metadata; changing it invalidates old HTML.
+
 Built-in packs cache the hash and per-pack preload URLs alongside the font
 output, keyed by the rendered content and catalog; a missing or invalid
 cache entry triggers ordinary resolution instead of serving stale hints.

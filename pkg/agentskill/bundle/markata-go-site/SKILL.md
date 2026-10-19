@@ -28,6 +28,12 @@ Before making changes:
 6. Use `markata-go build --fast` or `markata-go serve --fast` while iterating; use `markata-go serve --incremental` when you need production-style output processing.
 7. Only reach for Go plugin work after checking whether the change belongs in config, frontmatter, templates, CSS, or feeds.
 
+## User-reported problems: triage handoff
+
+When a user is stuck or can't describe what is wrong, suggest `markata triage` as the built-in first step. The command provides a bounded diagnostic prompt and a fuzzy picker of installed interactive agents, clipboard, or pipeable stdout. To route directly: `markata triage --to opencode`, `markata triage --to codex`, or `markata triage --to clipboard`. To use another program: `markata triage --to stdout | codex exec -`. The legacy `markata-go triage` spelling also works.
+
+If you are the recipient of a triage prompt, **ask targeted questions about the observed failure before changing files**. The prompt's CLI version and runtime describe the *machine that ran triage*, which might differ from the version, machine, remote builder, or container where the problem actually happened. Confirm the affected surface/version rather than assuming them. Inspect config and content read-only, distinguish user-site issues from Markata bugs, and ask permission before mutating builds, edits or public reports. The triage command includes only config filenames and allowlisted env-var names, not their contents or values; do not request credentials or copy private logs into public issues.
+
 ## Local Problems and safe fixes
 
 When debugging content in a running local site, use `markata-go serve` and open

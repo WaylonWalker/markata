@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build a small, JavaScript-optional GitHub Pages documentation site.
+"""Build a small, JavaScript-optional static documentation site.
 
 Source: docs/**/*.md. Output: docs-site/_site/.
 Requires the Python-Markdown package for authoring, not for running Markata.

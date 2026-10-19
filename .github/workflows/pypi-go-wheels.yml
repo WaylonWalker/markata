@@ -52,7 +52,7 @@ jobs:
         with:
           go-version: '1.26'
           cache: true
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.13'
       - name: Install Simon Willison's go-to-wheel
@@ -79,9 +79,41 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+  smoke-platforms:
+    name: Install Go CLI on ${{ matrix.os }}
+    needs: wheels
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    env:
+      MARKATA_WHEEL_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.version || '0.14.0.dev0' }}
+    steps:
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - uses: actions/download-artifact@v8
+        with:
+          name: markata-go-pypi-wheels
+          path: dist/pypi-wheels
+      - name: Offline install matching platform wheel (no Python legacy fallback)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --no-index --no-deps --only-binary=:all: \
+            --find-links=dist/pypi-wheels "markata==${MARKATA_WHEEL_VERSION}"
+      - name: Exercise Python module and installed Go executable
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m markata version
+          python -m markata --help
+          markata version
+
   publish:
     name: Publish markata 0.x Go wheels to PyPI
-    needs: wheels
+    needs: [wheels, smoke-platforms]
     # Never publish PRs, tags, forks, or a dispatch without explicit approval.
     if: >-
       github.event_name == 'workflow_dispatch' &&
@@ -96,7 +128,7 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           name: markata-go-pypi-wheels
           path: dist/

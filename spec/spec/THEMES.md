@@ -135,6 +135,7 @@ as pills; cards and the article container use `--radius-lg`/`--radius-xl`.
 ### Contrast Guarantees
 
 - Default theme text in compact UI surfaces such as home metadata, card metadata, and admonition titles MUST use text tokens that maintain WCAG 2.1 AA contrast at their rendered size.
+- Generic container classes such as `warning`, `note`, `info`, `success`, `error`, and `danger` MUST NOT override the palette-specific surface or foreground styles of `.admonition` elements that share those class names. Admonition body text and titles MUST maintain WCAG 2.1 AA contrast against their rendered palette surface.
 - Built-in palette regression tests MUST validate the default theme's concrete foreground/background combinations, not only abstract palette token pairs, so regressions in selector usage are caught across every shipped palette.
 
 ---
@@ -4113,9 +4114,29 @@ A separate display role must not suppress the heading face used by ordinary
 page titles. Code and extended coverage remain demand-loaded. The configured
 tier selection and returning visitor font-pack choice are preserved.
 
+Initial title fitting and heading contour measurements use ResizeObserver
+delivery when available, allowing the browser's first layout to complete before
+measurement. Font-ready subscriptions begin after the initial rendering
+opportunity. Font loading, later resizing, heading text changes, and article
+navigation retain the same fitted sizes and contour geometry. Browsers without
+ResizeObserver retain the animation-frame measurement fallback.
+
+The article progress indicator also uses ResizeObserver for its initial
+measurement and to refresh after article height changes. Reinitializing after
+navigation disconnects the prior observer. Scroll and viewport resize updates
+remain animation-frame throttled, with the existing fallback when observation
+is unavailable.
+
 Closed overlay drawers must not measure header or active navigation geometry
 during startup. Opening a drawer centers the active feed item. Full-height overlay drawers
 need no header offset; desktop offsets are scoped to drawer elements, preserving
 desktop persistence and resize/scroll behavior without restyling article trees.
 An overlay drawer focuses its active navigation link when available, otherwise
 its first interactive content, and Escape returns focus to the drawer handle.
+
+Where content visibility and discrete transitions are supported, closed feed
+and TOC drawers skip rendering their contents. Opening restores rendering
+immediately before focus and active-item measurements. Closing keeps contents
+rendered through the slide. Saved-open desktop drawers render immediately.
+Reduced motion and startup restoration disable the content transition with the
+drawer transition. Other browsers retain the existing drawer rendering.

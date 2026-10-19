@@ -42,8 +42,9 @@ type fontpackBuild struct {
 }
 
 type fontpackPreloadCache struct {
-	Hash string              `json:"hash"`
-	URLs map[string][]string `json:"urls"`
+	Hash          string              `json:"hash"`
+	URLs          map[string][]string `json:"urls"`
+	EditorialURLs map[string][]string `json:"editorial_urls"`
 }
 
 func NewFontpackPlugin() *FontpackPlugin { return &FontpackPlugin{} }
@@ -182,8 +183,10 @@ func (p *FontpackPlugin) prepare(m *lifecycle.Manager) (*fontpackBuild, error) {
 		build.resolved = resolved
 		build.preloads.Hash = fmt.Sprintf("%x", sha256.Sum256([]byte(resolved.CSS)))[:8]
 		build.preloads.URLs = make(map[string][]string, len(resolved.Packs))
+		build.preloads.EditorialURLs = make(map[string][]string, len(resolved.Packs))
 		for name, pack := range resolved.Packs {
 			build.preloads.URLs[name] = fontpackPreloadURLs(pack, resolved.Assets)
+			build.preloads.EditorialURLs[name] = fontpackEditorialPreloadURLs(pack, resolved.Assets)
 		}
 	}
 	if raw, ok := m.Cache().Get("build_cache"); ok {
@@ -198,6 +201,7 @@ func (p *FontpackPlugin) prepare(m *lifecycle.Manager) (*fontpackBuild, error) {
 	m.SetAssetHash("css/fonts.css", build.preloads.Hash)
 	templates.SetAssetHashes(map[string]string{"css/fonts.css": build.preloads.Hash})
 	m.Config().Extra["fontpack_preload_urls"] = build.preloads.URLs[defaultName]
+	m.Config().Extra["fontpack_editorial_preload_urls"] = build.preloads.EditorialURLs[defaultName]
 	// JSON is escaped by encoding/json (including HTML metacharacters), and
 	// inserted as an object literal only when the picker is enabled.
 	if pickerEnabled {
@@ -206,6 +210,11 @@ func (p *FontpackPlugin) prepare(m *lifecycle.Manager) (*fontpackBuild, error) {
 			return nil, fmt.Errorf("encode font preloads: %w", err)
 		}
 		m.Config().Extra["fontpack_preloads_json"] = string(data)
+		editorialData, err := json.Marshal(build.preloads.EditorialURLs)
+		if err != nil {
+			return nil, fmt.Errorf("encode editorial font preloads: %w", err)
+		}
+		m.Config().Extra["fontpack_editorial_preloads_json"] = string(editorialData)
 	}
 	for _, post := range m.Posts() {
 		if name := pageNames[post.Path]; name != "" {
@@ -217,7 +226,7 @@ func (p *FontpackPlugin) prepare(m *lifecycle.Manager) (*fontpackBuild, error) {
 }
 
 func fontpackHTMLCacheHash(preloads fontpackPreloadCache) string {
-	urls, err := json.Marshal(preloads.URLs)
+	urls, err := json.Marshal(preloads)
 	if err != nil {
 		return preloads.Hash
 	}
@@ -237,29 +246,39 @@ func validFontpackPreloadCache(output string, names []string, catalog *fontpacks
 		if err != nil {
 			return false
 		}
-		urls, ok := cached.URLs[resolved]
-		if !ok {
-			return false
-		}
-		for _, url := range urls {
-			file := strings.TrimPrefix(url, "/assets/fonts/")
-			if file == url || file != filepath.Base(file) {
+		for _, lists := range []map[string][]string{cached.URLs, cached.EditorialURLs} {
+			urls, ok := lists[resolved]
+			if !ok {
 				return false
 			}
-			if info, err := os.Stat(filepath.Join(output, "assets", "fonts", file)); err != nil || !info.Mode().IsRegular() {
-				return false
+			for _, url := range urls {
+				file := strings.TrimPrefix(url, "/assets/fonts/")
+				if file == url || file != filepath.Base(file) {
+					return false
+				}
+				if info, err := os.Stat(filepath.Join(output, "assets", "fonts", file)); err != nil || !info.Mode().IsRegular() {
+					return false
+				}
 			}
 		}
 	}
 	return true
 }
 
-// Prefer the full tier if present (it supersedes subsets in CSS), otherwise
-// preload the core tier. Other coverage tiers and code fonts load on demand.
+// Ordinary pages preload body and heading faces. Other roles load on demand.
 func fontpackPreloadURLs(pack fontpacks.FontPack, assets []fontpacks.Asset) []string {
+	return fontpackPreloadURLsForRoles(pack, assets, "body", "display", fontpackRoleHeading)
+}
+
+func fontpackEditorialPreloadURLs(pack fontpacks.FontPack, assets []fontpacks.Asset) []string {
+	return fontpackPreloadURLsForRoles(pack, assets, "body", "display", fontpackRoleHeading, "code")
+}
+
+// Select the requested emitted tier, falling back to another core tier or full.
+func fontpackPreloadURLsForRoles(pack fontpacks.FontPack, assets []fontpacks.Asset, roles ...string) []string {
 	urls := []string{}
 	seen := map[string]bool{}
-	for _, role := range []string{"body", "display", fontpackRoleHeading} {
+	for _, role := range roles {
 		source := pack.Roles[role].Source
 		tier := pack.Roles[role].Tier
 		if source == "" || seen[source] {

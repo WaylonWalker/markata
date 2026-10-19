@@ -199,6 +199,40 @@ func TestPurgeStats(t *testing.T) {
 	}
 }
 
+func TestDefaultPurgePreservesInteractiveSidebarState(t *testing.T) {
+	// Generated static HTML ships the drawer closed. The open and expanded
+	// classes are added by JS, so they never occur in build-time HTML.
+	used := NewUsedSelectors()
+	for _, class := range []string{"feed-sidebar", "doc-sidebar", "sidebar-toggle", "page-wrapper"} {
+		used.Classes[class] = true
+	}
+
+	css := `
+.feed-sidebar, .doc-sidebar { visibility: hidden; transform: translateX(-100%); }
+.feed-sidebar.sidebar--pinned, .doc-sidebar.sidebar--pinned { visibility: visible; transform: none; }
+.feed-sidebar.feed-sidebar--expanded .feed-nav-drawer { max-height: 12rem; }
+.sidebar--no-motion > .sidebar-toggle { transition: none; }
+.unused-selector { display: none; }
+`
+	// feed-nav-drawer is statically present as a closed element.
+	used.Classes["feed-nav-drawer"] = true
+
+	out, _ := PurgeCSS(css, used, PurgeOptions{Preserve: DefaultPreservePatterns()})
+	for _, selector := range []string{
+		".feed-sidebar.sidebar--pinned",
+		".doc-sidebar.sidebar--pinned",
+		".feed-sidebar.feed-sidebar--expanded",
+		".sidebar--no-motion",
+	} {
+		if !strings.Contains(out, selector) {
+			t.Errorf("purge removed JS-only sidebar selector %q: %s", selector, out)
+		}
+	}
+	if strings.Contains(out, ".unused-selector") {
+		t.Errorf("purge kept unrelated CSS: %s", out)
+	}
+}
+
 func TestDefaultPreservePatterns(t *testing.T) {
 	patterns := DefaultPreservePatterns()
 	if len(patterns) == 0 {
@@ -210,6 +244,7 @@ func TestDefaultPreservePatterns(t *testing.T) {
 		"js-*", "htmx-*", "active", "hidden",
 		"dark", "light", "dark-mode", "light-mode",
 		"theme-*", "palette-*", // Theme class patterns
+		"sidebar--pinned", "sidebar--no-motion", "feed-sidebar--expanded",
 	}
 	patternSet := make(map[string]bool)
 	for _, p := range patterns {

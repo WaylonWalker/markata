@@ -417,3 +417,46 @@ handle_field = "handle"
 ```
 
 Now you can use `@external` for external links and `@internal-user` for internal profile links in the same post.
+
+
+## Quote attributions with a tilde
+
+Use `~handle` to credit the source of a short quote without turning it
+into a prominent callout:
+
+```markdown
+if an agent cant verify its own work
+
+==nothing else matters==
+
+~poteto
+```
+
+When `poteto` is in your configured blogroll, Markata links it to the
+canonical `site_url` and displays it with a quiet, theme-aware
+`mention--attribution` style. Ordinary `@poteto` references keep the
+normal mention appearance. You can override the styling using
+`.mention--attribution` in your site CSS.
+
+If the handle is not yet in the blogroll, `~poteto` stays visible and
+styled, but is not made into a link. Markata does **not** assume that an
+identically named GitHub/X/Bluesky account belongs to the person you
+quoted.
+
+### Lint missing mentions locally
+
+```sh
+markata-go lint pages/ping/ping-84.md
+```
+
+With blogroll enabled, both `@handle` and `~handle` produce
+`unknown-mention` warnings when they cannot be resolved to an active
+configured feed handle or alias. The warning suggests adding the
+person's handle or alias to the blogroll; warnings do not fail the
+build. This check is deterministic and **does not search the network**.
+
+For new people, first check your blogroll. If absent, manually
+investigate X/Twitter, then GitHub, then Bluesky for a verified match,
+and add the verified canonical link plus an actual feed to the
+blogroll. Never automatically insert a social profile based only on a
+username collision.

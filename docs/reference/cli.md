@@ -61,6 +61,31 @@ markata-go build pages/sample.md
 markata-go serve pages/sample.md
 ```
 
+## Agent-assisted troubleshooting: `triage`
+
+`markata triage` collects a small, privacy-conscious diagnostic summary and passes a troubleshooting prompt to an interactive coding agent, clipboard, or stdout. The default is a fuzzy picker of **detected installed** coding agents plus clipboard and stdout. When either terminal stream is redirected or `--no-input` is used, it prints **only the Markdown prompt** to stdout.
+
+```sh
+markata triage
+markata triage --to opencode
+markata triage --agent claude
+markata triage --issue "My posts aren't appearing" --to clipboard
+markata triage --to stdout | codex exec -
+markata triage --to stdout > triage-prompt.md
+```
+
+| Flag | Description | Default |
+| --- | --- | --- |
+| `--to` | `auto`, `stdout`, `clipboard`, `opencode`, `claude`, `codex`, `gemini`, or `cursor` | `auto` |
+| `--agent` | Convenience alias for an installed agent name; cannot be combined with `--to` | none |
+| `--issue` | Optional brief user-provided problem description (up to 4000 bytes) | none |
+
+Only supported agent executables found on PATH are offered. An explicit agent launch needs a terminal so the agent can ask follow-up questions. For pipelines use stdout and the selected agent's own noninteractive mode. Clipboard uses local platform helpers and fails clearly if unavailable. No agent is launched automatically in a noninteractive session.
+
+The prompt contains the **running CLI** version, not necessarily the version where the bug occurred, plus OS, architecture, runtime, executable/install hints, project path and **config filenames only**. It never reads config values, logs, full environment values or secrets. Review local paths before sharing a prompt. The agent should first clarify the user's issue, confirm the actual affected version/deployment and ask before applying changes.
+
+For examples and privacy details, see [Triage a Markata problem](../guides/triage.md).
+
 ## Global Flags
 
 These flags are available for all commands:

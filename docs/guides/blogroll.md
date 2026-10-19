@@ -362,6 +362,13 @@ The reader page shows the latest posts from all feeds in reverse chronological o
 - Pagination navigation (when more than one page)
 - Offscreen reader cards after the first four in each day group may skip layout and paint in supporting browsers via CSS `content-visibility`; the full HTML, links, and no-JavaScript navigation remain available. Preview images and source icons load lazily and decode asynchronously.
 
+Ghost-hosted PNG, JPEG, and WebP previews with an existing `storage.ghost.io`
+width URL include responsive candidates. The browser selects a width for the
+card and screen density, including when JavaScript is disabled. The original
+image remains the fallback; other providers and GIF/SVG previews keep their
+existing URLs. Custom reader templates can use `entry.image_srcset` with
+`sizes="100vw"` on lazy images.
+
 ### Community aggregators: Lobsters, Lemmy and Reddit
 
 The reader preserves the original discussion permalink alongside a linked external article. For Lemmy community RSS feeds, `<link>` normally points to the article, and a `<guid>` or `<comments>` permalink can point to the Lemmy discussion. For Reddit's Atom feeds, posts remain linked to Reddit unless an explicit `[link]` anchor in the entry content provides an external article URL; text-only posts remain on Reddit. Unknown or blocked feeds retain the normal fallback behavior, and arbitrary links in a post body are not promoted to articles.

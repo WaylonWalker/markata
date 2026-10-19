@@ -412,8 +412,21 @@ func checkWikilinks(filePath, body string, hasFrontmatter bool, frontmatter stri
 	return issues
 }
 
-// mentionRegex matches @handle patterns.
-var mentionRegex = regexp.MustCompile(`@([a-zA-Z][a-zA-Z0-9_.-]*)`)
+// mentionRegex matches @mentions and ~quote attributions.
+var mentionRegex = regexp.MustCompile(`([@~])([a-zA-Z][a-zA-Z0-9_.-]*)`)
+
+// resolveMentionForLint checks the complete handle first, allowing valid
+// domain-style names, then retries without trailing sentence punctuation.
+func resolveMentionForLint(resolver Resolver, handle string) (string, bool) {
+	if resolver.ResolveHandle(handle) {
+		return handle, true
+	}
+	stripped := strings.TrimRight(handle, ".,;:!?")
+	if stripped == "" || stripped == handle {
+		return handle, false
+	}
+	return stripped, resolver.ResolveHandle(stripped)
+}
 
 // checkMentions finds unknown mentions in content.
 func checkMentions(filePath, body string, hasFrontmatter bool, frontmatter string, resolver Resolver) []Issue {
@@ -450,30 +463,33 @@ func checkMentions(filePath, body string, hasFrontmatter bool, frontmatter strin
 				prevChar := line[start-1]
 				if (prevChar >= 'a' && prevChar <= 'z') ||
 					(prevChar >= 'A' && prevChar <= 'Z') ||
-					(prevChar >= '0' && prevChar <= '9') || prevChar == '_' || prevChar == '@' {
+					(prevChar >= '0' && prevChar <= '9') || prevChar == '_' || prevChar == '@' || prevChar == '~' {
 					continue // Skip email addresses and @@mentions
 				}
 			}
 
-			handleStart := match[2]
-			handleEnd := match[3]
+			marker := line[match[2]:match[3]]
+			handleStart := match[4]
+			handleEnd := match[5]
 			handle := strings.ToLower(line[handleStart:handleEnd])
-
-			if !resolver.ResolveHandle(handle) {
-				issues = append(issues, Issue{
-					File: filePath,
-					Range: Range{
-						StartLine: lineNum + lineOffset,
-						StartCol:  match[0],
-						EndLine:   lineNum + lineOffset,
-						EndCol:    match[1],
-					},
-					Code:     diagnosticCodeUnknownMention,
-					Severity: SeverityWarning,
-					Message:  fmt.Sprintf("unknown mention: @%s not found in blogroll", handle),
-					Fixable:  false,
-				})
+			handle, known := resolveMentionForLint(resolver, handle)
+			if known {
+				continue
 			}
+
+			issues = append(issues, Issue{
+				File: filePath,
+				Range: Range{
+					StartLine: lineNum + lineOffset,
+					StartCol:  match[0],
+					EndLine:   lineNum + lineOffset,
+					EndCol:    match[1],
+				},
+				Code:     diagnosticCodeUnknownMention,
+				Severity: SeverityWarning,
+				Message:  fmt.Sprintf("unknown mention: %s%s not found in blogroll; add a handle or alias to your blogroll", marker, handle),
+				Fixable:  false,
+			})
 		}
 	}
 
