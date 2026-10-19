@@ -1503,7 +1503,6 @@ func imageLibraryTestImageBySrc(t *testing.T, index imageindex.Index, src string
 	return imageindex.Image{}
 }
 
-
 func TestImageLibraryPaginate_PreservesInventoryAndNativeLinks(t *testing.T) {
 	index := imageindex.Index{Images: make([]imageindex.Image, 105)}
 	for i := range index.Images {
