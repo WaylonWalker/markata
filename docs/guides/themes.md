@@ -1180,6 +1180,12 @@ and avoids downloading them again.
 The navbar reserves space for its search input before deferred search styles
 load, so the header stays in place while search initializes.
 
+Title fitting and highlighted headings wait for initial layout before measuring
+when ResizeObserver is available. They still update after fonts load and the
+page resizes, keeping the same typography with less synchronous startup work.
+The article progress indicator also refreshes as images or other content change
+the article's height.
+
 Mobile drawers center the active feed item when opened without measuring
 closed-drawer geometry during startup. Desktop drawers
 continue to restore their saved state and follow the visible header edge.
