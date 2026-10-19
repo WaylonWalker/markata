@@ -175,6 +175,9 @@ func mergeImagesConfig(base, override models.ImagesConfig) models.ImagesConfig {
 	if override.IncludeUnreferenced != nil {
 		result.IncludeUnreferenced = override.IncludeUnreferenced
 	}
+	if override.PageSize > 0 {
+		result.PageSize = override.PageSize
+	}
 	return result
 }
 
