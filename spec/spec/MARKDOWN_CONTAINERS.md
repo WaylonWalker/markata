@@ -93,6 +93,9 @@ Content
 
 The rendered container MUST retain the declared classes, ID, and valid custom attributes.
 
+The default theme gives some container classes extra behavior. For example,
+`::: road STYLE` creates a scroll-drawn road, as defined in [ROADS.md](ROADS.md).
+
 ## Conformance tests
 
 Implementations SHOULD test at minimum:

@@ -1,6 +1,6 @@
 ---
 name: markata-go-site
-description: Help agents work effectively in markata-go site repositories. Use this whenever the user is working on a markata-go site or asks about site config, frontmatter or content authoring, templates or layouts, themes or palettes, Web Awesome component setup, analytics or stats pages, chartjs or contribution graphs, build or deploy debugging, performance tuning, or deciding whether a change belongs in config, content, templates, CSS, feeds, or plugins. Use it proactively for tasks like creating an `analytics.md` page, exposing reading time or word count in templates, wiring Web Awesome components into content and templates, or helping an author turn site metrics into a publishable story.
+description: Help agents work effectively in markata-go site repositories. Use this whenever the user is working on a markata-go site or asks about site config, frontmatter or content authoring, templates or layouts, timelines or roadmaps in posts, themes or palettes, Web Awesome component setup, analytics or stats pages, chartjs or contribution graphs, build or deploy debugging, performance tuning, or deciding whether a change belongs in config, content, templates, CSS, feeds, or plugins. Use it proactively for tasks like creating an `analytics.md` page, exposing reading time or word count in templates, wiring Web Awesome components into content and templates, or helping an author turn site metrics into a publishable story.
 ---
 
 This skill helps an agent work inside a markata-go site repository without needing the markata-go source tree.
@@ -50,6 +50,7 @@ capabilities.
 Read only the topic files relevant to the task:
 - `topics/configuration.md`
 - `topics/writing-frontmatter.md`
+- `topics/roads.md`
 - `topics/cli-usage.md`
 - `topics/build-deployment.md`
 - `topics/faster-builds.md`
@@ -101,6 +102,7 @@ If the repository is a very small or first-time site and does not yet have clear
 - Template work: `topics/template-management.md`
 - Theme or styling work: `topics/theme-creation.md`
 - Content creation: `topics/writing-frontmatter.md`
+- Timelines, roadmaps, step paths, or branch histories in a post: `topics/roads.md`
 - Analytics pages or metrics storytelling: `topics/analytics-storytelling.md`
 - Config debugging: `topics/configuration.md`
 - Build and CI work: `topics/build-deployment.md`

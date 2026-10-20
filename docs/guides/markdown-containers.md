@@ -90,3 +90,18 @@ curl -fsSL https://example.com/install.sh | sh
 ````
 
 The outer `wa-tabs` container uses three colons and each nested `wa-tab` uses four, so the structure is unambiguous.
+
+## Roads
+
+The default theme turns a `road` container into a scroll-drawn path of linked
+milestones:
+
+````markdown
+::: road timeline
+
+- [Kickoff](/notes/kickoff/) Jan 2026
+- [Launch](/notes/launch/) Jun 2026
+:::
+````
+
+See [Roads](/docs/guides/roads/) for all styles and options.

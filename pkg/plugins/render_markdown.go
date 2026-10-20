@@ -1165,7 +1165,15 @@ func (p *RenderMarkdownPlugin) detectCSSRequirements(post *models.Post) {
 	if strings.Contains(post.ArticleHTML, `class="anchor"`) {
 		post.Extra["has_anchor_links"] = true
 	}
+
+	// Detect roads - `::: road STYLE` containers or elements with data-road.
+	if strings.Contains(post.ArticleHTML, "road") && roadMarkupPattern.MatchString(post.ArticleHTML) {
+		post.Extra["needs_roads"] = true
+	}
 }
+
+// roadMarkupPattern matches a "road" class token or a data-road attribute.
+var roadMarkupPattern = regexp.MustCompile(`class="(?:[^"]*\s)?road(?:\s[^"]*)?"|\sdata-road[\s=>]`)
 
 // Ensure RenderMarkdownPlugin implements the required interfaces.
 var (

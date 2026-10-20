@@ -27,6 +27,7 @@ markata-go supports standard Markdown (CommonMark), GitHub Flavored Markdown (GF
 - [Table of Contents](#table-of-contents)
 - [Heading Anchors](#heading-anchors)
 - [Footnotes](#footnotes)
+- [Roads](/docs/guides/roads/) - scroll-drawn timelines and roadmaps (separate guide)
 
 
 ---
