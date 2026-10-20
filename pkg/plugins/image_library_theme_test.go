@@ -65,6 +65,7 @@ func TestImageLibraryThemeContract(t *testing.T) {
 		"--font-display",
 		"--text-sm",
 		"--space-4",
+		"--spacing-scale",
 		"--radius-sm",
 		"--radius-lg",
 		"--border-width-normal",
