@@ -335,6 +335,44 @@
   margin: 0 auto;
 }
 
+/* A quiet, clickable affordance—not a permanent shortcuts panel. */
+.footer-shortcuts-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  min-height: 32px;
+  margin-top: 0.375rem;
+  padding: 0.25rem 0.5rem;
+  border: 0;
+  border-radius: var(--radius, 0.375rem);
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.footer-shortcuts-trigger kbd {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.3rem;
+  min-height: 1.3rem;
+  padding: 0 0.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.25rem;
+  font: inherit;
+}
+
+.footer-shortcuts-trigger:hover {
+  color: var(--color-link, var(--color-primary));
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+}
+
+.footer-shortcuts-trigger:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
 .footer-text {
   margin-bottom: 1rem;
 }
@@ -3667,6 +3705,11 @@ article.kb-highlighted {
     Complete styling for the keyboard shortcuts help modal including
     container, header, body, sections, tables, and footer.
     ========================================================================== */
+
+/* Keep the closed dialog out of document flow even with alternate display rules. */
+.shortcuts-modal[hidden] {
+   display: none;
+}
 
 /* Modal backdrop - semi-transparent overlay */
 .shortcuts-modal {

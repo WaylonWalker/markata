@@ -49,6 +49,13 @@
              {% endif %}
          </p>
          {% endif %}
+
+        {# Keep keyboard help discoverable without rendering the shortcut list in the page. #}
+        <button type="button" class="footer-shortcuts-trigger" data-shortcuts-trigger
+                aria-label="Show keyboard shortcuts" aria-haspopup="dialog" aria-controls="shortcuts-modal"
+                title="Keyboard shortcuts (press ?)">
+            <kbd aria-hidden="true">?</kbd><span aria-hidden="true">Shortcuts</span>
+        </button>
     </div>
 
     {# Site-wide h-card for IndieWeb identity #}
