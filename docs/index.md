@@ -32,6 +32,11 @@ Write Markdown. Give your agent the right context. Publish a site you own.
 - [CLI reference](/docs/reference/cli/)
 - [Naming migration](/docs/guides/name-migration/)
 
+## Releases
+
+- [v0.14.0 release notes](/docs/releases/v0.14.0/) — what's new, compatibility and upgrade guidance (release preparation)
+- [Release and deployment runbook](/docs/guides/releasing/) — tag, artifacts, GitOps rollout, build verification and rollback
+
 Markata is still **0.x**. The older `markata-go` command remains compatible. New Go sites should continue to use `markata-go.toml` and `[markata-go]` until the configuration migration is complete.
 
 **Important:** `pip install markata` currently installs the original **Python** project, not this Go program. See [installation](/docs/installation/) for details.
