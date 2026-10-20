@@ -317,6 +317,9 @@ func DefaultPreservePatterns() []string {
 		"mermaid-pz*",
 		"svg-pan-zoom*",
 
+		// Roads (classes added by roads.js)
+		"road-*",
+
 		// Common state classes (often added by JS)
 		"active",
 		"inactive",
@@ -378,5 +381,8 @@ func DefaultPreserveAttributes() []string {
 		"data-text-size",
 		"data-mode",
 		"data-color-scheme",
+
+		// Road styles are selected by roads.js at runtime
+		"data-road",
 	}
 }

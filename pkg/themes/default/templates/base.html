@@ -83,6 +83,10 @@
   {% if has_encrypted_content %}
   <link rel="stylesheet" href="{{ 'css/encryption.css' | theme_asset_hashed }}">
   {% endif %}
+  {% if needs_roads %}
+  <link rel="stylesheet" href="{{ 'css/roads.css' | theme_asset_hashed }}">
+  <script src="{{ 'js/roads.js' | theme_asset_hashed }}" defer></script>
+  {% endif %}
 
   <!-- Palette Switcher CSS (when enabled) -->
   {% include "partials/palette-switcher-styles.html" %}

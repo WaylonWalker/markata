@@ -28,6 +28,7 @@ func TestSiteSkill_ContainsAllRequiredTopics(t *testing.T) {
 		"topics/theme-creation.md",
 		"topics/template-management.md",
 		"topics/plugin-creation.md",
+		"topics/roads.md",
 	}
 
 	skillFS, err := SiteSkill()

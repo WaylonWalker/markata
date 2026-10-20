@@ -1719,6 +1719,7 @@ The `render_markdown` plugin scans rendered HTML content and sets flags in `post
 | `needs_admonitions_css` | HTML contains `class="admonition` |
 | `needs_code_css` | HTML contains `class="chroma"`, `class="highlight"`, `<pre><code`, or `<code class="language-` |
 | `needs_image_zoom` | HTML contains `data-zoomable` or `class="glightbox"` (set by `image_zoom` plugin) |
+| `needs_roads` | HTML has a `road` class token or a `data-road` attribute (see [ROADS.md](ROADS.md)) |
 
 ### Other Plugin Detection
 
@@ -1806,6 +1807,7 @@ The `document.startViewTransition()` update callback SHOULD stay limited to crit
 | Content | `code.css`, `chroma.css` | `needs_code_css` (content detection) |
 | Features | `webmentions.css` | `post.webmentions` or `needs_webmentions_css` |
 | Features | `encryption.css` | `has_encrypted_content` |
+| Content | `roads.css`, `roads.js` | `needs_roads` (content detection) |
 | Features | `glightbox.min.css` | `glightbox_enabled` and `needs_image_zoom` |
 | Features | `palette-switcher.css` | `config.theme.switcher.enabled` or (`config.theme.switcher.mode_toggle` and `config.header.show_theme_toggle`) |
 

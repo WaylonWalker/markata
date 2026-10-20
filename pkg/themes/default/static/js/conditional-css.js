@@ -22,11 +22,13 @@
     'webmentions': '.webmentions',
     'encryption':  '.encrypted-content, [data-encrypted]',
     'home':        '.home-hero, .home-feeds',
-    'feeds':       '.feeds-page, .feed.h-feed, .feed.feed-simple'
+    'feeds':       '.feeds-page, .feed.h-feed, .feed.feed-simple',
+    'roads':       '.road, [data-road]'
   };
 
   var conditionalJS = {
-    'feed-sparklines-v2': '.feed-sparkline-wrap, .feed-header-sparkline'
+    'feed-sparklines-v2': '.feed-sparkline-wrap, .feed-header-sparkline',
+    'roads': '.road, [data-road]'
   };
 
   var navHoverSuppressed = false;

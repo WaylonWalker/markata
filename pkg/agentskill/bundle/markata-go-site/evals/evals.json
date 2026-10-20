@@ -60,6 +60,12 @@
       "prompt": "I am outside my work-notes repository. Find the note about incident review, update it, and create a follow-up note without changing my current directory.",
       "expected_output": "Uses `--site-dir` or `MARKATA_GO_SITE_DIR`, searches with path output, explains that the returned absolute Markdown path can be edited directly, creates the follow-up with `new --no-input`, and validates with lint or a fast build.",
       "files": []
+    },
+    {
+      "id": 11,
+      "prompt": "Add a product roadmap to my about page that shows our quarterly milestones and draws itself as the reader scrolls. Each milestone links to its announcement post.",
+      "expected_output": "Uses a built-in `::: road timeline` container (or another suitable road style) with one `- [Title](url) Label` item per milestone, closes it with a colon-only line, and does not create a custom template, JavaScript file, or config change. Validates with a fast build.",
+      "files": []
     }
   ]
 }

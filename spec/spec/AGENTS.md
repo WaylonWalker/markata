@@ -31,6 +31,7 @@ The initial required topic files are:
 - `theme-creation.md`
 - `template-management.md`
 - `plugin-creation.md`
+- `roads.md`
 
 The initial reference files are:
 
