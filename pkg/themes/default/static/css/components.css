@@ -3939,6 +3939,19 @@ kbd.kbd {
    Share Component
    ========================================================================== */
 
+/* The share controls live outside <article> so read-aloud tools skip them. */
+.post-share {
+   box-sizing: border-box;
+   max-width: var(--content-width);
+   margin-inline: auto;
+}
+
+@media (max-width: 768px) {
+   .post-share {
+      padding-inline: var(--space-4);
+   }
+}
+
 .share-panel {
    margin: var(--space-8) 0 var(--space-6);
    padding-top: var(--space-4);
