@@ -4,6 +4,9 @@
 {% block description %}{{ post.description | default:'' }}{% endblock %}
 
 {% block meta %}
+{% if body and '<table' in body and '<thead' in body %}
+<script src="{{ 'js/sortable-tables.js'|theme_asset_hashed }}" defer></script>
+{% endif %}
 {% if post.editorial_history_view %}
 <link rel="stylesheet" href="{{ 'css/editorial-history.css'|theme_asset_hashed }}">
 <script src="{{ 'js/editorial-history.js'|theme_asset_hashed }}" defer></script>
