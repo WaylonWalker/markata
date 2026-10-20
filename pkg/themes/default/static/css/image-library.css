@@ -19,7 +19,7 @@
 .image-library__intro {
   align-items: end;
   display: flex;
-  gap: var(--space-6, 1.5rem);
+  gap: calc(var(--space-6, 1.5rem) * var(--spacing-scale, 1));
   justify-content: space-between;
   margin: 0 auto var(--space-6, 1.5rem);
   max-width: var(--grid-max-width, 1400px);
@@ -153,7 +153,7 @@
 
 .image-library__grid {
   display: grid;
-  gap: var(--space-4, 1rem);
+  gap: calc(var(--space-4, 1rem) * var(--spacing-scale, 1));
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr));
   margin: 0 auto;
   max-width: var(--grid-max-width, 1400px);
@@ -224,8 +224,8 @@
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: var(--space-2, .5rem);
-  padding: var(--space-3, .75rem);
+  gap: calc(var(--space-2, .5rem) * var(--spacing-scale, 1));
+  padding: calc(var(--space-3, .75rem) * var(--spacing-scale, 1));
 }
 
 .image-card__name {
