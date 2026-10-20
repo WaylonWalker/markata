@@ -183,6 +183,9 @@ release:
     ## Markata {{ .Version }}
 
     A plugin-driven static site generator written in Go.
+    
+    Curated highlights, upgrade notes, and deployment checks:
+    https://github.com/WaylonWalker/markata/blob/{{ .Tag }}/docs/releases/v{{ .Version }}.md
   footer: |
     ## Installation
 
