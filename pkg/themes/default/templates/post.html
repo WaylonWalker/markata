@@ -77,6 +77,7 @@
 </div>
 {% else %}
 <div class="content-wrapper{% if resolved_doc_sidebar.enabled and post.toc %} content-wrapper--with-sidebar content-wrapper--sidebar-{{ resolved_doc_sidebar.position | default:'right' }}{% endif %}">
+    <div class="post-shell">
     <article class="post h-entry" data-pagefind-body>
         {# Hidden canonical URL for microformats parsers #}
         <a class="u-url" href="{{ config.url }}{{ post.href }}" hidden></a>
@@ -147,16 +148,20 @@
 
         {% include "components/post_graph.html" %}
 
-        {% if config.components.share.enabled %}
-        {% include "components/share.html" %}
-        {% endif %}
-
         {# Guide series navigation #}
         {% include "partials/guide-navigation.html" %}
 
         {# Webmentions #}
         {% include "partials/webmentions.html" %}
     </article>
+
+    {# Keep site sharing controls available without including them in article extraction. #}
+    {% if config.components.share.enabled %}
+    <aside class="post-share" data-pagefind-ignore>
+        {% include "components/share.html" %}
+    </aside>
+    {% endif %}
+</div>
 </div>
 {% endif %}
 {% endblock %}
