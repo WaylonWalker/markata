@@ -11,7 +11,7 @@ main := "./cmd/markata"
 version := `git describe --tags --always --dirty 2>/dev/null || echo "dev"`
 commit := `git rev-parse --short HEAD 2>/dev/null || echo "none"`
 date := `date -u +"%Y-%m-%dT%H:%M:%SZ"`
-ldflags := "-s -w -X github.com/WaylonWalker/markata/cmd/markata/cmd.Version=" + version + " -X github.com/WaylonWalker/markata/cmd/markata/cmd.Commit=" + commit + " -X github.com/WaylonWalker/markata/cmd/markata/cmd.Date=" + date
+ldflags := "-s -w -X github.com/WaylonWalker/markata/cmd/markata-go/cmd.Version=" + version + " -X github.com/WaylonWalker/markata/cmd/markata-go/cmd.Commit=" + commit + " -X github.com/WaylonWalker/markata/cmd/markata-go/cmd.Date=" + date
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Development
