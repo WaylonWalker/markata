@@ -11,7 +11,6 @@
 <section class="image-library" data-image-library data-image-base="{{ image_library.BaseHref }}" data-image-page="{{ image_library.PageNumber }}" data-image-total-pages="{{ image_library.TotalPages }}" data-image-total-count="{{ image_library.Count }}" aria-labelledby="image-library-title">
   <header class="image-library__intro">
     <div>
-      <p class="image-library__eyebrow">Asset index</p>
       <h1 id="image-library-title">{{ title | default:"Image Library" }}</h1>
       {% if description %}<p class="image-library__description">{{ description }}</p>{% endif %}
     </div>
