@@ -18,6 +18,9 @@ viewport. Rich content outside cards loads its CSS immediately. Keep an
 immediate fallback when IntersectionObserver is unavailable. Search stays
 lazy until user intent, then reinitializes after SPA swaps.
 
-Do not hide or cap rendered cards. Test custom templates, embedded feeds,
-post cards, and normal article text. This is a narrow resource removal, not
-general per-page critical CSS extraction.
+Do not remove cards from the DOM or cap the feed. Editorial archives may use
+`content-visibility: auto` on offscreen cards, with an intrinsic-size estimate,
+to defer their layout until they approach the viewport. This keeps the complete
+content available to browser find, assistive technology, and printing. Test
+custom templates, embedded feeds, post cards, and normal article text. This is a
+narrow resource removal, not general per-page critical CSS extraction.

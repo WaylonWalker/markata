@@ -1473,6 +1473,12 @@ article.post > .post-content > .feed.h-feed {
     content-visibility: auto;
     contain-intrinsic-block-size: auto calc(var(--editorial-week-items, 6) * 700px);
   }
+
+  /* A long first week can still contain cards below the fold. */
+  .feed--editorial .editorial-entry > .card {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 280px;
+  }
 }
 
 /* Calendar styles are deferred in editorial list mode. Keep the intended
