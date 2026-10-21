@@ -22,6 +22,47 @@ Markata collects lightweight local diagnostics, then displays a **fuzzy picker**
 
 The command works with the new `markata` binary and the backwards-compatible `markata-go` binary.
 
+## Task-specific intake before agent handoff
+
+Triage can help with lint errors, broken Markdown features, or turning a written
+post into a richer presentation. In an interactive terminal, **missing intake
+flags become deterministic CLI questions** before the agent picker appears.
+Answers already supplied as flags are never asked again.
+
+```sh
+# Lint the whole site, or just a specific post
+markata triage lint --scope site
+markata triage lint --scope post --post posts/example.md
+
+# Fix a chart or Mermaid diagram that does not render
+markata triage post --post posts/example.md --action debug \
+  --feature chart --issue "The axis labels overlap"
+markata triage post --post posts/example.md --action debug \
+  --feature mermaid --issue "The diagram fails to parse"
+
+# Enhance existing writing with a road or other complex component
+markata triage post --post posts/history.md --action enhance \
+  --feature road --goal "Show the project's milestones as a static road"
+
+# Ask the CLI for the category, post, intent and feature first
+markata triage
+markata triage post
+```
+
+Available categories: `general`, `lint`, `post`. Lint asks for `--scope site|post`
+and a `--post` path when needed. Post tasks ask for a `--post` path, `--action
+debug|enhance|review`, and a `--feature chart|road|mermaid|markdown|other`
+for debugging or enhancement. Debugging asks for an `--issue`, while enhancement
+asks for a `--goal`. Paths are provided to the agent but never read by
+triage itself.
+
+With `--no-input` or redirected streams, no interactive question is
+presented. Missing intake answers are listed **in a fixed order inside the clean
+Markdown prompt**, so it remains safe to pipe or save. Existing generic
+`markata triage --issue ...` commands continue to work.
+Questions and destination choices are separate: triage collects what you want
+first and then lets you explicitly select the coding harness.
+
 ## Where the prompt goes
 
 | Option | Behavior |
