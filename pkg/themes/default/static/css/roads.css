@@ -33,7 +33,8 @@
   transition: background-color .5s, border-color .5s, box-shadow .5s;
 }
 .road-card {
-  position: absolute; top: 50%; width: max-content; max-width: 220px;
+  position: absolute; top: 50%; width: max-content; max-width: 220px; min-width: 0;
+  overflow-wrap: anywhere;
   opacity: 0; transform: translateY(-50%); transition: opacity .6s;
 }
 .road-card-right .road-card { left: var(--card-offset, 26px); }
