@@ -76,7 +76,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          latest=$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1)
+          latest=$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+
           if [[ -z "$latest" ]]; then echo "No stable semver tag; refusing to guess version" >&2; exit 1; fi
           base="${latest#v}"
           IFS=. read -r major minor patch <<< "$base"
@@ -125,7 +125,7 @@ jobs:
       - name: Assemble reviewed release-note fragments
         env:
           TAG: ${{ needs.validate.outputs.tag }}
-        run: python3 scripts/release-notes.py --version "$TAG" --output dist/RELEASE_NOTES.md
+        run: python3 scripts/release-notes.py --version "$TAG" --output $RUNNER_TEMP/RELEASE_NOTES.md
       - uses: sigstore/cosign-installer@v3
       - uses: anchore/sbom-action/download-syft@v0
       - name: Publish signed release
@@ -140,7 +140,77 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ needs.validate.outputs.tag }}
-        run: gh release edit "$TAG" --notes-file dist/RELEASE_NOTES.md
+        run: gh release edit "$TAG" --notes-file $RUNNER_TEMP/RELEASE_NOTES.md
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-artifacts
+          path: dist/*
+          retention-days: 30
+ | sort -V | tail -1 || true)
+          if [[ -z "$latest" ]]; then echo "No stable semver tag; refusing to guess version" >&2; exit 1; fi
+          base="${latest#v}"
+          IFS=. read -r major minor patch <<< "$base"
+          if [[ "$CHANNEL" == "stable" ]]; then
+            tag="v${major}.${minor}.$((patch + 1))"
+          else
+            tag="v${major}.${minor}.$((patch + 1))-nightly.$(date -u +%Y%m%d)"
+          fi
+          # Skip publishing when HEAD is unchanged since the last stable release.
+          if [[ "$(git rev-list -n 1 "$latest")" == "$GITHUB_SHA" ]]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          elif git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "Candidate: $tag" >> "$GITHUB_STEP_SUMMARY"
+  publish:
+    needs: validate
+    if: needs.validate.outputs.changed == 'true' && needs.validate.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    # Create 'stable-release' environment with required reviewers before enabling weekly stable releases.
+    environment: ${{ needs.validate.outputs.channel == 'stable' && 'stable-release' || 'nightly-release' }}
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v7
+        with:
+          go-version: '1.26'
+          cache: true
+      - name: Create immutable release tag
+        env:
+          TAG: ${{ needs.validate.outputs.tag }}
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git tag -a "$TAG" -m "Scheduled release $TAG"
+          git push origin "refs/tags/$TAG"
+          git checkout "$TAG"
+      - name: Assemble reviewed release-note fragments
+        env:
+          TAG: ${{ needs.validate.outputs.tag }}
+        run: python3 scripts/release-notes.py --version "$TAG" --output $RUNNER_TEMP/RELEASE_NOTES.md
+      - uses: sigstore/cosign-installer@v3
+      - uses: anchore/sbom-action/download-syft@v0
+      - name: Publish signed release
+        uses: goreleaser/goreleaser-action@v7
+        with:
+          distribution: goreleaser
+          version: '~> v2'
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Attach assembled release notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.validate.outputs.tag }}
+        run: gh release edit "$TAG" --notes-file $RUNNER_TEMP/RELEASE_NOTES.md
       - uses: actions/upload-artifact@v7
         with:
           name: release-artifacts
