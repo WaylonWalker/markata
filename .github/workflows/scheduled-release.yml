@@ -3,7 +3,7 @@ name: Scheduled release train
 on:
   schedule:
     # UTC; Central time shifts by an hour during daylight saving.
-    - cron: '0 7 * * *'
+    - cron: '0 7 * * 1-6'
     - cron: '0 8 * * 0'
   workflow_dispatch:
     inputs:
@@ -50,7 +50,7 @@ jobs:
         run: |
           if [[ "$EVENT" == "schedule" ]]; then
             if [[ "$SCHEDULE" == '0 8 * * 0' ]]; then channel=stable; else channel=nightly; fi
-            publish=true
+            publish=false # Scheduled publishing requires a separate, reviewed enablement PR
           else
             channel="$INPUT_CHANNEL"
             publish="$INPUT_PUBLISH"
@@ -85,7 +85,10 @@ jobs:
           else
             tag="v${major}.${minor}.$((patch + 1))-nightly.$(date -u +%Y%m%d)"
           fi
-          if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+          # Skip publishing when HEAD is unchanged since the last stable release.
+          if [[ "$(git rev-list -n 1 "$latest")" == "$GITHUB_SHA" ]]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          elif git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
@@ -119,6 +122,10 @@ jobs:
           git tag -a "$TAG" -m "Scheduled release $TAG"
           git push origin "refs/tags/$TAG"
           git checkout "$TAG"
+      - name: Assemble reviewed release-note fragments
+        env:
+          TAG: ${{ needs.validate.outputs.tag }}
+        run: python3 scripts/release-notes.py --version "$TAG" --output dist/RELEASE_NOTES.md
       - uses: sigstore/cosign-installer@v3
       - uses: anchore/sbom-action/download-syft@v0
       - name: Publish signed release
@@ -129,6 +136,11 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Attach assembled release notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.validate.outputs.tag }}
+        run: gh release edit "$TAG" --notes-file dist/RELEASE_NOTES.md
       - uses: actions/upload-artifact@v7
         with:
           name: release-artifacts
