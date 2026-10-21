@@ -274,6 +274,7 @@ func (r *containerHTMLRenderer) renderContainer(w util.BufWriter, _ []byte, n as
 // HTML meter/progress element. A visible Markdown caption remains ordinary
 // container content, and missing or invalid numeric data leaves that caption
 // intact without inserting a misleading bar. No client JavaScript is needed.
+//
 //nolint:errcheck // Writes to the Goldmark renderer are handled at the caller level.
 func (r *containerHTMLRenderer) renderGauge(w util.BufWriter, container *Container) {
 	tag := ""
