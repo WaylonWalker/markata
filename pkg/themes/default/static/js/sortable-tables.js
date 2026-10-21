@@ -10,14 +10,19 @@
 
     Array.from(headerRow.cells).forEach((cell, column) => {
       const label = cell.textContent.trim();
-      if (!label) return;
+      // Sorting controls may wrap formatted text but must not swallow
+      // links, nested controls, or incorrectly indexed spanning headers.
+      if (!label || cell.tagName !== 'TH' || cell.colSpan !== 1 ||
+          cell.querySelector('a, button, input, select, textarea, [tabindex]')) return;
 
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'table-sort-button';
-      button.textContent = label;
       button.setAttribute('aria-label', `Sort by ${label}`);
-      cell.replaceChildren(button);
+      // Preserve <code>, <em>, <abbr>, and other authored heading markup.
+      // Replacing the header with its text lost these details and links.
+      while (cell.firstChild) button.appendChild(cell.firstChild);
+      cell.appendChild(button);
       cell.setAttribute('aria-sort', 'none');
 
       button.addEventListener('click', () => {
