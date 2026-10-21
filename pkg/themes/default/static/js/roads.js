@@ -312,10 +312,18 @@
     const n = r.points.length;
     const sp = Number(r.root.dataset.roadSpacing) || SPACING[r.style] || 150;
     const w = r.inner.clientWidth;
-    const out = LAYOUTS[r.style](n, w, sp, r);
+    // A road can share a Markdown container with prose. Reserve its own block
+    // and make room for labels rather than letting absolutely positioned
+    // milestones paint over following article paragraphs.
+    const cardHeights = r.points.map((p) => {
+      const card = p.el.querySelector(".road-card");
+      return card ? card.getBoundingClientRect().height : 0;
+    });
+    const safeSpacing = Math.max(sp, ...cardHeights.map((h) => Math.ceil(h + 48)));
+    const out = LAYOUTS[r.style](n, w, safeSpacing, r);
     r.h = out.h;
     r.stops = out.stops;
-    r.inner.style.height = `${out.h}px`;
+    r.inner.style.height = `${out.h}px`;\n    r.root.style.display = "flow-root";
     r.svg.setAttribute("viewBox", `0 0 ${w} ${out.h}`);
 
     r.points.forEach((p, i) => {
