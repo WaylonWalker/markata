@@ -2,7 +2,9 @@
 package plugins
 
 import (
+	"math"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/yuin/goldmark"
@@ -260,11 +262,53 @@ func (r *containerHTMLRenderer) renderContainer(w util.BufWriter, _ []byte, n as
 		}
 
 		_, _ = w.WriteString(">\n")
+		r.renderGauge(w, container)
 	} else {
 		_, _ = w.WriteString("</div>\n")
 	}
 
 	return ast.WalkContinue, nil
+}
+
+// renderGauge turns an opt-in Markdown container into a native, accessible
+// HTML meter/progress element. A visible Markdown caption remains ordinary
+// container content, and missing or invalid numeric data leaves that caption
+// intact without inserting a misleading bar. No client JavaScript is needed.
+func (r *containerHTMLRenderer) renderGauge(w util.BufWriter, container *Container) {
+	tag := ""
+	for _, class := range container.Classes {
+		switch class {
+		case "md-meter":
+			tag = "meter"
+		case "md-progress":
+			tag = "progress"
+		}
+	}
+	if tag == "" {
+		return
+	}
+
+	valueText, hasValue := container.ExtraAttrs["data-value"]
+	maxText, hasMax := container.ExtraAttrs["data-max"]
+	label := strings.TrimSpace(container.ExtraAttrs["data-label"])
+	if !hasValue || !hasMax || label == "" {
+		return
+	}
+	value, valueErr := strconv.ParseFloat(valueText, 64)
+	max, maxErr := strconv.ParseFloat(maxText, 64)
+	if valueErr != nil || maxErr != nil ||
+		math.IsNaN(value) || math.IsNaN(max) ||
+		math.IsInf(value, 0) || math.IsInf(max, 0) ||
+		max <= 0 || value < 0 || value > max {
+		return
+	}
+
+	// Emit canonical numbers only; label text remains safely escaped.
+	_, _ = w.WriteString("<" + tag + ` value="` + strconv.FormatFloat(value, 'f', -1, 64))
+	_, _ = w.WriteString(`" max="` + strconv.FormatFloat(max, 'f', -1, 64))
+	_, _ = w.WriteString(`" aria-label="` + escapeHTMLAttr(label) + `">`)
+	_, _ = w.WriteString(strconv.FormatFloat(value, 'f', -1, 64) + " / " + strconv.FormatFloat(max, 'f', -1, 64))
+	_, _ = w.WriteString("</" + tag + ">\n")
 }
 
 // escapeHTMLAttr escapes a string for use in an HTML attribute.
