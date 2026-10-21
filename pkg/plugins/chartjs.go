@@ -134,21 +134,41 @@ func (p *ChartJSPlugin) processPost(post *models.Post) error {
 </div>`, p.config.ContainerClass, html.EscapeString(err.Error()))
 		}
 
-		// Generate a unique ID for this chart
+		// Re-encode decoded JSON using encoding/json's HTML-safe escaping.
+		// Inline scripts must never contain an authored </script> sequence.
+		safeJSON, err := json.Marshal(chartConfig)
+		if err != nil {
+			return match
+		}
+
+		// Generate a unique ID for this chart.
 		chartID := fmt.Sprintf("chartjs-%d", atomic.AddUint64(&p.idCounter, 1))
 
-		// Create the initialization script for this chart
+		// Render a real data table (or the configuration for unusual charts)
+		// so the data remains available with JavaScript disabled or offline.
+		fallback := chartStaticFallback(chartConfig, string(safeJSON))
+
+		// Keep the fallback present and inspectable. Collapse it only after
+		// Chart.js successfully initializes; never hide it when scripts fail.
 		initScript := fmt.Sprintf(`
   (function() {
     const ctx = document.getElementById('%s');
-    new Chart(ctx, %s);
-  })();`, chartID, jsonContent)
+    if (!ctx || typeof Chart !== 'function') return;
+    ctx.hidden = false;
+    try {
+      new Chart(ctx, %s);
+      const data = document.getElementById('%s-data');
+      if (data) data.open = false;
+    } catch (error) {
+      ctx.hidden = true;
+    }
+  })();`, chartID, string(safeJSON), chartID)
 		initScripts = append(initScripts, initScript)
 
-		// Return the canvas element
 		return fmt.Sprintf(`<div class="%s">
-  <canvas id="%s"></canvas>
-</div>`, p.config.ContainerClass, chartID)
+  <canvas id="%s" hidden role="img" aria-label="Chart visualization; expand Chart data for exact values"></canvas>
+  <div id="%s-data">%s</div>
+</div>`, html.EscapeString(p.config.ContainerClass), chartID, chartID, fallback)
 	})
 
 	// If we found chartjs blocks, inject the scripts
@@ -158,6 +178,60 @@ func (p *ChartJSPlugin) processPost(post *models.Post) error {
 
 	post.ArticleHTML = result
 	return nil
+}
+
+// chartStaticFallback provides semantic source data for non-JavaScript readers.
+// Common categorical chart types become an accessible table. Less-structured
+// Chart.js configurations preserve their JSON for inspection instead.
+func chartStaticFallback(config map[string]interface{}, source string) string {
+	data, _ := config["data"].(map[string]interface{})
+	labels, _ := data["labels"].([]interface{})
+	series, _ := data["datasets"].([]interface{})
+	if len(labels) > 0 && len(labels) <= 200 && len(series) > 0 && len(series) <= 12 {
+		var table strings.Builder
+		table.WriteString(`<details class="chartjs-data" open><summary>Chart data</summary><table><caption>Chart data</caption><thead><tr><th scope="col">Label</th>`)
+		for i, raw := range series {
+			dataset, ok := raw.(map[string]interface{})
+			if !ok {
+				return chartConfigFallback(source)
+			}
+			values, ok := dataset["data"].([]interface{})
+			if !ok || len(values) != len(labels) {
+				return chartConfigFallback(source)
+			}
+			label, _ := dataset["label"].(string)
+			if label == "" {
+				label = fmt.Sprintf("Series %d", i+1)
+			}
+			table.WriteString(`<th scope="col">`)
+			table.WriteString(html.EscapeString(label))
+			table.WriteString("</th>")
+		}
+		table.WriteString("</tr></thead><tbody>")
+		for i, label := range labels {
+			table.WriteString(`<tr><th scope="row">`)
+			table.WriteString(html.EscapeString(fmt.Sprint(label)))
+			table.WriteString("</th>")
+			for _, raw := range series {
+				dataset := raw.(map[string]interface{})
+				values := dataset["data"].([]interface{})
+				table.WriteString("<td>")
+				if values[i] != nil {
+					table.WriteString(html.EscapeString(fmt.Sprint(values[i])))
+				}
+				table.WriteString("</td>")
+			}
+			table.WriteString("</tr>")
+		}
+		table.WriteString("</tbody></table></details>")
+		return table.String()
+	}
+	return chartConfigFallback(source)
+}
+
+func chartConfigFallback(source string) string {
+	return `<details class="chartjs-data" open><summary>Chart configuration</summary><pre><code>` +
+		html.EscapeString(source) + "</code></pre></details>"
 }
 
 // injectChartJSScripts adds the Chart.js library and initialization scripts to the HTML.
