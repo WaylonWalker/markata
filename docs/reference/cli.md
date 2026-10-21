@@ -99,7 +99,11 @@ markata triage post --post posts/story.md --action enhance --feature road --goal
 | `--goal` | Desired enhancement (4000-byte limit) |
 
 Interactive missing values are asked **in a deterministic order** before the
-destination picker. Noninteractive use never reads stdin for answers: missing
+destination picker. Category, scope, action, and feature use a searchable fuzzy
+picker. Missing `--post` values show a fuzzy list of local Markdown paths from
+common content folders, with manual entry as a fallback. Only filenames are
+scanned; Markata does not parse the post contents. Escape cancels safely.
+Noninteractive use never reads stdin for answers: missing
 questions become an ordered section of the emitted prompt, with clean
 prompt-only stdout preserved. Supplied answers are not asked again.
 
