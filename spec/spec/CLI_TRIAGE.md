@@ -41,8 +41,17 @@ collect missing fields before selecting the destination, in this order:
    an issue description for debug or a goal for enhance.
 
 Supplied values MUST be validated, not asked again; incompatible category/flag
-combinations must fail clearly. User text and post path are bounded. Triage
-MUST NOT read or modify the referenced post to produce the prompt.
+combinations must fail clearly. User text and post path are bounded.
+
+Missing enumerated values MUST use a fuzzy-search picker with informative labels.
+For a missing post path, enumerate Markdown **filenames only** in common content
+folders, bounded to 5000 candidates and restricted against symlink traversal,
+hidden or generated directories, and repository metadata. Provide a manual
+path option even when candidates exist. If none are discovered or the site
+is unavailable, ask for a manual path. Never parse content/config files to
+create the picker, and never perform discovery in noninteractive mode or when
+`--post` is supplied. Escape cancels intake without launching an agent or
+emitting a prompt.
 
 For non-TTY use or `--no-input`, never consume stdin for intake or
 print questions to stderr: include any unanswered questions in order in the
