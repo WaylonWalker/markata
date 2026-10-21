@@ -5230,3 +5230,28 @@ body.reader-mode::after {
     }
   }
 }
+
+/* Chart.js no-JS data stays usable on narrow article columns. */
+@layer components {
+  .post-content .chartjs-data {
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    margin-block: var(--space-4, 1rem);
+  }
+  .post-content .chartjs-data > summary {
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .post-content .chartjs-data > summary:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+  .post-content .chartjs-data > table {
+    width: max-content;
+    max-width: none;
+    min-width: 100%;
+    margin-inline: 0;
+  }
+}
