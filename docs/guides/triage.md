@@ -26,7 +26,11 @@ The command works with the new `markata` binary and the backwards-compatible `ma
 
 Triage can help with lint errors, broken Markdown features, or turning a written
 post into a richer presentation. In an interactive terminal, **missing intake
-flags become deterministic CLI questions** before the agent picker appears.
+flags become deterministic fuzzy-search choices** before the agent picker appears.
+Category, scope, action, and feature are searchable menus with descriptions.
+When a post is needed, triage offers a fuzzy picker of local Markdown filenames
+from common content directories, plus **Enter a Markdown path manually**.
+Issue descriptions and enhancement goals remain free-text questions.
 Answers already supplied as flags are never asked again.
 
 ```sh
