@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"bytes"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -25,16 +27,45 @@ func resetTriageIntakeFlags(t *testing.T) {
 
 func TestTriageIntakeInteractiveQuestionsInFixedOrder(t *testing.T) {
 	resetTriageIntakeFlags(t)
+	beforeSiteDir := siteDir
+	t.Cleanup(func() { siteDir = beforeSiteDir })
+	siteDir = t.TempDir()
+	post := filepath.Join(siteDir, "posts", "story.md")
+	if err := os.MkdirAll(filepath.Dir(post), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(post, []byte("# Story"), 0o600); err != nil {
+		t.Fatal(err)
+	}
 	var errOutput bytes.Buffer
 	cmd := &cobra.Command{Use: "triage"}
-	cmd.SetIn(strings.NewReader("post\nposts/story.md\nenhance\nroad\nturn existing history into a visual timeline\n"))
+	cmd.SetIn(strings.NewReader("turn existing history into a visual timeline\n"))
 	cmd.SetErr(&errOutput)
-	req, issue, err := resolveTriageIntake(cmd, true)
+	expected := []string{"category", "post", "action", "feature"}
+	values := map[string]string{
+		"category": "post", "post": "posts/story.md",
+		"action": "enhance", "feature": "road",
+	}
+	i := 0
+	picker := func(q triageQuestion, options []string) (string, error) {
+		if i >= len(expected) || q.key != expected[i] {
+			t.Fatalf("picker order: got %s at position %d, wanted %v", q.key, i, expected)
+		}
+		i++
+		for _, option := range options {
+			if option == values[q.key] {
+				return option, nil
+			}
+		}
+		t.Fatalf("expected fuzzy option %q for %s, got %v", values[q.key], q.key, options)
+		return "", nil
+	}
+	req, issue, err := resolveTriageIntakeWithPicker(cmd, true, picker)
 	if err != nil {
 		t.Fatalf("intake failed: %v", err)
 	}
-	if issue != "" || req.Category != "post" || req.Post != "posts/story.md" || req.Action != "enhance" || req.Feature != "road" || req.Goal != "turn existing history into a visual timeline" {
-		t.Fatalf("unexpected intake: %#v; issue=%q", req, issue)
+	if i != len(expected) || issue != "" || req.Category != "post" || req.Post != "posts/story.md" || req.Action != "enhance" || req.Feature != "road" || req.Goal != "turn existing history into a visual timeline" {
+		t.Fatalf("unexpected intake: %#v; issue=%q; picks=%d", req, issue, i)
 	}
 	if len(req.Missing) != 0 {
 		t.Fatalf("interactive intake left missing questions: %v", req.Missing)
