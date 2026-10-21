@@ -17,6 +17,8 @@ All examples below render as static HTML with no JavaScript.
 :::: md-box {data-align="center"}
 ### Falcon3 — Kubernetes
 Two deployments, shared published site volume.
+
+
 ::::
 
 :::: md-columns {data-gap="sm"}
@@ -24,22 +26,34 @@ Two deployments, shared published site volume.
 ::::: md-card {data-align="center"}
 ### Website
 Nginx serves current release.
+
+
 :::::
 
 ::::: md-card {data-align="center"}
 ### Builder Admin
 Builds and publishes releases.
+
+
 :::::
+
+
 
 ::::
 
 :::: md-connector {data-direction="both"}
+
+
 ::::
 
 :::: md-box {data-align="center"}
 ### Shared `/data/site` Longhorn PVC
 Replicated storage: NVMe + HDD.
+
+
 ::::
+
+
 
 :::
 
@@ -54,6 +68,8 @@ Replicated storage: NVMe + HDD.
 | --- | ---: |
 | Falcon2 | 3 TB |
 | Falcon3 | 4 TB |
+
+
 ::::
 
 :::: md-card
@@ -63,7 +79,11 @@ Replicated storage: NVMe + HDD.
 | --- | ---: |
 | Falcon2 | 3 TB |
 | Falcon3 | 14 TB |
+
+
 ::::
+
+
 
 :::
 
@@ -74,17 +94,25 @@ Replicated storage: NVMe + HDD.
 :::: md-box
 ### Fast
 Static first.
+
+
 ::::
 
 :::: md-box
 ### Accessible
 Normal Markdown remains readable.
+
+
 ::::
 
 :::: md-box
 ### Themed
 Inherits active palette variables.
+
+
 ::::
+
+
 
 :::
 
@@ -93,12 +121,18 @@ Inherits active palette variables.
 ::: md-stack
 :::: md-card
 First step: deploy a change.
+
+
 ::::
 
 :::: md-divider
+
+
 ::::
 
 :::: md-card
 Second step: verify the result.
+
+
 ::::
 :::
