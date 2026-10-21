@@ -57,9 +57,38 @@ outside all entries.
 |-----------|---------|
 | `data-road="STYLE"` | Selects a style. |
 | `data-road-spacing="N"` | Vertical pixels per point for list styles with vertical spacing. |
+| `data-road-progress-mode="scroll|static|milestones"` | Progress source; defaults to `scroll`. |
+| `data-road-progress="N"` | Static percentage from 0 to 100 (optional `%` suffix). |
+| `data-road-current="N"` | Number of completed milestones (0 through the number of entries). |
 
 The `--road-accent` and `--road-muted` CSS custom properties set the colors.
 They default to `--color-primary` and `--color-border-strong`.
+
+### Fixed progress
+
+Use existing Markdown container attributes; no new fenced-code parser is needed:
+
+```markdown
+::: road timeline {data-road-progress-mode="static" data-road-progress="65"}
+- [Design](/design/)
+- [Build](/build/)
+- [Release](/release/)
+:::
+
+::: road steps {data-road-progress-mode="milestones" data-road-current="2"}
+- [Design](/design/)
+- [Build](/build/)
+- [Test](/test/)
+- [Release](/release/)
+:::
+```
+
+Static progress accepts percentages from 0 to 100. Milestone progress divides
+the number of completed entries by the total number of entries. Both modes
+MUST remain unchanged on scroll, including after resize and view transitions.
+Invalid fixed-progress configuration falls back to scroll progress. In fixed
+modes, reduced-motion preferences MUST NOT override the authored value.
+The original linked list MUST remain readable without JavaScript.
 
 ## Styles
 
@@ -100,10 +129,11 @@ In the `git` style the label names the commit's branch:
   If the road is still not built after 2.5 seconds, CSS MUST show the raw
   content. A built road SHOULD fade in, except with reduced motion.
 - A page MAY contain any number of roads, in any mix of styles.
-- The drawn progress MUST follow the reader's scroll position. A point or entry
-  MUST be marked `active` when the progress reaches it.
-- When the reader prefers reduced motion, roads MUST render fully drawn without
-  animation.
+- Scroll-mode progress MUST follow the reader's scroll position. Fixed modes
+  MUST use the authored value instead. A point or entry MUST be marked `active`
+  when progress reaches it.
+- When the reader prefers reduced motion, scroll-mode roads MUST render fully
+  drawn without animation; fixed modes MUST retain their specified progress.
 - Roads MUST lay out again when their width changes.
 - Point links MUST stay focusable and navigable. When a link has no hover data
   of its own, it MUST get `data-hover-title` from its title and
