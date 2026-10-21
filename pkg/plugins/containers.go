@@ -274,6 +274,7 @@ func (r *containerHTMLRenderer) renderContainer(w util.BufWriter, _ []byte, n as
 // HTML meter/progress element. A visible Markdown caption remains ordinary
 // container content, and missing or invalid numeric data leaves that caption
 // intact without inserting a misleading bar. No client JavaScript is needed.
+//nolint:errcheck // Writes to the Goldmark renderer are handled at the caller level.
 func (r *containerHTMLRenderer) renderGauge(w util.BufWriter, container *Container) {
 	tag := ""
 	for _, class := range container.Classes {
@@ -295,19 +296,19 @@ func (r *containerHTMLRenderer) renderGauge(w util.BufWriter, container *Contain
 		return
 	}
 	value, valueErr := strconv.ParseFloat(valueText, 64)
-	max, maxErr := strconv.ParseFloat(maxText, 64)
+	maximum, maxErr := strconv.ParseFloat(maxText, 64)
 	if valueErr != nil || maxErr != nil ||
-		math.IsNaN(value) || math.IsNaN(max) ||
-		math.IsInf(value, 0) || math.IsInf(max, 0) ||
-		max <= 0 || value < 0 || value > max {
+		math.IsNaN(value) || math.IsNaN(maximum) ||
+		math.IsInf(value, 0) || math.IsInf(maximum, 0) ||
+		maximum <= 0 || value < 0 || value > maximum {
 		return
 	}
 
 	// Emit canonical numbers only; label text remains safely escaped.
 	_, _ = w.WriteString("<" + tag + ` value="` + strconv.FormatFloat(value, 'f', -1, 64))
-	_, _ = w.WriteString(`" max="` + strconv.FormatFloat(max, 'f', -1, 64))
+	_, _ = w.WriteString(`" max="` + strconv.FormatFloat(maximum, 'f', -1, 64))
 	_, _ = w.WriteString(`" aria-label="` + escapeHTMLAttr(label) + `">`)
-	_, _ = w.WriteString(strconv.FormatFloat(value, 'f', -1, 64) + " / " + strconv.FormatFloat(max, 'f', -1, 64))
+	_, _ = w.WriteString(strconv.FormatFloat(value, 'f', -1, 64) + " / " + strconv.FormatFloat(maximum, 'f', -1, 64))
 	_, _ = w.WriteString("</" + tag + ">\n")
 }
 
