@@ -776,19 +776,122 @@ table {
 }
 
 th, td {
-  padding: var(--space-3);
+  padding: .7rem .85rem;
   text-align: left;
   border-bottom: 1px solid var(--color-border-soft);
 }
 
-/* Long unbroken values (URLs, dotted keys) must not push tables past the column. */
+.post-content > table {
+  position: relative;
+  left: 50%;
+  width: min(1200px, calc(100vw - 3rem));
+  max-width: none;
+  margin-inline: 0;
+  transform: translateX(-50%);
+}
+
+/* Keep table values intact; the table itself scrolls when its columns need room. */
 .post-content :is(th, td) {
-  overflow-wrap: anywhere;
+  overflow-wrap: normal;
+  vertical-align: top;
 }
 
 th {
   font-weight: 600;
   background: color-mix(in srgb, var(--color-surface) 70%, transparent);
+  border-bottom: 2px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.table-sort-button {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  min-height: 0;
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  font: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  text-align: inherit;
+  cursor: pointer;
+  transition: color .15s ease;
+}
+
+.table-sort-button:hover {
+  color: var(--color-primary);
+  background: transparent;
+  border-color: transparent;
+}
+
+.table-sort-button::after {
+  content: '↕';
+  display: inline-block;
+  width: 1ch;
+  flex: 0 0 1ch;
+  color: var(--color-text-muted);
+  opacity: .55;
+  font-size: .75em;
+  line-height: 1;
+  text-align: center;
+}
+
+th[aria-sort="ascending"] .table-sort-button::after,
+th[aria-sort="descending"] .table-sort-button::after {
+  color: var(--color-primary);
+  opacity: 1;
+}
+
+th[aria-sort="ascending"] .table-sort-button::after { content: '↑'; }
+th[aria-sort="descending"] .table-sort-button::after { content: '↓'; }
+
+.table-sort-button:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 4px;
+  border-radius: 2px;
+}
+
+.post-content tbody tr:nth-child(even) {
+  background: color-mix(in srgb, var(--color-surface) 32%, transparent);
+}
+
+.post-content tbody tr:hover {
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+}
+
+@media (max-width: 900px) {
+  .post-content > table {
+    width: calc(100vw - 2rem);
+    font-size: clamp(.7rem, 1.7vw, .9rem);
+  }
+
+  .post-content > table :is(th, td) {
+    padding: .55rem .65rem;
+  }
+}
+
+@media (max-width: 560px) {
+  .post-content > table {
+    display: block;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: thin;
+  }
+
+  .post-content > table thead,
+  .post-content > table tbody,
+  .post-content > table tr {
+    width: max-content;
+  }
+
+  .post-content > table th,
+  .post-content > table td {
+    white-space: normal;
+    min-width: 5.5rem;
+  }
 }
 
 /* Horizontal rule */

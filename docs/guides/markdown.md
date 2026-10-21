@@ -465,6 +465,12 @@ markata-go supports GitHub Flavored Markdown extensions.
 
 Tables use pipes (`|`) and hyphens (`-`) to define structure. Use colons (`:`) for alignment.
 
+Tables with a header row are sortable in rendered posts. Activate a column by
+selecting its header; select it again to reverse the order. Text sorts naturally,
+numeric values sort numerically, and empty cells stay at the end. The sorting
+controls are keyboard accessible. The small sorting script is loaded only on
+pages that contain a header table.
+
 **Input:**
 
 ```markdown
