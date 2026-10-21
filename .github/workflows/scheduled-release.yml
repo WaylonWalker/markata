@@ -1,239 +1,69 @@
-name: Scheduled release train
+name: Scheduled release dry run
 
 on:
   schedule:
-    # UTC; Central time shifts by an hour during daylight saving.
     - cron: '0 7 * * 1-6'
     - cron: '0 8 * * 0'
   workflow_dispatch:
     inputs:
       channel:
-        description: 'nightly or stable'
+        description: 'Candidate channel'
         required: true
         type: choice
         options: [nightly, stable]
         default: nightly
-      publish:
-        description: 'Publish release (otherwise dry-run)'
-        required: true
-        type: boolean
-        default: false
-
-concurrency:
-  group: scheduled-release-train
-  cancel-in-progress: false
 
 permissions:
   contents: read
 
+concurrency:
+  group: scheduled-release-dry-run
+  cancel-in-progress: false
+
 jobs:
-  validate:
+  verify:
     runs-on: ubuntu-latest
-    outputs:
-      channel: ${{ steps.mode.outputs.channel }}
-      publish: ${{ steps.mode.outputs.publish }}
-      tag: ${{ steps.version.outputs.tag }}
-      changed: ${{ steps.version.outputs.changed }}
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           persist-credentials: false
-      - name: Determine channel
-        id: mode
-        env:
-          EVENT: ${{ github.event_name }}
-          INPUT_CHANNEL: ${{ inputs.channel }}
-          INPUT_PUBLISH: ${{ inputs.publish }}
-          SCHEDULE: ${{ github.event.schedule }}
-        shell: bash
-        run: |
-          if [[ "$EVENT" == "schedule" ]]; then
-            if [[ "$SCHEDULE" == '0 8 * * 0' ]]; then channel=stable; else channel=nightly; fi
-            publish=false # Scheduled publishing requires a separate, reviewed enablement PR
-          else
-            channel="$INPUT_CHANNEL"
-            publish="$INPUT_PUBLISH"
-          fi
-          if [[ "$publish" == "true" ]]; then
-            echo 'Publishing remains disabled until release safeguards are reviewed.' >&2
-            exit 1
-          fi
-          echo "channel=$channel" >> "$GITHUB_OUTPUT"
-          echo "publish=$publish" >> "$GITHUB_OUTPUT"
       - uses: actions/setup-go@v7
         with:
           go-version: '1.26'
           cache: true
-      - name: Test release-note assembler
+      - name: Validate release-note fragments
         run: python3 -m unittest discover -s scripts -p 'test_release_notes.py' -v
-      - name: Full race tests
+      - name: Assemble release-note preview
+        run: |
+          python3 scripts/release-notes.py --version candidate --output "$RUNNER_TEMP/RELEASE_NOTES.md"
+          test -s "$RUNNER_TEMP/RELEASE_NOTES.md"
+          cat "$RUNNER_TEMP/RELEASE_NOTES.md" >> "$GITHUB_STEP_SUMMARY"
+      - name: Full Go race tests
         run: go test -race -timeout=30m ./...
-      - name: Validate GoReleaser configuration
+      - name: Check GoReleaser config
         uses: goreleaser/goreleaser-action@v7
         with:
           distribution: goreleaser
           version: '~> v2'
           args: check
-      - name: Snapshot build (dry-run artifact verification)
+      - name: Build release snapshot without publishing
         uses: goreleaser/goreleaser-action@v7
         with:
           distribution: goreleaser
           version: '~> v2'
           args: release --snapshot --clean
-      - name: Assemble candidate release notes
-        run: python3 scripts/release-notes.py --version candidate --output "$RUNNER_TEMP/RELEASE_NOTES.md"
-      - name: Inspect snapshot outputs
+      - name: Inspect build artifacts
         shell: bash
         run: |
           set -euo pipefail
           test -s dist/checksums.txt
-          find dist -type f | sort | head -60
-          test -s "$RUNNER_TEMP/RELEASE_NOTES.md"
-      - name: Compute immutable release tag
-        id: version
-        env:
-          CHANNEL: ${{ steps.mode.outputs.channel }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          latest=$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+
-          if [[ -z "$latest" ]]; then echo "No stable semver tag; refusing to guess version" >&2; exit 1; fi
-          base="${latest#v}"
-          IFS=. read -r major minor patch <<< "$base"
-          if [[ "$CHANNEL" == "stable" ]]; then
-            tag="v${major}.${minor}.$((patch + 1))"
-          else
-            tag="v${major}.${minor}.$((patch + 1))-nightly.$(date -u +%Y%m%d)"
-          fi
-          # Skip publishing when HEAD is unchanged since the last stable release.
-          if [[ "$(git rev-list -n 1 "$latest")" == "$GITHUB_SHA" ]]; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-          elif git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-          fi
-          echo "tag=$tag" >> "$GITHUB_OUTPUT"
-          echo "Candidate: $tag" >> "$GITHUB_STEP_SUMMARY"
-  publish:
-    needs: validate
-    if: false # publishing is intentionally disabled until a separate reviewed enablement PR
-    runs-on: ubuntu-latest
-    # Create 'stable-release' environment with required reviewers before enabling weekly stable releases.
-    environment: ${{ needs.validate.outputs.channel == 'stable' && 'stable-release' || 'nightly-release' }}
-    permissions:
-      contents: write
-      id-token: write
-    steps:
-      - uses: actions/checkout@v7
+          find dist -type f | sort
+          grep -q 'markata' dist/checksums.txt
+      - name: Upload dry-run artifacts
+        uses: actions/upload-artifact@v7
         with:
-          fetch-depth: 0
-      - uses: actions/setup-go@v7
-        with:
-          go-version: '1.26'
-          cache: true
-      - name: Create immutable release tag
-        env:
-          TAG: ${{ needs.validate.outputs.tag }}
-        run: |
-          set -euo pipefail
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git tag -a "$TAG" -m "Scheduled release $TAG"
-          git push origin "refs/tags/$TAG"
-          git checkout "$TAG"
-      - name: Assemble reviewed release-note fragments
-        env:
-          TAG: ${{ needs.validate.outputs.tag }}
-        run: python3 scripts/release-notes.py --version "$TAG" --output $RUNNER_TEMP/RELEASE_NOTES.md
-      - uses: sigstore/cosign-installer@v3
-      - uses: anchore/sbom-action/download-syft@v0
-      - name: Publish signed release
-        uses: goreleaser/goreleaser-action@v7
-        with:
-          distribution: goreleaser
-          version: '~> v2'
-          args: release --clean
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Attach assembled release notes
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ needs.validate.outputs.tag }}
-        run: gh release edit "$TAG" --notes-file $RUNNER_TEMP/RELEASE_NOTES.md
-      - uses: actions/upload-artifact@v7
-        with:
-          name: release-artifacts
-          path: dist/*
-          retention-days: 30
- | sort -V | tail -1 || true)
-          if [[ -z "$latest" ]]; then echo "No stable semver tag; refusing to guess version" >&2; exit 1; fi
-          base="${latest#v}"
-          IFS=. read -r major minor patch <<< "$base"
-          if [[ "$CHANNEL" == "stable" ]]; then
-            tag="v${major}.${minor}.$((patch + 1))"
-          else
-            tag="v${major}.${minor}.$((patch + 1))-nightly.$(date -u +%Y%m%d)"
-          fi
-          # Skip publishing when HEAD is unchanged since the last stable release.
-          if [[ "$(git rev-list -n 1 "$latest")" == "$GITHUB_SHA" ]]; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-          elif git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-          fi
-          echo "tag=$tag" >> "$GITHUB_OUTPUT"
-          echo "Candidate: $tag" >> "$GITHUB_STEP_SUMMARY"
-  publish:
-    needs: validate
-    if: needs.validate.outputs.changed == 'true' && needs.validate.outputs.publish == 'true'
-    runs-on: ubuntu-latest
-    # Create 'stable-release' environment with required reviewers before enabling weekly stable releases.
-    environment: ${{ needs.validate.outputs.channel == 'stable' && 'stable-release' || 'nightly-release' }}
-    permissions:
-      contents: write
-      id-token: write
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-      - uses: actions/setup-go@v7
-        with:
-          go-version: '1.26'
-          cache: true
-      - name: Create immutable release tag
-        env:
-          TAG: ${{ needs.validate.outputs.tag }}
-        run: |
-          set -euo pipefail
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git tag -a "$TAG" -m "Scheduled release $TAG"
-          git push origin "refs/tags/$TAG"
-          git checkout "$TAG"
-      - name: Assemble reviewed release-note fragments
-        env:
-          TAG: ${{ needs.validate.outputs.tag }}
-        run: python3 scripts/release-notes.py --version "$TAG" --output $RUNNER_TEMP/RELEASE_NOTES.md
-      - uses: sigstore/cosign-installer@v3
-      - uses: anchore/sbom-action/download-syft@v0
-      - name: Publish signed release
-        uses: goreleaser/goreleaser-action@v7
-        with:
-          distribution: goreleaser
-          version: '~> v2'
-          args: release --clean
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Attach assembled release notes
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ needs.validate.outputs.tag }}
-        run: gh release edit "$TAG" --notes-file $RUNNER_TEMP/RELEASE_NOTES.md
-      - uses: actions/upload-artifact@v7
-        with:
-          name: release-artifacts
-          path: dist/*
-          retention-days: 30
+          name: scheduled-release-snapshot
+          path: |
+            dist/**
+          retention-days: 7
