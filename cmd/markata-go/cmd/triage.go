@@ -25,20 +25,20 @@ const (
 )
 
 var (
-	triageTo    string
-	triageAgent string
-	triageIssue string
+	triageTo       string
+	triageAgent    string
+	triageIssue    string
 	triageCategory string
-	triageScope string
-	triagePost string
-	triageAction string
-	triageFeature string
-	triageGoal string
+	triageScope    string
+	triagePost     string
+	triageAction   string
+	triageFeature  string
+	triageGoal     string
 )
 
 var triageCmd = &cobra.Command{
 	Use:   "triage",
-	Short: "Help a coding agent troubleshoot this Markata installation",
+	Short: "Collect structured site or post context before an agent handoff",
 	Long: "Generate a privacy-conscious troubleshooting prompt, then choose an installed\n" +
 		"coding agent, clipboard, or stdout. In a pipeline, stdout is selected\n" +
 		"automatically. No agent launches unless explicitly selected.\n\n" +
