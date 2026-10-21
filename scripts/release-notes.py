@@ -25,7 +25,7 @@ def build(root: Path, version: str) -> str:
             continue
         lines.extend([f"## {TITLES[category]}", ""])
         for number, body in sorted(items[category]):
-            lines.append(f"- {body} (# {number})".replace("(# ", "(#"))
+            lines.append(f"- {body} (#{number})")
         lines.append("")
     if not any(items.values()):
         lines.extend(["No reviewed release-note fragments are available for this release.", ""])
