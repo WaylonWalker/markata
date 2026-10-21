@@ -189,7 +189,7 @@ func chartStaticFallback(config map[string]interface{}, source string) string {
 	series, _ := data["datasets"].([]interface{})
 	if len(labels) > 0 && len(labels) <= 200 && len(series) > 0 && len(series) <= 12 {
 		var table strings.Builder
-		table.WriteString(`<details class="chartjs-data" open><summary>Chart data</summary><table><caption>Chart data</caption><thead><tr><th scope="col">Label</th>`)
+		_, _ = table.WriteString(`<details class="chartjs-data" open><summary>Chart data</summary><table><caption>Chart data</caption><thead><tr><th scope="col">Label</th>`)
 		for i, raw := range series {
 			dataset, ok := raw.(map[string]interface{})
 			if !ok {
@@ -203,27 +203,27 @@ func chartStaticFallback(config map[string]interface{}, source string) string {
 			if label == "" {
 				label = fmt.Sprintf("Series %d", i+1)
 			}
-			table.WriteString(`<th scope="col">`)
-			table.WriteString(html.EscapeString(label))
-			table.WriteString("</th>")
+			_, _ = table.WriteString(`<th scope="col">`)
+			_, _ = table.WriteString(html.EscapeString(label))
+			_, _ = table.WriteString("</th>")
 		}
-		table.WriteString("</tr></thead><tbody>")
+		_, _ = table.WriteString("</tr></thead><tbody>")
 		for i, label := range labels {
-			table.WriteString(`<tr><th scope="row">`)
-			table.WriteString(html.EscapeString(fmt.Sprint(label)))
-			table.WriteString("</th>")
+			_, _ = table.WriteString(`<tr><th scope="row">`)
+			_, _ = table.WriteString(html.EscapeString(fmt.Sprint(label)))
+			_, _ = table.WriteString("</th>")
 			for _, raw := range series {
 				dataset := raw.(map[string]interface{})
 				values := dataset["data"].([]interface{})
-				table.WriteString("<td>")
+				_, _ = table.WriteString("<td>")
 				if values[i] != nil {
-					table.WriteString(html.EscapeString(fmt.Sprint(values[i])))
+					_, _ = table.WriteString(html.EscapeString(fmt.Sprint(values[i])))
 				}
-				table.WriteString("</td>")
+				_, _ = table.WriteString("</td>")
 			}
-			table.WriteString("</tr>")
+			_, _ = table.WriteString("</tr>")
 		}
-		table.WriteString("</tbody></table></details>")
+		_, _ = table.WriteString("</tbody></table></details>")
 		return table.String()
 	}
 	return chartConfigFallback(source)
