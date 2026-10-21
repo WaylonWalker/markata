@@ -113,10 +113,11 @@ func resolveTriageIntake(cmd *cobra.Command, interactive bool) (triageIntake, st
 		}
 		request.Category = cmd.Name()
 	}
-	if request.Category == "" && (request.Action != "" || request.Feature != "" || request.Goal != "" || request.Post != "") {
-		if request.Scope != "" {
+	if request.Category == "" {
+		switch {
+		case request.Scope != "":
 			request.Category = "lint"
-		} else {
+		case request.Action != "" || request.Feature != "" || request.Goal != "" || request.Post != "":
 			request.Category = "post"
 		}
 	}
