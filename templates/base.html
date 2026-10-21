@@ -70,6 +70,8 @@
   {% if needs_code_css %}
   <link rel="stylesheet" href="{{ 'css/code.css' | theme_asset_hashed }}">
   <link rel="stylesheet" href="{{ 'css/chroma.css' | theme_asset_hashed }}">
+  {# Only code-bearing pages receive the enhancement bundle; no-JS stays readable. #}
+  <script src="{{ 'js/code-chrome.js' | theme_asset_hashed }}" defer></script>
   {% endif %}
   {# Plain post pages do not need feed-card styles on first paint. #}
   {% if not skip_cards_css %}
