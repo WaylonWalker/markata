@@ -45,6 +45,7 @@ func registerBuiltinPluginsLocked() {
 	pluginRegistry.constructors["random_post"] = func() lifecycle.Plugin { return NewRandomPostPlugin() }
 	pluginRegistry.constructors["well_known"] = func() lifecycle.Plugin { return NewWellKnownPlugin() }
 	pluginRegistry.constructors["sitemap"] = func() lifecycle.Plugin { return NewSitemapPlugin() }
+	pluginRegistry.constructors["llms_txt"] = func() lifecycle.Plugin { return NewLLMsTXTPlugin() }
 	pluginRegistry.constructors["content_index"] = func() lifecycle.Plugin { return NewContentIndexPlugin() }
 	pluginRegistry.constructors["images"] = func() lifecycle.Plugin { return NewImageLibraryPlugin() }
 	pluginRegistry.constructors["wikilinks"] = func() lifecycle.Plugin { return NewWikilinksPlugin() }
@@ -240,6 +241,7 @@ func DefaultPlugins() []lifecycle.Plugin {
 		NewGardenViewPlugin(),   // Generate knowledge graph + garden page
 		// NewResourceHintsPlugin(), // Inject resource hints (after HTML written) // DISABLED: Performance issue on large sites
 		NewSitemapPlugin(),
+		NewLLMsTXTPlugin(), // Generate a curated /llms.txt from published pages
 		NewContentIndexPlugin(),
 
 		// Cleanup stage plugins

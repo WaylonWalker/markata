@@ -62,6 +62,7 @@ var singlePageExcludedPlugins = map[string]bool{
 	"feeds_listing":           true,
 	"garden_view":             true,
 	"sitemap":                 true,
+	"llms_txt":                true,
 	"content_index":           true,
 	"pagefind":                true,
 }

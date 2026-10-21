@@ -2930,6 +2930,23 @@ output/
 
 ---
 
+### llms_txt
+
+**Name:** `llms_txt`  
+**Stage:** Write (last priority)  
+**Purpose:** Automatically generate a concise v2-style `/llms.txt` index
+for AI agents from public site metadata and selected published pages.
+
+**Configuration:** `[markata-go.llms_txt]` with `enabled = true` and
+`max_pages = 30` defaults. Caps output at 100 entries. Drafts, private,
+skipped, unpublished, and `noindex` posts are excluded. The generator
+uses `.md` links when Markdown post output is enabled.
+
+A published `llms.md` or project static `llms.txt` wins over auto
+generation; existing manual output is also preserved. Disabling only
+deletes content identified as automatically generated. Excluded from
+single-page builds.
+
 ### sitemap
 
 **Name:** `sitemap`  

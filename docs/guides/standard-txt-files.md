@@ -62,33 +62,53 @@ Sitemap: https://example.com/sitemap.xml
 
 ### llms.txt
 
-Guidance for AI language models ([llms.txt standard](https://llmstxt.org)):
+By default, a full-site build automatically creates **/llms.txt** using the
+site title and description, links to selected published documentation and
+recent posts, and a link to the sitemap when available. The index is capped
+at 30 pages (configurable) to keep it concise. Private, draft, skipped,
+unpublished, and `noindex` posts are not included. The generated links
+prefer the post's `.md` version when that output format is enabled.
+
+This follows the [llms.txt v2 proposal](https://llmstxt.org): a Markdown H1,
+optional blockquote summary, and H2 sections with Markdown links. It is a
+**discovery aid**, not an instruction granting AI crawlers permission to
+train on content. Access rules belong in robots.txt and other applicable
+policies.
+
+Example generated output:
 
 ```markdown
----
-title: "LLMs"
-slug: llms
-published: true
----
+# Example Site
 
-# LLMs.txt
+> Notes on software, homelabs, and photography.
 
-> This site welcomes AI training on its content.
+## Site
 
-## Site Information
-- Name: Example Site
-- URL: https://example.com
-- Author: Jane Doe
+- [Home](https://example.com/): Site homepage
 
-## Guidelines
-- Attribution appreciated but not required
-- Commercial use allowed
-- Respect rate limits
+## Recent Content
 
-## Notable Content
-- /blog/ - Technical articles
-- /docs/ - Documentation
+- [A recent post](https://example.com/recent-post.md): A brief introduction.
+
+## Optional
+
+- [Sitemap](https://example.com/sitemap.xml): Complete index of publicly accessible pages
 ```
+
+To configure the generated index:
+
+```toml
+[markata-go.llms_txt]
+enabled = true       # default; set false to disable automatic generation
+max_pages = 30       # default; accepted range 1-100
+```
+
+A published Markdown post with `slug: llms` (and text output enabled), a
+`static/llms.txt` file, or an existing manually managed
+`output/llms.txt` overrides the automatic content. This preserves the
+ability to write a curated index yourself. If you disable auto-generation,
+markata-go removes only its own previously generated file, not a manually
+authored one.
 
 ### humans.txt
 

@@ -611,8 +611,27 @@ func ParseYAML(data []byte) (*models.Config, error) {
 	var raw map[string]any
 	if err := yaml.Unmarshal(data, &raw); err == nil {
 		normalizeParsedTheme(config, raw)
+		copyLLMsTXTConfig(config, raw)
 	}
 	return config, nil
+}
+
+// copyLLMsTXTConfig retains the untyped llms_txt plugin options in YAML/JSON
+// as well as TOML. Unlike TOML, these parsers do not automatically copy
+// unknown [markata-go] plugin sections to Config.Extra.
+func copyLLMsTXTConfig(config *models.Config, raw map[string]any) {
+	root, ok := raw["markata-go"].(map[string]any)
+	if !ok {
+		return
+	}
+	llmsConfig, ok := root["llms_txt"].(map[string]any)
+	if !ok {
+		return
+	}
+	if config.Extra == nil {
+		config.Extra = make(map[string]any)
+	}
+	config.Extra["llms_txt"] = llmsConfig
 }
 
 // ParseJSON parses JSON configuration data into a Config struct.
@@ -634,6 +653,7 @@ func ParseJSON(data []byte) (*models.Config, error) {
 	var raw map[string]any
 	if err := json.Unmarshal(data, &raw); err == nil {
 		normalizeParsedTheme(config, raw)
+		copyLLMsTXTConfig(config, raw)
 	}
 	return config, nil
 }
