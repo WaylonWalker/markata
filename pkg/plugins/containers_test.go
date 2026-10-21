@@ -77,3 +77,46 @@ func TestContainerCloseMarkerMustBeColonOnly(t *testing.T) {
 		})
 	}
 }
+
+func TestContainerExtension_RichMarkdownLayoutPrimitives(t *testing.T) {
+	got := renderContainerMarkdown(t, `::: md-layout
+:::: md-box {data-align="center"}
+Cluster
+::::
+:::: md-columns {data-gap="sm"}
+::::: md-card
+Website
+:::::
+::::: md-card
+Builder
+:::::
+::::
+:::: md-connector {data-direction="both"}
+::::
+:::: md-stack
+::::: md-divider
+:::::
+::::
+:::`)
+	assertContainerHTMLInOrder(t, got,
+		`<div class="md-layout">`,
+		`<div class="md-box" data-align="center">`,
+		`<p>Cluster</p>`,
+		`</div>`,
+		`<div class="md-columns" data-gap="sm">`,
+		`<div class="md-card">`,
+		`<p>Website</p>`,
+		`</div>`,
+		`<div class="md-card">`,
+		`<p>Builder</p>`,
+		`</div>`,
+		`</div>`,
+		`<div class="md-connector" data-direction="both">`,
+		`</div>`,
+		`<div class="md-stack">`,
+		`<div class="md-divider">`,
+		`</div>`,
+		`</div>`,
+		`</div>`,
+	)
+}
