@@ -184,9 +184,18 @@ func (p *ChartJSPlugin) processPost(post *models.Post) error {
 // Common categorical chart types become an accessible table. Less-structured
 // Chart.js configurations preserve their JSON for inspection instead.
 func chartStaticFallback(config map[string]interface{}, source string) string {
-	data, _ := config["data"].(map[string]interface{})
-	labels, _ := data["labels"].([]interface{})
-	series, _ := data["datasets"].([]interface{})
+	data, ok := config["data"].(map[string]interface{})
+	if !ok {
+		return chartConfigFallback(source)
+	}
+	labels, ok := data["labels"].([]interface{})
+	if !ok {
+		return chartConfigFallback(source)
+	}
+	series, ok := data["datasets"].([]interface{})
+	if !ok {
+		return chartConfigFallback(source)
+	}
 	if len(labels) > 0 && len(labels) <= 200 && len(series) > 0 && len(series) <= 12 {
 		var table strings.Builder
 		_, _ = table.WriteString(`<details class="chartjs-data" open><summary>Chart data</summary><table><caption>Chart data</caption><thead><tr><th scope="col">Label</th>`)
@@ -199,8 +208,8 @@ func chartStaticFallback(config map[string]interface{}, source string) string {
 			if !ok || len(values) != len(labels) {
 				return chartConfigFallback(source)
 			}
-			label, _ := dataset["label"].(string)
-			if label == "" {
+			label, hasLabel := dataset["label"].(string)
+			if !hasLabel || label == "" {
 				label = fmt.Sprintf("Series %d", i+1)
 			}
 			_, _ = table.WriteString(`<th scope="col">`)
@@ -213,8 +222,14 @@ func chartStaticFallback(config map[string]interface{}, source string) string {
 			_, _ = table.WriteString(html.EscapeString(fmt.Sprint(label)))
 			_, _ = table.WriteString("</th>")
 			for _, raw := range series {
-				dataset := raw.(map[string]interface{})
-				values := dataset["data"].([]interface{})
+				dataset, ok := raw.(map[string]interface{})
+				if !ok {
+					return chartConfigFallback(source)
+				}
+				values, ok := dataset["data"].([]interface{})
+				if !ok || len(values) != len(labels) {
+					return chartConfigFallback(source)
+				}
 				_, _ = table.WriteString("<td>")
 				if values[i] != nil {
 					_, _ = table.WriteString(html.EscapeString(fmt.Sprint(values[i])))
