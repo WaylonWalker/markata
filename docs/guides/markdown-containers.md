@@ -228,3 +228,9 @@ Each table remains normal semantic Markdown HTML and can independently use
 table sorting when enabled. Cards keep their own horizontal overflow instead
 of forcing the whole article to scroll. For more examples, see
 `examples/gallery-site/pages/layout-primitives.md`.
+
+### Status and metric reports
+
+You can also compose native, accessible status badges, metric cards, progress bars,
+and before/after comparisons. See the [Markdown metrics guide](/docs/guides/markdown-metrics/)
+for the required values, labels, and data-tone options.
