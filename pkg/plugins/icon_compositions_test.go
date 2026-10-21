@@ -88,14 +88,14 @@ NAS + ZFS
 
 func TestIconsInFencedRichMarkdownExamplesStayLiteral(t *testing.T) {
 	p := NewIconsPlugin()
-	icon := iconAsset{name:"lucide/rocket",svg:testIconSVG}
+	icon := iconAsset{name: "lucide/rocket", svg: testIconSVG}
 	p.icons["lucide-rocket"] = icon
 	input := "Actual :lucide-rocket:\n\n````markdown\n::: md-feature\n:lucide-rocket:\n:::\n````\n"
 	output := p.processContent(input)
 	if got := strings.Count(output, `data-icon="lucide/rocket"`); got != 1 {
-		t.Fatalf("icon examples in code fences must remain literal, got %s",output)
+		t.Fatalf("icon examples in code fences must remain literal, got %s", output)
 	}
 	if !strings.Contains(output, "::: md-feature\n:lucide-rocket:\n:::") {
-		t.Fatalf("fenced example was modified: %s",output)
+		t.Fatalf("fenced example was modified: %s", output)
 	}
 }
