@@ -1,0 +1,136 @@
+name: Scheduled release train
+
+on:
+  schedule:
+    # UTC; Central time shifts by an hour during daylight saving.
+    - cron: '0 7 * * *'
+    - cron: '0 8 * * 0'
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: 'nightly or stable'
+        required: true
+        type: choice
+        options: [nightly, stable]
+        default: nightly
+      publish:
+        description: 'Publish release (otherwise dry-run)'
+        required: true
+        type: boolean
+        default: false
+
+concurrency:
+  group: scheduled-release-train
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    outputs:
+      channel: ${{ steps.mode.outputs.channel }}
+      publish: ${{ steps.mode.outputs.publish }}
+      tag: ${{ steps.version.outputs.tag }}
+      changed: ${{ steps.version.outputs.changed }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Determine channel
+        id: mode
+        env:
+          EVENT: ${{ github.event_name }}
+          INPUT_CHANNEL: ${{ inputs.channel }}
+          INPUT_PUBLISH: ${{ inputs.publish }}
+          SCHEDULE: ${{ github.event.schedule }}
+        shell: bash
+        run: |
+          if [[ "$EVENT" == "schedule" ]]; then
+            if [[ "$SCHEDULE" == '0 8 * * 0' ]]; then channel=stable; else channel=nightly; fi
+            publish=true
+          else
+            channel="$INPUT_CHANNEL"
+            publish="$INPUT_PUBLISH"
+          fi
+          echo "channel=$channel" >> "$GITHUB_OUTPUT"
+          echo "publish=$publish" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-go@v7
+        with:
+          go-version: '1.26'
+          cache: true
+      - name: Full race tests
+        run: go test -race -timeout=30m ./...
+      - name: Validate GoReleaser configuration
+        uses: goreleaser/goreleaser-action@v7
+        with:
+          distribution: goreleaser
+          version: '~> v2'
+          args: check
+      - name: Compute immutable release tag
+        id: version
+        env:
+          CHANNEL: ${{ steps.mode.outputs.channel }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          latest=$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1)
+          if [[ -z "$latest" ]]; then echo "No stable semver tag; refusing to guess version" >&2; exit 1; fi
+          base="${latest#v}"
+          IFS=. read -r major minor patch <<< "$base"
+          if [[ "$CHANNEL" == "stable" ]]; then
+            tag="v${major}.${minor}.$((patch + 1))"
+          else
+            tag="v${major}.${minor}.$((patch + 1))-nightly.$(date -u +%Y%m%d)"
+          fi
+          if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "Candidate: $tag" >> "$GITHUB_STEP_SUMMARY"
+  publish:
+    needs: validate
+    if: needs.validate.outputs.changed == 'true' && needs.validate.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    # Create 'stable-release' environment with required reviewers before enabling weekly stable releases.
+    environment: ${{ needs.validate.outputs.channel == 'stable' && 'stable-release' || 'nightly-release' }}
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v7
+        with:
+          go-version: '1.26'
+          cache: true
+      - name: Create immutable release tag
+        env:
+          TAG: ${{ needs.validate.outputs.tag }}
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git tag -a "$TAG" -m "Scheduled release $TAG"
+          git push origin "refs/tags/$TAG"
+          git checkout "$TAG"
+      - uses: sigstore/cosign-installer@v3
+      - uses: anchore/sbom-action/download-syft@v0
+      - name: Publish signed release
+        uses: goreleaser/goreleaser-action@v7
+        with:
+          distribution: goreleaser
+          version: '~> v2'
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-artifacts
+          path: dist/*
+          retention-days: 30
