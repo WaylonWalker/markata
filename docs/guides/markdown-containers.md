@@ -192,6 +192,35 @@ Replicated storage: NVMe + HDD.
 The connector arrows are only a decorative aid, not a replacement for the
 descriptive labels. For connected arbitrary graphs, use Mermaid.
 
+### Icons and feature rows
+
+The built-in `icons` plugin already accepts Lucide shortcodes like
+`:lucide-rocket:`. Combine those shortcodes with `md-icon` (centered icon,
+optional `{data-size="lg"}`), or with an `md-feature` row containing a
+`md-feature-icon` and `md-feature-body`. No new icon font, CDN, or
+JavaScript is necessary.
+
+````markdown
+::: md-feature
+
+:::: md-feature-icon
+:lucide-rocket:
+
+::::
+
+:::: md-feature-body
+### Verify production
+Smoke-test the new Markdown components at mobile widths.
+
+::::
+
+:::
+````
+
+The icon remains decorative, so provide readable heading text. The row stays
+within its article column at narrow widths. For side-by-side icon cards or
+more icon names, see [Icon Shortcodes](/docs/guides/icons/).
+
 ### Side-by-side tables
 
 ````markdown
