@@ -8,7 +8,7 @@ require (
 	github.com/alecthomas/chroma/v2 v2.27.0
 	github.com/andybalholm/cascadia v1.3.5
 	github.com/blevesearch/bleve/v2 v2.6.1
-	github.com/bmatcuk/doublestar/v4 v4.10.2
+	github.com/bmatcuk/doublestar/v4 v4.10.3
 	github.com/charmbracelet/bubbles v1.0.0
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/glamour v1.0.0
