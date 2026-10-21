@@ -230,6 +230,26 @@ func (r *containerHTMLRenderer) renderContainer(w util.BufWriter, _ []byte, n as
 		return ast.WalkContinue, nil
 	}
 
+	// Source/preview disclosures are native HTML. Content inside the
+	// container stays ordinary fenced Markdown, with no JS to initialize.
+	// The source panel is marked as UI so rich post copying can omit it.
+	for _, class := range container.Classes {
+		if class == "md-source" {
+			if entering {
+				label := strings.TrimSpace(container.ExtraAttrs["data-label"])
+				if label == "" {
+					label = "Show Markdown source"
+				}
+				_, _ = w.WriteString(`<details class="md-source" data-markata-ui="source-preview"><summary>`)
+				_, _ = w.WriteString(escapeHTMLAttr(label))
+				_, _ = w.WriteString("</summary>\n")
+			} else {
+				_, _ = w.WriteString("</details>\n")
+			}
+			return ast.WalkContinue, nil
+		}
+	}
+
 	if entering {
 		_, _ = w.WriteString("<div")
 

@@ -5231,6 +5231,32 @@ body.reader-mode::after {
   }
 }
 
+/* Author-declared source details, available without JavaScript. */
+@layer components {
+  .post-content .md-source {
+    border: 1px solid var(--color-border-soft, var(--color-border));
+    border-radius: var(--radius-lg, .75rem);
+    margin-block: var(--space-4, 1rem);
+    min-width: 0;
+  }
+  .post-content .md-source > summary {
+    padding: .7rem 1rem;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .post-content .md-source > summary:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+  .post-content .md-source > :not(summary) {
+    margin-inline: 1rem;
+    max-width: calc(100% - 2rem);
+  }
+  .post-content .md-source pre {
+    overflow-x: auto;
+  }
+}
+
 /* Chart.js no-JS data stays usable on narrow article columns. */
 @layer components {
   .post-content .chartjs-data {

@@ -27,6 +27,8 @@ on:
       - "scripts/archive-startup.browser.test.cjs"
       - "scripts/admonition-contrast.browser.test.cjs"
       - "scripts/code-chrome.browser.test.cjs"
+      - "scripts/markdown-checklists.browser.test.cjs"
+      - "pkg/themes/default/static/js/markdown-checklists.js"
       - "scripts/markdown-metrics.browser.test.cjs"
       - "scripts/navbar-search-layout.browser.test.cjs"
       - ".github/workflows/archive-startup.yml"
@@ -54,7 +56,9 @@ jobs:
           node --check scripts/archive-startup.browser.test.cjs
           node --check scripts/admonition-contrast.browser.test.cjs
           node --check scripts/code-chrome.browser.test.cjs
+          node --check scripts/markdown-checklists.browser.test.cjs
+          node --check pkg/themes/default/static/js/markdown-checklists.js
           node --check pkg/themes/default/static/js/code-chrome.js
           node --check scripts/markdown-metrics.browser.test.cjs
           node --check pkg/themes/default/static/js/sidebar-rescue.js
-          node --test scripts/archive-startup.browser.test.cjs scripts/admonition-contrast.browser.test.cjs scripts/markdown-metrics.browser.test.cjs scripts/navbar-search-layout.browser.test.cjs scripts/drawer-startup.browser.test.cjs scripts/drawer-rendering.browser.test.cjs scripts/sidebar-rescue.browser.test.cjs scripts/font-startup.browser.test.cjs
+          node --test scripts/markdown-checklists.browser.test.cjs scripts/archive-startup.browser.test.cjs scripts/admonition-contrast.browser.test.cjs scripts/markdown-metrics.browser.test.cjs scripts/navbar-search-layout.browser.test.cjs scripts/drawer-startup.browser.test.cjs scripts/drawer-rendering.browser.test.cjs scripts/sidebar-rescue.browser.test.cjs scripts/font-startup.browser.test.cjs

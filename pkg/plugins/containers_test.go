@@ -135,3 +135,36 @@ Builder
 		`</div>`,
 	)
 }
+
+func TestSourceDisclosureRendersNativeDetailsWithEscapedLabel(t *testing.T) {
+	got := renderContainerMarkdown(t, `::: md-source {data-label="Show & source"}
+
+~~~markdown
+# Hello **Markdown**
+~~~
+
+:::`)
+	assertContainerHTMLInOrder(t, got,
+		`<details class="md-source" data-markata-ui="source-preview"><summary>Show &amp; source</summary>`,
+		`<pre><code class="language-markdown">`,
+		`# Hello **Markdown**`,
+		`</code></pre>`,
+		`</details>`,
+	)
+	if strings.Contains(got, `<div class="md-source"`) {
+		t.Fatalf("md-source must use native details, got: %s", got)
+	}
+}
+
+func TestSourceDisclosureDefaultsToReadableLabel(t *testing.T) {
+	got := renderContainerMarkdown(t, `::: md-source
+
+A short example.
+
+:::`)
+	assertContainerHTMLInOrder(t, got,
+		`<details class="md-source" data-markata-ui="source-preview"><summary>Show Markdown source</summary>`,
+		`<p>A short example.</p>`,
+		`</details>`,
+	)
+}
