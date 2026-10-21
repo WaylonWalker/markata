@@ -67,7 +67,9 @@ presented. Missing intake answers are listed **in a fixed order inside the clean
 Markdown prompt**, so it remains safe to pipe or save. Existing generic
 `markata triage --issue ...` commands continue to work.
 Questions and destination choices are separate: triage collects what you want
-first and then lets you explicitly select the coding harness.
+first and then lets you explicitly select the coding harness. Press **Escape**
+in any intake picker to cancel triage without generating a prompt or launching
+an agent. Supplied `--post` flags skip the filename scan entirely.
 
 ## Where the prompt goes
 
