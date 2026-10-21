@@ -45,8 +45,23 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          if ! protection="$(gh api "repos/${GITHUB_REPOSITORY}/branches/main/protection/required_status_checks")"; then
-            echo "::error::Cannot verify main's required checks. Configure branch protection and required CI before enabling Dependabot auto-merge."
+          # Classic branch-protection read may require Administration:read, which the
+          # workflow token cannot request. Active branch rulesets are readable with
+          # Metadata:read; check both and fail closed if neither exposes the gates.
+          protection="$(gh api "repos/${GITHUB_REPOSITORY}/branches/main/protection/required_status_checks" 2>/dev/null || true)"
+          rules="$(gh api "repos/${GITHUB_REPOSITORY}/rules/branches/main" 2>/dev/null || true)"
+          required_names="$(
+            {
+              if [[ -n "$protection" ]]; then
+                jq -r '.checks[]?.context, .contexts[]?' <<< "$protection"
+              fi
+              if [[ -n "$rules" ]]; then
+                jq -r '.[] | select(.type == "required_status_checks") | .parameters.required_status_checks[]?.context' <<< "$rules"
+              fi
+            } | sort -u
+          )"
+          if [[ -z "$required_names" ]]; then
+            echo "::error::Cannot find required status checks for main. Configure a required-status-checks branch ruleset before Dependabot auto-merge."
             exit 1
           fi
           required_checks=(
@@ -57,7 +72,7 @@ jobs:
             "GoReleaser Check"
           )
           for check in "${required_checks[@]}"; do
-            if ! jq -e --arg name "$check" '[.checks[]?.context, .contexts[]?] | index($name) != null' <<< "$protection" >/dev/null; then
+            if ! grep -Fxq -- "$check" <<< "$required_names"; then
               echo "::error::Missing required branch-protection check: $check. Refusing early auto-merge."
               exit 1
             fi
