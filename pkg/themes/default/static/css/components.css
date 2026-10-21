@@ -4988,3 +4988,107 @@ body.reader-mode::after {
 }
 
 }
+
+/* Article-only composition primitives. Class prefixes avoid changing old
+   .card/.columns containers, feeds, and theme navigation. No script needed. */
+@layer components {
+  .post-content :is(.md-layout, .md-box, .md-card, .md-columns, .md-grid, .md-stack, .md-divider, .md-connector) {
+    box-sizing: border-box;
+    min-width: 0;
+  }
+
+  .post-content :is(.md-layout, .md-box, .md-card) {
+    border: 1px solid var(--color-border-soft, var(--color-border));
+    border-radius: var(--radius-lg, .75rem);
+    padding: clamp(.75rem, 2vw, 1.25rem);
+  }
+
+  .post-content .md-layout {
+    display: grid;
+    gap: var(--space-3, .75rem);
+    margin-block: var(--space-6, 1.5rem);
+    background: transparent;
+  }
+
+  .post-content .md-box {
+    background: var(--color-background);
+  }
+
+  .post-content .md-card {
+    background: var(--color-surface);
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+  }
+
+  .post-content :is(.md-layout, .md-box, .md-card) > :first-child { margin-top: 0; }
+  .post-content :is(.md-layout, .md-box, .md-card) > :last-child { margin-bottom: 0; }
+  .post-content :is(.md-layout, .md-box, .md-card) > :is(h2, h3, h4, h5, h6) {
+    font-size: var(--text-lg, 1.125rem);
+    line-height: 1.35;
+  }
+
+  .post-content :is(.md-columns, .md-grid, .md-stack) {
+    display: grid;
+    gap: var(--space-3, .75rem);
+    align-items: stretch;
+    margin-block: var(--space-4, 1rem);
+  }
+
+  .post-content :is(.md-columns, .md-grid) {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+  }
+
+  .post-content .md-stack { grid-template-columns: minmax(0, 1fr); }
+  .post-content :is(.md-layout, .md-columns, .md-grid, .md-stack) > :is(.md-columns, .md-grid, .md-stack) {
+    margin-block: 0;
+  }
+
+  /* Explicit fixed columns are opt-in; default auto-fit is container-responsive. */
+  .post-content :is(.md-columns, .md-grid)[data-columns="2"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .post-content :is(.md-columns, .md-grid)[data-columns="3"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .post-content :is(.md-columns, .md-grid)[data-columns="4"] { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+  .post-content :is(.md-layout, .md-columns, .md-grid, .md-stack)[data-gap="sm"] { gap: var(--space-2, .5rem); }
+  .post-content :is(.md-layout, .md-columns, .md-grid, .md-stack)[data-gap="lg"] { gap: var(--space-6, 1.5rem); }
+  .post-content :is(.md-box, .md-card)[data-align="center"] { text-align: center; }
+
+  /* Within a comparison card the table scrolls with the card, never the page.
+     This complements (rather than duplicates) PR #1748's top-level tables. */
+  .post-content .md-card > table {
+    position: static;
+    left: auto;
+    transform: none;
+    margin-inline: 0;
+    width: max-content;
+    min-width: 100%;
+    max-width: none;
+  }
+
+  .post-content .md-divider {
+    border-top: 1px solid var(--color-border-soft, var(--color-border));
+    margin-block: var(--space-3, .75rem);
+  }
+
+  .post-content .md-connector {
+    display: grid;
+    place-items: center;
+    min-height: 1.75rem;
+    color: var(--color-text-muted);
+    line-height: 1;
+  }
+  .post-content .md-connector::before { content: "↓"; font-size: 1.25rem; }
+  .post-content .md-connector[data-direction="both"]::before { content: "↕"; }
+  .post-content .md-connector[data-direction="right"]::before { content: "→"; }
+  .post-content .md-connector[data-direction="left"]::before { content: "←"; }
+
+  @media (max-width: 640px) {
+    .post-content :is(.md-columns, .md-grid)[data-columns] {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  @media print {
+    .post-content .md-card { overflow: visible; }
+    .post-content :is(.md-columns, .md-grid) { break-inside: avoid; }
+  }
+}
