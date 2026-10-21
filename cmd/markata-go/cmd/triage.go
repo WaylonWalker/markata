@@ -25,14 +25,20 @@ const (
 )
 
 var (
-	triageTo    string
-	triageAgent string
-	triageIssue string
+	triageTo       string
+	triageAgent    string
+	triageIssue    string
+	triageCategory string
+	triageScope    string
+	triagePost     string
+	triageAction   string
+	triageFeature  string
+	triageGoal     string
 )
 
 var triageCmd = &cobra.Command{
 	Use:   "triage",
-	Short: "Help a coding agent troubleshoot this Markata installation",
+	Short: "Collect structured site or post context before an agent handoff",
 	Long: "Generate a privacy-conscious troubleshooting prompt, then choose an installed\n" +
 		"coding agent, clipboard, or stdout. In a pipeline, stdout is selected\n" +
 		"automatically. No agent launches unless explicitly selected.\n\n" +
@@ -41,16 +47,30 @@ var triageCmd = &cobra.Command{
 		"  markata triage --to opencode\n" +
 		"  markata triage --to clipboard\n" +
 		"  markata triage --to stdout | codex exec -\n" +
-		"  markata triage --issue \"my feed is empty\" --to claude",
+		"  markata triage --issue \"my feed is empty\" --to claude\n" +
+		"  markata triage lint --scope post --post posts/example.md\n" +
+		"  markata triage post --post posts/example.md --action debug --feature chart\n" +
+		"  markata triage post --post posts/example.md --action enhance --feature road --goal \"add a timeline\"",
 	Args: cobra.NoArgs,
 	RunE: runTriageCommand,
 }
 
 func init() {
 	rootCmd.AddCommand(triageCmd)
-	triageCmd.Flags().StringVar(&triageTo, "to", triageAuto, "destination: auto, stdout, clipboard, codex, claude, opencode, gemini, or cursor")
-	triageCmd.Flags().StringVar(&triageAgent, "agent", "", "shortcut for --to <installed-agent>")
-	triageCmd.Flags().StringVar(&triageIssue, "issue", "", "optional initial description of the problem")
+	flags := triageCmd.PersistentFlags()
+	flags.StringVar(&triageTo, "to", triageAuto, "destination: auto, stdout, clipboard, codex, claude, opencode, gemini, or cursor")
+	flags.StringVar(&triageAgent, "agent", "", "shortcut for --to <installed-agent>")
+	flags.StringVar(&triageIssue, "issue", "", "initial problem description (up to 4000 bytes)")
+	flags.StringVar(&triageCategory, "category", "", "task category: general, lint, or post")
+	flags.StringVar(&triageScope, "scope", "", "lint target: site or post")
+	flags.StringVar(&triagePost, "post", "", "Markdown post path for lint or post tasks")
+	flags.StringVar(&triageAction, "action", "", "post task: debug, enhance, or review")
+	flags.StringVar(&triageFeature, "feature", "", "post feature: chart, road, mermaid, markdown, or other")
+	flags.StringVar(&triageGoal, "goal", "", "desired post enhancement (up to 4000 bytes)")
+	triageCmd.AddCommand(
+		&cobra.Command{Use: "lint", Short: "Prepare a site or post linting handoff", Args: cobra.NoArgs, RunE: runTriageCommand},
+		&cobra.Command{Use: "post", Short: "Debug, review, or enhance a Markdown post", Args: cobra.NoArgs, RunE: runTriageCommand},
+	)
 }
 
 type triageHarness struct {
@@ -135,18 +155,21 @@ func runTriageCommand(cmd *cobra.Command, _ []string) error {
 
 	target := strings.ToLower(strings.TrimSpace(triageTo))
 	if triageAgent != "" {
-		if cmd.Flags().Changed("to") {
+		if cmd.Flags().Changed("to") || cmd.InheritedFlags().Changed("to") {
 			return fmt.Errorf("use either --to or --agent, not both")
 		}
 		target = strings.ToLower(strings.TrimSpace(triageAgent))
 	}
-	if len(triageIssue) > 4000 {
-		return fmt.Errorf("--issue must be 4000 bytes or less")
-	}
-
-	prompt := buildTriagePrompt(collectTriageFacts(), triageIssue)
-	agents := detectTriageHarnesses(exec.LookPath)
 	interactive := triageIsInteractive()
+	request, issue, err := resolveTriageIntake(cmd, interactive)
+	if errors.Is(err, errTriageIntakeCanceled) {
+		return nil // Escape from any intake picker exits without an agent launch.
+	}
+	if err != nil {
+		return err
+	}
+	prompt := buildTriageIntakePrompt(collectTriageFacts(), issue, request)
+	agents := detectTriageHarnesses(exec.LookPath)
 	if target == "" || target == triageAuto {
 		if !interactive {
 			target = triageStdout

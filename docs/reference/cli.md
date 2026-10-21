@@ -80,6 +80,33 @@ markata triage --to stdout > triage-prompt.md
 | `--agent` | Convenience alias for an installed agent name; cannot be combined with `--to` | none |
 | `--issue` | Optional brief user-provided problem description (up to 4000 bytes) | none |
 
+Task-specific subcommands and flags:
+
+```sh
+markata triage lint --scope site
+markata triage lint --scope post --post posts/story.md
+markata triage post --post posts/story.md --action debug --feature mermaid --issue "Parse error"
+markata triage post --post posts/story.md --action enhance --feature road --goal "Add project milestones"
+```
+
+| Intake flag | Description |
+| --- | --- |
+| `--category` | `general`, `lint`, or `post`; usually implied by a subcommand |
+| `--scope` | `site` or `post` for `triage lint` |
+| `--post` | Relative Markdown post path; metadata only (512-byte limit) |
+| `--action` | `debug`, `enhance`, or `review` for `triage post` |
+| `--feature` | `chart`, `road`, `mermaid`, `markdown`, or `other` |
+| `--goal` | Desired enhancement (4000-byte limit) |
+
+Interactive missing values are asked **in a deterministic order** before the
+destination picker. Category, scope, action, and feature use a searchable fuzzy
+picker. Missing `--post` values show a fuzzy list of local Markdown paths from
+common content folders, with manual entry as a fallback. Only filenames are
+scanned; Markata does not parse the post contents. Escape cancels safely.
+Noninteractive use never reads stdin for answers: missing
+questions become an ordered section of the emitted prompt, with clean
+prompt-only stdout preserved. Supplied answers are not asked again.
+
 Only supported agent executables found on PATH are offered. An explicit agent launch needs a terminal so the agent can ask follow-up questions. For pipelines use stdout and the selected agent's own noninteractive mode. Clipboard uses local platform helpers and fails clearly if unavailable. No agent is launched automatically in a noninteractive session.
 
 The prompt contains the **running CLI** version, not necessarily the version where the bug occurred, plus OS, architecture, runtime, executable/install hints, project path and **config filenames only**. It never reads config values, logs, full environment values or secrets. Review local paths before sharing a prompt. The agent should first clarify the user's issue, confirm the actual affected version/deployment and ask before applying changes.
