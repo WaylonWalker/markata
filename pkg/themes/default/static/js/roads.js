@@ -54,7 +54,7 @@
   };
   const polyline = (pts) => pts.map((p, i) => `${i ? "L" : "M"} ${p.x} ${p.y}`).join(" ");
   const sideOf = (x, w) => (x < w / 2 ? "right" : "left");
-  const sideWidth = (x, w, side) => clamp((side === "right" ? w - x : x) - 34, 96, 220);
+  const sideWidth = (x, w, side) => clamp((side === "right" ? w - x : x) - 34, 48, 220);
 
   // Each layout returns the height, a stop per point, and the path to draw.
   const LAYOUTS = {
@@ -74,7 +74,7 @@
     },
     steps(n, w, sp) {
       const col = w / n;
-      if (col < 110) return LAYOUTS.timeline(n, w, SPACING.timeline);
+      if (col < 110) return LAYOUTS.timeline(n, w, Math.max(sp, SPACING.timeline));
       const y = 24;
       const stops = Array.from({ length: n }, (_, i) => ({ x: col * (i + 0.5), y, card: "below", maxW: col - 12 }));
       return { h: 140, stops, d: `M ${col * 0.15} ${y} L ${w - col * 0.15} ${y}` };
@@ -98,7 +98,9 @@
       }
       return { h: rows * sp, stops, d };
     },
-    cycle(n, w) {
+    cycle(n, w, sp) {
+      // A ring has no room for labels on narrow viewports; use a readable rail.
+      if (w < 480) return LAYOUTS.timeline(n, w, Math.max(sp, SPACING.timeline));
       const R = clamp(Math.min(w / 2 - 140, 200), 70, 200);
       const cx = w / 2, cy = R + 70;
       const stops = Array.from({ length: n }, (_, i) => {
@@ -307,34 +309,41 @@
     return r;
   };
 
+  const placeCards = (r, stops) => {
+    r.points.forEach((p, i) => {
+      const s = stops[i];
+      p.el.style.left = `${s.x}px`;
+      p.el.style.top = `${s.y}px`;
+      for (const side of ["left", "right", "below", "above"]) p.el.classList.toggle(`road-card-${side}`, s.card === side);
+      p.el.style.setProperty("--card-offset", `${s.offset || 26}px`);
+      p.el.querySelector(".road-card").style.maxWidth = `${Math.max(48, s.maxW)}px`;
+    });
+  };
+
   const layout = (r) => {
     if (r.editorial) return update(r);
     const n = r.points.length;
     const sp = Number(r.root.dataset.roadSpacing) || SPACING[r.style] || 150;
     const w = r.inner.clientWidth;
-    // A road can share a Markdown container with prose. Reserve its own block
-    // and make room for labels rather than letting absolutely positioned
-    // milestones paint over following article paragraphs.
-    const cardHeights = r.points.map((p) => {
-      const card = p.el.querySelector(".road-card");
-      return card ? card.getBoundingClientRect().height : 0;
-    });
-    const safeSpacing = Math.max(sp, ...cardHeights.map((h) => Math.ceil(h + 48)));
-    const out = LAYOUTS[r.style](n, w, safeSpacing, r);
+    if (!w) return;
+
+    // Place and constrain the cards BEFORE measuring them. Otherwise the
+    // first measurement uses the old/wide width, missing text that wraps on
+    // mobile, and the next milestone can land on top of it.
+    const draft = LAYOUTS[r.style](n, w, sp, r);
+    placeCards(r, draft.stops);
+    const heights = r.points.map((p) => p.el.querySelector(".road-card").getBoundingClientRect().height);
+    // Constellation jitters its stops vertically by up to 40% of spacing.
+    const separation = r.style === "constellation" ? 0.6 : 1;
+    const safeSpacing = Math.max(sp, Math.ceil((Math.max(0, ...heights) + 48) / separation));
+    const out = safeSpacing > sp ? LAYOUTS[r.style](n, w, safeSpacing, r) : draft;
+    placeCards(r, out.stops);
+
     r.h = out.h;
     r.stops = out.stops;
     r.inner.style.height = `${out.h}px`;
     r.root.style.display = "flow-root";
     r.svg.setAttribute("viewBox", `0 0 ${w} ${out.h}`);
-
-    r.points.forEach((p, i) => {
-      const s = out.stops[i];
-      p.el.style.left = `${s.x}px`;
-      p.el.style.top = `${s.y}px`;
-      for (const side of ["left", "right", "below", "above"]) p.el.classList.toggle(`road-card-${side}`, s.card === side);
-      p.el.style.setProperty("--card-offset", `${s.offset || 26}px`);
-      p.el.querySelector(".road-card").style.maxWidth = `${Math.max(80, s.maxW)}px`;
-    });
 
     r.base.setAttribute("d", out.d);
     if (r.git) {
@@ -411,7 +420,17 @@
       resizer.observe(root);
       layout(r);
     });
+    // Font loading can change wrapping without resizing the road container.
+    if (document.fonts) document.fonts.ready.then(() => {
+      for (const r of roads) if (r.root.isConnected) layout(r);
+    });
   };
+
+  if (document.fonts && document.fonts.addEventListener) {
+    document.fonts.addEventListener("loadingdone", () => {
+      for (const r of roads) if (r.root.isConnected) layout(r);
+    });
+  }
 
   let ticking = false;
   window.addEventListener("scroll", () => {
