@@ -67,7 +67,7 @@
     }
 
     function removeCopyNoise(container) {
-        container.querySelectorAll('.anchor, .heading-anchor, [aria-hidden="true"], [role="presentation"]').forEach(function(node) {
+        container.querySelectorAll('.anchor, .heading-anchor, [aria-hidden="true"], [role="presentation"], [data-markata-ui]').forEach(function(node) {
             node.remove();
         });
 
