@@ -10,6 +10,10 @@ on:
       - "pkg/themes/default/static/js/conditional-css.js"
       - "pkg/themes/default/static/js/navigation-shortcuts.js"
       - "pkg/themes/default/static/js/view-transitions.js"
+      - "internal/fontcatalog/**"
+      - "pkg/fontpacks/**"
+      - "pkg/plugins/fontpack*.go"
+      - "scripts/font-partitions.browser.test.cjs"
       - "pkg/themes/default/static/js/sidebar-rescue.js"
       - "pkg/themes/default/static/js/fit-post-titles.js"
       - "pkg/themes/default/static/js/heading-highlights.js"
@@ -40,7 +44,7 @@ jobs:
         with:
           node-version: "22"
       - name: Install pinned Playwright
-        run: npm install --no-save --no-package-lock playwright@1.64.1
+        run: npm install --no-save --no-package-lock playwright@1.64.1 yaml@2.8.2
       - name: Install Chromium
         run: npx --no-install playwright install --with-deps chromium
       - name: Check archive startup and progressive rendering
@@ -49,4 +53,4 @@ jobs:
           node --check scripts/archive-startup.browser.test.cjs
           node --check scripts/admonition-contrast.browser.test.cjs
           node --check pkg/themes/default/static/js/sidebar-rescue.js
-          node --test scripts/archive-startup.browser.test.cjs scripts/admonition-contrast.browser.test.cjs scripts/navbar-search-layout.browser.test.cjs scripts/drawer-startup.browser.test.cjs scripts/drawer-rendering.browser.test.cjs scripts/sidebar-rescue.browser.test.cjs scripts/font-startup.browser.test.cjs
+          node --test scripts/archive-startup.browser.test.cjs scripts/admonition-contrast.browser.test.cjs scripts/navbar-search-layout.browser.test.cjs scripts/drawer-startup.browser.test.cjs scripts/drawer-rendering.browser.test.cjs scripts/sidebar-rescue.browser.test.cjs scripts/font-startup.browser.test.cjs scripts/font-partitions.browser.test.cjs

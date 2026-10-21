@@ -136,3 +136,27 @@ discovered from the source font; the generator never assumes a `[300, 900]`
 weight range. A non-zero `optical_size` requires an `opsz` axis whose recorded
 bounds contain the requested value. `fonts verify` rejects role weights,
 styles, and optical sizes that no bundled face can satisfy.
+
+## Partitioned prose fonts
+
+A manifest MAY provide `prose-basic` and `prose-extra` tiers as a pair. Their
+Unicode ranges MUST be disjoint and their combined glyph repertoire MUST
+preserve that source's `prose-core` repertoire, glyph outlines, advances, and
+variable axes. Shaping of text wholly covered by `prose-basic` MUST remain unchanged. Mixed-script
+strings can lose kerning across a subset boundary; document and measure that
+limit rather than claiming identical mixed-string widths.
+When both tiers are available, resolving `prose-core` (including the existing
+`display-core` fallback) MUST emit this pair instead of the broad core file.
+A manifest with only one partition MUST retain the existing core behavior.
+Explicit `full` requests MUST remain full requests.
+
+Only `prose-basic` SHOULD be preloaded. The browser MUST request the extra
+face only when it renders a character in that face's Unicode range. A
+character already covered by either partition MUST NOT add an overlapping
+`latin-ext` face. Characters beyond the pair retain existing extended-tier
+and family-fallback behavior. Cached font plans and HTML preload selections
+MUST invalidate when introducing the new tier selection.
+
+The initial built-in partition is Source Sans 3. Existing broad core assets
+remain available for compatibility. No font family, weight range, role, site
+configuration, or custom manifest without the pair changes.

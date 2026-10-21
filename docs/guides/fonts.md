@@ -119,3 +119,26 @@ Regenerate the comparison pages after changing the catalog with:
 ```bash
 uv run --with pyyaml python scripts/generate_fontpack_demos.py
 ```
+
+### Smaller prose transfers
+
+Source Sans 3 uses two Unicode subsets for prose. Common Latin text loads
+`prose-basic`; extended letters and less common symbols load `prose-extra`
+when rendered. Both preserve the configured family and variable weights.
+Only the basic file is preloaded, so a cold archive visit avoids downloading
+extended glyphs before they are needed. Custom catalogs can supply both
+tiers with disjoint Unicode ranges; supplying only one retains the existing
+`prose-core` behavior. Explicit full-font roles keep using the full face.
+
+Maintainers can reproduce the bundled partitions with
+`uv run scripts/split_prose_font.py source-sans-3`. This keeps every original
+core codepoint and variable axis, with relevant OpenType layout features. The script checks
+the disjoint ranges, complete repertoire, axis bounds, and manifest hashes.
+Subsetting runs during maintenance, never during a visitor's request or a site
+build.
+
+Unicode subsets preserve the individual glyph outlines and advances. A word
+that crosses a subset boundary can have slightly different kerning. Browser
+checks at five weights measured less than one CSS pixel (0.4%) difference for
+the tested mixed Latin/extended strings at 32px; common Latin text and ASCII
+ligatures measured identically. This does not select a different font family.

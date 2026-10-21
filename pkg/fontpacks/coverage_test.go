@@ -258,3 +258,30 @@ func TestCoverageResolutionErrors(t *testing.T) {
 		})
 	}
 }
+
+func TestPartitionedProseRetainsFallbackAndExtendedCoverage(t *testing.T) {
+	c := testCatalog(t)
+	c.SubsetProfiles["prose-basic"] = SubsetProfile{Unicode: []string{"U+0020-007E"}}
+	c.SubsetProfiles["prose-extra"] = SubsetProfile{Unicode: []string{"U+0100-017F"}}
+	profiles := compileSubsetProfiles(c.SubsetProfiles)
+	for _, tt := range []struct {
+		name, base, text string
+		tiers            map[string]Tier
+		want             map[string]bool
+	}{
+		{"complete pair without legacy core", "prose-core", "Hello Ā", map[string]Tier{"prose-basic": {}, "prose-extra": {}, "latin-ext": {}, "full": {}}, map[string]bool{"prose-basic": true, "prose-extra": true}},
+		{"display fallback uses pair", "display-core", "Hello", map[string]Tier{"prose-basic": {}, "prose-extra": {}, "full": {}}, map[string]bool{"prose-basic": true, "prose-extra": true}},
+		{"partial pair retains core", "prose-core", "Hello", map[string]Tier{"prose-basic": {}, "prose-core": {}, "full": {}}, map[string]bool{"prose-core": true}},
+		{"outside pair adds extended", "prose-core", "Hello Ȁ", map[string]Tier{"prose-basic": {}, "prose-extra": {}, "latin-ext": {}}, map[string]bool{"prose-basic": true, "prose-extra": true, "latin-ext": true}},
+		{"explicit full remains full", "full", "Hello Ā", map[string]Tier{"prose-basic": {}, "prose-extra": {}, "full": {}}, map[string]bool{"full": true}},
+		{"dedicated display remains display", "display-core", "Hello", map[string]Tier{"display-core": {}, "prose-basic": {}, "prose-extra": {}}, map[string]bool{"display-core": true}},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			pack := FontPack{Roles: map[string]Role{"body": {Source: "demo", Tier: tt.base}}}
+			got := requiredTiers(pack, coverageFromString(tt.text), profiles, map[string]Manifest{"demo": {Tiers: tt.tiers}})["demo"]
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Fatalf("tiers=%v,want%v", got, tt.want)
+			}
+		})
+	}
+}

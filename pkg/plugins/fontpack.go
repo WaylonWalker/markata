@@ -300,7 +300,7 @@ func fontpackPreloadURLsForRoles(pack fontpacks.FontPack, assets []fontpacks.Ass
 				full = a
 				continue
 			}
-			if best == nil && (a.Tier == "prose-core" || a.Tier == "display-core" || a.Tier == "code-core") {
+			if best == nil && (a.Tier == "prose-basic" || a.Tier == "prose-core" || a.Tier == "display-core" || a.Tier == "code-core") {
 				best = a
 			}
 		}

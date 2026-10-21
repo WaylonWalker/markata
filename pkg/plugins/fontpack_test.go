@@ -273,6 +273,16 @@ func TestValidFontpackPreloadCache(t *testing.T) {
 	}
 }
 
+func TestFontpackPartitionPreloadsOnlyBasic(t *testing.T) {
+	pack := fontpacks.FontPack{Roles: map[string]fontpacks.Role{"body": {Source: "body", Tier: "prose-core"}}}
+	// Extra comes first deliberately: asset ordering cannot preload the remainder.
+	assets := []fontpacks.Asset{{Source: "body", Tier: "prose-extra", URL: "/extra.woff2"}, {Source: "body", Tier: "prose-basic", URL: "/basic.woff2"}}
+	got := fontpackPreloadURLs(pack, assets)
+	if len(got) != 1 || got[0] != "/basic.woff2" {
+		t.Fatalf("partition preloads=%v", got)
+	}
+}
+
 func TestFontpackEditorialPreloadsCodeWithoutDuplicatingSharedSources(t *testing.T) {
 	assets := []fontpacks.Asset{
 		{Source: "body", Tier: "prose-core", URL: "/assets/fonts/body.woff2"},

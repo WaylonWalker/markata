@@ -163,8 +163,8 @@ func TestBuiltinFieldNotebookResolvesStableBaseTiers(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(r.Assets) != 5 {
-		t.Fatalf("assets = %d, want five deduplicated family/tier pairs", len(r.Assets))
+	if len(r.Assets) != 6 {
+		t.Fatalf("assets = %d, want six deduplicated family/tier pairs", len(r.Assets))
 	}
 	if strings.Contains(r.CSS, "full.woff2") {
 		t.Fatalf("ordinary English selected full tiers:\n%s", r.CSS)
@@ -230,7 +230,7 @@ func TestBuiltinPaintedSignUsesExpressiveAndReadableRoles(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(resolved.Assets) != 4 || !strings.Contains(resolved.CSS, "Finger Paint") || !strings.Contains(resolved.CSS, "Rock Salt") {
+	if len(resolved.Assets) != 5 || !strings.Contains(resolved.CSS, "Finger Paint") || !strings.Contains(resolved.CSS, "Rock Salt") {
 		t.Fatalf("painted-sign assets/CSS = %d\n%s", len(resolved.Assets), resolved.CSS)
 	}
 	if !strings.Contains(resolved.CSS, "h1 {\n  font-family: var(--font-display)") {
@@ -345,7 +345,7 @@ func TestBuiltinPaintedSignUsesFallbackForDisplayFontsWithoutExtendedTier(t *tes
 	for _, asset := range resolved.Assets {
 		seen[asset.Source+":"+asset.Tier] = true
 	}
-	for _, want := range []string{"finger-paint:display-core", "rock-salt:display-core", "source-sans-3:latin-ext", "dm-mono:latin-ext"} {
+	for _, want := range []string{"finger-paint:display-core", "rock-salt:display-core", "source-sans-3:prose-basic", "source-sans-3:prose-extra", "dm-mono:latin-ext"} {
 		if !seen[want] {
 			t.Errorf("extended painted-sign coverage missing %s (assets=%v)", want, seen)
 		}
