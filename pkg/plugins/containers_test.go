@@ -80,23 +80,38 @@ func TestContainerCloseMarkerMustBeColonOnly(t *testing.T) {
 
 func TestContainerExtension_RichMarkdownLayoutPrimitives(t *testing.T) {
 	got := renderContainerMarkdown(t, `::: md-layout
+
 :::: md-box {data-align="center"}
 Cluster
+
 ::::
+
 :::: md-columns {data-gap="sm"}
+
 ::::: md-card
 Website
+
 :::::
+
 ::::: md-card
 Builder
+
 :::::
+
 ::::
+
 :::: md-connector {data-direction="both"}
+
 ::::
+
 :::: md-stack
+
 ::::: md-divider
+
 :::::
+
 ::::
+
 :::`)
 	assertContainerHTMLInOrder(t, got,
 		`<div class="md-layout">`,
