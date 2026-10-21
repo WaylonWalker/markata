@@ -29,7 +29,7 @@ func triageFuzzyPick(q triageQuestion, options []string) (string, error) {
 	if len(options) == 0 {
 		return "", fmt.Errorf("no choices available for %s", q.key)
 	}
-	index, err := fuzzyfinder.Find(options, func(i int) string { return options[i] })
+	index, err := fuzzyfinder.Find(options, func(i int) string { return triageIntakeOptionLabel(q, options[i]) })
 	if errors.Is(err, fuzzyfinder.ErrAbort) {
 		return "", errTriageIntakeCanceled
 	}
@@ -42,6 +42,52 @@ func triageFuzzyPick(q triageQuestion, options []string) (string, error) {
 	return options[index], nil
 }
 
+func triageIntakeOptionLabel(q triageQuestion, option string) string {
+	switch q.key {
+	case "category":
+		switch option {
+		case "post":
+			return "post — Debug or enhance an existing Markdown post"
+		case "lint":
+			return "lint — Find content errors in a post or the whole site"
+		case "general":
+			return "general — Troubleshoot Markata or its configuration"
+		}
+	case "scope":
+		switch option {
+		case "post":
+			return "post — Lint a specific Markdown post"
+		case "site":
+			return "site — Lint the whole site"
+		}
+	case "action":
+		switch option {
+		case "debug":
+			return "debug — Fix a broken post feature or renderer error"
+		case "enhance":
+			return "enhance — Add a chart, road, diagram, or other feature"
+		case "review":
+			return "review — Evaluate existing Markdown and structure"
+		}
+	case "feature":
+		switch option {
+		case "chart":
+			return "chart — Chart data, syntax, axes, or rendering"
+		case "road":
+			return "road — Timeline, milestones, or static progress"
+		case "mermaid":
+			return "mermaid — Diagram syntax or rendering"
+		case "markdown":
+			return "markdown — Formatting, tables, and other Markdown"
+		case "other":
+			return "other — Another post feature"
+		}
+	}
+	// Post paths remain visually identical to the values included in the
+	// handoff, which makes substring/fuzzy matching predictable.
+	return option
+}
+
 func triageIsMarkdown(path string) bool {
 	ext := strings.ToLower(filepath.Ext(path))
 	return ext == ".md" || ext == ".markdown"
@@ -51,6 +97,15 @@ func triageIsMarkdown(path string) bool {
 // config nor opens Markdown contents. Restrict traversal to known content
 // folders and refuse hidden, generated and dependency directories. Symlinks
 // are never followed. Users with custom content locations can enter a path.
+func triageIsRepositoryMeta(name string) bool {
+	switch strings.ToLower(name) {
+	case "readme.md", "agents.md", "contributing.md", "changelog.md",
+		"code_of_conduct.md", "security.md", "license.md":
+		return true
+	}
+	return false
+}
+
 func triageMarkdownCandidates(siteRoot string) []string {
 	if siteRoot == "" {
 		return nil
@@ -83,7 +138,8 @@ func triageMarkdownCandidates(siteRoot string) []string {
 			if len(paths) == triageMaxPostCandidates {
 				break
 			}
-			if entry.Type().IsRegular() && triageIsMarkdown(entry.Name()) {
+			if entry.Type().IsRegular() && !strings.HasPrefix(entry.Name(), ".") &&
+				!triageIsRepositoryMeta(entry.Name()) && triageIsMarkdown(entry.Name()) {
 				add(filepath.Join(siteRoot, entry.Name()))
 			}
 		}
@@ -114,7 +170,8 @@ func triageMarkdownCandidates(siteRoot string) []string {
 					return filepath.SkipDir
 				}
 			}
-			if !entry.IsDir() && entry.Type()&os.ModeSymlink == 0 && triageIsMarkdown(entry.Name()) {
+			if !entry.IsDir() && entry.Type()&os.ModeSymlink == 0 &&
+				!strings.HasPrefix(entry.Name(), ".") && triageIsMarkdown(entry.Name()) {
 				add(path)
 			}
 			return nil
