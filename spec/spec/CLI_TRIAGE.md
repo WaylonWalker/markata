@@ -25,6 +25,33 @@ The agent MUST initially ask targeted questions, rather than presuming what is w
 
 The agent SHOULD distinguish problems in site content/config/templates, the local CLI installation, and Markata itself; perform read-only investigation first; request permission for edits, mutating builds or publicly shared issue reports; then propose a minimal verified solution. It SHOULD avoid asking for information the user already supplied with `--issue`.
 
+## Deterministic intake and task routing
+
+Triage MUST support both the generic handoff and `triage lint` /
+`triage post` task routes (using both binary names). Category may
+also be supplied with `--category general|lint|post`.
+
+Intake is rule-based, **not agent-generated**. For interactive terminals,
+collect missing fields before selecting the destination, in this order:
+
+1. Category (`general|lint|post`), if the command and flags do not imply it.
+2. For lint: scope (`site|post`), then post path when scope is post.
+3. For post: path, action (`debug|enhance|review`), feature
+   (`chart|road|mermaid|markdown|other`) for debug/enhance, then
+   an issue description for debug or a goal for enhance.
+
+Supplied values MUST be validated, not asked again; incompatible category/flag
+combinations must fail clearly. User text and post path are bounded. Triage
+MUST NOT read or modify the referenced post to produce the prompt.
+
+For non-TTY use or `--no-input`, never consume stdin for intake or
+print questions to stderr: include any unanswered questions in order in the
+pipeable Markdown handoff. Preserve generic triage compatibility. A generated
+prompt includes the structured task, provided context, and task-specific
+guidance, and instructs the agent not to repeat completed questions. Road
+enhancement should distinguish scrolling from static progress; charts and
+Mermaid debugging should separate syntax from rendering problems.
+
 ## Destination selection
 
 - `--to auto` (default): use a fuzzy picker when stdin and stdout are real terminals, `TERM` is usable, and `--no-input` is not set; otherwise print the generated prompt to stdout.
