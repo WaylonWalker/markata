@@ -164,6 +164,9 @@ func resolveTriageIntake(cmd *cobra.Command, interactive bool) (triageIntake, st
 		if request.Scope != "" || request.Post != "" || request.Action != "" || request.Feature != "" || request.Goal != "" {
 			return request, issue, fmt.Errorf("post/lint flags require --category post or --category lint")
 		}
+		if err := ask("issue", &issue); err != nil {
+			return request, issue, err
+		}
 	case "lint":
 		if request.Action != "" || request.Feature != "" || request.Goal != "" {
 			return request, issue, fmt.Errorf("--action, --feature and --goal are for post tasks, not lint")
