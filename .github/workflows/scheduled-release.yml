@@ -55,6 +55,10 @@ jobs:
             channel="$INPUT_CHANNEL"
             publish="$INPUT_PUBLISH"
           fi
+          if [[ "$publish" == "true" ]]; then
+            echo 'Publishing remains disabled until release safeguards are reviewed.' >&2
+            exit 1
+          fi
           echo "channel=$channel" >> "$GITHUB_OUTPUT"
           echo "publish=$publish" >> "$GITHUB_OUTPUT"
       - uses: actions/setup-go@v7
@@ -69,6 +73,21 @@ jobs:
           distribution: goreleaser
           version: '~> v2'
           args: check
+      - name: Snapshot build (dry-run artifact verification)
+        uses: goreleaser/goreleaser-action@v7
+        with:
+          distribution: goreleaser
+          version: '~> v2'
+          args: release --snapshot --clean
+      - name: Assemble candidate release notes
+        run: python3 scripts/release-notes.py --version candidate --output "$RUNNER_TEMP/RELEASE_NOTES.md"
+      - name: Inspect snapshot outputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s dist/checksums.txt
+          find dist -type f | sort | head -60
+          test -s "$RUNNER_TEMP/RELEASE_NOTES.md"
       - name: Compute immutable release tag
         id: version
         env:
@@ -97,7 +116,7 @@ jobs:
           echo "Candidate: $tag" >> "$GITHUB_STEP_SUMMARY"
   publish:
     needs: validate
-    if: needs.validate.outputs.changed == 'true' && needs.validate.outputs.publish == 'true'
+    if: false # publishing is intentionally disabled until a separate reviewed enablement PR
     runs-on: ubuntu-latest
     # Create 'stable-release' environment with required reviewers before enabling weekly stable releases.
     environment: ${{ needs.validate.outputs.channel == 'stable' && 'stable-release' || 'nightly-release' }}
