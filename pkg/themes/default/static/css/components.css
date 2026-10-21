@@ -5281,3 +5281,77 @@ body.reader-mode::after {
     margin-inline: 0;
   }
 }
+
+/* Rich Markdown icon compositions: existing local/pinned Lucide shortcodes
+   are inlined at build time. These helpers never load an icon-font or JS. */
+@layer components {
+  .post-content .md-icon,
+  .post-content .md-feature,
+  .post-content .md-feature-icon,
+  .post-content .md-feature-body {
+    box-sizing: border-box;
+    min-width: 0;
+  }
+
+  /* Centered icons in md-card and other article content. The existing icon
+     renderer emits an accessible decorative span with 1em SVG dimensions. */
+  .post-content .md-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    line-height: 1;
+    color: var(--color-text-muted);
+  }
+  .post-content .md-icon[data-size="sm"] { font-size: 1rem; }
+  .post-content .md-icon[data-size="lg"] { font-size: 1.75rem; }
+  .post-content .md-icon > p,
+  .post-content .md-feature-icon > p { margin: 0; }
+  .post-content :is(.md-icon, .md-feature-icon) .icon {
+    vertical-align: middle;
+  }
+  .post-content :is(.md-icon, .md-feature-icon) .icon svg {
+    display: block;
+  }
+
+  /* A feature row has an icon tile at left and real Markdown at right.
+     Unlike pseudo-element icons, the icon can be authored via :lucide-…:,
+     with visible heading text providing the accessible meaning. */
+  .post-content .md-feature {
+    display: grid;
+    grid-template-columns: 2.75rem minmax(0, 1fr);
+    gap: var(--space-3, .75rem);
+    align-items: start;
+    margin-block: var(--space-4, 1rem);
+  }
+  .post-content .md-feature > .md-feature-icon {
+    display: grid;
+    place-items: center;
+    width: 2.75rem;
+    min-height: 2.75rem;
+    padding: .5rem;
+    border-radius: var(--radius-lg, .75rem);
+    background: var(--color-surface);
+    color: var(--color-text-muted);
+    font-size: 1.3rem;
+    line-height: 1;
+  }
+  .post-content .md-feature > .md-feature-body > :first-child { margin-top: 0; }
+  .post-content .md-feature > .md-feature-body > :last-child { margin-bottom: 0; }
+  .post-content .md-feature > .md-feature-body > :is(h2, h3, h4) {
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+  @media (max-width: 360px) {
+    .post-content .md-feature {
+      grid-template-columns: 2.25rem minmax(0, 1fr);
+      gap: .625rem;
+    }
+    .post-content .md-feature > .md-feature-icon {
+      width: 2.25rem;
+      min-height: 2.25rem;
+      font-size: 1.1rem;
+      padding: .35rem;
+    }
+  }
+}
