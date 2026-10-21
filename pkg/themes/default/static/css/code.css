@@ -309,6 +309,7 @@ pre.line-numbers .line-numbers-rows > span::before {
 
 }
 
+@layer components {
 /* Compact, optional copy control. Positioned inside the existing <pre>
    without adding another document-flow row or compromising no-JS reading. */
 .post-content pre.md-code-enhanced {
@@ -353,4 +354,5 @@ pre.line-numbers .line-numbers-rows > span::before {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
 }
