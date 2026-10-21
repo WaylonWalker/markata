@@ -344,3 +344,13 @@ pre.line-numbers .line-numbers-rows > span::before {
 @media print {
   .post-content pre .md-code-copy { display: none !important; }
 }
+/* Reserve the top-right corner for Copy without overlapping the language
+   marker already provided by the base theme. */
+.post-content pre.md-code-enhanced[data-language]::before {
+  inset-inline-end: 5.4rem;
+  right: auto;
+  max-width: calc(100% - 8rem);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
