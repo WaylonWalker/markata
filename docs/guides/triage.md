@@ -57,8 +57,10 @@ Available categories: `general`, `lint`, `post`. Lint asks for `--scope site|pos
 and a `--post` path when needed. Post tasks ask for a `--post` path, `--action
 debug|enhance|review`, and a `--feature chart|road|mermaid|markdown|other`
 for debugging or enhancement. Debugging asks for an `--issue`, while enhancement
-asks for a `--goal`. Paths are provided to the agent but never read by
-triage itself.
+asks for a `--goal`. Only filenames are scanned for the post selector;
+post contents and configuration contents are not read by triage. A selected path
+is provided to the agent. Files in custom content directories can always be
+entered manually. An unavailable site directory also falls back to manual entry.
 
 With `--no-input` or redirected streams, no interactive question is
 presented. Missing intake answers are listed **in a fixed order inside the clean
