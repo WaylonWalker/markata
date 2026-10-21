@@ -37,6 +37,25 @@ jobs:
           github-token: "${{ secrets.GITHUB_TOKEN }}"
           alert-lookup: true
 
+      # GitHub auto-merge can merge immediately when no required checks are configured.
+      # Fail closed instead of depending on a comment saying branch protection is required.
+      - name: Verify required CI gates are configured
+        if: steps.metadata.outputs.alert-state != 'OPEN'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          if ! protection="$(gh api "repos/${GITHUB_REPOSITORY}/branches/main/protection/required_status_checks")"; then
+            echo "::error::Cannot verify main's required checks. Configure branch protection and required CI before enabling Dependabot auto-merge."
+            exit 1
+          fi
+          for check in             "Lint"             "Test (ubuntu-latest, 1.26)"             "Test (windows-latest, 1.26)"             "Test (macos-latest, 1.26)"             "GoReleaser Check"; do
+            if ! jq -e --arg name "$check" '[.checks[]?.context, .contexts[]?] | index($name) != null' <<< "$protection" >/dev/null; then
+              echo "::error::Missing required branch-protection check: $check. Refusing early auto-merge."
+              exit 1
+            fi
+          done
+
       - name: Enable auto-merge for non-security Dependabot updates
         if: steps.metadata.outputs.alert-state != 'OPEN'
         run: gh pr merge --auto --squash "$PR_URL"
