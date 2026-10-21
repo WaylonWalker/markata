@@ -21,6 +21,7 @@ Use three or more colons followed by a class name or attributes to open a contai
 ````markdown
 ::: card {#intro .featured data-kind="note"}
 This Markdown is inside the card.
+
 :::
 ````
 
@@ -36,9 +37,11 @@ Outer content before the card.
 
 :::: card
 Inner card content.
+
 ::::
 
 Outer content after the card.
+
 :::
 ````
 
@@ -62,6 +65,7 @@ The opening line can include multiple classes and an attribute block:
 ````markdown
 :::: panel wide {#example .accent data-state="ready"}
 Content
+
 ::::
 ````
 
@@ -78,13 +82,16 @@ The same nesting rule is useful for components that transform Markdown container
 ```bash
 brew install markata-go
 ```
+
 ::::
 
 :::: wa-tab {label="Linux"}
 ```bash
 curl -fsSL https://example.com/install.sh | sh
 ```
+
 ::::
+
 
 :::
 ````
@@ -101,6 +108,7 @@ milestones:
 
 - [Kickoff](/notes/kickoff/) Jan 2026
 - [Launch](/notes/launch/) Jun 2026
+
 :::
 ````
 
@@ -140,6 +148,8 @@ direction alone for accessibility.
 :::: md-box {data-align="center"}
 ### Falcon3 — Kubernetes
 Two deployments, shared published site volume.
+
+
 ::::
 
 :::: md-columns {data-gap="sm"}
@@ -147,22 +157,34 @@ Two deployments, shared published site volume.
 ::::: md-card {data-align="center"}
 ### Website
 Nginx serves current release.
+
+
 :::::
 
 ::::: md-card {data-align="center"}
 ### Builder Admin
 Builds and publishes releases.
+
+
 :::::
+
+
 
 ::::
 
 :::: md-connector {data-direction="both"}
+
+
 ::::
 
 :::: md-box {data-align="center"}
 ### Shared `/data/site` Longhorn PVC
 Replicated storage: NVMe + HDD.
+
+
 ::::
+
+
 
 :::
 ````
@@ -182,6 +204,8 @@ descriptive labels. For connected arbitrary graphs, use Mermaid.
 | --- | ---: |
 | Falcon2 | 3 TB |
 | Falcon3 | 4 TB |
+
+
 ::::
 
 :::: md-card
@@ -191,7 +215,11 @@ descriptive labels. For connected arbitrary graphs, use Mermaid.
 | --- | ---: |
 | Falcon2 | 3 TB |
 | Falcon3 | 14 TB |
+
+
 ::::
+
+
 
 :::
 ````
