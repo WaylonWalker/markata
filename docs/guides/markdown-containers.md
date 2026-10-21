@@ -21,6 +21,7 @@ Use three or more colons followed by a class name or attributes to open a contai
 ````markdown
 ::: card {#intro .featured data-kind="note"}
 This Markdown is inside the card.
+
 :::
 ````
 
@@ -36,9 +37,11 @@ Outer content before the card.
 
 :::: card
 Inner card content.
+
 ::::
 
 Outer content after the card.
+
 :::
 ````
 
@@ -62,6 +65,7 @@ The opening line can include multiple classes and an attribute block:
 ````markdown
 :::: panel wide {#example .accent data-state="ready"}
 Content
+
 ::::
 ````
 
@@ -78,13 +82,16 @@ The same nesting rule is useful for components that transform Markdown container
 ```bash
 brew install markata-go
 ```
+
 ::::
 
 :::: wa-tab {label="Linux"}
 ```bash
 curl -fsSL https://example.com/install.sh | sh
 ```
+
 ::::
+
 
 :::
 ````
@@ -101,7 +108,123 @@ milestones:
 
 - [Kickoff](/notes/kickoff/) Jan 2026
 - [Launch](/notes/launch/) Jun 2026
+
 :::
 ````
 
 See [Roads](/docs/guides/roads/) for all styles and options.
+
+## Responsive article layouts (static HTML and CSS)
+
+Markata also provides **opt-in, article-scoped** layout classes built from the
+same fenced containers. They generate plain HTML at build time: no JavaScript,
+external assets, or custom component framework. These classes intentionally use
+`md-` prefixes to avoid changing existing `::: card`, `::: columns`,
+`!!! vsplit`, and feed cards.
+
+| Container | Result |
+|---|---|
+| `md-layout` | Bordered grouping for an architecture diagram |
+| `md-box` | Simple bounded box |
+| `md-card` | Soft-surface card (scrollable if it contains a wide table) |
+| `md-columns` | Auto-fitting equal-width columns, stacking when narrow |
+| `md-grid` | Responsive grid, with optional fixed column count |
+| `md-stack` | Vertical grouping |
+| `md-divider` | Subtle rule |
+| `md-connector` | Decorative arrow between rows |
+
+Use `{data-gap="sm"}` or `{data-gap="lg"}` on grid/stack/layout containers,
+`{data-columns="2"}` (also 3 or 4) for explicit desktop columns, and
+`{data-align="center"}` on a card or box. Explicit columns stack at narrow
+viewports. Unknown values retain the defaults; arbitrary CSS is not accepted.
+Use descriptive text to convey relationships, rather than relying on arrow
+direction alone for accessibility.
+
+### Architecture diagram
+
+````markdown
+::: md-layout
+
+:::: md-box {data-align="center"}
+### Falcon3 — Kubernetes
+Two deployments, shared published site volume.
+
+
+::::
+
+:::: md-columns {data-gap="sm"}
+
+::::: md-card {data-align="center"}
+### Website
+Nginx serves current release.
+
+
+:::::
+
+::::: md-card {data-align="center"}
+### Builder Admin
+Builds and publishes releases.
+
+
+:::::
+
+
+
+::::
+
+:::: md-connector {data-direction="both"}
+
+
+::::
+
+:::: md-box {data-align="center"}
+### Shared `/data/site` Longhorn PVC
+Replicated storage: NVMe + HDD.
+
+
+::::
+
+
+
+:::
+````
+
+The connector arrows are only a decorative aid, not a replacement for the
+descriptive labels. For connected arbitrary graphs, use Mermaid.
+
+### Side-by-side tables
+
+````markdown
+::: md-columns
+
+:::: md-card
+### Current storage
+
+| Node | Capacity |
+| --- | ---: |
+| Falcon2 | 3 TB |
+| Falcon3 | 4 TB |
+
+
+::::
+
+:::: md-card
+### Proposed storage
+
+| Node | Capacity |
+| --- | ---: |
+| Falcon2 | 3 TB |
+| Falcon3 | 14 TB |
+
+
+::::
+
+
+
+:::
+````
+
+Each table remains normal semantic Markdown HTML and can independently use
+table sorting when enabled. Cards keep their own horizontal overflow instead
+of forcing the whole article to scroll. For more examples, see
+`examples/gallery-site/pages/layout-primitives.md`.
