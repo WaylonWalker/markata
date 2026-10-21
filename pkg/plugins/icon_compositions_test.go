@@ -7,8 +7,12 @@ import (
 
 func TestIconCompositionsUseExistingShortcodesAndNestedContainers(t *testing.T) {
 	p := NewIconsPlugin()
+	svg, ok := prepareIconSVG(testIconSVG)
+	if !ok {
+		t.Fatal("test SVG must pass normal icon preparation")
+	}
 	for _, name := range []string{"rocket", "server", "database"} {
-		icon := iconAsset{name: "lucide/" + name, svg: testIconSVG}
+		icon := iconAsset{name: "lucide/" + name, svg: svg}
 		p.icons["lucide-"+name] = icon
 		p.icons["lucide/"+name] = icon
 	}
