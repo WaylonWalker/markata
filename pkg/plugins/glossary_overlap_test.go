@@ -47,7 +47,7 @@ func TestGlossaryPlugin_OverlappingTermsWithUnlimitedLinks(t *testing.T) {
 	p.config.MaxLinksPerTerm = 0
 	p.terms = map[string]*GlossaryTerm{
 		"markdown": {Term: "Markdown", Slug: "markdown", Href: "/markdown/"},
-		"mark": {Term: "Mark", Slug: "mark", Href: "/mark/"},
+		"mark":     {Term: "Mark", Slug: "mark", Href: "/mark/"},
 	}
 	got := p.linkTerms("<p>Markdown Markdown and Mark.</p>", &models.Post{Slug: "sample"})
 	if strings.Count(got, `href="/markdown/"`) != 2 ||
