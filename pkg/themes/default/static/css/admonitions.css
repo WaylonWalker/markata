@@ -16,7 +16,10 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  min-width: 0;
   font-weight: 600;
+  line-height: var(--leading-normal, 1.5);
+  overflow-wrap: anywhere;
   margin-bottom: var(--space-2);
   color: var(--color-text);
 }
@@ -202,7 +205,8 @@ aside.admonition.aside .admonition-title::before {
   --admonition-color: var(--admonition-vsplit-border, #6b7280);
   --admonition-bg: transparent;
   display: grid;
-  grid-template-columns: 1fr;
+  /* Shrink the single column rather than letting long code set the width. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 0;
   padding: 0;
   margin: var(--space-4) 0;
@@ -213,7 +217,7 @@ aside.admonition.aside .admonition-title::before {
 /* On larger screens, arrange child vsplits side by side */
 @media (min-width: 768px) {
   .admonition.vsplit {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -229,11 +233,28 @@ aside.admonition.aside .admonition-title::before {
 /* These should NOT be grids - only the parent is a grid */
 .admonition.vsplit > .admonition.vsplit {
   display: block;
+  min-width: 0;
+  overflow-wrap: anywhere;
   margin: 0;
   padding: var(--space-4);
   border: none;
   border-top: 2px solid var(--color-border, #e5e7eb);
   background: var(--color-surface, #f9fafb);
+}
+
+/* Code and rich content must not force their comparison column wider than
+ * the page. Keep code horizontally scrollable instead of clipping it. */
+.admonition.vsplit > .admonition.vsplit pre,
+.admonition.vsplit > .admonition.vsplit .highlight {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.admonition.vsplit > .admonition.vsplit :is(img, video, svg) {
+  max-width: 100%;
+  height: auto;
 }
 
 /* On larger screens, use vertical divider instead of horizontal */
