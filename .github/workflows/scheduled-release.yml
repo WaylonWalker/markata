@@ -47,6 +47,8 @@ jobs:
           distribution: goreleaser
           version: '~> v2'
           args: check
+      - name: Install Syft for SBOM generation
+        uses: anchore/sbom-action/download-syft@v0
       - name: Build release snapshot without publishing
         uses: goreleaser/goreleaser-action@v7
         with:
