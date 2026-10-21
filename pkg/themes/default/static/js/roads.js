@@ -323,7 +323,8 @@
     const out = LAYOUTS[r.style](n, w, safeSpacing, r);
     r.h = out.h;
     r.stops = out.stops;
-    r.inner.style.height = `${out.h}px`;\n    r.root.style.display = "flow-root";
+    r.inner.style.height = `${out.h}px`;
+    r.root.style.display = "flow-root";
     r.svg.setAttribute("viewBox", `0 0 ${w} ${out.h}`);
 
     r.points.forEach((p, i) => {
