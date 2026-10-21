@@ -5092,3 +5092,141 @@ body.reader-mode::after {
     .post-content :is(.md-columns, .md-grid) { break-inside: avoid; }
   }
 }
+
+/* Static Markdown reporting components. These build on md-layout / md-columns
+   without affecting existing card/alert/task-list styling. */
+@layer components {
+  .post-content :is(.md-status, .md-stat, .md-delta, .md-meter, .md-progress) {
+    box-sizing: border-box;
+    min-width: 0;
+  }
+
+  .post-content .md-status {
+    --md-tone: var(--color-primary);
+    display: inline-flex;
+    max-width: 100%;
+    align-items: center;
+    gap: .4rem;
+    padding: .18rem .6rem;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--md-tone) 26%, transparent);
+    background: color-mix(in srgb, var(--md-tone) 10%, var(--color-surface));
+    color: var(--color-text);
+    font-size: var(--text-xs, .8rem);
+    line-height: 1.45;
+    vertical-align: baseline;
+  }
+
+  .post-content .md-status::before {
+    content: "";
+    width: .5em;
+    height: .5em;
+    flex: none;
+    border-radius: 50%;
+    background: var(--md-tone);
+  }
+  .post-content .md-status > p { margin: 0; }
+
+  .post-content :is(.md-status, .md-stat, .md-delta, .md-meter, .md-progress)[data-tone="success"] {
+    --md-tone: var(--admonition-success-border, #178b57);
+  }
+  .post-content :is(.md-status, .md-stat, .md-delta, .md-meter, .md-progress)[data-tone="caution"] {
+    --md-tone: var(--admonition-warn-border, #b87520);
+  }
+  .post-content :is(.md-status, .md-stat, .md-delta, .md-meter, .md-progress)[data-tone="danger"] {
+    --md-tone: var(--admonition-danger-border, #be4343);
+  }
+
+  .post-content .md-stat {
+    --md-tone: var(--color-primary);
+    display: grid;
+    align-content: start;
+    gap: var(--space-2, .5rem);
+    padding: var(--space-2, .5rem) 0;
+  }
+
+  .post-content .md-stat > p { margin: 0; }
+  .post-content .md-stat > p:first-child {
+    color: var(--color-text-muted);
+    font-size: var(--text-sm, .875rem);
+  }
+  .post-content .md-stat > p:nth-child(2) {
+    font-size: clamp(1.5rem, 3vw, 2rem);
+    font-weight: 700;
+    line-height: 1.15;
+    font-variant-numeric: tabular-nums;
+  }
+  .post-content .md-stat > p:nth-child(2) strong { font-weight: inherit; }
+  .post-content .md-stat > p:nth-child(3) {
+    color: var(--color-text-muted);
+    font-size: var(--text-sm, .875rem);
+  }
+
+  .post-content .md-delta {
+    --md-tone: var(--color-primary);
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: .5rem 1rem;
+    padding-top: var(--space-4, 1rem);
+    border-top: 1px solid var(--color-border-soft, var(--color-border));
+  }
+  .post-content .md-delta > p { margin: 0; }
+  .post-content .md-delta > p:last-child {
+    color: var(--md-tone);
+    font-size: var(--text-xl, 1.25rem);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Native <meter> is appropriate for utilization/space; <progress> for
+     incomplete operations. Both preserve text and accessibility without JS. */
+  .post-content :is(.md-meter, .md-progress) {
+    --md-tone: var(--color-primary);
+    display: grid;
+    gap: .4rem;
+    width: 100%;
+  }
+  .post-content :is(.md-meter, .md-progress) > :is(meter, progress) {
+    display: block;
+    width: 100%;
+    height: .72rem;
+    appearance: none;
+    -webkit-appearance: none;
+    border: 0;
+    border-radius: 999px;
+    overflow: hidden;
+    background: var(--color-border-soft, var(--color-border));
+    accent-color: var(--md-tone);
+  }
+  .post-content :is(.md-meter, .md-progress) > :is(meter, progress)::-webkit-meter-bar,
+  .post-content :is(.md-meter, .md-progress) > :is(meter, progress)::-webkit-progress-bar {
+    border: 0;
+    border-radius: 999px;
+    background: var(--color-border-soft, var(--color-border));
+  }
+  .post-content .md-meter > meter::-webkit-meter-optimum-value,
+  .post-content .md-meter > meter::-webkit-meter-suboptimum-value,
+  .post-content .md-meter > meter::-webkit-meter-even-less-good-value,
+  .post-content .md-progress > progress::-webkit-progress-value {
+    border-radius: 999px;
+    background: var(--md-tone);
+  }
+  .post-content .md-meter > meter::-moz-meter-bar,
+  .post-content .md-progress > progress::-moz-progress-bar {
+    border-radius: 999px;
+    background: var(--md-tone);
+  }
+  .post-content :is(.md-meter, .md-progress) > p {
+    color: var(--color-text-muted);
+    font-size: var(--text-xs, .8rem);
+    margin: 0;
+  }
+  @media print {
+    .post-content :is(.md-meter, .md-progress) > :is(meter, progress) {
+      print-color-adjust: exact;
+      -webkit-print-color-adjust: exact;
+    }
+  }
+}
