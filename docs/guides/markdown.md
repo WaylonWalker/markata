@@ -932,6 +932,22 @@ anchor = false  # default: false (use heading_anchors plugin instead)
 
 ## Code Blocks
 
+### Code copy controls (progressive enhancement)
+
+On pages containing code blocks, the default theme can add a compact **Copy**
+button, and a language label when the fence specifies a language. The controls
+reuse the existing palette-aware Chroma styling and don't require another
+highlighter. Markata only loads the small enhancement script on code-bearing
+pages; partial-page navigations initialize new blocks once, without duplicate
+buttons. Mermaid diagrams are excluded.
+
+The fenced source remains native `<pre><code>` HTML without JavaScript.
+Clipboard actions require the browser's permission or a secure context; if
+automatic copying isn't available, the control selects the code so readers can
+copy it manually. Controls are omitted from copied rich post content.
+
+
+
 Fenced code blocks support syntax highlighting for many languages.
 
 ### Basic Code Block
