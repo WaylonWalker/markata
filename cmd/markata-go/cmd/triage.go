@@ -162,6 +162,9 @@ func runTriageCommand(cmd *cobra.Command, _ []string) error {
 	}
 	interactive := triageIsInteractive()
 	request, issue, err := resolveTriageIntake(cmd, interactive)
+	if errors.Is(err, errTriageIntakeCanceled) {
+		return nil // Escape from any intake picker exits without an agent launch.
+	}
 	if err != nil {
 		return err
 	}
