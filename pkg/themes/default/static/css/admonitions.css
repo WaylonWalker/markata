@@ -16,12 +16,12 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  min-width: 0;
   font-weight: 600;
-  line-height: var(--leading-normal, 1.5);
-  overflow-wrap: anywhere;
   margin-bottom: var(--space-2);
   color: var(--color-text);
+  min-width: 0;
+  line-height: var(--leading-normal, 1.5);
+  overflow-wrap: anywhere;
 }
 
 .admonition-title::before {
