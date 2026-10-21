@@ -29,6 +29,7 @@
   var conditionalJS = {
     'feed-sparklines-v2': '.feed-sparkline-wrap, .feed-header-sparkline',
     'code-chrome': '.post-content pre > code, .post-content .chroma pre, .post-content .highlight pre',
+    'markdown-checklists': '.post-content .md-checklist li.task-list-item > input[type="checkbox"]',
     'roads': '.road, [data-road]'
   };
 
@@ -202,6 +203,10 @@
       // copy of the same code-block controls.
       if (scriptName === 'code-chrome' && typeof window.markataInitCodeChrome === 'function') {
         window.markataInitCodeChrome();
+        continue;
+      }
+      if (scriptName === 'markdown-checklists' && typeof window.markataInitChecklists === 'function') {
+        window.markataInitChecklists();
         continue;
       }
       if (!hasScript(scriptName)) {
