@@ -28,6 +28,7 @@
 
   var conditionalJS = {
     'feed-sparklines-v2': '.feed-sparkline-wrap, .feed-header-sparkline',
+    'code-chrome': '.post-content pre > code, .post-content .chroma pre, .post-content .highlight pre',
     'roads': '.road, [data-road]'
   };
 
@@ -195,7 +196,15 @@
     for (var scriptName in conditionalJS) {
       if (!conditionalJS.hasOwnProperty(scriptName)) continue;
       var scriptSelector = conditionalJS[scriptName];
-      if (document.querySelector(scriptSelector) && !hasScript(scriptName)) {
+      if (!document.querySelector(scriptSelector)) continue;
+      // SPA body swaps can remove the script tag while retaining the event
+      // handler. Re-run the existing initializer instead of loading a second
+      // copy of the same code-block controls.
+      if (scriptName === 'code-chrome' && typeof window.markataInitCodeChrome === 'function') {
+        window.markataInitCodeChrome();
+        continue;
+      }
+      if (!hasScript(scriptName)) {
         injectJS(scriptName);
       }
     }
