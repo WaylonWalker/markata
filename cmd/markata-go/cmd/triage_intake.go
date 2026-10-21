@@ -56,15 +56,43 @@ func triageIntakeChoice(value string, q triageQuestion) (string, error) {
 	return "", fmt.Errorf("invalid --%s %q (choose %s)", q.key, value, strings.Join(q.options, ", "))
 }
 
-func askTriageQuestion(reader *bufio.Reader, stderr io.Writer, q triageQuestion) (string, error) {
-	if len(q.options) > 0 {
-		if _, err := fmt.Fprintf(stderr, "%s [%s]: ", q.prompt, strings.Join(q.options, "/")); err != nil {
+func askTriageQuestion(reader *bufio.Reader, stderr io.Writer, q triageQuestion, picker triagePicker, siteRoot string) (string, error) {
+	choices := q.options
+	if q.key == "post" {
+		choices = triageMarkdownCandidates(siteRoot)
+		if len(choices) > 0 {
+			choices = append(choices, triageManualPostOption)
+		}
+	}
+	if len(choices) > 0 {
+		if _, err := fmt.Fprintln(stderr, q.prompt); err != nil {
 			return "", err
 		}
-	} else {
-		if _, err := fmt.Fprintf(stderr, "%s: ", q.prompt); err != nil {
+		answer, err := picker(q, choices)
+		if err != nil {
 			return "", err
 		}
+		valid := false
+		for _, choice := range choices {
+			if answer == choice {
+				valid = true
+				break
+			}
+		}
+		if !valid {
+			return "", fmt.Errorf("invalid %s selection %q", q.key, answer)
+		}
+		if q.key != "post" {
+			return triageIntakeChoice(answer, q)
+		}
+		if answer != triageManualPostOption {
+			return answer, nil
+		}
+		// A manually typed path is always possible, even if the content is
+		// outside the directories used for safe discovery.
+	}
+	if _, err := fmt.Fprintf(stderr, "%s: ", q.prompt); err != nil {
+		return "", err
 	}
 	answer, err := reader.ReadString('\n')
 	if err != nil && !(err == io.EOF && strings.TrimSpace(answer) != "") {
@@ -73,9 +101,6 @@ func askTriageQuestion(reader *bufio.Reader, stderr io.Writer, q triageQuestion)
 	answer = strings.TrimSpace(answer)
 	if answer == "" {
 		return "", fmt.Errorf("triage intake requires an answer for %s", q.key)
-	}
-	if len(q.options) > 0 {
-		return triageIntakeChoice(answer, q)
 	}
 	limit := 4000
 	if q.key == "post" {
@@ -92,6 +117,10 @@ func askTriageQuestion(reader *bufio.Reader, stderr io.Writer, q triageQuestion)
 // prompt. In a pipe, missing answers become explicit questions in the prompt,
 // never interactive reads or accidental stdin consumption.
 func resolveTriageIntake(cmd *cobra.Command, interactive bool) (triageIntake, string, error) {
+	return resolveTriageIntakeWithPicker(cmd, interactive, triageFuzzyPick)
+}
+
+func resolveTriageIntakeWithPicker(cmd *cobra.Command, interactive bool, picker triagePicker) (triageIntake, string, error) {
 	request := triageIntake{
 		Category: strings.ToLower(strings.TrimSpace(triageCategory)),
 		Scope:    strings.ToLower(strings.TrimSpace(triageScope)),
@@ -122,6 +151,12 @@ func resolveTriageIntake(cmd *cobra.Command, interactive bool) (triageIntake, st
 		}
 	}
 	reader := bufio.NewReader(cmd.InOrStdin())
+	// Directory listing is only performed for a missing post path in an
+	// interactive terminal; flags and piped prompts never scan content.
+	siteRoot := ""
+	if interactive {
+		_, siteRoot = triageProjectEvidence()
+	}
 	ask := func(key string, value *string) error {
 		q := triageQuestions[key]
 		if *value != "" {
@@ -138,7 +173,7 @@ func resolveTriageIntake(cmd *cobra.Command, interactive bool) (triageIntake, st
 			request.Missing = append(request.Missing, q.prompt)
 			return nil
 		}
-		answer, err := askTriageQuestion(reader, cmd.ErrOrStderr(), q)
+		answer, err := askTriageQuestion(reader, cmd.ErrOrStderr(), q, picker, siteRoot)
 		if err != nil {
 			return err
 		}
