@@ -7,20 +7,20 @@
 <div class="post-byline post-byline--multi">
     <div class="post-byline__authors">
     {% for author_obj in post.byline_authors %}
-        {% include "components/author_credit.html" %}
+        {% include "components/author_credit.html" with eager_author_avatar=True %}
     {% endfor %}
     </div>
 
     {% if post.byline_editors %}
     <div class="post-byline__editors">
         {% if post.byline_editors|length == 1 %}
-        {% for author_obj in post.byline_editors %}{% include "components/author_credit.html" %}{% endfor %}
+        {% for author_obj in post.byline_editors %}{% include "components/author_credit.html" with eager_author_avatar=True %}{% endfor %}
         {% else %}
         <details class="post-byline__editor-group">
             <summary>
                 <span class="post-byline__editor-stack" aria-hidden="true">
                 {% for editor in post.byline_editors %}{% if loop.index <= 4 %}
-                    {% if editor.avatar %}<img src="{{ editor.avatar }}" alt="" width="28" height="28" loading="lazy">
+                    {% if editor.avatar %}<img src="{{ editor.avatar }}" alt="" width="28" height="28" loading="eager">
                     {% else %}<span class="post-byline__editor-initial">{{ editor.name|first }}</span>{% endif %}
                 {% endif %}{% endfor %}
                 </span>
@@ -60,7 +60,7 @@
 {# Single author fallback from config #}
 <div class="post-byline p-author h-card">
     {% if config.seo.author_image %}
-    <img class="u-photo post-byline__photo" src="{% if config.seo.author_image | startswith:'http' %}{{ config.seo.author_image }}{% else %}{{ config.url }}{{ config.seo.author_image }}{% endif %}" alt="{{ config.author }} avatar" width="44" height="44" loading="lazy">
+    <img class="u-photo post-byline__photo" src="{% if config.seo.author_image | startswith:'http' %}{{ config.seo.author_image }}{% else %}{{ config.url }}{{ config.seo.author_image }}{% endif %}" alt="{{ config.author }} avatar" width="44" height="44" loading="eager">
     {% endif %}
     <div class="post-byline__author-info">
         {% if config.url %}
