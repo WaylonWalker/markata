@@ -65,7 +65,9 @@
         const card = sideOf(x, w);
         return { x, y: h * (i + 0.5) / n, card, maxW: sideWidth(x, w, card) };
       });
-      return { h, stops, d: smooth([{ x: w / 2, y: -h * 0.02 }, ...stops, { x: w / 2, y: h * 1.02 }]) };
+      // Keep the trailing path inside the road block. An overshooting SVG
+      // endpoint can paint into the Markdown paragraph that follows it.
+      return { h, stops, d: smooth([{ x: w / 2, y: -h * 0.02 }, ...stops, { x: w / 2, y: h }]) };
     },
     timeline(n, w, sp) {
       const h = n * sp;
@@ -312,6 +314,10 @@
   const placeCards = (r, stops) => {
     r.points.forEach((p, i) => {
       const s = stops[i];
+      // Link avatars add an unlayered `a.has-avatar { position: relative }`
+      // rule, which overrides the road component stylesheet and leaves these
+      // anchors in normal flow. Road points must stay out of document flow.
+      p.el.style.position = "absolute";
       p.el.style.left = `${s.x}px`;
       p.el.style.top = `${s.y}px`;
       for (const side of ["left", "right", "below", "above"]) p.el.classList.toggle(`road-card-${side}`, s.card === side);
