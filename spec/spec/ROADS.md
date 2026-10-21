@@ -105,6 +105,11 @@ In the `git` style the label names the commit's branch:
 - When the reader prefers reduced motion, roads MUST render fully drawn without
   animation.
 - Roads MUST lay out again when their width changes.
+- Positioned road points MUST be removed from normal document flow, regardless
+  of styles applied to their source links. This prevents milestones from
+  occupying space after the road container.
+- A winding road's SVG path MUST end within its container so it cannot paint
+  into following article content.
 - Point links MUST stay focusable and navigable. When a link has no hover data
   of its own, it MUST get `data-hover-title` from its title and
   `data-hover-description` from its label, so the default tooltip shows them.
