@@ -56,13 +56,14 @@ jobs:
       goreleaser_version: ${{ steps.version.outputs.goreleaser_version }}
     steps:
       - uses: actions/checkout@v7
-        if: github.event_name == 'schedule'
         with:
           fetch-depth: 0
           persist-credentials: false
-      - name: Check nightly version calculation
-        if: github.event_name == 'schedule'
+      - name: Check nightly version calculation on PR and schedule
         run: python3 -m unittest discover -s scripts -p 'test_nightly_release_version.py' -v
+      - name: Preview nightly identity without publishing
+        if: github.event_name == 'pull_request'
+        run: python3 scripts/nightly-release-version.py --date 20261022
       - name: Calculate date-stamped 0.x prerelease from latest stable tag
         id: version
         if: github.event_name == 'schedule' && github.ref == 'refs/heads/main'
