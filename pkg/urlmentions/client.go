@@ -181,7 +181,7 @@ func (c Client) Fetch(ctx context.Context, endpoint string) (map[string][]Entry,
 			return nil, err
 		}
 		total += n
-		if err = indexEntries(page, result, seenEntries); err != nil {
+		if err := indexEntries(page, result, seenEntries); err != nil {
 			return nil, err
 		}
 		if page.Next == nil {
