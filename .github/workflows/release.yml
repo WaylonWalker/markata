@@ -23,7 +23,8 @@ jobs:
   # Run tests before releasing
   test:
     name: Test
-    if: startsWith(github.ref, 'refs/tags/v')
+    # A nightly v0.x.y-dev.YYYYMMDD tag must never enter the stable release job.
+    if: startsWith(github.ref, 'refs/tags/v') && !contains(github.ref_name, '-')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
