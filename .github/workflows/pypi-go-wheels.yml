@@ -1,8 +1,8 @@
 name: Go Markata PyPI wheels
 
-# PRs build and inspect wheels without secrets. Publishing only happens on an
-# explicit main-branch workflow dispatch, confirmed by a human, after PyPI
-# trusts this exact workflow for the existing "markata" project.
+# PRs build and inspect wheels without secrets. Stable publishing requires
+# explicit main-branch dispatch and confirmation. Only schedule runs on main
+# can publish nightlies, using a separate PyPI trusted publishing environment.
 on:
   # 2 AM Chicago time, including DST transitions, on the default branch.
   # Nightlies publish only after all release and wheel verification succeeds.
@@ -39,7 +39,7 @@ on:
         type: string
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
   # Never cancel a publishing run after a new PR/dispatch starts.
   cancel-in-progress: false
 
@@ -285,7 +285,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if gh release view "${NIGHTLY_TAG}" >/dev/null 2>&1; then
+          if gh release view "${NIGHTLY_TAG}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
             echo "Refusing to overwrite release: ${NIGHTLY_TAG}" >&2
             exit 1
           fi
