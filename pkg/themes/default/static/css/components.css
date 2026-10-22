@@ -5281,3 +5281,52 @@ body.reader-mode::after {
     margin-inline: 0;
   }
 }
+
+/* URL mentions: compact SSR badges with a native no-JS disclosure. */
+@layer components {
+  .reader-entry-mentions {
+    margin-block: var(--space-2, .5rem);
+    font-size: .8125rem;
+    color: var(--color-text-muted, inherit);
+  }
+  .reader-entry-mentions-summary {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: .375rem;
+    width: fit-content;
+    max-width: 100%;
+    cursor: pointer;
+    list-style-position: inside;
+  }
+  .reader-entry-mentions-summary:focus-visible {
+    outline: 2px solid var(--color-primary, currentColor);
+    outline-offset: 3px;
+    border-radius: .25rem;
+  }
+  .reader-entry-mentions-label { font-weight: 500; }
+  .reader-entry-mention-provider {
+    display: inline-flex;
+    align-items: center;
+    gap: .25rem;
+    max-width: 100%;
+    padding: .125rem .375rem;
+    border: 1px solid var(--color-border, currentColor);
+    border-radius: 999px;
+    overflow-wrap: anywhere;
+  }
+  .reader-entry-mention-provider img {
+    display: block;
+    width: 1rem;
+    height: 1rem;
+    object-fit: contain;
+    flex: none;
+  }
+  .reader-entry-mentions-list {
+    margin: .5rem 0 0 1rem;
+    padding: 0;
+    overflow-wrap: anywhere;
+  }
+  .reader-entry-mentions-list li + li { margin-top: .25rem; }
+  .reader-entry-mentions-list a { text-decoration: underline; text-underline-offset: .15em; }
+}
