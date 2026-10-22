@@ -146,7 +146,8 @@ checksum:
   algorithm: sha256
 
 snapshot:
-  version_template: "{{ incpatch .Version }}-next"
+  # CI supplies a date-stamped prerelease; local dry runs retain -next.
+  version_template: "{{ if index .Env \"MARKATA_SNAPSHOT_VERSION\" }}{{ index .Env \"MARKATA_SNAPSHOT_VERSION\" }}{{ else }}{{ incpatch .Version }}-next{{ end }}"
 
 changelog:
   sort: asc
