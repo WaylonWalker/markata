@@ -15,6 +15,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write  # Keyless Cosign signing; no release publishing permissions.
 
 concurrency:
   group: scheduled-release-dry-run
@@ -49,6 +50,8 @@ jobs:
           args: check
       - name: Install Syft for SBOM generation
         uses: anchore/sbom-action/download-syft@v0
+      - name: Install Cosign for checksum signing
+        uses: sigstore/cosign-installer@v3
       - name: Build release snapshot without publishing
         uses: goreleaser/goreleaser-action@v7
         with:
