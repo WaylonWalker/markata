@@ -36,3 +36,29 @@ func TestFetchRejectsCrossOriginNext(t *testing.T) {
  _,err:=(Client{HTTP:server.Client()}).Fetch(context.Background(),server.URL)
  if err==nil || !strings.Contains(err.Error(),"cross-origin") { t.Fatalf("expected cross-origin error, got %v",err) }
 }
+
+
+func TestFetchRejectsCrossOriginRedirect(t *testing.T) {
+ server:=httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter,r *http.Request) {
+  http.Redirect(w,r,"https://other.example/private",http.StatusFound)
+ }))
+ defer server.Close()
+ _,err:=(Client{HTTP:server.Client()}).Fetch(context.Background(),server.URL)
+ if err==nil || !strings.Contains(err.Error(),"cross-origin redirect") {t.Fatalf("expected redirect rejection, got %v",err)}
+}
+func TestFetchRejectsOversizedResponse(t *testing.T) {
+ server:=httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter,r *http.Request) {
+  fmt.Fprint(w,`{"protocol":"url-mentions","version":"1.0","items":[]}`)
+ }))
+ defer server.Close()
+ _,err:=(Client{HTTP:server.Client(),MaxBytes:10}).Fetch(context.Background(),server.URL)
+ if err==nil || !strings.Contains(err.Error(),"budget exceeded") {t.Fatalf("expected budget rejection, got %v",err)}
+}
+func TestFetchRejectsMalformedEntry(t *testing.T) {
+ server:=httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter,r *http.Request) {
+  fmt.Fprint(w,`{"protocol":"url-mentions","version":"1.0","items":[{"id":"a","source_url":"https://example.com/a","references":[{"url":"https://example.com"}]}]}`)
+ }))
+ defer server.Close()
+ _,err:=(Client{HTTP:server.Client()}).Fetch(context.Background(),server.URL)
+ if err==nil || !strings.Contains(err.Error(),"normalized_url") {t.Fatalf("expected missing normalized URL rejection, got %v",err)}
+}
