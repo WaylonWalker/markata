@@ -25,3 +25,16 @@ These templates deliberately render nothing when the field is absent. **This PR 
 - One or more: small 'Mentioned by' group, source favicons and count. Native disclosure reveals titles and outbound links.
 - All mentions must be static HTML, available offline after a successful build.
 - Provider outages must not make a previously complete build silently lose mentions.
+
+
+## Reader opt-in (experimental)
+
+Set `url_mentions_providers` in the site's extra configuration to a list of public HTTPS v1.0 index endpoints, for example:
+
+```yaml
+url_mentions_providers:
+  - https://listen.waylonwalker.com/.well-known/url-mentions.json
+  - https://brainrot.waylonwalker.com/.well-known/url-mentions.json
+```
+
+The blogroll writer fetches these endpoints once per build and adds `url_mentions` to reader entry template data when an entry URL matches a normalized reference. An unavailable provider does not fail the build. The initial integration does not persist an ETag or disk cache; it is opt-in and should not be treated as a complete production rollout. Other article and archive templates are not yet wired.
