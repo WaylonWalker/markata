@@ -1,0 +1,74 @@
+name: Scheduled release dry run
+
+on:
+  schedule:
+    - cron: '0 7 * * 1-6'
+    - cron: '0 8 * * 0'
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: 'Candidate channel'
+        required: true
+        type: choice
+        options: [nightly, stable]
+        default: nightly
+
+permissions:
+  contents: read
+  id-token: write  # Keyless Cosign signing; no release publishing permissions.
+
+concurrency:
+  group: scheduled-release-dry-run
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-go@v7
+        with:
+          go-version: '1.26'
+          cache: true
+      - name: Validate release-note fragments
+        run: python3 -m unittest discover -s scripts -p 'test_release_notes.py' -v
+      - name: Assemble release-note preview
+        run: |
+          python3 scripts/release-notes.py --version candidate --output "$RUNNER_TEMP/RELEASE_NOTES.md"
+          test -s "$RUNNER_TEMP/RELEASE_NOTES.md"
+          cat "$RUNNER_TEMP/RELEASE_NOTES.md" >> "$GITHUB_STEP_SUMMARY"
+      - name: Full Go race tests
+        run: go test -race -timeout=30m ./...
+      - name: Check GoReleaser config
+        uses: goreleaser/goreleaser-action@v7
+        with:
+          distribution: goreleaser
+          version: '~> v2'
+          args: check
+      - name: Install Syft for SBOM generation
+        uses: anchore/sbom-action/download-syft@v0
+      - name: Install Cosign for checksum signing
+        uses: sigstore/cosign-installer@v3
+      - name: Build release snapshot without publishing
+        uses: goreleaser/goreleaser-action@v7
+        with:
+          distribution: goreleaser
+          version: '~> v2'
+          args: release --snapshot --clean
+      - name: Inspect build artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s dist/checksums.txt
+          find dist -type f | sort
+          grep -q 'markata' dist/checksums.txt
+      - name: Upload dry-run artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: scheduled-release-snapshot
+          path: |
+            dist/**
+          retention-days: 7
