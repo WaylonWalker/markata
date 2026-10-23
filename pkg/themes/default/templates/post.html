@@ -60,18 +60,17 @@
 <meta name="{{ meta.name }}" content="{{ meta.content }}">
 {% endfor %}
 {% endif %}
-{# Pagefind image metadata is valid in <head> and remains indexed there. #}
+{# Pagefind reads metadata in <head> even when the article uses data-pagefind-body. #}
 {% if not canonical_rendering_fixture %}
-{# Pagefind image metadata for search thumbnails #}
-	            {% if post.cover_image %}
-	            <meta data-pagefind-meta="image[content]" content="{{ post.cover_image | media_url }}">
-	            {% elif post.Extra.image %}
-	            <meta data-pagefind-meta="image[content]" content="{{ post.Extra.image | media_url }}">
-	            {% elif post.Extra.thumbnail %}
-	            <meta data-pagefind-meta="image[content]" content="{{ post.Extra.thumbnail | media_url }}">
-	            {% elif config.seo.default_image %}
-	            <meta data-pagefind-meta="image[content]" content="{{ config.seo.default_image | media_url }}">
-	            {% endif %}
+{% if post.cover_image %}
+<meta name="pagefind:image" data-pagefind-meta="image[content]" content="{{ post.cover_image | media_url }}">
+{% elif post.Extra.image %}
+<meta name="pagefind:image" data-pagefind-meta="image[content]" content="{{ post.Extra.image | media_url }}">
+{% elif post.Extra.thumbnail %}
+<meta name="pagefind:image" data-pagefind-meta="image[content]" content="{{ post.Extra.thumbnail | media_url }}">
+{% elif config.seo.default_image %}
+<meta name="pagefind:image" data-pagefind-meta="image[content]" content="{{ config.seo.default_image | media_url }}">
+{% endif %}
 {% endif %}
 {% endblock %}
 
