@@ -7,14 +7,14 @@
 <div class="post-byline post-byline--multi">
     <div class="post-byline__authors">
     {% for author_obj in post.byline_authors %}
-        {% include "components/author_credit.html" with eager_author_avatar=True %}
+        {% include "components/author_credit.html" with eager_author_avatar=true %}
     {% endfor %}
     </div>
 
     {% if post.byline_editors %}
     <div class="post-byline__editors">
         {% if post.byline_editors|length == 1 %}
-        {% for author_obj in post.byline_editors %}{% include "components/author_credit.html" with eager_author_avatar=True %}{% endfor %}
+        {% for author_obj in post.byline_editors %}{% include "components/author_credit.html" with eager_author_avatar=true %}{% endfor %}
         {% else %}
         <details class="post-byline__editor-group">
             <summary>
