@@ -79,6 +79,26 @@
             <a href="{{ entry.url }}" target="_blank" rel="noopener noreferrer">{{ entry.title }}<span class="visually-hidden">(opens in new tab)</span></a>
           </h2>
 
+          {# Progressive-enhancement-free URL mentions: populated by the reader data model. #}
+          {% if entry.url_mentions %}
+          <details class="reader-entry-mentions">
+            <summary class="reader-entry-mentions-summary">
+              <span class="reader-entry-mentions-label">Mentioned by</span>
+              {% for mention in entry.url_mentions %}
+              <span class="reader-entry-mention-provider">
+                {% if mention.icon_url %}<img src="{{ mention.icon_url }}" alt="" width="16" height="16">{% endif %}
+                {{ mention.provider_name }}
+              </span>
+              {% endfor %}
+            </summary>
+            <ul class="reader-entry-mentions-list">
+              {% for mention in entry.url_mentions %}
+              <li><a href="{{ mention.source_url }}" target="_blank" rel="noopener noreferrer">{{ mention.title | default:mention.provider_name }}</a></li>
+              {% endfor %}
+            </ul>
+          </details>
+          {% endif %}
+
           {% if entry.description %}
           <p class="reader-entry-description">{{ entry.description | striptags | truncatewords:40 }}</p>
           {% endif %}
