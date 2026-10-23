@@ -33,7 +33,7 @@ func TestPostPagefindImageMetadataIsInHead(t *testing.T) {
 			if metaEndOffset < 0 || bodyStart <= metaStart+metaEndOffset {
 				t.Fatal("could not identify head metadata and content template blocks")
 			}
-			head := source[metaStart : metaStart+metaEndOffset]
+			head := source[metaStart:metaStart+metaEndOffset]
 			body := source[bodyStart:]
 			if count := strings.Count(head, marker); count != 4 {
 				t.Fatalf("expected four prioritized image sources in head, found %d", count)
