@@ -276,7 +276,7 @@ func (p *GlossaryPlugin) computeTermsHash() string {
 
 	// allTerms is already sorted by term name from buildGlossary
 	var b strings.Builder
-	b.WriteString("glossary-deterministic-protection-v2\x00")
+	b.WriteString("glossary-deterministic-protection-v3\x00")
 	for _, term := range p.allTerms {
 		b.WriteString(term.Term)
 		b.WriteByte('\x00')
@@ -596,10 +596,13 @@ func (p *GlossaryPlugin) linkTerms(htmlContent string, currentPost *models.Post)
 				return match
 			}
 
-			// Build the replacement link
-			link := p.buildLink(glossaryTerm, match)
+			// Protect generated links as well as existing HTML. Later, shorter
+			// glossary terms must never match inside href, title, or link text.
+			key := fmt.Sprintf(placeholder, protectedIdx)
+			protectedSegments[key] = p.buildLink(glossaryTerm, match)
+			protectedIdx++
 			linkCounts[termID]++
-			return link
+			return key
 		})
 	}
 
