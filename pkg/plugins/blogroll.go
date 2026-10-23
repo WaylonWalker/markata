@@ -617,6 +617,7 @@ type BlogrollPlugin struct {
 	entries   []*models.ExternalEntry
 	mu        sync.RWMutex
 	assetURLs map[string]string
+	urlMentions map[string][]map[string]string
 }
 
 type blogrollFetchOptions struct {
@@ -792,6 +793,12 @@ func (p *BlogrollPlugin) Write(m *lifecycle.Manager) error {
 	outputDir := config.OutputDir
 	if outputDir == "" {
 		outputDir = defaultOutputDir
+	}
+
+	// Opt-in provider indexes are fetched once, before any reader pages render.
+	p.urlMentions = nil
+	if config.Extra != nil {
+		p.urlMentions = readerURLMentions(config.Extra["url_mentions_providers"])
 	}
 
 	// Generate blogroll page
@@ -2039,6 +2046,9 @@ func (p *BlogrollPlugin) readerEntryMap(entry *models.ExternalEntry, feed *model
 	if sourceDomain != "" {
 		result["source_domain"] = sourceDomain
 		result["source_icon_url"] = "https://www.google.com/s2/favicons?domain=" + neturl.QueryEscape(sourceDomain) + "&sz=32"
+	}
+	if matches := readerMentionsForURL(p.urlMentions, entry.URL); len(matches) > 0 {
+		result["url_mentions"] = matches
 	}
 	result["source_initial"] = readerSourceInitial(sourceTitle, sourceDomain)
 
