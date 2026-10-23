@@ -60,6 +60,19 @@
 <meta name="{{ meta.name }}" content="{{ meta.content }}">
 {% endfor %}
 {% endif %}
+{# Pagefind image metadata is valid in <head> and remains indexed there. #}
+{% if not canonical_rendering_fixture %}
+{# Pagefind image metadata for search thumbnails #}
+	            {% if post.cover_image %}
+	            <meta data-pagefind-meta="image[content]" content="{{ post.cover_image | media_url }}">
+	            {% elif post.Extra.image %}
+	            <meta data-pagefind-meta="image[content]" content="{{ post.Extra.image | media_url }}">
+	            {% elif post.Extra.thumbnail %}
+	            <meta data-pagefind-meta="image[content]" content="{{ post.Extra.thumbnail | media_url }}">
+	            {% elif config.seo.default_image %}
+	            <meta data-pagefind-meta="image[content]" content="{{ config.seo.default_image | media_url }}">
+	            {% endif %}
+{% endif %}
 {% endblock %}
 
 {% block progress %}
@@ -97,16 +110,7 @@
             <p class="post-description p-summary visually-hidden" data-pagefind-meta="excerpt">{{ post.description | striptags }}</p>
             {% endif %}
 
-            {# Pagefind image metadata for search thumbnails #}
-	            {% if post.cover_image %}
-	            <meta data-pagefind-meta="image[content]" content="{{ post.cover_image | media_url }}">
-	            {% elif post.Extra.image %}
-	            <meta data-pagefind-meta="image[content]" content="{{ post.Extra.image | media_url }}">
-	            {% elif post.Extra.thumbnail %}
-	            <meta data-pagefind-meta="image[content]" content="{{ post.Extra.thumbnail | media_url }}">
-	            {% elif config.seo.default_image %}
-	            <meta data-pagefind-meta="image[content]" content="{{ config.seo.default_image | media_url }}">
-	            {% endif %}
+            
             {% if post.tags %}
             <div class="tags">
                 {% for tag in post.tags %}
