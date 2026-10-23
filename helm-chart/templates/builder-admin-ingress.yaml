@@ -32,6 +32,9 @@ metadata:
   namespace: "{{ include "markata-notes.namespace" . }}"
   annotations:
     traefik.ingress.kubernetes.io/router.middlewares: "{{ include "markata-notes.namespace" . }}-{{ .Values.project_identifier }}-notes-builder-admin-auth@kubernetescrd"
+    {{- with .Values.builderAdmin.ingress.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
 spec:
   ingressClassName: {{ required "builderAdmin.ingress.ingressClassName is required when builder-admin is enabled" .Values.builderAdmin.ingress.ingressClassName | quote }}
   tls:

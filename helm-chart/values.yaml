@@ -148,6 +148,7 @@ builderAdmin:
     enabled: false
     host: ""
     ingressClassName: ""
+    annotations: {}
     tls:
       enabled: false
       secretName: ""
