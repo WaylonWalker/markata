@@ -14,28 +14,21 @@ import (
 // readerURLMentions loads opt-in public provider indexes once per build.
 // Network errors are non-fatal: a provider outage must not break the site build.
 func readerURLMentions(raw interface{}) map[string][]map[string]string {
- endpoints := make([]string, 0)
- switch v := raw.(type) {
- case []string:
-  endpoints = append(endpoints, v...)
- case []interface{}:
-  for _, item := range v {
-   if endpoint, ok := item.(string); ok { endpoints = append(endpoints, endpoint) }
-  }
- }
+ endpoints := readerMentionEndpoints(raw)
  result := make(map[string][]map[string]string)
  client := urlmentions.Client{MaxPages: 8, MaxBytes: 2 << 20}
  ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
  defer cancel()
  for _, endpoint := range endpoints {
   parsed, err := url.Parse(endpoint)
-  if err != nil || parsed.Scheme != "https" || parsed.Hostname() == "" || parsed.User != nil { continue }
+  if err != nil || parsed.Scheme != schemeHTTPS || parsed.Hostname() == "" || parsed.User != nil { continue }
   index, err := client.Fetch(ctx, endpoint)
   if err != nil { log.Printf("[url_mentions] provider %s unavailable: %v", parsed.Hostname(), err); continue }
   for target, entries := range index {
-   for _, entry := range entries {
+   for i := range entries {
+			entry := &entries[i]
     source, err := url.Parse(entry.SourceURL)
-    if err != nil || source.Scheme != "https" || source.Hostname() == "" { continue }
+    if err != nil || source.Scheme != schemeHTTPS || source.Hostname() == "" { continue }
     provider := strings.TrimSpace(entry.Provider.Name)
     if provider == "" { provider = parsed.Hostname() }
     title := strings.TrimSpace(entry.Title)
@@ -70,11 +63,24 @@ func readerURLMentions(raw interface{}) map[string][]map[string]string {
 // Normalize conservatively: don't conflate paths, query strings or hosts.
 func readerMentionsForURL(index map[string][]map[string]string, raw string) []map[string]string {
  parsed, err := url.Parse(strings.TrimSpace(raw))
- if err != nil || (parsed.Scheme != "https" && parsed.Scheme != "http") || parsed.Hostname() == "" { return nil }
+ if err != nil || (parsed.Scheme != schemeHTTPS && parsed.Scheme != schemeHTTP) || parsed.Hostname() == "" { return nil }
  parsed.Fragment = ""
  parsed.Host = strings.ToLower(parsed.Host)
  key := parsed.String()
  if matches := index[key]; len(matches) != 0 { return matches }
  if strings.HasSuffix(parsed.Path, "/") && parsed.Path != "/" { parsed.Path = strings.TrimSuffix(parsed.Path, "/") } else if parsed.Path != "/" { parsed.Path += "/" }
  return index[parsed.String()]
+}
+
+func readerMentionEndpoints(raw interface{}) []string {
+ endpoints := make([]string, 0)
+ switch v := raw.(type) {
+ case []string:
+  endpoints = append(endpoints, v...)
+ case []interface{}:
+  for _, item := range v {
+   if endpoint, ok := item.(string); ok { endpoints = append(endpoints, endpoint) }
+  }
+ }
+ return endpoints
 }
