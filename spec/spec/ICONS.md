@@ -87,6 +87,10 @@ The wrapper is vertically aligned with surrounding text. Source SVG `width` and 
 
 Icon shortcodes are decorative by default and are hidden from assistive technology. Authors should include visible text when an icon carries meaning.
 
+The plugin serializes SVG source on one line before inserting it into Markdown.
+This keeps multiline SVG files from being split into Markdown paragraphs and
+escaped instead of rendered as inline SVG.
+
 ## Article Compositions
 
 In the default article theme, the existing inline SVG shortcode may be

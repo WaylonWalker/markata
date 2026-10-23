@@ -1,8 +1,12 @@
 package plugins
 
 import (
+	"bytes"
 	"strings"
 	"testing"
+
+	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/renderer/html"
 )
 
 func TestIconCompositionsUseExistingShortcodesAndNestedContainers(t *testing.T) {
@@ -97,5 +101,36 @@ func TestIconsInFencedRichMarkdownExamplesStayLiteral(t *testing.T) {
 	}
 	if !strings.Contains(output, "::: md-feature\n:lucide-rocket:\n:::") {
 		t.Fatalf("fenced example was modified: %s", output)
+	}
+}
+
+func TestMultilineIconSVGStaysInlineThroughMarkdownRendering(t *testing.T) {
+	p := NewIconsPlugin()
+	icon, ok := prepareIconSVG(`<svg
+  width="24"
+  height="24"
+  viewBox="0 0 24 24">
+  <path d="M1 1h22v22H1z" />
+</svg>`)
+	if !ok {
+		t.Fatal("multiline SVG must pass normal icon preparation")
+	}
+	p.icons["lucide-rocket"] = iconAsset{name: "lucide/rocket", svg: icon}
+
+	markdown := p.processContent("Icon: :lucide-rocket:\n")
+	md := goldmark.New(
+		goldmark.WithExtensions(&ContainerExtension{}),
+		goldmark.WithRendererOptions(html.WithUnsafe()),
+	)
+	var output bytes.Buffer
+	if err := md.Convert([]byte(markdown), &output); err != nil {
+		t.Fatalf("Convert() error = %v", err)
+	}
+	rendered := output.String()
+	if !strings.Contains(rendered, `<svg`) || !strings.Contains(rendered, `<path `) {
+		t.Fatalf("multiline SVG should render as inline HTML: %s", rendered)
+	}
+	if strings.Contains(rendered, `&lt;svg`) {
+		t.Fatalf("multiline SVG was escaped as Markdown text: %s", rendered)
 	}
 }

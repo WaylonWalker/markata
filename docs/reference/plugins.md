@@ -41,8 +41,8 @@ Configure -> Glob -> Load -> Transform -> Render -> Collect -> Write -> Cleanup
 
 ### icons
 
-**Name:** `icons`  
-**Stage:** Transform (after other source transforms, before Markdown rendering)  
+**Name:** `icons`<br>
+**Stage:** Transform (after other source transforms, before Markdown rendering)<br>
 **Purpose:** Resolve Zensical-style SVG shortcodes in Markdown.
 
 ````markdown
