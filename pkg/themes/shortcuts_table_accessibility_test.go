@@ -29,7 +29,7 @@ func TestShortcutsTablesHaveAccessibleNamesAndHeaders(t *testing.T) {
 				t.Fatalf("expected %d shortcut tables, got %d", len(sections), len(tables))
 			}
 			for i, match := range tables {
-				t	table := match[1]
+					table := match[1]
 				caption := "<caption class=\"visually-hidden\">" + sections[i] + " keyboard shortcuts</caption>"
 				if !strings.Contains(table, caption) {
 					t.Errorf("%s table is missing its accessible caption", sections[i])
