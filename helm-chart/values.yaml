@@ -148,6 +148,9 @@ builderAdmin:
     enabled: false
     host: ""
     ingressClassName: ""
+    # Additional annotations for the protected ingress. The chart owns the
+    # Traefik middleware annotation and ignores it if set here.
+    annotations: {}
     tls:
       enabled: false
       secretName: ""
