@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - '.goreleaser.yml'
+      - 'scripts/nightly-release-version.py'
       - 'go.mod'
       - 'scripts/check-rc-artifacts.sh'
       - '.github/workflows/rc-snapshot-smoke.yml'
@@ -29,6 +30,14 @@ jobs:
         with:
           go-version: '1.26'
           cache: true
+      - name: Exercise date-stamped nightly version override (no publishing)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s scripts -p 'test_nightly_release_version.py' -v
+          version="$(python3 scripts/nightly-release-version.py --date 20261022 | sed -n 's/^goreleaser_version=//p')"
+          test -n "$version"
+          echo "MARKATA_SNAPSHOT_VERSION=$version" >> "$GITHUB_ENV"
       - name: Check GoReleaser configuration
         uses: goreleaser/goreleaser-action@v7
         with:
@@ -43,5 +52,10 @@ jobs:
           args: release --snapshot --clean --skip=sign,sbom
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Verify canonical and legacy assets and checksums
-        run: bash scripts/check-rc-artifacts.sh
+      - name: Verify canonical, legacy and date-stamped assets and checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash scripts/check-rc-artifacts.sh
+          test -s "dist/markata_${MARKATA_SNAPSHOT_VERSION}_linux_x86_64.tar.gz"
+          test -s "dist/markata-go_${MARKATA_SNAPSHOT_VERSION}_windows_x86_64.zip"
