@@ -31,6 +31,14 @@ template: post
 Write your content here.
 ```
 
+## Rich Markdown authoring
+
+For icons, card layouts, feature rows, tables, status metrics and
+progressive enhancements, read `topics/rich-markdown.md` before inventing
+custom HTML or JavaScript. `:lucide-rocket:` and `:lucide-database:` are
+built-in icon shortcodes; `md-feature` and `md-icon` are CSS-only layouts.
+Keep visible headings alongside icons for accessibility.
+
 ## Important Default Behavior
 
 - files without frontmatter are still valid

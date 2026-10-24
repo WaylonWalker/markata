@@ -54,6 +54,69 @@ The current static site is available to both workloads.
 
 :::
 
+## Lucide icons in cards and feature rows
+
+The `:lucide-…:` shortcode resolves at build time. It does not require
+Web Awesome or a browser-time icon library.
+
+::: md-columns
+
+:::: md-card {data-align="center"}
+
+::::: md-icon {data-size="lg"}
+:lucide-server:
+
+:::::
+
+### Falcon2
+K3s node
+
+::::
+
+:::: md-card {data-align="center"}
+
+::::: md-icon {data-size="lg"}
+:lucide-database:
+
+:::::
+
+### Falcon3
+NAS + ZFS
+
+::::
+
+:::
+
+::: md-feature
+
+:::: md-feature-icon
+:lucide-rocket:
+
+::::
+
+:::: md-feature-body
+### Verify production
+Confirm the new image is deployed and check live pages without JavaScript.
+
+::::
+
+:::
+
+::: md-feature
+
+:::: md-feature-icon
+:lucide-gauge:
+
+::::
+
+:::: md-feature-body
+### Protect performance
+Test narrow screens and simulated slow connections before rollout.
+
+::::
+
+:::
+
 ## Independent side-by-side tables
 
 ::: md-columns
