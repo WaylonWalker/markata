@@ -567,9 +567,13 @@ func (p *MermaidPlugin) cssVariablesScript() string {
 ` + p.mermaidImportJS() + `
   const rootStyle = getComputedStyle(document.documentElement);
   const css = (name, fallback) => (rootStyle.getPropertyValue(name) || fallback).trim();
-  const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches ||
-    document.documentElement.dataset.theme === 'dark';
-  const accent = css('--color-primary', '#ffcd11');
+  // The active palette is the source of truth: OS preference may differ
+  // from the user-selected theme.
+  const background = css('--color-background', '#ffffff');
+  const accent = css('--color-primary', '#64748b');
+  const surface = css('--color-surface', css('--color-background', '#ffffff'));
+  const foreground = css('--color-text', '#1f2937');
+  const border = css('--color-border', accent);
   const flowchart = {
     nodeSpacing: 60,
     rankSpacing: 90,
@@ -578,26 +582,26 @@ func (p *MermaidPlugin) cssVariablesScript() string {
   const themeCSS = ` + "`" + `
     .label foreignObject > div { padding: 14px 14px 10px; line-height: 1.2; }
     .nodeLabel { padding: 14px 14px 10px; line-height: 1.2; }
-    * { cursor: pointer; }
+
   ` + "`" + `;
   const themeVariables = {
-    background: css('--color-background', '#ffffff'),
-    primaryColor: css('--color-code-bg', '#0a0a0a'),
-    primaryTextColor: css('--color-text', '#1f2937'),
-    primaryBorderColor: accent,
-    lineColor: accent,
-    textColor: css('--color-text', '#1f2937'),
-    nodeBkg: css('--color-code-bg', '#0a0a0a'),
-    nodeBorder: accent,
-    nodeTextColor: css('--color-text', '#1f2937'),
+    background,
+    primaryColor: surface,
+    primaryTextColor: foreground,
+    primaryBorderColor: border,
+    lineColor: border,
+    textColor: foreground,
+    nodeBkg: surface,
+    nodeBorder: border,
+    nodeTextColor: foreground,
     fontSize: '16px',
     nodePadding: 20,
     nodeTextMargin: 14,
-    clusterBkg: isDark ? css('--color-background', '#0f0f0f') : css('--color-surface', '#f9fafb'),
-    clusterBorder: accent,
-    clusterTextColor: css('--color-text', '#1f2937'),
-    titleColor: css('--color-text', '#1f2937'),
-    edgeLabelBackground: css('--color-code-bg', '#0a0a0a'),
+    clusterBkg: background,
+    clusterBorder: border,
+    clusterTextColor: foreground,
+    titleColor: foreground,
+    edgeLabelBackground: surface,
   };
 ` + p.mermaidLightboxJS() + `
   mermaid.initialize({ startOnLoad: false, theme: 'base', themeVariables, flowchart, themeCSS });
