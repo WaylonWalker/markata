@@ -1043,7 +1043,6 @@ func TestMermaidPlugin_ChromiumConfig(t *testing.T) {
 	}
 }
 
-
 func TestMermaidCSSVariablesUseThemeSurfaceAndBorder(t *testing.T) {
 	script := NewMermaidPlugin().cssVariablesScript()
 	for _, expected := range []string{
