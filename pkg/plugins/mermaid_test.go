@@ -1056,6 +1056,12 @@ func TestMermaidCSSVariablesUseThemeSurfaceAndBorder(t *testing.T) {
 		"lineColor: border",
 		"clusterBorder: border",
 		"clusterBkg: background",
+		"new WeakMap()",
+		"removeAttribute('data-processed')",
+		"diagramSources.set(block, block.textContent || '')",
+		"window.addEventListener('theme-change'",
+		"window.addEventListener('palette-change'",
+		"window.addEventListener('color-mode-change'",
 	} {
 		if !strings.Contains(script, expected) {
 			t.Errorf("Mermaid theme script missing %q", expected)

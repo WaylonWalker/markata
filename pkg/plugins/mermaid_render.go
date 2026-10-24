@@ -37,12 +37,10 @@ type mermaidRenderer interface {
 // These are resolved at build time from the site's palette and passed to
 // mermaid.initialize() as themeVariables for consistent diagram styling.
 type mermaidPaletteColors struct {
-	Background   string // bg-primary -> --color-background
-	PrimaryColor string // code-bg -> --color-code-bg (node fill)
-	TextColor    string // text-primary -> --color-text
-	Accent       string // accent -> --color-primary (borders, lines)
-	Surface      string // bg-surface -> --color-surface (cluster bg)
-	IsDark       bool   // whether this is a dark variant
+	Background string // bg-primary -> --color-background
+	TextColor  string // text-primary -> --color-text
+	Accent     string // accent -> --color-border fallback
+	Surface    string // bg-surface -> --color-surface
 }
 
 // resolvePaletteColors loads and resolves palette colors for mermaid theming.
@@ -81,12 +79,10 @@ func resolvePaletteColors(extra map[string]interface{}) *mermaidPaletteColors {
 	}
 
 	colors := &mermaidPaletteColors{
-		Background:   palette.Resolve("bg-primary"),
-		PrimaryColor: palette.Resolve("code-bg"),
-		TextColor:    palette.Resolve("text-primary"),
-		Accent:       palette.Resolve("accent"),
-		Surface:      palette.Resolve("bg-surface"),
-		IsDark:       palette.Variant == palettes.VariantDark,
+		Background: palette.Resolve("bg-primary"),
+		TextColor:  palette.Resolve("text-primary"),
+		Accent:     palette.Resolve("accent"),
+		Surface:    palette.Resolve("bg-surface"),
 	}
 
 	// Only return if we got at least the accent color
@@ -103,7 +99,6 @@ func resolvePaletteColors(extra map[string]interface{}) *mermaidPaletteColors {
 // Default fallback colors for mermaid theme variables when palette values are missing.
 const (
 	defaultMermaidBg      = "#ffffff"
-	defaultMermaidPrimary = "#0a0a0a"
 	defaultMermaidText    = "#1f2937"
 	defaultMermaidSurface = "#f9fafb"
 )
@@ -114,10 +109,6 @@ func (c *mermaidPaletteColors) themeVariablesJSON() string {
 	if bg == "" {
 		bg = defaultMermaidBg
 	}
-	primary := c.PrimaryColor
-	if primary == "" {
-		primary = defaultMermaidPrimary
-	}
 	text := c.TextColor
 	if text == "" {
 		text = defaultMermaidText
@@ -127,27 +118,22 @@ func (c *mermaidPaletteColors) themeVariablesJSON() string {
 		surface = defaultMermaidSurface
 	}
 
-	clusterBg := surface
-	if c.IsDark {
-		clusterBg = bg
-	}
-
 	vars := map[string]interface{}{
 		"background":          bg,
-		"primaryColor":        primary,
+		"primaryColor":        surface,
 		"primaryTextColor":    text,
 		"primaryBorderColor":  c.Accent,
 		"lineColor":           c.Accent,
 		"textColor":           text,
-		"nodeBkg":             primary,
+		"nodeBkg":             surface,
 		"nodeBorder":          c.Accent,
 		"nodeTextColor":       text,
 		"fontSize":            "16px",
-		"clusterBkg":          clusterBg,
+		"clusterBkg":          bg,
 		"clusterBorder":       c.Accent,
 		"clusterTextColor":    text,
 		"titleColor":          text,
-		"edgeLabelBackground": primary,
+		"edgeLabelBackground": surface,
 	}
 
 	b, err := json.Marshal(vars)
