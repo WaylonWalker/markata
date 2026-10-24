@@ -3772,7 +3772,7 @@ no_sandbox = false                                          # Required in contai
 | `mode` | string | `"client"` | Rendering mode: `client` (browser-side JS), `cli` (mmdc), or `chromium` (headless Chrome) |
 | `cdn_url` | string | `/assets/vendor/mermaid/mermaid.min.js` | Mermaid URL (client mode, local by default) |
 | `theme` | string | `"default"` | Mermaid theme: default, dark, forest, neutral. Ignored when `use_css_variables` is true. |
-| `use_css_variables` | bool | `true` | Read site CSS custom properties (`--color-background`, `--color-text`, `--color-primary`, `--color-code-bg`, `--color-surface`) and pass them to Mermaid's theming. Hardcoded fallbacks are used if variables are not defined. |
+| `use_css_variables` | bool | `true` | Use `--color-surface` for node fills and edge-label backgrounds, `--color-text` for labels, `--color-border` (falling back to `--color-primary`) for borders and edges, and `--color-background` for cluster fills. |
 | `lightbox` | bool | `true` | Enable click-to-zoom lightbox overlay with interactive pan and zoom via svg-pan-zoom. |
 | `lightbox_selector` | string | `".glightbox-mermaid"` | CSS selector for mermaid lightbox links. Retained for backward compatibility; the programmatic GLightbox API does not use it. |
 | `chromium.no_sandbox` | bool | `false` | Disable Chromium sandbox. Required when running inside Docker, Distrobox, or other containerized environments. |
@@ -3785,9 +3785,10 @@ no_sandbox = false                                          # Required in contai
 3. In **cli/chromium** modes: pre-renders diagrams to static SVGs embedded directly in HTML
 4. Only injects the script once per post (even with multiple diagrams)
 5. When `use_css_variables` is true, reads site CSS custom properties and passes them to `mermaid.initialize()` so diagrams match the site palette automatically
-6. When `lightbox` is true, attaches click handlers to each rendered SVG. Clicking opens a programmatic GLightbox overlay with svg-pan-zoom for interactive pan and zoom. svg-pan-zoom (~29KB) is lazy-loaded from vendor assets by default.
-7. In chromium mode, the MermaidJS library is cached at `~/.cache/markata-go/mermaid/` to avoid re-downloading on each build
-8. In cli/chromium modes, rendered SVGs are cached in the build cache and reused when the diagram source and rendering inputs are unchanged
+6. Client mode retains each diagram's source and rerenders its SVG when the site theme, palette, or color mode changes. Chromium mode uses the same palette colors when it pre-renders SVGs. CLI mode follows Mermaid CLI theme and configuration.
+7. When `lightbox` is true, attaches click handlers to each rendered SVG. Clicking opens a programmatic GLightbox overlay with svg-pan-zoom for interactive pan and zoom. svg-pan-zoom (~29KB) is lazy-loaded from vendor assets by default.
+8. In chromium mode, the MermaidJS library is cached at `~/.cache/markata-go/mermaid/` to avoid re-downloading on each build
+9. In cli/chromium modes, rendered SVGs are cached in the build cache and reused when the diagram source and rendering inputs are unchanged
 
 **Markdown usage:**
 ````markdown

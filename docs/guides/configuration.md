@@ -1299,9 +1299,13 @@ the typed setting disabled.
 | `mode` | string | `"client"` | Rendering mode: `client` (browser-side), `cli` (mmdc), or `chromium` (headless Chrome) |
 | `cdn_url` | string | `/assets/vendor/mermaid/mermaid.min.js` | Mermaid JS URL (local by default) |
 | `theme` | string | `"default"` | Mermaid theme: `default`, `dark`, `forest`, `neutral`. Ignored when `use_css_variables` is true. |
-| `use_css_variables` | bool | `true` | Derive diagram colors from site CSS custom properties. Reads `--color-background`, `--color-text`, `--color-primary`, `--color-code-bg`, and `--color-surface` with hardcoded fallbacks. |
+| `use_css_variables` | bool | `true` | Derive diagram colors from site CSS custom properties. Nodes and edge labels use the surface color, labels use the text color, borders and edges use the border color (falling back to the primary color), and clusters use the background color. |
 | `lightbox` | bool | `true` | Enable click-to-zoom lightbox overlay with interactive pan and zoom via svg-pan-zoom. |
 | `lightbox_selector` | string | `".glightbox-mermaid"` | CSS selector for lightbox links (backward compatibility; programmatic API does not use it). |
+
+In client mode, diagrams rerender when readers change the active theme or
+palette. Chromium mode uses the same palette colors in its static SVGs. CLI mode
+uses the Mermaid CLI theme and configuration.
 
 #### CLI Mode Settings (`[markata-go.mermaid.cli]`)
 

@@ -199,6 +199,22 @@ kubectl get pods -A
 
 Without JavaScript, the commands are still ordinary selectable code.
 
+## Theme-aware Mermaid diagram
+
+The diagram keeps its node, label, edge, and cluster colors in step with the
+active site palette.
+
+~~~mermaid
+flowchart TD
+  subgraph input[Input]
+    A[Raw water]
+  end
+  A -->|clean| B{Ready?}
+  B -->|yes| C[Storage]
+  B -->|no| D[Filter]
+  D --> B
+~~~
+
 ## Native rendered/source disclosure
 
 ### Preview

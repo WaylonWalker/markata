@@ -2,6 +2,7 @@ package plugins
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -9,6 +10,38 @@ import (
 
 	"github.com/WaylonWalker/markata/pkg/runtimeenv"
 )
+
+func TestMermaidPaletteThemeVariablesUseThemeSurfaces(t *testing.T) {
+	colors := &mermaidPaletteColors{
+		Background: "#111111",
+		TextColor:  "#eeeeee",
+		Accent:     "#ffcc00",
+		Surface:    "#222222",
+	}
+
+	var got map[string]string
+	if err := json.Unmarshal([]byte(colors.themeVariablesJSON()), &got); err != nil {
+		t.Fatalf("themeVariablesJSON() returned invalid JSON: %v", err)
+	}
+
+	for key, want := range map[string]string{
+		"primaryColor":        colors.Surface,
+		"nodeBkg":             colors.Surface,
+		"edgeLabelBackground": colors.Surface,
+		"clusterBkg":          colors.Background,
+		"primaryTextColor":    colors.TextColor,
+		"nodeTextColor":       colors.TextColor,
+		"clusterTextColor":    colors.TextColor,
+		"primaryBorderColor":  colors.Accent,
+		"nodeBorder":          colors.Accent,
+		"lineColor":           colors.Accent,
+		"clusterBorder":       colors.Accent,
+	} {
+		if got[key] != want {
+			t.Errorf("theme variable %q = %q, want %q", key, got[key], want)
+		}
+	}
+}
 
 func TestLoadOrDownloadJSSource_UsesBundledMermaidDir(t *testing.T) {
 	bundledDir := t.TempDir()
