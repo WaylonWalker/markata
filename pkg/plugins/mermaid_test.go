@@ -1056,10 +1056,17 @@ func TestMermaidCSSVariablesUseThemeSurfaceAndBorder(t *testing.T) {
 		"nodeBorder: border",
 		"lineColor: border",
 		"clusterBorder: border",
+		"clusterBkg: background",
 	} {
 		if !strings.Contains(script, expected) {
 			t.Errorf("Mermaid theme script missing %q", expected)
 		}
+	}
+	if strings.Contains(script, "prefers-color-scheme: dark") {
+		t.Error("Mermaid palette should not override selected site theme with OS preference")
+	}
+	if strings.Contains(script, "* { cursor: pointer; }") {
+		t.Error("Mermaid should not make every diagram element appear interactive")
 	}
 	if strings.Contains(script, "nodeBkg: css('--color-code-bg'") {
 		t.Error("Mermaid node fill should not use code background")
