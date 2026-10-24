@@ -1042,3 +1042,26 @@ func TestMermaidPlugin_ChromiumConfig(t *testing.T) {
 		t.Errorf("expected MaxConcurrent 8, got %d", cfg.ChromiumConfig.MaxConcurrent)
 	}
 }
+
+
+func TestMermaidCSSVariablesUseThemeSurfaceAndBorder(t *testing.T) {
+	script := NewMermaidPlugin().cssVariablesScript()
+	for _, expected := range []string{
+		"primaryColor: surface",
+		"nodeBkg: surface",
+		"edgeLabelBackground: surface",
+		"primaryTextColor: foreground",
+		"nodeTextColor: foreground",
+		"primaryBorderColor: border",
+		"nodeBorder: border",
+		"lineColor: border",
+		"clusterBorder: border",
+	} {
+		if !strings.Contains(script, expected) {
+			t.Errorf("Mermaid theme script missing %q", expected)
+		}
+	}
+	if strings.Contains(script, "nodeBkg: css('--color-code-bg'") {
+		t.Error("Mermaid node fill should not use code background")
+	}
+}
