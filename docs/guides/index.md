@@ -16,6 +16,14 @@ Welcome to the markata-go documentation! Choose a learning path based on your go
 
 ---
 
+The [Icon Shortcodes](/docs/guides/icons/) guide and
+[Markdown Containers](/docs/guides/markdown-containers/) show how to build
+responsive icon cards, feature rows and architecture diagrams entirely in
+Markdown. Coding agents can follow
+[the bundled Markata skill](/docs/guides/agent-skills/) for these patterns.
+
+---
+
 ## Learning Paths
 
 ### Beginner Path

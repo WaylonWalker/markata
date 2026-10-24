@@ -73,6 +73,12 @@ markata explain content
 markata build --fast
 ```
 
+For rich content with symbols like :lucide-rocket: or :lucide-database:,
+responsive icon cards, or status/reporting blocks, the bundled skill includes
+`topics/rich-markdown.md`. Ask the agent to read that topic before creating
+new CSS, templates, or JS. The built-in icon syntax is documented under
+[Icon Shortcodes](/docs/guides/icons/).
+
 Keep a human in the loop for publishing and deployment. Markata's skill guides agents through frontmatter, themes, feed patterns, templates, site builds, and when **not** to create a plugin.
 
 ## Fixes

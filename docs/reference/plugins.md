@@ -39,6 +39,28 @@ Configure -> Glob -> Load -> Transform -> Render -> Collect -> Write -> Cleanup
 
 ---
 
+### icons
+
+**Name:** `icons`<br>
+**Stage:** Transform (after other source transforms, before Markdown rendering)<br>
+**Purpose:** Resolve Zensical-style SVG shortcodes in Markdown.
+
+````markdown
+A release :lucide-rocket: ready to ship.
+````
+
+The icon is inlined as decorative SVG, with no icon-font or client-side
+dependency. The default pinned Lucide pack is vendored on first use, with
+project-local SVGs under `.icons/` or `static/.icons/` taking precedence.
+For disconnected first-use builds, supply a cached/local pack or keep the
+literal shortcode; there is no forced network request in offline mode.
+
+The default theme supports `md-icon` inside cards and `md-feature` with
+`md-feature-icon`/`md-feature-body` for icon-first feature rows, without
+changing shortcode semantics. See [Icon Shortcodes](/docs/guides/icons/).
+
+---
+
 ### content_index
 
 **Name:** `content_index`

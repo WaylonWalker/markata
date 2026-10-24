@@ -15,6 +15,7 @@ Before making changes:
 - inspect `templates/` and `palettes/` before inventing new structure
 - inspect existing `wa-*` usage, `webawesome` config, and template asset guards before adding component code or new includes
 - inspect existing analytics pages, metrics partials, and chart code blocks before inventing a new data story pattern
+- check built-in `:lucide-name:` shortcodes and `md-*` article layout containers before adding any icon library or custom UI components
 - prefer current command output and files over older examples or assumptions
 - when the site is minimal or brand new, use the topic files in this skill as the default markata-go playbook
 
@@ -50,6 +51,7 @@ capabilities.
 Read only the topic files relevant to the task:
 - `topics/configuration.md`
 - `topics/writing-frontmatter.md`
+- `topics/rich-markdown.md`
 - `topics/roads.md`
 - `topics/cli-usage.md`
 - `topics/build-deployment.md`
@@ -102,6 +104,7 @@ If the repository is a very small or first-time site and does not yet have clear
 - Template work: `topics/template-management.md`
 - Theme or styling work: `topics/theme-creation.md`
 - Content creation: `topics/writing-frontmatter.md`
+- Icons, feature cards, layouts, tables, charts, or other Rich Markdown UI: `topics/rich-markdown.md`
 - Timelines, roadmaps, step paths, or branch histories in a post: `topics/roads.md`
 - Analytics pages or metrics storytelling: `topics/analytics-storytelling.md`
 - Config debugging: `topics/configuration.md`

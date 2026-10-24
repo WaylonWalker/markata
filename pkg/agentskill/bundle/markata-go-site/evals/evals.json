@@ -66,6 +66,18 @@
       "prompt": "Add a product roadmap to my about page that shows our quarterly milestones and draws itself as the reader scrolls. Each milestone links to its announcement post.",
       "expected_output": "Uses a built-in `::: road timeline` container (or another suitable road style) with one `- [Title](url) Label` item per milestone, closes it with a colon-only line, and does not create a custom template, JavaScript file, or config change. Validates with a fast build.",
       "files": []
+    },
+    {
+      "id": 12,
+      "prompt": "My Markata post should look like a ChatGPT feature roadmap: a rocket line icon in a rounded square next to 'Verify production', and two centered server/database icons above Falcon2 and Falcon3 cards. Can you author this in Markdown? Make sure it works on mobile and without JS.",
+      "expected_output": "Uses existing :lucide-rocket:, :lucide-server:, :lucide-database: Markdown shortcodes plus md-feature/md-feature-icon/md-feature-body and md-columns/md-card/md-icon containers with colon-depth-matched closers. Keeps visible text headings, uses the built-in pinned/local icons plugin and CSS-only layouts, and avoids inventing an SVG library, CDN, icon font, or plugin. Mentions local/cached icon requirement for first offline build and validates the generated page.",
+      "files": []
+    },
+    {
+      "id": 13,
+      "prompt": "I'm a Codex agent editing a Markata site. The user wants modern icons and metrics cards. Is this a Web Awesome dependency? What bundled skill topic and docs should I read? How do I update stale installed agent instructions?",
+      "expected_output": "Reads topics/rich-markdown.md in bundled markata-go-site skill, distinguishes built-in :lucide-name: inline SVG from Web Awesome, uses existing md-* containers and metrics. Points to docs/guides/icons.md and docs/guides/markdown-containers.md; tells user to run markata agent update and markata agent doctor after installing an updated binary, rather than claiming committed docs automatically update previously installed skills.",
+      "files": []
     }
   ]
 }
