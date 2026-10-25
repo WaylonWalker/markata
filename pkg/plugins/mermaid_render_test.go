@@ -34,7 +34,7 @@ func TestMermaidPaletteThemeVariablesUseThemeSurfaces(t *testing.T) {
 		"clusterTextColor":    colors.TextColor,
 		"primaryBorderColor":  colors.Accent,
 		"nodeBorder":          colors.Accent,
-		"lineColor":           colors.Accent,
+		"lineColor":           colors.TextColor,
 		"clusterBorder":       colors.Accent,
 	} {
 		if got[key] != want {

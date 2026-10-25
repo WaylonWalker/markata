@@ -123,7 +123,7 @@ func (c *mermaidPaletteColors) themeVariablesJSON() string {
 		"primaryColor":        surface,
 		"primaryTextColor":    text,
 		"primaryBorderColor":  c.Accent,
-		"lineColor":           c.Accent,
+		"lineColor":           text,
 		"textColor":           text,
 		"nodeBkg":             surface,
 		"nodeBorder":          c.Accent,
