@@ -1053,7 +1053,7 @@ func TestMermaidCSSVariablesUseThemeSurfaceAndBorder(t *testing.T) {
 		"nodeTextColor: foreground",
 		"primaryBorderColor: border",
 		"nodeBorder: border",
-		"lineColor: border",
+		"lineColor: foreground",
 		"clusterBorder: border",
 		"clusterBkg: background",
 		"context.getImageData(0, 0, 1, 1)",

@@ -2904,6 +2904,10 @@ by the Mermaid version in use. Theme changes must rerender diagrams without
 discarding their original source, and server-rendered diagram markup must remain
 readable when JavaScript is disabled.
 
+Directional edges and arrowheads use the active foreground color so their
+meaning remains visible against the diagram surface. Node and cluster outlines
+may use the subtler border color.
+
 ```css
 .mermaid {
   background: var(--color-surface);
