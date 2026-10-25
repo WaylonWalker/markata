@@ -21,7 +21,7 @@ func checkBareDomainLinks(filePath, body string, hasFrontmatter bool, frontmatte
 	for lineNum, line := range strings.Split(body, "\n") {
 		trimmed := strings.TrimLeft(line, " ")
 		indent := len(line) - len(trimmed)
-		if indent <= 3 && len(trimmed) >= 3 && (trimmed[0] == '\`' || trimmed[0] == '~') {
+		if indent <= 3 && len(trimmed) >= 3 && (trimmed[0] == '`' || trimmed[0] == '~') {
 			width := leadingRun(trimmed, trimmed[0])
 			if width >= 3 {
 				if fenceChar == 0 {
@@ -134,18 +134,18 @@ func hideInlineCode(line string) string {
 			i += 2
 			continue
 		}
-		if line[i] != '\`' {
+		if line[i] != '`' {
 			i++
 			continue
 		}
-		width := leadingRun(line[i:], '\`')
+		width := leadingRun(line[i:], '`')
 		closing := -1
 		for j := i + width; j < len(line); {
-			if line[j] != '\`' {
+			if line[j] != '`' {
 				j++
 				continue
 			}
-			run := leadingRun(line[j:], '\`')
+			run := leadingRun(line[j:], '`')
 			if run == width {
 				closing = j + run
 				break
