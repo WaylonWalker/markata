@@ -1,6 +1,6 @@
 ---
 name: markata-go-site
-description: Help agents work effectively in markata-go site repositories. Use this whenever the user is working on a markata-go site or asks about site config, frontmatter or content authoring, templates or layouts, timelines or roadmaps in posts, themes or palettes, Web Awesome component setup, analytics or stats pages, chartjs or contribution graphs, build or deploy debugging, performance tuning, or deciding whether a change belongs in config, content, templates, CSS, feeds, or plugins. Use it proactively for tasks like creating an `analytics.md` page, exposing reading time or word count in templates, wiring Web Awesome components into content and templates, or helping an author turn site metrics into a publishable story.
+description: Help agents work effectively in markata-go site repositories. Trigger for visual, visualize, visualization, visual post, visual report, diagram, dashboard, infographic, scorecard, roadmap, timeline, architecture map, flowchart, chart, graph, status board, progress tracker, or requests to show information at a glance. Also use for site configuration, Markdown content and frontmatter, templates, rich layout components, theme palettes, analytics or stats, Web Awesome, build and deploy debugging, and performance. Prefer native Markata Markdown visual primitives over proprietary UI markup or unnecessary new frontend dependencies.
 ---
 
 This skill helps an agent work inside a markata-go site repository without needing the markata-go source tree.
@@ -16,6 +16,7 @@ Before making changes:
 - inspect existing `wa-*` usage, `webawesome` config, and template asset guards before adding component code or new includes
 - inspect existing analytics pages, metrics partials, and chart code blocks before inventing a new data story pattern
 - check built-in `:lucide-name:` shortcodes and `md-*` article layout containers before adding any icon library or custom UI components
+- for visual/diagram/dashboard requests, select the visualization by information type and preserve a no-JavaScript text fallback; see `topics/visual-authoring.md`
 - prefer current command output and files over older examples or assumptions
 - when the site is minimal or brand new, use the topic files in this skill as the default markata-go playbook
 
@@ -52,6 +53,7 @@ Read only the topic files relevant to the task:
 - `topics/configuration.md`
 - `topics/writing-frontmatter.md`
 - `topics/rich-markdown.md`
+- `topics/visual-authoring.md`
 - `topics/roads.md`
 - `topics/cli-usage.md`
 - `topics/build-deployment.md`
@@ -105,6 +107,7 @@ If the repository is a very small or first-time site and does not yet have clear
 - Theme or styling work: `topics/theme-creation.md`
 - Content creation: `topics/writing-frontmatter.md`
 - Icons, feature cards, layouts, tables, charts, or other Rich Markdown UI: `topics/rich-markdown.md`
+- Visual, visualize, visual post, diagram, dashboard, scorecard, status board or infographic: `topics/visual-authoring.md`
 - Timelines, roadmaps, step paths, or branch histories in a post: `topics/roads.md`
 - Analytics pages or metrics storytelling: `topics/analytics-storytelling.md`
 - Config debugging: `topics/configuration.md`
