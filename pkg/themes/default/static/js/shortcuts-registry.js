@@ -268,7 +268,8 @@
   }
 
   /**
-   * Check if the current element is an input field where typing should be allowed
+   * Check if the current element is a form field or interactive control that
+   * must keep its native keyboard behavior.
    * @param {Element} element
    * @returns {boolean}
    */
@@ -293,6 +294,18 @@
     for (var i = 0; i < elementsToCheck.length; i++) {
       var el = elementsToCheck[i];
       if (!el) continue;
+
+      // Global shortcuts must not consume Enter/Space (or other registered
+      // keys) from a focused native or ARIA control. In particular, Enter on a
+      // copy button must reach the button's native activation behavior.
+      if (typeof el.closest === 'function' && el.closest(
+        'button, a[href], summary, [role="button"], [role="link"], ' +
+        '[role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"], ' +
+        '[role="option"], [role="tab"], [role="checkbox"], [role="radio"], ' +
+        '[role="switch"], [contenteditable="true"]'
+      )) {
+        return true;
+      }
 
       var tagName = el.tagName;
 

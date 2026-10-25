@@ -6,6 +6,7 @@ const {chromium} = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 
 const root = path.join(__dirname, '../pkg/themes/default/static');
 const codeJS = fs.readFileSync(path.join(root, 'js/code-chrome.js'), 'utf8');
+const shortcutsJS = fs.readFileSync(path.join(root, 'js/shortcuts-registry.js'), 'utf8');
 const codeCSS = fs.readFileSync(path.join(root, 'css/code.css'), 'utf8');
 const longCommand = 'kubectl get nodes --output=custom-columns=NAME:.metadata.name,STATUS:.status.conditions[0].type,READY:.status.conditions[0].status --sort-by=.metadata.name';
 
@@ -28,6 +29,14 @@ for (const width of [320, 1440]) {
         window.copiedText = null;
         Object.defineProperty(navigator, 'clipboard', {configurable:true,value:{writeText:async text => {window.copiedText=text;}}});
       });
+      await page.addScriptTag({content:shortcutsJS});
+      await page.evaluate(() => {
+        window.shortcutCalls = 0;
+        window.shortcutsRegistry.register({
+          key: 'Enter', modifiers: [], description: 'Open highlighted post', group: 'navigation',
+          handler: event => { event.preventDefault(); window.shortcutCalls++; },
+        });
+      });
       await page.addScriptTag({content:codeJS});
       assert.equal(await page.locator('.md-code-copy').count(), 1, 'only code blocks, never Mermaid, get controls');
       assert.equal(await page.locator('#source pre').getAttribute('data-language'), 'bash');
@@ -39,6 +48,8 @@ for (const width of [320, 1440]) {
       await page.keyboard.press('Enter');
       assert.equal(await page.evaluate(() => window.copiedText), `kubectl get pods -A\n${longCommand}`);
       assert.equal(await page.getByRole('button',{name:'Code copied'}).count(), 1);
+      assert.equal(await page.evaluate(() => window.shortcutCalls), 0,
+        'global Enter shortcuts must not intercept native button activation');
       const metrics = await page.evaluate(() => {
         const pre = document.querySelector('#source pre');
         const button = pre.querySelector('.md-code-copy');

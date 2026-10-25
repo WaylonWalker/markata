@@ -1623,6 +1623,11 @@ navigation.
 
 ### Keyboard Navigation
 
+Global keyboard shortcuts MUST ignore events originating from focused
+interactive controls, including buttons, links, menu items, tabs, and editable
+content. Native Enter and Space activation for these controls MUST continue to
+work while global shortcuts are enabled.
+
 | Key | Action |
 |-----|--------|
 | `t` | Open/close picker |
