@@ -8,7 +8,7 @@ import (
 func TestBareDomainLinkDestinations(t *testing.T) {
 	cases := []struct {
 		name, content string
-		want int
+		want          int
 	}{
 		{"reported reproduction", "[pype.dev](pype.dev)", 1},
 		{"path query fragment", "[site](blog.example.dev/posts?q=1#intro)", 1},
