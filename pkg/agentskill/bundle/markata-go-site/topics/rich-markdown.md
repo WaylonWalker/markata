@@ -4,6 +4,8 @@ Use this topic when the user asks for modern article UI such as icon cards,
 roadmap feature rows, responsive comparisons, diagrams, status metrics,
 sortable tables, code copy, checklists, chart fallbacks, or source disclosures.
 
+For broad requests to **visualize**, create a **visual post**, draw a **diagram**, or build a **dashboard**, also read `topics/visual-authoring.md` to choose a layout from the information being communicated. The skill is vendor-neutral; do not assume any particular chat interface or custom component framework.
+
 ## Prefer existing primitives before adding dependencies
 
 1. Inspect the site's existing Markdown and theme; do not invent an icon
@@ -14,7 +16,7 @@ sortable tables, code copy, checklists, chart fallbacks, or source disclosures.
    SVG without browser-time image requests or JavaScript.
 3. For card layouts, use `md-columns`, `md-grid`, `md-card`, `md-box`.
 4. For a centered icon in a card, use `md-icon`. For a left-hand icon tile
-   with body text (as in ChatGPT feature lists), use `md-feature` with
+   with body text (as in visual reports and feature lists), use `md-feature` with
    `md-feature-icon` and `md-feature-body`.
 5. For data, prefer semantic Markdown tables, `md-status`, `md-stat`,
    `md-meter`, `md-progress` and `md-delta`.

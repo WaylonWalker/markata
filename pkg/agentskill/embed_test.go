@@ -23,6 +23,7 @@ func TestSiteSkill_ContainsAllRequiredTopics(t *testing.T) {
 		"topics/configuration.md",
 		"topics/writing-frontmatter.md",
 		"topics/rich-markdown.md",
+		"topics/visual-authoring.md",
 		"topics/cli-usage.md",
 		"topics/build-deployment.md",
 		"topics/faster-builds.md",
