@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"testing/fstest"
 	"time"
@@ -432,6 +433,25 @@ func TestContext_ToPongo2(t *testing.T) {
 	if p2ctx["extra_key"] != "extra_value" {
 		t.Error("extra context value not set")
 	}
+}
+
+func TestContext_ToPongo2_ConcurrentConfigIsPerRender(t *testing.T) {
+	config := &models.Config{Title: "Test Site", Theme: models.ThemeConfig{Name: "test-theme"}}
+	ctx := NewContext(nil, "", config)
+	const renders = 128
+	var wg sync.WaitGroup
+	for i := 0; i < renders; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			pongoCtx := ctx.ToPongo2()
+			configMap, ok := pongoCtx["config"].(map[string]interface{})
+			if !ok || configMap["title"] != "Test Site" {
+				t.Errorf("config context = %#v", pongoCtx["config"])
+			}
+		}()
+	}
+	wg.Wait()
 }
 
 func TestContext_ToPongo2_ResolvedContentSidebar(t *testing.T) {
