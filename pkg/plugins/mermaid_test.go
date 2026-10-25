@@ -1056,6 +1056,8 @@ func TestMermaidCSSVariablesUseThemeSurfaceAndBorder(t *testing.T) {
 		"lineColor: border",
 		"clusterBorder: border",
 		"clusterBkg: background",
+		"context.getImageData(0, 0, 1, 1)",
+		"Mermaid 10 does not accept color-mix()",
 		"new WeakMap()",
 		"removeAttribute('data-processed')",
 		"diagramSources.set(block, block.textContent || '')",
