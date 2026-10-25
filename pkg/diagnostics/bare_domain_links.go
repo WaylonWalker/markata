@@ -72,12 +72,12 @@ func scanBareDomainLine(filePath, line string, lineNum int) []Issue {
 		destination := line[start:end]
 		if isLikelyBareDomain(destination) {
 			issues = append(issues, Issue{
-				File: filePath,
-				Range: Range{StartLine: lineNum, StartCol: start, EndLine: lineNum, EndCol: end},
-				Code: diagnosticCodeBareDomainLink,
+				File:     filePath,
+				Range:    Range{StartLine: lineNum, StartCol: start, EndLine: lineNum, EndCol: end},
+				Code:     diagnosticCodeBareDomainLink,
 				Severity: SeverityWarning,
-				Message: fmt.Sprintf("Markdown link destination %q looks like a bare domain; use an explicit https:// URL if external", destination),
-				Fixable: false,
+				Message:  fmt.Sprintf("Markdown link destination %q looks like a bare domain; use an explicit https:// URL if external", destination),
+				Fixable:  false,
 			})
 		}
 		i = closeLabel
