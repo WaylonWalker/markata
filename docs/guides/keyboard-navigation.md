@@ -15,7 +15,7 @@ tags:
 
 markata-go sites include comprehensive keyboard shortcuts for power users and those who prefer keyboard navigation. All shortcuts are designed to be intuitive, following conventions from popular tools like Vim and GitHub.
 
-> **Accessibility:** Shortcuts respect user preferences and can be disabled. They never interfere with form inputs or accessibility tools.
+> **Accessibility:** Shortcuts respect user preferences and can be disabled. They never intercept keyboard input from form fields or focused interactive controls, so native Enter and Space activation continues to work.
 
 ## Quick Reference
 
