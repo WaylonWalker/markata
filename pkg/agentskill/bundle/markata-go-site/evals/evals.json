@@ -69,7 +69,7 @@
     },
     {
       "id": 12,
-      "prompt": "My Markata post should look like a ChatGPT feature roadmap: a rocket line icon in a rounded square next to 'Verify production', and two centered server/database icons above Falcon2 and Falcon3 cards. Can you author this in Markdown? Make sure it works on mobile and without JS.",
+      "prompt": "My Markata post should be a visual feature roadmap: a rocket line icon in a rounded square next to 'Verify production', and two centered server/database icons above Falcon2 and Falcon3 cards. Can you author this in Markdown? Make sure it works on mobile and without JS.",
       "expected_output": "Uses existing :lucide-rocket:, :lucide-server:, :lucide-database: Markdown shortcodes plus md-feature/md-feature-icon/md-feature-body and md-columns/md-card/md-icon containers with colon-depth-matched closers. Keeps visible text headings, uses the built-in pinned/local icons plugin and CSS-only layouts, and avoids inventing an SVG library, CDN, icon font, or plugin. Mentions local/cached icon requirement for first offline build and validates the generated page.",
       "files": []
     },
@@ -77,6 +77,24 @@
       "id": 13,
       "prompt": "I'm a Codex agent editing a Markata site. The user wants modern icons and metrics cards. Is this a Web Awesome dependency? What bundled skill topic and docs should I read? How do I update stale installed agent instructions?",
       "expected_output": "Reads topics/rich-markdown.md in bundled markata-go-site skill, distinguishes built-in :lucide-name: inline SVG from Web Awesome, uses existing md-* containers and metrics. Points to docs/guides/icons.md and docs/guides/markdown-containers.md; tells user to run markata agent update and markata agent doctor after installing an updated binary, rather than claiming committed docs automatically update previously installed skills.",
+      "files": []
+    },
+    {
+      "id": 14,
+      "prompt": "Create a visual post on my Markata site showing release readiness. I want a small dashboard: passing checks, what is not deployed, a progress indicator, a short evidence table and a clear next-action handoff. Use known results; do not invent percentages.",
+      "expected_output": "Recognizes generic visual-post/dashboard intent and uses topics/visual-authoring.md; composes a static-first status/metric layout with md-status, md-stat, md-progress only with known numerator/denominator, and an accessible evidence table. Explicitly separates code merged, CI passed, deployed and verified live. Uses native Markata primitives, no proprietary UI syntax or fabricated values.",
+      "files": []
+    },
+    {
+      "id": 15,
+      "prompt": "Visualize how our small app is deployed: builder produces the site, server serves it, and a shared volume connects them. I'd like a diagram readers can understand on phones with JavaScript off.",
+      "expected_output": "Selects an md-layout/md-box/md-columns/md-connector topology when it is sufficient, uses descriptive accessible text and responsive theme tokens, or a Mermaid flowchart only if arbitrary connections warrant it. Mentions Mermaid runtime compatibility and no-JavaScript fallback; does not install a frontend graph framework.",
+      "files": []
+    },
+    {
+      "id": 16,
+      "prompt": "Turn these measured monthly publishing totals into a simple dashboard and chart-driven article in my Markata site. Make it visual but accessible and keep raw data visible when scripts are disabled.",
+      "expected_output": "Uses existing chartjs fences with semantic build-time table fallback, a small clearly labeled KPI section, or contribution-graph for calendar-style activity when appropriate. Separates provided measurements from conjecture, validates Chart.js JSON and mobile/dark modes, and follows generic visualization intent rather than a platform-specific UI.",
       "files": []
     }
   ]
