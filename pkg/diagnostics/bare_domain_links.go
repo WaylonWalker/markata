@@ -33,7 +33,7 @@ func checkBareDomainLinks(filePath, body string, hasFrontmatter bool, frontmatte
 
 // advanceBareDomainFence tracks Markdown fenced blocks. The final bool
 // indicates whether this line is inside a fence or is a fence delimiter.
-func advanceBareDomainFence(trimmed string, indent int, char byte, minWidth int) (byte, int, bool) {
+func advanceBareDomainFence(trimmed string, indent int, char byte, minWidth int) (nextChar byte, nextWidth int, skip bool) {
 	if indent > 3 || len(trimmed) < 3 {
 		return char, minWidth, char != 0
 	}
@@ -103,7 +103,7 @@ func findMarkdownLabelClose(line string, start int) int {
 	return -1
 }
 
-func findMarkdownDestination(line string, closeLabel int) (int, int, bool) {
+func findMarkdownDestination(line string, closeLabel int) (startIndex int, endIndex int, ok bool) {
 	if closeLabel+1 >= len(line) || line[closeLabel+1] != '(' {
 		return 0, 0, false
 	}
