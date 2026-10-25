@@ -134,12 +134,16 @@ test('Mermaid follows active palettes at responsive widths and remains readable 
           const node = svg?.querySelector('.node rect, .node polygon');
           const cluster = svg?.querySelector('.cluster rect');
           const edgeLabel = svg?.querySelector('.edgeLabel span');
+          const edge = svg?.querySelector('path.flowchart-link');
+          const arrow = svg?.querySelector('marker path');
           return {
             pageWidth: document.documentElement.scrollWidth,
             viewportWidth: innerWidth,
             nodeFill: node && getComputedStyle(node).fill,
             clusterFill: cluster && getComputedStyle(cluster).fill,
             edgeLabelColor: edgeLabel && getComputedStyle(edgeLabel).color,
+            edgeStroke: edge && getComputedStyle(edge).stroke,
+            arrowFill: arrow && getComputedStyle(arrow).fill,
             border: node && getComputedStyle(node).stroke,
             labels: svg?.textContent || '',
             edges: svg?.querySelectorAll('path.flowchart-link').length || 0,
@@ -150,6 +154,8 @@ test('Mermaid follows active palettes at responsive widths and remains readable 
         assert.equal(result.nodeFill, expected.surface);
         assert.equal(result.clusterFill, expected.background);
         assert.equal(result.edgeLabelColor, expected.text);
+        assert.equal(result.edgeStroke, expected.text, 'directional edges use readable foreground contrast');
+        assert.equal(result.arrowFill, expected.text, 'arrowheads use readable foreground contrast');
         assert.equal(result.border, expected.border);
         assert.match(result.labels, /Raw water/);
         assert.match(result.labels, /Ready\?/);

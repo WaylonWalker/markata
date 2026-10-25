@@ -611,7 +611,9 @@ func (p *MermaidPlugin) cssVariablesScript() string {
       primaryColor: surface,
       primaryTextColor: foreground,
       primaryBorderColor: border,
-      lineColor: border,
+      // Diagram edges encode direction and relationships, so keep them at
+      // foreground contrast instead of the intentionally subtle node border.
+      lineColor: foreground,
       textColor: foreground,
       nodeBkg: surface,
       nodeBorder: border,
