@@ -103,7 +103,7 @@ func findMarkdownLabelClose(line string, start int) int {
 	return -1
 }
 
-func findMarkdownDestination(line string, closeLabel int) (startIndex int, endIndex int, ok bool) {
+func findMarkdownDestination(line string, closeLabel int) (startIndex, endIndex int, ok bool) {
 	if closeLabel+1 >= len(line) || line[closeLabel+1] != '(' {
 		return 0, 0, false
 	}
