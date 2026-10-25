@@ -577,8 +577,22 @@ func (p *MermaidPlugin) cssVariablesScript() string {
       block.textContent = diagramSources.get(block);
     }
 
-    const rootStyle = getComputedStyle(document.documentElement);
-    const css = (name, fallback) => (rootStyle.getPropertyValue(name) || fallback).trim();
+    const css = (name, fallback) => {
+      const probe = document.createElement('span');
+      probe.style.backgroundColor = ` + "`" + `var(${name}, ${fallback})` + "`" + `;
+      document.documentElement.appendChild(probe);
+      const value = getComputedStyle(probe).backgroundColor;
+      probe.remove();
+      // Mermaid 10 does not accept color-mix(), color(), or other CSS color
+      // functions. Resolve the active CSS color through canvas to an RGB value.
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      if (!context) return value;
+      context.fillStyle = value;
+      context.fillRect(0, 0, 1, 1);
+      const [red, green, blue] = context.getImageData(0, 0, 1, 1).data;
+      return ` + "`" + `rgb(${red}, ${green}, ${blue})` + "`" + `;
+    };
     // The active palette is the source of truth: OS preference may differ
     // from the user-selected theme.
     const background = css('--color-background', '#ffffff');

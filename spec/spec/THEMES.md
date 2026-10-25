@@ -2892,6 +2892,13 @@ h6:hover .heading-anchor,
 
 ### Mermaid Diagrams (`mermaid` plugin)
 
+Client-rendered Mermaid diagrams follow the active site palette when the theme
+or palette changes. Palette values may use modern CSS expressions such as
+`color-mix()`, but the Mermaid theme API must receive concrete colors supported
+by the Mermaid version in use. Theme changes must rerender diagrams without
+discarding their original source, and server-rendered diagram markup must remain
+readable when JavaScript is disabled.
+
 ```css
 .mermaid {
   background: var(--color-surface);

@@ -21,6 +21,22 @@ function cssColor(hex) {
   return `rgb(${parts.join(', ')})`;
 }
 
+async function resolvedCssColor(page, variable) {
+  return page.evaluate(variable => {
+    const probe = document.createElement('span');
+    probe.style.backgroundColor = `var(${variable})`;
+    document.documentElement.appendChild(probe);
+    const color = getComputedStyle(probe).backgroundColor;
+    probe.remove();
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    context.fillStyle = color;
+    context.fillRect(0, 0, 1, 1);
+    const [red, green, blue] = context.getImageData(0, 0, 1, 1).data;
+    return `rgb(${red}, ${green}, ${blue})`;
+  }, variable);
+}
+
 before(async () => {
   fs.cpSync(gallery, siteRoot, {recursive: true});
   fs.appendFileSync(path.join(siteRoot, 'markata-go.toml'), '\n[markata-go.icons]\nauto_vendor = false\n');
@@ -80,7 +96,7 @@ test('Mermaid follows active palettes at responsive widths and remains readable 
     const themes = [
       {name: 'dark', background: '#111827', surface: '#1f2937', text: '#f9fafb', border: '#f59e0b'},
       {name: 'light', background: '#ffffff', surface: '#f3f4f6', text: '#111827', border: '#4b5563'},
-      {name: 'custom', background: '#291a3d', surface: '#3b2455', text: '#f6edff', border: '#d98fff'},
+      {name: 'custom', background: 'color-mix(in srgb, #291a3d 100%, #ffffff)', surface: 'color-mix(in srgb, #3b2455 100%, #ffffff)', text: 'color-mix(in srgb, #f6edff 100%, #000000)', border: 'color-mix(in srgb, #d98fff 100%, #000000)'},
     ];
     const screenshotDir = process.env.SCREENSHOT_DIR || path.join(repoRoot, 'test-results/mermaid-theme');
     fs.mkdirSync(screenshotDir, {recursive: true});
@@ -101,10 +117,17 @@ test('Mermaid follows active palettes at responsive widths and remains readable 
           window.dispatchEvent(new CustomEvent(eventName));
         }, {theme});
 
+        const expected = {
+          background: await resolvedCssColor(page, '--color-background'),
+          surface: await resolvedCssColor(page, '--color-surface'),
+          text: await resolvedCssColor(page, '--color-text'),
+          border: await resolvedCssColor(page, '--color-primary'),
+        };
+
         await page.waitForFunction(surface => {
           const node = document.querySelector('.post-content .mermaid svg .node rect, .post-content .mermaid svg .node polygon');
           return node && getComputedStyle(node).fill === surface;
-        }, cssColor(theme.surface));
+        }, expected.surface);
 
         const result = await page.evaluate(() => {
           const svg = document.querySelector('.post-content .mermaid svg');
@@ -124,10 +147,10 @@ test('Mermaid follows active palettes at responsive widths and remains readable 
           };
         });
         assert.ok(result.pageWidth <= result.viewportWidth + 1, `page overflow at ${width}px (${theme.name}): ${JSON.stringify(result)}`);
-        assert.equal(result.nodeFill, cssColor(theme.surface));
-        assert.equal(result.clusterFill, cssColor(theme.background));
-        assert.equal(result.edgeLabelColor, cssColor(theme.text));
-        assert.equal(result.border, cssColor(theme.border));
+        assert.equal(result.nodeFill, expected.surface);
+        assert.equal(result.clusterFill, expected.background);
+        assert.equal(result.edgeLabelColor, expected.text);
+        assert.equal(result.border, expected.border);
         assert.match(result.labels, /Raw water/);
         assert.match(result.labels, /Ready\?/);
         assert.match(result.labels, /yes/);
