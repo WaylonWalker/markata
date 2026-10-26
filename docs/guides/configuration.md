@@ -13,6 +13,15 @@ tags:
 
 markata-go uses a flexible configuration system that supports multiple file formats, environment variable overrides, and intelligent merging from multiple sources.
 
+## Chart data disclosures
+
+`[markata-go.chartjs] data_display = "open"` keeps chart data expanded before
+JavaScript initializes (the default). Set it to `"collapsed"` for a compact
+initial view. Per-chart top-level JSON `data_display` overrides this default.
+The summary stays usable without JavaScript. See
+[chart figures and fallbacks](markdown-chart-fallback.md) for titles, captions,
+and examples.
+
 ## Compose Config Files
 
 Use `include` when one config file gets too large.
@@ -588,13 +597,13 @@ When enabled, markata-go generates JSON-LD structured data for:
 | `show_text_size_control` | bool | `true` | Show the visitor-facing reading-size selector |
 | `custom_css` | string | `""` | Custom CSS file path (relative to static/) |
 | `variables` | map | `{}` | CSS variable overrides |
-| `fontpack` | string | `"brush"` | Font pack: Knewave headings, Space Grotesk body, DM Mono code by default |
+| `fontpack` | string | `"system"` | Font pack: zero-download system-ui headings/body with native monospace code (Brush is opt-in) |
 | `aesthetic` | string | `"minimal"` | Surface style: `minimal`, `balanced`, `elevated`, `precision`, or `brutal` |
 | `motif.kind` | string | `"off"` | Background motif (`off`, `block-w`, `letter`) |
 | `switcher.enabled` | bool | `true` | Show the live theme picker so visitors can choose any palette, style, and font; under `markata-go serve` its **Bake** button writes the current choices into your config (see [Themes Guide](/docs/guides/themes/)) |
 | `switcher.mode_toggle` | bool | `true` | Show the light/dark toggle next to the picker |
 
-The default font pack is `brush`. Built-in defaults do not cause migration warnings.
+The default font pack is `system` (no downloaded font files). `brush` and `brush-poster` remain available for explicit site or page overrides. Built-in defaults do not cause migration warnings.
 If your configuration supplies different values for `fontpack` and `theme.fontpack`, the nested value wins.
 The loader reports that conflict once. Remove the legacy top-level `fontpack` to resolve the warning.
 
@@ -646,14 +655,20 @@ for stylesheet boundaries and runtime behavior.
 [markata-go.css_purge]
 enabled = false
 verbose = false
-preserve = ["js-*", "htmx-*", "theme-*", "palette-*"]
+preserve = ["js-*", "htmx-*", "theme-*", "palette-*", "md-code-*"]
 preserve_attributes = ["data-theme", "data-palette", "data-text-size"]
 skip_files = ["vendor/*", "normalize.css"]
 warning_threshold = 0
 ```
 
 CSS purge removes unused rules by scanning generated HTML and keeping only selectors
-that are actually present. The purge logic always preserves key @-rules and keeps
+that are actually present.
+The built-in default safelist includes `md-code-*` for the article code-copy
+button, which is created by JavaScript after HTML generation. Without it, the
+button still works but loses its positioning and can cover code. When setting a
+custom `preserve` list, include `"md-code-*"` alongside your own patterns;
+custom lists replace, rather than extend, the defaults.
+ The purge logic always preserves key @-rules and keeps
 pseudo-only selectors like `:root` or `::selection` to avoid dropping base/theme styles.
 Full builds cache the discovered selector set and purged CSS under
 `.markata-cache/css-purge` in the content directory. The selector cache checks a content
@@ -1299,9 +1314,13 @@ the typed setting disabled.
 | `mode` | string | `"client"` | Rendering mode: `client` (browser-side), `cli` (mmdc), or `chromium` (headless Chrome) |
 | `cdn_url` | string | `/assets/vendor/mermaid/mermaid.min.js` | Mermaid JS URL (local by default) |
 | `theme` | string | `"default"` | Mermaid theme: `default`, `dark`, `forest`, `neutral`. Ignored when `use_css_variables` is true. |
-| `use_css_variables` | bool | `true` | Derive diagram colors from site CSS custom properties. Reads `--color-background`, `--color-text`, `--color-primary`, `--color-code-bg`, and `--color-surface` with hardcoded fallbacks. |
+| `use_css_variables` | bool | `true` | Derive diagram colors from site CSS custom properties. Nodes and edge labels use the surface color, labels use the text color, borders and edges use the border color (falling back to the primary color), and clusters use the background color. |
 | `lightbox` | bool | `true` | Enable click-to-zoom lightbox overlay with interactive pan and zoom via svg-pan-zoom. |
 | `lightbox_selector` | string | `".glightbox-mermaid"` | CSS selector for lightbox links (backward compatibility; programmatic API does not use it). |
+
+In client mode, diagrams rerender when readers change the active theme or
+palette. Chromium mode uses the same palette colors in its static SVGs. CLI mode
+uses the Mermaid CLI theme and configuration.
 
 #### CLI Mode Settings (`[markata-go.mermaid.cli]`)
 

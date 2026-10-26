@@ -1,11 +1,17 @@
 ---
 name: markata-go-site
-description: Help agents work effectively in markata-go site repositories. Use this whenever the user is working on a markata-go site or asks about site config, frontmatter or content authoring, templates or layouts, timelines or roadmaps in posts, themes or palettes, Web Awesome component setup, analytics or stats pages, chartjs or contribution graphs, build or deploy debugging, performance tuning, or deciding whether a change belongs in config, content, templates, CSS, feeds, or plugins. Use it proactively for tasks like creating an `analytics.md` page, exposing reading time or word count in templates, wiring Web Awesome components into content and templates, or helping an author turn site metrics into a publishable story.
+description: Create visually compelling, static-first Markdown documents with purposeful charts (bar, line, area, stacked, doughnut, scatter), overview cards, roads, decision comparisons, supporting feature rows, typography and readable prose. Trigger for visual, visualize, visualization, visual design, visual post, chart, charts, plot, graph, trend, data visualization, analytics, dashboard, scorecard, roadmap, timeline, flowchart, diagram, or progress tracker. Select charts by data question and use real Chart.js fenced JSON with accessible no-JS table fallbacks; preserve visual storytelling and breathing room. Supports Markata site work and single-file rich Markdown authoring in other repositories, themes, templates, configuration, and builds.
 ---
 
 This skill helps an agent work inside a markata-go site repository without needing the markata-go source tree.
 
 It is written to be useful in a standalone site repo where only the generated project files, templates, and config are available.
+
+It also supports authoring a **single Markata-flavored visual Markdown document**
+inside an unrelated repository, such as a Python project's `WORKFLOW.md`.
+Do not mistake "no `markata-go.toml` here" for "rich Markata Markdown is
+unavailable for authoring". Rendering requires Markata, but writing source
+containers does not.
 
 ## Start Here
 
@@ -15,8 +21,110 @@ Before making changes:
 - inspect `templates/` and `palettes/` before inventing new structure
 - inspect existing `wa-*` usage, `webawesome` config, and template asset guards before adding component code or new includes
 - inspect existing analytics pages, metrics partials, and chart code blocks before inventing a new data story pattern
+- check built-in `:lucide-name:` shortcodes and `md-*` article layout containers before adding any icon library or custom UI components
+- for visual/diagram/dashboard requests, read `topics/visual-authoring.md` to select the appropriate visual; for bar, line, time-series, scatter or data charts also read `topics/chart-authoring.md` and author real `chartjs` JSON with accessible no-JS fallback
 - prefer current command output and files over older examples or assumptions
 - when the site is minimal or brand new, use the topic files in this skill as the default markata-go playbook
+
+## Visual composition contract
+
+When asked for **visual design**, **visually represent**, **visualize a
+workflow**, **visual post**, **dashboard**, **diagram**, or a richly presented
+document, read **both** `topics/visual-authoring.md` and
+`topics/rich-markdown.md` before authoring. Prefer a *composed document*
+with meaningful `md-layout`, `md-columns`/`md-card`, `md-feature`,
+`md-icon`, `road`, or related primitives. **Do not stop at Mermaid plus
+a normal table** when the user requested a rich visual document. Use
+Mermaid when exact graph topology is the main information or the user
+explicitly requested a diagram, not as the reflexive visual default.
+
+For a single file requested in a non-Markata repository, deliver a single
+self-contained Markdown file with those native primitives, and explain
+that an actual Markata site is needed to preview its rich styling.
+Do not create project scaffolding as a prerequisite unless asked.
+See `examples/editorial-visual-composition.md` for generic visual storytelling,
+and `examples/chart-composition.md` for a chart-driven article with actual
+Chart.js source blocks. Neither is project-specific boilerplate.
+
+## Chart-first data visualization
+
+A request to visualize **measurements** needs a statistical encoding,
+not automatically a Mermaid diagram, an ordinary table, or a gallery of
+cards. Read `topics/chart-authoring.md`, choose the form from the
+question (bar for category comparison, line for trends, etc.), and create
+a real fenced `chartjs` JSON block. Include a meaningful title/period/
+unit, source-grounded numbers, brief interpretation, and the built-in
+no-JavaScript data disclosure. Charts may anchor a document with
+complementary summary cards and prose; avoid making a chart too small
+inside a narrow card.
+
+Markata's Chart.js canvas is **not automatically theme-adaptive**. Test
+colors, axes, legends, dark/light/custom palettes, and narrow screens
+before claiming a polished published result. If the user wants
+theme-responsive canvases, filters or richer interactions not already
+supported, identify that as renderer work rather than inventing Markdown
+syntax. Do not claim source-code tests alone demonstrate visual quality.
+
+## Editorial quality: breathing room and type rhythm
+
+A visual request is **not** a request for the maximum number of containers.
+The first version of this skill solved a plain-Mermaid failure but encouraged
+over-composition. Design the page as a reading experience:
+
+- Give the title and opening thesis a clear, unboxed place at the top.
+  Let top-level `##` section headings live **outside** `md-layout` and cards,
+  so the article's heading scale remains prominent.
+- Alternate visual emphasis and calm prose. Keep useful overview, navigation,
+  decision and exception treatments when each serves a **different job**.
+  Breathing room comes from spacing, shorter copy and clear hierarchy,
+  **not** from converting a strong visual article into mostly plain prose.
+- Choose one **primary navigation** for a process (for example a road).
+  It can coexist with overview cards, meaningful decision branches, and
+  occasional icon-feature explanations. Avoid *duplicating identical facts*;
+  don't ban multiple visual elements simply because a road is present.
+- Use cards for meaningful overview, choices, comparisons and distinct side
+  routes; they need not all be choices. Keep card copy concise and let the
+  longer instructions live in readable prose under clear section headings.
+- Use built-in `{data-gap="lg"}` on a `md-columns`, `md-grid`, or `md-layout`
+  when grouped items need separation; this changes spacing **within** the
+  component, not the distance between unrelated article sections.
+- Write a short lead, use one point per paragraph, and vary the lengths of
+  text blocks. Avoid a repeated wall of H3 heading / icon / code / paragraph.
+  Keep detailed commands near their relevant action rather than stuffing
+  them into every card.
+- Emphasize by meaning: one dominant idea per section, clear H2 section
+  labels, selective H3 card labels, and sparing status color. If everything is
+  emphasized, nothing is.
+- Before delivering, inspect the page as a sequence of visual beats:
+  orientation, process, choices, details and next action (only where relevant).
+  If a revision becomes a single road and many nearly identical text blocks,
+  **restore** a useful visual grouping instead of calling it minimalism.
+  Prefer shortening card copy, separating groups and varying typography
+  before deleting well-functioning components. Preview rendered whitespace,
+  line wraps and mobile stacking where possible.
+
+These are *design judgments*, not quotas. Keep a requested single diagram
+as a single diagram, and preserve any user's explicit structure.
+
+### Revising an existing visual
+
+Compare the previous and revised renders **side by side**, not just the
+Markdown source. Identify what the old version explained visually and what
+the revision removed. Treat loss of distinct summary cards, option groups,
+or side-route navigation as a regression when those made the page easier
+to understand. Favor a **balanced** version: retain useful visual structure,
+edit repetitive labels, add space around groups, and reduce long passages
+inside narrow cards. Do not interpret "less dense" as "fewer visuals"
+by default.
+
+### Avoid duplicate visible titles
+
+Many Markata post templates render the title from frontmatter above
+the body. If the rendered page already has that visible H1, do not copy
+the same article title as the first body H1. Start with a short deck or
+the next section heading instead. A standalone Markdown file without
+template-generated title can still use its own H1. Check the *rendered*
+page, because both approaches are valid in different environments.
 
 ## Core Workflow
 
@@ -50,6 +158,9 @@ capabilities.
 Read only the topic files relevant to the task:
 - `topics/configuration.md`
 - `topics/writing-frontmatter.md`
+- `topics/rich-markdown.md`
+- `topics/visual-authoring.md`
+- `topics/chart-authoring.md`
 - `topics/roads.md`
 - `topics/cli-usage.md`
 - `topics/build-deployment.md`
@@ -78,6 +189,8 @@ Use these as starter material for first sites or when a repo has no local exampl
 - `examples/templates/base.html`
 - `examples/templates/post.html`
 - `examples/templates/feed.html`
+- `examples/editorial-visual-composition.md` (generic editorial rhythm)
+- `examples/chart-composition.md` (generic bar, line, and doughnut chart article)
 
 ## Eval Files
 
@@ -102,6 +215,9 @@ If the repository is a very small or first-time site and does not yet have clear
 - Template work: `topics/template-management.md`
 - Theme or styling work: `topics/theme-creation.md`
 - Content creation: `topics/writing-frontmatter.md`
+- Icons, feature cards, layouts, tables, charts, or other Rich Markdown UI: `topics/rich-markdown.md`
+- Visual, visualize, visual post, diagram, dashboard, scorecard, status board or infographic: `topics/visual-authoring.md`
+- Bar, line, area, stacked, pie, doughnut, scatter, time series, charts or plotted data: `topics/chart-authoring.md`
 - Timelines, roadmaps, step paths, or branch histories in a post: `topics/roads.md`
 - Analytics pages or metrics storytelling: `topics/analytics-storytelling.md`
 - Config debugging: `topics/configuration.md`

@@ -1,0 +1,46 @@
+name: Mermaid theme browser regressions
+
+on:
+  pull_request:
+    paths:
+      - "pkg/plugins/mermaid*.go"
+      - "pkg/plugins/mermaid*test.go"
+      - "pkg/themes/default/static/js/code-chrome.js"
+      - "examples/gallery-site/pages/rich-markdown-gallery.md"
+      - "scripts/mermaid-theme.browser.test.cjs"
+      - "scripts/code-chrome.browser.test.cjs"
+      - ".github/workflows/mermaid-theme-browser.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+      - name: Install pinned Playwright
+        run: npm install --no-save --no-package-lock playwright@1.56.1
+      - name: Install Chromium
+        run: npx --no-install playwright install --with-deps chromium
+      - name: Run Mermaid and code block browser checks
+        env:
+          SCREENSHOT_DIR: test-results/mermaid-theme
+        run: |
+          node --check scripts/mermaid-theme.browser.test.cjs
+          node --test scripts/mermaid-theme.browser.test.cjs scripts/code-chrome.browser.test.cjs
+      - name: Upload theme screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mermaid-theme-browser-screenshots
+          path: test-results/mermaid-theme
+          if-no-files-found: ignore

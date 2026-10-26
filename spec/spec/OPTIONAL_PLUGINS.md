@@ -217,6 +217,16 @@ max_concurrent = 4                      # Maximum concurrent diagram renderings
 | `chromium.timeout` | int | `30` | Timeout in seconds for rendering each diagram. |
 | `chromium.max_concurrent` | int | `4` | Maximum number of diagrams to render concurrently. |
 
+When `use_css_variables` is enabled, Mermaid MUST use `--color-surface` for node
+fills and edge-label backgrounds, `--color-text` for diagram text, and
+`--color-border` (falling back to `--color-primary`) for borders and edges.
+Cluster fills MUST use `--color-background`. Client mode MUST retain the source
+of each diagram and rerender it on the site's `theme-change`, `palette-change`,
+and `color-mode-change` events so an open page follows the active palette.
+Chromium mode MUST use the same palette variables when it pre-renders SVGs. CLI
+mode follows the Mermaid CLI theme and configuration because it does not use
+the site's CSS variables.
+
 **Rendering Modes:**
 
 | Mode | Rendering | Best For | Dependencies |
@@ -367,6 +377,7 @@ The plugin MUST implement:
 enabled = true
 cdn_url = "https://cdn.jsdelivr.net/npm/chart.js"
 container_class = "chartjs-container"
+data_display = "open" # "open" (default) or "collapsed"
 ```
 
 **Syntax:**
@@ -393,6 +404,29 @@ container_class = "chartjs-container"
 2. Parse JSON content
 3. Replace with canvas element and initialization script
 4. Inject Chart.js script (once per page)
+
+Optional top-level JSON keys `title` and `caption` (plain strings) create a
+`figure.chartjs-figure` containing a left-aligned `figcaption` and the existing
+chart container. The title is not a heading and does not enter the TOC. Canvas
+labels use the title when present and reference the figcaption by a unique ID.
+Short horizontal bar figures (at most four labels, `options.indexAxis: "y"`)
+use a compact canvas. Other chart figures retain Chart.js sizing.
+
+The top-level JSON key `data_display` overrides the site setting with `"open"`
+or `"collapsed"`. These three authoring keys are removed before passing JSON to
+Chart.js or rendering configuration fallbacks. Invalid metadata produces an
+escaped chart error; invalid site `data_display` fails configuration.
+JSON metadata is used because the stock Markdown renderer keeps only the
+language from fence info; unlike CSV's legacy HTML option matcher, it reliably
+survives Markdown rendering without changes to the shared renderer.
+
+Without metadata and with default site settings, emitted HTML remains unchanged.
+Data/configuration details start open by default, including without JavaScript.
+Collapsed details remain keyboard-accessible without JavaScript. For opted-in
+charts, successful Chart.js initialization collapses the details element itself
+(not its wrapper); failed initialization leaves the configured state intact.
+Legacy scripts are unchanged, including their ineffective attempt to collapse
+the wrapper div.
 
 **Output:**
 

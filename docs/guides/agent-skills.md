@@ -39,11 +39,29 @@ markata agent install --agent codex
 
 Run only the command for the agent you use. For Claude Code, the project skill goes in `.claude/skills/markata-go-site/`; for a universal project install, it goes in `.agents/skills/markata-go-site/`.
 
-If you work across many site repositories, install globally with an explicit agent:
+For a global installation, open the fuzzy picker:
+
+```bash
+markata agent install -g
+```
+
+The picker uses an fzf-style layout: the prompt stays at the bottom, with results above it.
+The selected agent and matching characters use the terminal theme colors.
+
+Type an agent name or abbreviation, such as `copilot` or `ghcp`. Use the arrow keys to navigate. Press Enter to select.
+Escape or Ctrl+C cancels without an installation.
+`--no-color` or `NO_COLOR` disables the colors.
+
+For scripts, select the agent explicitly:
 
 ```bash
 markata agent install --agent opencode --global
+markata agent install --agent github-copilot --global
 ```
+
+The picker requires interactive input and output terminals. With `--no-input` or `TERM=dumb`, an explicit `--agent` is required.
+Unknown names show suggestions, such as `Did you mean --agent github-copilot?` for `--agent copilot`.
+Suggestions do not select an agent automatically.
 
 ## 3. Check it
 
@@ -72,6 +90,12 @@ markata list posts
 markata explain content
 markata build --fast
 ```
+
+For rich content with symbols like :lucide-rocket: or :lucide-database:,
+responsive icon cards, or status/reporting blocks, the bundled skill includes
+`topics/rich-markdown.md`. Ask the agent to read that topic before creating
+new CSS, templates, or JS. The built-in icon syntax is documented under
+[Icon Shortcodes](/docs/guides/icons/).
 
 Keep a human in the loop for publishing and deployment. Markata's skill guides agents through frontmatter, themes, feed patterns, templates, site builds, and when **not** to create a plugin.
 

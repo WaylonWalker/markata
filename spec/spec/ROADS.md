@@ -50,6 +50,27 @@ outside all entries.
   Markdown is allowed in the body.
 - Headings MUST stay heading elements and keep their IDs, so anchors and the
   table of contents keep working.
+- A leading Lucide `span.icon` MUST move into an enlarged, decorative rail
+  badge. The badge is muted until active, then uses the road accent and a soft
+  ring. Headings without a leading Lucide icon MUST keep their existing dots.
+- An emphasis-only paragraph immediately after a heading MUST become its
+  `.road-entry-label` eyebrow, unless the heading already has a beside-link
+  label. Mixed-content paragraphs MUST remain body content.
+
+#### Editorial modifiers
+
+`::: road editorial story` opts into larger balanced headings (about 34ch),
+larger first-paragraph leads, generous entry spacing, and 64ch prose. Direct
+unordered body lists without task checkboxes become diamond-bullet highlights
+with a top rule; at viewport widths of at least 1100px, lists with at least four
+items use two columns. Cards, stats, and figures receive additional spacing.
+Editorial roads without `story` MUST keep their existing typography.
+
+`::: road editorial reveal` independently opts into IntersectionObserver-driven
+entry fade/translate animations, only after `data-road-ready`. Entries MUST
+remain readable without JavaScript or IntersectionObserver, after script
+failure, during printing, and when targeted by anchors or keyboard focus.
+Reduced motion MUST disable reveal animations. The modifiers MAY be combined.
 
 ### Attributes
 

@@ -5020,11 +5020,44 @@ body.reader-mode::after {
     overscroll-behavior-inline: contain;
   }
 
+  /* Keep permalinks available without placing them beyond the heading's edge.
+     Inline anchors can wrap with the title; card scrolling is still needed for
+     wide comparison tables below. Include headings in nested containers too. */
+  .post-content .md-card .heading-anchor {
+    position: static;
+  }
+
   .post-content :is(.md-layout, .md-box, .md-card) > :first-child { margin-top: 0; }
   .post-content :is(.md-layout, .md-box, .md-card) > :last-child { margin-bottom: 0; }
+  /* Preserve type hierarchy inside visual Markdown, instead of flattening
+     every nested H2-H6 to the same size. Card labels are supporting titles,
+     whereas unboxed article H2s remain the strongest section landmarks. */
   .post-content :is(.md-layout, .md-box, .md-card) > :is(h2, h3, h4, h5, h6) {
+    line-height: 1.3;
+    letter-spacing: -0.012em;
+  }
+  .post-content :is(.md-layout, .md-box, .md-card) > h2 {
+    font-size: var(--text-2xl, 1.5rem);
+    font-weight: 750;
+  }
+  .post-content :is(.md-layout, .md-box, .md-card) > h3 {
+    font-size: var(--text-xl, 1.25rem);
+    font-weight: 700;
+  }
+  .post-content :is(.md-layout, .md-box, .md-card) > h4 {
     font-size: var(--text-lg, 1.125rem);
-    line-height: 1.35;
+    font-weight: 650;
+  }
+  .post-content :is(.md-layout, .md-box, .md-card) > :is(h5, h6) {
+    font-size: var(--text-base, 1rem);
+    font-weight: 600;
+    color: var(--color-text-muted, var(--color-text));
+  }
+  /* Less dense supporting copy gives prominent unboxed prose and H2 headings
+     breathing room without making all of the article text smaller. */
+  .post-content .md-card > p {
+    font-size: 0.94em;
+    line-height: 1.6;
   }
 
   .post-content :is(.md-columns, .md-grid, .md-stack) {
@@ -5090,6 +5123,179 @@ body.reader-mode::after {
   @media print {
     .post-content .md-card { overflow: visible; }
     .post-content :is(.md-columns, .md-grid) { break-inside: avoid; }
+  }
+}
+
+/* Story layouts are server-rendered and opt-in; no reveal script is required. */
+@layer components {
+  article.post.post--wide {
+    max-width: min(70rem, calc(100% - 2 * var(--space-10)));
+    margin-inline: auto;
+  }
+  article.post--wide > .post-header h1 {
+    max-width: 25ch;
+    font-size: clamp(2.1rem, 1.5rem + 2vw, 3.3rem);
+    line-height: 1.06;
+    letter-spacing: -.025em;
+    text-wrap: balance;
+  }
+  .post--wide > .post-content > p:first-of-type {
+    max-width: 32em;
+    font-size: clamp(1.2rem, 1rem + .8vw, 1.6rem);
+    line-height: 1.45;
+    text-wrap: pretty;
+  }
+  .post--wide .md-section-body p { max-width: 64ch; }
+  .post-content .md-section {
+    margin-top: clamp(4.5rem, 8vw, 7.5rem);
+    padding-top: clamp(2rem, 4vw, 3rem);
+    border-top: 1px solid var(--color-border);
+  }
+  .post-content :is(.md-section-head, .md-section-body) { min-width: 0; }
+  .post-content .md-section-head > h2 {
+    margin: 0 0 .9rem;
+    padding: 0;
+    font-size: clamp(1.55rem, 1.25rem + 1vw, 2.05rem);
+    line-height: 1.12;
+    letter-spacing: -.015em;
+    text-wrap: balance;
+  }
+  .post-content .md-section-kicker {
+    display: block;
+    margin-bottom: .4rem;
+    font-size: clamp(3rem, 2rem + 3.5vw, 5rem);
+    font-weight: 700;
+    line-height: .9;
+    letter-spacing: -.04em;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-primary);
+  }
+  .post-content .md-section-head > p {
+    max-width: 64ch;
+    margin: 0;
+    font-size: .88em;
+    line-height: 1.6;
+    color: var(--color-text-secondary, var(--color-text));
+  }
+  .post-content .md-section-head + .md-section-body { margin-top: 2.25rem; }
+  .post-content .md-section-body > :first-child { margin-top: 0; }
+  @media (min-width: 1100px) {
+    .post-content .md-section:has(> .md-section-head) {
+      display: grid;
+      grid-template-columns: 16rem minmax(0, 1fr);
+      gap: clamp(2rem, 4vw, 4.5rem);
+      align-items: start;
+    }
+    .post-content .md-section-head {
+      position: sticky;
+      top: 5rem;
+    }
+    .post-content .md-section-head + .md-section-body { margin-top: .35rem; }
+    .post-content .md-section-head > h2 { font-size: clamp(1.35rem, 1rem + .8vw, 1.6rem); }
+    .post-content .md-section-head > p { font-size: .8em; }
+  }
+  @media (max-width: 640px) {
+    article.post.post--wide { max-width: 100%; }
+  }
+
+  .post-content .md-grid.rail > .md-card {
+    position: relative;
+    display: grid;
+    align-content: start;
+    gap: .45rem;
+    padding: 1.25rem 1.25rem 1.4rem;
+    border-top: 2px solid var(--color-primary);
+  }
+  .post-content .md-grid.rail > .md-card:is(:hover, :focus-within) {
+    background: color-mix(in srgb, var(--color-primary) 6%, var(--color-surface));
+  }
+  .post-content .md-grid.rail > .md-card:has(a:focus-visible) {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 3px;
+  }
+  .post-content .md-grid.rail .md-icon {
+    justify-content: flex-start;
+    margin-bottom: .35rem;
+    color: var(--color-primary);
+  }
+  .post-content .md-grid.rail > .md-card > :is(h2, h3, h4, h5, h6) {
+    margin: 0;
+    font-size: 1.05em;
+    line-height: 1.25;
+    text-wrap: balance;
+  }
+  .post-content .md-grid.rail > .md-card > :is(h2, h3, h4, h5, h6) a:not(.heading-anchor, .anchor) {
+    color: inherit;
+    text-decoration: none;
+  }
+  .post-content .md-grid.rail > .md-card > :is(h2, h3, h4, h5, h6) a:not(.heading-anchor, .anchor)::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+  }
+  /* Keep the stretched link's containing block on the card, not the heading.
+     Generated heading-anchor overflow remains owned by the shared card styles. */
+  .post-content .md-grid.rail > .md-card > :is(h2, h3, h4, h5, h6) { position: static; }
+  .post-content .md-grid.rail > .md-card > p {
+    margin: 0;
+    font-size: .8em;
+    line-height: 1.55;
+  }
+  .post-content .md-grid.rail > .md-card > p:has(> em:only-child) {
+    font: 600 .7rem/1 var(--font-mono, monospace);
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+  }
+  .post-content .md-grid.rail > .md-card > p > em:only-child { font-style: normal; }
+  @media (min-width: 1000px) {
+    .post-content .md-grid.rail {
+      position: relative;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+    .post-content .md-grid.rail[data-columns="2"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .post-content .md-grid.rail[data-columns="3"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .post-content .md-grid.rail::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto;
+      height: 2px;
+      background: linear-gradient(90deg, var(--color-primary), var(--color-border));
+    }
+    .post-content .md-grid.rail > .md-card {
+      border-top-left-radius: 0;
+      border-top-right-radius: 0;
+    }
+    .post-content .md-grid.rail > .md-card:is(:hover, :focus-within) { transform: none; }
+    .post-content .md-grid.rail > .md-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 1.25rem;
+      box-sizing: border-box;
+      width: 10px;
+      height: 10px;
+      border: 2px solid var(--color-primary);
+      border-radius: 50%;
+      background: var(--color-background);
+    }
+    .post-content .md-grid.rail > .md-card:is(:hover, :focus-within)::before { background: var(--color-primary); }
+  }
+  @media (max-width: 999px) {
+    .post-content .md-grid.rail,
+    .post-content .md-grid.rail[data-columns] { grid-template-columns: minmax(0, 1fr); }
+  }
+  .post-content .md-grid.pending > .md-card {
+    border: 1px dashed var(--color-border);
+    background: transparent;
+  }
+  .post-content .md-grid.pending > .md-card .icon { color: var(--color-text-muted); }
+  @media print {
+    .post-content .md-section-head { position: static; }
+    .post-content .md-section { display: block; }
+    .post-content .md-grid.rail::before,
+    .post-content .md-grid.rail > .md-card::before { display: none; }
   }
 }
 
@@ -5259,6 +5465,69 @@ body.reader-mode::after {
 
 /* Chart.js no-JS data stays usable on narrow article columns. */
 @layer components {
+  .post-content .chartjs-figure {
+    box-sizing: border-box;
+    min-width: 0;
+    max-width: 100%;
+    margin: var(--space-6, 1.5rem) 0;
+    padding: clamp(.75rem, 3vw, 1.25rem);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg, .75rem);
+    background: var(--color-surface);
+    break-inside: avoid;
+  }
+
+  .post-content .chartjs-figure > figcaption {
+    margin: 0 0 var(--space-4, 1rem);
+    font-size: inherit;
+    text-align: left;
+    font-style: normal;
+  }
+
+  .post-content .chartjs-figure-title {
+    display: block;
+    color: var(--color-text);
+  }
+
+  .post-content .chartjs-figure-caption {
+    margin: .25rem 0 0;
+    font-size: .875rem;
+    color: var(--color-text-muted);
+  }
+
+  .post-content .chartjs-figure canvas {
+    max-width: 100%;
+  }
+
+  .post-content .chartjs-figure-compact canvas {
+    max-height: 130px;
+  }
+
+  .post-content .chartjs-figure .chartjs-data {
+    margin-block: .5rem 0;
+  }
+
+  .post-content .chartjs-figure .chartjs-data > summary {
+    font-size: .8rem;
+    color: var(--color-text-muted);
+  }
+
+  .post-content .chartjs-figure .chartjs-data > summary:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: -2px; /* Keep the ring inside the scrollable disclosure. */
+  }
+
+  @media print {
+    .post-content .chartjs-figure .chartjs-data::details-content {
+      content-visibility: visible;
+    }
+    .post-content .chartjs-figure .chartjs-data pre,
+    .post-content .chartjs-figure .chartjs-data pre code {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+  }
+
   .post-content .chartjs-data {
     max-width: 100%;
     min-width: 0;
@@ -5279,5 +5548,79 @@ body.reader-mode::after {
     max-width: none;
     min-width: 100%;
     margin-inline: 0;
+  }
+}
+
+/* Rich Markdown icon compositions: existing local/pinned Lucide shortcodes
+   are inlined at build time. These helpers never load an icon-font or JS. */
+@layer components {
+  .post-content .md-icon,
+  .post-content .md-feature,
+  .post-content .md-feature-icon,
+  .post-content .md-feature-body {
+    box-sizing: border-box;
+    min-width: 0;
+  }
+
+  /* Centered icons in md-card and other article content. The existing icon
+     renderer emits an accessible decorative span with 1em SVG dimensions. */
+  .post-content .md-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    line-height: 1;
+    color: var(--color-text-muted);
+  }
+  .post-content .md-icon[data-size="sm"] { font-size: 1rem; }
+  .post-content .md-icon[data-size="lg"] { font-size: 1.75rem; }
+  .post-content .md-icon > p,
+  .post-content .md-feature-icon > p { margin: 0; }
+  .post-content :is(.md-icon, .md-feature-icon) .icon {
+    vertical-align: middle;
+  }
+  .post-content :is(.md-icon, .md-feature-icon) .icon svg {
+    display: block;
+  }
+
+  /* A feature row has an icon tile at left and real Markdown at right.
+     Unlike pseudo-element icons, the icon can be authored via :lucide-…:,
+     with visible heading text providing the accessible meaning. */
+  .post-content .md-feature {
+    display: grid;
+    grid-template-columns: 2.75rem minmax(0, 1fr);
+    gap: var(--space-3, .75rem);
+    align-items: start;
+    margin-block: var(--space-4, 1rem);
+  }
+  .post-content .md-feature > .md-feature-icon {
+    display: grid;
+    place-items: center;
+    width: 2.75rem;
+    min-height: 2.75rem;
+    padding: .5rem;
+    border-radius: var(--radius-lg, .75rem);
+    background: var(--color-surface);
+    color: var(--color-text-muted);
+    font-size: 1.3rem;
+    line-height: 1;
+  }
+  .post-content .md-feature > .md-feature-body > :first-child { margin-top: 0; }
+  .post-content .md-feature > .md-feature-body > :last-child { margin-bottom: 0; }
+  .post-content .md-feature > .md-feature-body > :is(h2, h3, h4) {
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+  @media (max-width: 360px) {
+    .post-content .md-feature {
+      grid-template-columns: 2.25rem minmax(0, 1fr);
+      gap: .625rem;
+    }
+    .post-content .md-feature > .md-feature-icon {
+      width: 2.25rem;
+      min-height: 2.25rem;
+      font-size: 1.1rem;
+      padding: .35rem;
+    }
   }
 }

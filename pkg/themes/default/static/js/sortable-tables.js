@@ -2,30 +2,32 @@
   const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
   const numberPattern = /^[+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?%?$/i;
 
-  document.querySelectorAll('.post-content table thead').forEach((head) => {
-    const table = head.closest('table');
-    const body = table?.tBodies[0];
-    const headerRow = head.rows[head.rows.length - 1];
-    if (!table || !body || !headerRow) return;
+  function initializeTables(root) {
+    const selector = root === document ? '.post-content table thead' : 'table thead';
+    root.querySelectorAll(selector).forEach((head) => {
+      const table = head.closest('table');
+      const body = table?.tBodies[0];
+      const headerRow = head.rows[head.rows.length - 1];
+      if (!table || !body || !headerRow) return;
 
-    Array.from(headerRow.cells).forEach((cell, column) => {
-      const label = cell.textContent.trim();
-      // Sorting controls may wrap formatted text but must not swallow
-      // links, nested controls, or incorrectly indexed spanning headers.
-      if (!label || cell.tagName !== 'TH' || cell.colSpan !== 1 ||
-          cell.querySelector('a, button, input, select, textarea, [tabindex]')) return;
+      Array.from(headerRow.cells).forEach((cell, column) => {
+        const label = cell.textContent.trim();
+        // Sorting controls may wrap formatted text but must not swallow
+        // links, nested controls, or incorrectly indexed spanning headers.
+        if (!label || cell.tagName !== 'TH' || cell.colSpan !== 1 || cell.dataset.sortableInitialized === 'true' ||
+            cell.querySelector('a, button, input, select, textarea, [tabindex]')) return;
 
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'table-sort-button';
-      button.setAttribute('aria-label', `Sort by ${label}`);
-      // Preserve <code>, <em>, <abbr>, and other authored heading markup.
-      // Replacing the header with its text lost these details and links.
-      while (cell.firstChild) button.appendChild(cell.firstChild);
-      cell.appendChild(button);
-      cell.setAttribute('aria-sort', 'none');
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'table-sort-button';
+        button.setAttribute('aria-label', `Sort by ${label}`);
+        // Preserve <code>, <em>, <abbr>, and other authored heading markup.
+        // Replacing the header with its text lost these details and links.
+        while (cell.firstChild) button.appendChild(cell.firstChild);
+        cell.appendChild(button);
+        cell.setAttribute('aria-sort', 'none');
 
-      button.addEventListener('click', () => {
+        button.addEventListener('click', () => {
         const ascending = cell.getAttribute('aria-sort') !== 'ascending';
         headerRow.querySelectorAll('th').forEach((header) => {
           if (header !== cell) header.setAttribute('aria-sort', 'none');
@@ -49,7 +51,14 @@
           return (ascending ? result : -result) || a.index - b.index;
         });
         rows.forEach(({ row }) => body.append(row));
+        });
+        cell.dataset.sortableInitialized = 'true';
       });
     });
+  }
+
+  initializeTables(document);
+  document.addEventListener('markata:content-decrypted', (event) => {
+    if (event.detail?.container) initializeTables(event.detail.container);
   });
 })();

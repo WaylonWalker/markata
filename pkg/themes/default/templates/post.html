@@ -4,7 +4,9 @@
 {% block description %}{{ post.description | default:'' }}{% endblock %}
 
 {% block meta %}
-{% if body and '<table' in body and '<thead' in body %}
+{% if post.private %}
+<script src="{{ 'js/sortable-tables.js'|theme_asset_hashed }}" defer></script>
+{% elif body and '<table' in body and '<thead' in body %}
 <script src="{{ 'js/sortable-tables.js'|theme_asset_hashed }}" defer></script>
 {% endif %}
 {% if post.editorial_history_view %}
@@ -81,13 +83,13 @@
 {% else %}
 <div class="content-wrapper{% if resolved_doc_sidebar.enabled and post.toc %} content-wrapper--with-sidebar content-wrapper--sidebar-{{ resolved_doc_sidebar.position | default:'right' }}{% endif %}">
     <div class="post-shell">
-    <article class="post h-entry" data-pagefind-body>
+    <article class="post h-entry{% if post.Extra.content_width == 'wide' %} post--wide{% endif %}" data-pagefind-body>
         {# Hidden canonical URL for microformats parsers #}
-        <a class="u-url" href="{{ config.url }}{{ post.href }}" hidden></a>
+        <a class="u-url" href="{{ config.url }}{{ post.href }}" hidden>Canonical URL for this post</a>
 
         <header class="post-header">
             <div class="post-header__title-row">
-                <h1 class="p-name" data-pagefind-meta="title" data-title-size="{{ post.title_size }}">{{ post.title_html | safe }}</h1>
+                <h1 class="p-name" data-pagefind-meta="title"{% if post.Extra.content_width != 'wide' %} data-title-size="{{ post.title_size }}"{% endif %}>{{ post.title_html | safe }}</h1>
 
                 {# Author byline and post metadata #}
             {% include "components/post_byline.html" %}

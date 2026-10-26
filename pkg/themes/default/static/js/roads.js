@@ -202,6 +202,14 @@
         const body = document.createElement("div");
         body.className = "road-entry-body";
         node.classList.add("road-entry-heading");
+        // Only a leading Lucide icon becomes a decorative badge on the rail.
+        const leading = [...node.childNodes].find((c) =>
+          !(c.nodeType === 3 && !c.textContent.trim()) &&
+          !(c.classList && c.classList.contains("heading-anchor")));
+        if (leading && leading.nodeType === 1 && leading.matches('span.icon[data-icon^="lucide/"]')) {
+          dot.classList.add("road-entry-icon");
+          dot.appendChild(leading);
+        }
         // Text beside the title link becomes an eyebrow label above it.
         const link = [...node.children].find((c) => c.tagName === "A" && !c.classList.contains("heading-anchor"));
         if (link) {
@@ -216,10 +224,23 @@
           }
           link.classList.add("road-entry-title");
         }
+        // A standalone emphasis line is an alternative to a beside-link label.
+        const paragraph = node.nextElementSibling;
+        const emphasis = paragraph && paragraph.firstElementChild;
+        if (!node.querySelector(".road-entry-label") && paragraph && paragraph.tagName === "P" &&
+            paragraph.children.length === 1 && emphasis.tagName === "EM" &&
+            emphasis.textContent.trim() && [...paragraph.childNodes].every((c) =>
+              c === emphasis || (c.nodeType === 3 && !c.textContent.trim()))) {
+          const label = document.createElement("span");
+          label.className = "road-entry-label";
+          label.textContent = emphasis.textContent.trim();
+          node.prepend(label, " ");
+          paragraph.remove();
+        }
         root.replaceChild(entry, node);
         entry.append(dot, node, body);
         entries.push({ el: entry, dot, body });
-      } else if (entry) {
+      } else if (entry && node.parentNode === root) {
         entry.querySelector(".road-entry-body").appendChild(node);
       }
     }
@@ -414,9 +435,30 @@
     for (const r of roads) if (entries.some((e) => e.target === r.root)) layout(r);
   });
 
+  const revealEditorial = (r) => {
+    if (!r.editorial || !r.root.classList.contains("reveal") || reduceMotion ||
+        !("IntersectionObserver" in window)) return;
+    // Animate on arrival, not by hiding unseen content. A failed observer or
+    // interrupted script can never leave an entry permanently invisible.
+    r.revealObserver = new IntersectionObserver((records) => {
+      for (const record of records) {
+        if (!record.isIntersecting && record.boundingClientRect.top >= 0) continue;
+        if (record.isIntersecting && record.boundingClientRect.top >= 0) {
+          record.target.classList.add("road-entry-revealed");
+        }
+        r.revealObserver.unobserve(record.target);
+      }
+    }, { rootMargin: "0px 0px -8% 0px" });
+    r.entries.forEach((e) => r.revealObserver.observe(e.el));
+  };
+
   const init = () => {
     for (const r of roads) {
-      if (!r.root.isConnected) { resizer.unobserve(r.root); roads.delete(r); }
+      if (!r.root.isConnected) {
+        resizer.unobserve(r.root);
+        if (r.revealObserver) r.revealObserver.disconnect();
+        roads.delete(r);
+      }
     }
     document.querySelectorAll(".road:not([data-road-ready]), [data-road]:not([data-road-ready])").forEach((root) => {
       root.setAttribute("data-road-ready", "");
@@ -425,6 +467,7 @@
       roads.add(r);
       resizer.observe(root);
       layout(r);
+      revealEditorial(r);
     });
     // Font loading can change wrapping without resizing the road container.
     if (document.fonts) document.fonts.ready.then(() => {

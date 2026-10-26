@@ -216,7 +216,14 @@ hooks = ["default", "chartjs"]
 enabled = true
 cdn_url = "/assets/vendor/chartjs/chart.min.js"
 container_class = "chartjs-container"
+data_display = "open" # or "collapsed"; per-chart JSON can override
 ```
+
+For built-in figure cards, add top-level plain-text `title` and/or `caption`
+keys to the chart JSON. Use `data_display` to choose its initial data disclosure
+state. These keys are removed before Chart.js receives the configuration.
+See [chart figures and accessible fallbacks](markdown-chart-fallback.md) for
+complete examples and no-JavaScript behavior.
 
 ### Basic Usage
 

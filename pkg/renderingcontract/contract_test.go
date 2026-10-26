@@ -2,6 +2,23 @@ package renderingcontract
 
 import "testing"
 
+func TestContract_UsesZeroDownloadSystemFontByDefault(t *testing.T) {
+	c, err := Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c.Defaults.Fontpack != "system" {
+		t.Fatalf("default fontpack = %q, want system", c.Defaults.Fontpack)
+	}
+	pack, ok := c.Fontpacks["system"]
+	if !ok || pack["body"] != "system-ui" || pack["heading"] != "system-ui" || pack["mono"] != "ui-monospace" {
+		t.Fatalf("system typography roles not configured: %#v", pack)
+	}
+	if _, ok := c.Fontpacks["brush"]; !ok {
+		t.Fatal("opt-in brush fontpack must remain available")
+	}
+}
+
 func TestContract_PaletteFamiliesArePaired(t *testing.T) {
 	c, err := Load()
 	if err != nil {

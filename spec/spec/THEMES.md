@@ -1378,7 +1378,7 @@ When the picker is enabled, the fontpack plugin resolves every catalog pack
 `[data-fontpack="<name>"]` block per pack, and appends:
 
 ```css
-:root{--fontpack-default:"brush";--fontpack-manifest:'[{"name":"brush","displayName":"Brush","heading":"Knewave","body":"Space Grotesk","code":"DM Mono"},...]'}
+:root{--fontpack-default:"system";--fontpack-manifest:'[{"name":"system","displayName":"System","heading":"system-ui","body":"system-ui","code":"ui-monospace"},{"name":"brush","displayName":"Brush","heading":"Knewave","body":"Space Grotesk","code":"DM Mono"},...]'}
 ```
 
 Each manifest entry also carries `headingFont`, `headingWeight`, `bodyFont`,
@@ -1622,6 +1622,11 @@ View transitions preserve `data-palette` and `data-aesthetic` across SPA
 navigation.
 
 ### Keyboard Navigation
+
+Global keyboard shortcuts MUST ignore events originating from focused
+interactive controls, including buttons, links, menu items, tabs, and editable
+content. Native Enter and Space activation for these controls MUST continue to
+work while global shortcuts are enabled.
 
 | Key | Action |
 |-----|--------|
@@ -2891,6 +2896,18 @@ h6:hover .heading-anchor,
 ```
 
 ### Mermaid Diagrams (`mermaid` plugin)
+
+Mermaid diagrams follow the active site palette. Client-rendered diagrams are
+updated when the theme or palette changes; Chromium-pre-rendered SVGs use the
+configured palette at build time. Palette values may use modern CSS expressions such as
+`color-mix()`, but the Mermaid theme API must receive concrete colors supported
+by the Mermaid version in use. Theme changes must rerender diagrams without
+discarding their original source, and server-rendered diagram markup must remain
+readable when JavaScript is disabled.
+
+Directional edges and arrowheads use the active foreground color so their
+meaning remains visible against the diagram surface. Node and cluster outlines
+may use the subtler border color.
 
 ```css
 .mermaid {

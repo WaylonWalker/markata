@@ -388,6 +388,9 @@
 
     decryptedEl.innerHTML = content;
     decryptedEl.style.display = 'block';
+    document.dispatchEvent(new CustomEvent('markata:content-decrypted', {
+      detail: { container: decryptedEl },
+    }));
     lockedEl.style.display = 'none';
     container.setAttribute('aria-label', 'Decrypted content');
     decryptedEl.setAttribute('tabindex', '-1');

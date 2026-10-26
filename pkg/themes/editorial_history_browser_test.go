@@ -104,47 +104,47 @@ window.fetch = async function(url) {
 	defer cancelTimeout()
 	var requests int
 	var safe bool
-	if err := chromedp.Run(browser,
+	if err := chromedp.Do(browser,
 		chromedp.Navigate(server.URL),
 		chromedp.WaitReady(`[data-editorial-open]:not([hidden])`),
-		chromedp.Evaluate(`window.revisionRequests`, &requests),
+		evaluateInto(`window.revisionRequests`, &requests),
 	); err != nil {
 		t.Fatal(err)
 	}
 	if requests != 0 || viewerRequests.Load() != 0 {
 		t.Fatal("revision data or viewer loaded before reader action")
 	}
-	if err := chromedp.Run(browser,
-		chromedp.Evaluate(`window.failRevision = true; document.querySelector('[data-editorial-open]').focus()`, nil),
+	if err := chromedp.Do(browser,
+		evaluateVoid(`window.failRevision = true; document.querySelector('[data-editorial-open]').focus()`),
 		chromedp.KeyEvent("\r"),
 		chromedp.WaitVisible(`dialog[open]`),
 	); err != nil {
 		t.Fatalf("open editorial history dialog: %v", err)
 	}
-	if err := chromedp.Run(browser,
-		chromedp.Evaluate(`window.revisionRequests`, &requests),
+	if err := chromedp.Do(browser,
+		evaluateInto(`window.revisionRequests`, &requests),
 	); err != nil {
 		t.Fatalf("verify history-only view: %v", err)
 	}
 	if requests != 0 || viewerRequests.Load() != 0 {
 		t.Fatal("opening history fetched revision source without selecting Show changes")
 	}
-	if err := chromedp.Run(browser,
+	if err := chromedp.Do(browser,
 		chromedp.Click(`.editorial-history__event:not([hidden]) [data-editorial-show]`),
-		chromedp.Poll(`document.querySelector('.editorial-history__event:not([hidden]) [data-editorial-status]').textContent.includes('could not load')`, nil),
+		pollVoid(`document.querySelector('.editorial-history__event:not([hidden]) [data-editorial-status]').textContent.includes('could not load')`),
 	); err != nil {
 		t.Fatalf("explicit load failure and fallback: %v", err)
 	}
-	if err := chromedp.Run(browser,
-		chromedp.Evaluate(`window.failRevision = false`, nil),
+	if err := chromedp.Do(browser,
+		evaluateVoid(`window.failRevision = false`),
 		chromedp.Click(`[data-editorial-next]`),
 		chromedp.Click(`.editorial-history__event:not([hidden]) [data-editorial-show]`),
-		chromedp.Poll(`document.querySelector('.editorial-history__event:not([hidden]) [data-editorial-result] ins, .editorial-history__event:not([hidden]) [data-editorial-result] del') !== null`, nil),
-		chromedp.Evaluate(`document.querySelector('[data-editorial-position]').textContent === '2 of 2'`, &safe),
+		pollVoid(`document.querySelector('.editorial-history__event:not([hidden]) [data-editorial-result] ins, .editorial-history__event:not([hidden]) [data-editorial-result] del') !== null`),
+		evaluateInto(`document.querySelector('[data-editorial-position]').textContent === '2 of 2'`, &safe),
 		chromedp.Click(`[data-editorial-previous]`),
 		chromedp.Click(`.editorial-history__event:not([hidden]) [data-editorial-show]`),
-		chromedp.Poll(`document.querySelector('.editorial-history__event:not([hidden]) [data-editorial-result] ins, .editorial-history__event:not([hidden]) [data-editorial-result] del') !== null`, nil),
-		chromedp.Evaluate(`!window.bad && document.querySelectorAll('[data-editorial-result] script, [data-editorial-result] img').length === 0 && document.querySelectorAll('.editorial-history__omitted').length > 0 && [...document.querySelectorAll('.editorial-history__omitted')].every(x => !x.open) && document.querySelector('[data-editorial-position]').textContent === '1 of 2'`, &safe),
+		pollVoid(`document.querySelector('.editorial-history__event:not([hidden]) [data-editorial-result] ins, .editorial-history__event:not([hidden]) [data-editorial-result] del') !== null`),
+		evaluateInto(`!window.bad && document.querySelectorAll('[data-editorial-result] script, [data-editorial-result] img').length === 0 && document.querySelectorAll('.editorial-history__omitted').length > 0 && [...document.querySelectorAll('.editorial-history__omitted')].every(x => !x.open) && document.querySelector('[data-editorial-position]').textContent === '1 of 2'`, &safe),
 	); err != nil {
 		t.Fatalf("verify opt-in comparisons and history navigation: %v", err)
 	}
@@ -152,8 +152,8 @@ window.fetch = async function(url) {
 	if !safe || viewerRequests.Load() != 1 {
 		t.Fatalf("unsafe render or duplicate viewer loads: safe=%v loads=%d", safe, viewerRequests.Load())
 	}
-	if err := chromedp.Run(browser,
-		chromedp.Evaluate(`window.dispatchEvent(new Event('view-transition-complete')); window.dispatchEvent(new Event('view-transition-complete'))`, nil),
+	if err := chromedp.Do(browser,
+		evaluateVoid(`window.dispatchEvent(new Event('view-transition-complete')); window.dispatchEvent(new Event('view-transition-complete'))`),
 	); err != nil {
 		t.Fatalf("reinitialize editorial controls after navigation: %v", err)
 	}
@@ -161,9 +161,9 @@ window.fetch = async function(url) {
 	if !safe || viewerRequests.Load() != 1 {
 		t.Fatalf("view-transition initialization duplicated work: safe=%v loads=%d", safe, viewerRequests.Load())
 	}
-	if err := chromedp.Run(browser,
+	if err := chromedp.Do(browser,
 		chromedp.MouseClickXY(5, 5),
-		chromedp.Poll(`!document.querySelector('dialog.editorial-history').open`, nil),
+		pollVoid(`!document.querySelector('dialog.editorial-history').open`),
 	); err != nil {
 		t.Fatalf("close editorial history by clicking outside: %v", err)
 	}

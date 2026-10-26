@@ -1,0 +1,41 @@
+name: Production rich Markdown browser acceptance
+
+on:
+  pull_request:
+    paths:
+      - "scripts/production-rich-markdown.browser.test.cjs"
+      - ".github/workflows/production-rich-markdown-browser.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  live-browser:
+    name: Public sample acceptance
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+      - name: Install pinned Playwright
+        run: npm install --no-save --no-package-lock playwright@1.56.1
+      - name: Install Chromium
+        run: npx --no-install playwright install --with-deps chromium
+      - name: Audit the live sample in Chromium
+        env:
+          LIVE_SAMPLE_URL: https://waylonwalker.com/sample/
+          SCREENSHOT_DIR: test-results/production-rich-markdown
+        run: |
+          node --check scripts/production-rich-markdown.browser.test.cjs
+          node scripts/production-rich-markdown.browser.test.cjs
+      - name: Upload live evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-rich-markdown-evidence
+          path: test-results/production-rich-markdown
+          if-no-files-found: warn
+          retention-days: 21
