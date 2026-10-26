@@ -337,9 +337,9 @@ func TestSitemapIndexLastModIncludesGeneratedLandingDate(t *testing.T) {
 	m.SetPosts([]*models.Post{{Slug: "undated", Href: "/undated/", Published: true}})
 	feedDate := time.Date(2025, 7, 4, 0, 0, 0, 0, time.UTC)
 	m.Cache().Set("feed_configs", []models.FeedConfig{{
-		Slug: "blog",
+		Slug:    "blog",
 		Formats: models.FeedFormats{HTML: true, Sitemap: true},
-		Posts: []*models.Post{{Slug: "feed-only", Href: "/feed-only/", Published: true, Date: &feedDate}},
+		Posts:   []*models.Post{{Slug: "feed-only", Href: "/feed-only/", Published: true, Date: &feedDate}},
 	}})
 
 	index := plugin.buildSitemapIndex(m, "https://example.com")
