@@ -1,11 +1,17 @@
 ---
 name: markata-go-site
-description: Help agents work effectively in markata-go site repositories. Trigger for visual, visualize, visualization, visual post, visual report, diagram, dashboard, infographic, scorecard, roadmap, timeline, architecture map, flowchart, chart, graph, status board, progress tracker, or requests to show information at a glance. Also use for site configuration, Markdown content and frontmatter, templates, rich layout components, theme palettes, analytics or stats, Web Awesome, build and deploy debugging, and performance. Prefer native Markata Markdown visual primitives over proprietary UI markup or unnecessary new frontend dependencies.
+description: Create polished, static-first visual Markdown documents with Markata's native responsive containers, including single-file documents inside repositories that are not Markata sites. Trigger for visual, visualize, visually represent, visual design, visual post, visual report, workflow, diagram, dashboard, infographic, scorecard, roadmap, timeline, architecture, flowchart, chart, graph, status board, or progress tracker. Prefer composed layouts with md-layout, md-card, md-feature, md-icon and road steps over a bare Mermaid flowchart plus table unless explicitly requested. Also use for Markata site configuration, rich Markdown, themes, templates, analytics, Web Awesome, builds, deployments, and performance.
 ---
 
 This skill helps an agent work inside a markata-go site repository without needing the markata-go source tree.
 
 It is written to be useful in a standalone site repo where only the generated project files, templates, and config are available.
+
+It also supports authoring a **single Markata-flavored visual Markdown document**
+inside an unrelated repository, such as a Python project's `WORKFLOW.md`.
+Do not mistake "no `markata-go.toml` here" for "rich Markata Markdown is
+unavailable for authoring". Rendering requires Markata, but writing source
+containers does not.
 
 ## Start Here
 
@@ -16,9 +22,27 @@ Before making changes:
 - inspect existing `wa-*` usage, `webawesome` config, and template asset guards before adding component code or new includes
 - inspect existing analytics pages, metrics partials, and chart code blocks before inventing a new data story pattern
 - check built-in `:lucide-name:` shortcodes and `md-*` article layout containers before adding any icon library or custom UI components
-- for visual/diagram/dashboard requests, select the visualization by information type and preserve a no-JavaScript text fallback; see `topics/visual-authoring.md`
+- for visual/diagram/dashboard requests, read `topics/visual-authoring.md` and compose a visual page rather than automatically supplying only Mermaid and a table; retain a no-JavaScript text fallback
 - prefer current command output and files over older examples or assumptions
 - when the site is minimal or brand new, use the topic files in this skill as the default markata-go playbook
+
+## Visual composition contract
+
+When asked for **visual design**, **visually represent**, **visualize a
+workflow**, **visual post**, **dashboard**, **diagram**, or a richly presented
+document, read **both** `topics/visual-authoring.md` and
+`topics/rich-markdown.md` before authoring. Prefer a *composed document*
+with meaningful `md-layout`, `md-columns`/`md-card`, `md-feature`,
+`md-icon`, `road`, or related primitives. **Do not stop at Mermaid plus
+a normal table** when the user requested a rich visual document. Use
+Mermaid when exact graph topology is the main information or the user
+explicitly requested a diagram, not as the reflexive visual default.
+
+For a single file requested in a non-Markata repository, deliver a single
+self-contained Markdown file with those native primitives, and explain
+that an actual Markata site is needed to preview its rich styling.
+Do not create project scaffolding as a prerequisite unless asked.
+See `examples/visual-workflow.md` for a copyable, composed example.
 
 ## Core Workflow
 

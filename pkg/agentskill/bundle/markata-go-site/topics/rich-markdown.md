@@ -4,7 +4,19 @@ Use this topic when the user asks for modern article UI such as icon cards,
 roadmap feature rows, responsive comparisons, diagrams, status metrics,
 sortable tables, code copy, checklists, chart fallbacks, or source disclosures.
 
-For broad requests to **visualize**, create a **visual post**, draw a **diagram**, or build a **dashboard**, also read `topics/visual-authoring.md` to choose a layout from the information being communicated. The skill is vendor-neutral; do not assume any particular chat interface or custom component framework.
+For broad requests to **visualize**, create a **visual post**, draw a
+**diagram**, or build a **dashboard**, also read
+`topics/visual-authoring.md` to compose a responsive article layout from
+the information being communicated. The skill is vendor-neutral; do not
+assume any particular chat interface or custom component framework.
+
+**A visually designed article is not just a Mermaid block and a Markdown
+table.** For a workflow, begin with a meaningful `md-layout` summary, use
+`road steps` for its main path, `md-columns` / `md-card` for choices, and
+`md-feature` / `md-icon` for important actions. Use
+`examples/visual-workflow.md` as a concrete reference. When authoring one
+Markdown file outside an existing Markata site, you can still write these
+containers; only their styled rendering depends on Markata.
 
 ## Prefer existing primitives before adding dependencies
 
