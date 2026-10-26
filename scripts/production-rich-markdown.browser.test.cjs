@@ -178,6 +178,10 @@ async function main() {
         await page.screenshot({
           path:path.join(output,`${width}-${theme.name}.png`),animations:'disabled',
         });
+        await page.locator('pre.mermaid svg').first().screenshot({
+          path:path.join(output,`mermaid-${width}-${theme.name}.png`),
+          animations:'disabled',
+        });
       }
     }
 
