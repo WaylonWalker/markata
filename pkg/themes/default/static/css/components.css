@@ -5020,6 +5020,13 @@ body.reader-mode::after {
     overscroll-behavior-inline: contain;
   }
 
+  /* Keep permalinks available without placing them beyond the heading's edge.
+     Inline anchors can wrap with the title; card scrolling is still needed for
+     wide comparison tables below. Include headings in nested containers too. */
+  .post-content .md-card .heading-anchor {
+    position: static;
+  }
+
   .post-content :is(.md-layout, .md-box, .md-card) > :first-child { margin-top: 0; }
   .post-content :is(.md-layout, .md-box, .md-card) > :last-child { margin-bottom: 0; }
   /* Preserve type hierarchy inside visual Markdown, instead of flattening

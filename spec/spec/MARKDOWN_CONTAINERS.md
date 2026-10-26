@@ -100,6 +100,15 @@ Editorial roads accept independent `story` (heavier typography) and `reveal`
 Leading Lucide icons and emphasis-only label paragraphs enhance all editorial
 roads by default.
 
+### Card heading permalinks
+
+In the default theme, heading anchors anywhere inside an article's `md-card`
+MUST remain within the heading's normal text flow, wrapping when needed.
+They MUST remain available on hover and keyboard focus without causing
+horizontal card scrolling. Headings outside cards retain their existing anchors.
+Wide code blocks retain their own scrolling, and wide comparison tables MAY
+scroll within the card rather than widening the page.
+
 ## Conformance tests
 
 Implementations SHOULD test at minimum:
