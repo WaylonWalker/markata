@@ -1,6 +1,6 @@
 ---
 name: markata-go-site
-description: Help agents work effectively in markata-go site repositories. Trigger for visual, visualize, visualization, visual post, visual report, diagram, dashboard, infographic, scorecard, roadmap, timeline, architecture map, flowchart, chart, graph, status board, progress tracker, or requests to show information at a glance. Also use for site configuration, Markdown content and frontmatter, templates, rich layout components, theme palettes, analytics or stats, Web Awesome, build and deploy debugging, and performance. Prefer native Markata Markdown visual primitives over proprietary UI markup or unnecessary new frontend dependencies.
+description: Create polished, static-first visual Markdown documents with Markata's native responsive containers, including single-file documents inside repositories that are not Markata sites. Trigger for visual, visualize, visually represent, visual design, visual post, visual report, workflow, diagram, dashboard, infographic, scorecard, roadmap, timeline, architecture, flowchart, chart, graph, status board, or progress tracker. Prefer composed layouts with md-layout, md-card, md-feature, md-icon and road steps over a bare Mermaid flowchart plus table unless explicitly requested. Also use for Markata site configuration, rich Markdown, themes, templates, analytics, Web Awesome, builds, deployments, and performance.
 ---
 
 This skill helps an agent work inside a markata-go site repository without needing the markata-go source tree.
