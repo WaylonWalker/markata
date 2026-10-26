@@ -97,7 +97,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Publish live builder image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: docs-site/Dockerfile.builder
@@ -113,7 +113,7 @@ jobs:
           cache-from: type=gha,scope=markata-docs-builder
           cache-to: type=gha,mode=max,scope=markata-docs-builder
       - name: Publish versioned and commit-pinned image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: docs-site/Dockerfile
