@@ -43,6 +43,7 @@ This document specifies all built-in plugins that ship with the static site gene
 │    ├─ publish_html       Write individual post HTML files           │
 │    ├─ random_post        Write /random/ redirect page               │
 │    ├─ well_known         Generate .well-known endpoints             │
+│    ├─ llms_txt           Generate public /llms.txt discovery index   │
 │    ├─ copy_assets        Copy static files                           │
 │    ├─ redirects          Generate HTML redirect pages                │
 │    ├─ css_minify         Minify CSS files (PriorityLast)             │
@@ -1751,3 +1752,25 @@ hooks = [
 - [CONFIG.md](./CONFIG.md) - Plugin configuration
 - [SPEC.md](./SPEC.md) - Core specification
 - [LIFECYCLE.md](./LIFECYCLE.md) - Lifecycle stages
+
+
+## Automatically Generated `llms.txt`
+
+The default full-site build runs `llms_txt` in the Write stage at last
+priority, after static assets, published posts, and sitemap output. The
+plugin creates an H1, a site-description blockquote, and Markdown link-list
+sections for the homepage, documentation, and recent published content.
+It favors `.md` URLs when that format is enabled and falls back to HTML
+links. Only public, published, non-skipped and indexable posts are eligible.
+An authored `llms.md` takes precedence only when it is public, published,
+non-draft, non-skipped, and text output is enabled. Private posts never
+suppress the generated public index. A configured site URL is used for
+absolute links only when it is HTTP(S), has no user information, query, or
+fragment; otherwise links are relative.
+
+Site config `[markata-go.llms_txt]` accepts `enabled` (default true) and
+`max_pages` (default 30; cap 100). An explicitly authored `llms.md`, a
+project static `llms.txt`, or a hand-managed output file takes precedence.
+Authored content also takes precedence when generation is disabled. Only
+auto-generated output without an authored source is removed when disabled.
+This plugin is not part of single-page builds.
