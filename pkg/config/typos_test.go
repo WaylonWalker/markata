@@ -89,7 +89,7 @@ func TestFeedFormatKeysAndExtensionFields(t *testing.T) {
 	for _, key := range []string{"html", "simple_html", "rss", "atom", "json", "markdown", "text", "sitemap"} {
 		t.Run(key, func(t *testing.T) {
 			_, err := LoadFromString("[[markata-go.feeds]]\nslug = 'draft'\n" + key + " = false\n", FormatTOML)
-			if err == nil || !strings.Contains(err.Error(), "formats."+key) {
+			if err == nil || !strings.Contains(err.Error(), "formats." + key) {
 				t.Fatalf("error = %v; want formats.%s", err, key)
 			}
 		})
