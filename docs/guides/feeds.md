@@ -1620,11 +1620,11 @@ the same while its month details are available on demand.
 
 ### Editorial loading
 
-Editorial archives render the first week immediately and let the browser defer
-layout for later weeks until they approach the viewport. All posts are still in
-the HTML, including when JavaScript is disabled. Browser find and printing keep
-access to the complete page. Browsers without content visibility support render
-the complete page normally.
+Editorial archives render the visible cards immediately and let the browser
+defer layout for offscreen cards and later weeks until they approach the
+viewport. All posts are still in the HTML, including when JavaScript is
+disabled. Browser find and printing keep access to the complete page. Browsers
+without content visibility support render the complete page normally.
 
 Keyboard navigation setup does not download the next archive page. Link hover,
 focus, and explicit feed cycling can still prepare the next navigation.

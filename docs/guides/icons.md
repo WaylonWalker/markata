@@ -29,6 +29,106 @@ No icon directory or configuration is required. The first unresolved Lucide shor
 
 The default Lucide version is pinned by markata-go rather than following an upstream `latest` tag. Once vendored, later builds reuse the local materialization/cache and do not need to fetch it again.
 
+## Icons in cards, diagrams, and feature lists
+
+These are the same thin line icons shown in modern ChatGPT-style feature
+cards. **No new icon plugin or browser JavaScript is needed.** The `icons`
+plugin already emits inline SVG, and the default article theme supplies
+opt-in containers to size and position it.
+
+### Centered icons in side-by-side cards
+
+````markdown
+::: md-columns
+
+:::: md-card {data-align="center"}
+
+::::: md-icon {data-size="lg"}
+:lucide-server:
+
+:::::
+
+### Falcon2
+K3s node
+
+::::
+
+:::: md-card {data-align="center"}
+
+::::: md-icon {data-size="lg"}
+:lucide-database:
+
+:::::
+
+### Falcon3
+NAS + ZFS
+
+::::
+
+:::
+````
+
+`md-icon` also supports `data-size="sm"` (1rem) and the default 1.25rem
+size. The `data-size` values affect only presentation; the source SVG
+remains a 1em icon that inherits the current text color.
+
+### Icon-first feature rows
+
+````markdown
+::: md-feature
+
+:::: md-feature-icon
+:lucide-rocket:
+
+::::
+
+:::: md-feature-body
+### 1. Verify production
+
+Confirm the new image and the live page revision. Test without JavaScript.
+
+::::
+
+:::
+
+::: md-feature
+
+:::: md-feature-icon
+:lucide-gauge:
+
+::::
+
+:::: md-feature-body
+### 2. Protect performance
+
+Test slow 3G and keep page-weight budgets.
+
+::::
+
+:::
+````
+
+The icon tile and text reflow within the article width, including on narrow
+mobile screens. The icon itself is *decorative* and is hidden from assistive
+technology; the visible heading conveys the meaning. Avoid icon-only buttons
+without a readable text label.
+
+### Which syntax should an agent choose?
+
+- In ordinary prose, use `:lucide-rocket:` (or `:lucide/rocket:`).
+- In a card, wrap the shortcode with `::: md-icon` for centered/sized display.
+- In a list like a feature roadmap, use a `md-feature` row with nested
+  `md-feature-icon` and `md-feature-body` containers.
+- For arbitrary connected graphs, prefer Mermaid; use `md-feature` for
+  icon-plus-text rows rather than inventing new HTML/CSS.
+- In a custom post template, reuse existing icons and styles where appropriate;
+  do not hardcode a second SVG library, icon font, or CDN.
+
+The diagram and layout syntax is also documented under
+[Markdown Containers](/docs/guides/markdown-containers/). See the bundled
+agent skill's `topics/rich-markdown.md` for authoring examples that agents
+can use outside the Markata source repository.
+
 ## Local icons and overrides
 
 Project-local SVG packs still work and take precedence over automatically vendored Lucide icons. Put SVG files under `.icons/` or `static/.icons/`.

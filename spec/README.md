@@ -52,6 +52,7 @@ The docs explain *why* and *usage* - user-friendly guides, examples, tutorials.
 | `SPEC.md` (CLI) | `docs/reference/cli.md` |
 | `CONTAINERS.md` | `docs/guides/deployment/docker.md` |
 | `CI.md` | `docs/guides/maintainer-ci.md` |
+| `ROADS.md` | `docs/guides/roads.md` |
 
 **Documentation lives in `docs/` and is built as part of the site itself.**
 
@@ -74,6 +75,7 @@ The docs explain *why* and *usage* - user-friendly guides, examples, tutorials.
 | [CONFIG.md](./spec/CONFIG.md) | Configuration system, file discovery, env vars, CLI |
 | [AGENTS.md](./spec/AGENTS.md) | Agent skill packaging, install targets, and CLI |
 | [THEMES.md](./spec/THEMES.md) | **Theming system, customization, built-in styles** |
+| [ROADS.md](./spec/ROADS.md) | Scroll-drawn roads built from `::: road` containers |
 | [LIFECYCLE.md](./spec/LIFECYCLE.md) | 13 build stages, incremental builds |
 | [BUILD_DAG.md](./spec/BUILD_DAG.md) | Immutable graph declarations, canonical diagnostics, deterministic serial ordering |
 | [FEEDS.md](./spec/FEEDS.md) | **Feed system - the core differentiator** |

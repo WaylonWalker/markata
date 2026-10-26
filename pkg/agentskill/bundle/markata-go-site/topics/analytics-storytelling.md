@@ -146,9 +146,24 @@ These require outside analytics tools or logs and should not be presented as bui
 
 ## Chart And Graph Options
 
-- Use `chartjs` fenced blocks for bar, line, pie, doughnut, radar, polar area, bubble, and scatter charts.
-- Use `contribution-graph` fenced blocks for calendar-style publishing/activity views.
-- When the repo already has a chart palette or CSS treatment, reuse it instead of inventing a new visual language.
+Read `topics/chart-authoring.md` for choosing a bar, line, filled-line
+area, stacked bar, doughnut, scatter or other chart from the information.
+A chart is the right primary visual for **measured comparisons or trends**,
+not simply a decorative replacement for a table. Use real `chartjs`
+fenced JSON with labels, datasets, and semantic units; use
+`contribution-graph` for calendar-style publishing/activity views.
+
+A **line** compares ordered periods, a **bar** compares categories,
+a **doughnut** summarizes a known whole with few groups, and a **stacked
+bar** shows comparable subgroup contributions. Use the published
+Chart.js data-table fallback with aligned label/data arrays.
+
+**Do not put total articles, total words, and total code blocks in one
+ordinary bar chart**: the units and magnitudes are incompatible, so
+the visual comparison is misleading. Use individual `md-stat` values
+or separate same-unit charts. Reuse any site chart palette or CSS treatment;
+never claim that the canvas has been verified in every theme without a
+browser check.
 
 ## Recommended `analytics.md` Pattern
 
@@ -282,30 +297,37 @@ Use this when the author wants a calendar-like view of publishing cadence.
 `maxPercentile` is useful when a few unusually large days would otherwise wash out the rest of the heatmap.
 The built-in contribution graph runtime also fits graphs to narrow content columns, so agents should not add page-specific resize JavaScript unless the site has a special layout need.
 
-### `chartjs` chart from built-in site stats
+### `chartjs` chart from comparable built-in site stats
+
+This one series of same-unit article counts can be charted meaningfully.
+When the site has `posts_by_year`, derive chronologically ordered
+labels and values using the repository's existing safe Jinja pattern.
+Do not silently invent counts or render raw map values as if sorted.
+
+Illustrative static example (replace with verified annual counts):
 
 ````markdown
-## At a glance chart
+## Articles by year
 
 ```chartjs
 {
   "type": "bar",
   "data": {
-    "labels": ["Posts", "Words", "Code blocks"],
-    "datasets": [{
-      "label": "Site totals",
-      "data": [
-        {{ config.Extra.site_stats.total_posts }},
-        {{ config.Extra.site_stats.total_words }},
-        {{ config.Extra.site_stats.total_code_blocks }}
-      ]
-    }]
+    "labels": ["2023", "2024", "2025"],
+    "datasets": [
+      {"label": "Articles", "data": [7, 12, 9]}
+    ]
+  },
+  "options": {
+    "scales": {"y": {"beginAtZero": true}}
   }
 }
 ```
 ````
 
-Use this pattern for simple KPI comparisons where the values already exist in built-in stats.
+For site-wide totals measured in *different units*, show
+`total_posts`, `total_words`, and `total_code_blocks` as
+separately labeled `md-stat` KPIs instead of a single shared bar axis.
 
 ### Topic mix chart
 

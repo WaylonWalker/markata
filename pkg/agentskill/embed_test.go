@@ -2,6 +2,7 @@ package agentskill
 
 import (
 	"io/fs"
+	"strings"
 	"testing"
 )
 
@@ -22,12 +23,16 @@ func TestSiteSkill_ContainsAllRequiredTopics(t *testing.T) {
 	requiredTopics := []string{
 		"topics/configuration.md",
 		"topics/writing-frontmatter.md",
+		"topics/rich-markdown.md",
+		"topics/visual-authoring.md",
+		"topics/chart-authoring.md",
 		"topics/cli-usage.md",
 		"topics/build-deployment.md",
 		"topics/faster-builds.md",
 		"topics/theme-creation.md",
 		"topics/template-management.md",
 		"topics/plugin-creation.md",
+		"topics/roads.md",
 	}
 
 	skillFS, err := SiteSkill()
@@ -81,6 +86,8 @@ func TestSiteSkill_ContainsExampleFiles(t *testing.T) {
 		"examples/templates/base.html",
 		"examples/templates/post.html",
 		"examples/templates/feed.html",
+		"examples/editorial-visual-composition.md",
+		"examples/chart-composition.md",
 	}
 
 	skillFS, err := SiteSkill()
@@ -163,5 +170,77 @@ func TestListFiles_IsSorted(t *testing.T) {
 func TestSiteSkillName_IsExpectedValue(t *testing.T) {
 	if SiteSkillName != "markata-go-site" {
 		t.Fatalf("SiteSkillName = %q, want %q", SiteSkillName, "markata-go-site")
+	}
+}
+
+func TestSiteSkill_EditorialVisualComposition(t *testing.T) {
+	skillFS, err := SiteSkill()
+	if err != nil {
+		t.Fatalf("SiteSkill() error = %v", err)
+	}
+	data, err := fs.ReadFile(skillFS, "examples/editorial-visual-composition.md")
+	if err != nil {
+		t.Fatalf("cannot read visual workflow example: %v", err)
+	}
+	src := string(data)
+
+	// Source tests validate structure, not a design quota. A previous
+	// exact-one-feature/exact-two-cards assertion pushed agents toward
+	// under-designed walls of prose rather than balanced visual storytelling.
+	// Require distinct orientation, journey, choice and explanation roles.
+	for _, want := range []string{
+		"# From uncertainty to a clear decision",
+		"## The essentials",
+		"## The journey",
+		"## Understand",
+		"## Choose",
+		"## Act",
+		"## Verify",
+		"::: road steps",
+		"::: md-columns",
+		"::: md-feature",
+		"::: md-status",
+		"md-card",
+		"md-icon",
+		":lucide-",
+	} {
+		if !strings.Contains(src, want) {
+			t.Errorf("editorial visual example is missing %q", want)
+		}
+	}
+	if strings.Count(src, ":::: md-card") < 2 {
+		t.Error("generic visual example lost its meaningful card-based orientation or choice")
+	}
+	if strings.Contains(strings.ToLower(src), "repo-steward") {
+		t.Error("visual composition example must remain repository-neutral")
+	}
+
+	// Markata nested containers use strictly longer fences and must close
+	// with exactly the matching number of bare colons.
+	stack := make([]int, 0)
+	for i, line := range strings.Split(src, "\n") {
+		line = strings.TrimSpace(line)
+		depth := len(line) - len(strings.TrimLeft(line, ":"))
+		if depth < 3 {
+			continue
+		}
+		remaining := strings.TrimSpace(line[depth:])
+		if remaining == "" {
+			if len(stack) == 0 || stack[len(stack)-1] != depth {
+				t.Fatalf("line %d: unmatched %d-colon closing fence", i+1, depth)
+			}
+			stack = stack[:len(stack)-1]
+			continue
+		}
+		if !strings.HasPrefix(line[depth:], " ") {
+			continue
+		}
+		if len(stack) > 0 && depth <= stack[len(stack)-1] {
+			t.Fatalf("line %d: nested fence must be longer than its parent", i+1)
+		}
+		stack = append(stack, depth)
+	}
+	if len(stack) > 0 {
+		t.Fatalf("unclosed Markdown containers with depths %v", stack)
 	}
 }

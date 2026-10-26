@@ -37,12 +37,15 @@ When --agent is omitted, markata-go installs into the current agent's project
 layout when it can detect one from the environment. Otherwise it falls back to
 the portable universal layout under .agents/skills.
 
-Use --global with an explicit --agent to install into that agent's user-level
-skill directory instead of a project repository.
+Use --global to install into an agent's user-level skill directory. Without
+--agent, an interactive terminal opens a fuzzy picker. Type to filter, use the
+arrow keys to navigate, and press Enter to select. Escape or Ctrl+C cancels.
+Scripts and --no-input require an explicit --agent.
 
 Examples:
   markata-go agent install
   markata-go agent install --agent claude-code
+  markata-go agent install --global
   markata-go agent install --agent opencode --global
   markata-go agent install ../my-site --dry-run
   markata-go agent install . --force`,
@@ -187,7 +190,23 @@ func markTargetHidden(flags *pflag.FlagSet) {
 
 func runAgentInstallCommand(cmd *cobra.Command, args []string) error {
 	currentCmd = cmd
-	target, err := resolveAgentInstallTarget(agentInstallAgent, agentInstallLegacyTarget, agentInstallGlobal)
+	if agentInstallGlobal {
+		if _, err := resolveAgentProjectRoot(args, true); err != nil {
+			return err
+		}
+	}
+	selected, explicit, err := selectedAgentFlagValue(agentInstallAgent, agentInstallLegacyTarget)
+	if err != nil {
+		return err
+	}
+	if agentInstallGlobal && !explicit && !noInput && os.Getenv("TERM") != triageDumb &&
+		streamIsTerminal(cmd.InOrStdin()) && streamIsTerminal(cmd.OutOrStdout()) {
+		selected, err = pickInstallAgent(cmd)
+		if err != nil {
+			return err
+		}
+	}
+	target, err := resolveAgentInstallTarget(selected, "", agentInstallGlobal)
 	if err != nil {
 		return err
 	}

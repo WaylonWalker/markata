@@ -123,13 +123,20 @@
     if (aesthetic) {
       document.documentElement.dataset.aesthetic = aesthetic;
     }
+    {% if feed_presentation == "editorial" and feed_sections and feed.views.calendar %}
+    document.documentElement.classList.add('editorial-calendar-js');
+    {% endif %}
     window.__markataPageFontpack = document.documentElement.dataset.fontpack || '';
     window.__markataVisitorFontpack = fontpack;
     var preloadFontpack = fontpack || window.__markataPageFontpack;
     {% if config.Extra.fontpack_preloads_json %}
     // Preload only the pack that will render this page. This avoids fetching
     // both the page default and a returning visitor's stored choice.
+    {% if feed_presentation == "editorial" and feed_sections %}
+    var fontURLs = ({{ config.Extra.fontpack_editorial_preloads_json | safe }})[preloadFontpack] || [];
+    {% else %}
     var fontURLs = ({{ config.Extra.fontpack_preloads_json | safe }})[preloadFontpack] || [];
+    {% endif %}
     if (Array.isArray(fontURLs)) {
       fontURLs.forEach(function(url) {
         var link = document.createElement('link');

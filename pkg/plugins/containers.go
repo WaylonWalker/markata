@@ -2,7 +2,9 @@
 package plugins
 
 import (
+	"math"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/yuin/goldmark"
@@ -228,6 +230,26 @@ func (r *containerHTMLRenderer) renderContainer(w util.BufWriter, _ []byte, n as
 		return ast.WalkContinue, nil
 	}
 
+	// Source/preview disclosures are native HTML. Content inside the
+	// container stays ordinary fenced Markdown, with no JS to initialize.
+	// The source panel is marked as UI so rich post copying can omit it.
+	for _, class := range container.Classes {
+		if class == "md-source" {
+			if entering {
+				label := strings.TrimSpace(container.ExtraAttrs["data-label"])
+				if label == "" {
+					label = "Show Markdown source"
+				}
+				_, _ = w.WriteString(`<details class="md-source" data-markata-ui="source-preview"><summary>`)
+				_, _ = w.WriteString(escapeHTMLAttr(label))
+				_, _ = w.WriteString("</summary>\n")
+			} else {
+				_, _ = w.WriteString("</details>\n")
+			}
+			return ast.WalkContinue, nil
+		}
+	}
+
 	if entering {
 		_, _ = w.WriteString("<div")
 
@@ -260,11 +282,55 @@ func (r *containerHTMLRenderer) renderContainer(w util.BufWriter, _ []byte, n as
 		}
 
 		_, _ = w.WriteString(">\n")
+		r.renderGauge(w, container)
 	} else {
 		_, _ = w.WriteString("</div>\n")
 	}
 
 	return ast.WalkContinue, nil
+}
+
+// renderGauge turns an opt-in Markdown container into a native, accessible
+// HTML meter/progress element. A visible Markdown caption remains ordinary
+// container content, and missing or invalid numeric data leaves that caption
+// intact without inserting a misleading bar. No client JavaScript is needed.
+//
+//nolint:errcheck // Writes to the Goldmark renderer are handled at the caller level.
+func (r *containerHTMLRenderer) renderGauge(w util.BufWriter, container *Container) {
+	tag := ""
+	for _, class := range container.Classes {
+		switch class {
+		case "md-meter":
+			tag = "meter"
+		case "md-progress":
+			tag = "progress"
+		}
+	}
+	if tag == "" {
+		return
+	}
+
+	valueText, hasValue := container.ExtraAttrs["data-value"]
+	maxText, hasMax := container.ExtraAttrs["data-max"]
+	label := strings.TrimSpace(container.ExtraAttrs["data-label"])
+	if !hasValue || !hasMax || label == "" {
+		return
+	}
+	value, valueErr := strconv.ParseFloat(valueText, 64)
+	maximum, maxErr := strconv.ParseFloat(maxText, 64)
+	if valueErr != nil || maxErr != nil ||
+		math.IsNaN(value) || math.IsNaN(maximum) ||
+		math.IsInf(value, 0) || math.IsInf(maximum, 0) ||
+		maximum <= 0 || value < 0 || value > maximum {
+		return
+	}
+
+	// Emit canonical numbers only; label text remains safely escaped.
+	_, _ = w.WriteString("<" + tag + ` value="` + strconv.FormatFloat(value, 'f', -1, 64))
+	_, _ = w.WriteString(`" max="` + strconv.FormatFloat(maximum, 'f', -1, 64))
+	_, _ = w.WriteString(`" aria-label="` + escapeHTMLAttr(label) + `">`)
+	_, _ = w.WriteString(strconv.FormatFloat(value, 'f', -1, 64) + " / " + strconv.FormatFloat(maximum, 'f', -1, 64))
+	_, _ = w.WriteString("</" + tag + ">\n")
 }
 
 // escapeHTMLAttr escapes a string for use in an HTML attribute.

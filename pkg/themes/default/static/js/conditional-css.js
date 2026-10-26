@@ -22,11 +22,15 @@
     'webmentions': '.webmentions',
     'encryption':  '.encrypted-content, [data-encrypted]',
     'home':        '.home-hero, .home-feeds',
-    'feeds':       '.feeds-page, .feed.h-feed, .feed.feed-simple'
+    'feeds':       '.feeds-page, .feed.h-feed, .feed.feed-simple',
+    'roads':       '.road, [data-road]'
   };
 
   var conditionalJS = {
-    'feed-sparklines-v2': '.feed-sparkline-wrap, .feed-header-sparkline'
+    'feed-sparklines-v2': '.feed-sparkline-wrap, .feed-header-sparkline',
+    'code-chrome': '.post-content pre > code, .post-content .chroma pre, .post-content .highlight pre',
+    'markdown-checklists': '.post-content .md-checklist li.task-list-item > input[type="checkbox"]',
+    'roads': '.road, [data-road]'
   };
 
   var navHoverSuppressed = false;
@@ -193,7 +197,19 @@
     for (var scriptName in conditionalJS) {
       if (!conditionalJS.hasOwnProperty(scriptName)) continue;
       var scriptSelector = conditionalJS[scriptName];
-      if (document.querySelector(scriptSelector) && !hasScript(scriptName)) {
+      if (!document.querySelector(scriptSelector)) continue;
+      // SPA body swaps can remove the script tag while retaining the event
+      // handler. Re-run the existing initializer instead of loading a second
+      // copy of the same code-block controls.
+      if (scriptName === 'code-chrome' && typeof window.markataInitCodeChrome === 'function') {
+        window.markataInitCodeChrome();
+        continue;
+      }
+      if (scriptName === 'markdown-checklists' && typeof window.markataInitChecklists === 'function') {
+        window.markataInitChecklists();
+        continue;
+      }
+      if (!hasScript(scriptName)) {
         injectJS(scriptName);
       }
     }

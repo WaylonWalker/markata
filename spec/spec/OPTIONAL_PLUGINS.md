@@ -217,6 +217,16 @@ max_concurrent = 4                      # Maximum concurrent diagram renderings
 | `chromium.timeout` | int | `30` | Timeout in seconds for rendering each diagram. |
 | `chromium.max_concurrent` | int | `4` | Maximum number of diagrams to render concurrently. |
 
+When `use_css_variables` is enabled, Mermaid MUST use `--color-surface` for node
+fills and edge-label backgrounds, `--color-text` for diagram text, and
+`--color-border` (falling back to `--color-primary`) for borders and edges.
+Cluster fills MUST use `--color-background`. Client mode MUST retain the source
+of each diagram and rerender it on the site's `theme-change`, `palette-change`,
+and `color-mode-change` events so an open page follows the active palette.
+Chromium mode MUST use the same palette variables when it pre-renders SVGs. CLI
+mode follows the Mermaid CLI theme and configuration because it does not use
+the site's CSS variables.
+
 **Rendering Modes:**
 
 | Mode | Rendering | Best For | Dependencies |

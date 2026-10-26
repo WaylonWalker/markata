@@ -244,3 +244,61 @@ func TestChartJSPlugin_ProcessPost_PreserveSurroundingContent(t *testing.T) {
 		t.Error("Lost footer content")
 	}
 }
+
+func TestChartJSPlugin_StaticTableFallback(t *testing.T) {
+	p := NewChartJSPlugin()
+	post := &models.Post{ArticleHTML: `<pre><code class="language-chartjs">{
+		"type": "bar",
+		"data": {"labels": ["First", "&lt;script&gt;unsafe&lt;/script&gt;"],
+			"datasets": [{"label": "Used &amp; free", "data": [12, 19]}]}
+	}</code></pre>`}
+	if err := p.processPost(post); err != nil {
+		t.Fatal(err)
+	}
+	for _, part := range []string{
+		`<canvas id="chartjs-`,
+		`hidden role="img"`,
+		`<details class="chartjs-data" open>`,
+		`<table><caption>Chart data</caption>`,
+		`<th scope="col">Used &amp; free</th>`,
+		`&lt;script&gt;unsafe&lt;/script&gt;`,
+		`<td>12</td>`,
+		`<td>19</td>`,
+		`if (data) data.open = false;`,
+	} {
+		if !strings.Contains(post.ArticleHTML, part) {
+			t.Errorf("expected %q in static chart output", part)
+		}
+	}
+	if strings.Contains(post.ArticleHTML, "<script>unsafe</script>") {
+		t.Fatal("chart labels must be safely HTML escaped")
+	}
+}
+
+func TestChartJSPlugin_UnstructuredChartRetainsSourceWithoutJS(t *testing.T) {
+	p := NewChartJSPlugin()
+	post := &models.Post{ArticleHTML: `<pre><code class="language-chartjs">{"type":"scatter","data":{"datasets":[{"data":[{"x":1,"y":2}]}]}}</code></pre>`}
+	if err := p.processPost(post); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(post.ArticleHTML, "<summary>Chart configuration</summary>") {
+		t.Fatal("unstructured charts need readable configuration when JS is unavailable")
+	}
+	if strings.Contains(post.ArticleHTML, `<table>`) {
+		t.Fatal("scatter object pairs should not render misleading categorical tables")
+	}
+}
+
+func TestChartJSPlugin_EscapesAuthoredInlineScriptClosers(t *testing.T) {
+	p := NewChartJSPlugin()
+	post := &models.Post{ArticleHTML: `<pre><code class="language-chartjs">{"type":"bar","data":{"labels":["&lt;/script&gt;&lt;script&gt;alert(1)"],"datasets":[{"data":[7]}]}}</code></pre>`}
+	if err := p.processPost(post); err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(post.ArticleHTML, "</script><script>alert(1)") {
+		t.Fatal("chart JSON must not close an inline script")
+	}
+	if !strings.Contains(post.ArticleHTML, `<details class="chartjs-data" open>`) {
+		t.Fatal("static fallback should still be available")
+	}
+}

@@ -8,10 +8,9 @@
 <link rel="stylesheet" href="{{ 'css/image-library.css' | theme_asset_hashed }}">
 <script src="{{ 'js/image-library.js' | theme_asset_hashed }}" defer></script>
 
-<section class="image-library" data-image-library aria-labelledby="image-library-title">
+<section class="image-library" data-image-library data-image-base="{{ image_library.BaseHref }}" data-image-page="{{ image_library.PageNumber }}" data-image-total-pages="{{ image_library.TotalPages }}" data-image-total-count="{{ image_library.Count }}" aria-labelledby="image-library-title">
   <header class="image-library__intro">
     <div>
-      <p class="image-library__eyebrow">Asset index</p>
       <h1 id="image-library-title">{{ title | default:"Image Library" }}</h1>
       {% if description %}<p class="image-library__description">{{ description }}</p>{% endif %}
     </div>
@@ -43,12 +42,12 @@
         <option value="latest-used">Latest used</option>
       </select>
     </label>
-    <output class="image-library__count" data-image-count aria-live="polite">{{ image_library.Count }} of {{ image_library.Count }} media items</output>
+    <output class="image-library__count" data-image-count aria-live="polite">Showing {{ image_library.Images|length }} of {{ image_library.Count }} media items</output>
   </div>
 
   <div class="image-library__grid" data-image-grid>
     {% for image in image_library.Images %}
-    <article class="image-card" data-image-card
+    <article class="image-card" id="{{ image.Anchor }}" data-image-card
       data-src="{{ image.Src }}"
       data-name="{{ image.Name }}"
       data-search="{{ image.SearchText }}"
@@ -109,6 +108,16 @@
     </article>
     {% endfor %}
   </div>
+
+  {% if image_library.TotalPages > 1 %}
+  <nav class="image-library__pagination" data-image-pagination aria-label="Image library pages">
+    {% if image_library.PreviousURL %}<a rel="prev" href="{{ image_library.PreviousURL }}">Previous</a>{% endif %}
+    {% for link in image_library.PageLinks %}
+      {% if link.Current %}<span aria-current="page">{{ link.Number }}</span>{% else %}<a href="{{ link.Href }}">{{ link.Number }}</a>{% endif %}
+    {% endfor %}
+    {% if image_library.NextURL %}<a rel="next" href="{{ image_library.NextURL }}">Next</a>{% endif %}
+  </nav>
+  {% endif %}
 
   <div class="image-library__empty" data-image-empty{% if image_library.Images %} hidden{% endif %}>
     <strong>No media found</strong>

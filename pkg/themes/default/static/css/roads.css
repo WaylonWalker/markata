@@ -1,0 +1,191 @@
+/* Roads - scroll-drawn paths built from `::: road STYLE` containers.
+ * Loaded only on pages whose content contains a road (needs_roads).
+ * Every class added by js/roads.js starts with `road-` so CSS purge keeps it. */
+
+@layer components {
+
+.road {
+  --road-accent: var(--color-primary, #d9a441);
+  --road-muted: var(--color-border-strong, #555);
+  margin: 3rem 0;
+}
+.road-inner { position: relative; margin: 0 auto; }
+.road-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.road-path, .road-glow, .road-progress, .road-branch { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.road-path { stroke: var(--road-muted); stroke-width: 2; stroke-dasharray: 5 7; opacity: .75; }
+.road-glow { stroke: color-mix(in srgb, var(--road-accent) 15%, transparent); stroke-width: 8; }
+.road-progress { stroke: var(--road-accent); stroke-width: 2.5; }
+.road-marker {
+  position: absolute; top: 0; left: 0; z-index: 2; width: 12px; height: 12px; border-radius: 50%;
+  background: var(--road-accent);
+  box-shadow: 0 0 14px 4px color-mix(in srgb, var(--road-accent) 55%, transparent);
+  will-change: transform; pointer-events: none;
+}
+
+/* Points reuse the author's links, so neutralise inline link styling. */
+.road a.road-point, .road a.road-point:hover, .road a.road-point:focus-visible {
+  position: absolute; z-index: 3; transform: translate(-50%, -50%);
+  color: inherit; text-decoration: none; background: none; box-shadow: none;
+}
+.road-dot {
+  display: block; width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid var(--road-muted); background: var(--color-background, #111);
+  transition: background-color .5s, border-color .5s, box-shadow .5s;
+}
+.road-card {
+  position: absolute; top: 50%; width: max-content; max-width: 220px; min-width: 0;
+  overflow-wrap: anywhere;
+  opacity: 0; transform: translateY(-50%); transition: opacity .6s;
+}
+.road-card-right .road-card { left: var(--card-offset, 26px); }
+.road-card-left .road-card { right: 26px; text-align: right; }
+.road-card-below .road-card, .road-card-above .road-card { left: 50%; top: auto; transform: translateX(-50%); text-align: center; }
+.road-card-below .road-card { top: 22px; }
+.road-card-above .road-card { bottom: 22px; }
+.road-label {
+  display: block; font-family: var(--font-mono, monospace); font-size: .65rem;
+  letter-spacing: .2em; text-transform: uppercase; color: var(--road-accent);
+}
+.road-title { display: block; font-size: 1.05rem; line-height: 1.25; color: var(--color-text-muted, #aaa); transition: color .4s; }
+.road-point.active .road-dot {
+  background: var(--road-accent); border-color: var(--road-accent);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--road-accent) 50%, transparent);
+}
+.road[data-road] .road-point.active .road-card,
+.road[data-road] .road-point:focus-visible .road-card { opacity: 1; }
+.road[data-road] .road-point.active .road-title,
+.road-point:hover .road-title,
+.road-point:focus-visible .road-title { color: var(--color-text, #fff); }
+
+/* Styles whose cards stay readable before they are reached. */
+.road[data-road="timeline"] .road-card,
+.road[data-road="steps"] .road-card,
+.road[data-road="cycle"] .road-card,
+.road[data-road="git"] .road-card { opacity: .6; }
+
+/* Timeline: one straight rail. */
+.road[data-road="timeline"] .road-path { stroke-dasharray: none; opacity: .5; }
+
+/* Steps and snake: solid track, no moving marker. */
+.road[data-road="steps"] .road-marker, .road[data-road="snake"] .road-marker { display: none; }
+.road[data-road="steps"] .road-path, .road[data-road="snake"] .road-path { stroke-dasharray: none; opacity: .5; }
+.road[data-road="steps"] .road-progress, .road[data-road="snake"] .road-progress { stroke-width: 4; }
+.road[data-road="steps"] { counter-reset: road-step; }
+.road[data-road="steps"] .road-dot {
+  width: 30px; height: 30px; display: grid; place-items: center;
+  font: 600 .8rem var(--font-mono, monospace); color: var(--road-muted);
+}
+.road[data-road="steps"] .road-dot::before { counter-increment: road-step; content: counter(road-step); }
+.road[data-road="steps"] .active .road-dot { color: var(--color-background, #111); }
+.road[data-road="steps"] .road-card-below .road-card { top: 40px; }
+
+/* Constellation: small stars joined by faint lines. */
+.road[data-road="constellation"] .road-path { stroke-dasharray: 1 6; }
+.road[data-road="constellation"] .road-progress { stroke-width: 1.2; }
+.road[data-road="constellation"] .road-glow { stroke-width: 4; }
+.road[data-road="constellation"] .road-dot { width: 8px; height: 8px; border-width: 1px; }
+.road[data-road="constellation"] .active .road-dot {
+  box-shadow: 0 0 6px 3px color-mix(in srgb, var(--road-accent) 60%, transparent),
+              0 0 22px 6px color-mix(in srgb, var(--road-accent) 25%, transparent);
+}
+
+/* Git: one coloured line per branch, revealed as you scroll. */
+.road[data-road="git"] .road-marker, .road[data-road="git"] .road-glow, .road[data-road="git"] .road-progress { display: none; }
+.road[data-road="git"] .road-path { stroke-dasharray: none; stroke-width: 2.5; opacity: .25; }
+.road-branch { stroke-width: 2.5; }
+.road[data-road="git"] .road-dot { width: 12px; height: 12px; }
+.road[data-road="git"] .road-label { color: var(--branch-color); }
+.road[data-road="git"] .road-title { font-family: var(--font-mono, monospace); font-size: .9rem; }
+.road[data-road="git"] .active .road-dot {
+  background: var(--branch-color); border-color: var(--branch-color);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--branch-color) 50%, transparent);
+}
+
+/* Editorial: a heading per entry with prose below, on a rail that fills as you read. */
+.road[data-road="editorial"] { --rail-x: .5rem; position: relative; padding-left: 2.75rem; }
+.road-rail {
+  position: absolute; top: .4rem; bottom: .4rem; left: var(--rail-x); width: 2px; border-radius: 2px;
+  background: color-mix(in srgb, var(--road-muted) 55%, transparent);
+}
+.road-fill {
+  position: absolute; top: 0; left: 0; width: 100%; height: 0; border-radius: 2px;
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--road-accent) 40%, transparent), var(--road-accent));
+}
+.road-rail .road-marker { left: 50%; width: 10px; height: 10px; transition: opacity .3s; }
+.road-entry { position: relative; padding-bottom: 2.75rem; }
+.road-entry:last-child { padding-bottom: 0; }
+.road-entry-dot {
+  position: absolute; top: .35rem; left: calc(var(--rail-x) - 2.75rem + 1px); width: 13px; height: 13px;
+  transform: translateX(-50%); border-radius: 50%; border: 2px solid var(--road-muted);
+  background: var(--color-background, #111); transition: background-color .4s, border-color .4s, box-shadow .4s;
+}
+.road-entry.active .road-entry-dot {
+  background: var(--road-accent); border-color: var(--road-accent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--road-accent) 18%, transparent);
+}
+.road[data-road="editorial"] .road-entry-heading {
+  margin: 0 0 .6rem; padding: 0; border: 0; line-height: 1.2;
+  font-family: var(--font-heading, inherit); font-size: clamp(1.35rem, 1.1rem + 1vw, 1.75rem);
+}
+.road[data-road="editorial"] .road-entry-heading::after { display: none; }
+.road-entry-label {
+  display: block; margin-bottom: .35rem; font: 600 .7rem/1 var(--font-mono, monospace);
+  letter-spacing: .18em; text-transform: uppercase; color: var(--color-text-muted, #999); transition: color .4s;
+}
+.road-entry.active .road-entry-label { color: var(--road-accent); }
+.road[data-road="editorial"] .road-entry-title { color: var(--color-text, #fff); text-decoration: none; background: none; }
+.road[data-road="editorial"] .road-entry-title:hover {
+  text-decoration: underline; text-decoration-color: var(--road-accent); text-underline-offset: .2em;
+}
+.road-entry-body { max-width: 62ch; color: var(--color-text-secondary, var(--color-text)); }
+.road-entry-body > :first-child { margin-top: 0; }
+.road-entry-body > :last-child { margin-bottom: 0; }
+.road-entry-body blockquote { margin-left: 0; }
+.road-entry-body ul:has(> li > input[type="checkbox"]) { list-style: none; padding-left: 0; }
+.road-entry-body li:has(> input[type="checkbox"]) { display: flex; gap: .55rem; align-items: baseline; margin: .15rem 0; }
+.road-entry-body input[type="checkbox"] { accent-color: var(--road-accent); }
+
+/* Before roads.js builds a road, hide the raw list and reserve about the
+ * final height (items x spacing), so the page does not flash or jump. If the
+ * script fails, the failsafe animation shows the plain list. Without
+ * scripting, none of this applies. */
+@media (scripting: enabled) {
+.road:not([data-road-ready]) {
+  visibility: hidden;
+  animation: road-failsafe 0s 2.5s forwards;
+}
+.road:not([data-road-ready], .editorial, [data-road=editorial], :has(> :is(h2, h3, h4, h5, h6))) > ul { list-style: none; margin: 0; padding: 0; }
+.road:not([data-road-ready], .editorial, [data-road=editorial], :has(> :is(h2, h3, h4, h5, h6))) > ul > li { margin: 0; min-height: 210px; }
+.road:is(.timeline, [data-road=timeline]):not([data-road-ready]) > ul > li { min-height: 110px; }
+.road:is(.snake, [data-road=snake]):not([data-road-ready]) > ul > li { min-height: 44px; }
+.road:is(.constellation, [data-road=constellation]):not([data-road-ready]) > ul > li { min-height: 150px; }
+.road:is(.git, [data-road=git]):not([data-road-ready]) > ul > li { min-height: 64px; }
+.road:is(.steps, .cycle, [data-road=steps], [data-road=cycle]):not([data-road-ready]) > ul { overflow: hidden; }
+.road:is(.steps, .cycle, [data-road=steps], [data-road=cycle]):not([data-road-ready]) > ul > li { min-height: 0; }
+.road:is(.steps, [data-road=steps]):not([data-road-ready]) > ul { height: 140px; }
+.road:is(.cycle, [data-road=cycle]):not([data-road-ready]) > ul { height: clamp(280px, 100vw - 180px, 540px); }
+/* Editorial: mirror the entry layout so the reserved height matches. */
+.road:is(.editorial, [data-road=editorial], :has(> :is(h2, h3, h4, h5, h6))):not([data-road-ready]) { padding-left: 2.75rem; }
+.road:is(.editorial, [data-road=editorial], :has(> :is(h2, h3, h4, h5, h6))):not([data-road-ready]) > :is(h2, h3, h4, h5, h6) {
+  margin: 2.75rem 0 .6rem; padding: 1.05rem 0 0; border: 0; line-height: 1.2;
+  font-size: clamp(1.35rem, 1.1rem + 1vw, 1.75rem);
+}
+.road:is(.editorial, [data-road=editorial], :has(> :is(h2, h3, h4, h5, h6))):not([data-road-ready]) > :is(h2, h3, h4, h5, h6):first-child { margin-top: 0; }
+.road:is(.editorial, [data-road=editorial], :has(> :is(h2, h3, h4, h5, h6))):not([data-road-ready]) > :is(h2, h3, h4, h5, h6) + :not(h2, h3, h4, h5, h6) { margin-top: 0; }
+.road:is(.editorial, [data-road=editorial], :has(> :is(h2, h3, h4, h5, h6))):not([data-road-ready]) > :has(+ :is(h2, h3, h4, h5, h6)), .road:is(.editorial, [data-road=editorial], :has(> :is(h2, h3, h4, h5, h6))):not([data-road-ready]) > :last-child { margin-bottom: 0; }
+.road:is(.editorial, [data-road=editorial], :has(> :is(h2, h3, h4, h5, h6))):not([data-road-ready]) > blockquote { margin-left: 0; }
+.road:is(.editorial, [data-road=editorial], :has(> :is(h2, h3, h4, h5, h6))):not([data-road-ready]) ul:has(> li > input[type="checkbox"]) { list-style: none; padding-left: 0; }
+.road:is(.editorial, [data-road=editorial], :has(> :is(h2, h3, h4, h5, h6))):not([data-road-ready]) li:has(> input[type="checkbox"]) { display: flex; gap: .55rem; align-items: baseline; margin: .15rem 0; }
+}
+.road[data-road-ready] { animation: road-reveal .35s ease-out; }
+@keyframes road-failsafe { to { visibility: visible; } }
+@keyframes road-reveal { from { opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .road[data-road-ready] { animation: none; }
+  .road-card { opacity: 1 !important; transition: none; }
+  .road-dot, .road-title, .road-entry-dot, .road-entry-label { transition: none; }
+  .road-rail .road-marker { display: none; }
+}
+
+}

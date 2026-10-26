@@ -165,7 +165,8 @@
     var modal = document.getElementById('shortcuts-modal');
     if (modal) {
       shortcutsModalOpener = document.activeElement;
-      // Reveal the dialog to keyboard users before moving focus inside.
+      // Restore the dialog to the document before moving focus inside.
+      modal.removeAttribute('hidden');
       modal.removeAttribute('inert');
       modal.classList.add('shortcuts-modal--open');
       modal.setAttribute('aria-hidden', 'false');
@@ -195,6 +196,7 @@
       shortcutsModalOpener = null;
       modal.setAttribute('inert', '');
       modal.setAttribute('aria-hidden', 'true');
+      modal.setAttribute('hidden', '');
       document.body.style.overflow = '';
       return true;
     }
@@ -372,6 +374,15 @@
     // Update modifier key display
     updateModifierKeyDisplay();
   }
+
+  // Delegate on document: the footer is replaced during SPA transitions.
+  // A direct listener on the original button would stop working after a swap.
+  document.addEventListener('click', function(e) {
+    var button = e.target.closest && e.target.closest('[data-shortcuts-trigger]');
+    if (!button) return;
+    e.preventDefault();
+    showShortcutsModal();
+  });
 
   // Capture the 404 recovery submit before the generated template's legacy
   // redirect handler. This keeps the user on the recovery page and opens the

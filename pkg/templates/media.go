@@ -243,6 +243,15 @@ func derivePosterFromVideo(raw string) string {
 		return ""
 	}
 	u.Path = strings.TrimSuffix(u.Path, ext) + ".webp"
+	// Video URLs may carry resize hints for the source (e.g. ?width=400).
+	// A poster is a different media resource; don't propagate those stale
+	// dimensions into its URL alongside the poster's own w/h dimensions.
+	// Preserve unrelated query parameters such as signed access tokens.
+	query := u.Query()
+	for _, key := range []string{"w", "h", "width", "height"} {
+		query.Del(key)
+	}
+	u.RawQuery = query.Encode()
 	return u.String()
 }
 
