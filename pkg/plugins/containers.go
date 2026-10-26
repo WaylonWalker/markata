@@ -43,12 +43,14 @@ type sectionTransformer struct{}
 func (t *sectionTransformer) Transform(doc *ast.Document, reader text.Reader, _ parser.Context) {
 	source := reader.Source()
 	var sections []*Container
-	_ = ast.Walk(doc, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
+	if err := ast.Walk(doc, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
 		if c, ok := n.(*Container); entering && ok && slices.Contains(c.Classes, "md-section") {
 			sections = append(sections, c)
 		}
 		return ast.WalkContinue, nil
-	})
+	}); err != nil {
+		return
+	}
 	for _, section := range sections {
 		body := NewContainer([]string{"md-section-body"}, "", nil, 0)
 		var head *Container
