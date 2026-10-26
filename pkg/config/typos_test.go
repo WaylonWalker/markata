@@ -55,18 +55,18 @@ func TestMisplacedFeedFormatKeyAcrossFormats(t *testing.T) {
 		format Format
 	}{
 		{
-			name: "toml",
-			data: "[[markata-go.feeds]]\nslug = 'published'\n[markata-go.feeds.formats]\nsitemap = true\n[[markata-go.feeds]]\nslug = 'draft'\nsitemap = false\n",
+			name:   "toml",
+			data:   "[[markata-go.feeds]]\nslug = 'published'\n[markata-go.feeds.formats]\nsitemap = true\n[[markata-go.feeds]]\nslug = 'draft'\nsitemap = false\n",
 			format: FormatTOML,
 		},
 		{
-			name: "yaml",
-			data: "markata-go:\n  feeds:\n    - slug: published\n      formats:\n        sitemap: true\n    - slug: draft\n      sitemap: false\n",
+			name:   "yaml",
+			data:   "markata-go:\n  feeds:\n    - slug: published\n      formats:\n        sitemap: true\n    - slug: draft\n      sitemap: false\n",
 			format: FormatYAML,
 		},
 		{
-			name: "json",
-			data: `{"markata-go":{"feeds":[{"slug":"published","formats":{"sitemap":true}},{"slug":"draft","sitemap":false}]}}`,
+			name:   "json",
+			data:   `{"markata-go":{"feeds":[{"slug":"published","formats":{"sitemap":true}},{"slug":"draft","sitemap":false}]}}`,
 			format: FormatJSON,
 		},
 	}
