@@ -501,7 +501,7 @@ var settingDocs = map[string]string{
 	"MentionsConfig.Timeout":                       "Timeout is the HTTP request timeout in seconds for metadata fetching (default: 30)",
 	"MermaidConfig.CDNURL":                         "CDNURL is the URL for the Mermaid.js library (client mode only)",
 	"MermaidConfig.CLIConfig":                      "CLIConfig contains settings for CLI mode (npm mmdc)",
-	"MermaidConfig.ChromiumConfig":                 "ChromiumConfig contains settings for Chromium mode (mermaidcdp)",
+	"MermaidConfig.ChromiumConfig":                 "ChromiumConfig contains settings for Chromium mode.",
 	"MermaidConfig.Enabled":                        "Enabled controls whether mermaid processing is active (default: true)",
 	"MermaidConfig.Lightbox":                       "Lightbox enables GLightbox zoom for rendered Mermaid diagrams.",
 	"MermaidConfig.LightboxSelector":               "LightboxSelector is the CSS selector used for Mermaid lightbox links.",

@@ -3,6 +3,9 @@ package plugins
 import (
 	"context"
 	"encoding/json"
+	"io"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -76,4 +79,53 @@ func TestLoadOrDownloadJSSource_OfflineMissingFails(t *testing.T) {
 	if !strings.Contains(err.Error(), "offline") {
 		t.Fatalf("expected offline error, got %v", err)
 	}
+}
+
+func TestDownloadMermaidJSSource(t *testing.T) {
+	const version = "10.9.5"
+	want := "window.mermaid = {};"
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/npm/mermaid@"+version+"/dist/mermaid.min.js" {
+			http.NotFound(w, r)
+			return
+		}
+		_, _ = io.WriteString(w, want)
+	}))
+	defer server.Close()
+
+	client := &http.Client{Transport: mermaidDownloadRoundTripper(func(request *http.Request) (*http.Response, error) {
+		request = request.Clone(request.Context())
+		request.URL.Scheme = "http"
+		request.URL.Host = strings.TrimPrefix(server.URL, "http://")
+		return http.DefaultTransport.RoundTrip(request)
+	})}
+	got, err := downloadMermaidJSSource(context.Background(), version, client)
+	if err != nil {
+		t.Fatalf("downloadMermaidJSSource() error = %v", err)
+	}
+	if got != want {
+		t.Fatalf("downloadMermaidJSSource() = %q, want %q", got, want)
+	}
+}
+
+func TestDownloadMermaidJSSource_RejectsHTTPError(t *testing.T) {
+	server := httptest.NewServer(http.NotFoundHandler())
+	defer server.Close()
+	client := &http.Client{Transport: mermaidDownloadRoundTripper(func(request *http.Request) (*http.Response, error) {
+		request = request.Clone(request.Context())
+		request.URL.Scheme = "http"
+		request.URL.Host = strings.TrimPrefix(server.URL, "http://")
+		return http.DefaultTransport.RoundTrip(request)
+	})}
+
+	_, err := downloadMermaidJSSource(context.Background(), "10.9.5", client)
+	if err == nil || !strings.Contains(err.Error(), "HTTP status 404") {
+		t.Fatalf("downloadMermaidJSSource() error = %v, want HTTP status 404", err)
+	}
+}
+
+type mermaidDownloadRoundTripper func(*http.Request) (*http.Response, error)
+
+func (roundTripper mermaidDownloadRoundTripper) RoundTrip(request *http.Request) (*http.Response, error) {
+	return roundTripper(request)
 }
