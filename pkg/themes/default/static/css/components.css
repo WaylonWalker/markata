@@ -5126,6 +5126,179 @@ body.reader-mode::after {
   }
 }
 
+/* Story layouts are server-rendered and opt-in; no reveal script is required. */
+@layer components {
+  article.post.post--wide {
+    max-width: min(70rem, calc(100% - 2 * var(--space-10)));
+    margin-inline: auto;
+  }
+  article.post--wide > .post-header h1 {
+    max-width: 25ch;
+    font-size: clamp(2.1rem, 1.5rem + 2vw, 3.3rem);
+    line-height: 1.06;
+    letter-spacing: -.025em;
+    text-wrap: balance;
+  }
+  .post--wide > .post-content > p:first-of-type {
+    max-width: 32em;
+    font-size: clamp(1.2rem, 1rem + .8vw, 1.6rem);
+    line-height: 1.45;
+    text-wrap: pretty;
+  }
+  .post--wide .md-section-body p { max-width: 64ch; }
+  .post-content .md-section {
+    margin-top: clamp(4.5rem, 8vw, 7.5rem);
+    padding-top: clamp(2rem, 4vw, 3rem);
+    border-top: 1px solid var(--color-border);
+  }
+  .post-content :is(.md-section-head, .md-section-body) { min-width: 0; }
+  .post-content .md-section-head > h2 {
+    margin: 0 0 .9rem;
+    padding: 0;
+    font-size: clamp(1.55rem, 1.25rem + 1vw, 2.05rem);
+    line-height: 1.12;
+    letter-spacing: -.015em;
+    text-wrap: balance;
+  }
+  .post-content .md-section-kicker {
+    display: block;
+    margin-bottom: .4rem;
+    font-size: clamp(3rem, 2rem + 3.5vw, 5rem);
+    font-weight: 700;
+    line-height: .9;
+    letter-spacing: -.04em;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-primary);
+  }
+  .post-content .md-section-head > p {
+    max-width: 64ch;
+    margin: 0;
+    font-size: .88em;
+    line-height: 1.6;
+    color: var(--color-text-secondary, var(--color-text));
+  }
+  .post-content .md-section-head + .md-section-body { margin-top: 2.25rem; }
+  .post-content .md-section-body > :first-child { margin-top: 0; }
+  @media (min-width: 1100px) {
+    .post-content .md-section:has(> .md-section-head) {
+      display: grid;
+      grid-template-columns: 16rem minmax(0, 1fr);
+      gap: clamp(2rem, 4vw, 4.5rem);
+      align-items: start;
+    }
+    .post-content .md-section-head {
+      position: sticky;
+      top: 5rem;
+    }
+    .post-content .md-section-head + .md-section-body { margin-top: .35rem; }
+    .post-content .md-section-head > h2 { font-size: clamp(1.35rem, 1rem + .8vw, 1.6rem); }
+    .post-content .md-section-head > p { font-size: .8em; }
+  }
+  @media (max-width: 640px) {
+    article.post.post--wide { max-width: 100%; }
+  }
+
+  .post-content .md-grid.rail > .md-card {
+    position: relative;
+    display: grid;
+    align-content: start;
+    gap: .45rem;
+    padding: 1.25rem 1.25rem 1.4rem;
+    border-top: 2px solid var(--color-primary);
+  }
+  .post-content .md-grid.rail > .md-card:is(:hover, :focus-within) {
+    background: color-mix(in srgb, var(--color-primary) 6%, var(--color-surface));
+  }
+  .post-content .md-grid.rail > .md-card:has(a:focus-visible) {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 3px;
+  }
+  .post-content .md-grid.rail .md-icon {
+    justify-content: flex-start;
+    margin-bottom: .35rem;
+    color: var(--color-primary);
+  }
+  .post-content .md-grid.rail > .md-card > :is(h2, h3, h4, h5, h6) {
+    margin: 0;
+    font-size: 1.05em;
+    line-height: 1.25;
+    text-wrap: balance;
+  }
+  .post-content .md-grid.rail > .md-card > :is(h2, h3, h4, h5, h6) a:not(.heading-anchor, .anchor) {
+    color: inherit;
+    text-decoration: none;
+  }
+  .post-content .md-grid.rail > .md-card > :is(h2, h3, h4, h5, h6) a:not(.heading-anchor, .anchor)::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+  }
+  /* Keep the stretched link's containing block on the card, not the heading.
+     Generated heading-anchor overflow remains owned by the shared card styles. */
+  .post-content .md-grid.rail > .md-card > :is(h2, h3, h4, h5, h6) { position: static; }
+  .post-content .md-grid.rail > .md-card > p {
+    margin: 0;
+    font-size: .8em;
+    line-height: 1.55;
+  }
+  .post-content .md-grid.rail > .md-card > p:has(> em:only-child) {
+    font: 600 .7rem/1 var(--font-mono, monospace);
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+  }
+  .post-content .md-grid.rail > .md-card > p > em:only-child { font-style: normal; }
+  @media (min-width: 1000px) {
+    .post-content .md-grid.rail {
+      position: relative;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+    .post-content .md-grid.rail[data-columns="2"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .post-content .md-grid.rail[data-columns="3"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .post-content .md-grid.rail::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto;
+      height: 2px;
+      background: linear-gradient(90deg, var(--color-primary), var(--color-border));
+    }
+    .post-content .md-grid.rail > .md-card {
+      border-top-left-radius: 0;
+      border-top-right-radius: 0;
+    }
+    .post-content .md-grid.rail > .md-card:is(:hover, :focus-within) { transform: none; }
+    .post-content .md-grid.rail > .md-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 1.25rem;
+      box-sizing: border-box;
+      width: 10px;
+      height: 10px;
+      border: 2px solid var(--color-primary);
+      border-radius: 50%;
+      background: var(--color-background);
+    }
+    .post-content .md-grid.rail > .md-card:is(:hover, :focus-within)::before { background: var(--color-primary); }
+  }
+  @media (max-width: 999px) {
+    .post-content .md-grid.rail,
+    .post-content .md-grid.rail[data-columns] { grid-template-columns: minmax(0, 1fr); }
+  }
+  .post-content .md-grid.pending > .md-card {
+    border: 1px dashed var(--color-border);
+    background: transparent;
+  }
+  .post-content .md-grid.pending > .md-card .icon { color: var(--color-text-muted); }
+  @media print {
+    .post-content .md-section-head { position: static; }
+    .post-content .md-section { display: block; }
+    .post-content .md-grid.rail::before,
+    .post-content .md-grid.rail > .md-card::before { display: none; }
+  }
+}
+
 /* Static Markdown reporting components. These build on md-layout / md-columns
    without affecting existing card/alert/task-list styling. */
 @layer components {

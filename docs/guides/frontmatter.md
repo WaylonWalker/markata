@@ -362,6 +362,14 @@ Example built-in template choices include `post.html`, `landing.html`, `docs.htm
 
 `slides.html` is intended for presentation decks and pairs well with the shared assets system when you want to self-host Reveal.js.
 
+### content_width (string)
+
+Set `content_width: wide` to opt a default-theme `post.html` page into a wider
+story frame, a larger balanced title, and a lead opening paragraph. It pairs
+with `md-section` for sticky section heads and `md-grid rail` for overview
+cards. Unset or unknown values keep the normal layout. Custom templates must
+provide their own support. See [Markdown story pages](/docs/guides/markdown-containers/#markdown-story-pages).
+
 ---
 
 ## Complete Field Reference
@@ -377,6 +385,7 @@ Example built-in template choices include `post.html`, `landing.html`, `docs.htm
 | `tags` | []string | `[]` | No | List of categorization tags |
 | `description` | string | Auto-generated | No | Brief summary for SEO/meta tags |
 | `template` | string | `"post.html"` | No | Template file to use for rendering |
+| `content_width` | string | Normal theme width | No | `wide` opts a default-theme post into story layout |
 | `skip` | bool | `false` | No | Skip this file during processing entirely |
 | `authors` | []string | `[]` | No | List of author IDs (multi-author support) |
 | `author` | string | None | No | Legacy single-author name or ID |
