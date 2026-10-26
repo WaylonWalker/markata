@@ -19,9 +19,11 @@ and prose is **not sufficient** when the user asked for visual *design*.
 Only choose a diagram-only or table-only answer when the user explicitly
 asks for that narrow format or when richer layout would obscure the facts.
 
-For a multi-stage process with decisions, start with **a `road steps` journey
-plus `md-columns` / `md-card` choices**; enrich important steps with
-`md-feature` and Lucide icons. Add Mermaid *only* when the precise network
+For a multi-stage process with decisions, start with **one primary story**
+(e.g. a `road steps` journey) and reserve `md-columns` / `md-card`
+for an important choice. Add `md-feature` only where a step benefits from a
+visually emphasized explanation. **Do not reproduce every road step a
+second time as an icon row.** Add Mermaid only when the precise network
 of edges or complex loops genuinely needs a graph. If the user asks for a
 single standalone Markdown file in a repo that is **not** a Markata site,
 still author the rich Markata Markdown in **that one file**, without creating
@@ -55,34 +57,84 @@ Read `topics/rich-markdown.md`, `topics/roads.md`, and
 `docs/guides/markdown-containers.md`, `markdown-metrics.md`, and
 `markdown-chart-fallback.md`. Inspect site overrides before adding new CSS.
 
-**Copyable exemplar:** `examples/visual-workflow.md` is a one-file
-repo-steward visual workflow with an opening layout, icon cards, a road,
-decision branches, and feature rows. Use it as a composition reference,
-not as generic boilerplate. It deliberately has no Mermaid, invented
-counts, or custom component framework.
+**Generic exemplar:** `examples/editorial-visual-composition.md` shows
+a single Markdown document with a strong unboxed title, a short lead,
+one road, one feature row, one meaningful card pair, plain editorial
+paragraphs, and one status notice. Treat it as a *pacing reference*, not
+a mandatory component recipe. It deliberately avoids invented
+measurements, project-specific jargon, and custom frontend frameworks.
 
-## Compose an information-dense visual post
+## Compose an editorially paced visual post
 
 **Visual quality bar for a multi-section visual request:**
 
-- An opening visual anchor tells readers what the document is about: e.g.
-  `md-layout`, a small `md-columns` summary, or a well-labeled feature row.
-- The main story uses a fitting layout, such as `road steps`, `md-feature`
-  rows, a grid of comparison cards, or meaningful measurements.
-- Secondary branches and cautions are visually grouped, but semantics and
-  accessible text survive with JavaScript disabled.
-- A diagram or data table may supplement the composition; neither is a
-  substitute for it by default.
-- **Design check:** remove the Mermaid and any ordinary table. Would the
-  remaining document still communicate a clear visual structure? If not,
-  redesign the layout before declaring the visual request complete.
+- Begin with a clear, *unboxed* title and short lead. Establish what matters
+  before presenting a card, meter, or process diagram.
+- Use one dominant visual grammar for the main story. Let other content be
+  ordinary paragraphs, a compact list, or whitespace-separated sections.
+- Reserve a visually prominent box for a significant comparison, choice,
+  warning, or quantified fact. Do not box ordinary filler.
+- Give each section one idea, with meaningful H2 headings and short
+  introductions. Use H3 for subordinated card or step labels, not as the
+  only headline size across the page.
+- Avoid duplicate representation: a road of steps *and* one identical
+  feature row for every step adds density without adding information.
+- A diagram or table may supplement the composition; neither is a
+  substitute for a designed article when the user asked for that.
+- **Density check:** if cards and feature rows run continuously from top
+  to bottom, remove or merge some. A few strong moments beat a grid of
+  equally weighted components.
+- **Hierarchy check:** close the page and recall the three most important
+  things. If no distinction stands out, simplify the layout and wording.
 
 1. **Lead with the answer.** Explain what is done, what is risky, and what should happen next before decorating.
-2. **Give a small overview.** Use two to four metric or status cards only when the labels and values are meaningful.
+2. **Give a calm overview.** A sentence or two often beats a metric-card row. Use two to four cards only when there are meaningful distinct values or categories.
 3. **Show relationships.** Prefer a progress list, before/after comparison, timeline, table, or diagram that answers a concrete question.
 4. **Surface unresolved work.** Name the owner, blocker, verification state, next action, and evidence location. Never color "pending" green.
 5. **End with action.** Finish a progress report with a prioritized next-step list and a handoff; include links to PRs, builds, or screenshots.
 6. **Make evidence explicit.** Separate *implemented*, *locally tested*, *CI passed*, *merged*, *deployed*, and *verified live*. Merging does not prove deployment.
+
+## Typography, whitespace, and hierarchy
+
+Think in **reading beats**, not a component checklist.
+
+1. **Opening beat:** A strong H1, a short deck/intro paragraph, and space
+   before the first layout. Avoid an H2 nested immediately inside a
+   bordered `md-layout` wrapper just because the container exists.
+2. **Primary visual beat:** One useful road, chart, choice pair, or scorecard.
+   Use `{data-gap="lg"}` on supported `md-layout`, `md-columns`,
+   `md-grid`, or `md-stack` when their *children* need breathing room.
+3. **Quiet explanatory beat:** Simple H2 + paragraph, perhaps a short
+   list, without decoration. Let the eye rest between visual clusters.
+4. **Secondary beat:** An optional compact visual that answers a
+   *different* question, not the same process repeated.
+5. **Closing beat:** Plain-language consequence, uncertainty, or next
+   action, with a status component only when it meaningfully signals risk.
+
+**Actual theme limitation:** Markata's default `components.css`
+sets directly nested H2–H6 headings inside `md-layout`, `md-box`
+and `md-card` to the same `--text-lg` size. Put real section-level
+H2 headings *outside* those containers to preserve typographic scale.
+Use brief H3 labels inside cards. More `#` characters inside a card
+will not create the larger hierarchy you might expect.
+
+**Visual editing pass:**
+
+- Vary long and short forms: single-line lead, medium paragraph,
+  compact choice, quieter explanatory paragraph.
+- Use short card titles and one concise paragraph before details.
+  If a card needs multiple dense paragraphs and several commands,
+  move implementation detail into its own prose section.
+- Avoid placing a `road steps`, a full row of icon features, and a
+  second group of step cards back to back.
+- Use whitespace between independent sections rather than a
+  `md-divider` after every paragraph. Source blank lines ensure valid
+  Markdown but do not guarantee rendered breathing room: preview.
+- Prefer visible language and hierarchy to decorative status badges,
+  repetitive Lucide icons, or color filling every container.
+- View at narrow mobile widths and on desktop. Inspect the first screen
+  and a middle section for wrapping, vertical rhythm, and excessive
+  uniformity; revise after screenshots where possible.
 
 ### Example: visually readable release status
 
@@ -139,63 +191,26 @@ Awaiting production smoke test.
 
 Choose `md-progress` for a bounded task process; choose `md-meter` for a real measurement. If no denominator or reliable number exists, use descriptive statuses instead of an invented percent. All gauges require numeric `data-value` and `data-max` and a descriptive `data-label`. Keep values and labels readable in ordinary Markdown.
 
-### Example: compose a visual workflow with a branch
+### Example: a spacious visual story
 
-A step-by-step journey plus two decision cards communicates most product
-workflows better than one large flowchart. This is an excerpt; the complete
-one-file example is `examples/visual-workflow.md`.
+Read `examples/editorial-visual-composition.md` for a complete,
+repository-neutral, one-file Markdown example. Notice what is **not**
+decorated: the title, intro, H2 section headings, and two explanatory
+sections are ordinary text. The main journey uses one road; a single
+two-card comparison highlights the meaningful fork, and only one icon
+feature row emphasizes a central fact. The final status notice is
+reserved for an actual caution.
 
-~~~~markdown
-## Choose a route
+**Design exercise:** compare that restrained page with one that repeats
+every road milestone as an icon feature, every detail as a card, and
+every conclusion as a colored box. Prefer the former when the user asks
+for breathing room or better typography.
 
-::: road steps
-
-- [Discover](#discover) 01
-- [Decide](#decide) 02
-- [Prepare](#prepare) 03
-- [Publish](#publish) 04
-
-:::
-
-::: md-columns {data-gap="lg"}
-
-:::: md-card
-
-::::: md-icon {data-size="lg"}
-:lucide-git-branch:
-:::::
-
-### Keep
-
-Prepare the repository, review the cleanup plan, then commit and publish.
-
-::::
-
-:::: md-card
-
-::::: md-icon {data-size="lg"}
-:lucide-archive:
-:::::
-
-### Archive
-
-Verify the archive destination and copied data before removing local files.
-
-::::
-
-:::
-~~~~
-
-The full document should also include a strong opening layout, step-specific
-`md-feature` rows, and clear warnings about destructive operations where
-appropriate. Keep the output responsive and readable without JS.
-
-**Mermaid is an optional detail view**, not the default hero for a
-multi-section visual post. Choose a fenced Mermaid flowchart when exact
-connections, loops, dependencies, or exception routes cannot be conveyed
-clearly with cards and a road. Check the deployed Mermaid runtime before
-using version-specific syntax: `architecture-beta` is not supported by
-Mermaid 10.9.5. Test the rendered browser output, not just the source.
+**Mermaid is optional**, not the default hero for a multi-section visual
+post. Use it for exact connections or complicated loops that a road
+and short prose cannot convey. Check runtime support first:
+`architecture-beta` is unavailable in Mermaid 10.9.5. Validate rendered
+output, not just fenced source.
 
 ### Example: numerical chart with text fallback
 
@@ -226,10 +241,19 @@ unknown numbers remain unknown? Did the user request just one file? Does the
 file work as an authorable Markata document even outside a Markata site?
 
 If the only "visual" elements are a Mermaid block and a Markdown table,
-**revise the artifact** before declaring completion. For a one-file authoring
-task outside a Markata site, make a transparent note about how to preview it,
-but do not replace rich container syntax with generic Markdown just because
-the current repository has no Markata config.
+**revise the artifact** before declaring completion—unless a narrow diagram
+or table was explicitly requested. Equally, if every paragraph is inside a
+card or icon row, **remove components** to restore hierarchy.
+For a one-file authoring task outside a Markata site, explain how it could
+be previewed with Markata and avoid claiming an actual visual inspection
+that was not performed. If a Markata binary is available and a preview is
+feasible, use a **disposable scratch site outside the user's repository**
+to build and inspect the authored Markdown, then discard scratch output;
+do not leave `output/`, `.markata/`, or new site configuration in a
+repository where the user requested exactly one file. If a real browser
+preview is unavailable, distinguish source validation from visual acceptance.
+Do not replace rich container syntax with generic Markdown merely because
+the repository has no Markata config.
 
 ## Design and accessibility
 

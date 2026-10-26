@@ -85,7 +85,7 @@ func TestSiteSkill_ContainsExampleFiles(t *testing.T) {
 		"examples/templates/base.html",
 		"examples/templates/post.html",
 		"examples/templates/feed.html",
-		"examples/visual-workflow.md",
+		"examples/editorial-visual-composition.md",
 	}
 
 	skillFS, err := SiteSkill()
@@ -171,22 +171,25 @@ func TestSiteSkillName_IsExpectedValue(t *testing.T) {
 	}
 }
 
-func TestSiteSkill_VisualWorkflowComposition(t *testing.T) {
+func TestSiteSkill_EditorialVisualComposition(t *testing.T) {
 	skillFS, err := SiteSkill()
 	if err != nil {
 		t.Fatalf("SiteSkill() error = %v", err)
 	}
-	data, err := fs.ReadFile(skillFS, "examples/visual-workflow.md")
+	data, err := fs.ReadFile(skillFS, "examples/editorial-visual-composition.md")
 	if err != nil {
 		t.Fatalf("cannot read visual workflow example: %v", err)
 	}
 	src := string(data)
 
-	// A deliberately visual document needs more than a Mermaid graph and a
-	// Markdown table. Preserve the composed, accessible Markata example so
-	// future agent skills have a concrete one-file workflow to imitate.
+	// The bundled example should demonstrate hierarchy and selective visual
+	// treatment, rather than replacing every paragraph with a decorated box.
 	for _, want := range []string{
-		"::: md-layout",
+		"# From uncertainty to a clear decision",
+		"## Understand",
+		"## Choose",
+		"## Act",
+		"## Verify",
 		"::: road steps",
 		"::: md-columns",
 		"::: md-feature",
@@ -196,8 +199,23 @@ func TestSiteSkill_VisualWorkflowComposition(t *testing.T) {
 		":lucide-",
 	} {
 		if !strings.Contains(src, want) {
-			t.Errorf("visual workflow is missing %q", want)
+			t.Errorf("editorial visual example is missing %q", want)
 		}
+	}
+	featureRows := 0
+	for _, line := range strings.Split(src, "\n") {
+		if strings.TrimSpace(line) == "::: md-feature" {
+			featureRows++
+		}
+	}
+	if featureRows != 1 {
+		t.Errorf("generic editorial example should have one selective feature row, got %d", featureRows)
+	}
+	if strings.Count(src, ":::: md-card") != 2 {
+		t.Error("generic editorial example should reserve cards for one meaningful comparison")
+	}
+	if strings.Contains(strings.ToLower(src), "repo-steward") {
+		t.Error("visual composition example must remain repository-neutral")
 	}
 
 	// Markata nested containers use strictly longer fences and must close

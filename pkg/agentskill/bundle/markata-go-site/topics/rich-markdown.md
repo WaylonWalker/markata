@@ -10,13 +10,18 @@ For broad requests to **visualize**, create a **visual post**, draw a
 the information being communicated. The skill is vendor-neutral; do not
 assume any particular chat interface or custom component framework.
 
-**A visually designed article is not just a Mermaid block and a Markdown
-table.** For a workflow, begin with a meaningful `md-layout` summary, use
-`road steps` for its main path, `md-columns` / `md-card` for choices, and
-`md-feature` / `md-icon` for important actions. Use
-`examples/visual-workflow.md` as a concrete reference. When authoring one
-Markdown file outside an existing Markata site, you can still write these
-containers; only their styled rendering depends on Markata.
+**A visually designed article is not just Mermaid and a table, but
+it is not wall-to-wall cards either.** For a workflow, choose one main
+representation (for example `road steps`), then use
+`md-columns` / `md-card` only where choices genuinely need comparison.
+Reserve `md-feature` / `md-icon` for standout ideas. Let H2 section
+headings, short leads, and quiet paragraphs carry the rest. Keep prominent
+H2 headings outside boxes; the default theme equalizes heading sizes
+within `md-layout`, `md-box`, and `md-card`. Use
+`examples/editorial-visual-composition.md` as a generic reference for
+breathing room, not a mandatory recipe. When authoring one Markdown file
+outside an existing Markata site, you can still write these containers;
+only their styled rendering depends on Markata.
 
 ## Prefer existing primitives before adding dependencies
 

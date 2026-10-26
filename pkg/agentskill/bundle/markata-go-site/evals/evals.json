@@ -99,20 +99,26 @@
     },
     {
       "id": 17,
-      "prompt": "I am in a Python repository named repo-steward with no markata-go.toml. Write a document with your $markata-go-site visual design skill to visually represent its workflow: discover, review keep/archive/skip, prepare, clean ignored paths, publish, with clone as a side path. I want just one file.",
-      "expected_output": "Creates exactly one standalone rich Markata Markdown document (e.g. WORKFLOW.md) even though the current repository is not itself a Markata site. Provides a considered hierarchy with a strong opening visual md-layout, a road steps journey, visually grouped keep/archive md-columns + md-card branches and meaningful md-feature/md-icon and :lucide-...: elements. Preserves safe destructive-operation context and uses only grounded workflow facts. Does not deliver merely a Mermaid flowchart plus a standard Markdown table/prose, does not invent metrics or create site scaffolding. States that rendering styled containers requires Markata and does not falsely claim a local browser preview.",
+      "prompt": "I am in a small command-line project that is not itself a Markata site. Create one self-contained Markdown document using the $markata-go-site visual design skill to explain its workflow: discover items, choose which to keep or archive, safely apply changes, and verify. Keep it readable and not crowded.",
+      "expected_output": "Creates exactly one Markata-flavored Markdown file in the existing repository without site scaffolding. Uses clear unboxed article title/short lead, one main flow representation, a small number of real-choice cards, and calm prose for other steps. Does not duplicate each road milestone as a feature row or cram instructions into every card. Documents the relevant destructive-action caution, avoids fabricated metrics, and explains that visually styled rendering requires Markata.",
       "files": []
     },
     {
       "id": 18,
-      "prompt": "Make a visually compelling single-file article explaining a decision-heavy workflow. Do not use screenshots or invent metrics. I want a designed layout of steps, forks, and warnings, not just a graph.",
-      "expected_output": "Reads visual-authoring and rich-markdown topics; chooses a composed static-first Markata layout with md-layout, road steps, md-feature and responsive md-columns/md-card for forks, and an optional md-status warning. Mermaid is omitted unless uniquely valuable; a basic table alone is not treated as completion. Fences nest and close correctly, the meaning survives no-JS, and the file remains readable when styled by Markata.",
+      "prompt": "The visual guide you wrote works, but it feels dense: a road of five steps, then five icon feature rows repeating those steps, plus multiple card grids and tightly packed H3 headings. Please improve the design's breathing room and typographic rhythm without removing needed information.",
+      "expected_output": "Recognizes repetitive decoration as a design defect. Preserves one primary visual representation and a few selectively placed cards, reduces duplicated road/feature/card sequences, uses H2 headings outside card/layout containers, shorter intro paragraphs, varied section lengths, and data-gap lg only where supported. Keeps accurate content in ordinary prose and verifies readable mobile and desktop rhythm where preview is possible; never claims an unseen visual check.",
       "files": []
     },
     {
       "id": 19,
       "prompt": "Draw one exact dependency graph for my Markata article, including complex cross-links. I specifically want just a Mermaid diagram and a short accessibility explanation.",
       "expected_output": "Respects the explicitly narrow single-diagram request: uses a Mermaid fenced diagram with runtime-supported syntax and nearby accessible text, without forcing a dashboard, icon card collection or unrelated visual components. Distinguishes one requested graph from a broadly requested visual post.",
+      "files": []
+    },
+    {
+      "id": 20,
+      "prompt": "Design a long-form, calm, accessible visual report. I care about hierarchy and whitespace more than quantity of widgets. Explain how to treat heading sizes and nested Markata containers, including a comparison that needs two cards.",
+      "expected_output": "Leads with an unboxed H1 and concise deck, uses semantic H2s outside md-layout/md-card/md-box because default CSS normalizes contained H2-H6 sizes, uses a meaningful two-card comparison with data-gap lg, and places quieter narrative passages between stronger visual moments. No invented data, arbitrary CSS, hardcoded palette colors or compulsory card quotas; checks wrapping and visual hierarchy after rendering where possible.",
       "files": []
     }
   ]
