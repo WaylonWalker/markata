@@ -142,6 +142,7 @@ Use these as starter material for first sites or when a repo has no local exampl
 - `examples/templates/base.html`
 - `examples/templates/post.html`
 - `examples/templates/feed.html`
+- `examples/editorial-visual-composition.md` (generic editorial rhythm; no project-specific scaffold)
 
 ## Eval Files
 
