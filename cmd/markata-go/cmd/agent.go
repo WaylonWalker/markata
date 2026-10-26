@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"github.com/fatih/color"
 
 	"github.com/WaylonWalker/markata/pkg/agentskill"
 	"github.com/spf13/cobra"
@@ -259,9 +260,9 @@ func runAgentWriteCommand(args []string, target agentInstallTarget, global bool,
 	}
 
 	if dryRun {
-		outlnf("Dry run: would %s %d file(s) %s %s", operation, len(installedFiles), prepositionForAgentOperation(operation), destination)
+		outlnf("%s would %s %d file(s) %s %s", color.YellowString("Dry run:"), operation, len(installedFiles), prepositionForAgentOperation(operation), destination)
 	} else {
-		outlnf("%s %d file(s) %s %s", pastTenseForAgentOperation(operation), len(installedFiles), prepositionForAgentOperation(operation), destination)
+		outlnf("%s %d file(s) %s %s", color.GreenString(pastTenseForAgentOperation(operation)), len(installedFiles), prepositionForAgentOperation(operation), destination)
 	}
 
 	for _, filePath := range installedFiles {
@@ -457,30 +458,30 @@ func runAgentDoctorCommand(cmd *cobra.Command, args []string) error {
 	outlnf("Installed: %s", manifest.Version)
 	outlnf("Current:   %s", Version)
 	if report.VersionMismatch {
-		outlnf("Version:   mismatch")
+		outlnf("Version:   %s", color.YellowString("mismatch"))
 	}
 	outlnf("")
 
 	for _, entry := range report.Files {
 		switch entry.Status {
 		case agentskill.FileOK:
-			outlnf("  ok        %s", entry.Path)
+			outlnf("  %s        %s", color.GreenString("ok"), entry.Path)
 		case agentskill.FileModified:
-			outlnf("  modified  %s", entry.Path)
+			outlnf("  %s  %s", color.YellowString("modified"), entry.Path)
 		case agentskill.FileNew:
-			outlnf("  new       %s", entry.Path)
+			outlnf("  %s       %s", color.CyanString("new"), entry.Path)
 		case agentskill.FileMissing:
-			outlnf("  missing   %s", entry.Path)
+			outlnf("  %s   %s", color.RedString("missing"), entry.Path)
 		}
 	}
 
 	outlnf("")
 	if report.HasDrift() {
-		outlnf("Skill has %d issue(s). Run 'markata-go agent install --force' to update.", report.IssueCount())
+		outlnf("%s Run 'markata-go agent update' to update.", color.YellowString("Skill has %d issue(s).", report.IssueCount()))
 		return newExitCodeError(doctorExitDrift, nil)
 	}
 
-	outlnf("Skill is up to date.")
+	outlnf("%s", color.GreenString("Skill is up to date."))
 	return nil
 }
 
