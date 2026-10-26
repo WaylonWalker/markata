@@ -191,64 +191,26 @@ Awaiting production smoke test.
 
 Choose `md-progress` for a bounded task process; choose `md-meter` for a real measurement. If no denominator or reliable number exists, use descriptive statuses instead of an invented percent. All gauges require numeric `data-value` and `data-max` and a descriptive `data-label`. Keep values and labels readable in ordinary Markdown.
 
-### Example: compose a visual workflow with a branch
+### Example: a spacious visual story
 
-A step-by-step journey plus two decision cards communicates most product
-workflows better than one large flowchart. This is an excerpt; the complete
-one-file example is `examples/visual-workflow.md`.
+Read `examples/editorial-visual-composition.md` for a complete,
+repository-neutral, one-file Markdown example. Notice what is **not**
+decorated: the title, intro, H2 section headings, and two explanatory
+sections are ordinary text. The main journey uses one road; a single
+two-card comparison highlights the meaningful fork, and only one icon
+feature row emphasizes a central fact. The final status notice is
+reserved for an actual caution.
 
-~~~~markdown
-## Choose a route
+**Design exercise:** compare that restrained page with one that repeats
+every road milestone as an icon feature, every detail as a card, and
+every conclusion as a colored box. Prefer the former when the user asks
+for breathing room or better typography.
 
-::: road steps
-
-- [Discover](#discover) 01
-- [Decide](#decide) 02
-- [Prepare](#prepare) 03
-- [Publish](#publish) 04
-
-:::
-
-::: md-columns {data-gap="lg"}
-
-:::: md-card
-
-::::: md-icon {data-size="lg"}
-:lucide-git-branch:
-:::::
-
-### Keep
-
-Prepare the repository, review the cleanup plan, then commit and publish.
-
-::::
-
-:::: md-card
-
-::::: md-icon {data-size="lg"}
-:lucide-archive:
-:::::
-
-### Archive
-
-Verify the archive destination and copied data before removing local files.
-
-::::
-
-:::
-~~~~
-
-The full document should *not* repeat these exact steps as another feature
-row sequence. Expand only the complex or consequential steps in plain
-text. Add an `md-feature` row for a single standout idea, not by default.
-Keep the output responsive and readable without JS.
-
-**Mermaid is an optional detail view**, not the default hero for a
-multi-section visual post. Choose a fenced Mermaid flowchart when exact
-connections, loops, dependencies, or exception routes cannot be conveyed
-clearly with cards and a road. Check the deployed Mermaid runtime before
-using version-specific syntax: `architecture-beta` is not supported by
-Mermaid 10.9.5. Test the rendered browser output, not just the source.
+**Mermaid is optional**, not the default hero for a multi-section visual
+post. Use it for exact connections or complicated loops that a road
+and short prose cannot convey. Check runtime support first:
+`architecture-beta` is unavailable in Mermaid 10.9.5. Validate rendered
+output, not just fenced source.
 
 ### Example: numerical chart with text fallback
 
