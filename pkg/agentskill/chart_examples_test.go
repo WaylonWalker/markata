@@ -48,10 +48,10 @@ func TestSiteSkill_ChartCompositionExamples(t *testing.T) {
 		var config struct {
 			Type string `json:"type"`
 			Data struct {
-				Labels []string `json:"labels"`
+				Labels   []string `json:"labels"`
 				Datasets []struct {
-					Label string `json:"label"`
-					Data []float64 `json:"data"`
+					Label string    `json:"label"`
+					Data  []float64 `json:"data"`
 				} `json:"datasets"`
 			} `json:"data"`
 		}
