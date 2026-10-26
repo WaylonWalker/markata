@@ -190,7 +190,8 @@ func NormalizeTheme(raw map[string]any) (normalized map[string]any, warnings []s
 	resolve("contract_version", "contract_version", 1)
 	resolve("palette", "palette", "ayu-dark")
 	resolve("aesthetic", "aesthetic", "minimal")
-	resolve("fontpack", "fontpack", "brush")
+	// Match the source rendering contract and the core zero-download default.
+	resolve("fontpack", "fontpack", "system")
 	if value, ok := raw["texture"].(string); ok {
 		if _, exists := nested["texture"]; !exists {
 			out["texture"] = map[string]any{"kind": value}

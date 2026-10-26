@@ -111,12 +111,31 @@ Think in **reading beats**, not a component checklist.
 5. **Closing beat:** Plain-language consequence, uncertainty, or next
    action, with a status component only when it meaningfully signals risk.
 
-**Actual theme limitation:** Markata's default `components.css`
-sets directly nested H2–H6 headings inside `md-layout`, `md-box`
-and `md-card` to the same `--text-lg` size. Put real section-level
-H2 headings *outside* those containers to preserve typographic scale.
-Use brief H3 labels inside cards. More `#` characters inside a card
-will not create the larger hierarchy you might expect.
+**Typographic hierarchy:** Markata's visual containers now preserve
+distinct H2–H6 type sizes and weights. Still place real article sections
+under unboxed H2 headings, keeping brief H3/H4 labels inside choice
+cards. Use the zero-download `system` fontpack by default:
+`system-ui` body/headings and a native monospace stack for code.
+Expressive brush/poster fonts are opt-in for pages or branded sites,
+not the baseline for documentation, reports, and visual workflows.
+
+**Practical type ladder (default theme):**
+
+| Role | Semantic markup | Size / weight intent | Color role |
+| --- | --- | --- | --- |
+| Page title | H1, outside a container | Largest, bold (about 2.25rem) | Primary text |
+| Section | H2, outside cards | Prominent (about 1.875rem), bold | Primary text |
+| Choice / component title | H3 in `md-card` or `md-feature` | Moderate (about 1.25rem), strong | Primary text |
+| Paragraph | `p` | Comfortable reading size, normal weight | Primary text |
+| Labels and supporting context | `small`, captions, short metadata | Smaller (roughly 0.75–0.875rem), medium | Muted text |
+| Code or technical identifiers | Inline/fenced `code` | Native monospace, distinct from prose | Theme semantic colors |
+
+Use the tokens already provided by the theme; these are roles, not
+instructions to hardcode `px`, custom fonts, or arbitrary hex colors into
+content. Use no more than one saturated accent in a small visual grouping.
+Weight 700 should be exceptional; normal paragraphs need room to stay light.
+A body paragraph, label, status pill and card heading should not all
+share the same size or boldness.
 
 **Visual editing pass:**
 

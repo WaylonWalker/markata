@@ -16,8 +16,8 @@ representation (for example `road steps`), then use
 `md-columns` / `md-card` only where choices genuinely need comparison.
 Reserve `md-feature` / `md-icon` for standout ideas. Let H2 section
 headings, short leads, and quiet paragraphs carry the rest. Keep prominent
-H2 headings outside boxes; the default theme equalizes heading sizes
-within `md-layout`, `md-box`, and `md-card`. Use
+H2 headings outside boxes so section hierarchy remains strongest;
+container heading levels now keep distinct sizes and weights. Use
 `examples/editorial-visual-composition.md` as a generic reference for
 breathing room, not a mandatory recipe. When authoring one Markdown file
 outside an existing Markata site, you can still write these containers;
