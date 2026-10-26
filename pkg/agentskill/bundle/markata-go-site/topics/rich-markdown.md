@@ -10,18 +10,26 @@ For broad requests to **visualize**, create a **visual post**, draw a
 the information being communicated. The skill is vendor-neutral; do not
 assume any particular chat interface or custom component framework.
 
-**A visually designed article is not just Mermaid and a table, but
-it is not wall-to-wall cards either.** For a workflow, choose one main
-representation (for example `road steps`), then use
-`md-columns` / `md-card` only where choices genuinely need comparison.
-Reserve `md-feature` / `md-icon` for standout ideas. Let H2 section
-headings, short leads, and quiet paragraphs carry the rest. Keep prominent
-H2 headings outside boxes so section hierarchy remains strongest;
-container heading levels now keep distinct sizes and weights. Use
+**A visually designed article is neither Mermaid-plus-table nor
+a wall of cards, but a balanced sequence of useful visual roles.** A workflow
+may need a compact overview, a `road steps` sequence, a distinct
+`md-columns` / `md-card` decision group, and occasional
+`md-feature` rows. Keep these when they answer *different questions*;
+remove repeated descriptions, not useful orientation. Place longer
+instructions in quiet prose beneath meaningful H2 headings instead of
+squeezing them into narrow cards. Keep prominent H2 headings outside
+boxes so section hierarchy remains strongest; nested container headings
+also retain their separate size and weight hierarchy. Use
 `examples/editorial-visual-composition.md` as a generic reference for
-breathing room, not a mandatory recipe. When authoring one Markdown file
-outside an existing Markata site, you can still write these containers;
-only their styled rendering depends on Markata.
+purposeful visual variety, not a component quota. When authoring a single
+Markdown file outside an existing Markata site, you can still write these
+containers; only their styled rendering depends on Markata.
+
+**During visual revisions**, compare the actual before/after pages:
+reducing density by removing overview and side-route cards can make a page
+less useful even if it has more whitespace. Prefer shorter card copy and
+more separation between groups. If the site template already renders
+frontmatter.title, avoid duplicating it as the first body H1.
 
 ## Prefer existing primitives before adding dependencies
 
