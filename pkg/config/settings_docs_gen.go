@@ -104,6 +104,7 @@ var settingDocs = map[string]string{
 	"CardRouterConfig.Mappings":                    "Mappings maps post template names to card template names. User mappings are merged with defaults, allowing overrides. Example: {\"daily\": \"article\", \"meeting\": \"note\"}",
 	"ChartJSConfig.CDNURL":                         "CDNURL is the URL for the Chart.js library",
 	"ChartJSConfig.ContainerClass":                 "ContainerClass is the CSS class for the chart container div (default: \"chartjs-container\")",
+	"ChartJSConfig.DataDisplay":                    "DataDisplay sets the initial disclosure state: \"open\" (default) or \"collapsed\". An empty value also means open, preserving programmatic zero-value configs.",
 	"ChartJSConfig.Enabled":                        "Enabled controls whether Chart.js processing is active (default: true)",
 	"ChromiumRendererConfig.BrowserPath":           "BrowserPath is the path to the Chrome/Chromium binary. If empty, auto-detects.",
 	"ChromiumRendererConfig.MaxConcurrent":         "MaxConcurrent is the maximum number of concurrent diagram renders",

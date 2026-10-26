@@ -239,19 +239,37 @@ func parseChartFigureOptions(config map[string]interface{}) (chartFigureOptions,
 		{"caption", &options.Caption},
 		{chartDataDisplayKey, &options.DataDisplay},
 	} {
-		if raw, exists := config[field.key]; exists {
-			value, ok := raw.(string)
-			if !ok {
-				return options, fmt.Errorf("%s must be a string", field.key)
-			}
-			if field.key == chartDataDisplayKey && value != chartDataOpen && value != chartDataCollapsed {
-				return options, fmt.Errorf("data_display must be \"open\" or \"collapsed\"")
-			}
-			*field.value = value
-			delete(config, field.key)
+		raw, exists := config[field.key]
+		if !exists {
+			continue
 		}
+		value, ok := raw.(string)
+		if !ok {
+			return options, fmt.Errorf("%s must be a string", field.key)
+		}
+		if field.key == chartDataDisplayKey && value != chartDataOpen && value != chartDataCollapsed {
+			return options, fmt.Errorf("data_display must be \"open\" or \"collapsed\"")
+		}
+		*field.value = value
+		delete(config, field.key)
 	}
 	return options, nil
+}
+
+func isCompactHorizontalBar(config map[string]interface{}) bool {
+	data, ok := config["data"].(map[string]interface{})
+	if !ok {
+		return false
+	}
+	labels, ok := data["labels"].([]interface{})
+	if !ok {
+		return false
+	}
+	chartOptions, ok := config["options"].(map[string]interface{})
+	if !ok {
+		return false
+	}
+	return config["type"] == "bar" && chartOptions["indexAxis"] == "y" && len(labels) > 0 && len(labels) <= 4
 }
 
 func chartFigureHTML(options chartFigureOptions, config map[string]interface{}, chartID, container string) string {
@@ -259,10 +277,7 @@ func chartFigureHTML(options chartFigureOptions, config map[string]interface{}, 
 		return container
 	}
 	class := "chartjs-figure"
-	data, _ := config["data"].(map[string]interface{})
-	labels, _ := data["labels"].([]interface{})
-	chartOptions, _ := config["options"].(map[string]interface{})
-	if config["type"] == "bar" && chartOptions["indexAxis"] == "y" && len(labels) > 0 && len(labels) <= 4 {
+	if isCompactHorizontalBar(config) {
 		class += " chartjs-figure-compact"
 	}
 	var caption strings.Builder

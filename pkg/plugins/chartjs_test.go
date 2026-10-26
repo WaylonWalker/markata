@@ -331,9 +331,13 @@ func TestChartJSPlugin_FigureFromMarkdown(t *testing.T) {
 				}
 			}
 			if strings.Contains(metadata, `"title"`) && !strings.Contains(post.ArticleHTML, `aria-label="Build time"`) {
-				t.Error("canvas should be labelled by the title")
+				t.Error("canvas should be labeled by the title")
 			}
-			script := post.ArticleHTML[strings.Index(post.ArticleHTML, "<script"):]
+			scriptStart := strings.Index(post.ArticleHTML, "<script")
+			if scriptStart < 0 {
+				t.Fatal("missing chart script")
+			}
+			script := post.ArticleHTML[scriptStart:]
 			if strings.Contains(script, `"title":`) || strings.Contains(script, `"caption":`) || strings.Contains(post.ArticleHTML, "<h4") {
 				t.Error("figure metadata must not reach Chart.js or create headings")
 			}
