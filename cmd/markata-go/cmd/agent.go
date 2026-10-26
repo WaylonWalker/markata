@@ -259,9 +259,9 @@ func runAgentWriteCommand(args []string, target agentInstallTarget, global bool,
 	}
 
 	if dryRun {
-		outlnf("Dry run: would %s %d file(s) %s %s", operation, len(installedFiles), prepositionForAgentOperation(operation), destination)
+		outlnf("%s would %s %d file(s) %s %s", agentYellow("Dry run:"), operation, len(installedFiles), prepositionForAgentOperation(operation), destination)
 	} else {
-		outlnf("%s %d file(s) %s %s", pastTenseForAgentOperation(operation), len(installedFiles), prepositionForAgentOperation(operation), destination)
+		outlnf("%s %d file(s) %s %s", agentGreen("%s", pastTenseForAgentOperation(operation)), len(installedFiles), prepositionForAgentOperation(operation), destination)
 	}
 
 	for _, filePath := range installedFiles {
@@ -457,30 +457,30 @@ func runAgentDoctorCommand(cmd *cobra.Command, args []string) error {
 	outlnf("Installed: %s", manifest.Version)
 	outlnf("Current:   %s", Version)
 	if report.VersionMismatch {
-		outlnf("Version:   mismatch")
+		outlnf("Version:   %s", agentYellow("mismatch"))
 	}
 	outlnf("")
 
 	for _, entry := range report.Files {
 		switch entry.Status {
 		case agentskill.FileOK:
-			outlnf("  ok        %s", entry.Path)
+			outlnf("  %s        %s", agentGreen("ok"), entry.Path)
 		case agentskill.FileModified:
-			outlnf("  modified  %s", entry.Path)
+			outlnf("  %s  %s", agentYellow("modified"), entry.Path)
 		case agentskill.FileNew:
-			outlnf("  new       %s", entry.Path)
+			outlnf("  %s       %s", agentCyan("new"), entry.Path)
 		case agentskill.FileMissing:
-			outlnf("  missing   %s", entry.Path)
+			outlnf("  %s   %s", agentRed("missing"), entry.Path)
 		}
 	}
 
 	outlnf("")
 	if report.HasDrift() {
-		outlnf("Skill has %d issue(s). Run 'markata-go agent install --force' to update.", report.IssueCount())
+		outlnf("%s Run 'markata-go agent update' to update.", agentYellow("Skill has %d issue(s).", report.IssueCount()))
 		return newExitCodeError(doctorExitDrift, nil)
 	}
 
-	outlnf("Skill is up to date.")
+	outlnf("%s", agentGreen("Skill is up to date."))
 	return nil
 }
 
@@ -541,4 +541,23 @@ func runAgentRemoveCommand(cmd *cobra.Command, args []string) error {
 	}
 	outlnf("Removed %s", filepath.ToSlash(skillDir))
 	return nil
+}
+
+// Agent status colors follow the shared CLI color controls for the output stream.
+func agentColor(code, message string) string {
+	enabled := currentCmd != nil && colorEnabledFor(streamIsTerminal(currentCmd.OutOrStdout()))
+	return colorize(message, "\x1b["+code+"m", enabled)
+}
+
+func agentGreen(format string, args ...any) string {
+	return agentColor("32", fmt.Sprintf(format, args...))
+}
+func agentYellow(format string, args ...any) string {
+	return agentColor("33", fmt.Sprintf(format, args...))
+}
+func agentRed(format string, args ...any) string {
+	return agentColor("31", fmt.Sprintf(format, args...))
+}
+func agentCyan(format string, args ...any) string {
+	return agentColor("36", fmt.Sprintf(format, args...))
 }

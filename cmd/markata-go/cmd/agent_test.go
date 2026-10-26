@@ -673,6 +673,45 @@ func TestRunAgentDoctorCommand_UpToDate(t *testing.T) {
 	}
 }
 
+func TestAgentColor_RespectsCLIColorControls(t *testing.T) {
+	previousNoColor, previousForceColor, previousLogFormat, previousCommand := noColor, forceColor, logFormat, currentCmd
+	t.Cleanup(func() {
+		noColor, forceColor, logFormat, currentCmd = previousNoColor, previousForceColor, previousLogFormat, previousCommand
+	})
+	t.Setenv("NO_COLOR", "")
+	t.Setenv("TERM", "xterm-256color")
+
+	command := &cobra.Command{Use: "agent"}
+	command.SetOut(bytes.NewBuffer(nil))
+	currentCmd = command
+
+	tests := []struct {
+		name       string
+		noColorEnv string
+		noColor    bool
+		force      bool
+		logFormat  string
+		wantANSI   bool
+	}{
+		{name: "default redirected output is plain"},
+		{name: "NO_COLOR", noColorEnv: "1"},
+		{name: "no color flag", noColor: true},
+		{name: "plain log format", force: true, logFormat: "plain"},
+		{name: "color flag forces redirected output", force: true, logFormat: "auto", wantANSI: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv("NO_COLOR", tt.noColorEnv)
+			noColor, forceColor, logFormat = tt.noColor, tt.force, tt.logFormat
+			got := agentGreen("ok")
+			if strings.Contains(got, "\x1b[") != tt.wantANSI {
+				t.Fatalf("agentGreen() = %q, wantANSI %t", got, tt.wantANSI)
+			}
+		})
+	}
+}
+
 func TestRunAgentRemoveCommand_RemovesInstalledSkill(t *testing.T) {
 	root := t.TempDir()
 	target, err := normalizeAgentInstallTarget("claude-code")
