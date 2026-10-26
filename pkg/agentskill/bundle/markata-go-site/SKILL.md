@@ -42,7 +42,43 @@ For a single file requested in a non-Markata repository, deliver a single
 self-contained Markdown file with those native primitives, and explain
 that an actual Markata site is needed to preview its rich styling.
 Do not create project scaffolding as a prerequisite unless asked.
-See `examples/visual-workflow.md` for a copyable, composed example.
+See `examples/editorial-visual-composition.md` for a generic example
+of *restrained* composition; it is not tied to any repository or workflow.
+
+## Editorial quality: breathing room and type rhythm
+
+A visual request is **not** a request for the maximum number of containers.
+The first version of this skill solved a plain-Mermaid failure but encouraged
+over-composition. Design the page as a reading experience:
+
+- Give the title and opening thesis a clear, unboxed place at the top.
+  Let top-level `##` section headings live **outside** `md-layout` and cards,
+  so the article's heading scale remains prominent.
+- Alternate visual emphasis and calm prose. A short introductory paragraph,
+  one useful visual group, and a concluding transition usually read better
+  than four consecutive groups of cards or feature rows.
+- Choose **one main visual representation** for a process: a road *or* a
+  feature-step sequence. Do not restate every road milestone as a matching
+  icon row unless the second treatment adds meaning.
+- Use cards for genuine choices and comparisons, not every ordinary step.
+  Long instructions should remain readable prose under descriptive headings.
+- Use built-in `{data-gap="lg"}` on a `md-columns`, `md-grid`, or `md-layout`
+  when grouped items need separation; this changes spacing **within** the
+  component, not the distance between unrelated article sections.
+- Write a short lead, use one point per paragraph, and vary the lengths of
+  text blocks. Avoid a repeated wall of H3 heading / icon / code / paragraph.
+  Keep detailed commands near their relevant action rather than stuffing
+  them into every card.
+- Emphasize by meaning: one dominant idea per section, clear H2 section
+  labels, selective H3 card labels, and sparing status color. If everything is
+  emphasized, nothing is.
+- Before delivering, read the page from top to bottom. If removing half the
+  cards and icons would make the story easier to scan, simplify. Do not
+  equate source-line count with visual spacing. When a preview is possible,
+  inspect actual rendered whitespace, line wraps, and mobile stacking.
+
+These are *design judgments*, not quotas. Keep a requested single diagram
+as a single diagram, and preserve any user's explicit structure.
 
 ## Core Workflow
 
