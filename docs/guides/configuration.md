@@ -646,14 +646,20 @@ for stylesheet boundaries and runtime behavior.
 [markata-go.css_purge]
 enabled = false
 verbose = false
-preserve = ["js-*", "htmx-*", "theme-*", "palette-*"]
+preserve = ["js-*", "htmx-*", "theme-*", "palette-*", "md-code-*"]
 preserve_attributes = ["data-theme", "data-palette", "data-text-size"]
 skip_files = ["vendor/*", "normalize.css"]
 warning_threshold = 0
 ```
 
 CSS purge removes unused rules by scanning generated HTML and keeping only selectors
-that are actually present. The purge logic always preserves key @-rules and keeps
+that are actually present.
+The built-in default safelist includes `md-code-*` for the article code-copy
+button, which is created by JavaScript after HTML generation. Without it, the
+button still works but loses its positioning and can cover code. When setting a
+custom `preserve` list, include `"md-code-*"` alongside your own patterns;
+custom lists replace, rather than extend, the defaults.
+ The purge logic always preserves key @-rules and keeps
 pseudo-only selectors like `:root` or `::selection` to avoid dropping base/theme styles.
 Full builds cache the discovered selector set and purged CSS under
 `.markata-cache/css-purge` in the content directory. The selector cache checks a content
