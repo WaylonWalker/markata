@@ -116,7 +116,7 @@ async function main() {
     });
     report.codeCSS=await page.evaluate(async()=>{
       const links=[...document.querySelectorAll('link[rel="stylesheet"]')]
-        .filter(l=>/\\/code[.]/.test(l.href));
+        .filter(l=>l.href.includes('/code.'));
       return await Promise.all(links.map(async link=>{
         const response=await fetch(link.href,{cache:'no-cache'});
         const css=await response.text();
