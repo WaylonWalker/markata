@@ -140,6 +140,11 @@ viewports. Unknown values retain the defaults; arbitrary CSS is not accepted.
 Use descriptive text to convey relationships, rather than relying on arrow
 direction alone for accessibility.
 
+Heading permalink links stay inline inside `md-card`, including nested headings,
+so ordinary titles do not add a horizontal scrollbar. The links remain available
+on hover and keyboard focus. Wide code blocks still scroll independently; a wide
+comparison table can scroll within its card without widening the page.
+
 ### Architecture diagram
 
 ````markdown
