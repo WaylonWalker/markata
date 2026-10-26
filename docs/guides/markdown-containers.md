@@ -114,6 +114,13 @@ milestones:
 
 See [Roads](/docs/guides/roads/) for all styles and options.
 
+For prose-led histories, use `::: road editorial story` with a heading per
+entry. A leading `:lucide-name:` becomes a rail badge; an emphasis-only
+paragraph directly after the heading becomes its eyebrow label. Add `reveal`
+(`::: road editorial story reveal`) for optional, reduced-motion-safe scroll
+entrances. `story` alone opts into larger type and diamond-bullet highlights;
+plain editorial roads keep their existing typography.
+
 ## Responsive article layouts (static HTML and CSS)
 
 Markata also provides **opt-in, article-scoped** layout classes built from the
@@ -140,6 +147,11 @@ Use `{data-gap="sm"}` or `{data-gap="lg"}` on grid/stack/layout containers,
 viewports. Unknown values retain the defaults; arbitrary CSS is not accepted.
 Use descriptive text to convey relationships, rather than relying on arrow
 direction alone for accessibility.
+
+Heading permalink links stay inline inside `md-card`, including nested headings,
+so ordinary titles do not add a horizontal scrollbar. The links remain available
+on hover and keyboard focus. Wide code blocks still scroll independently; a wide
+comparison table can scroll within its card without widening the page.
 
 ### Markdown story pages
 
