@@ -202,8 +202,14 @@ func TestSiteSkill_EditorialVisualComposition(t *testing.T) {
 			t.Errorf("editorial visual example is missing %q", want)
 		}
 	}
-	if strings.Count(src, "\n::: md-feature\n") != 1 {
-		t.Error("generic editorial example should not repeat every road step as a feature row")
+	featureRows := 0
+	for _, line := range strings.Split(src, "\n") {
+		if strings.TrimSpace(line) == "::: md-feature" {
+			featureRows++
+		}
+	}
+	if featureRows != 1 {
+		t.Errorf("generic editorial example should have one selective feature row, got %d", featureRows)
 	}
 	if strings.Count(src, ":::: md-card") != 2 {
 		t.Error("generic editorial example should reserve cards for one meaningful comparison")
