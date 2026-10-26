@@ -377,6 +377,7 @@ The plugin MUST implement:
 enabled = true
 cdn_url = "https://cdn.jsdelivr.net/npm/chart.js"
 container_class = "chartjs-container"
+data_display = "open" # "open" (default) or "collapsed"
 ```
 
 **Syntax:**
@@ -403,6 +404,29 @@ container_class = "chartjs-container"
 2. Parse JSON content
 3. Replace with canvas element and initialization script
 4. Inject Chart.js script (once per page)
+
+Optional top-level JSON keys `title` and `caption` (plain strings) create a
+`figure.chartjs-figure` containing a left-aligned `figcaption` and the existing
+chart container. The title is not a heading and does not enter the TOC. Canvas
+labels use the title when present and reference the figcaption by a unique ID.
+Short horizontal bar figures (at most four labels, `options.indexAxis: "y"`)
+use a compact canvas. Other chart figures retain Chart.js sizing.
+
+The top-level JSON key `data_display` overrides the site setting with `"open"`
+or `"collapsed"`. These three authoring keys are removed before passing JSON to
+Chart.js or rendering configuration fallbacks. Invalid metadata produces an
+escaped chart error; invalid site `data_display` fails configuration.
+JSON metadata is used because the stock Markdown renderer keeps only the
+language from fence info; unlike CSV's legacy HTML option matcher, it reliably
+survives Markdown rendering without changes to the shared renderer.
+
+Without metadata and with default site settings, emitted HTML remains unchanged.
+Data/configuration details start open by default, including without JavaScript.
+Collapsed details remain keyboard-accessible without JavaScript. For opted-in
+charts, successful Chart.js initialization collapses the details element itself
+(not its wrapper); failed initialization leaves the configured state intact.
+Legacy scripts are unchanged, including their ineffective attempt to collapse
+the wrapper div.
 
 **Output:**
 

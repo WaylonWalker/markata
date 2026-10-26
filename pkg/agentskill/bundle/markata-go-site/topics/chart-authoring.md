@@ -45,6 +45,15 @@ Write **complete, parseable JSON** inside a fenced `chartjs` block:
 or Markdown tables as the chart source. Chart.js's `options` is an
 optional JSON object.
 
+For a built-in figure card, add top-level plain-text `title` and `caption`
+strings. The title does not enter the TOC; no page-local JS/CSS is needed.
+Optional top-level `"data_display": "collapsed"`
+starts the accessible data disclosure collapsed, overriding the site
+`[markata-go.chartjs] data_display` setting (`"open"` by default).
+All three metadata keys are stripped before Chart.js initialization.
+Short horizontal bar figures (up to four labels, `options.indexAxis: "y"`)
+automatically use a compact canvas; other charts retain normal sizing.
+
 These examples use **illustrative values** and are not user measurements.
 
 ### A clear categorical bar chart

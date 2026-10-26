@@ -13,6 +13,12 @@ import (
 	"github.com/WaylonWalker/markata/pkg/models"
 )
 
+const (
+	chartDataDisplayKey = "data_display"
+	chartDataOpen       = "open"
+	chartDataCollapsed  = "collapsed"
+)
+
 // ChartJSPlugin converts Chart.js JSON code blocks into rendered charts.
 // It runs at the render stage (after markdown conversion).
 type ChartJSPlugin struct {
@@ -69,6 +75,13 @@ func (p *ChartJSPlugin) Configure(m *lifecycle.Manager) error {
 		}
 		if containerClass, ok := cfgMap["container_class"].(string); ok && containerClass != "" {
 			p.config.ContainerClass = containerClass
+		}
+		if value, exists := cfgMap[chartDataDisplayKey]; exists {
+			display, ok := value.(string)
+			if !ok || (display != chartDataOpen && display != chartDataCollapsed) {
+				return fmt.Errorf("chartjs.data_display must be \"open\" or \"collapsed\"")
+			}
+			p.config.DataDisplay = display
 		}
 	}
 
@@ -134,6 +147,12 @@ func (p *ChartJSPlugin) processPost(post *models.Post) error {
 </div>`, p.config.ContainerClass, html.EscapeString(err.Error()))
 		}
 
+		options, err := parseChartFigureOptions(chartConfig)
+		if err != nil {
+			return fmt.Sprintf(`<div class="%s chartjs-error"><p>Chart.js Error: %s</p></div>`,
+				html.EscapeString(p.config.ContainerClass), html.EscapeString(err.Error()))
+		}
+
 		// Re-encode decoded JSON using encoding/json's HTML-safe escaping.
 		// Inline scripts must never contain an authored </script> sequence.
 		safeJSON, err := json.Marshal(chartConfig)
@@ -147,6 +166,20 @@ func (p *ChartJSPlugin) processPost(post *models.Post) error {
 		// Render a real data table (or the configuration for unusual charts)
 		// so the data remains available with JavaScript disabled or offline.
 		fallback := chartStaticFallback(chartConfig, string(safeJSON))
+		display := options.DataDisplay
+		if display == "" {
+			display = p.config.DataDisplay
+		}
+		if display == chartDataCollapsed {
+			fallback = strings.Replace(fallback, `class="chartjs-data" open`, `class="chartjs-data"`, 1)
+		}
+		// Preserve legacy output byte-for-byte unless the chart opts into the
+		// new presentation/disclosure options. Legacy initialization targets
+		// the wrapper div; opted-in charts target the actual disclosure.
+		dataLookup := fmt.Sprintf("document.getElementById('%s-data')", chartID)
+		if options.Title != "" || options.Caption != "" || options.DataDisplay != "" || display == chartDataCollapsed {
+			dataLookup = fmt.Sprintf("document.querySelector('#%s-data > details')", chartID)
+		}
 
 		// Keep the fallback present and inspectable. Collapse it only after
 		// Chart.js successfully initializes; never hide it when scripts fail.
@@ -157,18 +190,27 @@ func (p *ChartJSPlugin) processPost(post *models.Post) error {
     ctx.hidden = false;
     try {
       new Chart(ctx, %s);
-      const data = document.getElementById('%s-data');
+      const data = %s;
       if (data) data.open = false;
     } catch (error) {
       ctx.hidden = true;
     }
-  })();`, chartID, string(safeJSON), chartID)
+  })();`, chartID, string(safeJSON), dataLookup)
 		initScripts = append(initScripts, initScript)
 
-		return fmt.Sprintf(`<div class="%s">
-  <canvas id="%s" hidden role="img" aria-label="Chart visualization; expand Chart data for exact values"></canvas>
+		label := "Chart visualization; expand Chart data for exact values"
+		description := ""
+		if options.Title != "" || options.Caption != "" {
+			if options.Title != "" {
+				label = options.Title
+			}
+			description = fmt.Sprintf(` aria-describedby="%s-caption"`, chartID)
+		}
+		container := fmt.Sprintf(`<div class="%s">
+  <canvas id="%s" hidden role="img" aria-label="%s"%s></canvas>
   <div id="%s-data">%s</div>
-</div>`, html.EscapeString(p.config.ContainerClass), chartID, chartID, fallback)
+</div>`, html.EscapeString(p.config.ContainerClass), chartID, html.EscapeString(label), description, chartID, fallback)
+		return chartFigureHTML(options, chartConfig, chartID, container)
 	})
 
 	// If we found chartjs blocks, inject the scripts
@@ -178,6 +220,60 @@ func (p *ChartJSPlugin) processPost(post *models.Post) error {
 
 	post.ArticleHTML = result
 	return nil
+}
+
+// chartFigureOptions are authoring metadata, never Chart.js configuration.
+type chartFigureOptions struct {
+	Title       string
+	Caption     string
+	DataDisplay string
+}
+
+func parseChartFigureOptions(config map[string]interface{}) (chartFigureOptions, error) {
+	var options chartFigureOptions
+	for _, field := range []struct {
+		key   string
+		value *string
+	}{
+		{"title", &options.Title},
+		{"caption", &options.Caption},
+		{chartDataDisplayKey, &options.DataDisplay},
+	} {
+		if raw, exists := config[field.key]; exists {
+			value, ok := raw.(string)
+			if !ok {
+				return options, fmt.Errorf("%s must be a string", field.key)
+			}
+			if field.key == chartDataDisplayKey && value != chartDataOpen && value != chartDataCollapsed {
+				return options, fmt.Errorf("data_display must be \"open\" or \"collapsed\"")
+			}
+			*field.value = value
+			delete(config, field.key)
+		}
+	}
+	return options, nil
+}
+
+func chartFigureHTML(options chartFigureOptions, config map[string]interface{}, chartID, container string) string {
+	if options.Title == "" && options.Caption == "" {
+		return container
+	}
+	class := "chartjs-figure"
+	data, _ := config["data"].(map[string]interface{})
+	labels, _ := data["labels"].([]interface{})
+	chartOptions, _ := config["options"].(map[string]interface{})
+	if config["type"] == "bar" && chartOptions["indexAxis"] == "y" && len(labels) > 0 && len(labels) <= 4 {
+		class += " chartjs-figure-compact"
+	}
+	var caption strings.Builder
+	if options.Title != "" {
+		fmt.Fprintf(&caption, `<strong class="chartjs-figure-title">%s</strong>`, html.EscapeString(options.Title))
+	}
+	if options.Caption != "" {
+		fmt.Fprintf(&caption, `<p class="chartjs-figure-caption">%s</p>`, html.EscapeString(options.Caption))
+	}
+	return fmt.Sprintf(`<figure class="%s"><figcaption id="%s-caption">%s</figcaption>
+%s</figure>`, class, chartID, caption.String(), container)
 }
 
 // chartStaticFallback provides semantic source data for non-JavaScript readers.

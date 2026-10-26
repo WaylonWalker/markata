@@ -1773,6 +1773,12 @@ container_class = "chartjs-container"                  # CSS class for wrapper d
 | `enabled` | `true` | Enable/disable the plugin |
 | `cdn_url` | `/assets/vendor/chartjs/chart.min.js` | Chart.js URL (local by default) |
 | `container_class` | `chartjs-container` | CSS class for wrapper div |
+| `data_display` | `open` | Initial fallback disclosure state: `open` or `collapsed` |
+
+Optional top-level JSON strings `title` and `caption` create a semantic,
+accessible figure card without adding a TOC heading. Top-level `data_display`
+overrides the site default per chart. All three keys are stripped before Chart.js
+initialization. See [chart figures and fallbacks](../guides/markdown-chart-fallback.md).
 
 **Markdown syntax:**
 ````markdown

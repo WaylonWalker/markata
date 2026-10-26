@@ -1693,6 +1693,10 @@ type ChartJSConfig struct {
 
 	// ContainerClass is the CSS class for the chart container div (default: "chartjs-container")
 	ContainerClass string `json:"container_class" yaml:"container_class" toml:"container_class"`
+
+	// DataDisplay sets the initial disclosure state: "open" (default) or "collapsed".
+	// An empty value also means open, preserving programmatic zero-value configs.
+	DataDisplay string `json:"data_display" yaml:"data_display" toml:"data_display"`
 }
 
 // NewChartJSConfig creates a new ChartJSConfig with default values.
@@ -1701,6 +1705,7 @@ func NewChartJSConfig() ChartJSConfig {
 		Enabled:        true,
 		CDNURL:         "/assets/vendor/chartjs/chart.min.js",
 		ContainerClass: "chartjs-container",
+		DataDisplay:    "open",
 	}
 }
 

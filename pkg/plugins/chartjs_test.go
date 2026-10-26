@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
 	"github.com/WaylonWalker/markata/pkg/models"
 )
 
@@ -295,10 +296,160 @@ func TestChartJSPlugin_EscapesAuthoredInlineScriptClosers(t *testing.T) {
 	if err := p.processPost(post); err != nil {
 		t.Fatal(err)
 	}
+
 	if strings.Contains(post.ArticleHTML, "</script><script>alert(1)") {
 		t.Fatal("chart JSON must not close an inline script")
 	}
 	if !strings.Contains(post.ArticleHTML, `<details class="chartjs-data" open>`) {
 		t.Fatal("static fallback should still be available")
+	}
+}
+
+func TestChartJSPlugin_FigureFromMarkdown(t *testing.T) {
+	for _, metadata := range []string{
+		`"title":"Build time","caption":"Seconds per build",`,
+		`"title":"Build time",`,
+		`"caption":"Seconds per build",`,
+	} {
+		t.Run(metadata, func(t *testing.T) {
+			post := &models.Post{Content: "```chartjs\n{" + metadata + `"type":"bar","data":{"labels":["Full","Incremental"],"datasets":[{"data":[46,21]}]},"options":{"indexAxis":"y"}}` + "\n```"}
+			if err := NewRenderMarkdownPlugin().renderPost(post); err != nil {
+				t.Fatal(err)
+			}
+			if err := NewChartJSPlugin().processPost(post); err != nil {
+				t.Fatal(err)
+			}
+			for _, want := range []string{
+				`<figure class="chartjs-figure chartjs-figure-compact">`,
+				`<figcaption id="chartjs-1-caption">`,
+				`aria-describedby="chartjs-1-caption"`,
+				`<details class="chartjs-data" open>`,
+				`document.querySelector('#chartjs-1-data > details')`,
+			} {
+				if !strings.Contains(post.ArticleHTML, want) {
+					t.Errorf("missing %q in %s", want, post.ArticleHTML)
+				}
+			}
+			if strings.Contains(metadata, `"title"`) && !strings.Contains(post.ArticleHTML, `aria-label="Build time"`) {
+				t.Error("canvas should be labelled by the title")
+			}
+			script := post.ArticleHTML[strings.Index(post.ArticleHTML, "<script"):]
+			if strings.Contains(script, `"title":`) || strings.Contains(script, `"caption":`) || strings.Contains(post.ArticleHTML, "<h4") {
+				t.Error("figure metadata must not reach Chart.js or create headings")
+			}
+		})
+	}
+}
+
+func TestChartJSPlugin_FigureEscapesText(t *testing.T) {
+	post := &models.Post{Content: "```chartjs\n" + `{"title":"<img src=x onerror=alert(1)> \" &","caption":"</script><script>alert(1)</script>","type":"line"}` + "\n```"}
+	if err := NewRenderMarkdownPlugin().renderPost(post); err != nil {
+		t.Fatal(err)
+	}
+	if err := NewChartJSPlugin().processPost(post); err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{
+		`&lt;img src=x onerror=alert(1)&gt; &#34; &amp;`,
+		`&lt;/script&gt;&lt;script&gt;alert(1)&lt;/script&gt;`,
+	} {
+		if !strings.Contains(post.ArticleHTML, want) {
+			t.Errorf("missing escaped text %q", want)
+		}
+	}
+	if strings.Contains(post.ArticleHTML, "<img") || strings.Contains(post.ArticleHTML, "<script>alert") {
+		t.Fatal("metadata injected active HTML")
+	}
+}
+
+func TestChartJSPlugin_DataDisplay(t *testing.T) {
+	for _, tc := range []struct {
+		name, site, override string
+		open                 bool
+	}{
+		{"default", "", "", true},
+		{"site collapsed", "collapsed", "", false},
+		{"chart collapsed", "open", `"data_display":"collapsed",`, false},
+		{"chart open", "collapsed", `"data_display":"open",`, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			for _, config := range []string{
+				`"type":"bar","data":{"labels":["One"],"datasets":[{"data":[1]}]}`,
+				`"type":"scatter"`,
+			} {
+				p := NewChartJSPlugin()
+				p.config.DataDisplay = tc.site
+				post := &models.Post{ArticleHTML: `<pre><code class="language-chartjs">{` + tc.override + config + `}</code></pre>`}
+				if err := p.processPost(post); err != nil {
+					t.Fatal(err)
+				}
+				if got := strings.Contains(post.ArticleHTML, `<details class="chartjs-data" open>`); got != tc.open {
+					t.Errorf("open = %v, want %v", got, tc.open)
+				}
+				if !strings.Contains(post.ArticleHTML, `<details class="chartjs-data"`) || strings.Contains(post.ArticleHTML, "data_display") {
+					t.Error("disclosure must remain reachable and metadata must be stripped")
+				}
+			}
+		})
+	}
+}
+
+func TestChartJSPlugin_InvalidFigureOptions(t *testing.T) {
+	for _, metadata := range []string{`"title":42`, `"caption":null`, `"data_display":"closed"`} {
+		post := &models.Post{ArticleHTML: `<pre><code class="language-chartjs">{` + metadata + `}</code></pre>`}
+		if err := NewChartJSPlugin().processPost(post); err != nil {
+			t.Fatal(err)
+		}
+		if !strings.Contains(post.ArticleHTML, "chartjs-error") || strings.Contains(post.ArticleHTML, "new Chart") {
+			t.Errorf("invalid metadata must produce an error, got %s", post.ArticleHTML)
+		}
+	}
+}
+
+func TestChartJSPlugin_ConfigureDataDisplay(t *testing.T) {
+	for _, value := range []interface{}{"open", "collapsed", "closed", false} {
+		m := lifecycle.NewManager()
+		m.Config().Extra = map[string]interface{}{"chartjs": map[string]interface{}{"data_display": value}}
+		p := NewChartJSPlugin()
+		err := p.Configure(m)
+		valid := value == "open" || value == "collapsed"
+		if (err == nil) != valid {
+			t.Fatalf("Configure(%v) error = %v", value, err)
+		}
+		if valid && p.Config().DataDisplay != value {
+			t.Errorf("Configure(%v) did not set data display", value)
+		}
+	}
+}
+
+func TestChartJSPlugin_LegacyMarkupUnchanged(t *testing.T) {
+	post := &models.Post{ArticleHTML: `<pre><code class="language-chartjs">{"type":"pie"}</code></pre>`}
+	if err := NewChartJSPlugin().processPost(post); err != nil {
+		t.Fatal(err)
+	}
+	want := `<div class="chartjs-container">
+  <canvas id="chartjs-1" hidden role="img" aria-label="Chart visualization; expand Chart data for exact values"></canvas>
+  <div id="chartjs-1-data"><details class="chartjs-data" open><summary>Chart configuration</summary><pre><code>{&#34;type&#34;:&#34;pie&#34;}</code></pre></details></div>
+</div>`
+	want += `
+<script src="/assets/vendor/chartjs/chart.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  (function() {
+    const ctx = document.getElementById('chartjs-1');
+    if (!ctx || typeof Chart !== 'function') return;
+    ctx.hidden = false;
+    try {
+      new Chart(ctx, {"type":"pie"});
+      const data = document.getElementById('chartjs-1-data');
+      if (data) data.open = false;
+    } catch (error) {
+      ctx.hidden = true;
+    }
+  })();
+});
+</script>`
+	if post.ArticleHTML != want {
+		t.Fatalf("legacy output changed:\ngot: %s\nwant: %s", post.ArticleHTML, want)
 	}
 }
