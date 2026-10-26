@@ -21,8 +21,8 @@ import (
 
 const (
 	assetMinifyRevision = "3"
-	assetMinifyVersion  = "v2.24.21"
-	assetParseVersion   = "v2.8.18"
+	assetMinifyVersion  = "v2.24.23"
+	assetParseVersion   = "v2.8.20"
 )
 
 var errUnsafeMinifyCacheLocation = errors.New("unsafe asset cache")
