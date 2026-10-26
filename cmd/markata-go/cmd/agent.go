@@ -543,12 +543,10 @@ func runAgentRemoveCommand(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// Agent status colors are emitted only for interactive terminals.
+// Agent status colors follow the shared CLI color controls for the output stream.
 func agentColor(code, message string) string {
-	if os.Getenv("NO_COLOR") != "" || os.Getenv("TERM") == triageDumb || currentCmd == nil || !streamIsTerminal(currentCmd.OutOrStdout()) {
-		return message
-	}
-	return "\x1b[" + code + "m" + message + "\x1b[0m"
+	enabled := currentCmd != nil && colorEnabledFor(streamIsTerminal(currentCmd.OutOrStdout()))
+	return colorize(message, "\x1b["+code+"m", enabled)
 }
 
 func agentGreen(format string, args ...any) string {
