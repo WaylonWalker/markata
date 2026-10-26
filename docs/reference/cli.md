@@ -258,6 +258,8 @@ Install the bundled `markata-go-site` skill into a repository.
 | `--dry-run` | Show what would be installed without writing files | `false` |
 
 With `--global` and no agent, an interactive terminal opens a fuzzy picker.
+The picker places the prompt below the results, like fzf, and colors the selection and matching characters.
+`--no-color` and `NO_COLOR` disable the colors.
 Type to filter, use Up/Down to navigate, and press Enter to select.
 Escape or Ctrl+C cancels without an installation.
 Scripts, `--no-input`, and `TERM=dumb` require an explicit agent, such as `--agent github-copilot`.

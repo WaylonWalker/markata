@@ -195,6 +195,8 @@ Optional flags:
 - When `--agent` is omitted for project installs, the command MUST default to the current agent when it can detect one from the environment. If no current agent can be detected, it MUST default to `universal`.
 - When `--global` is set without `--agent` or the legacy `--target`, `install` MUST open a fuzzy agent picker on interactive input and output terminals.
 - The picker MUST list supported agent identifiers and global directories. Typing MUST filter names by ordered character matches.
+- The picker MUST use fzf's default bottom-up layout: the prompt at the bottom, the first result nearest the prompt, and additional results above it. Up MUST move toward results above the current selection; Down MUST move toward the prompt.
+- The picker MUST color the selection, matched characters, and prompt with the active terminal theme. It MUST respect the CLI's color controls, including `--no-color` and `NO_COLOR`.
 - Enter MUST select an agent. Escape or Ctrl+C MUST cancel without writing files.
 - With `--no-input`, `TERM=dumb`, or non-terminal input or output, `--global` MUST require an explicit agent and show an example plus `agent list-agents` guidance.
 - Unknown agent names MUST remain errors and suggest close identifiers, including `github-copilot` for `copilot`. Suggestions MUST include short names, case-insensitive matches, and minor spelling errors without selecting an agent automatically.

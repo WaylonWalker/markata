@@ -45,8 +45,12 @@ For a global installation, open the fuzzy picker:
 markata agent install -g
 ```
 
+The picker uses an fzf-style layout: the prompt stays at the bottom, with results above it.
+The selected agent and matching characters use the terminal theme colors.
+
 Type an agent name or abbreviation, such as `copilot` or `ghcp`. Use the arrow keys to navigate. Press Enter to select.
 Escape or Ctrl+C cancels without an installation.
+`--no-color` or `NO_COLOR` disables the colors.
 
 For scripts, select the agent explicitly:
 
