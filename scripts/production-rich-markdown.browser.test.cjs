@@ -90,7 +90,7 @@ async function main() {
     check(state.errors===0,'No Mermaid syntax-error SVGs');
     check(state.arrows>=20,'Mermaid diagrams contain directional arrows');
     check(state.glossary.length>=3,'Server-rendered glossary links present');
-    check(state.glossary.every(a => /^\\/(?![<])|^https:\\/\\//.test(a.href||'')),'Glossary hrefs are valid local or HTTPS paths');
+    check(state.glossary.every(a => {const href=a.href||''; return (href.startsWith('/') && !href.includes('<') && !href.includes('&lt;')) || href.startsWith('https://');}),'Glossary hrefs are valid local or HTTPS paths');
     check(state.glossary.every(a => !a.preview || (()=>{try{JSON.parse(a.preview);return true}catch{return false}})()),'Glossary local previews contain valid JSON');
     check(state.emoji.every(Boolean),'Five supported emoji shortcodes render as emoji');
     check(state.nested>=1 && state.tables>=2,'Nested containers and semantic tables are present');
