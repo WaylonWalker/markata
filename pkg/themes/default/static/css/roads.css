@@ -145,6 +145,81 @@
 .road-entry-body li:has(> input[type="checkbox"]) { display: flex; gap: .55rem; align-items: baseline; margin: .15rem 0; }
 .road-entry-body input[type="checkbox"] { accent-color: var(--road-accent); }
 
+/* Leading Lucide icons opt individual entries into a rail badge. */
+.road-entry-dot.road-entry-icon {
+  top: -.2rem; width: 2.4rem; height: 2.4rem; z-index: 3;
+  display: grid; place-items: center;
+  color: var(--color-text-muted); background: var(--color-surface, var(--color-background));
+  transition: color .4s, background-color .4s, border-color .4s, box-shadow .4s;
+}
+.road-entry-icon .icon svg { display: block; width: 1.15rem; height: 1.15rem; }
+.road-entry.active .road-entry-icon {
+  color: var(--road-accent); border-color: var(--road-accent);
+  background: color-mix(in srgb, var(--road-accent) 14%, var(--color-background));
+  box-shadow: 0 0 0 .3rem color-mix(in srgb, var(--road-accent) 12%, transparent);
+}
+.road[data-road="editorial"]:has(.road-entry-icon) { --rail-x: 1.2rem; padding-left: 3.75rem; }
+.road[data-road="editorial"]:has(.road-entry-icon) .road-entry-dot { left: calc(var(--rail-x) - 3.75rem + 1px); }
+
+/* Story typography is opt-in; ordinary editorial roads keep their measure. */
+.road[data-road="editorial"].story .road-entry { padding-bottom: clamp(3.25rem, 5vw, 4.75rem); }
+.road[data-road="editorial"].story .road-entry:last-child { padding-bottom: 0; }
+.road[data-road="editorial"].story .road-entry-label { margin-bottom: .6rem; font-size: .74rem; }
+.road[data-road="editorial"].story .road-entry-heading {
+  max-width: 34ch; margin-bottom: .85rem;
+  font-size: clamp(1.4rem, 1.1rem + 1vw, 1.95rem);
+  letter-spacing: -.012em; text-wrap: balance;
+}
+.road[data-road="editorial"].story .road-entry-body { max-width: none; }
+.road[data-road="editorial"].story .road-entry-body > :is(p, ul, ol, blockquote) { max-width: 64ch; }
+.road[data-road="editorial"].story .road-entry-body > p:first-child {
+  font-size: 1.1em; line-height: 1.55; color: var(--color-text); text-wrap: pretty;
+}
+.road[data-road="editorial"].story .road-entry-body > :is(.md-columns, .md-card, .md-stat, figure, .chartjs-container) { margin-block: 2rem; }
+.road[data-road="editorial"].story .road-entry-body > :is(ul, ol) + * { margin-top: 1.5rem; }
+.road[data-road="editorial"].story .road-entry-body > .md-columns:has(> .md-stat) { max-width: 44rem; }
+.road[data-road="editorial"].story .road-entry-body > ul:not(:has(input[type="checkbox"])) {
+  display: grid; gap: .8rem; margin: 1.75rem 0 0; padding: 1.25rem 0 0;
+  list-style: none; border-top: 1px solid var(--color-border);
+}
+.road[data-road="editorial"].story .road-entry-body > ul:not(:has(input[type="checkbox"])) > li {
+  position: relative; margin: 0; padding-left: 1.4rem; font-size: .88em; line-height: 1.6;
+  color: var(--color-text-secondary, var(--color-text)); text-wrap: pretty;
+}
+.road[data-road="editorial"].story .road-entry-body > ul:not(:has(input[type="checkbox"])) > li::before {
+  content: ""; position: absolute; top: .68em; left: .2rem; width: .42rem; height: .42rem;
+  background: var(--road-accent); transform: rotate(45deg);
+}
+@media (min-width: 1100px) {
+  .road[data-road="editorial"].story .road-entry-body > ul:not(:has(input[type="checkbox"])):has(> li:nth-child(4)) {
+    max-width: none; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 2.75rem; row-gap: 1rem;
+  }
+}
+
+/* Observer-triggered entrances: content is visible even if JS stops running. */
+@media screen and (prefers-reduced-motion: no-preference) {
+  .road[data-road-ready][data-road="editorial"].reveal .road-entry-revealed {
+    animation: road-entry-reveal .6s ease both;
+  }
+  .road[data-road-ready][data-road="editorial"].reveal .road-entry-revealed:is(:target, :has(:target), :focus-within) {
+    animation: none;
+  }
+}
+@keyframes road-entry-reveal {
+  from { opacity: 0; transform: translateY(1rem); }
+  to { opacity: 1; transform: none; }
+}
+@media (max-width: 40rem) {
+  .road-entry-dot.road-entry-icon { width: 2.1rem; height: 2.1rem; }
+  .road-entry-icon .icon svg { width: 1rem; height: 1rem; }
+  .road[data-road="editorial"].story .road-entry-body > p:first-child { font-size: 1em; }
+}
+@media print {
+  .road[data-road-ready] { animation: none; }
+  .road-rail .road-marker { display: none; }
+  .road-entry { break-inside: avoid; }
+}
+
 /* Before roads.js builds a road, hide the raw list and reserve about the
  * final height (items x spacing), so the page does not flash or jump. If the
  * script fails, the failsafe animation shows the plain list. Without
@@ -184,7 +259,7 @@
 @media (prefers-reduced-motion: reduce) {
   .road[data-road-ready] { animation: none; }
   .road-card { opacity: 1 !important; transition: none; }
-  .road-dot, .road-title, .road-entry-dot, .road-entry-label { transition: none; }
+  .road-dot, .road-title, .road-entry-dot, .road-entry-dot.road-entry-icon, .road-entry-label { transition: none; }
   .road-rail .road-marker { display: none; }
 }
 

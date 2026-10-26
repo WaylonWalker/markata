@@ -114,6 +114,13 @@ milestones:
 
 See [Roads](/docs/guides/roads/) for all styles and options.
 
+For prose-led histories, use `::: road editorial story` with a heading per
+entry. A leading `:lucide-name:` becomes a rail badge; an emphasis-only
+paragraph directly after the heading becomes its eyebrow label. Add `reveal`
+(`::: road editorial story reveal`) for optional, reduced-motion-safe scroll
+entrances. `story` alone opts into larger type and diamond-bullet highlights;
+plain editorial roads keep their existing typography.
+
 ## Responsive article layouts (static HTML and CSS)
 
 Markata also provides **opt-in, article-scoped** layout classes built from the

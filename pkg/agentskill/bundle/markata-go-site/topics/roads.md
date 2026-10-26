@@ -64,6 +64,19 @@ We interviewed twelve readers.
 
 A road whose first child is a heading always uses the editorial style.
 
+For visual storytelling, use `::: road editorial story` (optionally add
+`reveal` for motion-safe scroll entrances). `story` opts into larger titles,
+lead paragraphs, generous spacing, and diamond-bullet highlight lists; lists
+with at least four items use two columns at viewport widths of 1100px or more.
+Both modifiers are independent and leave plain editorial typography unchanged.
+
+Start an entry heading with `:lucide-key-round:` (or another Lucide shortcode)
+for a decorative rail badge. Put an emphasis-only paragraph such as `*2026 Q3*`
+immediately after the heading for an eyebrow label. These work without
+`story`; a beside-link label takes precedence. Do not add page-local label or
+reveal JavaScript. Without JavaScript the original headings and content remain
+readable.
+
 ## Git
 
 List commits in order. After each link, write the branch name:
