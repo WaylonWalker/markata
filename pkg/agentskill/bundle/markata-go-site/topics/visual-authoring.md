@@ -111,12 +111,13 @@ Think in **reading beats**, not a component checklist.
 5. **Closing beat:** Plain-language consequence, uncertainty, or next
    action, with a status component only when it meaningfully signals risk.
 
-**Actual theme limitation:** Markata's default `components.css`
-sets directly nested H2–H6 headings inside `md-layout`, `md-box`
-and `md-card` to the same `--text-lg` size. Put real section-level
-H2 headings *outside* those containers to preserve typographic scale.
-Use brief H3 labels inside cards. More `#` characters inside a card
-will not create the larger hierarchy you might expect.
+**Typographic hierarchy:** Markata's visual containers now preserve
+distinct H2–H6 type sizes and weights. Still place real article sections
+under unboxed H2 headings, keeping brief H3/H4 labels inside choice
+cards. Use the zero-download `system` fontpack by default:
+`system-ui` body/headings and a native monospace stack for code.
+Expressive brush/poster fonts are opt-in for pages or branded sites,
+not the baseline for documentation, reports, and visual workflows.
 
 **Visual editing pass:**
 
