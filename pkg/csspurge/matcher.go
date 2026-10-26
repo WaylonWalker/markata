@@ -317,6 +317,12 @@ func DefaultPreservePatterns() []string {
 		"mermaid-pz*",
 		"svg-pan-zoom*",
 
+		// Article code-copy controls are inserted after HTML generation by
+		// code-chrome.js.  They do not exist in the build-time HTML scan;
+		// without this safeguard CSS purge strips their positioning and focus
+		// styles, causing the Copy button to overlap code in production.
+		"md-code-*",
+
 		// Roads (classes added by roads.js)
 		"road-*",
 
