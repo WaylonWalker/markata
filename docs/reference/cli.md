@@ -257,6 +257,13 @@ Install the bundled `markata-go-site` skill into a repository.
 | `--force` | Overwrite bundled skill files if they already exist | `false` |
 | `--dry-run` | Show what would be installed without writing files | `false` |
 
+With `--global` and no agent, an interactive terminal opens a fuzzy picker.
+Type to filter, use Up/Down to navigate, and press Enter to select.
+Escape or Ctrl+C cancels without an installation.
+Scripts, `--no-input`, and `TERM=dumb` require an explicit agent, such as `--agent github-copilot`.
+Unknown names show close matches without selecting one automatically.
+For example, `--agent copilot` suggests `--agent github-copilot`.
+
 ##### update
 
 Update the installed `markata-go-site` skill in place.

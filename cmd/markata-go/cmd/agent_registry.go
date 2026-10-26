@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"github.com/spf13/cobra"
 )
 
 const (
@@ -93,9 +95,40 @@ func normalizeAgentInstallTarget(name string) (agentInstallTarget, error) {
 	canonical := strings.ToLower(strings.TrimSpace(name))
 	target, ok := supportedAgentTargetsByName[canonical]
 	if !ok {
-		return agentInstallTarget{}, fmt.Errorf("unknown agent %q; see 'markata-go agent install --help' for supported values", name)
+		message := fmt.Sprintf("unknown agent %q.", name)
+		for _, suggestion := range suggestAgentNames(canonical) {
+			message += fmt.Sprintf("\nDid you mean --agent %s?", suggestion)
+		}
+		return agentInstallTarget{}, fmt.Errorf("%s\nRun 'markata-go agent list-agents' for supported values", message)
 	}
 	return target, nil
+}
+
+func suggestAgentNames(name string) []string {
+	command := &cobra.Command{Use: "agent", SuggestionsMinimumDistance: 2}
+	for _, target := range supportedAgentTargets {
+		for _, candidate := range append([]string{target.Name}, target.Aliases...) {
+			child := &cobra.Command{
+				Use: candidate,
+				Run: func(_ *cobra.Command, _ []string) {},
+			}
+			if len(name) >= 3 && strings.Contains(candidate, name) {
+				child.SuggestFor = []string{name}
+			}
+			command.AddCommand(child)
+		}
+	}
+	seen := make(map[string]bool)
+	var suggestions []string
+	for _, suggestion := range command.SuggestionsFor(name) {
+		canonical := supportedAgentTargetsByName[suggestion].Name
+		if !seen[canonical] {
+			suggestions = append(suggestions, canonical)
+			seen[canonical] = true
+		}
+	}
+	sort.Strings(suggestions)
+	return suggestions
 }
 
 func resolveAgentInstallTarget(agentFlag, legacyTarget string, global bool) (agentInstallTarget, error) {
@@ -104,7 +137,7 @@ func resolveAgentInstallTarget(agentFlag, legacyTarget string, global bool) (age
 		return agentInstallTarget{}, err
 	}
 	if global && !explicitSet {
-		return agentInstallTarget{}, fmt.Errorf("--global requires --agent so markata-go can choose the correct user skill directory")
+		return agentInstallTarget{}, fmt.Errorf("--global requires --agent without an interactive picker; use '--agent github-copilot' or run 'markata-go agent list-agents' for supported values")
 	}
 	if explicitSet {
 		return normalizeAgentInstallTarget(explicit)
