@@ -37,6 +37,30 @@ choice cards, a compact scorecard, or a comparison gallery). Lead with it.
 Keep the number of components proportional to the information; don't fabricate
 metrics or add cards merely to hit a quota.
 
+## Chart-first visualizations
+
+**Numeric data should get a genuine data visualization when it improves
+comprehension.** For explicit **bar chart**, **line chart**, **area chart**,
+**stacked chart**, **scatter plot**, **time-series**, **trend**, or
+**data dashboard** requests, read `topics/chart-authoring.md` before
+writing the page. Choose the encoding from the question and the scale of
+the data rather than treating Mermaid, cards, or tables as the only visuals.
+Use real `chartjs` fenced JSON for numerical charts, and
+`contribution-graph` for publishing calendar heatmaps.
+
+A composed data story can include one or two grounded KPI cards, a
+full-width primary chart, and quiet interpretation. The exact-value
+HTML table is produced by Markata's Chart.js fallback when ordinary
+labels and dataset arrays are aligned. Avoid inventing measurements
+or mixing incompatible units on the same quantitative axis.
+
+**Current visual limitation:** Chart.js's canvas and default colors do
+not automatically adapt to every site's light/dark/custom palette just
+because the surrounding Markdown containers use theme tokens. Check
+rendered contrast before claiming a polished chart. A native chart
+widget from a chat application is not an authorable Markata Markdown
+primitive.
+
 ## Choose the visualization that matches the information
 
 | User intent | First choice in a Markata post |
@@ -54,8 +78,10 @@ metrics or add cards merely to hit a quota.
 | Short feature explanation with icons | `md-feature`, `md-feature-icon`, `md-feature-body`, pinned `:lucide-...:` icons |
 | Teaching a composition | Rendered example plus `md-source` native details |
 
-Read `topics/rich-markdown.md`, `topics/roads.md`, and
-`topics/analytics-storytelling.md` as needed. For exact syntax check
+Read `topics/chart-authoring.md` for numerical plots,
+`topics/rich-markdown.md` for card layouts,
+`topics/roads.md` for flows, and
+`topics/analytics-storytelling.md` for site-derived data as needed. For exact syntax check
 `docs/guides/markdown-containers.md`, `markdown-metrics.md`, and
 `markdown-chart-fallback.md`. Inspect site overrides before adding new CSS.
 
@@ -247,23 +273,18 @@ and short prose cannot convey. Check runtime support first:
 `architecture-beta` is unavailable in Mermaid 10.9.5. Validate rendered
 output, not just fenced source.
 
-### Example: numerical chart with text fallback
+### Example: a chart-driven article
 
-~~~~markdown
-```chartjs
-{
-  "type": "bar",
-  "data": {
-    "labels": ["Build", "Review", "Deploy"],
-    "datasets": [
-      {"label": "Completed checks", "data": [5, 3, 0]}
-    ]
-  }
-}
-```
-~~~~
+Use `examples/chart-composition.md` for a complete generic one-file
+data story with valid Chart.js **bar**, **line**, and **doughnut** blocks.
+The page opens with two small, grounded overview cards, then gives
+each chart full reading width, with prose between charts and a
+build-time data disclosure for the exact values.
 
-Chart.js fenced blocks publish a semantic data-table fallback at build time. When JavaScript is unavailable or Chart.js fails, the reader still has the source values. Do not turn real-time dashboards into static claims without disclosing freshness.
+Read `topics/chart-authoring.md` for the choice between those charts,
+filled lines, horizontal and stacked bars, scatter plots, label and
+axis design, and accessible fallback behavior. Do not insert a chart
+merely to make a report look visual when no measured data exists.
 
 ## Compare renders, not just Markdown
 
