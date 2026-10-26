@@ -120,7 +120,7 @@
   "motif_url_schemes": ["http:", "https:", "data:image/svg+xml,"],
   "defaults": {
     "aesthetic": "minimal",
-    "fontpack": "brush",
+    "fontpack": "system",
     "heading_texture": {
       "color_mix": 0.45,
       "kind": "inherit",
