@@ -261,7 +261,7 @@ func runAgentWriteCommand(args []string, target agentInstallTarget, global bool,
 	if dryRun {
 		outlnf("%s would %s %d file(s) %s %s", agentYellow("Dry run:"), operation, len(installedFiles), prepositionForAgentOperation(operation), destination)
 	} else {
-		outlnf("%s %d file(s) %s %s", agentGreen(pastTenseForAgentOperation(operation)), len(installedFiles), prepositionForAgentOperation(operation), destination)
+		outlnf("%s %d file(s) %s %s", agentGreen("%s", pastTenseForAgentOperation(operation)), len(installedFiles), prepositionForAgentOperation(operation), destination)
 	}
 
 	for _, filePath := range installedFiles {
@@ -545,13 +545,21 @@ func runAgentRemoveCommand(cmd *cobra.Command, args []string) error {
 
 // Agent status colors are emitted only for interactive terminals.
 func agentColor(code, message string) string {
-	if os.Getenv("NO_COLOR") != "" || os.Getenv("TERM") == "dumb" || currentCmd == nil || !streamIsTerminal(currentCmd.OutOrStdout()) {
+	if os.Getenv("NO_COLOR") != "" || os.Getenv("TERM") == triageDumb || currentCmd == nil || !streamIsTerminal(currentCmd.OutOrStdout()) {
 		return message
 	}
 	return "\x1b[" + code + "m" + message + "\x1b[0m"
 }
 
-func agentGreen(format string, args ...any) string { return agentColor("32", fmt.Sprintf(format, args...)) }
-func agentYellow(format string, args ...any) string { return agentColor("33", fmt.Sprintf(format, args...)) }
-func agentRed(format string, args ...any) string { return agentColor("31", fmt.Sprintf(format, args...)) }
-func agentCyan(format string, args ...any) string { return agentColor("36", fmt.Sprintf(format, args...)) }
+func agentGreen(format string, args ...any) string {
+	return agentColor("32", fmt.Sprintf(format, args...))
+}
+func agentYellow(format string, args ...any) string {
+	return agentColor("33", fmt.Sprintf(format, args...))
+}
+func agentRed(format string, args ...any) string {
+	return agentColor("31", fmt.Sprintf(format, args...))
+}
+func agentCyan(format string, args ...any) string {
+	return agentColor("36", fmt.Sprintf(format, args...))
+}
