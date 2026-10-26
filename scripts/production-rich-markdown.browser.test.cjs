@@ -98,6 +98,28 @@ async function main() {
 
     const button=page.locator('button.md-code-copy').first();
     await button.focus();
+    report.copyGeometry=await page.evaluate(()=>{
+      const button=document.querySelector('button.md-code-copy');
+      const pre=button?.closest('pre');
+      const box=button?.getBoundingClientRect();
+      const parent=pre?.getBoundingClientRect();
+      const style=button&&getComputedStyle(button);
+      return {
+        position:style?.position, insetInlineEnd:style?.insetInlineEnd,
+        insetBlockStart:style?.insetBlockStart,
+        prePosition:pre&&getComputedStyle(pre).position,
+        preClass:pre?.className,
+        rect:box&&{top:box.top,right:box.right,left:box.left,bottom:box.bottom},
+        parent:parent&&{top:parent.top,right:parent.right,left:parent.left,bottom:parent.bottom},
+        codeCSSLinks:[...document.querySelectorAll('link[rel="stylesheet"]')].map(l=>l.href).filter(h=>/code\.|chroma\./.test(h)),
+      };
+    });
+    await page.screenshot({path:path.join(output,'code-copy-placement.png')});
+    check(report.copyGeometry.position==='absolute',
+      'Copy button must be anchored above code, not flow after it: '+JSON.stringify(report.copyGeometry));
+    check(report.copyGeometry.rect.top<report.copyGeometry.parent.top+80 &&
+      report.copyGeometry.rect.right>report.copyGeometry.parent.right-40,
+      'Copy button must sit at the top-right of its code block: '+JSON.stringify(report.copyGeometry));
     await page.evaluate(() => {
       window.__auditCopied=null;
       Object.defineProperty(navigator,'clipboard',{configurable:true,value:{
