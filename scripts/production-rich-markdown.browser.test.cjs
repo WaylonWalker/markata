@@ -98,6 +98,42 @@ async function main() {
 
     const button=page.locator('button.md-code-copy').first();
     await button.focus();
+    report.copyGeometry=await page.evaluate(()=>{
+      const button=document.querySelector('button.md-code-copy');
+      const pre=button?.closest('pre');
+      const box=button?.getBoundingClientRect();
+      const parent=pre?.getBoundingClientRect();
+      const style=button&&getComputedStyle(button);
+      return {
+        position:style?.position, insetInlineEnd:style?.insetInlineEnd,
+        insetBlockStart:style?.insetBlockStart,
+        prePosition:pre&&getComputedStyle(pre).position,
+        preClass:pre?.className,
+        rect:box&&{top:box.top,right:box.right,left:box.left,bottom:box.bottom},
+        parent:parent&&{top:parent.top,right:parent.right,left:parent.left,bottom:parent.bottom},
+        codeCSSLinks:[...document.querySelectorAll('link[rel="stylesheet"]')].map(l=>l.href).filter(h=>/code\.|chroma\./.test(h)),
+      };
+    });
+    report.codeCSS=await page.evaluate(async()=>{
+      const links=[...document.querySelectorAll('link[rel="stylesheet"]')]
+        .filter(l=>l.href.includes('/code.'));
+      return await Promise.all(links.map(async link=>{
+        const response=await fetch(link.href,{cache:'no-cache'});
+        const css=await response.text();
+        return {url:link.href,status:response.status,bytes:css.length,
+          hasCopySelector:css.includes('md-code-copy'),
+          hasPositionRule:css.includes('position: absolute')||css.includes('position:absolute'),
+          finalCSS:css.slice(-1200)};
+      }));
+    });
+    await page.screenshot({path:path.join(output,'code-copy-placement.png')});
+    check(report.codeCSS.some(asset => asset.status===200 && asset.hasCopySelector && asset.hasPositionRule),
+      'Published code stylesheet must retain code-copy positioning rules after CSS purge: '+JSON.stringify(report.codeCSS));
+    check(report.copyGeometry.position==='absolute',
+      'Copy button must be anchored above code, not flow after it: '+JSON.stringify(report.copyGeometry));
+    check(report.copyGeometry.rect.top<report.copyGeometry.parent.top+80 &&
+      report.copyGeometry.rect.right>report.copyGeometry.parent.right-40,
+      'Copy button must sit at the top-right of its code block: '+JSON.stringify(report.copyGeometry));
     await page.evaluate(() => {
       window.__auditCopied=null;
       Object.defineProperty(navigator,'clipboard',{configurable:true,value:{
@@ -141,6 +177,10 @@ async function main() {
           `Flowchart edges use readable theme text color at ${width}px/${theme.name}`);
         await page.screenshot({
           path:path.join(output,`${width}-${theme.name}.png`),animations:'disabled',
+        });
+        await page.locator('pre.mermaid svg').first().screenshot({
+          path:path.join(output,`mermaid-${width}-${theme.name}.png`),
+          animations:'disabled',
         });
       }
     }
