@@ -56,12 +56,12 @@ func TestMisplacedFeedFormatKeyAcrossFormats(t *testing.T) {
 	}{
 		{
 			name: "toml",
-			data: "[[markata-go.feeds]]\\nslug = 'published'\\n[markata-go.feeds.formats]\\nsitemap = true\\n[[markata-go.feeds]]\\nslug = 'draft'\\nsitemap = false\\n",
+			data: "[[markata-go.feeds]]\nslug = 'published'\n[markata-go.feeds.formats]\nsitemap = true\n[[markata-go.feeds]]\nslug = 'draft'\nsitemap = false\n",
 			format: FormatTOML,
 		},
 		{
 			name: "yaml",
-			data: "markata-go:\\n  feeds:\\n    - slug: published\\n      formats:\\n        sitemap: true\\n    - slug: draft\\n      sitemap: false\\n",
+			data: "markata-go:\n  feeds:\n    - slug: published\n      formats:\n        sitemap: true\n    - slug: draft\n      sitemap: false\n",
 			format: FormatYAML,
 		},
 		{
@@ -88,13 +88,13 @@ func TestMisplacedFeedFormatKeyAcrossFormats(t *testing.T) {
 func TestFeedFormatKeysAndExtensionFields(t *testing.T) {
 	for _, key := range []string{"html", "simple_html", "rss", "atom", "json", "markdown", "text", "sitemap"} {
 		t.Run(key, func(t *testing.T) {
-			_, err := LoadFromString("[[markata-go.feeds]]\\nslug = 'draft'\\n"+key+" = false\\n", FormatTOML)
+			_, err := LoadFromString("[[markata-go.feeds]]\nslug = 'draft'\n"+key+" = false\n", FormatTOML)
 			if err == nil || !strings.Contains(err.Error(), "formats."+key) {
 				t.Fatalf("error = %v; want formats.%s", err, key)
 			}
 		})
 	}
-	_, err := LoadFromString("[[markata-go.feeds]]\\nslug = 'draft'\\nplugin_custom = true\\n[markata-go.feeds.formats]\\nsitemap = false\\n", FormatTOML)
+	_, err := LoadFromString("[[markata-go.feeds]]\nslug = 'draft'\nplugin_custom = true\n[markata-go.feeds.formats]\nsitemap = false\n", FormatTOML)
 	if err != nil {
 		t.Fatalf("valid nested formats and extension field: %v", err)
 	}
@@ -104,10 +104,10 @@ func TestIncludedFeedFormatDiagnosticNamesSource(t *testing.T) {
 	dir := t.TempDir()
 	root := filepath.Join(dir, "markata-go.toml")
 	child := filepath.Join(dir, "feeds.toml")
-	if err := os.WriteFile(root, []byte("[markata-go]\\ninclude = ['feeds.toml']\\n"), 0o600); err != nil {
+	if err := os.WriteFile(root, []byte("[markata-go]\ninclude = ['feeds.toml']\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(child, []byte("[[markata-go.feeds]]\\nslug = 'draft'\\nsitemap = false\\n"), 0o600); err != nil {
+	if err := os.WriteFile(child, []byte("[[markata-go.feeds]]\nslug = 'draft'\nsitemap = false\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	_, err := loadResolvedConfig(root)
