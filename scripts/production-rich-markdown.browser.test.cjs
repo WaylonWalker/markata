@@ -127,6 +127,8 @@ async function main() {
       }));
     });
     await page.screenshot({path:path.join(output,'code-copy-placement.png')});
+    check(report.codeCSS.some(asset => asset.status===200 && asset.hasCopySelector && asset.hasPositionRule),
+      'Published code stylesheet must retain code-copy positioning rules after CSS purge: '+JSON.stringify(report.codeCSS));
     check(report.copyGeometry.position==='absolute',
       'Copy button must be anchored above code, not flow after it: '+JSON.stringify(report.copyGeometry));
     check(report.copyGeometry.rect.top<report.copyGeometry.parent.top+80 &&
