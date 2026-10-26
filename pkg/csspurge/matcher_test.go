@@ -233,6 +233,60 @@ func TestDefaultPurgePreservesInteractiveSidebarState(t *testing.T) {
 	}
 }
 
+// The article Copy control is created after HTML has been published.
+// Purging based exclusively on build-time HTML must retain the CSS rules
+// that position it, including the language-label and focus styles.
+func TestDefaultPurgePreservesRuntimeCodeChrome(t *testing.T) {
+	used := NewUsedSelectors()
+	used.Elements["pre"] = true
+	used.Elements["code"] = true
+	used.Classes["post-content"] = true
+
+	css := `@layer components {
+.post-content pre.md-code-enhanced { position: relative; }
+.post-content pre.md-code-enhanced .md-code-copy { position: absolute; inset-inline-end: .45rem; }
+.post-content pre.md-code-enhanced .md-code-copy:focus-visible { outline: 2px solid blue; }
+.post-content pre.md-code-enhanced[data-language]::before { inset-inline-end: 5.4rem; }
+.unused-css-test-only { color: red; }
+}`
+	out, _ := PurgeCSS(css, used, PurgeOptions{Preserve: DefaultPreservePatterns()})
+	for _, want := range []string{
+		"pre.md-code-enhanced { position: relative; }",
+		".md-code-copy { position: absolute;",
+		".md-code-copy:focus-visible",
+		"[data-language]::before",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("purge removed runtime code chrome rule %q: %s", want, out)
+		}
+	}
+	if strings.Contains(out, ".unused-css-test-only") {
+		t.Errorf("purge preserved unrelated unused selector: %s", out)
+	}
+}
+
+func TestDefaultPurgePreservesEditorialRoadEnhancements(t *testing.T) {
+	used := NewUsedSelectors()
+	used.Classes["road"] = true
+	used.Classes["story"] = true
+	used.Classes["reveal"] = true
+	css := `.road[data-road="editorial"] .road-entry-icon { color: inherit; }
+.road[data-road-ready].reveal .road-entry-revealed { animation: road-entry-reveal .6s; }
+.unused-road-test { color: red; }`
+	out, _ := PurgeCSS(css, used, PurgeOptions{
+		Preserve:           DefaultPreservePatterns(),
+		PreserveAttributes: DefaultPreserveAttributes(),
+	})
+	for _, want := range []string{".road-entry-icon", "[data-road-ready]", ".road-entry-revealed"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("purge removed editorial road selector %q: %s", want, out)
+		}
+	}
+	if strings.Contains(out, ".unused-road-test") {
+		t.Errorf("purge preserved unrelated selector: %s", out)
+	}
+}
+
 func TestDefaultPreservePatterns(t *testing.T) {
 	patterns := DefaultPreservePatterns()
 	if len(patterns) == 0 {
@@ -245,6 +299,7 @@ func TestDefaultPreservePatterns(t *testing.T) {
 		"dark", "light", "dark-mode", "light-mode",
 		"theme-*", "palette-*", // Theme class patterns
 		"sidebar--pinned", "sidebar--no-motion", "feed-sidebar--expanded",
+		"md-code-*", // Runtime article code-copy enhancement
 	}
 	patternSet := make(map[string]bool)
 	for _, p := range patterns {

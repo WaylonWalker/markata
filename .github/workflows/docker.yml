@@ -163,7 +163,7 @@ jobs:
         # SARIF upload because the workflow ref no longer exists. Keep upload
         # alerts on the durable default branch while still scanning every image.
         if: github.ref == 'refs/heads/main'
-        uses: github/codeql-action/upload-sarif@v4.39.0
+        uses: github/codeql-action/upload-sarif@v4.39.1
         with:
           sarif_file: "trivy-results.sarif"
           category: trivy-minimal
@@ -271,7 +271,7 @@ jobs:
 
       - name: Upload Trivy scan results (builder)
         if: github.ref == 'refs/heads/main'
-        uses: github/codeql-action/upload-sarif@v4.39.0
+        uses: github/codeql-action/upload-sarif@v4.39.1
         with:
           sarif_file: "trivy-results-builder.sarif"
           category: trivy-builder

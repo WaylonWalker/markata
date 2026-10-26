@@ -3,6 +3,9 @@
 `contract-v1.json` is the single authoring source for presentation IDs,
 variants, roles, defaults, bounds, and migration aliases.
 
+The default fontpack is `system`, which uses native browser/platform font
+stacks without downloads. Named packs such as `brush` remain explicit opt-ins.
+
 Use the contract version and its migration table before changing theme data.
 Add shared palette families and presentation dials here first. Do not add a
 second registry in a site or consumer.

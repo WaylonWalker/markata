@@ -1378,7 +1378,7 @@ When the picker is enabled, the fontpack plugin resolves every catalog pack
 `[data-fontpack="<name>"]` block per pack, and appends:
 
 ```css
-:root{--fontpack-default:"brush";--fontpack-manifest:'[{"name":"brush","displayName":"Brush","heading":"Knewave","body":"Space Grotesk","code":"DM Mono"},...]'}
+:root{--fontpack-default:"system";--fontpack-manifest:'[{"name":"system","displayName":"System","heading":"system-ui","body":"system-ui","code":"ui-monospace"},{"name":"brush","displayName":"Brush","heading":"Knewave","body":"Space Grotesk","code":"DM Mono"},...]'}
 ```
 
 Each manifest entry also carries `headingFont`, `headingWeight`, `bodyFont`,

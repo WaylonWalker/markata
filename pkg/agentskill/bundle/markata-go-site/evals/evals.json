@@ -96,6 +96,66 @@
       "prompt": "Turn these measured monthly publishing totals into a simple dashboard and chart-driven article in my Markata site. Make it visual but accessible and keep raw data visible when scripts are disabled.",
       "expected_output": "Uses existing chartjs fences with semantic build-time table fallback, a small clearly labeled KPI section, or contribution-graph for calendar-style activity when appropriate. Separates provided measurements from conjecture, validates Chart.js JSON and mobile/dark modes, and follows generic visualization intent rather than a platform-specific UI.",
       "files": []
+    },
+    {
+      "id": 17,
+      "prompt": "I am in a small command-line project that is not itself a Markata site. Create one self-contained Markdown document using the $markata-go-site visual design skill to explain its workflow: discover items, choose which to keep or archive, safely apply changes, and verify. Keep it readable and not crowded.",
+      "expected_output": "Creates exactly one Markata-flavored Markdown file in the existing repository without site scaffolding. Uses clear unboxed article title/short lead, one main flow representation, a small number of real-choice cards, and calm prose for other steps. Does not duplicate each road milestone as a feature row or cram instructions into every card. Documents the relevant destructive-action caution, avoids fabricated metrics, and explains that visually styled rendering requires Markata.",
+      "files": []
+    },
+    {
+      "id": 18,
+      "prompt": "The visual guide you wrote works, but it feels dense: a road of five steps, then five icon feature rows repeating those steps, plus multiple card grids and tightly packed H3 headings. Please improve the design's breathing room and typographic rhythm without removing needed information.",
+      "expected_output": "Recognizes repetition and small-card density as the defects without equating breathing room with eliminating helpful visuals. Preserves an orientation/overview, a road for sequence, distinct decision or side-route cards where useful, and quieter explanatory prose; trims repeated descriptions and improves spacing and heading hierarchy. Compares previous and new renders and does not invent metrics or claim an unperformed browser preview.",
+      "files": []
+    },
+    {
+      "id": 19,
+      "prompt": "Draw one exact dependency graph for my Markata article, including complex cross-links. I specifically want just a Mermaid diagram and a short accessibility explanation.",
+      "expected_output": "Respects the explicitly narrow single-diagram request: uses a Mermaid fenced diagram with runtime-supported syntax and nearby accessible text, without forcing a dashboard, icon card collection or unrelated visual components. Distinguishes one requested graph from a broadly requested visual post.",
+      "files": []
+    },
+    {
+      "id": 20,
+      "prompt": "Design a long-form, calm, accessible visual report. I care about hierarchy and whitespace more than quantity of widgets. Explain how to treat heading sizes and nested Markata containers, including a comparison that needs two cards.",
+      "expected_output": "Leads with a single visible title and concise deck (avoids duplicate frontmatter/template H1), keeps semantic H2 headings prominent, distinguishes contained heading sizes and weights supported by the current theme, and uses meaningful comparison cards separated from explanatory text. Relies on the system font default without custom fonts or arbitrary palette colors. Tests actual spacing/mobile wrapping when possible; uses visual variety rather than either all cards or all prose.",
+      "files": []
+    },
+    {
+      "id": 21,
+      "prompt": "I asked an agent to make a visual document. Version A has two orientation cards, a five-step road, readable icon-assisted explanations, decision cards, and side-route cards. The copy in cards is a bit dense. Version B has more blank space but removes the opening visual and side routes, leaving a road and a long plain numbered explanation. The second feels worse. Improve the document without inventing facts or making it complicated.",
+      "expected_output": "Treats Version B as a visual-design regression despite improved whitespace. Preserves the useful visual orientation and decision/side-route groupings that make Version A skimmable; shortens card copy and moves detailed instructions into prose, adds separation between visual groups, improves hierarchy and label sizes, and retains road as wayfinding without duplicating identical feature content. Does not enforce exact card quotas, introduce unrelated widgets, or simply restore every dense detail.",
+      "files": []
+    },
+    {
+      "id": 22,
+      "prompt": "Make a visual Markdown article for a Markata site. The frontmatter title is shown in the template header. The source includes an identical '# Title' at the start of the body, so it renders twice. Please improve the visual page with an overview, process, and key decision.",
+      "expected_output": "Avoids duplicate visible title by removing the redundant body H1 when the template already prints it, while keeping a compelling lead and prominent H2 sections. Uses distinct orientation, process and choice visual treatments without repeating content; maintains semantic headings and no-JS readability.",
+      "files": []
+    },
+    {
+      "id": 23,
+      "prompt": "Create a polished visual report from these monthly counts: Jan 4, Feb 6, Mar 3, Apr 8. I want it to feel like a chart-driven article, with the right graph and a small explanation. Use built-in Markata Markdown and don't make up values.",
+      "expected_output": "Chooses a true Chart.js `line` fenced JSON block (not Mermaid, a Markdown table alone, or unsupported chat-chart syntax); labels months in order, uses exactly supplied values with series units, a visible chart heading and brief grounded interpretation. Includes standard aligned label/data arrays for Markata's no-JS data table; adds small optional md-stat/card overview without crowding the chart, and does not pretend theme-aware canvas or browser validation without evidence.",
+      "files": []
+    },
+    {
+      "id": 24,
+      "prompt": "Show a clean bar chart comparing these categories and counts: Docs 12, Tests 18, Fixes 9. Give the chart enough room and make it accessible on mobile with JavaScript disabled.",
+      "expected_output": "Creates a fenced `chartjs` JSON bar chart with explicit labels, numeric dataset values, a quantitative axis beginning at zero, clear unit/period/caption, and an aligned semantic fallback table generated at build time. Avoids a tiny chart in a side-by-side narrow card, handcoded proprietary chat components, and unverifiable CSS palette claims; checks plugin setup, responsive axes and fallback behavior.",
+      "files": []
+    },
+    {
+      "id": 25,
+      "prompt": "Make a visual dashboard where one chart shows monthly trends and another shows category share. Use an area-style chart and a doughnut. Explain when those choices help and when a table is better.",
+      "expected_output": "Uses a Chart.js `line` dataset with `fill:true` for area and a `doughnut` chart for a small known whole, with correct JSON, labels, readable legends, units and coherent supplied or clearly illustrative values. Uses separate semantic sections and short text, avoids arbitrary duplicate graphs and inaccessible canvas-only explanations. Notes when precise rankings are better represented by bar charts or tables.",
+      "files": []
+    },
+    {
+      "id": 26,
+      "prompt": "I have an analytics page showing 130 posts, 700000 words, and 210 code blocks. Make one bar chart comparing these site totals.",
+      "expected_output": "Recognizes that posts, words and code blocks are incompatible units, and declines the misleading shared-axis bar chart. Recommends md-stat KPIs or separate meaningful same-unit charts, preserves exact counts, and explains the visualization choice without fabricating measurements.",
+      "files": []
     }
   ]
 }

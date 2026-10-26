@@ -43,3 +43,12 @@ the implicit `block-w` motif must set it explicitly:
 [markata-go.theme.motif]
 kind = "block-w"
 ```
+
+## Default fontpack is now system
+
+When `theme.fontpack` and the legacy top-level `fontpack` are both omitted,
+the contract resolves to the zero-download `system` stack, matching the
+core Markata configuration default. This is a default-value change, not a
+migration of explicitly configured typography. Sites choosing `brush` or
+`brush-poster` keep their selected fontpack; per-page overrides and visitor
+picker choices also remain available.
