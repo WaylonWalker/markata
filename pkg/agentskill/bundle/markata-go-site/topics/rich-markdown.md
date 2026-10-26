@@ -25,6 +25,10 @@ For broad requests to **visualize**, create a **visual post**, draw a **diagram*
    `md-source` native details, or code blocks with optional Copy controls.
 7. Validate render at mobile widths and with JavaScript disabled. Always
    show visible heading/label text when an icon communicates meaning.
+8. If the site enables CSS purge, ensure its preserve patterns include
+   `md-code-*` for the JS-injected Copy button. Built-in defaults now include
+   it; custom `preserve` lists replace the defaults. Verify the *published*
+   code.css still has `.md-code-copy` and `.md-code-enhanced` positioning.
 
 ## Icons alongside text
 
