@@ -182,10 +182,14 @@ func TestSiteSkill_EditorialVisualComposition(t *testing.T) {
 	}
 	src := string(data)
 
-	// The bundled example should demonstrate hierarchy and selective visual
-	// treatment, rather than replacing every paragraph with a decorated box.
+	// Source tests validate structure, not a design quota. A previous
+	// exact-one-feature/exact-two-cards assertion pushed agents toward
+	// under-designed walls of prose rather than balanced visual storytelling.
+	// Require distinct orientation, journey, choice and explanation roles.
 	for _, want := range []string{
 		"# From uncertainty to a clear decision",
+		"## The essentials",
+		"## The journey",
 		"## Understand",
 		"## Choose",
 		"## Act",
@@ -202,17 +206,8 @@ func TestSiteSkill_EditorialVisualComposition(t *testing.T) {
 			t.Errorf("editorial visual example is missing %q", want)
 		}
 	}
-	featureRows := 0
-	for _, line := range strings.Split(src, "\n") {
-		if strings.TrimSpace(line) == "::: md-feature" {
-			featureRows++
-		}
-	}
-	if featureRows != 1 {
-		t.Errorf("generic editorial example should have one selective feature row, got %d", featureRows)
-	}
-	if strings.Count(src, ":::: md-card") != 2 {
-		t.Error("generic editorial example should reserve cards for one meaningful comparison")
+	if strings.Count(src, ":::: md-card") < 2 {
+		t.Error("generic visual example lost its meaningful card-based orientation or choice")
 	}
 	if strings.Contains(strings.ToLower(src), "repo-steward") {
 		t.Error("visual composition example must remain repository-neutral")
