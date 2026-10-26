@@ -1,11 +1,43 @@
 # From uncertainty to a clear decision
 
-A useful process has four distinct moments: **understand**, **choose**,
-**act**, and **verify**.
+A good workflow shows readers **where they are**, **what choices matter**,
+and **how they'll know an action succeeded**. Keep the important visual
+landmarks without boxing every sentence.
 
-This example demonstrates editorial pacing in a single Markata Markdown
-document. The headings and plain prose are intentional parts of the design.
-Not every step needs a card.
+## The essentials
+
+::: md-columns {data-gap="lg"}
+
+:::: md-card
+
+::::: md-icon {data-size="lg"}
+:lucide-scan-search:
+:::::
+
+### Understand the situation
+
+Gather the facts needed for a decision. Keep the summary short enough
+that it is useful at a glance.
+
+::::
+
+:::: md-card
+
+::::: md-icon {data-size="lg"}
+:lucide-shield-check:
+:::::
+
+### Act with confidence
+
+Review consequences and have a way to verify the result before
+making a change.
+
+::::
+
+:::
+
+These cards orient the reader. The journey below answers a *different*
+question: what sequence should they follow?
 
 ## The journey
 
@@ -20,8 +52,8 @@ Not every step needs a card.
 
 ## Understand
 
-Begin with what matters, not a wall of details. Name the decision in one
-sentence, then collect only the evidence needed to make it.
+Start with the situation in one paragraph, then link to the evidence
+rather than pouring the entire investigation into a card.
 
 ::: md-feature
 
@@ -31,10 +63,11 @@ sentence, then collect only the evidence needed to make it.
 
 :::: md-feature-body
 
-### Make the important fact visible
+### Find the deciding fact
 
-Summarize the strongest evidence in ordinary language. Link to the detail
-rather than putting the whole investigation into the first screen.
+Highlight the strongest observation and explain what it changes.
+This expands the **meaning** of the first milestone rather than merely
+repeating its title.
 
 ::::
 
@@ -42,8 +75,8 @@ rather than putting the whole investigation into the first screen.
 
 ## Choose
 
-Some decisions are easy to undo. Others need safeguards before anyone acts.
-Give those paths space to stand apart.
+Not every action has the same consequences. Make the alternatives
+visibly distinct without turning their instructions into dense blocks.
 
 ::: md-columns {data-gap="lg"}
 
@@ -53,58 +86,55 @@ Give those paths space to stand apart.
 :lucide-route:
 :::::
 
-### Reversible route
+### Reversible option
 
-Prefer a small trial with a clear success condition.
+Start small, learn quickly, and retain an easy way back.
 
-**Next:** learn from the result before committing to a wider change.
+**Next:** check a concrete success condition.
 
 ::::
 
 :::: md-card
 
 ::::: md-icon {data-size="lg"}
-:lucide-shield-check:
+:lucide-lock-keyhole:
 :::::
 
-### High-impact route
+### High-impact option
 
-Agree on ownership, a verification plan, and a way back.
+Confirm ownership, prerequisites, and a recovery plan first.
 
-**Next:** proceed only after the required checks are understood.
+**Next:** proceed only after the safeguards are clear.
 
 ::::
 
 :::
 
-The right choice depends on consequences and evidence, not on which
-card has the more attractive icon.
-
 ## Act
 
-Turn the chosen path into one or two concrete actions. Put commands and
-implementation details *near the step where someone needs them*, not in
-every card or heading.
-
-Keep the main paragraph short. A supporting explanation can follow when
-readers need the why, and deeper reference material can be linked separately.
+Write the chosen action in a calm, readable paragraph. Put commands
+and important details here, not in tiny copy inside the choice cards.
 
 ## Verify
 
 ::: md-status {data-tone="caution"}
 
-**Not yet confirmed.** A completed action is different from an observed,
-successful outcome.
+**Unverified.** Completing an action is different from observing
+that it worked.
 
 :::
 
-Describe what was checked, what the result means, and what remains unknown.
+Explain what needs to be checked and what the reader should do
+if the result is not as expected.
 
-A strong ending identifies the next decision without repeating the
-entire process.
+## Continue from here
+
+End with a practical next action. A useful close creates a way forward
+rather than repeating every earlier milestone.
 
 ---
 
-*This is an illustrative document, not live operational status. The
-`md-*`, `road`, and `:lucide-*:` syntax becomes styled when rendered
-by Markata. A generic Markdown viewer may show container fences literally.*
+*Authoring note: This is illustrative content, not live operational
+status. Markata renders the `md-*`, `road`, and `:lucide-*:` syntax as a
+theme-aware document. When the site's post template already displays the
+article title, avoid repeating this example's H1 in the content body.*

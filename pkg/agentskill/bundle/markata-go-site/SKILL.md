@@ -1,6 +1,6 @@
 ---
 name: markata-go-site
-description: Create polished, static-first visual Markdown documents and visual design inside any repository, including single-file documents for non-Markata projects. Trigger for visual, visualize, visually represent, visual design, visual post, visual report, workflow, diagram, dashboard, infographic, scorecard, roadmap, timeline, architecture, flowchart, chart, graph, status board, and progress tracker. Design with editorial hierarchy, breathing room, restrained cards, responsive md-* containers, and purposeful visual emphasis. Avoid both Mermaid-plus-table-only output and dense walls of equal-weight widgets. Also use for Markata sites, configuration, rich Markdown, themes, templates, analytics, Web Awesome, builds, and performance.
+description: Create visually compelling, static-first Markdown documents with purposeful overview cards, roads, decision comparisons, supporting feature rows, typography and readable prose. Trigger for visual, visualize, visually represent, visual design, visual post, visual report, workflow, diagram, dashboard, infographic, scorecard, roadmap, timeline, architecture, flowchart, chart, graph, status board, and progress tracker. Balance rich visual storytelling with editorial breathing room; preserve distinct visual roles while trimming repetition, avoid Mermaid-plus-table-only output, walls of tiny cards, and plain numbered-text regressions. Supports single-file authoring inside non-Markata repositories. Also use for Markata sites, configuration, themes, templates, analytics, Web Awesome, builds, and performance.
 ---
 
 This skill helps an agent work inside a markata-go site repository without needing the markata-go source tree.
@@ -43,7 +43,9 @@ self-contained Markdown file with those native primitives, and explain
 that an actual Markata site is needed to preview its rich styling.
 Do not create project scaffolding as a prerequisite unless asked.
 See `examples/editorial-visual-composition.md` for a generic example
-of *restrained* composition; it is not tied to any repository or workflow.
+of *balanced* composition: an overview, a journey, decision cards, and
+quieter prose that each add different information. It is not tied to any
+repository or workflow.
 
 ## Editorial quality: breathing room and type rhythm
 
@@ -54,14 +56,17 @@ over-composition. Design the page as a reading experience:
 - Give the title and opening thesis a clear, unboxed place at the top.
   Let top-level `##` section headings live **outside** `md-layout` and cards,
   so the article's heading scale remains prominent.
-- Alternate visual emphasis and calm prose. A short introductory paragraph,
-  one useful visual group, and a concluding transition usually read better
-  than four consecutive groups of cards or feature rows.
-- Choose **one main visual representation** for a process: a road *or* a
-  feature-step sequence. Do not restate every road milestone as a matching
-  icon row unless the second treatment adds meaning.
-- Use cards for genuine choices and comparisons, not every ordinary step.
-  Long instructions should remain readable prose under descriptive headings.
+- Alternate visual emphasis and calm prose. Keep useful overview, navigation,
+  decision and exception treatments when each serves a **different job**.
+  Breathing room comes from spacing, shorter copy and clear hierarchy,
+  **not** from converting a strong visual article into mostly plain prose.
+- Choose one **primary navigation** for a process (for example a road).
+  It can coexist with overview cards, meaningful decision branches, and
+  occasional icon-feature explanations. Avoid *duplicating identical facts*;
+  don't ban multiple visual elements simply because a road is present.
+- Use cards for meaningful overview, choices, comparisons and distinct side
+  routes; they need not all be choices. Keep card copy concise and let the
+  longer instructions live in readable prose under clear section headings.
 - Use built-in `{data-gap="lg"}` on a `md-columns`, `md-grid`, or `md-layout`
   when grouped items need separation; this changes spacing **within** the
   component, not the distance between unrelated article sections.
@@ -72,13 +77,36 @@ over-composition. Design the page as a reading experience:
 - Emphasize by meaning: one dominant idea per section, clear H2 section
   labels, selective H3 card labels, and sparing status color. If everything is
   emphasized, nothing is.
-- Before delivering, read the page from top to bottom. If removing half the
-  cards and icons would make the story easier to scan, simplify. Do not
-  equate source-line count with visual spacing. When a preview is possible,
-  inspect actual rendered whitespace, line wraps, and mobile stacking.
+- Before delivering, inspect the page as a sequence of visual beats:
+  orientation, process, choices, details and next action (only where relevant).
+  If a revision becomes a single road and many nearly identical text blocks,
+  **restore** a useful visual grouping instead of calling it minimalism.
+  Prefer shortening card copy, separating groups and varying typography
+  before deleting well-functioning components. Preview rendered whitespace,
+  line wraps and mobile stacking where possible.
 
 These are *design judgments*, not quotas. Keep a requested single diagram
 as a single diagram, and preserve any user's explicit structure.
+
+### Revising an existing visual
+
+Compare the previous and revised renders **side by side**, not just the
+Markdown source. Identify what the old version explained visually and what
+the revision removed. Treat loss of distinct summary cards, option groups,
+or side-route navigation as a regression when those made the page easier
+to understand. Favor a **balanced** version: retain useful visual structure,
+edit repetitive labels, add space around groups, and reduce long passages
+inside narrow cards. Do not interpret "less dense" as "fewer visuals"
+by default.
+
+### Avoid duplicate visible titles
+
+Many Markata post templates render the title from frontmatter above
+the body. If the rendered page already has that visible H1, do not copy
+the same article title as the first body H1. Start with a short deck or
+the next section heading instead. A standalone Markdown file without
+template-generated title can still use its own H1. Check the *rendered*
+page, because both approaches are valid in different environments.
 
 ## Core Workflow
 

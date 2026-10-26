@@ -19,12 +19,14 @@ and prose is **not sufficient** when the user asked for visual *design*.
 Only choose a diagram-only or table-only answer when the user explicitly
 asks for that narrow format or when richer layout would obscure the facts.
 
-For a multi-stage process with decisions, start with **one primary story**
-(e.g. a `road steps` journey) and reserve `md-columns` / `md-card`
-for an important choice. Add `md-feature` only where a step benefits from a
-visually emphasized explanation. **Do not reproduce every road step a
-second time as an icon row.** Add Mermaid only when the precise network
-of edges or complex loops genuinely needs a graph. If the user asks for a
+For a multi-stage process, choose a **primary wayfinding element**
+(e.g. `road steps`), then preserve other *complementary* visual jobs:
+a compact overview that orients the reader, cards that compare decisions,
+and selected `md-feature` rows that explain a consequential action.
+**Different visual roles can coexist.** Do not reproduce every road
+milestone as a nearly identical icon row, but also do not remove an
+overview or options gallery merely because a road already exists.
+Add Mermaid only when precise graph topology genuinely matters. If the user asks for a
 single standalone Markdown file in a repo that is **not** a Markata site,
 still author the rich Markata Markdown in **that one file**, without creating
 an unnecessary site, config, CSS, or JS. Explain that Markata is required to
@@ -58,11 +60,13 @@ Read `topics/rich-markdown.md`, `topics/roads.md`, and
 `markdown-chart-fallback.md`. Inspect site overrides before adding new CSS.
 
 **Generic exemplar:** `examples/editorial-visual-composition.md` shows
-a single Markdown document with a strong unboxed title, a short lead,
-one road, one feature row, one meaningful card pair, plain editorial
-paragraphs, and one status notice. Treat it as a *pacing reference*, not
-a mandatory component recipe. It deliberately avoids invented
-measurements, project-specific jargon, and custom frontend frameworks.
+a single Markdown document with an introductory pair of orientation
+cards, a road for the sequence, another pair of cards for decisions,
+one icon feature for a key explanation, ordinary prose for details,
+and a meaningful status notice. The two card groups answer **different
+questions**, rather than duplicating the road. Treat it as a *pacing
+reference*, not a mandatory recipe. It avoids invented measurements,
+project-specific jargon, and custom frontend frameworks.
 
 ## Compose an editorially paced visual post
 
@@ -70,10 +74,13 @@ measurements, project-specific jargon, and custom frontend frameworks.
 
 - Begin with a clear, *unboxed* title and short lead. Establish what matters
   before presenting a card, meter, or process diagram.
-- Use one dominant visual grammar for the main story. Let other content be
-  ordinary paragraphs, a compact list, or whitespace-separated sections.
-- Reserve a visually prominent box for a significant comparison, choice,
-  warning, or quantified fact. Do not box ordinary filler.
+- Use one main **navigation** or storytelling grammar, but retain
+  complementary orientation, comparison, or exception views where they
+  make the information easier to understand. Not every visual is a repeat.
+- Reserve visually prominent boxes for **distinct purposes**: short
+  summary/orientation, an actual choice, a warning, a supporting route, or
+  grounded measurement. Do not box filler or turn substantial instructions
+  into tiny cards.
 - Give each section one idea, with meaningful H2 headings and short
   introductions. Use H3 for subordinated card or step labels, not as the
   only headline size across the page.
@@ -81,14 +88,18 @@ measurements, project-specific jargon, and custom frontend frameworks.
   feature row for every step adds density without adding information.
 - A diagram or table may supplement the composition; neither is a
   substitute for a designed article when the user asked for that.
-- **Density check:** if cards and feature rows run continuously from top
-  to bottom, remove or merge some. A few strong moments beat a grid of
-  equally weighted components.
+- **Density check:** when visual groups run together, shorten the copy,
+  separate them with a calm reading beat, improve labels, and group related
+  items before deleting anything. A few strong moments beat equal-weight
+  decoration, but a wall of numbered prose is not automatically better.
 - **Hierarchy check:** close the page and recall the three most important
   things. If no distinction stands out, simplify the layout and wording.
 
 1. **Lead with the answer.** Explain what is done, what is risky, and what should happen next before decorating.
-2. **Give a calm overview.** A sentence or two often beats a metric-card row. Use two to four cards only when there are meaningful distinct values or categories.
+2. **Give a compelling overview.** Use a short lead plus compact cards or a
+   feature pair when readers benefit from seeing two distinct responsibilities,
+   choices or categories at a glance. Don't invent metrics or force a card row
+   where a sentence communicates the same information.
 3. **Show relationships.** Prefer a progress list, before/after comparison, timeline, table, or diagram that answers a concrete question.
 4. **Surface unresolved work.** Name the owner, blocker, verification state, next action, and evidence location. Never color "pending" green.
 5. **End with action.** Finish a progress report with a prioritized next-step list and a handoff; include links to PRs, builds, or screenshots.
@@ -101,13 +112,15 @@ Think in **reading beats**, not a component checklist.
 1. **Opening beat:** A strong H1, a short deck/intro paragraph, and space
    before the first layout. Avoid an H2 nested immediately inside a
    bordered `md-layout` wrapper just because the container exists.
-2. **Primary visual beat:** One useful road, chart, choice pair, or scorecard.
-   Use `{data-gap="lg"}` on supported `md-layout`, `md-columns`,
-   `md-grid`, or `md-stack` when their *children* need breathing room.
+2. **Visual orientation beat:** A small overview or two-part comparison
+   can orient the reader. A road or chart may then show *sequence* or
+   *measurements* rather than restating those same cards. Use
+   `{data-gap="lg"}` on supported layouts when their children need space.
 3. **Quiet explanatory beat:** Simple H2 + paragraph, perhaps a short
    list, without decoration. Let the eye rest between visual clusters.
-4. **Secondary beat:** An optional compact visual that answers a
-   *different* question, not the same process repeated.
+4. **Secondary beat:** Keep a compact visual if it answers a *different*
+   question—such as which route to take after the road shows the sequence.
+   Distinguish visual redundancy from legitimate information structure.
 5. **Closing beat:** Plain-language consequence, uncertainty, or next
    action, with a status component only when it meaningfully signals risk.
 
@@ -144,8 +157,9 @@ share the same size or boldness.
 - Use short card titles and one concise paragraph before details.
   If a card needs multiple dense paragraphs and several commands,
   move implementation detail into its own prose section.
-- Avoid placing a `road steps`, a full row of icon features, and a
-  second group of step cards back to back.
+- Avoid placing a road, identical icon-feature recap, and identical
+  step-card recap back to back. A road plus cards for a **separate decision**
+  or **useful side routes** is a stronger design, not automatically clutter.
 - Use whitespace between independent sections rather than a
   `md-divider` after every paragraph. Source blank lines ensure valid
   Markdown but do not guarantee rendered breathing room: preview.
@@ -213,17 +227,19 @@ Choose `md-progress` for a bounded task process; choose `md-meter` for a real me
 ### Example: a spacious visual story
 
 Read `examples/editorial-visual-composition.md` for a complete,
-repository-neutral, one-file Markdown example. Notice what is **not**
-decorated: the title, intro, H2 section headings, and two explanatory
-sections are ordinary text. The main journey uses one road; a single
-two-card comparison highlights the meaningful fork, and only one icon
-feature row emphasizes a central fact. The final status notice is
-reserved for an actual caution.
+repository-neutral, one-file Markdown example. Notice the **different
+jobs**: orientation cards tell readers what matters; the road shows
+sequence; decision cards compare possible routes; one icon feature
+explains a consequential moment; ordinary paragraphs carry detailed
+instructions. The page has both visual anchors **and** room to read.
+The final status notice is reserved for an actual caution.
 
-**Design exercise:** compare that restrained page with one that repeats
-every road milestone as an icon feature, every detail as a card, and
-every conclusion as a colored box. Prefer the former when the user asks
-for breathing room or better typography.
+**Design exercise:** compare two revisions. One may be too dense because
+it repeats each road milestone as a card; another may be too flat because
+it removed the overview, meaningful comparison, and useful wayfinding.
+The strongest revision preserves the distinct visual jobs and edits
+spacing, copy length, and typography instead of collapsing the document
+into a numbered outline.
 
 **Mermaid is optional**, not the default hero for a multi-section visual
 post. Use it for exact connections or complicated loops that a road
@@ -249,6 +265,26 @@ output, not just fenced source.
 
 Chart.js fenced blocks publish a semantic data-table fallback at build time. When JavaScript is unavailable or Chart.js fails, the reader still has the source values. Do not turn real-time dashboards into static claims without disclosing freshness.
 
+## Compare renders, not just Markdown
+
+When improving an existing visual document, identify three things in the
+previous render: its **strongest visual orientation**, its **clearest
+decision/comparison**, and the **content that is genuinely repetitive**.
+Do not delete the first two while fixing the third. Side-by-side preview
+helps identify a regression that source-based checks will miss: a more
+spacious document can still be a less helpful visual document.
+
+Check the page at its actual reading width, not only at a full browser
+window. Narrow columns can make otherwise concise card copy wrap densely.
+Before removing cards, try shorter titles, shorter card descriptions,
+a more readable column measure, and spacing between separate groups.
+
+**Title ownership:** Check whether the Markata template already renders the
+frontmatter title above the article. If so, avoid repeating the same H1
+in the Markdown body. A standalone file without template title chrome
+may use its own H1. The rendered page should not show two identical
+adjacent article titles.
+
 ## Review the generated document before delivering
 
 For an explicitly **visual** assignment, inspect the actual output, not just
@@ -261,8 +297,11 @@ file work as an authorable Markata document even outside a Markata site?
 
 If the only "visual" elements are a Mermaid block and a Markdown table,
 **revise the artifact** before declaring completion—unless a narrow diagram
-or table was explicitly requested. Equally, if every paragraph is inside a
-card or icon row, **remove components** to restore hierarchy.
+or table was explicitly requested. If every paragraph is inside a card,
+move detailed prose out while retaining useful overview and comparison
+cards. If a redesign leaves only a road and long numbered paragraphs,
+consider restoring compact orientation and choice visuals. Neither extreme
+is the desired outcome.
 For a one-file authoring task outside a Markata site, explain how it could
 be previewed with Markata and avoid claiming an actual visual inspection
 that was not performed. If a Markata binary is available and a preview is
