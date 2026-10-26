@@ -24,8 +24,8 @@ func evaluateVoid(expression string) chromedp.Action[chromedp.Void] {
 	return chromedp.Evaluate[chromedp.Void](expression, chromedp.EvalAwaitPromise)
 }
 
-func pollVoid(predicate string, opts ...chromedp.PollOption) chromedp.Action[chromedp.Void] {
-	return chromedp.Poll[chromedp.Void](predicate, opts...)
+func pollVoid(predicate string) chromedp.Action[chromedp.Void] {
+	return chromedp.Poll[chromedp.Void](predicate)
 }
 
 func setDeviceMetricsOverride(width, height int64, scale float64, mobile bool) chromedp.Action[chromedp.Void] {

@@ -21,7 +21,3 @@ func evaluateInto[T any](expression string, result *T) chromedp.Action[chromedp.
 func evaluateVoid(expression string) chromedp.Action[chromedp.Void] {
 	return chromedp.Evaluate[chromedp.Void](expression, chromedp.EvalAwaitPromise)
 }
-
-func pollVoid(predicate string, opts ...chromedp.PollOption) chromedp.Action[chromedp.Void] {
-	return chromedp.Poll[chromedp.Void](predicate, opts...)
-}

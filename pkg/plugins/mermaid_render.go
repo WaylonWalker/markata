@@ -319,7 +319,7 @@ func downloadMermaidJSSource(ctx context.Context, version string, client *http.C
 	}
 
 	url := "https://cdn.jsdelivr.net/npm/mermaid@" + version + "/dist/mermaid.min.js"
-	request, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
 	if err != nil {
 		return "", fmt.Errorf("prepare MermaidJS download request: %w", err)
 	}
@@ -329,7 +329,9 @@ func downloadMermaidJSSource(ctx context.Context, version string, client *http.C
 	}
 	defer response.Body.Close()
 	if response.StatusCode != http.StatusOK {
-		_, _ = io.Copy(io.Discard, response.Body)
+		if _, err := io.Copy(io.Discard, response.Body); err != nil {
+			return "", fmt.Errorf("download MermaidJS: HTTP status %d (read error response: %w)", response.StatusCode, err)
+		}
 		return "", fmt.Errorf("download MermaidJS: HTTP status %d", response.StatusCode)
 	}
 
