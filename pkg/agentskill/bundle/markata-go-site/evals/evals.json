@@ -132,6 +132,30 @@
       "prompt": "Make a visual Markdown article for a Markata site. The frontmatter title is shown in the template header. The source includes an identical '# Title' at the start of the body, so it renders twice. Please improve the visual page with an overview, process, and key decision.",
       "expected_output": "Avoids duplicate visible title by removing the redundant body H1 when the template already prints it, while keeping a compelling lead and prominent H2 sections. Uses distinct orientation, process and choice visual treatments without repeating content; maintains semantic headings and no-JS readability.",
       "files": []
+    },
+    {
+      "id": 23,
+      "prompt": "Create a polished visual report from these monthly counts: Jan 4, Feb 6, Mar 3, Apr 8. I want it to feel like a chart-driven article, with the right graph and a small explanation. Use built-in Markata Markdown and don't make up values.",
+      "expected_output": "Chooses a true Chart.js `line` fenced JSON block (not Mermaid, a Markdown table alone, or unsupported chat-chart syntax); labels months in order, uses exactly supplied values with series units, a visible chart heading and brief grounded interpretation. Includes standard aligned label/data arrays for Markata's no-JS data table; adds small optional md-stat/card overview without crowding the chart, and does not pretend theme-aware canvas or browser validation without evidence.",
+      "files": []
+    },
+    {
+      "id": 24,
+      "prompt": "Show a clean bar chart comparing these categories and counts: Docs 12, Tests 18, Fixes 9. Give the chart enough room and make it accessible on mobile with JavaScript disabled.",
+      "expected_output": "Creates a fenced `chartjs` JSON bar chart with explicit labels, numeric dataset values, a quantitative axis beginning at zero, clear unit/period/caption, and an aligned semantic fallback table generated at build time. Avoids a tiny chart in a side-by-side narrow card, handcoded proprietary chat components, and unverifiable CSS palette claims; checks plugin setup, responsive axes and fallback behavior.",
+      "files": []
+    },
+    {
+      "id": 25,
+      "prompt": "Make a visual dashboard where one chart shows monthly trends and another shows category share. Use an area-style chart and a doughnut. Explain when those choices help and when a table is better.",
+      "expected_output": "Uses a Chart.js `line` dataset with `fill:true` for area and a `doughnut` chart for a small known whole, with correct JSON, labels, readable legends, units and coherent supplied or clearly illustrative values. Uses separate semantic sections and short text, avoids arbitrary duplicate graphs and inaccessible canvas-only explanations. Notes when precise rankings are better represented by bar charts or tables.",
+      "files": []
+    },
+    {
+      "id": 26,
+      "prompt": "I have an analytics page showing 130 posts, 700000 words, and 210 code blocks. Make one bar chart comparing these site totals.",
+      "expected_output": "Recognizes that posts, words and code blocks are incompatible units, and declines the misleading shared-axis bar chart. Recommends md-stat KPIs or separate meaningful same-unit charts, preserves exact counts, and explains the visualization choice without fabricating measurements.",
+      "files": []
     }
   ]
 }

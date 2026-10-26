@@ -5,10 +5,14 @@ roadmap feature rows, responsive comparisons, diagrams, status metrics,
 sortable tables, code copy, checklists, chart fallbacks, or source disclosures.
 
 For broad requests to **visualize**, create a **visual post**, draw a
-**diagram**, or build a **dashboard**, also read
-`topics/visual-authoring.md` to compose a responsive article layout from
-the information being communicated. The skill is vendor-neutral; do not
-assume any particular chat interface or custom component framework.
+**diagram**, or build a **dashboard**, read
+`topics/visual-authoring.md` to compose a responsive article layout.
+When the content involves **bar charts, lines, trends, data comparisons,
+distributions or scatter plots**, also read `topics/chart-authoring.md`
+and author actual `chartjs` fenced JSON. Numerical charts complement
+`md-stat`, cards, and prose rather than being replaced by them.
+The skill is vendor-neutral: do not copy proprietary chat-chart syntax
+into a Markata Markdown page.
 
 **A visually designed article is neither Mermaid-plus-table nor
 a wall of cards, but a balanced sequence of useful visual roles.** A workflow
@@ -45,12 +49,15 @@ frontmatter.title, avoid duplicating it as the first body H1.
    `md-feature-icon` and `md-feature-body`.
 5. For data, prefer semantic Markdown tables, `md-status`, `md-stat`,
    `md-meter`, `md-progress` and `md-delta`.
-6. For interactive behavior, use existing opt-ins: Chart.js fences with
+6. For measured trends and category comparisons, use `chartjs` blocks rather
+   than Mermaid or a static diagram. Read `topics/chart-authoring.md`
+   for valid bar/line/stacked/doughnut examples, scales, and fallbacks.
+7. For interactive behavior, use existing opt-ins: Chart.js fences with
    build-time table fallback, `md-checklist` with optional local persistence,
    `md-source` native details, or code blocks with optional Copy controls.
-7. Validate render at mobile widths and with JavaScript disabled. Always
+8. Validate render at mobile widths and with JavaScript disabled. Always
    show visible heading/label text when an icon communicates meaning.
-8. If the site enables CSS purge, ensure its preserve patterns include
+9. If the site enables CSS purge, ensure its preserve patterns include
    `md-code-*` for the JS-injected Copy button. Built-in defaults now include
    it; custom `preserve` lists replace the defaults. Verify the *published*
    code.css still has `.md-code-copy` and `.md-code-enhanced` positioning.

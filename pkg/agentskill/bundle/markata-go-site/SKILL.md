@@ -1,6 +1,6 @@
 ---
 name: markata-go-site
-description: Create visually compelling, static-first Markdown documents with purposeful overview cards, roads, decision comparisons, supporting feature rows, typography and readable prose. Trigger for visual, visualize, visually represent, visual design, visual post, visual report, workflow, diagram, dashboard, infographic, scorecard, roadmap, timeline, architecture, flowchart, chart, graph, status board, and progress tracker. Balance rich visual storytelling with editorial breathing room; preserve distinct visual roles while trimming repetition, avoid Mermaid-plus-table-only output, walls of tiny cards, and plain numbered-text regressions. Supports single-file authoring inside non-Markata repositories. Also use for Markata sites, configuration, themes, templates, analytics, Web Awesome, builds, and performance.
+description: Create visually compelling, static-first Markdown documents with purposeful charts (bar, line, area, stacked, doughnut, scatter), overview cards, roads, decision comparisons, supporting feature rows, typography and readable prose. Trigger for visual, visualize, visualization, visual design, visual post, chart, charts, plot, graph, trend, data visualization, analytics, dashboard, scorecard, roadmap, timeline, flowchart, diagram, or progress tracker. Select charts by data question and use real Chart.js fenced JSON with accessible no-JS table fallbacks; preserve visual storytelling and breathing room. Supports Markata site work and single-file rich Markdown authoring in other repositories, themes, templates, configuration, and builds.
 ---
 
 This skill helps an agent work inside a markata-go site repository without needing the markata-go source tree.
@@ -22,7 +22,7 @@ Before making changes:
 - inspect existing `wa-*` usage, `webawesome` config, and template asset guards before adding component code or new includes
 - inspect existing analytics pages, metrics partials, and chart code blocks before inventing a new data story pattern
 - check built-in `:lucide-name:` shortcodes and `md-*` article layout containers before adding any icon library or custom UI components
-- for visual/diagram/dashboard requests, read `topics/visual-authoring.md` and compose a visual page rather than automatically supplying only Mermaid and a table; retain a no-JavaScript text fallback
+- for visual/diagram/dashboard requests, read `topics/visual-authoring.md` to select the appropriate visual; for bar, line, time-series, scatter or data charts also read `topics/chart-authoring.md` and author real `chartjs` JSON with accessible no-JS fallback
 - prefer current command output and files over older examples or assumptions
 - when the site is minimal or brand new, use the topic files in this skill as the default markata-go playbook
 
@@ -42,10 +42,28 @@ For a single file requested in a non-Markata repository, deliver a single
 self-contained Markdown file with those native primitives, and explain
 that an actual Markata site is needed to preview its rich styling.
 Do not create project scaffolding as a prerequisite unless asked.
-See `examples/editorial-visual-composition.md` for a generic example
-of *balanced* composition: an overview, a journey, decision cards, and
-quieter prose that each add different information. It is not tied to any
-repository or workflow.
+See `examples/editorial-visual-composition.md` for generic visual storytelling,
+and `examples/chart-composition.md` for a chart-driven article with actual
+Chart.js source blocks. Neither is project-specific boilerplate.
+
+## Chart-first data visualization
+
+A request to visualize **measurements** needs a statistical encoding,
+not automatically a Mermaid diagram, an ordinary table, or a gallery of
+cards. Read `topics/chart-authoring.md`, choose the form from the
+question (bar for category comparison, line for trends, etc.), and create
+a real fenced `chartjs` JSON block. Include a meaningful title/period/
+unit, source-grounded numbers, brief interpretation, and the built-in
+no-JavaScript data disclosure. Charts may anchor a document with
+complementary summary cards and prose; avoid making a chart too small
+inside a narrow card.
+
+Markata's Chart.js canvas is **not automatically theme-adaptive**. Test
+colors, axes, legends, dark/light/custom palettes, and narrow screens
+before claiming a polished published result. If the user wants
+theme-responsive canvases, filters or richer interactions not already
+supported, identify that as renderer work rather than inventing Markdown
+syntax. Do not claim source-code tests alone demonstrate visual quality.
 
 ## Editorial quality: breathing room and type rhythm
 
@@ -142,6 +160,7 @@ Read only the topic files relevant to the task:
 - `topics/writing-frontmatter.md`
 - `topics/rich-markdown.md`
 - `topics/visual-authoring.md`
+- `topics/chart-authoring.md`
 - `topics/roads.md`
 - `topics/cli-usage.md`
 - `topics/build-deployment.md`
@@ -170,7 +189,8 @@ Use these as starter material for first sites or when a repo has no local exampl
 - `examples/templates/base.html`
 - `examples/templates/post.html`
 - `examples/templates/feed.html`
-- `examples/editorial-visual-composition.md` (generic editorial rhythm; no project-specific scaffold)
+- `examples/editorial-visual-composition.md` (generic editorial rhythm)
+- `examples/chart-composition.md` (generic bar, line, and doughnut chart article)
 
 ## Eval Files
 
@@ -197,6 +217,7 @@ If the repository is a very small or first-time site and does not yet have clear
 - Content creation: `topics/writing-frontmatter.md`
 - Icons, feature cards, layouts, tables, charts, or other Rich Markdown UI: `topics/rich-markdown.md`
 - Visual, visualize, visual post, diagram, dashboard, scorecard, status board or infographic: `topics/visual-authoring.md`
+- Bar, line, area, stacked, pie, doughnut, scatter, time series, charts or plotted data: `topics/chart-authoring.md`
 - Timelines, roadmaps, step paths, or branch histories in a post: `topics/roads.md`
 - Analytics pages or metrics storytelling: `topics/analytics-storytelling.md`
 - Config debugging: `topics/configuration.md`

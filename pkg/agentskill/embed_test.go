@@ -25,6 +25,7 @@ func TestSiteSkill_ContainsAllRequiredTopics(t *testing.T) {
 		"topics/writing-frontmatter.md",
 		"topics/rich-markdown.md",
 		"topics/visual-authoring.md",
+		"topics/chart-authoring.md",
 		"topics/cli-usage.md",
 		"topics/build-deployment.md",
 		"topics/faster-builds.md",
@@ -86,6 +87,7 @@ func TestSiteSkill_ContainsExampleFiles(t *testing.T) {
 		"examples/templates/post.html",
 		"examples/templates/feed.html",
 		"examples/editorial-visual-composition.md",
+		"examples/chart-composition.md",
 	}
 
 	skillFS, err := SiteSkill()
