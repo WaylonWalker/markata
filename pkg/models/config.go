@@ -1586,7 +1586,7 @@ type MermaidConfig struct {
 	// CLIConfig contains settings for CLI mode (npm mmdc)
 	CLIConfig *CLIRendererConfig `json:"cli" yaml:"cli" toml:"cli"`
 
-	// ChromiumConfig contains settings for Chromium mode (mermaidcdp)
+	// ChromiumConfig contains settings for Chromium mode.
 	ChromiumConfig *ChromiumRendererConfig `json:"chromium" yaml:"chromium" toml:"chromium"`
 }
 
@@ -1599,7 +1599,7 @@ type CLIRendererConfig struct {
 	ExtraArgs string `json:"extra_args" yaml:"extra_args" toml:"extra_args"`
 }
 
-// ChromiumRendererConfig configures the Chromium-based renderer (mermaidcdp)
+// ChromiumRendererConfig configures the Chromium-based renderer.
 type ChromiumRendererConfig struct {
 	// BrowserPath is the path to the Chrome/Chromium binary. If empty, auto-detects.
 	BrowserPath string `json:"browser_path" yaml:"browser_path" toml:"browser_path"`

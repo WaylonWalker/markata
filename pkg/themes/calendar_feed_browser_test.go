@@ -61,56 +61,56 @@ func TestCalendarYearPagination_Browser(t *testing.T) {
 	defer cancelTimeout()
 	var months int
 	var year, query string
-	if err := chromedp.Run(browser,
+	if err := chromedp.Do(browser,
 		chromedp.Navigate(server.URL),
 		chromedp.WaitVisible(`[data-calendar-switch]`),
-		chromedp.Evaluate(`document.querySelectorAll('.calendar-month').length`, &months),
+		evaluateInto(`document.querySelectorAll('.calendar-month').length`, &months),
 	); err != nil {
 		t.Fatal(err)
 	}
 	if months != 0 {
 		t.Fatalf("list view created %d calendar months, want zero", months)
 	}
-	if err := chromedp.Run(browser,
+	if err := chromedp.Do(browser,
 		chromedp.Click(`[data-calendar-mode="calendar"]`),
 		chromedp.WaitVisible(`#calendar-year-2026`),
-		chromedp.Evaluate(`document.querySelectorAll('.calendar-month').length`, &months),
+		evaluateInto(`document.querySelectorAll('.calendar-month').length`, &months),
 		chromedp.Click(`.calendar-year-older`),
 		chromedp.WaitVisible(`#calendar-year-2024`),
-		chromedp.Evaluate(`location.search`, &query),
+		evaluateInto(`location.search`, &query),
 	); err != nil {
 		t.Fatal(err)
 	}
 	if months != 12 || !strings.Contains(query, "year=2024") {
 		t.Fatalf("annual paging: months=%d query=%q, want 12 months and populated 2024", months, query)
 	}
-	if err := chromedp.Run(browser,
-		chromedp.Evaluate(`history.back()`, nil),
+	if err := chromedp.Do(browser,
+		evaluateVoid(`history.back()`),
 		chromedp.WaitVisible(`#calendar-year-2026`),
-		chromedp.Evaluate(`document.querySelector('.calendar-year-select').value`, &year),
+		evaluateInto(`document.querySelector('.calendar-year-select').value`, &year),
 	); err != nil {
 		t.Fatal(err)
 	}
 	if year != "2026" {
 		t.Fatalf("Back restored year %q, want 2026", year)
 	}
-	if err := chromedp.Run(browser,
-		chromedp.Evaluate(`history.forward()`, nil),
+	if err := chromedp.Do(browser,
+		evaluateVoid(`history.forward()`),
 		chromedp.WaitVisible(`#calendar-year-2024`),
-		chromedp.Evaluate(`document.querySelector('.calendar-year-select').value`, &year),
+		evaluateInto(`document.querySelector('.calendar-year-select').value`, &year),
 	); err != nil {
 		t.Fatal(err)
 	}
 	if year != "2024" {
 		t.Fatalf("Forward restored year %q, want 2024", year)
 	}
-	if err := chromedp.Run(browser,
+	if err := chromedp.Do(browser,
 		chromedp.Navigate(server.URL+"?view=calendar&year=9999&keep=test"),
 		chromedp.WaitVisible(`#calendar-year-2026`),
 		chromedp.Click(`.calendar-year-older`),
 		chromedp.WaitVisible(`#calendar-year-2024`),
-		chromedp.Evaluate(`location.search`, &query),
-		chromedp.Evaluate(`document.querySelectorAll('.calendar-month').length`, &months),
+		evaluateInto(`location.search`, &query),
+		evaluateInto(`document.querySelectorAll('.calendar-month').length`, &months),
 	); err != nil {
 		t.Fatal(err)
 	}

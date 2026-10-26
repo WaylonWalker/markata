@@ -3738,7 +3738,7 @@ jinja: true
 
 **Name:** `mermaid`  
 **Stage:** Render (post_render)  
-**Purpose:** Converts Mermaid code blocks into rendered diagrams. Supports client-side rendering (default), CLI-based pre-rendering via mmdc, or headless Chromium pre-rendering via mermaidcdp.
+**Purpose:** Converts Mermaid code blocks into rendered diagrams. Supports client-side rendering (default), CLI-based pre-rendering via mmdc, or headless Chromium pre-rendering.
 
 **Status:** Enabled by default. Set `enabled = false` to disable.
 

@@ -16,7 +16,6 @@ import (
 
 	"github.com/WaylonWalker/markata/pkg/templates"
 	"github.com/WaylonWalker/markata/pkg/themes"
-	"github.com/chromedp/cdproto/emulation"
 	"github.com/chromedp/chromedp"
 )
 
@@ -158,14 +157,14 @@ func TestFeedPhotoResponsiveLayout_Browser(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			var measured []geometry
-			err := chromedp.Run(browser,
-				emulation.SetDeviceMetricsOverride(tc.viewport, 900, 2, false),
+			err := chromedp.Do(browser,
+				setDeviceMetricsOverride(tc.viewport, 900, 2, false),
 				chromedp.Navigate(server.URL),
-				chromedp.Poll(`[...document.querySelectorAll(".photo-figure img")].length === 2 && [...document.querySelectorAll(".photo-figure img")].every(img => img.complete && img.naturalWidth > 0)`, nil),
+				pollVoid(`[...document.querySelectorAll(".photo-figure img")].length === 2 && [...document.querySelectorAll(".photo-figure img")].every(img => img.complete && img.naturalWidth > 0)`),
 				// decoding="async" deliberately allows the decoder to complete
 				// after fetch; inspect only after both raster decodes finish.
-				chromedp.Evaluate(`Promise.all([...document.querySelectorAll(".photo-figure img")].map(img => img.decode())).then(() => true)`, nil),
-				chromedp.Evaluate(inspect, &measured),
+				evaluateVoid(`Promise.all([...document.querySelectorAll(".photo-figure img")].map(img => img.decode())).then(() => true)`),
+				evaluateInto(inspect, &measured),
 			)
 			if err != nil {
 				t.Fatal(err)
