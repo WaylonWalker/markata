@@ -119,6 +119,24 @@ cards. Use the zero-download `system` fontpack by default:
 Expressive brush/poster fonts are opt-in for pages or branded sites,
 not the baseline for documentation, reports, and visual workflows.
 
+**Practical type ladder (default theme):**
+
+| Role | Semantic markup | Size / weight intent | Color role |
+| --- | --- | --- | --- |
+| Page title | H1, outside a container | Largest, bold (about 2.25rem) | Primary text |
+| Section | H2, outside cards | Prominent (about 1.875rem), bold | Primary text |
+| Choice / component title | H3 in `md-card` or `md-feature` | Moderate (about 1.25rem), strong | Primary text |
+| Paragraph | `p` | Comfortable reading size, normal weight | Primary text |
+| Labels and supporting context | `small`, captions, short metadata | Smaller (roughly 0.75–0.875rem), medium | Muted text |
+| Code or technical identifiers | Inline/fenced `code` | Native monospace, distinct from prose | Theme semantic colors |
+
+Use the tokens already provided by the theme; these are roles, not
+instructions to hardcode `px`, custom fonts, or arbitrary hex colors into
+content. Use no more than one saturated accent in a small visual grouping.
+Weight 700 should be exceptional; normal paragraphs need room to stay light.
+A body paragraph, label, status pill and card heading should not all
+share the same size or boldness.
+
 **Visual editing pass:**
 
 - Vary long and short forms: single-line lead, medium paragraph,
