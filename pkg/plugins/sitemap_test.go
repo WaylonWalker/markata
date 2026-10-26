@@ -270,3 +270,85 @@ func TestSitemapNoindexDirectiveParsing(t *testing.T) {
 		}
 	}
 }
+
+func TestSitemapIndexLastModExcludesNonEmittedPosts(t *testing.T) {
+	plugin := NewSitemapPlugin()
+	m := lifecycle.NewManager()
+	m.Config().Extra = map[string]interface{}{"feeds_page": models.NewFeedsPageConfig()}
+	publishedDate := time.Date(2024, 1, 15, 0, 0, 0, 0, time.UTC)
+	futureDate := time.Date(2026, 12, 31, 0, 0, 0, 0, time.UTC)
+	public := &models.Post{Slug: "public", Href: "/public/", Published: true, Date: &publishedDate}
+	undated := &models.Post{Slug: "undated", Href: "/undated/", Published: true}
+	draft := &models.Post{Slug: "draft", Href: "/draft/", Published: true, Draft: true, Date: &futureDate}
+	scheduled := &models.Post{Slug: "scheduled", Href: "/scheduled/", Date: &futureDate}
+	private := &models.Post{Slug: "private", Href: "/private/", Published: true, Private: true, Date: &futureDate}
+	skipped := &models.Post{Slug: "skipped", Href: "/skipped/", Published: true, Skip: true, Date: &futureDate}
+	noindex := &models.Post{
+		Slug: "noindex", Href: "/noindex/", Published: true, Date: &futureDate,
+		Extra: map[string]interface{}{"robots": "noindex,follow"},
+	}
+	m.SetPosts([]*models.Post{nil, public, undated, draft, scheduled, private, skipped, noindex})
+	m.Cache().Set("feed_configs", []models.FeedConfig{
+		{
+			Slug: "blog", Formats: models.FeedFormats{HTML: true, Sitemap: true},
+			Posts: []*models.Post{nil, public, undated, draft, scheduled, private, skipped},
+		},
+		{
+			Slug: "empty", Formats: models.FeedFormats{HTML: true, Sitemap: true},
+			Posts: []*models.Post{draft, scheduled, private, skipped},
+		},
+		{
+			Slug: "disabled", Formats: models.FeedFormats{HTML: true},
+			Posts: []*models.Post{public},
+		},
+	})
+
+	pages := plugin.buildPagesSitemap(m, "https://example.com")
+	for _, entry := range pages.URLs {
+		if entry.LastMod == "2026-12-31" {
+			t.Errorf("excluded future post affected pages sitemap: %+v", entry)
+		}
+	}
+	index := plugin.buildSitemapIndex(m, "https://example.com")
+	want := map[string]string{
+		"https://example.com/sitemap-pages.xml": "2024-01-15",
+		"https://example.com/blog/sitemap.xml":  "2024-01-15",
+		"https://example.com/empty/sitemap.xml": "",
+	}
+	if len(index.Sitemaps) != len(want) {
+		t.Fatalf("index has %d entries, want %d: %+v", len(index.Sitemaps), len(want), index.Sitemaps)
+	}
+	for _, entry := range index.Sitemaps {
+		expected, ok := want[entry.Loc]
+		if !ok {
+			t.Errorf("unexpected sitemap entry %q", entry.Loc)
+			continue
+		}
+		if entry.LastMod != expected {
+			t.Errorf("%s lastmod = %q, want %q", entry.Loc, entry.LastMod, expected)
+		}
+	}
+}
+
+func TestSitemapIndexLastModIncludesGeneratedLandingDate(t *testing.T) {
+	plugin := NewSitemapPlugin()
+	m := lifecycle.NewManager()
+	m.Config().Extra = map[string]interface{}{"feeds_page": models.NewFeedsPageConfig()}
+	m.SetPosts([]*models.Post{{Slug: "undated", Href: "/undated/", Published: true}})
+	feedDate := time.Date(2025, 7, 4, 0, 0, 0, 0, time.UTC)
+	m.Cache().Set("feed_configs", []models.FeedConfig{{
+		Slug: "blog",
+		Formats: models.FeedFormats{HTML: true, Sitemap: true},
+		Posts: []*models.Post{{Slug: "feed-only", Href: "/feed-only/", Published: true, Date: &feedDate}},
+	}})
+
+	index := plugin.buildSitemapIndex(m, "https://example.com")
+	if len(index.Sitemaps) != 2 {
+		t.Fatalf("index entries = %+v, want pages and blog", index.Sitemaps)
+	}
+	for _, entry := range index.Sitemaps {
+		if entry.LastMod != "2025-07-04" {
+			t.Errorf("%s lastmod = %q, want generated landing date", entry.Loc, entry.LastMod)
+		}
+	}
+}
