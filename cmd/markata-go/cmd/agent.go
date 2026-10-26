@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"github.com/fatih/color"
 
 	"github.com/WaylonWalker/markata/pkg/agentskill"
 	"github.com/spf13/cobra"
@@ -260,9 +259,9 @@ func runAgentWriteCommand(args []string, target agentInstallTarget, global bool,
 	}
 
 	if dryRun {
-		outlnf("%s would %s %d file(s) %s %s", color.YellowString("Dry run:"), operation, len(installedFiles), prepositionForAgentOperation(operation), destination)
+		outlnf("%s would %s %d file(s) %s %s", agentYellow("Dry run:"), operation, len(installedFiles), prepositionForAgentOperation(operation), destination)
 	} else {
-		outlnf("%s %d file(s) %s %s", color.GreenString(pastTenseForAgentOperation(operation)), len(installedFiles), prepositionForAgentOperation(operation), destination)
+		outlnf("%s %d file(s) %s %s", agentGreen(pastTenseForAgentOperation(operation)), len(installedFiles), prepositionForAgentOperation(operation), destination)
 	}
 
 	for _, filePath := range installedFiles {
@@ -458,30 +457,30 @@ func runAgentDoctorCommand(cmd *cobra.Command, args []string) error {
 	outlnf("Installed: %s", manifest.Version)
 	outlnf("Current:   %s", Version)
 	if report.VersionMismatch {
-		outlnf("Version:   %s", color.YellowString("mismatch"))
+		outlnf("Version:   %s", agentYellow("mismatch"))
 	}
 	outlnf("")
 
 	for _, entry := range report.Files {
 		switch entry.Status {
 		case agentskill.FileOK:
-			outlnf("  %s        %s", color.GreenString("ok"), entry.Path)
+			outlnf("  %s        %s", agentGreen("ok"), entry.Path)
 		case agentskill.FileModified:
-			outlnf("  %s  %s", color.YellowString("modified"), entry.Path)
+			outlnf("  %s  %s", agentYellow("modified"), entry.Path)
 		case agentskill.FileNew:
-			outlnf("  %s       %s", color.CyanString("new"), entry.Path)
+			outlnf("  %s       %s", agentCyan("new"), entry.Path)
 		case agentskill.FileMissing:
-			outlnf("  %s   %s", color.RedString("missing"), entry.Path)
+			outlnf("  %s   %s", agentRed("missing"), entry.Path)
 		}
 	}
 
 	outlnf("")
 	if report.HasDrift() {
-		outlnf("%s Run 'markata-go agent update' to update.", color.YellowString("Skill has %d issue(s).", report.IssueCount()))
+		outlnf("%s Run 'markata-go agent update' to update.", agentYellow("Skill has %d issue(s).", report.IssueCount()))
 		return newExitCodeError(doctorExitDrift, nil)
 	}
 
-	outlnf("%s", color.GreenString("Skill is up to date."))
+	outlnf("%s", agentGreen("Skill is up to date."))
 	return nil
 }
 
@@ -543,3 +542,16 @@ func runAgentRemoveCommand(cmd *cobra.Command, args []string) error {
 	outlnf("Removed %s", filepath.ToSlash(skillDir))
 	return nil
 }
+
+// Agent status colors are emitted only for interactive terminals.
+func agentColor(code, message string) string {
+	if os.Getenv("NO_COLOR") != "" || os.Getenv("TERM") == "dumb" || currentCmd == nil || !streamIsTerminal(currentCmd.OutOrStdout()) {
+		return message
+	}
+	return "\x1b[" + code + "m" + message + "\x1b[0m"
+}
+
+func agentGreen(format string, args ...any) string { return agentColor("32", fmt.Sprintf(format, args...)) }
+func agentYellow(format string, args ...any) string { return agentColor("33", fmt.Sprintf(format, args...)) }
+func agentRed(format string, args ...any) string { return agentColor("31", fmt.Sprintf(format, args...)) }
+func agentCyan(format string, args ...any) string { return agentColor("36", fmt.Sprintf(format, args...)) }
