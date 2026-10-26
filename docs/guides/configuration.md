@@ -1899,6 +1899,10 @@ max_pages = 30
   use the default).
 - A hand-authored `llms.md` (published with text format), project
   `static/llms.txt`, or unmanaged `output/llms.txt` takes precedence.
+- A private `llms.md` does not suppress the public generated index. Authored
+  sources remain authoritative when automatic generation is disabled.
+- Absolute links use the configured site URL only when it has no credentials,
+  query, or fragment; otherwise the index uses relative links.
 - Single-page builds never generate this site-wide index.
 - `llms.txt` is a content guide, **not** a robots/training permission policy.
 

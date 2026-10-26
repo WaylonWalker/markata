@@ -8,8 +8,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 const llmsTXTPluginName = "llms_txt"
@@ -39,23 +39,16 @@ func (p *LLMsTXTPlugin) Write(m *lifecycle.Manager) error {
 	output := filepath.Join(cfg.OutputDir, "llms.txt")
 	enabled, maxPages := llmsTXTOptions(cfg)
 
-	if !enabled {
-		return removeGeneratedLLMsTXT(output)
+	hasAuthoredSource, err := hasAuthoredLLMsTXTSource(m, cfg)
+	if err != nil {
+		return fmt.Errorf("llms_txt: checking authored source: %w", err)
+	}
+	if hasAuthoredSource {
+		return nil
 	}
 
-	// Do not overwrite a published, hand-authored llms.md or a project static
-	// llms.txt. These are both already supported by markata-go.
-	for _, post := range m.Posts() {
-		if post != nil && post.Slug == "llms" && post.Published && !post.Draft && !post.Skip &&
-			resolvePostFormats(post, cfg).Text {
-			return nil
-		}
-	}
-	staticFile := filepath.Join(NewStaticAssetsPlugin().projectStaticDir(cfg), "llms.txt")
-	if _, err := os.Stat(staticFile); err == nil {
-		return nil
-	} else if !os.IsNotExist(err) {
-		return fmt.Errorf("llms_txt: checking project static file: %w", err)
+	if !enabled {
+		return removeGeneratedLLMsTXT(output)
 	}
 
 	// Preserve manually managed output/llms.txt, but refresh generated content
@@ -86,6 +79,24 @@ func (p *LLMsTXTPlugin) Write(m *lifecycle.Manager) error {
 		return fmt.Errorf("llms_txt: writing output: %w", err)
 	}
 	return nil
+}
+
+func hasAuthoredLLMsTXTSource(m *lifecycle.Manager, cfg *lifecycle.Config) (bool, error) {
+	// Do not overwrite a published, public, hand-authored llms.md or a project
+	// static llms.txt. These are both already supported by markata-go.
+	for _, post := range m.Posts() {
+		if post != nil && post.Slug == "llms" && post.Published && !post.Draft && !post.Skip && !post.Private &&
+			resolvePostFormats(post, cfg).Text {
+			return true, nil
+		}
+	}
+	staticFile := filepath.Join(NewStaticAssetsPlugin().projectStaticDir(cfg), "llms.txt")
+	if _, err := os.Stat(staticFile); err == nil {
+		return true, nil
+	} else if !os.IsNotExist(err) {
+		return false, fmt.Errorf("checking static file: %w", err)
+	}
+	return false, nil
 }
 
 func removeGeneratedLLMsTXT(path string) error {
@@ -147,7 +158,7 @@ func buildLLMsTXT(m *lifecycle.Manager, maxPages int) string {
 	if cfg.Extra != nil {
 		if raw, ok := cfg.Extra["url"].(string); ok {
 			u, err := url.Parse(strings.TrimSpace(raw))
-			if err == nil && (u.Scheme == schemeHTTPS || u.Scheme == schemeHTTP) && u.Host != "" &&
+			if err == nil && (u.Scheme == schemeHTTPS || u.Scheme == schemeHTTP) && u.Host != "" && u.User == nil &&
 				u.RawQuery == "" && u.Fragment == "" {
 				siteURL = strings.TrimRight(u.String(), "/")
 			}

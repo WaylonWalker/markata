@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 func llmsTXTTestPost(slug, title string, date *time.Time) *models.Post {
@@ -185,6 +185,82 @@ func TestLLMsTXTPlugin_PreservesManualAndStaticSources(t *testing.T) {
 			t.Fatalf("overwrote hand-managed output: %q, %v", data, err)
 		}
 	})
+}
+
+func TestLLMsTXTPlugin_PrivateAuthoredPostDoesNotSuppressPublicIndex(t *testing.T) {
+	cfg := lifecycle.NewConfig()
+	cfg.OutputDir = t.TempDir()
+	private := llmsTXTTestPost("llms", "Private operator notes", nil)
+	private.Private = true
+	public := llmsTXTTestPost("public", "Public guide", nil)
+	m := lifecycle.NewManager()
+	m.SetConfig(cfg)
+	m.SetPosts([]*models.Post{private, public})
+
+	if err := NewLLMsTXTPlugin().Write(m); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(filepath.Join(cfg.OutputDir, "llms.txt"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := string(data)
+	if !strings.Contains(got, "[Public guide](/public.md)") {
+		t.Fatalf("private authored llms post suppressed public index:\n%s", got)
+	}
+	if strings.Contains(got, "Private operator notes") {
+		t.Fatal("private authored llms post leaked into public index")
+	}
+}
+
+func TestLLMsTXTPlugin_DisabledPreservesAuthoredSourceWithGeneratedMarker(t *testing.T) {
+	root := t.TempDir()
+	cfg := lifecycle.NewConfig()
+	cfg.ContentDir = root
+	cfg.OutputDir = filepath.Join(root, "output")
+	cfg.Extra["assets_dir"] = "public-assets"
+	cfg.Extra["llms_txt"] = map[string]interface{}{"enabled": false}
+	if err := os.MkdirAll(filepath.Join(root, "public-assets"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	const authored = "# Authored index\n\n" + llmsTXTMarker + "\n"
+	if err := os.WriteFile(filepath.Join(root, "public-assets", "llms.txt"), []byte(authored), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(cfg.OutputDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	output := filepath.Join(cfg.OutputDir, "llms.txt")
+	if err := os.WriteFile(output, []byte(authored), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	m := lifecycle.NewManager()
+	m.SetConfig(cfg)
+
+	if err := NewLLMsTXTPlugin().Write(m); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(output)
+	if err != nil || string(data) != authored {
+		t.Fatalf("disabled plugin changed authored static index: %q, %v", data, err)
+	}
+}
+
+func TestBuildLLMsTXT_DoesNotPublishSiteURLUserInfo(t *testing.T) {
+	cfg := lifecycle.NewConfig()
+	cfg.OutputDir = t.TempDir()
+	cfg.Extra["url"] = "https://agent:secret@example.com/"
+	m := lifecycle.NewManager()
+	m.SetConfig(cfg)
+	m.SetPosts([]*models.Post{llmsTXTTestPost("guide", "Guide", nil)})
+
+	got := buildLLMsTXT(m, defaultLLMsTXTMaxPages)
+	if strings.Contains(got, "agent") || strings.Contains(got, "secret") || strings.Contains(got, "example.com") {
+		t.Fatalf("site URL credentials or host unexpectedly appeared in relative output:\n%s", got)
+	}
+	if !strings.Contains(got, "[Guide](/guide.md)") {
+		t.Fatalf("expected relative guide URL when site URL contains userinfo:\n%s", got)
+	}
 }
 
 func TestLLMsTXTPlugin_DisabledCleansOnlyGeneratedFile(t *testing.T) {

@@ -107,8 +107,10 @@ A published Markdown post with `slug: llms` (and text output enabled), a
 `static/llms.txt` file, or an existing manually managed
 `output/llms.txt` overrides the automatic content. This preserves the
 ability to write a curated index yourself. If you disable auto-generation,
-markata-go removes only its own previously generated file, not a manually
-authored one.
+markata-go removes only its own previously generated file when no authored
+source exists. Private posts with `slug: llms` do not override the public
+index. Absolute links use the configured site URL only when it has no
+credentials, query, or fragment; otherwise generated links are relative.
 
 ### humans.txt
 
