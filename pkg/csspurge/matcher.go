@@ -323,7 +323,7 @@ func DefaultPreservePatterns() []string {
 		// styles, causing the Copy button to overlap code in production.
 		"md-code-*",
 
-		// Roads (classes added by roads.js)
+		// Roads (including road-entry-icon and road-entry-revealed added by roads.js)
 		"road-*",
 
 		// Common state classes (often added by JS)
@@ -390,5 +390,6 @@ func DefaultPreserveAttributes() []string {
 
 		// Road styles are selected by roads.js at runtime
 		"data-road",
+		"data-road-ready",
 	}
 }

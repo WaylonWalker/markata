@@ -249,6 +249,48 @@ How editorial entries work:
 - A road whose first item is a heading uses the editorial style automatically,
   even when you write `::: road` or `::: road timeline`.
 
+### Editorial stories, icons, and reveal
+
+````markdown
+::: road editorial story reveal
+
+### :lucide-key-round: RSA migration and faster job views
+*2026 Q3*
+
+A lead paragraph explaining what changed and why it matters.
+
+- Faster job views
+- Simpler key rotation
+- Clearer audit trails
+- Fewer manual steps
+
+### A quieter milestone without an icon
+*2026 Q4*
+
+The ordinary rail dot still works.
+:::
+````
+
+A leading `:lucide-name:` icon becomes a badge on the rail, muted until the
+entry is active. An emphasis-only paragraph immediately after a heading becomes
+the eyebrow above its title. Both work on all editorial roads, without `story`.
+If the heading already has a beside-link label, it takes precedence and the
+emphasis paragraph stays in the body. Mixed-content paragraphs are not labels.
+
+Add **`story`** for larger balanced titles, a larger opening paragraph, generous
+spacing, and a prose measure of about 64 characters. Direct unordered lists
+without task checkboxes become diamond-bullet highlights with a top rule.
+Lists of four or more items use two columns at viewport widths of 1100px or
+more. Cards, stats, and figures can use the wider entry body. Without `story`,
+existing editorial typography stays unchanged.
+
+Add **`reveal`** independently for scroll-triggered entry fades and gentle
+upward motion. It works with or without `story`, respects reduced motion, and
+does not animate print, anchor targets, or keyboard-focused entries. Entries
+stay readable without JavaScript or IntersectionObserver, even if the
+enhancement fails: reveal animates arriving content rather than hiding it
+until a callback runs.
+
 ## More than one road
 
 A post can have any number of roads, in any mix of styles. Each road draws on

@@ -265,6 +265,28 @@ func TestDefaultPurgePreservesRuntimeCodeChrome(t *testing.T) {
 	}
 }
 
+func TestDefaultPurgePreservesEditorialRoadEnhancements(t *testing.T) {
+	used := NewUsedSelectors()
+	used.Classes["road"] = true
+	used.Classes["story"] = true
+	used.Classes["reveal"] = true
+	css := `.road[data-road="editorial"] .road-entry-icon { color: inherit; }
+.road[data-road-ready].reveal .road-entry-revealed { animation: road-entry-reveal .6s; }
+.unused-road-test { color: red; }`
+	out, _ := PurgeCSS(css, used, PurgeOptions{
+		Preserve:           DefaultPreservePatterns(),
+		PreserveAttributes: DefaultPreserveAttributes(),
+	})
+	for _, want := range []string{".road-entry-icon", "[data-road-ready]", ".road-entry-revealed"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("purge removed editorial road selector %q: %s", want, out)
+		}
+	}
+	if strings.Contains(out, ".unused-road-test") {
+		t.Errorf("purge preserved unrelated selector: %s", out)
+	}
+}
+
 func TestDefaultPreservePatterns(t *testing.T) {
 	patterns := DefaultPreservePatterns()
 	if len(patterns) == 0 {

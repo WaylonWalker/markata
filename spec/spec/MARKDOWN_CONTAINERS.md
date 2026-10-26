@@ -95,6 +95,10 @@ The rendered container MUST retain the declared classes, ID, and valid custom at
 
 The default theme gives some container classes extra behavior. For example,
 `::: road STYLE` creates a scroll-drawn road, as defined in [ROADS.md](ROADS.md).
+Editorial roads accept independent `story` (heavier typography) and `reveal`
+(motion-safe scroll entrance) modifiers: `::: road editorial story reveal`.
+Leading Lucide icons and emphasis-only label paragraphs enhance all editorial
+roads by default.
 
 ### Card heading permalinks
 
