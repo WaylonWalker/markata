@@ -114,6 +114,18 @@ async function main() {
         codeCSSLinks:[...document.querySelectorAll('link[rel="stylesheet"]')].map(l=>l.href).filter(h=>/code\.|chroma\./.test(h)),
       };
     });
+    report.codeCSS=await page.evaluate(async()=>{
+      const links=[...document.querySelectorAll('link[rel="stylesheet"]')]
+        .filter(l=>/\\/code[.]/.test(l.href));
+      return await Promise.all(links.map(async link=>{
+        const response=await fetch(link.href,{cache:'no-cache'});
+        const css=await response.text();
+        return {url:link.href,status:response.status,bytes:css.length,
+          hasCopySelector:css.includes('md-code-copy'),
+          hasPositionRule:css.includes('position: absolute')||css.includes('position:absolute'),
+          finalCSS:css.slice(-1200)};
+      }));
+    });
     await page.screenshot({path:path.join(output,'code-copy-placement.png')});
     check(report.copyGeometry.position==='absolute',
       'Copy button must be anchored above code, not flow after it: '+JSON.stringify(report.copyGeometry));
