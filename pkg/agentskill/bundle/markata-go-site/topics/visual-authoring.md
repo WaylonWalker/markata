@@ -246,8 +246,14 @@ or table was explicitly requested. Equally, if every paragraph is inside a
 card or icon row, **remove components** to restore hierarchy.
 For a one-file authoring task outside a Markata site, explain how it could
 be previewed with Markata and avoid claiming an actual visual inspection
-that was not performed. Do not replace rich container syntax with generic
-Markdown merely because the repository has no Markata config.
+that was not performed. If a Markata binary is available and a preview is
+feasible, use a **disposable scratch site outside the user's repository**
+to build and inspect the authored Markdown, then discard scratch output;
+do not leave `output/`, `.markata/`, or new site configuration in a
+repository where the user requested exactly one file. If a real browser
+preview is unavailable, distinguish source validation from visual acceptance.
+Do not replace rich container syntax with generic Markdown merely because
+the repository has no Markata config.
 
 ## Design and accessibility
 
