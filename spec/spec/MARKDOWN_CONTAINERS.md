@@ -96,6 +96,39 @@ The rendered container MUST retain the declared classes, ID, and valid custom at
 The default theme gives some container classes extra behavior. For example,
 `::: road STYLE` creates a scroll-drawn road, as defined in [ROADS.md](ROADS.md).
 
+## Story layout primitives
+
+`::: md-section` MUST render a `section` retaining its classes, ID and attributes.
+When its first block is an H2, that heading and the immediately following
+paragraph (if present) MUST become `.md-section-head`; remaining blocks become
+`.md-section-body`. Without a leading H2, all blocks belong to the body and no
+empty head is emitted.
+
+A leading plain-text token of 1–16 non-whitespace characters followed by the
+literal separator ` · ` and a nonempty title MUST become a
+`span.md-section-kicker` inside the H2. Inline formatting in the title MUST
+survive. Heading IDs and anchor URLs MUST still derive from the original full
+heading text, before splitting. Other headings MUST remain unchanged.
+
+The default theme MUST provide a ruled, generously spaced section, with a
+sticky 16rem head column at viewport widths of at least 1100px, a single column
+below that, and static heads in print. A section without a head uses one column.
+
+Frontmatter `content_width: wide` opts a default-theme post into `.post--wide`:
+a maximum reading frame of `min(70rem, 100% - 2 * --space-10)`, balanced larger
+title, opening lead paragraph and roughly 64ch prose within sections. Mobile
+uses the available width. Unset or unknown values MUST preserve normal styling.
+
+`::: md-grid rail` uses the existing modifier-class and attribute syntax.
+At least 1000px wide, it defaults to four columns, respects `data-columns`
+(2, 3 or 4), connects card tops with a two-pixel gradient rail and ring ticks,
+and disables hover lift. Below 1000px it stacks without a rail.
+Heading links (excluding generated permalinks) stretch across the card, with
+visible keyboard focus on the card. Emphasis-only paragraphs are muted uppercase
+monospace kickers. `::: md-grid pending` gives cards dashed borders, transparent
+backgrounds and muted icons. These features MUST work without JavaScript and
+respect reduced-motion preferences.
+
 ## Conformance tests
 
 Implementations SHOULD test at minimum:

@@ -44,6 +44,13 @@ frontmatter.title, avoid duplicating it as the first body H1.
    optionally vendors the pinned Lucide pack on first use. It emits inline
    SVG without browser-time image requests or JavaScript.
 3. For card layouts, use `md-columns`, `md-grid`, `md-card`, `md-box`.
+   For editorial stories, use `content_width: wide` frontmatter and `md-section`
+   containers. A leading H2 plus its next paragraph automatically become the
+   sticky section head; `## 2026 · Title` gets a display kicker without changing
+   its full-text anchor. Use `md-grid rail` for linked overview cards (four
+   desktop columns by default, or `data-columns="2|3|4"`, stacked below 1000px)
+   and `md-grid pending` for dashed unresolved-item cards. No local CSS or JS
+   is necessary; see the Markdown Containers guide for complete examples.
 4. For a centered icon in a card, use `md-icon`. For a left-hand icon tile
    with body text (as in visual reports and feature lists), use `md-feature` with
    `md-feature-icon` and `md-feature-body`.
