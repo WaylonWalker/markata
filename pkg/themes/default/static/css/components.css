@@ -5465,6 +5465,69 @@ body.reader-mode::after {
 
 /* Chart.js no-JS data stays usable on narrow article columns. */
 @layer components {
+  .post-content .chartjs-figure {
+    box-sizing: border-box;
+    min-width: 0;
+    max-width: 100%;
+    margin: var(--space-6, 1.5rem) 0;
+    padding: clamp(.75rem, 3vw, 1.25rem);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg, .75rem);
+    background: var(--color-surface);
+    break-inside: avoid;
+  }
+
+  .post-content .chartjs-figure > figcaption {
+    margin: 0 0 var(--space-4, 1rem);
+    font-size: inherit;
+    text-align: left;
+    font-style: normal;
+  }
+
+  .post-content .chartjs-figure-title {
+    display: block;
+    color: var(--color-text);
+  }
+
+  .post-content .chartjs-figure-caption {
+    margin: .25rem 0 0;
+    font-size: .875rem;
+    color: var(--color-text-muted);
+  }
+
+  .post-content .chartjs-figure canvas {
+    max-width: 100%;
+  }
+
+  .post-content .chartjs-figure-compact canvas {
+    max-height: 130px;
+  }
+
+  .post-content .chartjs-figure .chartjs-data {
+    margin-block: .5rem 0;
+  }
+
+  .post-content .chartjs-figure .chartjs-data > summary {
+    font-size: .8rem;
+    color: var(--color-text-muted);
+  }
+
+  .post-content .chartjs-figure .chartjs-data > summary:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: -2px; /* Keep the ring inside the scrollable disclosure. */
+  }
+
+  @media print {
+    .post-content .chartjs-figure .chartjs-data::details-content {
+      content-visibility: visible;
+    }
+    .post-content .chartjs-figure .chartjs-data pre,
+    .post-content .chartjs-figure .chartjs-data pre code {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+  }
+
   .post-content .chartjs-data {
     max-width: 100%;
     min-width: 0;

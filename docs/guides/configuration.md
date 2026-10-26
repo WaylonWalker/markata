@@ -13,6 +13,15 @@ tags:
 
 markata-go uses a flexible configuration system that supports multiple file formats, environment variable overrides, and intelligent merging from multiple sources.
 
+## Chart data disclosures
+
+`[markata-go.chartjs] data_display = "open"` keeps chart data expanded before
+JavaScript initializes (the default). Set it to `"collapsed"` for a compact
+initial view. Per-chart top-level JSON `data_display` overrides this default.
+The summary stays usable without JavaScript. See
+[chart figures and fallbacks](markdown-chart-fallback.md) for titles, captions,
+and examples.
+
 ## Compose Config Files
 
 Use `include` when one config file gets too large.
