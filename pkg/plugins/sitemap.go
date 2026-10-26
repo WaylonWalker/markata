@@ -73,7 +73,7 @@ func (p *SitemapPlugin) buildPagesSitemap(m *lifecycle.Manager, siteURL string) 
 	posts := m.Posts()
 	var latestDate time.Time
 	for _, post := range posts {
-		if post.Published && !post.Draft && !post.Skip && !post.Private && post.Date != nil && post.Date.After(latestDate) {
+		if post != nil && post.Published && !post.Draft && !post.Skip && !post.Private && !sitemapPostNoindex(post) && post.Date != nil && post.Date.After(latestDate) {
 			latestDate = *post.Date
 		}
 	}
@@ -85,7 +85,7 @@ func (p *SitemapPlugin) buildPagesSitemap(m *lifecycle.Manager, siteURL string) 
 	sitemap.URLs = append(sitemap.URLs, homeURL)
 
 	for _, post := range posts {
-		if !post.Published || post.Draft || post.Skip || post.Private || sitemapPostNoindex(post) {
+		if post == nil || !post.Published || post.Draft || post.Skip || post.Private || sitemapPostNoindex(post) {
 			continue
 		}
 		url := SitemapURL{Loc: siteURL + post.Href, ChangeFreq: "weekly", Priority: "0.8"}
@@ -237,7 +237,9 @@ func hasGeneratedFeeds(feedConfigs []models.FeedConfig, config *lifecycle.Config
 }
 
 func (p *SitemapPlugin) buildSitemapIndex(m *lifecycle.Manager, siteURL string) *SitemapIndex {
-	pagesLatest := sitemapLastMod(m.Posts())
+	// Use the actual public pages sitemap, including generated landing pages.
+	// Unpublished, private, skipped, and noindex posts cannot affect its lastmod.
+	pagesLatest := sitemapURLsLastMod(p.buildPagesSitemap(m, siteURL).URLs)
 	entries := []SitemapIndexEntry{{Loc: siteURL + "/sitemap-pages.xml", LastMod: pagesLatest}}
 	feedConfigs := getCachedFeedConfigs(m)
 
@@ -285,9 +287,33 @@ type SitemapIndexEntry struct {
 	LastMod string `xml:"lastmod,omitempty"`
 }
 
+// sitemapURLsLastMod derives index metadata from URLs actually emitted in
+// sitemap-pages.xml, rather than from posts omitted by sitemap eligibility.
+func sitemapURLsLastMod(urls []SitemapURL) string {
+	latest := ""
+	for _, url := range urls {
+		// Sitemap dates use fixed-width YYYY-MM-DD, so lexical order is date order.
+		if url.LastMod > latest {
+			latest = url.LastMod
+		}
+	}
+	return latest
+}
+
+// sitemapLastMod mirrors publishSitemap's post eligibility. An empty feed
+// sitemap has no defensible modification date, even if it contains scheduled
+// or private source posts.
 func sitemapLastMod(posts []*models.Post) string {
-	latest := latestFeedTime(posts)
-	if latest.Equal(stableFallbackTime) {
+	var latest time.Time
+	for _, post := range posts {
+		if post == nil || !post.Published || post.Draft || post.Skip || post.Private || post.Date == nil {
+			continue
+		}
+		if post.Date.After(latest) {
+			latest = *post.Date
+		}
+	}
+	if latest.IsZero() {
 		return ""
 	}
 	return latest.Format("2006-01-02")
