@@ -42,6 +42,8 @@
   // Keep hover/focus work useful for an ordinary click, but revalidate a
   // document left in the in-memory cache for longer than this window.
   const PREFETCH_FRESHNESS_MS = 5000;
+  const STAGED_STYLESHEET_ATTR = 'data-markata-staged-stylesheet';
+  const STYLESHEET_READY_TIMEOUT_MS = 3500;
   // Visitor-controlled theme state must survive in-site navigation; the new
   // document only carries server defaults.
   const RUNTIME_HTML_ATTRIBUTES = new Set(['data-theme', 'data-text-size', 'data-palette', 'data-aesthetic']);
@@ -696,42 +698,137 @@
     return true;
   }
 
+  /**
+   * Load destination-only styles INSIDE the View Transition update callback.
+   * The browser has already captured the outgoing page at that point, so
+   * enabling the incoming CSS cannot flash or restyle what visitors see.
+   * Wait for real CSSOM readiness before capturing the destination frame.
+   * A failed/stalled stylesheet falls back to ordinary navigation.
+   */
+  async function prepareHeadStyles(newDoc) {
+    if (!newDoc || !newDoc.head) return;
+
+    const alreadyLoaded = new Set(
+      Array.from(document.head.querySelectorAll('link[rel="stylesheet"]'))
+        .filter(node => !node.hasAttribute(STAGED_STYLESHEET_ATTR))
+        .map(stylesheetKey)
+    );
+    const staged = [];
+    const loads = [];
+
+    const nextStyles = Array.from(newDoc.head.querySelectorAll('link[rel="stylesheet"], style'));
+    nextStyles.forEach((node, index) => {
+      if (node.tagName !== 'LINK') return;
+      const key = stylesheetKey(node);
+      if (!key || alreadyLoaded.has(key)) return;
+
+      // Print/on-demand styles must retain their intentional lazy loading.
+      const media = node.getAttribute('media');
+      if (media && window.matchMedia && !window.matchMedia(media).matches) return;
+
+      const link = node.cloneNode(true);
+      link.removeAttribute('onload');
+      link.setAttribute(STAGED_STYLESHEET_ATTR, key);
+      const loaded = new Promise((resolve, reject) => {
+        link.addEventListener('load', resolve, { once: true });
+        link.addEventListener('error', () => reject(new Error('Stylesheet failed: ' + node.href)), { once: true });
+      });
+      staged.push(link);
+      loads.push(loaded);
+
+      // A stylesheet link can lose its CSSOM when moved after load. Put
+      // destination-only links into final cascade order BEFORE loading them.
+      const existingFor = desired => Array.from(document.head.querySelectorAll('link[rel="stylesheet"], style'))
+        .find(candidate => stylesheetKey(candidate) === stylesheetKey(desired) ||
+          candidate.getAttribute(STAGED_STYLESHEET_ATTR) === stylesheetKey(desired));
+      const following = nextStyles.slice(index + 1).map(existingFor).find(Boolean);
+      const preceding = nextStyles.slice(0, index).reverse().map(existingFor).find(Boolean);
+      if (following) {
+        document.head.insertBefore(link, following);
+      } else if (preceding) {
+        preceding.insertAdjacentElement('afterend', link);
+      } else {
+        document.head.appendChild(link);
+      }
+    });
+
+    if (!loads.length) return;
+    let timeout;
+    try {
+      await Promise.race([
+        Promise.all(loads),
+        new Promise((_, reject) => {
+          timeout = setTimeout(() => reject(new Error('Stylesheet preparation timed out')), STYLESHEET_READY_TIMEOUT_MS);
+        })
+      ]);
+    } catch (error) {
+      staged.forEach(node => node.remove());
+      throw error;
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
   function syncHeadStyles(newDoc) {
     if (!newDoc || !newDoc.head) return;
 
     const selector = 'link[rel="stylesheet"], style';
-    const currentNodes = Array.from(document.head.querySelectorAll(selector));
+    const head = document.head;
+    const currentNodes = Array.from(head.querySelectorAll(selector));
     const nextNodes = Array.from(newDoc.head.querySelectorAll(selector));
     const nextKeys = new Set(nextNodes.map(stylesheetKey).filter(Boolean));
 
-    currentNodes.forEach((node) => {
-      if (node.hasAttribute('data-markata-persist')) return;
-      const key = stylesheetKey(node);
-      if (key && !nextKeys.has(key)) {
-        node.remove();
-      }
-    });
-
-    const head = document.head;
+    // Activate prepared styles before removing outgoing ones. Preserve the
+    // destination cascade order within the synchronous transition callback.
+    const firstCurrent = currentNodes.find(node => !node.hasAttribute(STAGED_STYLESHEET_ATTR));
     let previousInserted = null;
-
-    nextNodes.forEach((node) => {
+    nextNodes.forEach(node => {
       const key = stylesheetKey(node);
       if (!key) return;
 
-      const existing = Array.from(head.querySelectorAll(selector)).find((candidate) => stylesheetKey(candidate) === key);
-      if (existing) {
-        previousInserted = existing;
-        return;
+      const existing = Array.from(head.querySelectorAll(selector)).find(candidate =>
+        !candidate.hasAttribute(STAGED_STYLESHEET_ATTR) && stylesheetKey(candidate) === key
+      );
+      let replacement = existing;
+      if (!replacement) {
+        replacement = currentNodes.find(candidate =>
+          candidate.getAttribute(STAGED_STYLESHEET_ATTR) === key
+        );
+        if (replacement) {
+          if (node.hasAttribute('media')) {
+            replacement.setAttribute('media', node.getAttribute('media'));
+          } else {
+            replacement.removeAttribute('media');
+          }
+          if (node.hasAttribute('onload')) {
+            replacement.setAttribute('onload', node.getAttribute('onload'));
+          }
+          replacement.removeAttribute(STAGED_STYLESHEET_ATTR);
+        } else {
+          // Non-blocking media (such as print) can still load on demand.
+          replacement = node.cloneNode(true);
+        }
       }
 
-      const clone = node.cloneNode(true);
-      if (previousInserted && previousInserted.parentNode === head) {
-        previousInserted.insertAdjacentElement('afterend', clone);
-      } else {
-        head.appendChild(clone);
+      // Never detach/reinsert an existing <link>: Chromium unloads its
+      // CSSOM during that move, causing a one-frame flash. Prepared links
+      // were already inserted at their destination cascade position.
+      if (!replacement.parentNode) {
+        if (previousInserted && previousInserted.parentNode === head) {
+          previousInserted.insertAdjacentElement('afterend', replacement);
+        } else if (firstCurrent && firstCurrent.parentNode === head) {
+          head.insertBefore(replacement, firstCurrent);
+        } else {
+          head.appendChild(replacement);
+        }
       }
-      previousInserted = clone;
+      previousInserted = replacement;
+    });
+
+    currentNodes.forEach(node => {
+      if (node.hasAttribute('data-markata-persist')) return;
+      const key = stylesheetKey(node);
+      if (key && !nextKeys.has(key)) node.remove();
     });
   }
 
@@ -940,10 +1037,12 @@
   }
 
   function hydrateCriticalLayoutScripts() {
-    // Feed cycling rewrites visible sidebar chrome from the embedded JSON. Run
-    // it during the transition swap so the captured new state is not the
-    // server-rendered fallback sidebar.
+    // The destination snapshot must contain hydrated, visible sidebars.
+    // Revealing them only after transition.finished flashes empty drawers.
     callOptionalInit('initFeedCycling', window.initFeedCycling);
+    document.querySelectorAll('[data-sidebar-hydrating]').forEach(el => {
+      el.removeAttribute('data-sidebar-hydrating');
+    });
   }
 
   /**
@@ -1100,6 +1199,16 @@
     if (navOptions.bypassTransition) {
       const metrics = createNavigationMetrics(targetURL.href, navOptions.source);
       const newDoc = await resolveDocument(targetURL.href, metrics);
+      // This fast path does not capture an old snapshot. If new render-
+      // blocking CSS is required, prefer an ordinary page load to a FOUC.
+      const currentStyles = new Set(Array.from(document.head.querySelectorAll('link[rel="stylesheet"]')).map(stylesheetKey));
+      const hasNewStyles = Array.from(newDoc.head.querySelectorAll('link[rel="stylesheet"]'))
+        .some(node => (!node.media || !window.matchMedia || window.matchMedia(node.media).matches) &&
+          !currentStyles.has(stylesheetKey(node)));
+      if (hasNewStyles) {
+        window.location.href = targetURL.href;
+        return false;
+      }
       updateDocument(newDoc, metrics);
 
       if (navOptions.pushState) {
@@ -1114,20 +1223,21 @@
     navigationInFlight = true;
 
     const metrics = createNavigationMetrics(targetURL.href, navOptions.source);
-    const newDoc = await resolveDocument(targetURL.href, metrics);
-    const sharedContext = getSidebarSharedTransitionContext(navOptions.triggerElement, targetURL) || getSharedTransitionContext(navOptions.triggerElement, targetURL);
-    const postNavigationContext = getPostNavigationContext(navOptions.triggerElement);
-
-    if (sharedContext) {
-      activateSharedTransitionContext(sharedContext);
-    }
-
-    if (postNavigationContext) {
-      setPostNavigationState(postNavigationContext);
-    }
-
     try {
-      const transition = document.startViewTransition(() => {
+      const newDoc = await resolveDocument(targetURL.href, metrics);
+      const sharedContext = getSidebarSharedTransitionContext(navOptions.triggerElement, targetURL) || getSharedTransitionContext(navOptions.triggerElement, targetURL);
+      const postNavigationContext = getPostNavigationContext(navOptions.triggerElement);
+
+      if (sharedContext) {
+        activateSharedTransitionContext(sharedContext);
+      }
+
+      if (postNavigationContext) {
+        setPostNavigationState(postNavigationContext);
+      }
+
+      const transition = document.startViewTransition(async () => {
+        await prepareHeadStyles(newDoc);
         prepareIncomingSharedTransition(newDoc, sharedContext);
         updateDocument(newDoc, metrics, { reinitialize: false, hydrateCritical: true });
         if (navOptions.pushState) {
@@ -1213,7 +1323,8 @@
       const metrics = createNavigationMetrics(url, 'popstate');
       const newDoc = await resolveDocument(url, metrics);
 
-      const transition = document.startViewTransition(() => {
+      const transition = document.startViewTransition(async () => {
+        await prepareHeadStyles(newDoc);
         updateDocument(newDoc, metrics, { reinitialize: false, hydrateCritical: true });
         markRenderedLocation();
       });
@@ -1352,6 +1463,8 @@
   window.initFeedSidebarScroll = function() {
     var active = document.querySelector('.feed-nav-item--active');
     if (!active) return;
+    var drawer = active.closest('.feed-sidebar');
+    if (drawer && !drawer.classList.contains('sidebar--pinned')) return;
     var container = document.getElementById('feed-nav-collapsible');
     if (!container) return;
     var activeTop = active.offsetTop - container.offsetTop;
@@ -1456,7 +1569,8 @@
   }
 
   function focusDrawerStart(sidebar) {
-    var target = sidebar.querySelector('.toc-link--active, .feed-nav-item--active a, .toc a[href], .feed-nav a[href], a[href], button:not(.sidebar-toggle)');
+    var target = sidebar.querySelector('.toc-link--active, .feed-nav-item--active a') ||
+      sidebar.querySelector('.toc a[href], .feed-nav a[href], a[href], button:not(.sidebar-toggle)');
     if (target && typeof target.focus === 'function') {
       target.focus({ preventScroll: true });
     }
@@ -1473,6 +1587,10 @@
     }
     sidebar.classList.toggle('sidebar--pinned', open);
     syncSidebarToggle(sidebar);
+    if (open) {
+      updateSidebarTop();
+      window.initFeedSidebarScroll();
+    }
     if (open && overlay) {
       // Wait for visibility to flip before moving focus into the drawer.
       requestAnimationFrame(function() { focusDrawerStart(sidebar); });
@@ -1508,17 +1626,22 @@
 
   // Keep fixed drawers flush with the bottom edge of the header while it is
   // on screen, then let them grow to the top once the header scrolls away.
-  // Writing a root custom property restyles the whole document, so only
-  // write when the value actually changes.
+  // Overlay drawers fill the viewport and need no header geometry. Scope the
+  // offset to drawers so updates do not invalidate the article subtree.
   var sidebarTopFrame = null;
   var sidebarTopValue = null;
   function updateSidebarTop() {
     sidebarTopFrame = null;
+    if (isSidebarOverlayMode()) return;
+    var drawers = document.querySelectorAll(DRAWER_SELECTOR);
+    if (!drawers.length) return;
     var header = document.querySelector('.site-header');
     var bottom = header ? Math.max(0, Math.round(header.getBoundingClientRect().bottom)) : 0;
     if (bottom === sidebarTopValue) return;
     sidebarTopValue = bottom;
-    document.documentElement.style.setProperty('--sidebar-top', bottom + 'px');
+    drawers.forEach(function(drawer) {
+      drawer.style.setProperty('--sidebar-top', bottom + 'px');
+    });
   }
   function scheduleSidebarTop() {
     if (sidebarTopFrame === null) {
@@ -1550,6 +1673,8 @@
       }
       syncSidebarToggle(sidebar);
     });
+    updateSidebarTop();
+    window.initFeedSidebarScroll();
   };
 
   window.initSidebarPinButtons = function() {

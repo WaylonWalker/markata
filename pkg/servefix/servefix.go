@@ -14,8 +14,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/WaylonWalker/markata-go/pkg/diagnostics"
-	"github.com/WaylonWalker/markata-go/pkg/lint"
+	"github.com/WaylonWalker/markata/pkg/diagnostics"
+	"github.com/WaylonWalker/markata/pkg/lint"
 )
 
 var ErrStale = errors.New("source changed since fix preview")

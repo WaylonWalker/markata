@@ -11,10 +11,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/WaylonWalker/markata-go/pkg/buildcache"
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/templates"
-	"github.com/WaylonWalker/markata-go/pkg/themes"
+	"github.com/WaylonWalker/markata/pkg/buildcache"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/templates"
+	"github.com/WaylonWalker/markata/pkg/themes"
 )
 
 // StaticAssetsPlugin copies static assets from themes and project directories to output.
@@ -86,15 +86,17 @@ func (p *StaticAssetsPlugin) Configure(m *lifecycle.Manager) error {
 	// Set hashes in templates package for theme_asset_hashed filter
 	templates.SetAssetHashes(assetHashes)
 
-	// Update build cache with combined assets hash
-	// This ensures all pages are rebuilt when any JS/CSS file changes
+	return nil
+}
+
+// Validate fingerprints the final asset registry after all Configure hooks.
+// Generated styles such as palette-core.css register after static files.
+func (p *StaticAssetsPlugin) Validate(m *lifecycle.Manager) error {
 	if cache := GetBuildCache(m); cache != nil {
-		assetsHash := buildcache.HashAssetMap(assetHashes)
-		if cache.SetAssetsHash(assetsHash) {
+		if cache.SetAssetsHash(buildcache.HashAssetMap(m.AssetHashes())) {
 			log.Printf("[static_assets] JS/CSS assets changed, full rebuild required")
 		}
 	}
-
 	return nil
 }
 
@@ -544,6 +546,7 @@ func (p *StaticAssetsPlugin) Priority(stage lifecycle.Stage) int {
 var (
 	_ lifecycle.Plugin          = (*StaticAssetsPlugin)(nil)
 	_ lifecycle.ConfigurePlugin = (*StaticAssetsPlugin)(nil)
+	_ lifecycle.ValidatePlugin  = (*StaticAssetsPlugin)(nil)
 	_ lifecycle.WritePlugin     = (*StaticAssetsPlugin)(nil)
 	_ lifecycle.CleanupPlugin   = (*StaticAssetsPlugin)(nil)
 	_ lifecycle.PriorityPlugin  = (*StaticAssetsPlugin)(nil)

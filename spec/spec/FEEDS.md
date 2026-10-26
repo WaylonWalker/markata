@@ -66,6 +66,18 @@ For YouTube Atom feeds, reader entries should resolve the per-video thumbnail fr
 
 Reader template contexts may expose `preview_url`, `preview_kind`, `source_image_url`, and existing source metadata so themes can style each preview type differently.
 
+Reader entries MAY expose `image_srcset` for a supported image resizing service.
+Ghost CDN raster previews on `storage.ghost.io` with an existing
+`/content/images/size/w<width>/` path SHOULD include smaller width candidates,
+without exceeding the original requested width. The original `image_url` MUST
+remain the `src` fallback. Unknown services and GIF/SVG images MUST
+retain their original URLs without invented resizing parameters. Query strings
+and escaped path segments MUST be preserved. Templates and built-in fallback
+rendering MUST use the same candidates, retain lazy loading and async decoding,
+and use a conservative `100vw` size hint that does not introduce intrinsic-size
+containment or alter existing preview geometry.
+Image selection MUST work without JavaScript and retain existing error tiles.
+
 ## Blogroll Add Metadata
 
 When `markata-go blogroll add <feed-url>` fetches metadata for a new external feed, the command MUST use site-level HTML or OpenGraph metadata for the editable title, description, and tags shown to the user.
@@ -513,6 +525,8 @@ The reader page aggregates the latest posts from all followed feeds into a curat
 - Each entry shows a source favicon up front, the source name, publish date, title, description, and optional image.
 - When a feed item points at a Hacker News or Lobsters discussion URL, the collector resolves the outbound article URL for the main card when one exists, preserves the original discussion permalink, and keeps the feed source label visible. Lobsters RSS items commonly provide the article in `<link>` and the discussion in `<guid>` or `<comments>`; these must be preserved without an unnecessary API lookup. Reader discussion labels reflect the actual aggregator.
 - The layout collapses to a single column on small screens.
+- On paginated reader grids, cards after the first four in each day group SHOULD use `content-visibility: auto` with a reasonable `contain-intrinsic-size` fallback, so offscreen card contents can skip initial layout/paint without client-side rendering. The first four cards remain normally rendered to preserve first paint; browsers without support render all cards normally.
+- Reader preview and source images SHOULD use asynchronous decoding while keeping native lazy loading and explicit dimensions.
 
 ### Template Context
 
@@ -1707,6 +1721,19 @@ alias for `include_private = true`.
 The title for each state SHOULD use a distinct semantic color so the inventory
 can be scanned quickly.
 
+## Editorial Feed Images
+
+Editorial feed cards MUST defer thumbnail loading, including featured weekly
+lead cards. The leading content on an editorial archive can be text, so weekly
+lead status alone is not enough evidence to prioritize an image request. A
+template SHOULD reserve eager loading and high fetch priority for a verified
+above-the-fold image that is the page's likely Largest Contentful Paint element.
+
+The current pagination page marker MUST maintain readable text contrast across
+theme palettes. When the primary palette color is too bright for white text,
+the marker background SHOULD darken that color enough to retain at least 4.5:1
+contrast.
+
 ## Feed Listings
 
 The generated `/feeds/` listing MUST hide feeds with `include_private = true` by default.
@@ -1731,3 +1758,31 @@ month. The monthly values MAY be stored as compact chart data on the SVG and use
 update a single guide and marker. Keyboard users MUST be able to focus each chart
 and use the arrow keys to inspect values; the live readout MUST announce the selected
 month and count. Pointer exit MUST restore the chart's latest-month summary.
+
+### Editorial startup work
+
+Editorial weeks after the first use native `content-visibility: auto` with a
+remembered intrinsic block size. All content remains server rendered and
+available without JavaScript, to browser find, and to assistive technology.
+Printing must render every week without containment. The first week renders
+normally so its initial paint does not depend on visibility observation.
+
+Navigation shortcut initialization must not fetch adjacent pages. Adjacent
+documents may be prefetched on explicit navigation intent (link hover/focus or
+feed cycling), respecting the existing Save Data policy.
+
+## Deferred Feed Style Geometry
+
+Calendar/list feed widths and navbar search widths MUST be established by
+eager styles before the first paint. Applying deferred calendar/search styles
+or hydrating either search provider MUST preserve the visible header, feed,
+and story positions and widths at mobile and desktop sizes, including feeds
+with a closed sidebar. Deferred styles MAY supply optional control appearance.
+
+## Offscreen Editorial Week Sizing
+
+Offscreen editorial weeks reserve an intrinsic height scaled to their editorial
+item count, with a conservative fallback for custom templates. The estimate
+should avoid geometric overlap with following sections while actual heights
+are unknown. Native reveal remembers measured heights. Find, focus, print and
+no-JavaScript access remain available.

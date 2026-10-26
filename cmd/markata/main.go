@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/WaylonWalker/markata-go/cmd/markata-go/cmd"
+	"github.com/WaylonWalker/markata/cmd/markata-go/cmd"
 )
 
 func main() {

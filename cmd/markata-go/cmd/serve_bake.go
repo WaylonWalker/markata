@@ -14,8 +14,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/WaylonWalker/markata-go/pkg/config"
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/config"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 // serveThemeBakeEndpoint is the dev-server endpoint the theme picker uses to

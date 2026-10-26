@@ -5,7 +5,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 func TestTemplatesPlugin_SidebarProjectionParity(t *testing.T) {

@@ -37,6 +37,47 @@ jobs:
           github-token: "${{ secrets.GITHUB_TOKEN }}"
           alert-lookup: true
 
+      # GitHub auto-merge can merge immediately when no required checks are configured.
+      # Fail closed instead of depending on a comment saying branch protection is required.
+      - name: Verify required CI gates are configured
+        if: steps.metadata.outputs.alert-state != 'OPEN'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          # Classic branch-protection read may require Administration:read, which the
+          # workflow token cannot request. Active branch rulesets are readable with
+          # Metadata:read; check both and fail closed if neither exposes the gates.
+          protection="$(gh api "repos/${GITHUB_REPOSITORY}/branches/main/protection/required_status_checks" 2>/dev/null || true)"
+          rules="$(gh api "repos/${GITHUB_REPOSITORY}/rules/branches/main" 2>/dev/null || true)"
+          required_names="$(
+            {
+              if [[ -n "$protection" ]]; then
+                jq -r '.checks[]?.context, .contexts[]?' <<< "$protection"
+              fi
+              if [[ -n "$rules" ]]; then
+                jq -r '.[] | select(.type == "required_status_checks") | .parameters.required_status_checks[]?.context' <<< "$rules"
+              fi
+            } | sort -u
+          )"
+          if [[ -z "$required_names" ]]; then
+            echo "::error::Cannot find required status checks for main. Configure a required-status-checks branch ruleset before Dependabot auto-merge."
+            exit 1
+          fi
+          required_checks=(
+            "Lint"
+            "Test (ubuntu-latest, 1.26)"
+            "Test (windows-latest, 1.26)"
+            "Test (macos-latest, 1.26)"
+            "GoReleaser Check"
+          )
+          for check in "${required_checks[@]}"; do
+            if ! grep -Fxq -- "$check" <<< "$required_names"; then
+              echo "::error::Missing required branch-protection check: $check. Refusing early auto-merge."
+              exit 1
+            fi
+          done
+
       - name: Enable auto-merge for non-security Dependabot updates
         if: steps.metadata.outputs.alert-state != 'OPEN'
         run: gh pr merge --auto --squash "$PR_URL"

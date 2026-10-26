@@ -33,6 +33,12 @@ Templates wrap rendered markdown content in HTML layouts. The system supports:
 - Format-specific templates for `.txt`, `.ansi`, `.md`, and OG outputs
 - Presentation templates such as `slides.html` for reveal.js decks
 
+Each template execution MUST receive its own top-level configuration map. The
+cached configuration projection is shared across renders and MUST remain
+immutable after creation; render-specific values such as the active theme must
+be applied to a per-execution copy. Concurrent feed rendering MUST NOT mutate
+maps read by another template execution.
+
 ---
 
 ## Cached HTML Restoration

@@ -6,7 +6,8 @@
 
 version: 2
 
-project_name: markata-go
+# Canonical 1.0 release identity; legacy archive and executable names remain.
+project_name: markata
 
 before:
   hooks:
@@ -49,9 +50,9 @@ builds:
         goarch: arm
     ldflags:
       - -s -w
-      - -X github.com/WaylonWalker/markata-go/cmd/markata-go/cmd.Version={{.Version}}
-      - -X github.com/WaylonWalker/markata-go/cmd/markata-go/cmd.Commit={{.Commit}}
-      - -X github.com/WaylonWalker/markata-go/cmd/markata-go/cmd.Date={{.Date}}
+      - -X github.com/WaylonWalker/markata/cmd/markata-go/cmd.Version={{.Version}}
+      - -X github.com/WaylonWalker/markata/cmd/markata-go/cmd.Commit={{.Commit}}
+      - -X github.com/WaylonWalker/markata/cmd/markata-go/cmd.Date={{.Date}}
     mod_timestamp: "{{ .CommitTimestamp }}"
 
   - id: markata
@@ -89,9 +90,9 @@ builds:
         goarch: arm
     ldflags:
       - -s -w
-      - -X github.com/WaylonWalker/markata-go/cmd/markata-go/cmd.Version={{.Version}}
-      - -X github.com/WaylonWalker/markata-go/cmd/markata-go/cmd.Commit={{.Commit}}
-      - -X github.com/WaylonWalker/markata-go/cmd/markata-go/cmd.Date={{.Date}}
+      - -X github.com/WaylonWalker/markata/cmd/markata-go/cmd.Version={{.Version}}
+      - -X github.com/WaylonWalker/markata/cmd/markata-go/cmd.Commit={{.Commit}}
+      - -X github.com/WaylonWalker/markata/cmd/markata-go/cmd.Date={{.Date}}
     mod_timestamp: "{{ .CommitTimestamp }}"
 
 archives:
@@ -100,8 +101,9 @@ archives:
       - markata-go
     formats:
       - tar.gz
+    # Keep historical markata-go_<version> archives even though ProjectName is markata.
     name_template: >-
-      {{ .ProjectName }}_
+      markata-go_
       {{- .Version }}_
       {{- .Os }}_
       {{- if eq .Arch "amd64" }}x86_64
@@ -171,10 +173,9 @@ changelog:
     - title: "Other"
       order: 999
 
+# Infer the release repository from the checked-out git origin.
+# Hard-coding markata-go here would target the old URL after the GitHub rename.
 release:
-  github:
-    owner: WaylonWalker
-    name: markata-go
   draft: false
   prerelease: auto
   mode: replace
@@ -182,6 +183,9 @@ release:
     ## Markata {{ .Version }}
 
     A plugin-driven static site generator written in Go.
+    
+    Curated highlights, upgrade notes, and deployment checks:
+    https://github.com/WaylonWalker/markata/blob/{{ .Tag }}/docs/releases/v{{ .Version }}.md
   footer: |
     ## Installation
 
@@ -189,20 +193,20 @@ release:
 
     ```bash
     # Using jpillora/installer (Linux/macOS)
-    curl -sL https://i.jpillora.com/WaylonWalker/markata-go | bash
+    curl -sL https://i.jpillora.com/WaylonWalker/markata | bash
 
     # Using eget
-    eget WaylonWalker/markata-go
+    eget WaylonWalker/markata
 
     # Using mise (from GitHub releases)
-    mise use -g github:WaylonWalker/markata-go
+    mise use -g github:WaylonWalker/markata
     ```
 
     ### Manual Download
 
     Download the appropriate archive for your platform from the assets below.
 
-    **Full Changelog**: https://github.com/WaylonWalker/markata-go/compare/{{ .PreviousTag }}...{{ .Tag }}
+    **Full Changelog**: https://github.com/WaylonWalker/markata/compare/{{ .PreviousTag }}...{{ .Tag }}
 
 # sbom generation
 sboms:
@@ -229,7 +233,7 @@ signs:
 #       owner: WaylonWalker
 #       name: homebrew-tap
 #     directory: Formula
-#     homepage: "https://github.com/WaylonWalker/markata-go"
+#     homepage: "https://github.com/WaylonWalker/markata"
 #     description: "A plugin-driven static site generator"
 #     license: "MIT"
 #     test: |

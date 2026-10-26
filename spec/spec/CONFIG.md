@@ -865,8 +865,20 @@ warning_threshold = 0
 ```
 
 CSS purge removes unused rules by scanning generated HTML and keeping only selectors
-that are actually present. The purge logic always preserves key @-rules and keeps
+that are actually present.
+CSS purge MUST preserve the default theme's `md-code-*` classes even when
+absent from generated HTML, because the code-copy enhancement adds them at
+browser runtime. The generated `code.css` MUST retain positioning and keyboard
+focus rules for `.md-code-copy` and `pre.md-code-enhanced`. This protection
+MUST NOT turn off purging for unrelated selectors. Sites overriding
+`preserve` should include `md-code-*` in their custom list.
+ The purge logic always preserves key @-rules and keeps
 pseudo-only selectors like `:root` or `::selection` to avoid dropping base/theme styles.
+Full builds MAY cache the aggregate selector set and purged CSS under
+`.markata-cache/css-purge` in the content directory. Selector cache validity MUST include
+the sorted generated HTML paths and exact file bytes. Purged CSS cache validity MUST
+include stylesheet bytes, the selector set, and purge options. Missing or invalid cache
+entries MUST fall back to the normal scan or purge path.
 
 ### Tailwind (`[my-ssg.tailwind]`)
 

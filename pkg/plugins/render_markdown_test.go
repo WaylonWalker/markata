@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 func TestRenderMarkdownPlugin_Name(t *testing.T) {
@@ -1429,5 +1429,34 @@ func TestRenderMarkdownPlugin_ExtensionConfig_Disabled(t *testing.T) {
 	// Without definition list extension, should not have <dl>
 	if strings.Contains(post2.ArticleHTML, "<dl>") {
 		t.Error("Definition list should be disabled but <dl> found in output")
+	}
+}
+
+func TestRenderMarkdownPlugin_DetectRoads(t *testing.T) {
+	tests := []struct {
+		name    string
+		content string
+		want    bool
+	}{
+		{"road container", "::: road timeline\n\n- [Kickoff](#a) Jan\n:::", true},
+		{"road container with attributes", "::: road {data-road=\"git\"}\n\n- [Init](#a) main\n:::", true},
+		{"raw div with data-road", "<div data-road=\"winding\">\n\n- [Start](#a)\n\n</div>", true},
+		{"similar class name", "<div class=\"roadmap\">plan</div>", false},
+		{"plain list", "- [Kickoff](#a) Jan", false},
+		{"word road in text", "The road goes ever on.", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := NewRenderMarkdownPlugin()
+			post := &models.Post{Content: tt.content}
+			if err := p.renderPost(post); err != nil {
+				t.Fatalf("renderPost error: %v", err)
+			}
+			got := post.Extra["needs_roads"] == true
+			if got != tt.want {
+				t.Errorf("needs_roads = %v, want %v\nhtml: %s", got, tt.want, post.ArticleHTML)
+			}
+		})
 	}
 }

@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/blogroll"
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/blogroll"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 func TestValidateFeedURL(t *testing.T) {

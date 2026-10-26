@@ -9,9 +9,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/models"
-	"github.com/WaylonWalker/markata-go/pkg/templates"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/templates"
 )
 
 // SeriesListingInfo contains the data rendered for one series on the series index.

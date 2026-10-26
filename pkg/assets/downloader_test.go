@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/runtimeenv"
+	"github.com/WaylonWalker/markata/pkg/runtimeenv"
 )
 
 func TestNewDownloader(t *testing.T) {

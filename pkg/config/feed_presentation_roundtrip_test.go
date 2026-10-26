@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 // Exercise actual format converters: model-only unit tests never found this bug.

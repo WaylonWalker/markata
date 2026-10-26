@@ -18,11 +18,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/buildcache"
-	"github.com/WaylonWalker/markata-go/pkg/buildstats"
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/models"
-	"github.com/WaylonWalker/markata-go/pkg/templates"
+	"github.com/WaylonWalker/markata/pkg/buildcache"
+	"github.com/WaylonWalker/markata/pkg/buildstats"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/templates"
 )
 
 // EmbedsPlugin processes embed syntax in markdown content.
@@ -1439,7 +1439,7 @@ func (p *EmbedsPlugin) fetchPageHTML(rawURL string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	req.Header.Set("User-Agent", "markata-go/1.0 (+https://github.com/WaylonWalker/markata-go)")
+	req.Header.Set("User-Agent", "markata-go/1.0 (+https://github.com/WaylonWalker/markata)")
 	req.Header.Set("Accept", "text/html,application/xhtml+xml")
 
 	resp, err := p.httpClient.Do(req)

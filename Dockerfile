@@ -28,9 +28,9 @@ ARG BUILD_DATE=unknown
 # -s -w strips debug information for smaller binary
 RUN CGO_ENABLED=0 GOOS=linux go build \
     -ldflags="-s -w \
-        -X github.com/WaylonWalker/markata-go/cmd/markata-go/cmd.Version=${VERSION} \
-        -X github.com/WaylonWalker/markata-go/cmd/markata-go/cmd.Commit=${COMMIT} \
-        -X github.com/WaylonWalker/markata-go/cmd/markata-go/cmd.Date=${BUILD_DATE}" \
+        -X github.com/WaylonWalker/markata/cmd/markata-go/cmd.Version=${VERSION} \
+        -X github.com/WaylonWalker/markata/cmd/markata-go/cmd.Commit=${COMMIT} \
+        -X github.com/WaylonWalker/markata/cmd/markata-go/cmd.Date=${BUILD_DATE}" \
     -o markata-go \
     ./cmd/markata-go
 

@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 func TestLoadRenderingContract_FontpackWarnings(t *testing.T) {
@@ -16,7 +16,7 @@ func TestLoadRenderingContract_FontpackWarnings(t *testing.T) {
 		fontpack string
 		warnings []string
 	}{
-		{name: "defaults", data: "[markata-go]\n", fontpack: "brush"},
+		{name: "defaults", data: "[markata-go]\n", fontpack: "system"},
 		{name: "canonical", data: "[markata-go.theme]\nfontpack = \"typewriter\"\n", fontpack: "typewriter"},
 		{name: "legacy", data: "[markata-go]\nfontpack = \"typewriter\"\n", fontpack: "typewriter"},
 		{
@@ -74,8 +74,8 @@ func TestLoadRenderingContract_DefaultsWithoutWarnings(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.Theme.Fontpack != "brush" {
-		t.Errorf("fontpack = %q, want brush", cfg.Theme.Fontpack)
+	if cfg.Theme.Fontpack != "system" {
+		t.Errorf("fontpack = %q, want system", cfg.Theme.Fontpack)
 	}
 	if warnings, ok := cfg.Extra["theme_migration_warnings"]; ok {
 		t.Errorf("unexpected default migration warnings: %v", warnings)

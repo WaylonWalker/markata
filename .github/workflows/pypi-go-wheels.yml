@@ -1,0 +1,138 @@
+name: Go Markata PyPI wheels
+
+# PRs build and inspect wheels without secrets. Publishing only happens on an
+# explicit main-branch workflow dispatch, confirmed by a human, after PyPI
+# trusts this exact workflow for the existing "markata" project.
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/pypi-go-wheels.yml'
+      - 'scripts/build-pypi-wheels.sh'
+      - 'scripts/check-pypi-wheels.py'
+      - 'cmd/markata/**'
+      - 'cmd/markata-go/**'
+      - 'go.mod'
+      - 'go.sum'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '0.x PyPI version to build (must not exist on PyPI)'
+        required: true
+        type: string
+        default: '0.14.0'
+      publish:
+        description: 'Actually publish Go wheels as markata on PyPI'
+        required: true
+        type: boolean
+        default: false
+      confirm:
+        description: 'For publishing, type REPLACE_PYTHON_MARKATA_WITH_GO'
+        required: false
+        type: string
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  wheels:
+    name: Build and verify eight Go wheels
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    env:
+      MARKATA_WHEEL_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.version || '0.14.0.dev0' }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v7
+        with:
+          go-version: '1.26'
+          cache: true
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - name: Install Simon Willison's go-to-wheel
+        run: python -m pip install go-to-wheel==0.2
+      - name: Build Go command into PyPI wheel artifacts (no upload)
+        run: bash scripts/build-pypi-wheels.sh "${MARKATA_WHEEL_VERSION}"
+      - name: Verify platform wheel tags, Go binaries and metadata
+        run: python scripts/check-pypi-wheels.py dist/pypi-wheels
+      - name: Install and execute wheel in a clean Python environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m venv "${RUNNER_TEMP}/markata-wheel-venv"
+          wheel="dist/pypi-wheels/markata-${MARKATA_WHEEL_VERSION}-py3-none-manylinux_2_17_x86_64.whl"
+          "${RUNNER_TEMP}/markata-wheel-venv/bin/python" -m pip install --no-deps --no-index "${wheel}"
+          "${RUNNER_TEMP}/markata-wheel-venv/bin/python" -m markata version
+          "${RUNNER_TEMP}/markata-wheel-venv/bin/markata" version
+          "${RUNNER_TEMP}/markata-wheel-venv/bin/markata" --help
+      - name: Save inspected wheel artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: markata-go-pypi-wheels
+          path: dist/pypi-wheels/*.whl
+          if-no-files-found: error
+          retention-days: 7
+
+  smoke-platforms:
+    name: Install Go CLI on ${{ matrix.os }}
+    needs: wheels
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    env:
+      MARKATA_WHEEL_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.version || '0.14.0.dev0' }}
+    steps:
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - uses: actions/download-artifact@v8
+        with:
+          name: markata-go-pypi-wheels
+          path: dist/pypi-wheels
+      - name: Offline install matching platform wheel (no Python legacy fallback)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --no-index --no-deps --only-binary=:all: \
+            --find-links=dist/pypi-wheels "markata==${MARKATA_WHEEL_VERSION}"
+      - name: Exercise Python module and installed Go executable
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m markata version
+          python -m markata --help
+          markata version
+
+  publish:
+    name: Publish markata 0.x Go wheels to PyPI
+    needs: [wheels, smoke-platforms]
+    # Never publish PRs, tags, forks, or a dispatch without explicit approval.
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      github.ref == 'refs/heads/main' &&
+      inputs.publish == true &&
+      inputs.confirm == 'REPLACE_PYTHON_MARKATA_WITH_GO'
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/markata/
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: markata-go-pypi-wheels
+          path: dist/
+      - name: Publish verified wheels using PyPI trusted publisher OIDC
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/

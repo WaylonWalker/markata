@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 // parseTime parses a date string in YYYY-MM-DD format.

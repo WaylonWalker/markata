@@ -9,13 +9,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/buildstats"
-	"github.com/WaylonWalker/markata-go/pkg/config"
-	"github.com/WaylonWalker/markata-go/pkg/diagnostics"
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/models"
-	"github.com/WaylonWalker/markata-go/pkg/plugins"
-	"github.com/WaylonWalker/markata-go/pkg/servecontrol"
+	"github.com/WaylonWalker/markata/pkg/buildstats"
+	"github.com/WaylonWalker/markata/pkg/config"
+	"github.com/WaylonWalker/markata/pkg/diagnostics"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/plugins"
+	"github.com/WaylonWalker/markata/pkg/servecontrol"
 )
 
 // createManager creates and configures a lifecycle manager with all plugins.

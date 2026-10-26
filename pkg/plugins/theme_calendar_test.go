@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
 )
 
 func TestThemeCalendarPlugin_Name(t *testing.T) {

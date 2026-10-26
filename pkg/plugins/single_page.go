@@ -1,7 +1,7 @@
 package plugins
 
 import (
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
 )
 
 // SinglePageRootPlugin publishes every loaded post at the site root.

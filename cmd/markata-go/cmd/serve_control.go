@@ -8,12 +8,12 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/WaylonWalker/markata-go/pkg/diagnostics"
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/logging"
-	"github.com/WaylonWalker/markata-go/pkg/palettes"
-	"github.com/WaylonWalker/markata-go/pkg/servecontrol"
-	"github.com/WaylonWalker/markata-go/pkg/servefix"
+	"github.com/WaylonWalker/markata/pkg/diagnostics"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/logging"
+	"github.com/WaylonWalker/markata/pkg/palettes"
+	"github.com/WaylonWalker/markata/pkg/servecontrol"
+	"github.com/WaylonWalker/markata/pkg/servefix"
 )
 
 var serveControl struct {

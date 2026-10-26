@@ -16,7 +16,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/runtimeenv"
+	"github.com/WaylonWalker/markata/pkg/runtimeenv"
 )
 
 const ResultSchemaVersion = 1

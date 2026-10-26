@@ -3,10 +3,11 @@
 <article class="card card-note h-entry">
   <a class="u-url" href="{{ post.href }}" hidden></a>
   <div class="card-content">
-    {% if post.description %}
+    {# Use rendered Markdown for the visible excerpt; the SEO description is plain text. #}
+    {% if post.article_html %}
+    <div class="card-text p-content">{{ post.article_html | excerpt:"paragraphs=3,chars=1000" }}</div>
+    {% elif post.description %}
     <p class="card-text p-content">{{ post.description }}</p>
-    {% elif post.article_html %}
-    <div class="card-text p-content">{{ post.article_html | striptags | truncatechars:200 }}</div>
     {% endif %}
   </div>
 

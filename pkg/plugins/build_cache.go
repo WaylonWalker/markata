@@ -7,11 +7,11 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/WaylonWalker/markata-go/pkg/buildcache"
-	"github.com/WaylonWalker/markata-go/pkg/config"
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/logging"
-	"github.com/WaylonWalker/markata-go/pkg/themes"
+	"github.com/WaylonWalker/markata/pkg/buildcache"
+	"github.com/WaylonWalker/markata/pkg/config"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/logging"
+	"github.com/WaylonWalker/markata/pkg/themes"
 )
 
 var buildCacheLog = logging.Component("build_cache")

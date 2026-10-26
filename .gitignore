@@ -994,3 +994,4 @@ scripts/fill_continue_prompts.py
 scripts/test_fill_continue_prompts.py
 worktrees
 .markata-cache
+/test-results

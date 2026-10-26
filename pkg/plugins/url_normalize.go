@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 var absoluteHTTPURLRegex = regexp.MustCompile(`http://[^\s"'<>)]*`)

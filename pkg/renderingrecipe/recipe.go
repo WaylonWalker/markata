@@ -18,7 +18,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/WaylonWalker/markata-go/pkg/renderingcontract"
+	"github.com/WaylonWalker/markata/pkg/renderingcontract"
 	jsoncanonicalizer "github.com/cyberphone/json-canonicalization/go/src/webpki.org/jsoncanonicalizer"
 )
 

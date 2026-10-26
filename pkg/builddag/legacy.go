@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
 )
 
 // LegacyTasks returns the runnable plugin hooks for one lifecycle stage as an

@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/config"
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/config"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 func TestStatsPlugin_Name(t *testing.T) {

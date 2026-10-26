@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/WaylonWalker/markata-go/pkg/servefix"
+	"github.com/WaylonWalker/markata/pkg/servefix"
 )
 
 func TestWebHandler_SharedRuntimeStateAndActions(t *testing.T) {

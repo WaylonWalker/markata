@@ -13,6 +13,10 @@ tags:
 
 For a photo-first shots archive, set `html = "feed-photo-grid.html"` under the feed's `[markata-go.feeds.templates]` table. See the [photo galleries guide](/docs/guides/galleries/).
 
+Editorial feed cards keep thumbnails lazy loaded, including featured weekly
+leads. Use eager loading and high fetch priority only when a page's actual
+above-the-fold image is likely to be its Largest Contentful Paint element.
+
 Feeds are the core differentiator of markata-go. A feed is a **filtered, sorted, paginated collection of posts** that can output to **multiple formats** simultaneously from a single definition.
 
 Feeds only include posts that produced renderable page output. If a page is skipped, remains a draft, or has no rendered HTML because its content is empty, markata-go omits it from feed pages and syndication outputs instead of publishing a broken entry.
@@ -1613,3 +1617,22 @@ the same while its month details are available on demand.
 - [Templates Guide](/docs/guides/templates/) - Template system documentation
 - [Frontmatter Guide](/docs/guides/frontmatter/) - Post metadata for filtering
 - [Quick Reference](/docs/guides/quick-reference/) - Filter expression cheat sheet
+
+### Editorial loading
+
+Editorial archives render the visible cards immediately and let the browser
+defer layout for offscreen cards and later weeks until they approach the
+viewport. All posts are still in the HTML, including when JavaScript is
+disabled. Browser find and printing keep access to the complete page. Browsers
+without content visibility support render the complete page normally.
+
+Keyboard navigation setup does not download the next archive page. Link hover,
+focus, and explicit feed cycling can still prepare the next navigation.
+
+Calendar feeds reserve their full list width before optional calendar styles
+arrive. Navbar search also reserves its final width before search hydration,
+so opening an archive does not move the content as those styles finish loading.
+
+Editorial weeks below the first viewport reserve space according to the number
+of items they contain. This keeps unrendered weeks from crowding following
+sections. The browser remembers their actual height after revealing them.

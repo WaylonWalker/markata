@@ -5,7 +5,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/models"
 	"github.com/flosch/pongo2/v6"
 )
 
@@ -1368,7 +1368,9 @@ func sidebarItemsToMaps(items []models.SidebarNavItem) []map[string]interface{} 
 // ToPongo2 converts the Context to a pongo2.Context for template execution.
 func (c Context) ToPongo2() pongo2.Context {
 	postMap := postToMap(c.Post)
-	configMap := GetConfigMap(c.Config)
+	// Config maps are cached and shared between renders. Keep the cached
+	// projection immutable: each execution may add render-specific values.
+	configMap := cloneTemplateMap(GetConfigMap(c.Config))
 	if c.Config != nil {
 		configMap["theme"] = ThemeToMap(&c.Config.Theme)
 	}
@@ -1396,6 +1398,17 @@ func (c Context) ToPongo2() pongo2.Context {
 	addExtraContext(&ctx, c.Extra)
 
 	return ctx
+}
+
+func cloneTemplateMap(values map[string]interface{}) map[string]interface{} {
+	if values == nil {
+		return nil
+	}
+	cloned := make(map[string]interface{}, len(values))
+	for key, value := range values {
+		cloned[key] = value
+	}
+	return cloned
 }
 
 // ResolveDocSidebar returns the effective table-of-contents sidebar settings.

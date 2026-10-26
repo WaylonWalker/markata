@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/servecontrol"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/servecontrol"
 	"github.com/spf13/cobra"
 )
 

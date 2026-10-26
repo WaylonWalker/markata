@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/buildstats"
+	"github.com/WaylonWalker/markata/pkg/buildstats"
 )
 
 func TestBuildSpanViewOrdersDepthAndCriticalChain(t *testing.T) {

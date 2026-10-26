@@ -8,7 +8,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/WaylonWalker/markata-go/pkg/encryption"
+	"github.com/WaylonWalker/markata/pkg/encryption"
 )
 
 const (

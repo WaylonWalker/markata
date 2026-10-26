@@ -8,8 +8,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 // ExternalLinkHoverConfig configures the external_link_hover plugin.

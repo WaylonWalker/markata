@@ -234,7 +234,7 @@ func generateGuide(index int) string {
 	sb.WriteString(selectParagraph(index+1) + "\n\n")
 
 	sb.WriteString("### Installation\n\n")
-	sb.WriteString("```bash\ngo install github.com/WaylonWalker/markata-go/cmd/markata-go@latest\n```\n\n")
+	sb.WriteString("```bash\ngo install github.com/WaylonWalker/markata/cmd/markata-go@latest\n```\n\n")
 
 	sb.WriteString("### Configuration\n\n")
 	sb.WriteString("```toml\n[markata-go]\ntitle = \"My Site\"\noutput_dir = \"public\"\n```\n\n")

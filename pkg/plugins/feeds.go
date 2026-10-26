@@ -8,10 +8,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/diagnostics"
-	"github.com/WaylonWalker/markata-go/pkg/filter"
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/diagnostics"
+	"github.com/WaylonWalker/markata/pkg/filter"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 // FeedsPlugin processes configured feeds during the collect stage.

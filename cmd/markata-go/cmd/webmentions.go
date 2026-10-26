@@ -5,7 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/WaylonWalker/markata-go/pkg/plugins"
+	"github.com/WaylonWalker/markata/pkg/plugins"
 )
 
 var (

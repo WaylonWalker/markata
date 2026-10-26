@@ -16,13 +16,13 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
 )
 
 const (
 	assetMinifyRevision = "3"
-	assetMinifyVersion  = "v2.24.19"
-	assetParseVersion   = "v2.8.16"
+	assetMinifyVersion  = "v2.24.23"
+	assetParseVersion   = "v2.8.20"
 )
 
 var errUnsafeMinifyCacheLocation = errors.New("unsafe asset cache")

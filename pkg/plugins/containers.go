@@ -2,7 +2,10 @@
 package plugins
 
 import (
+	"math"
 	"regexp"
+	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/yuin/goldmark"
@@ -16,6 +19,101 @@ import (
 
 // KindContainer is the AST node kind for container elements.
 var KindContainer = ast.NewNodeKind("Container")
+
+var kindSectionKicker = ast.NewNodeKind("SectionKicker")
+
+type sectionKicker struct {
+	ast.BaseInline
+	value []byte
+}
+
+func (n *sectionKicker) Kind() ast.NodeKind   { return kindSectionKicker }
+func (n *sectionKicker) Text(_ []byte) []byte { return n.value }
+func (n *sectionKicker) Dump(source []byte, level int) {
+	ast.DumpHelper(n, source, level, nil, nil)
+}
+
+var sectionKickerPrefix = regexp.MustCompile(`^([^\s·]{1,16}) · `)
+
+// Section restructuring runs after heading IDs (HeadingIDTransformer, -90).
+// The anchor transformer (100) then links to that unchanged ID, regardless of
+// whether the author places permalinks before or after the heading text.
+type sectionTransformer struct{}
+
+func (t *sectionTransformer) Transform(doc *ast.Document, reader text.Reader, _ parser.Context) {
+	source := reader.Source()
+	var sections []*Container
+	if err := ast.Walk(doc, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
+		if c, ok := n.(*Container); entering && ok && slices.Contains(c.Classes, "md-section") {
+			sections = append(sections, c)
+		}
+		return ast.WalkContinue, nil
+	}); err != nil {
+		return
+	}
+	for _, section := range sections {
+		body := NewContainer([]string{"md-section-body"}, "", nil, 0)
+		var head *Container
+		if heading, ok := section.FirstChild().(*ast.Heading); ok && heading.Level == 2 {
+			head = NewContainer([]string{"md-section-head"}, "", nil, 0)
+			section.InsertBefore(section, heading, head)
+			next := heading.NextSibling()
+			head.AppendChild(head, heading)
+			if _, ok := next.(*ast.Paragraph); ok {
+				head.AppendChild(head, next)
+			}
+			splitSectionKicker(heading, source)
+		}
+		for child := section.FirstChild(); child != nil; {
+			next := child.NextSibling()
+			if child != head {
+				body.AppendChild(body, child)
+			}
+			child = next
+		}
+		section.AppendChild(section, body)
+	}
+}
+
+func splitSectionKicker(heading *ast.Heading, source []byte) {
+	first, ok := heading.FirstChild().(*ast.Text)
+	if !ok {
+		return
+	}
+	// Extensions can split otherwise plain text into adjacent Text nodes (for
+	// example CJK separates the middle dot from the following space).
+	var leading strings.Builder
+	for child := ast.Node(first); child != nil; child = child.NextSibling() {
+		part, ok := child.(*ast.Text)
+		if !ok {
+			break
+		}
+		leading.Write(part.Segment.Value(source))
+	}
+	value := []byte(leading.String())
+	match := sectionKickerPrefix.FindSubmatchIndex(value)
+	if match == nil {
+		return
+	}
+	kicker := &sectionKicker{value: value[match[2]:match[3]]}
+	heading.InsertBefore(heading, first, kicker)
+	remaining := match[1]
+	for child := ast.Node(first); child != nil && remaining > 0; {
+		part, ok := child.(*ast.Text)
+		if !ok {
+			break
+		}
+		next := child.NextSibling()
+		if part.Segment.Len() <= remaining {
+			remaining -= part.Segment.Len()
+			heading.RemoveChild(heading, child)
+		} else {
+			part.Segment.Start += remaining
+			remaining = 0
+		}
+		child = next
+	}
+}
 
 // Container is an AST node representing a container block (::: class).
 type Container struct {
@@ -217,6 +315,18 @@ func newContainerHTMLRenderer() renderer.NodeRenderer {
 // RegisterFuncs registers the render functions.
 func (r *containerHTMLRenderer) RegisterFuncs(reg renderer.NodeRendererFuncRegisterer) {
 	reg.Register(KindContainer, r.renderContainer)
+	reg.Register(kindSectionKicker, r.renderSectionKicker)
+}
+
+func (r *containerHTMLRenderer) renderSectionKicker(w util.BufWriter, _ []byte, n ast.Node, entering bool) (ast.WalkStatus, error) {
+	if entering {
+		kicker, ok := n.(*sectionKicker)
+		if ok {
+			_, err := w.WriteString(`<span class="md-section-kicker">` + escapeHTMLAttr(string(kicker.value)) + "</span>\n")
+			return ast.WalkContinue, err
+		}
+	}
+	return ast.WalkContinue, nil
 }
 
 // renderContainer renders a Container node to HTML.
@@ -228,8 +338,32 @@ func (r *containerHTMLRenderer) renderContainer(w util.BufWriter, _ []byte, n as
 		return ast.WalkContinue, nil
 	}
 
+	// Source/preview disclosures are native HTML. Content inside the
+	// container stays ordinary fenced Markdown, with no JS to initialize.
+	// The source panel is marked as UI so rich post copying can omit it.
+	for _, class := range container.Classes {
+		if class == "md-source" {
+			if entering {
+				label := strings.TrimSpace(container.ExtraAttrs["data-label"])
+				if label == "" {
+					label = "Show Markdown source"
+				}
+				_, _ = w.WriteString(`<details class="md-source" data-markata-ui="source-preview"><summary>`)
+				_, _ = w.WriteString(escapeHTMLAttr(label))
+				_, _ = w.WriteString("</summary>\n")
+			} else {
+				_, _ = w.WriteString("</details>\n")
+			}
+			return ast.WalkContinue, nil
+		}
+	}
+
+	tag := "div"
+	if slices.Contains(container.Classes, "md-section") {
+		tag = "section"
+	}
 	if entering {
-		_, _ = w.WriteString("<div")
+		_, _ = w.WriteString("<" + tag)
 
 		// Add ID if present
 		if container.ContainerID != "" {
@@ -260,11 +394,55 @@ func (r *containerHTMLRenderer) renderContainer(w util.BufWriter, _ []byte, n as
 		}
 
 		_, _ = w.WriteString(">\n")
+		r.renderGauge(w, container)
 	} else {
-		_, _ = w.WriteString("</div>\n")
+		_, _ = w.WriteString("</" + tag + ">\n")
 	}
 
 	return ast.WalkContinue, nil
+}
+
+// renderGauge turns an opt-in Markdown container into a native, accessible
+// HTML meter/progress element. A visible Markdown caption remains ordinary
+// container content, and missing or invalid numeric data leaves that caption
+// intact without inserting a misleading bar. No client JavaScript is needed.
+//
+//nolint:errcheck // Writes to the Goldmark renderer are handled at the caller level.
+func (r *containerHTMLRenderer) renderGauge(w util.BufWriter, container *Container) {
+	tag := ""
+	for _, class := range container.Classes {
+		switch class {
+		case "md-meter":
+			tag = "meter"
+		case "md-progress":
+			tag = "progress"
+		}
+	}
+	if tag == "" {
+		return
+	}
+
+	valueText, hasValue := container.ExtraAttrs["data-value"]
+	maxText, hasMax := container.ExtraAttrs["data-max"]
+	label := strings.TrimSpace(container.ExtraAttrs["data-label"])
+	if !hasValue || !hasMax || label == "" {
+		return
+	}
+	value, valueErr := strconv.ParseFloat(valueText, 64)
+	maximum, maxErr := strconv.ParseFloat(maxText, 64)
+	if valueErr != nil || maxErr != nil ||
+		math.IsNaN(value) || math.IsNaN(maximum) ||
+		math.IsInf(value, 0) || math.IsInf(maximum, 0) ||
+		maximum <= 0 || value < 0 || value > maximum {
+		return
+	}
+
+	// Emit canonical numbers only; label text remains safely escaped.
+	_, _ = w.WriteString("<" + tag + ` value="` + strconv.FormatFloat(value, 'f', -1, 64))
+	_, _ = w.WriteString(`" max="` + strconv.FormatFloat(maximum, 'f', -1, 64))
+	_, _ = w.WriteString(`" aria-label="` + escapeHTMLAttr(label) + `">`)
+	_, _ = w.WriteString(strconv.FormatFloat(value, 'f', -1, 64) + " / " + strconv.FormatFloat(maximum, 'f', -1, 64))
+	_, _ = w.WriteString("</" + tag + ">\n")
 }
 
 // escapeHTMLAttr escapes a string for use in an HTML attribute.
@@ -295,6 +473,7 @@ type ContainerExtension struct{}
 // Extend adds the container parser and renderer to goldmark.
 func (e *ContainerExtension) Extend(m goldmark.Markdown) {
 	m.Parser().AddOptions(
+		parser.WithASTTransformers(util.Prioritized(&sectionTransformer{}, 50)),
 		parser.WithBlockParsers(
 			// Lower priority than admonitions so !!! takes precedence
 			util.Prioritized(newContainerParser(), 800),

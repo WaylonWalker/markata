@@ -15,9 +15,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/buildstats"
-	"github.com/WaylonWalker/markata-go/pkg/diagnostics"
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/buildstats"
+	"github.com/WaylonWalker/markata/pkg/diagnostics"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
 )
 
 // Keep the original encoder and custom MarshalJSON as an independent wire-format

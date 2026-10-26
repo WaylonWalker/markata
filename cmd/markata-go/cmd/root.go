@@ -7,8 +7,8 @@ import (
 	"runtime/pprof"
 	"strings"
 
-	"github.com/WaylonWalker/markata-go/pkg/logging"
-	"github.com/WaylonWalker/markata-go/pkg/suggest"
+	"github.com/WaylonWalker/markata/pkg/logging"
+	"github.com/WaylonWalker/markata/pkg/suggest"
 	"github.com/spf13/cobra"
 )
 
@@ -73,10 +73,10 @@ Common help:
   markata-go explain content # Agent workflow for site content
 
 Documentation:
-  https://github.com/WaylonWalker/markata-go/tree/main/docs
+  https://github.com/WaylonWalker/markata/tree/main/docs
 
 Issues:
-  https://github.com/WaylonWalker/markata-go/issues
+  https://github.com/WaylonWalker/markata/issues
 
 Profiling:
   markata-go build --cpuprofile cpu.prof   # Write CPU profile
@@ -105,7 +105,9 @@ Profiling:
 		// Build Lab resolves and binds every child to its copied workspace. Do
 		// not let the caller's site-directory selection change the parent
 		// process's fixture resolution or child command setup.
-		if !isBuildLabCommand(cmd) {
+		// Triage must still work when a requested site directory is broken.
+		// It reports the inaccessible path rather than failing before diagnostics.
+		if !isBuildLabCommand(cmd) && cmd != triageCmd {
 			if err := activateSiteDir(); err != nil {
 				return err
 			}

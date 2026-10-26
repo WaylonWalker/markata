@@ -35,9 +35,15 @@
 
   {% if config.Extra.fontpack_css %}
   {% if not config.Extra.fontpack_preloads_json %}
+  {% if feed_presentation == "editorial" and feed_sections %}
+  {% for url in config.Extra.fontpack_editorial_preload_urls %}
+  <link rel="preload" href="{{ url }}" as="font" type="font/woff2" crossorigin>
+  {% endfor %}
+  {% else %}
   {% for url in post.Extra._fontpack_preload_urls | default:config.Extra.fontpack_preload_urls %}
   <link rel="preload" href="{{ url }}" as="font" type="font/woff2" crossorigin>
   {% endfor %}
+  {% endif %}
   {% endif %}
   {% endif %}
   <!-- Core CSS (always loaded) -->
@@ -64,6 +70,8 @@
   {% if needs_code_css %}
   <link rel="stylesheet" href="{{ 'css/code.css' | theme_asset_hashed }}">
   <link rel="stylesheet" href="{{ 'css/chroma.css' | theme_asset_hashed }}">
+  {# Only code-bearing pages receive the enhancement bundle; no-JS stays readable. #}
+  <script src="{{ 'js/code-chrome.js' | theme_asset_hashed }}" defer></script>
   {% endif %}
   {# Plain post pages do not need feed-card styles on first paint. #}
   {% if not skip_cards_css %}
@@ -77,6 +85,10 @@
   {% endif %}
   {% if has_encrypted_content %}
   <link rel="stylesheet" href="{{ 'css/encryption.css' | theme_asset_hashed }}">
+  {% endif %}
+  {% if needs_roads %}
+  <link rel="stylesheet" href="{{ 'css/roads.css' | theme_asset_hashed }}">
+  <script src="{{ 'js/roads.js' | theme_asset_hashed }}" defer></script>
   {% endif %}
 
   <!-- Palette Switcher CSS (when enabled) -->
@@ -1041,6 +1053,11 @@
   <script src="{{ 'js/conditional-css.js' | theme_asset_hashed }}" defer></script>
   {% endif %}
 
+  {# Lightweight sidebar fallback if optional navigation JavaScript is unavailable. #}
+  {% if config.components.feed_sidebar.enabled or resolved_doc_sidebar.enabled or resolved_content_sidebar.enabled %}
+  <script src="{{ 'js/sidebar-rescue.js' | theme_asset_hashed }}" defer></script>
+  {% endif %}
+
   <!-- Decryption JS (only loaded for encrypted posts) -->
   {% if has_encrypted_content %}
   <script src="{{ 'js/decryption.js' | theme_asset_hashed }}" defer></script>
@@ -1123,14 +1140,17 @@
           raf(refresh);
         }
 
+        var resizeObserver = window.ResizeObserver ? new ResizeObserver(schedule) : null;
+        if (resizeObserver) resizeObserver.observe(article);
         window.addEventListener('scroll', schedule, { passive: true });
         window.addEventListener('resize', schedule);
         window.__articleProgressCleanup = function() {
+          if (resizeObserver) resizeObserver.disconnect();
           window.removeEventListener('scroll', schedule);
           window.removeEventListener('resize', schedule);
         };
 
-        schedule();
+        if (!resizeObserver) schedule();
       }
 
       window.initArticleProgressIndicator = initArticleProgressIndicator;

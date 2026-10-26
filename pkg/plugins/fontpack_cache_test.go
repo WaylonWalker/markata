@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/WaylonWalker/markata-go/pkg/fontpacks"
+	"github.com/WaylonWalker/markata/pkg/fontpacks"
 )
 
 func fontpackTestCacheKey(t *testing.T, content, defaultName string, names []string, picker bool, source *fontpacks.CatalogSource) string {

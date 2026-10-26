@@ -15,6 +15,12 @@
 
     var grid = root.querySelector("[data-image-grid]");
     var cards = Array.prototype.slice.call(root.querySelectorAll("[data-image-card]"));
+    var baseHref = (root.getAttribute ? root.getAttribute("data-image-base") : null) || "/images/";
+    var currentPage = Number((root.getAttribute ? root.getAttribute("data-image-page") : null) || 1);
+    var totalPages = Number((root.getAttribute ? root.getAttribute("data-image-total-pages") : null) || 1);
+    var totalCount = Number((root.getAttribute ? root.getAttribute("data-image-total-count") : null) || cards.length);
+    var allPagesLoaded = totalPages <= 1;
+    var loadPromise = null;
     var search = root.querySelector("[data-image-search]");
     var sort = root.querySelector("[data-image-sort]");
     var count = root.querySelector("[data-image-count]");
@@ -148,14 +154,72 @@
       }
 
       if (count) {
-        count.textContent = visible.length + " of " + cards.length + " media items";
+        count.textContent = visible.length + " of " + (allPagesLoaded ? cards.length : totalCount) + " media items" +
+          (allPagesLoaded ? "" : " (page " + currentPage + " of " + totalPages + ")");
       }
       if (empty) {
         empty.hidden = visible.length !== 0;
       }
     }
 
+    // Keep the initial document bounded. Only if the visitor searches, sorts,
+    // or filters do we hydrate the remaining, already server-rendered pages.
+    // This retains global authoring controls without a JS dependency for basic
+    // paging or navigation.
+    function hydrateAllPages() {
+      if (allPagesLoaded) return Promise.resolve(true);
+      if (loadPromise) return loadPromise;
+      if (typeof window.fetch !== "function" || typeof window.DOMParser !== "function") {
+        announce("Global filtering needs JavaScript fetch; browse the page links instead.", true);
+        return Promise.resolve(false);
+      }
+      if (status) status.textContent = "Loading the rest of the image library...";
+      var requests = [];
+      for (var number = 1; number <= totalPages; number++) {
+        if (number === currentPage) continue;
+        (function (pageNumber) {
+          var href = pageNumber === 1 ? baseHref : baseHref + "page/" + pageNumber + "/";
+          requests.push(fetch(href, { credentials: "same-origin" }).then(function (response) {
+            if (!response.ok) throw new Error("Image library page " + pageNumber + " returned " + response.status);
+            return response.text();
+          }).then(function (markup) {
+            var page = new DOMParser().parseFromString(markup, "text/html");
+            var pageCards = page.querySelectorAll("[data-image-card]");
+            if (!pageCards.length) throw new Error("Image library page " + pageNumber + " has no cards");
+            return Array.prototype.slice.call(pageCards);
+          }));
+        }(number));
+      }
+      loadPromise = Promise.all(requests).then(function (pageCards) {
+        var fragment = document.createDocumentFragment();
+        pageCards.forEach(function (entry) {
+          entry.forEach(function (card) { fragment.appendChild(card); });
+        });
+        grid.appendChild(fragment);
+        cards = Array.prototype.slice.call(root.querySelectorAll("[data-image-card]"));
+        allPagesLoaded = true;
+        var pagination = root.querySelector("[data-image-pagination]");
+        if (pagination) pagination.hidden = true;
+        setupLazyVideos();
+        if (status) status.textContent = "";
+        return true;
+      }).catch(function () {
+        announce("Could not load the whole library. Use the numbered page links to continue.", true);
+        return false;
+      }).then(function (success) {
+        loadPromise = null;
+        return success;
+      });
+      return loadPromise;
+    }
+
     function scheduleApply() {
+      if (!allPagesLoaded) {
+        hydrateAllPages().then(function (success) {
+          if (success) scheduleApply();
+        });
+        return;
+      }
       if (frame) window.cancelAnimationFrame(frame);
       frame = window.requestAnimationFrame(function () {
         frame = 0;

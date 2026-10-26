@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/servecontrol"
-	"github.com/WaylonWalker/markata-go/pkg/servefix"
+	"github.com/WaylonWalker/markata/pkg/servecontrol"
+	"github.com/WaylonWalker/markata/pkg/servefix"
 	"github.com/fsnotify/fsnotify"
 )
 

@@ -33,6 +33,10 @@ its nested loading inputs, without triggering theme-grid shortcuts.
 The navbar search MUST remain accessible and keyboard operable with either
 Pagefind or Bleve, and remain lazy-loaded where it was before. CSS changes
 SHOULD use existing palette tokens and MUST NOT add extra network resources.
+Core styles MUST reserve the navbar search input height and mobile spacing
+before deferred search styles or either search renderer hydrate the placeholder.
+Loading search styles MUST NOT move the header or following content. Editorial
+feed header spacing MUST remain stable when deferred calendar styles load.
 
 ## Reader Mode
 
@@ -131,6 +135,7 @@ as pills; cards and the article container use `--radius-lg`/`--radius-xl`.
 ### Contrast Guarantees
 
 - Default theme text in compact UI surfaces such as home metadata, card metadata, and admonition titles MUST use text tokens that maintain WCAG 2.1 AA contrast at their rendered size.
+- Generic container classes such as `warning`, `note`, `info`, `success`, `error`, and `danger` MUST NOT override the palette-specific surface or foreground styles of `.admonition` elements that share those class names. Admonition body text and titles MUST maintain WCAG 2.1 AA contrast against their rendered palette surface.
 - Built-in palette regression tests MUST validate the default theme's concrete foreground/background combinations, not only abstract palette token pairs, so regressions in selector usage are caught across every shipped palette.
 
 ---
@@ -1373,7 +1378,7 @@ When the picker is enabled, the fontpack plugin resolves every catalog pack
 `[data-fontpack="<name>"]` block per pack, and appends:
 
 ```css
-:root{--fontpack-default:"brush";--fontpack-manifest:'[{"name":"brush","displayName":"Brush","heading":"Knewave","body":"Space Grotesk","code":"DM Mono"},...]'}
+:root{--fontpack-default:"system";--fontpack-manifest:'[{"name":"system","displayName":"System","heading":"system-ui","body":"system-ui","code":"ui-monospace"},{"name":"brush","displayName":"Brush","heading":"Knewave","body":"Space Grotesk","code":"DM Mono"},...]'}
 ```
 
 Each manifest entry also carries `headingFont`, `headingWeight`, `bodyFont`,
@@ -1618,6 +1623,11 @@ navigation.
 
 ### Keyboard Navigation
 
+Global keyboard shortcuts MUST ignore events originating from focused
+interactive controls, including buttons, links, menu items, tabs, and editable
+content. Native Enter and Space activation for these controls MUST continue to
+work while global shortcuts are enabled.
+
 | Key | Action |
 |-----|--------|
 | `t` | Open/close picker |
@@ -1714,6 +1724,7 @@ The `render_markdown` plugin scans rendered HTML content and sets flags in `post
 | `needs_admonitions_css` | HTML contains `class="admonition` |
 | `needs_code_css` | HTML contains `class="chroma"`, `class="highlight"`, `<pre><code`, or `<code class="language-` |
 | `needs_image_zoom` | HTML contains `data-zoomable` or `class="glightbox"` (set by `image_zoom` plugin) |
+| `needs_roads` | HTML has a `road` class token or a `data-road` attribute (see [ROADS.md](ROADS.md)) |
 
 ### Other Plugin Detection
 
@@ -1801,6 +1812,7 @@ The `document.startViewTransition()` update callback SHOULD stay limited to crit
 | Content | `code.css`, `chroma.css` | `needs_code_css` (content detection) |
 | Features | `webmentions.css` | `post.webmentions` or `needs_webmentions_css` |
 | Features | `encryption.css` | `has_encrypted_content` |
+| Content | `roads.css`, `roads.js` | `needs_roads` (content detection) |
 | Features | `glightbox.min.css` | `glightbox_enabled` and `needs_image_zoom` |
 | Features | `palette-switcher.css` | `config.theme.switcher.enabled` or (`config.theme.switcher.mode_toggle` and `config.header.show_theme_toggle`) |
 
@@ -2884,6 +2896,18 @@ h6:hover .heading-anchor,
 ```
 
 ### Mermaid Diagrams (`mermaid` plugin)
+
+Mermaid diagrams follow the active site palette. Client-rendered diagrams are
+updated when the theme or palette changes; Chromium-pre-rendered SVGs use the
+configured palette at build time. Palette values may use modern CSS expressions such as
+`color-mix()`, but the Mermaid theme API must receive concrete colors supported
+by the Mermaid version in use. Theme changes must rerender diagrams without
+discarding their original source, and server-rendered diagram markup must remain
+readable when JavaScript is disabled.
+
+Directional edges and arrowheads use the active foreground color so their
+meaning remains visible against the diagram surface. Node and cluster outlines
+may use the subtler border color.
 
 ```css
 .mermaid {
@@ -4088,3 +4112,50 @@ $palette: (
 - [CONFIG.md](./CONFIG.md) - Theme configuration
 - [CONTENT.md](./CONTENT.md) - Admonition syntax
 - [SPEC.md](./SPEC.md) - Core specification
+
+### Deferred palette catalog
+
+The default theme's initial palette-core stylesheet MUST include only configured
+light/dark palette metadata and colors. The full palette stylesheet MUST retain
+the complete catalog for custom templates and lazy picker loading. If the
+configured pair cannot be resolved, retain the full manifest as a fallback.
+The picker MUST refresh a previously cached core manifest after full palette
+styles become ready, so every color remains available on the first opening.
+
+Generated palette hashes participate in HTML cache invalidation after all
+Configure hooks finish. Consecutive full builds must update cached archive
+stylesheet URLs when generated colors or metadata change, even if source
+content, templates, and static files are unchanged. Unchanged generated
+assets preserve warm page and feed caches.
+
+Font preloads include each distinct body, display, and heading source once.
+A separate display role must not suppress the heading face used by ordinary
+page titles. Code and extended coverage remain demand-loaded. The configured
+tier selection and returning visitor font-pack choice are preserved.
+
+Initial title fitting and heading contour measurements use ResizeObserver
+delivery when available, allowing the browser's first layout to complete before
+measurement. Font-ready subscriptions begin after the initial rendering
+opportunity. Font loading, later resizing, heading text changes, and article
+navigation retain the same fitted sizes and contour geometry. Browsers without
+ResizeObserver retain the animation-frame measurement fallback.
+
+The article progress indicator also uses ResizeObserver for its initial
+measurement and to refresh after article height changes. Reinitializing after
+navigation disconnects the prior observer. Scroll and viewport resize updates
+remain animation-frame throttled, with the existing fallback when observation
+is unavailable.
+
+Closed overlay drawers must not measure header or active navigation geometry
+during startup. Opening a drawer centers the active feed item. Full-height overlay drawers
+need no header offset; desktop offsets are scoped to drawer elements, preserving
+desktop persistence and resize/scroll behavior without restyling article trees.
+An overlay drawer focuses its active navigation link when available, otherwise
+its first interactive content, and Escape returns focus to the drawer handle.
+
+Where content visibility and discrete transitions are supported, closed feed
+and TOC drawers skip rendering their contents. Opening restores rendering
+immediately before focus and active-item measurements. Closing keeps contents
+rendered through the slide. Saved-open desktop drawers render immediately.
+Reduced motion and startup restoration disable the content transition with the
+drawer transition. Other browsers retain the existing drawer rendering.

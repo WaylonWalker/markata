@@ -17,9 +17,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/buildstats"
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/buildstats"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 // WebMention represents a webmention to be sent.

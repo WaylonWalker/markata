@@ -18,11 +18,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/buildcache"
-	"github.com/WaylonWalker/markata-go/pkg/buildstats"
-	"github.com/WaylonWalker/markata-go/pkg/filter"
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/buildcache"
+	"github.com/WaylonWalker/markata/pkg/buildstats"
+	"github.com/WaylonWalker/markata/pkg/filter"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 // MentionsPlugin transforms @handle syntax into HTML links
@@ -32,7 +32,7 @@ type MentionsPlugin struct {
 	cssClass string
 }
 
-const mentionsCacheVersion = "mentions:v1"
+const mentionsCacheVersion = "mentions:v2"
 
 // NewMentionsPlugin creates a new MentionsPlugin.
 func NewMentionsPlugin() *MentionsPlugin {
@@ -89,11 +89,8 @@ func (p *MentionsPlugin) Transform(m *lifecycle.Manager) error {
 
 	log.Printf("[mentions] Found %d handles in handleMap", len(handleMap))
 
-	if len(handleMap) == 0 {
-		// No blogroll entries, nothing to resolve
-		log.Printf("[mentions] No handle map entries, skipping")
-		return nil
-	}
+	// Keep processing when the blogroll is empty: unknown ~attributions
+	// still need distinct styling and are caught by the offline linter.
 
 	// Fetch metadata for all unique domains
 	domainMap := p.fetchAllMetadata(m, handleMap)
@@ -711,12 +708,12 @@ var (
 	metaAppleTouchIconRe = regexp.MustCompile(`<link[^>]+rel=["']apple-touch-icon["'][^>]+href=["']([^"']+)["']`)
 )
 
-// mentionRegex matches @handle patterns.
+// mentionRegex matches @handle references and ~handle quote attributions.
 // Handles can contain alphanumeric characters, underscores, hyphens, and dots.
 // This supports both simple handles like @daverupert and domain-style handles
 // like @simonwillison.net. Must start with a letter and not be preceded by
 // another @ or word character.
-var mentionRegex = regexp.MustCompile(`((?:^|[^@\w])@([a-zA-Z][a-zA-Z0-9_.-]*))([^a-zA-Z0-9_.-]|$)`)
+var mentionRegex = regexp.MustCompile(`((?:^|[^@~\w])([@~])([a-zA-Z][a-zA-Z0-9_.-]*))([^a-zA-Z0-9_.-]|$)`)
 
 // mentionTrailingPunctRegex strips trailing punctuation from handles.
 // When the greedy handle match includes trailing dots, commas, etc. that are
@@ -832,14 +829,17 @@ func (p *MentionsPlugin) processMentionsSkippingAdmonitions(text string, handleM
 func (p *MentionsPlugin) replaceMentionsInText(text string, handleMap map[string]*mentionEntry) string {
 	return mentionRegex.ReplaceAllStringFunc(text, func(match string) string {
 		// Extract the handle from the match
-		// Groups: [0]=full match, [1]=prefix+@handle, [2]=handle, [3]=suffix
+		// Groups: [0]=full match, [1]=prefix+marker+handle, [2]=marker,
+		// [3]=handle, [4]=suffix.
 		groups := mentionRegex.FindStringSubmatch(match)
-		if len(groups) < 4 {
+		if len(groups) < 5 {
 			return match
 		}
 
-		handle := strings.ToLower(groups[2])
-		suffix := groups[3]
+		marker := groups[2]
+		handle := strings.ToLower(groups[3])
+		suffix := groups[4]
+		prefix, _, _ := strings.Cut(match, marker)
 
 		// Look up the handle
 		entry, found := handleMap[handle]
@@ -859,15 +859,13 @@ func (p *MentionsPlugin) replaceMentionsInText(text string, handleMap map[string
 				}
 			}
 			if !found {
+				if marker == "~" {
+					return prefix + fmt.Sprintf(`<span class=%q data-handle=%q>%s%s</span>`,
+						html.EscapeString(p.cssClass+" mention--attribution mention--unresolved"),
+						html.EscapeString("~"+handle), marker, html.EscapeString(handle)) + suffix
+				}
 				return match
 			}
-		}
-
-		// Determine what prefix was captured (space, newline, etc.)
-		prefix := ""
-		atPos := strings.Index(match, "@")
-		if atPos > 0 {
-			prefix = match[:atPos]
 		}
 
 		// Build data attributes if metadata is available
@@ -883,11 +881,17 @@ func (p *MentionsPlugin) replaceMentionsInText(text string, handleMap map[string
 			dataAttrs += fmt.Sprintf(` data-handle=%q`, html.EscapeString("@"+entry.Handle))
 		}
 
-		// Build the HTML link — always display @handle as the link text
-		link := fmt.Sprintf(`<a href=%q class=%q%s>@%s</a>`,
+		// Quote attributions get a distinct, themeable class and retain the
+		// source marker in the visible link text.
+		cssClass := p.cssClass
+		if marker == "~" {
+			cssClass += " mention--attribution"
+		}
+		link := fmt.Sprintf(`<a href=%q class=%q%s>%s%s</a>`,
 			html.EscapeString(entry.SiteURL),
-			html.EscapeString(p.cssClass),
+			html.EscapeString(cssClass),
 			dataAttrs,
+			marker,
 			html.EscapeString(entry.Handle))
 
 		return prefix + link + suffix

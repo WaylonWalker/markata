@@ -1,4 +1,4 @@
-# justfile for markata-go
+# justfile for markata
 # https://just.systems/man/en/
 
 # Default recipe - show available commands
@@ -6,12 +6,12 @@ default:
     @just --list
 
 # Project variables
-project := "markata-go"
-main := "./cmd/markata-go"
+project := "markata"
+main := "./cmd/markata"
 version := `git describe --tags --always --dirty 2>/dev/null || echo "dev"`
 commit := `git rev-parse --short HEAD 2>/dev/null || echo "none"`
 date := `date -u +"%Y-%m-%dT%H:%M:%SZ"`
-ldflags := "-s -w -X github.com/WaylonWalker/markata-go/cmd/markata-go/cmd.Version=" + version + " -X github.com/WaylonWalker/markata-go/cmd/markata-go/cmd.Commit=" + commit + " -X github.com/WaylonWalker/markata-go/cmd/markata-go/cmd.Date=" + date
+ldflags := "-s -w -X github.com/WaylonWalker/markata/cmd/markata-go/cmd.Version=" + version + " -X github.com/WaylonWalker/markata/cmd/markata-go/cmd.Commit=" + commit + " -X github.com/WaylonWalker/markata/cmd/markata-go/cmd.Date=" + date
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Development
@@ -21,7 +21,7 @@ ldflags := "-s -w -X github.com/WaylonWalker/markata-go/cmd/markata-go/cmd.Versi
 build:
     go build -ldflags '{{ldflags}}' -o {{project}} {{main}}
 
-# Canonical command alongside the historical markata-go development binary
+# Explicit canonical build alias
 build-markata:
     go build -ldflags '{{ldflags}}' -o markata ./cmd/markata
 
@@ -173,7 +173,7 @@ version: build
 
 # Generate and view docs (if godoc is installed)
 docs:
-    @echo "Starting godoc server at http://localhost:6060/pkg/github.com/WaylonWalker/markata-go/"
+    @echo "Starting godoc server at http://localhost:6060/pkg/github.com/WaylonWalker/markata/"
     godoc -http=:6060
 
 # ─────────────────────────────────────────────────────────────────────────────

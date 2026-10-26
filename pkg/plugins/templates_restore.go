@@ -1,8 +1,8 @@
 package plugins
 
 import (
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 // restoreCachedFullHTML joins all reads before assigning public HTML or

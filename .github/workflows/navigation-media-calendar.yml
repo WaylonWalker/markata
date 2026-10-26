@@ -9,6 +9,8 @@ on:
       - "pkg/themes/default/templates/base.html"
       - "templates/base.html"
       - "scripts/navigation-media-calendar.browser.test.cjs"
+      - "scripts/view-transition-visual-stability.browser.test.cjs"
+      - "pkg/themes/default/static/css/components.css"
       - ".github/workflows/navigation-media-calendar.yml"
   workflow_dispatch:
 
@@ -20,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version: "22"
@@ -33,4 +35,6 @@ jobs:
           node --check pkg/themes/default/static/js/calendar-feed.js
           node --check pkg/themes/default/static/js/conditional-css.js
           node --check scripts/navigation-media-calendar.browser.test.cjs
-          node --test scripts/navigation-media-calendar.browser.test.cjs
+          node --check pkg/themes/default/static/js/view-transitions.js
+          node --check scripts/view-transition-visual-stability.browser.test.cjs
+          node --test scripts/navigation-media-calendar.browser.test.cjs scripts/view-transition-visual-stability.browser.test.cjs

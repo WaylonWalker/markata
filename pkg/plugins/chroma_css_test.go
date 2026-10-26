@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
 )
 
 func TestChromaCSSPlugin_Name(t *testing.T) {

@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/palettes"
+	"github.com/WaylonWalker/markata/pkg/palettes"
 )
 
 func TestEasterDate_KnownYears(t *testing.T) {

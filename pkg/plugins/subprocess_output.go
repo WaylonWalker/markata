@@ -5,7 +5,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/WaylonWalker/markata-go/pkg/logging"
+	"github.com/WaylonWalker/markata/pkg/logging"
 )
 
 const maxSubprocessLineBytes = 16 * 1024

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/WaylonWalker/markata-go/pkg/agentskill"
+	"github.com/WaylonWalker/markata/pkg/agentskill"
 	"github.com/spf13/cobra"
 )
 
@@ -38,6 +38,31 @@ func TestNormalizeAgentInstallTarget(t *testing.T) {
 				t.Fatalf("normalizeAgentInstallTarget().Name = %q, want %q", got.Name, tt.want)
 			}
 		})
+	}
+}
+
+func TestNormalizeAgentInstallTarget_Suggestions(t *testing.T) {
+	for _, tt := range []struct {
+		input string
+		want  string
+	}{
+		{input: "copilot", want: "github-copilot"},
+		{input: " COPILOT ", want: "github-copilot"},
+		{input: "opencod", want: "opencode"},
+		{input: "cluade", want: "claude-code"},
+	} {
+		t.Run(tt.input, func(t *testing.T) {
+			_, err := normalizeAgentInstallTarget(tt.input)
+			if err == nil || !strings.Contains(err.Error(), "Did you mean") ||
+				!strings.Contains(err.Error(), "--agent "+tt.want) {
+				t.Fatalf("expected suggestion for %q, got %v", tt.want, err)
+			}
+		})
+	}
+	_, err := normalizeAgentInstallTarget("not-a-real-agent-xyz")
+	if err == nil || strings.Contains(err.Error(), "Did you mean") ||
+		!strings.Contains(err.Error(), "agent list-agents") {
+		t.Fatalf("expected list guidance without an unrelated suggestion, got %v", err)
 	}
 }
 
@@ -84,6 +109,11 @@ func TestResolveAgentInstallTarget_GlobalRequiresExplicitAgent(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "--global requires --agent") {
 		t.Fatalf("expected --global guidance, got %v", err)
+	}
+	for _, want := range []string{"--agent github-copilot", "agent list-agents"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Fatalf("expected %q guidance, got %v", want, err)
+		}
 	}
 }
 
@@ -640,6 +670,45 @@ func TestRunAgentDoctorCommand_UpToDate(t *testing.T) {
 	}
 	if !strings.Contains(stdout.String(), "Agent:     universal") {
 		t.Errorf("expected agent line in output, got %q", stdout.String())
+	}
+}
+
+func TestAgentColor_RespectsCLIColorControls(t *testing.T) {
+	previousNoColor, previousForceColor, previousLogFormat, previousCommand := noColor, forceColor, logFormat, currentCmd
+	t.Cleanup(func() {
+		noColor, forceColor, logFormat, currentCmd = previousNoColor, previousForceColor, previousLogFormat, previousCommand
+	})
+	t.Setenv("NO_COLOR", "")
+	t.Setenv("TERM", "xterm-256color")
+
+	command := &cobra.Command{Use: "agent"}
+	command.SetOut(bytes.NewBuffer(nil))
+	currentCmd = command
+
+	tests := []struct {
+		name       string
+		noColorEnv string
+		noColor    bool
+		force      bool
+		logFormat  string
+		wantANSI   bool
+	}{
+		{name: "default redirected output is plain"},
+		{name: "NO_COLOR", noColorEnv: "1"},
+		{name: "no color flag", noColor: true},
+		{name: "plain log format", force: true, logFormat: "plain"},
+		{name: "color flag forces redirected output", force: true, logFormat: "auto", wantANSI: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv("NO_COLOR", tt.noColorEnv)
+			noColor, forceColor, logFormat = tt.noColor, tt.force, tt.logFormat
+			got := agentGreen("ok")
+			if strings.Contains(got, "\x1b[") != tt.wantANSI {
+				t.Fatalf("agentGreen() = %q, wantANSI %t", got, tt.wantANSI)
+			}
+		})
 	}
 }
 

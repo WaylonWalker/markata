@@ -52,6 +52,7 @@ The docs explain *why* and *usage* - user-friendly guides, examples, tutorials.
 | `SPEC.md` (CLI) | `docs/reference/cli.md` |
 | `CONTAINERS.md` | `docs/guides/deployment/docker.md` |
 | `CI.md` | `docs/guides/maintainer-ci.md` |
+| `ROADS.md` | `docs/guides/roads.md` |
 
 **Documentation lives in `docs/` and is built as part of the site itself.**
 
@@ -66,6 +67,7 @@ The docs explain *why* and *usage* - user-friendly guides, examples, tutorials.
 | [CLI_LIST.md](./spec/CLI_LIST.md) | CLI list command and output formats |
 | [CLI_SITE_DIR.md](./spec/CLI_SITE_DIR.md) | Cross-directory site selection and agent workflows |
 | [CLI_UX.md](./spec/CLI_UX.md) | Shared CLI UX rules for streams, color, and prompts |
+| [CLI_TRIAGE.md](./spec/CLI_TRIAGE.md) | Agent-first troubleshooting, safe diagnostics, and pipeable prompt handoff |
 | [SERVE_CONTROL_CENTER.md](./spec/SERVE_CONTROL_CENTER.md) | Shared local serve session runtime, resources, and terminal/web clients |
 | [LSP.md](./spec/LSP.md) | Language Server Protocol integration and setup guidance |
 | [CONTAINERS.md](./spec/CONTAINERS.md) | Container images and runtime environments |
@@ -73,6 +75,7 @@ The docs explain *why* and *usage* - user-friendly guides, examples, tutorials.
 | [CONFIG.md](./spec/CONFIG.md) | Configuration system, file discovery, env vars, CLI |
 | [AGENTS.md](./spec/AGENTS.md) | Agent skill packaging, install targets, and CLI |
 | [THEMES.md](./spec/THEMES.md) | **Theming system, customization, built-in styles** |
+| [ROADS.md](./spec/ROADS.md) | Scroll-drawn roads built from `::: road` containers |
 | [LIFECYCLE.md](./spec/LIFECYCLE.md) | 13 build stages, incremental builds |
 | [BUILD_DAG.md](./spec/BUILD_DAG.md) | Immutable graph declarations, canonical diagnostics, deterministic serial ordering |
 | [FEEDS.md](./spec/FEEDS.md) | **Feed system - the core differentiator** |

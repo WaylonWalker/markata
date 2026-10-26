@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/models"
 	"github.com/spf13/cobra"
 )
 

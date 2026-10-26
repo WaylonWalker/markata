@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/WaylonWalker/markata-go/pkg/buildcache"
-	"github.com/WaylonWalker/markata-go/pkg/fontpacks"
+	"github.com/WaylonWalker/markata/pkg/buildcache"
+	"github.com/WaylonWalker/markata/pkg/fontpacks"
 )
 
 func fontpackCacheKey(coverage, defaultName string, names []string, pickerEnabled bool, source *fontpacks.CatalogSource) (string, error) {

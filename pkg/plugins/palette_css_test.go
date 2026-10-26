@@ -3,14 +3,15 @@ package plugins
 import (
 	"bytes"
 	"crypto/sha256"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 func TestPaletteCSSPlugin_CorePreservesDefaultsAndDefersOtherPalettes(t *testing.T) {
@@ -22,6 +23,7 @@ func TestPaletteCSSPlugin_CorePreservesDefaultsAndDefersOtherPalettes(t *testing
 		t.Run(fmt.Sprint(enabled), func(t *testing.T) {
 			m := lifecycle.NewManager()
 			m.SetConfig(&lifecycle.Config{OutputDir: t.TempDir(), Extra: map[string]interface{}{
+				"models_config": &models.Config{Theme: models.ThemeConfig{Palette: "ayu-dark", Aesthetic: "precision"}},
 				"theme": models.ThemeConfig{
 					Palette: "ayu-dark", PaletteLight: "ayu-light", PaletteDark: "ayu-dark",
 					Switcher:  models.ThemeSwitcherConfig{Enabled: &enabled, IncludeAll: &includeAll},
@@ -50,13 +52,30 @@ func TestPaletteCSSPlugin_CorePreservesDefaultsAndDefersOtherPalettes(t *testing
 			if err != nil {
 				t.Fatal(err)
 			}
-			for _, want := range []string{`[data-palette="ayu-dark"]`, `[data-palette="ayu-light"]`, "--palette-manifest:", "--test-override: 42px"} {
+			for _, want := range []string{`[data-palette="ayu-dark"]`, `[data-palette="ayu-light"]`, "--palette-manifest:", "--test-override: 42px", `--aesthetic: "precision"`, "--color-border-strong:"} {
 				if !strings.Contains(string(core), want) {
 					t.Errorf("core missing %s", want)
 				}
 			}
-			if strings.Contains(string(core), `[data-palette="nord-dark"]`) || !strings.Contains(string(full), `[data-palette="nord-dark"]`) {
-				t.Error("optional palette blocks must remain in the full stylesheet only")
+			if strings.Contains(string(core), `nord-dark`) || !strings.Contains(string(full), `nord-dark`) {
+				t.Error("optional palette colors and metadata must remain in the full stylesheet only")
+			}
+			for name, css := range map[string][]byte{"core": core, "full": full} {
+				_, value, ok := strings.Cut(string(css), "--palette-manifest: '")
+				if !ok {
+					t.Fatalf("%s missing manifest", name)
+				}
+				value, _, _ = strings.Cut(value, "';")
+				var entries []PaletteManifestEntry
+				if err := json.Unmarshal([]byte(strings.ReplaceAll(value, "\\'", "'")), &entries); err != nil {
+					t.Fatal(err)
+				}
+				if name == "core" && len(entries) != 2 {
+					t.Fatalf("core must contain the configured pair, got %d palettes", len(entries))
+				}
+				if name == "full" && len(entries) <= 2 {
+					t.Fatal("full stylesheet must retain the complete palette catalog")
+				}
 			}
 			if len(core)*2 >= len(full) {
 				t.Errorf("core %d bytes should be less than half of full %d", len(core), len(full))

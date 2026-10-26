@@ -1586,7 +1586,7 @@ type MermaidConfig struct {
 	// CLIConfig contains settings for CLI mode (npm mmdc)
 	CLIConfig *CLIRendererConfig `json:"cli" yaml:"cli" toml:"cli"`
 
-	// ChromiumConfig contains settings for Chromium mode (mermaidcdp)
+	// ChromiumConfig contains settings for Chromium mode.
 	ChromiumConfig *ChromiumRendererConfig `json:"chromium" yaml:"chromium" toml:"chromium"`
 }
 
@@ -1599,7 +1599,7 @@ type CLIRendererConfig struct {
 	ExtraArgs string `json:"extra_args" yaml:"extra_args" toml:"extra_args"`
 }
 
-// ChromiumRendererConfig configures the Chromium-based renderer (mermaidcdp)
+// ChromiumRendererConfig configures the Chromium-based renderer.
 type ChromiumRendererConfig struct {
 	// BrowserPath is the path to the Chrome/Chromium binary. If empty, auto-detects.
 	BrowserPath string `json:"browser_path" yaml:"browser_path" toml:"browser_path"`
@@ -1693,6 +1693,10 @@ type ChartJSConfig struct {
 
 	// ContainerClass is the CSS class for the chart container div (default: "chartjs-container")
 	ContainerClass string `json:"container_class" yaml:"container_class" toml:"container_class"`
+
+	// DataDisplay sets the initial disclosure state: "open" (default) or "collapsed".
+	// An empty value also means open, preserving programmatic zero-value configs.
+	DataDisplay string `json:"data_display" yaml:"data_display" toml:"data_display"`
 }
 
 // NewChartJSConfig creates a new ChartJSConfig with default values.
@@ -1701,6 +1705,7 @@ func NewChartJSConfig() ChartJSConfig {
 		Enabled:        true,
 		CDNURL:         "/assets/vendor/chartjs/chart.min.js",
 		ContainerClass: "chartjs-container",
+		DataDisplay:    "open",
 	}
 }
 
@@ -2036,7 +2041,7 @@ func NewWebMentionsConfig() WebMentionsConfig {
 	return WebMentionsConfig{
 		Enabled:            false,
 		Outgoing:           true,
-		UserAgent:          "markata-go/1.0 (WebMention Sender; +https://github.com/WaylonWalker/markata-go)",
+		UserAgent:          "markata-go/1.0 (WebMention Sender; +https://github.com/WaylonWalker/markata)",
 		Timeout:            "30s",
 		CacheDir:           ".cache/webmentions",
 		ConcurrentRequests: 5,
@@ -3129,6 +3134,10 @@ type ImagesConfig struct {
 	// enabling it makes every supported asset centrally enumerable. The default,
 	// including a nil configuration value, is false.
 	IncludeUnreferenced *bool `json:"include_unreferenced,omitempty" yaml:"include_unreferenced,omitempty" toml:"include_unreferenced,omitempty"`
+
+	// PageSize opts into server-rendered pagination of the image library.
+	// Zero retains the historical complete-page behavior.
+	PageSize int `json:"page_size,omitempty" yaml:"page_size,omitempty" toml:"page_size,omitempty"`
 }
 
 // NewImagesConfig returns the default image-library configuration.

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 // Filter represents a compiled filter expression

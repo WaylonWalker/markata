@@ -9,10 +9,10 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/WaylonWalker/markata-go/pkg/diagnostics"
-	"github.com/WaylonWalker/markata-go/pkg/filter"
-	"github.com/WaylonWalker/markata-go/pkg/models"
-	"github.com/WaylonWalker/markata-go/pkg/templates"
+	"github.com/WaylonWalker/markata/pkg/diagnostics"
+	"github.com/WaylonWalker/markata/pkg/filter"
+	"github.com/WaylonWalker/markata/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/templates"
 )
 
 // Cache is an interface for caching data between stages.

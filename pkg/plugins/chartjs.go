@@ -9,8 +9,14 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/models"
+)
+
+const (
+	chartDataDisplayKey = "data_display"
+	chartDataOpen       = "open"
+	chartDataCollapsed  = "collapsed"
 )
 
 // ChartJSPlugin converts Chart.js JSON code blocks into rendered charts.
@@ -69,6 +75,13 @@ func (p *ChartJSPlugin) Configure(m *lifecycle.Manager) error {
 		}
 		if containerClass, ok := cfgMap["container_class"].(string); ok && containerClass != "" {
 			p.config.ContainerClass = containerClass
+		}
+		if value, exists := cfgMap[chartDataDisplayKey]; exists {
+			display, ok := value.(string)
+			if !ok || (display != chartDataOpen && display != chartDataCollapsed) {
+				return fmt.Errorf("chartjs.data_display must be \"open\" or \"collapsed\"")
+			}
+			p.config.DataDisplay = display
 		}
 	}
 
@@ -134,21 +147,70 @@ func (p *ChartJSPlugin) processPost(post *models.Post) error {
 </div>`, p.config.ContainerClass, html.EscapeString(err.Error()))
 		}
 
-		// Generate a unique ID for this chart
+		options, err := parseChartFigureOptions(chartConfig)
+		if err != nil {
+			return fmt.Sprintf(`<div class="%s chartjs-error"><p>Chart.js Error: %s</p></div>`,
+				html.EscapeString(p.config.ContainerClass), html.EscapeString(err.Error()))
+		}
+
+		// Re-encode decoded JSON using encoding/json's HTML-safe escaping.
+		// Inline scripts must never contain an authored </script> sequence.
+		safeJSON, err := json.Marshal(chartConfig)
+		if err != nil {
+			return match
+		}
+
+		// Generate a unique ID for this chart.
 		chartID := fmt.Sprintf("chartjs-%d", atomic.AddUint64(&p.idCounter, 1))
 
-		// Create the initialization script for this chart
+		// Render a real data table (or the configuration for unusual charts)
+		// so the data remains available with JavaScript disabled or offline.
+		fallback := chartStaticFallback(chartConfig, string(safeJSON))
+		display := options.DataDisplay
+		if display == "" {
+			display = p.config.DataDisplay
+		}
+		if display == chartDataCollapsed {
+			fallback = strings.Replace(fallback, `class="chartjs-data" open`, `class="chartjs-data"`, 1)
+		}
+		// Preserve legacy output byte-for-byte unless the chart opts into the
+		// new presentation/disclosure options. Legacy initialization targets
+		// the wrapper div; opted-in charts target the actual disclosure.
+		dataLookup := fmt.Sprintf("document.getElementById('%s-data')", chartID)
+		if options.Title != "" || options.Caption != "" || options.DataDisplay != "" || display == chartDataCollapsed {
+			dataLookup = fmt.Sprintf("document.querySelector('#%s-data > details')", chartID)
+		}
+
+		// Keep the fallback present and inspectable. Collapse it only after
+		// Chart.js successfully initializes; never hide it when scripts fail.
 		initScript := fmt.Sprintf(`
   (function() {
     const ctx = document.getElementById('%s');
-    new Chart(ctx, %s);
-  })();`, chartID, jsonContent)
+    if (!ctx || typeof Chart !== 'function') return;
+    ctx.hidden = false;
+    try {
+      new Chart(ctx, %s);
+      const data = %s;
+      if (data) data.open = false;
+    } catch (error) {
+      ctx.hidden = true;
+    }
+  })();`, chartID, string(safeJSON), dataLookup)
 		initScripts = append(initScripts, initScript)
 
-		// Return the canvas element
-		return fmt.Sprintf(`<div class="%s">
-  <canvas id="%s"></canvas>
-</div>`, p.config.ContainerClass, chartID)
+		label := "Chart visualization; expand Chart data for exact values"
+		description := ""
+		if options.Title != "" || options.Caption != "" {
+			if options.Title != "" {
+				label = options.Title
+			}
+			description = fmt.Sprintf(` aria-describedby="%s-caption"`, chartID)
+		}
+		container := fmt.Sprintf(`<div class="%s">
+  <canvas id="%s" hidden role="img" aria-label="%s"%s></canvas>
+  <div id="%s-data">%s</div>
+</div>`, html.EscapeString(p.config.ContainerClass), chartID, html.EscapeString(label), description, chartID, fallback)
+		return chartFigureHTML(options, chartConfig, chartID, container)
 	})
 
 	// If we found chartjs blocks, inject the scripts
@@ -158,6 +220,144 @@ func (p *ChartJSPlugin) processPost(post *models.Post) error {
 
 	post.ArticleHTML = result
 	return nil
+}
+
+// chartFigureOptions are authoring metadata, never Chart.js configuration.
+type chartFigureOptions struct {
+	Title       string
+	Caption     string
+	DataDisplay string
+}
+
+func parseChartFigureOptions(config map[string]interface{}) (chartFigureOptions, error) {
+	var options chartFigureOptions
+	for _, field := range []struct {
+		key   string
+		value *string
+	}{
+		{"title", &options.Title},
+		{"caption", &options.Caption},
+		{chartDataDisplayKey, &options.DataDisplay},
+	} {
+		raw, exists := config[field.key]
+		if !exists {
+			continue
+		}
+		value, ok := raw.(string)
+		if !ok {
+			return options, fmt.Errorf("%s must be a string", field.key)
+		}
+		if field.key == chartDataDisplayKey && value != chartDataOpen && value != chartDataCollapsed {
+			return options, fmt.Errorf("data_display must be \"open\" or \"collapsed\"")
+		}
+		*field.value = value
+		delete(config, field.key)
+	}
+	return options, nil
+}
+
+func isCompactHorizontalBar(config map[string]interface{}) bool {
+	data, ok := config["data"].(map[string]interface{})
+	if !ok {
+		return false
+	}
+	labels, ok := data["labels"].([]interface{})
+	if !ok {
+		return false
+	}
+	chartOptions, ok := config["options"].(map[string]interface{})
+	if !ok {
+		return false
+	}
+	return config["type"] == "bar" && chartOptions["indexAxis"] == "y" && len(labels) > 0 && len(labels) <= 4
+}
+
+func chartFigureHTML(options chartFigureOptions, config map[string]interface{}, chartID, container string) string {
+	if options.Title == "" && options.Caption == "" {
+		return container
+	}
+	class := "chartjs-figure"
+	if isCompactHorizontalBar(config) {
+		class += " chartjs-figure-compact"
+	}
+	var caption strings.Builder
+	if options.Title != "" {
+		fmt.Fprintf(&caption, `<strong class="chartjs-figure-title">%s</strong>`, html.EscapeString(options.Title))
+	}
+	if options.Caption != "" {
+		fmt.Fprintf(&caption, `<p class="chartjs-figure-caption">%s</p>`, html.EscapeString(options.Caption))
+	}
+	return fmt.Sprintf(`<figure class="%s"><figcaption id="%s-caption">%s</figcaption>
+%s</figure>`, class, chartID, caption.String(), container)
+}
+
+// chartStaticFallback provides semantic source data for non-JavaScript readers.
+// Common categorical chart types become an accessible table. Less-structured
+// Chart.js configurations preserve their JSON for inspection instead.
+func chartStaticFallback(config map[string]interface{}, source string) string {
+	data, ok := config["data"].(map[string]interface{})
+	if !ok {
+		return chartConfigFallback(source)
+	}
+	labels, ok := data["labels"].([]interface{})
+	if !ok {
+		return chartConfigFallback(source)
+	}
+	series, ok := data["datasets"].([]interface{})
+	if !ok {
+		return chartConfigFallback(source)
+	}
+	if len(labels) > 0 && len(labels) <= 200 && len(series) > 0 && len(series) <= 12 {
+		var table strings.Builder
+		_, _ = table.WriteString(`<details class="chartjs-data" open><summary>Chart data</summary><table><caption>Chart data</caption><thead><tr><th scope="col">Label</th>`)
+		for i, raw := range series {
+			dataset, ok := raw.(map[string]interface{})
+			if !ok {
+				return chartConfigFallback(source)
+			}
+			values, ok := dataset["data"].([]interface{})
+			if !ok || len(values) != len(labels) {
+				return chartConfigFallback(source)
+			}
+			label, hasLabel := dataset["label"].(string)
+			if !hasLabel || label == "" {
+				label = fmt.Sprintf("Series %d", i+1)
+			}
+			_, _ = table.WriteString(`<th scope="col">`)
+			_, _ = table.WriteString(html.EscapeString(label))
+			_, _ = table.WriteString("</th>")
+		}
+		_, _ = table.WriteString("</tr></thead><tbody>")
+		for i, label := range labels {
+			_, _ = table.WriteString(`<tr><th scope="row">`)
+			_, _ = table.WriteString(html.EscapeString(fmt.Sprint(label)))
+			_, _ = table.WriteString("</th>")
+			for _, raw := range series {
+				dataset, ok := raw.(map[string]interface{})
+				if !ok {
+					return chartConfigFallback(source)
+				}
+				values, ok := dataset["data"].([]interface{})
+				if !ok || len(values) != len(labels) {
+					return chartConfigFallback(source)
+				}
+				_, _ = table.WriteString("<td>")
+				if values[i] != nil {
+					_, _ = table.WriteString(html.EscapeString(fmt.Sprint(values[i])))
+				}
+				_, _ = table.WriteString("</td>")
+			}
+			_, _ = table.WriteString("</tr>")
+		}
+		_, _ = table.WriteString("</tbody></table></details>")
+		return table.String()
+	}
+	return chartConfigFallback(source)
+}
+
+func chartConfigFallback(source string) string {
+	return `<details class="chartjs-data" open><summary>Chart configuration</summary><pre><code>` +
+		html.EscapeString(source) + "</code></pre></details>"
 }
 
 // injectChartJSScripts adds the Chart.js library and initialization scripts to the HTML.

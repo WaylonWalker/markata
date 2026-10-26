@@ -12,8 +12,8 @@ import (
 	"github.com/BurntSushi/toml"
 	"gopkg.in/yaml.v3"
 
-	"github.com/WaylonWalker/markata-go/pkg/models"
-	"github.com/WaylonWalker/markata-go/pkg/renderingcontract"
+	"github.com/WaylonWalker/markata/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/renderingcontract"
 )
 
 // loadResolvedConfig loads a config file, resolves recursive includes, then

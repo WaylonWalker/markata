@@ -4,8 +4,8 @@ package plugins
 import (
 	"log"
 
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 // AuthorsPlugin resolves author IDs in posts against the site-wide authors

@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 // SitemapPlugin generates the root sitemap index and the primary pages sitemap.

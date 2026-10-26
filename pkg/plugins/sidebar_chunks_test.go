@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 func TestPublishSidebarChunks_BoundedPublicAndPrunesOldChunks(t *testing.T) {
@@ -113,5 +113,54 @@ func TestCompactAlternateSidebarPosts(t *testing.T) {
 	}
 	if feeds[1].WindowStart != 1 || feeds[1].ChunkBase != "/other/_sidebar/" {
 		t.Fatalf("lost alternate hydration metadata: %#v", feeds[1])
+	}
+}
+
+func TestSidebarChunkBaseRequiresMatchingPublicURLsAndTitles(t *testing.T) {
+	t.Parallel()
+	m := lifecycle.NewManager()
+	originalTitle := "Published title"
+	feedPosts := []*models.Post{
+		{Slug: "one", Href: "/one/", Title: &originalTitle, Published: true},
+		{Slug: "two", Href: "/two/", Published: true},
+	}
+	published := models.FeedConfig{
+		Slug:    "blog",
+		Formats: models.FeedFormats{HTML: true},
+		Posts:   feedPosts,
+	}
+	m.Cache().Set("feed_configs", []models.FeedConfig{published})
+
+	matchingTitle := "Published title"
+	matching := []*models.Post{
+		{Slug: "one", Href: "/one/", Title: &matchingTitle, Published: true},
+		{Slug: "two", Href: "/two/", Published: true},
+	}
+	if got := sidebarChunkBase(&published, matching, m); got != "/blog/_sidebar/" {
+		t.Fatalf("matching navigation must permit deferred sidecar: %q", got)
+	}
+
+	staleURL := []*models.Post{
+		{Slug: "one", Href: "/old-one/", Title: &matchingTitle, Published: true},
+		{Slug: "two", Href: "/two/", Published: true},
+	}
+	if got := sidebarChunkBase(&published, staleURL, m); got != "" {
+		t.Fatalf("mismatched href must retain embedded fallback, got sidecar %q", got)
+	}
+	staleTitle := "Outdated title"
+	staleTitles := []*models.Post{
+		{Slug: "one", Href: "/one/", Title: &staleTitle, Published: true},
+		{Slug: "two", Href: "/two/", Published: true},
+	}
+	if got := sidebarChunkBase(&published, staleTitles, m); got != "" {
+		t.Fatalf("mismatched title must retain embedded fallback, got sidecar %q", got)
+	}
+	feedData := []sidebarFeedJSON{
+		{Slug: "current", Posts: []sidebarPostJSON{{Slug: "visible"}}},
+		{Slug: "old", ChunkBase: sidebarChunkBase(&published, staleURL, m), ChunkSize: sidebarNavChunkSize, TotalPosts: 2, Posts: []sidebarPostJSON{{Slug: "one", Href: "/old-one/"}}},
+	}
+	compactAlternateSidebarPosts(feedData, 0)
+	if len(feedData[1].Posts) != 1 {
+		t.Fatal("alternate window must not be omitted when its sidecar URL is unsafe")
 	}
 }

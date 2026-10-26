@@ -308,3 +308,51 @@ pre.line-numbers .line-numbers-rows > span::before {
 }
 
 }
+
+@layer components {
+/* Compact, optional copy control. Positioned inside the existing <pre>
+   without adding another document-flow row or compromising no-JS reading. */
+.post-content pre.md-code-enhanced {
+  position: relative;
+  padding-inline-end: max(var(--space-4), 4.75rem);
+}
+
+.post-content pre.md-code-enhanced .md-code-copy {
+  position: absolute;
+  inset-block-start: .4rem;
+  inset-inline-end: .45rem;
+  z-index: 1;
+  padding: .25rem .45rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius, .35rem);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: 500 .75rem/1.25 var(--font-sans, system-ui);
+  cursor: pointer;
+  user-select: none;
+}
+
+.post-content pre.md-code-enhanced .md-code-copy:hover {
+  background: var(--color-background);
+  border-color: var(--color-text-muted);
+}
+
+.post-content pre.md-code-enhanced .md-code-copy:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+@media print {
+  .post-content pre .md-code-copy { display: none !important; }
+}
+/* Reserve the top-right corner for Copy without overlapping the language
+   marker already provided by the base theme. */
+.post-content pre.md-code-enhanced[data-language]::before {
+  inset-inline-end: 5.4rem;
+  right: auto;
+  max-width: calc(100% - 8rem);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+}

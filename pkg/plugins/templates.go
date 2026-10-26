@@ -11,12 +11,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/buildcache"
-	"github.com/WaylonWalker/markata-go/pkg/diagnostics"
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/logging"
-	"github.com/WaylonWalker/markata-go/pkg/models"
-	"github.com/WaylonWalker/markata-go/pkg/templates"
+	"github.com/WaylonWalker/markata/pkg/buildcache"
+	"github.com/WaylonWalker/markata/pkg/diagnostics"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/logging"
+	"github.com/WaylonWalker/markata/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/templates"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
@@ -1709,7 +1709,19 @@ func sidebarChunkBase(fc *models.FeedConfig, posts []*models.Post, m *lifecycle.
 			return ""
 		}
 		for j := range posts {
-			if posts[j] == nil || published[j] == nil || posts[j].Slug != published[j].Slug {
+			if posts[j] == nil || published[j] == nil {
+				return ""
+			}
+			// Most feeds share the same immutable Post pointers. Avoid
+			// recomputing display titles for these common matches.
+			if posts[j] == published[j] {
+				continue
+			}
+			// The slug alone is insufficient: synthetic/sidebar copies can
+			// differ from what the publisher emitted at the same position.
+			// Never discard embedded navigation in favor of stale URLs or
+			// titles from a chunk that no longer represents this feed.
+			if sidebarKey(posts[j], fc.Slug) != sidebarKey(published[j], candidate.Slug) {
 				return ""
 			}
 		}

@@ -3,7 +3,9 @@
   let observed;
   let frame;
   let observedWidth = 0;
+  let followingFonts = false;
   const resizeObserver = window.ResizeObserver ? new ResizeObserver((entries) => {
+    followFonts();
     const width = entries[0]?.contentRect.width || 0;
     if (width !== observedWidth) { observedWidth = width; schedule(); }
   }) : null;
@@ -49,17 +51,27 @@
     frame = requestAnimationFrame(fit);
   }
 
+  function followFonts() {
+    if (followingFonts) return;
+    followingFonts = true;
+    // ResizeObserver delivery follows layout, so reading font readiness here
+    // cannot pull the first full-page layout into script evaluation.
+    document.fonts?.ready.then(schedule);
+  }
+
   function connect() {
     const title = document.querySelector(selector);
     if (title === observed) return;
     resizeObserver?.disconnect();
     observed = title;
     observedWidth = 0;
-    if (title) { resizeObserver?.observe(title); schedule(); }
+    // The initial observer delivery follows normal layout. An eager frame
+    // callback would measure before that layout and force it synchronously.
+    if (title) { if (resizeObserver) resizeObserver.observe(title); else schedule(); }
   }
 
   connect();
-  document.fonts?.ready.then(schedule);
+  if (!resizeObserver) requestAnimationFrame(() => requestAnimationFrame(followFonts));
   window.addEventListener('resize', schedule);
   window.addEventListener('view-transition-complete', connect);
 })();

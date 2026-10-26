@@ -27,9 +27,38 @@ env:
   REGISTRY: ghcr.io
 
 jobs:
+  verify-publish:
+    name: Verify source and embedded revision
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      # Do not advance the mutable main-channel tag until tests have passed.
+      - name: Test source before publish
+        run: go test ./...
+
+      - name: Verify the builder's embedded commit
+        if: github.event_name != 'pull_request'
+        env:
+          EXPECTED_COMMIT: ${{ github.sha }}
+        shell: bash
+        run: |
+          go build -ldflags="-X github.com/WaylonWalker/markata/cmd/markata-go/cmd.Commit=${EXPECTED_COMMIT}" -o /tmp/markata-go ./cmd/markata-go
+          /tmp/markata-go version | grep -F "commit:    ${EXPECTED_COMMIT}"
+
   build-minimal:
     name: Build and Push (minimal)
     runs-on: ubuntu-latest
+    needs: verify-publish
     if: github.event_name != 'pull_request'
     permissions:
       contents: read
@@ -39,8 +68,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Set lowercase image name
-        run: echo "IMAGE_NAME=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+      - name: Set image targets (preserve legacy tags after rename)
+        shell: bash
+        run: |
+          repo="${GITHUB_REPOSITORY,,}"
+          echo "IMAGE_NAME=$repo" >> "$GITHUB_ENV"
+          {
+            echo 'IMAGE_TARGETS<<EOF'
+            echo "$REGISTRY/$repo"
+            # Only publish the legacy alias after Go occupies the canonical repo.
+            # Prior to the GitHub rename, avoid publishing to the Python identity.
+            if [[ "$repo" == "waylonwalker/markata" ]]; then
+              echo "$REGISTRY/waylonwalker/markata-go"
+            fi
+            echo 'EOF'
+          } >> "$GITHUB_ENV"
 
       - name: Set Trivy cache directory
         run: echo "TRIVY_CACHE_DIR=${{ runner.temp }}/trivy-cache" >> $GITHUB_ENV
@@ -70,7 +112,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v6
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.IMAGE_TARGETS }}
           tags: |
             # Set latest tag for default branch
             type=raw,value=latest,enable={{is_default_branch}}
@@ -121,7 +163,7 @@ jobs:
         # SARIF upload because the workflow ref no longer exists. Keep upload
         # alerts on the durable default branch while still scanning every image.
         if: github.ref == 'refs/heads/main'
-        uses: github/codeql-action/upload-sarif@v4.38.3
+        uses: github/codeql-action/upload-sarif@v4.39.1
         with:
           sarif_file: "trivy-results.sarif"
           category: trivy-minimal
@@ -129,6 +171,7 @@ jobs:
   build-builder:
     name: Build and Push (builder)
     runs-on: ubuntu-latest
+    needs: verify-publish
     if: github.event_name != 'pull_request'
     permissions:
       contents: read
@@ -138,8 +181,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Set lowercase image name
-        run: echo "IMAGE_NAME=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+      - name: Set builder image targets (preserve legacy tags after rename)
+        shell: bash
+        run: |
+          repo="${GITHUB_REPOSITORY,,}"
+          echo "IMAGE_NAME=$repo" >> "$GITHUB_ENV"
+          {
+            echo 'BUILDER_IMAGE_TARGETS<<EOF'
+            echo "$REGISTRY/${repo}-builder"
+            if [[ "$repo" == "waylonwalker/markata" ]]; then
+              echo "$REGISTRY/waylonwalker/markata-go-builder"
+            fi
+            echo 'EOF'
+          } >> "$GITHUB_ENV"
 
       - name: Set Trivy cache directory
         run: echo "TRIVY_CACHE_DIR=${{ runner.temp }}/trivy-cache" >> $GITHUB_ENV
@@ -169,7 +223,7 @@ jobs:
         id: meta_builder
         uses: docker/metadata-action@v6
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-builder
+          images: ${{ env.BUILDER_IMAGE_TARGETS }}
           tags: |
             # Set latest tag for default branch
             type=raw,value=latest,enable={{is_default_branch}}
@@ -217,7 +271,7 @@ jobs:
 
       - name: Upload Trivy scan results (builder)
         if: github.ref == 'refs/heads/main'
-        uses: github/codeql-action/upload-sarif@v4.38.3
+        uses: github/codeql-action/upload-sarif@v4.39.1
         with:
           sarif_file: "trivy-results-builder.sarif"
           category: trivy-builder

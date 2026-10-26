@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
-	"github.com/WaylonWalker/markata-go/pkg/config"
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/config"
+	"github.com/WaylonWalker/markata/pkg/models"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )

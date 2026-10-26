@@ -11,11 +11,11 @@ import (
 
 	chromahtml "github.com/alecthomas/chroma/v2/formatters/html"
 
-	"github.com/WaylonWalker/markata-go/pkg/buildcache"
-	"github.com/WaylonWalker/markata-go/pkg/diagnostics"
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/models"
-	"github.com/WaylonWalker/markata-go/pkg/palettes"
+	"github.com/WaylonWalker/markata/pkg/buildcache"
+	"github.com/WaylonWalker/markata/pkg/diagnostics"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/palettes"
 	"github.com/yuin/goldmark"
 	emoji "github.com/yuin/goldmark-emoji"
 	emojiast "github.com/yuin/goldmark-emoji/ast"
@@ -1165,7 +1165,15 @@ func (p *RenderMarkdownPlugin) detectCSSRequirements(post *models.Post) {
 	if strings.Contains(post.ArticleHTML, `class="anchor"`) {
 		post.Extra["has_anchor_links"] = true
 	}
+
+	// Detect roads - `::: road STYLE` containers or elements with data-road.
+	if strings.Contains(post.ArticleHTML, "road") && roadMarkupPattern.MatchString(post.ArticleHTML) {
+		post.Extra["needs_roads"] = true
+	}
 }
+
+// roadMarkupPattern matches a "road" class token or a data-road attribute.
+var roadMarkupPattern = regexp.MustCompile(`class="(?:[^"]*\s)?road(?:\s[^"]*)?"|\sdata-road[\s=>]`)
 
 // Ensure RenderMarkdownPlugin implements the required interfaces.
 var (

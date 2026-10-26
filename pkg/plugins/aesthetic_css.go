@@ -13,13 +13,13 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/WaylonWalker/markata-go/pkg/aesthetic"
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/models"
-	"github.com/WaylonWalker/markata-go/pkg/renderingcontract"
-	"github.com/WaylonWalker/markata-go/pkg/renderingrecipe"
-	"github.com/WaylonWalker/markata-go/pkg/templates"
-	"github.com/WaylonWalker/markata-go/pkg/themes"
+	"github.com/WaylonWalker/markata/pkg/aesthetic"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/renderingcontract"
+	"github.com/WaylonWalker/markata/pkg/renderingrecipe"
+	"github.com/WaylonWalker/markata/pkg/templates"
+	"github.com/WaylonWalker/markata/pkg/themes"
 )
 
 // AestheticCSSPlugin generates CSS variables from the configured aesthetic.

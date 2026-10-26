@@ -17,8 +17,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/internal/testbinary"
-	"github.com/WaylonWalker/markata-go/pkg/diagnostics"
+	"github.com/WaylonWalker/markata/internal/testbinary"
+	"github.com/WaylonWalker/markata/pkg/diagnostics"
 )
 
 func TestBuilderAdminWebhook_RejectsInvalidSignatureAndIgnoresOtherBranches(t *testing.T) {

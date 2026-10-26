@@ -10,7 +10,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/buildcache"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
 )
 
 func TestStaticAssets_CreateHashedCopies_UsesRegistryHash(t *testing.T) {
@@ -177,5 +178,35 @@ func TestVersionedFeedCSSIntegrity(t *testing.T) {
 	}
 	if err := verifyVersionedFeedCSS(root, hash); err != nil {
 		t.Fatalf("correctly versioned feed CSS should pass: %v", err)
+	}
+}
+
+// Generated CSS can change across binary revisions without any static-file or
+// source changes. Only the final Configure registry can identify that change.
+func TestStaticAssets_GeneratedAssetInvalidatesWarmFeed(t *testing.T) {
+	cache := buildcache.New(t.TempDir())
+	for index, hash := range []string{"old-palette", "new-palette", "new-palette"} {
+		manager := lifecycle.NewManager()
+		config := lifecycle.NewConfig()
+		config.Extra = map[string]interface{}{"static_dir": t.TempDir()}
+		manager.SetConfig(config)
+		manager.Cache().Set("build_cache", cache)
+		plugin := NewStaticAssetsPlugin()
+		if err := plugin.Configure(manager); err != nil {
+			t.Fatal(err)
+		}
+		// Palette Configure runs later than static_assets Configure.
+		manager.SetAssetHash("css/palette-core.css", hash)
+		if err := plugin.Validate(manager); err != nil {
+			t.Fatal(err)
+		}
+		want := ""
+		if index == 2 {
+			want = "rendered-feed"
+		}
+		if got := cache.GetFeedHash("archive"); got != want {
+			t.Fatalf("build %d feed cache = %q, want %q", index, got, want)
+		}
+		cache.SetFeedHash("archive", "rendered-feed")
 	}
 }

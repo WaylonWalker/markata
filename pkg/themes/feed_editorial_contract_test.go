@@ -17,6 +17,8 @@ func TestEditorialFeedPreservesPaginationAndCalendarHooks(t *testing.T) {
 	for _, want := range []string{
 		`class="editorial-feed posts-list" id="posts-list"`,
 		`data-calendar-primary`,
+		`data-editorial-relative-week data-week-start="{{ section.Start }}"`,
+		`{{ section.RelativeLabel }}`,
 		`{% include "partials/cards/card-router.html" %}`,
 	} {
 		if !strings.Contains(template, want) {
@@ -86,7 +88,7 @@ func TestEditorialLeadAndPhotoEssayTemplateContract(t *testing.T) {
 		`{{ item.DateLabel }}`,
 		`editorial-shot-grid--mosaic`,
 		`Photo journal`,
-		`data-editorial-version="3"`,
+		`data-editorial-version="4"`,
 	} {
 		if !strings.Contains(tmpl, want) {
 			t.Errorf("editorial template missing %q", want)
@@ -125,7 +127,7 @@ func TestEditorialPhotoDatesAreOnlyAddedInsideWeeklyGallery(t *testing.T) {
 				t.Fatalf("photo card missing optional dated caption")
 			}
 		case "partials/feed-editorial.html":
-			if !strings.Contains(string(tmpl), "data-editorial-version=\"3\"") {
+			if !strings.Contains(string(tmpl), "data-editorial-version=\"4\"") {
 				t.Fatal("editorial HTML version must invalidate old gallery caches")
 			}
 		}
@@ -157,7 +159,7 @@ func TestEditorialArchiveDefersOnlyNonCriticalSearchCSS(t *testing.T) {
 	}
 }
 
-func TestEditorialArchiveDefersCalendarStylesAndPrioritizesLeadImage(t *testing.T) {
+func TestEditorialArchiveDefersCalendarStylesAndLeadImages(t *testing.T) {
 	feed, err := ReadTemplate("feed.html")
 	if err != nil {
 		t.Fatal(err)
@@ -179,12 +181,44 @@ func TestEditorialArchiveDefersCalendarStylesAndPrioritizesLeadImage(t *testing.
 	}
 	card := string(link)
 	for _, want := range []string{
-		`{% if item.Lead %} loading="eager" fetchpriority="high"`,
-		`{% else %} loading="lazy"`,
+		`loading="lazy" decoding="async"`,
 		`editorial_card_image:item.Lead`,
 	} {
 		if !strings.Contains(card, want) {
 			t.Errorf("link thumbnail priority contract missing %q", want)
 		}
+	}
+	for _, unwanted := range []string{
+		`loading="eager"`,
+		`fetchpriority="high"`,
+	} {
+		if strings.Contains(card, unwanted) {
+			t.Errorf("editorial link thumbnails must not include %q", unwanted)
+		}
+	}
+}
+
+func TestEditorialRelativeHeadingsScriptIsDeferred(t *testing.T) {
+	for _, path := range []string{"feed.html", "partials/feed-editorial.html"} {
+		tmpl, err := ReadTemplate(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if path == "feed.html" && !strings.Contains(string(tmpl),
+			`'js/editorial-relative-weeks.js' | theme_asset_hashed }}" defer`) {
+			t.Fatal("editorial week labels need a deferred hashed script")
+		}
+		if path != "feed.html" && !strings.Contains(string(tmpl),
+			`data-editorial-relative-week data-week-start="{{ section.Start }}"`) {
+			t.Fatal("editorial week start must be present for runtime labels")
+		}
+	}
+	js, err := fs.ReadFile(DefaultStatic(), "js/editorial-relative-weeks.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(js), "htmx:afterSwap") ||
+		!strings.Contains(string(js), "view-transition-complete") {
+		t.Fatal("relative labels must refresh after partial navigation")
 	}
 }

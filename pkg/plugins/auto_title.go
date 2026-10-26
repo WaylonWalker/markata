@@ -8,8 +8,8 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 // AutoTitlePlugin auto-generates human-readable titles for posts that don't have one.

@@ -39,6 +39,28 @@ Configure -> Glob -> Load -> Transform -> Render -> Collect -> Write -> Cleanup
 
 ---
 
+### icons
+
+**Name:** `icons`<br>
+**Stage:** Transform (after other source transforms, before Markdown rendering)<br>
+**Purpose:** Resolve Zensical-style SVG shortcodes in Markdown.
+
+````markdown
+A release :lucide-rocket: ready to ship.
+````
+
+The icon is inlined as decorative SVG, with no icon-font or client-side
+dependency. The default pinned Lucide pack is vendored on first use, with
+project-local SVGs under `.icons/` or `static/.icons/` taking precedence.
+For disconnected first-use builds, supply a cached/local pack or keep the
+literal shortcode; there is no forced network request in offline mode.
+
+The default theme supports `md-icon` inside cards and `md-feature` with
+`md-feature-icon`/`md-feature-body` for icon-first feature rows, without
+changing shortcode semantics. See [Icon Shortcodes](/docs/guides/icons/).
+
+---
+
 ### content_index
 
 **Name:** `content_index`
@@ -1751,6 +1773,12 @@ container_class = "chartjs-container"                  # CSS class for wrapper d
 | `enabled` | `true` | Enable/disable the plugin |
 | `cdn_url` | `/assets/vendor/chartjs/chart.min.js` | Chart.js URL (local by default) |
 | `container_class` | `chartjs-container` | CSS class for wrapper div |
+| `data_display` | `open` | Initial fallback disclosure state: `open` or `collapsed` |
+
+Optional top-level JSON strings `title` and `caption` create a semantic,
+accessible figure card without adding a TOC heading. Top-level `data_display`
+overrides the site default per chart. All three keys are stripped before Chart.js
+initialization. See [chart figures and fallbacks](../guides/markdown-chart-fallback.md).
 
 **Markdown syntax:**
 ````markdown
@@ -3733,7 +3761,7 @@ jinja: true
 
 **Name:** `mermaid`  
 **Stage:** Render (post_render)  
-**Purpose:** Converts Mermaid code blocks into rendered diagrams. Supports client-side rendering (default), CLI-based pre-rendering via mmdc, or headless Chromium pre-rendering via mermaidcdp.
+**Purpose:** Converts Mermaid code blocks into rendered diagrams. Supports client-side rendering (default), CLI-based pre-rendering via mmdc, or headless Chromium pre-rendering.
 
 **Status:** Enabled by default. Set `enabled = false` to disable.
 
@@ -3767,7 +3795,7 @@ no_sandbox = false                                          # Required in contai
 | `mode` | string | `"client"` | Rendering mode: `client` (browser-side JS), `cli` (mmdc), or `chromium` (headless Chrome) |
 | `cdn_url` | string | `/assets/vendor/mermaid/mermaid.min.js` | Mermaid URL (client mode, local by default) |
 | `theme` | string | `"default"` | Mermaid theme: default, dark, forest, neutral. Ignored when `use_css_variables` is true. |
-| `use_css_variables` | bool | `true` | Read site CSS custom properties (`--color-background`, `--color-text`, `--color-primary`, `--color-code-bg`, `--color-surface`) and pass them to Mermaid's theming. Hardcoded fallbacks are used if variables are not defined. |
+| `use_css_variables` | bool | `true` | Use `--color-surface` for node fills and edge-label backgrounds, `--color-text` for labels, `--color-border` (falling back to `--color-primary`) for borders and edges, and `--color-background` for cluster fills. |
 | `lightbox` | bool | `true` | Enable click-to-zoom lightbox overlay with interactive pan and zoom via svg-pan-zoom. |
 | `lightbox_selector` | string | `".glightbox-mermaid"` | CSS selector for mermaid lightbox links. Retained for backward compatibility; the programmatic GLightbox API does not use it. |
 | `chromium.no_sandbox` | bool | `false` | Disable Chromium sandbox. Required when running inside Docker, Distrobox, or other containerized environments. |
@@ -3780,9 +3808,10 @@ no_sandbox = false                                          # Required in contai
 3. In **cli/chromium** modes: pre-renders diagrams to static SVGs embedded directly in HTML
 4. Only injects the script once per post (even with multiple diagrams)
 5. When `use_css_variables` is true, reads site CSS custom properties and passes them to `mermaid.initialize()` so diagrams match the site palette automatically
-6. When `lightbox` is true, attaches click handlers to each rendered SVG. Clicking opens a programmatic GLightbox overlay with svg-pan-zoom for interactive pan and zoom. svg-pan-zoom (~29KB) is lazy-loaded from vendor assets by default.
-7. In chromium mode, the MermaidJS library is cached at `~/.cache/markata-go/mermaid/` to avoid re-downloading on each build
-8. In cli/chromium modes, rendered SVGs are cached in the build cache and reused when the diagram source and rendering inputs are unchanged
+6. Client mode retains each diagram's source and rerenders its SVG when the site theme, palette, or color mode changes. Chromium mode uses the same palette colors when it pre-renders SVGs. CLI mode follows Mermaid CLI theme and configuration.
+7. When `lightbox` is true, attaches click handlers to each rendered SVG. Clicking opens a programmatic GLightbox overlay with svg-pan-zoom for interactive pan and zoom. svg-pan-zoom (~29KB) is lazy-loaded from vendor assets by default.
+8. In chromium mode, the MermaidJS library is cached at `~/.cache/markata-go/mermaid/` to avoid re-downloading on each build
+9. In cli/chromium modes, rendered SVGs are cached in the build cache and reused when the diagram source and rendering inputs are unchanged
 
 **Markdown usage:**
 ````markdown

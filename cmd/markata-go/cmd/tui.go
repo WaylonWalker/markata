@@ -6,9 +6,9 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
 
-	"github.com/WaylonWalker/markata-go/pkg/listcache"
-	"github.com/WaylonWalker/markata-go/pkg/services"
-	"github.com/WaylonWalker/markata-go/pkg/tui"
+	"github.com/WaylonWalker/markata/pkg/listcache"
+	"github.com/WaylonWalker/markata/pkg/services"
+	"github.com/WaylonWalker/markata/pkg/tui"
 )
 
 var tuiCmd = &cobra.Command{

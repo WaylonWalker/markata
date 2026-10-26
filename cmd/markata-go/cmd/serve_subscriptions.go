@@ -21,8 +21,8 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/PuerkitoBio/goquery"
-	"github.com/WaylonWalker/markata-go/pkg/models"
-	"github.com/WaylonWalker/markata-go/pkg/plugins"
+	"github.com/WaylonWalker/markata/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/plugins"
 )
 
 // The subscription editor is serve-only; it is never copied to the output site.

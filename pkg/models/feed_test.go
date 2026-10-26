@@ -2,6 +2,7 @@ package models
 
 import (
 	"testing"
+	"time"
 )
 
 // =============================================================================
@@ -106,6 +107,64 @@ func TestFeed_Pagination(t *testing.T) {
 	// Last page should have 3 posts (merged)
 	if len(feed.Pages) > 1 && len(feed.Pages[1].Posts) != 3 {
 		t.Errorf("page_2_count: got %d, want 3", len(feed.Pages[1].Posts))
+	}
+}
+
+// Editorial pages are allowed to grow to finish the week; no week's
+// photo gallery or featured story should be cut between adjacent pages.
+func TestFeed_EditorialPaginationPreservesWeeks(t *testing.T) {
+	feed := &FeedConfig{Slug: "archive", Presentation: "editorial", ItemsPerPage: 3, OrphanThreshold: 2}
+	// Oct 12–18, Oct 5–11, and Sep 28–Oct 4. Descending date order.
+	for _, day := range []int{16, 15, 14, 13, 12, 9, 8, 7, 6, 5, 2, 1} {
+		date := time.Date(2026, time.October, day, 12, 0, 0, 0, time.UTC)
+		feed.Posts = append(feed.Posts, &Post{Date: &date})
+	}
+	feed.Paginate("/archive")
+	if got := len(feed.Pages); got != 3 {
+		t.Fatalf("got %d pages, want 3", got)
+	}
+	want := []int{5, 5, 2}
+	for i, page := range feed.Pages {
+		if len(page.Posts) != want[i] {
+			t.Errorf("page %d: %d posts, want %d", i+1, len(page.Posts), want[i])
+		}
+		if page.TotalItems != 12 || page.TotalPages != 3 {
+			t.Errorf("page %d metadata: %d total posts, %d pages", i+1, page.TotalItems, page.TotalPages)
+		}
+	}
+	if feed.Pages[0].NextURL != "/archive/page/2/" || feed.Pages[1].PrevURL != "/archive/" || feed.Pages[2].PrevURL != "/archive/page/2/" {
+		t.Fatal("editorial page navigation URLs changed")
+	}
+}
+
+func TestFeed_EditorialPaginationYearBoundaryAndUndated(t *testing.T) {
+	feed := &FeedConfig{Presentation: "editorial", ItemsPerPage: 2}
+	for _, day := range []time.Time{
+		time.Date(2027, 1, 3, 12, 0, 0, 0, time.UTC),
+		time.Date(2027, 1, 2, 12, 0, 0, 0, time.UTC),
+		time.Date(2026, 12, 31, 12, 0, 0, 0, time.UTC),
+		time.Date(2026, 12, 28, 12, 0, 0, 0, time.UTC),
+		time.Date(2026, 12, 27, 12, 0, 0, 0, time.UTC),
+	} {
+		date := day
+		feed.Posts = append(feed.Posts, &Post{Date: &date})
+	}
+	feed.Posts = append(feed.Posts, &Post{}, &Post{})
+	feed.Paginate("/archive")
+	if len(feed.Pages) != 2 || len(feed.Pages[0].Posts) != 4 || len(feed.Pages[1].Posts) != 3 {
+		t.Fatalf("unexpected ISO year and undated boundaries: %+v", feed.Pages)
+	}
+}
+
+func TestFeed_NonEditorialPaginationKeepsFixedPageSize(t *testing.T) {
+	feed := &FeedConfig{Presentation: "classic", ItemsPerPage: 2}
+	for i := 0; i < 5; i++ {
+		date := time.Date(2026, 10, 12+i, 12, 0, 0, 0, time.UTC)
+		feed.Posts = append(feed.Posts, &Post{Date: &date})
+	}
+	feed.Paginate("/archive")
+	if len(feed.Pages) != 3 || len(feed.Pages[0].Posts) != 2 {
+		t.Fatalf("classic pagination should be unchanged: %+v", feed.Pages)
 	}
 }
 

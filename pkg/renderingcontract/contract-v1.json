@@ -137,7 +137,7 @@
   },
   "defaults": {
     "aesthetic": "minimal",
-    "fontpack": "brush",
+    "fontpack": "system",
     "heading_texture": {
       "color_mix": 0.45,
       "kind": "inherit",

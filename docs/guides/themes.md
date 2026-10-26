@@ -387,7 +387,12 @@ The **Style** tab switches the aesthetic, which sets the shape and depth of code
 
 ### Fonts
 
-The **Font** tab lists every bundled font pack as a preview card with its heading, body, and code faces. The default pack is `brush`: **Knewave** headings, **Space Grotesk** body text, and **DM Mono** code. Fonts are self-hosted, and a card only loads its fonts once it scrolls into view. Offering every pack therefore adds CSS, not downloads (the build copies all pack files, about 4MB, to `assets/fonts/`). Set `fontpack` in `[markata-go.theme]` to change the site default.
+The **Font** tab lists every bundled font pack as a preview card with its heading, body, and code faces. The default is the zero-download `system` pack: platform-native **system-ui** headings/body and **ui-monospace** code. The expressive **Brush** (Knewave, Space Grotesk, DM Mono) remains opt-in. Bundled alternative fonts are self-hosted, and a preview only downloads a face if selected or scrolled into view. With the font picker enabled, the build may still copy bundled font files to `assets/fonts/` so visitors can switch packs. Set `fontpack` in `[markata-go.theme]` to override the default for a site.
+
+The active font pack preloads its distinct body, display, and heading faces.
+Packs with separate display and heading fonts keep both ready for the first
+paint. Shared faces are fetched once; code fonts and extended character
+coverage load when needed.
 
 ### No flash on load
 
@@ -1172,8 +1177,29 @@ untouched. Fast builds skip this step. Original CSS files remain available for
 navigation and custom templates. The runtime loader recognizes bundled sources
 and avoids downloading them again.
 
+The navbar reserves space for its search input before deferred search styles
+load, so the header stays in place while search initializes.
+
+Title fitting and highlighted headings wait for initial layout before measuring
+when ResizeObserver is available. They still update after fonts load and the
+page resizes, keeping the same typography with less synchronous startup work.
+The article progress indicator also refreshes as images or other content change
+the article's height.
+
+Closed feed and table-of-contents drawers skip rendering their contents when
+the browser supports content visibility and discrete transitions. Opening
+restores the contents immediately, while closing preserves the slide.
+Reduced-motion preferences remain supported. Other browsers keep the existing
+rendering behavior.
+
+Mobile drawers center the active feed item when opened without measuring
+closed-drawer geometry during startup. Desktop drawers
+continue to restore their saved state and follow the visible header edge.
+
 With the built-in theme picker, the default template initially loads
-`palette-core.css` for the configured light/dark pair. Other colors load when
+`palette-core.css` with colors and picker metadata for the configured light/dark
+pair. Generated palette changes also invalidate cached HTML, so warm builds
+reference the current stylesheet. The remaining palette catalog and colors load when
 opening the picker or restoring a saved or seasonal choice. Custom templates
 can continue loading the complete `palette.css` stylesheet.
 

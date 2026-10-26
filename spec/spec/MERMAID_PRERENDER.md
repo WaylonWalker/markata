@@ -29,7 +29,7 @@ lightbox_selector = ".glightbox-mermaid"
 [markata-go.mermaid.cli]
 mmdc_path = ""                     # Auto-detect if empty
 
-# Chromium mode settings (mermaidcdp)
+# Chromium mode settings (chromedp)
 [markata-go.mermaid.chromium]
 browser_path = ""                  # Auto-detect if empty
 timeout = 30                       # Seconds per diagram
@@ -131,13 +131,13 @@ mmdc --version
 
 ---
 
-### Chromium Mode (mermaidcdp)
+### Chromium Mode (chromedp)
 
 **Rendering:** Build-time via Chrome DevTools Protocol  
 **Stage:** Render (post-processing)  
 **Requirements:** Chrome/Chromium browser binary
 
-Uses the `mermaidcdp` Go package to render diagrams via Chrome's headless browser, reusing a single browser connection for all diagrams.
+Uses the project's chromedp renderer to render diagrams in a headless Chrome browser. It reuses one browser connection for all diagrams. The renderer applies configured palette colors when available and uses the configured Mermaid theme otherwise.
 
 ```toml
 [markata-go.mermaid]

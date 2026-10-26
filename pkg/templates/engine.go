@@ -11,7 +11,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/WaylonWalker/markata-go/pkg/themes"
+	"github.com/WaylonWalker/markata/pkg/themes"
 
 	"github.com/flosch/pongo2/v6"
 )
@@ -251,21 +251,8 @@ func (l *searchPathLoader) Abs(base, name string) string {
 
 	// Handle case where base is an embedded file
 	if strings.HasPrefix(base, embeddedFilePrefix) {
-		// For embedded base, first check if the file exists in embedded FS
-		if l.embeddedFS != nil {
-			// Try the name directly first
-			if _, err := fs.Stat(l.embeddedFS, name); err == nil {
-				return embeddedFilePrefix + name
-			}
-			// Also try resolving relative to the base's directory within embedded FS
-			embeddedBase := base[len(embeddedFilePrefix):]
-			baseDir := filepath.Dir(embeddedBase)
-			if baseDir != "." {
-				candidate := filepath.Join(baseDir, name)
-				if _, err := fs.Stat(l.embeddedFS, candidate); err == nil {
-					return embeddedFilePrefix + candidate
-				}
-			}
+		if resolved := resolveEmbeddedInclude(base, name, l.searchPaths, l.embeddedFS); resolved != "" {
+			return resolved
 		}
 	}
 
@@ -310,6 +297,51 @@ func (l *searchPathLoader) Abs(base, name string) string {
 		}
 	}
 	return name
+}
+
+func resolveEmbeddedInclude(base, name string, searchPaths []string, embeddedFS fs.FS) string {
+	embeddedBase := base[len(embeddedFilePrefix):]
+	baseDir := filepath.Dir(embeddedBase)
+	// Project templates override embedded templates, including nested
+	// includes from an embedded parent template.
+	projectNames := []string{name}
+	if baseDir != "." {
+		projectNames = append(projectNames, filepath.Join(baseDir, name))
+	}
+	if projectPath := findProjectTemplate(searchPaths, projectNames...); projectPath != "" {
+		return projectPath
+	}
+
+	if embeddedFS == nil {
+		return ""
+	}
+	if _, err := fs.Stat(embeddedFS, name); err == nil {
+		return embeddedFilePrefix + name
+	}
+	if baseDir != "." {
+		candidate := filepath.Join(baseDir, name)
+		if _, err := fs.Stat(embeddedFS, candidate); err == nil {
+			return embeddedFilePrefix + candidate
+		}
+	}
+	return ""
+}
+
+func findProjectTemplate(searchPaths []string, names ...string) string {
+	for _, dir := range searchPaths {
+		for _, name := range names {
+			candidate := filepath.Join(dir, name)
+			if _, err := os.Stat(candidate); err != nil {
+				continue
+			}
+			absPath, err := filepath.Abs(candidate)
+			if err == nil {
+				return absPath
+			}
+			return candidate
+		}
+	}
+	return ""
 }
 
 func (l *searchPathLoader) Get(path string) (io.Reader, error) {

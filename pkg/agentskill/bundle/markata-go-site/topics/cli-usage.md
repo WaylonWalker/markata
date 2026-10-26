@@ -199,6 +199,7 @@ repository includes the markata-go documentation.
 - `markata-go agent list-agents` (list supported agent ids and their install paths)
 - `markata-go agent install` (install bundled agent skill into the detected project agent or the universal layout)
 - `markata-go agent install --agent <name> [-g]` (choose a specific agent and optional global install scope)
+- `markata-go agent install -g` (open an fzf-style picker with a bottom prompt and colored matches; scripts must pass `--agent`, such as `github-copilot`; `--no-color` disables colors)
 - `markata-go agent doctor` (check for drift after binary upgrades)
 - `markata-go version`
 
@@ -295,3 +296,13 @@ Unknown commands, flags, and close config key typos report possible matches.
 Treat each suggestion as a hint and use the fully spelled command or key.
 Run the specific command's `--help` when no suggestion fits. A bare Markdown
 path such as `markata-go post.md` still runs a one-file build.
+
+
+### Mention attribution and lint warnings
+
+In Markdown, `@handle` refers to a person and `~handle` attributes a
+quote. Both resolve from active, configured blogroll feeds and aliases.
+When blogroll is enabled, `markata-go lint` reports
+`unknown-mention` warnings for unresolved handles. Add a verified
+entry or alias to the blogroll before linking: CLI lint/build never
+searches social networks or guesses a person's identity.

@@ -1,74 +1,42 @@
 ---
-title: "Documentation"
-description: "Complete documentation for markata-go, a comprehensive, extendable static site generator written in Go"
-date: 2024-01-15
+title: "Markata documentation"
+description: "Install Markata, teach your agent the site skill, and publish your first Markdown page."
+date: 2026-10-18
 published: true
-slug: /docs/home/
-tags:
-  - documentation
+tags: [documentation, getting-started]
 ---
 
-# markata-go Documentation
+# Markata documentation
 
-A comprehensive, extendable static site generator written in Go.
+**A fast static site generator for people and their agents.**
 
----
+Let's be honest. We're all running agents these days. They manage everything.
 
-## Quick Links
+Write Markdown. Give your agent the right context. Publish a site you own.
 
-- [[quickstart|Quickstart]] - Get running in 5 minutes
-- [[getting-started|Getting Started]] - Full tutorial walkthrough
-- [Serve Control Center](/docs/guides/serve-control-center/) - Inspect builds, warnings, and pages while serving
+## Start here
 
----
+1. [Install Markata](/docs/installation/) using curl, a shell, mise, GitHub Releases, or Go.
+2. [Quickstart](/docs/quickstart/) — create your first site and preview it locally.
+3. [Set up your agent](/docs/guides/agent-skills/) — install the bundled `markata-go-site` skill.
+4. [Write your first post](/docs/guides/authoring/) — Markdown, frontmatter, drafts, images, and links.
+5. [Publish](/docs/guides/deployment/) — deploy the generated static files.
 
-## Guides
+## Explore as you grow
 
-### Content
+- [Configuration](/docs/guides/configuration/)
+- [Themes](/docs/guides/themes/)
+- [Feeds and RSS](/docs/guides/feeds/)
+- [Templates](/docs/guides/templates/)
+- [Plugins](/docs/reference/plugins/)
+- [CLI reference](/docs/reference/cli/)
+- [Naming migration](/docs/guides/name-migration/)
 
-- [[frontmatter-guide|Frontmatter]] - Post metadata and fields
-- [[markdown-features|Markdown Features]] - Supported syntax and extensions
-- [[image-library|Image Library]] - Search and reuse site images
-- [[dynamic-content|Dynamic Content]] - Using Jinja templates in Markdown
+## Releases
 
-### Feeds & Output
+- [v0.14.0 release notes](/docs/releases/v0.14.0/) — what's new, compatibility and upgrade guidance (release preparation)
+- [Release and deployment runbook](/docs/guides/releasing/) — tag, artifacts, GitOps rollout, build verification and rollback
 
-- [[feeds-guide|Feeds]] - Create archives and collections
-- [[syndication-feeds|Syndication]] - RSS, Atom, JSON Feed, and Sitemap
+Markata is still **0.x**. The older `markata-go` command remains compatible. New Go sites should continue to use `markata-go.toml` and `[markata-go]` until the configuration migration is complete.
 
-### Customization
-
-- [[configuration-guide|Configuration]] - All configuration options
-- [[templates-guide|Templates]] - Customize your site's appearance
-- [[view-transitions|View Transitions]] - Smooth page navigation animations
-- [[resource-hints|Resource Hints]] - Auto-generate performance hints
-- [[plugin-development|Plugin Development]] - Extend markata-go
-
-### Publishing
-
-- [[deployment-guide|Deployment]] - Host your site
-- [[ci-cd-guide|CI/CD]] - Automated builds and deployments
-  - [[github-actions|GitHub Actions]] - Deploy with GitHub Actions
-  - [[gitlab-ci|GitLab CI]] - Deploy with GitLab CI
-
----
-
-## Reference
-
-- [[cli-reference|CLI Reference]] - All commands and flags
-- [[advanced-usage|Advanced Usage]] - Power user features
-- [[maintainer-ci|Maintainer CI]] - Product repository validation and publishing policy
-
----
-
-## Help
-
-- [[troubleshooting|Troubleshooting]] - Common issues and solutions
-- [[framework-comparison|Comparison]] - How markata-go compares to other SSGs
-
----
-
-## External Links
-
-- [GitHub Repository](https://github.com/waylonwalker/markata-go)
-- [Issue Tracker](https://github.com/waylonwalker/markata-go/issues)
+**Important:** `pip install markata` currently installs the original **Python** project, not this Go program. See [installation](/docs/installation/) for details.

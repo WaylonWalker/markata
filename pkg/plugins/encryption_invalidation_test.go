@@ -8,10 +8,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/WaylonWalker/markata-go/pkg/buildcache"
-	"github.com/WaylonWalker/markata-go/pkg/encryption"
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/buildcache"
+	"github.com/WaylonWalker/markata/pkg/encryption"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 type encryptionPipelineFixture struct {
@@ -73,7 +73,7 @@ func (f encryptionPipelineFixture) buildWithFullCacheExpectation(t *testing.T, p
 	}
 	crypt.enforceStrength = false // Test-only keys; production policy is unchanged.
 	for _, stage := range []func(*lifecycle.Manager) error{
-		loader.Load, bc.Load, crypt.Transform, NewAutoTitlePlugin().Transform,
+		assets.Validate, loader.Load, bc.Load, crypt.Transform, NewAutoTitlePlugin().Transform,
 		NewInlineTitlesPlugin().Transform, bc.Transform, markdown.Render,
 		crypt.Render, pages.Render, assets.Write, NewPublishHTMLPlugin().Write, assets.Cleanup,
 	} {

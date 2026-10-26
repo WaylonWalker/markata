@@ -1,6 +1,6 @@
 package plugins
 
-import "github.com/WaylonWalker/markata-go/pkg/lifecycle"
+import "github.com/WaylonWalker/markata/pkg/lifecycle"
 
 // CriticalStageErrors marks publication failures as build-fatal. Other
 // Write-stage plugins keep the lifecycle's default warning-only behavior.

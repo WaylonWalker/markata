@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/WaylonWalker/markata-go/pkg/agentskill"
+	"github.com/WaylonWalker/markata/pkg/agentskill"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -37,12 +37,15 @@ When --agent is omitted, markata-go installs into the current agent's project
 layout when it can detect one from the environment. Otherwise it falls back to
 the portable universal layout under .agents/skills.
 
-Use --global with an explicit --agent to install into that agent's user-level
-skill directory instead of a project repository.
+Use --global to install into an agent's user-level skill directory. Without
+--agent, an interactive terminal opens a fuzzy picker. Type to filter, use the
+arrow keys to navigate, and press Enter to select. Escape or Ctrl+C cancels.
+Scripts and --no-input require an explicit --agent.
 
 Examples:
   markata-go agent install
   markata-go agent install --agent claude-code
+  markata-go agent install --global
   markata-go agent install --agent opencode --global
   markata-go agent install ../my-site --dry-run
   markata-go agent install . --force`,
@@ -187,7 +190,23 @@ func markTargetHidden(flags *pflag.FlagSet) {
 
 func runAgentInstallCommand(cmd *cobra.Command, args []string) error {
 	currentCmd = cmd
-	target, err := resolveAgentInstallTarget(agentInstallAgent, agentInstallLegacyTarget, agentInstallGlobal)
+	if agentInstallGlobal {
+		if _, err := resolveAgentProjectRoot(args, true); err != nil {
+			return err
+		}
+	}
+	selected, explicit, err := selectedAgentFlagValue(agentInstallAgent, agentInstallLegacyTarget)
+	if err != nil {
+		return err
+	}
+	if agentInstallGlobal && !explicit && !noInput && os.Getenv("TERM") != triageDumb &&
+		streamIsTerminal(cmd.InOrStdin()) && streamIsTerminal(cmd.OutOrStdout()) {
+		selected, err = pickInstallAgent(cmd)
+		if err != nil {
+			return err
+		}
+	}
+	target, err := resolveAgentInstallTarget(selected, "", agentInstallGlobal)
 	if err != nil {
 		return err
 	}
@@ -240,9 +259,9 @@ func runAgentWriteCommand(args []string, target agentInstallTarget, global bool,
 	}
 
 	if dryRun {
-		outlnf("Dry run: would %s %d file(s) %s %s", operation, len(installedFiles), prepositionForAgentOperation(operation), destination)
+		outlnf("%s would %s %d file(s) %s %s", agentYellow("Dry run:"), operation, len(installedFiles), prepositionForAgentOperation(operation), destination)
 	} else {
-		outlnf("%s %d file(s) %s %s", pastTenseForAgentOperation(operation), len(installedFiles), prepositionForAgentOperation(operation), destination)
+		outlnf("%s %d file(s) %s %s", agentGreen("%s", pastTenseForAgentOperation(operation)), len(installedFiles), prepositionForAgentOperation(operation), destination)
 	}
 
 	for _, filePath := range installedFiles {
@@ -438,30 +457,30 @@ func runAgentDoctorCommand(cmd *cobra.Command, args []string) error {
 	outlnf("Installed: %s", manifest.Version)
 	outlnf("Current:   %s", Version)
 	if report.VersionMismatch {
-		outlnf("Version:   mismatch")
+		outlnf("Version:   %s", agentYellow("mismatch"))
 	}
 	outlnf("")
 
 	for _, entry := range report.Files {
 		switch entry.Status {
 		case agentskill.FileOK:
-			outlnf("  ok        %s", entry.Path)
+			outlnf("  %s        %s", agentGreen("ok"), entry.Path)
 		case agentskill.FileModified:
-			outlnf("  modified  %s", entry.Path)
+			outlnf("  %s  %s", agentYellow("modified"), entry.Path)
 		case agentskill.FileNew:
-			outlnf("  new       %s", entry.Path)
+			outlnf("  %s       %s", agentCyan("new"), entry.Path)
 		case agentskill.FileMissing:
-			outlnf("  missing   %s", entry.Path)
+			outlnf("  %s   %s", agentRed("missing"), entry.Path)
 		}
 	}
 
 	outlnf("")
 	if report.HasDrift() {
-		outlnf("Skill has %d issue(s). Run 'markata-go agent install --force' to update.", report.IssueCount())
+		outlnf("%s Run 'markata-go agent update' to update.", agentYellow("Skill has %d issue(s).", report.IssueCount()))
 		return newExitCodeError(doctorExitDrift, nil)
 	}
 
-	outlnf("Skill is up to date.")
+	outlnf("%s", agentGreen("Skill is up to date."))
 	return nil
 }
 
@@ -522,4 +541,23 @@ func runAgentRemoveCommand(cmd *cobra.Command, args []string) error {
 	}
 	outlnf("Removed %s", filepath.ToSlash(skillDir))
 	return nil
+}
+
+// Agent status colors follow the shared CLI color controls for the output stream.
+func agentColor(code, message string) string {
+	enabled := currentCmd != nil && colorEnabledFor(streamIsTerminal(currentCmd.OutOrStdout()))
+	return colorize(message, "\x1b["+code+"m", enabled)
+}
+
+func agentGreen(format string, args ...any) string {
+	return agentColor("32", fmt.Sprintf(format, args...))
+}
+func agentYellow(format string, args ...any) string {
+	return agentColor("33", fmt.Sprintf(format, args...))
+}
+func agentRed(format string, args ...any) string {
+	return agentColor("31", fmt.Sprintf(format, args...))
+}
+func agentCyan(format string, args ...any) string {
+	return agentColor("36", fmt.Sprintf(format, args...))
 }

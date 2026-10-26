@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/buildstats"
+	"github.com/WaylonWalker/markata/pkg/buildstats"
 )
 
 var hackerNewsItemAPIBaseURL = "https://hacker-news.firebaseio.com/v0/item/%s.json"
@@ -155,7 +155,7 @@ func fetchHackerNewsArticleMetadata(articleURL string) *hackerNewsMetadata {
 	if err != nil {
 		return nil
 	}
-	req.Header.Set("User-Agent", "markata-go/1.0 (+https://github.com/WaylonWalker/markata-go)")
+	req.Header.Set("User-Agent", "markata-go/1.0 (+https://github.com/WaylonWalker/markata)")
 
 	resp, err := hackerNewsHTTPClient.Do(req)
 	if err != nil {

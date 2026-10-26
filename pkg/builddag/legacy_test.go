@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
 )
 
 type legacyTaskTestPlugin struct {

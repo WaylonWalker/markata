@@ -8,7 +8,7 @@
       {% if feed_presentation == "editorial" %}
       {% with post.image|editorial_card_image:item.Lead as preview_image %}
       {% with preview_image|responsive_srcset:"160,240,320,480,600,720" as thumbset %}
-      <img src="{% if item.Lead %}{{ preview_image | with_size:"720,450" }}{% else %}{{ preview_image | with_size:"480,300" }}{% endif %}"{% if thumbset %} srcset="{{ thumbset }}" sizes="(max-width: 480px) 92vw, (max-width: 760px) 40vw, 330px"{% endif %} alt="" class="u-photo" width="720" height="450"{% if item.Lead %} loading="eager" fetchpriority="high"{% else %} loading="lazy"{% endif %} decoding="async">
+      <img src="{% if item.Lead %}{{ preview_image | with_size:"720,450" }}{% else %}{{ preview_image | with_size:"480,300" }}{% endif %}"{% if thumbset %} srcset="{{ thumbset }}" sizes="(max-width: 480px) 92vw, (max-width: 760px) 40vw, 330px"{% endif %} alt="" class="u-photo" width="720" height="450" loading="lazy" decoding="async">
       {% endwith %}
       {% endwith %}
       {% else %}

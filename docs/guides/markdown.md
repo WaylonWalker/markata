@@ -27,6 +27,9 @@ markata-go supports standard Markdown (CommonMark), GitHub Flavored Markdown (GF
 - [Table of Contents](#table-of-contents)
 - [Heading Anchors](#heading-anchors)
 - [Footnotes](#footnotes)
+- [Lucide icons](/docs/guides/icons/) - inline SVG icons, centered icon cards, and feature rows
+- [Rich Markdown layouts](/docs/guides/markdown-containers/) - responsive cards, grids, and diagrams
+- [Roads](/docs/guides/roads/) - scroll-drawn timelines and roadmaps (separate guide)
 
 
 ---
@@ -463,6 +466,12 @@ markata-go supports GitHub Flavored Markdown extensions.
 ### Tables
 
 Tables use pipes (`|`) and hyphens (`-`) to define structure. Use colons (`:`) for alignment.
+
+Tables with a header row are sortable in rendered posts. Activate a column by
+selecting its header; select it again to reverse the order. Text sorts naturally,
+numeric values sort numerically, and empty cells stay at the end. The sorting
+controls are keyboard accessible. The small sorting script is loaded only on
+pages that contain a header table.
 
 **Input:**
 
@@ -924,6 +933,22 @@ anchor = false  # default: false (use heading_anchors plugin instead)
 ---
 
 ## Code Blocks
+
+### Code copy controls (progressive enhancement)
+
+On pages containing code blocks, the default theme can add a compact **Copy**
+button, and a language label when the fence specifies a language. The controls
+reuse the existing palette-aware Chroma styling and don't require another
+highlighter. Markata only loads the small enhancement script on code-bearing
+pages; partial-page navigations initialize new blocks once, without duplicate
+buttons. Mermaid diagrams are excluded.
+
+The fenced source remains native `<pre><code>` HTML without JavaScript.
+Clipboard actions require the browser's permission or a secure context; if
+automatic copying isn't available, the control selects the code so readers can
+copy it manually. Controls are omitted from copied rich post content.
+
+
 
 Fenced code blocks support syntax highlighting for many languages.
 

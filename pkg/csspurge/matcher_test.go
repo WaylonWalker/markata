@@ -199,6 +199,94 @@ func TestPurgeStats(t *testing.T) {
 	}
 }
 
+func TestDefaultPurgePreservesInteractiveSidebarState(t *testing.T) {
+	// Generated static HTML ships the drawer closed. The open and expanded
+	// classes are added by JS, so they never occur in build-time HTML.
+	used := NewUsedSelectors()
+	for _, class := range []string{"feed-sidebar", "doc-sidebar", "sidebar-toggle", "page-wrapper"} {
+		used.Classes[class] = true
+	}
+
+	css := `
+.feed-sidebar, .doc-sidebar { visibility: hidden; transform: translateX(-100%); }
+.feed-sidebar.sidebar--pinned, .doc-sidebar.sidebar--pinned { visibility: visible; transform: none; }
+.feed-sidebar.feed-sidebar--expanded .feed-nav-drawer { max-height: 12rem; }
+.sidebar--no-motion > .sidebar-toggle { transition: none; }
+.unused-selector { display: none; }
+`
+	// feed-nav-drawer is statically present as a closed element.
+	used.Classes["feed-nav-drawer"] = true
+
+	out, _ := PurgeCSS(css, used, PurgeOptions{Preserve: DefaultPreservePatterns()})
+	for _, selector := range []string{
+		".feed-sidebar.sidebar--pinned",
+		".doc-sidebar.sidebar--pinned",
+		".feed-sidebar.feed-sidebar--expanded",
+		".sidebar--no-motion",
+	} {
+		if !strings.Contains(out, selector) {
+			t.Errorf("purge removed JS-only sidebar selector %q: %s", selector, out)
+		}
+	}
+	if strings.Contains(out, ".unused-selector") {
+		t.Errorf("purge kept unrelated CSS: %s", out)
+	}
+}
+
+// The article Copy control is created after HTML has been published.
+// Purging based exclusively on build-time HTML must retain the CSS rules
+// that position it, including the language-label and focus styles.
+func TestDefaultPurgePreservesRuntimeCodeChrome(t *testing.T) {
+	used := NewUsedSelectors()
+	used.Elements["pre"] = true
+	used.Elements["code"] = true
+	used.Classes["post-content"] = true
+
+	css := `@layer components {
+.post-content pre.md-code-enhanced { position: relative; }
+.post-content pre.md-code-enhanced .md-code-copy { position: absolute; inset-inline-end: .45rem; }
+.post-content pre.md-code-enhanced .md-code-copy:focus-visible { outline: 2px solid blue; }
+.post-content pre.md-code-enhanced[data-language]::before { inset-inline-end: 5.4rem; }
+.unused-css-test-only { color: red; }
+}`
+	out, _ := PurgeCSS(css, used, PurgeOptions{Preserve: DefaultPreservePatterns()})
+	for _, want := range []string{
+		"pre.md-code-enhanced { position: relative; }",
+		".md-code-copy { position: absolute;",
+		".md-code-copy:focus-visible",
+		"[data-language]::before",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("purge removed runtime code chrome rule %q: %s", want, out)
+		}
+	}
+	if strings.Contains(out, ".unused-css-test-only") {
+		t.Errorf("purge preserved unrelated unused selector: %s", out)
+	}
+}
+
+func TestDefaultPurgePreservesEditorialRoadEnhancements(t *testing.T) {
+	used := NewUsedSelectors()
+	used.Classes["road"] = true
+	used.Classes["story"] = true
+	used.Classes["reveal"] = true
+	css := `.road[data-road="editorial"] .road-entry-icon { color: inherit; }
+.road[data-road-ready].reveal .road-entry-revealed { animation: road-entry-reveal .6s; }
+.unused-road-test { color: red; }`
+	out, _ := PurgeCSS(css, used, PurgeOptions{
+		Preserve:           DefaultPreservePatterns(),
+		PreserveAttributes: DefaultPreserveAttributes(),
+	})
+	for _, want := range []string{".road-entry-icon", "[data-road-ready]", ".road-entry-revealed"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("purge removed editorial road selector %q: %s", want, out)
+		}
+	}
+	if strings.Contains(out, ".unused-road-test") {
+		t.Errorf("purge preserved unrelated selector: %s", out)
+	}
+}
+
 func TestDefaultPreservePatterns(t *testing.T) {
 	patterns := DefaultPreservePatterns()
 	if len(patterns) == 0 {
@@ -210,6 +298,8 @@ func TestDefaultPreservePatterns(t *testing.T) {
 		"js-*", "htmx-*", "active", "hidden",
 		"dark", "light", "dark-mode", "light-mode",
 		"theme-*", "palette-*", // Theme class patterns
+		"sidebar--pinned", "sidebar--no-motion", "feed-sidebar--expanded",
+		"md-code-*", // Runtime article code-copy enhancement
 	}
 	patternSet := make(map[string]bool)
 	for _, p := range patterns {

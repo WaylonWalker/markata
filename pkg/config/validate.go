@@ -7,11 +7,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/WaylonWalker/markata-go/pkg/fontpacks"
-	"github.com/WaylonWalker/markata-go/pkg/models"
-	"github.com/WaylonWalker/markata-go/pkg/palettes"
-	"github.com/WaylonWalker/markata-go/pkg/renderingcontract"
-	"github.com/WaylonWalker/markata-go/pkg/suggest"
+	"github.com/WaylonWalker/markata/pkg/fontpacks"
+	"github.com/WaylonWalker/markata/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/palettes"
+	"github.com/WaylonWalker/markata/pkg/renderingcontract"
+	"github.com/WaylonWalker/markata/pkg/suggest"
 )
 
 // ValidationError represents a configuration validation error.
@@ -154,6 +154,12 @@ func ValidateConfig(config *models.Config) []error {
 
 func validateImageLibraryConfig(config *models.Config) []error {
 	var errs []error
+	if config.Images.PageSize < 0 {
+		errs = append(errs, ValidationError{
+			Field:   "images.page_size",
+			Message: "must be a nonnegative integer (0 disables pagination)",
+		})
+	}
 	if path := strings.TrimSpace(config.Images.Path); path != "" && imagePathEscapesRoot(path) {
 		errs = append(errs, ValidationError{
 			Field:   "images.path",

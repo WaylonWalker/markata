@@ -1,10 +1,10 @@
 #!/bin/bash
 #
 # Markata installer (supports legacy markata-go releases)
-# https://github.com/WaylonWalker/markata-go
+# https://github.com/WaylonWalker/markata
 #
 # Usage:
-#   curl -sSL https://raw.githubusercontent.com/WaylonWalker/markata-go/main/install.sh | bash
+#   curl -sSL https://raw.githubusercontent.com/WaylonWalker/markata/main/install.sh | bash
 #
 # Environment variables:
 #   MARKATA_INSTALL_DIR    - Custom install directory (legacy: MARKATA_GO_INSTALL_DIR)
@@ -19,7 +19,7 @@
 set -e
 
 # Configuration
-REPO="WaylonWalker/markata-go"
+REPO="WaylonWalker/markata"
 BINARY_NAME="markata"
 GITHUB_API="https://api.github.com/repos/${REPO}"
 GITHUB_RELEASES="https://github.com/${REPO}/releases"
@@ -167,7 +167,7 @@ ensure_install_dir() {
 
     if [ ! -w "${dir}" ]; then
         log_error "Install directory is not writable: ${dir}"
-        log_error "Try running with sudo or set MARKATA_GO_INSTALL_DIR to a writable path"
+        log_error "Try running with sudo or set MARKATA_INSTALL_DIR (legacy: MARKATA_GO_INSTALL_DIR) to a writable path"
         exit 1
     fi
 }

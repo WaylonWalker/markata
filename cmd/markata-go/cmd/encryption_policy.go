@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/encryption"
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/encryption"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 const encryptionEnvPrefix = "MARKATA_GO_ENCRYPTION_KEY_"

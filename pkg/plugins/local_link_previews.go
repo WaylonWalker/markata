@@ -6,8 +6,8 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/WaylonWalker/markata-go/pkg/buildcache"
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/buildcache"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 // encodeLocalPreviews prepares one immutable lookup shared by concurrent renders.

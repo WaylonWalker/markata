@@ -1,0 +1,28 @@
+name: Markata Repository Cutover Safety
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/markata-repo-cutover.sh'
+      - 'scripts/test-markata-repo-cutover.sh'
+      - '.github/workflows/markata-repo-cutover.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'scripts/markata-repo-cutover.sh'
+      - 'scripts/test-markata-repo-cutover.sh'
+      - '.github/workflows/markata-repo-cutover.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  cutover-script:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check Bash syntax
+        run: bash -n scripts/markata-repo-cutover.sh scripts/test-markata-repo-cutover.sh
+      - name: Exercise read-only preflight and fail-closed gates
+        run: bash scripts/test-markata-repo-cutover.sh

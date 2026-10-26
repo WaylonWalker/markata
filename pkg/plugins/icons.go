@@ -11,8 +11,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 const iconPluginName = "icons"
@@ -234,6 +234,10 @@ func prepareIconSVG(raw string) (string, bool) {
 	}
 	end += len("</svg>")
 	svg := raw[start:end]
+	// Shortcodes are expanded into Markdown source before Goldmark parses it.
+	// Keep the SVG on one line so multiline vendored files remain inline HTML
+	// instead of being split into paragraphs and escaped as text.
+	svg = strings.NewReplacer("\r\n", " ", "\n", " ", "\r", " ").Replace(svg)
 	lower = strings.ToLower(svg)
 
 	// Local SVGs are trusted authoring assets, but reject the most dangerous

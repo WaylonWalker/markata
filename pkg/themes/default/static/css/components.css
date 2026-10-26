@@ -335,6 +335,44 @@
   margin: 0 auto;
 }
 
+/* A quiet, clickable affordance—not a permanent shortcuts panel. */
+.footer-shortcuts-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  min-height: 32px;
+  margin-top: 0.375rem;
+  padding: 0.25rem 0.5rem;
+  border: 0;
+  border-radius: var(--radius, 0.375rem);
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.footer-shortcuts-trigger kbd {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.3rem;
+  min-height: 1.3rem;
+  padding: 0 0.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.25rem;
+  font: inherit;
+}
+
+.footer-shortcuts-trigger:hover {
+  color: var(--color-link, var(--color-primary));
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+}
+
+.footer-shortcuts-trigger:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
 .footer-text {
   margin-bottom: 1rem;
 }
@@ -410,6 +448,17 @@
 /* Sidebar on the left */
 .content-wrapper--sidebar-left {
   grid-template-columns: 250px 1fr;
+}
+
+/* The article and external share tools occupy one grid cell. */
+.content-wrapper--sidebar-left > .post-shell {
+  grid-column: 2;
+  min-width: 0;
+}
+
+.content-wrapper--sidebar-right > .post-shell {
+  grid-column: 1;
+  min-width: 0;
 }
 
 .content-wrapper--sidebar-left article {
@@ -1177,9 +1226,27 @@
   box-shadow: -12px 0 40px -18px rgba(0, 0, 0, 0.35);
 }
 
+/* Skip closed drawer contents while preserving the closing slide. */
+@supports (transition-behavior: allow-discrete) and (content-visibility: hidden) {
+  .feed-sidebar > .feed-nav,
+  .doc-sidebar > .toc {
+    content-visibility: hidden;
+    transition: content-visibility var(--sidebar-duration, 0.26s) allow-discrete;
+  }
+
+  .feed-sidebar.sidebar--pinned > .feed-nav,
+  .doc-sidebar.sidebar--pinned > .toc {
+    content-visibility: visible;
+    /* Opening measurements and focus need rendered contents immediately. */
+    transition: none;
+  }
+}
+
 /* Skip the slide when the page loads with a drawer already open */
 .sidebar--no-motion,
 .sidebar--no-motion > .sidebar-toggle,
+.sidebar--no-motion > .feed-nav,
+.sidebar--no-motion > .toc,
 .page-wrapper:has(> .sidebar--no-motion) > .main-content {
   transition: none !important;
 }
@@ -1499,6 +1566,14 @@
    Overlay drawers (<= 1200px)
    ========================================================================== */
 @media (max-width: 1200px) {
+  /* Only the open overlay drawer may offer a handle: the closed drawer's
+     protruding handle can otherwise intercept taps on the active close tab. */
+  .page-wrapper:has(> :is(.feed-sidebar, .doc-sidebar).sidebar--pinned)
+    > :is(.feed-sidebar, .doc-sidebar):not(.sidebar--pinned) > .sidebar-toggle {
+    pointer-events: none;
+    visibility: hidden;
+  }
+
   .feed-sidebar,
   .doc-sidebar {
     top: 0;
@@ -1636,6 +1711,8 @@
 @media (prefers-reduced-motion: reduce) {
   .feed-sidebar,
   .doc-sidebar,
+  .feed-sidebar > .feed-nav,
+  .doc-sidebar > .toc,
   .content-sidebar,
   .sidebar-toggle__icon,
   .sidebar-toggle__kbd,
@@ -1985,6 +2062,41 @@
 
 .search {
   position: relative;
+}
+
+/* Search results may load later, but the visible navbar row needs space now. */
+.header-controls .search-container--navbar,
+.header-controls .search--navbar {
+  min-height: 2.125rem;
+  width: clamp(10rem, 18vw, 16rem);
+  max-width: 100%;
+  flex-shrink: 0;
+  margin-left: 0;
+}
+
+.header-controls .search-container--navbar #pagefind-search,
+.header-controls .search-container--navbar .pagefind-ui {
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .header-controls .search-container--navbar,
+  .header-controls .search--navbar {
+    margin-top: 0.5rem;
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 0;
+  }
+}
+
+.header-controls .pagefind-ui__search-input,
+.header-controls .bleve-search__input {
+  width: 100%;
+  max-width: 100%;
+  display: block;
+  box-sizing: border-box;
+  height: 2.125rem;
+  min-height: 2.125rem;
 }
 
 /* Navbar positioning */
@@ -3283,6 +3395,16 @@
     0 1px 0 color-mix(in srgb, var(--color-border) 55%, transparent);
 }
 
+/* Skip layout and paint inside distant reader cards while preserving server-rendered
+   content and grid space. Keep the first four cards of each day fully laid out
+   for first paint and keyboard/navigation predictability. */
+@supports (content-visibility: auto) {
+  .reader-day-entries > .reader-entry:nth-child(n+5) {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 24rem;
+  }
+}
+
 .reader-entry-meta-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -3584,6 +3706,11 @@ article.kb-highlighted {
     container, header, body, sections, tables, and footer.
     ========================================================================== */
 
+/* Keep the closed dialog out of document flow even with alternate display rules. */
+.shortcuts-modal[hidden] {
+   display: none;
+}
+
 /* Modal backdrop - semi-transparent overlay */
 .shortcuts-modal {
    position: fixed;
@@ -3845,16 +3972,13 @@ kbd.kbd {
    View Transitions API Styles
    ============================================ */
 
-/* Default cross-fade for everything (fixes old+new overlap flash). */
-::view-transition-old(root) {
-   animation: fade-out 80ms ease both;
-}
-
-::view-transition-new(root) {
-   animation: fade-in 100ms ease both;
-}
-
-/* Root transition container */
+/*
+ * Navigation swaps are atomic, not theatrical. The content already changes
+ * inside startViewTransition(); interpolating entire page snapshots or
+ * shared elements causes flashes and large motion across different layouts.
+ * Keep the performance and state benefits of SPA navigation without animating
+ * the snapshots. Local hover/drawer animations remain unaffected.
+ */
 ::view-transition {
    pointer-events: none;
 }
@@ -3862,53 +3986,25 @@ kbd.kbd {
 ::view-transition-group(*),
 ::view-transition-old(*),
 ::view-transition-new(*) {
-   overflow: visible;
-}
-
-/* Keyframe animations for view transitions */
-@keyframes fade-out {
-   to {
-      opacity: 0;
-   }
-}
-
-@keyframes fade-in {
-   from {
-      opacity: 0;
-   }
-}
-
-@keyframes slide-up {
-   from {
-      transform: translateY(8px);
-   }
-}
-
-@keyframes slide-down {
-   from {
-      transform: translateY(-8px);
-   }
-}
-
-/* Main content gets a slightly more directional motion. */
-::view-transition-old(main-content) {
-   animation: fade-out 70ms ease both;
-}
-
-::view-transition-new(main-content) {
-   animation: fade-in 110ms ease both, slide-up 120ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
-}
-
-/* Keep the broad article snapshot underneath shared title/header morphs. */
-::view-transition-group(main-content),
-::view-transition-old(main-content),
-::view-transition-new(main-content) {
-   z-index: 1;
+   animation: none !important;
 }
 
 /* ==========================================================================
    Share Component
    ========================================================================== */
+
+/* The share controls live outside <article> so read-aloud tools skip them. */
+.post-share {
+   box-sizing: border-box;
+   max-width: var(--content-width);
+   margin-inline: auto;
+}
+
+@media (max-width: 768px) {
+   .post-share {
+      padding-inline: var(--space-4);
+   }
+}
 
 .share-panel {
    margin: var(--space-8) 0 var(--space-6);
@@ -4058,31 +4154,6 @@ kbd.kbd {
    .share-button {
       width: 2rem;
       height: 2rem;
-   }
-}
-
-/* Keep global chrome stable (no morphing). */
-::view-transition-old(site-nav),
-::view-transition-new(site-nav),
-::view-transition-old(site-footer),
-::view-transition-new(site-footer),
-::view-transition-old(breadcrumbs),
-::view-transition-new(breadcrumbs),
-::view-transition-old(pagination),
-::view-transition-new(pagination),
-::view-transition-old(feed-sidebar),
-::view-transition-new(feed-sidebar),
-::view-transition-old(post-nav),
-::view-transition-new(post-nav) {
-   animation: none;
-}
-
-/* Respect reduced motion - disable view transitions */
-@media (prefers-reduced-motion: reduce) {
-   ::view-transition-group(*),
-   ::view-transition-old(*),
-   ::view-transition-new(*) {
-      animation: none !important;
    }
 }
 
@@ -4588,7 +4659,7 @@ main .container {
 }
 
 /* Warning container */
-.warning {
+.warning:not(.admonition) {
   padding: 1rem;
   margin: 1rem 0;
   background-color: var(--color-warning-bg, #fff3cd);
@@ -4597,7 +4668,7 @@ main .container {
 }
 
 /* Info container */
-.info {
+.info:not(.admonition) {
   padding: 1rem;
   margin: 1rem 0;
   background-color: var(--color-info-bg, #cff4fc);
@@ -4606,7 +4677,7 @@ main .container {
 }
 
 /* Success container */
-.success {
+.success:not(.admonition) {
   padding: 1rem;
   margin: 1rem 0;
   background-color: var(--color-success-bg, #d1e7dd);
@@ -4615,8 +4686,8 @@ main .container {
 }
 
 /* Error/Danger container */
-.error,
-.danger {
+.error:not(.admonition),
+.danger:not(.admonition) {
   padding: 1rem;
   margin: 1rem 0;
   background-color: var(--color-danger-bg, #f8d7da);
@@ -4625,7 +4696,7 @@ main .container {
 }
 
 /* Note container */
-.note {
+.note:not(.admonition) {
   padding: 1rem;
   margin: 1rem 0;
   background-color: var(--color-note-bg, #e7e9eb);
@@ -4635,24 +4706,24 @@ main .container {
 
 /* Dark mode for containers */
 @media (prefers-color-scheme: dark) {
-  .warning {
+  .warning:not(.admonition) {
     background-color: var(--color-warning-bg, #332d1a);
   }
 
-  .info {
+  .info:not(.admonition) {
     background-color: var(--color-info-bg, #1a2e33);
   }
 
-  .success {
+  .success:not(.admonition) {
     background-color: var(--color-success-bg, #1a2e22);
   }
 
-  .error,
-  .danger {
+  .error:not(.admonition),
+  .danger:not(.admonition) {
     background-color: var(--color-danger-bg, #331a1d);
   }
 
-  .note {
+  .note:not(.admonition) {
     background-color: var(--color-note-bg, #2d2d2d);
   }
 }
@@ -4877,4 +4948,679 @@ body.reader-mode::after {
   }
 }
 
+
+/* Quote attributions (~handle) use the same theme tokens in every palette.
+   Keep these understated so the attribution doesn't compete with the quote. */
+.post-content .mention--attribution,
+.prose .mention--attribution {
+  display: inline;
+  padding: 0.1em 0.42em;
+  border-radius: 0.45em;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: 0.875em;
+  font-weight: 550;
+  line-height: 1.65;
+  text-decoration: none;
+  white-space: nowrap;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+.post-content a.mention--attribution:hover,
+.prose a.mention--attribution:hover {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+  text-decoration: underline;
+  text-underline-offset: 0.14em;
+}
+
+.post-content a.mention--attribution:focus-visible,
+.prose a.mention--attribution:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.post-content .mention--attribution.mention--unresolved,
+.prose .mention--attribution.mention--unresolved {
+  border-style: dashed;
+}
+
+}
+
+/* Article-only composition primitives. Class prefixes avoid changing old
+   .card/.columns containers, feeds, and theme navigation. No script needed. */
+@layer components {
+  .post-content :is(.md-layout, .md-box, .md-card, .md-columns, .md-grid, .md-stack, .md-divider, .md-connector) {
+    box-sizing: border-box;
+    min-width: 0;
+  }
+
+  .post-content :is(.md-layout, .md-box, .md-card) {
+    border: 1px solid var(--color-border-soft, var(--color-border));
+    border-radius: var(--radius-lg, .75rem);
+    padding: clamp(.75rem, 2vw, 1.25rem);
+  }
+
+  .post-content .md-layout {
+    display: grid;
+    gap: var(--space-3, .75rem);
+    margin-block: var(--space-6, 1.5rem);
+    background: transparent;
+  }
+
+  .post-content .md-box {
+    background: var(--color-background);
+  }
+
+  .post-content .md-card {
+    background: var(--color-surface);
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+  }
+
+  /* Keep permalinks available without placing them beyond the heading's edge.
+     Inline anchors can wrap with the title; card scrolling is still needed for
+     wide comparison tables below. Include headings in nested containers too. */
+  .post-content .md-card .heading-anchor {
+    position: static;
+  }
+
+  .post-content :is(.md-layout, .md-box, .md-card) > :first-child { margin-top: 0; }
+  .post-content :is(.md-layout, .md-box, .md-card) > :last-child { margin-bottom: 0; }
+  /* Preserve type hierarchy inside visual Markdown, instead of flattening
+     every nested H2-H6 to the same size. Card labels are supporting titles,
+     whereas unboxed article H2s remain the strongest section landmarks. */
+  .post-content :is(.md-layout, .md-box, .md-card) > :is(h2, h3, h4, h5, h6) {
+    line-height: 1.3;
+    letter-spacing: -0.012em;
+  }
+  .post-content :is(.md-layout, .md-box, .md-card) > h2 {
+    font-size: var(--text-2xl, 1.5rem);
+    font-weight: 750;
+  }
+  .post-content :is(.md-layout, .md-box, .md-card) > h3 {
+    font-size: var(--text-xl, 1.25rem);
+    font-weight: 700;
+  }
+  .post-content :is(.md-layout, .md-box, .md-card) > h4 {
+    font-size: var(--text-lg, 1.125rem);
+    font-weight: 650;
+  }
+  .post-content :is(.md-layout, .md-box, .md-card) > :is(h5, h6) {
+    font-size: var(--text-base, 1rem);
+    font-weight: 600;
+    color: var(--color-text-muted, var(--color-text));
+  }
+  /* Less dense supporting copy gives prominent unboxed prose and H2 headings
+     breathing room without making all of the article text smaller. */
+  .post-content .md-card > p {
+    font-size: 0.94em;
+    line-height: 1.6;
+  }
+
+  .post-content :is(.md-columns, .md-grid, .md-stack) {
+    display: grid;
+    gap: var(--space-3, .75rem);
+    align-items: stretch;
+    margin-block: var(--space-4, 1rem);
+  }
+
+  .post-content :is(.md-columns, .md-grid) {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+  }
+
+  .post-content .md-stack { grid-template-columns: minmax(0, 1fr); }
+  .post-content :is(.md-layout, .md-columns, .md-grid, .md-stack) > :is(.md-columns, .md-grid, .md-stack) {
+    margin-block: 0;
+  }
+
+  /* Explicit fixed columns are opt-in; default auto-fit is container-responsive. */
+  .post-content :is(.md-columns, .md-grid)[data-columns="2"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .post-content :is(.md-columns, .md-grid)[data-columns="3"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .post-content :is(.md-columns, .md-grid)[data-columns="4"] { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+  .post-content :is(.md-layout, .md-columns, .md-grid, .md-stack)[data-gap="sm"] { gap: var(--space-2, .5rem); }
+  .post-content :is(.md-layout, .md-columns, .md-grid, .md-stack)[data-gap="lg"] { gap: var(--space-6, 1.5rem); }
+  .post-content :is(.md-box, .md-card)[data-align="center"] { text-align: center; }
+
+  /* Within a comparison card the table scrolls with the card, never the page.
+     This complements (rather than duplicates) PR #1748's top-level tables. */
+  .post-content .md-card > table {
+    position: static;
+    left: auto;
+    transform: none;
+    margin-inline: 0;
+    width: max-content;
+    min-width: 100%;
+    max-width: none;
+  }
+
+  .post-content .md-divider {
+    border-top: 1px solid var(--color-border-soft, var(--color-border));
+    margin-block: var(--space-3, .75rem);
+  }
+
+  .post-content .md-connector {
+    display: grid;
+    place-items: center;
+    min-height: 1.75rem;
+    color: var(--color-text-muted);
+    line-height: 1;
+  }
+  .post-content .md-connector::before { content: "↓"; font-size: 1.25rem; }
+  .post-content .md-connector[data-direction="both"]::before { content: "↕"; }
+  .post-content .md-connector[data-direction="right"]::before { content: "→"; }
+  .post-content .md-connector[data-direction="left"]::before { content: "←"; }
+
+  @media (max-width: 640px) {
+    .post-content :is(.md-columns, .md-grid)[data-columns] {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  @media print {
+    .post-content .md-card { overflow: visible; }
+    .post-content :is(.md-columns, .md-grid) { break-inside: avoid; }
+  }
+}
+
+/* Story layouts are server-rendered and opt-in; no reveal script is required. */
+@layer components {
+  article.post.post--wide {
+    max-width: min(70rem, calc(100% - 2 * var(--space-10)));
+    margin-inline: auto;
+  }
+  article.post--wide > .post-header h1 {
+    max-width: 25ch;
+    font-size: clamp(2.1rem, 1.5rem + 2vw, 3.3rem);
+    line-height: 1.06;
+    letter-spacing: -.025em;
+    text-wrap: balance;
+  }
+  .post--wide > .post-content > p:first-of-type {
+    max-width: 32em;
+    font-size: clamp(1.2rem, 1rem + .8vw, 1.6rem);
+    line-height: 1.45;
+    text-wrap: pretty;
+  }
+  .post--wide .md-section-body p { max-width: 64ch; }
+  .post-content .md-section {
+    margin-top: clamp(4.5rem, 8vw, 7.5rem);
+    padding-top: clamp(2rem, 4vw, 3rem);
+    border-top: 1px solid var(--color-border);
+  }
+  .post-content :is(.md-section-head, .md-section-body) { min-width: 0; }
+  .post-content .md-section-head > h2 {
+    margin: 0 0 .9rem;
+    padding: 0;
+    font-size: clamp(1.55rem, 1.25rem + 1vw, 2.05rem);
+    line-height: 1.12;
+    letter-spacing: -.015em;
+    text-wrap: balance;
+  }
+  .post-content .md-section-kicker {
+    display: block;
+    margin-bottom: .4rem;
+    font-size: clamp(3rem, 2rem + 3.5vw, 5rem);
+    font-weight: 700;
+    line-height: .9;
+    letter-spacing: -.04em;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-primary);
+  }
+  .post-content .md-section-head > p {
+    max-width: 64ch;
+    margin: 0;
+    font-size: .88em;
+    line-height: 1.6;
+    color: var(--color-text-secondary, var(--color-text));
+  }
+  .post-content .md-section-head + .md-section-body { margin-top: 2.25rem; }
+  .post-content .md-section-body > :first-child { margin-top: 0; }
+  @media (min-width: 1100px) {
+    .post-content .md-section:has(> .md-section-head) {
+      display: grid;
+      grid-template-columns: 16rem minmax(0, 1fr);
+      gap: clamp(2rem, 4vw, 4.5rem);
+      align-items: start;
+    }
+    .post-content .md-section-head {
+      position: sticky;
+      top: 5rem;
+    }
+    .post-content .md-section-head + .md-section-body { margin-top: .35rem; }
+    .post-content .md-section-head > h2 { font-size: clamp(1.35rem, 1rem + .8vw, 1.6rem); }
+    .post-content .md-section-head > p { font-size: .8em; }
+  }
+  @media (max-width: 640px) {
+    article.post.post--wide { max-width: 100%; }
+  }
+
+  .post-content .md-grid.rail > .md-card {
+    position: relative;
+    display: grid;
+    align-content: start;
+    gap: .45rem;
+    padding: 1.25rem 1.25rem 1.4rem;
+    border-top: 2px solid var(--color-primary);
+  }
+  .post-content .md-grid.rail > .md-card:is(:hover, :focus-within) {
+    background: color-mix(in srgb, var(--color-primary) 6%, var(--color-surface));
+  }
+  .post-content .md-grid.rail > .md-card:has(a:focus-visible) {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 3px;
+  }
+  .post-content .md-grid.rail .md-icon {
+    justify-content: flex-start;
+    margin-bottom: .35rem;
+    color: var(--color-primary);
+  }
+  .post-content .md-grid.rail > .md-card > :is(h2, h3, h4, h5, h6) {
+    margin: 0;
+    font-size: 1.05em;
+    line-height: 1.25;
+    text-wrap: balance;
+  }
+  .post-content .md-grid.rail > .md-card > :is(h2, h3, h4, h5, h6) a:not(.heading-anchor, .anchor) {
+    color: inherit;
+    text-decoration: none;
+  }
+  .post-content .md-grid.rail > .md-card > :is(h2, h3, h4, h5, h6) a:not(.heading-anchor, .anchor)::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+  }
+  /* Keep the stretched link's containing block on the card, not the heading.
+     Generated heading-anchor overflow remains owned by the shared card styles. */
+  .post-content .md-grid.rail > .md-card > :is(h2, h3, h4, h5, h6) { position: static; }
+  .post-content .md-grid.rail > .md-card > p {
+    margin: 0;
+    font-size: .8em;
+    line-height: 1.55;
+  }
+  .post-content .md-grid.rail > .md-card > p:has(> em:only-child) {
+    font: 600 .7rem/1 var(--font-mono, monospace);
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+  }
+  .post-content .md-grid.rail > .md-card > p > em:only-child { font-style: normal; }
+  @media (min-width: 1000px) {
+    .post-content .md-grid.rail {
+      position: relative;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+    .post-content .md-grid.rail[data-columns="2"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .post-content .md-grid.rail[data-columns="3"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .post-content .md-grid.rail::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto;
+      height: 2px;
+      background: linear-gradient(90deg, var(--color-primary), var(--color-border));
+    }
+    .post-content .md-grid.rail > .md-card {
+      border-top-left-radius: 0;
+      border-top-right-radius: 0;
+    }
+    .post-content .md-grid.rail > .md-card:is(:hover, :focus-within) { transform: none; }
+    .post-content .md-grid.rail > .md-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 1.25rem;
+      box-sizing: border-box;
+      width: 10px;
+      height: 10px;
+      border: 2px solid var(--color-primary);
+      border-radius: 50%;
+      background: var(--color-background);
+    }
+    .post-content .md-grid.rail > .md-card:is(:hover, :focus-within)::before { background: var(--color-primary); }
+  }
+  @media (max-width: 999px) {
+    .post-content .md-grid.rail,
+    .post-content .md-grid.rail[data-columns] { grid-template-columns: minmax(0, 1fr); }
+  }
+  .post-content .md-grid.pending > .md-card {
+    border: 1px dashed var(--color-border);
+    background: transparent;
+  }
+  .post-content .md-grid.pending > .md-card .icon { color: var(--color-text-muted); }
+  @media print {
+    .post-content .md-section-head { position: static; }
+    .post-content .md-section { display: block; }
+    .post-content .md-grid.rail::before,
+    .post-content .md-grid.rail > .md-card::before { display: none; }
+  }
+}
+
+/* Static Markdown reporting components. These build on md-layout / md-columns
+   without affecting existing card/alert/task-list styling. */
+@layer components {
+  .post-content :is(.md-status, .md-stat, .md-delta, .md-meter, .md-progress) {
+    box-sizing: border-box;
+    min-width: 0;
+  }
+
+  .post-content .md-status {
+    --md-tone: var(--color-primary);
+    display: inline-flex;
+    max-width: 100%;
+    align-items: center;
+    gap: .4rem;
+    padding: .18rem .6rem;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--md-tone) 26%, transparent);
+    background: color-mix(in srgb, var(--md-tone) 10%, var(--color-surface));
+    color: var(--color-text);
+    font-size: var(--text-xs, .8rem);
+    line-height: 1.45;
+    vertical-align: baseline;
+  }
+
+  .post-content .md-status::before {
+    content: "";
+    width: .5em;
+    height: .5em;
+    flex: none;
+    border-radius: 50%;
+    background: var(--md-tone);
+  }
+  .post-content .md-status > p { margin: 0; }
+
+  .post-content :is(.md-status, .md-stat, .md-delta, .md-meter, .md-progress)[data-tone="success"] {
+    --md-tone: var(--admonition-success-border, #178b57);
+  }
+  .post-content :is(.md-status, .md-stat, .md-delta, .md-meter, .md-progress)[data-tone="caution"] {
+    --md-tone: var(--admonition-warn-border, #b87520);
+  }
+  .post-content :is(.md-status, .md-stat, .md-delta, .md-meter, .md-progress)[data-tone="danger"] {
+    --md-tone: var(--admonition-danger-border, #be4343);
+  }
+
+  .post-content .md-stat {
+    --md-tone: var(--color-primary);
+    display: grid;
+    align-content: start;
+    gap: var(--space-2, .5rem);
+    padding: var(--space-2, .5rem) 0;
+  }
+
+  .post-content .md-stat > p { margin: 0; }
+  .post-content .md-stat > p:first-child {
+    color: var(--color-text-muted);
+    font-size: var(--text-sm, .875rem);
+  }
+  .post-content .md-stat > p:nth-child(2) {
+    font-size: clamp(1.5rem, 3vw, 2rem);
+    font-weight: 700;
+    line-height: 1.15;
+    font-variant-numeric: tabular-nums;
+  }
+  .post-content .md-stat > p:nth-child(2) strong { font-weight: inherit; }
+  .post-content .md-stat > p:nth-child(3) {
+    color: var(--color-text-muted);
+    font-size: var(--text-sm, .875rem);
+  }
+
+  .post-content .md-delta {
+    --md-tone: var(--color-primary);
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: .5rem 1rem;
+    padding-top: var(--space-4, 1rem);
+    border-top: 1px solid var(--color-border-soft, var(--color-border));
+  }
+  .post-content .md-delta > p { margin: 0; }
+  .post-content .md-delta > p:last-child {
+    color: var(--md-tone);
+    font-size: var(--text-xl, 1.25rem);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Native <meter> is appropriate for utilization/space; <progress> for
+     incomplete operations. Both preserve text and accessibility without JS. */
+  .post-content :is(.md-meter, .md-progress) {
+    --md-tone: var(--color-primary);
+    display: grid;
+    gap: .4rem;
+    width: 100%;
+  }
+  .post-content :is(.md-meter, .md-progress) > :is(meter, progress) {
+    display: block;
+    width: 100%;
+    height: .72rem;
+    appearance: none;
+    -webkit-appearance: none;
+    border: 0;
+    border-radius: 999px;
+    overflow: hidden;
+    background: var(--color-border-soft, var(--color-border));
+    accent-color: var(--md-tone);
+  }
+  .post-content :is(.md-meter, .md-progress) > :is(meter, progress)::-webkit-meter-bar,
+  .post-content :is(.md-meter, .md-progress) > :is(meter, progress)::-webkit-progress-bar {
+    border: 0;
+    border-radius: 999px;
+    background: var(--color-border-soft, var(--color-border));
+  }
+  .post-content .md-meter > meter::-webkit-meter-optimum-value,
+  .post-content .md-meter > meter::-webkit-meter-suboptimum-value,
+  .post-content .md-meter > meter::-webkit-meter-even-less-good-value,
+  .post-content .md-progress > progress::-webkit-progress-value {
+    border-radius: 999px;
+    background: var(--md-tone);
+  }
+  .post-content .md-meter > meter::-moz-meter-bar,
+  .post-content .md-progress > progress::-moz-progress-bar {
+    border-radius: 999px;
+    background: var(--md-tone);
+  }
+  .post-content :is(.md-meter, .md-progress) > p {
+    color: var(--color-text-muted);
+    font-size: var(--text-xs, .8rem);
+    margin: 0;
+  }
+  @media print {
+    .post-content :is(.md-meter, .md-progress) > :is(meter, progress) {
+      print-color-adjust: exact;
+      -webkit-print-color-adjust: exact;
+    }
+  }
+}
+
+/* Author-declared source details, available without JavaScript. */
+@layer components {
+  .post-content .md-source {
+    border: 1px solid var(--color-border-soft, var(--color-border));
+    border-radius: var(--radius-lg, .75rem);
+    margin-block: var(--space-4, 1rem);
+    min-width: 0;
+  }
+  .post-content .md-source > summary {
+    padding: .7rem 1rem;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .post-content .md-source > summary:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+  .post-content .md-source > :not(summary) {
+    margin-inline: 1rem;
+    max-width: calc(100% - 2rem);
+  }
+  .post-content .md-source pre {
+    overflow-x: auto;
+  }
+}
+
+/* Chart.js no-JS data stays usable on narrow article columns. */
+@layer components {
+  .post-content .chartjs-figure {
+    box-sizing: border-box;
+    min-width: 0;
+    max-width: 100%;
+    margin: var(--space-6, 1.5rem) 0;
+    padding: clamp(.75rem, 3vw, 1.25rem);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg, .75rem);
+    background: var(--color-surface);
+    break-inside: avoid;
+  }
+
+  .post-content .chartjs-figure > figcaption {
+    margin: 0 0 var(--space-4, 1rem);
+    font-size: inherit;
+    text-align: left;
+    font-style: normal;
+  }
+
+  .post-content .chartjs-figure-title {
+    display: block;
+    color: var(--color-text);
+  }
+
+  .post-content .chartjs-figure-caption {
+    margin: .25rem 0 0;
+    font-size: .875rem;
+    color: var(--color-text-muted);
+  }
+
+  .post-content .chartjs-figure canvas {
+    max-width: 100%;
+  }
+
+  .post-content .chartjs-figure-compact canvas {
+    max-height: 130px;
+  }
+
+  .post-content .chartjs-figure .chartjs-data {
+    margin-block: .5rem 0;
+  }
+
+  .post-content .chartjs-figure .chartjs-data > summary {
+    font-size: .8rem;
+    color: var(--color-text-muted);
+  }
+
+  .post-content .chartjs-figure .chartjs-data > summary:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: -2px; /* Keep the ring inside the scrollable disclosure. */
+  }
+
+  @media print {
+    .post-content .chartjs-figure .chartjs-data::details-content {
+      content-visibility: visible;
+    }
+    .post-content .chartjs-figure .chartjs-data pre,
+    .post-content .chartjs-figure .chartjs-data pre code {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+  }
+
+  .post-content .chartjs-data {
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    margin-block: var(--space-4, 1rem);
+  }
+  .post-content .chartjs-data > summary {
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .post-content .chartjs-data > summary:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+  .post-content .chartjs-data > table {
+    width: max-content;
+    max-width: none;
+    min-width: 100%;
+    margin-inline: 0;
+  }
+}
+
+/* Rich Markdown icon compositions: existing local/pinned Lucide shortcodes
+   are inlined at build time. These helpers never load an icon-font or JS. */
+@layer components {
+  .post-content .md-icon,
+  .post-content .md-feature,
+  .post-content .md-feature-icon,
+  .post-content .md-feature-body {
+    box-sizing: border-box;
+    min-width: 0;
+  }
+
+  /* Centered icons in md-card and other article content. The existing icon
+     renderer emits an accessible decorative span with 1em SVG dimensions. */
+  .post-content .md-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    line-height: 1;
+    color: var(--color-text-muted);
+  }
+  .post-content .md-icon[data-size="sm"] { font-size: 1rem; }
+  .post-content .md-icon[data-size="lg"] { font-size: 1.75rem; }
+  .post-content .md-icon > p,
+  .post-content .md-feature-icon > p { margin: 0; }
+  .post-content :is(.md-icon, .md-feature-icon) .icon {
+    vertical-align: middle;
+  }
+  .post-content :is(.md-icon, .md-feature-icon) .icon svg {
+    display: block;
+  }
+
+  /* A feature row has an icon tile at left and real Markdown at right.
+     Unlike pseudo-element icons, the icon can be authored via :lucide-…:,
+     with visible heading text providing the accessible meaning. */
+  .post-content .md-feature {
+    display: grid;
+    grid-template-columns: 2.75rem minmax(0, 1fr);
+    gap: var(--space-3, .75rem);
+    align-items: start;
+    margin-block: var(--space-4, 1rem);
+  }
+  .post-content .md-feature > .md-feature-icon {
+    display: grid;
+    place-items: center;
+    width: 2.75rem;
+    min-height: 2.75rem;
+    padding: .5rem;
+    border-radius: var(--radius-lg, .75rem);
+    background: var(--color-surface);
+    color: var(--color-text-muted);
+    font-size: 1.3rem;
+    line-height: 1;
+  }
+  .post-content .md-feature > .md-feature-body > :first-child { margin-top: 0; }
+  .post-content .md-feature > .md-feature-body > :last-child { margin-bottom: 0; }
+  .post-content .md-feature > .md-feature-body > :is(h2, h3, h4) {
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+  @media (max-width: 360px) {
+    .post-content .md-feature {
+      grid-template-columns: 2.25rem minmax(0, 1fr);
+      gap: .625rem;
+    }
+    .post-content .md-feature > .md-feature-icon {
+      width: 2.25rem;
+      min-height: 2.25rem;
+      font-size: 1.1rem;
+      padding: .35rem;
+    }
+  }
 }

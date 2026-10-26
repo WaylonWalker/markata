@@ -14,7 +14,7 @@ import (
 	"github.com/chromedp/chromedp"
 	"github.com/chromedp/chromedp/kb"
 
-	"github.com/WaylonWalker/markata-go/pkg/servefix"
+	"github.com/WaylonWalker/markata/pkg/servefix"
 )
 
 func TestBrowserKeyboardNavigationAndHistory(t *testing.T) {
@@ -56,77 +56,77 @@ func TestBrowserKeyboardNavigationAndHistory(t *testing.T) {
 	defer cancelTimeout()
 
 	var hash, section, filter string
-	if err := chromedp.Run(browser,
+	if err := chromedp.Do(browser,
 		chromedp.EmulateViewport(1280, 900),
 		chromedp.Navigate(server.URL+"/_markata/"),
 		chromedp.WaitVisible(`#list [data-key]`),
 		chromedp.KeyEvent("p"),
-		chromedp.Evaluate(`location.hash`, &hash),
+		evaluateInto(`location.hash`, &hash),
 	); err != nil {
 		t.Fatal(err)
 	}
 	if hash != "#/pages?item=page%3Aposts%2Ffirst.md" {
 		t.Fatalf("p shortcut hash = %q", hash)
 	}
-	if err := chromedp.Run(browser,
+	if err := chromedp.Do(browser,
 		chromedp.KeyEvent("j"),
-		chromedp.Evaluate(`location.hash`, &hash),
+		evaluateInto(`location.hash`, &hash),
 	); err != nil {
 		t.Fatal(err)
 	}
 	if hash != "#/pages?item=page%3Aposts%2Fsecond.md" {
 		t.Fatalf("j selection hash = %q", hash)
 	}
-	if err := chromedp.Run(browser,
+	if err := chromedp.Do(browser,
 		chromedp.KeyEvent(kb.Escape),
-		chromedp.Evaluate(`location.hash`, &hash),
-		chromedp.Evaluate(`document.querySelector('#title').textContent`, &section),
+		evaluateInto(`location.hash`, &hash),
+		evaluateInto(`document.querySelector('#title').textContent`, &section),
 	); err != nil {
 		t.Fatal(err)
 	}
 	if hash != "#/pages?item=page%3Aposts%2Ffirst.md" || section != "Pages" {
 		t.Fatalf("Escape did not return to the prior selection: hash=%q title=%q", hash, section)
 	}
-	if err := chromedp.Run(browser,
-		chromedp.Evaluate(`history.forward()`, nil),
-		chromedp.Evaluate(`location.hash`, &hash),
+	if err := chromedp.Do(browser,
+		evaluateVoid(`history.forward()`),
+		evaluateInto(`location.hash`, &hash),
 	); err != nil {
 		t.Fatal(err)
 	}
 	if hash != "#/pages?item=page%3Aposts%2Fsecond.md" {
 		t.Fatalf("browser Forward did not restore selected item: %q", hash)
 	}
-	if err := chromedp.Run(browser,
+	if err := chromedp.Do(browser,
 		chromedp.KeyEvent(kb.Escape),
-		chromedp.Evaluate(`location.hash`, &hash),
+		evaluateInto(`location.hash`, &hash),
 	); err != nil {
 		t.Fatal(err)
 	}
 	if hash != "#/pages?item=page%3Aposts%2Ffirst.md" {
 		t.Fatalf("second Escape did not return to prior route: %q", hash)
 	}
-	if err := chromedp.Run(browser,
+	if err := chromedp.Do(browser,
 		chromedp.Focus(`#filter`),
 		chromedp.KeyEvent("p"),
-		chromedp.Evaluate(`document.querySelector('#filter').value`, &filter),
-		chromedp.Evaluate(`document.querySelector('#title').textContent`, &section),
+		evaluateInto(`document.querySelector('#filter').value`, &filter),
+		evaluateInto(`document.querySelector('#title').textContent`, &section),
 	); err != nil {
 		t.Fatal(err)
 	}
 	if filter != "p" || section != "Pages" {
 		t.Fatalf("typing in filter was intercepted: filter=%q section=%q", filter, section)
 	}
-	if err := chromedp.Run(browser,
+	if err := chromedp.Do(browser,
 		chromedp.Focus(`#desktop-nav [data-section="feeds"]`),
 		chromedp.KeyEvent(kb.Enter),
-		chromedp.Evaluate(`document.querySelector('#title').textContent`, &section),
+		evaluateInto(`document.querySelector('#title').textContent`, &section),
 	); err != nil {
 		t.Fatal(err)
 	}
 	if section != "Feeds" {
 		t.Fatalf("Enter did not activate focused nav button: title=%q", section)
 	}
-	if err := chromedp.Run(browser,
+	if err := chromedp.Do(browser,
 		chromedp.Click(`#desktop-nav [data-section="jobs"]`),
 		chromedp.KeyEvent("j"),
 		chromedp.KeyEvent("r"),
@@ -141,17 +141,17 @@ func TestBrowserKeyboardNavigationAndHistory(t *testing.T) {
 	case <-time.After(2 * time.Second):
 		t.Fatal("r shortcut did not rerun the selected completed job")
 	}
-	if err := chromedp.Run(browser, chromedp.Evaluate(`location.hash`, &hash)); err != nil {
+	if err := chromedp.Do(browser, evaluateInto(`location.hash`, &hash)); err != nil {
 		t.Fatal(err)
 	}
 	if hash != "#/jobs?item=job%3Ajob-2" {
 		t.Fatalf("section navigation after browser interaction = %q", hash)
 	}
 	var focused string
-	if err := chromedp.Run(browser,
-		chromedp.Evaluate(`document.querySelector('#list [data-key="job:job-2"]').focus()`, nil),
+	if err := chromedp.Do(browser,
+		evaluateVoid(`document.querySelector('#list [data-key="job:job-2"]').focus()`),
 		chromedp.Sleep(2300*time.Millisecond),
-		chromedp.Evaluate(`document.activeElement?.dataset?.key || ''`, &focused),
+		evaluateInto(`document.activeElement?.dataset?.key || ''`, &focused),
 	); err != nil {
 		t.Fatal(err)
 	}
@@ -159,9 +159,9 @@ func TestBrowserKeyboardNavigationAndHistory(t *testing.T) {
 		t.Fatalf("poll replaced focused row: focus = %q", focused)
 	}
 	runtime.QueueJob(JobSpec{Name: "Third build", Type: "build"})
-	if err := chromedp.Run(browser,
+	if err := chromedp.Do(browser,
 		chromedp.Sleep(2300*time.Millisecond),
-		chromedp.Evaluate(`document.activeElement?.dataset?.key || ''`, &focused),
+		evaluateInto(`document.activeElement?.dataset?.key || ''`, &focused),
 	); err != nil {
 		t.Fatal(err)
 	}
@@ -216,14 +216,14 @@ func TestBrowserGroupedSafeFixReviewAndApply(t *testing.T) {
 	defer cancelTimeout()
 	var reviewOpen bool
 	var richDiffRendered bool
-	if err := chromedp.Run(browser,
+	if err := chromedp.Do(browser,
 		chromedp.Navigate(server.URL+"/_markata/#/diagnostics"),
 		chromedp.WaitVisible(`#fix-tools [data-fix-group="all"]`),
 		chromedp.Click(`#fix-tools [data-fix-group="all"]`),
 		chromedp.WaitVisible(`#fix-review[open]`),
 		chromedp.WaitVisible(`#fix-approve:not([disabled])`),
-		chromedp.Evaluate(`document.querySelector('#fix-review-body').textContent.includes('2 edits across 2 files')`, &reviewOpen),
-		chromedp.Poll(`[...document.querySelectorAll('.diff-host')].length === 2 && [...document.querySelectorAll('.diff-host')].every(host => host.shadowRoot?.querySelector('[data-diffs-header]') && host.shadowRoot.textContent.includes('https://example.com'))`, &richDiffRendered, chromedp.WithPollingTimeout(10*time.Second)),
+		evaluateInto(`document.querySelector('#fix-review-body').textContent.includes('2 edits across 2 files')`, &reviewOpen),
+		pollInto(`[...document.querySelectorAll('.diff-host')].length === 2 && [...document.querySelectorAll('.diff-host')].every(host => host.shadowRoot?.querySelector('[data-diffs-header]') && host.shadowRoot.textContent.includes('https://example.com'))`, &richDiffRendered, chromedp.WithPollingTimeout(10*time.Second)),
 	); err != nil {
 		t.Fatal(err)
 	}
@@ -233,7 +233,7 @@ func TestBrowserGroupedSafeFixReviewAndApply(t *testing.T) {
 	if !richDiffRendered {
 		t.Fatal("Pierre did not render both frozen source diffs")
 	}
-	if err := chromedp.Run(browser, chromedp.Click(`#fix-approve`)); err != nil {
+	if err := chromedp.Do(browser, chromedp.Click(`#fix-approve`)); err != nil {
 		t.Fatal(err)
 	}
 	select {
@@ -256,9 +256,9 @@ func TestBrowserGroupedSafeFixReviewAndApply(t *testing.T) {
 		}
 	}
 	var noticeText string
-	if err := chromedp.Run(browser,
+	if err := chromedp.Do(browser,
 		chromedp.Sleep(2300*time.Millisecond),
-		chromedp.Evaluate(`document.querySelector('#notice').textContent`, &noticeText),
+		evaluateInto(`document.querySelector('#notice').textContent`, &noticeText),
 	); err != nil {
 		t.Fatal(err)
 	}

@@ -1,291 +1,94 @@
 ---
-title: "Installation"
-description: "How to install Markata and preserve markata-go compatibility"
-date: 2024-01-15
+title: "Install Markata"
+description: "Install the Go static site generator with curl, Bash, mise, GitHub Releases, or Go."
+date: 2026-10-18
 published: true
-tags:
-  - getting-started
-  - installation
+tags: [documentation, installation]
 ---
 
-# Installation
+# Install Markata
 
-**Markata** is the new command name for the Go static site generator. The installer installs both `markata` and the backward-compatible `markata-go` alias. Existing configuration files and environment variables continue to work; see [the name migration guide](guides/name-migration.md).
+The preferred executable is **`markata`**. The installer also installs the compatibility command **`markata-go`**.
 
-markata-go is distributed as a single binary with no dependencies. Choose the installation method that works best for you.
+Markata is a single Go binary; you do not need Python to run it. Choose your installation method.
 
-## Quick Install (Recommended)
+## Curl (Linux / macOS)
 
-### One-liner Install Script
-
-The easiest way to install markata-go on Linux and macOS:
+Read [the installer source](https://github.com/WaylonWalker/markata/blob/main/install.sh) before running it, especially on managed machines.
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/WaylonWalker/markata-go/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/WaylonWalker/markata/main/install.sh | bash
+markata version
 ```
 
-This script:
-- Automatically detects your OS and architecture
-- Downloads the correct binary from GitHub releases
-- Installs to `/usr/local/bin` or `~/.local/bin`
-- Verifies the installation
+This checks GitHub Releases, detects platform and architecture, and installs into a writable binary directory (usually `~/.local/bin` for non-root users). Add that directory to your `PATH` if necessary.
 
-**Custom installation directory:**
+## Bash (download then inspect)
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/WaylonWalker/markata-go/main/install.sh | MARKATA_INSTALL_DIR=/opt/bin bash
+curl -fsSLo install-markata.sh https://raw.githubusercontent.com/WaylonWalker/markata/main/install.sh
+less install-markata.sh
+bash install-markata.sh
+markata version
 ```
 
-**Install a specific version:**
+To choose an install location or a version, pass variables to **the Bash process**:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/WaylonWalker/markata-go/main/install.sh | MARKATA_VERSION=v0.1.0 bash
+MARKATA_INSTALL_DIR="$HOME/.local/bin" MARKATA_VERSION="v0.13.0" bash install-markata.sh
 ```
 
-### Using jpillora/installer
+The script refuses to overwrite an unrelated `markata` executable, including one belonging to Python Markata.
 
-The fastest way to install on Linux and macOS:
+## mise
+
+Install from GitHub Releases:
 
 ```bash
-curl -sL https://i.jpillora.com/WaylonWalker/markata-go | bash
+mise use -g github:WaylonWalker/markata
+markata version
 ```
 
-This automatically detects your OS and architecture and installs the latest release.
+Or omit `-g` to pin it in your project's mise configuration. Check the installed command name: historical release archives may still contain `markata-go` rather than `markata`.
 
-### Using eget
+## GitHub download
 
-[eget](https://github.com/zyedidia/eget) is a convenient tool for downloading pre-built binaries:
+Get the archive for your operating system and architecture from [GitHub Releases](https://github.com/WaylonWalker/markata/releases). Verify its checksum against the accompanying `checksums.txt`, extract it, and put the executable on your `PATH`.
+
+Historical v0.13.0 release archives are named `markata-go_<version>_<os>_<arch>.tar.gz` (Windows uses `.zip`). New releases may use `markata_...`. Do not guess archive filenames: select one from the actual release assets.
+
+## Go (source build)
+
+Use **Go 1.26 or newer** for the current source module:
 
 ```bash
-# Install eget first (if you haven't)
-go install github.com/zyedidia/eget@latest
-
-# Install markata-go
-eget WaylonWalker/markata-go
+go install github.com/WaylonWalker/markata/cmd/markata@main
+markata version
 ```
 
-### Using mise
+Until a release tag contains the new entry point, use `@main` for this canonical command rather than `@latest`. Make sure `$(go env GOPATH)/bin` is in `PATH`.
 
-[mise](https://mise.jdx.dev/) is a polyglot runtime manager that can install tools directly from GitHub releases:
+## PyPI / pip — the original Python project
+
+**This does not install Markata Go.** The `markata` name on PyPI still points to the older Python implementation at [WaylonWalker/markata-py](https://github.com/WaylonWalker/markata-py).
 
 ```bash
-# Install globally
-mise use -g github:WaylonWalker/markata-go
-
-# Or add to your project's mise.toml
-mise use github:WaylonWalker/markata-go
+python -m pip install markata
 ```
 
-This uses mise's [GitHub backend](https://mise.jdx.dev/dev-tools/backends/github.html) which automatically detects the correct binary for your platform from GitHub releases.
+Use that only if you intentionally want **Python Markata**. Go releases and the PyPI migration are separate decisions.
 
-## Package Managers
-
-### Homebrew (macOS/Linux)
-
-Coming soon! For now, use one of the methods above.
+## Verify and start
 
 ```bash
-# Future support planned:
-# brew install example/tap/markata-go
+markata version
+markata --help
+mkdir my-site && cd my-site
+markata config init
+markata new "Hello World"
+markata serve
 ```
 
-### Go Install
+Continue with the [quickstart](/docs/quickstart/). If you already use `markata-go`, that command remains supported. Keep your `markata-go.toml` filename and `[markata-go]` configuration section; the Go config file has **not** been renamed. See [Naming migration](/docs/guides/name-migration/).
 
-The `markata` entry point is available from the current development branch until it appears in a tagged release:
-
-```bash
-go install github.com/WaylonWalker/markata-go/cmd/markata@main
-```
-
-Previously tagged versions support `go install github.com/WaylonWalker/markata-go/cmd/markata-go@latest`.
-
-Note: This installs to `$GOPATH/bin` (usually `~/go/bin`). Ensure this is in your `PATH`.
-
-## Manual Download
-
-Download the appropriate archive for your platform from the [GitHub Releases](https://github.com/WaylonWalker/markata-go/releases) page.
-
-### Available Platforms
-
-| OS | Architecture | Archive |
-|---|---|---|
-| Linux | x86_64 (amd64) | `markata-go_*_linux_x86_64.tar.gz` |
-| Linux | ARM64 | `markata-go_*_linux_arm64.tar.gz` |
-| Linux | ARMv7 | `markata-go_*_linux_armv7.tar.gz` |
-| macOS | x86_64 (Intel) | `markata-go_*_darwin_x86_64.tar.gz` |
-| macOS | ARM64 (Apple Silicon) | `markata-go_*_darwin_arm64.tar.gz` |
-| Windows | x86_64 | `markata-go_*_windows_x86_64.zip` |
-| FreeBSD | x86_64 | `markata-go_*_freebsd_x86_64.tar.gz` |
-| Android | ARM64 (Termux) | `markata-go_*_android_arm64.tar.gz` |
-
-### Manual Installation Steps
-
-```bash
-# Download (replace VERSION and PLATFORM)
-curl -LO https://github.com/WaylonWalker/markata-go/releases/download/v0.1.0/markata-go_0.1.0_linux_x86_64.tar.gz
-
-# Verify checksum (recommended)
-curl -LO https://github.com/WaylonWalker/markata-go/releases/download/v0.1.0/checksums.txt
-sha256sum -c checksums.txt --ignore-missing
-
-# Extract
-tar xzf markata-go_*.tar.gz
-
-# Move to PATH
-sudo mv markata-go /usr/local/bin/
-
-# Verify installation
-markata-go version
-```
-
-### Windows
-
-1. Download the `.zip` file from releases
-2. Extract the archive
-3. Move `markata-go.exe` to a directory in your PATH
-4. Or add the extraction directory to your PATH
-
-## Building from Source
-
-Requirements:
-- Go 1.22 or later
-- Git
-
-```bash
-# Clone the repository
-git clone https://github.com/WaylonWalker/markata-go.git
-cd markata-go
-
-# Build with version info
-go build -ldflags="-s -w" -o markata-go ./cmd/markata-go
-
-# Or use just (if installed)
-just build
-
-# Install to GOPATH/bin
-just install
-```
-
-### Development Build
-
-For development with full version information:
-
-```bash
-# Using just
-just build
-
-# Or manually with ldflags
-VERSION=$(git describe --tags --always --dirty)
-COMMIT=$(git rev-parse --short HEAD)
-DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-
-go build -ldflags "-s -w \
-  -X github.com/WaylonWalker/markata-go/cmd/markata-go/cmd.Version=$VERSION \
-  -X github.com/WaylonWalker/markata-go/cmd/markata-go/cmd.Commit=$COMMIT \
-  -X github.com/WaylonWalker/markata-go/cmd/markata-go/cmd.Date=$DATE" \
-  -o markata-go ./cmd/markata-go
-```
-
-## Verifying Installation
-
-After installation, verify it works:
-
-```bash
-# Check version
-markata-go version
-
-# Show help
-markata-go --help
-```
-
-Expected output:
-
-```
-markata-go 0.1.0
-  commit:    abc1234
-  built:     2024-01-15T12:00:00Z
-  go:        go1.22.2
-  os/arch:   linux/amd64
-```
-
-## Updating
-
-### Quick Update
-
-```bash
-# Using jpillora/installer
-curl -sL https://i.jpillora.com/WaylonWalker/markata-go | bash
-
-# Using eget
-eget WaylonWalker/markata-go
-
-# Using mise
-mise upgrade github:WaylonWalker/markata-go
-```
-
-### Go Install Update
-
-```bash
-go install github.com/WaylonWalker/markata-go/cmd/markata-go@latest
-```
-
-## Uninstalling
-
-Remove the binary from your system:
-
-```bash
-# If installed to /usr/local/bin
-sudo rm /usr/local/bin/markata-go
-
-# If installed via go install
-rm $(go env GOPATH)/bin/markata-go
-
-# If using mise
-mise uninstall github:WaylonWalker/markata-go
-```
-
-## Troubleshooting
-
-### "command not found"
-
-Ensure the installation directory is in your PATH:
-
-```bash
-# Check if markata-go is in PATH
-which markata-go
-
-# Add to PATH (bash)
-echo 'export PATH="$PATH:/usr/local/bin"' >> ~/.bashrc
-source ~/.bashrc
-
-# Add Go bin to PATH
-echo 'export PATH="$PATH:$(go env GOPATH)/bin"' >> ~/.bashrc
-source ~/.bashrc
-```
-
-### Permission Denied
-
-```bash
-# Make binary executable
-chmod +x markata-go
-
-# Or use sudo for system-wide install
-sudo mv markata-go /usr/local/bin/
-```
-
-### macOS Security Warning
-
-If macOS blocks the binary:
-
-1. Go to System Preferences > Security & Privacy
-2. Click "Allow Anyway" for markata-go
-3. Or remove the quarantine attribute:
-   ```bash
-   xattr -d com.apple.quarantine markata-go
-   ```
-
-## Next Steps
-
-- [[quickstart|Quick Start Guide]] - Build your first site
-- [[configuration-guide|Configuration]] - Configure your site
-- [[cli-reference|CLI Reference]] - All available commands
+For more options, check [troubleshooting](/docs/troubleshooting/) and [the release list](https://github.com/WaylonWalker/markata/releases).

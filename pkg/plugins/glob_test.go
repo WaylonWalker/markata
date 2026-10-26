@@ -7,8 +7,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/WaylonWalker/markata-go/pkg/buildcache"
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/buildcache"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
 )
 
 func TestGlobPlugin_FastBuildRescansMovedFiles(t *testing.T) {

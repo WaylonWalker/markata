@@ -8,11 +8,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/WaylonWalker/markata-go/pkg/fontpacks"
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/models"
-	"github.com/WaylonWalker/markata-go/pkg/palettes"
-	"github.com/WaylonWalker/markata-go/pkg/themes"
+	"github.com/WaylonWalker/markata/pkg/fontpacks"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/palettes"
+	"github.com/WaylonWalker/markata/pkg/themes"
 )
 
 var paletteManifestPattern = regexp.MustCompile(`--palette-manifest: '([^\n]*)';`)

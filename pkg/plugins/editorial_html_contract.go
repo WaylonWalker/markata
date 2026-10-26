@@ -12,7 +12,7 @@ import (
 func editorialHTMLMarkupValid(html string) bool {
 	return strings.Contains(html, `data-feed-presentation="editorial"`) &&
 		strings.Contains(html, `class="editorial-feed posts-list"`) &&
-		strings.Contains(html, `data-editorial-version="3"`)
+		strings.Contains(html, `data-editorial-version="4"`)
 }
 
 // editorialHTMLPublished inspects only the beginning of the existing HTML

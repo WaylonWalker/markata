@@ -5,7 +5,7 @@ import (
 	"io/fs"
 	"path/filepath"
 
-	"github.com/WaylonWalker/markata-go/internal/fontcatalog"
+	"github.com/WaylonWalker/markata/internal/fontcatalog"
 	"gopkg.in/yaml.v3"
 )
 

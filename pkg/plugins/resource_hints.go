@@ -7,9 +7,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/models"
-	"github.com/WaylonWalker/markata-go/pkg/resourcehints"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/resourcehints"
 )
 
 // ResourceHintsPlugin generates and injects resource hints (preconnect, dns-prefetch, etc.)

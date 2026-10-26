@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/config"
+	"github.com/WaylonWalker/markata/pkg/config"
 )
 
 func TestManifest_DeterministicAndDiff(t *testing.T) {

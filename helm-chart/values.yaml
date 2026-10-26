@@ -90,6 +90,9 @@ builderAdmin:
   watch:
     enabled: true
     debounce: 2s
+  # Build immediately on rollout when the executable's embedded commit differs
+  # from the last successful published build. Only the active leader enqueues.
+  buildOnStartupRevisionChange: true
   # Queued builder-admin builds default to full builds so blogroll, mentions, and other
   # user-facing outputs stay live unless an environment explicitly opts into faster previews.
   fast: false
@@ -145,6 +148,9 @@ builderAdmin:
     enabled: false
     host: ""
     ingressClassName: ""
+    # Additional annotations for the protected ingress. The chart owns the
+    # Traefik middleware annotation and ignores it if set here.
+    annotations: {}
     tls:
       enabled: false
       secretName: ""
@@ -187,6 +193,8 @@ site:
     tag: "1.27.5-alpine"
     pullPolicy: IfNotPresent
   use404Page: false
+  # Opt public HTML into a 60-second shared-cache TTL while browsers revalidate.
+  cacheHtmlAtEdge: false
   # HTTP path that must return a successful response before the site is ready.
   healthPath: /
   cors:

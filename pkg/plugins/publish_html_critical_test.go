@@ -3,7 +3,7 @@ package plugins
 import (
 	"testing"
 
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
 )
 
 func TestPublishHTMLPluginCriticalStageErrors(t *testing.T) {

@@ -77,6 +77,9 @@ The Helm chart serves published site files through nginx.
 - Operators MUST be able to disable this header with `site.cors.enabled: false`.
 - Protected release previews MUST NOT include the public CORS header.
 - The chart MUST preserve cache headers when it adds the CORS header.
+- Public HTML responses MUST remain `no-cache` by default. Operators MAY opt into
+  `site.cacheHtmlAtEdge: true`, which sets browser `max-age=0` and a 60-second
+  shared-cache TTL. Protected release previews MUST NOT receive this policy.
 - The configured Content Index path MUST return `404` when its artifact is missing.
 - The site PVC MAY specify `storage.site.volumeName` to bind an existing PV.
   The chart MUST omit this field unless configured. A bound PVC's storage class

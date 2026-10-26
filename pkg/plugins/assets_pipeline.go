@@ -2,8 +2,8 @@
 package plugins
 
 import (
-	"github.com/WaylonWalker/markata-go/pkg/assets"
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/assets"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
 )
 
 func assetURLsFromConfig(config *lifecycle.Config) map[string]string {

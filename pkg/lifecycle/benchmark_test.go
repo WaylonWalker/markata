@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 // BenchmarkManager_ColdStart measures performance with no cache (fresh manager).

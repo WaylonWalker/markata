@@ -67,6 +67,28 @@ func TestOriginalMediaURLLeavesUnknownHostsUntouched(t *testing.T) {
 	}
 }
 
+func TestDerivedVideoPosterDropsSourceDimensions(t *testing.T) {
+	got := PosterURLFromMap(map[string]interface{}{},
+		"https://dropper.wayl.one/file/clip.webm?width=400&height=225&w=320&h=180&token=abc#preview")
+	want := "https://dropper.wayl.one/file/clip.webp?token=abc#preview"
+	if got != want {
+		t.Fatalf("PosterURLFromMap() = %q, want %q", got, want)
+	}
+	sized := WithSize(got, 1200, 675)
+	wantSized := "https://dropper.wayl.one/file/clip.webp?h=675&token=abc&w=1200#preview"
+	if sized != wantSized {
+		t.Fatalf("WithSize(poster) = %q, want %q", sized, wantSized)
+	}
+}
+
+func TestExplicitVideoPosterKeepsAuthorURL(t *testing.T) {
+	explicit := "https://dropper.wayl.one/file/custom.webp?width=400&token=abc"
+	got := PosterURLFromMap(map[string]interface{}{"poster_image": explicit}, "https://dropper.wayl.one/file/clip.webm?width=400")
+	if got != explicit {
+		t.Fatalf("explicit poster changed: got %q, want %q", got, explicit)
+	}
+}
+
 func TestVideoMediaHelpers_HandleWindowsPaths(t *testing.T) {
 	for _, path := range []string{`C:\Users\runner\static\clip.Mp4`, `C:/Users/runner/static/clip.Mp4`} {
 		if !IsVideoURL(path) {

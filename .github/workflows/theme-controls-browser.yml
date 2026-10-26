@@ -3,6 +3,7 @@ name: Theme controls browser regressions
 on:
   pull_request:
     paths:
+      - "pkg/plugins/palette_css.go"
       - "pkg/themes/default/templates/partials/theme-controls-loader.html"
       - "pkg/themes/default/templates/base.html"
       - "templates/base.html"
@@ -19,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version: "22"

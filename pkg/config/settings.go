@@ -17,10 +17,10 @@ import (
 	"sync"
 	"unicode/utf8"
 
-	"github.com/WaylonWalker/markata-go/pkg/fontpacks"
-	"github.com/WaylonWalker/markata-go/pkg/models"
-	"github.com/WaylonWalker/markata-go/pkg/palettes"
-	"github.com/WaylonWalker/markata-go/pkg/renderingcontract"
+	"github.com/WaylonWalker/markata/pkg/fontpacks"
+	"github.com/WaylonWalker/markata/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/palettes"
+	"github.com/WaylonWalker/markata/pkg/renderingcontract"
 
 	"github.com/alecthomas/chroma/v2/styles"
 )

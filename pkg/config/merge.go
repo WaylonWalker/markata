@@ -1,7 +1,7 @@
 package config
 
 import (
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 // MergeConfigs merges override configuration into base configuration.
@@ -174,6 +174,9 @@ func mergeImagesConfig(base, override models.ImagesConfig) models.ImagesConfig {
 	}
 	if override.IncludeUnreferenced != nil {
 		result.IncludeUnreferenced = override.IncludeUnreferenced
+	}
+	if override.PageSize > 0 {
+		result.PageSize = override.PageSize
 	}
 	return result
 }

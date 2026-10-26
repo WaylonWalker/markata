@@ -498,6 +498,22 @@ e to open the selected post in $EDITOR.
 New content uses the selected site's configuration and content templates. With
 an explicit site directory, the created path is printed as an absolute path.
 
+## Visual Sequences (Roads)
+
+For timelines, roadmaps, step-by-step paths, or release histories, wrap a list
+of links in a road container. The default theme draws it as the reader scrolls.
+
+    ::: road timeline
+
+    - [Kickoff](/notes/kickoff/) Jan 2026
+    - [Launch](/notes/launch/) Jun 2026
+    :::
+
+The text after each link is the label. Styles: winding, timeline, steps, snake,
+cycle, constellation, git, and editorial. For editorial, use a heading per
+entry, with Markdown under it. For git, write the branch after each link
+(feat/x, fix/y from feat/x, main <- feat/x). See docs/guides/roads.md.
+
 ## Validate Changes
 
     markata-go --site-dir ~/sites/blog lint
@@ -837,7 +853,7 @@ Plugins read from config sections:
 
     package myplugin
 
-    import "github.com/WaylonWalker/markata-go/pkg/lifecycle"
+    import "github.com/WaylonWalker/markata/pkg/lifecycle"
 
     type MyPlugin struct{}
 
