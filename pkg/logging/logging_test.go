@@ -54,11 +54,30 @@ func TestWriterDoesNotTreatWarningAsComponent(t *testing.T) {
 }
 
 func TestAllowColorForceColor(t *testing.T) {
-	t.Setenv("NO_COLOR", "")
+	t.Setenv("NO_COLOR", "1")
+	t.Setenv("FORCE_COLOR", "")
 	t.Setenv("TERM", "xterm-256color")
 
 	if !allowColor(Options{Format: FormatRich, ForceColor: true}) {
 		t.Fatal("expected force color to enable color")
+	}
+}
+
+func TestColorEnabledMatchesCLIForcePrecedence(t *testing.T) {
+	t.Setenv("NO_COLOR", "1")
+	t.Setenv("FORCE_COLOR", "")
+	t.Setenv("TERM", "dumb")
+	if !ColorEnabled(false, FormatRich, true, false) {
+		t.Fatal("explicit force color should override automatic suppression")
+	}
+}
+
+func TestColorEnabledWhitespaceNoColor(t *testing.T) {
+	t.Setenv("NO_COLOR", " ")
+	t.Setenv("FORCE_COLOR", "")
+	t.Setenv("TERM", "xterm-256color")
+	if ColorEnabled(true, FormatAuto, false, false) {
+		t.Fatal("any non-empty NO_COLOR value should disable automatic color")
 	}
 }
 

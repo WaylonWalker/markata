@@ -23,6 +23,19 @@ func TestColorEnabledFor_NoColorEnv(t *testing.T) {
 	}
 }
 
+func TestColorEnabledFor_WhitespaceNoColorEnv(t *testing.T) {
+	oldNoColor, oldForceColor, oldLogFormat := noColor, forceColor, logFormat
+	t.Cleanup(func() { noColor, forceColor, logFormat = oldNoColor, oldForceColor, oldLogFormat })
+	t.Setenv("NO_COLOR", " ")
+	t.Setenv("FORCE_COLOR", "")
+	t.Setenv("TERM", "xterm-256color")
+	noColor, forceColor, logFormat = false, false, "auto"
+
+	if colorEnabledFor(true) {
+		t.Fatal("expected any non-empty NO_COLOR value to disable automatic color")
+	}
+}
+
 func TestColorEnabledFor_TermDumb(t *testing.T) {
 	originalNoColor := noColor
 	originalForceColor := forceColor
@@ -107,7 +120,7 @@ func TestColorEnabledFor_ForceColor(t *testing.T) {
 	defer func() { forceColor = originalForceColor }()
 	defer func() { logFormat = originalLogFormat }()
 
-	t.Setenv("NO_COLOR", "")
+	t.Setenv("NO_COLOR", "1")
 	t.Setenv("TERM", "xterm-256color")
 	noColor = false
 	forceColor = true
@@ -115,6 +128,19 @@ func TestColorEnabledFor_ForceColor(t *testing.T) {
 
 	if !colorEnabledFor(false) {
 		t.Fatal("expected --color to enable color for non-TTY output")
+	}
+}
+
+func TestColorEnabledFor_ForceColorEnv(t *testing.T) {
+	oldNoColor, oldForceColor, oldLogFormat := noColor, forceColor, logFormat
+	t.Cleanup(func() { noColor, forceColor, logFormat = oldNoColor, oldForceColor, oldLogFormat })
+	t.Setenv("NO_COLOR", "1")
+	t.Setenv("FORCE_COLOR", "1")
+	t.Setenv("TERM", "dumb")
+	noColor, forceColor, logFormat = false, false, "auto"
+
+	if !colorEnabledFor(false) {
+		t.Fatal("expected FORCE_COLOR to override automatic detection")
 	}
 }
 

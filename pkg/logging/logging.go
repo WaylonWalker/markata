@@ -353,19 +353,23 @@ func resolveFormat(format Format, isTTY bool) Format {
 }
 
 func allowColor(opts Options) bool {
-	if opts.NoColor || opts.Format == FormatPlain {
+	return ColorEnabled(opts.IsTTY, opts.Format, opts.ForceColor, opts.NoColor)
+}
+
+// ColorEnabled applies the shared color policy for CLI output and logging.
+// Explicit disable options take precedence, then explicit force options, then
+// automatic TTY and environment detection.
+func ColorEnabled(isTTY bool, format Format, forceColor, noColor bool) bool {
+	if noColor || format == FormatPlain {
 		return false
 	}
-	if strings.TrimSpace(os.Getenv("NO_COLOR")) != "" {
-		return false
-	}
-	if os.Getenv("TERM") == "dumb" {
-		return false
-	}
-	if opts.ForceColor {
+	if forceColor || (os.Getenv("FORCE_COLOR") != "" && os.Getenv("FORCE_COLOR") != "0") {
 		return true
 	}
-	return opts.IsTTY
+	if os.Getenv("NO_COLOR") != "" || os.Getenv("TERM") == "dumb" || !isTTY {
+		return false
+	}
+	return true
 }
 
 func style(text, color string, enabled bool) string {
