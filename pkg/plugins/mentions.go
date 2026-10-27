@@ -92,8 +92,25 @@ func (p *MentionsPlugin) Transform(m *lifecycle.Manager) error {
 	// Keep processing when the blogroll is empty: unknown ~attributions
 	// still need distinct styling and are caught by the offline linter.
 
-	// Fetch metadata for all unique domains
-	domainMap := p.fetchAllMetadata(m, handleMap)
+	// Only contacts referenced by loaded posts need network metadata. Keep
+	// the full handle map for unknown mentions and author rendering.
+	referenced := make(map[string]*mentionEntry)
+	for _, post := range m.FilterPosts(func(post *models.Post) bool {
+		return !post.Skip && post.Content != ""
+	}) {
+		// Both regular mentions and chat titles use @handle syntax.
+		// This deliberately over-selects references in literal text rather
+		// than risking missing metadata for a rendered mention.
+		for _, match := range mentionRegex.FindAllStringSubmatch(post.Content, -1) {
+			handle := strings.ToLower(strings.TrimRight(match[3], ".,;:!?"))
+			if entry := handleMap[handle]; entry != nil {
+				referenced[handle] = entry
+			}
+		}
+	}
+
+	// A post with no relevant handles must not contact unrelated sites.
+	domainMap := p.fetchAllMetadata(m, referenced)
 
 	// Store in memory cache for other plugins
 	m.Cache().Set("mentions_metadata", domainMap)
