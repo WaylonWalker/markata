@@ -42,6 +42,7 @@ For a single file requested in a non-Markata repository, deliver a single
 self-contained Markdown file with those native primitives, and explain
 that an actual Markata site is needed to preview its rich styling.
 Do not create project scaffolding as a prerequisite unless asked.
+For source-backed, multi-period project histories, use `examples/evidence-led-history.md` to separate verified outcomes from ongoing work.
 See `examples/editorial-visual-composition.md` for generic visual storytelling,
 and `examples/chart-composition.md` for a chart-driven article with actual
 Chart.js source blocks. Neither is project-specific boilerplate.
