@@ -85,6 +85,8 @@ Read `topics/chart-authoring.md` for numerical plots,
 `docs/guides/markdown-containers.md`, `markdown-metrics.md`, and
 `markdown-chart-fallback.md`. Inspect site overrides before adding new CSS.
 
+**Historical storytelling:** For a sourced, multi-period project retrospective, see `examples/evidence-led-history.md`. Begin with a thesis and source scope, use editorial roads for milestones, and keep unresolved work distinct.
+
 **Generic exemplar:** `examples/editorial-visual-composition.md` shows
 a single Markdown document with an introductory pair of orientation
 cards, a road for the sequence, another pair of cards for decisions,
