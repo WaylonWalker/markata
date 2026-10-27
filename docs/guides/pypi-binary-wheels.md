@@ -102,3 +102,7 @@ It currently needs owner attention because GitHub rejects branch creation in
 
 This release is an explicitly authorized new PyPI packaging path, distinct from
 the earlier GitHub repository rename. The version is chosen on dispatch.
+
+## Current installation status
+
+The PyPI handoff has occurred: current `markata` releases install the Go CLI after a version break from the Python implementation. Historical Python wheels remain immutable and can be pinned. This handoff does not imply Python API compatibility. The release preparation steps above document the transition process, not the present installer identity.
