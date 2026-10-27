@@ -143,19 +143,42 @@ func (p *MentionsPlugin) Transform(m *lifecycle.Manager) error {
 	})
 }
 
-// referencedHandles narrows metadata fetching to handles present in loaded posts.
-// The full map remains available to the rendering passes.
+// referencedHandles selects contacts that the rendering passes can actually
+// link, without fetching unrelated blogroll entries or fenced-code literals.
 func (p *MentionsPlugin) referencedHandles(m *lifecycle.Manager, handleMap map[string]*mentionEntry) map[string]*mentionEntry {
 	referenced := make(map[string]*mentionEntry)
+	addHandle := func(handle string) {
+		normalized := strings.ToLower(handle)
+		if entry := handleMap[normalized]; entry != nil {
+			referenced[normalized] = entry
+			return
+		}
+		// Preserve exact domain handles, but retry without sentence punctuation.
+		normalized = mentionTrailingPunctRegex.ReplaceAllString(normalized, "")
+		if entry := handleMap[normalized]; entry != nil {
+			referenced[normalized] = entry
+		}
+	}
 	for _, post := range m.FilterPosts(func(post *models.Post) bool {
 		return !post.Skip && post.Content != ""
 	}) {
-		// This also recognizes chat admonition title mentions. Over-selecting
-		// literal mentions is safe; fetching unrelated blogroll entries is not.
-		for _, match := range mentionRegex.FindAllStringSubmatch(post.Content, -1) {
-			handle := strings.ToLower(strings.TrimRight(match[3], ".,;:!?"))
-			if entry := handleMap[handle]; entry != nil {
-				referenced[handle] = entry
+		// Match the rendering pipeline: fenced code is inert, while chat
+		// titles are an exception to ordinary skipped admonition headers.
+		content := mentionsCodeBlockRegex.ReplaceAllString(post.Content, "")
+		for _, line := range strings.Split(content, "\n") {
+			if admonitionHeaderRegex.MatchString(line) {
+				groups := chatAdmonitionTitleRegex.FindStringSubmatch(line)
+				if len(groups) >= 7 {
+					if groups[3] != "" {
+						addHandle(groups[3])
+					} else {
+						addHandle(groups[5])
+					}
+				}
+				continue
+			}
+			for _, match := range mentionRegex.FindAllStringSubmatch(line, -1) {
+				addHandle(match[3])
 			}
 		}
 	}
