@@ -203,7 +203,9 @@ func runAgentInstallCommand(cmd *cobra.Command, args []string) error {
 	}
 	if explicit {
 		target, err := normalizeAgentInstallTarget(selected)
-		if err != nil { return err }
+		if err != nil {
+			return err
+		}
 		return runAgentWriteCommand(args, target, agentInstallGlobal, agentInstallName, agentInstallDryRun, agentInstallForce, "install")
 	}
 	interactive := !noInput && os.Getenv("TERM") != triageDumb &&
@@ -217,11 +219,15 @@ func runAgentInstallCommand(cmd *cobra.Command, args []string) error {
 	detected := detectInstalledAgentTargets()
 	if len(detected) > 0 {
 		outlnf("Detected %d installed agent(s):", len(detected))
-		for _, target := range detected { outlnf("  - %s", target.Name) }
+		for _, target := range detected {
+			outlnf("  - %s", target.Name)
+		}
 		outlnf("Install Markata skills for all detected agents? [Y/n]")
 		reader := bufio.NewReader(cmd.InOrStdin())
 		answer, readErr := reader.ReadString('\n')
-		if readErr != nil && !errors.Is(readErr, io.EOF) { return readErr }
+		if readErr != nil && !errors.Is(readErr, io.EOF) {
+			return readErr
+		}
 		switch strings.ToLower(strings.TrimSpace(answer)) {
 		case "", "y", "yes":
 			for _, target := range detected {
@@ -239,9 +245,13 @@ func runAgentInstallCommand(cmd *cobra.Command, args []string) error {
 		outlnf("No supported installed agents detected; choose an agent manually.")
 	}
 	selected, err = pickInstallAgent(cmd)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	target, err := normalizeAgentInstallTarget(selected)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	return runAgentWriteCommand(args, target, agentInstallGlobal, agentInstallName, agentInstallDryRun, agentInstallForce, "install")
 }
 
@@ -249,20 +259,35 @@ func runAgentInstallCommand(cmd *cobra.Command, args []string) error {
 // universal .agents directory shared by multiple agent implementations.
 func detectInstalledAgentTargets() []agentInstallTarget {
 	binaries := map[string][]string{
-		"opencode": {"opencode"}, "claude-code": {"claude"}, "codex": {"codex"},
-		"cursor": {"cursor", "cursor-agent"}, "gemini-cli": {"gemini"},
-		"github-copilot": {"copilot"}, "goose": {"goose"},
-		"cline": {"cline"}, "amp": {"amp"}, "qwen-code": {"qwen"},
-		"kimi-cli": {"kimi"}, "crush": {"crush"}, "continue": {"cn"},
+		"opencode":      {"opencode"},
+		"claude-code":   {"claude"},
+		"codex":         {"codex"},
+		"cursor":        {"cursor", "cursor-agent"},
+		"gemini-cli":    {"gemini"},
+		"github-copilot": {"copilot"},
+		"goose":         {"goose"},
+		"cline":         {"cline"},
+		"amp":           {"amp"},
+		"qwen-code":     {"qwen"},
+		"kimi-cli":      {"kimi"},
+		"crush":         {"crush"},
+		"continue":      {"cn"},
 	}
 	home, homeErr := os.UserHomeDir()
-	if homeErr != nil { home = "" }
+	if homeErr != nil {
+		home = ""
+	}
 	var found []agentInstallTarget
 	for _, target := range supportedAgentTargets {
-		if target.Name == agentDefaultUniversal { continue }
+		if target.Name == agentDefaultUniversal {
+			continue
+		}
 		present := false
 		for _, binary := range binaries[target.Name] {
-			if _, err := exec.LookPath(binary); err == nil { present = true; break }
+			if _, err := exec.LookPath(binary); err == nil {
+				present = true
+				break
+			}
 		}
 		if !present && home != "" {
 			// Ignore generic/shared paths: they do not identify an agent.
@@ -271,7 +296,9 @@ func detectInstalledAgentTargets() []agentInstallTarget {
 				present = err == nil
 			}
 		}
-		if present { found = append(found, target) }
+		if present {
+			found = append(found, target)
+		}
 	}
 	return found
 }
