@@ -94,20 +94,7 @@ func (p *MentionsPlugin) Transform(m *lifecycle.Manager) error {
 
 	// Only contacts referenced by loaded posts need network metadata. Keep
 	// the full handle map for unknown mentions and author rendering.
-	referenced := make(map[string]*mentionEntry)
-	for _, post := range m.FilterPosts(func(post *models.Post) bool {
-		return !post.Skip && post.Content != ""
-	}) {
-		// Both regular mentions and chat titles use @handle syntax.
-		// This deliberately over-selects references in literal text rather
-		// than risking missing metadata for a rendered mention.
-		for _, match := range mentionRegex.FindAllStringSubmatch(post.Content, -1) {
-			handle := strings.ToLower(strings.TrimRight(match[3], ".,;:!?"))
-			if entry := handleMap[handle]; entry != nil {
-				referenced[handle] = entry
-			}
-		}
-	}
+	referenced := p.referencedHandles(m, handleMap)
 
 	// A post with no relevant handles must not contact unrelated sites.
 	domainMap := p.fetchAllMetadata(m, referenced)
@@ -154,6 +141,26 @@ func (p *MentionsPlugin) Transform(m *lifecycle.Manager) error {
 		}
 		return nil
 	})
+}
+
+ 
+// referencedHandles narrows metadata fetching to handles present in loaded posts.
+// The full map remains available to the rendering passes.
+func (p *MentionsPlugin) referencedHandles(m *lifecycle.Manager, handleMap map[string]*mentionEntry) map[string]*mentionEntry {
+	referenced := make(map[string]*mentionEntry)
+	for _, post := range m.FilterPosts(func(post *models.Post) bool {
+		return !post.Skip && post.Content != ""
+	}) {
+		// This also recognizes chat admonition title mentions. Over-selecting
+		// literal mentions is safe; fetching unrelated blogroll entries is not.
+		for _, match := range mentionRegex.FindAllStringSubmatch(post.Content, -1) {
+			handle := strings.ToLower(strings.TrimRight(match[3], ".,;:!?"))
+			if entry := handleMap[handle]; entry != nil {
+				referenced[handle] = entry
+			}
+		}
+	}
+	return referenced
 }
 
 func (p *MentionsPlugin) computePostHash(post *models.Post, cacheSignature string) string {
