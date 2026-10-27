@@ -6,24 +6,32 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/WaylonWalker/markata/pkg/lifecycle"
 	"github.com/WaylonWalker/markata/pkg/templates"
 )
 
-// reconcileFinalCSSAssets runs after css_purge has rewritten output CSS.
-// Templates are rendered earlier, so both the registered asset hashes and
-// previously rendered HTML references must be updated together. Hashed copies
-// are written by StaticAssetsPlugin.Cleanup after this reconciliation.
+// reconcileFinalCSSAssets reconciles final published CSS with already-rendered
+// HTML after purge and minification, including HTML restored from build cache.
 func reconcileFinalCSSAssets(m *lifecycle.Manager, outputFS *os.Root, outputDir string) error {
-	type replacement struct{ from, to string }
-	changes := make([]replacement, 0)
-	finalHashes := make(map[string]string)
-	for path, oldHash := range m.AssetHashes() {
-		if !strings.EqualFold(filepath.Ext(path), ".css") {
-			continue
+	type replacement struct {
+		matcher     *regexp.Regexp
+		destination string
+	}
+	hashes := m.AssetHashes()
+	paths := make([]string, 0, len(hashes))
+	for path := range hashes {
+		if strings.EqualFold(filepath.Ext(path), ".css") {
+			paths = append(paths, path)
 		}
+	}
+	sort.Strings(paths)
+	changes := make([]replacement, 0, len(paths))
+	finalHashes := make(map[string]string)
+	for _, path := range paths {
 		relative, err := outputRelativePath(outputDir, filepath.Join(outputDir, path))
 		if err != nil {
 			return err
@@ -36,23 +44,24 @@ func reconcileFinalCSSAssets(m *lifecycle.Manager, outputFS *os.Root, outputDir 
 			return fmt.Errorf("reading final stylesheet %s: %w", path, err)
 		}
 		hash := fmt.Sprintf("%x", sha256.Sum256(data))[:8]
-		if hash == oldHash {
-			continue
-		}
 		ext := filepath.Ext(path)
 		base := strings.TrimSuffix(filepath.ToSlash(path), ext)
-		changes = append(changes, replacement{
-			from: base + "." + oldHash + ext,
-			to:   base + "." + hash + ext,
-		})
-		finalHashes[path] = hash
+		matcher, err := regexp.Compile(regexp.QuoteMeta(base) + `\.[0-9a-fA-F]{8}` + regexp.QuoteMeta(ext))
+		if err != nil {
+			return err
+		}
+		changes = append(changes, replacement{matcher: matcher, destination: base + "." + hash + ext})
+		if hash != hashes[path] {
+			finalHashes[path] = hash
+		}
 	}
 	if len(changes) == 0 {
 		return nil
 	}
 
-	// Rewrite generated HTML references before publishing the final filenames.
-	// Read/write through the descriptor-backed output root to prevent traversal.
+	// Cached HTML may reference either the original Configure hash or a final
+	// hash from an earlier build. Normalize every matching URL, not only the
+	// source-hash reference from this build.
 	err := filepath.WalkDir(outputDir, func(path string, entry fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return walkErr
@@ -74,9 +83,9 @@ func reconcileFinalCSSAssets(m *lifecycle.Manager, outputFS *os.Root, outputDir 
 		before := string(data)
 		after := before
 		for _, change := range changes {
-			after = strings.ReplaceAll(after, change.from, change.to)
+			after = change.matcher.ReplaceAllString(after, change.destination)
 		}
-		if after == before {
+		if before == after {
 			return nil
 		}
 		return outputFS.WriteFile(relative, []byte(after), 0o644)
