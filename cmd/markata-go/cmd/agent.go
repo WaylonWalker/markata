@@ -259,19 +259,19 @@ func runAgentInstallCommand(cmd *cobra.Command, args []string) error {
 // universal .agents directory shared by multiple agent implementations.
 func detectInstalledAgentTargets() []agentInstallTarget {
 	binaries := map[string][]string{
-		"opencode":      {"opencode"},
-		"claude-code":   {"claude"},
-		"codex":         {"codex"},
-		"cursor":        {"cursor", "cursor-agent"},
-		"gemini-cli":    {"gemini"},
+		"opencode":       {"opencode"},
+		"claude-code":    {"claude"},
+		"codex":          {"codex"},
+		"cursor":         {"cursor", "cursor-agent"},
+		"gemini-cli":     {"gemini"},
 		"github-copilot": {"copilot"},
-		"goose":         {"goose"},
-		"cline":         {"cline"},
-		"amp":           {"amp"},
-		"qwen-code":     {"qwen"},
-		"kimi-cli":      {"kimi"},
-		"crush":         {"crush"},
-		"continue":      {"cn"},
+		"goose":          {"goose"},
+		"cline":          {"cline"},
+		"amp":            {"amp"},
+		"qwen-code":      {"qwen"},
+		"kimi-cli":       {"kimi"},
+		"crush":          {"crush"},
+		"continue":       {"cn"},
 	}
 	home, homeErr := os.UserHomeDir()
 	if homeErr != nil {
