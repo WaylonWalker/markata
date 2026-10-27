@@ -1,6 +1,7 @@
 package plugins
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"fmt"
 	"os"
@@ -39,18 +40,18 @@ func TestVersionedCSSFilesAreExcludedFromFurtherTransforms(t *testing.T) {
 
 func TestReconcileFinalCSSAssetsUsesPublishedBytes(t *testing.T) {
 	out := t.TempDir()
-	if err := os.MkdirAll(filepath.Join(out, "css"), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Join(out, "css"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	initial := []byte(".old { display:block }")
 	final := []byte(".new { display:grid }")
 	oldHash := fmt.Sprintf("%x", sha256.Sum256(initial))[:8]
 	newHash := fmt.Sprintf("%x", sha256.Sum256(final))[:8]
-	if err := os.WriteFile(filepath.Join(out, "css", "components.css"), final, 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(out, "css", "components.css"), final, 0o600); err != nil {
 		t.Fatal(err)
 	}
 	html := `<link rel="stylesheet" href="/css/components.` + oldHash + `.css"><main class="new"></main>`
-	if err := os.WriteFile(filepath.Join(out, "index.html"), []byte(html), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(out, "index.html"), []byte(html), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	m := lifecycle.NewManager()
@@ -81,7 +82,7 @@ func TestReconcileFinalCSSAssetsUsesPublishedBytes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if string(published) != string(final) {
+	if !bytes.Equal(published, final) {
 		t.Fatalf("versioned CSS differs from final bytes")
 	}
 	// Re-running without any CSS change must preserve URLs and file content.
@@ -92,14 +93,14 @@ func TestReconcileFinalCSSAssetsUsesPublishedBytes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if string(again) != string(rendered) {
+	if !bytes.Equal(again, rendered) {
 		t.Fatal("unchanged output must be stable")
 	}
 
 	// Incremental builds can restore HTML referencing a prior final hash.
 	// The reconciliation must not assume the source Configure hash appears.
 	cachedHTML := `<link href="/css/components.deadbeef.css" rel="stylesheet">`
-	if err := os.WriteFile(filepath.Join(out, "cached.html"), []byte(cachedHTML), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(out, "cached.html"), []byte(cachedHTML), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	if err := reconcileFinalCSSAssets(m, root, out); err != nil {
