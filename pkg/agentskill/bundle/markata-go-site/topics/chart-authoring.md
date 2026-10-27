@@ -249,4 +249,4 @@ select charts, query a database, theme a canvas across all palettes,
 or attach complex interactive filtering. Author the correct chart first;
 request explicit renderer work for missing runtime behaviors.
 
-Simple horizontal bar charts with one dataset and up to five labels use compact, rounded bars by default. Set dataset bar geometry or `options.datasets.bar` / `options.elements.bar` to choose your own; set `options.aspectRatio` or `options.maintainAspectRatio` to control sizing. Multi-dataset and larger charts keep Chart.js defaults.
+Simple horizontal bar charts with one dataset and up to five labels use compact, rounded bars by default. Set dataset bar geometry, `options`, or `options.datasets.bar` / `options.elements.bar` to choose your own; set `options.aspectRatio` or `options.maintainAspectRatio` to control sizing. Multi-dataset and larger charts keep Chart.js defaults.

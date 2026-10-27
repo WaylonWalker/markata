@@ -307,6 +307,9 @@ func hasBarGeometry(dataset, options map[string]interface{}) bool {
 		if _, exists := dataset[key]; exists {
 			return true
 		}
+		if _, exists := options[key]; exists {
+			return true
+		}
 		for _, section := range []string{"datasets", "elements"} {
 			group, ok := options[section].(map[string]interface{})
 			if !ok {

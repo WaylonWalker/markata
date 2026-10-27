@@ -469,6 +469,7 @@ func TestHorizontalBarDefaults(t *testing.T) {
 		{"simple", `{"type":"bar","data":{"labels":["A","B"],"datasets":[{"data":[1,2]}]},"options":{"indexAxis":"y"}}`, `"barThickness":14`, ""},
 		{"explicit geometry", `{"type":"bar","data":{"labels":["A"],"datasets":[{"data":[1],"borderRadius":0}]},"options":{"indexAxis":"y","aspectRatio":2}}`, `"aspectRatio":2`, `"barThickness":14`},
 		{"element geometry", `{"type":"bar","data":{"labels":["A"],"datasets":[{"data":[1]}]},"options":{"indexAxis":"y","elements":{"bar":{"borderRadius":0}}}}`, `"borderRadius":0`, `"barThickness":14`},
+		{"root geometry", `{"type":"bar","data":{"labels":["A"],"datasets":[{"data":[1]}]},"options":{"indexAxis":"y","borderRadius":0}}`, `"borderRadius":0`, `"barThickness":14`},
 		{"multiple series", `{"type":"bar","data":{"labels":["A"],"datasets":[{"data":[1]},{"data":[2]}]},"options":{"indexAxis":"y"}}`, `"indexAxis":"y"`, `"barThickness":14`},
 		{"vertical", `{"type":"bar","data":{"labels":["A"],"datasets":[{"data":[1]}]}}`, `"type":"bar"`, `"barThickness":14`},
 	}
