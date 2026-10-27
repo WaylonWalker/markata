@@ -14,6 +14,30 @@ import (
 	"github.com/WaylonWalker/markata/pkg/templates"
 )
 
+// A versioned asset is immutable. Previous releases may still refer to it,
+// so purge/minification must only process the unversioned working stylesheet.
+var versionedCSSFilename = regexp.MustCompile(`\.[0-9a-fA-F]{8}\.csspackage plugins
+
+import (
+	"crypto/sha256"
+	"fmt"
+	"io/fs"
+	"os"
+	"path/filepath"
+	"regexp"
+	"sort"
+	"strings"
+
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/templates"
+)
+
+)
+
+func isVersionedCSSFile(path string) bool {
+	return versionedCSSFilename.MatchString(filepath.Base(path))
+}
+
 // reconcileFinalCSSAssets reconciles final published CSS with already-rendered
 // HTML after purge and minification, including HTML restored from build cache.
 func reconcileFinalCSSAssets(m *lifecycle.Manager, outputFS *os.Root, outputDir string) error {
