@@ -1,44 +1,72 @@
 package plugins
 
 import (
- "crypto/sha256"
- "fmt"
- "os"
- "path/filepath"
- "strings"
- "testing"
+	"crypto/sha256"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
 
- "github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
 )
 
 func TestReconcileFinalCSSAssetsUsesPublishedBytes(t *testing.T) {
- out:=t.TempDir()
- if err:=os.MkdirAll(filepath.Join(out,"css"),0755);err!=nil{t.Fatal(err)}
- initial:=[]byte(".old { display:block }")
- final:=[]byte(".new { display:grid }")
- oldHash:=fmt.Sprintf("%x",sha256.Sum256(initial))[:8]
- newHash:=fmt.Sprintf("%x",sha256.Sum256(final))[:8]
- if err:=os.WriteFile(filepath.Join(out,"css","components.css"),final,0644);err!=nil{t.Fatal(err)}
- html:=`<link rel="stylesheet" href="/css/components.`+oldHash+`.css"><main class="new"></main>`
- if err:=os.WriteFile(filepath.Join(out,"index.html"),[]byte(html),0644);err!=nil{t.Fatal(err)}
- m:=lifecycle.NewManager()
- m.SetAssetHash("css/components.css",oldHash)
- root,err:=os.OpenRoot(out)
- if err!=nil{t.Fatal(err)}
- defer root.Close()
- if err:=reconcileFinalCSSAssets(m,root,out);err!=nil{t.Fatal(err)}
- if got:=m.GetAssetHash("css/components.css");got!=newHash{t.Errorf("hash=%s want=%s",got,newHash)}
- rendered,err:=os.ReadFile(filepath.Join(out,"index.html"))
- if err!=nil{t.Fatal(err)}
- if !strings.Contains(string(rendered),"/css/components."+newHash+".css"){t.Fatalf("stale asset reference: %s",rendered)}
- plugin:=NewStaticAssetsPlugin()
- if err:=plugin.createHashedCopiesWithRoot(m,out,root);err!=nil{t.Fatal(err)}
- published,err:=os.ReadFile(filepath.Join(out,"css","components."+newHash+".css"))
- if err!=nil{t.Fatal(err)}
- if string(published)!=string(final){t.Fatalf("versioned CSS differs from final bytes")}
- // Re-running without any CSS change must preserve URLs and file content.
- if err:=reconcileFinalCSSAssets(m,root,out);err!=nil{t.Fatal(err)}
- again,err:=os.ReadFile(filepath.Join(out,"index.html"))
- if err!=nil{t.Fatal(err)}
- if string(again)!=string(rendered){t.Fatal("unchanged output must be stable")}
+	out := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(out, "css"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	initial := []byte(".old { display:block }")
+	final := []byte(".new { display:grid }")
+	oldHash := fmt.Sprintf("%x", sha256.Sum256(initial))[:8]
+	newHash := fmt.Sprintf("%x", sha256.Sum256(final))[:8]
+	if err := os.WriteFile(filepath.Join(out, "css", "components.css"), final, 0644); err != nil {
+		t.Fatal(err)
+	}
+	html := `<link rel="stylesheet" href="/css/components.` + oldHash + `.css"><main class="new"></main>`
+	if err := os.WriteFile(filepath.Join(out, "index.html"), []byte(html), 0644); err != nil {
+		t.Fatal(err)
+	}
+	m := lifecycle.NewManager()
+	m.SetAssetHash("css/components.css", oldHash)
+	root, err := os.OpenRoot(out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer root.Close()
+	if err := reconcileFinalCSSAssets(m, root, out); err != nil {
+		t.Fatal(err)
+	}
+	if got := m.GetAssetHash("css/components.css"); got != newHash {
+		t.Errorf("hash=%s want=%s", got, newHash)
+	}
+	rendered, err := os.ReadFile(filepath.Join(out, "index.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(rendered), "/css/components."+newHash+".css") {
+		t.Fatalf("stale asset reference: %s", rendered)
+	}
+	plugin := NewStaticAssetsPlugin()
+	if err := plugin.createHashedCopiesWithRoot(m, out, root); err != nil {
+		t.Fatal(err)
+	}
+	published, err := os.ReadFile(filepath.Join(out, "css", "components."+newHash+".css"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(published) != string(final) {
+		t.Fatalf("versioned CSS differs from final bytes")
+	}
+	// Re-running without any CSS change must preserve URLs and file content.
+	if err := reconcileFinalCSSAssets(m, root, out); err != nil {
+		t.Fatal(err)
+	}
+	again, err := os.ReadFile(filepath.Join(out, "index.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(again) != string(rendered) {
+		t.Fatal("unchanged output must be stable")
+	}
 }
