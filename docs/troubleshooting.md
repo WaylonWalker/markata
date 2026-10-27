@@ -1364,3 +1364,7 @@ markata-go new "My Post Title"
 # Check version
 markata-go --version
 ```
+
+## Agent-assisted troubleshooting
+
+Run `markata triage` to prepare a diagnostic prompt and choose an installed coding agent, clipboard, or stdout. See the [triage guide](/docs/guides/triage/).

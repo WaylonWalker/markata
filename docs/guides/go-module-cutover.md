@@ -20,8 +20,8 @@ which now lives at [WaylonWalker/markata-py](https://github.com/WaylonWalker/mar
   Avoid depending on both the historical and new module paths in the
   same dependency graph; they describe the same source with different
   module identities and may result in duplicate packages.
-- **Python users:** the Python package import `markata` and the
-  existing `markata` distribution on PyPI are unchanged. A
+- **Python users:** historical pinned Python releases remain available on PyPI, but
+  current PyPI releases install the Go CLI after a version break. A
   Go CLI install must not silently overwrite an existing Python
   `markata` executable.
 

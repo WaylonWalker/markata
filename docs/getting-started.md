@@ -20,4 +20,4 @@ You do not need to learn the entire plugin system before publishing something.
 
 Later, explore [themes](/docs/guides/themes/), [feeds](/docs/guides/feeds/), [templates](/docs/guides/templates/), and [plugins](/docs/reference/plugins/).
 
-Markata is the **Go** project at [WaylonWalker/markata](https://github.com/WaylonWalker/markata). It is still **0.x**. The original Python product lives at [WaylonWalker/markata-py](https://github.com/WaylonWalker/markata-py), and PyPI's `markata` currently refers to Python.
+Markata is the **Go** project at [WaylonWalker/markata](https://github.com/WaylonWalker/markata). It is still **0.x**. The original Python product lives at [WaylonWalker/markata-py](https://github.com/WaylonWalker/markata-py), and current PyPI releases install the Go CLI after a version break. Older Python versions remain available when pinned; see [installation](/docs/installation/).

@@ -1,6 +1,6 @@
 ---
 title: "Install Markata"
-description: "Install the Go static site generator with curl, Bash, mise, GitHub Releases, or Go."
+description: "Install the Go static site generator with curl, mise, uv, pip, GitHub Releases, or Go."
 date: 2026-10-18
 published: true
 tags: [documentation, installation]
@@ -68,15 +68,18 @@ markata version
 
 Until a release tag contains the new entry point, use `@main` for this canonical command rather than `@latest`. Make sure `$(go env GOPATH)/bin` is in `PATH`.
 
-## PyPI / pip — the original Python project
+## PyPI (uv, uvx, pip, pipx)
 
-**This does not install Markata Go.** The `markata` name on PyPI still points to the older Python implementation at [WaylonWalker/markata-py](https://github.com/WaylonWalker/markata-py).
+The current `markata` PyPI distribution installs the Go CLI following the version break from the original Python implementation. Existing Python-era versions remain available when explicitly pinned; the Python source lives in [markata-py](https://github.com/WaylonWalker/markata-py). This is a CLI transition, not Python API compatibility.
 
 ```bash
-python -m pip install markata
+uv tool install markata
+uvx markata --help
+pip install markata
+pipx install markata
 ```
 
-Use that only if you intentionally want **Python Markata**. Go releases and the PyPI migration are separate decisions.
+Use one installation method. On platforms without a matching Go binary wheel, check the selected package version and executable rather than assuming a compatible wheel is available.
 
 ## Verify and start
 
@@ -92,3 +95,7 @@ markata serve
 Continue with the [quickstart](/docs/quickstart/). If you already use `markata-go`, that command remains supported. Keep your `markata-go.toml` filename and `[markata-go]` configuration section; the Go config file has **not** been renamed. See [Naming migration](/docs/guides/name-migration/).
 
 For more options, check [troubleshooting](/docs/troubleshooting/) and [the release list](https://github.com/WaylonWalker/markata/releases).
+
+## Troubleshooting with an agent
+
+Run `markata triage` to gather a bounded diagnostic prompt and choose a detected coding agent, clipboard, or stdout. See the [triage guide](/docs/guides/triage/).
