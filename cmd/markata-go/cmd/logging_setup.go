@@ -67,14 +67,6 @@ func loggerThemeForManager(m *lifecycle.Manager) logging.Theme {
 	return logging.ThemeFromPalette(palette)
 }
 
-func resolveLoggerTheme(m *lifecycle.Manager) (logging.Theme, bool) {
-	palette, ok := resolveLoggerPalette(m)
-	if !ok {
-		return logging.Theme{}, false
-	}
-	return logging.ThemeFromPalette(palette), true
-}
-
 func resolveLoggerPalette(m *lifecycle.Manager) (*palettes.Palette, bool) {
 	if m == nil || m.Config() == nil || m.Config().Extra == nil {
 		return nil, false
