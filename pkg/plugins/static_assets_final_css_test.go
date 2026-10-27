@@ -11,6 +11,32 @@ import (
 	"github.com/WaylonWalker/markata/pkg/lifecycle"
 )
 
+func TestVersionedCSSFilesAreExcludedFromFurtherTransforms(t *testing.T) {
+	tests := []struct {
+		path    string
+		skipped bool
+	}{
+		{"css/components.bd9a4951.css", true},
+		{"css/components.52A9D553.css", true},
+		{"css/components.css", false},
+		{"css/components.min.css", false},
+	}
+	minifier := NewCSSMinifyPlugin()
+	for _, tt := range tests {
+		t.Run(tt.path, func(t *testing.T) {
+			if got := isVersionedCSSFile(tt.path); got != tt.skipped {
+				t.Errorf("versioned CSS detection = %v, want %v", got, tt.skipped)
+			}
+			if got := minifier.isExcluded(tt.path); got != tt.skipped {
+				t.Errorf("minify exclusion = %v, want %v", got, tt.skipped)
+			}
+			if got := shouldSkipCSSFile(tt.path, nil); got != tt.skipped {
+				t.Errorf("purge exclusion = %v, want %v", got, tt.skipped)
+			}
+		})
+	}
+}
+
 func TestReconcileFinalCSSAssetsUsesPublishedBytes(t *testing.T) {
 	out := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(out, "css"), 0755); err != nil {
