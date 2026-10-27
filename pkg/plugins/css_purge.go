@@ -640,6 +640,9 @@ func scanHTMLFilesConcurrently(files []string, concurrency int) (*csspurge.UsedS
 
 // shouldSkipCSSFile checks if a CSS file matches any skip pattern.
 func shouldSkipCSSFile(relPath string, patterns []string) bool {
+	if isVersionedCSSFile(relPath) {
+		return true
+	}
 	for _, pattern := range patterns {
 		matched, err := filepath.Match(pattern, relPath)
 		if err == nil && matched {
