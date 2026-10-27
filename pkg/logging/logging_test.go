@@ -72,6 +72,21 @@ func TestColorEnabledMatchesCLIForcePrecedence(t *testing.T) {
 	}
 }
 
+func TestWriterForceColorUsesRichAutoFormat(t *testing.T) {
+	t.Setenv("NO_COLOR", "")
+	t.Setenv("FORCE_COLOR", "")
+	t.Setenv("TERM", "xterm-256color")
+	buf := bytes.NewBuffer(nil)
+	writer := NewWriter(Options{Writer: buf, Format: FormatAuto, ForceColor: true, IsTTY: false})
+
+	if _, err := writer.Write([]byte("[build] complete\n")); err != nil {
+		t.Fatalf("Write() error = %v", err)
+	}
+	if !strings.Contains(buf.String(), ansiCyan+"[build]"+ansiReset) {
+		t.Fatalf("forced auto-format output = %q, want ANSI color", buf.String())
+	}
+}
+
 func TestColorEnabledWhitespaceNoColor(t *testing.T) {
 	t.Setenv("NO_COLOR", " ")
 	t.Setenv("FORCE_COLOR", "")

@@ -122,12 +122,13 @@ func NewWriter(opts Options) *Writer {
 	if theme.Component == "" {
 		theme = DefaultTheme()
 	}
+	color := allowColor(opts)
 
 	return &Writer{
 		out:      writer,
 		observer: opts.Observer,
-		format:   resolveFormat(format, opts.IsTTY),
-		color:    allowColor(opts),
+		format:   resolveFormat(format, opts.IsTTY || color),
+		color:    color,
 		theme:    theme,
 	}
 }
