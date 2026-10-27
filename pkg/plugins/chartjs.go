@@ -153,6 +153,8 @@ func (p *ChartJSPlugin) processPost(post *models.Post) error {
 				html.EscapeString(p.config.ContainerClass), html.EscapeString(err.Error()))
 		}
 
+		applyHorizontalBarDefaults(chartConfig)
+
 		// Re-encode decoded JSON using encoding/json's HTML-safe escaping.
 		// Inline scripts must never contain an authored </script> sequence.
 		safeJSON, err := json.Marshal(chartConfig)
@@ -254,6 +256,53 @@ func parseChartFigureOptions(config map[string]interface{}) (chartFigureOptions,
 		delete(config, field.key)
 	}
 	return options, nil
+}
+
+// applyHorizontalBarDefaults adds compact, rounded horizontal bars without
+// overwriting explicit Chart.js dataset or element styling. Dataset-level
+// properties remain authoritative over these options.datasets.bar defaults.
+func applyHorizontalBarDefaults(config map[string]interface{}) {
+	if config["type"] != "bar" {
+		return
+	}
+	options, ok := config["options"].(map[string]interface{})
+	if !ok || options["indexAxis"] != "y" {
+		return
+	}
+	datasets, ok := options["datasets"].(map[string]interface{})
+	if !ok {
+		if _, exists := options["datasets"]; exists {
+			return // Preserve authored, even if malformed, Chart.js options.
+		}
+		datasets = make(map[string]interface{})
+		options["datasets"] = datasets
+	}
+	bar, ok := datasets["bar"].(map[string]interface{})
+	if !ok {
+		if _, exists := datasets["bar"]; exists {
+			return
+		}
+		bar = make(map[string]interface{})
+		datasets["bar"] = bar
+	}
+	elements, _ := options["elements"].(map[string]interface{})
+	elementBar, _ := elements["bar"].(map[string]interface{})
+	for _, setting := range []struct {
+		key   string
+		value interface{}
+	}{
+		{"borderRadius", 6},
+		{"borderSkipped", false},
+		{"maxBarThickness", 24},
+	} {
+		if _, explicit := bar[setting.key]; explicit {
+			continue
+		}
+		if _, explicit := elementBar[setting.key]; explicit {
+			continue
+		}
+		bar[setting.key] = setting.value
+	}
 }
 
 func isCompactHorizontalBar(config map[string]interface{}) bool {
