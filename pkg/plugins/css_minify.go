@@ -174,6 +174,9 @@ func (p *CSSMinifyPlugin) findCSSFiles(dir string) ([]string, error) {
 
 // isExcluded checks if a file should be excluded from minification.
 func (p *CSSMinifyPlugin) isExcluded(filePath string) bool {
+	if isVersionedCSSFile(filePath) {
+		return true
+	}
 	if isPagefindAsset(filePath) {
 		return true
 	}
