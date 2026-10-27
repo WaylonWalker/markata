@@ -23,6 +23,7 @@ require (
 	github.com/ktr0731/go-fuzzyfinder v0.9.0
 	github.com/mangoumbrella/goldmark-figure v1.4.0
 	github.com/markusmobius/go-dateparser v1.4.8
+	github.com/muesli/termenv v0.16.0
 	github.com/nbutton23/zxcvbn-go v0.0.0-20210217022336-fa2cb2858354
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.3
 	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
@@ -99,7 +100,6 @@ require (
 	github.com/muesli/ansi v0.0.0-20230316100256-276c6243b2f6 // indirect
 	github.com/muesli/cancelreader v0.2.2 // indirect
 	github.com/muesli/reflow v0.3.0 // indirect
-	github.com/muesli/termenv v0.16.0 // indirect
 	github.com/nsf/termbox-go v1.1.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
