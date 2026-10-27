@@ -10,7 +10,10 @@ import (
 	"github.com/WaylonWalker/markata/pkg/palettes"
 )
 
-var currentLogTheme = logging.DefaultTheme()
+var (
+	currentLogTheme   = logging.DefaultTheme()
+	currentCLIPalette *palettes.Palette
+)
 
 func configureCommandLogger(theme logging.Theme) error {
 	format, err := logging.ParseFormat(logFormat)
@@ -56,29 +59,33 @@ func configureServeLoggerForManager(m *lifecycle.Manager) {
 }
 
 func loggerThemeForManager(m *lifecycle.Manager) logging.Theme {
-	theme := logging.DefaultTheme()
-	if resolved, ok := resolveLoggerTheme(m); ok {
-		theme = resolved
+	palette, ok := resolveLoggerPalette(m)
+	currentCLIPalette = palette
+	if !ok {
+		return logging.DefaultTheme()
 	}
-	return theme
+	return logging.ThemeFromPalette(palette)
 }
 
 func resolveLoggerTheme(m *lifecycle.Manager) (logging.Theme, bool) {
-	if m == nil || m.Config() == nil || m.Config().Extra == nil {
+	palette, ok := resolveLoggerPalette(m)
+	if !ok {
 		return logging.Theme{}, false
+	}
+	return logging.ThemeFromPalette(palette), true
+}
+
+func resolveLoggerPalette(m *lifecycle.Manager) (*palettes.Palette, bool) {
+	if m == nil || m.Config() == nil || m.Config().Extra == nil {
+		return nil, false
 	}
 
 	modelsConfig, ok := m.Config().Extra["models_config"].(*models.Config)
 	if !ok || modelsConfig == nil {
-		return logging.Theme{}, false
+		return nil, false
 	}
 
-	palette, ok := loadLoggerPalette(modelsConfig.Theme, m.Config().Extra)
-	if !ok {
-		return logging.Theme{}, false
-	}
-
-	return logging.ThemeFromPalette(palette), true
+	return loadLoggerPalette(modelsConfig.Theme, m.Config().Extra)
 }
 
 func loadLoggerPalette(theme models.ThemeConfig, extra map[string]any) (*palettes.Palette, bool) {

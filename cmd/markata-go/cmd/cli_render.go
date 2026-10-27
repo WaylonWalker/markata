@@ -9,6 +9,7 @@ import (
 
 	"github.com/WaylonWalker/markata/pkg/logging"
 	"github.com/WaylonWalker/markata/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/palettes"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )
@@ -68,25 +69,40 @@ func cliSection(label string) {
 }
 
 func resolveCLITheme(cfg *models.Config, configPaths []string) logging.Theme {
-	if cfg == nil {
+	palette, ok := resolveCLIPalette(cfg, configPaths)
+	if !ok {
 		return logging.DefaultTheme()
+	}
+	return logging.ThemeFromPalette(palette)
+}
+
+func resolveCLIPalette(cfg *models.Config, configPaths []string) (*palettes.Palette, bool) {
+	if cfg == nil {
+		return nil, false
 	}
 	extra := make(map[string]any)
 	if len(configPaths) > 0 {
 		extra["config_path"] = configPaths[0]
 	}
-	if palette, ok := loadLoggerPalette(cfg.Theme, extra); ok {
-		return logging.ThemeFromPalette(palette)
-	}
-	return logging.DefaultTheme()
+	return loadLoggerPalette(cfg.Theme, extra)
 }
 
 func resolveCLIThemeFromConfig() logging.Theme {
+	return logging.ThemeFromPalette(resolveCLIPaletteFromConfig())
+}
+
+func resolveCLIPaletteFromConfig() *palettes.Palette {
 	cfg, _, configPaths, err := loadManagerConfig(cfgFile)
 	if err != nil {
-		return logging.DefaultTheme()
+		return nil
 	}
-	return resolveCLITheme(cfg, configPaths)
+	palette, _ := resolveCLIPalette(cfg, configPaths)
+	return palette
+}
+
+func configureCLIThemeFromConfig() error {
+	currentCLIPalette = resolveCLIPaletteFromConfig()
+	return configureCommandLogger(logging.ThemeFromPalette(currentCLIPalette))
 }
 
 //nolint:gocyclo // Handles distinct help sections and narrow-terminal variants.
