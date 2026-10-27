@@ -115,6 +115,7 @@ Profiling:
 		if noColor && forceColor {
 			return fmt.Errorf("cannot use --color and --no-color together")
 		}
+		configureTUIColor()
 
 		if err := configureCommandLogger(logging.DefaultTheme()); err != nil {
 			return err
