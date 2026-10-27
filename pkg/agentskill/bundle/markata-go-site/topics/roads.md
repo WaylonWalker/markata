@@ -41,6 +41,8 @@ Rules:
 | Branches and merges | `git` |
 | Entries that need paragraphs, lists, or images | `editorial` |
 
+For evidence-backed, multi-period history narratives, see `examples/evidence-led-history.md` for chapter framing, supported milestones, and a separate unresolved record.
+
 ## Editorial
 
 Write a heading per entry. Put any Markdown under each heading. Use a heading
