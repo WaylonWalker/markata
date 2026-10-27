@@ -233,27 +233,13 @@ func runAgentInstallCommand(cmd *cobra.Command, args []string) error {
 		answer, readErr := reader.ReadString('\n')
 		if readErr != nil {
 			if errors.Is(readErr, io.EOF) {
-				return fmt.Errorf("agent setup cancelled: input ended before confirmation")
+				return fmt.Errorf("agent setup canceled: input ended before confirmation")
 			}
 			return readErr
 		}
 		switch strings.ToLower(strings.TrimSpace(answer)) {
 		case "", "y", "yes":
-			seen := make(map[string]bool)
-			for _, target := range detected {
-				path := target.ProjectPath
-				if agentInstallGlobal {
-					path = target.GlobalPath
-				}
-				if seen[path] {
-					continue
-				}
-				seen[path] = true
-				if err := runAgentWriteCommand(args, target, agentInstallGlobal, agentInstallName, agentInstallDryRun, agentInstallForce, "install"); err != nil {
-					return fmt.Errorf("%s: %w", target.Name, err)
-				}
-			}
-			return nil
+			return installDetectedAgentTargets(args, detected)
 		case "n", "no":
 			// Continue to the existing searchable agent picker.
 		default:
@@ -271,6 +257,24 @@ func runAgentInstallCommand(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	return runAgentWriteCommand(args, target, agentInstallGlobal, agentInstallName, agentInstallDryRun, agentInstallForce, "install")
+}
+
+func installDetectedAgentTargets(args []string, detected []agentInstallTarget) error {
+	seen := make(map[string]bool)
+	for _, target := range detected {
+		path := target.ProjectPath
+		if agentInstallGlobal {
+			path = target.GlobalPath
+		}
+		if seen[path] {
+			continue
+		}
+		seen[path] = true
+		if err := runAgentWriteCommand(args, target, agentInstallGlobal, agentInstallName, agentInstallDryRun, agentInstallForce, "install"); err != nil {
+			return fmt.Errorf("%s: %w", target.Name, err)
+		}
+	}
+	return nil
 }
 
 // Detection uses agent-specific executables and user configuration, not the
