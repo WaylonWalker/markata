@@ -16,23 +16,7 @@ import (
 
 // A versioned asset is immutable. Previous releases may still refer to it,
 // so purge/minification must only process the unversioned working stylesheet.
-var versionedCSSFilename = regexp.MustCompile(`\.[0-9a-fA-F]{8}\.csspackage plugins
-
-import (
-	"crypto/sha256"
-	"fmt"
-	"io/fs"
-	"os"
-	"path/filepath"
-	"regexp"
-	"sort"
-	"strings"
-
-	"github.com/WaylonWalker/markata/pkg/lifecycle"
-	"github.com/WaylonWalker/markata/pkg/templates"
-)
-
-)
+var versionedCSSFilename = regexp.MustCompile(`\.[0-9a-fA-F]{8}\.css$`)
 
 func isVersionedCSSFile(path string) bool {
 	return versionedCSSFilename.MatchString(filepath.Base(path))
