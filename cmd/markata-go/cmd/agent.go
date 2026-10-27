@@ -35,7 +35,7 @@ var agentInstallCmd = &cobra.Command{
 	Use:     "install [site-path]",
 	Aliases: []string{"setup"},
 	Short:   "Install the bundled markata-go site skill",
-	Long: `Install the bundled markata-go site skill.
+	Long:    `Install the bundled markata-go site skill.
 
 When --agent is omitted, markata-go installs into the current agent's project
 layout when it can detect one from the environment. Otherwise it falls back to
