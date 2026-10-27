@@ -32,7 +32,7 @@ Examples:
 }
 
 var agentInstallCmd = &cobra.Command{
-	Use:   "install [site-path]",
+	Use:     "install [site-path]",
 	Aliases: []string{"setup"},
 	Short: "Install the bundled markata-go site skill",
 	Long: `Install the bundled markata-go site skill.
