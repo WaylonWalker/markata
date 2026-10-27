@@ -4,10 +4,10 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"io/fs"
 	"io"
-	"os/exec"
+	"io/fs"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -209,6 +209,9 @@ func runAgentInstallCommand(cmd *cobra.Command, args []string) error {
 	interactive := !noInput && os.Getenv("TERM") != triageDumb &&
 		streamIsTerminal(cmd.InOrStdin()) && streamIsTerminal(cmd.OutOrStdout())
 	if !interactive {
+		if agentInstallGlobal {
+			return fmt.Errorf("--global requires --agent without an interactive picker; use '--agent github-copilot' or run 'markata-go agent list-agents' for supported values")
+		}
 		return fmt.Errorf("non-interactive agent setup requires --agent (see 'markata agent list-agents')")
 	}
 	detected := detectInstalledAgentTargets()
@@ -252,7 +255,8 @@ func detectInstalledAgentTargets() []agentInstallTarget {
 		"cline": {"cline"}, "amp": {"amp"}, "qwen-code": {"qwen"},
 		"kimi-cli": {"kimi"}, "crush": {"crush"}, "continue": {"cn"},
 	}
-	home, _ := os.UserHomeDir()
+	home, homeErr := os.UserHomeDir()
+	if homeErr != nil { home = "" }
 	var found []agentInstallTarget
 	for _, target := range supportedAgentTargets {
 		if target.Name == agentDefaultUniversal { continue }
