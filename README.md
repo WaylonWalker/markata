@@ -8,49 +8,30 @@ Markata builds static sites from Markdown. Define feeds to filter, sort, and pag
 
 ## Install
 
-Choose one of the existing installation methods:
-
-**curl (Linux / macOS)**
-
 ```sh
+# curl (Linux / macOS)
 curl -fsSL https://raw.githubusercontent.com/WaylonWalker/markata/main/install.sh | bash
-```
 
-**mise**
-
-```sh
+# mise
 mise use -g github:WaylonWalker/markata
-```
 
-**Go (1.26+)**
+# uv
+uv tool install markata
 
-```sh
+# uvx (run without installing)
+uvx markata --help
+
+# pip / pipx
+pip install markata
+pipx install markata
+
+# Go (1.26+; current source)
 go install github.com/WaylonWalker/markata/cmd/markata@main
 ```
 
-**Manual download:** Pick a binary for your platform from [GitHub Releases](https://github.com/WaylonWalker/markata/releases).
+Choose **one** method above, or download a binary from [GitHub Releases](https://github.com/WaylonWalker/markata/releases). Check your installation with `markata version`.
 
-```sh
-markata version
-```
-
-**uv / uvx (PyPI)**
-
-```sh
-uv tool install markata
-# Or run without a persistent installation:
-uvx markata --help
-```
-
-**pip / pipx (PyPI)**
-
-```sh
-pip install markata
-# Or install as an isolated CLI:
-pipx install markata
-```
-
-The PyPI package now distributes the Go implementation following a version break from the [original Python Markata](https://github.com/WaylonWalker/markata-py). See [installation details](docs/installation.md).
+PyPI now distributes the Go implementation after a version break from [Python Markata](https://github.com/WaylonWalker/markata-py). See [installation details](docs/installation.md).
 
 ## Quick start
 
