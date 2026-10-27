@@ -143,7 +143,6 @@ func (p *MentionsPlugin) Transform(m *lifecycle.Manager) error {
 	})
 }
 
-
 // referencedHandles narrows metadata fetching to handles present in loaded posts.
 // The full map remains available to the rendering passes.
 func (p *MentionsPlugin) referencedHandles(m *lifecycle.Manager, handleMap map[string]*mentionEntry) map[string]*mentionEntry {
