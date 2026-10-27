@@ -1170,7 +1170,7 @@ func runInitCommand(cmd *cobra.Command, _ []string) error {
 				return runExistingProjectWizard(reader, configPath)
 			}
 			// Try to load existing config to get palette for theming
-			theme := createHuhTheme(getPaletteFromConfig(configPath))
+			theme := createHuhThemeForPalette(getPaletteFromConfig(configPath))
 			return runHuhExistingProjectWizard(configPath, theme, initForce)
 		}
 	}
@@ -1191,12 +1191,13 @@ func runInitCommand(cmd *cobra.Command, _ []string) error {
 }
 
 // getPaletteFromConfig attempts to extract the palette name from an existing config file.
-func getPaletteFromConfig(configPath string) string {
+func getPaletteFromConfig(configPath string) *palettes.Palette {
 	cfg, err := config.Load(configPath)
 	if err != nil {
-		return ""
+		return nil
 	}
-	return cfg.Theme.Palette
+	palette, _ := loadLoggerPalette(cfg.Theme, map[string]any{"config_path": configPath})
+	return palette
 }
 
 // runPlainNewProjectWizard runs the plain text wizard for new projects.

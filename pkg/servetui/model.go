@@ -14,6 +14,7 @@ import (
 	"github.com/WaylonWalker/markata/pkg/palettes"
 	"github.com/WaylonWalker/markata/pkg/servecontrol"
 	"github.com/WaylonWalker/markata/pkg/serveopen"
+	"github.com/WaylonWalker/markata/pkg/terminaltheme"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -50,27 +51,16 @@ type theme struct {
 }
 
 func themeFromPalette(palette *palettes.Palette) theme {
-	// These defaults match the bundled default site palette's semantic roles.
-	t := theme{accent: "#8462af", text: "#e5e5e5", muted: "#777777", success: "#3c9d73", warning: "#cb903c", failure: "#ce5364", focus: "#49335f"}
-	if palette == nil {
-		return t
+	colors := terminaltheme.FromPalette(palette)
+	return theme{
+		accent:  lipgloss.Color(colors.Accent),
+		text:    lipgloss.Color(colors.TextPrimary),
+		muted:   lipgloss.Color(colors.TextMuted),
+		success: lipgloss.Color(colors.Success),
+		warning: lipgloss.Color(colors.Warning),
+		failure: lipgloss.Color(colors.Error),
+		focus:   lipgloss.Color(colors.AccentHover),
 	}
-	resolve := func(names []string, fallback lipgloss.Color) lipgloss.Color {
-		for _, name := range names {
-			if color := palette.Resolve(name); color != "" {
-				return lipgloss.Color(color)
-			}
-		}
-		return fallback
-	}
-	t.accent = resolve([]string{"accent", "link"}, t.accent)
-	t.text = resolve([]string{"text-primary", "text"}, t.text)
-	t.muted = resolve([]string{"text-muted", "text-secondary"}, t.muted)
-	t.success = resolve([]string{"success", "info"}, t.success)
-	t.warning = resolve([]string{"warning"}, t.warning)
-	t.failure = resolve([]string{"error"}, t.failure)
-	t.focus = resolve([]string{"bg-elevated", "accent-hover"}, t.focus)
-	return t
 }
 
 // Model renders an immutable runtime snapshot. It never reconstructs job or
