@@ -2,8 +2,8 @@ package cmd
 
 import (
 	"os"
-	"strings"
 
+	"github.com/WaylonWalker/markata/pkg/logging"
 	"golang.org/x/term"
 )
 
@@ -41,17 +41,5 @@ func colorEnabledOnOutput() bool {
 }
 
 func colorEnabledFor(isTTY bool) bool {
-	if noColor || logFormat == "plain" {
-		return false
-	}
-	if forceColor {
-		return true
-	}
-	if !isTTY {
-		return false
-	}
-	if os.Getenv("TERM") == "dumb" {
-		return false
-	}
-	return strings.TrimSpace(os.Getenv("NO_COLOR")) == ""
+	return logging.ColorEnabled(isTTY, logging.Format(logFormat), forceColor, noColor)
 }

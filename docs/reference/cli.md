@@ -149,10 +149,13 @@ markata-go follows a few shared CLI rules:
 - warnings, progress, prompts, and errors are written to `stderr`
 - interactive terminal output uses color by default when the target stream is a TTY
 - operational logs use centralized formatting; `--log-format auto` chooses rich logs for TTYs and plain logs otherwise
-- `--color` forces ANSI color output, while `--no-color` disables it everywhere
+- `--color` and `FORCE_COLOR` force ANSI color output, while `--no-color` disables it everywhere
 - rich logs can use structured metadata such as lifecycle phase, and builds/serve runs can tint log colors from the configured site palette
-- color is disabled when output is not a terminal, when `NO_COLOR` is set, when
-  `TERM=dumb`, or when `--no-color` is passed
+- color is enabled by default for interactive terminal streams and disabled for
+  redirected streams; `NO_COLOR` (any non-empty value) and `TERM=dumb` disable
+  automatic color
+- `--color` or `FORCE_COLOR` overrides automatic detection; `--no-color` and
+  `--log-format plain` always disable color
 - interactive commands such as `new` and `init` honor `--no-input`
 - commands that expose structured data should prefer explicit machine-readable
   modes such as `--json` or `--format json`

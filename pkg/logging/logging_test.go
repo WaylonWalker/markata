@@ -54,11 +54,45 @@ func TestWriterDoesNotTreatWarningAsComponent(t *testing.T) {
 }
 
 func TestAllowColorForceColor(t *testing.T) {
-	t.Setenv("NO_COLOR", "")
+	t.Setenv("NO_COLOR", "1")
+	t.Setenv("FORCE_COLOR", "")
 	t.Setenv("TERM", "xterm-256color")
 
 	if !allowColor(Options{Format: FormatRich, ForceColor: true}) {
 		t.Fatal("expected force color to enable color")
+	}
+}
+
+func TestColorEnabledMatchesCLIForcePrecedence(t *testing.T) {
+	t.Setenv("NO_COLOR", "1")
+	t.Setenv("FORCE_COLOR", "")
+	t.Setenv("TERM", "dumb")
+	if !ColorEnabled(false, FormatRich, true, false) {
+		t.Fatal("explicit force color should override automatic suppression")
+	}
+}
+
+func TestWriterForceColorUsesRichAutoFormat(t *testing.T) {
+	t.Setenv("NO_COLOR", "")
+	t.Setenv("FORCE_COLOR", "")
+	t.Setenv("TERM", "xterm-256color")
+	buf := bytes.NewBuffer(nil)
+	writer := NewWriter(Options{Writer: buf, Format: FormatAuto, ForceColor: true, IsTTY: false})
+
+	if _, err := writer.Write([]byte("[build] complete\n")); err != nil {
+		t.Fatalf("Write() error = %v", err)
+	}
+	if !strings.Contains(buf.String(), ansiCyan+"[build]"+ansiReset) {
+		t.Fatalf("forced auto-format output = %q, want ANSI color", buf.String())
+	}
+}
+
+func TestColorEnabledWhitespaceNoColor(t *testing.T) {
+	t.Setenv("NO_COLOR", " ")
+	t.Setenv("FORCE_COLOR", "")
+	t.Setenv("TERM", "xterm-256color")
+	if ColorEnabled(true, FormatAuto, false, false) {
+		t.Fatal("any non-empty NO_COLOR value should disable automatic color")
 	}
 }
 
