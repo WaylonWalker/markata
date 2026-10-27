@@ -69,4 +69,21 @@ func TestReconcileFinalCSSAssetsUsesPublishedBytes(t *testing.T) {
 	if string(again) != string(rendered) {
 		t.Fatal("unchanged output must be stable")
 	}
+
+	// Incremental builds can restore HTML referencing a prior final hash.
+	// The reconciliation must not assume the source Configure hash appears.
+	cachedHTML := `<link href="/css/components.deadbeef.css" rel="stylesheet">`
+	if err := os.WriteFile(filepath.Join(out, "cached.html"), []byte(cachedHTML), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := reconcileFinalCSSAssets(m, root, out); err != nil {
+		t.Fatal(err)
+	}
+	cached, err := os.ReadFile(filepath.Join(out, "cached.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(cached), "deadbeef") || !strings.Contains(string(cached), "components."+newHash+".css") {
+		t.Fatalf("cached HTML retains stale CSS reference: %s", cached)
+	}
 }
