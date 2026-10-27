@@ -1,6 +1,7 @@
 package plugins
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 
@@ -455,5 +456,39 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>`
 	if post.ArticleHTML != want {
 		t.Fatalf("legacy output changed:\ngot: %s\nwant: %s", post.ArticleHTML, want)
+	}
+}
+
+func TestHorizontalBarDefaults(t *testing.T) {
+	cases := []struct {
+		name   string
+		input  string
+		want   string
+		absent string
+	}{
+		{"simple", `{"type":"bar","data":{"labels":["A","B"],"datasets":[{"data":[1,2]}]},"options":{"indexAxis":"y"}}`, `"barThickness":14`, ""},
+		{"explicit geometry", `{"type":"bar","data":{"labels":["A"],"datasets":[{"data":[1],"borderRadius":0}]},"options":{"indexAxis":"y","aspectRatio":2}}`, `"aspectRatio":2`, `"barThickness":14`},
+		{"element geometry", `{"type":"bar","data":{"labels":["A"],"datasets":[{"data":[1]}]},"options":{"indexAxis":"y","elements":{"bar":{"borderRadius":0}}}}`, `"borderRadius":0`, `"barThickness":14`},
+		{"multiple series", `{"type":"bar","data":{"labels":["A"],"datasets":[{"data":[1]},{"data":[2]}]},"options":{"indexAxis":"y"}}`, `"indexAxis":"y"`, `"barThickness":14`},
+		{"vertical", `{"type":"bar","data":{"labels":["A"],"datasets":[{"data":[1]}]}}`, `"type":"bar"`, `"barThickness":14`},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var config map[string]interface{}
+			if err := json.Unmarshal([]byte(tc.input), &config); err != nil {
+				t.Fatal(err)
+			}
+			applyHorizontalBarDefaults(config)
+			out, err := json.Marshal(config)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !strings.Contains(string(out), tc.want) {
+				t.Errorf("got %s, want %s", out, tc.want)
+			}
+			if tc.absent != "" && strings.Contains(string(out), tc.absent) {
+				t.Errorf("got unwanted %s in %s", tc.absent, out)
+			}
+		})
 	}
 }

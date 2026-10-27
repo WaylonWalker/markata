@@ -153,6 +153,13 @@ func (p *ChartJSPlugin) processPost(post *models.Post) error {
 				html.EscapeString(p.config.ContainerClass), html.EscapeString(err.Error()))
 		}
 
+		// Preserve authored configuration for the fallback before applying presentation defaults.
+		authoredJSON, err := json.Marshal(chartConfig)
+		if err != nil {
+			return match
+		}
+		applyHorizontalBarDefaults(chartConfig)
+
 		// Re-encode decoded JSON using encoding/json's HTML-safe escaping.
 		// Inline scripts must never contain an authored </script> sequence.
 		safeJSON, err := json.Marshal(chartConfig)
@@ -165,7 +172,7 @@ func (p *ChartJSPlugin) processPost(post *models.Post) error {
 
 		// Render a real data table (or the configuration for unusual charts)
 		// so the data remains available with JavaScript disabled or offline.
-		fallback := chartStaticFallback(chartConfig, string(safeJSON))
+		fallback := chartStaticFallback(chartConfig, string(authoredJSON))
 		display := options.DataDisplay
 		if display == "" {
 			display = p.config.DataDisplay
@@ -254,6 +261,67 @@ func parseChartFigureOptions(config map[string]interface{}) (chartFigureOptions,
 		delete(config, field.key)
 	}
 	return options, nil
+}
+
+// applyHorizontalBarDefaults adds compact geometry only to simple horizontal bars.
+func applyHorizontalBarDefaults(config map[string]interface{}) {
+	const barType = "bar"
+	if config["type"] != barType {
+		return
+	}
+	options, ok := config["options"].(map[string]interface{})
+	if !ok || options["indexAxis"] != "y" {
+		return
+	}
+	data, ok := config["data"].(map[string]interface{})
+	if !ok {
+		return
+	}
+	labels, ok := data["labels"].([]interface{})
+	if !ok || len(labels) == 0 || len(labels) > 5 {
+		return
+	}
+	datasets, ok := data["datasets"].([]interface{})
+	if !ok || len(datasets) != 1 {
+		return
+	}
+	dataset, ok := datasets[0].(map[string]interface{})
+	if !ok || (dataset["type"] != nil && dataset["type"] != barType) {
+		return
+	}
+	if _, a := options["aspectRatio"]; !a {
+		if _, b := options["maintainAspectRatio"]; !b {
+			options["aspectRatio"] = 3
+		}
+	}
+	if hasBarGeometry(dataset, options) {
+		return
+	}
+	dataset["barThickness"] = 14
+	dataset["borderRadius"] = 7
+	dataset["borderSkipped"] = false
+}
+
+func hasBarGeometry(dataset, options map[string]interface{}) bool {
+	for _, key := range []string{"barThickness", "maxBarThickness", "barPercentage", "categoryPercentage", "borderRadius", "borderSkipped"} {
+		if _, exists := dataset[key]; exists {
+			return true
+		}
+		for _, section := range []string{"datasets", "elements"} {
+			group, ok := options[section].(map[string]interface{})
+			if !ok {
+				continue
+			}
+			bar, ok := group["bar"].(map[string]interface{})
+			if !ok {
+				continue
+			}
+			if _, exists := bar[key]; exists {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func isCompactHorizontalBar(config map[string]interface{}) bool {
