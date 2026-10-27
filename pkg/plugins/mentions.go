@@ -84,6 +84,12 @@ func (p *MentionsPlugin) Transform(m *lifecycle.Manager) error {
 		}
 	}
 
+	// Identify loaded posts before doing any network work. Single-page serve
+	// must not fetch metadata for unrelated contacts in the blogroll.
+	posts := m.FilterPosts(func(post *models.Post) bool {
+		return !post.Skip && post.Content != ""
+	})
+
 	// Build handle resolution map from blogroll config
 	handleMap := p.buildHandleMap(m)
 
@@ -92,8 +98,9 @@ func (p *MentionsPlugin) Transform(m *lifecycle.Manager) error {
 	// Keep processing when the blogroll is empty: unknown ~attributions
 	// still need distinct styling and are caught by the offline linter.
 
-	// Fetch metadata for all unique domains
-	domainMap := p.fetchAllMetadata(m, handleMap)
+	// Only fetch metadata for handles referenced in loaded content. The full
+	// map is retained for link resolution and unknown-attribution styling.
+	domainMap := p.fetchAllMetadata(m, referencedMentionHandles(posts, handleMap))
 
 	// Store in memory cache for other plugins
 	m.Cache().Set("mentions_metadata", domainMap)
@@ -103,9 +110,6 @@ func (p *MentionsPlugin) Transform(m *lifecycle.Manager) error {
 
 	cache := GetBuildCache(m)
 	cacheSignature := p.computeCacheSignature(handleMap)
-	posts := m.FilterPosts(func(post *models.Post) bool {
-		return !post.Skip && post.Content != ""
-	})
 
 	log.Printf("[mentions] Processing %d posts", len(posts))
 
@@ -137,6 +141,31 @@ func (p *MentionsPlugin) Transform(m *lifecycle.Manager) error {
 		}
 		return nil
 	})
+}
+
+// referencedMentionHandles selects only known handles used in loaded posts.
+// Fenced code is excluded because the mentions renderer leaves it untouched.
+// Aliases are looked up using the same exact-then-trim rule as rendering.
+func referencedMentionHandles(posts []*models.Post, handleMap map[string]*mentionEntry) map[string]*mentionEntry {
+	used := make(map[string]*mentionEntry)
+	for _, post := range posts {
+		if post == nil {
+			continue
+		}
+		content := mentionsCodeBlockRegex.ReplaceAllString(post.Content, "")
+		for _, match := range mentionRegex.FindAllStringSubmatch(content, -1) {
+			handle := strings.ToLower(match[3])
+			entry, ok := handleMap[handle]
+			if !ok {
+				handle = mentionTrailingPunctRegex.ReplaceAllString(handle, "")
+				entry, ok = handleMap[handle]
+			}
+			if ok && entry != nil {
+				used[handle] = entry
+			}
+		}
+	}
+	return used
 }
 
 func (p *MentionsPlugin) computePostHash(post *models.Post, cacheSignature string) string {
