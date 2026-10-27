@@ -182,6 +182,9 @@ func (p *StaticAssetsPlugin) Cleanup(m *lifecycle.Manager) error {
 	}
 	defer outputFS.Close()
 
+	if err := reconcileFinalCSSAssets(m, outputFS, outputDir); err != nil {
+		return fmt.Errorf("reconcile final CSS fingerprints: %w", err)
+	}
 	if err := p.createHashedCopiesWithRoot(m, outputDir, outputFS); err != nil {
 		return fmt.Errorf("creating hashed asset copies: %w", err)
 	}
@@ -536,6 +539,10 @@ func (p *StaticAssetsPlugin) createHashedCopiesWithRoot(m *lifecycle.Manager, ou
 func (p *StaticAssetsPlugin) Priority(stage lifecycle.Stage) int {
 	// Configure registers asset hashes; Write copies source images before
 	// image optimization reads them.
+	if stage == lifecycle.StageCleanup {
+		// CSS purge must complete before final CSS fingerprints are published.
+		return lifecycle.PriorityLast
+	}
 	if stage == lifecycle.StageConfigure || stage == lifecycle.StageWrite {
 		return lifecycle.PriorityEarly
 	}
