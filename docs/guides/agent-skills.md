@@ -37,9 +37,15 @@ markata agent install --agent claude-code
 markata agent install --agent codex
 ```
 
-Run only the command for the agent you use. For Claude Code, the project skill goes in `.claude/skills/markata-go-site/`; for a universal project install, it goes in `.agents/skills/markata-go-site/`.
+For a specific agent, use `--agent`. For Claude Code, the project skill goes in `.claude/skills/markata-go-site/`; for a universal project install, it goes in `.agents/skills/markata-go-site/`.
 
-For a global installation, open the fuzzy picker:
+The `setup` alias also installs the skill. On an interactive terminal, either
+command lists detected agents and asks whether to install for all of them. Press
+Enter or `y` to accept. Enter `n` to choose an agent from the fuzzy picker.
+If no agents are detected, the picker opens directly. Agents that share a skill
+directory use one installation.
+
+For a global installation, use:
 
 ```bash
 markata agent install -g
@@ -51,8 +57,10 @@ The selected agent and matching characters use the terminal theme colors.
 Type an agent name or abbreviation, such as `copilot` or `ghcp`. Use the arrow keys to navigate. Press Enter to select.
 Escape or Ctrl+C cancels without an installation.
 `--no-color` or `NO_COLOR` disables the colors.
+If an install for multiple agents fails, the error identifies the failed agent.
+Installations completed before the error remain in place.
 
-For scripts, select the agent explicitly:
+For scripts, project installs keep the environment-detected agent or universal fallback. Global installs need an explicit agent:
 
 ```bash
 markata agent install --agent opencode --global

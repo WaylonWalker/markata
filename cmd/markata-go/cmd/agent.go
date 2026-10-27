@@ -35,19 +35,21 @@ var agentInstallCmd = &cobra.Command{
 	Use:     "install [site-path]",
 	Aliases: []string{"setup"},
 	Short:   "Install the bundled markata-go site skill",
-	Long:    `Install the bundled markata-go site skill.
+	Long: `Install the bundled markata-go site skill.
 
 When --agent is omitted, markata-go installs into the current agent's project
 layout when it can detect one from the environment. Otherwise it falls back to
 the portable universal layout under .agents/skills.
 
-Use --global to install into an agent's user-level skill directory. Without
---agent, an interactive terminal opens a fuzzy picker. Type to filter, use the
-arrow keys to navigate, and press Enter to select. Escape or Ctrl+C cancels.
-Scripts and --no-input require an explicit --agent.
+Use --global to install into an agent's user-level skill directory. On an
+interactive terminal without --agent, markata-go detects installed agents and
+offers to install for all of them. Declining opens a fuzzy picker. Scripts
+retain the environment-detected target or universal project layout; global
+installs require an explicit --agent when prompting is unavailable.
 
 Examples:
   markata-go agent install
+  markata-go agent setup
   markata-go agent install --agent claude-code
   markata-go agent install --global
   markata-go agent install --agent opencode --global
@@ -214,7 +216,11 @@ func runAgentInstallCommand(cmd *cobra.Command, args []string) error {
 		if agentInstallGlobal {
 			return fmt.Errorf("--global requires --agent without an interactive picker; use '--agent github-copilot' or run 'markata-go agent list-agents' for supported values")
 		}
-		return fmt.Errorf("non-interactive agent setup requires --agent (see 'markata agent list-agents')")
+		target, err := resolveAgentInstallTarget("", "", false)
+		if err != nil {
+			return err
+		}
+		return runAgentWriteCommand(args, target, false, agentInstallName, agentInstallDryRun, agentInstallForce, "install")
 	}
 	detected := detectInstalledAgentTargets()
 	if len(detected) > 0 {
@@ -225,12 +231,24 @@ func runAgentInstallCommand(cmd *cobra.Command, args []string) error {
 		outlnf("Install Markata skills for all detected agents? [Y/n]")
 		reader := bufio.NewReader(cmd.InOrStdin())
 		answer, readErr := reader.ReadString('\n')
-		if readErr != nil && !errors.Is(readErr, io.EOF) {
+		if readErr != nil {
+			if errors.Is(readErr, io.EOF) {
+				return fmt.Errorf("agent setup cancelled: input ended before confirmation")
+			}
 			return readErr
 		}
 		switch strings.ToLower(strings.TrimSpace(answer)) {
 		case "", "y", "yes":
+			seen := make(map[string]bool)
 			for _, target := range detected {
+				path := target.ProjectPath
+				if agentInstallGlobal {
+					path = target.GlobalPath
+				}
+				if seen[path] {
+					continue
+				}
+				seen[path] = true
 				if err := runAgentWriteCommand(args, target, agentInstallGlobal, agentInstallName, agentInstallDryRun, agentInstallForce, "install"); err != nil {
 					return fmt.Errorf("%s: %w", target.Name, err)
 				}
