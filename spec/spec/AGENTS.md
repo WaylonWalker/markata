@@ -191,8 +191,15 @@ Optional flags:
 
 ### `install` behavior
 
+- `setup` MUST be an alias for `install`.
+- On an interactive terminal without an explicit agent, the command MUST offer to install for detected agents, or open the picker if none are detected or the user declines.
+- In non-interactive project installs without `--agent`, the command MUST retain the existing environment-detected target or universal fallback.
+- In non-interactive global installs without `--agent`, the command MUST return an actionable error.
+- EOF at the confirmation prompt MUST cancel without installing.
+- Detected agents that share an installation directory MUST be installed only once.
+- If installation for multiple agents fails, the error MUST identify the failed agent; prior successful installs may remain.
 - `site-path` defaults to the current directory.
-- When `--agent` is omitted for project installs, the command MUST default to the current agent when it can detect one from the environment. If no current agent can be detected, it MUST default to `universal`.
+- When `--agent` is omitted for non-interactive project installs, the command MUST default to the current agent when it can detect one from the environment. If no current agent can be detected, it MUST default to `universal`.
 - When `--global` is set without `--agent` or the legacy `--target`, `install` MUST open a fuzzy agent picker on interactive input and output terminals.
 - The picker MUST list supported agent identifiers and global directories. Typing MUST filter names by ordered character matches.
 - The picker MUST use fzf's default bottom-up layout: the prompt at the bottom, the first result nearest the prompt, and additional results above it. Up MUST move toward results above the current selection; Down MUST move toward the prompt.

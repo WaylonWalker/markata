@@ -240,6 +240,7 @@ Install bundled agent integrations for markata-go site repositories.
 
 ```bash
 markata-go agent install [site-path] [flags]
+markata-go agent setup [site-path] [flags]
 ```
 
 #### Subcommands
@@ -251,6 +252,7 @@ List the supported agent identifiers and their project/global skill directories.
 ##### install
 
 Install the bundled `markata-go-site` skill into a repository.
+`setup` is an alias for `install`.
 
 | Flag | Description | Default |
 |------|-------------|---------|
@@ -260,12 +262,21 @@ Install the bundled `markata-go-site` skill into a repository.
 | `--force` | Overwrite bundled skill files if they already exist | `false` |
 | `--dry-run` | Show what would be installed without writing files | `false` |
 
-With `--global` and no agent, an interactive terminal opens a fuzzy picker.
+On an interactive terminal with no explicit agent, the command detects installed
+agents and offers to install for all of them. Declining opens the fuzzy picker.
+Agents that share an installation directory are installed only once. EOF cancels
+the confirmation. If one installation fails, prior successful installations
+remain and the error names the failed agent.
+
+With `--global` and no agent, an interactive terminal opens a fuzzy picker when
+no detected agents are available.
 The picker places the prompt below the results, like fzf, and colors the selection and matching characters.
 `--no-color` and `NO_COLOR` disable the colors.
 Type to filter, use Up/Down to navigate, and press Enter to select.
 Escape or Ctrl+C cancels without an installation.
-Scripts, `--no-input`, and `TERM=dumb` require an explicit agent, such as `--agent github-copilot`.
+Non-interactive project installs keep the environment-detected agent or fall
+back to `universal`. Non-interactive global installs require an explicit agent,
+such as `--agent github-copilot`.
 Unknown names show close matches without selecting one automatically.
 For example, `--agent copilot` suggests `--agent github-copilot`.
 

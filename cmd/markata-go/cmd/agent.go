@@ -1,10 +1,13 @@
 package cmd
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -29,21 +32,24 @@ Examples:
 }
 
 var agentInstallCmd = &cobra.Command{
-	Use:   "install [site-path]",
-	Short: "Install the bundled markata-go site skill",
+	Use:     "install [site-path]",
+	Aliases: []string{"setup"},
+	Short:   "Install the bundled markata-go site skill",
 	Long: `Install the bundled markata-go site skill.
 
 When --agent is omitted, markata-go installs into the current agent's project
 layout when it can detect one from the environment. Otherwise it falls back to
 the portable universal layout under .agents/skills.
 
-Use --global to install into an agent's user-level skill directory. Without
---agent, an interactive terminal opens a fuzzy picker. Type to filter, use the
-arrow keys to navigate, and press Enter to select. Escape or Ctrl+C cancels.
-Scripts and --no-input require an explicit --agent.
+Use --global to install into an agent's user-level skill directory. On an
+interactive terminal without --agent, markata-go detects installed agents and
+offers to install for all of them. Declining opens a fuzzy picker. Scripts
+retain the environment-detected target or universal project layout; global
+installs require an explicit --agent when prompting is unavailable.
 
 Examples:
   markata-go agent install
+  markata-go agent setup
   markata-go agent install --agent claude-code
   markata-go agent install --global
   markata-go agent install --agent opencode --global
@@ -190,27 +196,133 @@ func markTargetHidden(flags *pflag.FlagSet) {
 
 func runAgentInstallCommand(cmd *cobra.Command, args []string) error {
 	currentCmd = cmd
-	if agentInstallGlobal {
-		if _, err := resolveAgentProjectRoot(args, true); err != nil {
-			return err
-		}
+	if _, err := resolveAgentProjectRoot(args, agentInstallGlobal); err != nil {
+		return err
 	}
 	selected, explicit, err := selectedAgentFlagValue(agentInstallAgent, agentInstallLegacyTarget)
 	if err != nil {
 		return err
 	}
-	if agentInstallGlobal && !explicit && !noInput && os.Getenv("TERM") != triageDumb &&
-		streamIsTerminal(cmd.InOrStdin()) && streamIsTerminal(cmd.OutOrStdout()) {
-		selected, err = pickInstallAgent(cmd)
+	if explicit {
+		target, err := normalizeAgentInstallTarget(selected)
 		if err != nil {
 			return err
 		}
+		return runAgentWriteCommand(args, target, agentInstallGlobal, agentInstallName, agentInstallDryRun, agentInstallForce, "install")
 	}
-	target, err := resolveAgentInstallTarget(selected, "", agentInstallGlobal)
+	interactive := !noInput && os.Getenv("TERM") != triageDumb &&
+		streamIsTerminal(cmd.InOrStdin()) && streamIsTerminal(cmd.OutOrStdout())
+	if !interactive {
+		if agentInstallGlobal {
+			return fmt.Errorf("--global requires --agent without an interactive picker; use '--agent github-copilot' or run 'markata-go agent list-agents' for supported values")
+		}
+		target, err := resolveAgentInstallTarget("", "", false)
+		if err != nil {
+			return err
+		}
+		return runAgentWriteCommand(args, target, false, agentInstallName, agentInstallDryRun, agentInstallForce, "install")
+	}
+	detected := detectInstalledAgentTargets()
+	if len(detected) > 0 {
+		outlnf("Detected %d installed agent(s):", len(detected))
+		for _, target := range detected {
+			outlnf("  - %s", target.Name)
+		}
+		outlnf("Install Markata skills for all detected agents? [Y/n]")
+		reader := bufio.NewReader(cmd.InOrStdin())
+		answer, readErr := reader.ReadString('\n')
+		if readErr != nil {
+			if errors.Is(readErr, io.EOF) {
+				return fmt.Errorf("agent setup canceled: input ended before confirmation")
+			}
+			return readErr
+		}
+		switch strings.ToLower(strings.TrimSpace(answer)) {
+		case "", "y", "yes":
+			return installDetectedAgentTargets(args, detected)
+		case "n", "no":
+			// Continue to the existing searchable agent picker.
+		default:
+			return fmt.Errorf("invalid response %q; enter y or n", strings.TrimSpace(answer))
+		}
+	} else {
+		outlnf("No supported installed agents detected; choose an agent manually.")
+	}
+	selected, err = pickInstallAgent(cmd)
+	if err != nil {
+		return err
+	}
+	target, err := normalizeAgentInstallTarget(selected)
 	if err != nil {
 		return err
 	}
 	return runAgentWriteCommand(args, target, agentInstallGlobal, agentInstallName, agentInstallDryRun, agentInstallForce, "install")
+}
+
+func installDetectedAgentTargets(args []string, detected []agentInstallTarget) error {
+	seen := make(map[string]bool)
+	for _, target := range detected {
+		path := target.ProjectPath
+		if agentInstallGlobal {
+			path = target.GlobalPath
+		}
+		if seen[path] {
+			continue
+		}
+		seen[path] = true
+		if err := runAgentWriteCommand(args, target, agentInstallGlobal, agentInstallName, agentInstallDryRun, agentInstallForce, "install"); err != nil {
+			return fmt.Errorf("%s: %w", target.Name, err)
+		}
+	}
+	return nil
+}
+
+// Detection uses agent-specific executables and user configuration, not the
+// universal .agents directory shared by multiple agent implementations.
+func detectInstalledAgentTargets() []agentInstallTarget {
+	binaries := map[string][]string{
+		"opencode":       {"opencode"},
+		"claude-code":    {"claude"},
+		"codex":          {"codex"},
+		"cursor":         {"cursor", "cursor-agent"},
+		"gemini-cli":     {"gemini"},
+		"github-copilot": {"copilot"},
+		"goose":          {"goose"},
+		"cline":          {"cline"},
+		"amp":            {"amp"},
+		"qwen-code":      {"qwen"},
+		"kimi-cli":       {"kimi"},
+		"crush":          {"crush"},
+		"continue":       {"cn"},
+	}
+	home, homeErr := os.UserHomeDir()
+	if homeErr != nil {
+		home = ""
+	}
+	var found []agentInstallTarget
+	for _, target := range supportedAgentTargets {
+		if target.Name == agentDefaultUniversal {
+			continue
+		}
+		present := false
+		for _, binary := range binaries[target.Name] {
+			if _, err := exec.LookPath(binary); err == nil {
+				present = true
+				break
+			}
+		}
+		if !present && home != "" {
+			// Ignore generic/shared paths: they do not identify an agent.
+			if target.GlobalPath != ".agents/skills" && target.GlobalPath != ".config/agents/skills" {
+				_, err := os.Stat(filepath.Join(home, filepath.Dir(target.GlobalPath)))
+				present = err == nil
+			}
+		}
+		if present {
+			found = append(found, target)
+		}
+	}
+	return found
 }
 
 func runAgentListAgentsCommand(cmd *cobra.Command, _ []string) error {
