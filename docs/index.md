@@ -39,4 +39,6 @@ Write Markdown. Give your agent the right context. Publish a site you own.
 
 Markata is still **0.x**. The older `markata-go` command remains compatible. New Go sites should continue to use `markata-go.toml` and `[markata-go]` until the configuration migration is complete.
 
-**Important:** `pip install markata` currently installs the original **Python** project, not this Go program. See [installation](/docs/installation/) for details.
+**PyPI version break:** Current `markata` releases install the Go CLI; older pinned releases remain the original Python implementation. See [installation](/docs/installation/) for details.
+
+If something fails, run `markata triage` or see the [triage guide](/docs/guides/triage/).
