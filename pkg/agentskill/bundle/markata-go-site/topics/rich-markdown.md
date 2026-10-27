@@ -174,3 +174,13 @@ Reference docs in the Markata repository:
 - `docs/guides/markdown-checklists.md`
 - `docs/guides/markdown-chart-fallback.md`
 - `docs/guides/markdown-source-disclosure.md`
+
+### Standalone rendering and Python applications
+
+`markata render --json` reads Markdown from stdin and returns HTML, feature
+signals, and ordered assets without building a site. `--inline-assets` includes
+bundled CSS/JS (including Mermaid and Chart.js). The official Python wheels expose
+`from markata import render, render_async`; use `render_async` in async FastAPI
+handlers and `result.document()` for a complete HTML response. For existing
+layouts, insert the fragment inside `.post-content` and include both asset tag
+fields. See `docs/guides/python-renderer.md` for asset serving and API scope.

@@ -23,12 +23,14 @@ const (
 // MermaidPlugin converts Mermaid code blocks into rendered diagrams.
 // It runs at the render stage (post_render, after markdown conversion).
 type MermaidPlugin struct {
-	config        models.MermaidConfig
-	renderer      mermaidRenderer
-	paletteColors *mermaidPaletteColors // resolved at configure time, nil if no palette
-	assetURLs     map[string]string
-	cache         *buildcache.Cache
-	renderKey     string
+	scriptCollector    func(string) // standalone rendering collects generated scripts as assets
+	escapeClientSource bool
+	config             models.MermaidConfig
+	renderer           mermaidRenderer
+	paletteColors      *mermaidPaletteColors // resolved at configure time, nil if no palette
+	assetURLs          map[string]string
+	cache              *buildcache.Cache
+	renderKey          string
 }
 
 // NewMermaidPlugin creates a new MermaidPlugin with default settings.
@@ -464,6 +466,9 @@ func (p *MermaidPlugin) processPost(post *models.Post) error {
 
 			// For client mode: return as mermaid pre block
 			if mode == mermaidModeClient {
+				if p.escapeClientSource {
+					diagramCode = html.EscapeString(diagramCode)
+				}
 				return `<pre class="mermaid">` + "\n" + diagramCode + "\n</pre>"
 			}
 
@@ -558,6 +563,10 @@ func (p *MermaidPlugin) injectMermaidScript(htmlContent string) string {
 	}
 
 	// Append the script to the end of the content
+	if p.scriptCollector != nil {
+		p.scriptCollector(script)
+		return htmlContent
+	}
 	return htmlContent + script
 }
 
