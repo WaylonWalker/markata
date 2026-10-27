@@ -34,7 +34,23 @@ go install github.com/WaylonWalker/markata/cmd/markata@main
 markata version
 ```
 
-**Looking for uv, uvx, or pip?** The `markata` package on PyPI currently installs the [original Python project](https://github.com/WaylonWalker/markata-py), **not this Go implementation**. See [installation details](docs/installation.md).
+**uv / uvx (PyPI)**
+
+```sh
+uv tool install markata
+# Or run without a persistent installation:
+uvx markata --help
+```
+
+**pip / pipx (PyPI)**
+
+```sh
+pip install markata
+# Or install as an isolated CLI:
+pipx install markata
+```
+
+The PyPI package now distributes the Go implementation following a version break from the [original Python Markata](https://github.com/WaylonWalker/markata-py). See [installation details](docs/installation.md).
 
 ## Quick start
 
