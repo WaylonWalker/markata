@@ -53,6 +53,11 @@ starts the accessible data disclosure collapsed, overriding the site
 All three metadata keys are stripped before Chart.js initialization.
 Short horizontal bar figures (up to four labels, `options.indexAxis: "y"`)
 automatically use a compact canvas; other charts retain normal sizing.
+Horizontal `bar` charts also default to rounded bars (`borderRadius: 6`,
+`borderSkipped: false`) with `maxBarThickness: 24`. Set these values in
+`options.datasets.bar`, `options.elements.bar`, or on individual datasets to
+customize the chart; explicit Chart.js styling takes precedence. Vertical
+bars and other chart types are unchanged.
 
 These examples use **illustrative values** and are not user measurements.
 
