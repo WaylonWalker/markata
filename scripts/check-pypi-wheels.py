@@ -44,7 +44,7 @@ def check_wheels(folder: Path) -> None:
             entrypoint_path = f"{NAME}-{VERSION}.dist-info/entry_points.txt"
             wheel_data_path = f"{NAME}-{VERSION}.dist-info/WHEEL"
             binary_path = f"{NAME}/bin/{binary_name}"
-            for entry in (metadata_path, entrypoint_path, wheel_data_path, binary_path):
+            for entry in (metadata_path, entrypoint_path, wheel_data_path, binary_path, "markata/rendering.py"):
                 if entry not in filenames:
                     raise AssertionError(f"{wheel.name} missing {entry}")
             metadata = archive.read(metadata_path).decode()

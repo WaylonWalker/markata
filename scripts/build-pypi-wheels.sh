@@ -45,3 +45,5 @@ go-to-wheel . \
 
 # Build failures on individual targets are warnings in go-to-wheel 0.2;
 # scripts/check-pypi-wheels.py must validate the complete target matrix.
+
+python scripts/add-python-renderer-to-wheels.py "${output}"

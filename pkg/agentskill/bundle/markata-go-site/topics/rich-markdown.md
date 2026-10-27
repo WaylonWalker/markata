@@ -179,3 +179,12 @@ Reference docs in the Markata repository:
 
 Rail card grids stay connected when responsive: horizontal above 1000px, vertical
 with ring ticks below 1000px. Use the rail modifier instead of custom connector CSS.
+### Standalone rendering and Python applications
+
+`markata render --json` reads Markdown from stdin and returns HTML, feature
+signals, and ordered assets without building a site. `--inline-assets` includes
+bundled CSS/JS (including Mermaid and Chart.js). The official Python wheels expose
+`from markata import render, render_async`; use `render_async` in async FastAPI
+handlers and `result.document()` for a complete HTML response. For existing
+layouts, insert the fragment inside `.post-content` and include both asset tag
+fields. See `docs/guides/python-renderer.md` for asset serving and API scope.

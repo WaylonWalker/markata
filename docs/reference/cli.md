@@ -2381,3 +2381,17 @@ Use `--json` to obtain the full list of resulting commits. See
 [Editorial authoring](../../guides/editorial-authoring/) and
 [Editorial history](../../guides/editorial-history/) for ownership rules,
 primary author configuration, and the built-site comparison view.
+
+## Render Markdown without a site
+
+```bash
+printf '# Hello\n' | markata render
+printf '# Hello\n' | markata render --json --inline-assets
+```
+
+`render` reads stdin. `--json` returns the HTML fragment, feature signals and
+ordered CSS/JS assets. `--inline-assets` embeds all bundled assets, including
+Mermaid and Chart.js libraries, into the returned asset tags. `--asset-base`
+sets the linked asset URL prefix (default `/markata-assets`). `--unsafe` permits
+raw authored HTML for trusted content. No site build or configuration is needed.
+See [Python and FastAPI rendering](/docs/guides/python-renderer/).
