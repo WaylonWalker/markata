@@ -156,6 +156,41 @@
       "prompt": "I have an analytics page showing 130 posts, 700000 words, and 210 code blocks. Make one bar chart comparing these site totals.",
       "expected_output": "Recognizes that posts, words and code blocks are incompatible units, and declines the misleading shared-axis bar chart. Recommends md-stat KPIs or separate meaningful same-unit charts, preserves exact counts, and explains the visualization choice without fabricating measurements.",
       "files": []
+    },
+    {
+      "id": 27,
+      "prompt": "Visualize this session. We fixed a cache bug, the targeted test passed, and the documentation review remains open. There is an existing Markata site here. Make the result available for me to read.",
+      "expected_output": "Reads topics/visualize-session.md, creates a composed visual Markdown post using only the supplied session evidence, distinguishes tested work from pending review, preserves publication flags, serves on loopback or reuses the correct site server, checks the exact post URL and its content, attempts browser opening, and reports the artifact, URL, browser result, and server handle. Does not publish or deploy.",
+      "files": [],
+      "expectations": [
+        "The post uses native visual containers and distinguishes the passed targeted test from pending documentation review.",
+        "The workflow selects the correct site and plans a persistent loopback preview without changing publication flags.",
+        "The workflow checks the exact post URL and intended content before attempting browser opening.",
+        "The handoff includes the Markdown path, preview URL, browser-open result, and server handle or stop instruction."
+      ]
+    },
+    {
+      "id": 28,
+      "prompt": "Visualize this: our release process is draft, review, approval. This Python repository is not a Markata site. I want to read the visual post in my browser, but keep preview configuration and generated output out of this repository.",
+      "expected_output": "Uses the supplied process rather than unrelated session history, authors native visual Markdown, creates any required Markata preview scaffolding in an isolated temporary directory, starts a persistent loopback server without disturbing other services, checks the exact post URL and intended content, and attempts browser opening. Reports limitations accurately and retains the preview plus authored Markdown for the user.",
+      "files": [],
+      "expectations": [
+        "The post uses native visual containers for the supplied draft, review, approval process.",
+        "The workflow keeps preview configuration, output, and cache outside the unrelated repository.",
+        "The workflow plans a persistent loopback preview and checks the exact post URL and intended content before opening it.",
+        "The handoff preserves the authored Markdown and preview while distinguishing planned actions from observed results."
+      ]
+    },
+    {
+      "id": 29,
+      "prompt": "Make a visual post from this session: a cache fix passed its targeted test, but docs review is pending. Source only. Create exactly one Markdown file in this non-Markata repository. Do not serve it or open a browser.",
+      "expected_output": "Creates exactly one composed Markata Markdown artifact, separates tested work from pending review, and honors source-only scope. Does not create site configuration, preview scaffolding, generated output, a server, or a browser-open request. Explains that rich styling requires Markata.",
+      "files": [],
+      "expectations": [
+        "The post uses native visual containers and distinguishes the passed targeted test from pending documentation review.",
+        "The workflow delivers exactly one Markdown artifact without site scaffolding, server startup, or browser opening.",
+        "The handoff explains that rich styling requires Markata and does not claim a browser preview occurred."
+      ]
     }
   ]
 }

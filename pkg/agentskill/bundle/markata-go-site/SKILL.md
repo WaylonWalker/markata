@@ -1,6 +1,6 @@
 ---
 name: markata-go-site
-description: Create visually compelling, static-first Markdown documents with purposeful charts (bar, line, area, stacked, doughnut, scatter), overview cards, roads, decision comparisons, supporting feature rows, typography and readable prose. Trigger for visual, visualize, visualization, visual design, visual post, chart, charts, plot, graph, trend, data visualization, analytics, dashboard, scorecard, roadmap, timeline, flowchart, diagram, or progress tracker. Select charts by data question and use real Chart.js fenced JSON with accessible no-JS table fallbacks; preserve visual storytelling and breathing room. Supports Markata site work and single-file rich Markdown authoring in other repositories, themes, templates, configuration, and builds.
+description: Author static-first visual Markdown with purposeful charts, cards, roads, comparisons, and readable prose. Use for "visualize this session", "visualize this", or "make a visual post" to create a visual post, serve a local preview, and open it in the browser, unless the user requests source only. Also use for visual design, data visualization, charts, dashboards, scorecards, roadmaps, timelines, diagrams, flowcharts, and progress trackers. Select charts by data question and use real Chart.js fenced JSON with accessible no-JS table fallbacks. Supports Markata site configuration, frontmatter, themes, templates, builds, deployment, performance, and plugin decisions, plus single-file rich Markdown in other repositories.
 ---
 
 This skill helps an agent work inside a markata-go site repository without needing the markata-go source tree.
@@ -12,6 +12,13 @@ inside an unrelated repository, such as a Python project's `WORKFLOW.md`.
 Do not mistake "no `markata-go.toml` here" for "rich Markata Markdown is
 unavailable for authoring". Rendering requires Markata, but writing source
 containers does not.
+
+## Visualize: create, serve, open
+
+For **"visualize this session"**, **"visualize this"**, or **"make a visual post"**,
+read `topics/visualize-session.md` for the create, serve, and open workflow.
+An explicit source-only or single-file request takes precedence over automatic preview.
+Ordinary chart, diagram, and styling requests use the relevant authoring topics without automatically starting a server.
 
 ## Start Here
 
