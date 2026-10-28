@@ -1,14 +1,22 @@
 name: Go Markata PyPI wheels
 
-# PRs build and inspect wheels without secrets. Publishing only happens on an
-# explicit main-branch workflow dispatch, confirmed by a human, after PyPI
-# trusts this exact workflow for the existing "markata" project.
+# PRs build and inspect wheels without secrets. Stable publishing requires
+# explicit main-branch dispatch and confirmation. Only schedule runs on main
+# can publish nightlies, using a separate PyPI trusted publishing environment.
 on:
+  # 2 AM Chicago time, including DST transitions, on the default branch.
+  # Nightlies publish only after all release and wheel verification succeeds.
+  schedule:
+    - cron: '0 2 * * *'
+      timezone: 'America/Chicago'
   pull_request:
     paths:
       - '.github/workflows/pypi-go-wheels.yml'
       - 'scripts/build-pypi-wheels.sh'
       - 'scripts/check-pypi-wheels.py'
+      - 'scripts/nightly-release-version.py'
+      - 'scripts/test_nightly_release_version.py'
+      - '.goreleaser.yml'
       - 'cmd/markata/**'
       - 'cmd/markata-go/**'
       - 'go.mod'
@@ -31,19 +39,78 @@ on:
         type: string
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  # Never cancel a publishing run after a new PR/dispatch starts.
+  cancel-in-progress: false
 
 permissions:
   contents: read
 
 jobs:
+  prepare-nightly:
+    name: Compute immutable nightly identity
+    runs-on: ubuntu-latest
+    outputs:
+      github_tag: ${{ steps.version.outputs.github_tag }}
+      pypi_version: ${{ steps.version.outputs.pypi_version }}
+      goreleaser_version: ${{ steps.version.outputs.goreleaser_version }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Check nightly version calculation on PR and schedule
+        run: python3 -m unittest discover -s scripts -p 'test_nightly_release_version.py' -v
+      - name: Preview nightly identity without publishing
+        if: github.event_name == 'pull_request'
+        run: python3 scripts/nightly-release-version.py --date 20261022
+      - name: Calculate date-stamped 0.x prerelease from latest stable tag
+        id: version
+        if: github.event_name == 'schedule' && github.ref == 'refs/heads/main'
+        run: python3 scripts/nightly-release-version.py --github-output "$GITHUB_OUTPUT"
+      - name: Refuse already-published nightly versions
+        if: github.event_name == 'schedule' && github.ref == 'refs/heads/main'
+        env:
+          GITHUB_RELEASE_TAG: ${{ steps.version.outputs.github_tag }}
+          PYPI_VERSION: ${{ steps.version.outputs.pypi_version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          status=0
+          git ls-remote --exit-code --tags origin "refs/tags/${GITHUB_RELEASE_TAG}" >/dev/null || status=$?
+          if [[ "${status}" -eq 0 ]]; then
+            echo "Nightly Git tag already exists: ${GITHUB_RELEASE_TAG}" >&2
+            exit 1
+          elif [[ "${status}" -ne 2 ]]; then
+            echo "Unable to verify nightly tag availability (exit ${status})" >&2
+            exit 1
+          fi
+          python3 - <<'PY'
+          import os
+          import urllib.error
+          import urllib.request
+
+          version = os.environ["PYPI_VERSION"]
+          request = urllib.request.Request(
+              f"https://pypi.org/pypi/markata/{version}/json",
+              headers={"User-Agent": "markata-nightly-release-preflight"},
+          )
+          try:
+              with urllib.request.urlopen(request, timeout=15):
+                  raise SystemExit(f"PyPI version already exists: {version}")
+          except urllib.error.HTTPError as exc:
+              if exc.code != 404:
+                  raise
+          PY
+
   wheels:
     name: Build and verify eight Go wheels
+    needs: prepare-nightly
+    if: github.event_name != 'schedule' || needs.prepare-nightly.outputs.pypi_version != ''
     runs-on: ubuntu-latest
     timeout-minutes: 50
     env:
-      MARKATA_WHEEL_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.version || '0.14.0.dev0' }}
+      MARKATA_WHEEL_VERSION: ${{ github.event_name == 'schedule' && needs.prepare-nightly.outputs.pypi_version || github.event_name == 'workflow_dispatch' && inputs.version || '0.14.0.dev0' }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -81,14 +148,14 @@ jobs:
 
   smoke-platforms:
     name: Install Go CLI on ${{ matrix.os }}
-    needs: wheels
+    needs: [prepare-nightly, wheels]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [macos-latest, windows-latest]
     env:
-      MARKATA_WHEEL_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.version || '0.14.0.dev0' }}
+      MARKATA_WHEEL_VERSION: ${{ github.event_name == 'schedule' && needs.prepare-nightly.outputs.pypi_version || github.event_name == 'workflow_dispatch' && inputs.version || '0.14.0.dev0' }}
     steps:
       - uses: actions/setup-python@v7
         with:
@@ -133,6 +200,122 @@ jobs:
           name: markata-go-pypi-wheels
           path: dist/
       - name: Publish verified wheels using PyPI trusted publisher OIDC
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/
+
+  nightly-snapshot:
+    name: Signed cross-platform nightly snapshot (no direct publish)
+    if: github.event_name == 'schedule' && github.ref == 'refs/heads/main'
+    needs: prepare-nightly
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      MARKATA_SNAPSHOT_VERSION: ${{ needs.prepare-nightly.outputs.goreleaser_version }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-go@v7
+        with:
+          go-version: '1.26'
+          cache: true
+      - name: Full Go race suite
+        run: go test -race -timeout=30m ./...
+      - name: Check GoReleaser configuration
+        uses: goreleaser/goreleaser-action@v7
+        with:
+          distribution: goreleaser
+          version: '~> v2'
+          args: check
+      - name: Install Syft
+        uses: anchore/sbom-action/download-syft@v0
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3
+      - name: Build signed snapshot, with version matching PyPI
+        uses: goreleaser/goreleaser-action@v7
+        with:
+          distribution: goreleaser
+          version: '~> v2'
+          args: release --snapshot --clean
+      - name: Validate archives, SBOMs, checksums and signature
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s dist/checksums.txt
+          test -s dist/checksums.txt.sig
+          test -s dist/checksums.txt.pem
+          test -s "dist/markata_${MARKATA_SNAPSHOT_VERSION}_linux_x86_64.tar.gz"
+          test -s "dist/markata-go_${MARKATA_SNAPSHOT_VERSION}_windows_x86_64.zip"
+          shopt -s nullglob
+          sboms=(dist/*.sbom.json)
+          (( ${#sboms[@]} >= 16 )) || { echo "Expected 16 platform SBOMs" >&2; exit 1; }
+      - uses: actions/upload-artifact@v7
+        with:
+          name: nightly-release-assets
+          path: |
+            dist/*.tar.gz
+            dist/*.zip
+            dist/*.sbom.json
+            dist/checksums.txt*
+          if-no-files-found: error
+          retention-days: 7
+
+  publish-nightly-github:
+    name: Publish immutable GitHub nightly prerelease
+    if: github.event_name == 'schedule' && github.ref == 'refs/heads/main'
+    needs: [prepare-nightly, wheels, smoke-platforms, nightly-snapshot]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: nightly-release-assets
+          path: dist/
+      - name: Publish date-stamped prerelease only if tag is new
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NIGHTLY_TAG: ${{ needs.prepare-nightly.outputs.github_tag }}
+          NIGHTLY_VERSION: ${{ needs.prepare-nightly.outputs.goreleaser_version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view "${NIGHTLY_TAG}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+            echo "Refusing to overwrite release: ${NIGHTLY_TAG}" >&2
+            exit 1
+          fi
+          shopt -s nullglob
+          assets=(dist/*.tar.gz dist/*.zip dist/*.sbom.json dist/checksums.txt dist/checksums.txt.sig dist/checksums.txt.pem)
+          (( ${#assets[@]} >= 35 )) || { echo "Incomplete nightly release asset set" >&2; exit 1; }
+          gh release create "${NIGHTLY_TAG}" "${assets[@]}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --target "${GITHUB_SHA}" \
+            --title "Markata nightly ${NIGHTLY_VERSION}" \
+            --notes "Nightly prerelease from commit ${GITHUB_SHA}. Verified wheels and signed Go archives. PyPI distribution: markata ${NIGHTLY_VERSION/\-dev./.dev}. This is not a stable release." \
+            --prerelease
+
+  publish-nightly-pypi:
+    name: Publish tested nightly wheels to PyPI
+    if: github.event_name == 'schedule' && github.ref == 'refs/heads/main'
+    needs: [prepare-nightly, wheels, smoke-platforms, nightly-snapshot, publish-nightly-github]
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi-nightly
+      url: https://pypi.org/project/markata/
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: markata-go-pypi-wheels
+          path: dist/
+      - name: Publish eight verified nightly wheels via PyPI OIDC
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: dist/
