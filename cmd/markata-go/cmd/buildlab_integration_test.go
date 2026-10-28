@@ -238,6 +238,9 @@ func TestBuildLab_ConfigChangeRebuildsFeedsListing(t *testing.T) {
 		t.Fatalf("Build Lab run error = %v", runErr)
 	}
 	if result.Verdict != buildLabPassVerdict {
+		for _, checkpoint := range result.Checkpoints {
+			t.Logf("Build Lab operation %d (%s): correctness = %+v; diagnostics = %+v", checkpoint.OperationIndex, checkpoint.Operation, checkpoint.Correctness, checkpoint.Diagnostics)
+		}
 		t.Fatalf("Build Lab verdict = %s, want %s; diagnostics = %+v", result.Verdict, buildLabPassVerdict, result.Diagnostics)
 	}
 	if len(result.Checkpoints) != 2 {
