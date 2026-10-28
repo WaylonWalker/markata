@@ -50,7 +50,7 @@ func TestReconcileFinalCSSAssetsUsesPublishedBytes(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(out, "css", "components.css"), final, 0o600); err != nil {
 		t.Fatal(err)
 	}
-	html := `<link rel="stylesheet" href="/css/components.` + oldHash + `.css"><main class="new"></main>`
+	html := `<link rel="stylesheet" href="/css/components.` + oldHash + `.css"><main class="new"><p>css/components.` + oldHash + `.css</p><pre><code>&lt;link href="/css/components.` + oldHash + `.css"&gt;</code></pre><!-- css/components.` + oldHash + `.css --></main>`
 	if err := os.WriteFile(filepath.Join(out, "index.html"), []byte(html), 0o600); err != nil {
 		t.Fatal(err)
 	}
@@ -73,6 +73,12 @@ func TestReconcileFinalCSSAssetsUsesPublishedBytes(t *testing.T) {
 	}
 	if !strings.Contains(string(rendered), "/css/components."+newHash+".css") {
 		t.Fatalf("stale asset reference: %s", rendered)
+	}
+	// Literal authored content must not be rewritten to the new asset URL.
+	if !strings.Contains(string(rendered), "<p>css/components."+oldHash+".css</p>") ||
+		!strings.Contains(string(rendered), `&lt;link href="/css/components.`+oldHash+`.css"&gt;`) ||
+		!strings.Contains(string(rendered), "<!-- css/components."+oldHash+".css -->") {
+		t.Fatalf("authored content was modified: %s", rendered)
 	}
 	plugin := NewStaticAssetsPlugin()
 	if err := plugin.createHashedCopiesWithRoot(m, out, root); err != nil {
@@ -99,7 +105,7 @@ func TestReconcileFinalCSSAssetsUsesPublishedBytes(t *testing.T) {
 
 	// Incremental builds can restore HTML referencing a prior final hash.
 	// The reconciliation must not assume the source Configure hash appears.
-	cachedHTML := `<link href="/css/components.deadbeef.css" rel="stylesheet">`
+	cachedHTML := `<link href="/css/components.deadbeef.css" rel="stylesheet"><p>css/components.deadbeef.css</p>`
 	if err := os.WriteFile(filepath.Join(out, "cached.html"), []byte(cachedHTML), 0o600); err != nil {
 		t.Fatal(err)
 	}
@@ -110,7 +116,8 @@ func TestReconcileFinalCSSAssetsUsesPublishedBytes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if strings.Contains(string(cached), "deadbeef") || !strings.Contains(string(cached), "components."+newHash+".css") {
+	if !strings.Contains(string(cached), `<link href="/css/components.`+newHash+`.css" rel="stylesheet">`) ||
+		!strings.Contains(string(cached), "<p>css/components.deadbeef.css</p>") {
 		t.Fatalf("cached HTML retains stale CSS reference: %s", cached)
 	}
 }
