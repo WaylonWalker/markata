@@ -16,6 +16,7 @@ import (
 	"github.com/WaylonWalker/markata/pkg/lifecycle"
 	"github.com/WaylonWalker/markata/pkg/templates"
 	"golang.org/x/net/html"
+	"golang.org/x/net/html/atom"
 )
 
 // A versioned asset is immutable. Previous releases may still refer to it,
@@ -51,7 +52,7 @@ func rewriteCSSLinkReferences(input []byte, changes []finalCSSReplacement) ([]by
 			continue
 		}
 		token := tokenizer.Token()
-		if token.Data != "link" {
+		if token.DataAtom != atom.Link {
 			output.Write(raw)
 			continue
 		}
