@@ -1,8 +1,11 @@
 package plugins
 
 import (
+	"bytes"
 	"crypto/sha256"
+	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -12,6 +15,7 @@ import (
 
 	"github.com/WaylonWalker/markata/pkg/lifecycle"
 	"github.com/WaylonWalker/markata/pkg/templates"
+	"golang.org/x/net/html"
 )
 
 // A versioned asset is immutable. Previous releases may still refer to it,
@@ -22,13 +26,59 @@ func isVersionedCSSFile(path string) bool {
 	return versionedCSSFilename.MatchString(filepath.Base(path))
 }
 
+type finalCSSReplacement struct {
+	matcher     *regexp.Regexp
+	destination string
+}
+
+// rewriteCSSLinkReferences only edits actual <link href> attributes. Scanning
+// the HTML as tokens preserves authored prose, code examples, and comments
+// that happen to mention an older versioned CSS filename.
+func rewriteCSSLinkReferences(input []byte, changes []finalCSSReplacement) ([]byte, error) {
+	tokenizer := html.NewTokenizer(bytes.NewReader(input))
+	var output bytes.Buffer
+	for {
+		kind := tokenizer.Next()
+		if kind == html.ErrorToken {
+			if errors.Is(tokenizer.Err(), io.EOF) {
+				return output.Bytes(), nil
+			}
+			return nil, fmt.Errorf("tokenize HTML for CSS references: %w", tokenizer.Err())
+		}
+		raw := tokenizer.Raw()
+		if kind != html.StartTagToken && kind != html.SelfClosingTagToken {
+			output.Write(raw)
+			continue
+		}
+		token := tokenizer.Token()
+		if token.Data != "link" {
+			output.Write(raw)
+			continue
+		}
+		changed := false
+		for i := range token.Attr {
+			if token.Attr[i].Key != "href" {
+				continue
+			}
+			for _, change := range changes {
+				updated := change.matcher.ReplaceAllString(token.Attr[i].Val, change.destination)
+				if updated != token.Attr[i].Val {
+					token.Attr[i].Val = updated
+					changed = true
+				}
+			}
+		}
+		if changed {
+			output.WriteString(token.String())
+		} else {
+			output.Write(raw)
+		}
+	}
+}
+
 // reconcileFinalCSSAssets reconciles final published CSS with already-rendered
 // HTML after purge and minification, including HTML restored from build cache.
 func reconcileFinalCSSAssets(m *lifecycle.Manager, outputFS *os.Root, outputDir string) error {
-	type replacement struct {
-		matcher     *regexp.Regexp
-		destination string
-	}
 	hashes := m.AssetHashes()
 	paths := make([]string, 0, len(hashes))
 	for path := range hashes {
@@ -37,7 +87,7 @@ func reconcileFinalCSSAssets(m *lifecycle.Manager, outputFS *os.Root, outputDir 
 		}
 	}
 	sort.Strings(paths)
-	changes := make([]replacement, 0, len(paths))
+	changes := make([]finalCSSReplacement, 0, len(paths))
 	finalHashes := make(map[string]string)
 	for _, path := range paths {
 		relative, err := outputRelativePath(outputDir, filepath.Join(outputDir, path))
@@ -58,7 +108,7 @@ func reconcileFinalCSSAssets(m *lifecycle.Manager, outputFS *os.Root, outputDir 
 		if err != nil {
 			return err
 		}
-		changes = append(changes, replacement{matcher: matcher, destination: base + "." + hash + ext})
+		changes = append(changes, finalCSSReplacement{matcher: matcher, destination: base + "." + hash + ext})
 		if hash != hashes[path] {
 			finalHashes[path] = hash
 		}
@@ -88,15 +138,14 @@ func reconcileFinalCSSAssets(m *lifecycle.Manager, outputFS *os.Root, outputDir 
 		if err != nil {
 			return err
 		}
-		before := string(data)
-		after := before
-		for _, change := range changes {
-			after = change.matcher.ReplaceAllString(after, change.destination)
+		after, err := rewriteCSSLinkReferences(data, changes)
+		if err != nil {
+			return fmt.Errorf("reconcile CSS links in %s: %w", relative, err)
 		}
-		if before == after {
+		if bytes.Equal(data, after) {
 			return nil
 		}
-		return outputFS.WriteFile(relative, []byte(after), 0o644)
+		return outputFS.WriteFile(relative, after, 0o644)
 	})
 	if err != nil {
 		return fmt.Errorf("updating HTML CSS URLs: %w", err)
