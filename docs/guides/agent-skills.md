@@ -107,6 +107,41 @@ new CSS, templates, or JS. The built-in icon syntax is documented under
 
 Keep a human in the loop for publishing and deployment. Markata's skill guides agents through frontmatter, themes, feed patterns, templates, site builds, and when **not** to create a plugin.
 
+## Visualize a session or topic
+
+After you install the skill, ask your agent:
+
+> Visualize this session.
+
+The agent creates a visual Markdown post from the conversation's work, decisions, and unresolved items.
+It serves a local preview, checks the exact post URL, and attempts to open that URL in your browser.
+The handoff includes the Markdown path, preview URL, browser-open result, and server handle or stop instruction.
+
+For supplied material, use either phrase:
+
+> Visualize this: our release process starts with a draft, then review, then approval.
+
+> Make a visual post from these notes.
+
+These are natural-language instructions for the agent, not Markata CLI commands.
+Ordinary chart, diagram, or styling requests do not automatically start a preview server.
+
+For Markdown without a preview, state that constraint:
+
+> Visualize this session. Source only: create exactly one Markdown file.
+
+The agent then creates the file without a server or preview scaffolding.
+Outside a Markata site, a full preview uses an isolated temporary site.
+The agent keeps that scaffolding outside your repository.
+
+Local preview does not authorize public publication or deployment.
+The agent preserves publication flags and excludes secrets.
+The agent reports browser or persistent-server limitations instead of claiming that the page opened.
+On a remote machine, the preview can require port forwarding to reach your browser.
+
+The workflow lives in the bundled skill's `topics/visualize-session.md`.
+For an existing installation, use `markata agent update` after you install a binary with the updated skill.
+
 ## Fixes
 
 - If the wrong harness is detected, pass `--agent` explicitly.

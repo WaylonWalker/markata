@@ -74,6 +74,31 @@ The bundled skill MUST also include a starter eval set that covers at least:
 - build or deploy debugging
 - deciding whether work belongs in config, templates, feeds, CSS, or plugins
 
+## Visualize Workflow
+
+The existing `markata-go-site` skill includes a focused `topics/visualize-session.md` branch.
+Its description names these natural-language triggers:
+`visualize this session`, `visualize this`, and `make a visual post`.
+These phrases are agent instructions, not new CLI commands.
+
+The workflow creates an evidence-backed visual Markdown post, serves a local preview,
+checks the exact post URL, and attempts to open that URL in the user's browser.
+Session posts distinguish completed work, decisions, and unresolved work.
+The workflow excludes secrets and unrequested private material.
+
+An explicit source-only or single-file request takes precedence over automatic preview.
+Ordinary chart, diagram, and styling requests do not automatically start this workflow.
+Outside a Markata site, preview scaffolding stays in an isolated temporary directory.
+The workflow preserves existing publication flags and requires separate authorization for public publishing.
+
+Agents reuse only a server that serves the intended site and output.
+New preview servers bind to loopback and remain available for the user through the agent's supported persistent-process mechanism.
+Agents report process-lifetime or browser-opening limitations instead of claiming success.
+Completion requires the Markdown artifact, a successful response for the intended post,
+and an attempted browser open, or an explicit report of the blocked stage.
+
+Regression prompts cover session evidence, supplied topics, and explicit source-only requests.
+
 ## Skill Maintenance Requirement
 
 The bundled site skill is part of markata-go's user-facing product surface for coding agents.
