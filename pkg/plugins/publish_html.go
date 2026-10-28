@@ -185,6 +185,16 @@ func postFormatContentPath(outputDir, slug, ext string) string {
 	return filepath.Join(outputDir, slug+"."+ext)
 }
 
+// appendExpectedFormatOutputs tracks the canonical format file and the
+// non-root redirect page emitted for that format.
+func appendExpectedFormatOutputs(paths []string, outputDir, slug, ext string) []string {
+	paths = append(paths, postFormatContentPath(outputDir, slug, ext))
+	if slug != "" {
+		paths = append(paths, filepath.Join(outputDir, slug, "index."+ext, "index.html"))
+	}
+	return paths
+}
+
 func (p *PublishHTMLPlugin) expectedPostOutputsExist(post *models.Post, config *lifecycle.Config) bool {
 	formats := resolvePostFormats(post, config)
 	expected := make([]string, 0, 5)
@@ -197,25 +207,13 @@ func (p *PublishHTMLPlugin) expectedPostOutputsExist(post *models.Post, config *
 			expected = append(expected, filepath.Join(config.OutputDir, post.Slug, "index.html"))
 		}
 		if formats.Markdown {
-			expected = append(expected, postFormatContentPath(config.OutputDir, post.Slug, "md"))
-			// Root formats are files, not redirect directories.
-			if post.Slug != "" {
-				expected = append(expected, filepath.Join(config.OutputDir, post.Slug, "index.md", "index.html"))
-			}
+			expected = appendExpectedFormatOutputs(expected, config.OutputDir, post.Slug, "md")
 		}
 		if formats.Text {
-			expected = append(expected, postFormatContentPath(config.OutputDir, post.Slug, "txt"))
-			// Root formats are files, not redirect directories.
-			if post.Slug != "" {
-				expected = append(expected, filepath.Join(config.OutputDir, post.Slug, "index.txt", "index.html"))
-			}
+			expected = appendExpectedFormatOutputs(expected, config.OutputDir, post.Slug, "txt")
 		}
 		if formats.ANSI {
-			expected = append(expected, postFormatContentPath(config.OutputDir, post.Slug, "ansi"))
-			// Root formats are files, not redirect directories.
-			if post.Slug != "" {
-				expected = append(expected, filepath.Join(config.OutputDir, post.Slug, "index.ansi", "index.html"))
-			}
+			expected = appendExpectedFormatOutputs(expected, config.OutputDir, post.Slug, "ansi")
 		}
 		if formats.OG {
 			expected = append(expected, filepath.Join(config.OutputDir, post.Slug, "og", "index.html"))
