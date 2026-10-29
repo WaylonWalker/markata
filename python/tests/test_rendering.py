@@ -25,7 +25,7 @@ class RenderingTest(unittest.TestCase):
                 result = rendering.render('hello $(echo injected)', inline_assets=True)
         self.assertEqual(run.call_args.kwargs['input'], b'hello $(echo injected)')
         self.assertNotIn('shell', run.call_args.kwargs)
-        command.assert_called_once_with(True, '/markata-assets', False)
+        command.assert_called_once_with(True, '/markata-assets', False, None, None)
         self.assertIn('&lt;unsafe&gt;', result.document('<unsafe>'))
         self.assertIn('lang="&quot;"', result.document(lang='"'))
 
@@ -40,6 +40,30 @@ class RenderingTest(unittest.TestCase):
             with patch.object(subprocess, 'run', side_effect=subprocess.TimeoutExpired('renderer', 1)):
                 with self.assertRaises(rendering.RenderError):
                     rendering.render('hello')
+
+    def test_render_profile_and_config_path_are_forwarded(self):
+        with patch.object(rendering, '_command', return_value=['renderer']) as command:
+            with patch.object(subprocess, 'run', return_value=subprocess.CompletedProcess([], 0, json.dumps(PAYLOAD).encode(), b'')):
+                rendered = rendering.render('# test', profile='offline-interactive')
+                self.assertEqual(rendered.render_profile, 'web')  # Legacy v1 responses omit this optional field.
+                command.assert_called_once_with(False, '/markata-assets', False, 'offline-interactive', None)
+
+        with patch.object(rendering, '_command', return_value=['renderer']) as command:
+            with patch.object(subprocess, 'run', return_value=subprocess.CompletedProcess([], 0, json.dumps(PAYLOAD).encode(), b'')):
+                rendering.render('# test', config_path='site.toml')
+                command.assert_called_once_with(False, '/markata-assets', False, None, 'site.toml')
+
+    def test_profile_cli_flags_are_explicit(self):
+        with tempfile.TemporaryDirectory() as folder:
+            binary = Path(folder) / 'bin/markata'
+            binary.parent.mkdir()
+            binary.write_bytes(b'binary')
+            binary.chmod(0o755)
+            with patch.object(rendering, '__file__', str(Path(folder) / 'rendering.py')):
+                cmd = rendering._command(False, '/assets', False, 'offline-interactive', 'site.toml')
+            self.assertIn('--site-render-profile', cmd)
+            self.assertEqual(cmd[-4:], ['--site-render-profile', '--profile', 'offline-interactive'])
+            self.assertIn('site.toml', cmd)
 
     def test_missing_binary_is_actionable(self):
         with patch.object(rendering.Path, 'is_file', return_value=False):
