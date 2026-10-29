@@ -2,6 +2,8 @@ package plugins
 
 import (
 	"fmt"
+	"errors"
+	"io"
 	"net/url"
 	"regexp"
 	"strings"
@@ -74,7 +76,7 @@ func checkStandaloneOfflineResources(result *StandaloneResult) error {
 	for {
 		kind := tokenizer.Next()
 		if kind == xhtml.ErrorToken {
-			if tokenizer.Err() != nil && tokenizer.Err().Error() != "EOF" {
+			if tokenizer.Err() != nil && !errors.Is(tokenizer.Err(), io.EOF) {
 				return fmt.Errorf("offline-interactive: parse generated HTML: %w", tokenizer.Err())
 			}
 			return nil
