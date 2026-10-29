@@ -40,3 +40,17 @@ Appearance updates do not re-render Markdown. The server does not store drafts.
 The demo binds to 127.0.0.1 by default. It rejects cross-origin render requests
 and non-JSON content types. It has HTTP timeouts and graceful shutdown.
 The handler is reusable by a future builder; it does not depend on CLI globals.
+
+
+## Integration benchmark
+
+The benchmark reuses the seven Python-reference fixture files without changing
+source bytes. It records fixture and binary hashes, raw samples, environment,
+and source revisions. Initial and fragment cache misses are separate from
+repeated cached fragments. A separate unmeasured render invalidates the one-entry
+cache before each miss sample; every measured response validates its cache flag.
+Each mode excludes two warm-up calls and measures fifteen calls by default.
+HTTP timing excludes JSON encoding/decoding, binary startup, and asset requests.
+Reports identify linked Go assets and inline Python assets as different transport
+policies. Comparisons against the stored Python report require matching fixture
+hashes and identify the measurements as separate runs on a shared workstation.

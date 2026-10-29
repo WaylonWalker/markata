@@ -119,3 +119,9 @@ uv run --with playwright python python/test_go_editor_browser.py -v
 
 Set `MARKATA_TEST_CHROMIUM` to your Chromium executable.
 The tests check retained stylesheets, fragment responses, conditional styles, charts, and diagrams.
+
+
+## Benchmark the server
+
+The [integration benchmark guide](/docs/guides/renderer-integration-benchmarks/#go-server-workbench) compares seven existing fixtures with the Python reference.
+It separates initial renders, uncached edits, and cached edits. Raw samples and reproduction commands are included.

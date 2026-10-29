@@ -1,0 +1,27 @@
+goos: linux
+goarch: amd64
+pkg: github.com/WaylonWalker/markata/pkg/plugins
+cpu: AMD Ryzen 5 3600 6-Core Processor
+BenchmarkRenderStandaloneFixtures/post-001.md-12         	      69	   3048358 ns/op	   0.50 MB/s	 2286751 B/op	   12438 allocs/op
+BenchmarkRenderStandaloneFixtures/post-001.md-12         	      82	   3158159 ns/op	   0.48 MB/s	 2259942 B/op	   12160 allocs/op
+BenchmarkRenderStandaloneFixtures/post-001.md-12         	      84	   2812107 ns/op	   0.54 MB/s	 2260937 B/op	   12155 allocs/op
+BenchmarkRenderStandaloneFixtures/home.md-12             	     596	    401621 ns/op	   1.06 MB/s	  988563 B/op	     677 allocs/op
+BenchmarkRenderStandaloneFixtures/home.md-12             	     616	    400238 ns/op	   1.06 MB/s	  987341 B/op	     677 allocs/op
+BenchmarkRenderStandaloneFixtures/home.md-12             	     663	    390078 ns/op	   1.09 MB/s	  987429 B/op	     677 allocs/op
+BenchmarkRenderStandaloneFixtures/markdown-chart-fallback.md-12         	       7	  31651787 ns/op	   0.05 MB/s	 2693497 B/op	    2661 allocs/op
+BenchmarkRenderStandaloneFixtures/markdown-chart-fallback.md-12         	       7	  34576491 ns/op	   0.04 MB/s	 2719859 B/op	    2663 allocs/op
+BenchmarkRenderStandaloneFixtures/markdown-chart-fallback.md-12         	       7	  33039304 ns/op	   0.05 MB/s	 2715118 B/op	    2662 allocs/op
+BenchmarkRenderStandaloneFixtures/md-card-headings.md-12                	     240	    929591 ns/op	   1.19 MB/s	 1572177 B/op	    2697 allocs/op
+BenchmarkRenderStandaloneFixtures/md-card-headings.md-12                	     277	    840433 ns/op	   1.31 MB/s	 1570071 B/op	    2695 allocs/op
+BenchmarkRenderStandaloneFixtures/md-card-headings.md-12                	     264	    892217 ns/op	   1.24 MB/s	 1571337 B/op	    2695 allocs/op
+BenchmarkRenderStandaloneFixtures/roads.md-12                           	     250	    934677 ns/op	   1.71 MB/s	 1493926 B/op	    2466 allocs/op
+BenchmarkRenderStandaloneFixtures/roads.md-12                           	     232	   1078644 ns/op	   1.48 MB/s	 1495630 B/op	    2466 allocs/op
+BenchmarkRenderStandaloneFixtures/roads.md-12                           	     159	   1289949 ns/op	   1.24 MB/s	 1492990 B/op	    2465 allocs/op
+BenchmarkRenderStandaloneFixtures/story-layout.md-12                    	     178	   1396364 ns/op	   2.79 MB/s	 1283981 B/op	    4382 allocs/op
+BenchmarkRenderStandaloneFixtures/story-layout.md-12                    	     170	   1457170 ns/op	   2.68 MB/s	 1282823 B/op	    4382 allocs/op
+BenchmarkRenderStandaloneFixtures/story-layout.md-12                    	     152	   1541071 ns/op	   2.53 MB/s	 1280939 B/op	    4382 allocs/op
+BenchmarkRenderStandaloneFixtures/test-headings.md-12                   	     286	    818729 ns/op	   1.52 MB/s	 1082385 B/op	    1552 allocs/op
+BenchmarkRenderStandaloneFixtures/test-headings.md-12                   	     297	    828555 ns/op	   1.50 MB/s	 1080695 B/op	    1552 allocs/op
+BenchmarkRenderStandaloneFixtures/test-headings.md-12                   	     304	    783761 ns/op	   1.59 MB/s	 1080824 B/op	    1552 allocs/op
+PASS
+ok  	github.com/WaylonWalker/markata/pkg/plugins	5.119s

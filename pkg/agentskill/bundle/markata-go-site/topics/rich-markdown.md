@@ -208,3 +208,14 @@ The Go workbench follows the Python preview protocol: request the full document
 once, then set `include_document: false` and update the existing sandboxed frame
 with `html`, `feature_head_html`, and `body_end_html`. Keep shared appearance
 styles loaded between edits. Do not replace the iframe document on each render.
+
+For renderer integrations, reuse the benchmark site post and rendering fixtures.
+Run `python python/benchmark_editor.py` with an installed wheel and FastAPI dependencies.
+See `docs/guides/renderer-integration-benchmarks.md` for timing boundaries and host-specific results.
+
+
+For Go HTTP benchmarks, build `cmd/markata-workbench` and run
+`python python/benchmark_go_editor.py --binary /path/to/markata-workbench`.
+Use the same fixture hashes as the Python report. Keep cache misses separate
+from repeated cached renders, and distinguish linked assets from inline assets.
+See the integration benchmark guide for timing boundaries and stacking order.
