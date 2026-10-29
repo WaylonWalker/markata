@@ -482,6 +482,7 @@ var settingDocs = map[string]string{
 	"MDVideoConfig.VideoExtensions":                "VideoExtensions is the list of file extensions to treat as videos",
 	"MarkdownConfig.Extensions":                    "Extensions is the list of markdown extensions to enable",
 	"MarkdownConfig.Highlight":                     "Highlight configures syntax highlighting for code blocks",
+	"MarkdownConfig.RenderProfile":                 "RenderProfile selects interoperability renderer defaults (not the site build lifecycle). Valid values: \"web\", \"offline-interactive\", \"offline-static\". Offline-static is reserved until static diagram and chart rendering is implemented.",
 	"MentionMetadata.Avatar":                       "Avatar is the avatar/image URL from og:image or icon",
 	"MentionMetadata.Bio":                          "Bio is the site description from og:description or meta description",
 	"MentionMetadata.Domain":                       "Domain is the normalized domain name (e.g., \"example.com\")",
