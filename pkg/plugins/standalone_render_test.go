@@ -138,3 +138,26 @@ func assertStandaloneInlineTags(t *testing.T, source string) {
 		}
 	}
 }
+
+func TestStandaloneRenderer_IndependentSequentialDocuments(t *testing.T) {
+	renderer := NewStandaloneRenderer(StandaloneOptions{OmitAssetContent: true, AssetBase: "./appearance"})
+	sources := []string{"```mermaid\ngraph LR\nA-->B\n```", "# Plain", "```chartjs\n{\"type\":\"bar\",\"data\":{\"labels\":[\"A\"],\"datasets\":[{\"data\":[1]}]}}\n```", "# Plain"}
+	for _, source := range sources {
+		got, err := renderer.Render(source)
+		if err != nil {
+			t.Fatal(err)
+		}
+		want, err := RenderStandalone(source, StandaloneOptions{AssetBase: "./appearance"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got.HTML != want.HTML || got.HeadHTML != want.HeadHTML || got.BodyEndHTML != want.BodyEndHTML {
+			t.Fatal("persistent renderer changed independent document output")
+		}
+		for _, asset := range got.Assets {
+			if !strings.HasPrefix(asset.ID, "generated-") && asset.ID != "css/chroma.css" && asset.Content != "" {
+				t.Fatalf("linked asset %s contains bytes", asset.ID)
+			}
+		}
+	}
+}

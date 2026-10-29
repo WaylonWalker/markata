@@ -995,3 +995,6 @@ scripts/test_fill_continue_prompts.py
 worktrees
 .markata-cache
 /test-results
+
+# Generated static WASM demo
+.wasm-workbench/

@@ -193,3 +193,13 @@ For application integrations, `markata.appearance()` provides the site's picker 
 asset catalog. Use `result.document(appearance=...)` for site article layout instead
 of copying templates or modifying rendered HTML. Standalone rendering includes
 bundled Lucide icons. CodeMirror and application editing behavior stay application-side.
+
+## Browser-local WASM rendering
+
+For browser-only Markdown apps, build `scripts/wasm-workbench.py --output DIR`.
+Use its persistent `worker.js` rather than a rendering server. Wait for `ready`,
+then send `{source, revision}`. Accept only the newest result. Serve the generated
+`appearance/` assets and the matching `wasm_exec.js` beside `markata.wasm`.
+Raw HTML is disabled; site-dependent plugins still require a full site build.
+Wait for the demo's **Ready offline** status before testing offline reload.
+See `docs/guides/wasm-workbench.md` for hosting headers and browser checks.

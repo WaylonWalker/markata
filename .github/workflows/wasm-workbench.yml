@@ -1,0 +1,42 @@
+name: WASM workbench
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/wasm-workbench.yml'
+      - 'cmd/markata-wasm/**'
+      - 'pkg/plugins/**'
+      - 'pkg/themes/**'
+      - 'pkg/fontpacks/**'
+      - 'internal/fontcatalog/**'
+      - 'examples/wasm-workbench/**'
+      - 'scripts/wasm-assets/**'
+      - 'scripts/wasm-workbench.py'
+      - 'tests/wasm/**'
+      - 'go.mod'
+      - 'go.sum'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version: '1.26'
+          cache: true
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+      - run: python scripts/wasm-workbench.py
+      - run: python -m pip install playwright==1.64.1
+      - run: python -m playwright install --with-deps chromium
+      - run: python tests/wasm/test_workbench.py
+      - uses: actions/upload-artifact@v7
+        if: success()
+        with:
+          name: markata-wasm-workbench
+          path: .wasm-workbench/
+          include-hidden-files: true
