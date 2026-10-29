@@ -317,8 +317,8 @@ func buildConfig(src configSource) *models.Config {
 			SlugRules: append([]models.SlugRule{}, base.SlugRules...),
 		},
 		MarkdownConfig: models.MarkdownConfig{
-			Extensions: base.Extensions,
-			Highlight:  base.Highlight,
+			Extensions:    base.Extensions,
+			Highlight:     base.Highlight,
 			RenderProfile: base.RenderProfile,
 		},
 		Concurrency: base.Concurrency,
@@ -2088,7 +2088,7 @@ func (c *tomlConfig) getBaseConfig() baseConfigData {
 		ErrorPages:     c.ErrorPages,
 		ResourceHints:  c.ResourceHints,
 		Highlight:      c.Markdown.Highlight,
-		RenderProfile: c.Markdown.RenderProfile,
+		RenderProfile:  c.Markdown.RenderProfile,
 		Footer:         c.Footer.toFooterConfig(),
 	}
 }
@@ -3756,7 +3756,7 @@ func (c *yamlConfig) getBaseConfig() baseConfigData {
 		ErrorPages:     c.ErrorPages,
 		ResourceHints:  c.ResourceHints,
 		Highlight:      c.Markdown.Highlight,
-		RenderProfile: c.Markdown.RenderProfile,
+		RenderProfile:  c.Markdown.RenderProfile,
 		Footer:         c.Footer.toFooterConfig(),
 	}
 }
@@ -5374,7 +5374,7 @@ func (c *jsonConfig) getBaseConfig() baseConfigData {
 		ErrorPages:     c.ErrorPages,
 		ResourceHints:  c.ResourceHints,
 		Highlight:      c.Markdown.Highlight,
-		RenderProfile: c.Markdown.RenderProfile,
+		RenderProfile:  c.Markdown.RenderProfile,
 		Footer:         c.Footer.toFooterConfig(),
 	}
 }
