@@ -2,6 +2,14 @@
 
 Use this topic for everyday site work and safe project inspection.
 
+## Terminal Colors
+
+CLI output, logs, forms, and TUIs share semantic colors from the configured site palette.
+The theme's `fallback_mode` selects the light or dark palette variant.
+Without a usable site palette, these surfaces share one fallback theme.
+Palette picker swatches still show each previewed palette.
+Use `--no-color` or `--log-format plain` to suppress terminal colors.
+
 ## High-Value Commands
 
 ### Build And Serve
