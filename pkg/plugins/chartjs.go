@@ -22,8 +22,9 @@ const (
 // ChartJSPlugin converts Chart.js JSON code blocks into rendered charts.
 // It runs at the render stage (after markdown conversion).
 type ChartJSPlugin struct {
-	config    models.ChartJSConfig
-	idCounter uint64
+	scriptCollector func(string) // standalone rendering collects generated scripts as assets
+	config          models.ChartJSConfig
+	idCounter       uint64
 }
 
 // NewChartJSPlugin creates a new ChartJSPlugin with default settings.
@@ -467,11 +468,22 @@ func (p *ChartJSPlugin) injectChartJSScripts(htmlContent string, initScripts []s
 	script := fmt.Sprintf(`
 <script src="%s"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {%s
-});
+(function() {
+const initCharts = function() {%s
+};
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initCharts, {once: true});
+} else {
+  initCharts();
+}
+})();
 </script>`, chartURL, strings.Join(initScripts, ""))
 
 	// Append the script to the end of the content
+	if p.scriptCollector != nil {
+		p.scriptCollector(script)
+		return htmlContent
+	}
 	return htmlContent + script
 }
 

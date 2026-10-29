@@ -44,9 +44,12 @@ def check_wheels(folder: Path) -> None:
             entrypoint_path = f"{NAME}-{VERSION}.dist-info/entry_points.txt"
             wheel_data_path = f"{NAME}-{VERSION}.dist-info/WHEEL"
             binary_path = f"{NAME}/bin/{binary_name}"
-            for entry in (metadata_path, entrypoint_path, wheel_data_path, binary_path):
+            license_path = f"{NAME}-{VERSION}.dist-info/licenses/lucide.txt"
+            for entry in (metadata_path, entrypoint_path, wheel_data_path, binary_path, "markata/rendering.py", license_path):
                 if entry not in filenames:
                     raise AssertionError(f"{wheel.name} missing {entry}")
+            if archive.read(license_path) != (Path(__file__).resolve().parents[1] / "pkg/plugins/standalone_icons/LICENSE").read_bytes():
+                raise AssertionError(f"{wheel.name} has incomplete Lucide/Feather notices")
             metadata = archive.read(metadata_path).decode()
             entrypoints = archive.read(entrypoint_path).decode()
             wheel_data = archive.read(wheel_data_path).decode()

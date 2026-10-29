@@ -177,5 +177,29 @@ Reference docs in the Markata repository:
 - `docs/guides/markdown-chart-fallback.md`
 - `docs/guides/markdown-source-disclosure.md`
 
+### Standalone rendering and Python applications
+
+`markata render --json` reads Markdown from stdin and returns HTML, feature
+signals, and ordered assets without building a site. `--inline-assets` includes
+bundled CSS/JS (including Mermaid and Chart.js). The official Python wheels expose
+`from markata import render, render_async`; use `render_async` in async FastAPI
+handlers and `result.document()` for a complete HTML response. For existing
+layouts, insert the fragment inside `.post-content` and include both asset tag
+fields. See `docs/guides/python-renderer.md` for asset serving and API scope.
+
+For application integrations, `markata.appearance()` provides the site's picker and
+asset catalog. Use `result.document(appearance=...)` for site article layout instead
+of copying templates or modifying rendered HTML. Standalone rendering includes
+bundled Lucide icons. CodeMirror and application editing behavior stay application-side.
+
 Rail card grids stay connected when responsive: horizontal above 1000px, vertical
 with ring ticks below 1000px. Use the rail modifier instead of custom connector CSS.
+
+For renderer integrations, reuse the benchmark site post and rendering fixtures.
+Run `python python/benchmark_editor.py` with an installed wheel and FastAPI dependencies.
+See `docs/guides/renderer-integration-benchmarks.md` for timing boundaries and host-specific results.
+
+Official renderer wheels include readable Lucide/Feather notices in dist-info/licenses.
+Executable installed wheels can render from read-only site-packages. Preserve
+the executable bit when packaging; prefer the persistent Go server for frequent
+interactive renders. See the Python renderer guide for packaging and size details.

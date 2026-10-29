@@ -9,6 +9,18 @@ on:
       - '.github/workflows/pypi-go-wheels.yml'
       - 'scripts/build-pypi-wheels.sh'
       - 'scripts/check-pypi-wheels.py'
+      - 'scripts/add-python-renderer-to-wheels.py'
+      - 'python/**'
+      - 'docs/guides/python-renderer.md'
+      - 'pkg/plugins/standalone*'
+      - 'pkg/plugins/icons*'
+      - 'pkg/themes/**'
+      - 'pkg/templates/**'
+      - 'pkg/palettes/**'
+      - 'pkg/aesthetic/**'
+      - 'pkg/fontpacks/**'
+      - 'examples/fastapi_editor.py'
+      - 'docs/guides/fastapi-editor.md'
       - 'cmd/markata/**'
       - 'cmd/markata-go/**'
       - 'go.mod'
@@ -57,6 +69,8 @@ jobs:
           python-version: '3.13'
       - name: Install Simon Willison's go-to-wheel
         run: python -m pip install go-to-wheel==0.2
+      - name: Test Python renderer protocol and wheel packaging
+        run: python -m unittest discover -s python/tests -v
       - name: Build Go command into PyPI wheel artifacts (no upload)
         run: bash scripts/build-pypi-wheels.sh "${MARKATA_WHEEL_VERSION}"
       - name: Verify platform wheel tags, Go binaries and metadata
@@ -68,9 +82,17 @@ jobs:
           python -m venv "${RUNNER_TEMP}/markata-wheel-venv"
           wheel="dist/pypi-wheels/markata-${MARKATA_WHEEL_VERSION}-py3-none-manylinux_2_17_x86_64.whl"
           "${RUNNER_TEMP}/markata-wheel-venv/bin/python" -m pip install --no-deps --no-index "${wheel}"
+          "${RUNNER_TEMP}/markata-wheel-venv/bin/python" python/smoke_renderer.py
           "${RUNNER_TEMP}/markata-wheel-venv/bin/python" -m markata version
           "${RUNNER_TEMP}/markata-wheel-venv/bin/markata" version
           "${RUNNER_TEMP}/markata-wheel-venv/bin/markata" --help
+          "${RUNNER_TEMP}/markata-wheel-venv/bin/python" -m pip install fastapi httpx uvicorn playwright
+          "${RUNNER_TEMP}/markata-wheel-venv/bin/python" python/smoke_fastapi.py
+          "${RUNNER_TEMP}/markata-wheel-venv/bin/python" -m unittest discover -s python/integration -v
+      - name: Install browser for the live editor regression test
+        run: '"${RUNNER_TEMP}/markata-wheel-venv/bin/python" -m playwright install --with-deps chromium'
+      - name: Exercise the live editor with the installed wheel
+        run: '"${RUNNER_TEMP}/markata-wheel-venv/bin/python" python/test_editor_browser.py -v'
       - name: Save inspected wheel artifacts
         uses: actions/upload-artifact@v7
         with:
@@ -90,6 +112,9 @@ jobs:
     env:
       MARKATA_WHEEL_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.version || '0.14.0.dev0' }}
     steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@v7
         with:
           python-version: '3.13'
@@ -107,6 +132,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          python python/smoke_renderer.py
           python -m markata version
           python -m markata --help
           markata version

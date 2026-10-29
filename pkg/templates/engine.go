@@ -79,6 +79,16 @@ func NewEngineWithTheme(templatesDir, themeName string) (*Engine, error) {
 	return e, nil
 }
 
+// NewEmbeddedEngine creates an engine that resolves only bundled templates.
+// It does not inspect project, user, or executable-relative template directories.
+func NewEmbeddedEngine() *Engine {
+	e := &Engine{templateCache: make(map[string]*pongo2.Template), themeName: defaultThemeName,
+		embeddedFS: themes.DefaultTemplates(), useEmbedded: true}
+	registerFilters()
+	e.set = pongo2.NewSet(defaultThemeName, &searchPathLoader{embeddedFS: e.embeddedFS})
+	return e
+}
+
 // buildSearchPaths constructs the ordered list of template directories.
 func (e *Engine) buildSearchPaths(templatesDir string) {
 	e.searchPaths = make([]string, 0)
