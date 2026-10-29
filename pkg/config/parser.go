@@ -181,6 +181,7 @@ type baseConfigData struct {
 	ErrorPages     parsedErrorPages
 	ResourceHints  parsedResourceHints
 	Highlight      parsedHighlight
+	RenderProfile  string
 	Footer         models.FooterConfig
 }
 
@@ -292,6 +293,9 @@ type templatesConverter interface {
 // This helper eliminates code duplication across TOML, YAML, and JSON config converters.
 func buildConfig(src configSource) *models.Config {
 	base := src.getBaseConfig()
+	if base.RenderProfile == "" {
+		base.RenderProfile = "web"
+	}
 	config := &models.Config{
 		Fontpack:       base.Fontpack,
 		FontpacksFile:  base.FontpacksFile,
@@ -318,6 +322,7 @@ func buildConfig(src configSource) *models.Config {
 		MarkdownConfig: models.MarkdownConfig{
 			Extensions: base.Extensions,
 			Highlight:  base.Highlight,
+			RenderProfile: base.RenderProfile,
 		},
 		Concurrency: base.Concurrency,
 		Theme:       base.Theme,
@@ -867,8 +872,9 @@ type tomlSlugRule struct {
 }
 
 type tomlMarkdownConfig struct {
-	Extensions []string        `toml:"extensions"`
-	Highlight  parsedHighlight `toml:"highlight"`
+	Extensions    []string        `toml:"extensions"`
+	Highlight     parsedHighlight `toml:"highlight"`
+	RenderProfile string          `toml:"render_profile"`
 }
 
 type tomlFeedConfig struct {
@@ -2085,6 +2091,7 @@ func (c *tomlConfig) getBaseConfig() baseConfigData {
 		ErrorPages:     c.ErrorPages,
 		ResourceHints:  c.ResourceHints,
 		Highlight:      c.Markdown.Highlight,
+		RenderProfile: c.Markdown.RenderProfile,
 		Footer:         c.Footer.toFooterConfig(),
 	}
 }
@@ -2404,8 +2411,9 @@ type yamlSlugRule struct {
 }
 
 type yamlMarkdownConfig struct {
-	Extensions []string        `yaml:"extensions"`
-	Highlight  parsedHighlight `yaml:"highlight"`
+	Extensions    []string        `yaml:"extensions"`
+	Highlight     parsedHighlight `yaml:"highlight"`
+	RenderProfile string          `yaml:"render_profile"`
 }
 
 type yamlFeedConfig struct {
@@ -3751,6 +3759,7 @@ func (c *yamlConfig) getBaseConfig() baseConfigData {
 		ErrorPages:     c.ErrorPages,
 		ResourceHints:  c.ResourceHints,
 		Highlight:      c.Markdown.Highlight,
+		RenderProfile: c.Markdown.RenderProfile,
 		Footer:         c.Footer.toFooterConfig(),
 	}
 }
@@ -3996,8 +4005,9 @@ type jsonSlugRule struct {
 }
 
 type jsonMarkdownConfig struct {
-	Extensions []string        `json:"extensions"`
-	Highlight  parsedHighlight `json:"highlight"`
+	Extensions    []string        `json:"extensions"`
+	Highlight     parsedHighlight `json:"highlight"`
+	RenderProfile string          `json:"render_profile"`
 }
 
 func (g tomlGlobConfig) toSlugRules() []models.SlugRule {
@@ -5367,6 +5377,7 @@ func (c *jsonConfig) getBaseConfig() baseConfigData {
 		ErrorPages:     c.ErrorPages,
 		ResourceHints:  c.ResourceHints,
 		Highlight:      c.Markdown.Highlight,
+		RenderProfile: c.Markdown.RenderProfile,
 		Footer:         c.Footer.toFooterConfig(),
 	}
 }
