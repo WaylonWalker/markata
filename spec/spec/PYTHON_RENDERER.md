@@ -25,3 +25,15 @@ helper. Python calls the bundled binary over stdin with argv, never a shell.
 One process is launched per call; timeouts and cancellation terminate and reap it.
 The async interface does not block the ASGI event loop. Protocol mismatch,
 missing executables, and renderer errors raise `RenderError`.
+
+## Wheel distribution contract
+
+Official wheels preserve executable permissions for POSIX binaries. Rendering
+from an executable, read-only installation must not require chmod or writes to
+site-packages. Permission repair is only a fallback for installations that lost
+the executable bit; such installations need writable permissions or reinstall.
+
+The full pinned Lucide catalog remains bundled for deterministic offline icon
+shortcodes. Its original Lucide ISC and derived Feather MIT notices remain
+embedded in the binary and are also distributed in wheel dist-info/licenses.
+Wheel RECORD entries cover the readable notice file.

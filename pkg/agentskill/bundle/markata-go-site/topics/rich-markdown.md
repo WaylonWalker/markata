@@ -198,3 +198,8 @@ with ring ticks below 1000px. Use the rail modifier instead of custom connector 
 For renderer integrations, reuse the benchmark site post and rendering fixtures.
 Run `python python/benchmark_editor.py` with an installed wheel and FastAPI dependencies.
 See `docs/guides/renderer-integration-benchmarks.md` for timing boundaries and host-specific results.
+
+Official renderer wheels include readable Lucide/Feather notices in dist-info/licenses.
+Executable installed wheels can render from read-only site-packages. Preserve
+the executable bit when packaging; prefer the persistent Go server for frequent
+interactive renders. See the Python renderer guide for packaging and size details.
