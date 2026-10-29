@@ -250,3 +250,7 @@ or attach complex interactive filtering. Author the correct chart first;
 request explicit renderer work for missing runtime behaviors.
 
 Simple horizontal bar charts with one dataset and up to five labels use compact, rounded bars by default. Set dataset bar geometry, `options`, or `options.datasets.bar` / `options.elements.bar` to choose your own; set `options.aspectRatio` or `options.maintainAspectRatio` to control sizing. Multi-dataset and larger charts keep Chart.js defaults.
+
+For orientation, dataset `indexAxis` overrides `options.datasets.bar.indexAxis`, which overrides `options.indexAxis`. Vertical overrides keep their original geometry and sizing.
+
+Default bars are at most 14 pixels thick and shrink to fit narrow screens.

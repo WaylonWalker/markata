@@ -270,7 +270,7 @@ func applyHorizontalBarDefaults(config map[string]interface{}) {
 		return
 	}
 	options, ok := config["options"].(map[string]interface{})
-	if !ok || options["indexAxis"] != "y" {
+	if _, exists := config["options"]; exists && !ok {
 		return
 	}
 	data, ok := config["data"].(map[string]interface{})
@@ -289,6 +289,13 @@ func applyHorizontalBarDefaults(config map[string]interface{}) {
 	if !ok || (dataset["type"] != nil && dataset["type"] != barType) {
 		return
 	}
+	if horizontalBarIndexAxis(dataset, options) != "y" {
+		return
+	}
+	if options == nil {
+		options = make(map[string]interface{})
+		config["options"] = options
+	}
 	if _, a := options["aspectRatio"]; !a {
 		if _, b := options["maintainAspectRatio"]; !b {
 			options["aspectRatio"] = 3
@@ -297,9 +304,27 @@ func applyHorizontalBarDefaults(config map[string]interface{}) {
 	if hasBarGeometry(dataset, options) {
 		return
 	}
-	dataset["barThickness"] = 14
+	dataset["maxBarThickness"] = 14
 	dataset["borderRadius"] = 7
 	dataset["borderSkipped"] = false
+}
+
+// horizontalBarIndexAxis follows Chart.js dataset, dataset-options, then chart precedence.
+func horizontalBarIndexAxis(dataset, options map[string]interface{}) string {
+	if axis, ok := dataset["indexAxis"].(string); ok && axis != "" {
+		return axis
+	}
+	if groups, ok := options["datasets"].(map[string]interface{}); ok {
+		if bar, ok := groups["bar"].(map[string]interface{}); ok {
+			if axis, ok := bar["indexAxis"].(string); ok && axis != "" {
+				return axis
+			}
+		}
+	}
+	if axis, ok := options["indexAxis"].(string); ok && axis != "" {
+		return axis
+	}
+	return "x"
 }
 
 func hasBarGeometry(dataset, options map[string]interface{}) bool {

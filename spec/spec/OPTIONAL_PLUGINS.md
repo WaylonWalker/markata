@@ -1255,4 +1255,9 @@ The plugin MUST implement:
 
 ### Default horizontal bar styling
 
-For a `bar` chart with `options.indexAxis: "y"`, one dataset, and one to five labels, the Chart.js plugin supplies compact styling when the author has not specified bar geometry: 14-pixel bars, a 7-pixel radius, and rounded ends. It supplies an aspect ratio of 3 when neither `aspectRatio` nor `maintainAspectRatio` is specified. Explicit bar geometry at the dataset, `options`, `options.datasets.bar`, or `options.elements.bar` level prevents geometry defaults; explicit sizing options are preserved. Other chart types, multi-dataset charts, and charts with more than five labels retain Chart.js defaults. The accessible fallback retains the authored configuration for irregular data.
+For a `bar` chart with an effective `indexAxis: "y"`, one dataset, and one to five labels, the Chart.js plugin supplies compact styling when the author has not specified bar geometry: bars at most 14 pixels thick, a 7-pixel radius, and rounded ends. It supplies an aspect ratio of 3 when neither `aspectRatio` nor `maintainAspectRatio` is specified. Explicit bar geometry at the dataset, `options`, `options.datasets.bar`, or `options.elements.bar` level prevents geometry defaults; explicit sizing options are preserved. Other chart types, multi-dataset charts, and charts with more than five labels retain Chart.js defaults. The accessible fallback retains the authored configuration for irregular data.
+
+The effective index axis follows Chart.js precedence: dataset `indexAxis`, then `options.datasets.bar.indexAxis`, then `options.indexAxis`.
+The default axis is `x`. Vertical overrides MUST prevent compact geometry and sizing defaults.
+
+Default bar thickness MUST shrink to fit narrow viewports without overlapping adjacent categories.
