@@ -8,8 +8,8 @@ const code = fs.readFileSync(path.join(__dirname, '../pkg/themes/default/static/
 const markup = `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body>
 <article class="post-content">
 <div class="md-checklist" data-id="release">
-<ul class="task-list">
-<li class="task-list-item"><input type="checkbox" disabled> Verify CI</li>
+<ul>
+<li><input type="checkbox" disabled> Verify CI</li>
 <li class="task-list-item"><input type="checkbox" checked disabled> Review diff</li>
 </ul>
 </div>
@@ -37,7 +37,7 @@ for (const width of [320, 1440]) {
       assert.equal(await page.locator('.md-checklist input').first().isChecked(), true);
       await page.evaluate(() => {
         const node = document.querySelector('.md-checklist');
-        node.innerHTML = '<ul class="task-list"><li class="task-list-item"><input type="checkbox" disabled> New task</li></ul>';
+        node.innerHTML = '<ul><li><input type="checkbox" disabled> New task</li></ul>';
         window.dispatchEvent(new Event('view-transition-complete'));
       });
       assert.equal(await page.locator('.md-checklist input').isEnabled(), true);

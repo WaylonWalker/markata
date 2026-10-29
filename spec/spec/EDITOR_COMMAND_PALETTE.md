@@ -20,11 +20,34 @@ The inserted placeholder MUST be selected for replacement. Insertion MUST be one
 undoable editor operation and MUST trigger existing draft saving and rendering.
 The initial version operates on the primary selection.
 
-Commands MUST include note, tip, warning, aside, collapsible note, highlight,
-keyboard keys, definition list, Mermaid, Chart.js, table, task list, code block,
-bold, italic, link, and image. Only standalone-renderable syntax belongs in this
-initial catalog. Site-dependent post embeds and wikilinks are excluded because
-these editors do not load a site content index.
+The catalog MUST cover every documented custom Markdown family: all admonition
+types, collapsible variants and split layouts; all eight road styles and
+editorial modifiers; article layout/card/icon/feature containers; status, stat,
+delta, meter, progress, checklist, and source containers; Mermaid and Chart.js;
+all ten Web Awesome Markdown shortcuts; Lucide icons; and inline extensions.
+All bundled Lucide icon names MUST be searchable by name and insertable offline.
+A named icon command MUST replace selected text with the chosen icon; it MUST NOT
+interpret selected prose as an icon name.
+A generic local icon-pack shortcode MUST also be offered for site authors.
+
+Site-dependent syntax (wikilinks, post embeds, external embed cards, TOC,
+glossary frontmatter, custom icon packs, and Web Awesome components) MUST be
+insertable. Descriptions MUST state the site/plugin/runtime requirement rather
+than promise a functioning standalone preview. Web Awesome shortcuts MUST use
+the exact forms in WEBAWESOME.md. A raw Web Awesome HTML template MUST support
+components without a Markdown shorthand. This palette does not change renderer
+capabilities or fetch third-party runtimes. Interactive checklist enhancement
+MUST accept the classless list items emitted by the standalone Goldmark renderer
+as well as site markup with task-list classes. Ordinary task lists MUST stay disabled.
+
+Search MUST remain responsive with the full icon catalog. At most 60 results
+are displayed at once. The count MUST show the total number of matches and
+instruct authors to refine the search when results are truncated.
+
+The repository MUST include a self-contained example document that demonstrates
+the custom elements that work in the standalone preview. Site-dependent examples
+MUST be clearly identified. Tests MUST cover catalog completeness and syntax
+conformance in addition to interaction behavior.
 
 One canonical JavaScript and CSS implementation MUST ship to every workbench.
 Packaging checks MUST prevent the Python bundled copy from drifting.

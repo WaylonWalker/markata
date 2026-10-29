@@ -315,5 +315,9 @@ are documented in the site's Editorial history and Editorial authoring guides.
 The Python, Go, and WASM workbenches offer **Commands** above the editor.
 Use **Ctrl+Shift+P** (**Cmd+Shift+P** on macOS) to search the snippet catalog.
 Commands preserve selected text and insert Markdown in one undo step.
-The catalog includes admonitions, Mermaid, Chart.js, and inline formatting.
-These standalone editors do not load a site index for post embeds.
+The catalog covers all documented custom Markdown families and the bundled Lucide icon pack.
+Search names such as `Road: steps`, `Article card`, or `Lucide: rocket`.
+Results are limited to 60 at a time. Refine the query to search the full catalog.
+Site-dependent commands state their plugin, content-index, or runtime requirements.
+Web Awesome commands insert site Markdown. The standalone preview does not load its runtime.
+Use `examples/command-palette-showcase.md` to inspect working standalone examples.

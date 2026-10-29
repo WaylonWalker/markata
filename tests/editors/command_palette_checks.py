@@ -71,10 +71,41 @@ def check_commands(page, preview):
     dialog.get_by_role('button', name='Close commands').click()
     assert value() == ''
 
+    # Custom element families insert runnable standalone syntax in every runtime.
+    for search, command_id, selector in [
+        ('road steps', 'road-steps', '.road.steps[data-road-ready]'),
+        ('Article card', 'md-card', '.md-card'),
+        ('Icon feature row', 'md-feature', '.md-feature .icon svg'),
+        ('Measurement meter', 'md-meter', 'meter[value="45"]'),
+        ('Markdown source disclosure', 'md-source', 'details.md-source'),
+        ('Interactive checklist', 'md-checklist', '.md-checklist input:not([disabled])'),
+        ('Lucide: zodiac-aries', 'lucide-zodiac-aries', '[data-icon="lucide/zodiac-aries"] svg'),
+        ('Mermaid: sequence', 'mermaid-sequence', 'pre.mermaid svg'),
+    ]:
+        select_text('Replace this with an icon' if command_id.startswith('lucide-') else '')
+        page.locator('#commands').click()
+        query.fill(search)
+        dialog.locator('#markdown-command-' + command_id).click()
+        expect(preview.locator(selector).first).to_be_visible(timeout=30000)
+
+    # Icon names beyond the initial result window remain searchable, while the
+    # unfiltered modal stays bounded. Site requirements are visible before insert.
+    select_text('')
+    page.locator('#commands').click()
+    expect(dialog.get_by_role('status')).to_contain_text('Showing 60 of')
+    expect(dialog.get_by_role('option')).to_have_count(60)
+    query.fill('Web Awesome:')
+    expect(dialog.get_by_role('option')).to_have_count(11)
+    expect(dialog.locator('#markdown-command-wa-details')).to_contain_text('Requires the webawesome plugin and runtime')
+    dialog.locator('#markdown-command-wa-details').click()
+    assert value().startswith('::: wa-details {summary="Read more"}')
+    page.evaluate("document.querySelector('.CodeMirror').CodeMirror.undo()")
+    assert value() == ''
+
     # Click execution, default placeholder and actual chart rendering.
     page.locator('#commands').click()
     query.fill('chartjs')
-    dialog.get_by_role('option').click()
+    dialog.locator('#markdown-command-chart').click()
     assert value().startswith('```chartjs\n')
     expect(preview.locator('canvas')).to_be_visible(timeout=30000)
     expect(page.locator('#saved')).to_contain_text('Draft saved')

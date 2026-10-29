@@ -28,6 +28,7 @@ For example, the **Note box** command inserts:
 The editor selects the placeholder so you can replace it immediately.
 If you select text before opening Commands, the command uses that text instead.
 For example, **Highlighted text** changes selected `important` to `==important==`.
+Named Lucide icon commands replace selected text with the chosen icon.
 Block commands add blank lines around their output to keep surrounding paragraphs separate.
 Multiline selections receive the indentation required by admonitions.
 Commands use the primary selection when the editor has multiple selections.
@@ -37,25 +38,55 @@ The existing draft saving and preview update run after insertion.
 Press **Escape**, select **Close**, or click outside the dialog to cancel.
 The editor keeps your text and selection and receives focus again.
 
-Available commands include:
+The catalog includes 110 authoring snippets and all 2,118 icons in the bundled Lucide pack.
+Search matches command names, syntax hints, and aliases.
+The palette shows up to 60 results at once. Refine the search to find more specific commands.
+For example, search `Lucide: zodiac-aries` to find that icon directly.
 
-| Commands | Inserted syntax |
+| Family | Commands |
 | --- | --- |
-| Note, tip, warning, aside | `!!!` admonitions |
-| Collapsible note | `??? note` |
-| Highlighted text | `==text==` |
-| Keyboard keys | `++Ctrl+Alt+Del++` |
-| Definition list | Term followed by `: Definition` |
-| Mermaid diagram | A `mermaid` code fence |
-| Chart.js chart | A `chartjs` code fence with sample JSON |
-| Table | Two columns with a header row |
-| Task list | `- [ ] Task` |
-| Code block | A `text` code fence |
-| Bold, italic, link, image URL | Standard Markdown formatting |
+| Admonitions | All documented types, closed and expanded disclosures, and split columns |
+| Roads | Winding, timeline, steps, snake, cycle, constellation, git, and editorial; story and reveal variants |
+| Cards and layouts | Card, box, layout, columns, grid, rail, pending cards, stack, divider, connector, and story section |
+| Icons and feature rows | Icon tile, icon feature row, generic Lucide shortcode, every bundled Lucide icon, and custom icon-pack shortcode |
+| Metrics | Status, statistic, delta, native meter, and progress gauge |
+| Interactive content | Checklist and Markdown source disclosure |
+| Mermaid | Flow, sequence, class, state, entity relationship, Gantt, pie, mind map, timeline, and git diagrams |
+| Chart.js | Bar, line, area, stacked bar, pie, doughnut, scatter, bubble, radar, and polar area |
+| Web Awesome | Comparison, details, tabs, copy button, QR code, badge, tag, tooltip, carousel, animated image, and raw component template |
+| Inline extensions | Highlight, keyboard keys, emoji, superscript, subscript, attributes, footnote, and definition list |
+| Images and citations | Captioned figure, image URL, and attributed quotation |
+| Site features | Wikilink, post embed, external embed card, YouTube embed, hover cards, table of contents, glossary frontmatter, and contribution calendar |
+| Standard Markdown | Table, task list, code fence, inline code, bold, italic, strikethrough, and link |
+
+## Preview and site requirements
 
 The palette uses local assets in all three workbenches.
 It remains available offline after the WASM workbench caches its assets.
-Site-dependent commands, such as post embeds, require a site index and are outside this initial catalog.
+Bundled Lucide icons, roads, article containers, metrics, Mermaid, and Chart.js render in the standalone preview.
 
-See the [Markdown guide](markdown.md) for syntax details and the
-[editor comparison](renderer-integration-benchmarks.md#shared-editor-features-and-runtime-differences) for runtime differences.
+Commands for site features state their requirements in the result description.
+The standalone renderers do not load a site content index or the Web Awesome plugin and custom-element runtime.
+Web Awesome commands insert the documented Markdown shortcuts for a configured site build.
+They do not load third-party scripts in the standalone preview.
+The raw component template supports components that have no Markdown shorthand.
+Replace its tag with the required Web Awesome tag.
+
+Wikilinks and post embeds need site content. External embeds need the site embed pipeline.
+Hover cards and contribution calendars need their site plugins or runtime assets.
+Custom icon packs need site configuration and local SVGs.
+The TOC command inserts `[[toc]]` for the site table-of-contents plugin.
+Use glossary frontmatter at the start of a new glossary post.
+Replace sample image paths and IDs before publishing.
+
+## Try a complete example
+
+Open `examples/command-palette-showcase.md` with **Open .md** in any workbench.
+The example combines icon cards, a steps road, a feature row, metrics, Mermaid, and a Chart.js chart.
+It also shows Web Awesome source with its site requirement clearly identified.
+The chart data is illustrative.
+
+See the [Markdown guide](markdown.md), [container guide](markdown-containers.md),
+[roads guide](roads.md), [icon guide](icons.md), and [Web Awesome guide](webawesome.md)
+for syntax details. The [editor comparison](renderer-integration-benchmarks.md#shared-editor-features-and-runtime-differences)
+explains runtime differences.
