@@ -82,7 +82,7 @@ Inside the initialized runtime, `markataRender(source)` returns a JSON string.
 Invalid argument types, oversized documents, and render errors return an
 `error` field. The worker preserves the request's `revision`. Hosts must discard
 stale results. Keep one render in flight and replace pending edits with the
-latest source. The sample editor uses a 180 ms debounce.
+latest source. The sample editor uses a 250 ms debounce.
 
 The renderer uses the same Go Markdown implementation as the Python API.
 It supports syntax highlighting, admonitions, containers, bundled Lucide icons,
@@ -132,3 +132,10 @@ The checks cover offline reload, import/export, draft recovery, rapid edits,
 repeated diagrams and charts, keymaps, mobile width, storage failures, input
 limits, worker errors, and local-only network requests. Warm-render measurements
 are reported without machine-specific timing assertions.
+
+## Shared editor behavior
+
+Use **Open .md** to import a Markdown file. An oversized file leaves the current draft intact.
+Use **Download .md** to keep a copy outside browser storage.
+The footer reports whether the draft was saved. Storage failures leave editing and downloads available.
+See [shared editor features and runtime differences](/docs/guides/renderer-integration-benchmarks/#shared-editor-features-and-runtime-differences) for the comparison.

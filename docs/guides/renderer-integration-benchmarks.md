@@ -247,3 +247,33 @@ For `post-001.md`, the Python HTTP edit median was 149.282 ms.
 The Go HTTP edit median was 2.389 ms; the cached median was 0.301 ms.
 The WASM worker median was 10.9 ms.
 These measurements use different timing boundaries and asset policies, as described above.
+
+## Shared editor features and runtime differences
+
+All three demos provide the same editor features:
+
+- System typography, appearance controls, and Default/Vim/Emacs/Sublime keymaps.
+- **Open .md** import and **Download .md** export.
+- Automatic draft recovery and visible save status.
+- Live previews with a 250 ms edit debounce and protection against stale results.
+- A 200,000 UTF-8 byte limit, with errors that preserve the current draft.
+
+An oversized import leaves the current draft intact. Download the draft before clearing browser storage.
+If storage is unavailable or full, editing and downloads remain available, but drafts cannot survive closing the page.
+Each origin stores its own draft and appearance settings. Different ports do not share these settings.
+For a font comparison, select the same font pack and text size in each demo.
+The default uses system fonts; operating systems can display different system typefaces.
+
+| Runtime behavior | Python / FastAPI | Go server | Browser WASM |
+| --- | --- | --- | --- |
+| Rendering location | Server subprocess per request | Directly in Go server | Persistent browser worker |
+| Markdown transfer | HTTP to local server | HTTP to local server | No render request |
+| Rich feature assets | Inline response assets | Linked assets reused by browser | Bundled assets cached locally |
+| Offline reload | Requires running server | Requires running server | Available after **Ready offline** |
+| Authored raw HTML | Enabled inside sandbox | Enabled inside sandbox | Disabled |
+| Repeated source | New renderer process | Last result cache | Persistent renderer runtime |
+
+Runtime differences do not require different fonts, import controls, or draft feedback.
+Raw HTML and cache policies are demo choices, rather than requirements of Python, Go, or WASM.
+All previews use a sandbox. Authored external images and links can still access the network.
+These demos render standalone Markdown; they do not load a site's configuration or run its complete build lifecycle.

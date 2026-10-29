@@ -57,13 +57,14 @@ footer{height:37px;padding:9px 24px;border-top:1px solid var(--editor-divider);f
 .CodeMirror-dialog{background:var(--color-surface);color:var(--color-text);border-color:var(--editor-divider)}
 .CodeMirror-dialog input{color:var(--color-text)}
 
-header{flex-wrap:wrap}#offline{font-size:11px;color:var(--color-text-muted);margin-left:auto}.import-button{cursor:pointer;color:var(--color-text);background:var(--color-surface);font-size:12px;padding:8px;border:1px solid var(--editor-divider);border-radius:6px}header h1{font-family:Georgia,serif;letter-spacing:-.04em}#saved{font-weight:600}main{height:calc(100dvh - 140px)}@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+
+header{flex-wrap:wrap}#open{background:var(--color-surface,white);border:1px solid var(--editor-divider);border-radius:6px;padding:9px 14px;color:var(--color-text);cursor:pointer}#saved{font-weight:600}footer{height:auto;min-height:37px}#offline{font-size:12px;color:var(--color-text-muted)}
 </style>
 </head><body>
-<header><div><h1>Markata / local</h1><p>Your words. Your browser. No rendering server.</p></div><span id="offline" role="status">Preparing offline copy…</span><button class="import-button" id="open" type="button">Open .md</button><input id="import" type="file" accept=".md,.markdown,text/plain,text/markdown" hidden><button id="download" type="button">Download .md</button></header>
+<header><div><h1>Markata / local</h1><p>Your words. Your browser. No rendering server.</p></div><span id="offline" role="status">Preparing offline copy…</span><button id="open" type="button">Open .md</button><input id="import" type="file" accept=".md,.markdown,text/plain,text/markdown" hidden><button id="download" type="button">Download .md</button></header>
 <main id="workbench">
-<section><div class="pane-label editor-toolbar"><label for="keymap">Markdown · Keymap</label><select id="keymap" aria-label="Editor keymap"><option value="default">Default</option><option value="vim">Vim</option><option value="emacs">Emacs</option><option value="sublime">Sublime</option></select></div><textarea id="source" spellcheck="false" aria-describedby="status"></textarea></section>
-<section aria-label="Rendered Markdown"><div class="pane-label">Live preview</div><pre id="error" role="alert" hidden></pre><iframe id="preview" title="Rendered Markdown preview" sandbox="allow-scripts allow-downloads"></iframe></section>
+<section><div class="pane-label editor-toolbar"><label for="keymap">Markdown · Keymap</label><select id="keymap" aria-label="Editor keymap"><option value="default">Default</option><option value="vim">Vim</option><option value="emacs">Emacs</option><option value="sublime">Sublime</option></select></div><textarea aria-label="Markdown source" id="source" spellcheck="false" aria-describedby="status"></textarea></section>
+<section aria-label="Rendered Markdown"><div class="pane-label">Live preview</div><pre id="error" role="alert" hidden></pre><iframe id="preview" title="Rendered Markdown preview" sandbox="allow-scripts"></iframe></section>
 </main>
-<footer><span id="saved" role="status"></span> · <span id="status" role="status" aria-live="polite">Loading local renderer…</span></footer>
+<footer><span id="saved" role="status"></span> · <span id="status" role="status" aria-live="polite">Preparing preview…</span></footer>
 <script src="app.js" defer></script></body></html>

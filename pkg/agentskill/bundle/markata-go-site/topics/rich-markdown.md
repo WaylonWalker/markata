@@ -233,3 +233,10 @@ For comparable WASM fixture measurements, serve the browser workbench and run
 `uv run --with playwright python scripts/benchmark-wasm.py --output /tmp/wasm-benchmark.json`.
 The report measures worker rendering, excluding startup, transfer, layout, and paint.
 Keep these timings separate from HTTP latency.
+
+The Python, Go, and WASM workbenches share typography, import/export, draft save
+feedback, keymaps, and a 200,000 UTF-8 byte limit. Keep their editor UI consistent.
+Preserve separate runtime transports, offline support, and documented raw HTML
+policies. Browser storage belongs to each origin, including its port; compare
+fonts with matching appearance settings. See the integration benchmark guide's
+shared editor feature table before treating runtime differences as defects.

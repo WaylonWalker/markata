@@ -92,7 +92,7 @@
     // Save first, including when the renderer is still loading or has failed.
     save();
     status.textContent = 'Waiting for edits…';
-    timer = setTimeout(schedule,180);
+    timer = setTimeout(schedule,250);
   });
   document.querySelector('#download').addEventListener('click',() => {
     const url = URL.createObjectURL(new Blob([source.value],{type:'text/markdown;charset=utf-8'}));
@@ -103,8 +103,13 @@
   document.querySelector('#import').addEventListener('change',async e => {
     const file = e.target.files[0];
     if (!file) return;
-    if (file.size > 200000) { showError('Choose a Markdown file smaller than 200,000 bytes.'); return; }
-    try { editor.setValue(await file.text()); } catch (error) { showError(`Cannot read file: ${error.message}`); }
+    e.target.value='';
+    if (file.size > 200000) { showError('Document exceeds 200,000 UTF-8 bytes. Your current draft has been kept.'); return; }
+    try {
+      const text = await file.text();
+      if (new TextEncoder().encode(text).length > 200000) throw new Error('Document exceeds 200,000 UTF-8 bytes.');
+      editor.setValue(text);
+    } catch (error) { showError(`Cannot read file: ${error.message}`); }
     e.target.value='';
   });
   try {

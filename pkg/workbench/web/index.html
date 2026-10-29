@@ -58,12 +58,14 @@ footer{height:37px;padding:9px 24px;border-top:1px solid var(--editor-divider);f
 .CodeMirror-dialog{background:var(--color-surface);color:var(--color-text);border-color:var(--editor-divider)}
 .CodeMirror-dialog input{color:var(--color-text)}
 
+
+header{flex-wrap:wrap}#open{background:var(--color-surface,white);border:1px solid var(--editor-divider);border-radius:6px;padding:9px 14px;color:var(--color-text);cursor:pointer}#saved{font-weight:600}footer{height:auto;min-height:37px}#offline{font-size:12px;color:var(--color-text-muted)}
 </style>
 </head><body>
-<header><div><h1>Markata Go workbench</h1><p>Write Markdown. Render directly in Go.</p></div><!--PICKER--><button id="download" type="button">Download .md</button></header>
+<header><div><h1>Markata Go workbench</h1><p>Write Markdown. Render directly in Go.</p></div><!--PICKER--><button id="open" type="button">Open .md</button><input id="import" type="file" accept=".md,.markdown,text/plain,text/markdown" hidden><button id="download" type="button">Download .md</button></header>
 <main id="workbench">
 <section><div class="pane-label editor-toolbar"><label for="keymap">Markdown · Keymap</label><select id="keymap" aria-label="Editor keymap"><option value="default">Default</option><option value="vim">Vim</option><option value="emacs">Emacs</option><option value="sublime">Sublime</option></select></div><textarea aria-label="Markdown source" id="source" spellcheck="false" aria-describedby="status"></textarea></section>
 <section aria-label="Rendered Markdown"><div class="pane-label">Live preview</div><pre id="error" role="alert" hidden></pre><iframe id="preview" title="Rendered Markdown preview" sandbox="allow-scripts"></iframe></section>
 </main>
-<footer><span id="storage" role="status"></span><span id="status" role="status" aria-live="polite">Preparing preview…</span></footer>
+<footer><span id="saved" role="status"></span> · <span id="status" role="status" aria-live="polite">Preparing preview…</span></footer>
 <script src="/editor/app.js" defer></script><!--APPEARANCE_SCRIPTS--></body></html>
