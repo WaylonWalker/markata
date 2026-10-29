@@ -149,6 +149,24 @@ The path must remain inside `output_dir`. Environment variables use the
 `MARKATA_GO_IMAGES_` prefix. See the [Image Library guide](/docs/guides/image-library/)
 for discovery rules and template context.
 
+## Renderer integration profile
+
+The `markata serve` settings sidebar exposes `markdown.render_profile`
+under **Common** and **Markdown**. It is a default for standalone renderer
+integrations that explicitly load site config—not an override of the normal
+site-build lifecycle.
+
+```toml
+[markata-go.markdown]
+render_profile = "web" # or "offline-interactive"; "offline-static" is not yet supported
+```
+
+Use `markata --config markata-go.toml render --json --site-render-profile`
+or Python `render(markdown, config_path="markata-go.toml")` to apply the value.
+`offline-interactive` inlines managed assets and rejects detected remote
+resources, but is **not** a complete offline audit of rendered browser behavior.
+`offline-static` fails rather than silently falling back to JavaScript.
+
 ## Correcting Configuration Mistakes
 
 Run `markata-go config validate` after editing a config file. If a key closely
