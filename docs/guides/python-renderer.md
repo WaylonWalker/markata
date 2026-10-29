@@ -38,34 +38,6 @@ async subprocess I/O, terminates the process on timeout or cancellation, and doe
 not block the ASGI event loop. `timeout` defaults to 30 seconds. Failures raise
 `markata.RenderError`.
 
-## Shared renderer profiles
-
-Choose `profile="web"` for the current asset-manifest behavior, or
-`profile="offline-interactive"` to inline Markata-managed CSS/JS and reject
-detected remote media in the generated fragment. The latter is an incremental
-local-asset policy, **not yet a verified zero-network guarantee**.
-`profile="offline-static"` currently fails explicitly because static Mermaid
-and Chart.js export are not available in the standalone renderer.
-
-```python
-from markata import render
-
-result = render("# Local report", profile="offline-interactive")
-html = result.document(title="Local report")
-```
-
-To use a site-selected profile instead, set
-`[markata-go.markdown] render_profile = "offline-interactive"` in your site
-config (the `markata serve` settings sidebar can Preview/Bake it), then:
-
-```python
-result = render("# Local report", config_path="markata-go.toml")
-```
-
-These profiles only change standalone rendering. They do not make a full site
-build offline or automatically enable site lifecycle plugins. See
-[Renderer Profiles](/docs/guides/renderer-profiles/) for limitations.
-
 ## Fragments and signals
 
 ```python
@@ -201,3 +173,31 @@ The [single-file editor example](https://github.com/WaylonWalker/markata/blob/ma
 contains CodeMirror and application behavior. Markata supplies its preview document,
 icons, appearance picker, and assets. Applications must explicitly enable
 `unsafe=True` to render authored HTML and style blocks.
+
+## Shared renderer profiles
+
+Choose `profile="web"` for the current asset-manifest behavior, or
+`profile="offline-interactive"` to inline Markata-managed CSS/JS and reject
+detected remote media in the generated fragment. The latter is an incremental
+local-asset policy, **not yet a verified zero-network guarantee**.
+`profile="offline-static"` currently fails explicitly because static Mermaid
+and Chart.js export are not available in the standalone renderer.
+
+```python
+from markata import render
+
+result = render("# Local report", profile="offline-interactive")
+html = result.document(title="Local report")
+```
+
+To use a site-selected profile instead, set
+`[markata-go.markdown] render_profile = "offline-interactive"` in your site
+config (the `markata serve` settings sidebar can Preview/Bake it), then:
+
+```python
+result = render("# Local report", config_path="markata-go.toml")
+```
+
+These profiles only change standalone rendering. They do not make a full site
+build offline or automatically enable site lifecycle plugins. See
+[Renderer Profiles](/docs/guides/renderer-profiles/) for limitations.
