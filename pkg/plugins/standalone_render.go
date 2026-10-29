@@ -56,13 +56,14 @@ func RenderStandalone(source string, options StandaloneOptions) (*StandaloneResu
 	}
 	post.Extra = map[string]interface{}{}
 	p.detectCSSRequirements(post)
-	r.HTML = post.ArticleHTML
+	r.HTML = expandStandaloneIcons(post.ArticleHTML)
 	r.detectEnhancements()
 	for signal, feature := range map[string]string{
 		"needs_code_css": "code", "needs_admonitions_css": "admonitions",
 		"needs_roads": "roads", "has_figure": "figures", "has_anchor_links": "anchors",
 	} {
-		r.Features[feature], _ = post.Extra[signal].(bool)
+		value, ok := post.Extra[signal].(bool)
+		r.Features[feature] = ok && value
 	}
 	if err := r.addPresentationAssets(); err != nil {
 		return nil, err
@@ -91,7 +92,7 @@ func (r *StandaloneResult) renderDiagrams(post *models.Post) error {
 	}
 	if mermaidScript != "" {
 		r.Features["mermaid"] = true
-		if err := r.addBundled("assets/vendor/mermaid/mermaid.min.js", "script", "body_end"); err != nil {
+		if err := r.addBundled("assets/vendor/mermaid/mermaid.min.js", standaloneScriptKind, "body_end"); err != nil {
 			return err
 		}
 		r.collectScripts(mermaidScript)
@@ -141,7 +142,7 @@ func (r *StandaloneResult) addPresentationAssets() error {
 			return fmt.Errorf("generate highlighting CSS: %w", err)
 		}
 		r.Assets = append(r.Assets, RenderAsset{ID: "css/chroma.css", Kind: "style", Placement: "head", Content: css})
-		if err := r.addBundled("js/code-chrome.js", "script", "body_end"); err != nil {
+		if err := r.addBundled("js/code-chrome.js", standaloneScriptKind, "body_end"); err != nil {
 			return err
 		}
 	}
@@ -150,7 +151,7 @@ func (r *StandaloneResult) addPresentationAssets() error {
 		{"checklists", "js/markdown-checklists.js"},
 	} {
 		if r.Features[item.feature] {
-			if err := r.addBundled(item.path, "script", "body_end"); err != nil {
+			if err := r.addBundled(item.path, standaloneScriptKind, "body_end"); err != nil {
 				return err
 			}
 		}
@@ -208,10 +209,10 @@ func (r *StandaloneResult) collectScripts(fragment string) {
 			continue
 		}
 		token := z.Token()
-		if token.Data != "script" {
+		if token.Data != standaloneScriptKind {
 			continue
 		}
-		a := RenderAsset{ID: fmt.Sprintf("generated-%d", len(r.Assets)), Kind: "script", Placement: "body_end"}
+		a := RenderAsset{ID: fmt.Sprintf("generated-%d", len(r.Assets)), Kind: standaloneScriptKind, Placement: "body_end"}
 		for _, attr := range token.Attr {
 			if attr.Key == "src" {
 				a.URL = attr.Val

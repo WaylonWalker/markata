@@ -129,7 +129,7 @@ func assertStandaloneInlineTags(t *testing.T, source string) {
 		if tag.Data == "link" {
 			t.Fatal("inline output contains external styles")
 		}
-		if tag.Data == "script" {
+		if tag.Data == standaloneScriptKind {
 			for _, attr := range tag.Attr {
 				if attr.Key == "src" {
 					t.Fatal("inline output contains external scripts")

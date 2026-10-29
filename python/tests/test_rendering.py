@@ -108,6 +108,54 @@ class AsyncRenderingTest(unittest.IsolatedAsyncioTestCase):
                     await task
                 self.assertIsNotNone(processes[1].returncode)
 
+class AppearanceDocumentTest(unittest.TestCase):
+    def test_document_site_layout_and_escaping(self):
+        result = rendering._result(json.dumps(PAYLOAD).encode(), b'', 0)
+        document = result.document('<title>', lang='"')
+        self.assertIn('class="post h-entry"', document)
+        self.assertIn('class="post-content e-content"', document)
+        self.assertIn('&lt;title&gt;', document)
+        self.assertNotIn("addEventListener('message'", document)
+        self.assertIn('color-scheme:dark', document)
+        self.assertIn('color-scheme:light', result.document(mode='light'))
+        with self.assertRaises(ValueError):
+            result.document(mode='invalid')
+
+    def test_catalog_validation_and_bridge(self):
+        presentation = rendering.Appearance('', {}, (), (), '/assets', {
+            'data-palette': ['ayu-dark'], 'data-theme': ['dark'],
+            'data-aesthetic': ['minimal'], 'data-fontpack': ['system'],
+            'data-text-size': ['large'],
+        })
+        result = rendering._result(json.dumps(PAYLOAD).encode(), b'', 0)
+        document = result.document(appearance=presentation, palette='ayu-dark', appearance_bridge=True)
+        self.assertIn('e.source!==parent', document)
+        self.assertIn('values.includes(value)', document)
+        with self.assertRaises(ValueError):
+            result.document(appearance=presentation, palette='unknown')
+
+
+class AppearanceAssetsTest(unittest.TestCase):
+    def test_rebased_fonts_and_control_styles(self):
+        import base64
+        files = {
+            'css/palette.css': b"--palette-manifest: '[{\"name\":\"ayu-dark\"}]';",
+            'css/aesthetic.css': b"--aesthetic-manifest: '[{\"name\":\"minimal\"}]';",
+            'css/fonts.css': b"--fontpack-manifest: '[{\"name\":\"system\"}]'; @font-face{src:url('/assets/fonts/a.woff2')}",
+        }
+        payload = dict(schema_version=1, picker_html='<button>Colors</button>',
+                       assets={key: base64.b64encode(value).decode() for key, value in files.items()},
+                       styles=['css/main.css', 'css/components.css', 'css/palette.css'], scripts=[])
+        process = subprocess.CompletedProcess([], 0, json.dumps(payload).encode(), b'')
+        with patch.object(rendering, '_command', return_value=['renderer']):
+            with patch.object(subprocess, 'run', return_value=process):
+                presentation = rendering.appearance(asset_base='/custom')
+        self.assertIn(b"url('/custom/assets/fonts/a.woff2')", presentation.assets['css/fonts.css'])
+        self.assertIn('/custom/css/main.css', presentation.head_html)
+        self.assertNotIn('main.css', presentation.controls_head_html)
+        self.assertIn('/custom/css/palette.css', presentation.controls_head_html)
+        self.assertEqual(presentation.choices['data-palette'], ['ayu-dark'])
+
 
 if __name__ == '__main__':
     unittest.main()

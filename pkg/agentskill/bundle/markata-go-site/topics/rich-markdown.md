@@ -184,3 +184,8 @@ bundled CSS/JS (including Mermaid and Chart.js). The official Python wheels expo
 handlers and `result.document()` for a complete HTML response. For existing
 layouts, insert the fragment inside `.post-content` and include both asset tag
 fields. See `docs/guides/python-renderer.md` for asset serving and API scope.
+
+For application integrations, `markata.appearance()` provides the site's picker and
+asset catalog. Use `result.document(appearance=...)` for site article layout instead
+of copying templates or modifying rendered HTML. Standalone rendering includes
+bundled Lucide icons. CodeMirror and application editing behavior stay application-side.

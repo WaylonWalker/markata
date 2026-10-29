@@ -1,6 +1,8 @@
 """Render Markdown with the Go renderer bundled in official Markata wheels."""
 from __future__ import annotations
 
+import base64
+import re
 import asyncio
 import json
 import os
@@ -26,15 +28,95 @@ class RenderResult:
     body_end_html: str
     schema_version: int = 1
 
-    def document(self, title: str = "", *, lang: str = "en") -> str:
-        """Wrap the fragment and asset tags in a complete HTML document."""
+    def document(self, title: str = "", *, lang: str = "en",
+                 appearance: Appearance | None = None, palette: str | None = None,
+                 mode: str = "dark", aesthetic: str = "minimal",
+                 fontpack: str = "system", text_size: str = "large",
+                 appearance_bridge: bool = False) -> str:
+        """Create a site-compatible article document with optional appearance assets."""
+        if mode not in {"light", "dark"} or text_size not in {"small", "medium", "large", "x-large"}:
+            raise ValueError("Invalid color mode or text size")
+        values = {"data-theme": mode, "data-aesthetic": aesthetic,
+                  "data-fontpack": fontpack, "data-text-size": text_size}
+        if palette:
+            values["data-palette"] = palette
+        if appearance:
+            appearance.validate(values)
+        attrs = ''.join(' ' + key + '="' + escape(value, quote=True) + '"' for key, value in values.items())
+        bridge = appearance.bridge_html if appearance_bridge and appearance else ''
+        background = '#131721' if mode == 'dark' else '#ffffff'
+        foreground = '#bfbdb6' if mode == 'dark' else '#1f2937'
+        initial_style = '<style>html{color-scheme:' + mode + ';background:' + background + '}body{background:var(--color-background,' + background + ');color:var(--color-text,' + foreground + ')}</style>'
         return (
-            '<!doctype html><html lang="' + escape(lang, quote=True) + '"><head>'
+            '<!doctype html><html lang="' + escape(lang, quote=True) + '"' + attrs + '><head>'
             '<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
-            '<title>' + escape(title) + '</title>' + self.head_html
-            + '</head><body><article class="post-content">' + self.html
-            + '</article>' + self.body_end_html + '</body></html>'
+            '<title>' + escape(title) + '</title>' + initial_style + self.head_html
+            + (appearance.head_html if appearance else '')
+            + '</head><body><main class="main-content"><div class="content-wrapper"><div class="post-shell">'
+            '<article class="post h-entry"><div class="post-content e-content">' + self.html
+            + '</div></article></div></div></main>' + self.body_end_html + bridge + '</body></html>'
         )
+
+
+@dataclass(frozen=True)
+class Appearance:
+    """Reusable site controls and exact-path assets for a host application."""
+    picker_html: str
+    assets: dict[str, bytes]
+    styles: tuple[str, ...]
+    scripts: tuple[str, ...]
+    asset_base: str
+    choices: dict[str, list[str]]
+
+    @property
+    def head_html(self) -> str:
+        return ''.join('<link rel="stylesheet" href="' + escape(self.asset_base + '/' + name, quote=True) + '">' for name in self.styles)
+
+    @property
+    def controls_head_html(self) -> str:
+        """Style the appearance controls without applying the site's page layout."""
+        return ''.join('<link rel="stylesheet" href="' + escape(self.asset_base + '/' + name, quote=True) + '">' for name in self.styles if name not in {'css/main.css', 'css/components.css'})
+
+    @property
+    def body_end_html(self) -> str:
+        return ''.join('<script src="' + escape(self.asset_base + '/' + name, quote=True) + '"></script>' for name in self.scripts)
+
+    def validate(self, attributes: dict[str, str]) -> None:
+        for key, value in attributes.items():
+            if key in self.choices and value not in self.choices[key]:
+                raise ValueError(f"Unknown appearance choice for {key}: {value}")
+
+    @property
+    def bridge_html(self) -> str:
+        allowed = json.dumps(self.choices).replace('<', r'\u003c')
+        return '<script>(()=>{const allowed=' + allowed + ";addEventListener('message',e=>{if(e.source!==parent||e.data?.type!=='appearance')return;for(const [key,values] of Object.entries(allowed)){const value=e.data.attributes?.[key];if(value==null)document.documentElement.removeAttribute(key);else if(values.includes(value))document.documentElement.setAttribute(key,value);}dispatchEvent(new Event('theme-change'));});})();</script>"
+
+
+def appearance(*, asset_base: str = "/markata-assets", timeout: float = 30) -> Appearance:
+    """Load the full site appearance catalog once at application startup."""
+    command = [_command(False, asset_base, False)[0], 'render', '--appearance']
+    try:
+        process = subprocess.run(command, capture_output=True, timeout=timeout, check=False)
+        if process.returncode:
+            raise RenderError(process.stderr.decode(errors='replace'))
+        data = json.loads(process.stdout)
+        if data['schema_version'] != 1:
+            raise ValueError('unsupported appearance schema')
+        assets = {name: base64.b64decode(value, validate=True) for name, value in data['assets'].items()}
+        base = asset_base.rstrip('/')
+        font_css = assets['css/fonts.css'].decode().replace('/assets/fonts/', base + '/assets/fonts/')
+        assets['css/fonts.css'] = font_css.encode()
+        choices = {'data-theme':['light','dark'], 'data-text-size':['small','medium','large','x-large']}
+        for key, name, prop in [('data-palette','palette','palette'), ('data-aesthetic','aesthetic','aesthetic'), ('data-fontpack','fonts','fontpack')]:
+            css = assets['css/' + name + '.css'].decode()
+            match = re.search(r"--" + prop + r"-manifest:\s*'((?:\\.|[^'])*)'", css)
+            if not match:
+                raise ValueError('missing ' + prop + ' manifest')
+            entries = json.loads(match[1].replace("\\'", "'").replace('\\\\', '\\'))
+            choices[key] = [entry['name'] for entry in entries]
+        return Appearance(data['picker_html'], assets, tuple(data['styles']), tuple(data['scripts']), base, choices)
+    except (OSError, subprocess.TimeoutExpired, ValueError, KeyError, TypeError) as error:
+        raise RenderError(f"Invalid appearance response: {error}") from error
 
 
 def _command(inline_assets: bool, asset_base: str, unsafe: bool) -> list[str]:
