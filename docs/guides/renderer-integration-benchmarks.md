@@ -119,3 +119,91 @@ It does not replace the live editor server.
 Before comparing changes, keep the fixture bytes, dependency versions, machine, and renderer options the same.
 Compare medians and raw samples as well as response sizes.
 Useful next measurements include process initialization, JSON encoding, asset transfer, browser paint, and memory retained after repeated diagram edits.
+
+
+## Go server workbench
+
+The [Go workbench](/docs/guides/go-workbench/) uses the same seven fixture files and the same HTTP timing boundaries.
+All fixture hashes match the Python report above. The server renders directly in process and keeps one previous result in memory.
+
+Each mode uses two excluded warm-up calls and 15 measured calls.
+Before every cache-miss call, a separate unmeasured request renders a small invalidator document.
+This keeps the measured fixture bytes unchanged while preventing an accidental cache hit.
+Every measured response checks its `cached` field. Cached edits use the same source repeatedly without invalidation.
+The invalidator request is excluded from the HTTP time and response size.
+
+### HTTP results
+
+Values are milliseconds. Each median and p95 comes from 15 calls.
+The Python column comes from the earlier report; the Go columns come from a separate run on the same workstation.
+
+| Fixture | Python HTTP edit median | Go initial miss median | Go edit miss median | Go edit miss p95 | Go cached edit median |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `post-001.md` | 136.245 | 2.247 | 2.143 | 3.599 | 0.365 |
+| `home.md` | 129.152 | 0.645 | 0.466 | 0.867 | 0.324 |
+| `markdown-chart-fallback.md` | 264.495 | 36.032 | 28.571 | 53.724 | 0.295 |
+| `md-card-headings.md` | 153.448 | 0.799 | 1.504 | 1.790 | 0.366 |
+| `roads.md` | 177.217 | 0.957 | 0.973 | 1.547 | 0.325 |
+| `story-layout.md` | 154.968 | 1.368 | 1.326 | 1.827 | 0.300 |
+| `test-headings.md` | 152.701 | 0.838 | 0.805 | 1.721 | 0.293 |
+
+For the site benchmark post, an uncached Go edit takes 2.143 ms over loopback HTTP.
+A repeated cached edit takes 0.365 ms.
+The earlier Python HTTP measurement for that exact file is 136.25 ms.
+
+The Go server avoids a renderer subprocess per request. It also links feature assets instead of embedding their contents in each response.
+Both differences contribute to the observed gap. These runs do not isolate language or process-startup costs.
+The native Go renderer benchmark uses inline assets, so it can take longer than the Go HTTP path with linked assets.
+
+### Response sizes
+
+Values are uncompressed JSON body KiB. Separately requested stylesheets, libraries, and fonts are excluded.
+Initial responses contain a complete document and fragment fields. Edit responses omit the document.
+
+| Fixture | Python edit response | Go initial response | Go edit response | Go initial-to-edit reduction |
+| --- | ---: | ---: | ---: | ---: |
+| `post-001.md` | 20.01 | 24.62 | 8.82 | 64.2% |
+| `home.md` | 0.86 | 8.99 | 1.02 | 88.6% |
+| `markdown-chart-fallback.md` | 226.92 | 24.15 | 8.54 | 64.6% |
+| `md-card-headings.md` | 19.57 | 12.99 | 2.99 | 77.0% |
+| `roads.md` | 43.40 | 19.58 | 6.30 | 67.8% |
+| `story-layout.md` | 9.54 | 30.59 | 11.82 | 61.4% |
+| `test-headings.md` | 3.42 | 16.24 | 4.65 | 71.4% |
+
+The Go editor retains loaded libraries and shared styles in the preview frame.
+The linked-asset policy makes its chart response smaller, but the browser must fetch each dependency when it is first needed.
+Response-size reductions do not include those initial asset transfers and do not establish a browser paint-time improvement.
+
+### Go measurements and reproduction
+
+The Go run uses runtime source revision `059bb011f3314c43ca9e0c6e51d7ed735cf68790`.
+The merged parent adds benchmark tooling and documentation without changing that runtime.
+The host is the same AMD Ryzen 5 3600 workstation, with 12 logical CPUs and Go 1.26.3.
+The Go HTTP client uses Python 3.14.8; the earlier Python-reference client uses 3.13.13.
+The comparison includes that client-version difference. The JSON report records its timestamp, OS, binary hash, and harness hash.
+
+The Go server timer includes rendering, asset registration, and optional document construction.
+It excludes HTTP JSON encoding and network transfer. The Python server timer above excludes document construction.
+Use HTTP measurements to compare the complete request paths.
+
+These are sequential measurements on a shared workstation, rather than a controlled before-and-after experiment.
+They exclude server startup, appearance generation, cache invalidation calls, separately fetched assets, editor debounce, browser layout, and drawing.
+The Go editor debounce is 250 ms. The p95 equals the maximum with 15 samples; larger runs are needed for stable tail estimates.
+No site configuration, site build cache, encryption keys, or site lifecycle stages participate.
+
+The [Go HTTP report](https://github.com/WaylonWalker/markata/blob/feat/go-render-workbench/benchmarks/go-workbench-2026-10-29.json)
+contains every sample and fixture/binary/harness hashes.
+The [native Go output](https://github.com/WaylonWalker/markata/blob/feat/go-render-workbench/benchmarks/go-workbench-native-2026-10-29.txt)
+contains three fresh runs of the parent's renderer benchmark on the same fixtures.
+
+Run these commands sequentially from the repository root:
+
+```bash
+go build -o /tmp/markata-workbench-benchmark ./cmd/markata-workbench
+python python/benchmark_go_editor.py --binary /tmp/markata-workbench-benchmark
+go test ./pkg/plugins -run '^$' -bench '^BenchmarkRenderStandaloneFixtures$' -benchtime=200ms -count=3
+```
+
+The standard-library Python client starts a temporary Go server on an OS-assigned loopback port and stops it after the run.
+It does not restart the live editor or change its cache.
+Use `--samples`, `--warmups`, and `--output` to control the run. The default output uses the UTC date.
