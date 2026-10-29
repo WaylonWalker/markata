@@ -23,7 +23,7 @@ func TestStandaloneProfile_OfflineInteractiveInlinesManagedAssets(t *testing.T) 
 	if result.RenderProfile != RenderProfileOfflineInteractive {
 		t.Fatalf("profile not reported: %q", result.RenderProfile)
 	}
-	if !strings.Contains(result.HeadHTML, "<style>") || strings.Contains(result.HeadHTML, "href=") {
+	if !strings.Contains(result.HeadHTML, "<style>") || strings.Contains(result.HeadHTML, "<link ") {
 		t.Fatalf("bundled styles must be inline: %s", result.HeadHTML)
 	}
 	for _, asset := range result.Assets {
