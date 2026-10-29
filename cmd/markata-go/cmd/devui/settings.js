@@ -137,7 +137,7 @@
     'components.nav.enabled', 'components.nav.position',
     'components.footer.text', 'components.footer.show_copyright',
     'layout.name', 'layout.blog.show_toc', 'layout.blog.show_date', 'layout.blog.show_reading_time',
-    'search.enabled'
+    'search.enabled', 'markdown.render_profile'
   ];
   var COMMON_SECTION = '\u0000common';
 
