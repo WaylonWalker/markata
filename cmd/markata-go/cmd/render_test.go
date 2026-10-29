@@ -57,3 +57,40 @@ func TestRenderCommand_CapabilitiesConflict(t *testing.T) {
 		t.Fatalf("expected conflicting mode error, got %v", err)
 	}
 }
+
+func TestRenderCommand_Stdio(t *testing.T) {
+	cmd := newRenderCommand()
+	cmd.SetIn(strings.NewReader("{\"id\":\"a\",\"op\":\"capabilities\"}\n{\"id\":\"b\",\"op\":\"render\",\"source\":\"# OK\"}\n"))
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"--stdio"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	lines := strings.Split(strings.TrimSpace(out.String()), "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected two JSONL responses: %s", out.String())
+	}
+	var caps map[string]any
+	if err := json.Unmarshal([]byte(lines[0]), &caps); err != nil {
+		t.Fatal(err)
+	}
+	if caps["ok"] != true || caps["capabilities"] == nil {
+		t.Fatalf("missing capabilities: %+v", caps)
+	}
+	var response map[string]any
+	if err := json.Unmarshal([]byte(lines[1]), &response); err != nil {
+		t.Fatal(err)
+	}
+	if response["ok"] != true || response["result"] == nil {
+		t.Fatalf("missing render result: %+v", response)
+	}
+}
+
+func TestRenderCommand_StdioRejectsConflictingOptions(t *testing.T) {
+	cmd := newRenderCommand()
+	cmd.SetArgs([]string{"--stdio", "--unsafe"})
+	if err := cmd.Execute(); err == nil || !strings.Contains(err.Error(), "per-request JSON options") {
+		t.Fatalf("expected stdio option error, got %v", err)
+	}
+}
