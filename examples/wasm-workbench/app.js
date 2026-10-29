@@ -13,6 +13,7 @@
   catch { source.value = initial; saved.textContent = 'Storage unavailable · export to keep your draft'; }
   const editor = CodeMirror.fromTextArea(source, {mode:'gfm',lineNumbers:true,lineWrapping:true,matchBrackets:true,indentUnit:2,tabSize:4,viewportMargin:10,screenReaderLabel:'Markdown source'});
   // Exposed on the element by CodeMirror for host integrations and browser tests.
+  window.MarkataCommandPalette.attach(editor);
   const keymap = document.querySelector('#keymap');
   try { keymap.value = localStorage.getItem('markata-editor-keymap') || 'default'; } catch {}
   if (!keymap.value) keymap.value = 'default';

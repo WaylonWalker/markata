@@ -14,6 +14,7 @@ from playwright.sync_api import sync_playwright, expect
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'python'))
 from editor_test_support import load_editor, serve_editor
+from command_palette_checks import check_commands
 
 
 def check(browser, url):
@@ -25,6 +26,7 @@ def check(browser, url):
         page.goto(url)
         preview = page.frame_locator('#preview')
         expect(preview.locator('h1')).to_be_visible(timeout=60000)
+        check_commands(page, preview)
         expect(page.locator('#saved')).to_contain_text('Draft saved')
         assert page.locator('header h1').evaluate("e => getComputedStyle(e).fontFamily") != 'Georgia, serif'
         assert not page.locator('link[href$="/css/main.css"]').count()

@@ -11,6 +11,7 @@ const editor = CodeMirror.fromTextArea(source, {
   mode:'gfm', lineNumbers:true, lineWrapping:true, matchBrackets:true,
   indentUnit:2, tabSize:4, viewportMargin:10, screenReaderLabel:'Markdown source'
 });
+window.MarkataCommandPalette.attach(editor);
 const keymap = document.querySelector('#keymap');
 try { keymap.value = localStorage.getItem('markata-editor-keymap') || 'default'; } catch { storageWarning(); }
 if (!keymap.value) keymap.value = 'default';

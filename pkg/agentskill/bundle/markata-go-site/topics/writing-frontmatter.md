@@ -309,3 +309,11 @@ Inline comparisons fetch public GitHub revision files only after a reader
 requests them. Custom post templates need the editorial history component and
 its conditional CSS/bootstrap assets. Full rendering and authoring contracts
 are documented in the site's Editorial history and Editorial authoring guides.
+
+## Workbench snippet commands
+
+The Python, Go, and WASM workbenches offer **Commands** above the editor.
+Use **Ctrl+Shift+P** (**Cmd+Shift+P** on macOS) to search the snippet catalog.
+Commands preserve selected text and insert Markdown in one undo step.
+The catalog includes admonitions, Mermaid, Chart.js, and inline formatting.
+These standalone editors do not load a site index for post embeds.

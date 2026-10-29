@@ -99,6 +99,7 @@ jobs:
         run: '"${RUNNER_TEMP}/markata-wheel-venv/bin/python" python/test_editor_browser.py -v'
       - name: Build all editor demos and verify shared behavior
         run: |
+          python -m unittest discover -s tests/editors -p test_palette_assets.py -v
           go build -o "${RUNNER_TEMP}/markata-workbench" ./cmd/markata-workbench
           python scripts/wasm-workbench.py
           "${RUNNER_TEMP}/markata-wheel-venv/bin/python" tests/editors/test_parity.py --go-binary "${RUNNER_TEMP}/markata-workbench" --wasm-output .wasm-workbench

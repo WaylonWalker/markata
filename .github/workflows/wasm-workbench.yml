@@ -9,6 +9,7 @@ on:
       - 'pkg/fontpacks/**'
       - 'internal/fontcatalog/**'
       - 'examples/wasm-workbench/**'
+      - 'pkg/workbench/web/command-palette.*'
       - 'scripts/wasm-assets/**'
       - 'scripts/wasm-workbench.py'
       - 'tests/wasm/**'
