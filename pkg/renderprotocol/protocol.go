@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"strings"
 
 	"github.com/WaylonWalker/markata/pkg/plugins"
 )
@@ -59,7 +58,7 @@ func failure(id, code, message string) Response {
 // Handle is transport-neutral. It does not retain per-request configuration.
 func Handle(req Request) Response {
 	if req.ID == "" || len(req.ID) > MaxRequestIDBytes {
-		return failure(req.ID, "invalid_id", "id must contain 1 to 128 UTF-8 bytes")
+		return failure("", "invalid_id", "id must contain 1 to 128 UTF-8 bytes")
 	}
 	switch req.Op {
 	case "capabilities":
@@ -172,7 +171,3 @@ func readFrame(reader *bufio.Reader) ([]byte, bool, error) {
 		}
 	}
 }
-
-// The canonical protocol names deliberately don't depend on client-specific
-// rendering presets or site configuration; those are tracked separately.
-var _ = strings.TrimSpace
