@@ -228,3 +228,8 @@ For Go HTTP benchmarks, build `cmd/markata-workbench` and run
 Use the same fixture hashes as the Python report. Keep cache misses separate
 from repeated cached renders, and distinguish linked assets from inline assets.
 See the integration benchmark guide for timing boundaries and stacking order.
+
+For comparable WASM fixture measurements, serve the browser workbench and run
+`uv run --with playwright python scripts/benchmark-wasm.py --output /tmp/wasm-benchmark.json`.
+The report measures worker rendering, excluding startup, transfer, layout, and paint.
+Keep these timings separate from HTTP latency.

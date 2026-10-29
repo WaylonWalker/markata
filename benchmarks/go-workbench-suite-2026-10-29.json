@@ -1,0 +1,2732 @@
+{
+  "revision": "aca9d892503d3fe39b0648ccaec43a49a637aeca",
+  "recorded_at": "2026-10-29T18:41:50.892206+00:00",
+  "platform": "Linux-7.2.8-9-omarchy-x86_64-with-glibc2.44",
+  "python": "3.14.8",
+  "logical_cpus": 12,
+  "go": "/tmp/markata-renderer-suite-go: go1.26.3",
+  "binary_sha256": "0c29aa1e0f5f0b6992d4208f8526c088d4970c7fb72d4dc1d1b1920da961ae6e",
+  "harness_sha256": "9831981d1e4b9c12a77611be3d33da95765e583e148050771143c811e65745d2",
+  "samples": 15,
+  "warmups_per_mode": 2,
+  "asset_policy": "linked local dependencies; separately fetched assets excluded",
+  "miss_policy": "separate unmeasured request invalidates the one-entry cache before each miss",
+  "fixtures": [
+    {
+      "path": "benchmarks/site/posts/blog/2024/01/post-001.md",
+      "sha256": "539087f8df0cd2ac9f396f9db9ecc8a511b7ec2a479e6794f620edfaebaf0eac",
+      "input_bytes": 1518,
+      "raw": {
+        "initial_miss": [
+          {
+            "http_ms": 2.712621004320681,
+            "server_render_ms": 2.304,
+            "response_bytes": 25208,
+            "html_bytes": 5036,
+            "cached": false
+          },
+          {
+            "http_ms": 2.5284590083174407,
+            "server_render_ms": 2.097,
+            "response_bytes": 25208,
+            "html_bytes": 5036,
+            "cached": false
+          },
+          {
+            "http_ms": 2.909232978709042,
+            "server_render_ms": 2.406,
+            "response_bytes": 25208,
+            "html_bytes": 5036,
+            "cached": false
+          },
+          {
+            "http_ms": 3.201846033334732,
+            "server_render_ms": 2.151,
+            "response_bytes": 25208,
+            "html_bytes": 5036,
+            "cached": false
+          },
+          {
+            "http_ms": 2.7871410129591823,
+            "server_render_ms": 2.294,
+            "response_bytes": 25208,
+            "html_bytes": 5036,
+            "cached": false
+          },
+          {
+            "http_ms": 2.9161429847590625,
+            "server_render_ms": 2.463,
+            "response_bytes": 25208,
+            "html_bytes": 5036,
+            "cached": false
+          },
+          {
+            "http_ms": 2.546039002481848,
+            "server_render_ms": 2.166,
+            "response_bytes": 25208,
+            "html_bytes": 5036,
+            "cached": false
+          },
+          {
+            "http_ms": 2.238796034362167,
+            "server_render_ms": 1.888,
+            "response_bytes": 25208,
+            "html_bytes": 5036,
+            "cached": false
+          },
+          {
+            "http_ms": 4.126866988372058,
+            "server_render_ms": 3.541,
+            "response_bytes": 25208,
+            "html_bytes": 5036,
+            "cached": false
+          },
+          {
+            "http_ms": 2.4492170196026564,
+            "server_render_ms": 2.037,
+            "response_bytes": 25208,
+            "html_bytes": 5036,
+            "cached": false
+          },
+          {
+            "http_ms": 2.228916040621698,
+            "server_render_ms": 1.884,
+            "response_bytes": 25208,
+            "html_bytes": 5036,
+            "cached": false
+          },
+          {
+            "http_ms": 2.400146971922368,
+            "server_render_ms": 1.971,
+            "response_bytes": 25208,
+            "html_bytes": 5036,
+            "cached": false
+          },
+          {
+            "http_ms": 2.993403992149979,
+            "server_render_ms": 2.335,
+            "response_bytes": 25208,
+            "html_bytes": 5036,
+            "cached": false
+          },
+          {
+            "http_ms": 4.044145985972136,
+            "server_render_ms": 3.447,
+            "response_bytes": 25208,
+            "html_bytes": 5036,
+            "cached": false
+          },
+          {
+            "http_ms": 2.9008929850533605,
+            "server_render_ms": 2.464,
+            "response_bytes": 25208,
+            "html_bytes": 5036,
+            "cached": false
+          }
+        ],
+        "fragment_miss": [
+          {
+            "http_ms": 2.204646007157862,
+            "server_render_ms": 1.891,
+            "response_bytes": 9031,
+            "html_bytes": 5036,
+            "cached": false
+          },
+          {
+            "http_ms": 2.176654990762472,
+            "server_render_ms": 1.869,
+            "response_bytes": 9031,
+            "html_bytes": 5036,
+            "cached": false
+          },
+          {
+            "http_ms": 2.6298000011593103,
+            "server_render_ms": 2.145,
+            "response_bytes": 9031,
+            "html_bytes": 5036,
+            "cached": false
+          },
+          {
+            "http_ms": 2.2880759788677096,
+            "server_render_ms": 1.929,
+            "response_bytes": 9031,
+            "html_bytes": 5036,
+            "cached": false
+          },
+          {
+            "http_ms": 2.881963038817048,
+            "server_render_ms": 2.292,
+            "response_bytes": 9031,
+            "html_bytes": 5036,
+            "cached": false
+          },
+          {
+            "http_ms": 2.608850016258657,
+            "server_render_ms": 2.235,
+            "response_bytes": 9031,
+            "html_bytes": 5036,
+            "cached": false
+          },
+          {
+            "http_ms": 2.6540409890003502,
+            "server_render_ms": 2.245,
+            "response_bytes": 9031,
+            "html_bytes": 5036,
+            "cached": false
+          },
+          {
+            "http_ms": 3.75188299221918,
+            "server_render_ms": 3.187,
+            "response_bytes": 9031,
+            "html_bytes": 5036,
+            "cached": false
+          },
+          {
+            "http_ms": 2.5075890007428825,
+            "server_render_ms": 2.017,
+            "response_bytes": 9031,
+            "html_bytes": 5036,
+            "cached": false
+          },
+          {
+            "http_ms": 2.2844859631732106,
+            "server_render_ms": 1.931,
+            "response_bytes": 9031,
+            "html_bytes": 5036,
+            "cached": false
+          },
+          {
+            "http_ms": 2.1951450034976006,
+            "server_render_ms": 1.87,
+            "response_bytes": 9030,
+            "html_bytes": 5036,
+            "cached": false
+          },
+          {
+            "http_ms": 2.2843460319563746,
+            "server_render_ms": 1.935,
+            "response_bytes": 9031,
+            "html_bytes": 5036,
+            "cached": false
+          },
+          {
+            "http_ms": 2.303536981344223,
+            "server_render_ms": 1.914,
+            "response_bytes": 9031,
+            "html_bytes": 5036,
+            "cached": false
+          },
+          {
+            "http_ms": 3.2730569946579635,
+            "server_render_ms": 2.557,
+            "response_bytes": 9031,
+            "html_bytes": 5036,
+            "cached": false
+          },
+          {
+            "http_ms": 2.3887569550424814,
+            "server_render_ms": 2.048,
+            "response_bytes": 9031,
+            "html_bytes": 5036,
+            "cached": false
+          }
+        ],
+        "fragment_cached": [
+          {
+            "http_ms": 0.30339398654177785,
+            "server_render_ms": 0.007,
+            "response_bytes": 9030,
+            "html_bytes": 5036,
+            "cached": true
+          },
+          {
+            "http_ms": 0.29719399753957987,
+            "server_render_ms": 0.007,
+            "response_bytes": 9030,
+            "html_bytes": 5036,
+            "cached": true
+          },
+          {
+            "http_ms": 0.2812430029734969,
+            "server_render_ms": 0.004,
+            "response_bytes": 9030,
+            "html_bytes": 5036,
+            "cached": true
+          },
+          {
+            "http_ms": 0.30507304472848773,
+            "server_render_ms": 0.005,
+            "response_bytes": 9030,
+            "html_bytes": 5036,
+            "cached": true
+          },
+          {
+            "http_ms": 0.3079739981330931,
+            "server_render_ms": 0.006,
+            "response_bytes": 9030,
+            "html_bytes": 5036,
+            "cached": true
+          },
+          {
+            "http_ms": 0.3018840216100216,
+            "server_render_ms": 0.005,
+            "response_bytes": 9030,
+            "html_bytes": 5036,
+            "cached": true
+          },
+          {
+            "http_ms": 0.30083401361480355,
+            "server_render_ms": 0.005,
+            "response_bytes": 9030,
+            "html_bytes": 5036,
+            "cached": true
+          },
+          {
+            "http_ms": 0.30181300826370716,
+            "server_render_ms": 0.005,
+            "response_bytes": 9030,
+            "html_bytes": 5036,
+            "cached": true
+          },
+          {
+            "http_ms": 0.3102530026808381,
+            "server_render_ms": 0.004,
+            "response_bytes": 9030,
+            "html_bytes": 5036,
+            "cached": true
+          },
+          {
+            "http_ms": 0.3095230204053223,
+            "server_render_ms": 0.005,
+            "response_bytes": 9030,
+            "html_bytes": 5036,
+            "cached": true
+          },
+          {
+            "http_ms": 0.2944829757325351,
+            "server_render_ms": 0.004,
+            "response_bytes": 9030,
+            "html_bytes": 5036,
+            "cached": true
+          },
+          {
+            "http_ms": 0.2956640091724694,
+            "server_render_ms": 0.006,
+            "response_bytes": 9030,
+            "html_bytes": 5036,
+            "cached": true
+          },
+          {
+            "http_ms": 0.2951840288005769,
+            "server_render_ms": 0.004,
+            "response_bytes": 9030,
+            "html_bytes": 5036,
+            "cached": true
+          },
+          {
+            "http_ms": 0.29061298118904233,
+            "server_render_ms": 0.005,
+            "response_bytes": 9030,
+            "html_bytes": 5036,
+            "cached": true
+          },
+          {
+            "http_ms": 0.28609298169612885,
+            "server_render_ms": 0.004,
+            "response_bytes": 9030,
+            "html_bytes": 5036,
+            "cached": true
+          }
+        ]
+      },
+      "initial_miss": {
+        "http_ms": {
+          "median": 2.787,
+          "p95": 4.127,
+          "min": 2.229,
+          "max": 4.127
+        },
+        "server_render_ms": {
+          "median": 2.294,
+          "p95": 3.541,
+          "min": 1.884,
+          "max": 3.541
+        },
+        "response_bytes": {
+          "median": 25208,
+          "p95": 25208,
+          "min": 25208,
+          "max": 25208
+        }
+      },
+      "fragment_miss": {
+        "http_ms": {
+          "median": 2.389,
+          "p95": 3.752,
+          "min": 2.177,
+          "max": 3.752
+        },
+        "server_render_ms": {
+          "median": 2.017,
+          "p95": 3.187,
+          "min": 1.869,
+          "max": 3.187
+        },
+        "response_bytes": {
+          "median": 9031,
+          "p95": 9031,
+          "min": 9030,
+          "max": 9031
+        }
+      },
+      "fragment_cached": {
+        "http_ms": {
+          "median": 0.301,
+          "p95": 0.31,
+          "min": 0.281,
+          "max": 0.31
+        },
+        "server_render_ms": {
+          "median": 0.005,
+          "p95": 0.007,
+          "min": 0.004,
+          "max": 0.007
+        },
+        "response_bytes": {
+          "median": 9030,
+          "p95": 9030,
+          "min": 9030,
+          "max": 9030
+        }
+      }
+    },
+    {
+      "path": "rendering-fixtures/home.md",
+      "sha256": "28269cc4cb5e409b4a0fa0cf298bbc93b5435e284de279c92e9b3dbee4fbd1ab",
+      "input_bytes": 426,
+      "raw": {
+        "initial_miss": [
+          {
+            "http_ms": 0.5151649820618331,
+            "server_render_ms": 0.229,
+            "response_bytes": 9205,
+            "html_bytes": 719,
+            "cached": false
+          },
+          {
+            "http_ms": 0.5150359938852489,
+            "server_render_ms": 0.237,
+            "response_bytes": 9205,
+            "html_bytes": 719,
+            "cached": false
+          },
+          {
+            "http_ms": 1.420926011633128,
+            "server_render_ms": 1.003,
+            "response_bytes": 9205,
+            "html_bytes": 719,
+            "cached": false
+          },
+          {
+            "http_ms": 0.8100490085780621,
+            "server_render_ms": 0.338,
+            "response_bytes": 9205,
+            "html_bytes": 719,
+            "cached": false
+          },
+          {
+            "http_ms": 0.6135469884611666,
+            "server_render_ms": 0.269,
+            "response_bytes": 9205,
+            "html_bytes": 719,
+            "cached": false
+          },
+          {
+            "http_ms": 0.7768790237605572,
+            "server_render_ms": 0.346,
+            "response_bytes": 9205,
+            "html_bytes": 719,
+            "cached": false
+          },
+          {
+            "http_ms": 0.5389259895309806,
+            "server_render_ms": 0.227,
+            "response_bytes": 9205,
+            "html_bytes": 719,
+            "cached": false
+          },
+          {
+            "http_ms": 0.5128859775140882,
+            "server_render_ms": 0.22,
+            "response_bytes": 9204,
+            "html_bytes": 719,
+            "cached": false
+          },
+          {
+            "http_ms": 0.6062770262360573,
+            "server_render_ms": 0.281,
+            "response_bytes": 9205,
+            "html_bytes": 719,
+            "cached": false
+          },
+          {
+            "http_ms": 0.5833270261064172,
+            "server_render_ms": 0.273,
+            "response_bytes": 9205,
+            "html_bytes": 719,
+            "cached": false
+          },
+          {
+            "http_ms": 0.5889259628020227,
+            "server_render_ms": 0.276,
+            "response_bytes": 9205,
+            "html_bytes": 719,
+            "cached": false
+          },
+          {
+            "http_ms": 1.1914240312762558,
+            "server_render_ms": 0.429,
+            "response_bytes": 9205,
+            "html_bytes": 719,
+            "cached": false
+          },
+          {
+            "http_ms": 0.6852570222690701,
+            "server_render_ms": 0.346,
+            "response_bytes": 9205,
+            "html_bytes": 719,
+            "cached": false
+          },
+          {
+            "http_ms": 0.8241399773396552,
+            "server_render_ms": 0.34,
+            "response_bytes": 9204,
+            "html_bytes": 719,
+            "cached": false
+          },
+          {
+            "http_ms": 0.5929059698246419,
+            "server_render_ms": 0.217,
+            "response_bytes": 9205,
+            "html_bytes": 719,
+            "cached": false
+          }
+        ],
+        "fragment_miss": [
+          {
+            "http_ms": 0.5037549999542534,
+            "server_render_ms": 0.206,
+            "response_bytes": 1045,
+            "html_bytes": 719,
+            "cached": false
+          },
+          {
+            "http_ms": 0.5971660139039159,
+            "server_render_ms": 0.277,
+            "response_bytes": 1045,
+            "html_bytes": 719,
+            "cached": false
+          },
+          {
+            "http_ms": 1.2195740127936006,
+            "server_render_ms": 0.513,
+            "response_bytes": 1045,
+            "html_bytes": 719,
+            "cached": false
+          },
+          {
+            "http_ms": 0.5502259591594338,
+            "server_render_ms": 0.253,
+            "response_bytes": 1045,
+            "html_bytes": 719,
+            "cached": false
+          },
+          {
+            "http_ms": 0.49944600323215127,
+            "server_render_ms": 0.217,
+            "response_bytes": 1045,
+            "html_bytes": 719,
+            "cached": false
+          },
+          {
+            "http_ms": 0.5610459484159946,
+            "server_render_ms": 0.254,
+            "response_bytes": 1045,
+            "html_bytes": 719,
+            "cached": false
+          },
+          {
+            "http_ms": 0.5775970057584345,
+            "server_render_ms": 0.252,
+            "response_bytes": 1045,
+            "html_bytes": 719,
+            "cached": false
+          },
+          {
+            "http_ms": 0.5660959868691862,
+            "server_render_ms": 0.249,
+            "response_bytes": 1045,
+            "html_bytes": 719,
+            "cached": false
+          },
+          {
+            "http_ms": 0.5220759776420891,
+            "server_render_ms": 0.24,
+            "response_bytes": 1044,
+            "html_bytes": 719,
+            "cached": false
+          },
+          {
+            "http_ms": 0.49744604621082544,
+            "server_render_ms": 0.209,
+            "response_bytes": 1045,
+            "html_bytes": 719,
+            "cached": false
+          },
+          {
+            "http_ms": 1.1485929717309773,
+            "server_render_ms": 0.381,
+            "response_bytes": 1045,
+            "html_bytes": 719,
+            "cached": false
+          },
+          {
+            "http_ms": 0.5188649520277977,
+            "server_render_ms": 0.213,
+            "response_bytes": 1045,
+            "html_bytes": 719,
+            "cached": false
+          },
+          {
+            "http_ms": 0.5629060324281454,
+            "server_render_ms": 0.22,
+            "response_bytes": 1044,
+            "html_bytes": 719,
+            "cached": false
+          },
+          {
+            "http_ms": 0.5483260028995574,
+            "server_render_ms": 0.213,
+            "response_bytes": 1045,
+            "html_bytes": 719,
+            "cached": false
+          },
+          {
+            "http_ms": 0.5616570124402642,
+            "server_render_ms": 0.258,
+            "response_bytes": 1045,
+            "html_bytes": 719,
+            "cached": false
+          }
+        ],
+        "fragment_cached": [
+          {
+            "http_ms": 0.30844402499496937,
+            "server_render_ms": 0.007,
+            "response_bytes": 1044,
+            "html_bytes": 719,
+            "cached": true
+          },
+          {
+            "http_ms": 0.30924397287890315,
+            "server_render_ms": 0.003,
+            "response_bytes": 1044,
+            "html_bytes": 719,
+            "cached": true
+          },
+          {
+            "http_ms": 0.31998398480936885,
+            "server_render_ms": 0.004,
+            "response_bytes": 1044,
+            "html_bytes": 719,
+            "cached": true
+          },
+          {
+            "http_ms": 0.30677299946546555,
+            "server_render_ms": 0.003,
+            "response_bytes": 1044,
+            "html_bytes": 719,
+            "cached": true
+          },
+          {
+            "http_ms": 0.2731540007516742,
+            "server_render_ms": 0.003,
+            "response_bytes": 1044,
+            "html_bytes": 719,
+            "cached": true
+          },
+          {
+            "http_ms": 0.26519299717620015,
+            "server_render_ms": 0.004,
+            "response_bytes": 1044,
+            "html_bytes": 719,
+            "cached": true
+          },
+          {
+            "http_ms": 0.2654629643075168,
+            "server_render_ms": 0.003,
+            "response_bytes": 1044,
+            "html_bytes": 719,
+            "cached": true
+          },
+          {
+            "http_ms": 0.3043239703401923,
+            "server_render_ms": 0.005,
+            "response_bytes": 1044,
+            "html_bytes": 719,
+            "cached": true
+          },
+          {
+            "http_ms": 0.29119302053004503,
+            "server_render_ms": 0.004,
+            "response_bytes": 1044,
+            "html_bytes": 719,
+            "cached": true
+          },
+          {
+            "http_ms": 0.29324396746233106,
+            "server_render_ms": 0.004,
+            "response_bytes": 1044,
+            "html_bytes": 719,
+            "cached": true
+          },
+          {
+            "http_ms": 0.2878830418922007,
+            "server_render_ms": 0.004,
+            "response_bytes": 1044,
+            "html_bytes": 719,
+            "cached": true
+          },
+          {
+            "http_ms": 0.28176396153867245,
+            "server_render_ms": 0.003,
+            "response_bytes": 1044,
+            "html_bytes": 719,
+            "cached": true
+          },
+          {
+            "http_ms": 0.28267299057915807,
+            "server_render_ms": 0.005,
+            "response_bytes": 1044,
+            "html_bytes": 719,
+            "cached": true
+          },
+          {
+            "http_ms": 0.2974339877255261,
+            "server_render_ms": 0.003,
+            "response_bytes": 1044,
+            "html_bytes": 719,
+            "cached": true
+          },
+          {
+            "http_ms": 0.2568730269558728,
+            "server_render_ms": 0.003,
+            "response_bytes": 1044,
+            "html_bytes": 719,
+            "cached": true
+          }
+        ]
+      },
+      "initial_miss": {
+        "http_ms": {
+          "median": 0.606,
+          "p95": 1.421,
+          "min": 0.513,
+          "max": 1.421
+        },
+        "server_render_ms": {
+          "median": 0.276,
+          "p95": 1.003,
+          "min": 0.217,
+          "max": 1.003
+        },
+        "response_bytes": {
+          "median": 9205,
+          "p95": 9205,
+          "min": 9204,
+          "max": 9205
+        }
+      },
+      "fragment_miss": {
+        "http_ms": {
+          "median": 0.561,
+          "p95": 1.22,
+          "min": 0.497,
+          "max": 1.22
+        },
+        "server_render_ms": {
+          "median": 0.249,
+          "p95": 0.513,
+          "min": 0.206,
+          "max": 0.513
+        },
+        "response_bytes": {
+          "median": 1045,
+          "p95": 1045,
+          "min": 1044,
+          "max": 1045
+        }
+      },
+      "fragment_cached": {
+        "http_ms": {
+          "median": 0.291,
+          "p95": 0.32,
+          "min": 0.257,
+          "max": 0.32
+        },
+        "server_render_ms": {
+          "median": 0.004,
+          "p95": 0.007,
+          "min": 0.003,
+          "max": 0.007
+        },
+        "response_bytes": {
+          "median": 1044,
+          "p95": 1044,
+          "min": 1044,
+          "max": 1044
+        }
+      }
+    },
+    {
+      "path": "rendering-fixtures/markdown-chart-fallback.md",
+      "sha256": "436870dba4523d49464ff1c23fbc198390e74eceee31ca573bd27a34161fae5a",
+      "input_bytes": 1550,
+      "raw": {
+        "initial_miss": [
+          {
+            "http_ms": 33.21497899014503,
+            "server_render_ms": 32.637,
+            "response_bytes": 24729,
+            "html_bytes": 3762,
+            "cached": false
+          },
+          {
+            "http_ms": 30.928121996112168,
+            "server_render_ms": 30.093,
+            "response_bytes": 24729,
+            "html_bytes": 3762,
+            "cached": false
+          },
+          {
+            "http_ms": 30.340916011482477,
+            "server_render_ms": 29.724,
+            "response_bytes": 24729,
+            "html_bytes": 3762,
+            "cached": false
+          },
+          {
+            "http_ms": 29.173592978622764,
+            "server_render_ms": 28.609,
+            "response_bytes": 24729,
+            "html_bytes": 3762,
+            "cached": false
+          },
+          {
+            "http_ms": 29.882080969400704,
+            "server_render_ms": 29.269,
+            "response_bytes": 24729,
+            "html_bytes": 3762,
+            "cached": false
+          },
+          {
+            "http_ms": 30.387297039851546,
+            "server_render_ms": 29.802,
+            "response_bytes": 24729,
+            "html_bytes": 3762,
+            "cached": false
+          },
+          {
+            "http_ms": 30.039202014449984,
+            "server_render_ms": 29.396,
+            "response_bytes": 24729,
+            "html_bytes": 3762,
+            "cached": false
+          },
+          {
+            "http_ms": 35.376683983486146,
+            "server_render_ms": 34.785,
+            "response_bytes": 24729,
+            "html_bytes": 3762,
+            "cached": false
+          },
+          {
+            "http_ms": 37.17915405286476,
+            "server_render_ms": 36.403,
+            "response_bytes": 24729,
+            "html_bytes": 3762,
+            "cached": false
+          },
+          {
+            "http_ms": 30.377975956071168,
+            "server_render_ms": 29.822,
+            "response_bytes": 24729,
+            "html_bytes": 3762,
+            "cached": false
+          },
+          {
+            "http_ms": 34.969968954101205,
+            "server_render_ms": 34.348,
+            "response_bytes": 24729,
+            "html_bytes": 3762,
+            "cached": false
+          },
+          {
+            "http_ms": 30.927043000701815,
+            "server_render_ms": 30.356,
+            "response_bytes": 24729,
+            "html_bytes": 3762,
+            "cached": false
+          },
+          {
+            "http_ms": 34.130139043554664,
+            "server_render_ms": 33.205,
+            "response_bytes": 24729,
+            "html_bytes": 3762,
+            "cached": false
+          },
+          {
+            "http_ms": 29.91365100024268,
+            "server_render_ms": 29.248,
+            "response_bytes": 24729,
+            "html_bytes": 3762,
+            "cached": false
+          },
+          {
+            "http_ms": 33.805735991336405,
+            "server_render_ms": 33.184,
+            "response_bytes": 24729,
+            "html_bytes": 3762,
+            "cached": false
+          }
+        ],
+        "fragment_miss": [
+          {
+            "http_ms": 30.64765001181513,
+            "server_render_ms": 30,
+            "response_bytes": 8740,
+            "html_bytes": 3762,
+            "cached": false
+          },
+          {
+            "http_ms": 29.427775007206947,
+            "server_render_ms": 28.922,
+            "response_bytes": 8744,
+            "html_bytes": 3762,
+            "cached": false
+          },
+          {
+            "http_ms": 29.452806047629565,
+            "server_render_ms": 28.788,
+            "response_bytes": 8744,
+            "html_bytes": 3762,
+            "cached": false
+          },
+          {
+            "http_ms": 37.9905829904601,
+            "server_render_ms": 37.296,
+            "response_bytes": 8744,
+            "html_bytes": 3762,
+            "cached": false
+          },
+          {
+            "http_ms": 39.30768801365048,
+            "server_render_ms": 38.766,
+            "response_bytes": 8744,
+            "html_bytes": 3762,
+            "cached": false
+          },
+          {
+            "http_ms": 36.15234198514372,
+            "server_render_ms": 35.314,
+            "response_bytes": 8744,
+            "html_bytes": 3762,
+            "cached": false
+          },
+          {
+            "http_ms": 32.23381703719497,
+            "server_render_ms": 31.419,
+            "response_bytes": 8744,
+            "html_bytes": 3762,
+            "cached": false
+          },
+          {
+            "http_ms": 38.69425103766844,
+            "server_render_ms": 38.056,
+            "response_bytes": 8744,
+            "html_bytes": 3762,
+            "cached": false
+          },
+          {
+            "http_ms": 35.78688798006624,
+            "server_render_ms": 35.32,
+            "response_bytes": 8743,
+            "html_bytes": 3762,
+            "cached": false
+          },
+          {
+            "http_ms": 28.79827795550227,
+            "server_render_ms": 28.392,
+            "response_bytes": 8744,
+            "html_bytes": 3762,
+            "cached": false
+          },
+          {
+            "http_ms": 29.26376403775066,
+            "server_render_ms": 28.885,
+            "response_bytes": 8744,
+            "html_bytes": 3762,
+            "cached": false
+          },
+          {
+            "http_ms": 40.105067018885165,
+            "server_render_ms": 39.478,
+            "response_bytes": 8744,
+            "html_bytes": 3762,
+            "cached": false
+          },
+          {
+            "http_ms": 32.350027991924435,
+            "server_render_ms": 31.677,
+            "response_bytes": 8744,
+            "html_bytes": 3762,
+            "cached": false
+          },
+          {
+            "http_ms": 34.07773800427094,
+            "server_render_ms": 33.521,
+            "response_bytes": 8744,
+            "html_bytes": 3762,
+            "cached": false
+          },
+          {
+            "http_ms": 31.19922598125413,
+            "server_render_ms": 30.744,
+            "response_bytes": 8744,
+            "html_bytes": 3762,
+            "cached": false
+          }
+        ],
+        "fragment_cached": [
+          {
+            "http_ms": 0.36316399928182364,
+            "server_render_ms": 0.006,
+            "response_bytes": 8742,
+            "html_bytes": 3762,
+            "cached": true
+          },
+          {
+            "http_ms": 0.35536399809643626,
+            "server_render_ms": 0.006,
+            "response_bytes": 8742,
+            "html_bytes": 3762,
+            "cached": true
+          },
+          {
+            "http_ms": 0.347793975379318,
+            "server_render_ms": 0.006,
+            "response_bytes": 8742,
+            "html_bytes": 3762,
+            "cached": true
+          },
+          {
+            "http_ms": 0.3282639663666487,
+            "server_render_ms": 0.004,
+            "response_bytes": 8742,
+            "html_bytes": 3762,
+            "cached": true
+          },
+          {
+            "http_ms": 0.364875013474375,
+            "server_render_ms": 0.006,
+            "response_bytes": 8742,
+            "html_bytes": 3762,
+            "cached": true
+          },
+          {
+            "http_ms": 0.3514639683999121,
+            "server_render_ms": 0.005,
+            "response_bytes": 8742,
+            "html_bytes": 3762,
+            "cached": true
+          },
+          {
+            "http_ms": 0.3210730501450598,
+            "server_render_ms": 0.004,
+            "response_bytes": 8742,
+            "html_bytes": 3762,
+            "cached": true
+          },
+          {
+            "http_ms": 0.3418739652261138,
+            "server_render_ms": 0.004,
+            "response_bytes": 8742,
+            "html_bytes": 3762,
+            "cached": true
+          },
+          {
+            "http_ms": 0.3324940335005522,
+            "server_render_ms": 0.007,
+            "response_bytes": 8742,
+            "html_bytes": 3762,
+            "cached": true
+          },
+          {
+            "http_ms": 0.33937301486730576,
+            "server_render_ms": 0.005,
+            "response_bytes": 8742,
+            "html_bytes": 3762,
+            "cached": true
+          },
+          {
+            "http_ms": 0.33956399420276284,
+            "server_render_ms": 0.005,
+            "response_bytes": 8742,
+            "html_bytes": 3762,
+            "cached": true
+          },
+          {
+            "http_ms": 0.3296540235169232,
+            "server_render_ms": 0.004,
+            "response_bytes": 8742,
+            "html_bytes": 3762,
+            "cached": true
+          },
+          {
+            "http_ms": 0.3440440050326288,
+            "server_render_ms": 0.004,
+            "response_bytes": 8742,
+            "html_bytes": 3762,
+            "cached": true
+          },
+          {
+            "http_ms": 0.3475139965303242,
+            "server_render_ms": 0.005,
+            "response_bytes": 8742,
+            "html_bytes": 3762,
+            "cached": true
+          },
+          {
+            "http_ms": 0.3273340407758951,
+            "server_render_ms": 0.005,
+            "response_bytes": 8742,
+            "html_bytes": 3762,
+            "cached": true
+          }
+        ]
+      },
+      "initial_miss": {
+        "http_ms": {
+          "median": 30.927,
+          "p95": 37.179,
+          "min": 29.174,
+          "max": 37.179
+        },
+        "server_render_ms": {
+          "median": 30.093,
+          "p95": 36.403,
+          "min": 28.609,
+          "max": 36.403
+        },
+        "response_bytes": {
+          "median": 24729,
+          "p95": 24729,
+          "min": 24729,
+          "max": 24729
+        }
+      },
+      "fragment_miss": {
+        "http_ms": {
+          "median": 32.35,
+          "p95": 40.105,
+          "min": 28.798,
+          "max": 40.105
+        },
+        "server_render_ms": {
+          "median": 31.677,
+          "p95": 39.478,
+          "min": 28.392,
+          "max": 39.478
+        },
+        "response_bytes": {
+          "median": 8744,
+          "p95": 8744,
+          "min": 8740,
+          "max": 8744
+        }
+      },
+      "fragment_cached": {
+        "http_ms": {
+          "median": 0.342,
+          "p95": 0.365,
+          "min": 0.321,
+          "max": 0.365
+        },
+        "server_render_ms": {
+          "median": 0.005,
+          "p95": 0.007,
+          "min": 0.004,
+          "max": 0.007
+        },
+        "response_bytes": {
+          "median": 8742,
+          "p95": 8742,
+          "min": 8742,
+          "max": 8742
+        }
+      }
+    },
+    {
+      "path": "rendering-fixtures/md-card-headings.md",
+      "sha256": "7b9417e75318716d028b6463c5107cb9719a6bd0d41d19fbf7e2c3b6125e80e6",
+      "input_bytes": 1104,
+      "raw": {
+        "initial_miss": [
+          {
+            "http_ms": 1.027311955112964,
+            "server_render_ms": 0.676,
+            "response_bytes": 13299,
+            "html_bytes": 1793,
+            "cached": false
+          },
+          {
+            "http_ms": 0.9743809932842851,
+            "server_render_ms": 0.628,
+            "response_bytes": 13299,
+            "html_bytes": 1793,
+            "cached": false
+          },
+          {
+            "http_ms": 0.9618410258553922,
+            "server_render_ms": 0.638,
+            "response_bytes": 13299,
+            "html_bytes": 1793,
+            "cached": false
+          },
+          {
+            "http_ms": 0.9861119906418025,
+            "server_render_ms": 0.647,
+            "response_bytes": 13299,
+            "html_bytes": 1793,
+            "cached": false
+          },
+          {
+            "http_ms": 0.9658910566940904,
+            "server_render_ms": 0.643,
+            "response_bytes": 13299,
+            "html_bytes": 1793,
+            "cached": false
+          },
+          {
+            "http_ms": 0.8566390024498105,
+            "server_render_ms": 0.512,
+            "response_bytes": 13299,
+            "html_bytes": 1793,
+            "cached": false
+          },
+          {
+            "http_ms": 1.0924829985015094,
+            "server_render_ms": 0.737,
+            "response_bytes": 13299,
+            "html_bytes": 1793,
+            "cached": false
+          },
+          {
+            "http_ms": 0.9373609791509807,
+            "server_render_ms": 0.55,
+            "response_bytes": 13298,
+            "html_bytes": 1793,
+            "cached": false
+          },
+          {
+            "http_ms": 0.8338890038430691,
+            "server_render_ms": 0.491,
+            "response_bytes": 13299,
+            "html_bytes": 1793,
+            "cached": false
+          },
+          {
+            "http_ms": 0.9754310012795031,
+            "server_render_ms": 0.634,
+            "response_bytes": 13299,
+            "html_bytes": 1793,
+            "cached": false
+          },
+          {
+            "http_ms": 0.9200110216625035,
+            "server_render_ms": 0.583,
+            "response_bytes": 13299,
+            "html_bytes": 1793,
+            "cached": false
+          },
+          {
+            "http_ms": 0.9024710161611438,
+            "server_render_ms": 0.524,
+            "response_bytes": 13299,
+            "html_bytes": 1793,
+            "cached": false
+          },
+          {
+            "http_ms": 1.1331929708831012,
+            "server_render_ms": 0.666,
+            "response_bytes": 13299,
+            "html_bytes": 1793,
+            "cached": false
+          },
+          {
+            "http_ms": 0.951280992012471,
+            "server_render_ms": 0.62,
+            "response_bytes": 13298,
+            "html_bytes": 1793,
+            "cached": false
+          },
+          {
+            "http_ms": 1.4735459699295461,
+            "server_render_ms": 0.825,
+            "response_bytes": 13299,
+            "html_bytes": 1793,
+            "cached": false
+          }
+        ],
+        "fragment_miss": [
+          {
+            "http_ms": 0.7623789715580642,
+            "server_render_ms": 0.488,
+            "response_bytes": 3061,
+            "html_bytes": 1793,
+            "cached": false
+          },
+          {
+            "http_ms": 0.8680799510329962,
+            "server_render_ms": 0.505,
+            "response_bytes": 3061,
+            "html_bytes": 1793,
+            "cached": false
+          },
+          {
+            "http_ms": 0.9406899916939437,
+            "server_render_ms": 0.607,
+            "response_bytes": 3061,
+            "html_bytes": 1793,
+            "cached": false
+          },
+          {
+            "http_ms": 0.8564199670217931,
+            "server_render_ms": 0.572,
+            "response_bytes": 3061,
+            "html_bytes": 1793,
+            "cached": false
+          },
+          {
+            "http_ms": 0.8675199933350086,
+            "server_render_ms": 0.573,
+            "response_bytes": 3061,
+            "html_bytes": 1793,
+            "cached": false
+          },
+          {
+            "http_ms": 1.2078640284016728,
+            "server_render_ms": 0.823,
+            "response_bytes": 3061,
+            "html_bytes": 1793,
+            "cached": false
+          },
+          {
+            "http_ms": 0.7757689454592764,
+            "server_render_ms": 0.499,
+            "response_bytes": 3061,
+            "html_bytes": 1793,
+            "cached": false
+          },
+          {
+            "http_ms": 0.7826790097169578,
+            "server_render_ms": 0.497,
+            "response_bytes": 3061,
+            "html_bytes": 1793,
+            "cached": false
+          },
+          {
+            "http_ms": 0.7960489601828158,
+            "server_render_ms": 0.502,
+            "response_bytes": 3061,
+            "html_bytes": 1793,
+            "cached": false
+          },
+          {
+            "http_ms": 0.9238109923899174,
+            "server_render_ms": 0.593,
+            "response_bytes": 3061,
+            "html_bytes": 1793,
+            "cached": false
+          },
+          {
+            "http_ms": 0.895950011909008,
+            "server_render_ms": 0.595,
+            "response_bytes": 3061,
+            "html_bytes": 1793,
+            "cached": false
+          },
+          {
+            "http_ms": 0.895500008482486,
+            "server_render_ms": 0.565,
+            "response_bytes": 3061,
+            "html_bytes": 1793,
+            "cached": false
+          },
+          {
+            "http_ms": 0.8102290448732674,
+            "server_render_ms": 0.514,
+            "response_bytes": 3061,
+            "html_bytes": 1793,
+            "cached": false
+          },
+          {
+            "http_ms": 1.07694196049124,
+            "server_render_ms": 0.543,
+            "response_bytes": 3061,
+            "html_bytes": 1793,
+            "cached": false
+          },
+          {
+            "http_ms": 0.8039789972826838,
+            "server_render_ms": 0.481,
+            "response_bytes": 3061,
+            "html_bytes": 1793,
+            "cached": false
+          }
+        ],
+        "fragment_cached": [
+          {
+            "http_ms": 0.31780399149283767,
+            "server_render_ms": 0.006,
+            "response_bytes": 3060,
+            "html_bytes": 1793,
+            "cached": true
+          },
+          {
+            "http_ms": 0.37019402952864766,
+            "server_render_ms": 0.006,
+            "response_bytes": 3060,
+            "html_bytes": 1793,
+            "cached": true
+          },
+          {
+            "http_ms": 0.3489539958536625,
+            "server_render_ms": 0.01,
+            "response_bytes": 3059,
+            "html_bytes": 1793,
+            "cached": true
+          },
+          {
+            "http_ms": 0.3226639819331467,
+            "server_render_ms": 0.007,
+            "response_bytes": 3060,
+            "html_bytes": 1793,
+            "cached": true
+          },
+          {
+            "http_ms": 0.33356400672346354,
+            "server_render_ms": 0.005,
+            "response_bytes": 3060,
+            "html_bytes": 1793,
+            "cached": true
+          },
+          {
+            "http_ms": 0.31136401230469346,
+            "server_render_ms": 0.004,
+            "response_bytes": 3060,
+            "html_bytes": 1793,
+            "cached": true
+          },
+          {
+            "http_ms": 0.33086398616433144,
+            "server_render_ms": 0.005,
+            "response_bytes": 3060,
+            "html_bytes": 1793,
+            "cached": true
+          },
+          {
+            "http_ms": 0.29699300648644567,
+            "server_render_ms": 0.004,
+            "response_bytes": 3060,
+            "html_bytes": 1793,
+            "cached": true
+          },
+          {
+            "http_ms": 0.3357430105097592,
+            "server_render_ms": 0.008,
+            "response_bytes": 3060,
+            "html_bytes": 1793,
+            "cached": true
+          },
+          {
+            "http_ms": 0.31605298863723874,
+            "server_render_ms": 0.004,
+            "response_bytes": 3060,
+            "html_bytes": 1793,
+            "cached": true
+          },
+          {
+            "http_ms": 0.3134339931420982,
+            "server_render_ms": 0.005,
+            "response_bytes": 3060,
+            "html_bytes": 1793,
+            "cached": true
+          },
+          {
+            "http_ms": 0.3040939918719232,
+            "server_render_ms": 0.005,
+            "response_bytes": 3060,
+            "html_bytes": 1793,
+            "cached": true
+          },
+          {
+            "http_ms": 0.28579297941178083,
+            "server_render_ms": 0.007,
+            "response_bytes": 3060,
+            "html_bytes": 1793,
+            "cached": true
+          },
+          {
+            "http_ms": 0.29383396031334996,
+            "server_render_ms": 0.008,
+            "response_bytes": 3060,
+            "html_bytes": 1793,
+            "cached": true
+          },
+          {
+            "http_ms": 0.29508298030123115,
+            "server_render_ms": 0.006,
+            "response_bytes": 3060,
+            "html_bytes": 1793,
+            "cached": true
+          }
+        ]
+      },
+      "initial_miss": {
+        "http_ms": {
+          "median": 0.966,
+          "p95": 1.474,
+          "min": 0.834,
+          "max": 1.474
+        },
+        "server_render_ms": {
+          "median": 0.634,
+          "p95": 0.825,
+          "min": 0.491,
+          "max": 0.825
+        },
+        "response_bytes": {
+          "median": 13299,
+          "p95": 13299,
+          "min": 13298,
+          "max": 13299
+        }
+      },
+      "fragment_miss": {
+        "http_ms": {
+          "median": 0.868,
+          "p95": 1.208,
+          "min": 0.762,
+          "max": 1.208
+        },
+        "server_render_ms": {
+          "median": 0.543,
+          "p95": 0.823,
+          "min": 0.481,
+          "max": 0.823
+        },
+        "response_bytes": {
+          "median": 3061,
+          "p95": 3061,
+          "min": 3061,
+          "max": 3061
+        }
+      },
+      "fragment_cached": {
+        "http_ms": {
+          "median": 0.316,
+          "p95": 0.37,
+          "min": 0.286,
+          "max": 0.37
+        },
+        "server_render_ms": {
+          "median": 0.006,
+          "p95": 0.01,
+          "min": 0.004,
+          "max": 0.01
+        },
+        "response_bytes": {
+          "median": 3060,
+          "p95": 3060,
+          "min": 3059,
+          "max": 3060
+        }
+      }
+    },
+    {
+      "path": "rendering-fixtures/roads.md",
+      "sha256": "5901e05a6ba02038fee8149029f6711fb3063fd39f082a250b787e8a35383d8d",
+      "input_bytes": 1598,
+      "raw": {
+        "initial_miss": [
+          {
+            "http_ms": 1.1229829979129136,
+            "server_render_ms": 0.766,
+            "response_bytes": 20046,
+            "html_bytes": 4573,
+            "cached": false
+          },
+          {
+            "http_ms": 0.9600610355846584,
+            "server_render_ms": 0.6,
+            "response_bytes": 20044,
+            "html_bytes": 4573,
+            "cached": false
+          },
+          {
+            "http_ms": 2.1769949817098677,
+            "server_render_ms": 1.424,
+            "response_bytes": 20046,
+            "html_bytes": 4573,
+            "cached": false
+          },
+          {
+            "http_ms": 1.0402619955129921,
+            "server_render_ms": 0.646,
+            "response_bytes": 20046,
+            "html_bytes": 4573,
+            "cached": false
+          },
+          {
+            "http_ms": 1.1096629896201193,
+            "server_render_ms": 0.712,
+            "response_bytes": 20046,
+            "html_bytes": 4573,
+            "cached": false
+          },
+          {
+            "http_ms": 1.0643320274539292,
+            "server_render_ms": 0.7,
+            "response_bytes": 20044,
+            "html_bytes": 4573,
+            "cached": false
+          },
+          {
+            "http_ms": 1.128772972151637,
+            "server_render_ms": 0.758,
+            "response_bytes": 20046,
+            "html_bytes": 4573,
+            "cached": false
+          },
+          {
+            "http_ms": 1.0958120110444725,
+            "server_render_ms": 0.742,
+            "response_bytes": 20046,
+            "html_bytes": 4573,
+            "cached": false
+          },
+          {
+            "http_ms": 1.0842320043593645,
+            "server_render_ms": 0.726,
+            "response_bytes": 20046,
+            "html_bytes": 4573,
+            "cached": false
+          },
+          {
+            "http_ms": 2.149494015611708,
+            "server_render_ms": 1.64,
+            "response_bytes": 20045,
+            "html_bytes": 4573,
+            "cached": false
+          },
+          {
+            "http_ms": 1.1444530100561678,
+            "server_render_ms": 0.734,
+            "response_bytes": 20046,
+            "html_bytes": 4573,
+            "cached": false
+          },
+          {
+            "http_ms": 0.996312010101974,
+            "server_render_ms": 0.591,
+            "response_bytes": 20046,
+            "html_bytes": 4573,
+            "cached": false
+          },
+          {
+            "http_ms": 0.9243710082955658,
+            "server_render_ms": 0.559,
+            "response_bytes": 20046,
+            "html_bytes": 4573,
+            "cached": false
+          },
+          {
+            "http_ms": 0.9676610352471471,
+            "server_render_ms": 0.59,
+            "response_bytes": 20045,
+            "html_bytes": 4573,
+            "cached": false
+          },
+          {
+            "http_ms": 0.9665010147728026,
+            "server_render_ms": 0.577,
+            "response_bytes": 20046,
+            "html_bytes": 4573,
+            "cached": false
+          }
+        ],
+        "fragment_miss": [
+          {
+            "http_ms": 0.9055999689735472,
+            "server_render_ms": 0.61,
+            "response_bytes": 6449,
+            "html_bytes": 4573,
+            "cached": false
+          },
+          {
+            "http_ms": 0.8790899883024395,
+            "server_render_ms": 0.592,
+            "response_bytes": 6450,
+            "html_bytes": 4573,
+            "cached": false
+          },
+          {
+            "http_ms": 0.9069900261238217,
+            "server_render_ms": 0.601,
+            "response_bytes": 6450,
+            "html_bytes": 4573,
+            "cached": false
+          },
+          {
+            "http_ms": 1.2607139651663601,
+            "server_render_ms": 0.826,
+            "response_bytes": 6450,
+            "html_bytes": 4573,
+            "cached": false
+          },
+          {
+            "http_ms": 1.0343309841118753,
+            "server_render_ms": 0.623,
+            "response_bytes": 6450,
+            "html_bytes": 4573,
+            "cached": false
+          },
+          {
+            "http_ms": 1.2341249966993928,
+            "server_render_ms": 0.81,
+            "response_bytes": 6449,
+            "html_bytes": 4573,
+            "cached": false
+          },
+          {
+            "http_ms": 1.1541139683686197,
+            "server_render_ms": 0.671,
+            "response_bytes": 6450,
+            "html_bytes": 4573,
+            "cached": false
+          },
+          {
+            "http_ms": 0.9604510269127786,
+            "server_render_ms": 0.608,
+            "response_bytes": 6450,
+            "html_bytes": 4573,
+            "cached": false
+          },
+          {
+            "http_ms": 0.9395800298079848,
+            "server_render_ms": 0.59,
+            "response_bytes": 6449,
+            "html_bytes": 4573,
+            "cached": false
+          },
+          {
+            "http_ms": 0.9175000013783574,
+            "server_render_ms": 0.585,
+            "response_bytes": 6450,
+            "html_bytes": 4573,
+            "cached": false
+          },
+          {
+            "http_ms": 1.0287609766237438,
+            "server_render_ms": 0.677,
+            "response_bytes": 6450,
+            "html_bytes": 4573,
+            "cached": false
+          },
+          {
+            "http_ms": 1.0189709719270468,
+            "server_render_ms": 0.692,
+            "response_bytes": 6450,
+            "html_bytes": 4573,
+            "cached": false
+          },
+          {
+            "http_ms": 1.0580430389381945,
+            "server_render_ms": 0.7,
+            "response_bytes": 6448,
+            "html_bytes": 4573,
+            "cached": false
+          },
+          {
+            "http_ms": 1.529667992144823,
+            "server_render_ms": 1.026,
+            "response_bytes": 6450,
+            "html_bytes": 4573,
+            "cached": false
+          },
+          {
+            "http_ms": 0.9358599781990051,
+            "server_render_ms": 0.608,
+            "response_bytes": 6450,
+            "html_bytes": 4573,
+            "cached": false
+          }
+        ],
+        "fragment_cached": [
+          {
+            "http_ms": 0.31906296499073505,
+            "server_render_ms": 0.004,
+            "response_bytes": 6449,
+            "html_bytes": 4573,
+            "cached": true
+          },
+          {
+            "http_ms": 0.31626300187781453,
+            "server_render_ms": 0.004,
+            "response_bytes": 6449,
+            "html_bytes": 4573,
+            "cached": true
+          },
+          {
+            "http_ms": 0.32247399212792516,
+            "server_render_ms": 0.004,
+            "response_bytes": 6449,
+            "html_bytes": 4573,
+            "cached": true
+          },
+          {
+            "http_ms": 0.3067239886149764,
+            "server_render_ms": 0.005,
+            "response_bytes": 6449,
+            "html_bytes": 4573,
+            "cached": true
+          },
+          {
+            "http_ms": 0.3134540165774524,
+            "server_render_ms": 0.004,
+            "response_bytes": 6449,
+            "html_bytes": 4573,
+            "cached": true
+          },
+          {
+            "http_ms": 0.32883399398997426,
+            "server_render_ms": 0.006,
+            "response_bytes": 6449,
+            "html_bytes": 4573,
+            "cached": true
+          },
+          {
+            "http_ms": 0.30794396298006177,
+            "server_render_ms": 0.004,
+            "response_bytes": 6449,
+            "html_bytes": 4573,
+            "cached": true
+          },
+          {
+            "http_ms": 0.3160139895044267,
+            "server_render_ms": 0.003,
+            "response_bytes": 6449,
+            "html_bytes": 4573,
+            "cached": true
+          },
+          {
+            "http_ms": 0.3147540264762938,
+            "server_render_ms": 0.004,
+            "response_bytes": 6449,
+            "html_bytes": 4573,
+            "cached": true
+          },
+          {
+            "http_ms": 0.31223398400470614,
+            "server_render_ms": 0.004,
+            "response_bytes": 6449,
+            "html_bytes": 4573,
+            "cached": true
+          },
+          {
+            "http_ms": 0.2990530338138342,
+            "server_render_ms": 0.006,
+            "response_bytes": 6449,
+            "html_bytes": 4573,
+            "cached": true
+          },
+          {
+            "http_ms": 0.3408739576116204,
+            "server_render_ms": 0.004,
+            "response_bytes": 6449,
+            "html_bytes": 4573,
+            "cached": true
+          },
+          {
+            "http_ms": 0.33035397063940763,
+            "server_render_ms": 0.005,
+            "response_bytes": 6449,
+            "html_bytes": 4573,
+            "cached": true
+          },
+          {
+            "http_ms": 0.3935949644073844,
+            "server_render_ms": 0.005,
+            "response_bytes": 6449,
+            "html_bytes": 4573,
+            "cached": true
+          },
+          {
+            "http_ms": 0.3501339815557003,
+            "server_render_ms": 0.006,
+            "response_bytes": 6449,
+            "html_bytes": 4573,
+            "cached": true
+          }
+        ]
+      },
+      "initial_miss": {
+        "http_ms": {
+          "median": 1.084,
+          "p95": 2.177,
+          "min": 0.924,
+          "max": 2.177
+        },
+        "server_render_ms": {
+          "median": 0.712,
+          "p95": 1.64,
+          "min": 0.559,
+          "max": 1.64
+        },
+        "response_bytes": {
+          "median": 20046,
+          "p95": 20046,
+          "min": 20044,
+          "max": 20046
+        }
+      },
+      "fragment_miss": {
+        "http_ms": {
+          "median": 1.019,
+          "p95": 1.53,
+          "min": 0.879,
+          "max": 1.53
+        },
+        "server_render_ms": {
+          "median": 0.623,
+          "p95": 1.026,
+          "min": 0.585,
+          "max": 1.026
+        },
+        "response_bytes": {
+          "median": 6450,
+          "p95": 6450,
+          "min": 6448,
+          "max": 6450
+        }
+      },
+      "fragment_cached": {
+        "http_ms": {
+          "median": 0.316,
+          "p95": 0.394,
+          "min": 0.299,
+          "max": 0.394
+        },
+        "server_render_ms": {
+          "median": 0.004,
+          "p95": 0.006,
+          "min": 0.003,
+          "max": 0.006
+        },
+        "response_bytes": {
+          "median": 6449,
+          "p95": 6449,
+          "min": 6449,
+          "max": 6449
+        }
+      }
+    },
+    {
+      "path": "rendering-fixtures/story-layout.md",
+      "sha256": "8b17556266400442fbe7f3ab24fdfbcd01515a1a1eb5f330816a4a8c4c2bb837",
+      "input_bytes": 3900,
+      "raw": {
+        "initial_miss": [
+          {
+            "http_ms": 1.4154959935694933,
+            "server_render_ms": 0.999,
+            "response_bytes": 31324,
+            "html_bytes": 9111,
+            "cached": false
+          },
+          {
+            "http_ms": 1.5991480322554708,
+            "server_render_ms": 1.205,
+            "response_bytes": 31324,
+            "html_bytes": 9111,
+            "cached": false
+          },
+          {
+            "http_ms": 1.9728320185095072,
+            "server_render_ms": 1.287,
+            "response_bytes": 31324,
+            "html_bytes": 9111,
+            "cached": false
+          },
+          {
+            "http_ms": 1.635968976188451,
+            "server_render_ms": 1.228,
+            "response_bytes": 31324,
+            "html_bytes": 9111,
+            "cached": false
+          },
+          {
+            "http_ms": 1.3782359892502427,
+            "server_render_ms": 0.964,
+            "response_bytes": 31324,
+            "html_bytes": 9111,
+            "cached": false
+          },
+          {
+            "http_ms": 1.5947080100886524,
+            "server_render_ms": 1.202,
+            "response_bytes": 31324,
+            "html_bytes": 9111,
+            "cached": false
+          },
+          {
+            "http_ms": 1.618818030692637,
+            "server_render_ms": 1.2,
+            "response_bytes": 31322,
+            "html_bytes": 9111,
+            "cached": false
+          },
+          {
+            "http_ms": 1.626298006158322,
+            "server_render_ms": 1.249,
+            "response_bytes": 31324,
+            "html_bytes": 9111,
+            "cached": false
+          },
+          {
+            "http_ms": 2.184654993470758,
+            "server_render_ms": 1.482,
+            "response_bytes": 31324,
+            "html_bytes": 9111,
+            "cached": false
+          },
+          {
+            "http_ms": 1.3606760185211897,
+            "server_render_ms": 0.983,
+            "response_bytes": 31324,
+            "html_bytes": 9111,
+            "cached": false
+          },
+          {
+            "http_ms": 2.2716459934599698,
+            "server_render_ms": 1.461,
+            "response_bytes": 31324,
+            "html_bytes": 9111,
+            "cached": false
+          },
+          {
+            "http_ms": 1.9403219921514392,
+            "server_render_ms": 1.362,
+            "response_bytes": 31324,
+            "html_bytes": 9111,
+            "cached": false
+          },
+          {
+            "http_ms": 1.403216039761901,
+            "server_render_ms": 1.015,
+            "response_bytes": 31324,
+            "html_bytes": 9111,
+            "cached": false
+          },
+          {
+            "http_ms": 1.3738659908995032,
+            "server_render_ms": 1.026,
+            "response_bytes": 31324,
+            "html_bytes": 9111,
+            "cached": false
+          },
+          {
+            "http_ms": 2.2669059690088034,
+            "server_render_ms": 1.679,
+            "response_bytes": 31324,
+            "html_bytes": 9111,
+            "cached": false
+          }
+        ],
+        "fragment_miss": [
+          {
+            "http_ms": 1.577488030306995,
+            "server_render_ms": 1.125,
+            "response_bytes": 12105,
+            "html_bytes": 9111,
+            "cached": false
+          },
+          {
+            "http_ms": 1.331176026724279,
+            "server_render_ms": 0.974,
+            "response_bytes": 12105,
+            "html_bytes": 9111,
+            "cached": false
+          },
+          {
+            "http_ms": 1.3318460551090539,
+            "server_render_ms": 0.969,
+            "response_bytes": 12105,
+            "html_bytes": 9111,
+            "cached": false
+          },
+          {
+            "http_ms": 2.5326389586552978,
+            "server_render_ms": 1.778,
+            "response_bytes": 12105,
+            "html_bytes": 9111,
+            "cached": false
+          },
+          {
+            "http_ms": 1.5144069911912084,
+            "server_render_ms": 1.127,
+            "response_bytes": 12105,
+            "html_bytes": 9111,
+            "cached": false
+          },
+          {
+            "http_ms": 1.4358359621837735,
+            "server_render_ms": 1.045,
+            "response_bytes": 12105,
+            "html_bytes": 9111,
+            "cached": false
+          },
+          {
+            "http_ms": 1.3198749511502683,
+            "server_render_ms": 0.961,
+            "response_bytes": 12105,
+            "html_bytes": 9111,
+            "cached": false
+          },
+          {
+            "http_ms": 1.3372749672271311,
+            "server_render_ms": 0.961,
+            "response_bytes": 12105,
+            "html_bytes": 9111,
+            "cached": false
+          },
+          {
+            "http_ms": 1.5474380343221128,
+            "server_render_ms": 1.202,
+            "response_bytes": 12105,
+            "html_bytes": 9111,
+            "cached": false
+          },
+          {
+            "http_ms": 1.5217270120047033,
+            "server_render_ms": 1.178,
+            "response_bytes": 12105,
+            "html_bytes": 9111,
+            "cached": false
+          },
+          {
+            "http_ms": 2.5340989814139903,
+            "server_render_ms": 2.078,
+            "response_bytes": 12105,
+            "html_bytes": 9111,
+            "cached": false
+          },
+          {
+            "http_ms": 1.533586997538805,
+            "server_render_ms": 1.171,
+            "response_bytes": 12105,
+            "html_bytes": 9111,
+            "cached": false
+          },
+          {
+            "http_ms": 1.326015975791961,
+            "server_render_ms": 0.951,
+            "response_bytes": 12105,
+            "html_bytes": 9111,
+            "cached": false
+          },
+          {
+            "http_ms": 1.2994849821552634,
+            "server_render_ms": 0.931,
+            "response_bytes": 12105,
+            "html_bytes": 9111,
+            "cached": false
+          },
+          {
+            "http_ms": 1.3073449954390526,
+            "server_render_ms": 0.934,
+            "response_bytes": 12105,
+            "html_bytes": 9111,
+            "cached": false
+          }
+        ],
+        "fragment_cached": [
+          {
+            "http_ms": 0.3561239573173225,
+            "server_render_ms": 0.004,
+            "response_bytes": 12104,
+            "html_bytes": 9111,
+            "cached": true
+          },
+          {
+            "http_ms": 0.41052501183003187,
+            "server_render_ms": 0.004,
+            "response_bytes": 12104,
+            "html_bytes": 9111,
+            "cached": true
+          },
+          {
+            "http_ms": 0.3640240174718201,
+            "server_render_ms": 0.005,
+            "response_bytes": 12104,
+            "html_bytes": 9111,
+            "cached": true
+          },
+          {
+            "http_ms": 0.3822339931502938,
+            "server_render_ms": 0.003,
+            "response_bytes": 12104,
+            "html_bytes": 9111,
+            "cached": true
+          },
+          {
+            "http_ms": 0.40366401663050056,
+            "server_render_ms": 0.004,
+            "response_bytes": 12104,
+            "html_bytes": 9111,
+            "cached": true
+          },
+          {
+            "http_ms": 0.3586840466596186,
+            "server_render_ms": 0.005,
+            "response_bytes": 12104,
+            "html_bytes": 9111,
+            "cached": true
+          },
+          {
+            "http_ms": 0.3249740111641586,
+            "server_render_ms": 0.003,
+            "response_bytes": 12104,
+            "html_bytes": 9111,
+            "cached": true
+          },
+          {
+            "http_ms": 0.3379139816388488,
+            "server_render_ms": 0.003,
+            "response_bytes": 12104,
+            "html_bytes": 9111,
+            "cached": true
+          },
+          {
+            "http_ms": 0.3395939711481333,
+            "server_render_ms": 0.004,
+            "response_bytes": 12104,
+            "html_bytes": 9111,
+            "cached": true
+          },
+          {
+            "http_ms": 0.31918304739519954,
+            "server_render_ms": 0.004,
+            "response_bytes": 12104,
+            "html_bytes": 9111,
+            "cached": true
+          },
+          {
+            "http_ms": 0.3190540010109544,
+            "server_render_ms": 0.004,
+            "response_bytes": 12104,
+            "html_bytes": 9111,
+            "cached": true
+          },
+          {
+            "http_ms": 0.3297439543530345,
+            "server_render_ms": 0.003,
+            "response_bytes": 12104,
+            "html_bytes": 9111,
+            "cached": true
+          },
+          {
+            "http_ms": 0.31758396653458476,
+            "server_render_ms": 0.004,
+            "response_bytes": 12104,
+            "html_bytes": 9111,
+            "cached": true
+          },
+          {
+            "http_ms": 0.3257240168750286,
+            "server_render_ms": 0.004,
+            "response_bytes": 12104,
+            "html_bytes": 9111,
+            "cached": true
+          },
+          {
+            "http_ms": 0.35376398591324687,
+            "server_render_ms": 0.004,
+            "response_bytes": 12104,
+            "html_bytes": 9111,
+            "cached": true
+          }
+        ]
+      },
+      "initial_miss": {
+        "http_ms": {
+          "median": 1.619,
+          "p95": 2.272,
+          "min": 1.361,
+          "max": 2.272
+        },
+        "server_render_ms": {
+          "median": 1.205,
+          "p95": 1.679,
+          "min": 0.964,
+          "max": 1.679
+        },
+        "response_bytes": {
+          "median": 31324,
+          "p95": 31324,
+          "min": 31322,
+          "max": 31324
+        }
+      },
+      "fragment_miss": {
+        "http_ms": {
+          "median": 1.436,
+          "p95": 2.534,
+          "min": 1.299,
+          "max": 2.534
+        },
+        "server_render_ms": {
+          "median": 1.045,
+          "p95": 2.078,
+          "min": 0.931,
+          "max": 2.078
+        },
+        "response_bytes": {
+          "median": 12105,
+          "p95": 12105,
+          "min": 12105,
+          "max": 12105
+        }
+      },
+      "fragment_cached": {
+        "http_ms": {
+          "median": 0.34,
+          "p95": 0.411,
+          "min": 0.318,
+          "max": 0.411
+        },
+        "server_render_ms": {
+          "median": 0.004,
+          "p95": 0.005,
+          "min": 0.003,
+          "max": 0.005
+        },
+        "response_bytes": {
+          "median": 12104,
+          "p95": 12104,
+          "min": 12104,
+          "max": 12104
+        }
+      }
+    },
+    {
+      "path": "rendering-fixtures/test-headings.md",
+      "sha256": "58bc0ab1e501adbe498c2902f1e0ede5112c8deede94e8b3a278f16613e9cedb",
+      "input_bytes": 1245,
+      "raw": {
+        "initial_miss": [
+          {
+            "http_ms": 0.9002400329336524,
+            "server_render_ms": 0.523,
+            "response_bytes": 16631,
+            "html_bytes": 3269,
+            "cached": false
+          },
+          {
+            "http_ms": 0.9240909712389112,
+            "server_render_ms": 0.58,
+            "response_bytes": 16630,
+            "html_bytes": 3269,
+            "cached": false
+          },
+          {
+            "http_ms": 0.8493500063195825,
+            "server_render_ms": 0.511,
+            "response_bytes": 16631,
+            "html_bytes": 3269,
+            "cached": false
+          },
+          {
+            "http_ms": 0.8743900107219815,
+            "server_render_ms": 0.529,
+            "response_bytes": 16631,
+            "html_bytes": 3269,
+            "cached": false
+          },
+          {
+            "http_ms": 0.9465510374866426,
+            "server_render_ms": 0.61,
+            "response_bytes": 16630,
+            "html_bytes": 3269,
+            "cached": false
+          },
+          {
+            "http_ms": 0.9374209912493825,
+            "server_render_ms": 0.625,
+            "response_bytes": 16631,
+            "html_bytes": 3269,
+            "cached": false
+          },
+          {
+            "http_ms": 0.9555110009387136,
+            "server_render_ms": 0.627,
+            "response_bytes": 16631,
+            "html_bytes": 3269,
+            "cached": false
+          },
+          {
+            "http_ms": 1.7510600155219436,
+            "server_render_ms": 1.338,
+            "response_bytes": 16631,
+            "html_bytes": 3269,
+            "cached": false
+          },
+          {
+            "http_ms": 1.0379719897173345,
+            "server_render_ms": 0.577,
+            "response_bytes": 16631,
+            "html_bytes": 3269,
+            "cached": false
+          },
+          {
+            "http_ms": 0.8873699698597193,
+            "server_render_ms": 0.526,
+            "response_bytes": 16631,
+            "html_bytes": 3269,
+            "cached": false
+          },
+          {
+            "http_ms": 0.8614689577370882,
+            "server_render_ms": 0.512,
+            "response_bytes": 16631,
+            "html_bytes": 3269,
+            "cached": false
+          },
+          {
+            "http_ms": 0.8550100028514862,
+            "server_render_ms": 0.522,
+            "response_bytes": 16631,
+            "html_bytes": 3269,
+            "cached": false
+          },
+          {
+            "http_ms": 1.088342978619039,
+            "server_render_ms": 0.727,
+            "response_bytes": 16631,
+            "html_bytes": 3269,
+            "cached": false
+          },
+          {
+            "http_ms": 1.0038820328190923,
+            "server_render_ms": 0.628,
+            "response_bytes": 16631,
+            "html_bytes": 3269,
+            "cached": false
+          },
+          {
+            "http_ms": 0.8604800095781684,
+            "server_render_ms": 0.517,
+            "response_bytes": 16631,
+            "html_bytes": 3269,
+            "cached": false
+          }
+        ],
+        "fragment_miss": [
+          {
+            "http_ms": 1.0349720250815153,
+            "server_render_ms": 0.632,
+            "response_bytes": 4759,
+            "html_bytes": 3269,
+            "cached": false
+          },
+          {
+            "http_ms": 0.9155810112133622,
+            "server_render_ms": 0.512,
+            "response_bytes": 4759,
+            "html_bytes": 3269,
+            "cached": false
+          },
+          {
+            "http_ms": 0.9261309751309454,
+            "server_render_ms": 0.528,
+            "response_bytes": 4759,
+            "html_bytes": 3269,
+            "cached": false
+          },
+          {
+            "http_ms": 1.0084719979204237,
+            "server_render_ms": 0.701,
+            "response_bytes": 4759,
+            "html_bytes": 3269,
+            "cached": false
+          },
+          {
+            "http_ms": 0.8002190152183175,
+            "server_render_ms": 0.516,
+            "response_bytes": 4759,
+            "html_bytes": 3269,
+            "cached": false
+          },
+          {
+            "http_ms": 0.7896890165284276,
+            "server_render_ms": 0.517,
+            "response_bytes": 4759,
+            "html_bytes": 3269,
+            "cached": false
+          },
+          {
+            "http_ms": 0.9282610262744129,
+            "server_render_ms": 0.612,
+            "response_bytes": 4759,
+            "html_bytes": 3269,
+            "cached": false
+          },
+          {
+            "http_ms": 1.2448240304365754,
+            "server_render_ms": 0.853,
+            "response_bytes": 4759,
+            "html_bytes": 3269,
+            "cached": false
+          },
+          {
+            "http_ms": 0.7995190098881721,
+            "server_render_ms": 0.502,
+            "response_bytes": 4759,
+            "html_bytes": 3269,
+            "cached": false
+          },
+          {
+            "http_ms": 0.8197500137612224,
+            "server_render_ms": 0.534,
+            "response_bytes": 4759,
+            "html_bytes": 3269,
+            "cached": false
+          },
+          {
+            "http_ms": 0.82077004481107,
+            "server_render_ms": 0.521,
+            "response_bytes": 4759,
+            "html_bytes": 3269,
+            "cached": false
+          },
+          {
+            "http_ms": 1.075381995178759,
+            "server_render_ms": 0.708,
+            "response_bytes": 4759,
+            "html_bytes": 3269,
+            "cached": false
+          },
+          {
+            "http_ms": 0.8816799963824451,
+            "server_render_ms": 0.571,
+            "response_bytes": 4759,
+            "html_bytes": 3269,
+            "cached": false
+          },
+          {
+            "http_ms": 1.0072009754367173,
+            "server_render_ms": 0.694,
+            "response_bytes": 4759,
+            "html_bytes": 3269,
+            "cached": false
+          },
+          {
+            "http_ms": 1.02201197296381,
+            "server_render_ms": 0.713,
+            "response_bytes": 4759,
+            "html_bytes": 3269,
+            "cached": false
+          }
+        ],
+        "fragment_cached": [
+          {
+            "http_ms": 0.28405297780409455,
+            "server_render_ms": 0.003,
+            "response_bytes": 4758,
+            "html_bytes": 3269,
+            "cached": true
+          },
+          {
+            "http_ms": 0.2753030275925994,
+            "server_render_ms": 0.004,
+            "response_bytes": 4758,
+            "html_bytes": 3269,
+            "cached": true
+          },
+          {
+            "http_ms": 0.29300397727638483,
+            "server_render_ms": 0.003,
+            "response_bytes": 4758,
+            "html_bytes": 3269,
+            "cached": true
+          },
+          {
+            "http_ms": 0.2880429965443909,
+            "server_render_ms": 0.004,
+            "response_bytes": 4758,
+            "html_bytes": 3269,
+            "cached": true
+          },
+          {
+            "http_ms": 0.26350299594923854,
+            "server_render_ms": 0.003,
+            "response_bytes": 4758,
+            "html_bytes": 3269,
+            "cached": true
+          },
+          {
+            "http_ms": 0.3006730112247169,
+            "server_render_ms": 0.004,
+            "response_bytes": 4758,
+            "html_bytes": 3269,
+            "cached": true
+          },
+          {
+            "http_ms": 0.26884302496910095,
+            "server_render_ms": 0.004,
+            "response_bytes": 4758,
+            "html_bytes": 3269,
+            "cached": true
+          },
+          {
+            "http_ms": 0.26709301164373755,
+            "server_render_ms": 0.003,
+            "response_bytes": 4758,
+            "html_bytes": 3269,
+            "cached": true
+          },
+          {
+            "http_ms": 0.2791229635477066,
+            "server_render_ms": 0.003,
+            "response_bytes": 4758,
+            "html_bytes": 3269,
+            "cached": true
+          },
+          {
+            "http_ms": 0.28638297226279974,
+            "server_render_ms": 0.006,
+            "response_bytes": 4758,
+            "html_bytes": 3269,
+            "cached": true
+          },
+          {
+            "http_ms": 0.27227296959608793,
+            "server_render_ms": 0.003,
+            "response_bytes": 4758,
+            "html_bytes": 3269,
+            "cached": true
+          },
+          {
+            "http_ms": 0.28146395925432444,
+            "server_render_ms": 0.006,
+            "response_bytes": 4758,
+            "html_bytes": 3269,
+            "cached": true
+          },
+          {
+            "http_ms": 0.2785130054689944,
+            "server_render_ms": 0.004,
+            "response_bytes": 4758,
+            "html_bytes": 3269,
+            "cached": true
+          },
+          {
+            "http_ms": 0.5784769891761243,
+            "server_render_ms": 0.005,
+            "response_bytes": 4758,
+            "html_bytes": 3269,
+            "cached": true
+          },
+          {
+            "http_ms": 0.46931602992117405,
+            "server_render_ms": 0.009,
+            "response_bytes": 4758,
+            "html_bytes": 3269,
+            "cached": true
+          }
+        ]
+      },
+      "initial_miss": {
+        "http_ms": {
+          "median": 0.924,
+          "p95": 1.751,
+          "min": 0.849,
+          "max": 1.751
+        },
+        "server_render_ms": {
+          "median": 0.577,
+          "p95": 1.338,
+          "min": 0.511,
+          "max": 1.338
+        },
+        "response_bytes": {
+          "median": 16631,
+          "p95": 16631,
+          "min": 16630,
+          "max": 16631
+        }
+      },
+      "fragment_miss": {
+        "http_ms": {
+          "median": 0.926,
+          "p95": 1.245,
+          "min": 0.79,
+          "max": 1.245
+        },
+        "server_render_ms": {
+          "median": 0.571,
+          "p95": 0.853,
+          "min": 0.502,
+          "max": 0.853
+        },
+        "response_bytes": {
+          "median": 4759,
+          "p95": 4759,
+          "min": 4759,
+          "max": 4759
+        }
+      },
+      "fragment_cached": {
+        "http_ms": {
+          "median": 0.281,
+          "p95": 0.578,
+          "min": 0.264,
+          "max": 0.578
+        },
+        "server_render_ms": {
+          "median": 0.004,
+          "p95": 0.009,
+          "min": 0.003,
+          "max": 0.009
+        },
+        "response_bytes": {
+          "median": 4758,
+          "p95": 4758,
+          "min": 4758,
+          "max": 4758
+        }
+      }
+    }
+  ]
+}

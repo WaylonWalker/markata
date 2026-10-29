@@ -210,3 +210,40 @@ Use `--samples`, `--warmups`, and `--output` to control the run. The default out
 
 Merge the parent PR #1835 before the Go workbench PR #1851. The Go PR targets the parent's feature branch while it is stacked.
 A merge commit for the parent preserves ancestry. After a squash merge, rebase the child onto `main` before retargeting it.
+
+## Browser WASM worker
+
+Start the WASM demo before the benchmark:
+
+```bash
+python3 scripts/wasm-workbench.py --serve
+```
+
+In another terminal, run:
+
+```bash
+uv run --with playwright python scripts/benchmark-wasm.py --output /tmp/wasm-benchmark.json
+```
+
+Use `--url` for a different demo address. Install Playwright Chromium if the browser is unavailable.
+The benchmark uses the same seven fixtures as the HTTP clients.
+Each fixture uses a fresh worker, two excluded warmups, and fifteen measured renders.
+The report includes raw samples, fixture hashes, browser version, median, and p95.
+
+These timings measure worker rendering. They exclude worker startup, message transfer, layout, and paint.
+Do not compare them directly with HTTP request timings.
+
+Local demos use these addresses when all three run together:
+
+- Python/FastAPI: `http://127.0.0.1:8765/`
+- Go server: `http://127.0.0.1:8767/`
+- Browser WASM: `http://127.0.0.1:8766/`
+
+### Integration verification on 2026-10-29
+
+Fresh reports use the `*-suite-2026-10-29.json` names for Python and Go.
+The WASM report is `benchmarks/wasm-workbench-2026-10-29.json`.
+For `post-001.md`, the Python HTTP edit median was 149.282 ms.
+The Go HTTP edit median was 2.389 ms; the cached median was 0.301 ms.
+The WASM worker median was 10.9 ms.
+These measurements use different timing boundaries and asset policies, as described above.

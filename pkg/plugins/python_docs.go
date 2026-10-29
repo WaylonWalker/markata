@@ -632,7 +632,7 @@ func pythonDocAnchor(name string) string {
 
 func pythonKindLabel(kind string) string {
 	switch kind {
-	case "class": //nolint:goconst // A Python symbol kind is distinct from an HTML attribute name.
+	case "class":
 		return "Class"
 	case "function":
 		return "Function"
