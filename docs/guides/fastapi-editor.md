@@ -64,3 +64,35 @@ line wrapping, and bracket matching. Select **Keymap** above the editor to use
 Default, Vim, Emacs, or Sublime bindings. Your choice persists in this browser.
 With Vim selected, press `i` to insert text and `Escape` to return to normal mode.
 Editor colors follow the appearance picker. CodeMirror requires no CDN requests.
+
+
+## Run the demo integration tests
+
+Use a virtual environment containing the built Markata wheel, FastAPI, Uvicorn,
+HTTPX, and Playwright. Run the endpoint checks against that installed wheel:
+
+```bash
+python -m unittest discover -s python/integration -v
+```
+
+Install Chromium and run the browser checks:
+
+```bash
+python -m playwright install chromium
+python python/test_editor_browser.py -v
+```
+
+If Chromium is already installed, set `MARKATA_TEST_CHROMIUM` to its executable path.
+The tests reserve an available localhost port and stop their server afterward.
+They cover live edits, saved drafts, keymaps, initial appearance, picker changes,
+Lucide icons, responsive rails, and full-width desktop and mobile layouts.
+The wheel workflow runs both suites against the installed Linux wheel.
+
+The first render returns the full preview document. Later requests set
+`include_document` to `false`, so the server returns only the rendered fragment,
+conditional styles, scripts, and metrics. The browser keeps its document and
+appearance styles loaded, then replaces the article content in the existing
+sandboxed frame. This avoids sending the large site CSS payload or reloading
+theme stylesheets after every edit.
+
+See [integration benchmarks](/docs/guides/renderer-integration-benchmarks/) for measured fixture timings and reproduction steps.

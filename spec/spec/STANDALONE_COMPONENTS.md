@@ -19,11 +19,21 @@ the same base. Appearance defaults and overrides are validated against the catal
 fontpack=..., text_size=...)` uses site article wrappers and selected settings.
 Without appearance it still provides the site article hierarchy and defaults.
 Optional `appearance_bridge=True` supports parent-frame appearance updates using
-validated attributes and catalog values. No bridge is installed by default.
+validated attributes and catalog values. It also accepts `markdown-render`
+messages from the parent to replace `.post-content`, run the supplied generated
+body scripts, update render-specific head styles, and dispatch the view-transition
+completion event used by site components. It does not replay `DOMContentLoaded`.
+Hosts can keep the initial preview document and its shared stylesheets loaded
+between renders. No bridge is installed by default.
 
 The FastAPI editor owns CodeMirror, keymaps, editing, debounce, persistence, and
 metrics. It uses these APIs without modifying generated HTML or duplicating icons,
 picker templates, fonts, palettes, or site layout rules.
+
+The editor requests the full preview document on its initial render. Later render
+requests can omit that shell and return only the article fragment, conditional
+styles, scripts, and metrics. Reusing the sandboxed frame avoids retransmitting
+shared appearance styles with every edit.
 
 Document color mode and selected appearance are applied in the initial HTML.
 An early inline background and native color scheme prevent a white first paint
@@ -37,3 +47,9 @@ Responsive Markdown containers use the preview viewport width.
 `Appearance.controls_head_html` supplies picker styles without site main-column or
 article component rules. Host applications use this entry point; `document()` uses
 the complete appearance stylesheet set inside its own document.
+
+Integration benchmarks reuse the deterministic site benchmark post and rendering
+fixtures. Reports separate process-backed rendering, server rendering, HTTP wall
+time, and response size. They record sample counts, fixture hashes, environment,
+and source revision. Initial document requests and fragment updates use separate
+measurements. Timing results describe the measured host, not a performance limit.

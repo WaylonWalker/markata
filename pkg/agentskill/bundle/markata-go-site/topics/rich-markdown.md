@@ -179,6 +179,7 @@ Reference docs in the Markata repository:
 
 Rail card grids stay connected when responsive: horizontal above 1000px, vertical
 with ring ticks below 1000px. Use the rail modifier instead of custom connector CSS.
+
 ### Standalone rendering and Python applications
 
 `markata render --json` reads Markdown from stdin and returns HTML, feature
@@ -203,3 +204,27 @@ then send `{source, revision}`. Accept only the newest result. Serve the generat
 Raw HTML is disabled; site-dependent plugins still require a full site build.
 Wait for the demo's **Ready offline** status before testing offline reload.
 See `docs/guides/wasm-workbench.md` for hosting headers and browser checks.
+For a server backed Go editor, run `go run ./cmd/markata-workbench` from the
+Markata source repository. The default URL is `http://127.0.0.1:8766/`; use
+`--listen 127.0.0.1:8767` when that port is occupied. Applications can embed
+`workbench.New()` from `pkg/workbench` at an origin root. It renders in process,
+serves local appearance assets, and preserves drafts in browser storage.
+This trusted local editor enables authored HTML inside a sandboxed preview.
+It does not load a site's configuration or run its full build lifecycle.
+See `docs/guides/go-workbench.md` for the HTTP contract and embedding example.
+
+The Go workbench follows the Python preview protocol: request the full document
+once, then set `include_document: false` and update the existing sandboxed frame
+with `html`, `feature_head_html`, and `body_end_html`. Keep shared appearance
+styles loaded between edits. Do not replace the iframe document on each render.
+
+For renderer integrations, reuse the benchmark site post and rendering fixtures.
+Run `python python/benchmark_editor.py` with an installed wheel and FastAPI dependencies.
+See `docs/guides/renderer-integration-benchmarks.md` for timing boundaries and host-specific results.
+
+
+For Go HTTP benchmarks, build `cmd/markata-workbench` and run
+`python python/benchmark_go_editor.py --binary /path/to/markata-workbench`.
+Use the same fixture hashes as the Python report. Keep cache misses separate
+from repeated cached renders, and distinguish linked assets from inline assets.
+See the integration benchmark guide for timing boundaries and stacking order.

@@ -2399,3 +2399,15 @@ See [Python and FastAPI rendering](/docs/guides/python-renderer/).
 `markata render --appearance` emits versioned JSON with reusable appearance picker
 markup, ordered style/script paths, and base64 asset bytes. It does not read stdin.
 Host applications serve these assets and insert the controls in their own layouts.
+
+## Go Markdown workbench demo
+
+From a source checkout, run the separate demo command:
+
+```bash
+go run ./cmd/markata-workbench --listen 127.0.0.1:8767
+```
+
+The default listen address is `127.0.0.1:8766`. Use `--help` for command help.
+The [Go workbench guide](../guides/go-workbench/) covers editing, the render API,
+and embedding its HTTP handler in a Go application.

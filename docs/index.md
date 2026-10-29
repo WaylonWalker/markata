@@ -45,3 +45,5 @@ If something fails, run `markata triage` or see the [triage guide](/docs/guides/
 
 Use Markata in a web application: [Python and FastAPI rendering](/docs/guides/python-renderer/)
 or the [browser WASM workbench](/docs/guides/wasm-workbench/).
+Use Markata in a web application: [Python and FastAPI rendering](/docs/guides/python-renderer/).
+See [renderer integration benchmarks](/docs/guides/renderer-integration-benchmarks/) for measured timings.
