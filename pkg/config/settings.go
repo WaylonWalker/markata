@@ -530,6 +530,7 @@ var settingEnums = map[string][]string{
 	"sidebar.auto_generate.order_by":      {"title", "date", "nav_order", "filename"},
 	"toc.position":                        {"left", "right"},
 	"assets.mode":                         {"cdn", "self-hosted", "auto"},
+	"markdown.render_profile":            {"web", "offline-interactive", "offline-static"},
 	"feed_defaults.pagination_type":       paginationTypes,
 	"blogroll.pagination_type":            paginationTypes,
 }
