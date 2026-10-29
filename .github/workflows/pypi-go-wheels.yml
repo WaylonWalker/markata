@@ -12,7 +12,15 @@ on:
       - 'scripts/add-python-renderer-to-wheels.py'
       - 'python/**'
       - 'docs/guides/python-renderer.md'
-      - 'pkg/plugins/standalone_render*'
+      - 'pkg/plugins/standalone*'
+      - 'pkg/plugins/icons*'
+      - 'pkg/themes/**'
+      - 'pkg/templates/**'
+      - 'pkg/palettes/**'
+      - 'pkg/aesthetic/**'
+      - 'pkg/fontpacks/**'
+      - 'examples/fastapi_editor.py'
+      - 'docs/guides/fastapi-editor.md'
       - 'cmd/markata/**'
       - 'cmd/markata-go/**'
       - 'go.mod'
@@ -78,8 +86,13 @@ jobs:
           "${RUNNER_TEMP}/markata-wheel-venv/bin/python" -m markata version
           "${RUNNER_TEMP}/markata-wheel-venv/bin/markata" version
           "${RUNNER_TEMP}/markata-wheel-venv/bin/markata" --help
-          "${RUNNER_TEMP}/markata-wheel-venv/bin/python" -m pip install fastapi httpx
+          "${RUNNER_TEMP}/markata-wheel-venv/bin/python" -m pip install fastapi httpx uvicorn playwright
           "${RUNNER_TEMP}/markata-wheel-venv/bin/python" python/smoke_fastapi.py
+          "${RUNNER_TEMP}/markata-wheel-venv/bin/python" -m unittest discover -s python/integration -v
+      - name: Install browser for the live editor regression test
+        run: '"${RUNNER_TEMP}/markata-wheel-venv/bin/python" -m playwright install --with-deps chromium'
+      - name: Exercise the live editor with the installed wheel
+        run: '"${RUNNER_TEMP}/markata-wheel-venv/bin/python" python/test_editor_browser.py -v'
       - name: Save inspected wheel artifacts
         uses: actions/upload-artifact@v7
         with:

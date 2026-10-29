@@ -428,7 +428,7 @@ func TestChartJSPlugin_ConfigureDataDisplay(t *testing.T) {
 	}
 }
 
-func TestChartJSPlugin_LegacyMarkupUnchanged(t *testing.T) {
+func TestChartJSPlugin_LegacyMarkupUsesReadyStateAwareInitialization(t *testing.T) {
 	post := &models.Post{ArticleHTML: `<pre><code class="language-chartjs">{"type":"pie"}</code></pre>`}
 	if err := NewChartJSPlugin().processPost(post); err != nil {
 		t.Fatal(err)
@@ -440,7 +440,8 @@ func TestChartJSPlugin_LegacyMarkupUnchanged(t *testing.T) {
 	want += `
 <script src="/assets/vendor/chartjs/chart.min.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+(function() {
+const initCharts = function() {
   (function() {
     const ctx = document.getElementById('chartjs-1');
     if (!ctx || typeof Chart !== 'function') return;
@@ -453,7 +454,13 @@ document.addEventListener('DOMContentLoaded', function() {
       ctx.hidden = true;
     }
   })();
-});
+};
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initCharts, {once: true});
+} else {
+  initCharts();
+}
+})();
 </script>`
 	if post.ArticleHTML != want {
 		t.Fatalf("legacy output changed:\ngot: %s\nwant: %s", post.ArticleHTML, want)

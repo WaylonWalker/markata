@@ -19,11 +19,21 @@ the same base. Appearance defaults and overrides are validated against the catal
 fontpack=..., text_size=...)` uses site article wrappers and selected settings.
 Without appearance it still provides the site article hierarchy and defaults.
 Optional `appearance_bridge=True` supports parent-frame appearance updates using
-validated attributes and catalog values. No bridge is installed by default.
+validated attributes and catalog values. It also accepts `markdown-render`
+messages from the parent to replace `.post-content`, run the supplied generated
+body scripts, update render-specific head styles, and dispatch the view-transition
+completion event used by site components. It does not replay `DOMContentLoaded`.
+Hosts can keep the initial preview document and its shared stylesheets loaded
+between renders. No bridge is installed by default.
 
 The FastAPI editor owns CodeMirror, keymaps, editing, debounce, persistence, and
 metrics. It uses these APIs without modifying generated HTML or duplicating icons,
 picker templates, fonts, palettes, or site layout rules.
+
+The editor requests the full preview document on its initial render. Later render
+requests can omit that shell and return only the article fragment, conditional
+styles, scripts, and metrics. Reusing the sandboxed frame avoids retransmitting
+shared appearance styles with every edit.
 
 Document color mode and selected appearance are applied in the initial HTML.
 An early inline background and native color scheme prevent a white first paint
