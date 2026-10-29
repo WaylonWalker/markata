@@ -225,6 +225,9 @@ or `"4"` overrides it. Below 1000px cards stack with no rail. A card's heading
 link stretches over the card; keyboard focus outlines the card. Use one heading
 link per card and avoid other interactive controls in these overview cards.
 An emphasis-only paragraph supplies the small uppercase monospace kicker.
+Rail cards allow visible overflow so the ring ticks remain visible above their tops.
+An `md-section` immediately after the rail gets responsive spacing from 4.5rem to 7.5rem.
+These defaults need no page-local CSS.
 
 For unresolved items, use `::: md-grid pending` with nested `md-card`
 containers. Cards get dashed borders, transparent backgrounds and muted icons.

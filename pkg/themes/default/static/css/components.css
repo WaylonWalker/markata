@@ -5198,7 +5198,11 @@ body.reader-mode::after {
     article.post.post--wide { max-width: 100%; }
   }
 
+  .post-content .md-grid.rail + .md-section {
+    margin-top: clamp(4.5rem, 8vw, 7.5rem);
+  }
   .post-content .md-grid.rail > .md-card {
+    overflow: visible;
     position: relative;
     display: grid;
     align-content: start;
@@ -5271,7 +5275,7 @@ body.reader-mode::after {
     .post-content .md-grid.rail > .md-card::before {
       content: "";
       position: absolute;
-      top: 0;
+      top: -6px;
       left: 1.25rem;
       box-sizing: border-box;
       width: 10px;
