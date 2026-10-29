@@ -25,3 +25,18 @@ helper. Python calls the bundled binary over stdin with argv, never a shell.
 One process is launched per call; timeouts and cancellation terminate and reap it.
 The async interface does not block the ASGI event loop. Protocol mismatch,
 missing executables, and renderer errors raise `RenderError`.
+
+### Renderer profile defaults
+
+The standalone `--profile` option and Python `render(..., profile=...)`
+delegate to the same Go policy implementation. `web` preserves existing output.
+`offline-interactive` inlines managed CSS/JS and rejects detected remote
+media; it is **not** yet a comprehensive browser-network guarantee.
+`offline-static` rejects with a clear unsupported-capability error until
+Mermaid SVG and static chart rendering exist. All current call sites remain
+valid when no profile is provided.
+
+Use `--config path --site-render-profile` to opt into the profile stored in
+`[markata-go.markdown].render_profile` without running the site builder.
+The `markata serve` settings sidebar exposes that editable field. Automatic
+site config discovery is intentionally not enabled for bare standalone calls.
