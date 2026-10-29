@@ -1020,7 +1020,7 @@ func extractLinkText(tag string) string {
 // isSourceLinkText checks if link text indicates a source (not person) link.
 func isSourceLinkText(text string) bool {
 	lower := strings.ToLower(strings.TrimSpace(text))
-	return lower == "via" || lower == "source" || lower == "read more" || lower == "link" || lower == "permalink"
+	return lower == "via" || lower == "source" || lower == "read more" || lower == gardenEdgeTypeLink || lower == "permalink"
 }
 
 // textBeforeTag returns content before the first occurrence of tag in html.

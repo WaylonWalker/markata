@@ -632,7 +632,7 @@ func pythonDocAnchor(name string) string {
 
 func pythonKindLabel(kind string) string {
 	switch kind {
-	case "class":
+	case htmlAttrClass:
 		return "Class"
 	case "function":
 		return "Function"

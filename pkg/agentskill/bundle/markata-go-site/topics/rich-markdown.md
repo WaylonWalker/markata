@@ -193,3 +193,12 @@ For application integrations, `markata.appearance()` provides the site's picker 
 asset catalog. Use `result.document(appearance=...)` for site article layout instead
 of copying templates or modifying rendered HTML. Standalone rendering includes
 bundled Lucide icons. CodeMirror and application editing behavior stay application-side.
+
+For a server backed Go editor, run `go run ./cmd/markata-workbench` from the
+Markata source repository. The default URL is `http://127.0.0.1:8766/`; use
+`--listen 127.0.0.1:8767` when that port is occupied. Applications can embed
+`workbench.New()` from `pkg/workbench` at an origin root. It renders in process,
+serves local appearance assets, and preserves drafts in browser storage.
+This trusted local editor enables authored HTML inside a sandboxed preview.
+It does not load a site's configuration or run its full build lifecycle.
+See `docs/guides/go-workbench.md` for the HTTP contract and embedding example.
