@@ -207,6 +207,3 @@ go test ./pkg/plugins -run '^$' -bench '^BenchmarkRenderStandaloneFixtures$' -be
 The standard-library Python client starts a temporary Go server on an OS-assigned loopback port and stops it after the run.
 It does not restart the live editor or change its cache.
 Use `--samples`, `--warmups`, and `--output` to control the run. The default output uses the UTC date.
-
-Merge the parent PR #1835 before the Go workbench PR #1851. The Go PR targets the parent's feature branch while it is stacked.
-A merge commit for the parent preserves ancestry. After a squash merge, rebase the child onto `main` before retargeting it.
