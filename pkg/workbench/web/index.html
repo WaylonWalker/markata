@@ -63,10 +63,12 @@ header{flex-wrap:wrap}#open{background:var(--color-surface,white);border:1px sol
 </style>
 <link rel="stylesheet" href="/editor/command-palette.css">
 <script src="/editor/command-palette.js" defer></script>
+<link rel="stylesheet" href="/editor/site-tree.css"><script src="/editor/site-tree.js" defer></script>
 </head><body>
 <header><div><h1>Markata Go workbench</h1><p>Write Markdown. Render directly in Go.</p></div><!--PICKER--><button id="open" type="button">Open .md</button><input id="import" type="file" accept=".md,.markdown,text/plain,text/markdown" hidden><button id="download" type="button">Download .md</button></header>
 <main id="workbench">
-<section><div class="pane-label editor-toolbar"><label for="keymap">Markdown · Keymap</label><select id="keymap" aria-label="Editor keymap"><option value="default">Default</option><option value="vim">Vim</option><option value="emacs">Emacs</option><option value="sublime">Sublime</option></select></div><textarea aria-label="Markdown source" id="source" spellcheck="false" aria-describedby="status"></textarea></section>
+<aside id="site-sidebar" aria-label="Example site navigation"><div class="pane-label"><label for="site-view">Example site</label><select id="site-view"><option value="files">Files</option><option value="feeds">Feeds</option></select></div><div id="site-files" class="site-tree" aria-label="Site files"></div><div id="site-feeds" class="site-tree" aria-label="Feed members" hidden></div><p>Example files · edits stay in this browser.</p></aside>
+<section><div class="pane-label editor-toolbar"><span id="active-file">draft.md</span><label for="keymap">Keymap</label><select id="keymap" aria-label="Editor keymap"><option value="default">Default</option><option value="vim">Vim</option><option value="emacs">Emacs</option><option value="sublime">Sublime</option></select></div><textarea aria-label="Markdown source" id="source" spellcheck="false" aria-describedby="status"></textarea></section>
 <section aria-label="Rendered Markdown"><div class="pane-label">Live preview</div><pre id="error" role="alert" hidden></pre><iframe id="preview" title="Rendered Markdown preview" sandbox="allow-scripts"></iframe></section>
 </main>
 <footer><span id="saved" role="status"></span> · <span id="status" role="status" aria-live="polite">Preparing preview…</span></footer>

@@ -317,3 +317,7 @@ Use **Ctrl+Shift+P** (**Cmd+Shift+P** on macOS) to search the snippet catalog.
 Commands preserve selected text and insert Markdown in one undo step.
 The catalog includes admonitions, Mermaid, Chart.js, and inline formatting.
 These standalone editors do not load a site index for post embeds.
+
+The Python and Go renderer examples include a bundled example site with Files and
+Feeds navigation. These examples save per-file drafts in browser storage, not in
+the site repository. Download changes before applying them to a real site.

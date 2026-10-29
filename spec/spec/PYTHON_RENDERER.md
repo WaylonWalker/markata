@@ -44,3 +44,8 @@ styles into the editor shell. Preview article styles remain available.
 Runtime-specific differences remain: Python subprocess versus native Go versus
 browser WASM, inline versus linked/cached assets, browser offline support, and
 raw HTML policy. Documentation distinguishes those from shared editor features.
+
+## Example site navigation
+
+Python and Go editor examples follow [Renderer example site navigation](RENDERER_SITE_TREE.md).
+Their bundled site files and feed references share browser drafts without server file writes.

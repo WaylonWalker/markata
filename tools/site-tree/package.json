@@ -1,0 +1,1 @@
+{"name":"markata-renderer-site-tree","private":true,"type":"module","scripts":{"build":"node build.mjs"},"dependencies":{"@pierre/trees":"1.0.0-beta.6"},"devDependencies":{"esbuild":"0.25.12"}}
