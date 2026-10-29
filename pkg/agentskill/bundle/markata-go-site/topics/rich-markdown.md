@@ -194,3 +194,7 @@ bundled Lucide icons. CodeMirror and application editing behavior stay applicati
 
 Rail card grids stay connected when responsive: horizontal above 1000px, vertical
 with ring ticks below 1000px. Use the rail modifier instead of custom connector CSS.
+
+For renderer integrations, reuse the benchmark site post and rendering fixtures.
+Run `python python/benchmark_editor.py` with an installed wheel and FastAPI dependencies.
+See `docs/guides/renderer-integration-benchmarks.md` for timing boundaries and host-specific results.

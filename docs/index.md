@@ -44,3 +44,4 @@ Markata is still **0.x**. The older `markata-go` command remains compatible. New
 If something fails, run `markata triage` or see the [triage guide](/docs/guides/triage/).
 
 Use Markata in a web application: [Python and FastAPI rendering](/docs/guides/python-renderer/).
+See [renderer integration benchmarks](/docs/guides/renderer-integration-benchmarks/) for measured timings.

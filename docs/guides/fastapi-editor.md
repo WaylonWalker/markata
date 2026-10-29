@@ -94,3 +94,5 @@ conditional styles, scripts, and metrics. The browser keeps its document and
 appearance styles loaded, then replaces the article content in the existing
 sandboxed frame. This avoids sending the large site CSS payload or reloading
 theme stylesheets after every edit.
+
+See [integration benchmarks](/docs/guides/renderer-integration-benchmarks/) for measured fixture timings and reproduction steps.

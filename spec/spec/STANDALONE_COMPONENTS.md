@@ -47,3 +47,9 @@ Responsive Markdown containers use the preview viewport width.
 `Appearance.controls_head_html` supplies picker styles without site main-column or
 article component rules. Host applications use this entry point; `document()` uses
 the complete appearance stylesheet set inside its own document.
+
+Integration benchmarks reuse the deterministic site benchmark post and rendering
+fixtures. Reports separate process-backed rendering, server rendering, HTTP wall
+time, and response size. They record sample counts, fixture hashes, environment,
+and source revision. Initial document requests and fragment updates use separate
+measurements. Timing results describe the measured host, not a performance limit.
