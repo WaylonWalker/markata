@@ -293,9 +293,6 @@ type templatesConverter interface {
 // This helper eliminates code duplication across TOML, YAML, and JSON config converters.
 func buildConfig(src configSource) *models.Config {
 	base := src.getBaseConfig()
-	if base.RenderProfile == "" {
-		base.RenderProfile = "web"
-	}
 	config := &models.Config{
 		Fontpack:       base.Fontpack,
 		FontpacksFile:  base.FontpacksFile,
