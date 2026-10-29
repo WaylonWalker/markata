@@ -552,6 +552,9 @@ func mergeMarkdownConfig(base, override models.MarkdownConfig) models.MarkdownCo
 	if len(override.Extensions) > 0 {
 		result.Extensions = override.Extensions
 	}
+	if override.RenderProfile != "" {
+		result.RenderProfile = override.RenderProfile
+	}
 
 	return result
 }
