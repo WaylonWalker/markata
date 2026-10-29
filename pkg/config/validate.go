@@ -41,6 +41,18 @@ func ValidateConfig(config *models.Config) []error {
 	var errs []error
 	errs = append(errs, validateRenderingTheme(config)...)
 
+	// The profile is an integration preference, not the site-build lifecycle.
+	// Reject misspellings instead of recording a setting no consumer can honor.
+	switch config.MarkdownConfig.RenderProfile {
+	case "", "web", "offline-interactive", "offline-static":
+		// Recognized. Offline-static is reserved and standalone renders reject it.
+	default:
+		errs = append(errs, ValidationError{
+			Field: "markdown.render_profile",
+			Message: "must be one of: web, offline-interactive, offline-static",
+		})
+	}
+
 	// Validate URL format if provided
 	if config.URL != "" {
 		if err := validateURL(config.URL); err != nil {
