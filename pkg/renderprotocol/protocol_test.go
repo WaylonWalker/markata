@@ -119,7 +119,7 @@ func TestDecodeRequest_RejectsExtraJSON(t *testing.T) {
 }
 
 func TestHandle_RequiresID(t *testing.T) {
-	r := Handle(Request{Op:"capabilities"})
+	r := Handle(Request{Op: "capabilities"})
 	if r.OK || r.Error == nil || r.Error.Code != "invalid_id" {
 		t.Fatalf("missing ID incorrectly accepted: %+v", r)
 	}
