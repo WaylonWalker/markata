@@ -191,7 +191,8 @@ def appearance(*, asset_base: str = "/markata-assets", timeout: float = 30) -> A
         raise RenderError(f"Invalid appearance response: {error}") from error
 
 
-def _command(inline_assets: bool, asset_base: str, unsafe: bool,\n             profile: str | None = None, config_path: str | Path | None = None) -> list[str]:
+def _command(inline_assets: bool, asset_base: str, unsafe: bool,
+             profile: str | None = None, config_path: str | Path | None = None) -> list[str]:
     binary = Path(__file__).parent / "bin" / ("markata.exe" if os.name == "nt" else "markata")
     if not binary.is_file():
         raise RenderError("Bundled Markata executable missing; install an official Markata binary wheel.")
@@ -240,7 +241,8 @@ def _result(stdout: bytes, stderr: bytes, returncode: int) -> RenderResult:
 
 def render(markdown: str, *, inline_assets: bool = False,
            asset_base: str = "/markata-assets", unsafe: bool = False,
-           timeout: float = 30, profile: str | None = None,\n           config_path: str | Path | None = None) -> RenderResult:
+           timeout: float = 30, profile: str | None = None,
+           config_path: str | Path | None = None) -> RenderResult:
     """Render using one bundled Go process; input is passed over stdin, never a shell.
 
     For a standalone response, use inline_assets=True and result.document().
@@ -258,7 +260,8 @@ def render(markdown: str, *, inline_assets: bool = False,
 
 async def render_async(markdown: str, *, inline_assets: bool = False,
                        asset_base: str = "/markata-assets", unsafe: bool = False,
-                       timeout: float = 30, profile: str | None = None,\n                       config_path: str | Path | None = None) -> RenderResult:
+                       timeout: float = 30, profile: str | None = None,
+                       config_path: str | Path | None = None) -> RenderResult:
     """Render without blocking an ASGI event loop; reap the process on cancellation."""
     command = _command(inline_assets, asset_base, unsafe, profile, config_path)
     try:
