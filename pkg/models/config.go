@@ -1499,6 +1499,11 @@ type MarkdownConfig struct {
 
 	// Highlight configures syntax highlighting for code blocks
 	Highlight HighlightConfig `json:"highlight" yaml:"highlight" toml:"highlight"`
+
+	// RenderProfile selects interoperability renderer defaults (not the site build lifecycle).
+	// Valid values: "web", "offline-interactive", "offline-static".
+	// Offline-static is reserved until static diagram and chart rendering is implemented.
+	RenderProfile string `json:"render_profile,omitempty" yaml:"render_profile,omitempty" toml:"render_profile,omitempty"`
 }
 
 // HighlightConfig configures syntax highlighting for code blocks.
@@ -3511,8 +3516,9 @@ func NewConfig() *Config {
 			UseGitignore: true,
 		},
 		MarkdownConfig: MarkdownConfig{
-			Extensions: []string{},
-			Highlight:  NewHighlightConfig(),
+			Extensions:    []string{},
+			Highlight:     NewHighlightConfig(),
+			RenderProfile: "web",
 		},
 		Feeds:            []FeedConfig{},
 		FeedDefaults:     NewFeedDefaults(),
