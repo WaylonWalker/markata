@@ -6,9 +6,9 @@
 {# Optional: sidebar_feeds_json - JSON blob of all candidate feeds for {/} cycling #}
 
 {% with sidebar = config.components.feed_sidebar %}
-{# Only show sidebar if enabled AND we have posts to display #}
-{# sidebar_posts is injected when the current post belongs to a configured feed #}
-{% if sidebar.enabled and (sidebar_posts or feed.posts or posts) %}
+{# A generic page-wide posts collection does not establish feed membership. #}
+{# sidebar_posts is injected when the current post belongs to a configured feed. #}
+{% if sidebar.enabled and (sidebar_posts or feed.posts) %}
 <aside class="feed-sidebar feed-sidebar--{{ sidebar.position | default:'left' }}" style="--feed-sidebar-width: {{ sidebar.width | default:'250px' }}" aria-label="Feed navigation">
     <button type="button" class="sidebar-toggle" aria-expanded="false" aria-label="Open series sidebar" data-sidebar-label="series" {% if (sidebar.position | default:'left') == 'left' %}aria-keyshortcuts="b" data-sidebar-hotkey="b"{% else %}aria-keyshortcuts="Shift+B" data-sidebar-hotkey="Shift+B"{% endif %}>
         <svg class="sidebar-toggle__icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -93,7 +93,7 @@
         </div>{# /feed-nav-chrome #}
 
         <div id="feed-nav-collapsible">
-        {# Priority: sidebar_posts (post pages) > posts (current feed page) #}
+        {# Priority: resolved sidebar_posts (post pages) > feed.posts (feed pages) #}
         {% if sidebar_posts %}
         <ul class="feed-nav-list" id="feed-nav-list">
             {% for p in sidebar_posts %}
@@ -104,9 +104,9 @@
             </li>
             {% endfor %}
         </ul>
-        {% elif posts %}
+        {% elif feed.posts %}
         <ul class="feed-nav-list" id="feed-nav-list">
-            {% for p in posts %}
+            {% for p in feed.posts %}
             <li class="feed-nav-item{% if post.slug == p.slug %} feed-nav-item--active{% endif %}" data-sidebar-transition-path="{{ p.href }}">
                 <a href="{{ p.href }}" class="feed-nav-link" data-sidebar-transition-title{% if post.slug == p.slug %} aria-current="page"{% endif %}>
                     {{ p.title | default:p.slug }}
