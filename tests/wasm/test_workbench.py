@@ -39,6 +39,7 @@ class WorkbenchTest(unittest.TestCase):
         self.page.on('pageerror', lambda error: self.errors.append(str(error)))
         self.page.on('request', lambda request: self.requests.append(request))
         self.page.goto(self.url)
+        self.assertEqual(self.errors, [], 'JavaScript failed during application startup')
         expect(self.page.locator('#status')).to_contain_text('rendered locally', timeout=60000)
         self.frame = self.page.frame_locator('#preview')
         expect(self.frame.locator('h1')).to_have_text('A place to think')

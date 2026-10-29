@@ -998,3 +998,7 @@ worktrees
 
 # Generated static WASM demo
 .wasm-workbench/
+# Vendored browser editor runtime (not a Python virtualenv library directory).
+!examples/wasm-workbench/codemirror/lib/
+!examples/wasm-workbench/codemirror/lib/codemirror.js
+!examples/wasm-workbench/codemirror/lib/codemirror.css

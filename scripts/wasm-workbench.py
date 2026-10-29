@@ -38,6 +38,9 @@ def build(output):
     (output / 'appearance/css/preview-fonts.css').write_text(font_css)
 
     cm = ['lib/codemirror.css', 'lib/codemirror.js', 'mode/xml/xml.js', 'mode/markdown/markdown.js', 'mode/gfm/gfm.js', 'mode/javascript/javascript.js', 'mode/python/python.js', 'mode/css/css.js', 'mode/htmlmixed/htmlmixed.js', 'addon/mode/overlay.js', 'addon/edit/matchbrackets.js', 'keymap/vim.js', 'keymap/emacs.js', 'keymap/sublime.js']
+    for name in cm:
+        if not (output / 'codemirror' / name).is_file():
+            raise OSError(f'Missing bundled editor asset: codemirror/{name}')
     cm_tags = ''.join(f'<link rel="stylesheet" href="codemirror/{name}">' if name.endswith('.css') else f'<script src="codemirror/{name}"></script>' for name in cm)
     styles = ''.join(f'<link rel="stylesheet" href="appearance/{name}">' for name in appearance['styles'])
     scripts = ''.join(f'<script src="appearance/{name}"></script>' for name in appearance['scripts'])
