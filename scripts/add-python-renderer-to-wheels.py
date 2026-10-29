@@ -24,7 +24,7 @@ def add_renderer(wheel: Path) -> None:
                 if item.filename == "markata/rendering.py":
                     continue
                 if item.filename == "markata/__init__.py":
-                    imports = b"from .rendering import RenderError, RenderResult, render, render_async"
+                    imports = b"from .rendering import Appearance, appearance, RenderError, RenderResult, render, render_async"
                     if imports not in content:
                         content += b"\n" + imports + b"\n"
                 archive.writestr(item, content)

@@ -129,3 +129,38 @@ printf '# Hello\n' | markata render --json --inline-assets
 Without `--json`, `markata render` emits just the HTML fragment. `--unsafe` enables
 raw HTML; `--asset-base /static/markdown` changes linked bundled asset URLs. This
 command reads stdin without discovering a site configuration or writing files.
+
+## Reuse the site's appearance controls
+
+Load the catalog once when the application starts:
+
+```python
+from markata import appearance, render_async
+
+presentation = appearance(asset_base="/markata-assets")
+result = await render_async("# Hello", inline_assets=True)
+html = result.document(appearance=presentation, palette="ayu-dark", mode="dark")
+```
+
+`presentation.picker_html` contains the site's appearance controls. Insert
+`presentation.controls_head_html` in the host page's head and `presentation.body_end_html`
+after its content. Serve `presentation.assets` through exact path lookup.
+`controls_head_html` omits site page-layout styles. Complete preview documents
+use `head_html` internally. Each asset value is bytes. Use CSS, JavaScript, or WOFF2 response types as appropriate.
+The asset base also applies to font URLs. No site build or filesystem writes occur.
+
+The controls reuse the site's palette, aesthetic, font, size, and loading catalogs.
+`document()` now uses site article wrappers. Set `mode`, `palette`, `aesthetic`,
+`fontpack`, and `text_size` to select appearance. Unknown catalog values raise
+`ValueError`. Lucide shortcodes render through Markata's existing icon implementation.
+
+For an isolated preview iframe, set `appearance_bridge=True`. The parent can send
+`{type: "appearance", attributes: {...}}` with `data-theme`, `data-palette`,
+`data-aesthetic`, `data-fontpack`, and `data-text-size` choices. The bridge accepts
+messages from its parent and validates values against the catalogs. Keep the
+iframe sandboxed with `allow-scripts` and without `allow-same-origin`.
+
+The [single-file editor example](https://github.com/WaylonWalker/markata/blob/main/examples/fastapi_editor.py)
+contains CodeMirror and application behavior. Markata supplies its preview document,
+icons, appearance picker, and assets. Applications must explicitly enable
+`unsafe=True` to render authored HTML and style blocks.

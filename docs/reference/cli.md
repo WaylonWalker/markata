@@ -2395,3 +2395,7 @@ Mermaid and Chart.js libraries, into the returned asset tags. `--asset-base`
 sets the linked asset URL prefix (default `/markata-assets`). `--unsafe` permits
 raw authored HTML for trusted content. No site build or configuration is needed.
 See [Python and FastAPI rendering](/docs/guides/python-renderer/).
+
+`markata render --appearance` emits versioned JSON with reusable appearance picker
+markup, ordered style/script paths, and base64 asset bytes. It does not read stdin.
+Host applications serve these assets and insert the controls in their own layouts.
