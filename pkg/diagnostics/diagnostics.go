@@ -80,6 +80,7 @@ func Check(filePath, content string, resolver Resolver) []Issue {
 	// Body checks
 	issues = append(issues, checkImageLinks(filePath, body, hasFrontmatter, frontmatter)...)
 	issues = append(issues, checkProtocollessURLs(filePath, content)...)
+	issues = append(issues, checkBareDomainLinks(filePath, body, hasFrontmatter, frontmatter)...)
 	issues = append(issues, checkH1Headings(filePath, body, hasFrontmatter, frontmatter)...)
 	issues = append(issues, checkAdmonitionFencedCode(filePath, body, hasFrontmatter, frontmatter)...)
 

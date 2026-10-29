@@ -219,3 +219,8 @@ For Go HTTP benchmarks, build `cmd/markata-workbench` and run
 Use the same fixture hashes as the Python report. Keep cache misses separate
 from repeated cached renders, and distinguish linked assets from inline assets.
 See the integration benchmark guide for timing boundaries and stacking order.
+
+Official renderer wheels include readable Lucide/Feather notices in dist-info/licenses.
+Executable installed wheels can render from read-only site-packages. Preserve
+the executable bit when packaging; prefer the persistent Go server for frequent
+interactive renders. See the Python renderer guide for packaging and size details.

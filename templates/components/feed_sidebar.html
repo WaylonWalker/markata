@@ -4,7 +4,8 @@
 {# Requires: config.components.feed_sidebar (FeedSidebarConfig) #}
 
 {% with sidebar = config.components.feed_sidebar %}
-{% if sidebar.enabled %}
+{# Do not treat the generic page-wide posts collection as a series. #}
+{% if sidebar.enabled and (sidebar_posts or feed.posts) %}
 <aside class="feed-sidebar feed-sidebar--{{ sidebar.position | default:'left' }}" style="--feed-sidebar-width: {{ sidebar.width | default:'250px' }}" aria-label="Feed navigation" data-pagefind-ignore>
     <button type="button" class="sidebar-toggle" aria-expanded="false" aria-label="Open series sidebar" data-sidebar-label="series" {% if (sidebar.position | default:'left') == 'left' %}aria-keyshortcuts="b" data-sidebar-hotkey="b"{% else %}aria-keyshortcuts="Shift+B" data-sidebar-hotkey="Shift+B"{% endif %}>
         <svg class="sidebar-toggle__icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -14,13 +15,25 @@
     <nav class="feed-nav">
         {% if sidebar.title %}
         <h2 class="feed-nav-title">{{ sidebar.title }}</h2>
+        {% elif sidebar_feed.title %}
+        <h2 class="feed-nav-title">{{ sidebar_feed.title }}</h2>
         {% elif feed.title %}
         <h2 class="feed-nav-title">{{ feed.title }}</h2>
         {% else %}
         <h2 class="feed-nav-title">In this series</h2>
         {% endif %}
 
-        {% if feed.posts %}
+        {% if sidebar_posts %}
+        <ul class="feed-nav-list">
+            {% for p in sidebar_posts %}
+            <li class="feed-nav-item{% if post.slug == p.slug %} feed-nav-item--active{% endif %}">
+                <a href="{{ p.href }}" class="feed-nav-link"{% if post.slug == p.slug %} aria-current="page"{% endif %}>
+                    {{ p.title | default:p.slug }}
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+        {% elif feed.posts %}
         <ul class="feed-nav-list">
             {% for p in feed.posts %}
             <li class="feed-nav-item{% if post.slug == p.slug %} feed-nav-item--active{% endif %}">
@@ -30,17 +43,7 @@
             </li>
             {% endfor %}
         </ul>
-        {% elif posts %}
-        <ul class="feed-nav-list">
-            {% for p in posts %}
-            <li class="feed-nav-item{% if post.slug == p.slug %} feed-nav-item--active{% endif %}">
-                <a href="{{ p.href }}" class="feed-nav-link">
-                    {{ p.title | default:p.slug }}
-                </a>
-            </li>
-            {% endfor %}
-        </ul>
-        {% else %}
+                {% else %}
         <p class="feed-nav-empty">No posts in this series.</p>
         {% endif %}
     </nav>
