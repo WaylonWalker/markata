@@ -118,6 +118,11 @@ Set `MARKATA_GO_SITE_DIR` in an alias or wrapper when repeatedly using one site.
 - `markata-go lint` (lint markdown files for common issues)
 - `markata-go lint --fix` (auto-fix fixable issues)
 - `markata-go lint --dry-run` (show files without linting)
+- The Go and FastAPI browser editor examples use the existing LSP through a same-origin `/lsp` WebSocket.
+  Select the workspace on the server (`markata-workbench --workspace` or `MARKATA_LSP_WORKSPACE`).
+  FastAPI uses `markata-go lsp --browser-workspace` behind its stdio bridge.
+  Drafts stay in memory. These examples do not open or save workspace files.
+  See `docs/guides/go-workbench.md` and `docs/guides/fastapi-editor.md` in the Markata repository.
 - `markata-go lsp doctor` (check local LSP command and project configuration)
 - `markata-go lsp doctor --no-verify-editor` (detect installed editors without loading their configuration)
 - `markata-go lsp setup` (print setup guidance for each installed supported editor; use `--editor <editor>` for `generic`, `neovim`, `helix`, `emacs`, `zed`, or `vscode`)

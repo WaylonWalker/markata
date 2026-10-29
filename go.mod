@@ -20,6 +20,7 @@ require (
 	github.com/cyberphone/json-canonicalization v0.0.0-20241213102144-19d51d7fe467
 	github.com/flosch/pongo2/v6 v6.1.0
 	github.com/fsnotify/fsnotify v1.10.1
+	github.com/gorilla/websocket v1.5.3
 	github.com/ktr0731/go-fuzzyfinder v0.9.0
 	github.com/mangoumbrella/goldmark-figure v1.4.0
 	github.com/markusmobius/go-dateparser v1.4.8

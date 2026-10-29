@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
@@ -92,23 +94,24 @@ func (s *Server) handleCompletion(_ context.Context, msg *Message) error {
 	s.docMu.RUnlock()
 
 	if !ok {
-		return s.sendResponse(msg.ID, &CompletionList{Items: []CompletionItem{}})
+		return s.sendCompletion(msg.ID, params, &CompletionList{Items: []CompletionItem{}})
 	}
 
 	// Get the line at the cursor position
 	lines := strings.Split(doc.Content, "\n")
-	if params.Position.Line >= len(lines) {
-		return s.sendResponse(msg.ID, &CompletionList{Items: []CompletionItem{}})
+	if params.Position.Line < 0 || params.Position.Character < 0 || params.Position.Line >= len(lines) {
+		return s.sendCompletion(msg.ID, params, &CompletionList{Items: []CompletionItem{}})
 	}
 
 	line := lines[params.Position.Line]
-	col := params.Position.Character
+	col := byteColumn(line, params.Position.Character)
+	params.Position.Character = col
 	if col > len(line) {
 		col = len(line)
 	}
 	if strings.HasSuffix(params.TextDocument.URI, ".toml") || strings.HasSuffix(params.TextDocument.URI, ".yaml") || strings.HasSuffix(params.TextDocument.URI, ".yml") || strings.HasSuffix(params.TextDocument.URI, ".json") {
 		if items := getThemeConfigCompletions(doc.Content, params.Position.Line, line[:col]); items != nil {
-			return s.sendResponse(msg.ID, &CompletionList{Items: items})
+			return s.sendCompletion(msg.ID, params, &CompletionList{Items: items})
 		}
 	}
 
@@ -116,7 +119,7 @@ func (s *Server) handleCompletion(_ context.Context, msg *Message) error {
 	frontmatterCtx := getFrontmatterContext(doc.Content, params.Position.Line, col)
 	if frontmatterCtx.InFrontmatter && (frontmatterCtx.IsFieldName || frontmatterCtx.IsFieldValue) {
 		items := getFrontmatterCompletions(frontmatterCtx, params)
-		return s.sendResponse(msg.ID, &CompletionList{
+		return s.sendCompletion(msg.ID, params, &CompletionList{
 			IsIncomplete: false,
 			Items:        items,
 		})
@@ -125,7 +128,7 @@ func (s *Server) handleCompletion(_ context.Context, msg *Message) error {
 	// Check if we're in an admonition context (after !!!, ???, or ???+)
 	if adCtx, inAdmonition := getAdmonitionContext(line, col); inAdmonition {
 		items := getAdmonitionCompletions(adCtx, params)
-		return s.sendResponse(msg.ID, &CompletionList{Items: items})
+		return s.sendCompletion(msg.ID, params, &CompletionList{Items: items})
 	}
 
 	// Check if we're inside a mention (@handle)
@@ -133,10 +136,14 @@ func (s *Server) handleCompletion(_ context.Context, msg *Message) error {
 		return s.handleMentionCompletion(msg, params, prefix, startCol, col)
 	}
 
+	if prefix, start, ok := getDocumentLinkContext(line, col); ok {
+		return s.handleDocumentLinkCompletion(msg, params, prefix, start, col)
+	}
+
 	// Check if we're inside a wikilink
 	prefix, startCol, inWikilink := getWikilinkContext(line, col)
 	if !inWikilink {
-		return s.sendResponse(msg.ID, &CompletionList{Items: []CompletionItem{}})
+		return s.sendCompletion(msg.ID, params, &CompletionList{Items: []CompletionItem{}})
 	}
 
 	return s.handleWikilinkCompletion(msg, params, prefix, startCol, col)
@@ -146,6 +153,15 @@ func (s *Server) handleCompletion(_ context.Context, msg *Message) error {
 func (s *Server) handleWikilinkCompletion(msg *Message, params CompletionParams, prefix string, startCol, col int) error {
 	// Get all posts
 	posts := s.index.AllPosts()
+	if s.browser != nil {
+		filtered := make([]*PostInfo, 0, len(posts))
+		for _, post := range posts {
+			if post.URI != s.browser.DocumentURI {
+				filtered = append(filtered, post)
+			}
+		}
+		posts = filtered
+	}
 
 	// Build completion entries - include both slugs and aliases
 	entries := buildWikilinkCompletionEntries(posts, prefix)
@@ -167,7 +183,7 @@ func (s *Server) handleWikilinkCompletion(msg *Message, params CompletionParams,
 		Items:        items,
 	}
 
-	return s.sendResponse(msg.ID, result)
+	return s.sendCompletion(msg.ID, params, result)
 }
 
 // wikilinkCompletionEntry represents a potential wikilink completion.
@@ -315,7 +331,7 @@ func (s *Server) handleMentionCompletion(msg *Message, params CompletionParams, 
 		Items:        items,
 	}
 
-	return s.sendResponse(msg.ID, result)
+	return s.sendCompletion(msg.ID, params, result)
 }
 
 // mentionHandleRegex matches the handle part after @.
@@ -493,4 +509,84 @@ func getMentionAtPosition(line string, col, lineNum int) (string, *Range) {
 	}
 
 	return "", nil
+}
+
+// sendCompletion converts byte-based parser ranges to LSP UTF-16 ranges.
+func (s *Server) sendCompletion(id json.RawMessage, params CompletionParams, result *CompletionList) error {
+	// Browser adapters request again as the prefix changes. Keep large workspaces responsive.
+	if s.browser != nil && len(result.Items) > 200 {
+		result.Items = result.Items[:200]
+		result.IsIncomplete = true
+	}
+	s.docMu.RLock()
+	doc := s.documents[params.TextDocument.URI]
+	s.docMu.RUnlock()
+	if doc != nil {
+		lines := strings.Split(doc.Content, "\n")
+		for i := range result.Items {
+			edit := result.Items[i].TextEdit
+			if edit == nil {
+				continue
+			}
+			if edit.Range.Start.Line >= 0 && edit.Range.Start.Line < len(lines) {
+				edit.Range.Start.Character = utf16Column(lines[edit.Range.Start.Line], edit.Range.Start.Character)
+			}
+			if edit.Range.End.Line >= 0 && edit.Range.End.Line < len(lines) {
+				edit.Range.End.Character = utf16Column(lines[edit.Range.End.Line], edit.Range.End.Character)
+			}
+		}
+	}
+	return s.sendResponse(id, result)
+}
+
+var documentLinkStart = regexp.MustCompile(`!?\[[^\]\n]*\]\(([^)\s]*)$`)
+
+func getDocumentLinkContext(line string, col int) (prefix string, startCol int, inLink bool) {
+	match := documentLinkStart.FindStringSubmatchIndex(line[:col])
+	if match == nil {
+		return "", 0, false
+	}
+	prefix = line[match[2]:col]
+	// Remote URLs and fragment-only links are not document path completions.
+	if strings.ContainsAny(prefix, ":#") {
+		return "", 0, false
+	}
+	return prefix, match[2], true
+}
+
+func (s *Server) handleDocumentLinkCompletion(msg *Message, params CompletionParams, prefix string, start, col int) error {
+	items := make([]CompletionItem, 0)
+	source := uriToPath(params.TextDocument.URI)
+	// The browser draft has no source file. Its document paths start at the workspace root.
+	directory := filepath.Dir(source)
+	if s.browser != nil {
+		directory = uriToPath(s.browser.RootURI)
+	}
+	for _, post := range s.index.AllPosts() {
+		if post.URI == params.TextDocument.URI {
+			continue
+		}
+		relative, err := filepath.Rel(directory, post.Path)
+		if err != nil {
+			continue
+		}
+		target := (&url.URL{Path: filepath.ToSlash(relative)}).EscapedPath()
+		if strings.HasPrefix(prefix, "/") && s.rootURI != "" {
+			relative, err = filepath.Rel(uriToPath(s.rootURI), post.Path)
+			if err != nil || relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
+				continue
+			}
+			target = "/" + (&url.URL{Path: filepath.ToSlash(relative)}).EscapedPath()
+		} else if strings.HasPrefix(prefix, "./") {
+			target = "./" + target
+		}
+		if prefix != "" && !strings.HasPrefix(strings.ToLower(target), strings.ToLower(prefix)) && !strings.Contains(strings.ToLower(post.Title), strings.ToLower(prefix)) {
+			continue
+		}
+		items = append(items, CompletionItem{Label: target, Kind: CompletionItemKindFile, Detail: post.Title,
+			Documentation: &MarkupContent{Kind: "markdown", Value: formatPostDocumentation(post)},
+			TextEdit:      &TextEdit{Range: Range{Start: Position{Line: params.Position.Line, Character: start}, End: Position{Line: params.Position.Line, Character: col}}, NewText: target}})
+	}
+	sort.Slice(items, func(i, j int) bool { return items[i].Label < items[j].Label })
+	return s.sendCompletion(msg.ID, params, &CompletionList{Items: items})
 }

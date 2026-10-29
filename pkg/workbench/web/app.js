@@ -12,6 +12,7 @@ const editor = CodeMirror.fromTextArea(source, {
   indentUnit:2, tabSize:4, viewportMargin:10, screenReaderLabel:'Markdown source'
 });
 window.MarkataCommandPalette.attach(editor);
+window.MarkataEditorLSP.connect(editor, document.querySelector('#language-status'));
 if (new URLSearchParams(location.search).has('example')) {
   fetch(document.body.dataset.exampleUrl).then(response => {
     if (!response.ok) throw new Error('Cannot load the command palette example.');

@@ -1,111 +1,196 @@
----
-title: "Live Markdown editor with FastAPI"
-description: "Run a single-file editor with a live Markata preview"
-date: 2026-10-28
-published: true
-tags:
-  - documentation
-  - python
-  - markdown
----
+name: Go Markata PyPI wheels
 
-Run the single-file example:
+# PRs build and inspect wheels without secrets. Publishing only happens on an
+# explicit main-branch workflow dispatch, confirmed by a human, after PyPI
+# trusts this exact workflow for the existing "markata" project.
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/pypi-go-wheels.yml'
+      - 'scripts/build-pypi-wheels.sh'
+      - 'scripts/check-pypi-wheels.py'
+      - 'scripts/add-python-renderer-to-wheels.py'
+      - 'python/**'
+      - 'docs/guides/python-renderer.md'
+      - 'pkg/plugins/standalone*'
+      - 'pkg/plugins/icons*'
+      - 'pkg/themes/**'
+      - 'pkg/templates/**'
+      - 'pkg/palettes/**'
+      - 'pkg/aesthetic/**'
+      - 'pkg/fontpacks/**'
+      - 'examples/fastapi_editor.py'
+      - 'examples/command-palette-showcase.md'
+      - 'examples/wasm-workbench/**'
+      - 'pkg/workbench/**'
+      - 'tests/editors/**'
+      - 'scripts/wasm-workbench.py'
+      - 'docs/guides/fastapi-editor.md'
+      - 'cmd/markata/**'
+      - 'cmd/markata-go/**'
+      - 'go.mod'
+      - 'go.sum'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '0.x PyPI version to build (must not exist on PyPI)'
+        required: true
+        type: string
+        default: '0.14.0'
+      publish:
+        description: 'Actually publish Go wheels as markata on PyPI'
+        required: true
+        type: boolean
+        default: false
+      confirm:
+        description: 'For publishing, type REPLACE_PYTHON_MARKATA_WITH_GO'
+        required: false
+        type: string
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  wheels:
+    name: Build and verify eight Go wheels
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    env:
+      MARKATA_WHEEL_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.version || '0.14.0.dev0' }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v7
+        with:
+          go-version: '1.26'
+          cache: true
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - name: Install Simon Willison's go-to-wheel
+        run: python -m pip install go-to-wheel==0.2
+      - name: Test Python renderer protocol and wheel packaging
+        run: python -m unittest discover -s python/tests -v
+      - name: Build Go command into PyPI wheel artifacts (no upload)
+        run: bash scripts/build-pypi-wheels.sh "${MARKATA_WHEEL_VERSION}"
+      - name: Verify platform wheel tags, Go binaries and metadata
+        run: python scripts/check-pypi-wheels.py dist/pypi-wheels
+      - name: Install and execute wheel in a clean Python environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m venv "${RUNNER_TEMP}/markata-wheel-venv"
+          wheel="dist/pypi-wheels/markata-${MARKATA_WHEEL_VERSION}-py3-none-manylinux_2_17_x86_64.whl"
+          "${RUNNER_TEMP}/markata-wheel-venv/bin/python" -m pip install --no-deps --no-index "${wheel}"
+          "${RUNNER_TEMP}/markata-wheel-venv/bin/python" python/smoke_renderer.py
+          "${RUNNER_TEMP}/markata-wheel-venv/bin/python" -m markata version
+          "${RUNNER_TEMP}/markata-wheel-venv/bin/markata" version
+          "${RUNNER_TEMP}/markata-wheel-venv/bin/markata" --help
+          "${RUNNER_TEMP}/markata-wheel-venv/bin/python" -m pip install fastapi httpx uvicorn playwright
+          "${RUNNER_TEMP}/markata-wheel-venv/bin/python" python/smoke_fastapi.py
+          "${RUNNER_TEMP}/markata-wheel-venv/bin/python" -m unittest discover -s python/integration -v
+      - name: Install browser for the live editor regression test
+        run: '"${RUNNER_TEMP}/markata-wheel-venv/bin/python" -m playwright install --with-deps chromium'
+      - name: Exercise the live editor with the installed wheel
+        run: '"${RUNNER_TEMP}/markata-wheel-venv/bin/python" python/test_editor_browser.py -v'
+      - name: Build all editor demos and verify shared behavior
+        run: |
+          "${RUNNER_TEMP}/markata-wheel-venv/bin/python" -m unittest discover -s tests/editors -p 'test_*.py' -v
+          go build -o "${RUNNER_TEMP}/markata-workbench" ./cmd/markata-workbench
+          python scripts/wasm-workbench.py
+          "${RUNNER_TEMP}/markata-wheel-venv/bin/python" tests/editors/test_parity.py --go-binary "${RUNNER_TEMP}/markata-workbench" --wasm-output .wasm-workbench
+      - name: Exercise LSP completion in the Python and Go browser examples
+        shell: bash
+        run: |
+          set -euo pipefail
+          go build -o "${RUNNER_TEMP}/markata-example-lsp" ./cmd/markata-go
+          go build -o "${RUNNER_TEMP}/markata-example-workbench" ./cmd/markata-workbench
+          MARKATA_LSP_BINARY="${RUNNER_TEMP}/markata-example-lsp" \
+          MARKATA_WORKBENCH_BINARY="${RUNNER_TEMP}/markata-example-workbench" \
+          "${RUNNER_TEMP}/markata-wheel-venv/bin/python" python/test_browser_lsp.py -v
+      - name: Save inspected wheel artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: markata-go-pypi-wheels
+          path: dist/pypi-wheels/*.whl
+          if-no-files-found: error
+          retention-days: 7
+
+  smoke-platforms:
+    name: Install Go CLI on ${{ matrix.os }}
+    needs: wheels
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    env:
+      MARKATA_WHEEL_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.version || '0.14.0.dev0' }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - uses: actions/download-artifact@v8
+        with:
+          name: markata-go-pypi-wheels
+          path: dist/pypi-wheels
+      - name: Offline install matching platform wheel (no Python legacy fallback)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --no-index --no-deps --only-binary=:all: \
+            --find-links=dist/pypi-wheels "markata==${MARKATA_WHEEL_VERSION}"
+      - name: Exercise Python module and installed Go executable
+        shell: bash
+        run: |
+          set -euo pipefail
+          python python/smoke_renderer.py
+          python -m markata version
+          python -m markata --help
+          markata version
+
+  publish:
+    name: Publish markata 0.x Go wheels to PyPI
+    needs: [wheels, smoke-platforms]
+    # Never publish PRs, tags, forks, or a dispatch without explicit approval.
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      github.ref == 'refs/heads/main' &&
+      inputs.publish == true &&
+      inputs.confirm == 'REPLACE_PYTHON_MARKATA_WITH_GO'
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/markata/
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: markata-go-pypi-wheels
+          path: dist/
+      - name: Publish verified wheels using PyPI trusted publisher OIDC
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/
+
+Run the LSP browser checks against both examples:
 
 ```bash
-uv run examples/fastapi_editor.py
+go build -o /tmp/markata-editor-lsp ./cmd/markata-go
+go build -o /tmp/markata-editor-workbench ./cmd/markata-workbench
+MARKATA_LSP_BINARY=/tmp/markata-editor-lsp \
+MARKATA_WORKBENCH_BINARY=/tmp/markata-editor-workbench \
+python python/test_browser_lsp.py -v
 ```
 
-Open <http://127.0.0.1:8765>. Edit Markdown on the left. The preview updates after
-250 milliseconds without edits. Narrow screens stack the editor and preview.
-The browser stores your draft locally. Use **Download .md** to save a file.
-
-The example requires a Markata wheel containing the Python API from PR #1835.
-Until that API is released, install a wheel built from that PR:
-
-```bash
-uv run --with /absolute/path/to/markata-VERSION-PLATFORM.whl examples/fastapi_editor.py
-```
-
-Replace the wheel path with your local wheel. With Python and dependencies already
-installed, `python examples/fastapi_editor.py` also works. The server listens on
-localhost, port 8765. Press Ctrl+C to stop it.
-
-Each preview calls `markata.render_async()` through FastAPI. Inline assets support
-code highlighting, Mermaid, and Chart.js without separate asset routes. A fresh
-iframe document executes initialization scripts after each successful render.
-The iframe permits scripts and keeps the preview separate from the editor origin.
-Authored HTML and inline styles are enabled for this local authoring tool.
-The preview remains isolated from the editor origin.
-
-The example limits input to 200,000 UTF-8 bytes and rendering to 15 seconds.
-Errors preserve the last successful preview. Each call starts a renderer process.
-This example is a local development tool. It does not include accounts or shared storage.
-
-Use the appearance button beside **Download .md** to open Markata's full picker.
-Search color themes, switch light and dark modes, or select Style and Font tabs.
-Selections apply to the preview and persist across edits. Markata supplies the
-palette catalog, styles, scripts, and fonts. No site build runs during editing.
-
-The footer shows Markata time, request time, input bytes, document bytes, and frame
-load time. Markata time includes process startup, rendering, asset collection, and
-JSON parsing. Request time also includes HTTP transfer and browser JSON parsing.
-Frame load time measures iframe loading, not completed asynchronous diagrams.
-The 250-millisecond typing delay is separate from these measurements.
-
-The preview uses the default site's article wrappers, reading size, and spacing.
-It previews article content. It does not add site navigation, feeds, or post metadata.
-
-Lucide shortcodes such as `:lucide-globe:` and `:lucide/heart:` display as inline
-icons in prose and headings. Markata bundles all 2,118 icons from Markata's pinned
-Lucide pack, including its license. Code examples and unknown shortcodes stay unchanged.
-
-The Markdown pane uses bundled CodeMirror with syntax highlighting, line numbers,
-line wrapping, and bracket matching. Select **Keymap** above the editor to use
-Default, Vim, Emacs, or Sublime bindings. Your choice persists in this browser.
-With Vim selected, press `i` to insert text and `Escape` to return to normal mode.
-Editor colors follow the appearance picker. CodeMirror requires no CDN requests.
-
-
-## Run the demo integration tests
-
-Use a virtual environment containing the built Markata wheel, FastAPI, Uvicorn,
-HTTPX, and Playwright. Run the endpoint checks against that installed wheel:
-
-```bash
-python -m unittest discover -s python/integration -v
-```
-
-Install Chromium and run the browser checks:
-
-```bash
-python -m playwright install chromium
-python python/test_editor_browser.py -v
-```
-
-If Chromium is already installed, set `MARKATA_TEST_CHROMIUM` to its executable path.
-The tests reserve an available localhost port and stop their server afterward.
-They cover live edits, saved drafts, keymaps, initial appearance, picker changes,
-Lucide icons, responsive rails, and full-width desktop and mobile layouts.
-The wheel workflow runs both suites against the installed Linux wheel.
-
-The first render returns the full preview document. Later requests set
-`include_document` to `false`, so the server returns only the rendered fragment,
-conditional styles, scripts, and metrics. The browser keeps its document and
-appearance styles loaded, then replaces the article content in the existing
-sandboxed frame. This avoids sending the large site CSS payload or reloading
-theme stylesheets after every edit.
-
-See [integration benchmarks](/docs/guides/renderer-integration-benchmarks/) for measured fixture timings and reproduction steps.
-
-## Shared editor behavior
-
-Use **Open .md** to import a Markdown file. An oversized file leaves the current draft intact.
-Use **Download .md** to keep a copy outside browser storage.
-The footer reports whether the draft was saved. Storage failures leave editing and downloads available.
-See [shared editor features and runtime differences](/docs/guides/renderer-integration-benchmarks/#shared-editor-features-and-runtime-differences) for the comparison.
-
-## Insert Markdown commands
-
-Select **Commands** or press **Ctrl+Shift+P** (**Cmd+Shift+P** on macOS).
-Search for special syntax, then press **Enter** to insert it at your selection.
-See the [command palette guide](editor-command-palette.md) for the catalog and keyboard controls.
+These checks use temporary Markdown fixtures and verify completion, Unicode ranges, diagnostics, and preview after connection failure.

@@ -33,7 +33,9 @@ import (
 
 // Server is the LSP server implementation for markata-go.
 type Server struct {
-	logger *log.Logger
+	logger   *log.Logger
+	browser  *BrowserConfig
+	sendJSON func([]byte) error
 
 	// index holds the indexed posts for autocomplete and validation
 	index *Index
@@ -206,8 +208,8 @@ func (s *Server) readMessage(reader *bufio.Reader) (*Message, error) {
 		// Ignore other headers (like Content-Type)
 	}
 
-	if contentLength == 0 {
-		return nil, fmt.Errorf("missing or zero Content-Length header")
+	if contentLength <= 0 || (s.browser != nil && contentLength > MaxBrowserMessage) {
+		return nil, fmt.Errorf("missing, invalid, or excessive Content-Length header")
 	}
 
 	// Read exactly contentLength bytes for the body
@@ -227,9 +229,15 @@ func (s *Server) readMessage(reader *bufio.Reader) (*Message, error) {
 // handleMessage dispatches a message to the appropriate handler.
 func (s *Server) handleMessage(ctx context.Context, msg *Message) error {
 	isRequest := s.isRequest(msg)
+	if !s.allowBrowserMessage(msg) {
+		if isRequest {
+			return s.sendError(msg.ID, InvalidParams, "method or document is outside the browser session")
+		}
+		return nil
+	}
 
-	if err := s.checkMessageAllowed(msg, isRequest); err != nil {
-		return err
+	if (s.shutdown && msg.Method != methodExit) || (!s.initialized && msg.Method != methodInitialize && msg.Method != methodExit) {
+		return s.checkMessageAllowed(msg, isRequest)
 	}
 
 	return s.dispatchMethod(ctx, msg, isRequest)
@@ -339,6 +347,9 @@ func (s *Server) writeMessage(msg *Message) error {
 		return fmt.Errorf("failed to marshal message: %w", err)
 	}
 
+	if s.sendJSON != nil {
+		return s.sendJSON(content)
+	}
 	header := fmt.Sprintf("Content-Length: %d\r\n\r\n", len(content))
 	if _, err := io.WriteString(s.writer, header); err != nil {
 		return fmt.Errorf("failed to write header: %w", err)

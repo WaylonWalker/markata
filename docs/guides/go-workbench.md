@@ -12,7 +12,7 @@ tags:
 Run the editor from the Markata repository:
 
 ```bash
-go run ./cmd/markata-workbench --listen 127.0.0.1:8767
+go run ./cmd/markata-workbench --listen 127.0.0.1:8767 --workspace ./docs
 ```
 
 Open <http://127.0.0.1:8767/>. Edit Markdown on the left and view the preview on the right.
@@ -20,7 +20,7 @@ Press Ctrl+C to stop the server. Without `--listen`, the server uses port 8766.
 
 The Go server calls Markata's standalone renderer directly. It starts no Python process and needs no WASM runtime.
 It uses the same Markdown renderer as the [Python API](./python-renderer/) and [FastAPI editor](./fastapi-editor/).
-It does not build a site or load site configuration.
+The preview does not build a site. The language service indexes Markdown and reads workspace configuration for existing mention support.
 
 Use the appearance picker to select a palette, color mode, style, font, or text size.
 Use the keymap selector for Default, Vim, Emacs, or Sublime editing.
@@ -35,6 +35,42 @@ The preview updates after a 250 ms pause. One request runs at a time, and newer 
 Old responses cannot replace a newer draft. Errors preserve the last successful preview.
 The footer shows render time, round trip time, source size, and preview size.
 Repeated source uses a one-entry memory cache. Appearance changes update the preview without a render request.
+
+## Language assistance
+
+The editor connects to the existing Markata LSP through `/lsp` over WebSocket.
+The server indexes the directory from `--workspace`. The default directory is the current directory.
+
+Type `[[` for wiki-link suggestions, including aliases. Type `[label](` for Markdown document paths.
+Press **Ctrl+Space** to request suggestions at the cursor. Use the arrow keys and Enter to select a suggestion.
+Existing frontmatter, admonition, and mention completion also use the LSP.
+Broken wiki links receive an underline. The underline tooltip shows the diagnostic message.
+
+The editor sends unsaved text as a synthetic `.markata/browser-draft.md` document.
+This document stays in memory. Markdown path suggestions start at the workspace root because the draft has no source file.
+The example does not open or save workspace files. File trees and document switching require separate integration.
+Each WebSocket connection owns its own draft and index. Reload the page to index external file changes.
+
+The footer reports the language connection state. Editing and preview continue if the connection fails.
+Reload the page to reconnect. The browser adapter is shared with the [FastAPI example](./fastapi-editor/).
+
+For an embedded application, use `workbench.NewWithWorkspace(ctx, root)`.
+Cancel `ctx` during shutdown to close active language connections.
+`workbench.New()` uses the current directory and the lifetime of the application.
+
+### WebSocket protocol
+
+`GET /lsp/config` returns `rootUri` and `documentUri` for the selected workspace.
+Connect to `/lsp` with the page origin. Each WebSocket text message contains one JSON-RPC object.
+WebSocket messages omit the stdio `Content-Length` headers.
+Send `initialize`, `initialized`, and `textDocument/didOpen` before language requests.
+The session accepts the synthetic draft URI from the configuration response.
+The server ignores browser workspace-change notifications and overrides the client workspace during initialization.
+
+Browser completion responses contain at most 200 suggestions. More specific text requests a new list.
+Messages have a 2 MiB limit. A disconnect releases the session.
+The endpoint rejects missing or foreign origins. It provides no authentication or shared workspace management.
+Keep this example on a trusted local address.
 
 ## Embed the handler
 

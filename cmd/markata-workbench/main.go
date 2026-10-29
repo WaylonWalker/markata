@@ -19,10 +19,12 @@ import (
 )
 
 func main() {
-	var address string
+	var address, workspace string
 	command := &cobra.Command{Use: "markata-workbench", Short: "Serve a local Markdown editor with in-process Go rendering", Version: "dev", Args: cobra.NoArgs, SilenceUsage: true, RunE: func(cmd *cobra.Command, _ []string) error {
 		fmt.Fprintln(cmd.ErrOrStderr(), "Preparing Markata appearance assets…")
-		handler, err := workbench.New()
+		ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
+		defer stop()
+		handler, err := workbench.NewWithWorkspace(ctx, workspace)
 		if err != nil {
 			return err
 		}
@@ -30,11 +32,10 @@ func main() {
 		if err != nil {
 			return fmt.Errorf("listen on %s: %w", address, err)
 		}
-		ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
-		defer stop()
 		fmt.Fprintf(cmd.ErrOrStderr(), "Markata Go workbench: http://%s/\nStop with Ctrl+C.\n", listener.Addr())
 		return serve(ctx, listener, handler, cmd.ErrOrStderr())
 	}}
+	command.Flags().StringVar(&workspace, "workspace", ".", "Markdown workspace for language assistance (drafts stay in memory)")
 	command.Flags().StringVar(&address, "listen", "127.0.0.1:8766", "HTTP listen address (trusted local use)")
 	if err := command.Execute(); err != nil {
 		os.Exit(1)
