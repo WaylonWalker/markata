@@ -1704,8 +1704,8 @@ func (m Model) highlightSearchMatch(line, query string) string {
 		matchText := line[actualIndex : actualIndex+len(query)]
 		highlightStyle := lipgloss.NewStyle().
 			Bold(true).
-			Foreground(lipgloss.Color("0")).
-			Background(lipgloss.Color("11"))
+			Foreground(m.theme.Colors.SelectedText).
+			Background(m.theme.Colors.SelectedBg)
 		result.WriteString(highlightStyle.Render(matchText))
 
 		lastIndex = actualIndex + len(query)
@@ -2011,6 +2011,9 @@ func (m Model) renderLayout(content string) string {
 	// Show active filter in header if present
 	if m.activeFilter != nil && m.view == ViewPosts {
 		filterLabel := fmt.Sprintf(" → %s: %s", m.activeFilter.Type, m.activeFilter.Name)
+		activeFilterStyle := lipgloss.NewStyle().Bold(true).
+			Foreground(m.theme.Colors.SelectedText).
+			Background(m.theme.Colors.SelectedBg)
 		header += " " + activeFilterStyle.Render(filterLabel)
 	}
 
@@ -2909,14 +2912,5 @@ func getIntFromExtra(extra map[string]interface{}, name string) int {
 	}
 	return 0
 }
-
-// Styles
-var (
-	// Active filter style - shows current tag/feed filter
-	activeFilterStyle = lipgloss.NewStyle().
-		Bold(true).
-		Foreground(lipgloss.Color("229")).
-		Background(lipgloss.Color("57"))
-)
 
 // CI trigger

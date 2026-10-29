@@ -82,7 +82,7 @@ func TestWriterForceColorUsesRichAutoFormat(t *testing.T) {
 	if _, err := writer.Write([]byte("[build] complete\n")); err != nil {
 		t.Fatalf("Write() error = %v", err)
 	}
-	if !strings.Contains(buf.String(), ansiCyan+"[build]"+ansiReset) {
+	if !strings.Contains(buf.String(), ansiTrueColor(DefaultTheme().Component)+"[build]"+ansiReset) {
 		t.Fatalf("forced auto-format output = %q, want ANSI color", buf.String())
 	}
 }
@@ -106,7 +106,7 @@ func TestRichComponentUsesPhaseColor(t *testing.T) {
 		t.Fatalf("Write() error = %v", err)
 	}
 
-	if !strings.Contains(buf.String(), ansiCyan+"[lifecycle]"+ansiReset) {
+	if !strings.Contains(buf.String(), ansiTrueColor(DefaultTheme().PhaseColor["render"])+"[lifecycle]"+ansiReset) {
 		t.Fatalf("output = %q", buf.String())
 	}
 }
@@ -132,8 +132,8 @@ func TestThemeFromPaletteUsesPaletteColors(t *testing.T) {
 	if theme.Success != "#778899" {
 		t.Fatalf("Success = %q, want %q", theme.Success, "#778899")
 	}
-	if theme.PhaseColor["transform"] != "#334455" {
-		t.Fatalf("transform color = %q, want %q", theme.PhaseColor["transform"], "#334455")
+	if theme.PhaseColor["transform"] != "#112233" {
+		t.Fatalf("transform color = %q, want %q", theme.PhaseColor["transform"], "#112233")
 	}
 	if theme.PhaseColor["collect"] != "#778899" {
 		t.Fatalf("collect color = %q, want %q", theme.PhaseColor["collect"], "#778899")

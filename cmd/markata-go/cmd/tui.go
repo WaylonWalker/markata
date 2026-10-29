@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/WaylonWalker/markata/pkg/listcache"
+	"github.com/WaylonWalker/markata/pkg/palettes"
 	"github.com/WaylonWalker/markata/pkg/services"
 	"github.com/WaylonWalker/markata/pkg/tui"
 )
@@ -55,8 +56,11 @@ func runTUI(_ *cobra.Command, _ []string) error {
 	})
 
 	// Load theme from configuration
-	paletteName := tui.GetPaletteNameFromConfig(manager.Config().Extra)
-	colors := tui.LoadColors(paletteName)
+	var palette *palettes.Palette
+	if cfg := getModelsConfig(manager); cfg != nil {
+		palette, _ = loadLoggerPalette(cfg.Theme, manager.Config().Extra)
+	}
+	colors := tui.ColorsFromPalette(palette)
 	theme := tui.NewTheme(colors)
 
 	// Create and run TUI with theme

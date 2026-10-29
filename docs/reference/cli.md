@@ -156,6 +156,8 @@ markata-go follows a few shared CLI rules:
   automatic color
 - `--color` or `FORCE_COLOR` overrides automatic detection; `--no-color` and
   `--log-format plain` always disable color
+- terminal logs, help, prompts, and TUIs use the configured site palette when
+  available, with one shared CLI theme as the fallback
 - interactive commands such as `new` and `init` honor `--no-input`
 - commands that expose structured data should prefer explicit machine-readable
   modes such as `--json` or `--format json`

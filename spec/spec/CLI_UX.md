@@ -103,6 +103,12 @@ When phase metadata is available, lifecycle-oriented logs SHOULD colorize by
 phase rather than by component name alone. If a site palette is configured,
 rich logs SHOULD prefer palette-derived colors when they remain readable.
 
+All CLI surfaces MUST resolve their semantic colors from the same terminal
+theme. When a site palette is configured, logs, help, prompts, and TUIs MUST use
+that palette. When no palette is configured, they MUST use the shared CLI
+fallback theme. Palette pickers MAY show each candidate palette in its preview,
+but their controls and labels MUST use the active CLI theme.
+
 Commands SHOULD make color decisions per stream. For example, `stderr` MAY stay
 colored when `stdout` is piped.
 

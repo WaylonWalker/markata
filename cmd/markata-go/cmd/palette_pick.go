@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/WaylonWalker/markata/pkg/config"
+	"github.com/WaylonWalker/markata/pkg/logging"
 	"github.com/WaylonWalker/markata/pkg/palettes"
 )
 
@@ -37,6 +38,7 @@ var palettePickNoSet bool
 func init() {
 	paletteCmd.AddCommand(palettePickCmd)
 	palettePickCmd.Flags().BoolVar(&palettePickNoSet, "no-set", false, "Only print the palette name without updating config")
+	configurePalettePickerTheme(logging.DefaultTheme())
 }
 
 // runPalettePickCommand launches the interactive palette picker.
@@ -50,6 +52,7 @@ func runPalettePickCommand(_ *cobra.Command, _ []string) error {
 	if len(infos) == 0 {
 		return fmt.Errorf("no palettes found")
 	}
+	configurePalettePickerTheme(currentLogTheme)
 
 	// Pre-load all palettes for preview.
 	loaded := make(map[string]*palettes.Palette, len(infos))
@@ -250,46 +253,34 @@ func listPageSize(termHeight int) int {
 
 // Style definitions for the picker.
 var (
-	pickerTitleStyle = lipgloss.NewStyle().
-				Bold(true).
-				Foreground(lipgloss.Color("#cba6f7"))
-
-	pickerPromptStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("#89b4fa"))
-
-	pickerCursorStyle = lipgloss.NewStyle().
-				Bold(true).
-				Foreground(lipgloss.Color("#f5c2e7"))
-
-	pickerItemStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#cdd6f4"))
-
-	pickerDimStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#6c7086"))
-
-	pickerVariantDarkStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("#585b70"))
-
-	pickerVariantLightStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("#f9e2af"))
-
-	pickerPreviewHeaderStyle = lipgloss.NewStyle().
-					Bold(true).
-					Foreground(lipgloss.Color("#89b4fa"))
-
-	pickerPreviewLabelStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("#a6adc8"))
-
-	pickerPreviewValueStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("#cdd6f4"))
-
-	pickerBorderStyle = lipgloss.NewStyle().
-				Border(lipgloss.RoundedBorder()).
-				BorderForeground(lipgloss.Color("#45475a"))
-
-	pickerHelpStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#6c7086"))
+	pickerTitleStyle         lipgloss.Style
+	pickerPromptStyle        lipgloss.Style
+	pickerCursorStyle        lipgloss.Style
+	pickerItemStyle          lipgloss.Style
+	pickerDimStyle           lipgloss.Style
+	pickerVariantDarkStyle   lipgloss.Style
+	pickerVariantLightStyle  lipgloss.Style
+	pickerPreviewHeaderStyle lipgloss.Style
+	pickerPreviewLabelStyle  lipgloss.Style
+	pickerPreviewValueStyle  lipgloss.Style
+	pickerBorderStyle        lipgloss.Style
+	pickerHelpStyle          lipgloss.Style
 )
+
+func configurePalettePickerTheme(theme logging.Theme) {
+	pickerTitleStyle = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(theme.Component))
+	pickerPromptStyle = lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Component))
+	pickerCursorStyle = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(theme.Success))
+	pickerItemStyle = lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Component))
+	pickerDimStyle = lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Timestamp))
+	pickerVariantDarkStyle = lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Timestamp))
+	pickerVariantLightStyle = lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Warning))
+	pickerPreviewHeaderStyle = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(theme.Component))
+	pickerPreviewLabelStyle = lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Timestamp))
+	pickerPreviewValueStyle = lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Component))
+	pickerBorderStyle = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color(theme.Timestamp))
+	pickerHelpStyle = lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Timestamp))
+}
 
 func (m pickerModel) View() string {
 	if m.width == 0 || m.height == 0 {
