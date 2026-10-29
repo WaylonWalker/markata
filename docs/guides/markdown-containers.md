@@ -221,7 +221,8 @@ Telemetry reaches more teams.
 
 At 1000px and wider, a rail joins card tops with ring ticks that fill on
 hover or keyboard focus. The default is four columns; `data-columns="2"`, `"3"`
-or `"4"` overrides it. Below 1000px cards stack with no rail. A card's heading
+or `"4"` overrides it. Below 1000px cards stack along a vertical rail with ring ticks. The ticks
+remain visible and fill on hover or keyboard focus. A card's heading
 link stretches over the card; keyboard focus outlines the card. Use one heading
 link per card and avoid other interactive controls in these overview cards.
 An emphasis-only paragraph supplies the small uppercase monospace kicker.

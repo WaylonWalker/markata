@@ -176,3 +176,6 @@ Reference docs in the Markata repository:
 - `docs/guides/markdown-checklists.md`
 - `docs/guides/markdown-chart-fallback.md`
 - `docs/guides/markdown-source-disclosure.md`
+
+Rail card grids stay connected when responsive: horizontal above 1000px, vertical
+with ring ticks below 1000px. Use the rail modifier instead of custom connector CSS.
