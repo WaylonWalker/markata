@@ -50,7 +50,7 @@ func RenderStandalone(source string, options StandaloneOptions) (*StandaloneResu
 	if err := p.renderPost(post); err != nil {
 		return nil, fmt.Errorf("render markdown: %w", err)
 	}
-	r := &StandaloneResult{SchemaVersion: 1, Features: map[string]bool{"mermaid": false, "chartjs": false}, Assets: []RenderAsset{}, ExternalURLs: []string{}}
+	r := &StandaloneResult{SchemaVersion: StandaloneSchemaVersion, Features: map[string]bool{"mermaid": false, "chartjs": false}, Assets: []RenderAsset{}, ExternalURLs: []string{}}
 	if err := r.renderDiagrams(post); err != nil {
 		return nil, err
 	}
