@@ -62,7 +62,7 @@ class RenderingTest(unittest.TestCase):
             with patch.object(rendering, '__file__', str(Path(folder) / 'rendering.py')):
                 cmd = rendering._command(False, '/assets', False, 'offline-interactive', 'site.toml')
             self.assertIn('--site-render-profile', cmd)
-            self.assertEqual(cmd[-4:], ['--site-render-profile', '--profile', 'offline-interactive'])
+            self.assertEqual(cmd[-3:], ['--site-render-profile', '--profile', 'offline-interactive'])
             self.assertIn('site.toml', cmd)
 
     def test_missing_binary_is_actionable(self):
