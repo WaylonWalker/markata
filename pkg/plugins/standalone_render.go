@@ -19,6 +19,7 @@ type StandaloneOptions struct {
 	Unsafe       bool
 	InlineAssets bool
 	AssetBase    string
+	Profile      string
 }
 
 // RenderAsset is an ordered dependency for a rendered Markdown fragment.
@@ -40,17 +41,23 @@ type StandaloneResult struct {
 	ExternalURLs  []string        `json:"external_urls"`
 	HeadHTML      string          `json:"head_html"`
 	BodyEndHTML   string          `json:"body_end_html"`
+	RenderProfile string          `json:"render_profile,omitempty"`
 }
 
 // RenderStandalone uses the site's Markdown, Mermaid, and Chart.js renderers.
 // It performs no network access or filesystem writes and loads no site config.
 func RenderStandalone(source string, options StandaloneOptions) (*StandaloneResult, error) {
+	var err error
+	options, err = ResolveStandaloneProfile(options)
+	if err != nil {
+		return nil, err
+	}
 	p := &RenderMarkdownPlugin{md: createMarkdownRenderer(palettes.DefaultChromaThemeDark, false, DefaultMarkdownExtensionConfig(), options.Unsafe)}
 	post := &models.Post{Content: source, Extra: map[string]interface{}{}}
 	if err := p.renderPost(post); err != nil {
 		return nil, fmt.Errorf("render markdown: %w", err)
 	}
-	r := &StandaloneResult{SchemaVersion: 1, Features: map[string]bool{"mermaid": false, "chartjs": false}, Assets: []RenderAsset{}, ExternalURLs: []string{}}
+	r := &StandaloneResult{SchemaVersion: 1, Features: map[string]bool{"mermaid": false, "chartjs": false}, Assets: []RenderAsset{}, ExternalURLs: []string{}, RenderProfile: options.Profile}
 	if err := r.renderDiagrams(post); err != nil {
 		return nil, err
 	}
@@ -73,6 +80,11 @@ func RenderStandalone(source string, options StandaloneOptions) (*StandaloneResu
 			r.HeadHTML += tag + "\n"
 		} else {
 			r.BodyEndHTML += tag + "\n"
+		}
+	}
+	if options.Profile == RenderProfileOfflineInteractive {
+		if err := checkStandaloneOfflineResources(r); err != nil {
+			return nil, err
 		}
 	}
 	return r, nil
