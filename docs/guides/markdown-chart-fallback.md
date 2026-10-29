@@ -107,3 +107,11 @@ set the site's `data_display` to `"collapsed"`) to opt into corrected behavior.
 This is an accessibility and progressive-enhancement improvement to the
 existing Chart.js plugin. It is **not** a new chart data format, SVG exporter,
 or automatic visual data verification.
+
+## Horizontal bar defaults
+
+A horizontal bar chart with one dataset and up to five labels uses thin, rounded bars and a compact aspect ratio by default. Set bar geometry such as `barThickness` or `borderRadius` in the dataset, `options`, `options.datasets.bar`, or `options.elements.bar` to use your own geometry. Set `options.aspectRatio` or `options.maintainAspectRatio` to control chart sizing. Charts with multiple datasets or more than five labels keep Chart.js defaults.
+
+Dataset `indexAxis` overrides `options.datasets.bar.indexAxis`, which overrides `options.indexAxis`. Compact defaults apply only to the resulting horizontal orientation.
+
+Default bars have a maximum thickness of 14 pixels. They shrink on narrow screens to prevent overlap.

@@ -37,9 +37,15 @@ markata agent install --agent claude-code
 markata agent install --agent codex
 ```
 
-Run only the command for the agent you use. For Claude Code, the project skill goes in `.claude/skills/markata-go-site/`; for a universal project install, it goes in `.agents/skills/markata-go-site/`.
+For a specific agent, use `--agent`. For Claude Code, the project skill goes in `.claude/skills/markata-go-site/`; for a universal project install, it goes in `.agents/skills/markata-go-site/`.
 
-For a global installation, open the fuzzy picker:
+The `setup` alias also installs the skill. On an interactive terminal, either
+command lists detected agents and asks whether to install for all of them. Press
+Enter or `y` to accept. Enter `n` to choose an agent from the fuzzy picker.
+If no agents are detected, the picker opens directly. Agents that share a skill
+directory use one installation.
+
+For a global installation, use:
 
 ```bash
 markata agent install -g
@@ -51,8 +57,10 @@ The selected agent and matching characters use the terminal theme colors.
 Type an agent name or abbreviation, such as `copilot` or `ghcp`. Use the arrow keys to navigate. Press Enter to select.
 Escape or Ctrl+C cancels without an installation.
 `--no-color` or `NO_COLOR` disables the colors.
+If an install for multiple agents fails, the error identifies the failed agent.
+Installations completed before the error remain in place.
 
-For scripts, select the agent explicitly:
+For scripts, project installs keep the environment-detected agent or universal fallback. Global installs need an explicit agent:
 
 ```bash
 markata agent install --agent opencode --global
@@ -98,6 +106,41 @@ new CSS, templates, or JS. The built-in icon syntax is documented under
 [Icon Shortcodes](/docs/guides/icons/).
 
 Keep a human in the loop for publishing and deployment. Markata's skill guides agents through frontmatter, themes, feed patterns, templates, site builds, and when **not** to create a plugin.
+
+## Visualize a session or topic
+
+After you install the skill, ask your agent:
+
+> Visualize this session.
+
+The agent creates a visual Markdown post from the conversation's work, decisions, and unresolved items.
+It serves a local preview, checks the exact post URL, and attempts to open that URL in your browser.
+The handoff includes the Markdown path, preview URL, browser-open result, and server handle or stop instruction.
+
+For supplied material, use either phrase:
+
+> Visualize this: our release process starts with a draft, then review, then approval.
+
+> Make a visual post from these notes.
+
+These are natural-language instructions for the agent, not Markata CLI commands.
+Ordinary chart, diagram, or styling requests do not automatically start a preview server.
+
+For Markdown without a preview, state that constraint:
+
+> Visualize this session. Source only: create exactly one Markdown file.
+
+The agent then creates the file without a server or preview scaffolding.
+Outside a Markata site, a full preview uses an isolated temporary site.
+The agent keeps that scaffolding outside your repository.
+
+Local preview does not authorize public publication or deployment.
+The agent preserves publication flags and excludes secrets.
+The agent reports browser or persistent-server limitations instead of claiming that the page opened.
+On a remote machine, the preview can require port forwarding to reach your browser.
+
+The workflow lives in the bundled skill's `topics/visualize-session.md`.
+For an existing installation, use `markata agent update` after you install a binary with the updated skill.
 
 ## Fixes
 

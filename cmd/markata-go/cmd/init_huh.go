@@ -14,6 +14,7 @@ import (
 	"github.com/WaylonWalker/markata/pkg/config"
 	"github.com/WaylonWalker/markata/pkg/models"
 	"github.com/WaylonWalker/markata/pkg/palettes"
+	"github.com/WaylonWalker/markata/pkg/terminaltheme"
 )
 
 // initWizardState holds the state gathered during the huh wizard.
@@ -60,7 +61,7 @@ type initWizardState struct {
 }
 
 // createHuhTheme creates a huh theme based on the configured palette.
-// If no palette is configured or loading fails, returns the default Charm theme.
+// If no palette is configured or loading fails, it uses shared CLI defaults.
 //
 // This maps palette semantic and component colors to all huh theme fields so
 // that interactive forms (select chevrons, multi-select indicators, buttons,
@@ -68,15 +69,19 @@ type initWizardState struct {
 // using the default Charm fuchsia (#F780E2).
 func createHuhTheme(paletteName string) *huh.Theme {
 	if paletteName == "" {
-		return huh.ThemeCharm()
+		return buildThemeFromPalette(nil)
 	}
 
 	loader := palettes.NewLoader()
 	palette, err := loader.Load(paletteName)
 	if err != nil {
-		return huh.ThemeCharm()
+		return buildThemeFromPalette(nil)
 	}
 
+	return buildThemeFromPalette(palette)
+}
+
+func createHuhThemeForPalette(palette *palettes.Palette) *huh.Theme {
 	return buildThemeFromPalette(palette)
 }
 
@@ -103,21 +108,22 @@ type paletteColors struct {
 // unit-tested without needing the palette loader.
 func buildThemeFromPalette(palette *palettes.Palette) *huh.Theme {
 	theme := huh.ThemeCharm()
+	colors := terminaltheme.FromPalette(palette)
 
 	pc := paletteColors{
-		accent:           resolveColor(palette, "accent"),
-		textPrimary:      resolveColor(palette, "text-primary"),
-		textSecondary:    resolveColor(palette, "text-secondary"),
-		textMuted:        resolveColor(palette, "text-muted"),
-		success:          resolveColor(palette, "success"),
-		errorColor:       resolveColor(palette, "error"),
-		border:           resolveColor(palette, "border"),
-		borderFocus:      resolveColor(palette, "border-focus"),
-		link:             resolveColor(palette, "link"),
-		btnPrimaryBg:     resolveColor(palette, "button-primary-bg"),
-		btnPrimaryText:   resolveColor(palette, "button-primary-text"),
-		btnSecondaryBg:   resolveColor(palette, "button-secondary-bg"),
-		btnSecondaryText: resolveColor(palette, "button-secondary-text"),
+		accent:           lipgloss.Color(colors.Accent),
+		textPrimary:      lipgloss.Color(colors.TextPrimary),
+		textSecondary:    lipgloss.Color(colors.TextSecondary),
+		textMuted:        lipgloss.Color(colors.TextMuted),
+		success:          lipgloss.Color(colors.Success),
+		errorColor:       lipgloss.Color(colors.Error),
+		border:           lipgloss.Color(colors.Border),
+		borderFocus:      lipgloss.Color(colors.BorderFocus),
+		link:             lipgloss.Color(colors.Link),
+		btnPrimaryBg:     lipgloss.Color(colors.ButtonPrimaryBg),
+		btnPrimaryText:   lipgloss.Color(colors.ButtonPrimaryText),
+		btnSecondaryBg:   lipgloss.Color(colors.ButtonSecondaryBg),
+		btnSecondaryText: lipgloss.Color(colors.ButtonSecondaryText),
 	}
 
 	applyFocusedStyles(theme, &pc)

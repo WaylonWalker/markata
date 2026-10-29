@@ -4,6 +4,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 
 	"github.com/WaylonWalker/markata/pkg/palettes"
+	"github.com/WaylonWalker/markata/pkg/terminaltheme"
 )
 
 // Colors holds resolved colors for TUI styling.
@@ -39,25 +40,28 @@ type Colors struct {
 	MenuBg lipgloss.Color
 }
 
-// DefaultColors returns fallback colors when no palette is configured.
-// These match the original hardcoded ANSI codes for backward compatibility.
+// DefaultColors returns the shared fallback colors when no palette is configured.
 func DefaultColors() *Colors {
+	return colorsFromTerminalTheme(terminaltheme.Default())
+}
+
+func colorsFromTerminalTheme(theme terminaltheme.Theme) *Colors {
 	return &Colors{
-		Header:        lipgloss.Color("99"),  // Purple
-		Subtle:        lipgloss.Color("241"), // Gray
-		Selected:      lipgloss.Color("212"), // Pink
-		SelectedBg:    lipgloss.Color("57"),  // Purple bg
-		SelectedText:  lipgloss.Color("229"), // Light yellow
-		Border:        lipgloss.Color("240"), // Gray
-		BorderFocus:   lipgloss.Color("99"),  // Purple
-		TableHeader:   lipgloss.Color("99"),  // Purple
-		TableCell:     lipgloss.Color("252"), // Light gray
-		TableSelected: lipgloss.Color("229"), // Light yellow
-		FeedPrivate:   lipgloss.Color("203"), // Red/pink
-		FeedHidden:    lipgloss.Color("214"), // Orange
-		FeedAutomated: lipgloss.Color("81"),  // Cyan
-		MenuFg:        lipgloss.Color("252"), // Light gray
-		MenuBg:        lipgloss.Color("236"), // Dark gray
+		Header:        lipgloss.Color(theme.Accent),
+		Subtle:        lipgloss.Color(theme.TextMuted),
+		Selected:      lipgloss.Color(theme.Link),
+		SelectedBg:    lipgloss.Color(theme.Elevated),
+		SelectedText:  lipgloss.Color(theme.TextPrimary),
+		Border:        lipgloss.Color(theme.Border),
+		BorderFocus:   lipgloss.Color(theme.BorderFocus),
+		TableHeader:   lipgloss.Color(theme.Accent),
+		TableCell:     lipgloss.Color(theme.TextPrimary),
+		TableSelected: lipgloss.Color(theme.Link),
+		FeedPrivate:   lipgloss.Color(theme.Error),
+		FeedHidden:    lipgloss.Color(theme.Warning),
+		FeedAutomated: lipgloss.Color(theme.Info),
+		MenuFg:        lipgloss.Color(theme.TextPrimary),
+		MenuBg:        lipgloss.Color(theme.Background),
 	}
 }
 
@@ -77,69 +81,14 @@ func LoadColors(paletteName string) *Colors {
 	return colorsFromPalette(palette)
 }
 
+// ColorsFromPalette maps a resolved palette to the shared TUI color roles.
+func ColorsFromPalette(palette *palettes.Palette) *Colors {
+	return colorsFromPalette(palette)
+}
+
 // colorsFromPalette extracts TUI colors from a loaded palette.
 func colorsFromPalette(p *palettes.Palette) *Colors {
-	colors := DefaultColors()
-
-	// Map palette semantic colors to TUI colors
-	// Use accent for header styling
-	if hex := p.Resolve("accent"); hex != "" {
-		colors.Header = lipgloss.Color(hex)
-		colors.BorderFocus = lipgloss.Color(hex)
-		colors.TableHeader = lipgloss.Color(hex)
-	}
-
-	// Use text-muted for subtle styling
-	if hex := p.Resolve("text-muted"); hex != "" {
-		colors.Subtle = lipgloss.Color(hex)
-	}
-
-	// Use link color for selected items
-	if hex := p.Resolve("link"); hex != "" {
-		colors.Selected = lipgloss.Color(hex)
-		colors.TableSelected = lipgloss.Color(hex)
-	}
-	if hex := p.Resolve("error"); hex != "" {
-		colors.FeedPrivate = lipgloss.Color(hex)
-	}
-	if hex := p.Resolve("warning"); hex != "" {
-		colors.FeedHidden = lipgloss.Color(hex)
-	}
-	if hex := p.Resolve("info"); hex != "" {
-		colors.FeedAutomated = lipgloss.Color(hex)
-	}
-
-	// Use accent-hover for selection background
-	if hex := p.Resolve("accent-hover"); hex != "" {
-		colors.SelectedBg = lipgloss.Color(hex)
-	} else if hex := p.Resolve("bg-elevated"); hex != "" {
-		colors.SelectedBg = lipgloss.Color(hex)
-	}
-
-	// Use text-primary for selected text
-	if hex := p.Resolve("text-primary"); hex != "" {
-		colors.SelectedText = lipgloss.Color(hex)
-	}
-
-	// Use border colors
-	if hex := p.Resolve("border"); hex != "" {
-		colors.Border = lipgloss.Color(hex)
-	}
-
-	// Use text-primary for table cells
-	if hex := p.Resolve("text-primary"); hex != "" {
-		colors.TableCell = lipgloss.Color(hex)
-	}
-
-	// Menu colors from nav or surface colors
-	if hex := p.Resolve("text-primary"); hex != "" {
-		colors.MenuFg = lipgloss.Color(hex)
-	}
-	if hex := p.Resolve("bg-surface"); hex != "" {
-		colors.MenuBg = lipgloss.Color(hex)
-	}
-
-	return colors
+	return colorsFromTerminalTheme(terminaltheme.FromPalette(p))
 }
 
 // Theme holds the Lipgloss styles for the TUI.

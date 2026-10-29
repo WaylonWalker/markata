@@ -7,7 +7,6 @@ import (
 	"runtime/pprof"
 	"strings"
 
-	"github.com/WaylonWalker/markata/pkg/logging"
 	"github.com/WaylonWalker/markata/pkg/suggest"
 	"github.com/spf13/cobra"
 )
@@ -118,7 +117,7 @@ Profiling:
 		}
 		configureTUIColor()
 
-		if err := configureCommandLogger(logging.DefaultTheme()); err != nil {
+		if err := configureCLIThemeFromConfig(); err != nil {
 			return err
 		}
 

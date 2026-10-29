@@ -451,7 +451,7 @@ func promptForBlogrollConfigPath(paths []string) (string, error) {
 				Options(options...).
 				Value(&selected),
 		),
-	).WithTheme(createHuhTheme(""))
+	).WithTheme(createHuhThemeForPalette(currentCLIPalette))
 
 	if err := form.Run(); err != nil {
 		return "", err
@@ -597,11 +597,7 @@ func promptForFeedValues(cfg *models.Config, _ *blogroll.Metadata, fv feedValues
 }
 
 func promptForFeedValuesHuh(cfg *models.Config, fv feedValues) (feedValues, error) {
-	paletteName := ""
-	if cfg != nil {
-		paletteName = cfg.Theme.Palette
-	}
-	theme := createHuhTheme(paletteName)
+	theme := createHuhThemeForPalette(currentCLIPalette)
 
 	tagsInput := strings.Join(fv.tags, ", ")
 	typeChoice := string(fv.feedType)

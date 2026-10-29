@@ -203,12 +203,8 @@ func discoverExistingDirs(cfg *models.Config) []string {
 func runHuhNewWizard(templates map[string]ContentTemplate) (*newWizardState, error) {
 	ctx := loadSiteContext(templates)
 
-	// Create theme from config palette
-	paletteName := ""
-	if ctx.Config != nil {
-		paletteName = ctx.Config.Theme.Palette
-	}
-	theme := createHuhTheme(paletteName)
+	// Use the palette resolved for the active command configuration.
+	theme := createHuhThemeForPalette(currentCLIPalette)
 
 	state := &newWizardState{
 		Template: "post",

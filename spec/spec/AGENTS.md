@@ -74,6 +74,31 @@ The bundled skill MUST also include a starter eval set that covers at least:
 - build or deploy debugging
 - deciding whether work belongs in config, templates, feeds, CSS, or plugins
 
+## Visualize Workflow
+
+The existing `markata-go-site` skill includes a focused `topics/visualize-session.md` branch.
+Its description names these natural-language triggers:
+`visualize this session`, `visualize this`, and `make a visual post`.
+These phrases are agent instructions, not new CLI commands.
+
+The workflow creates an evidence-backed visual Markdown post, serves a local preview,
+checks the exact post URL, and attempts to open that URL in the user's browser.
+Session posts distinguish completed work, decisions, and unresolved work.
+The workflow excludes secrets and unrequested private material.
+
+An explicit source-only or single-file request takes precedence over automatic preview.
+Ordinary chart, diagram, and styling requests do not automatically start this workflow.
+Outside a Markata site, preview scaffolding stays in an isolated temporary directory.
+The workflow preserves existing publication flags and requires separate authorization for public publishing.
+
+Agents reuse only a server that serves the intended site and output.
+New preview servers bind to loopback and remain available for the user through the agent's supported persistent-process mechanism.
+Agents report process-lifetime or browser-opening limitations instead of claiming success.
+Completion requires the Markdown artifact, a successful response for the intended post,
+and an attempted browser open, or an explicit report of the blocked stage.
+
+Regression prompts cover session evidence, supplied topics, and explicit source-only requests.
+
 ## Skill Maintenance Requirement
 
 The bundled site skill is part of markata-go's user-facing product surface for coding agents.
@@ -191,8 +216,15 @@ Optional flags:
 
 ### `install` behavior
 
+- `setup` MUST be an alias for `install`.
+- On an interactive terminal without an explicit agent, the command MUST offer to install for detected agents, or open the picker if none are detected or the user declines.
+- In non-interactive project installs without `--agent`, the command MUST retain the existing environment-detected target or universal fallback.
+- In non-interactive global installs without `--agent`, the command MUST return an actionable error.
+- EOF at the confirmation prompt MUST cancel without installing.
+- Detected agents that share an installation directory MUST be installed only once.
+- If installation for multiple agents fails, the error MUST identify the failed agent; prior successful installs may remain.
 - `site-path` defaults to the current directory.
-- When `--agent` is omitted for project installs, the command MUST default to the current agent when it can detect one from the environment. If no current agent can be detected, it MUST default to `universal`.
+- When `--agent` is omitted for non-interactive project installs, the command MUST default to the current agent when it can detect one from the environment. If no current agent can be detected, it MUST default to `universal`.
 - When `--global` is set without `--agent` or the legacy `--target`, `install` MUST open a fuzzy agent picker on interactive input and output terminals.
 - The picker MUST list supported agent identifiers and global directories. Typing MUST filter names by ordered character matches.
 - The picker MUST use fzf's default bottom-up layout: the prompt at the bottom, the first result nearest the prompt, and additional results above it. Up MUST move toward results above the current selection; Down MUST move toward the prompt.

@@ -49,7 +49,9 @@ frontmatter.title, avoid duplicating it as the first body H1.
    sticky section head; `## 2026 · Title` gets a display kicker without changing
    its full-text anchor. Use `md-grid rail` for linked overview cards (four
    desktop columns by default, or `data-columns="2|3|4"`, stacked below 1000px)
-   and `md-grid pending` for dashed unresolved-item cards. No local CSS or JS
+   and `md-grid pending` for dashed unresolved-item cards. Rail ticks remain
+   visible above cards; an immediately following `md-section` gets responsive
+   spacing automatically. No local CSS or JS
    is necessary; see the Markdown Containers guide for complete examples.
 4. For a centered icon in a card, use `md-icon`. For a left-hand icon tile
    with body text (as in visual reports and feature lists), use `md-feature` with
@@ -189,3 +191,6 @@ For application integrations, `markata.appearance()` provides the site's picker 
 asset catalog. Use `result.document(appearance=...)` for site article layout instead
 of copying templates or modifying rendered HTML. Standalone rendering includes
 bundled Lucide icons. CodeMirror and application editing behavior stay application-side.
+
+Rail card grids stay connected when responsive: horizontal above 1000px, vertical
+with ring ticks below 1000px. Use the rail modifier instead of custom connector CSS.
