@@ -109,6 +109,15 @@ class AsyncRenderingTest(unittest.IsolatedAsyncioTestCase):
                 self.assertIsNotNone(processes[1].returncode)
 
 class AppearanceDocumentTest(unittest.TestCase):
+    def test_feature_head_html_excludes_shared_styles(self):
+        result = rendering.RenderResult(
+            html='', features={}, assets=(
+                {'id': 'css/main.css', 'kind': 'style', 'placement': 'head', 'content': 'shared'},
+                {'id': 'css/code.css', 'kind': 'style', 'placement': 'head', 'content': 'feature'},
+            ), external_urls=(), head_html='', body_end_html='',
+        )
+        self.assertEqual(result.feature_head_html, '<style>feature</style>')
+
     def test_document_site_layout_and_escaping(self):
         result = rendering._result(json.dumps(PAYLOAD).encode(), b'', 0)
         document = result.document('<title>', lang='"')

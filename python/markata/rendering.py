@@ -28,6 +28,21 @@ class RenderResult:
     body_end_html: str
     schema_version: int = 1
 
+    @property
+    def feature_head_html(self) -> str:
+        """Return only conditional styles required by this rendered fragment."""
+        shared = {"css/variables.css", "css/main.css", "css/components.css"}
+        tags = []
+        for asset in self.assets:
+            if asset.get("placement") != "head" or asset.get("kind") != "style" or asset.get("id") in shared:
+                continue
+            content = asset.get("content")
+            if content:
+                tags.append("<style>" + content + "</style>")
+            elif asset.get("url"):
+                tags.append('<link rel="stylesheet" href="' + escape(asset["url"], quote=True) + '">')
+        return "\n".join(tags)
+
     def document(self, title: str = "", *, lang: str = "en",
                  appearance: Appearance | None = None, palette: str | None = None,
                  mode: str = "dark", aesthetic: str = "minimal",
@@ -50,7 +65,7 @@ class RenderResult:
         return (
             '<!doctype html><html lang="' + escape(lang, quote=True) + '"' + attrs + '><head>'
             '<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
-            '<title>' + escape(title) + '</title>' + initial_style + self.head_html
+            '<title>' + escape(title) + '</title>' + initial_style + (self.feature_head_html if appearance else self.head_html)
             + (appearance.head_html if appearance else '')
             + '</head><body><main class="main-content"><div class="content-wrapper"><div class="post-shell">'
             '<article class="post h-entry"><div class="post-content e-content">' + self.html
@@ -89,7 +104,63 @@ class Appearance:
     @property
     def bridge_html(self) -> str:
         allowed = json.dumps(self.choices).replace('<', r'\u003c')
-        return '<script>(()=>{const allowed=' + allowed + ";addEventListener('message',e=>{if(e.source!==parent||e.data?.type!=='appearance')return;for(const [key,values] of Object.entries(allowed)){const value=e.data.attributes?.[key];if(value==null)document.documentElement.removeAttribute(key);else if(values.includes(value))document.documentElement.setAttribute(key,value);}dispatchEvent(new Event('theme-change'));});})();</script>"
+        return """<script>(()=>{const allowed=__MARKATA_CHOICES__;
+
+const setAppearance=attributes=>{for(const [key,values] of Object.entries(allowed)){const value=attributes?.[key];
+if(value==null)document.documentElement.removeAttribute(key);
+else if(values.includes(value))document.documentElement.setAttribute(key,value);
+}};
+
+let updates=Promise.resolve();
+
+const renderMarkdown=async data=>{const article=document.querySelector('.post-content');
+if(!article)return;
+if(window.Chart)article.querySelectorAll('canvas').forEach(canvas=>window.Chart.getChart?.(canvas)?.destroy());
+article.innerHTML=data.html;
+const head=document.createElement('template');
+head.innerHTML=data.feature_head_html;
+const styles=[...head.content.querySelectorAll('style,link[rel=stylesheet]')];
+const key=n=>n.tagName==='STYLE'?n.textContent:n.href;
+const desired=new Set(styles.map(key));
+document.querySelectorAll('[data-markata-render-head]').forEach(n=>{if(!desired.has(key(n)))n.remove();
+});
+for(const source of styles){const existing=[...document.head.querySelectorAll('style,link[rel=stylesheet]')];
+if(existing.some(n=>key(n)===key(source)))continue;
+const style=source.cloneNode(true);
+style.dataset.markataRenderHead='true';
+document.head.append(style);
+}
+const body=document.createElement('template');
+body.innerHTML=data.body_end_html;
+const sources=[...body.content.querySelectorAll('script')];
+const inlineScripts=new Set(sources.filter(s=>!s.src&&s.textContent.includes('rerenderMermaid')).map(s=>s.textContent));
+document.querySelectorAll('script[data-markata-generated]:not([src])').forEach(s=>{if(!inlineScripts.has(s.textContent)&&!s.textContent.includes('rerenderMermaid'))s.remove();
+});
+for(const source of sources){if(source.src&&[...document.scripts].some(s=>s.src===source.src))continue;
+if(!source.src&&inlineScripts.has(source.textContent)&&[...document.scripts].some(s=>!s.src&&s.textContent===source.textContent))continue;
+const script=document.createElement('script');
+for(const attr of source.attributes)script.setAttribute(attr.name,attr.value);
+script.dataset.markataGenerated='true';
+script.textContent=source.textContent;
+if(source.src||source.type==='module'){await new Promise(resolve=>{script.addEventListener('load',resolve,{once:true});
+script.addEventListener('error',resolve,{once:true});
+document.body.append(script);
+});
+}else document.body.append(script);
+}dispatchEvent(new Event('view-transition-complete'));
+setAppearance(data.attributes);
+dispatchEvent(new Event('theme-change'));
+};
+
+addEventListener('message',e=>{if(e.source!==parent)return;
+if(e.data?.type==='markdown-render'){updates=updates.then(()=>renderMarkdown(e.data)).catch(console.error);
+return;
+}if(e.data?.type==='appearance'){updates=updates.then(()=>{setAppearance(e.data.attributes);
+dispatchEvent(new Event('theme-change'));
+}).catch(console.error);
+}});
+})();
+</script>""".replace("__MARKATA_CHOICES__", allowed)
 
 
 def appearance(*, asset_base: str = "/markata-assets", timeout: float = 30) -> Appearance:

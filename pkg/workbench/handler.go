@@ -37,6 +37,7 @@ type Handler struct {
 	choices    map[string][]string
 	assets     map[string][]byte
 	index      []byte
+	bridge     string
 	gate       chan struct{}
 	lastSource string
 	lastResult *plugins.StandaloneResult
@@ -66,6 +67,15 @@ func New() (*Handler, error) {
 			h.choices["data-"+string(match[1])] = append(h.choices["data-"+string(match[1])], entry.Name)
 		}
 	}
+	choices, err := json.Marshal(h.choices)
+	if err != nil {
+		return nil, fmt.Errorf("encode appearance choices: %w", err)
+	}
+	bridge, err := web.ReadFile("web/preview.js")
+	if err != nil {
+		return nil, err
+	}
+	h.bridge = "<script>" + strings.ReplaceAll(string(bridge), "__MARKATA_CHOICES__", string(choices)) + "</script>"
 	page, err := web.ReadFile("web/index.html")
 	if err != nil {
 		return nil, err
@@ -182,7 +192,7 @@ func (h *Handler) render(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	started := time.Now()
-	document, cached, err := h.prepareRender(r, req)
+	response, err := h.prepareRender(r, req)
 	if err != nil {
 		if r.Context().Err() == nil {
 			fail(w, 422, err.Error())
@@ -190,17 +200,18 @@ func (h *Handler) render(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ms := float64(time.Since(started).Microseconds()) / 1000
+	response.RenderMS = ms
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Server-Timing", fmt.Sprintf("markata;dur=%.3f", ms))
-	if err := json.NewEncoder(w).Encode(map[string]any{"document": document, "render_ms": ms, "input_bytes": len(*req.Markdown), "document_bytes": len(document), "cached": cached}); err != nil {
+	if err := json.NewEncoder(w).Encode(response); err != nil {
 		return
 	}
 }
 
-func (h *Handler) prepareRender(r *http.Request, req *renderRequest) (document string, cacheHit bool, renderErr error) {
+func (h *Handler) prepareRender(r *http.Request, req *renderRequest) (*renderResponse, error) {
 	defer func() { <-h.gate }()
 	if err := r.Context().Err(); err != nil {
-		return "", false, err
+		return nil, err
 	}
 	result := h.lastResult
 	cached := result != nil && h.lastSource == *req.Markdown
@@ -208,7 +219,7 @@ func (h *Handler) prepareRender(r *http.Request, req *renderRequest) (document s
 		var err error
 		result, err = plugins.RenderStandalone(*req.Markdown, plugins.StandaloneOptions{Unsafe: true, AssetBase: "/appearance"})
 		if err != nil {
-			return "", false, err
+			return nil, err
 		}
 		for _, asset := range result.Assets {
 			if !strings.HasPrefix(asset.ID, "generated-") && asset.Content != "" {
@@ -217,12 +228,41 @@ func (h *Handler) prepareRender(r *http.Request, req *renderRequest) (document s
 		}
 		h.lastSource, h.lastResult = *req.Markdown, result
 	}
-	return h.document(result, req.Appearance), cached, nil
+	response := &renderResponse{HTML: result.HTML, FeatureHeadHTML: h.featureHead(result), BodyEndHTML: result.BodyEndHTML, InputBytes: len(*req.Markdown), HTMLBytes: len(result.HTML), Cached: cached}
+	if req.IncludeDocument == nil || *req.IncludeDocument {
+		document := h.document(result, req.Appearance)
+		response.Document, response.DocumentBytes = &document, len(document)
+	}
+	return response, nil
 }
 
 type renderRequest struct {
-	Markdown   *string           `json:"markdown"`
-	Appearance map[string]string `json:"appearance"`
+	Markdown        *string           `json:"markdown"`
+	Appearance      map[string]string `json:"appearance"`
+	IncludeDocument *bool             `json:"include_document"`
+}
+
+// renderResponse matches the Python reference's full-document/fragment contract.
+type renderResponse struct {
+	Document        *string `json:"document"`
+	HTML            string  `json:"html"`
+	FeatureHeadHTML string  `json:"feature_head_html"`
+	BodyEndHTML     string  `json:"body_end_html"`
+	RenderMS        float64 `json:"render_ms"`
+	InputBytes      int     `json:"input_bytes"`
+	HTMLBytes       int     `json:"html_bytes"`
+	DocumentBytes   int     `json:"document_bytes"`
+	Cached          bool    `json:"cached"`
+}
+
+// featureHead omits styles already owned by the persistent appearance shell.
+// Mark feature styles so subsequent fragments can remove unused styles as well.
+func (h *Handler) featureHead(result *plugins.StandaloneResult) string {
+	head := result.HeadHTML
+	for _, name := range h.appearance.Styles {
+		head = strings.ReplaceAll(head, styleLink(name)+"\n", "")
+	}
+	return strings.NewReplacer("<link ", `<link data-markata-render-head="true" `, "<style>", `<style data-markata-render-head="true">`).Replace(head)
 }
 
 func (h *Handler) decodeRequest(w http.ResponseWriter, r *http.Request) *renderRequest {
@@ -290,15 +330,10 @@ func (h *Handler) document(result *plugins.StandaloneResult, attributes map[stri
 	for _, name := range h.appearance.Styles {
 		styles += styleLink(name)
 	}
-	choices, err := json.Marshal(h.choices)
-	if err != nil {
-		panic("appearance choices are not serializable: " + err.Error())
-	}
-	bridge := `<script>(()=>{const allowed=` + string(choices) + `;addEventListener('message',e=>{if(e.source!==parent||e.data?.type!=='appearance')return;for(const [key,values] of Object.entries(allowed)){const v=e.data.attributes?.[key];if(values.includes(v))document.documentElement.setAttribute(key,v)}dispatchEvent(new Event('theme-change'))})})();</script>`
 	bg, fg := "#131721", "#e5e7eb"
 	if defaults["data-theme"] == "light" {
 		bg, fg = "#fff", "#1f2937"
 	}
 	initial := `<style>html{color-scheme:` + defaults["data-theme"] + `;background:` + bg + `}body{background:var(--color-background,` + bg + `);color:var(--color-text,` + fg + `)}</style>`
-	return `<!doctype html><html lang="en"` + attrs + `><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Markdown preview</title>` + initial + result.HeadHTML + styles + `</head><body><main class="main-content"><div class="content-wrapper"><div class="post-shell"><article class="post h-entry"><div class="post-content e-content">` + result.HTML + `</div></article></div></div></main>` + result.BodyEndHTML + bridge + `</body></html>`
+	return `<!doctype html><html lang="en"` + attrs + `><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Markdown preview</title>` + initial + styles + h.featureHead(result) + `</head><body><main class="main-content"><div class="content-wrapper"><div class="post-shell"><article class="post h-entry"><div class="post-content e-content">` + result.HTML + `</div></article></div></div></main>` + strings.ReplaceAll(result.BodyEndHTML, "<script", `<script data-markata-generated="true"`) + h.bridge + `</body></html>`
 }

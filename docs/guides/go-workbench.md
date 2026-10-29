@@ -76,7 +76,15 @@ curl http://127.0.0.1:8767/render \
   -d '{"markdown":"# Hello Go","appearance":{"data-theme":"light"}}'
 ```
 
-The JSON response contains `document`, `render_ms`, `input_bytes`, `document_bytes`, and `cached`.
+The first editor request receives a complete preview document. Later requests use `"include_document": false` and receive fragments.
+The iframe keeps its document, shared styles, and loaded libraries between edits.
+New features add their styles once; removed features remove their conditional styles.
+Chart instances are destroyed before replacement, and feature scripts initialize the new content.
+
+The JSON response contains `document`, `html`, `feature_head_html`, `body_end_html`, and `cached`.
+Metrics include `render_ms`, `input_bytes`, `html_bytes`, and `document_bytes`.
+With `include_document` set to false, `document` is null and `document_bytes` is zero.
+Omit this option to retain the original full-document response.
 The `Server-Timing` response header also reports render time.
 `document` contains a complete HTML preview with links to this server's assets.
 Keep the server available while you view the document.
@@ -91,9 +99,23 @@ The handler runs one render at a time. Canceled requests leave the queue before 
 An active render completes before the next render starts.
 The browser stops waiting after 30 seconds. The demo server has read and write timeouts.
 
-This editor supports trusted local authoring. Authored HTML and scripts are enabled inside an opaque-origin iframe sandbox.
+This editor supports trusted local authoring. Authored HTML and styles remain available inside an opaque-origin iframe sandbox.
+Only renderer-generated scripts run during fragment updates. Reload the page to apply changes to authored scripts.
 Preview scripts cannot read the editor's DOM or storage. Authored links and images can access external networks.
 Keep the default loopback binding for local use. Add authentication and suitable resource controls before remote deployment.
 
 All built-in assets come from the server. Offline reload is not supported.
 For site builds and site-specific plugins, use the normal [CLI](../reference/cli/).
+
+## Check persistent preview updates
+
+Start the Go workbench, then run its browser regression tests:
+
+```bash
+MARKATA_GO_WORKBENCH_URL=http://127.0.0.1:8767 \
+MARKATA_TEST_CHROMIUM=/usr/bin/chromium \
+uv run --with playwright python python/test_go_editor_browser.py -v
+```
+
+Set `MARKATA_TEST_CHROMIUM` to your Chromium executable.
+The tests check retained stylesheets, fragment responses, conditional styles, charts, and diagrams.

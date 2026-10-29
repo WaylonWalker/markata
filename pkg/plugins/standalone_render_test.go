@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	xhtml "golang.org/x/net/html"
+	"golang.org/x/net/html/atom"
 )
 
 func TestRenderStandalone_ConditionalAssets(t *testing.T) {
@@ -126,7 +127,7 @@ func assertStandaloneInlineTags(t *testing.T, source string) {
 			continue
 		}
 		tag := z.Token()
-		if tag.Data == "link" {
+		if tag.DataAtom == atom.Link {
 			t.Fatal("inline output contains external styles")
 		}
 		if tag.Data == standaloneScriptKind {

@@ -47,6 +47,7 @@ result = render("```go\nfmt.Println(42)\n```", inline_assets=True)
 print(result.html)              # Article markup
 print(result.features)          # code, admonitions, roads, mermaid, chartjs, ...
 print(result.head_html)         # Ordered style tags
+print(result.feature_head_html) # Only styles specific to this fragment
 print(result.body_end_html)     # Ordered scripts
 ```
 
@@ -56,7 +57,8 @@ strings contain generated HTML; use the appropriate trusted-markup mechanism in
 your template engine. `document(title="...", lang="en")` creates that layout for
 you and escapes the title and language.
 
-The renderer returns core theme CSS plus only the optional assets the content
+`feature_head_html` returns only conditional styles, without the shared variables,
+main, and component styles. The renderer returns core theme CSS plus only the optional assets the content
 requires. Mermaid and Chart.js use Markata's vendored browser libraries; inline
 mode includes them too, without CDN requests. Inlining diagrams can make a
 response considerably larger. `external_urls` identifies any external browser
@@ -159,6 +161,13 @@ For an isolated preview iframe, set `appearance_bridge=True`. The parent can sen
 `data-aesthetic`, `data-fontpack`, and `data-text-size` choices. The bridge accepts
 messages from its parent and validates values against the catalogs. Keep the
 iframe sandboxed with `allow-scripts` and without `allow-same-origin`.
+
+For live edits, the parent can also send `{"type": "markdown-render", "html":
+"...", "feature_head_html": "...", "body_end_html": "..."}`. The bridge replaces
+`.post-content`, updates render-specific styles, loads new feature scripts once,
+runs generated scripts, and dispatches `view-transition-complete`. It does not
+replay `DOMContentLoaded`. The host can therefore keep shared preview stylesheets
+loaded between renders.
 
 The [single-file editor example](https://github.com/WaylonWalker/markata/blob/main/examples/fastapi_editor.py)
 contains CodeMirror and application behavior. Markata supplies its preview document,

@@ -241,3 +241,68 @@ func TestHandler_SlowResponseDoesNotHoldRenderGate(t *testing.T) {
 		t.Fatal("response encoding holds render gate")
 	}
 }
+
+func TestHandler_FragmentUpdatesOmitSharedCSS(t *testing.T) {
+	h := newHandler(t)
+	source := "# Update\n\n```go\nfmt.Println(1)\n```\n\n!!! note\n    Conditional styles."
+	var first renderResponse
+	for _, include := range []bool{true, false, false} {
+		body, err := json.Marshal(map[string]any{"markdown": source, "include_document": include})
+		if err != nil {
+			t.Fatal(err)
+		}
+		w := request(h, string(body))
+		if w.Code != http.StatusOK {
+			t.Fatalf("status %d: %s", w.Code, w.Body)
+		}
+		var result renderResponse
+		if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
+			t.Fatal(err)
+		}
+		if result.HTMLBytes != len(result.HTML) || result.InputBytes != len(source) {
+			t.Fatal("incorrect fragment byte counts")
+		}
+		if include && result.Document == nil {
+			t.Fatal("initial document missing")
+		}
+		for _, name := range h.appearance.Styles {
+			if strings.Contains(result.FeatureHeadHTML, name) {
+				t.Errorf("fragment repeats shared style %s", name)
+			}
+			if include && strings.Count(*result.Document, styleLink(name)) != 1 {
+				t.Errorf("document must include %s exactly once", name)
+			}
+		}
+		if !strings.Contains(result.FeatureHeadHTML, `data-markata-render-head="true"`) || !strings.Contains(result.FeatureHeadHTML, "css/code.css") {
+			t.Fatal("missing marked conditional styles")
+		}
+		if include {
+			if result.Document == nil {
+				t.Fatal("initial document missing")
+			}
+			first = result
+			continue
+		}
+		if result.Document != nil || result.DocumentBytes != 0 {
+			t.Fatal("fragment includes document shell")
+		}
+		if !result.Cached || result.HTML != first.HTML || result.FeatureHeadHTML != first.FeatureHeadHTML || result.BodyEndHTML != first.BodyEndHTML {
+			t.Fatal("cached fragment differs from initial content")
+		}
+		if strings.Contains(w.Body.String(), "palette.css") || strings.Contains(w.Body.String(), "fontpack-manifest") {
+			t.Fatal("fragment contains shared appearance CSS")
+		}
+	}
+	w := request(h, `{"markdown":"# Plain","include_document":false}`)
+	var plain renderResponse
+	if err := json.Unmarshal(w.Body.Bytes(), &plain); err != nil {
+		t.Fatal(err)
+	}
+	if plain.FeatureHeadHTML != "" || plain.BodyEndHTML != "" {
+		t.Fatal("plain fragment keeps unused feature assets")
+	}
+	invalid := request(h, `{"markdown":"# Invalid","include_document":"false"}`)
+	if invalid.Code != http.StatusBadRequest {
+		t.Fatalf("invalid option: %d", invalid.Code)
+	}
+}

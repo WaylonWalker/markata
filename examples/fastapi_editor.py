@@ -33,6 +33,7 @@ presentation = appearance(asset_base="/appearance")
 class RenderRequest(BaseModel):
     markdown: str = Field(max_length=200_000)
     appearance: dict[str, str] = Field(default_factory=dict)
+    include_document: bool = True
 
 
 @app.post("/render")
@@ -50,9 +51,13 @@ async def preview(request: RenderRequest):
     except RenderError as error:
         return JSONResponse({"error": str(error)}, status_code=422)
     render_ms = (perf_counter() - started) * 1000
-    document = result.document(title="Markdown preview", appearance=presentation, appearance_bridge=True, **options)
-    return JSONResponse({"document": document, "render_ms": round(render_ms, 2),
+    document = result.document(title="Markdown preview", appearance=presentation, appearance_bridge=True, **options) if request.include_document else ""
+    return JSONResponse({"document": document or None, "html": result.html,
+                         "feature_head_html": result.feature_head_html,
+                         "body_end_html": result.body_end_html,
+                         "render_ms": round(render_ms, 2),
                          "input_bytes": len(request.markdown.encode()),
+                         "html_bytes": len(result.html.encode()),
                          "document_bytes": len(document.encode())},
                         headers={"Server-Timing": f"markata;dur={render_ms:.2f}"})
 
@@ -154,7 +159,7 @@ keymap.addEventListener('change', () => {
   try { localStorage.setItem('markata-editor-keymap', keymap.value); } catch {}
   editor.focus();
 });
-let revision = 0, timer, controller;
+let revision = 0, timer, controller, previewReady = false, previewDocumentStarted = false, pendingPreview = null;
 async function render(version) {
   const current = new AbortController();
   controller = current;
@@ -163,19 +168,33 @@ async function render(version) {
   try {
     const response = await fetch('/render', {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({markdown:source.value, appearance:Object.fromEntries(Object.entries(attributes()).filter(([k,v])=>v))}), signal:current.signal
+      body:JSON.stringify({markdown:source.value, include_document:!previewDocumentStarted, appearance:Object.fromEntries(Object.entries(attributes()).filter(([k,v])=>v))}), signal:current.signal
     });
     const data = await response.json();
     if (version !== revision) return;
     if (!response.ok) throw new Error(data.error || 'Rendering failed. Check the Markdown or shorten the document.');
     const frameStarted = performance.now();
-    frame.onload = () => {
-      syncAppearance();
-      status.textContent += ` · frame load ${Math.round(performance.now()-frameStarted)} ms`;
-    };
-    frame.srcdoc = data.document;
+    if (!previewDocumentStarted) {
+      previewDocumentStarted = true;
+      frame.onload = () => {
+        previewReady = true;
+        syncAppearance();
+        if (pendingPreview) {
+          const latest = pendingPreview;
+          pendingPreview = null;
+          updatePreview(latest);
+        }
+        status.textContent += ` · frame load ${Math.round(performance.now()-frameStarted)} ms`;
+      };
+      frame.srcdoc = data.document;
+    } else if (!previewReady) {
+      pendingPreview = data;
+    } else {
+      updatePreview(data);
+    }
     errorBox.hidden = true;
-    status.textContent = `Markata ${data.render_ms.toFixed(1)} ms · request ${Math.round(performance.now()-started)} ms · input ${(data.input_bytes/1024).toFixed(1)} KB · document ${(data.document_bytes/1024).toFixed(1)} KB`;
+    const previewSize = data.document_bytes ? `document ${(data.document_bytes/1024).toFixed(1)} KB` : `fragment ${(data.html_bytes/1024).toFixed(1)} KB`;
+    status.textContent = `Markata ${data.render_ms.toFixed(1)} ms · request ${Math.round(performance.now()-started)} ms · input ${(data.input_bytes/1024).toFixed(1)} KB · ${previewSize}`;
   } catch (error) {
     if (version !== revision || error.name === 'AbortError') return;
     errorBox.textContent = error.message;
@@ -200,6 +219,7 @@ document.querySelector('#download').addEventListener('click', () => {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 });
 const appearanceKeys = ['data-palette','data-theme','data-aesthetic','data-fontpack','data-text-size'];
+function updatePreview(data) { frame.contentWindow.postMessage({type:'markdown-render', html:data.html, feature_head_html:data.feature_head_html, body_end_html:data.body_end_html, attributes:attributes()}, '*'); }
 function attributes() { return Object.fromEntries(appearanceKeys.map(k => [k, document.documentElement.getAttribute(k)])); }
 function syncAppearance() { frame.contentWindow?.postMessage({type:'appearance',attributes:attributes()}, '*'); }
 new MutationObserver(syncAppearance).observe(document.documentElement, {attributes:true,attributeFilter:appearanceKeys});

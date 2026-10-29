@@ -179,6 +179,7 @@ Reference docs in the Markata repository:
 
 Rail card grids stay connected when responsive: horizontal above 1000px, vertical
 with ring ticks below 1000px. Use the rail modifier instead of custom connector CSS.
+
 ### Standalone rendering and Python applications
 
 `markata render --json` reads Markdown from stdin and returns HTML, feature
@@ -202,3 +203,8 @@ serves local appearance assets, and preserves drafts in browser storage.
 This trusted local editor enables authored HTML inside a sandboxed preview.
 It does not load a site's configuration or run its full build lifecycle.
 See `docs/guides/go-workbench.md` for the HTTP contract and embedding example.
+
+The Go workbench follows the Python preview protocol: request the full document
+once, then set `include_document: false` and update the existing sandboxed frame
+with `html`, `feature_head_html`, and `body_end_html`. Keep shared appearance
+styles loaded between edits. Do not replace the iframe document on each render.

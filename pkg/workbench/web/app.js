@@ -20,6 +20,7 @@ keymap.addEventListener('change', () => {
   editor.focus();
 });
 let revision = 0, timer, busy = false, ready = false;
+let previewStarted = false, previewReady = false, pendingPreview = null;
 function storageWarning() { document.querySelector('#storage').textContent = 'Browser storage unavailable; download your draft to keep it. '; }
 async function render() {
   if (!ready || busy) return;
@@ -37,16 +38,31 @@ async function render() {
   try {
     const response = await fetch('/render', {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({markdown, appearance:Object.fromEntries(Object.entries(attributes()).filter(([,v])=>v))}),
+      body:JSON.stringify({markdown, include_document:!previewStarted, appearance:Object.fromEntries(Object.entries(attributes()).filter(([,v])=>v))}),
       signal:controller.signal
     });
     const data = await response.json();
     if (version !== revision) return;
     if (!response.ok) throw new Error(data.error || 'Rendering failed.');
-    frame.onload = syncAppearance;
-    frame.srcdoc = data.document;
+    if (!previewStarted) {
+      previewStarted = true;
+      frame.onload = () => {
+        previewReady = true;
+        syncAppearance();
+        if (pendingPreview) {
+          const latest = pendingPreview;
+          pendingPreview = null;
+          if (latest.version === revision) updatePreview(latest.data);
+        }
+      };
+      frame.srcdoc = data.document;
+    } else if (!previewReady) {
+      pendingPreview = {data, version};
+    } else {
+      updatePreview(data);
+    }
     errorBox.hidden = true;
-    status.textContent = `Go ${data.render_ms.toFixed(1)} ms${data.cached ? ' (cached)' : ''} · round trip ${Math.round(performance.now()-started)} ms · input ${(data.input_bytes/1024).toFixed(1)} KB · preview ${(data.document_bytes/1024).toFixed(1)} KB`;
+    status.textContent = `Go ${data.render_ms.toFixed(1)} ms${data.cached ? ' (cached)' : ''} · round trip ${Math.round(performance.now()-started)} ms · input ${(data.input_bytes/1024).toFixed(1)} KB · ${data.document_bytes ? 'document' : 'fragment'} ${((data.document_bytes || data.html_bytes)/1024).toFixed(1)} KB`;
   } catch (error) {
     if (version !== revision) return;
     errorBox.textContent = error.name === 'AbortError' ? 'Preview timed out. Edit the Markdown or reload to retry.' : error.message;
@@ -70,6 +86,11 @@ document.querySelector('#download').addEventListener('click', () => {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 });
 const appearanceKeys = ['data-palette','data-theme','data-aesthetic','data-fontpack','data-text-size'];
+function updatePreview(data) {
+  frame.contentWindow?.postMessage({type:'markdown-render', html:data.html,
+    feature_head_html:data.feature_head_html, body_end_html:data.body_end_html,
+    attributes:attributes()}, '*');
+}
 function attributes() { return Object.fromEntries(appearanceKeys.map(k => [k, document.documentElement.getAttribute(k)])); }
 function syncAppearance() { frame.contentWindow?.postMessage({type:'appearance',attributes:attributes()}, '*'); }
 new MutationObserver(syncAppearance).observe(document.documentElement, {attributes:true,attributeFilter:appearanceKeys});
