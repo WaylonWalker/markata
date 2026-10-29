@@ -139,7 +139,8 @@ and disables hover lift. Ring ticks MUST sit at `top: -6px` within each card.
 Rail cards MUST use visible overflow so the ticks remain visible.
 An immediately following `md-section` MUST use
 `margin-top: clamp(4.5rem, 8vw, 7.5rem)` to separate the overview from the story.
-Below 1000px it stacks without a rail.
+Below 1000px it stacks along a vertical rail with ring ticks. Stacked cards
+use a straight left edge and retain the same hover/focus tick feedback.
 Heading links (excluding generated permalinks) stretch across the card, with
 visible keyboard focus on the card. Emphasis-only paragraphs are muted uppercase
 monospace kickers. `::: md-grid pending` gives cards dashed borders, transparent

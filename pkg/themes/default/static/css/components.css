@@ -5289,6 +5289,39 @@ body.reader-mode::after {
   @media (max-width: 999px) {
     .post-content .md-grid.rail,
     .post-content .md-grid.rail[data-columns] { grid-template-columns: minmax(0, 1fr); }
+    .post-content .md-grid.rail { position: relative; padding-left: 1rem; }
+    .post-content .md-grid.rail::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 1rem;
+      width: 2px;
+      background: linear-gradient(var(--color-primary), var(--color-border));
+    }
+    .post-content .md-grid.rail > .md-card {
+      overflow: visible;
+      border-top-color: var(--color-border);
+      border-left: 2px solid var(--color-primary);
+      border-top-left-radius: 0;
+      border-bottom-left-radius: 0;
+      transform: none;
+    }
+    .post-content .md-grid.rail > .md-card:is(:hover, :focus-within) { transform: none; }
+    .post-content .md-grid.rail > .md-card::before {
+      content: "";
+      position: absolute;
+      top: 1.25rem;
+      left: -6px;
+      box-sizing: border-box;
+      width: 10px;
+      height: 10px;
+      border: 2px solid var(--color-primary);
+      border-radius: 50%;
+      background: var(--color-background);
+      z-index: 1;
+    }
+    .post-content .md-grid.rail > .md-card:is(:hover, :focus-within)::before { background: var(--color-primary); }
   }
   .post-content .md-grid.pending > .md-card {
     border: 1px dashed var(--color-border);
