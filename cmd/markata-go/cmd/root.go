@@ -106,7 +106,7 @@ Profiling:
 		// process's fixture resolution or child command setup.
 		// Triage must still work when a requested site directory is broken.
 		// It reports the inaccessible path rather than failing before diagnostics.
-		if !isBuildLabCommand(cmd) && cmd != triageCmd {
+		if !isBuildLabCommand(cmd) && !isTriageCommand(cmd) {
 			if err := activateSiteDir(); err != nil {
 				return err
 			}
