@@ -468,8 +468,15 @@ func (p *ChartJSPlugin) injectChartJSScripts(htmlContent string, initScripts []s
 	script := fmt.Sprintf(`
 <script src="%s"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {%s
-});
+(function() {
+const initCharts = function() {%s
+};
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initCharts, {once: true});
+} else {
+  initCharts();
+}
+})();
 </script>`, chartURL, strings.Join(initScripts, ""))
 
 	// Append the script to the end of the content

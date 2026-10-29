@@ -13,6 +13,7 @@ def add_renderer(wheel: Path) -> None:
     source = Path(__file__).resolve().parent.parent / "python/markata/rendering.py"
     with zipfile.ZipFile(wheel) as archive:
         members = [(item, archive.read(item)) for item in archive.infolist()]
+    license_content = (source.parents[2] / 'pkg/plugins/standalone_icons/LICENSE').read_bytes()
     records = []
     temporary = wheel.with_suffix(".tmp")
     try:
@@ -21,7 +22,7 @@ def add_renderer(wheel: Path) -> None:
                 if item.filename.endswith(".dist-info/RECORD"):
                     record_path = item.filename
                     continue
-                if item.filename == "markata/rendering.py":
+                if item.filename == "markata/rendering.py" or item.filename.endswith(".dist-info/licenses/lucide.txt"):
                     continue
                 if item.filename == "markata/__init__.py":
                     imports = b"from .rendering import Appearance, appearance, RenderError, RenderResult, render, render_async"
@@ -32,6 +33,9 @@ def add_renderer(wheel: Path) -> None:
             content = source.read_bytes()
             archive.writestr("markata/rendering.py", content)
             records.append(record("markata/rendering.py", content))
+            license_path = record_path.rsplit("/", 1)[0] + "/licenses/lucide.txt"
+            archive.writestr(license_path, license_content)
+            records.append(record(license_path, license_content))
             buffer = io.StringIO(newline="")
             writer = csv.writer(buffer)
             writer.writerows(records)

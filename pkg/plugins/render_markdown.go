@@ -1020,7 +1020,7 @@ func extractLinkText(tag string) string {
 // isSourceLinkText checks if link text indicates a source (not person) link.
 func isSourceLinkText(text string) bool {
 	lower := strings.ToLower(strings.TrimSpace(text))
-	return lower == "via" || lower == "source" || lower == "read more" || lower == "link" || lower == "permalink" //nolint:goconst // This prose label is distinct from a garden edge type.
+	return lower == "via" || lower == "source" || lower == "read more" || lower == "link" || lower == "permalink"
 }
 
 // textBeforeTag returns content before the first occurrence of tag in html.

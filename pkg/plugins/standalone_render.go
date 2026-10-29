@@ -86,8 +86,7 @@ func (renderer *StandaloneRenderer) Render(source string) (*StandaloneResult, er
 		"needs_code_css": "code", "needs_admonitions_css": "admonitions",
 		"needs_roads": "roads", "has_figure": "figures", "has_anchor_links": "anchors",
 	} {
-		value, ok := post.Extra[signal].(bool)
-		r.Features[feature] = ok && value
+		r.Features[feature] = post.Extra[signal] == true
 	}
 	if err := r.addPresentationAssets(); err != nil {
 		return nil, err
@@ -217,7 +216,7 @@ func (r *StandaloneResult) detectEnhancements() {
 			r.Features["tables"] = true
 		}
 		for _, attr := range token.Attr {
-			if attr.Key == "class" {
+			if attr.Key == htmlAttrClass {
 				for _, class := range strings.Fields(attr.Val) {
 					if class == "md-checklist" {
 						r.Features["checklists"] = true

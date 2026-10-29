@@ -47,6 +47,7 @@ result = render("```go\nfmt.Println(42)\n```", inline_assets=True)
 print(result.html)              # Article markup
 print(result.features)          # code, admonitions, roads, mermaid, chartjs, ...
 print(result.head_html)         # Ordered style tags
+print(result.feature_head_html) # Only styles specific to this fragment
 print(result.body_end_html)     # Ordered scripts
 ```
 
@@ -56,7 +57,8 @@ strings contain generated HTML; use the appropriate trusted-markup mechanism in
 your template engine. `document(title="...", lang="en")` creates that layout for
 you and escapes the title and language.
 
-The renderer returns core theme CSS plus only the optional assets the content
+`feature_head_html` returns only conditional styles, without the shared variables,
+main, and component styles. The renderer returns core theme CSS plus only the optional assets the content
 requires. Mermaid and Chart.js use Markata's vendored browser libraries; inline
 mode includes them too, without CDN requests. Inlining diagrams can make a
 response considerably larger. `external_urls` identifies any external browser
@@ -160,7 +162,37 @@ For an isolated preview iframe, set `appearance_bridge=True`. The parent can sen
 messages from its parent and validates values against the catalogs. Keep the
 iframe sandboxed with `allow-scripts` and without `allow-same-origin`.
 
+For live edits, the parent can also send `{"type": "markdown-render", "html":
+"...", "feature_head_html": "...", "body_end_html": "..."}`. The bridge replaces
+`.post-content`, updates render-specific styles, loads new feature scripts once,
+runs generated scripts, and dispatches `view-transition-complete`. It does not
+replay `DOMContentLoaded`. The host can therefore keep shared preview stylesheets
+loaded between renders.
+
 The [single-file editor example](https://github.com/WaylonWalker/markata/blob/main/examples/fastapi_editor.py)
 contains CodeMirror and application behavior. Markata supplies its preview document,
 icons, appearance picker, and assets. Applications must explicitly enable
 `unsafe=True` to render authored HTML and style blocks.
+
+## Installation size and offline icons
+
+The renderer retains the full pinned `lucide-static` 1.48.0 catalog for offline icon shortcodes.
+This provides consistent icon availability without downloads or a configurable subset.
+The catalog contains 2,118 SVG files: 1,026,506 source bytes, or approximately 0.98 MiB.
+Compressing their concatenated bytes with gzip produces approximately 97 KiB.
+These asset measurements do not measure the catalog's exact contribution to a compiled binary or wheel.
+A stripped Linux amd64 CLI built with Go 1.26.3 measured approximately 66 MiB before wheel compression.
+The complete CLI also contains themes, fonts, browser libraries, and build features.
+Wheel sizes vary by operating system and architecture.
+
+Lucide's ISC and derived Feather MIT notices remain embedded in the binary.
+Wheels also provide readable notices in `markata-<version>.dist-info/licenses/lucide.txt`.
+
+An installed POSIX binary with its executable bit preserved can render from read-only site-packages.
+Rendering does not require permission changes in that installation.
+If another installer removes the executable bit, reinstall the official wheel with executable permissions.
+The permission-repair fallback needs permission to change the binary's mode.
+
+Each Python render call starts a subprocess. The measured benchmark post took approximately 137 ms through the Python API.
+For frequent live edits, use the persistent Go workbench instead of starting a subprocess for every request.
+See [integration benchmarks](/docs/guides/renderer-integration-benchmarks/) for timing boundaries and reproduction commands.

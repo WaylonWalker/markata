@@ -58,6 +58,7 @@
   }
 
   initializeTables(document);
+  window.addEventListener('view-transition-complete', () => initializeTables(document));
   document.addEventListener('markata:content-decrypted', (event) => {
     if (event.detail?.container) initializeTables(event.detail.container);
   });

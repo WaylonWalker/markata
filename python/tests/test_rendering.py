@@ -58,6 +58,18 @@ class RenderingTest(unittest.TestCase):
             self.assertEqual(command[0], str(binary))
             self.assertTrue(os.access(binary, os.X_OK))
 
+    @unittest.skipIf(os.name == "nt", "POSIX executable permissions")
+    def test_executable_binary_needs_no_permission_write(self):
+        with tempfile.TemporaryDirectory() as folder:
+            binary = Path(folder) / 'bin/markata'
+            binary.parent.mkdir()
+            binary.write_bytes(b'binary')
+            binary.chmod(0o555)
+            with patch.object(rendering, '__file__', str(Path(folder) / 'rendering.py')):
+                with patch.object(Path, 'chmod', side_effect=PermissionError('read-only installation')):
+                    command = rendering._command(False, '/assets', False)
+            self.assertEqual(command[0], str(binary))
+
     def test_wheel_injection_preserves_entrypoint_and_records(self):
         spec = importlib.util.spec_from_file_location('wheel_patch', ROOT / 'scripts/add-python-renderer-to-wheels.py')
         module = importlib.util.module_from_spec(spec)
@@ -76,7 +88,10 @@ class RenderingTest(unittest.TestCase):
                 self.assertIn(b'from .rendering import', archive.read('markata/__init__.py'))
                 self.assertIn('markata/rendering.py', archive.namelist())
                 self.assertEqual(archive.getinfo('markata/bin/markata').external_attr >> 16, 0o755)
+                notice = archive.read('markata-1.dist-info/licenses/lucide.txt')
+                self.assertEqual(notice, (ROOT / 'pkg/plugins/standalone_icons/LICENSE').read_bytes())
                 record = archive.read('markata-1.dist-info/RECORD').decode()
+                self.assertIn(','.join(module.record('markata-1.dist-info/licenses/lucide.txt', notice)), record)
                 self.assertIn(','.join(module.record('markata/rendering.py', archive.read('markata/rendering.py'))), record)
 
 
@@ -109,6 +124,15 @@ class AsyncRenderingTest(unittest.IsolatedAsyncioTestCase):
                 self.assertIsNotNone(processes[1].returncode)
 
 class AppearanceDocumentTest(unittest.TestCase):
+    def test_feature_head_html_excludes_shared_styles(self):
+        result = rendering.RenderResult(
+            html='', features={}, assets=(
+                {'id': 'css/main.css', 'kind': 'style', 'placement': 'head', 'content': 'shared'},
+                {'id': 'css/code.css', 'kind': 'style', 'placement': 'head', 'content': 'feature'},
+            ), external_urls=(), head_html='', body_end_html='',
+        )
+        self.assertEqual(result.feature_head_html, '<style>feature</style>')
+
     def test_document_site_layout_and_escaping(self):
         result = rendering._result(json.dumps(PAYLOAD).encode(), b'', 0)
         document = result.document('<title>', lang='"')
