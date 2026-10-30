@@ -17,7 +17,7 @@ class BrowserEndpointTest(unittest.TestCase):
         cls.demo = load_editor()
 
     def test_configuration_ignores_client_workspace(self):
-        with TestClient(self.demo.app) as client:
+        with TestClient(self.demo.app, client=("127.0.0.1", 50000)) as client:
             response = client.get("/lsp/config?rootUri=file:///outside")
             self.assertEqual(response.status_code, 200)
             self.assertEqual(response.json()["rootUri"], self.demo.LSP_WORKSPACE.as_uri())
@@ -29,7 +29,7 @@ class BrowserEndpointTest(unittest.TestCase):
 
     def test_foreign_or_missing_origin_never_starts_process(self):
         with patch.object(self.demo.asyncio, "create_subprocess_exec", new_callable=AsyncMock) as spawn:
-            with TestClient(self.demo.app) as client:
+            with TestClient(self.demo.app, client=("127.0.0.1", 50000)) as client:
                 for headers in [{}, {"origin": "https://foreign.invalid"},
                                 {"host": "evil.invalid", "origin": "http://evil.invalid"}]:
                     with self.assertRaises(WebSocketDisconnect):
@@ -37,9 +37,19 @@ class BrowserEndpointTest(unittest.TestCase):
                             self.fail("Accepted invalid origin")
             spawn.assert_not_awaited()
 
+    def test_remote_peer_cannot_spoof_local_origin(self):
+        with patch.object(self.demo.asyncio, "create_subprocess_exec", new_callable=AsyncMock) as spawn:
+            with TestClient(self.demo.app, client=("198.51.100.9", 50000)) as client:
+                with self.assertRaises(WebSocketDisconnect):
+                    with client.websocket_connect(
+                        "/lsp", headers={"host": "localhost", "origin": "http://localhost"}
+                    ):
+                        self.fail("A remote client spoofed localhost headers")
+            spawn.assert_not_awaited()
+
     def test_missing_binary_closes_only_language_connection(self):
         with patch.object(self.demo, "lsp_command", return_value=["/nonexistent/markata"]):
-            with TestClient(self.demo.app) as client:
+            with TestClient(self.demo.app, client=("127.0.0.1", 50000)) as client:
                 with client.websocket_connect("/lsp", headers={"host": "localhost", "origin": "http://localhost"}) as socket:
                     with self.assertRaises(WebSocketDisconnect):
                         socket.receive_json()
