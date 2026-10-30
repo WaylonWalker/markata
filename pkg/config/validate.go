@@ -41,17 +41,7 @@ func ValidateConfig(config *models.Config) []error {
 	var errs []error
 	errs = append(errs, validateRenderingTheme(config)...)
 
-	// The profile is an integration preference, not the site-build lifecycle.
-	// Reject misspellings instead of recording a setting no consumer can honor.
-	switch config.MarkdownConfig.RenderProfile {
-	case "", "web", "offline-interactive", "offline-static":
-		// Recognized. Offline-static is reserved and standalone renders reject it.
-	default:
-		errs = append(errs, ValidationError{
-			Field: "markdown.render_profile",
-			Message: "must be one of: web, offline-interactive, offline-static",
-		})
-	}
+	errs = append(errs, validateRendererDefaults(config)...)
 
 	// Validate URL format if provided
 	if config.URL != "" {
@@ -72,22 +62,6 @@ func ValidateConfig(config *models.Config) []error {
 	}
 
 	errs = append(errs, validateImageLibraryConfig(config)...)
-
-	// Standalone integration asset defaults are independent of site-build assets.
-	switch config.MarkdownConfig.RenderAssetMode {
-	case "", "linked", "inline":
-	default:
-		errs = append(errs, ValidationError{Field: "markdown.render_asset_mode",
-			Message: "must be one of: linked, inline"})
-	}
-	assetBase := config.MarkdownConfig.RenderAssetBase
-	if assetBase != "" && (!strings.HasPrefix(assetBase, "/") ||
-		strings.HasPrefix(assetBase, "//") ||
-		strings.ContainsAny(assetBase, "?#\\\r\n") ||
-		strings.Contains(assetBase, "/../")) {
-		errs = append(errs, ValidationError{Field: "markdown.render_asset_base",
-			Message: "must be a local absolute URL path without a query, fragment, or parent traversal"})
-	}
 
 	// Warn on empty glob patterns
 	if len(config.GlobConfig.Patterns) == 0 {
