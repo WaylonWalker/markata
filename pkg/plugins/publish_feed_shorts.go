@@ -125,7 +125,7 @@ func safeShortsMediaURL(raw string) string {
 	if err != nil {
 		return ""
 	}
-	if parsed.Scheme != "" && parsed.Scheme != "https" && parsed.Scheme != "http" {
+	if parsed.Scheme != "" && parsed.Scheme != schemeHTTPS && parsed.Scheme != schemeHTTP {
 		return ""
 	}
 	if parsed.Scheme == "" && strings.HasPrefix(raw, "//") {
@@ -139,7 +139,7 @@ func safeShortsMediaURL(raw string) string {
 // URL instead of receiving query parameters that the host may ignore.
 func shortsCanResizeImageURL(raw string) bool {
 	parsed, err := url.Parse(raw)
-	return err == nil && parsed.Host != "" && (parsed.Scheme == "http" || parsed.Scheme == "https") && templates.IsTrustedMediaURL(raw)
+	return err == nil && parsed.Host != "" && (parsed.Scheme == schemeHTTP || parsed.Scheme == schemeHTTPS) && templates.IsTrustedMediaURL(raw)
 }
 
 func shortsSizedImageURL(raw string, width int) string {
