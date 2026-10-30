@@ -44,7 +44,9 @@ def build(output):
     cm_tags = ''.join(f'<link rel="stylesheet" href="codemirror/{name}">' if name.endswith('.css') else f'<script src="codemirror/{name}"></script>' for name in cm)
     styles = ''.join(f'<link rel="stylesheet" href="appearance/{name}">' for name in appearance['styles'])
     scripts = ''.join(f'<script src="appearance/{name}"></script>' for name in appearance['scripts'])
-    page = (output / 'index.html').read_text().replace('<!-- ASSETS -->', cm_tags + styles + scripts)
+    controls_styles = ''.join(f'<link rel="stylesheet" href="appearance/{name}">' for name in appearance['styles']
+                              if name not in ('css/main.css', 'css/components.css'))
+    page = (output / 'index.html').read_text().replace('<!-- ASSETS -->', cm_tags + controls_styles + scripts)
     page = page.replace('<span id="offline"', appearance['picker_html'] + '<span id="offline"', 1)
     (output / 'index.html').write_text(page)
     preview = (output / 'preview.html').read_text().replace('<!-- PREVIEW_STYLES -->', styles)

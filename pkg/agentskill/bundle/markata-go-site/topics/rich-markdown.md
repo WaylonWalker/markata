@@ -223,12 +223,23 @@ For renderer integrations, reuse the benchmark site post and rendering fixtures.
 Run `python python/benchmark_editor.py` with an installed wheel and FastAPI dependencies.
 See `docs/guides/renderer-integration-benchmarks.md` for timing boundaries and host-specific results.
 
-
 For Go HTTP benchmarks, build `cmd/markata-workbench` and run
 `python python/benchmark_go_editor.py --binary /path/to/markata-workbench`.
 Use the same fixture hashes as the Python report. Keep cache misses separate
 from repeated cached renders, and distinguish linked assets from inline assets.
 See the integration benchmark guide for timing boundaries and stacking order.
+
+For comparable WASM fixture measurements, serve the browser workbench and run
+`uv run --with playwright python scripts/benchmark-wasm.py --output /tmp/wasm-benchmark.json`.
+The report measures worker rendering, excluding startup, transfer, layout, and paint.
+Keep these timings separate from HTTP latency.
+
+The Python, Go, and WASM workbenches share typography, import/export, draft save
+feedback, keymaps, and a 200,000 UTF-8 byte limit. Keep their editor UI consistent.
+Preserve separate runtime transports, offline support, and documented raw HTML
+policies. Browser storage belongs to each origin, including its port; compare
+fonts with matching appearance settings. See the integration benchmark guide's
+shared editor feature table before treating runtime differences as defects.
 
 Official renderer wheels include readable Lucide/Feather notices in dist-info/licenses.
 Executable installed wheels can render from read-only site-packages. Preserve

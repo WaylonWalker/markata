@@ -29,6 +29,13 @@ class FastAPIEditorTest(unittest.TestCase):
         self.assertIn('data-picker-tab="font"', response.text)
         self.assertNotIn('href="/appearance/css/main.css"', response.text)
 
+    def test_utf8_byte_limit_rejects_multibyte_source_before_render(self):
+        with patch.object(self.demo, 'render_async') as render:
+            response = self.client.post('/render', json={'markdown': '界' * 70000})
+            self.assertEqual(response.status_code, 422)
+            self.assertIn('UTF-8 bytes', response.json()['error'])
+            render.assert_not_called()
+
     def test_real_render_preserves_site_content_and_initial_appearance(self):
         markdown = '# :lucide-globe: Hello\n\n```python\nprint("héllo")\n```'
         response = self.client.post("/render", json={"markdown": markdown, "appearance": {

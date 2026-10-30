@@ -120,7 +120,6 @@ Before comparing changes, keep the fixture bytes, dependency versions, machine, 
 Compare medians and raw samples as well as response sizes.
 Useful next measurements include process initialization, JSON encoding, asset transfer, browser paint, and memory retained after repeated diagram edits.
 
-
 ## Go server workbench
 
 The [Go workbench](/docs/guides/go-workbench/) uses the same seven fixture files and the same HTTP timing boundaries.
@@ -207,3 +206,70 @@ go test ./pkg/plugins -run '^$' -bench '^BenchmarkRenderStandaloneFixtures$' -be
 The standard-library Python client starts a temporary Go server on an OS-assigned loopback port and stops it after the run.
 It does not restart the live editor or change its cache.
 Use `--samples`, `--warmups`, and `--output` to control the run. The default output uses the UTC date.
+
+## Browser WASM worker
+
+Start the WASM demo before the benchmark:
+
+```bash
+python3 scripts/wasm-workbench.py --serve
+```
+
+In another terminal, run:
+
+```bash
+uv run --with playwright python scripts/benchmark-wasm.py --output /tmp/wasm-benchmark.json
+```
+
+Use `--url` for a different demo address. Install Playwright Chromium if the browser is unavailable.
+The benchmark uses the same seven fixtures as the HTTP clients.
+Each fixture uses a fresh worker, two excluded warmups, and fifteen measured renders.
+The report includes raw samples, fixture hashes, browser version, median, and p95.
+
+These timings measure worker rendering. They exclude worker startup, message transfer, layout, and paint.
+Do not compare them directly with HTTP request timings.
+
+Local demos use these addresses when all three run together:
+
+- Python/FastAPI: `http://127.0.0.1:8765/`
+- Go server: `http://127.0.0.1:8767/`
+- Browser WASM: `http://127.0.0.1:8766/`
+
+### Integration verification on 2026-10-29
+
+Fresh reports use the `*-suite-2026-10-29.json` names for Python and Go.
+The WASM report is `benchmarks/wasm-workbench-2026-10-29.json`.
+For `post-001.md`, the Python HTTP edit median was 149.282 ms.
+The Go HTTP edit median was 2.389 ms; the cached median was 0.301 ms.
+The WASM worker median was 10.9 ms.
+These measurements use different timing boundaries and asset policies, as described above.
+
+## Shared editor features and runtime differences
+
+All three demos provide the same editor features:
+
+- System typography, appearance controls, and Default/Vim/Emacs/Sublime keymaps.
+- **Open .md** import and **Download .md** export.
+- Automatic draft recovery and visible save status.
+- Live previews with a 250 ms edit debounce and protection against stale results.
+- A 200,000 UTF-8 byte limit, with errors that preserve the current draft.
+
+An oversized import leaves the current draft intact. Download the draft before clearing browser storage.
+If storage is unavailable or full, editing and downloads remain available, but drafts cannot survive closing the page.
+Each origin stores its own draft and appearance settings. Different ports do not share these settings.
+For a font comparison, select the same font pack and text size in each demo.
+The default uses system fonts; operating systems can display different system typefaces.
+
+| Runtime behavior | Python / FastAPI | Go server | Browser WASM |
+| --- | --- | --- | --- |
+| Rendering location | Server subprocess per request | Directly in Go server | Persistent browser worker |
+| Markdown transfer | HTTP to local server | HTTP to local server | No render request |
+| Rich feature assets | Inline response assets | Linked assets reused by browser | Bundled assets cached locally |
+| Offline reload | Requires running server | Requires running server | Available after **Ready offline** |
+| Authored raw HTML | Enabled inside sandbox | Enabled inside sandbox | Disabled |
+| Repeated source | New renderer process | Last result cache | Persistent renderer runtime |
+
+Runtime differences do not require different fonts, import controls, or draft feedback.
+Raw HTML and cache policies are demo choices, rather than requirements of Python, Go, or WASM.
+All previews use a sandbox. Authored external images and links can still access the network.
+These demos render standalone Markdown; they do not load a site's configuration or run its complete build lifecycle.

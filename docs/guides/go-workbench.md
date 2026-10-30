@@ -125,3 +125,10 @@ The tests check retained stylesheets, fragment responses, conditional styles, ch
 
 The [integration benchmark guide](/docs/guides/renderer-integration-benchmarks/#go-server-workbench) compares seven existing fixtures with the Python reference.
 It separates initial renders, uncached edits, and cached edits. Raw samples and reproduction commands are included.
+
+## Shared editor behavior
+
+Use **Open .md** to import a Markdown file. An oversized file leaves the current draft intact.
+Use **Download .md** to keep a copy outside browser storage.
+The footer reports whether the draft was saved. Storage failures leave editing and downloads available.
+See [shared editor features and runtime differences](/docs/guides/renderer-integration-benchmarks/#shared-editor-features-and-runtime-differences) for the comparison.

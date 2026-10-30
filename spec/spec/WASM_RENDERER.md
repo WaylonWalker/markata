@@ -29,3 +29,10 @@ Font URLs remain relative to the app. The parent embeds preview font data and re
 controlled origin, because opaque-origin sandbox requests bypass service workers.
 The server supports gzip negotiation, loopback binding, and explicit port/output
 options. It does not serve a render API or receive document contents.
+
+## Reproducible worker benchmarks
+
+The worker benchmark uses the seven renderer integration fixtures without changing their bytes.
+Each fixture uses a fresh worker, two excluded warmups, and fifteen measured renders.
+The report records fixture hashes, browser version, host, raw timings, median, and p95.
+Worker timings exclude startup, message transfer, layout, and paint. They are not HTTP latency measurements.

@@ -16,7 +16,7 @@ uv run examples/fastapi_editor.py
 ```
 
 Open <http://127.0.0.1:8765>. Edit Markdown on the left. The preview updates after
-350 milliseconds without edits. Narrow screens stack the editor and preview.
+250 milliseconds without edits. Narrow screens stack the editor and preview.
 The browser stores your draft locally. Use **Download .md** to save a file.
 
 The example requires a Markata wheel containing the Python API from PR #1835.
@@ -37,7 +37,7 @@ The iframe permits scripts and keeps the preview separate from the editor origin
 Authored HTML and inline styles are enabled for this local authoring tool.
 The preview remains isolated from the editor origin.
 
-The example limits input to 200,000 characters and rendering to 15 seconds.
+The example limits input to 200,000 UTF-8 bytes and rendering to 15 seconds.
 Errors preserve the last successful preview. Each call starts a renderer process.
 This example is a local development tool. It does not include accounts or shared storage.
 
@@ -50,7 +50,7 @@ The footer shows Markata time, request time, input bytes, document bytes, and fr
 load time. Markata time includes process startup, rendering, asset collection, and
 JSON parsing. Request time also includes HTTP transfer and browser JSON parsing.
 Frame load time measures iframe loading, not completed asynchronous diagrams.
-The 350-millisecond typing delay is separate from these measurements.
+The 250-millisecond typing delay is separate from these measurements.
 
 The preview uses the default site's article wrappers, reading size, and spacing.
 It previews article content. It does not add site navigation, feeds, or post metadata.
@@ -96,3 +96,10 @@ sandboxed frame. This avoids sending the large site CSS payload or reloading
 theme stylesheets after every edit.
 
 See [integration benchmarks](/docs/guides/renderer-integration-benchmarks/) for measured fixture timings and reproduction steps.
+
+## Shared editor behavior
+
+Use **Open .md** to import a Markdown file. An oversized file leaves the current draft intact.
+Use **Download .md** to keep a copy outside browser storage.
+The footer reports whether the draft was saved. Storage failures leave editing and downloads available.
+See [shared editor features and runtime differences](/docs/guides/renderer-integration-benchmarks/#shared-editor-features-and-runtime-differences) for the comparison.

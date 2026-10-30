@@ -20,6 +20,10 @@ on:
       - 'pkg/aesthetic/**'
       - 'pkg/fontpacks/**'
       - 'examples/fastapi_editor.py'
+      - 'examples/wasm-workbench/**'
+      - 'pkg/workbench/**'
+      - 'tests/editors/**'
+      - 'scripts/wasm-workbench.py'
       - 'docs/guides/fastapi-editor.md'
       - 'cmd/markata/**'
       - 'cmd/markata-go/**'
@@ -93,6 +97,11 @@ jobs:
         run: '"${RUNNER_TEMP}/markata-wheel-venv/bin/python" -m playwright install --with-deps chromium'
       - name: Exercise the live editor with the installed wheel
         run: '"${RUNNER_TEMP}/markata-wheel-venv/bin/python" python/test_editor_browser.py -v'
+      - name: Build all editor demos and verify shared behavior
+        run: |
+          go build -o "${RUNNER_TEMP}/markata-workbench" ./cmd/markata-workbench
+          python scripts/wasm-workbench.py
+          "${RUNNER_TEMP}/markata-wheel-venv/bin/python" tests/editors/test_parity.py --go-binary "${RUNNER_TEMP}/markata-workbench" --wasm-output .wasm-workbench
       - name: Save inspected wheel artifacts
         uses: actions/upload-artifact@v7
         with:
