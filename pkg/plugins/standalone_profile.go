@@ -32,8 +32,10 @@ func ResolveStandaloneProfile(options StandaloneOptions) (StandaloneOptions, err
 		if options.Unsafe {
 			return options, fmt.Errorf("%s does not allow unsafe authored HTML", options.Profile)
 		}
-		// Bundled dependencies must not need a separately served asset endpoint.
-		options.InlineAssets = true
+		// For portable HTML, inline the entire managed bundle. A browser worker
+		// may instead reference a complete same-origin, offline-cached bundle.
+		// The latter is host-specific and not a self-contained HTML document.
+		options.InlineAssets = !options.OfflineAssetHost
 		return options, nil
 	case RenderProfileOfflineStatic:
 		return options, fmt.Errorf("%s is not supported by the standalone renderer: Mermaid and Chart.js require client-side JavaScript; no static fallback is implemented", options.Profile)
