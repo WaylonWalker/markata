@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Browser acceptance for both shipped shortcuts template copies.
-// Uses actual template DOM and shipped shortcut JS, without CSS or a network server.
-// A full generated-site legacy-template smoke remains a separate deployment gate.
+// Uses Markata-rendered HTML and shipped shortcut JS with/without CSS.
+// Deployed-site smoke remains a separate release/deployment gate.
 'use strict';
 
 const assert = require('node:assert/strict');
@@ -15,16 +15,18 @@ const templates = [
   'pkg/themes/default/templates/partials/shortcuts-modal.html',
 ];
 
-function templateBody(template) {
-  // Only remove template control-flow directives; keep the actual checked HTML.
-  return template
-    .replace(/\{#[\s\S]*?#\}/g, '')
-    .replace(/\{%[\s\S]*?%\}/g, '')
-    .replace(/\{\{[\s\S]*?\}\}/g, '');
+function renderedTemplate(filename) {
+  const binary = process.env.MARKATA_SHORTCUTS_RENDERER;
+  if (!binary) throw new Error('MARKATA_SHORTCUTS_RENDERER must point to the built Pongo2 template fixture');
+  const templateDir = path.dirname(path.dirname(path.join(root, filename)));
+  const html = execFileSync(binary, [templateDir], { cwd: root, encoding: 'utf8' });
+  if (!html.includes('id="shortcuts-modal"')) throw new Error(`template did not render: ${filename}`);
+  return html;
 }
 
 async function checkTemplate(browser, filename) {
-  const body = templateBody(await fs.readFile(path.join(root, filename), 'utf8'));
+  // Render with the same production Pongo2 engine that serves Markata pages.
+  const body = renderedTemplate(filename);
   const markup = `<!doctype html><html lang="en"><head><meta charset="utf-8"></head>
     <body><button id="opener" type="button" data-shortcuts-trigger
     aria-controls="shortcuts-modal">Keyboard shortcuts</button>
