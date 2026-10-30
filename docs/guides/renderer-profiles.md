@@ -84,6 +84,13 @@ Go and WASM accept `profile` and `inline_assets` without a second Markdown parse
 WASM reports unsupported native-only static rendering modes rather than silently
 falling back to client-side Mermaid.
 
+WASM builds keep their large presentation assets in the static workbench bundle,
+rather than embedding a duplicate in the Go/WASM module. When inline output is
+requested, the browser worker hydrates the ordered asset manifest from that
+same-origin bundle (and its service-worker cache once installed); it fails if a
+required asset is absent. The resulting inline output is assembled at the host
+boundary, while the underlying Go parser and profile validation stay shared.
+
 Strict browser-network guarantees, asset font audits and static diagram/chart
 prerendering remain tracked in
 [#1854](https://github.com/WaylonWalker/markata/issues/1854).
