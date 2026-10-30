@@ -9,8 +9,8 @@ tags:
   - editor
 ---
 
-Select **Commands** above the Markdown editor, or press **Ctrl+Shift+P**.
-On macOS, press **Cmd+Shift+P**.
+Select **Commands** above the Markdown editor, or press **Ctrl+K**.
+On macOS, press **Cmd+K**. The **Ctrl/Cmd+Shift+P** shortcut also works.
 The palette works with the Default, Vim, Emacs, and Sublime keymaps.
 
 Search for a command, such as `callout`, `diagram`, or `highlight`.

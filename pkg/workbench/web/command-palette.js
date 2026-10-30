@@ -7,7 +7,7 @@
   function attach(editor) {
     const button = document.createElement('button');
     button.type = 'button'; button.id = 'commands';
-    button.textContent = 'Commands'; button.title = 'Commands (Ctrl/Cmd+Shift+P)';
+    button.textContent = 'Commands'; button.title = 'Commands (Ctrl/Cmd+K)';
     button.setAttribute('aria-haspopup', 'dialog');
     document.querySelector('.editor-toolbar').append(button);
     const dialog = document.createElement('dialog');
@@ -96,7 +96,10 @@
     });
     // Capture before Vim, Emacs or browser shortcuts can consume the event.
     document.addEventListener('keydown', event => {
-      if (!event.isComposing && (event.ctrlKey || event.metaKey) && event.shiftKey && !event.altKey && event.key.toLowerCase() === 'p') {
+      const key = event.key.toLowerCase();
+      const modifier = event.ctrlKey || event.metaKey;
+      const shortcut = (key === 'k' && !event.shiftKey) || (key === 'p' && event.shiftKey);
+      if (!event.isComposing && modifier && shortcut && !event.altKey) {
         event.preventDefault(); event.stopPropagation(); open();
       }
     }, true);

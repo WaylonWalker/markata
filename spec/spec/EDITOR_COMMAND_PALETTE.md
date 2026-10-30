@@ -1,7 +1,7 @@
 # Renderer Editor Command Palette
 
 The Python, Go, and WASM workbenches MUST offer the same Markdown snippet palette.
-A Commands button and Ctrl+Shift+P (Cmd+Shift+P on macOS) MUST open a modal dialog.
+A Commands button, Ctrl+K (Cmd+K on macOS), and Ctrl+Shift+P (Cmd+Shift+P on macOS) MUST open a modal dialog.
 The shortcut MUST work with every supported editor keymap, outside IME composition.
 The palette MUST use local assets and MUST work in the offline WASM workbench.
 

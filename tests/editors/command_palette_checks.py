@@ -19,7 +19,7 @@ def check_commands(page, preview):
     for keymap in ['default', 'vim', 'emacs', 'sublime']:
         page.locator('#keymap').select_option(keymap)
         select_text('Keep this text', 5, 9)
-        page.keyboard.press('Control+Shift+P')
+        page.keyboard.press('Control+K')
         expect(dialog).to_be_visible()
         expect(query).to_be_focused()
         query.fill('not-a-real-command')
@@ -33,6 +33,14 @@ def check_commands(page, preview):
         assert page.evaluate("document.querySelector('.CodeMirror').CodeMirror.hasFocus()")
 
     page.locator('#keymap').select_option('default')
+    page.keyboard.press('Control+Shift+P')
+    expect(dialog).to_be_visible()
+    page.keyboard.press('Escape')
+    expect(dialog).not_to_be_visible()
+    page.keyboard.press('Meta+K')
+    expect(dialog).to_be_visible()
+    page.keyboard.press('Escape')
+    expect(dialog).not_to_be_visible()
     select_text('Important')
     page.locator('#commands').click()
     query.fill('HIGHLIGHT text')
