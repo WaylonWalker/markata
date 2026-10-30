@@ -123,3 +123,7 @@ configuration surfaces. They are not a promise to automatically configure all
 editor versions. The generic integration contract is the stable compatibility
 surface; agents SHOULD inspect a repository's existing editor configuration and
 adapt the snippet to the installed client.
+
+The editor accepts `--port` (`-p`) to select its HTTP port. When a port is occupied,
+`editor` and `serve` suggest a rerun command. In an interactive terminal, Enter
+accepts an available port; `q` followed by Enter or Ctrl+C cancels.

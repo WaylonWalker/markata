@@ -729,6 +729,11 @@ markata-go reader update -c production.toml
 
 ### editor
 
+The editor accepts `--port` (`-p`) to select its HTTP port. When a port is occupied,
+`editor` and `serve` suggest a rerun command. In an interactive terminal, Enter
+accepts an available port; `q` followed by Enter or Ctrl+C cancels.
+
+
 Run the browser-based Go Markdown editor against a selected workspace.
 
 #### Usage
@@ -748,6 +753,7 @@ workspace files.
 | --- | --- | --- |
 | `--workspace` | Markdown workspace used for language assistance | `.` |
 | `--listen` | Loopback HTTP address | `127.0.0.1:8766` |
+| `--port`, `-p` | HTTP port (overrides the port in `--listen`) | `8766` |
 
 #### Examples
 

@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -19,6 +20,7 @@ import (
 
 var (
 	editorWorkspace = "."
+	editorPort      int
 	editorListen    = "127.0.0.1:8766"
 )
 
@@ -34,11 +36,19 @@ var editorCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(editorCmd)
+	editorCmd.Flags().IntVarP(&editorPort, "port", "p", 8766, "port to serve on")
 	editorCmd.Flags().StringVar(&editorWorkspace, "workspace", ".", "Markdown workspace for language assistance")
 	editorCmd.Flags().StringVar(&editorListen, "listen", "127.0.0.1:8766", "loopback HTTP address for the editor")
 }
 
 func runEditorCommand(cmd *cobra.Command, _ []string) error {
+	if cmd.Flags().Changed("port") {
+		host, _, err := net.SplitHostPort(editorListen)
+		if err != nil {
+			return err
+		}
+		editorListen = net.JoinHostPort(host, strconv.Itoa(editorPort))
+	}
 	if err := validateEditorListenAddress(editorListen); err != nil {
 		return err
 	}
@@ -52,7 +62,7 @@ func runEditorCommand(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	listener, err := net.Listen("tcp", editorListen)
+	listener, err := listenWithPortRecovery(cmd, editorListen)
 	if err != nil {
 		return fmt.Errorf("listen on %s: %w", editorListen, err)
 	}

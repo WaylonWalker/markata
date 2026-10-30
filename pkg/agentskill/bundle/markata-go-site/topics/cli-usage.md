@@ -118,7 +118,7 @@ Set `MARKATA_GO_SITE_DIR` in an alias or wrapper when repeatedly using one site.
 - `markata-go lint` (lint markdown files for common issues)
 - `markata-go lint --fix` (auto-fix fixable issues)
 - `markata-go lint --dry-run` (show files without linting)
-- `markata editor --workspace <site>` (start the Go browser editor on loopback)
+- `markata editor --workspace <site> --port 8766` (start the Go browser editor on loopback)
 - The Go and FastAPI browser editor examples use the existing LSP through a same-origin `/lsp` WebSocket.
   Go uses `markata editor --workspace`; FastAPI uses `MARKATA_LSP_WORKSPACE`.
   FastAPI uses `markata-go lsp --browser-workspace` behind its stdio bridge.
