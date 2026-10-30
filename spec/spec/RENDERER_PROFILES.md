@@ -71,8 +71,9 @@ All three integrations share **the same profile and asset options**:
 - Go workbench HTTP: `profile`, `inline_assets`; its asset base remains fixed to the local `/appearance` server. Reuse
   `ResolveStandaloneProfile`, rather than a parallel asset-policy switch.
 - WASM: accepts web/offline-interactive, inline vs linked assets, and reports
-  native-only unsupported modes explicitly. Service-worker cache and sandboxed
-  preview rules remain platform-specific.
+  native-only unsupported modes explicitly. The worker hydrates inline assets
+  from its same-origin service-worker-cached host bundle without embedding a
+  second copy in the WASM binary. Cache and sandbox rules remain platform-specific.
 - Python: covered by this PR; the CLI and Go implement the actual policy.
 
 #1854 remains open until strict browser-network assertions, Mermaid SVG prerender,
