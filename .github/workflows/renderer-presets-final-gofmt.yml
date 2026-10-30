@@ -1,5 +1,5 @@
 name: Renderer presets final gofmt one-shot
-# Re-run after config lint and offline host changes
+# Rerun after correcting exhaustive switch syntax and final lint
 on:
   push:
     branches: [feat/renderer-presets-unified]
