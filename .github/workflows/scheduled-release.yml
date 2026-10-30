@@ -107,19 +107,38 @@ jobs:
         uses: anchore/sbom-action/download-syft@v0
       - name: Install Cosign for checksum signing
         uses: sigstore/cosign-installer@v3
+      # Full-archive SBOM/signing can overwhelm the all-target build on a
+      # single runner. The existing RC smoke has proven this exact snapshot
+      # command and checks both canonical/legacy archives and checksums.
+      # Sample the SBOM/signing tools separately; the tag workflow still
+      # generates and signs the complete release.
       - name: Build release snapshot without publishing
         uses: goreleaser/goreleaser-action@v7
         with:
           distribution: goreleaser
           version: '~> v2'
-          args: release --snapshot --clean
-      - name: Inspect build artifacts
+          args: release --snapshot --clean --skip=sign,sbom
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Verify canonical and legacy archives and checksums
+        run: bash scripts/check-rc-artifacts.sh
+      - name: Generate sample SPDX SBOM
         shell: bash
         run: |
           set -euo pipefail
-          test -s dist/checksums.txt
-          grep -q 'markata' dist/checksums.txt
-          find dist -type f | sort
+          archive="$(find dist -maxdepth 1 -type f -name 'markata_*_linux_x86_64.tar.gz' -print -quit)"
+          test -n "$archive"
+          syft "$archive" -o spdx-json=dist/candidate-sample.spdx.json
+          test -s dist/candidate-sample.spdx.json
+      - name: Sign candidate checksum manifest
+        shell: bash
+        run: |
+          cosign sign-blob --yes \
+            --output-signature=dist/checksums.txt.sig \
+            --output-certificate=dist/checksums.txt.pem \
+            dist/checksums.txt
+          test -s dist/checksums.txt.sig
+          test -s dist/checksums.txt.pem
       - name: Upload dry-run artifacts and notes
         uses: actions/upload-artifact@v7
         with:
