@@ -44,6 +44,9 @@ func TestWorkspace_ConfiguredDiscoveryAndSource(t *testing.T) {
 
 func TestWorkspace_RejectsSymlinkEscape(t *testing.T) {
 	root, outside := t.TempDir(), t.TempDir()
+	if err := os.WriteFile(filepath.Join(root, "markata-go.toml"), []byte("[markata-go.glob]\npatterns = ['*.md']\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
 	target := filepath.Join(outside, "secret.md")
 	if err := os.WriteFile(target, []byte("# Outside"), 0o600); err != nil {
 		t.Fatal(err)

@@ -18,7 +18,7 @@ before starting `examples/fastapi_editor.py`.
 The Files tree lists content discovered by Markata's glob plugin. The editor
 reads `markata-go.toml`, YAML, or JSON configuration from the selected workspace.
 It uses the configured glob patterns and gitignore behavior. Without a config,
-it discovers Markdown recursively with Markata's defaults. The Tags view groups
+it discovers Markdown under `pages/` and `posts/` with Markata's defaults. The Tags view groups
 loaded documents by their frontmatter tags.
 
 Select a file to load its original source, including frontmatter. Edit it and
