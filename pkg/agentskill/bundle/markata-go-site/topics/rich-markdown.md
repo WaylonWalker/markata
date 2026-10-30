@@ -204,6 +204,7 @@ then send `{source, revision}`. Accept only the newest result. Serve the generat
 Raw HTML is disabled; site-dependent plugins still require a full site build.
 Wait for the demo's **Ready offline** status before testing offline reload.
 See `docs/guides/wasm-workbench.md` for hosting headers and browser checks.
+
 For a server backed Go editor, run `go run ./cmd/markata-workbench` from the
 Markata source repository. The default URL is `http://127.0.0.1:8766/`; use
 `--listen 127.0.0.1:8767` when that port is occupied. Applications can embed
@@ -222,7 +223,6 @@ For renderer integrations, reuse the benchmark site post and rendering fixtures.
 Run `python python/benchmark_editor.py` with an installed wheel and FastAPI dependencies.
 See `docs/guides/renderer-integration-benchmarks.md` for timing boundaries and host-specific results.
 
-
 For Go HTTP benchmarks, build `cmd/markata-workbench` and run
 `python python/benchmark_go_editor.py --binary /path/to/markata-workbench`.
 Use the same fixture hashes as the Python report. Keep cache misses separate
@@ -240,3 +240,8 @@ Preserve separate runtime transports, offline support, and documented raw HTML
 policies. Browser storage belongs to each origin, including its port; compare
 fonts with matching appearance settings. See the integration benchmark guide's
 shared editor feature table before treating runtime differences as defects.
+
+Official renderer wheels include readable Lucide/Feather notices in dist-info/licenses.
+Executable installed wheels can render from read-only site-packages. Preserve
+the executable bit when packaging; prefer the persistent Go server for frequent
+interactive renders. See the Python renderer guide for packaging and size details.

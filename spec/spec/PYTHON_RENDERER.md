@@ -44,3 +44,15 @@ styles into the editor shell. Preview article styles remain available.
 Runtime-specific differences remain: Python subprocess versus native Go versus
 browser WASM, inline versus linked/cached assets, browser offline support, and
 raw HTML policy. Documentation distinguishes those from shared editor features.
+
+## Wheel distribution contract
+
+Official wheels preserve executable permissions for POSIX binaries. Rendering
+from an executable, read-only installation must not require chmod or writes to
+site-packages. Permission repair is only a fallback for installations that lost
+the executable bit; such installations need writable permissions or reinstall.
+
+The full pinned Lucide catalog remains bundled for deterministic offline icon
+shortcodes. Its original Lucide ISC and derived Feather MIT notices remain
+embedded in the binary and are also distributed in wheel dist-info/licenses.
+Wheel RECORD entries cover the readable notice file.
