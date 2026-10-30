@@ -155,13 +155,16 @@ class WorkbenchTest(unittest.TestCase):
           const oversized=await render('界'.repeat(70000),2);
           const samples=[];
           for(let i=0;i<8;i++) {const r=await render('# Heading\\n\\nA paragraph.\\n'.repeat(50),i+3);samples.push(r.render_ms);}
-          const final=await render('# Alive',20);const unsupported=await render('# Static',21,'offline-static');worker.terminate();
-          return {invalid,oversized,samples,final,unsupported};
+          const final=await render('# Alive',20);const unsupported=await render('# Static',21,'offline-static');const offline=await render('# Local',22,'offline-interactive');worker.terminate();
+          return {invalid,oversized,samples,final,unsupported,offline};
         }''')
         self.assertIn('error', result['invalid']['result'])
         self.assertIn('error', result['oversized']['result'])
         self.assertIn('<h1', result['final']['result']['html'])
         self.assertIn('not supported', result['unsupported']['result']['error'])
+        self.assertEqual(result['offline']['result'].get('render_profile'), 'offline-interactive')
+        self.assertIn('<style>', result['offline']['result']['head_html'])
+        self.assertTrue(any(a.get('content') for a in result['offline']['result']['assets'] if a['id'] == 'css/main.css'))
         self.assertLess(len(str(result['final']['result'])), 10000, 'Bundled asset bytes leaked into every response')
         # Report measurements; do not impose machine-specific timing thresholds.
         print('Warm 50-section document median ms:', round(statistics.median(result['samples']), 2))
