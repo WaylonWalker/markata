@@ -1,6 +1,6 @@
 ---
 title: "Renderer profiles and cross-application assets"
-description: "Choose rendering and asset defaults for Python, CLI and future Go/WASM adapters"
+description: "Choose rendering and asset defaults for Python, CLI and Go workbench and WASM adapters"
 date: 2026-10-29
 published: true
 tags:
@@ -77,12 +77,11 @@ Markdown renderer, but **their asset transports differ**:
 | Native Go CLI | Bundled manifest, linked or inline | Direct Go call |
 | Python/FastAPI | Manifest and optional inlined tags | One Go subprocess per render |
 | Go workbench | Local linked assets + persistent preview, with `profile`/`inline_assets` request options and ordered asset metadata | In-process render |
-| Browser WASM | Static app assets cached by service worker | Persistent Go WASM worker |
+| Browser WASM | Linked pre-cached assets by default, optional fully inline assets and shared profiles | Persistent Go WASM worker |
 
-**Follow-up:** apply the same `profile`/asset-policy inputs and capability
-reporting in Go workbench and WASM without adding a duplicate config parser;
-test identical feature and asset IDs with cross-adapter fixtures. WASM must
-report unsupported native-only static rendering modes rather than silently
+**Follow-up:** complete cross-adapter golden fixtures and capability discovery.
+Go and WASM accept `profile` and `inline_assets` without a second Markdown parser.
+WASM reports unsupported native-only static rendering modes rather than silently
 falling back to client-side Mermaid.
 
 Strict browser-network guarantees, asset font audits and static diagram/chart
