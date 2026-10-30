@@ -352,3 +352,36 @@ func TestSitemapIndexLastModIncludesGeneratedLandingDate(t *testing.T) {
 		}
 	}
 }
+
+func TestPublishFeedSitemapEmittedXMLSkipsExcludedPosts(t *testing.T) {
+	outputDir := t.TempDir()
+	publishedDate := time.Date(2024, 1, 15, 0, 0, 0, 0, time.UTC)
+	futureDate := time.Date(2026, 12, 31, 0, 0, 0, 0, time.UTC)
+	fc := &models.FeedConfig{
+		Slug: "blog",
+		Posts: []*models.Post{
+			nil,
+			{Slug: "public", Href: "/public/", Published: true, Date: &publishedDate},
+			{Slug: "draft", Href: "/draft/", Published: true, Draft: true, Date: &futureDate},
+			{Slug: "private", Href: "/private/", Published: true, Private: true, Date: &futureDate},
+			{Slug: "noindex", Href: "/noindex/", Published: true, Extra: map[string]interface{}{"robots": "noindex,follow"}},
+		},
+	}
+	config := &lifecycle.Config{Extra: map[string]interface{}{"url": "https://example.com"}}
+	if err := NewPublishFeedsPlugin().publishSitemap(fc, config, outputDir); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(filepath.Join(outputDir, "sitemap.xml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	xml := string(data)
+	if !strings.Contains(xml, "<loc>https://example.com/public/</loc>") {
+		t.Errorf("published post missing from sitemap: %s", xml)
+	}
+	for _, excluded := range []string{"/draft/", "/private/", "/noindex/"} {
+		if strings.Contains(xml, "<loc>https://example.com"+excluded+"</loc>") {
+			t.Errorf("excluded post %s present in sitemap: %s", excluded, xml)
+		}
+	}
+}
