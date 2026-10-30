@@ -5,7 +5,7 @@
 'use strict';
 
 const assert = require('node:assert/strict');
-const fs = require('node:fs/promises');
+const { execFileSync } = require('node:child_process');
 const path = require('node:path');
 const { chromium } = require('playwright');
 
