@@ -101,9 +101,9 @@ func checkStandaloneHTMLResources(markup string) error {
 					return err
 				}
 			}
-		}
 		default:
 			// Text, comments, end tags, and doctypes cannot load resources.
+		}
 	}
 }
 
