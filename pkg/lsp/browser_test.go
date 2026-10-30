@@ -225,10 +225,9 @@ func TestBrowserSession_IgnoresWatchedFiles(t *testing.T) {
 	}
 }
 
-
 func TestBrowserOrigin_RejectsSpoofedLocalhostFromRemotePeer(t *testing.T) {
 	for _, tc := range []struct {
-		peer string
+		peer    string
 		allowed bool
 	}{
 		{"127.0.0.1:42300", true},
@@ -238,7 +237,7 @@ func TestBrowserOrigin_RejectsSpoofedLocalhostFromRemotePeer(t *testing.T) {
 		{"malformed", false},
 	} {
 		t.Run(tc.peer, func(t *testing.T) {
-			request := httptest.NewRequest(http.MethodGet, "http://localhost:8766/lsp", nil)
+			request := httptest.NewRequest(http.MethodGet, "http://localhost:8766/lsp", http.NoBody)
 			request.Host = "localhost:8766"
 			request.Header.Set("Origin", "http://localhost:8766")
 			request.RemoteAddr = tc.peer
