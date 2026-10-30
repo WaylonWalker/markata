@@ -40,6 +40,7 @@ type Handler struct {
 	bridge     string
 	gate       chan struct{}
 	lastSource string
+	lastOptions plugins.StandaloneOptions
 	lastResult *plugins.StandaloneResult
 }
 
@@ -213,11 +214,17 @@ func (h *Handler) prepareRender(r *http.Request, req *renderRequest) (*renderRes
 	if err := r.Context().Err(); err != nil {
 		return nil, err
 	}
+	profile := req.Profile
+	if profile == "" { profile = plugins.RenderProfileWeb }
+	unsafe := profile == plugins.RenderProfileWeb // Existing trusted-local editor default.
+	if req.Unsafe != nil { unsafe = *req.Unsafe }
+	options := plugins.StandaloneOptions{Unsafe: unsafe, AssetBase: "/appearance", Profile: profile}
+	if req.InlineAssets != nil { options.InlineAssets = *req.InlineAssets }
 	result := h.lastResult
-	cached := result != nil && h.lastSource == *req.Markdown
+	cached := result != nil && h.lastSource == *req.Markdown && h.lastOptions == options
 	if !cached {
 		var err error
-		result, err = plugins.RenderStandalone(*req.Markdown, plugins.StandaloneOptions{Unsafe: true, AssetBase: "/appearance"})
+		result, err = plugins.RenderStandalone(*req.Markdown, options)
 		if err != nil {
 			return nil, err
 		}
@@ -226,9 +233,14 @@ func (h *Handler) prepareRender(r *http.Request, req *renderRequest) (*renderRes
 				h.assets[asset.ID] = []byte(asset.Content)
 			}
 		}
-		h.lastSource, h.lastResult = *req.Markdown, result
+		h.lastSource, h.lastOptions, h.lastResult = *req.Markdown, options, result
 	}
-	response := &renderResponse{HTML: result.HTML, FeatureHeadHTML: h.featureHead(result), BodyEndHTML: result.BodyEndHTML, InputBytes: len(*req.Markdown), HTMLBytes: len(result.HTML), Cached: cached}
+	response := &renderResponse{HTML: result.HTML, FeatureHeadHTML: h.featureHead(result), BodyEndHTML: result.BodyEndHTML, InputBytes: len(*req.Markdown), HTMLBytes: len(result.HTML), Cached: cached, Profile: profile, Features: result.Features}
+	// Asset metadata is portable across Go/Python/WASM. Keep full static libraries
+	// on the local asset endpoint rather than duplicating megabytes in JSON.
+	for _, asset := range result.Assets {
+		response.Assets = append(response.Assets, assetSummary{ID: asset.ID, Kind: asset.Kind, Placement: asset.Placement, Module: asset.Module})
+	}
 	if req.IncludeDocument == nil || *req.IncludeDocument {
 		document := h.document(result, req.Appearance)
 		response.Document, response.DocumentBytes = &document, len(document)
@@ -240,6 +252,19 @@ type renderRequest struct {
 	Markdown        *string           `json:"markdown"`
 	Appearance      map[string]string `json:"appearance"`
 	IncludeDocument *bool             `json:"include_document"`
+	Profile         string            `json:"profile,omitempty"`
+	InlineAssets    *bool             `json:"inline_assets,omitempty"`
+	Unsafe          *bool             `json:"unsafe,omitempty"`
+}
+
+// assetSummary preserves asset ordering and metadata while the workbench serves
+// bundled bytes separately at /appearance and initializes dynamic scripts in
+// body_end_html. This deliberately does not duplicate large CSS/JS contents.
+type assetSummary struct {
+	ID string `json:"id"`
+	Kind string `json:"kind"`
+	Placement string `json:"placement"`
+	Module bool `json:"module,omitempty"`
 }
 
 // renderResponse matches the Python reference's full-document/fragment contract.
@@ -253,6 +278,9 @@ type renderResponse struct {
 	HTMLBytes       int     `json:"html_bytes"`
 	DocumentBytes   int     `json:"document_bytes"`
 	Cached          bool    `json:"cached"`
+	Profile         string  `json:"profile"`
+	Features        map[string]bool `json:"features"`
+	Assets          []assetSummary `json:"assets"`
 }
 
 // featureHead omits styles already owned by the persistent appearance shell.
