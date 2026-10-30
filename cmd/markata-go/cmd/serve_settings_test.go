@@ -315,20 +315,24 @@ func TestHandleSettings_RenderAssetDefaultsBake(t *testing.T) {
 	site := setupThemeBakeSite(t, settingsTestFiles)
 	serveRequestFullRebuild = func() {}
 	payload := `{"changes":[{"key":"markdown.render_asset_mode","value":"inline"},{"key":"markdown.render_asset_base","value":"/local-md-assets"}]}`
-	rec, resp := doSettings(t, http.MethodPost, payload, map[string]string{"Origin":"http://localhost:8000"})
+	rec, resp := doSettings(t, http.MethodPost, payload, map[string]string{"Origin": "http://localhost:8000"})
 	if rec.Code != http.StatusOK {
 		t.Fatalf("bake renderer asset defaults = %d %+v", rec.Code, resp)
 	}
 	configText := readSiteFile(t, site, "markata-go.toml")
 	for _, wanted := range []string{`render_asset_mode = "inline"`, `render_asset_base = "/local-md-assets"`} {
-		if !strings.Contains(configText, wanted) { t.Fatalf("bake lost %s: %s", wanted, configText) }
+		if !strings.Contains(configText, wanted) {
+			t.Fatalf("bake lost %s: %s", wanted, configText)
+		}
 	}
 	rec, resp = doSettings(t, http.MethodGet, "", nil)
-	if rec.Code != http.StatusOK { t.Fatal(rec.Body.String()) }
-	if settingField(t, resp, "markdown.render_asset_mode").Value != "inline" {
+	if rec.Code != http.StatusOK {
+		t.Fatal(rec.Body.String())
+	}
+	if settingsField(t, resp, "markdown.render_asset_mode").Value != "inline" {
 		t.Fatal("asset delivery mode did not reload")
 	}
-	if settingField(t, resp, "markdown.render_asset_base").Value != "/local-md-assets" {
+	if settingsField(t, resp, "markdown.render_asset_base").Value != "/local-md-assets" {
 		t.Fatal("asset base did not reload")
 	}
 }
