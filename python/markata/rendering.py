@@ -27,6 +27,7 @@ class RenderResult:
     head_html: str
     body_end_html: str
     schema_version: int = 1
+    render_profile: str = "web"
 
     @property
     def feature_head_html(self) -> str:
@@ -190,7 +191,8 @@ def appearance(*, asset_base: str = "/markata-assets", timeout: float = 30) -> A
         raise RenderError(f"Invalid appearance response: {error}") from error
 
 
-def _command(inline_assets: bool, asset_base: str, unsafe: bool) -> list[str]:
+def _command(inline_assets: bool, asset_base: str, unsafe: bool,
+             profile: str | None = None, config_path: str | Path | None = None) -> list[str]:
     binary = Path(__file__).parent / "bin" / ("markata.exe" if os.name == "nt" else "markata")
     if not binary.is_file():
         raise RenderError("Bundled Markata executable missing; install an official Markata binary wheel.")
@@ -201,11 +203,19 @@ def _command(inline_assets: bool, asset_base: str, unsafe: bool) -> list[str]:
                 binary.chmod(mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
     except OSError as error:
         raise RenderError(f"Cannot prepare bundled Markata executable: {error}") from error
-    command = [str(binary), "render", "--json", "--asset-base", asset_base]
+    command = [str(binary), "render", "--json"]
+    # When a site config is supplied, let the CLI inherit its asset base.
+    # Without config, preserve the existing explicit default for wheel users.
+    if config_path is None or asset_base != "/markata-assets":
+        command.extend(["--asset-base", asset_base])
     if inline_assets:
         command.append("--inline-assets")
     if unsafe:
         command.append("--unsafe")
+    if config_path is not None:
+        command.extend(["--config", str(config_path), "--site-render-profile"])
+    if profile is not None:
+        command.extend(["--profile", profile])
     return command
 
 
@@ -227,7 +237,7 @@ def _result(stdout: bytes, stderr: bytes, returncode: int) -> RenderResult:
         return RenderResult(
             html=data["html"], features=data["features"], assets=tuple(data["assets"]),
             external_urls=tuple(data["external_urls"]), head_html=data["head_html"],
-            body_end_html=data["body_end_html"],
+            body_end_html=data["body_end_html"], render_profile=data.get("render_profile") or "web",
         )
     except (ValueError, KeyError, TypeError) as error:
         raise RenderError(f"Invalid renderer response: {error}") from error
@@ -235,14 +245,15 @@ def _result(stdout: bytes, stderr: bytes, returncode: int) -> RenderResult:
 
 def render(markdown: str, *, inline_assets: bool = False,
            asset_base: str = "/markata-assets", unsafe: bool = False,
-           timeout: float = 30) -> RenderResult:
+           timeout: float = 30, profile: str | None = None,
+           config_path: str | Path | None = None) -> RenderResult:
     """Render using one bundled Go process; input is passed over stdin, never a shell.
 
     For a standalone response, use inline_assets=True and result.document().
     Otherwise serve bundled asset contents from result.assets below asset_base.
     Rich Markdown output is not an HTML sanitizer. Sanitize untrusted input/output.
     """
-    command = _command(inline_assets, asset_base, unsafe)
+    command = _command(inline_assets, asset_base, unsafe, profile, config_path)
     try:
         process = subprocess.run(command, input=markdown.encode("utf-8"),
                                  capture_output=True, timeout=timeout, check=False)
@@ -253,9 +264,10 @@ def render(markdown: str, *, inline_assets: bool = False,
 
 async def render_async(markdown: str, *, inline_assets: bool = False,
                        asset_base: str = "/markata-assets", unsafe: bool = False,
-                       timeout: float = 30) -> RenderResult:
+                       timeout: float = 30, profile: str | None = None,
+                       config_path: str | Path | None = None) -> RenderResult:
     """Render without blocking an ASGI event loop; reap the process on cancellation."""
-    command = _command(inline_assets, asset_base, unsafe)
+    command = _command(inline_assets, asset_base, unsafe, profile, config_path)
     try:
         process = await asyncio.create_subprocess_exec(
             *command, stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE,
