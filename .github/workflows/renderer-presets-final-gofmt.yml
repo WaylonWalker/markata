@@ -1,0 +1,27 @@
+name: Renderer presets final gofmt one-shot
+on:
+  push:
+    branches: [feat/renderer-presets-unified]
+    paths:
+      - .github/workflows/renderer-presets-final-gofmt.yml
+permissions:
+  contents: write
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/renderer-presets-unified
+          persist-credentials: true
+      - name: Format final Go changes, delete one-time action, and commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          gofmt -w             cmd/markata-wasm/main.go             pkg/plugins/standalone_profile.go             pkg/plugins/standalone_profile_test.go             pkg/plugins/standalone_render.go
+          git rm -- .github/workflows/renderer-presets-final-gofmt.yml
+          git add -- cmd/markata-wasm/main.go pkg/plugins/standalone_profile.go pkg/plugins/standalone_profile_test.go pkg/plugins/standalone_render.go
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'style(renderer): format final offline host adapter'
+          git push origin HEAD:feat/renderer-presets-unified
