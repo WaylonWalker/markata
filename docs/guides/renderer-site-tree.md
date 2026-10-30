@@ -73,3 +73,7 @@ is ready and builds its tree when opened. Metadata errors do not block editing.
 Use `markata workspace --paths --workspace PATH` or
 `workspace_files(PATH, metadata=False)` for discovery without parsing documents.
 Server clients can request `GET /workspace?metadata=true` when they need metadata.
+
+If the workspace contains a real `draft.md`, the scratch buffer appears as
+**Unsaved draft.md** (or a numbered variant if that name also exists). Imports
+open the scratch buffer, and real workspace files retain their own browser drafts.

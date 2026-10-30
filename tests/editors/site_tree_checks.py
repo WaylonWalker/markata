@@ -27,7 +27,7 @@ def check_site_tree(page, url):
     # Simulate an empty placeholder persisted by the first workspace build.
     workspace = page.request.get(url.rstrip('/') + '/workspace').json()
     key = workspace.get('rootUri') or workspace.get('root')
-    page.evaluate("key => localStorage.setItem('markata-workspace-v1:' + key + ':pages/about.md', '')", key)
+    page.evaluate("key => {localStorage.removeItem('markata-workspace-v1:' + key + ':buffer:file:pages/about.md'); localStorage.setItem('markata-workspace-v1:' + key + ':pages/about.md', '');}", key)
     page.reload()
     preview = page.frame_locator('#preview')
     expect(preview.locator('h1')).to_have_text('About this site')

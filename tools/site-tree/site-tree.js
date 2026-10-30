@@ -2,7 +2,9 @@ import {FileTree} from '@pierre/trees';
 
 let files = SITE_FILES;
 let workspaceKey = "example", metadata = [], metadataByPath = new Map(), selection = 0;
-const storageKey = path => 'markata-workspace-v1:' + workspaceKey + ':' + path;
+let scratchPath = 'draft.md';
+const legacyStorageKey = path => 'markata-workspace-v1:' + workspaceKey + ':' + path;
+const storageKey = path => legacyStorageKey('buffer:') + (path === scratchPath ? 'scratch' : 'file:' + path);
 let active = 'draft.md', drafts = {}, currentEditor, warning, label;
 let fileTree, feedTree, syncing = false;
 const aliases = {};
@@ -13,7 +15,8 @@ function syncSelection(tree, path) {
 }
 const editable = path => /\.(md|markdown|mdown|mkd)$/i.test(path);
 function readDraft(path, fallback) {
-  const cached = localStorage.getItem(storageKey(path));
+  let cached = localStorage.getItem(storageKey(path));
+  if (cached === null && (path === scratchPath || path !== 'draft.md')) cached = localStorage.getItem(legacyStorageKey(path === scratchPath ? 'draft.md' : path));
   if (cached === null) return fallback;
   try {
     const record = JSON.parse(cached);
@@ -21,7 +24,7 @@ function readDraft(path, fallback) {
   } catch { /* Legacy drafts contain plain Markdown. */ }
   // Earlier builds could persist an empty placeholder before loading source.
   // Preserve all nonempty legacy drafts; new records also preserve intentional blanks.
-  return cached === '' && path !== 'draft.md' ? fallback : cached;
+  return cached === '' && path !== scratchPath ? fallback : cached;
 }
 function writeDraft(path, source) {
   localStorage.setItem(storageKey(path), JSON.stringify({format:'markata-draft-v2', source}));
@@ -35,7 +38,7 @@ function remember() {
 async function open(path) {
   if (syncing) return;
   const request = ++selection;
-  if (path in files && files[path] === null && !(path in drafts)) {
+  if (Object.hasOwn(files, path) && files[path] === null && !(path in drafts)) {
     try {
       const response = await fetch("/workspace/file?path=" + encodeURIComponent(path));
       const data = await response.json();
@@ -46,7 +49,7 @@ async function open(path) {
       const box = document.querySelector("#error"); box.textContent = error.message; box.hidden = false; return;
     }
   }
-  if (syncing || (!(path in files) && path !== 'draft.md')) return;
+  if (syncing || (!(Object.hasOwn(files, path)) && path !== scratchPath)) return;
   syncing = true;
   try {
     syncSelection(fileTree, path);
@@ -86,12 +89,12 @@ window.MarkataSiteTree = {
     catch { warning(); }
     return true;
   },
-  filename: () => active.split('/').pop(),
+  filename: () => active === scratchPath ? 'draft.md' : active.split('/').pop(),
   markdown(text) {
     if (!editable(active)) return '````toml\n' + text + '\n````';
     return text.replace(/^---\r?\n[\s\S]*?\r?\n---(?:\r?\n|$)/, '');
   },
-  import(text) { open('draft.md'); currentEditor.setValue(text); },
+  import(text) { open(scratchPath); currentEditor.setValue(text); },
   async attach(editor, storageWarning) {
     currentEditor = editor; warning = storageWarning;
     try {
@@ -107,15 +110,18 @@ window.MarkataSiteTree = {
     editor.on('beforeChange', (instance, change) => {
       if (!editable(active) && change.origin !== 'setValue') change.cancel();
     });
-    let selected = Object.keys(files)[0] || 'draft.md';
+    scratchPath = 'draft.md';
+    for (let suffix = 1; Object.hasOwn(files, scratchPath); suffix++) scratchPath = suffix === 1 ? 'Unsaved draft.md' : `Unsaved draft ${suffix}.md`;
+    active = scratchPath;
+    let selected = Object.keys(files)[0] || scratchPath;
     try {
       selected = localStorage.getItem('markata-workspace-active-v1:' + workspaceKey) || selected;
-      drafts['draft.md'] = readDraft('draft.md', editor.getValue());
-    } catch { drafts['draft.md'] = editor.getValue(); warning(); }
-    editor.setValue(drafts['draft.md']);
+      drafts[scratchPath] = readDraft(scratchPath, editor.getValue());
+    } catch { drafts[scratchPath] = editor.getValue(); warning(); }
+    editor.setValue(drafts[scratchPath]);
     label = document.querySelector('#active-file');
-    label.textContent = 'draft.md';
-    fileTree = new FileTree({paths:['draft.md', ...Object.keys(files)], initialExpansion:'open',
+    label.textContent = scratchPath;
+    fileTree = new FileTree({paths:[scratchPath, ...Object.keys(files)], initialExpansion:'open',
       search:true,
       onSelectionChange(paths) { if (paths.length) open(paths[paths.length - 1]); }});
     fileTree.render({containerWrapper:document.querySelector('#site-files')});
@@ -139,7 +145,7 @@ window.MarkataSiteTree = {
       document.querySelector('#site-feeds').hidden = event.target.value !== 'feeds';
     });
     // Start with a real site post. The previous standalone draft stays in the tree.
-    await open(selected in files || selected === 'draft.md' ? selected : (Object.keys(files)[0] || 'draft.md'));
+    await open(Object.hasOwn(files, selected) || selected === scratchPath ? selected : (Object.keys(files)[0] || scratchPath));
     // Yield to the initial preview; metadata is never part of attach's promise.
     setTimeout(async () => {
       try {

@@ -51,3 +51,7 @@ MUST open its selected source before requesting metadata, and MUST construct the
 Tags tree only when selected. Metadata failure MUST NOT block editing or preview.
 CLI `workspace --paths` and Python `workspace_files(metadata=False)` expose the
 same fast discovery path. Existing metadata API defaults remain compatible.
+
+Scratch and workspace sources MUST have separate storage identities. A real
+`draft.md` MUST open its source; scratch navigation MUST use a collision-free label
+(such as `Unsaved draft.md`) and retain old browser scratch content during migration.
