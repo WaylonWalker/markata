@@ -479,7 +479,6 @@ func (r *containerHTMLRenderer) renderSparkline(w util.BufWriter, container *Con
 		points[i] = formatSparklineCoord(x) + "," + formatSparklineCoord(y)
 	}
 	line := strings.Join(points, " ")
-	area := "0," + formatSparklineCoord(height) + " " + line + " " + formatSparklineCoord(width) + "," + formatSparklineCoord(height)
 
 	first, last := values[0], values[len(values)-1]
 	summary := label + ": " + strconv.Itoa(len(values)) + " points from " + formatSparklineValue(first) +
@@ -488,7 +487,11 @@ func (r *containerHTMLRenderer) renderSparkline(w util.BufWriter, container *Con
 	_, _ = w.WriteString(`<svg class="md-sparkline-chart" viewBox="0 0 100 24" preserveAspectRatio="none" role="img" aria-label="`)
 	_, _ = w.WriteString(escapeHTMLAttr(summary))
 	_, _ = w.WriteString(`" focusable="false">`)
-	_, _ = w.WriteString(`<polygon class="md-sparkline-area" points="` + area + `"/>`)
+	// The shaded area under the line is opt-in with the "area" modifier class.
+	if slices.Contains(container.Classes, "area") {
+		area := "0," + formatSparklineCoord(height) + " " + line + " " + formatSparklineCoord(width) + "," + formatSparklineCoord(height)
+		_, _ = w.WriteString(`<polygon class="md-sparkline-area" points="` + area + `"/>`)
+	}
 	_, _ = w.WriteString(`<polyline class="md-sparkline-line" points="` + line + `" vector-effect="non-scaling-stroke"/>`)
 	_, _ = w.WriteString("</svg>\n")
 }

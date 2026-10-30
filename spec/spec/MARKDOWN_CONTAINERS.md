@@ -154,8 +154,10 @@ respect reduced-motion preferences.
 as the first child of its `div`, an inline
 `svg.md-sparkline-chart` with `viewBox="0 0 100 24"`,
 `preserveAspectRatio="none"`, `role="img"` and `focusable="false"`. It MUST
-contain a `polygon.md-sparkline-area` and a `polyline.md-sparkline-line` with
-`vector-effect="non-scaling-stroke"`. Points MUST be evenly spaced from x=0 to
+contain a `polyline.md-sparkline-line` with
+`vector-effect="non-scaling-stroke"`. Only with the `area` modifier class
+(`::: md-sparkline area`) MUST it also contain a `polygon.md-sparkline-area`
+before the line, closing the line down to y=24. Points MUST be evenly spaced from x=0 to
 x=100. Values MUST map linearly from the series high (y=2) to the series low
 (y=22). A flat series MUST draw at y=12. Coordinates MUST be rounded to two
 decimals.

@@ -131,6 +131,17 @@ Years 1–4
 :::
 ````
 
+The sparkline draws only a line by default. Add the `area` modifier class to
+shade the area under the line:
+
+````markdown
+::: md-sparkline area {data-values="12 18 15 31 44" data-label="Jobs per week"}
+
+Last five weeks
+
+:::
+````
+
 The line fills the container width and scales between the lowest and highest
 values. It does not start at zero, so it shows shape, not size. Put the exact
 numbers in the text or a table when the reader needs them. The SVG's

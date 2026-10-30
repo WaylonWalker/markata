@@ -18,12 +18,22 @@ Up 3x since year one
 		"\">\n<svg class=\"md-sparkline-chart\"",
 		`<svg class="md-sparkline-chart" viewBox="0 0 100 24" preserveAspectRatio="none" role="img" aria-label="Jobs per year: 4 points from 10 to 30, low 10, high 40" focusable="false">`,
 		`<polyline class="md-sparkline-line" points="0,22 33.33,15.33 66.67,2 100,8.67" vector-effect="non-scaling-stroke"/>`,
-		`<polygon class="md-sparkline-area" points="0,24 0,22 33.33,15.33 66.67,2 100,8.67 100,24"/>`,
 		`Up 3x since year one`,
 	} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("want %q\ngot:\n%s", want, got)
 		}
+	}
+	if strings.Contains(got, "md-sparkline-area") {
+		t.Fatalf("area must be opt-in: %s", got)
+	}
+}
+
+func TestContainerSparklineAreaModifierAddsFill(t *testing.T) {
+	got := renderContainerMarkdown(t, "::: md-sparkline area {data-values=\"10 20 40 30\" data-label=\"Jobs\"}\n\nCaption\n\n:::")
+	want := `<polygon class="md-sparkline-area" points="0,24 0,22 33.33,15.33 66.67,2 100,8.67 100,24"/><polyline class="md-sparkline-line"`
+	if !strings.Contains(got, want) {
+		t.Fatalf("want area before line %q\ngot:\n%s", want, got)
 	}
 }
 
