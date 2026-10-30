@@ -24,10 +24,11 @@ preserve closing delimiters, and cannot apply to a changed buffer or cursor.
 Ctrl+Space requests completion explicitly. Broken-link diagnostics appear in
 the editor. Connection failures leave editing and preview available.
 
-The WebSocket endpoints reject foreign or missing browser origins, bound message
-sizes, cap completion responses at 200 items, and release connections or subprocesses
-on disconnect. They are trusted local examples, not a multi-user remote workspace
-service. Existing stdio clients
+The WebSocket endpoints require an exact same-origin match and a `localhost` or
+loopback IP host. They reject foreign or missing browser origins and DNS-rebinding
+hostnames, bound message sizes, cap completion responses at 200 items, and release
+connections or subprocesses on disconnect. They are trusted local examples, not a
+multi-user remote workspace service. Existing stdio clients
 retain their workspace selection and Content-Length framing by default.
 
 ## Overview

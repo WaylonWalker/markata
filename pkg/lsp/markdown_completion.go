@@ -94,7 +94,7 @@ var containerOpenLine = regexp.MustCompile(`^\s*:{3,}\s+(.*)$`)
 var mermaidFence = regexp.MustCompile(`^\s*` + "```" + `\s*mermaid\s*$`)
 var markdownFenceClose = regexp.MustCompile(`^\s*` + "```" + `\s*$`)
 var mermaidDirectionLine = regexp.MustCompile(`^(?:flowchart|graph)\s+(\w*)$`)
-var mermaidNodeShape = regexp.MustCompile(`\w+\s*[\[{(]([^\]})]*)$`)
+var mermaidNodeShape = regexp.MustCompile(`\w+\s*([\[{(])([^\]})]*)$`)
 var mermaidClassDef = regexp.MustCompile(`^\s*classDef\s+\S+\s+(.+)$`)
 
 func (s *Server) handleMarkdownCompletion(msg *Message, params CompletionParams, lines []string, line string, col int) (bool, error) {
@@ -204,9 +204,9 @@ func mermaidCompletions(lines []string, lineNo int, line string, col int, params
 		return filterSuggestions(mermaidDirections, prefix, params, col-len(prefix), col), true
 	}
 	if match := mermaidNodeShape.FindStringSubmatchIndex(trimmed); match != nil {
-		prefix := trimmed[match[2]:]
-		shapes := []markdownSuggestion{{")", ")", "Round node"}, {"]", "]", "Rectangle node"}, {"}", "}", "Hexagon node"}, {"))", "))", "Stadium node"}, {"])", "])", "Cylinder node"}}
-		return filterSuggestions(shapes, prefix, params, col-len(prefix), col), true
+		opening := trimmed[match[2]:match[3]]
+		shapes := mermaidNodeClosers(opening)
+		return filterSuggestions(shapes, "", params, col, col), true
 	}
 	if match := mermaidClassDef.FindStringSubmatchIndex(trimmed); match != nil {
 		prefix := trimmed[match[2]:]
@@ -214,6 +214,19 @@ func mermaidCompletions(lines []string, lineNo int, line string, col int, params
 		return filterSuggestions(attrs, prefix, params, col-len(prefix), col), true
 	}
 	return nil, false
+}
+
+func mermaidNodeClosers(opening string) []markdownSuggestion {
+	switch opening {
+	case "(":
+		return []markdownSuggestion{{")", ")", "Round node"}, {"))", "))", "Stadium node"}}
+	case "[":
+		return []markdownSuggestion{{"]", "]", "Rectangle node"}, {"])", "])", "Cylinder node"}}
+	case "{":
+		return []markdownSuggestion{{"}", "}", "Hexagon node"}}
+	default:
+		return nil
+	}
 }
 
 func mermaidFenceStart(lines []string, lineNo int) (int, bool) {

@@ -74,7 +74,9 @@ func TestMermaidCompletion_SuggestsDiagramKindsDirectionsAndStyles(t *testing.T)
 		{"flowchart starter", []string{"```mermaid", ""}, 1, 0, "flowchart TD"},
 		{"direction", []string{"```mermaid", "flowchart T"}, 1, 11, "TD"},
 		{"class style", []string{"```mermaid", "classDef note c"}, 1, 15, "color"},
-		{"node shape", []string{"```mermaid", "flowchart TD", "  A("}, 2, 4, ")"},
+		{"node shape", []string{"```mermaid", "flowchart TD", "  A(hello"}, 2, 9, ")"},
+		{"rectangle shape after label", []string{"```mermaid", "flowchart TD", "  A[hello"}, 2, 9, "]"},
+		{"hexagon shape after label", []string{"```mermaid", "flowchart TD", "  A{hello"}, 2, 9, "}"},
 		{"outside code", []string{"g"}, 0, 1, ""},
 		{"after Mermaid fence", []string{"```mermaid", "flowchart TD", "```", "g"}, 3, 1, ""},
 	}

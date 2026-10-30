@@ -5,9 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -127,13 +130,7 @@ func NewWebSocketHandler(ctx context.Context, root string, logger *log.Logger) (
 		return nil, err
 	}
 	root = uriToPath(config.RootURI)
-	upgrader := websocket.Upgrader{HandshakeTimeout: 5 * time.Second, CheckOrigin: func(r *http.Request) bool {
-		scheme := "http"
-		if r.TLS != nil {
-			scheme = "https"
-		}
-		return r.Header.Get("Origin") == scheme+"://"+r.Host && r.Header.Get("Sec-Fetch-Site") != "cross-site"
-	}}
+	upgrader := websocket.Upgrader{HandshakeTimeout: 5 * time.Second, CheckOrigin: validBrowserOrigin}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		server, err := NewBrowserSession(logger, root)
 		if err != nil {
@@ -166,4 +163,29 @@ func NewWebSocketHandler(ctx context.Context, root string, logger *log.Logger) (
 			return
 		}
 	}), nil
+}
+
+func validBrowserOrigin(r *http.Request) bool {
+	if !isLocalBrowserHost(r.Host) || r.Header.Get("Sec-Fetch-Site") == "cross-site" {
+		return false
+	}
+	scheme := "http"
+	if r.TLS != nil {
+		scheme = "https"
+	}
+	origin, err := url.Parse(r.Header.Get("Origin"))
+	return err == nil && origin.Scheme == scheme && origin.Host == r.Host && origin.User == nil &&
+		origin.Path == "" && origin.RawQuery == "" && origin.Fragment == ""
+}
+
+func isLocalBrowserHost(hostport string) bool {
+	host, _, err := net.SplitHostPort(hostport)
+	if err != nil {
+		host = strings.Trim(hostport, "[]")
+	}
+	if strings.EqualFold(strings.TrimSuffix(host, "."), "localhost") {
+		return true
+	}
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsLoopback()
 }

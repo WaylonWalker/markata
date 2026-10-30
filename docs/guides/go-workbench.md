@@ -40,6 +40,7 @@ Repeated source uses a one-entry memory cache. Appearance changes update the pre
 
 The editor connects to the existing Markata LSP through `/lsp` over WebSocket.
 The server indexes the directory from `--workspace`. The default directory is the current directory.
+The browser LSP accepts same-origin connections on `localhost` or a loopback IP only.
 
 Type `[[` for wiki-link suggestions, including aliases. Type `[label](` for Markdown document paths.
 Press **Ctrl+Space** to request suggestions at the cursor. Use the arrow keys and Enter to select a suggestion.

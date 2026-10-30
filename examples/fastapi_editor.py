@@ -13,6 +13,7 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel, Field
 import uvicorn
 import asyncio
+import ipaddress
 import json
 import os
 from pathlib import Path
@@ -21,6 +22,7 @@ import io
 import zipfile
 from time import perf_counter
 from fastapi import HTTPException, Response
+from urllib.parse import urlsplit
 
 try:
     from markata import RenderError, appearance, render_async
@@ -33,6 +35,26 @@ except ImportError as error:
 LSP_WORKSPACE = Path(os.environ.get("MARKATA_LSP_WORKSPACE", ".")).resolve()
 LSP_ASSETS = Path(__file__).resolve().parents[1] / "pkg/workbench/web"
 MAX_LSP_MESSAGE = 2 << 20
+
+
+def valid_browser_origin(scheme: str, host_header: str, origin_header: str) -> bool:
+    try:
+        request_host = urlsplit("//" + host_header)
+        origin = urlsplit(origin_header)
+        hostname = request_host.hostname
+        request_host.port  # Validate the optional port.
+        if hostname is None or request_host.username is not None or request_host.password is not None or \
+                request_host.path or request_host.query or request_host.fragment:
+            return False
+        if origin.scheme != scheme or origin.netloc != host_header:
+            return False
+        if origin.username is not None or origin.password is not None or origin.path or origin.query or origin.fragment:
+            return False
+        if hostname.lower().rstrip(".") == "localhost":
+            return True
+        return ipaddress.ip_address(hostname).is_loopback
+    except ValueError:
+        return False
 
 app = FastAPI(title="Markata live editor")
 presentation = appearance(asset_base="/appearance")
@@ -322,9 +344,9 @@ def lsp_command():
 async def language_socket(websocket: WebSocket):
     # No forwarded headers or browser-provided executable/workspace options.
     expected_scheme = "https" if websocket.url.scheme == "wss" else "http"
-    origin = websocket.headers.get("origin", "")
-    expected = expected_scheme + "://" + websocket.headers.get("host", "")
-    if origin != expected or websocket.headers.get("sec-fetch-site") == "cross-site":
+    if not valid_browser_origin(expected_scheme, websocket.headers.get("host", ""),
+                                websocket.headers.get("origin", "")) or \
+            websocket.headers.get("sec-fetch-site") == "cross-site":
         await websocket.close(code=1008)
         return
     await websocket.accept()

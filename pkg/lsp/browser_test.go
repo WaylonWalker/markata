@@ -173,8 +173,16 @@ func TestBrowserWebSocket_OriginAndMessageBounds(t *testing.T) {
 	}
 	server := httptest.NewServer(handler)
 	defer server.Close()
-	for _, origin := range []string{"", "https://foreign.invalid"} {
-		conn, response, dialErr := websocket.DefaultDialer.Dial("ws"+strings.TrimPrefix(server.URL, "http"), http.Header{"Origin": {origin}})
+	for _, test := range []struct{ origin, host string }{
+		{"", ""},
+		{"https://foreign.invalid", ""},
+		{"http://evil.invalid", "evil.invalid"}, // DNS-rebinding style Host and Origin.
+	} {
+		headers := http.Header{"Origin": {test.origin}}
+		if test.host != "" {
+			headers.Set("Host", test.host)
+		}
+		conn, response, dialErr := websocket.DefaultDialer.Dial("ws"+strings.TrimPrefix(server.URL, "http"), headers)
 		if conn != nil {
 			_ = conn.Close()
 		}
@@ -182,7 +190,7 @@ func TestBrowserWebSocket_OriginAndMessageBounds(t *testing.T) {
 			_ = response.Body.Close()
 		}
 		if dialErr == nil || response == nil || response.StatusCode != http.StatusForbidden {
-			t.Fatalf("accepted origin %q", origin)
+			t.Fatalf("accepted origin %q with Host %q", test.origin, test.host)
 		}
 	}
 	conn := browserConnect(t, server)

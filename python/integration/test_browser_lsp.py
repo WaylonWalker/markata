@@ -30,7 +30,8 @@ class BrowserEndpointTest(unittest.TestCase):
     def test_foreign_or_missing_origin_never_starts_process(self):
         with patch.object(self.demo.asyncio, "create_subprocess_exec", new_callable=AsyncMock) as spawn:
             with TestClient(self.demo.app) as client:
-                for headers in [{}, {"origin": "https://foreign.invalid"}]:
+                for headers in [{}, {"origin": "https://foreign.invalid"},
+                                {"host": "evil.invalid", "origin": "http://evil.invalid"}]:
                     with self.assertRaises(WebSocketDisconnect):
                         with client.websocket_connect("/lsp", headers=headers):
                             self.fail("Accepted invalid origin")
@@ -39,7 +40,7 @@ class BrowserEndpointTest(unittest.TestCase):
     def test_missing_binary_closes_only_language_connection(self):
         with patch.object(self.demo, "lsp_command", return_value=["/nonexistent/markata"]):
             with TestClient(self.demo.app) as client:
-                with client.websocket_connect("/lsp", headers={"origin": "http://testserver"}) as socket:
+                with client.websocket_connect("/lsp", headers={"host": "localhost", "origin": "http://localhost"}) as socket:
                     with self.assertRaises(WebSocketDisconnect):
                         socket.receive_json()
                 self.assertEqual(client.get("/lsp/config").status_code, 200)
