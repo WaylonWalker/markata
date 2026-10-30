@@ -19,9 +19,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          gofmt -w             cmd/markata-wasm/main.go             pkg/plugins/standalone_profile.go             pkg/plugins/standalone_profile_test.go             pkg/plugins/standalone_render.go
+          gofmt -w             pkg/config/renderer_defaults_validate.go             pkg/config/settings.go             cmd/markata-wasm/main.go             pkg/plugins/standalone_profile.go             pkg/plugins/standalone_profile_test.go             pkg/plugins/standalone_render.go
           git rm -- .github/workflows/renderer-presets-final-gofmt.yml
-          git add -- cmd/markata-wasm/main.go pkg/plugins/standalone_profile.go pkg/plugins/standalone_profile_test.go pkg/plugins/standalone_render.go
+          git add -- pkg/config/renderer_defaults_validate.go pkg/config/settings.go cmd/markata-wasm/main.go pkg/plugins/standalone_profile.go pkg/plugins/standalone_profile_test.go pkg/plugins/standalone_render.go
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git commit -m 'style(renderer): format final offline host adapter'
