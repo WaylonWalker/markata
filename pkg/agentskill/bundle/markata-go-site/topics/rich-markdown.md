@@ -195,6 +195,16 @@ asset catalog. Use `result.document(appearance=...)` for site article layout ins
 of copying templates or modifying rendered HTML. Standalone rendering includes
 bundled Lucide icons. CodeMirror and application editing behavior stay application-side.
 
+## Browser-local WASM rendering
+
+For browser-only Markdown apps, build `scripts/wasm-workbench.py --output DIR`.
+Use its persistent `worker.js` rather than a rendering server. Wait for `ready`,
+then send `{source, revision}`. Accept only the newest result. Serve the generated
+`appearance/` assets and the matching `wasm_exec.js` beside `markata.wasm`.
+Raw HTML is disabled; site-dependent plugins still require a full site build.
+Wait for the demo's **Ready offline** status before testing offline reload.
+See `docs/guides/wasm-workbench.md` for hosting headers and browser checks.
+
 For a server backed Go editor, run `go run ./cmd/markata-workbench` from the
 Markata source repository. The default URL is `http://127.0.0.1:8766/`; use
 `--listen 127.0.0.1:8767` when that port is occupied. Applications can embed

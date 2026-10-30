@@ -481,6 +481,10 @@ if (document.readyState === 'loading') {
 
 	// Append the script to the end of the content
 	if p.scriptCollector != nil {
+		// Standalone hosts can insert a fragment after DOMContentLoaded.
+		// Site output retains the existing initialization contract.
+		script = strings.Replace(script, "document.addEventListener('DOMContentLoaded', function() {", "(() => { const init = () => {", 1)
+		script = strings.Replace(script, "\n});\n</script>", "\n}; if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, {once:true}); else init(); })();\n</script>", 1)
 		p.scriptCollector(script)
 		return htmlContent
 	}
