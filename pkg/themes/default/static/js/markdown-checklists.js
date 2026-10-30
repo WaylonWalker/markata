@@ -14,7 +14,7 @@
 
   function initChecklists() {
     document.querySelectorAll('.post-content .md-checklist').forEach((container) => {
-      const boxes = Array.from(container.querySelectorAll('li.task-list-item > input[type="checkbox"]'))
+      const boxes = Array.from(container.querySelectorAll('li > input[type="checkbox"]'))
         .filter((box) => box.disabled);
       if (!boxes.length) return;
 
@@ -38,7 +38,7 @@
       boxes.forEach((box, index) => {
         if (stored) box.checked = stored[index];
         box.disabled = false;
-        const item = box.closest('li.task-list-item');
+        const item = box.closest('li');
         if (item && !box.hasAttribute('aria-label')) {
           const label = (item.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 160);
           box.setAttribute('aria-label', label || 'Checklist item ' + (index + 1));

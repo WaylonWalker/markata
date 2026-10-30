@@ -139,3 +139,11 @@ Use **Open .md** to import a Markdown file. An oversized file leaves the current
 Use **Download .md** to keep a copy outside browser storage.
 The footer reports whether the draft was saved. Storage failures leave editing and downloads available.
 See [shared editor features and runtime differences](/docs/guides/renderer-integration-benchmarks/#shared-editor-features-and-runtime-differences) for the comparison.
+
+## Insert Markdown commands
+
+Select **Commands** or press **Ctrl+Shift+P** (**Cmd+Shift+P** on macOS).
+Search for special syntax, then press **Enter** to insert it at your selection.
+See the [command palette guide](editor-command-palette.md) for the catalog and keyboard controls.
+
+Open the workbench with `?example` to load a Markdown example and open the command palette.

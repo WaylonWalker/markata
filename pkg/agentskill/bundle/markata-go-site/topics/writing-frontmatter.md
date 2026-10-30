@@ -309,3 +309,15 @@ Inline comparisons fetch public GitHub revision files only after a reader
 requests them. Custom post templates need the editorial history component and
 its conditional CSS/bootstrap assets. Full rendering and authoring contracts
 are documented in the site's Editorial history and Editorial authoring guides.
+
+## Workbench snippet commands
+
+The Python, Go, and WASM workbenches offer **Commands** above the editor.
+Use **Ctrl+Shift+P** (**Cmd+Shift+P** on macOS) to search the snippet catalog.
+Commands preserve selected text and insert Markdown in one undo step.
+The catalog covers all documented custom Markdown families and the bundled Lucide icon pack.
+Search names such as `Road: steps`, `Article card`, or `Lucide: rocket`.
+Results are limited to 60 at a time. Refine the query to search the full catalog.
+Site-dependent commands state their plugin, content-index, or runtime requirements.
+Web Awesome commands insert site Markdown. The standalone preview does not load its runtime.
+Use `examples/command-palette-showcase.md` to inspect working standalone examples.
