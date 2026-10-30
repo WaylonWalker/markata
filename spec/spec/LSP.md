@@ -31,6 +31,16 @@ connections or subprocesses on disconnect. They are trusted local examples, not 
 multi-user remote workspace service. Existing stdio clients
 retain their workspace selection and Content-Length framing by default.
 
+The installed Go CLI MUST expose the same Go workbench as `markata editor`.
+It MUST use the existing `pkg/workbench` handler and LSP session rather than a
+second renderer or language server. The default listener MUST bind to loopback;
+an explicit listener address MUST also use a loopback host. The command MUST
+select its workspace at startup and print the actual local URL to stderr. It
+MUST stop cleanly on interrupt or termination. Browser drafts remain in memory
+and the command MUST NOT open, write, or switch workspace files. Users can use
+the editor's download control to save a copy. File-tree navigation and workspace
+file editing remain separate features.
+
 ## Overview
 
 `markata-go lsp` starts the markata-go Language Server Protocol (LSP) server on

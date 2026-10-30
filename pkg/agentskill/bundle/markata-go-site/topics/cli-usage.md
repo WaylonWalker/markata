@@ -118,10 +118,11 @@ Set `MARKATA_GO_SITE_DIR` in an alias or wrapper when repeatedly using one site.
 - `markata-go lint` (lint markdown files for common issues)
 - `markata-go lint --fix` (auto-fix fixable issues)
 - `markata-go lint --dry-run` (show files without linting)
+- `markata editor --workspace <site>` (start the Go browser editor on loopback)
 - The Go and FastAPI browser editor examples use the existing LSP through a same-origin `/lsp` WebSocket.
-  Select the workspace on the server (`markata-workbench --workspace` or `MARKATA_LSP_WORKSPACE`).
+  Go uses `markata editor --workspace`; FastAPI uses `MARKATA_LSP_WORKSPACE`.
   FastAPI uses `markata-go lsp --browser-workspace` behind its stdio bridge.
-  Drafts stay in memory. These examples do not open or save workspace files.
+  Drafts stay in memory. The Go editor does not open or save workspace files.
   The editors complete command-catalog containers and attributes, plus Mermaid
   diagram types and directions. Press Ctrl+Space to show completions.
   See `docs/guides/go-workbench.md` and `docs/guides/fastapi-editor.md` in the Markata repository.

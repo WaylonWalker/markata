@@ -727,6 +727,46 @@ markata-go reader update -c production.toml
 
 ---
 
+### editor
+
+Run the browser-based Go Markdown editor against a selected workspace.
+
+#### Usage
+
+```bash
+markata editor [flags]
+```
+
+The editor uses Markata's Go renderer and LSP in the same process. It binds to
+loopback by default and prints its local URL. Browser drafts stay in memory;
+use **Download .md** to save a copy. This command does not open, save, or switch
+workspace files.
+
+#### Flags
+
+| Flag | Description | Default |
+| --- | --- | --- |
+| `--workspace` | Markdown workspace used for language assistance | `.` |
+| `--listen` | Loopback HTTP address | `127.0.0.1:8766` |
+
+#### Examples
+
+```bash
+# Open the editor for the current workspace
+markata editor
+
+# Select a site workspace
+markata editor --workspace ~/sites/blog
+
+# Change the local port
+markata editor --listen 127.0.0.1:8767
+```
+
+The listener accepts only `localhost` or a loopback IP address. See the
+[Go editor guide](/docs/guides/go-workbench/) for browser behavior and LSP completions.
+
+---
+
 ### serve
 
 Start a development server with live reload support.
