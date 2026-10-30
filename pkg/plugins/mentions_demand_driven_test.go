@@ -47,3 +47,26 @@ func TestMentionsReferencedHandlesDemandDriven(t *testing.T) {
 		})
 	}
 }
+
+func TestMentionsTransformPlainPageWithoutBlogrollMetadata(t *testing.T) {
+	p := NewMentionsPlugin()
+	m := lifecycle.NewManager()
+	active := true
+	m.Config().Extra = map[string]interface{}{
+		"blogroll": models.BlogrollConfig{
+			Enabled: true,
+			Feeds: []models.ExternalFeedConfig{{
+				URL: "https://unrelated.invalid/feed.xml", Handle: "unrelated",
+				SiteURL: "https://unrelated.invalid", Active: &active,
+			}},
+		},
+	}
+	const plain = "A post without mentions."
+	m.AddPost(&models.Post{Path: "plain.md", Content: plain})
+	if err := p.Transform(m); err != nil {
+		t.Fatalf("Transform: %v", err)
+	}
+	if got := m.Posts()[0].Content; got != plain {
+		t.Fatalf("plain content changed: %q", got)
+	}
+}
