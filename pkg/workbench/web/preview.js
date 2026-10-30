@@ -11,7 +11,7 @@ let updates=Promise.resolve();
 const renderMarkdown=async data=>{const article=document.querySelector('.post-content');
 if(!article)return;
 if(window.Chart)article.querySelectorAll('canvas').forEach(canvas=>window.Chart.getChart?.(canvas)?.destroy());
-article.innerHTML=data.html;
+
 const head=document.createElement('template');
 head.innerHTML=data.feature_head_html;
 const styles=[...head.content.querySelectorAll('style,link[rel=stylesheet]')];
@@ -49,7 +49,9 @@ dispatchEvent(new Event('theme-change'));
 };
 
 addEventListener('message',e=>{if(e.source!==parent)return;
-if(e.data?.type==='markdown-render'){updates=updates.then(()=>renderMarkdown(e.data)).catch(console.error);
+if(e.data?.type==='markdown-render'){const article=document.querySelector('.post-content');
+if(article)article.innerHTML=e.data.html;
+updates=updates.then(()=>renderMarkdown(e.data)).catch(console.error);
 return;
 }if(e.data?.type==='appearance'){updates=updates.then(()=>{setAppearance(e.data.attributes);
 dispatchEvent(new Event('theme-change'));
