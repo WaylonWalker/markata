@@ -14,6 +14,7 @@ import (
 	"io"
 	"log"
 	"mime"
+	"net"
 	"net/http"
 	"net/url"
 	"path"
@@ -21,6 +22,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/WaylonWalker/markata/pkg/editorworkspace"
 	"github.com/WaylonWalker/markata/pkg/lsp"
 	"github.com/WaylonWalker/markata/pkg/plugins"
 )
@@ -36,6 +38,7 @@ var manifestPattern = regexp.MustCompile(`--(palette|aesthetic|fontpack)-manifes
 // Mount it at the root of an origin. Authored HTML is enabled for trusted local
 // editing; isolate its preview using an opaque-origin iframe sandbox.
 type Handler struct {
+	workspace      *editorworkspace.Workspace
 	language       http.Handler
 	languageConfig lsp.BrowserConfig
 	appearance     *plugins.StandaloneAppearance
@@ -53,6 +56,10 @@ func New() (*Handler, error) { return NewWithWorkspace(context.Background(), "."
 
 // NewWithWorkspace enables LSP for a server-selected workspace. Cancel ctx on shutdown.
 func NewWithWorkspace(ctx context.Context, root string) (*Handler, error) {
+	workspace, err := editorworkspace.New(root)
+	if err != nil {
+		return nil, err
+	}
 	config, err := lsp.BrowserWorkspace(root)
 	if err != nil {
 		return nil, err
@@ -65,7 +72,7 @@ func NewWithWorkspace(ctx context.Context, root string) (*Handler, error) {
 	if err != nil {
 		return nil, err
 	}
-	h := &Handler{language: language, languageConfig: config, appearance: a, assets: a.Assets, gate: make(chan struct{}, 1), choices: map[string][]string{"data-theme": {"light", "dark"}, "data-text-size": {"small", "medium", "large", "x-large"}}}
+	h := &Handler{workspace: workspace, language: language, languageConfig: config, appearance: a, assets: a.Assets, gate: make(chan struct{}, 1), choices: map[string][]string{"data-theme": {"light", "dark"}, "data-text-size": {"small", "medium", "large", "x-large"}}}
 	h.assets["css/fonts.css"] = bytes.ReplaceAll(h.assets["css/fonts.css"], []byte("/assets/fonts/"), []byte("/appearance/assets/fonts/"))
 	for _, name := range []string{"palette", "aesthetic", "fonts"} {
 		match := manifestPattern.FindSubmatch(h.assets["css/"+name+".css"])
@@ -120,6 +127,38 @@ func styleLink(name string) string { return `<link rel="stylesheet" href="/appea
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	switch {
+	case (r.URL.Path == "/workspace" || r.URL.Path == "/workspace/file") && r.Method == http.MethodGet:
+		peer, _, peerErr := net.SplitHostPort(r.RemoteAddr)
+		if peerErr != nil || net.ParseIP(peer) == nil || !net.ParseIP(peer).IsLoopback() {
+			http.Error(w, "local workspace access required", http.StatusForbidden)
+			return
+		}
+		host, hostErr := url.Parse("//" + r.Host)
+		if hostErr != nil || host.User != nil || host.Path != "" || (host.Hostname() != "localhost" && (net.ParseIP(host.Hostname()) == nil || !net.ParseIP(host.Hostname()).IsLoopback())) {
+			http.Error(w, "local workspace access required", http.StatusForbidden)
+			return
+		}
+		w.Header().Set("Cache-Control", "no-store")
+		w.Header().Set("Content-Type", "application/json")
+		if r.URL.Path == "/workspace/file" {
+			source, err := h.workspace.Read(r.URL.Query().Get("path"))
+			if err != nil {
+				fail(w, 404, err.Error())
+				return
+			}
+			if err := json.NewEncoder(w).Encode(map[string]string{"source": source}); err != nil {
+				return
+			}
+			return
+		}
+		files, err := h.workspace.Files()
+		if err != nil {
+			fail(w, 422, err.Error())
+			return
+		}
+		if err := json.NewEncoder(w).Encode(map[string]any{"files": files, "rootUri": h.languageConfig.RootURI}); err != nil {
+			return
+		}
 	case r.URL.Path == "/lsp":
 		h.language.ServeHTTP(w, r)
 	case r.URL.Path == "/lsp/config" && r.Method == http.MethodGet:

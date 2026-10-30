@@ -1,0 +1,17 @@
+[markata-go]
+title = "Field notes"
+url = "https://example.com"
+output_dir = "output"
+
+[markata-go.glob]
+patterns = ["posts/**/*.md", "pages/**/*.md"]
+
+[[markata-go.feeds]]
+slug = "notes"
+title = "Field notes"
+filter = "'notes' in tags"
+
+[[markata-go.feeds]]
+slug = "garden"
+title = "Garden"
+filter = "'garden' in tags"

@@ -744,8 +744,8 @@ markata editor [flags]
 
 The editor uses Markata's Go renderer and LSP in the same process. It binds to
 loopback by default and prints its local URL. Browser drafts stay in memory;
-use **Download .md** to save a copy. This command does not open, save, or switch
-workspace files.
+use **Download .md** to save a copy. The file tree opens discovered workspace sources. Edits remain browser drafts;
+the command does not save changes to source files.
 
 #### Flags
 
@@ -2476,3 +2476,9 @@ go run ./cmd/markata-workbench --workspace /absolute/path/to/site
 ```
 
 `--workspace` selects the Markdown directory for completion. It defaults to the current directory.
+
+### workspace
+
+List discovered source metadata as JSON with `markata workspace --workspace PATH`.
+Read original source with `markata workspace --workspace PATH --file posts/hello.md`.
+See the [workspace file tree guide](/docs/guides/renderer-site-tree/).

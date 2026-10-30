@@ -122,7 +122,7 @@ Set `MARKATA_GO_SITE_DIR` in an alias or wrapper when repeatedly using one site.
 - The Go and FastAPI browser editor examples use the existing LSP through a same-origin `/lsp` WebSocket.
   Go uses `markata editor --workspace`; FastAPI uses `MARKATA_LSP_WORKSPACE`.
   FastAPI uses `markata-go lsp --browser-workspace` behind its stdio bridge.
-  Drafts stay in memory. The Go editor does not open or save workspace files.
+  Drafts stay in memory. The Go and Python editors open files discovered by Markata glob rules; edits stay in browser drafts and do not write source files.
   The editors complete command-catalog containers and attributes, plus Mermaid
   diagram types and directions. Press Ctrl+Space to show completions.
   See `docs/guides/go-workbench.md` and `docs/guides/fastapi-editor.md` in the Markata repository.
@@ -322,3 +322,6 @@ When blogroll is enabled, `markata-go lint` reports
 `unknown-mention` warnings for unresolved handles. Add a verified
 entry or alias to the blogroll before linking: CLI lint/build never
 searches social networks or guesses a person's identity.
+
+Use `markata workspace --workspace <site>` to inspect discovered document metadata as JSON.
+Add `--file <relative-path>` to read a discovered source. Python exposes the same API as `markata.workspace_files`.

@@ -276,3 +276,17 @@ async def render_async(markdown: str, *, inline_assets: bool = False,
             raise RenderError(f"Markata render timed out after {timeout}s") from error
         raise
     return _result(stdout, stderr, process.returncode)
+
+
+def workspace_files(root: str = ".", *, path: str | None = None, timeout: float = 30) -> dict:
+    """Discover Markata content, or read one source, through the Go loader."""
+    command = [_command(False, "/markata-assets", False)[0], "workspace", "--workspace", str(root)]
+    if path is not None:
+        command += ["--file", path]
+    try:
+        process = subprocess.run(command, capture_output=True, timeout=timeout, check=False)
+        if process.returncode:
+            raise RenderError(process.stderr.decode(errors="replace"))
+        return json.loads(process.stdout)
+    except (OSError, subprocess.TimeoutExpired, ValueError) as error:
+        raise RenderError(f"Cannot load workspace: {error}") from error

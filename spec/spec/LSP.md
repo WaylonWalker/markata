@@ -37,7 +37,7 @@ second renderer or language server. The default listener MUST bind to loopback;
 an explicit listener address MUST also use a loopback host. The command MUST
 select its workspace at startup and print the actual local URL to stderr. It
 MUST stop cleanly on interrupt or termination. Browser drafts remain in memory
-and the command MUST NOT open, write, or switch workspace files. Users can use
+and the command MUST NOT write workspace files. The workspace API can read and switch discovered files. Users can use
 the editor's download control to save a copy. File-tree navigation and workspace
 file editing remain separate features.
 

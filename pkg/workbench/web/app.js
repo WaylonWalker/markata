@@ -36,11 +36,12 @@ let revision = 0, timer, busy = false, ready = false;
 let previewStarted = false, previewReady = false, pendingPreview = null;
 function storageWarning() { saved.textContent = 'Draft not saved · storage unavailable or full · download a copy'; }
 function saveDraft() {
+ if (window.MarkataSiteTree?.save()) return;
   try { localStorage.setItem('markata-workbench-draft', source.value); saved.textContent = 'Draft saved on this device'; } catch { storageWarning(); }
 }
 async function render() {
   if (!ready || busy) return;
-  const version = revision, markdown = source.value;
+  const version = revision, markdown = window.MarkataSiteTree?.markdown(source.value) ?? source.value;
   const bytes = new TextEncoder().encode(markdown).length;
   if (bytes > 200000) {
     errorBox.textContent = 'Document exceeds 200,000 UTF-8 bytes. Download your draft or shorten it.';
@@ -98,7 +99,7 @@ editor.on('change', () => {
 document.querySelector('#download').addEventListener('click', () => {
   const url = URL.createObjectURL(new Blob([source.value], {type:'text/markdown;charset=utf-8'}));
   const link = document.createElement('a');
-  link.href = url; link.download = 'draft.md'; link.click();
+  link.href = url; link.download = window.MarkataSiteTree?.filename() || 'draft.md'; link.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 });
 const appearanceKeys = ['data-palette','data-theme','data-aesthetic','data-fontpack','data-text-size'];
@@ -124,7 +125,9 @@ document.querySelector('#import').addEventListener('change', async event => {
   try {
     const text = await file.text();
     if (new TextEncoder().encode(text).length > 200000) throw new Error('Document exceeds 200,000 UTF-8 bytes.');
-    editor.setValue(text);
+    window.MarkataSiteTree.import(text);
   } catch (error) { errorBox.textContent = 'Cannot open file: ' + error.message; errorBox.hidden = false; }
 });
 if (!saved.textContent) saveDraft();
+
+window.MarkataSiteTree.attach(editor, storageWarning);

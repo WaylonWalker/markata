@@ -50,7 +50,7 @@ Broken wiki links receive an underline. The underline tooltip shows the diagnost
 
 The editor sends unsaved text as a synthetic `.markata/browser-draft.md` document.
 This document stays in memory. Markdown path suggestions start at the workspace root because the draft has no source file.
-The example does not open or save workspace files. File trees and document switching require separate integration.
+The Files tree opens source files from the selected workspace using Markata glob rules. The Tags view groups those files by loaded frontmatter. Edits stay in browser drafts; download a copy to keep changes outside the browser. See [workspace navigation](./renderer-site-tree/).
 Each WebSocket connection owns its own draft and index. Reload the page to index external file changes.
 
 The footer reports the language connection state. Editing and preview continue if the connection fails.
