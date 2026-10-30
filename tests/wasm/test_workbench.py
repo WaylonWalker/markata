@@ -96,16 +96,16 @@ class WorkbenchTest(unittest.TestCase):
         profile.select_option('offline-interactive')
         expect(assets).to_be_disabled()
         self.assertEqual(assets.input_value(), 'inline')
-        self.edit('# Offline profile\\n\\nLocal-only content')
+        self.edit('# Offline profile\n\nLocal-only content')
         try:
             expect(self.frame.locator('h1')).to_have_text('Offline profile', timeout=20000)
         except AssertionError as error:
             status = self.page.locator('#status').text_content()
             failure = self.page.locator('#error').text_content()
             raise AssertionError(f'Offline WASM render stuck: status={status!r} error={failure!r}') from error
-        self.edit('# Remote denied\\n\\n![image](https://example.com/pixel.png)')
+        self.edit('# Remote denied\n\n![image](https://example.com/pixel.png)')
         expect(self.page.locator('#error')).to_contain_text('remote resource', timeout=30000)
-        self.edit('# Recovered offline\\n\\nSafe content')
+        self.edit('# Recovered offline\n\nSafe content')
         expect(self.frame.locator('h1')).to_have_text('Recovered offline', timeout=30000)
         profile.select_option('web')
         expect(assets).to_be_enabled()
