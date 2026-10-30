@@ -77,3 +77,20 @@ different times. This is test content, not a live monitoring dashboard.
 7 of 10 build steps finished.
 
 :::
+
+## Example trend sparkline
+
+::: md-stat {data-tone="success"}
+NVMe used
+
+**254 GiB**
+
+Down from a 383 GiB peak after cleanup
+
+:::: md-sparkline {data-values="310 342 361 383 371 254" data-label="NVMe used in GiB, last six checks" data-tone="success"}
+
+Last six checks
+
+::::
+
+:::

@@ -57,7 +57,7 @@ frontmatter.title, avoid duplicating it as the first body H1.
    with body text (as in visual reports and feature lists), use `md-feature` with
    `md-feature-icon` and `md-feature-body`.
 5. For data, prefer semantic Markdown tables, `md-status`, `md-stat`,
-   `md-meter`, `md-progress` and `md-delta`.
+   `md-meter`, `md-progress`, `md-sparkline` and `md-delta`.
 6. For measured trends and category comparisons, use `chartjs` blocks rather
    than Mermaid or a static diagram. Read `topics/chart-authoring.md`
    for valid bar/line/stacked/doughnut examples, scales, and fallbacks.

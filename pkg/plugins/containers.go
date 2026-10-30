@@ -395,6 +395,7 @@ func (r *containerHTMLRenderer) renderContainer(w util.BufWriter, _ []byte, n as
 
 		_, _ = w.WriteString(">\n")
 		r.renderGauge(w, container)
+		r.renderSparkline(w, container)
 	} else {
 		_, _ = w.WriteString("</" + tag + ">\n")
 	}
@@ -443,6 +444,79 @@ func (r *containerHTMLRenderer) renderGauge(w util.BufWriter, container *Contain
 	_, _ = w.WriteString(`" aria-label="` + escapeHTMLAttr(label) + `">`)
 	_, _ = w.WriteString(strconv.FormatFloat(value, 'f', -1, 64) + " / " + strconv.FormatFloat(maximum, 'f', -1, 64))
 	_, _ = w.WriteString("</" + tag + ">\n")
+}
+
+// maxSparklinePoints bounds the inline SVG a single container can emit.
+const maxSparklinePoints = 500
+
+// renderSparkline turns an opt-in md-sparkline container into a static,
+// accessible inline SVG trend line. The visible Markdown caption remains
+// ordinary container content; missing, invalid, or unlabeled data leaves that
+// caption intact without drawing a misleading line. No JavaScript is needed.
+//
+//nolint:errcheck // Writes to the Goldmark renderer are handled at the caller level.
+func (r *containerHTMLRenderer) renderSparkline(w util.BufWriter, container *Container) {
+	if !slices.Contains(container.Classes, "md-sparkline") {
+		return
+	}
+	label := strings.TrimSpace(container.ExtraAttrs["data-label"])
+	values, ok := parseSparklineValues(container.ExtraAttrs["data-values"])
+	if !ok || label == "" {
+		return
+	}
+
+	low, high := slices.Min(values), slices.Max(values)
+	// The line spans a 100x24 box with 2 units of padding so the stroke is
+	// never clipped. A flat series draws through the middle.
+	const width, height, pad = 100.0, 24.0, 2.0
+	points := make([]string, len(values))
+	for i, v := range values {
+		x := width * float64(i) / float64(len(values)-1)
+		y := height / 2
+		if high > low {
+			y = pad + (high-v)/(high-low)*(height-2*pad)
+		}
+		points[i] = formatSparklineCoord(x) + "," + formatSparklineCoord(y)
+	}
+	line := strings.Join(points, " ")
+	area := "0," + formatSparklineCoord(height) + " " + line + " " + formatSparklineCoord(width) + "," + formatSparklineCoord(height)
+
+	first, last := values[0], values[len(values)-1]
+	summary := label + ": " + strconv.Itoa(len(values)) + " points from " + formatSparklineValue(first) +
+		" to " + formatSparklineValue(last) + ", low " + formatSparklineValue(low) + ", high " + formatSparklineValue(high)
+
+	_, _ = w.WriteString(`<svg class="md-sparkline-chart" viewBox="0 0 100 24" preserveAspectRatio="none" role="img" aria-label="`)
+	_, _ = w.WriteString(escapeHTMLAttr(summary))
+	_, _ = w.WriteString(`" focusable="false">`)
+	_, _ = w.WriteString(`<polygon class="md-sparkline-area" points="` + area + `"/>`)
+	_, _ = w.WriteString(`<polyline class="md-sparkline-line" points="` + line + `" vector-effect="non-scaling-stroke"/>`)
+	_, _ = w.WriteString("</svg>\n")
+}
+
+// parseSparklineValues reads whitespace- or comma-separated finite numbers.
+// It needs at least two points to draw a trend.
+func parseSparklineValues(raw string) ([]float64, bool) {
+	fields := strings.FieldsFunc(raw, func(c rune) bool { return c == ',' || c == ' ' || c == '\t' || c == '\n' })
+	if len(fields) < 2 || len(fields) > maxSparklinePoints {
+		return nil, false
+	}
+	values := make([]float64, len(fields))
+	for i, field := range fields {
+		v, err := strconv.ParseFloat(field, 64)
+		if err != nil || math.IsNaN(v) || math.IsInf(v, 0) {
+			return nil, false
+		}
+		values[i] = v
+	}
+	return values, true
+}
+
+func formatSparklineCoord(v float64) string {
+	return strconv.FormatFloat(math.Round(v*100)/100, 'f', -1, 64)
+}
+
+func formatSparklineValue(v float64) string {
+	return strconv.FormatFloat(v, 'f', -1, 64)
 }
 
 // escapeHTMLAttr escapes a string for use in an HTML attribute.

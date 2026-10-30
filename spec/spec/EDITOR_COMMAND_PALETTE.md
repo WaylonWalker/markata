@@ -23,7 +23,7 @@ The initial version operates on the primary selection.
 The catalog MUST cover every documented custom Markdown family: all admonition
 types, collapsible variants and split layouts; all eight road styles and
 editorial modifiers; article layout/card/icon/feature containers; status, stat,
-delta, meter, progress, checklist, and source containers; Mermaid and Chart.js;
+delta, meter, progress, sparkline, checklist, and source containers; Mermaid and Chart.js;
 all ten Web Awesome Markdown shortcuts; Lucide icons; and inline extensions.
 All bundled Lucide icon names MUST be searchable by name and insertable offline.
 A named icon command MUST replace selected text with the chosen icon; it MUST NOT
