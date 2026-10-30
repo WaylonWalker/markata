@@ -262,6 +262,7 @@ Install the bundled `markata-go-site` skill into a repository.
 | `--name` | Installed skill directory name | `markata-go-site` |
 | `--force` | Overwrite bundled skill files if they already exist | `false` |
 | `--dry-run` | Show what would be installed without writing files | `false` |
+| `--all-installed-tools` | Install globally for each supported agent executable found on `PATH` | `false` |
 
 On an interactive terminal with no explicit agent, the command detects installed
 agents and offers to install for all of them. Declining opens the fuzzy picker.
@@ -280,6 +281,8 @@ back to `universal`. Non-interactive global installs require an explicit agent,
 such as `--agent github-copilot`.
 Unknown names show close matches without selecting one automatically.
 For example, `--agent copilot` suggests `--agent github-copilot`.
+`--all-installed-tools` is non-interactive and installs or refreshes the global
+skill for supported agent executables found on `PATH`.
 
 ##### update
 
@@ -290,9 +293,12 @@ This is the user-friendly equivalent of reinstalling with `--force`.
 | Flag | Description | Default |
 |------|-------------|---------|
 | `--agent` | Update a specific agent install such as `opencode` or `claude-code` | auto-detected, else `universal` |
-| `-g`, `--global` | Update the selected agent's user-level skill directory | `false` |
+| `-g`, `--global` | Update global skill directories; all detected agents when `--agent` is omitted | `false` |
 | `--name` | Installed skill directory name | `markata-go-site` |
 | `--dry-run` | Show what would be updated without writing files | `false` |
+
+With `--global` and no `--agent`, `update` updates all detected global agents
+that already have this skill installed, and skips the others.
 
 ##### doctor
 
@@ -301,8 +307,11 @@ Check the installed skill for drift against the versions bundled in the current 
 | Flag | Description | Default |
 |------|-------------|---------|
 | `--agent` | Check a specific agent install such as `opencode` or `claude-code` | auto-detected, else `universal` |
-| `-g`, `--global` | Check the selected agent's user-level skill directory | `false` |
+| `-g`, `--global` | Check global skill directories; all detected agents when `--agent` is omitted | `false` |
 | `--name` | Installed skill directory name | `markata-go-site` |
+
+With `--global` and no `--agent`, `doctor` checks all detected global agents
+that already have this skill installed, and skips the others.
 
 Exit codes:
 

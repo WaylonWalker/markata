@@ -81,6 +81,36 @@ The picker requires interactive input and output terminals. With `--no-input` or
 Unknown names show suggestions, such as `Did you mean --agent github-copilot?` for `--agent copilot`.
 Suggestions do not select an agent automatically.
 
+## Install or update global skills for detected agents
+
+The repository's `just install` recipe installs the `markata` binary, updates
+global skills for detected agents that already have one, and checks those
+installations:
+
+```bash
+just install
+```
+
+To install or refresh the skill for every supported agent executable found on
+`PATH`, use:
+
+```bash
+just install --all-installed-tools
+```
+
+This installs globally for detected executables such as `claude`, `codex`, or
+`opencode`. The recipe then runs `agent doctor` for the detected global
+installations. It does not infer additional tools from generic shared skill
+directories.
+
+You can run the global update and check steps directly after installing a new
+binary:
+
+```bash
+markata agent update --global
+markata agent doctor --global
+```
+
 ## 3. Check it
 
 ```bash

@@ -34,8 +34,16 @@ run *args:
     go run -ldflags '{{ldflags}}' {{main}} {{args}}
 
 # Install to $GOPATH/bin
-install:
+install *args:
     go install -ldflags '{{ldflags}}' {{main}}
+    @if [ "{{args}}" = "--all-installed-tools" ]; then \
+        markata agent install --all-installed-tools && markata agent doctor --global; \
+    elif [ -z "{{args}}" ]; then \
+        markata agent update --global && markata agent doctor --global; \
+    else \
+        echo "Usage: just install [--all-installed-tools]" >&2; \
+        exit 2; \
+    fi
 
 # Clean build artifacts
 clean:
