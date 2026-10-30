@@ -28,7 +28,7 @@ footer{height:37px;padding:9px 24px;border-top:1px solid var(--editor-divider);f
 @media(max-width:700px){header{padding:14px 18px}#workbench{grid-template-columns:1fr;height:auto}section{height:60dvh}section+section{border-left:0;border-top:1px solid var(--editor-divider)}footer{height:auto;min-height:37px}}
 
 .editor-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px}
-#keymap{font:12px system-ui;color:var(--color-text);background:var(--color-surface);border:1px solid var(--editor-divider);border-radius:4px;padding:3px 7px}
+#keymap,#render-profile,#render-assets{font:12px system-ui;color:var(--color-text);background:var(--color-surface);border:1px solid var(--editor-divider);border-radius:4px;padding:3px 7px}
 .CodeMirror{flex:1;min-height:0;height:auto;background:var(--color-background);color:var(--color-text);font:14px/1.7 var(--font-code,ui-monospace,monospace)}
 .CodeMirror-gutters{background:var(--color-background);border-right:1px solid var(--editor-divider)}
 .CodeMirror-linenumber{color:var(--color-text-muted);opacity:.6}
@@ -64,7 +64,7 @@ header{flex-wrap:wrap}#open{background:var(--color-surface,white);border:1px sol
 <header><div><h1>Markata / local</h1><p>Your words. Your browser. No rendering server.</p></div><span id="offline" role="status">Preparing offline copy…</span><button id="open" type="button">Open .md</button><input id="import" type="file" accept=".md,.markdown,text/plain,text/markdown" hidden><button id="download" type="button">Download .md</button></header>
 <main id="workbench">
 <section><div class="pane-label editor-toolbar"><label for="keymap">Markdown · Keymap</label><select id="keymap" aria-label="Editor keymap"><option value="default">Default</option><option value="vim">Vim</option><option value="emacs">Emacs</option><option value="sublime">Sublime</option></select></div><textarea aria-label="Markdown source" id="source" spellcheck="false" aria-describedby="status"></textarea></section>
-<section aria-label="Rendered Markdown"><div class="pane-label">Live preview</div><pre id="error" role="alert" hidden></pre><iframe id="preview" title="Rendered Markdown preview" sandbox="allow-scripts"></iframe></section>
+<section aria-label="Rendered Markdown"><div class="pane-label editor-toolbar"><span>Live preview</span><div><label for="render-profile">Render profile</label> <select id="render-profile"><option value="web">Web</option><option value="offline-interactive">Offline interactive</option><option value="offline-static" disabled>Offline static (unavailable)</option></select> <label for="render-assets">Assets</label> <select id="render-assets"><option value="linked">Linked</option><option value="inline">Inline</option></select></div></div><pre id="error" role="alert" hidden></pre><iframe id="preview" title="Rendered Markdown preview" sandbox="allow-scripts"></iframe></section>
 </main>
 <footer><span id="saved" role="status"></span> · <span id="status" role="status" aria-live="polite">Preparing preview…</span></footer>
 <script src="app.js" defer></script></body></html>
