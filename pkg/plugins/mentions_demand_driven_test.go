@@ -110,9 +110,9 @@ func TestMentionsTransform_MetadataHTTPCounts(t *testing.T) {
 					}
 					return &http.Response{
 						StatusCode: http.StatusOK,
-						Header: make(http.Header),
-						Body: io.NopCloser(strings.NewReader("<html><head><title>Alice</title></head></html>")),
-						Request: req,
+						Header:     make(http.Header),
+						Body:       io.NopCloser(strings.NewReader("<html><head><title>Alice</title></head></html>")),
+						Request:    req,
 					}, nil
 				}),
 			}
