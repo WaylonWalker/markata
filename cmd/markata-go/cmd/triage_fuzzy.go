@@ -153,7 +153,7 @@ func triageMarkdownCandidates(siteRoot string) []string {
 		if err != nil || !info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
 			continue
 		}
-		_ = filepath.WalkDir(base, func(path string, entry fs.DirEntry, walkErr error) error {
+		if err := filepath.WalkDir(base, func(path string, entry fs.DirEntry, walkErr error) error {
 			if walkErr != nil {
 				return nil // Missing/unreadable content dirs should never block triage.
 			}
@@ -175,7 +175,10 @@ func triageMarkdownCandidates(siteRoot string) []string {
 				add(path)
 			}
 			return nil
-		})
+		}); err != nil && err != filepath.SkipAll {
+			// An unreadable content tree should not prevent triage.
+			continue
+		}
 	}
 	sort.Strings(paths)
 	return paths
