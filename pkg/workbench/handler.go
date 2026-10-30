@@ -168,43 +168,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	switch {
 	case (r.URL.Path == "/workspace" || r.URL.Path == "/workspace/file") && r.Method == http.MethodGet:
-		peer, _, peerErr := net.SplitHostPort(r.RemoteAddr)
-		if peerErr != nil || net.ParseIP(peer) == nil || !net.ParseIP(peer).IsLoopback() {
-			http.Error(w, "local workspace access required", http.StatusForbidden)
-			return
-		}
-		host, hostErr := url.Parse("//" + r.Host)
-		if hostErr != nil || host.User != nil || host.Path != "" || (host.Hostname() != "localhost" && (net.ParseIP(host.Hostname()) == nil || !net.ParseIP(host.Hostname()).IsLoopback())) {
-			http.Error(w, "local workspace access required", http.StatusForbidden)
-			return
-		}
-		w.Header().Set("Cache-Control", "no-store")
-		w.Header().Set("Content-Type", "application/json")
-		if r.URL.Path == "/workspace/file" {
-			source, err := h.workspace.Read(r.URL.Query().Get("path"))
-			if err != nil {
-				fail(w, 404, err.Error())
-				return
-			}
-			if err := json.NewEncoder(w).Encode(map[string]string{"source": source}); err != nil {
-				return
-			}
-			return
-		}
-		var files []editorworkspace.File
-		var err error
-		if r.URL.Query().Get("metadata") == "true" {
-			files, err = h.workspace.Files()
-		} else {
-			files, err = h.workspace.Paths()
-		}
-		if err != nil {
-			fail(w, 422, err.Error())
-			return
-		}
-		if err := json.NewEncoder(w).Encode(map[string]any{"files": files, "rootUri": h.languageConfig.RootURI}); err != nil {
-			return
-		}
+		h.serveWorkspace(w, r)
 	case r.URL.Path == "/lsp":
 		h.language.ServeHTTP(w, r)
 	case r.URL.Path == "/lsp/config" && r.Method == http.MethodGet:
@@ -452,4 +416,44 @@ func (h *Handler) document(result *plugins.StandaloneResult, attributes map[stri
 	}
 	initial := `<style>html{color-scheme:` + defaults["data-theme"] + `;background:` + bg + `}body{background:var(--color-background,` + bg + `);color:var(--color-text,` + fg + `)}</style>`
 	return `<!doctype html><html lang="en"` + attrs + `><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Markdown preview</title>` + initial + styles + h.featureHead(result) + `</head><body><main class="main-content"><div class="content-wrapper"><div class="post-shell"><article class="post h-entry"><div class="post-content e-content">` + result.HTML + `</div></article></div></div></main>` + strings.ReplaceAll(result.BodyEndHTML, "<script", `<script data-markata-generated="true"`) + h.bridge + `</body></html>`
+}
+
+func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
+	peer, _, peerErr := net.SplitHostPort(r.RemoteAddr)
+	if peerErr != nil || net.ParseIP(peer) == nil || !net.ParseIP(peer).IsLoopback() {
+		http.Error(w, "local workspace access required", http.StatusForbidden)
+		return
+	}
+	host, hostErr := url.Parse("//" + r.Host)
+	if hostErr != nil || host.User != nil || host.Path != "" || (host.Hostname() != "localhost" && (net.ParseIP(host.Hostname()) == nil || !net.ParseIP(host.Hostname()).IsLoopback())) {
+		http.Error(w, "local workspace access required", http.StatusForbidden)
+		return
+	}
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("Content-Type", "application/json")
+	if r.URL.Path == "/workspace/file" {
+		source, err := h.workspace.Read(r.URL.Query().Get("path"))
+		if err != nil {
+			fail(w, 404, err.Error())
+			return
+		}
+		if err := json.NewEncoder(w).Encode(map[string]string{"source": source}); err != nil {
+			return
+		}
+		return
+	}
+	var files []editorworkspace.File
+	var err error
+	if r.URL.Query().Get("metadata") == "true" {
+		files, err = h.workspace.Files()
+	} else {
+		files, err = h.workspace.Paths()
+	}
+	if err != nil {
+		fail(w, 422, err.Error())
+		return
+	}
+	if err := json.NewEncoder(w).Encode(map[string]any{"files": files, "rootUri": h.languageConfig.RootURI}); err != nil {
+		return
+	}
 }

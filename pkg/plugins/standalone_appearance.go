@@ -17,6 +17,8 @@ import (
 	"github.com/WaylonWalker/markata/pkg/themes"
 )
 
+const standaloneSystemFontpack = "system"
+
 // StandaloneAppearance is a reusable appearance component and its ordered assets.
 // Assets contains bytes, encoded as base64 by encoding/json.
 type StandaloneAppearance struct {
@@ -42,7 +44,7 @@ type standaloneSiteStyle struct {
 func standaloneSiteTheme(cfg *models.Config) standaloneSiteStyle {
 	var theme models.ThemeConfig
 	var fontpack, mode, light, dark, selected string
-	theme = models.ThemeConfig{Palette: templateTypeDefault, PaletteLight: "default-light", PaletteDark: "default-dark", Aesthetic: "minimal", Fontpack: "system", Switcher: models.NewThemeSwitcherConfig()}
+	theme = models.ThemeConfig{Palette: templateTypeDefault, PaletteLight: "default-light", PaletteDark: "default-dark", Aesthetic: "minimal", Fontpack: standaloneSystemFontpack, Switcher: models.NewThemeSwitcherConfig()}
 	if cfg != nil {
 		theme = cfg.Theme
 	}
@@ -57,15 +59,15 @@ func standaloneSiteTheme(cfg *models.Config) standaloneSiteStyle {
 		fontpack = cfg.Fontpack
 	}
 	if fontpack == "" {
-		fontpack = "system"
+		fontpack = standaloneSystemFontpack
 	}
 	mode = theme.FallbackMode
-	if mode != "light" {
-		mode = "dark"
+	if mode != themeModeLight {
+		mode = themeModeDark
 	}
 	light, dark = palettes.GetEffectivePalettes(theme.Palette, theme.PaletteLight, theme.PaletteDark)
 	selected = dark
-	if mode == "light" {
+	if mode == themeModeLight {
 		selected = light
 	}
 	return standaloneSiteStyle{theme, fontpack, mode, light, dark, selected}
@@ -111,7 +113,7 @@ func BuildStandaloneAppearanceForSite(cfg *models.Config, root string) (*Standal
 	if err != nil {
 		return nil, err
 	}
-	names := append([]string{"system"}, fontpacks.SortedKeys(source.Catalog.FontPacks)...)
+	names := append([]string{standaloneSystemFontpack}, fontpacks.SortedKeys(source.Catalog.FontPacks)...)
 	fonts, err := source.Catalog.ResolveManyFSWithOptions(names, source.FS, source.Root, "", fontpacks.ResolveOptions{})
 	if err != nil {
 		return nil, err
@@ -137,7 +139,7 @@ func BuildStandaloneAppearanceForSite(cfg *models.Config, root string) (*Standal
 		}
 		r.Assets[name] = data
 	}
-	defaults, err := json.Marshal(map[string]string{"light": normalizePaletteName(light), "dark": normalizePaletteName(dark)})
+	defaults, err := json.Marshal(map[string]string{themeModeLight: normalizePaletteName(light), themeModeDark: normalizePaletteName(dark)})
 	if err != nil {
 		return nil, err
 	}
