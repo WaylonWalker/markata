@@ -56,6 +56,14 @@ def valid_browser_origin(scheme: str, host_header: str, origin_header: str) -> b
     except ValueError:
         return False
 
+def valid_lsp_peer(host: str) -> bool:
+    """Only the actual loopback TCP peer may use filesystem-aware language help."""
+    try:
+        return ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        return False
+
+
 app = FastAPI(title="Markata live editor")
 presentation = appearance(asset_base="/appearance")
 
@@ -344,8 +352,12 @@ def lsp_command():
 async def language_socket(websocket: WebSocket):
     # No forwarded headers or browser-provided executable/workspace options.
     expected_scheme = "https" if websocket.url.scheme == "wss" else "http"
-    if not valid_browser_origin(expected_scheme, websocket.headers.get("host", ""),
-                                websocket.headers.get("origin", "")) or \
+    # Host and Origin alone are forgeable outside a browser.
+    # Never grant access from X-Forwarded-For or an untrusted remote peer.
+    peer_host = websocket.client.host if websocket.client else ""
+    if not valid_lsp_peer(peer_host) or \
+            not valid_browser_origin(expected_scheme, websocket.headers.get("host", ""),
+                                     websocket.headers.get("origin", "")) or \
             websocket.headers.get("sec-fetch-site") == "cross-site":
         await websocket.close(code=1008)
         return
