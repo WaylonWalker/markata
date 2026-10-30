@@ -35,9 +35,14 @@ func listenWithPortRecovery(cmd *cobra.Command, address string) (net.Listener, e
 		retry := fmt.Sprintf("%s --port %d", cmd.CommandPath(), candidate)
 		if noInput || !streamIsTerminal(cmd.InOrStdin()) || !streamIsTerminal(cmd.ErrOrStderr()) {
 			_ = offered.Close()
-			return nil, fmt.Errorf("port %d is already in use; rerun with %s", port, retry)
+			return nil, fmt.Errorf("port %d is already in use. Rerun with:\n\n%s", port, retry)
 		}
-		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Port %d is already in use.\nRerun with: %s\nUse port %d now? Press Enter to continue, or q then Enter or Ctrl+C to quit: ", port, retry, candidate)
+		enabled := colorEnabledFor(streamIsTerminal(cmd.ErrOrStderr()))
+		theme := currentLogTheme
+		warning := colorize(fmt.Sprintf("Port %d is already in use.", port), theme.Warning, enabled)
+		command := colorize(retry, theme.Success, enabled)
+		question := colorize(fmt.Sprintf("Use port %d now?", candidate), theme.Component, enabled)
+		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "%s\nRerun with:\n\n%s\n\n%s Press Enter to continue, or q then Enter or Ctrl+C to quit: ", warning, command, question)
 		reader := bufio.NewReader(cmd.InOrStdin())
 		for {
 			ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)

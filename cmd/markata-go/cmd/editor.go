@@ -55,7 +55,7 @@ func runEditorCommand(cmd *cobra.Command, _ []string) error {
 
 	ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	if _, err := fmt.Fprintln(cmd.ErrOrStderr(), "Preparing Markata editor assets…"); err != nil {
+	if _, err := fmt.Fprintln(cmd.ErrOrStderr(), colorize("Preparing Markata editor assets…", currentLogTheme.Component, colorEnabledFor(streamIsTerminal(cmd.ErrOrStderr())))); err != nil {
 		return fmt.Errorf("write editor status: %w", err)
 	}
 	handler, err := workbench.NewWithWorkspace(ctx, editorWorkspace)
@@ -66,7 +66,7 @@ func runEditorCommand(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("listen on %s: %w", editorListen, err)
 	}
-	if _, err = fmt.Fprintf(cmd.ErrOrStderr(), "Markata editor: http://%s/\nStop with Ctrl+C.\n", listener.Addr()); err != nil {
+	if _, err = fmt.Fprintf(cmd.ErrOrStderr(), "Markata editor: %s\nStop with Ctrl+C.\n", colorize(fmt.Sprintf("http://%s/", listener.Addr()), currentLogTheme.Success, colorEnabledFor(streamIsTerminal(cmd.ErrOrStderr())))); err != nil {
 		_ = listener.Close()
 		return fmt.Errorf("write editor address: %w", err)
 	}
