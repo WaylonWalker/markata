@@ -38,7 +38,10 @@ type Server struct {
 	sendJSON func([]byte) error
 
 	// index holds the indexed posts for autocomplete and validation
-	index *Index
+	index          *Index
+	sharedIndex    IndexProvider
+	sharedRevision uint64
+	sharedLoaded   bool
 
 	// documents tracks open documents by URI
 	documents map[string]*Document

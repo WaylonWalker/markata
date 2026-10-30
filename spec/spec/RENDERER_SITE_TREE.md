@@ -55,3 +55,25 @@ same fast discovery path. Existing metadata API defaults remain compatible.
 Scratch and workspace sources MUST have separate storage identities. A real
 `draft.md` MUST open its source; scratch navigation MUST use a collision-free label
 (such as `Unsaved draft.md`) and retain old browser scratch content during migration.
+
+## Long-lived Go server state
+
+The Go workbench MUST retain workspace path membership and parsed metadata for
+its lifetime. File opens MUST validate cached membership and current containment
+without globbing the entire workspace. Filesystem events MUST trigger debounced
+reconciliation; only new or changed documents are parsed again. Config and
+ignore-file changes MUST invalidate affected state. Watchers and workers MUST
+stop on cancellation. Python's one-shot API remains available with its existing
+behavior.
+
+Go browser LSP sessions MUST use shared immutable workspace index snapshots.
+Each connection MUST keep its unsaved draft overlay private. A changed snapshot
+MUST be adopted before later language requests without reparsing workspace files.
+The Markdown renderer MUST be configured once per site-configuration version and
+serialized across requests. Config changes MUST refresh appearance and rendering
+without requiring a server restart.
+
+External source changes MUST be visible on subsequent file opens or page reloads.
+Clean browser buffers MUST refresh from disk; modified drafts MUST be preserved
+when disk content changes. Cache correctness tests MUST use operation counts and
+observable file contents, rather than assuming nonzero clock durations.

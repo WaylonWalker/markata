@@ -83,6 +83,33 @@ class BrowserLSPTest(unittest.TestCase):
                 page.reload()
                 expect(preview.locator('h1')).to_have_text('Real workspace draft')
 
+    def test_external_edits_refresh_clean_buffers_and_preserve_drafts(self):
+        source_path = self.root / "draft.md"
+        original = source_path.read_text(encoding="utf-8")
+        try:
+            for name, url in [("Python", self.python_url), ("Go", self.go_url)]:
+                with self.subTest(server=name), self.browser.new_context() as context:
+                    source_path.write_text(original, encoding="utf-8")
+                    page = context.new_page()
+                    page.goto(url)
+                    preview = page.frame_locator('#preview')
+                    expect(preview.locator('h1')).to_have_text('Real workspace draft')
+                    source_path.write_text('# External clean edit', encoding="utf-8")
+                    page.reload()
+                    expect(preview.locator('h1')).to_have_text('External clean edit')
+                    page.evaluate("document.querySelector('.CodeMirror').CodeMirror.setValue('# Private browser edit')")
+                    expect(preview.locator('h1')).to_have_text('Private browser edit')
+                    source_path.write_text('# External conflicting edit', encoding="utf-8")
+                    page.reload()
+                    expect(preview.locator('h1')).to_have_text('Private browser edit')
+                    expect(page.locator('#saved')).to_contain_text('File changed on disk')
+                    with self.browser.new_context() as separate:
+                        other = separate.new_page()
+                        other.goto(url)
+                        expect(other.frame_locator('#preview').locator('h1')).to_have_text('External conflicting edit')
+        finally:
+            source_path.write_text(original, encoding="utf-8")
+
     def test_link_completion_and_diagnostics(self):
         for name, url in [("Python", self.python_url), ("Go", self.go_url)]:
             with self.subTest(server=name):

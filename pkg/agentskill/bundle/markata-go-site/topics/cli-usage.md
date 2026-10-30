@@ -329,3 +329,9 @@ Add `--file <relative-path>` to read a discovered source. Python exposes the sam
 The editor applies the selected site configuration to appearance defaults and Markdown highlighting. Python renderer APIs accept `workspace=`; CLI rendering accepts `render --workspace <site>`. Browser preferences can override appearance defaults.
 For quick content discovery, use `markata workspace --paths --workspace <site>`.
 The editor loads path discovery first and document metadata in the background.
+
+The Go editor retains workspace discovery, document metadata, renderer state, and
+shared LSP data for one running server. Filesystem changes invalidate that state.
+Reload the page to refresh the Files and Tags trees. Reopening a clean file loads
+its latest disk source. Edited browser drafts stay intact when the source changes.
+Browser drafts do not modify workspace files.

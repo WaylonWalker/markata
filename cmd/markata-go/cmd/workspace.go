@@ -20,7 +20,7 @@ func init() {
 			if err != nil {
 				return err
 			}
-			return json.NewEncoder(cmd.OutOrStdout()).Encode(map[string]string{"source": source})
+			return json.NewEncoder(cmd.OutOrStdout()).Encode(map[string]string{"source": source, "version": editorworkspace.SourceVersion(source)})
 		}
 		var files []editorworkspace.File
 		if pathsOnly {
