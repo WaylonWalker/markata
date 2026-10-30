@@ -125,11 +125,11 @@ func TestMentionsTransform_MetadataHTTPCounts(t *testing.T) {
 				"blogroll": models.BlogrollConfig{
 					Enabled: true,
 					Feeds: []models.ExternalFeedConfig{{
-						URL: "https://alice.example/feed.xml",
+						URL:     "https://alice.example/feed.xml",
 						SiteURL: "https://alice.example",
-						Handle: "alice",
+						Handle:  "alice",
 						Aliases: []string{"ally"},
-						Active: &active,
+						Active:  &active,
 					}},
 				},
 			}
