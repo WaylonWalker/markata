@@ -16,6 +16,8 @@ import (
 
 // StandaloneOptions configures rendering without a site build.
 type StandaloneOptions struct {
+	// Config applies site Markdown and highlighting settings when supplied.
+	Config       *models.Config
 	Unsafe       bool
 	InlineAssets bool
 	AssetBase    string
@@ -47,7 +49,7 @@ type StandaloneResult struct {
 }
 
 // RenderStandalone uses the site's Markdown, Mermaid, and Chart.js renderers.
-// It performs no network access or filesystem writes and loads no site config.
+// It performs no network access or filesystem writes. Hosts may supply site config.
 func RenderStandalone(source string, options StandaloneOptions) (*StandaloneResult, error) {
 	return NewStandaloneRenderer(options).Render(source)
 }
@@ -62,6 +64,11 @@ type StandaloneRenderer struct {
 // NewStandaloneRenderer creates a renderer for a persistent host or worker.
 func NewStandaloneRenderer(options StandaloneOptions) *StandaloneRenderer {
 	p := &RenderMarkdownPlugin{md: createMarkdownRenderer(palettes.DefaultChromaThemeDark, false, DefaultMarkdownExtensionConfig(), options.Unsafe)}
+	if options.Config != nil {
+		extra := map[string]interface{}{"theme": options.Config.Theme, "models_config": options.Config, "markdown": options.Config.MarkdownConfig}
+		chroma, numbers := p.resolveHighlightConfig(extra)
+		p.md = createMarkdownRenderer(chroma, numbers, p.resolveExtensionConfig(extra), options.Unsafe)
+	}
 	return &StandaloneRenderer{parser: p, options: options}
 }
 

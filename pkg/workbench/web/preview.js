@@ -6,7 +6,9 @@ if(value==null)document.documentElement.removeAttribute(key);
 else if(values.includes(value))document.documentElement.setAttribute(key,value);
 }};
 
-let updates=Promise.resolve();
+let updates=Promise.resolve(), scriptSequence=0;
+const originalScripts=new WeakMap();
+const scriptSource=s=>originalScripts.get(s) ?? s.textContent;
 
 const renderMarkdown=async data=>{const article=document.querySelector('.post-content');
 if(!article)return;
@@ -30,15 +32,24 @@ const body=document.createElement('template');
 body.innerHTML=data.body_end_html;
 const sources=[...body.content.querySelectorAll('script')];
 const inlineScripts=new Set(sources.filter(s=>!s.src&&s.textContent.includes('rerenderMermaid')).map(s=>s.textContent));
-document.querySelectorAll('script[data-markata-generated]:not([src])').forEach(s=>{if(!inlineScripts.has(s.textContent)&&!s.textContent.includes('rerenderMermaid'))s.remove();
+document.querySelectorAll('script[data-markata-generated]:not([src])').forEach(s=>{if(!inlineScripts.has(scriptSource(s))&&!s.textContent.includes('rerenderMermaid'))s.remove();
 });
 for(const source of sources){if(source.src&&[...document.scripts].some(s=>s.src===assetURL(source,'src')))continue;
-if(!source.src&&inlineScripts.has(source.textContent)&&[...document.scripts].some(s=>!s.src&&s.textContent===source.textContent))continue;
+if(!source.src&&inlineScripts.has(source.textContent)&&[...document.scripts].some(s=>!s.src&&scriptSource(s)===source.textContent))continue;
 const script=document.createElement('script');
 for(const attr of source.attributes)script.setAttribute(attr.name,attr.value);
 script.dataset.markataGenerated='true';
 script.textContent=source.textContent;
-if(source.src||source.type==='module'){await new Promise(resolve=>{script.addEventListener('load',resolve,{once:true});
+originalScripts.set(script,source.textContent);
+if(!source.src&&source.type==='module'){
+  await new Promise(resolve=>{
+    const event='markata-module-ready-'+(++scriptSequence);
+    addEventListener(event,resolve,{once:true});
+    script.addEventListener('error',resolve,{once:true});
+    script.textContent+='\n;window.dispatchEvent(new Event('+JSON.stringify(event)+'));';
+    document.body.append(script);
+  });
+}else if(source.src){await new Promise(resolve=>{script.addEventListener('load',resolve,{once:true});
 script.addEventListener('error',resolve,{once:true});
 document.body.append(script);
 });

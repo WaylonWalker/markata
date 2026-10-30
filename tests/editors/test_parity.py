@@ -68,6 +68,7 @@ def main():
         site = Path(__file__).resolve().parents[2] / 'examples/editor-site'
         demo = load_editor()
         demo.LSP_WORKSPACE = site
+        demo.presentation = demo.appearance(asset_base="/appearance", workspace=str(site))
         python_url = stack.enter_context(serve_editor(demo.app))
         process = subprocess.Popen([args.go_binary, '--listen', '127.0.0.1:0', '--workspace', str(site)], stderr=subprocess.PIPE, text=True)
         stack.callback(process.wait, timeout=15)

@@ -200,6 +200,19 @@ class EditorBrowserTest(unittest.TestCase):
         }""")
         self.assertEqual(self.errors, [], "Chart.js rerenders must not leave stale initializers")
 
+    def test_new_diagram_does_not_block_following_preview_updates(self):
+        self.edit("# Plain start")
+        expect(self.preview.locator("h1")).to_have_text("Plain start")
+        self.page.reload()
+        expect(self.preview.locator("h1")).to_have_text("Plain start")
+        self.edit("# Added diagram\n\n```mermaid\ngraph TD\n  A --> B\n```")
+        expect(self.preview.locator("pre.mermaid")).to_be_visible()
+        self.frame().wait_for_function("() => typeof window.initMermaid === 'function'")
+        self.edit("# After diagram")
+        expect(self.preview.locator("h1")).to_have_text("After diagram")
+        self.edit(chart_source("After diagram"))
+        expect(self.preview.locator("canvas")).to_be_visible()
+
     def test_mermaid_initializer_survives_removing_and_restoring_a_diagram(self):
         self.frame().wait_for_function("() => typeof window.initMermaid === 'function'")
         self.frame().evaluate("""() => {

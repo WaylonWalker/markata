@@ -13,6 +13,12 @@ def check_site_tree(page, url):
           return attach.call(this, {...options, mode:'open'});
         };''')
     page.goto(url)
+    expect(page.frame_locator('#preview').locator('h1')).to_have_text('About this site')
+    # Simulate an empty placeholder persisted by the first workspace build.
+    workspace = page.request.get(url + '/workspace').json()
+    key = workspace.get('rootUri') or workspace.get('root')
+    page.evaluate("key => localStorage.setItem('markata-workspace-v1:' + key + ':pages/about.md', '')", key)
+    page.reload()
     preview = page.frame_locator('#preview')
     expect(preview.locator('h1')).to_have_text('About this site')
     page.locator('#site-files').get_by_role('treeitem', name='welcome.md', exact=True).click()
@@ -58,6 +64,16 @@ def check_site_tree(page, url):
     expect(page.locator('#active-file')).to_have_text('posts/welcome.md')
     expect(preview.locator('h1')).to_have_text('Saved welcome', timeout=10000)
     assert rendered_sources[-1].startswith('# Saved welcome'), rendered_sources[-1][:100]
+    # Reload restores Storage after the deliberate failure injection above.
+    page.reload()
+    expect(page.frame_locator('#preview').locator('h1')).to_be_visible()
+    page.locator('#site-files').get_by_role('treeitem', name='welcome.md', exact=True).click()
+    expect(page.locator('#active-file')).to_have_text('posts/welcome.md')
+    # An intentionally empty draft in the new format must stay empty on reload.
+    page.evaluate("document.querySelector('.CodeMirror').CodeMirror.setValue('')")
+    page.reload()
+    expect(page.locator('#active-file')).to_have_text('posts/welcome.md')
+    assert page.evaluate("document.querySelector('.CodeMirror').CodeMirror.getValue()") == ''
     assert not errors, errors
 
 
@@ -82,6 +98,7 @@ if __name__ == '__main__':
                 from editor_test_support import load_editor, serve_editor
                 module = load_editor()
                 module.LSP_WORKSPACE = Path(__file__).resolve().parents[2] / 'examples/editor-site'
+                module.presentation = module.appearance(asset_base='/appearance', workspace=str(module.LSP_WORKSPACE))
                 with serve_editor(module.app) as url:
                     check_site_tree(page, url)
         browser.close()

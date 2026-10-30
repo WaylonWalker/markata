@@ -52,3 +52,17 @@ and `markata workspace --workspace /path/to/site --file posts/hello.md`.
 The Go and FastAPI servers provide `GET /workspace` and
 `GET /workspace/file?path=posts/hello.md`. The browser loads source on demand.
 See the [Go editor guide](./go-workbench/) and [Python editor guide](./fastapi-editor/).
+
+## Site defaults
+
+When the selected workspace has a config, the editor applies its palette,
+light/dark fallback, aesthetic, fontpack, text size, palette variables, custom CSS,
+and Markdown highlighting settings. Local `palettes/` and `aesthetics/` catalogs
+resolve from that workspace, as does an explicit `fontpacks_file`.
+Saved browser appearance preferences take priority over site defaults.
+The preview remains an article preview; it does not run page templates or a site build.
+
+Python hosts can pass `workspace="/path/to/site"` to `appearance()`, `render()`,
+and `render_async()`. The JSON command equivalent is
+`markata render --workspace /path/to/site --json` (Markdown on stdin), or
+`markata render --workspace /path/to/site --appearance` for controls and assets.

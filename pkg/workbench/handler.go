@@ -24,6 +24,7 @@ import (
 
 	"github.com/WaylonWalker/markata/pkg/editorworkspace"
 	"github.com/WaylonWalker/markata/pkg/lsp"
+	"github.com/WaylonWalker/markata/pkg/models"
 	"github.com/WaylonWalker/markata/pkg/plugins"
 )
 
@@ -38,6 +39,7 @@ var manifestPattern = regexp.MustCompile(`--(palette|aesthetic|fontpack)-manifes
 // Mount it at the root of an origin. Authored HTML is enabled for trusted local
 // editing; isolate its preview using an opaque-origin iframe sandbox.
 type Handler struct {
+	siteConfig     *models.Config
 	workspace      *editorworkspace.Workspace
 	language       http.Handler
 	languageConfig lsp.BrowserConfig
@@ -68,11 +70,15 @@ func NewWithWorkspace(ctx context.Context, root string) (*Handler, error) {
 	if err != nil {
 		return nil, err
 	}
-	a, err := plugins.BuildStandaloneAppearance()
+	siteConfig, err := workspace.Config()
 	if err != nil {
 		return nil, err
 	}
-	h := &Handler{workspace: workspace, language: language, languageConfig: config, appearance: a, assets: a.Assets, gate: make(chan struct{}, 1), choices: map[string][]string{"data-theme": {"light", "dark"}, "data-text-size": {"small", "medium", "large", "x-large"}}}
+	a, err := plugins.BuildStandaloneAppearanceForSite(siteConfig, root)
+	if err != nil {
+		return nil, err
+	}
+	h := &Handler{siteConfig: siteConfig, workspace: workspace, language: language, languageConfig: config, appearance: a, assets: a.Assets, gate: make(chan struct{}, 1), choices: map[string][]string{"data-theme": {"light", "dark"}, "data-text-size": {"small", "medium", "large", "x-large"}}}
 	h.assets["css/fonts.css"] = bytes.ReplaceAll(h.assets["css/fonts.css"], []byte("/assets/fonts/"), []byte("/appearance/assets/fonts/"))
 	for _, name := range []string{"palette", "aesthetic", "fonts"} {
 		match := manifestPattern.FindSubmatch(h.assets["css/"+name+".css"])
@@ -119,6 +125,13 @@ func NewWithWorkspace(ctx context.Context, root string) (*Handler, error) {
 		scripts += `<script src="/appearance/` + name + `"></script>`
 	}
 	h.index = []byte(strings.NewReplacer("<!--EDITOR_HEAD-->", editorHead, "<!--APPEARANCE_HEAD-->", controls, "<!--PICKER-->", a.PickerHTML, "<!--APPEARANCE_SCRIPTS-->", scripts).Replace(string(page)))
+	if siteConfig != nil {
+		attrs := `<html lang="en"`
+		for _, key := range []string{"data-theme", "data-palette", "data-aesthetic", "data-fontpack", "data-text-size"} {
+			attrs += " " + key + `="` + html.EscapeString(a.Defaults[key]) + `"`
+		}
+		h.index = regexp.MustCompile(`<html[^>]*>`).ReplaceAll(h.index, []byte(attrs+">"))
+	}
 	return h, nil
 }
 
@@ -280,7 +293,7 @@ func (h *Handler) prepareRender(r *http.Request, req *renderRequest) (*renderRes
 	cached := result != nil && h.lastSource == *req.Markdown
 	if !cached {
 		var err error
-		result, err = plugins.RenderStandalone(*req.Markdown, plugins.StandaloneOptions{Unsafe: true, AssetBase: "/appearance"})
+		result, err = plugins.RenderStandalone(*req.Markdown, plugins.StandaloneOptions{Config: h.siteConfig, Unsafe: true, AssetBase: "/appearance"})
 		if err != nil {
 			return nil, err
 		}
@@ -379,11 +392,16 @@ func (h *Handler) decodeRequest(w http.ResponseWriter, r *http.Request) *renderR
 
 func (h *Handler) document(result *plugins.StandaloneResult, attributes map[string]string) string {
 	defaults := map[string]string{"data-theme": "dark", "data-palette": "default-dark", "data-aesthetic": "minimal", "data-fontpack": "system", "data-text-size": "large"}
+	for key, value := range h.appearance.Defaults {
+		defaults[key] = value
+	}
 	for key, value := range attributes {
 		defaults[key] = value
 	}
 	if _, ok := attributes["data-palette"]; !ok && defaults["data-theme"] == "light" {
-		defaults["data-palette"] = "default-light"
+		if h.siteConfig == nil {
+			defaults["data-palette"] = "default-light"
+		}
 	}
 	attrs := ""
 	for _, key := range []string{"data-theme", "data-palette", "data-aesthetic", "data-fontpack", "data-text-size"} {

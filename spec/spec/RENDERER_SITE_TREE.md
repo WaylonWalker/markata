@@ -23,3 +23,18 @@ files may be read. Symlink escapes and arbitrary path requests MUST be rejected.
 The browser MUST fetch the file list and load source on selection. Source files
 remain unchanged; drafts and downloads retain the example's existing behavior.
 Python MUST delegate discovery and reads to the bundled Go executable.
+
+## Workspace appearance and rendering
+
+When a workspace config exists, both servers MUST use it for standalone Markdown
+highlighting and initial palette, light/dark mode, aesthetic, fontpack, text size,
+and palette variable overrides. Workspace palette and aesthetic catalogs and an
+explicit fontpack catalog MUST resolve relative to the workspace. Local custom CSS
+MUST be served with appearance assets. Browser appearance preferences may override
+the site's defaults. Without a config, existing standalone defaults MUST remain.
+The `render --workspace` protocol MUST make these settings available to Python
+without a second configuration parser. Standalone preview does not run a full
+site build or apply site page templates.
+
+Browser draft records MUST distinguish intentional empty drafts from legacy empty
+placeholders. Existing nonempty Markdown drafts MUST survive format migration.

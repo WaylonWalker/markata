@@ -8,7 +8,7 @@ import json
 import os
 import stat
 import subprocess
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from html import escape
 from pathlib import Path
 from typing import Any
@@ -45,10 +45,16 @@ class RenderResult:
 
     def document(self, title: str = "", *, lang: str = "en",
                  appearance: Appearance | None = None, palette: str | None = None,
-                 mode: str = "dark", aesthetic: str = "minimal",
-                 fontpack: str = "system", text_size: str = "large",
+                 mode: str | None = None, aesthetic: str | None = None,
+                 fontpack: str | None = None, text_size: str | None = None,
                  appearance_bridge: bool = False) -> str:
         """Create a site-compatible article document with optional appearance assets."""
+        defaults = appearance.defaults if appearance else {}
+        mode = mode if mode is not None else defaults.get('data-theme', 'dark')
+        aesthetic = aesthetic if aesthetic is not None else defaults.get('data-aesthetic', 'minimal')
+        fontpack = fontpack if fontpack is not None else defaults.get('data-fontpack', 'system')
+        text_size = text_size if text_size is not None else defaults.get('data-text-size', 'large')
+        palette = palette if palette is not None else defaults.get('data-palette')
         if mode not in {"light", "dark"} or text_size not in {"small", "medium", "large", "x-large"}:
             raise ValueError("Invalid color mode or text size")
         values = {"data-theme": mode, "data-aesthetic": aesthetic,
@@ -82,6 +88,7 @@ class Appearance:
     scripts: tuple[str, ...]
     asset_base: str
     choices: dict[str, list[str]]
+    defaults: dict[str, str] = field(default_factory=dict)
 
     @property
     def head_html(self) -> str:
@@ -111,7 +118,9 @@ if(value==null)document.documentElement.removeAttribute(key);
 else if(values.includes(value))document.documentElement.setAttribute(key,value);
 }};
 
-let updates=Promise.resolve();
+let updates=Promise.resolve(), scriptSequence=0;
+const originalScripts=new WeakMap();
+const scriptSource=s=>originalScripts.get(s) ?? s.textContent;
 
 const renderMarkdown=async data=>{const article=document.querySelector('.post-content');
 if(!article)return;
@@ -134,15 +143,24 @@ const body=document.createElement('template');
 body.innerHTML=data.body_end_html;
 const sources=[...body.content.querySelectorAll('script')];
 const inlineScripts=new Set(sources.filter(s=>!s.src&&s.textContent.includes('rerenderMermaid')).map(s=>s.textContent));
-document.querySelectorAll('script[data-markata-generated]:not([src])').forEach(s=>{if(!inlineScripts.has(s.textContent)&&!s.textContent.includes('rerenderMermaid'))s.remove();
+document.querySelectorAll('script[data-markata-generated]:not([src])').forEach(s=>{if(!inlineScripts.has(scriptSource(s))&&!s.textContent.includes('rerenderMermaid'))s.remove();
 });
 for(const source of sources){if(source.src&&[...document.scripts].some(s=>s.src===source.src))continue;
-if(!source.src&&inlineScripts.has(source.textContent)&&[...document.scripts].some(s=>!s.src&&s.textContent===source.textContent))continue;
+if(!source.src&&inlineScripts.has(source.textContent)&&[...document.scripts].some(s=>!s.src&&scriptSource(s)===source.textContent))continue;
 const script=document.createElement('script');
 for(const attr of source.attributes)script.setAttribute(attr.name,attr.value);
 script.dataset.markataGenerated='true';
 script.textContent=source.textContent;
-if(source.src||source.type==='module'){await new Promise(resolve=>{script.addEventListener('load',resolve,{once:true});
+originalScripts.set(script,source.textContent);
+if(!source.src&&source.type==='module'){
+  await new Promise(resolve=>{
+    const event='markata-module-ready-'+(++scriptSequence);
+    addEventListener(event,resolve,{once:true});
+    script.addEventListener('error',resolve,{once:true});
+    script.textContent+='\\n;window.dispatchEvent(new Event('+JSON.stringify(event)+'));';
+    document.body.append(script);
+  });
+}else if(source.src){await new Promise(resolve=>{script.addEventListener('load',resolve,{once:true});
 script.addEventListener('error',resolve,{once:true});
 document.body.append(script);
 });
@@ -163,9 +181,11 @@ dispatchEvent(new Event('theme-change'));
 </script>""".replace("__MARKATA_CHOICES__", allowed)
 
 
-def appearance(*, asset_base: str = "/markata-assets", timeout: float = 30) -> Appearance:
+def appearance(*, asset_base: str = "/markata-assets", workspace: str | None = None, timeout: float = 30) -> Appearance:
     """Load the full site appearance catalog once at application startup."""
     command = [_command(False, asset_base, False)[0], 'render', '--appearance']
+    if workspace is not None:
+        command += ['--workspace', str(workspace)]
     try:
         process = subprocess.run(command, capture_output=True, timeout=timeout, check=False)
         if process.returncode:
@@ -185,7 +205,7 @@ def appearance(*, asset_base: str = "/markata-assets", timeout: float = 30) -> A
                 raise ValueError('missing ' + prop + ' manifest')
             entries = json.loads(match[1].replace("\\'", "'").replace('\\\\', '\\'))
             choices[key] = [entry['name'] for entry in entries]
-        return Appearance(data['picker_html'], assets, tuple(data['styles']), tuple(data['scripts']), base, choices)
+        return Appearance(data['picker_html'], assets, tuple(data['styles']), tuple(data['scripts']), base, choices, data.get('defaults', {}))
     except (OSError, subprocess.TimeoutExpired, ValueError, KeyError, TypeError) as error:
         raise RenderError(f"Invalid appearance response: {error}") from error
 
@@ -235,7 +255,7 @@ def _result(stdout: bytes, stderr: bytes, returncode: int) -> RenderResult:
 
 def render(markdown: str, *, inline_assets: bool = False,
            asset_base: str = "/markata-assets", unsafe: bool = False,
-           timeout: float = 30) -> RenderResult:
+           timeout: float = 30, workspace: str | None = None) -> RenderResult:
     """Render using one bundled Go process; input is passed over stdin, never a shell.
 
     For a standalone response, use inline_assets=True and result.document().
@@ -243,6 +263,8 @@ def render(markdown: str, *, inline_assets: bool = False,
     Rich Markdown output is not an HTML sanitizer. Sanitize untrusted input/output.
     """
     command = _command(inline_assets, asset_base, unsafe)
+    if workspace is not None:
+        command += ['--workspace', str(workspace)]
     try:
         process = subprocess.run(command, input=markdown.encode("utf-8"),
                                  capture_output=True, timeout=timeout, check=False)
@@ -253,9 +275,11 @@ def render(markdown: str, *, inline_assets: bool = False,
 
 async def render_async(markdown: str, *, inline_assets: bool = False,
                        asset_base: str = "/markata-assets", unsafe: bool = False,
-                       timeout: float = 30) -> RenderResult:
+                       timeout: float = 30, workspace: str | None = None) -> RenderResult:
     """Render without blocking an ASGI event loop; reap the process on cancellation."""
     command = _command(inline_assets, asset_base, unsafe)
+    if workspace is not None:
+        command += ['--workspace', str(workspace)]
     try:
         process = await asyncio.create_subprocess_exec(
             *command, stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE,

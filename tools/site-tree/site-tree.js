@@ -12,10 +12,24 @@ function syncSelection(tree, path) {
   if (!tree.getSelectedPaths().includes(path)) tree.getItem(path)?.select();
 }
 const editable = path => /\.(md|markdown|mdown|mkd)$/i.test(path);
+function readDraft(path, fallback) {
+  const cached = localStorage.getItem(storageKey(path));
+  if (cached === null) return fallback;
+  try {
+    const record = JSON.parse(cached);
+    if (record?.format === 'markata-draft-v2' && typeof record.source === 'string') return record.source;
+  } catch { /* Legacy drafts contain plain Markdown. */ }
+  // Earlier builds could persist an empty placeholder before loading source.
+  // Preserve all nonempty legacy drafts; new records also preserve intentional blanks.
+  return cached === '' && path !== 'draft.md' ? fallback : cached;
+}
+function writeDraft(path, source) {
+  localStorage.setItem(storageKey(path), JSON.stringify({format:'markata-draft-v2', source}));
+}
 function remember() {
   if (!currentEditor || !editable(active)) return;
   drafts[active] = currentEditor.getValue();
-  try { localStorage.setItem(storageKey(active), drafts[active]); }
+  try { writeDraft(active, drafts[active]); }
   catch { warning(); }
 }
 async function open(path) {
@@ -49,7 +63,7 @@ async function open(path) {
   if (!(path in drafts)) {
     drafts[path] = files[path] || '';
     if (editable(path)) {
-      try { drafts[path] = localStorage.getItem(storageKey(path)) ?? drafts[path]; }
+      try { drafts[path] = readDraft(path, drafts[path]); }
       catch { warning(); }
     }
   }
@@ -66,7 +80,7 @@ window.MarkataSiteTree = {
     if (!currentEditor) return false;
     if (!editable(active)) return true;
     drafts[active] = currentEditor.getValue();
-    try { localStorage.setItem(storageKey(active), drafts[active]);
+    try { writeDraft(active, drafts[active]);
       document.querySelector('#saved').textContent = 'Draft saved on this device'; }
     catch { warning(); }
     return true;
@@ -95,7 +109,7 @@ window.MarkataSiteTree = {
     let selected = Object.keys(files)[0] || 'draft.md';
     try {
       selected = localStorage.getItem('markata-workspace-active-v1:' + workspaceKey) || selected;
-      drafts['draft.md'] = localStorage.getItem(storageKey('draft.md')) ?? editor.getValue();
+      drafts['draft.md'] = readDraft('draft.md', editor.getValue());
     } catch { drafts['draft.md'] = editor.getValue(); warning(); }
     editor.setValue(drafts['draft.md']);
     label = document.querySelector('#active-file');

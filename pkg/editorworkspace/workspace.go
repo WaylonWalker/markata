@@ -12,6 +12,7 @@ import (
 	"github.com/WaylonWalker/markata/pkg/lifecycle"
 	"github.com/WaylonWalker/markata/pkg/models"
 	"github.com/WaylonWalker/markata/pkg/plugins"
+	"github.com/WaylonWalker/markata/pkg/runtimeenv"
 )
 
 // File describes a discovered source document.
@@ -44,19 +45,30 @@ func New(root string) (*Workspace, error) {
 	return &Workspace{root: absolute}, nil
 }
 
-func (w *Workspace) manager() (*lifecycle.Manager, error) {
-	cfg := models.NewConfig()
+// Config loads the selected site's configuration, or returns nil if none exists.
+func (w *Workspace) Config() (*models.Config, error) {
+	if !runtimeenv.DotEnvDisabled() {
+		if err := config.LoadDotEnvFile(filepath.Join(w.root, ".env")); err != nil && !os.IsNotExist(err) {
+			return nil, fmt.Errorf("load workspace environment: %w", err)
+		}
+	}
 	for _, name := range []string{"markata-go.toml", "markata-go.yaml", "markata-go.yml", "markata-go.json"} {
 		filename := filepath.Join(w.root, name)
 		if _, err := os.Stat(filename); os.IsNotExist(err) {
 			continue
 		}
-		loaded, err := config.Load(filename)
-		if err != nil {
-			return nil, err
-		}
-		cfg = loaded
-		break
+		return config.Load(filename)
+	}
+	return nil, nil
+}
+
+func (w *Workspace) manager() (*lifecycle.Manager, error) {
+	cfg, err := w.Config()
+	if err != nil {
+		return nil, err
+	}
+	if cfg == nil {
+		cfg = models.NewConfig()
 	}
 	m := lifecycle.NewManager()
 	lc := lifecycle.NewConfig()
