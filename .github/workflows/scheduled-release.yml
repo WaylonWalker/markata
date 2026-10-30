@@ -1,13 +1,18 @@
-name: Scheduled release dry run
+name: Scheduled release candidate (no publish)
+
+# A green candidate is evidence for a subsequent human-approved tag/release.
+# No job here creates a tag, GitHub Release, container tag, or PyPI upload.
+run-name: "Candidate ${{ github.event.schedule == '0 14 * * 2,5' && 'stable' || inputs.channel || 'nightly' }}: ${{ github.sha }}"
 
 on:
   schedule:
-    - cron: '0 7 * * 1-6'
-    - cron: '0 8 * * 0'
+    # Fixed UTC schedule; local Central time shifts by one hour at DST.
+    - cron: '0 8 * * *'       # Nightly snapshot, about 2-3 AM Central
+    - cron: '0 14 * * 2,5'    # Tue/Fri stable-candidate review, about 8-9 AM Central
   workflow_dispatch:
     inputs:
       channel:
-        description: 'Candidate channel'
+        description: 'Candidate channel; never publishes'
         required: true
         type: choice
         options: [nightly, stable]
@@ -15,15 +20,65 @@ on:
 
 permissions:
   contents: read
-  id-token: write  # Keyless Cosign signing; no release publishing permissions.
+  actions: read
 
 concurrency:
-  group: scheduled-release-dry-run
+  group: scheduled-release-candidate
   cancel-in-progress: false
 
 jobs:
-  verify:
+  gate:
+    name: Determine whether a candidate is needed
     runs-on: ubuntu-latest
+    outputs:
+      run_candidate: ${{ steps.check.outputs.run_candidate }}
+      channel: ${{ steps.check.outputs.channel }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Check current commit and previous successful candidate
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CHANNEL: ${{ github.event.schedule == '0 14 * * 2,5' && 'stable' || inputs.channel || 'nightly' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "channel=$CHANNEL" >> "$GITHUB_OUTPUT"
+          # Always permit a deliberate manual rebuild, including on a feature branch.
+          if [[ "$GITHUB_EVENT_NAME" != "schedule" ]]; then
+            echo "run_candidate=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          latest_tag="$(git tag --merged HEAD --list 'v[0-9]*' --sort=-version:refname | head -n 1)"
+          if [[ -n "$latest_tag" && "$(git rev-list -n 1 "$latest_tag")" == "$GITHUB_SHA" ]]; then
+            echo "main already matches $latest_tag; no new candidate" >> "$GITHUB_STEP_SUMMARY"
+            echo "run_candidate=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Do not rebuild the same commit and channel after a successful run.
+          # The current run is in progress, so it cannot appear in status=success.
+          previous="$(gh api "/repos/$GITHUB_REPOSITORY/actions/workflows/scheduled-release.yml/runs?branch=main&status=success&per_page=100" \
+            --jq ".workflow_runs[] | select(.head_sha == \"$GITHUB_SHA\" and .display_title == \"Candidate $CHANNEL: $GITHUB_SHA\") | .id" | head -n 1)"
+          if [[ -n "$previous" ]]; then
+            echo "Unchanged $CHANNEL candidate already passed in run $previous" >> "$GITHUB_STEP_SUMMARY"
+            echo "run_candidate=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "New $CHANNEL candidate for $GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
+          echo "run_candidate=true" >> "$GITHUB_OUTPUT"
+
+  verify:
+    name: Test and package candidate (no publish)
+    needs: gate
+    if: needs.gate.outputs.run_candidate == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # Keyless signature for the disposable snapshot, no publishing scope.
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v7
         with:
@@ -63,12 +118,13 @@ jobs:
         run: |
           set -euo pipefail
           test -s dist/checksums.txt
-          find dist -type f | sort
           grep -q 'markata' dist/checksums.txt
-      - name: Upload dry-run artifacts
+          find dist -type f | sort
+      - name: Upload dry-run artifacts and notes
         uses: actions/upload-artifact@v7
         with:
-          name: scheduled-release-snapshot
+          name: scheduled-${{ needs.gate.outputs.channel }}-snapshot
           path: |
             dist/**
+            ${{ runner.temp }}/RELEASE_NOTES.md
           retention-days: 7
