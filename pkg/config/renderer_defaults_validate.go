@@ -6,6 +6,11 @@ import (
 	"github.com/WaylonWalker/markata/pkg/models"
 )
 
+const (
+	renderConfigOfflineInteractive = "offline-interactive"
+	renderConfigAssetInline = "inline"
+)
+
 // validateRendererDefaults checks integration-only settings, keeping full site
 // validation independent from transport-specific render policy.
 func validateRendererDefaults(config *models.Config) []error {
@@ -13,7 +18,7 @@ func validateRendererDefaults(config *models.Config) []error {
 	// The profile is an integration preference, not the site-build lifecycle.
 	// Reject misspellings instead of recording a setting no consumer can honor.
 	switch config.MarkdownConfig.RenderProfile {
-	case "", "web", "offline-interactive", "offline-static":
+	case "", "web", renderConfigOfflineInteractive, "offline-static":
 		// Recognized. Offline-static is reserved and standalone renders reject it.
 	default:
 		errs = append(errs, ValidationError{
@@ -23,7 +28,7 @@ func validateRendererDefaults(config *models.Config) []error {
 	}
 	// Standalone integration asset defaults are independent of site-build assets.
 	switch config.MarkdownConfig.RenderAssetMode {
-	case "", "linked", "inline":
+	case "", "linked", renderConfigAssetInline:
 	default:
 		errs = append(errs, ValidationError{Field: "markdown.render_asset_mode",
 			Message: "must be one of: linked, inline"})
