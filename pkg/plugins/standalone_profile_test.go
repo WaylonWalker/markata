@@ -73,3 +73,13 @@ func TestStandaloneProfile_AuditsGeneratedAssetURLs(t *testing.T) {
 		t.Fatalf("ordinary user-initiated links must be allowed: %v", err)
 	}
 }
+
+func TestStandaloneProfile_WASMAssetOmissionRejectsOfflineInline(t *testing.T) {
+	renderer := NewStandaloneRenderer(StandaloneOptions{
+		Profile: RenderProfileOfflineInteractive,
+		OmitAssetContent: true,
+	})
+	if _, err := renderer.Render("# Example"); err == nil || !strings.Contains(err.Error(), "omit_asset_content") {
+		t.Fatalf("WASM omitted-asset mode must not claim self-contained output: %v", err)
+	}
+}
