@@ -279,7 +279,7 @@ func TestSitemapIndexOmitsNoindexAndDuplicateFeedSitemaps(t *testing.T) {
 		{Slug: "draft", Robots: "NOINDEX,follow", Formats: models.FeedFormats{HTML: true, Sitemap: true}},
 		{Slug: "blog", Formats: models.FeedFormats{HTML: true, Sitemap: true}},
 		{Slug: "disabled", Formats: models.FeedFormats{HTML: true}},
-		{Slug: "private", Filter: "private == true", Formats: models.FeedFormats{HTML: true, Sitemap: true}},
+		{Slug: "private", IncludePrivate: true, Formats: models.FeedFormats{HTML: true, Sitemap: true}},
 		{Slug: "sitemap-only", Formats: models.FeedFormats{Sitemap: true}},
 	})
 
