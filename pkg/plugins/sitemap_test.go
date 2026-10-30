@@ -285,8 +285,8 @@ func TestSitemapIndexOmitsNoindexAndDuplicateFeedSitemaps(t *testing.T) {
 
 	index := NewSitemapPlugin().buildSitemapIndex(m, "https://example.com")
 	want := map[string]int{
-		"https://example.com/sitemap-pages.xml":      1,
-		"https://example.com/blog/sitemap.xml":       1,
+		"https://example.com/sitemap-pages.xml":        1,
+		"https://example.com/blog/sitemap.xml":         1,
 		"https://example.com/sitemap-only/sitemap.xml": 1,
 	}
 	got := make(map[string]int)
