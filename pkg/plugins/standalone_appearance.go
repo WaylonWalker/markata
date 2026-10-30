@@ -42,7 +42,7 @@ type standaloneSiteStyle struct {
 func standaloneSiteTheme(cfg *models.Config) standaloneSiteStyle {
 	var theme models.ThemeConfig
 	var fontpack, mode, light, dark, selected string
-	theme = models.ThemeConfig{Palette: templateTypeDefault, Aesthetic: "minimal", Fontpack: "system", Switcher: models.NewThemeSwitcherConfig()}
+	theme = models.ThemeConfig{Palette: templateTypeDefault, PaletteLight: "default-light", PaletteDark: "default-dark", Aesthetic: "minimal", Fontpack: "system", Switcher: models.NewThemeSwitcherConfig()}
 	if cfg != nil {
 		theme = cfg.Theme
 	}

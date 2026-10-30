@@ -88,3 +88,23 @@ func TestWorkspaceSiteAppearance(t *testing.T) {
 		t.Fatal("site CSS missing")
 	}
 }
+
+func TestWorkspaceWithoutConfig_DefaultPaletteIsAvailable(t *testing.T) {
+	handler, err := NewWithWorkspace(context.Background(), t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	selected := handler.appearance.Defaults["data-palette"]
+	if selected != "default-dark" {
+		t.Fatalf("default palette = %q", selected)
+	}
+	found := false
+	for _, palette := range handler.choices["data-palette"] {
+		if palette == selected {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("default palette absent from renderer choices")
+	}
+}
