@@ -45,17 +45,14 @@ func main() {
 		if len(source) > 200000 || !utf8.ValidString(source) {
 			return errorJSON("Markdown must contain at most 200,000 UTF-8 bytes")
 		}
+		// WASM intentionally does not duplicate its large CSS/JS bundle inside
+		// the module. The static host and service worker provide those bytes,
+		// and the parent preview hydrates them before inserting into its iframe.
 		options := plugins.StandaloneOptions{
-			Profile: profile, AssetBase: "./appearance", InlineAssets: inline,
-			OmitAssetContent: !inline,
+			Profile: profile, AssetBase: "./appearance", OmitAssetContent: true,
+			OfflineAssetHost: profile == plugins.RenderProfileOfflineInteractive,
 		}
-		if profile == plugins.RenderProfileOfflineInteractive {
-			// This profile requires the real bundled CSS/JS bytes, not references
-			// to the worker's precached static assets.
-			options.InlineAssets = true
-			options.OmitAssetContent = false
-		}
-		key := fmt.Sprintf("%s:%t", profile, options.InlineAssets)
+		key := fmt.Sprintf("%s:%t", profile, inline)
 		renderer, ok := renderers[key]
 		if !ok {
 			renderer = plugins.NewStandaloneRenderer(options)
