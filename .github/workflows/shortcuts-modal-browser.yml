@@ -8,6 +8,7 @@ on:
       - "pkg/themes/default/static/js/search-shortcuts.js"
       - "pkg/themes/default/static/js/shortcuts-registry.js"
       - "scripts/shortcuts-modal.browser.test.cjs"
+      - "scripts/shortcuts-modal-render/**"
       - ".github/workflows/shortcuts-modal-browser.yml"
   workflow_dispatch:
 
@@ -26,11 +27,18 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: "22"
+      - uses: actions/setup-go@v7
+        with:
+          go-version: "1.26"
+      - name: Build production template renderer fixture
+        run: go build -o "$RUNNER_TEMP/shortcuts-modal-render" ./scripts/shortcuts-modal-render
       - name: Install pinned Playwright
         run: npm install --no-save --no-package-lock playwright@1.56.1
       - name: Install Chromium
         run: npx --no-install playwright install --with-deps chromium
-      - name: Verify shipped shortcuts templates and JavaScript
+      - name: Verify rendered shortcuts templates and JavaScript
+        env:
+          MARKATA_SHORTCUTS_RENDERER: ${{ runner.temp }}/shortcuts-modal-render
         run: |
           node --check scripts/shortcuts-modal.browser.test.cjs
           node scripts/shortcuts-modal.browser.test.cjs
