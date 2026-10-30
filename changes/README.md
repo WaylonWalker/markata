@@ -1,17 +1,19 @@
 # Release-note fragments
 
-Every user-visible PR adds one Markdown fragment under `changes/unreleased/` named `<PR-number>.<category>.md`, where category is `feature`, `fix`, `performance`, `breaking`, or `other`. Documentation-only, tests-only, and internal CI changes can omit a fragment.
+For user-visible PRs, add one Markdown fragment under `changes/unreleased/` named `<PR-number>.<category>.md`. Categories: `feature`, `fix`, `performance`, `breaking`, `other`. Documentation-only, test-only, and internal CI changes can omit a fragment.
 
-Write one concise, user-facing sentence, with no heading. Explain impact, not implementation. For breaking changes, include migration instructions in the fragment.
+Write one concise, user-facing sentence (not a heading). Describe the user impact. A breaking change should include migration guidance.
 
-Example: `changes/unreleased/1748.fix.md`:
+Example `changes/unreleased/1748.fix.md`:
 
 ```md
 Fix the archive next-page navigation when editorial presentation is enabled.
 ```
 
-The release workflow should assemble fragments deterministically, sorted by category and PR number, into version-specific notes. Nightly releases preview accumulated fragments; stable releases publish the same curated notes, then a follow-up PR archives consumed fragments. **Never delete or move fragments automatically on a release runner**: release tags should remain immutable, and the archival change should be reviewed as a normal PR.
+`python3 scripts/release-notes.py --version v0.15.0` assembles the available fragments in deterministic category/PR order. The assembler validates filenames and content. **It does not yet verify that every merged user-visible PR has a fragment.** The current backlog predates this convention, so releases must also review merged changes and write curated highlights.
 
-A missing fragment for a user-visible change should fail the release-notes validation gate. Historical releases can fall back to GoReleaser's GitHub changelog until fragments are populated.
+The scheduled release workflow produces disposable snapshot artifacts and note previews only. Its daily nightly and Tuesday/Friday stable-candidate runs never create tags or publish to GitHub or PyPI. Humans must review candidate artifacts and tag/publish using the existing controlled release processes after the gates pass.
 
-See `scripts/release-notes.py` for deterministic assembly.
+After a stable release, archive consumed fragments in a reviewed PR. Never mutate release tags or remove fragments from a release runner. Historical releases can use GoReleaser's GitHub changelog as a starting point.
+
+See `scripts/release-notes.py` for the deterministic assembler.
