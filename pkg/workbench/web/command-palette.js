@@ -17,7 +17,8 @@
     const query = dialog.querySelector('input');
     const results = dialog.querySelector('[role=listbox]');
     const count = dialog.querySelector('[role=status]');
-    let matches = commands, active = 0, selection;
+    const available = window.MarkataSiteTree ? [{id:'open-file', label:'Open file', description:'Fuzzy search workspace files', syntax:'Ctrl/Cmd+P', aliases:'find quick open picker', action:() => window.MarkataSiteTree.openPicker()}, ...commands] : commands;
+    let matches = available, active = 0, selection;
     function select(index) {
       active = index;
       [...results.children].forEach((row, i) => row.setAttribute('aria-selected', String(i === active)));
@@ -29,7 +30,7 @@
     }
     function refresh() {
       const words = query.value.toLowerCase().trim().split(/\s+/).filter(Boolean);
-      const filtered = commands.filter(c => words.every(word => `${c.label} ${c.description} ${c.syntax} ${c.aliases}`.toLowerCase().includes(word)));
+      const filtered = available.filter(c => words.every(word => `${c.label} ${c.description} ${c.syntax} ${c.aliases}`.toLowerCase().includes(word)));
       matches = filtered.slice(0, 60);
       results.replaceChildren();
       count.textContent = filtered.length > 60 ? `Showing 60 of ${filtered.length} commands. Refine your search to see more.` : filtered.length ? `${filtered.length} commands` : 'No matching commands. Try another word or clear the search.';
@@ -53,6 +54,8 @@
     }
     function close() { dialog.close(); }
     function insert(command) {
+      if (command.action) { close(); command.action(); return; }
+      if (editor.getOption('readOnly')) return;
       const text = command.useSelection === false ? command.placeholder : selection.text || command.placeholder;
       // Keep all lines of a selected passage inside an indented block.
       const indent = command.template.slice(0, command.template.indexOf('{{text}}')).match(/\n( +)$/)?.[1] || '';

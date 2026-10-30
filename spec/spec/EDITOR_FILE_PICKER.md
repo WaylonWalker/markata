@@ -1,0 +1,21 @@
+# Editor file picker
+
+The shared Go and Python workspace editor provides Open file in the command
+palette and Ctrl/Cmd+P. Ctrl/Cmd+Shift+P continues to open commands.
+A modal combobox searches discovered workspace paths and available titles without
+fetching source or waiting for metadata. It includes the standalone draft.
+
+Use bundled MIT-licensed fuzzysort, with immutable prepared search snapshots.
+Rank basename matches above path and title matches. Show at most 60 rows,
+with safe DOM match highlighting, full paths, a result count and empty state.
+Arrow keys select; Enter opens through the existing workspace selection handler;
+Escape cancels. Focus returns to the editor. Composition input must not trigger
+shortcuts. Read-only files still permit file navigation and command discovery.
+Opening a file preserves the existing draft, source access and stale-request rules.
+Metadata updates rebuild the index and refresh an open picker.
+
+Research: fuzzysort offers Sublime-style scoring and prepared targets with no
+runtime dependencies. uFuzzy favors configurable word matching; fzf-for-js ports
+fzf but documents browser performance tradeoffs. Choose fuzzysort for this small
+plain-JavaScript runtime. Validate ranking against ambiguous filenames, path
+queries and titles, and measure repeated queries over at least 10,000 paths.
