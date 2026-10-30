@@ -176,6 +176,25 @@ func (p *PublishHTMLPlugin) recordDraftInputs(posts []*models.Post, cache *build
 	}
 }
 
+// postFormatContentPath matches writeReversedFormatOutput: the homepage has
+// /index.<ext>, while other posts have /<slug>.<ext>.
+func postFormatContentPath(outputDir, slug, ext string) string {
+	if slug == "" {
+		return filepath.Join(outputDir, "index."+ext)
+	}
+	return filepath.Join(outputDir, slug+"."+ext)
+}
+
+// appendExpectedFormatOutputs tracks the canonical format file and the
+// non-root redirect page emitted for that format.
+func appendExpectedFormatOutputs(paths []string, outputDir, slug, ext string) []string {
+	paths = append(paths, postFormatContentPath(outputDir, slug, ext))
+	if slug != "" {
+		paths = append(paths, filepath.Join(outputDir, slug, "index."+ext, "index.html"))
+	}
+	return paths
+}
+
 func (p *PublishHTMLPlugin) expectedPostOutputsExist(post *models.Post, config *lifecycle.Config) bool {
 	formats := resolvePostFormats(post, config)
 	expected := make([]string, 0, 5)
@@ -184,26 +203,17 @@ func (p *PublishHTMLPlugin) expectedPostOutputsExist(post *models.Post, config *
 	}
 	if !post.Private {
 		hasReversedFormat := formats.Markdown || formats.Text || formats.ANSI
-		if !formats.IsHTMLEnabled() && hasReversedFormat {
+		if !formats.IsHTMLEnabled() && hasReversedFormat && post.Slug != "" {
 			expected = append(expected, filepath.Join(config.OutputDir, post.Slug, "index.html"))
 		}
 		if formats.Markdown {
-			expected = append(expected,
-				filepath.Join(config.OutputDir, post.Slug+".md"),
-				filepath.Join(config.OutputDir, post.Slug, "index.md", "index.html"),
-			)
+			expected = appendExpectedFormatOutputs(expected, config.OutputDir, post.Slug, "md")
 		}
 		if formats.Text {
-			expected = append(expected,
-				filepath.Join(config.OutputDir, post.Slug+".txt"),
-				filepath.Join(config.OutputDir, post.Slug, "index.txt", "index.html"),
-			)
+			expected = appendExpectedFormatOutputs(expected, config.OutputDir, post.Slug, "txt")
 		}
 		if formats.ANSI {
-			expected = append(expected,
-				filepath.Join(config.OutputDir, post.Slug+".ansi"),
-				filepath.Join(config.OutputDir, post.Slug, "index.ansi", "index.html"),
-			)
+			expected = appendExpectedFormatOutputs(expected, config.OutputDir, post.Slug, "ansi")
 		}
 		if formats.OG {
 			expected = append(expected, filepath.Join(config.OutputDir, post.Slug, "og", "index.html"))
@@ -231,13 +241,13 @@ func (p *PublishHTMLPlugin) postOutputExists(post *models.Post, config *lifecycl
 	}
 	if !post.Private {
 		if formats.Markdown {
-			paths = append(paths, filepath.Join(config.OutputDir, post.Slug+".md"))
+			paths = append(paths, postFormatContentPath(config.OutputDir, post.Slug, "md"))
 		}
 		if formats.Text {
-			paths = append(paths, filepath.Join(config.OutputDir, post.Slug+".txt"))
+			paths = append(paths, postFormatContentPath(config.OutputDir, post.Slug, "txt"))
 		}
 		if formats.ANSI {
-			paths = append(paths, filepath.Join(config.OutputDir, post.Slug+".ansi"))
+			paths = append(paths, postFormatContentPath(config.OutputDir, post.Slug, "ansi"))
 		}
 		if formats.OG {
 			paths = append(paths, filepath.Join(config.OutputDir, post.Slug, "og", "index.html"))
