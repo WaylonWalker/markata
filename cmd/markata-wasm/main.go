@@ -14,7 +14,7 @@ import (
 
 func main() {
 	renderers := map[string]*plugins.StandaloneRenderer{
-		"web:linked": plugins.NewStandaloneRenderer(plugins.StandaloneOptions{
+		"web:false": plugins.NewStandaloneRenderer(plugins.StandaloneOptions{
 			Profile: plugins.RenderProfileWeb, AssetBase: "./appearance", OmitAssetContent: true,
 		}),
 	}
