@@ -75,7 +75,6 @@ func TestMentionsTransformPlainPageWithoutBlogrollMetadata(t *testing.T) {
 	}
 }
 
-
 type countingMentionTransport func(*http.Request) (*http.Response, error)
 
 func (fn countingMentionTransport) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -88,7 +87,7 @@ func (fn countingMentionTransport) RoundTrip(req *http.Request) (*http.Response,
 func TestMentionsTransform_MetadataHTTPCounts(t *testing.T) {
 	tests := []struct {
 		name, content string
-		want int64
+		want          int64
 	}{
 		{"plain post", "No relevant contacts", 0},
 		{"unknown mention", "Hello @unknown", 0},
