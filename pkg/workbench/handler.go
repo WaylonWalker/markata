@@ -117,7 +117,7 @@ func NewWithWorkspace(ctx context.Context, root string) (*Handler, error) {
 	controls := ""
 	for _, name := range a.Styles {
 		if name != "css/main.css" && name != "css/components.css" {
-			controls += styleLink(name)
+			controls += h.versionedStyleLink(name)
 		}
 	}
 	scripts := ""
@@ -132,7 +132,34 @@ func NewWithWorkspace(ctx context.Context, root string) (*Handler, error) {
 		}
 		h.index = regexp.MustCompile(`<html[^>]*>`).ReplaceAll(h.index, []byte(attrs+">"))
 	}
+	h.versionEditorAssets()
 	return h, nil
+}
+
+// Version editor references so restarting on the same port cannot reuse stale code.
+var editorAssetReference = regexp.MustCompile(`(?:src|href)="/(editor|appearance)/([^"?]+)"`)
+
+func (h *Handler) versionEditorAssets() {
+	h.index = editorAssetReference.ReplaceAllFunc(h.index, func(reference []byte) []byte {
+		match := editorAssetReference.FindSubmatch(reference)
+		var data []byte
+		if string(match[1]) == "editor" {
+			var err error
+			data, err = web.ReadFile("web/" + string(match[2]))
+			if err != nil {
+				return reference
+			}
+		} else {
+			data = h.assets[string(match[2])]
+		}
+		hash := sha256.Sum256(data)
+		return []byte(strings.TrimSuffix(string(reference), `"`) + fmt.Sprintf("?v=%x", hash[:8]) + `"`)
+	})
+}
+
+func (h *Handler) versionedStyleLink(name string) string {
+	hash := sha256.Sum256(h.assets[name])
+	return `<link rel="stylesheet" href="/appearance/` + name + fmt.Sprintf("?v=%x", hash[:8]) + `">`
 }
 
 func styleLink(name string) string { return `<link rel="stylesheet" href="/appearance/` + name + `">` }
@@ -195,6 +222,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Security-Policy", "frame-ancestors 'self'")
 		serve(w, r, "index.html", h.index)
 	case strings.HasPrefix(r.URL.Path, "/appearance/"):
+		w.Header().Set("Cache-Control", "no-cache")
 		// The only mutation occurs under the render gate. Copy the slice header while
 		// holding it, then let concurrent asset requests proceed independently.
 		select {
@@ -211,6 +239,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		serve(w, r, r.URL.Path, data)
 	case strings.HasPrefix(r.URL.Path, "/editor/"):
+		w.Header().Set("Cache-Control", "no-cache")
 		name := strings.TrimPrefix(r.URL.Path, "/editor/")
 		data, err := web.ReadFile("web/" + name)
 		if err != nil {
@@ -409,7 +438,7 @@ func (h *Handler) document(result *plugins.StandaloneResult, attributes map[stri
 	}
 	styles := ""
 	for _, name := range h.appearance.Styles {
-		styles += styleLink(name)
+		styles += h.versionedStyleLink(name)
 	}
 	bg, fg := "#131721", "#e5e7eb"
 	if defaults["data-theme"] == "light" {

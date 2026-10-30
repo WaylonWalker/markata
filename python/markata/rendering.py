@@ -5,6 +5,7 @@ import base64
 import re
 import asyncio
 import json
+import hashlib
 import os
 import stat
 import subprocess
@@ -90,18 +91,24 @@ class Appearance:
     choices: dict[str, list[str]]
     defaults: dict[str, str] = field(default_factory=dict)
 
+    def asset_url(self, name: str) -> str:
+        url = self.asset_base + '/' + name
+        if name in self.assets:
+            url += '?v=' + hashlib.sha256(self.assets[name]).hexdigest()[:16]
+        return url
+
     @property
     def head_html(self) -> str:
-        return ''.join('<link rel="stylesheet" href="' + escape(self.asset_base + '/' + name, quote=True) + '">' for name in self.styles)
+        return ''.join('<link rel="stylesheet" href="' + escape(self.asset_url(name), quote=True) + '">' for name in self.styles)
 
     @property
     def controls_head_html(self) -> str:
         """Style the appearance controls without applying the site's page layout."""
-        return ''.join('<link rel="stylesheet" href="' + escape(self.asset_base + '/' + name, quote=True) + '">' for name in self.styles if name not in {'css/main.css', 'css/components.css'})
+        return ''.join('<link rel="stylesheet" href="' + escape(self.asset_url(name), quote=True) + '">' for name in self.styles if name not in {'css/main.css', 'css/components.css'})
 
     @property
     def body_end_html(self) -> str:
-        return ''.join('<script src="' + escape(self.asset_base + '/' + name, quote=True) + '"></script>' for name in self.scripts)
+        return ''.join('<script src="' + escape(self.asset_url(name), quote=True) + '"></script>' for name in self.scripts)
 
     def validate(self, attributes: dict[str, str]) -> None:
         for key, value in attributes.items():

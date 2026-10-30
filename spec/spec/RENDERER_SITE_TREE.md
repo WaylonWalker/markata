@@ -38,3 +38,7 @@ site build or apply site page templates.
 
 Browser draft records MUST distinguish intentional empty drafts from legacy empty
 placeholders. Existing nonempty Markdown drafts MUST survive format migration.
+
+Editor and generated appearance assets MUST revalidate and use content-versioned
+page references, so restarting a server at the same origin loads current code and
+site defaults.

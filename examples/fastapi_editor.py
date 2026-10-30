@@ -15,6 +15,7 @@ import uvicorn
 import asyncio
 import ipaddress
 import json
+import hashlib
 import re
 from html import escape
 import os
@@ -146,7 +147,15 @@ async def index():
         tag = re.search(r'<html[^>]*>', page).group(0)
         updated = re.sub(r' ' + re.escape(key) + r'="[^"]*"', '', tag)
         page = page.replace(tag, updated[:-1] + ' ' + key + '="' + escape(value, quote=True) + '">', 1)
-    return page.replace('</body>',  presentation.body_end_html + '</body>', 1)
+    page = page.replace('</body>', presentation.body_end_html + '</body>', 1)
+    def version_asset(match):
+        name = match.group(2)
+        try:
+            content = editor_asset_bytes(name)
+        except (KeyError, OSError):
+            return match.group(0)
+        return match.group(1) + name + '?v=' + hashlib.sha256(content).hexdigest()[:16] + '"'
+    return re.sub(r'((?:src|href)="/appearance/)([^"?]+)"', version_asset, page)
 
 
 
@@ -348,16 +357,20 @@ ASSET_BUNDLE = 'UEsDBBQAAAAIAAAAXV3m1LVokQIAAFkEAAASAAAAY29kZW1pcnJvci9MSUNFTlNF
 # Only editor assets live here. Markata owns its appearance bundle.
 EDITOR_ASSETS = zipfile.ZipFile(io.BytesIO(base64.b64decode(ASSET_BUNDLE)))
 
+def editor_asset_bytes(name: str):
+    return ((LSP_ASSETS / name).read_bytes() if name in {"codemirror/addon/hint/show-hint.js", "codemirror/addon/hint/show-hint.css"} else
+                   EDITOR_ASSETS.read(name) if (name.startswith("codemirror/") or name in {"command-catalog.js", "command-palette.js", "command-palette.css", "command-palette-example.md", "site-tree.js", "site-tree.css", "site-tree.LICENSE"}) else presentation.assets[name])
+
+
 @app.get("/appearance/{name:path}")
 async def appearance_asset(name: str):
     try:
-        content = ((LSP_ASSETS / name).read_bytes() if name in {"codemirror/addon/hint/show-hint.js", "codemirror/addon/hint/show-hint.css"} else
-                   EDITOR_ASSETS.read(name) if (name.startswith("codemirror/") or name in {"command-catalog.js", "command-palette.js", "command-palette.css", "command-palette-example.md", "site-tree.js", "site-tree.css", "site-tree.LICENSE"}) else presentation.assets[name])
+        content = editor_asset_bytes(name)
     except (KeyError, OSError):
         raise HTTPException(status_code=404)
     kind = ('text/markdown' if name.endswith('.md') else
             'text/css' if name.endswith('.css') else 'font/woff2' if name.endswith('.woff2') else 'text/javascript')
-    return Response(content, media_type=kind, headers={"Access-Control-Allow-Origin": "*", "Cache-Control": "public, max-age=3600"})
+    return Response(content, media_type=kind, headers={"Access-Control-Allow-Origin": "*", "Cache-Control": "no-cache"})
 
 @app.get("/editor/{name}")
 async def language_asset(name: str):
