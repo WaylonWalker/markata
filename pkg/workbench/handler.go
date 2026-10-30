@@ -33,15 +33,15 @@ var manifestPattern = regexp.MustCompile(`--(palette|aesthetic|fontpack)-manifes
 // Mount it at the root of an origin. Authored HTML is enabled for trusted local
 // editing; isolate its preview using an opaque-origin iframe sandbox.
 type Handler struct {
-	appearance *plugins.StandaloneAppearance
-	choices    map[string][]string
-	assets     map[string][]byte
-	index      []byte
-	bridge     string
-	gate       chan struct{}
-	lastSource string
+	appearance  *plugins.StandaloneAppearance
+	choices     map[string][]string
+	assets      map[string][]byte
+	index       []byte
+	bridge      string
+	gate        chan struct{}
+	lastSource  string
 	lastOptions plugins.StandaloneOptions
-	lastResult *plugins.StandaloneResult
+	lastResult  *plugins.StandaloneResult
 }
 
 // New builds immutable appearance assets once. Reuse the handler for all requests.
@@ -215,11 +215,17 @@ func (h *Handler) prepareRender(r *http.Request, req *renderRequest) (*renderRes
 		return nil, err
 	}
 	profile := req.Profile
-	if profile == "" { profile = plugins.RenderProfileWeb }
+	if profile == "" {
+		profile = plugins.RenderProfileWeb
+	}
 	unsafe := profile == plugins.RenderProfileWeb // Existing trusted-local editor default.
-	if req.Unsafe != nil { unsafe = *req.Unsafe }
+	if req.Unsafe != nil {
+		unsafe = *req.Unsafe
+	}
 	options := plugins.StandaloneOptions{Unsafe: unsafe, AssetBase: "/appearance", Profile: profile}
-	if req.InlineAssets != nil { options.InlineAssets = *req.InlineAssets }
+	if req.InlineAssets != nil {
+		options.InlineAssets = *req.InlineAssets
+	}
 	result := h.lastResult
 	cached := result != nil && h.lastSource == *req.Markdown && h.lastOptions == options
 	if !cached {
@@ -261,26 +267,26 @@ type renderRequest struct {
 // bundled bytes separately at /appearance and initializes dynamic scripts in
 // body_end_html. This deliberately does not duplicate large CSS/JS contents.
 type assetSummary struct {
-	ID string `json:"id"`
-	Kind string `json:"kind"`
+	ID        string `json:"id"`
+	Kind      string `json:"kind"`
 	Placement string `json:"placement"`
-	Module bool `json:"module,omitempty"`
+	Module    bool   `json:"module,omitempty"`
 }
 
 // renderResponse matches the Python reference's full-document/fragment contract.
 type renderResponse struct {
-	Document        *string `json:"document"`
-	HTML            string  `json:"html"`
-	FeatureHeadHTML string  `json:"feature_head_html"`
-	BodyEndHTML     string  `json:"body_end_html"`
-	RenderMS        float64 `json:"render_ms"`
-	InputBytes      int     `json:"input_bytes"`
-	HTMLBytes       int     `json:"html_bytes"`
-	DocumentBytes   int     `json:"document_bytes"`
-	Cached          bool    `json:"cached"`
-	Profile         string  `json:"profile"`
+	Document        *string         `json:"document"`
+	HTML            string          `json:"html"`
+	FeatureHeadHTML string          `json:"feature_head_html"`
+	BodyEndHTML     string          `json:"body_end_html"`
+	RenderMS        float64         `json:"render_ms"`
+	InputBytes      int             `json:"input_bytes"`
+	HTMLBytes       int             `json:"html_bytes"`
+	DocumentBytes   int             `json:"document_bytes"`
+	Cached          bool            `json:"cached"`
+	Profile         string          `json:"profile"`
 	Features        map[string]bool `json:"features"`
-	Assets          []assetSummary `json:"assets"`
+	Assets          []assetSummary  `json:"assets"`
 }
 
 // featureHead omits styles already owned by the persistent appearance shell.

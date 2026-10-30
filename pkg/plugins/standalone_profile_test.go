@@ -76,7 +76,7 @@ func TestStandaloneProfile_AuditsGeneratedAssetURLs(t *testing.T) {
 
 func TestStandaloneProfile_WASMAssetOmissionRejectsOfflineInline(t *testing.T) {
 	renderer := NewStandaloneRenderer(StandaloneOptions{
-		Profile: RenderProfileOfflineInteractive,
+		Profile:          RenderProfileOfflineInteractive,
 		OmitAssetContent: true,
 	})
 	if _, err := renderer.Render("# Example"); err == nil || !strings.Contains(err.Error(), "omit_asset_content") {

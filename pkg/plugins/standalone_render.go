@@ -72,7 +72,9 @@ func (renderer *StandaloneRenderer) Render(source string) (*StandaloneResult, er
 	p, options := renderer.parser, renderer.options
 	var err error
 	options, err = ResolveStandaloneProfile(options)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	if options.Profile == RenderProfileOfflineInteractive && options.OmitAssetContent {
 		return nil, fmt.Errorf("offline-interactive requires managed asset content, unavailable with omit_asset_content")
 	}
@@ -108,7 +110,9 @@ func (renderer *StandaloneRenderer) Render(source string) (*StandaloneResult, er
 		}
 	}
 	if options.Profile == RenderProfileOfflineInteractive {
-		if err := checkStandaloneOfflineResources(r); err != nil { return nil, err }
+		if err := checkStandaloneOfflineResources(r); err != nil {
+			return nil, err
+		}
 	}
 	return r, nil
 }

@@ -309,11 +309,11 @@ func TestHandler_FragmentUpdatesOmitSharedCSS(t *testing.T) {
 
 func TestHandler_RenderProfileAndAssetMetadata(t *testing.T) {
 	h := newHandler(t)
-	for i, tc := range []struct{
+	for i, tc := range []struct {
 		request string
-		status int
+		status  int
 		profile string
-		cached bool
+		cached  bool
 	}{
 		{`{"markdown":"# Local","profile":"web"}`, 200, "web", false},
 		{`{"markdown":"# Local","profile":"web"}`, 200, "web", true},
@@ -324,15 +324,25 @@ func TestHandler_RenderProfileAndAssetMetadata(t *testing.T) {
 		{`{"markdown":"hi","profile":"not-a-profile"}`, 422, "", false},
 	} {
 		w := request(h, tc.request)
-		if w.Code != tc.status { t.Fatalf("case %d: %d want %d: %s", i, w.Code, tc.status, w.Body.String()) }
-		if tc.status != 200 { continue }
+		if w.Code != tc.status {
+			t.Fatalf("case %d: %d want %d: %s", i, w.Code, tc.status, w.Body.String())
+		}
+		if tc.status != 200 {
+			continue
+		}
 		var result struct {
-			Profile string `json:"profile"`
+			Profile  string          `json:"profile"`
 			Features map[string]bool `json:"features"`
-			Assets []struct { ID string `json:"id"`; Kind string `json:"kind"`; Placement string `json:"placement"` } `json:"assets"`
+			Assets   []struct {
+				ID        string `json:"id"`
+				Kind      string `json:"kind"`
+				Placement string `json:"placement"`
+			} `json:"assets"`
 			Cached bool `json:"cached"`
 		}
-		if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil { t.Fatal(err) }
+		if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
+			t.Fatal(err)
+		}
 		if result.Profile != tc.profile || result.Cached != tc.cached || len(result.Assets) == 0 || result.Features == nil {
 			t.Fatalf("case %d: missing or stale profile/manifest: %+v", i, result)
 		}

@@ -3523,9 +3523,9 @@ func NewConfig() *Config {
 			UseGitignore: true,
 		},
 		MarkdownConfig: MarkdownConfig{
-			Extensions:    []string{},
-			Highlight:     NewHighlightConfig(),
-			RenderProfile: "web",
+			Extensions:      []string{},
+			Highlight:       NewHighlightConfig(),
+			RenderProfile:   "web",
 			RenderAssetMode: "linked",
 			RenderAssetBase: "/markata-assets",
 		},

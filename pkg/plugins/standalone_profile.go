@@ -1,8 +1,8 @@
 package plugins
 
 import (
-	"fmt"
 	"errors"
+	"fmt"
 	"io"
 	"net/url"
 	"regexp"
@@ -44,7 +44,7 @@ func ResolveStandaloneProfile(options StandaloneOptions) (StandaloneOptions, err
 
 const (
 	standaloneTagStyle = "style"
-	standaloneAttrSrc = "src"
+	standaloneAttrSrc  = "src"
 )
 
 var remoteCSSURL = regexp.MustCompile(`(?i)(?:url\s*\(\s*['"]?\s*|@import\s+(?:url\s*\(\s*)?['"]?\s*)(?:https?:)?//`)

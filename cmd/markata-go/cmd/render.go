@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/WaylonWalker/markata/pkg/plugins"
 	"github.com/WaylonWalker/markata/pkg/config"
+	"github.com/WaylonWalker/markata/pkg/plugins"
 
 	"github.com/spf13/cobra"
 )

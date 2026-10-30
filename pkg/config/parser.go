@@ -149,42 +149,42 @@ func parseHeadText(value any) (string, error) {
 
 // baseConfigData holds the basic config fields that are directly assignable.
 type baseConfigData struct {
-	Fontpack       string
-	FontpacksFile  string
-	OutputDir      string
-	URL            string
-	Title          string
-	Description    string
-	Author         string
-	Language       string
-	AuthorURL      string
-	ManagingEditor string
-	WebMaster      string
-	Copyright      string
-	License        interface{}
-	AssetsDir      string
-	Assets         models.AssetsConfig
-	TemplatesDir   string
-	Hooks          []string
-	DisabledHooks  []string
-	GlobPatterns   []string
-	UseGitignore   *bool
-	SlugMode       string
-	SlugRules      []models.SlugRule
-	Extensions     []string
-	Concurrency    int
-	Theme          models.ThemeConfig
-	ThemeCalendar  parsedThemeCalendar
-	Head           models.HeadConfig
-	Presets        parsedTemplatePresets
-	Defaults       parsedDefaultTemplates
-	ErrorPages     parsedErrorPages
-	ResourceHints  parsedResourceHints
-	Highlight      parsedHighlight
-	RenderProfile  string
+	Fontpack        string
+	FontpacksFile   string
+	OutputDir       string
+	URL             string
+	Title           string
+	Description     string
+	Author          string
+	Language        string
+	AuthorURL       string
+	ManagingEditor  string
+	WebMaster       string
+	Copyright       string
+	License         interface{}
+	AssetsDir       string
+	Assets          models.AssetsConfig
+	TemplatesDir    string
+	Hooks           []string
+	DisabledHooks   []string
+	GlobPatterns    []string
+	UseGitignore    *bool
+	SlugMode        string
+	SlugRules       []models.SlugRule
+	Extensions      []string
+	Concurrency     int
+	Theme           models.ThemeConfig
+	ThemeCalendar   parsedThemeCalendar
+	Head            models.HeadConfig
+	Presets         parsedTemplatePresets
+	Defaults        parsedDefaultTemplates
+	ErrorPages      parsedErrorPages
+	ResourceHints   parsedResourceHints
+	Highlight       parsedHighlight
+	RenderProfile   string
 	RenderAssetMode string
 	RenderAssetBase string
-	Footer         models.FooterConfig
+	Footer          models.FooterConfig
 }
 
 // navItemData holds nav item fields.
@@ -319,9 +319,9 @@ func buildConfig(src configSource) *models.Config {
 			SlugRules: append([]models.SlugRule{}, base.SlugRules...),
 		},
 		MarkdownConfig: models.MarkdownConfig{
-			Extensions:    base.Extensions,
-			Highlight:     base.Highlight,
-			RenderProfile: base.RenderProfile,
+			Extensions:      base.Extensions,
+			Highlight:       base.Highlight,
+			RenderProfile:   base.RenderProfile,
 			RenderAssetMode: base.RenderAssetMode,
 			RenderAssetBase: base.RenderAssetBase,
 		},
@@ -873,9 +873,9 @@ type tomlSlugRule struct {
 }
 
 type tomlMarkdownConfig struct {
-	Extensions    []string        `toml:"extensions"`
-	Highlight     parsedHighlight `toml:"highlight"`
-	RenderProfile string          `toml:"render_profile"`
+	Extensions      []string        `toml:"extensions"`
+	Highlight       parsedHighlight `toml:"highlight"`
+	RenderProfile   string          `toml:"render_profile"`
 	RenderAssetMode string          `toml:"render_asset_mode"`
 	RenderAssetBase string          `toml:"render_asset_base"`
 }
@@ -2062,42 +2062,42 @@ func (w *tomlWellKnownConfig) toWellKnownConfig() models.WellKnownConfig {
 // configSource interface implementation for tomlConfig.
 func (c *tomlConfig) getBaseConfig() baseConfigData {
 	return baseConfigData{
-		Fontpack:       c.Fontpack,
-		FontpacksFile:  c.FontpacksFile,
-		OutputDir:      c.OutputDir,
-		URL:            c.URL,
-		Title:          c.Title,
-		Description:    c.Description,
-		Author:         c.Author,
-		Language:       c.Language,
-		AuthorURL:      c.AuthorURL,
-		ManagingEditor: c.ManagingEditor,
-		WebMaster:      c.WebMaster,
-		Copyright:      c.Copyright,
-		License:        c.License,
-		AssetsDir:      c.AssetsDir,
-		Assets:         c.Assets,
-		TemplatesDir:   c.TemplatesDir,
-		Hooks:          c.Hooks,
-		DisabledHooks:  c.DisabledHooks,
-		GlobPatterns:   c.Glob.Patterns,
-		UseGitignore:   c.Glob.UseGitignore,
-		SlugMode:       c.Glob.SlugMode,
-		SlugRules:      c.Glob.toSlugRules(),
-		Extensions:     c.Markdown.Extensions,
-		Concurrency:    c.Concurrency,
-		Theme:          c.Theme.toThemeConfig(),
-		ThemeCalendar:  c.ThemeCalendar,
-		Head:           c.Head.toHeadConfig(),
-		Presets:        c.Presets,
-		Defaults:       c.Defaults,
-		ErrorPages:     c.ErrorPages,
-		ResourceHints:  c.ResourceHints,
-		Highlight:      c.Markdown.Highlight,
-		RenderProfile:  c.Markdown.RenderProfile,
+		Fontpack:        c.Fontpack,
+		FontpacksFile:   c.FontpacksFile,
+		OutputDir:       c.OutputDir,
+		URL:             c.URL,
+		Title:           c.Title,
+		Description:     c.Description,
+		Author:          c.Author,
+		Language:        c.Language,
+		AuthorURL:       c.AuthorURL,
+		ManagingEditor:  c.ManagingEditor,
+		WebMaster:       c.WebMaster,
+		Copyright:       c.Copyright,
+		License:         c.License,
+		AssetsDir:       c.AssetsDir,
+		Assets:          c.Assets,
+		TemplatesDir:    c.TemplatesDir,
+		Hooks:           c.Hooks,
+		DisabledHooks:   c.DisabledHooks,
+		GlobPatterns:    c.Glob.Patterns,
+		UseGitignore:    c.Glob.UseGitignore,
+		SlugMode:        c.Glob.SlugMode,
+		SlugRules:       c.Glob.toSlugRules(),
+		Extensions:      c.Markdown.Extensions,
+		Concurrency:     c.Concurrency,
+		Theme:           c.Theme.toThemeConfig(),
+		ThemeCalendar:   c.ThemeCalendar,
+		Head:            c.Head.toHeadConfig(),
+		Presets:         c.Presets,
+		Defaults:        c.Defaults,
+		ErrorPages:      c.ErrorPages,
+		ResourceHints:   c.ResourceHints,
+		Highlight:       c.Markdown.Highlight,
+		RenderProfile:   c.Markdown.RenderProfile,
 		RenderAssetMode: c.Markdown.RenderAssetMode,
 		RenderAssetBase: c.Markdown.RenderAssetBase,
-		Footer:         c.Footer.toFooterConfig(),
+		Footer:          c.Footer.toFooterConfig(),
 	}
 }
 
@@ -2416,9 +2416,9 @@ type yamlSlugRule struct {
 }
 
 type yamlMarkdownConfig struct {
-	Extensions    []string        `yaml:"extensions"`
-	Highlight     parsedHighlight `yaml:"highlight"`
-	RenderProfile string          `yaml:"render_profile"`
+	Extensions      []string        `yaml:"extensions"`
+	Highlight       parsedHighlight `yaml:"highlight"`
+	RenderProfile   string          `yaml:"render_profile"`
 	RenderAssetMode string          `yaml:"render_asset_mode"`
 	RenderAssetBase string          `yaml:"render_asset_base"`
 }
@@ -3734,42 +3734,42 @@ func (w *yamlWellKnownConfig) toWellKnownConfig() models.WellKnownConfig {
 // configSource interface implementation for yamlConfig.
 func (c *yamlConfig) getBaseConfig() baseConfigData {
 	return baseConfigData{
-		Fontpack:       c.Fontpack,
-		FontpacksFile:  c.FontpacksFile,
-		OutputDir:      c.OutputDir,
-		URL:            c.URL,
-		Title:          c.Title,
-		Description:    c.Description,
-		Author:         c.Author,
-		Language:       c.Language,
-		AuthorURL:      c.AuthorURL,
-		ManagingEditor: c.ManagingEditor,
-		WebMaster:      c.WebMaster,
-		Copyright:      c.Copyright,
-		License:        c.License,
-		AssetsDir:      c.AssetsDir,
-		Assets:         c.Assets,
-		TemplatesDir:   c.TemplatesDir,
-		Hooks:          c.Hooks,
-		DisabledHooks:  c.DisabledHooks,
-		GlobPatterns:   c.Glob.Patterns,
-		UseGitignore:   c.Glob.UseGitignore,
-		SlugMode:       c.Glob.SlugMode,
-		SlugRules:      c.Glob.toSlugRules(),
-		Extensions:     c.Markdown.Extensions,
-		Concurrency:    c.Concurrency,
-		Theme:          c.Theme.toThemeConfig(),
-		ThemeCalendar:  c.ThemeCalendar,
-		Head:           c.Head.toHeadConfig(),
-		Presets:        c.Presets,
-		Defaults:       c.Defaults,
-		ErrorPages:     c.ErrorPages,
-		ResourceHints:  c.ResourceHints,
-		Highlight:      c.Markdown.Highlight,
-		RenderProfile:  c.Markdown.RenderProfile,
+		Fontpack:        c.Fontpack,
+		FontpacksFile:   c.FontpacksFile,
+		OutputDir:       c.OutputDir,
+		URL:             c.URL,
+		Title:           c.Title,
+		Description:     c.Description,
+		Author:          c.Author,
+		Language:        c.Language,
+		AuthorURL:       c.AuthorURL,
+		ManagingEditor:  c.ManagingEditor,
+		WebMaster:       c.WebMaster,
+		Copyright:       c.Copyright,
+		License:         c.License,
+		AssetsDir:       c.AssetsDir,
+		Assets:          c.Assets,
+		TemplatesDir:    c.TemplatesDir,
+		Hooks:           c.Hooks,
+		DisabledHooks:   c.DisabledHooks,
+		GlobPatterns:    c.Glob.Patterns,
+		UseGitignore:    c.Glob.UseGitignore,
+		SlugMode:        c.Glob.SlugMode,
+		SlugRules:       c.Glob.toSlugRules(),
+		Extensions:      c.Markdown.Extensions,
+		Concurrency:     c.Concurrency,
+		Theme:           c.Theme.toThemeConfig(),
+		ThemeCalendar:   c.ThemeCalendar,
+		Head:            c.Head.toHeadConfig(),
+		Presets:         c.Presets,
+		Defaults:        c.Defaults,
+		ErrorPages:      c.ErrorPages,
+		ResourceHints:   c.ResourceHints,
+		Highlight:       c.Markdown.Highlight,
+		RenderProfile:   c.Markdown.RenderProfile,
 		RenderAssetMode: c.Markdown.RenderAssetMode,
 		RenderAssetBase: c.Markdown.RenderAssetBase,
-		Footer:         c.Footer.toFooterConfig(),
+		Footer:          c.Footer.toFooterConfig(),
 	}
 }
 
@@ -4014,9 +4014,9 @@ type jsonSlugRule struct {
 }
 
 type jsonMarkdownConfig struct {
-	Extensions    []string        `json:"extensions"`
-	Highlight     parsedHighlight `json:"highlight"`
-	RenderProfile string          `json:"render_profile"`
+	Extensions      []string        `json:"extensions"`
+	Highlight       parsedHighlight `json:"highlight"`
+	RenderProfile   string          `json:"render_profile"`
 	RenderAssetMode string          `json:"render_asset_mode"`
 	RenderAssetBase string          `json:"render_asset_base"`
 }
@@ -5356,42 +5356,42 @@ func (w *jsonWellKnownConfig) toWellKnownConfig() models.WellKnownConfig {
 // configSource interface implementation for jsonConfig.
 func (c *jsonConfig) getBaseConfig() baseConfigData {
 	return baseConfigData{
-		Fontpack:       c.Fontpack,
-		FontpacksFile:  c.FontpacksFile,
-		OutputDir:      c.OutputDir,
-		URL:            c.URL,
-		Title:          c.Title,
-		Description:    c.Description,
-		Author:         c.Author,
-		Language:       c.Language,
-		AuthorURL:      c.AuthorURL,
-		ManagingEditor: c.ManagingEditor,
-		WebMaster:      c.WebMaster,
-		Copyright:      c.Copyright,
-		License:        c.License,
-		AssetsDir:      c.AssetsDir,
-		Assets:         c.Assets,
-		TemplatesDir:   c.TemplatesDir,
-		Hooks:          c.Hooks,
-		DisabledHooks:  c.DisabledHooks,
-		GlobPatterns:   c.Glob.Patterns,
-		UseGitignore:   c.Glob.UseGitignore,
-		SlugMode:       c.Glob.SlugMode,
-		SlugRules:      c.Glob.toSlugRules(),
-		Extensions:     c.Markdown.Extensions,
-		Concurrency:    c.Concurrency,
-		Theme:          c.Theme.toThemeConfig(),
-		ThemeCalendar:  c.ThemeCalendar,
-		Head:           c.Head.toHeadConfig(),
-		Presets:        c.Presets,
-		Defaults:       c.Defaults,
-		ErrorPages:     c.ErrorPages,
-		ResourceHints:  c.ResourceHints,
-		Highlight:      c.Markdown.Highlight,
-		RenderProfile:  c.Markdown.RenderProfile,
+		Fontpack:        c.Fontpack,
+		FontpacksFile:   c.FontpacksFile,
+		OutputDir:       c.OutputDir,
+		URL:             c.URL,
+		Title:           c.Title,
+		Description:     c.Description,
+		Author:          c.Author,
+		Language:        c.Language,
+		AuthorURL:       c.AuthorURL,
+		ManagingEditor:  c.ManagingEditor,
+		WebMaster:       c.WebMaster,
+		Copyright:       c.Copyright,
+		License:         c.License,
+		AssetsDir:       c.AssetsDir,
+		Assets:          c.Assets,
+		TemplatesDir:    c.TemplatesDir,
+		Hooks:           c.Hooks,
+		DisabledHooks:   c.DisabledHooks,
+		GlobPatterns:    c.Glob.Patterns,
+		UseGitignore:    c.Glob.UseGitignore,
+		SlugMode:        c.Glob.SlugMode,
+		SlugRules:       c.Glob.toSlugRules(),
+		Extensions:      c.Markdown.Extensions,
+		Concurrency:     c.Concurrency,
+		Theme:           c.Theme.toThemeConfig(),
+		ThemeCalendar:   c.ThemeCalendar,
+		Head:            c.Head.toHeadConfig(),
+		Presets:         c.Presets,
+		Defaults:        c.Defaults,
+		ErrorPages:      c.ErrorPages,
+		ResourceHints:   c.ResourceHints,
+		Highlight:       c.Markdown.Highlight,
+		RenderProfile:   c.Markdown.RenderProfile,
 		RenderAssetMode: c.Markdown.RenderAssetMode,
 		RenderAssetBase: c.Markdown.RenderAssetBase,
-		Footer:         c.Footer.toFooterConfig(),
+		Footer:          c.Footer.toFooterConfig(),
 	}
 }
 

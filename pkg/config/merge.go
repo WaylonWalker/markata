@@ -555,8 +555,12 @@ func mergeMarkdownConfig(base, override models.MarkdownConfig) models.MarkdownCo
 	if override.RenderProfile != "" {
 		result.RenderProfile = override.RenderProfile
 	}
-	if override.RenderAssetMode != "" { result.RenderAssetMode = override.RenderAssetMode }
-	if override.RenderAssetBase != "" { result.RenderAssetBase = override.RenderAssetBase }
+	if override.RenderAssetMode != "" {
+		result.RenderAssetMode = override.RenderAssetMode
+	}
+	if override.RenderAssetBase != "" {
+		result.RenderAssetBase = override.RenderAssetBase
+	}
 
 	return result
 }

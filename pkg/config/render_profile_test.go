@@ -6,9 +6,9 @@ import (
 )
 
 func TestRenderProfile_ConfigFormatsAndSidebar(t *testing.T) {
-	for _, tc := range []struct{
+	for _, tc := range []struct {
 		name, data string
-		format Format
+		format     Format
 	}{
 		{"toml", "[markata-go.markdown]\nrender_profile = \"offline-interactive\"\n", FormatTOML},
 		{"yaml", "markata-go:\n  markdown:\n    render_profile: offline-interactive\n", FormatYAML},
@@ -54,14 +54,19 @@ func TestRenderProfile_ConfigMergeAndValidation(t *testing.T) {
 }
 
 func TestRenderAssetDefaults_ConfigAndValidation(t *testing.T) {
-	cases := []struct { data string; format Format }{
+	cases := []struct {
+		data   string
+		format Format
+	}{
 		{"[markata-go.markdown]\nrender_asset_mode = \"inline\"\nrender_asset_base = \"/custom-assets\"\n", FormatTOML},
 		{"markata-go:\n  markdown:\n    render_asset_mode: inline\n    render_asset_base: /custom-assets\n", FormatYAML},
 		{`{"markata-go":{"markdown":{"render_asset_mode":"inline","render_asset_base":"/custom-assets"}}}`, FormatJSON},
 	}
 	for _, tc := range cases {
 		cfg, err := LoadFromString(tc.data, tc.format)
-		if err != nil { t.Fatal(err) }
+		if err != nil {
+			t.Fatal(err)
+		}
 		if cfg.MarkdownConfig.RenderAssetMode != "inline" || cfg.MarkdownConfig.RenderAssetBase != "/custom-assets" {
 			t.Fatalf("failed to parse renderer assets: %+v", cfg.MarkdownConfig)
 		}
@@ -76,9 +81,13 @@ func TestRenderAssetDefaults_ConfigAndValidation(t *testing.T) {
 
 func TestRenderAssetDefaults_MergePreservesUnrelatedSettings(t *testing.T) {
 	base, err := LoadFromString("[markata-go.markdown]\nrender_asset_mode = \"inline\"\nrender_asset_base = \"/assets\"\n", FormatTOML)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	override, err := LoadFromString("[markata-go]\ntitle = \"New title\"\n", FormatTOML)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	merged := mergeMarkdownConfig(base.MarkdownConfig, override.MarkdownConfig)
 	if merged.RenderAssetMode != "inline" || merged.RenderAssetBase != "/assets" {
 		t.Fatalf("unrelated settings clobbered renderer defaults: %+v", merged)

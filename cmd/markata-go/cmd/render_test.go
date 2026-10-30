@@ -2,9 +2,9 @@ package cmd
 
 import (
 	"bytes"
+	"encoding/json"
 	"os"
 	"path/filepath"
-	"encoding/json"
 	"strings"
 	"testing"
 
@@ -77,9 +77,13 @@ func TestRenderCommand_InheritsSiteAssetDefaults(t *testing.T) {
 	oldCfg := cfgFile
 	cfgFile = path
 	defer func() { cfgFile = oldCfg }()
-	if err := cmd.Execute(); err != nil { t.Fatal(err) }
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
 	var result plugins.StandaloneResult
-	if err := json.Unmarshal(out.Bytes(), &result); err != nil { t.Fatal(err) }
+	if err := json.Unmarshal(out.Bytes(), &result); err != nil {
+		t.Fatal(err)
+	}
 	if !strings.Contains(result.HeadHTML, "<style>") || strings.Contains(result.HeadHTML, "/test-assets/") {
 		t.Fatalf("expected inlined config-managed assets: %.300s", result.HeadHTML)
 	}
