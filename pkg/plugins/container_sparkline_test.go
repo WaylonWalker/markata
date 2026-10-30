@@ -6,13 +6,16 @@ import (
 )
 
 func TestContainerSparklineRendersStaticSVG(t *testing.T) {
+	// Container attributes come from a map, so check them independently of order.
 	got := renderContainerMarkdown(t, `::: md-sparkline {data-values="10, 20 40 30" data-label="Jobs per year" data-tone="success"}
 
 Up 3x since year one
 
 :::`)
 	for _, want := range []string{
-		`<div class="md-sparkline" data-values="10, 20 40 30"`,
+		`<div class="md-sparkline"`,
+		`data-values="10, 20 40 30"`,
+		"\">\n<svg class=\"md-sparkline-chart\"",
 		`<svg class="md-sparkline-chart" viewBox="0 0 100 24" preserveAspectRatio="none" role="img" aria-label="Jobs per year: 4 points from 10 to 30, low 10, high 40" focusable="false">`,
 		`<polyline class="md-sparkline-line" points="0,22 33.33,15.33 66.67,2 100,8.67" vector-effect="non-scaling-stroke"/>`,
 		`<polygon class="md-sparkline-area" points="0,24 0,22 33.33,15.33 66.67,2 100,8.67 100,24"/>`,
