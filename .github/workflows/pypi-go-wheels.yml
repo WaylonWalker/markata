@@ -23,6 +23,7 @@ on:
       - 'examples/command-palette-showcase.md'
       - 'examples/wasm-workbench/**'
       - 'pkg/workbench/**'
+      - 'pkg/lsp/**'
       - 'tests/editors/**'
       - 'scripts/wasm-workbench.py'
       - 'docs/guides/fastapi-editor.md'
@@ -91,7 +92,7 @@ jobs:
           "${RUNNER_TEMP}/markata-wheel-venv/bin/python" -m markata version
           "${RUNNER_TEMP}/markata-wheel-venv/bin/markata" version
           "${RUNNER_TEMP}/markata-wheel-venv/bin/markata" --help
-          "${RUNNER_TEMP}/markata-wheel-venv/bin/python" -m pip install fastapi httpx uvicorn playwright
+          "${RUNNER_TEMP}/markata-wheel-venv/bin/python" -m pip install fastapi httpx uvicorn websockets playwright
           "${RUNNER_TEMP}/markata-wheel-venv/bin/python" python/smoke_fastapi.py
           "${RUNNER_TEMP}/markata-wheel-venv/bin/python" -m unittest discover -s python/integration -v
       - name: Install browser for the live editor regression test
@@ -104,6 +105,15 @@ jobs:
           go build -o "${RUNNER_TEMP}/markata-workbench" ./cmd/markata-workbench
           python scripts/wasm-workbench.py
           "${RUNNER_TEMP}/markata-wheel-venv/bin/python" tests/editors/test_parity.py --go-binary "${RUNNER_TEMP}/markata-workbench" --wasm-output .wasm-workbench
+      - name: Exercise LSP completion in the Python and Go browser examples
+        shell: bash
+        run: |
+          set -euo pipefail
+          go build -o "${RUNNER_TEMP}/markata-example-lsp" ./cmd/markata-go
+          go build -o "${RUNNER_TEMP}/markata-example-workbench" ./cmd/markata-workbench
+          MARKATA_LSP_BINARY="${RUNNER_TEMP}/markata-example-lsp" \
+          MARKATA_WORKBENCH_BINARY="${RUNNER_TEMP}/markata-example-workbench" \
+          "${RUNNER_TEMP}/markata-wheel-venv/bin/python" python/test_browser_lsp.py -v
       - name: Save inspected wheel artifacts
         uses: actions/upload-artifact@v7
         with:

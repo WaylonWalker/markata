@@ -2,6 +2,7 @@ package lsp
 
 import (
 	"log"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -1113,12 +1114,18 @@ func pathToURI(path string) string {
 	}
 	// Normalize separators for URI
 	absPath = filepath.ToSlash(absPath)
-	return "file://" + absPath
+	if !strings.HasPrefix(absPath, "/") {
+		absPath = "/" + absPath
+	}
+	return (&url.URL{Scheme: "file", Path: absPath}).String()
 }
 
 // uriToPath converts a file URI to a file system path.
 func uriToPath(uri string) string {
 	path := strings.TrimPrefix(uri, "file://")
+	if parsed, err := url.Parse(uri); err == nil && parsed.Scheme == "file" {
+		path = parsed.Path
+	}
 	// Handle Windows paths
 	if len(path) > 2 && path[0] == '/' && path[2] == ':' {
 		path = path[1:]

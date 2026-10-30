@@ -1,6 +1,8 @@
 package lsp
 
 import (
+	"strings"
+
 	"github.com/WaylonWalker/markata/pkg/diagnostics"
 )
 
@@ -26,6 +28,12 @@ func (s *Server) publishDiagnostics(uri, content string) error {
 		Diagnostics: diagnosticsList,
 	}
 
+	s.docMu.RLock()
+	if doc := s.documents[uri]; doc != nil {
+		version := doc.Version
+		params.Version = &version
+	}
+	s.docMu.RUnlock()
 	return s.sendNotification("textDocument/publishDiagnostics", params)
 }
 
@@ -41,6 +49,7 @@ func (s *Server) computeDiagnostics(uri, content string) []Diagnostic {
 	issues := diagnostics.Check(filePath, content, resolver)
 
 	diagnosticsList := make([]Diagnostic, 0, len(issues))
+	lines := strings.Split(content, "\n")
 
 	for _, issue := range issues {
 		diag := Diagnostic{
@@ -52,6 +61,12 @@ func (s *Server) computeDiagnostics(uri, content string) []Diagnostic {
 			Source:   "markata-go",
 			Message:  issue.Message,
 			Code:     issue.Code,
+		}
+		if diag.Range.Start.Line >= 0 && diag.Range.Start.Line < len(lines) {
+			diag.Range.Start.Character = utf16Column(lines[diag.Range.Start.Line], diag.Range.Start.Character)
+		}
+		if diag.Range.End.Line >= 0 && diag.Range.End.Line < len(lines) {
+			diag.Range.End.Character = utf16Column(lines[diag.Range.End.Line], diag.Range.End.Character)
 		}
 		diagnosticsList = append(diagnosticsList, diag)
 	}

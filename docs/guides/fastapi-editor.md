@@ -109,3 +109,25 @@ See [shared editor features and runtime differences](/docs/guides/renderer-integ
 Select **Commands** or press **Ctrl+Shift+P** (**Cmd+Shift+P** on macOS).
 Search for special syntax, then press **Enter** to insert it at your selection.
 See the [command palette guide](editor-command-palette.md) for the catalog and keyboard controls.
+
+## Language assistance
+
+The Python and Go editors connect to Markata's LSP through a same-origin WebSocket.
+The server selects the workspace with `MARKATA_LSP_WORKSPACE`; browser messages cannot change it.
+The endpoint accepts `localhost` and loopback IP hosts only. It is intended for local examples.
+
+Both editors complete wiki links and Markdown document paths. They also complete
+command-catalog containers, their known attributes, and Mermaid diagram syntax.
+Press **Ctrl+Space** to request suggestions at the cursor. File-tree navigation
+is a separate feature.
+
+To run the browser checks against both servers, build the Go binaries and set
+`MARKATA_LSP_BINARY` and `MARKATA_WORKBENCH_BINARY` as shown below:
+
+```bash
+go build -o /tmp/markata-editor-lsp ./cmd/markata-go
+go build -o /tmp/markata-editor-workbench ./cmd/markata-workbench
+MARKATA_LSP_BINARY=/tmp/markata-editor-lsp \
+MARKATA_WORKBENCH_BINARY=/tmp/markata-editor-workbench \
+python python/test_browser_lsp.py -v
+```

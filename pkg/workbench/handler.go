@@ -4,6 +4,7 @@ package workbench
 
 import (
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"embed"
 	"encoding/json"
@@ -11,6 +12,7 @@ import (
 	"fmt"
 	"html"
 	"io"
+	"log"
 	"mime"
 	"net/http"
 	"net/url"
@@ -19,6 +21,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/WaylonWalker/markata/pkg/lsp"
 	"github.com/WaylonWalker/markata/pkg/plugins"
 )
 
@@ -33,23 +36,36 @@ var manifestPattern = regexp.MustCompile(`--(palette|aesthetic|fontpack)-manifes
 // Mount it at the root of an origin. Authored HTML is enabled for trusted local
 // editing; isolate its preview using an opaque-origin iframe sandbox.
 type Handler struct {
-	appearance *plugins.StandaloneAppearance
-	choices    map[string][]string
-	assets     map[string][]byte
-	index      []byte
-	bridge     string
-	gate       chan struct{}
-	lastSource string
-	lastResult *plugins.StandaloneResult
+	language       http.Handler
+	languageConfig lsp.BrowserConfig
+	appearance     *plugins.StandaloneAppearance
+	choices        map[string][]string
+	assets         map[string][]byte
+	index          []byte
+	bridge         string
+	gate           chan struct{}
+	lastSource     string
+	lastResult     *plugins.StandaloneResult
 }
 
 // New builds immutable appearance assets once. Reuse the handler for all requests.
-func New() (*Handler, error) {
+func New() (*Handler, error) { return NewWithWorkspace(context.Background(), ".") }
+
+// NewWithWorkspace enables LSP for a server-selected workspace. Cancel ctx on shutdown.
+func NewWithWorkspace(ctx context.Context, root string) (*Handler, error) {
+	config, err := lsp.BrowserWorkspace(root)
+	if err != nil {
+		return nil, err
+	}
+	language, err := lsp.NewWebSocketHandler(ctx, root, log.Default())
+	if err != nil {
+		return nil, err
+	}
 	a, err := plugins.BuildStandaloneAppearance()
 	if err != nil {
 		return nil, err
 	}
-	h := &Handler{appearance: a, assets: a.Assets, gate: make(chan struct{}, 1), choices: map[string][]string{"data-theme": {"light", "dark"}, "data-text-size": {"small", "medium", "large", "x-large"}}}
+	h := &Handler{language: language, languageConfig: config, appearance: a, assets: a.Assets, gate: make(chan struct{}, 1), choices: map[string][]string{"data-theme": {"light", "dark"}, "data-text-size": {"small", "medium", "large", "x-large"}}}
 	h.assets["css/fonts.css"] = bytes.ReplaceAll(h.assets["css/fonts.css"], []byte("/assets/fonts/"), []byte("/appearance/assets/fonts/"))
 	for _, name := range []string{"palette", "aesthetic", "fonts"} {
 		match := manifestPattern.FindSubmatch(h.assets["css/"+name+".css"])
@@ -81,8 +97,8 @@ func New() (*Handler, error) {
 		return nil, err
 	}
 	// Editor CSS precedes theme overrides. Site article layout belongs in the iframe.
-	editorHead := `<link rel="stylesheet" href="/editor/codemirror/lib/codemirror.css">`
-	for _, name := range []string{"lib/codemirror", "mode/xml/xml", "mode/markdown/markdown", "mode/gfm/gfm", "mode/javascript/javascript", "mode/python/python", "mode/css/css", "mode/htmlmixed/htmlmixed", "addon/mode/overlay", "addon/edit/matchbrackets", "keymap/vim", "keymap/emacs", "keymap/sublime"} {
+	editorHead := `<link rel="stylesheet" href="/editor/codemirror/lib/codemirror.css"><link rel="stylesheet" href="/editor/codemirror/addon/hint/show-hint.css"><link rel="stylesheet" href="/editor/lsp.css"><script src="/editor/lsp.js"></script>`
+	for _, name := range []string{"lib/codemirror", "mode/xml/xml", "mode/markdown/markdown", "mode/gfm/gfm", "mode/javascript/javascript", "mode/python/python", "mode/css/css", "mode/htmlmixed/htmlmixed", "addon/mode/overlay", "addon/edit/matchbrackets", "addon/hint/show-hint", "keymap/vim", "keymap/emacs", "keymap/sublime"} {
 		editorHead += `<script src="/editor/codemirror/` + name + `.js"></script>`
 	}
 	controls := ""
@@ -104,6 +120,14 @@ func styleLink(name string) string { return `<link rel="stylesheet" href="/appea
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	switch {
+	case r.URL.Path == "/lsp":
+		h.language.ServeHTTP(w, r)
+	case r.URL.Path == "/lsp/config" && r.Method == http.MethodGet:
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Cache-Control", "no-store")
+		if err := json.NewEncoder(w).Encode(h.languageConfig); err != nil {
+			return
+		}
 	case r.URL.Path == "/render":
 		if r.Method != http.MethodPost {
 			w.Header().Set("Allow", "POST")

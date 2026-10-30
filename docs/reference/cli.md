@@ -2411,3 +2411,22 @@ go run ./cmd/markata-workbench --listen 127.0.0.1:8767
 The default listen address is `127.0.0.1:8766`. Use `--help` for command help.
 The [Go workbench guide](../guides/go-workbench/) covers editing, the render API,
 and embedding its HTTP handler in a Go application.
+
+### Browser LSP bridge
+
+```bash
+markata-go lsp --browser-workspace /absolute/path/to/site
+```
+
+This option keeps the stdio transport and confines a browser bridge to a server-selected workspace.
+It accepts the synthetic `.markata/browser-draft.md` URI and ignores browser requests to read watched files.
+The [FastAPI editor](../guides/fastapi-editor/) uses this option behind its WebSocket endpoint.
+Ordinary editor clients continue to use `markata-go lsp` without this option.
+
+The [Go editor example](../guides/go-workbench/) provides its own launch command:
+
+```bash
+go run ./cmd/markata-workbench --workspace /absolute/path/to/site
+```
+
+`--workspace` selects the Markdown directory for completion. It defaults to the current directory.

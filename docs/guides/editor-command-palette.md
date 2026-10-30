@@ -26,6 +26,17 @@ For example, the **Note box** command inserts:
 ```
 
 The editor selects the placeholder so you can replace it immediately.
+
+In the Python and Go browser editors, the connected language service also completes
+container classes and modifiers from these commands. For example, type `::::: md-i`
+to suggest `md-icon`. Inside its attribute block, type `{data-s` to suggest
+`data-size`, then type `data-size="` to choose `sm` or `lg`.
+
+Inside a Mermaid fence, the language service suggests diagram types such as
+`flowchart`, `sequenceDiagram`, and `classDiagram`; flowchart directions; a
+flowchart starter; and Mermaid class style properties. Press **Ctrl+Space** to
+show completions at the cursor. The WASM editor keeps the full command palette
+and does not currently connect to the LSP.
 If you select text before opening Commands, the command uses that text instead.
 For example, **Highlighted text** changes selected `important` to `==important==`.
 Named Lucide icon commands replace selected text with the chosen icon.

@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.10"
-# dependencies = ["fastapi", "uvicorn", "markata"]
+# dependencies = ["fastapi", "uvicorn", "websockets", "markata"]
 # ///
 """Run: uv run examples/fastapi_editor.py
 
@@ -8,15 +8,21 @@ Requires a Markata wheel with standalone rendering and appearance components.
 Open http://127.0.0.1:8765. Stop with Ctrl+C.
 """
 
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel, Field
 import uvicorn
+import asyncio
+import ipaddress
+import json
+import os
+from pathlib import Path
 import base64
 import io
 import zipfile
 from time import perf_counter
 from fastapi import HTTPException, Response
+from urllib.parse import urlsplit
 
 try:
     from markata import RenderError, appearance, render_async
@@ -25,6 +31,38 @@ except ImportError as error:
         "Install a Markata wheel containing the standalone appearance and render_async APIs. "
         "See docs/guides/fastapi-editor.md."
     ) from error
+
+LSP_WORKSPACE = Path(os.environ.get("MARKATA_LSP_WORKSPACE", ".")).resolve()
+LSP_ASSETS = Path(__file__).resolve().parents[1] / "pkg/workbench/web"
+MAX_LSP_MESSAGE = 2 << 20
+
+
+def valid_browser_origin(scheme: str, host_header: str, origin_header: str) -> bool:
+    try:
+        request_host = urlsplit("//" + host_header)
+        origin = urlsplit(origin_header)
+        hostname = request_host.hostname
+        request_host.port  # Validate the optional port.
+        if hostname is None or request_host.username is not None or request_host.password is not None or \
+                request_host.path or request_host.query or request_host.fragment:
+            return False
+        if origin.scheme != scheme or origin.netloc != host_header:
+            return False
+        if origin.username is not None or origin.password is not None or origin.path or origin.query or origin.fragment:
+            return False
+        if hostname.lower().rstrip(".") == "localhost":
+            return True
+        return ipaddress.ip_address(hostname).is_loopback
+    except ValueError:
+        return False
+
+def valid_lsp_peer(host: str) -> bool:
+    """Only the actual loopback TCP peer may use filesystem-aware language help."""
+    try:
+        return ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        return False
+
 
 app = FastAPI(title="Markata live editor")
 presentation = appearance(asset_base="/appearance")
@@ -66,11 +104,11 @@ async def preview(request: RenderRequest):
 
 @app.get("/", response_class=HTMLResponse)
 async def index():
-    cm_files = ['lib/codemirror.css', 'lib/codemirror.js', 'mode/xml/xml.js', 'mode/markdown/markdown.js', 'mode/gfm/gfm.js', 'mode/javascript/javascript.js', 'mode/python/python.js', 'mode/css/css.js', 'mode/htmlmixed/htmlmixed.js', 'addon/mode/overlay.js', 'addon/edit/matchbrackets.js', 'keymap/vim.js', 'keymap/emacs.js', 'keymap/sublime.js']
+    cm_files = ['addon/hint/show-hint.css', 'lib/codemirror.css', 'lib/codemirror.js', 'mode/xml/xml.js', 'mode/markdown/markdown.js', 'mode/gfm/gfm.js', 'mode/javascript/javascript.js', 'mode/python/python.js', 'mode/css/css.js', 'mode/htmlmixed/htmlmixed.js', 'addon/mode/overlay.js', 'addon/edit/matchbrackets.js', 'addon/hint/show-hint.js', 'keymap/vim.js', 'keymap/emacs.js', 'keymap/sublime.js']
     cm_tags = ''.join('<link rel="stylesheet" href="/appearance/codemirror/' + n + '">' if n.endswith('.css') else '<script src="/appearance/codemirror/' + n + '"></script>' for n in cm_files)
     cm_tags += '<link rel="stylesheet" href="/appearance/command-palette.css"><script src="/appearance/command-catalog.js"></script><script src="/appearance/command-palette.js"></script>'
     page = PAGE.replace('<body>' , '<body data-example-url="/appearance/command-palette-example.md">', 1)
-    page = page.replace('<head>', '<head>' + cm_tags, 1).replace('</head>', presentation.controls_head_html + '</head>', 1)
+    page = page.replace('<head>', '<head>' + cm_tags + '<link rel="stylesheet" href="/editor/lsp.css"><script src="/editor/lsp.js"></script>', 1).replace('</head>', presentation.controls_head_html + '</head>', 1)
     page = page.replace('<button id="open"', presentation.picker_html + '<button id="open"', 1)
     return page.replace('</body>', presentation.body_end_html + '</body>', 1)
 
@@ -143,7 +181,7 @@ header{flex-wrap:wrap}#open{background:var(--color-surface,white);border:1px sol
 <section><div class="pane-label editor-toolbar"><label for="keymap">Markdown · Keymap</label><select id="keymap" aria-label="Editor keymap"><option value="default">Default</option><option value="vim">Vim</option><option value="emacs">Emacs</option><option value="sublime">Sublime</option></select></div><textarea aria-label="Markdown source" id="source" spellcheck="false" aria-describedby="status"></textarea></section>
 <section aria-label="Rendered Markdown"><div class="pane-label">Live preview</div><pre id="error" role="alert" hidden></pre><iframe id="preview" title="Rendered Markdown preview" sandbox="allow-scripts"></iframe></section>
 </main>
-<footer><span id="saved" role="status"></span> · <span id="status" role="status" aria-live="polite">Preparing preview…</span></footer>
+<footer><span id="language-status" role="status" aria-live="polite">Language service connecting…</span> · <span id="saved" role="status"></span> · <span id="status" role="status" aria-live="polite">Preparing preview…</span></footer>
 <script>
 
 const source = document.querySelector('#source');
@@ -159,6 +197,7 @@ const editor = CodeMirror.fromTextArea(source, {
   indentUnit:2, tabSize:4, viewportMargin:10, screenReaderLabel:'Markdown source'
 });
 window.MarkataCommandPalette.attach(editor);
+window.MarkataEditorLSP.connect(editor, document.querySelector('#language-status'));
 const keymap = document.querySelector('#keymap');
 try { keymap.value = localStorage.getItem('markata-editor-keymap') || 'default'; } catch { storageWarning(); }
 if (!keymap.value) keymap.value = 'default';
@@ -274,12 +313,112 @@ EDITOR_ASSETS = zipfile.ZipFile(io.BytesIO(base64.b64decode(ASSET_BUNDLE)))
 @app.get("/appearance/{name:path}")
 async def appearance_asset(name: str):
     try:
-        content = EDITOR_ASSETS.read(name) if (name.startswith("codemirror/") or name in {"command-catalog.js", "command-palette.js", "command-palette.css", "command-palette-example.md"}) else presentation.assets[name]
-    except KeyError:
+        content = ((LSP_ASSETS / name).read_bytes() if name in {"codemirror/addon/hint/show-hint.js", "codemirror/addon/hint/show-hint.css"} else
+                   EDITOR_ASSETS.read(name) if (name.startswith("codemirror/") or name in {"command-catalog.js", "command-palette.js", "command-palette.css", "command-palette-example.md"}) else presentation.assets[name])
+    except (KeyError, OSError):
         raise HTTPException(status_code=404)
     kind = ('text/markdown' if name.endswith('.md') else
             'text/css' if name.endswith('.css') else 'font/woff2' if name.endswith('.woff2') else 'text/javascript')
     return Response(content, media_type=kind, headers={"Access-Control-Allow-Origin": "*", "Cache-Control": "public, max-age=3600"})
+
+@app.get("/editor/{name}")
+async def language_asset(name: str):
+    if name not in {"lsp.js", "lsp.css"}:
+        raise HTTPException(status_code=404)
+    try:
+        content = (LSP_ASSETS / name).read_bytes()
+    except OSError:
+        raise HTTPException(status_code=404)
+    return Response(content, media_type="text/css" if name.endswith(".css") else "text/javascript")
+
+
+@app.get("/lsp/config")
+async def language_config():
+    return JSONResponse({"rootUri": LSP_WORKSPACE.as_uri(),
+                         "documentUri": (LSP_WORKSPACE / ".markata/browser-draft.md").as_uri()},
+                        headers={"Cache-Control": "no-store"})
+
+
+def lsp_command():
+    binary = os.environ.get("MARKATA_LSP_BINARY")
+    if not binary:
+        import markata.rendering
+        binary = str(Path(markata.rendering.__file__).parent / "bin" /
+                     ("markata.exe" if os.name == "nt" else "markata"))
+    return [binary, "lsp", "--browser-workspace", str(LSP_WORKSPACE)]
+
+
+@app.websocket("/lsp")
+async def language_socket(websocket: WebSocket):
+    # No forwarded headers or browser-provided executable/workspace options.
+    expected_scheme = "https" if websocket.url.scheme == "wss" else "http"
+    # Host and Origin alone are forgeable outside a browser.
+    # Never grant access from X-Forwarded-For or an untrusted remote peer.
+    peer_host = websocket.client.host if websocket.client else ""
+    if not valid_lsp_peer(peer_host) or \
+            not valid_browser_origin(expected_scheme, websocket.headers.get("host", ""),
+                                     websocket.headers.get("origin", "")) or \
+            websocket.headers.get("sec-fetch-site") == "cross-site":
+        await websocket.close(code=1008)
+        return
+    await websocket.accept()
+    process = None
+    tasks = []
+    try:
+        process = await asyncio.create_subprocess_exec(
+            *lsp_command(), stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE,
+            # LSP logs belong on the server console, never in protocol messages.
+            stderr=None, limit=MAX_LSP_MESSAGE + 8192)
+
+        async def to_lsp():
+            while True:
+                data = (await websocket.receive_text()).encode("utf-8")
+                if len(data) > MAX_LSP_MESSAGE:
+                    raise ValueError("LSP message too large")
+                message = json.loads(data)
+                if not isinstance(message, dict) or message.get("jsonrpc") != "2.0" or not message.get("method"):
+                    raise ValueError("Expected one JSON-RPC request or notification")
+                process.stdin.write(f"Content-Length: {len(data)}\r\n\r\n".encode() + data)
+                await process.stdin.drain()
+
+        async def from_lsp():
+            while True:
+                headers = await process.stdout.readuntil(b"\r\n\r\n")
+                length = next(int(line.split(b":", 1)[1]) for line in headers.split(b"\r\n")
+                              if line.lower().startswith(b"content-length:"))
+                if not 0 < length <= MAX_LSP_MESSAGE:
+                    raise ValueError("Invalid LSP response length")
+                await websocket.send_text((await process.stdout.readexactly(length)).decode("utf-8"))
+
+        tasks = [asyncio.create_task(to_lsp()), asyncio.create_task(from_lsp())]
+        done, _ = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+        for task in done:
+            task.result()
+    except (OSError, ValueError, StopIteration, asyncio.IncompleteReadError, WebSocketDisconnect, RuntimeError):
+        pass
+    finally:
+        for task in tasks:
+            task.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
+        if process is not None:
+            if process.stdin is not None:
+                process.stdin.close()
+            if process.returncode is None:
+                try:
+                    process.terminate()
+                except ProcessLookupError:
+                    pass
+            try:
+                await asyncio.wait_for(process.wait(), timeout=2)
+            except asyncio.TimeoutError:
+                process.kill()
+                await process.wait()
+        try:
+            await websocket.close()
+        except (RuntimeError, WebSocketDisconnect):
+            pass
+
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=8765)
