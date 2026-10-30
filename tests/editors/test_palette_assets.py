@@ -15,7 +15,7 @@ class PaletteAssetsTest(unittest.TestCase):
         bundle = next(node.value.value for node in tree.body if isinstance(node, ast.Assign)
                       and any(isinstance(target, ast.Name) and target.id == 'ASSET_BUNDLE' for target in node.targets))
         with zipfile.ZipFile(io.BytesIO(base64.b64decode(bundle))) as archive:
-            for name in ['command-catalog.js', 'command-palette.js', 'command-palette.css']:
+            for name in ['command-catalog.js', 'command-palette.js', 'command-palette.css', 'command-palette-example.md']:
                 self.assertEqual(archive.read(name), (ROOT / 'pkg/workbench/web' / name).read_bytes(),
                                  f'Regenerate the Python editor asset bundle: {name}')
 

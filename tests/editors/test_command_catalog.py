@@ -80,6 +80,13 @@ class CommandCatalogTest(unittest.TestCase):
         self.assertIn('<details class="md-source"', result.html)
         self.assertNotIn('::::', result.html)
 
+    def test_example_copies_match_the_shared_asset(self):
+        source = (ROOT / 'examples/command-palette-showcase.md').read_bytes()
+        for path in ['pkg/workbench/web/command-palette-example.md',
+                     'examples/wasm-workbench/command-palette-example.md']:
+            with self.subTest(path=path):
+                self.assertEqual((ROOT / path).read_bytes(), source)
+
     def test_chart_defaults_are_valid_configs(self):
         for command in self.commands:
             if command['id'] == 'chart' or command['id'].startswith('chart-'):

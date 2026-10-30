@@ -82,7 +82,7 @@ Replace sample image paths and IDs before publishing.
 ## Try a complete example
 
 Open the workbench with `?example` to load the sample in the editor and open the command palette.
-For example, visit `http://localhost:8080/?example` for the Go workbench.
+For example, visit `http://localhost:8766/?example` for the Go workbench.
 You can also open `examples/command-palette-showcase.md` with **Open .md**.
 The example combines icon cards, a steps road, a feature row, metrics, Mermaid, and a Chart.js chart.
 It also shows Web Awesome source with its site requirement clearly identified.

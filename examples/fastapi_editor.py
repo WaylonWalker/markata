@@ -277,7 +277,8 @@ async def appearance_asset(name: str):
         content = EDITOR_ASSETS.read(name) if (name.startswith("codemirror/") or name in {"command-catalog.js", "command-palette.js", "command-palette.css", "command-palette-example.md"}) else presentation.assets[name]
     except KeyError:
         raise HTTPException(status_code=404)
-    kind = 'text/css' if name.endswith('.css') else 'font/woff2' if name.endswith('.woff2') else 'text/javascript'
+    kind = ('text/markdown' if name.endswith('.md') else
+            'text/css' if name.endswith('.css') else 'font/woff2' if name.endswith('.woff2') else 'text/javascript')
     return Response(content, media_type=kind, headers={"Access-Control-Allow-Origin": "*", "Cache-Control": "public, max-age=3600"})
 
 if __name__ == "__main__":
