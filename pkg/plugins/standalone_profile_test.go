@@ -83,3 +83,26 @@ func TestStandaloneProfile_WASMAssetOmissionRejectsOfflineInline(t *testing.T) {
 		t.Fatalf("WASM omitted-asset mode must not claim self-contained output: %v", err)
 	}
 }
+
+func TestStandaloneProfile_OfflineAssetHostUsesLocalBundle(t *testing.T) {
+	options := StandaloneOptions{
+		Profile:          RenderProfileOfflineInteractive,
+		AssetBase:        "./appearance",
+		OmitAssetContent: true,
+		OfflineAssetHost: true,
+	}
+	result, err := NewStandaloneRenderer(options).Render("# Local")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(result.HeadHTML, "./appearance/css/main.css") {
+		t.Fatalf("offline hosted assets must reference local cache: %.250s", result.HeadHTML)
+	}
+	if !strings.Contains(result.HTML, "Local") || result.RenderProfile != RenderProfileOfflineInteractive {
+		t.Fatalf("offline host rendering failed: %+v", result)
+	}
+	_, err = NewStandaloneRenderer(options).Render("![remote](https://example.com/image.png)")
+	if err == nil || !strings.Contains(err.Error(), "remote resource") {
+		t.Fatalf("offline host accepted remote image: %v", err)
+	}
+}
