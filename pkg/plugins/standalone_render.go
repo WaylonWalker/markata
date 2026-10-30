@@ -23,6 +23,10 @@ type StandaloneOptions struct {
 	// OmitAssetContent keeps bundled assets linked and omits their bytes.
 	// Browser hosts must export and serve the native presentation bundle.
 	OmitAssetContent bool
+	// OfflineAssetHost permits an offline interactive browser host to serve the
+	// complete vendored bundle from its own precached, local asset store.
+	// Without that guarantee, offline-interactive requires inline asset bytes.
+	OfflineAssetHost bool
 }
 
 // RenderAsset is an ordered dependency for a rendered Markdown fragment.
@@ -75,7 +79,7 @@ func (renderer *StandaloneRenderer) Render(source string) (*StandaloneResult, er
 	if err != nil {
 		return nil, err
 	}
-	if options.Profile == RenderProfileOfflineInteractive && options.OmitAssetContent {
+	if options.Profile == RenderProfileOfflineInteractive && options.OmitAssetContent && !options.OfflineAssetHost {
 		return nil, fmt.Errorf("offline-interactive requires managed asset content, unavailable with omit_asset_content")
 	}
 	post := &models.Post{Content: source, Extra: map[string]interface{}{}}
