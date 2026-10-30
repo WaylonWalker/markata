@@ -19,6 +19,7 @@ type StandaloneOptions struct {
 	Unsafe       bool
 	InlineAssets bool
 	AssetBase    string
+	Profile      string
 	// OmitAssetContent keeps bundled assets linked and omits their bytes.
 	// Browser hosts must export and serve the native presentation bundle.
 	OmitAssetContent bool
@@ -43,6 +44,7 @@ type StandaloneResult struct {
 	ExternalURLs     []string        `json:"external_urls"`
 	HeadHTML         string          `json:"head_html"`
 	BodyEndHTML      string          `json:"body_end_html"`
+	RenderProfile    string          `json:"render_profile,omitempty"`
 	omitAssetContent bool
 }
 
@@ -68,13 +70,19 @@ func NewStandaloneRenderer(options StandaloneOptions) *StandaloneRenderer {
 // Render renders one independent document with fresh IDs and feature signals.
 func (renderer *StandaloneRenderer) Render(source string) (*StandaloneResult, error) {
 	p, options := renderer.parser, renderer.options
+	var err error
+	options, err = ResolveStandaloneProfile(options)
+	if err != nil { return nil, err }
+	if options.Profile == RenderProfileOfflineInteractive && options.OmitAssetContent {
+		return nil, fmt.Errorf("offline-interactive requires managed asset content, unavailable with omit_asset_content")
+	}
 	post := &models.Post{Content: source, Extra: map[string]interface{}{}}
 	article, err := p.renderArticleHTML(source)
 	if err != nil {
 		return nil, fmt.Errorf("render markdown: %w", err)
 	}
 	post.ArticleHTML = article
-	r := &StandaloneResult{omitAssetContent: options.OmitAssetContent, SchemaVersion: 1, Features: map[string]bool{"mermaid": false, "chartjs": false}, Assets: []RenderAsset{}, ExternalURLs: []string{}}
+	r := &StandaloneResult{omitAssetContent: options.OmitAssetContent, SchemaVersion: 1, Features: map[string]bool{"mermaid": false, "chartjs": false}, Assets: []RenderAsset{}, ExternalURLs: []string{}, RenderProfile: options.Profile}
 	if err := r.renderDiagrams(post); err != nil {
 		return nil, err
 	}
@@ -98,6 +106,9 @@ func (renderer *StandaloneRenderer) Render(source string) (*StandaloneResult, er
 		} else {
 			r.BodyEndHTML += tag + "\n"
 		}
+	}
+	if options.Profile == RenderProfileOfflineInteractive {
+		if err := checkStandaloneOfflineResources(r); err != nil { return nil, err }
 	}
 	return r, nil
 }
