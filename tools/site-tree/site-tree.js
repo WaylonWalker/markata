@@ -1,3 +1,4 @@
+import {attachFilePicker} from './file-picker.js';
 import {FileTree} from '@pierre/trees';
 
 let files = SITE_FILES;
@@ -116,7 +117,7 @@ async function open(path) {
     }
   }
   currentEditor.setOption('readOnly', !editable(path));
-  document.querySelector('#commands').disabled = !editable(path);
+  // Commands remain available for file navigation from read-only sources.
   currentEditor.setOption('mode', editable(path) ? 'gfm' : 'text/plain');
   label.textContent = path + (editable(path) ? '' : ' · read only');
   label.title = metadataByPath.get(path)?.title || path;
@@ -126,6 +127,7 @@ async function open(path) {
   if (diskChanged) document.querySelector('#saved').textContent = 'File changed on disk · keeping your browser draft';
 }
 window.MarkataSiteTree = {
+  openPicker() { picker?.open(); },
   save() {
     if (!currentEditor) return false;
     if (!editable(active)) return true;
@@ -164,6 +166,8 @@ window.MarkataSiteTree = {
       const box = document.querySelector('#error'); box.textContent = error.message; box.hidden = false;
       files = {};
     }
+    picker = attachFilePicker(editor, open);
+    picker.update([{path:'draft.md'}, ...metadata]);
     editor.on('beforeChange', (instance, change) => {
       if (!editable(active) && change.origin !== 'setValue') change.cancel();
     });
@@ -245,6 +249,7 @@ window.MarkataSiteTree = {
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || data.detail || 'Metadata unavailable');
         metadata = data.files;
+        picker.update([{path:'draft.md'}, ...metadata]);
         metadataByPath = new Map(metadata.map(file => [file.path,file]));
         label.title = metadataByPath.get(active)?.title || active;
         const tags = new Set(metadata.flatMap(file => file.tags || []));

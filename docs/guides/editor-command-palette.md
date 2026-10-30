@@ -106,3 +106,19 @@ See the [Markdown guide](markdown.md), [container guide](markdown-containers.md)
 [roads guide](roads.md), [icon guide](icons.md), and [Web Awesome guide](webawesome.md)
 for syntax details. The [editor comparison](renderer-integration-benchmarks.md#shared-editor-features-and-runtime-differences)
 explains runtime differences.
+
+## Open workspace files
+
+Press **Ctrl+P** (macOS: **Cmd+P**) to open the file picker in the workspace editor.
+You can also run **Open file** from the command palette. Ctrl/Cmd+Shift+P still
+opens commands.
+
+Type a filename abbreviation, path, or document title. Filename matches rank
+above path and title matches. Titles become searchable after background metadata
+loads. Matching characters are highlighted, and full paths distinguish duplicate
+filenames. The picker shows up to 60 results; type more to narrow the list.
+Use Up/Down and Enter to open a file, or Escape to cancel. Opening another file
+preserves the current browser draft. Source files stay unchanged on disk.
+
+The picker uses locally bundled [fuzzysort](https://github.com/farzher/fuzzysort).
+Search runs in the browser over discovered files without fetching source content.
