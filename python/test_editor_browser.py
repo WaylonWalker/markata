@@ -1,6 +1,8 @@
 """Browser regressions for the single-file demo using an installed Markata wheel."""
 import os
 import unittest
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
 from playwright.sync_api import expect, sync_playwright
 
@@ -60,7 +62,10 @@ def chart_source(label):
 class EditorBrowserTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        cls.workspace = TemporaryDirectory()
+        cls.addClassCleanup(cls.workspace.cleanup)
         cls.demo = load_editor()
+        cls.demo.LSP_WORKSPACE = Path(cls.workspace.name)
         cls.server = serve_editor(cls.demo.app)
         cls.url = cls.server.__enter__()
         cls.addClassCleanup(cls.server.__exit__, None, None, None)
@@ -167,7 +172,8 @@ class EditorBrowserTest(unittest.TestCase):
         expect(self.preview.locator("html")).to_have_attribute("data-palette", "ash")
 
     def test_feature_styles_are_added_and_removed_with_live_content(self):
-        self.page.evaluate("localStorage.setItem('markata-workbench-draft', '# Plain preview')")
+        self.edit("# Plain preview")
+        expect(self.preview.locator("h1")).to_have_text("Plain preview")
         self.page.reload()
         expect(self.preview.locator("h1")).to_have_text("Plain preview")
         expect(self.preview.locator('head style[data-markata-render-head]')).to_have_count(0)
