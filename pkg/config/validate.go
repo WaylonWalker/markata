@@ -41,6 +41,8 @@ func ValidateConfig(config *models.Config) []error {
 	var errs []error
 	errs = append(errs, validateRenderingTheme(config)...)
 
+	errs = append(errs, validateRendererDefaults(config)...)
+
 	// Validate URL format if provided
 	if config.URL != "" {
 		if err := validateURL(config.URL); err != nil {

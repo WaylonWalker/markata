@@ -72,13 +72,26 @@ worker.onmessage = ({data}) => {
 };
 ```
 
+The worker accepts optional `profile` (`web` or `offline-interactive`) and
+`inline_assets` fields in each render request. The workbench exposes these
+options in the Live preview toolbar. To keep the WASM binary small, linked
+assets are shipped separately in the service-worker-cached static bundle.
+When inline assets are requested, the worker hydrates those exact managed
+assets from the local bundle and returns inline head/body tags. This is
+host-specific delivery; the Go standalone renderer still supports independently
+self-contained inline output when running natively. `offline-interactive` inlines managed
+assets and rejects detected remote media; it does **not** guarantee zero
+browser network requests from all authored or third-party content.
+`offline-static` is not available until static diagram/chart rendering exists.
+
 The result follows the standalone renderer's schema version 1. It includes
 HTML, feature flags, ordered assets, and head/body tags. Bundled assets contain
 IDs rather than their file contents. Serve those files from `appearance/`.
 Generated initializer scripts retain their contents. The sample parent app loads each dependency once. It sends cached asset contents
 to the sandboxed `preview.js`, which disposes old Chart.js instances.
 
-Inside the initialized runtime, `markataRender(source)` returns a JSON string.
+Inside the initialized runtime, `markataRender(source, profile, inlineAssets)`
+returns a JSON string. The original one-argument form remains supported.
 Invalid argument types, oversized documents, and render errors return an
 `error` field. The worker preserves the request's `revision`. Hosts must discard
 stale results. Keep one render in flight and replace pending edits with the

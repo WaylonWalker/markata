@@ -98,6 +98,32 @@ class WorkbenchTest(unittest.TestCase):
         self.assertFalse(self.page.evaluate('Boolean(window.hacked)'))
         expect(self.frame.locator('.post-content script')).to_have_count(0)
 
+    def test_renderer_profiles_and_asset_delivery(self):
+        profile = self.page.locator('#render-profile')
+        assets = self.page.locator('#render-assets')
+        self.assertEqual(profile.input_value(), 'web')
+        self.assertEqual(assets.input_value(), 'linked')
+        profile.select_option('offline-interactive')
+        expect(assets).to_be_disabled()
+        self.assertEqual(assets.input_value(), 'inline')
+        self.edit('# Offline profile\n\nLocal-only content')
+        try:
+            expect(self.frame.locator('h1')).to_have_text('Offline profile', timeout=20000)
+        except AssertionError as error:
+            status = self.page.locator('#status').text_content()
+            failure = self.page.locator('#error').text_content()
+            raise AssertionError(f'Offline WASM render stuck: status={status!r} error={failure!r}') from error
+        self.edit('# Remote denied\n\n![image](https://example.com/pixel.png)')
+        expect(self.page.locator('#error')).to_contain_text('remote resource', timeout=30000)
+        self.edit('# Recovered offline\n\nSafe content')
+        expect(self.frame.locator('h1')).to_have_text('Recovered offline', timeout=30000)
+        profile.select_option('web')
+        expect(assets).to_be_enabled()
+        assets.select_option('inline')
+        self.edit('# Web inline')
+        expect(self.frame.locator('h1')).to_have_text('Web inline', timeout=30000)
+        self.assertFalse(self.page.locator('#error').is_visible())
+
     def test_tables_reinitialize_after_replacement(self):
         for title in ['First table', 'Second table']:
             self.edit('# '+title+'\n\n| Item | Value |\n| --- | --- |\n| B | 2 |\n| A | 1 |')
@@ -134,17 +160,21 @@ class WorkbenchTest(unittest.TestCase):
           const worker = new Worker('worker.js');
           const next = () => new Promise(resolve => worker.onmessage=e=>resolve(e.data));
           await next();
-          async function render(source,revision) {const promise=next();worker.postMessage({source,revision});return promise;}
+          async function render(source,revision,profile='web') {const promise=next();worker.postMessage({source,revision,profile});return promise;}
           const invalid=await render(42,1);
           const oversized=await render('界'.repeat(70000),2);
           const samples=[];
           for(let i=0;i<8;i++) {const r=await render('# Heading\\n\\nA paragraph.\\n'.repeat(50),i+3);samples.push(r.render_ms);}
-          const final=await render('# Alive',20);worker.terminate();
-          return {invalid,oversized,samples,final};
+          const final=await render('# Alive',20);const unsupported=await render('# Static',21,'offline-static');const offline=await render('# Local',22,'offline-interactive');worker.terminate();
+          return {invalid,oversized,samples,final,unsupported,offline};
         }''')
         self.assertIn('error', result['invalid']['result'])
         self.assertIn('error', result['oversized']['result'])
         self.assertIn('<h1', result['final']['result']['html'])
+        self.assertIn('not supported', result['unsupported']['result']['error'])
+        self.assertEqual(result['offline']['result'].get('render_profile'), 'offline-interactive')
+        self.assertIn('<style>', result['offline']['result']['head_html'])
+        self.assertTrue(any(a.get('content') for a in result['offline']['result']['assets'] if a['id'] == 'css/main.css'))
         self.assertLess(len(str(result['final']['result'])), 10000, 'Bundled asset bytes leaked into every response')
         # Report measurements; do not impose machine-specific timing thresholds.
         print('Warm 50-section document median ms:', round(statistics.median(result['samples']), 2))

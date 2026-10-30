@@ -1499,6 +1499,18 @@ type MarkdownConfig struct {
 
 	// Highlight configures syntax highlighting for code blocks
 	Highlight HighlightConfig `json:"highlight" yaml:"highlight" toml:"highlight"`
+
+	// RenderProfile selects interoperability renderer defaults (not the site build lifecycle).
+	// Valid values: "web", "offline-interactive", "offline-static".
+	// Offline-static is reserved until static diagram and chart rendering is implemented.
+	RenderProfile string `json:"render_profile,omitempty" yaml:"render_profile,omitempty" toml:"render_profile,omitempty"`
+	// RenderAssetMode selects managed asset delivery for standalone rendering.
+	// Valid values: "linked" (default), "inline". Offline profiles can force inline.
+	RenderAssetMode string `json:"render_asset_mode,omitempty" yaml:"render_asset_mode,omitempty" toml:"render_asset_mode,omitempty"`
+
+	// RenderAssetBase is the URL path where linked standalone assets are served.
+	// It is not the static site's assets directory (default: "/markata-assets").
+	RenderAssetBase string `json:"render_asset_base,omitempty" yaml:"render_asset_base,omitempty" toml:"render_asset_base,omitempty"`
 }
 
 // HighlightConfig configures syntax highlighting for code blocks.
@@ -3511,8 +3523,11 @@ func NewConfig() *Config {
 			UseGitignore: true,
 		},
 		MarkdownConfig: MarkdownConfig{
-			Extensions: []string{},
-			Highlight:  NewHighlightConfig(),
+			Extensions:      []string{},
+			Highlight:       NewHighlightConfig(),
+			RenderProfile:   "web",
+			RenderAssetMode: "linked",
+			RenderAssetBase: "/markata-assets",
 		},
 		Feeds:            []FeedConfig{},
 		FeedDefaults:     NewFeedDefaults(),

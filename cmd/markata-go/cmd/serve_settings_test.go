@@ -280,3 +280,59 @@ func TestHandleSettingsPreview_AppliesWithoutWritingThenBakeAndReset(t *testing.
 		t.Fatalf("reset left concurrency = %d", cfg.Concurrency)
 	}
 }
+
+func TestHandleSettings_RenderProfilePreviewAndBake(t *testing.T) {
+	site := setupThemeBakeSite(t, settingsTestFiles)
+	serveRequestFullRebuild = func() {}
+
+	rec, response := doSettings(t, http.MethodGet, "", nil)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("GET settings = %d %+v", rec.Code, response)
+	}
+	field := settingsField(t, response, "markdown.render_profile")
+	if !field.Editable {
+		t.Fatalf("render profile is not editable: %+v", field)
+	}
+
+	change := `{"changes":[{"key":"markdown.render_profile","value":"offline-interactive"}]}`
+	rec, response = doSettings(t, http.MethodPost, change, map[string]string{"Origin": "http://localhost:8000"})
+	if rec.Code != http.StatusOK {
+		t.Fatalf("bake profile = %d %+v", rec.Code, response)
+	}
+	if source := readSiteFile(t, site, "markata-go.toml"); !strings.Contains(source, `render_profile = "offline-interactive"`) {
+		t.Fatalf("profile was not persisted to config: %s", source)
+	}
+	rec, response = doSettings(t, http.MethodGet, "", nil)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("reload settings = %d %+v", rec.Code, response)
+	}
+	if field := settingsField(t, response, "markdown.render_profile"); field.Value != "offline-interactive" {
+		t.Fatalf("baked render profile did not reload: %+v", field)
+	}
+}
+
+func TestHandleSettings_RenderAssetDefaultsBake(t *testing.T) {
+	site := setupThemeBakeSite(t, settingsTestFiles)
+	serveRequestFullRebuild = func() {}
+	payload := `{"changes":[{"key":"markdown.render_asset_mode","value":"inline"},{"key":"markdown.render_asset_base","value":"/local-md-assets"}]}`
+	rec, resp := doSettings(t, http.MethodPost, payload, map[string]string{"Origin": "http://localhost:8000"})
+	if rec.Code != http.StatusOK {
+		t.Fatalf("bake renderer asset defaults = %d %+v", rec.Code, resp)
+	}
+	configText := readSiteFile(t, site, "markata-go.toml")
+	for _, wanted := range []string{`render_asset_mode = "inline"`, `render_asset_base = "/local-md-assets"`} {
+		if !strings.Contains(configText, wanted) {
+			t.Fatalf("bake lost %s: %s", wanted, configText)
+		}
+	}
+	rec, resp = doSettings(t, http.MethodGet, "", nil)
+	if rec.Code != http.StatusOK {
+		t.Fatal(rec.Body.String())
+	}
+	if settingsField(t, resp, "markdown.render_asset_mode").Value != "inline" {
+		t.Fatal("asset delivery mode did not reload")
+	}
+	if settingsField(t, resp, "markdown.render_asset_base").Value != "/local-md-assets" {
+		t.Fatal("asset base did not reload")
+	}
+}

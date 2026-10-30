@@ -69,7 +69,7 @@ func expandStandaloneIcons(source string) string {
 
 func standaloneProtectedTag(name string) bool {
 	switch name {
-	case "code", "pre", standaloneScriptKind, "style", "textarea", "svg":
+	case "code", "pre", standaloneScriptKind, standaloneTagStyle, "textarea", "svg":
 		return true
 	default:
 		return false

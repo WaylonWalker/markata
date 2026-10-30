@@ -196,3 +196,31 @@ The permission-repair fallback needs permission to change the binary's mode.
 Each Python render call starts a subprocess. The measured benchmark post took approximately 137 ms through the Python API.
 For frequent live edits, use the persistent Go workbench instead of starting a subprocess for every request.
 See [integration benchmarks](/docs/guides/renderer-integration-benchmarks/) for timing boundaries and reproduction commands.
+
+## Shared renderer profiles
+
+Choose `profile="web"` for the current asset-manifest behavior, or
+`profile="offline-interactive"` to inline Markata-managed CSS/JS and reject
+detected remote media in the generated fragment. The latter is an incremental
+local-asset policy, **not yet a verified zero-network guarantee**.
+`profile="offline-static"` currently fails explicitly because static Mermaid
+and Chart.js export are not available in the standalone renderer.
+
+```python
+from markata import render
+
+result = render("# Local report", profile="offline-interactive")
+html = result.document(title="Local report")
+```
+
+To use a site-selected profile instead, set
+`[markata-go.markdown] render_profile = "offline-interactive"` in your site
+config (the `markata serve` settings sidebar can Preview/Bake it), then:
+
+```python
+result = render("# Local report", config_path="markata-go.toml")
+```
+
+These profiles only change standalone rendering. They do not make a full site
+build offline or automatically enable site lifecycle plugins. See
+[Renderer Profiles](/docs/guides/renderer-profiles/) for limitations.
