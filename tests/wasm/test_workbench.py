@@ -88,6 +88,27 @@ class WorkbenchTest(unittest.TestCase):
         self.assertFalse(self.page.evaluate('Boolean(window.hacked)'))
         expect(self.frame.locator('.post-content script')).to_have_count(0)
 
+    def test_renderer_profiles_and_asset_delivery(self):
+        profile = self.page.locator('#render-profile')
+        assets = self.page.locator('#render-assets')
+        self.assertEqual(profile.input_value(), 'web')
+        self.assertEqual(assets.input_value(), 'linked')
+        profile.select_option('offline-interactive')
+        expect(assets).to_be_disabled()
+        self.assertEqual(assets.input_value(), 'inline')
+        self.edit('# Offline profile\\n\\nLocal-only content')
+        expect(self.frame.locator('h1')).to_have_text('Offline profile', timeout=30000)
+        self.edit('# Remote denied\\n\\n![image](https://example.com/pixel.png)')
+        expect(self.page.locator('#error')).to_contain_text('remote resource', timeout=30000)
+        self.edit('# Recovered offline\\n\\nSafe content')
+        expect(self.frame.locator('h1')).to_have_text('Recovered offline', timeout=30000)
+        profile.select_option('web')
+        expect(assets).to_be_enabled()
+        assets.select_option('inline')
+        self.edit('# Web inline')
+        expect(self.frame.locator('h1')).to_have_text('Web inline', timeout=30000)
+        self.assertFalse(self.page.locator('#error').is_visible())
+
     def test_tables_reinitialize_after_replacement(self):
         for title in ['First table', 'Second table']:
             self.edit('# '+title+'\n\n| Item | Value |\n| --- | --- |\n| B | 2 |\n| A | 1 |')
