@@ -14,6 +14,16 @@
   const editor = CodeMirror.fromTextArea(source, {mode:'gfm',lineNumbers:true,lineWrapping:true,matchBrackets:true,indentUnit:2,tabSize:4,viewportMargin:10,screenReaderLabel:'Markdown source'});
   // Exposed on the element by CodeMirror for host integrations and browser tests.
   window.MarkataCommandPalette.attach(editor);
+if (new URLSearchParams(location.search).has('example')) {
+  fetch(document.body.dataset.exampleUrl).then(response => {
+    if (!response.ok) throw new Error('Cannot load the command palette example.');
+    return response.text();
+  }).then(markdown => {
+    editor.setValue(markdown);
+    editor.focus();
+    setTimeout(() => document.querySelector('#commands').click(), 250);
+  }).catch(error => { errorBox.textContent = error.message; errorBox.hidden = false; });
+}
   const keymap = document.querySelector('#keymap');
   try { keymap.value = localStorage.getItem('markata-editor-keymap') || 'default'; } catch {}
   if (!keymap.value) keymap.value = 'default';

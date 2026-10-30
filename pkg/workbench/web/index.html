@@ -64,7 +64,7 @@ header{flex-wrap:wrap}#open{background:var(--color-surface,white);border:1px sol
 <link rel="stylesheet" href="/editor/command-palette.css">
 <script src="/editor/command-catalog.js" defer></script>
 <script src="/editor/command-palette.js" defer></script>
-</head><body>
+</head><body data-example-url="/editor/command-palette-example.md">
 <header><div><h1>Markata Go workbench</h1><p>Write Markdown. Render directly in Go.</p></div><!--PICKER--><button id="open" type="button">Open .md</button><input id="import" type="file" accept=".md,.markdown,text/plain,text/markdown" hidden><button id="download" type="button">Download .md</button></header>
 <main id="workbench">
 <section><div class="pane-label editor-toolbar"><label for="keymap">Markdown · Keymap</label><select id="keymap" aria-label="Editor keymap"><option value="default">Default</option><option value="vim">Vim</option><option value="emacs">Emacs</option><option value="sublime">Sublime</option></select></div><textarea aria-label="Markdown source" id="source" spellcheck="false" aria-describedby="status"></textarea></section>

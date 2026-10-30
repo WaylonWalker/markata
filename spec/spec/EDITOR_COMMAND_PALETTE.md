@@ -53,3 +53,7 @@ One canonical JavaScript and CSS implementation MUST ship to every workbench.
 Packaging checks MUST prevent the Python bundled copy from drifting.
 Tests MUST exercise real CodeMirror selections, history, modal interactions,
 search, rendering, and local asset availability.
+
+Each workbench MUST support `?example`: load the shared showcase Markdown into
+the editor, render its preview, and open the command palette. Example assets MUST
+be included in the Python bundle and offline WASM cache.

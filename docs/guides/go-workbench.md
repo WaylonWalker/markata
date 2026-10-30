@@ -138,3 +138,5 @@ See [shared editor features and runtime differences](/docs/guides/renderer-integ
 Select **Commands** or press **Ctrl+Shift+P** (**Cmd+Shift+P** on macOS).
 Search for special syntax, then press **Enter** to insert it at your selection.
 See the [command palette guide](editor-command-palette.md) for the catalog and keyboard controls.
+
+To open the command palette with a complete example loaded, visit `/?example`.
