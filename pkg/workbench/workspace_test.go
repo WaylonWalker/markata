@@ -31,7 +31,8 @@ func TestWorkspaceHTTP(t *testing.T) {
 		status             int
 		contains           string
 	}{
-		{"listing", "http://127.0.0.1/workspace", "127.0.0.1:1234", 200, "Workspace post"},
+		{"listing", "http://127.0.0.1/workspace", "127.0.0.1:1234", 200, "post.md"},
+		{"metadata", "http://127.0.0.1/workspace?metadata=true", "127.0.0.1:1234", 200, "Workspace post"},
 		{"source", "http://127.0.0.1/workspace/file?path=post.md", "127.0.0.1:1234", 200, "# Source"},
 		{"traversal", "http://127.0.0.1/workspace/file?path=../post.md", "127.0.0.1:1234", 404, ""},
 		{"host", "http://example.com/workspace", "127.0.0.1:1234", 403, ""},

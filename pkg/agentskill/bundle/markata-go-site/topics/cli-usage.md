@@ -327,3 +327,5 @@ Use `markata workspace --workspace <site>` to inspect discovered document metada
 Add `--file <relative-path>` to read a discovered source. Python exposes the same API as `markata.workspace_files`.
 
 The editor applies the selected site configuration to appearance defaults and Markdown highlighting. Python renderer APIs accept `workspace=`; CLI rendering accepts `render --workspace <site>`. Browser preferences can override appearance defaults.
+For quick content discovery, use `markata workspace --paths --workspace <site>`.
+The editor loads path discovery first and document metadata in the background.

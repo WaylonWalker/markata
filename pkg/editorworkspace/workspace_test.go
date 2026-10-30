@@ -69,3 +69,28 @@ func TestWorkspace_RejectsSymlinkEscape(t *testing.T) {
 		t.Fatal("escaped file readable")
 	}
 }
+
+func TestWorkspace_PathsDoesNotParseBodies(t *testing.T) {
+	t.Setenv("MARKATA_GO_ENCRYPTION_KEY_EDITORPERFORMANCEFIXTUREMISSING", "")
+	root := t.TempDir()
+	if err := os.WriteFile(filepath.Join(root, "markata-go.toml"), []byte("[markata-go.glob]\npatterns=['*.md']\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "broken.md"), []byte("<!-- markata-encrypted-source:v1 key=editorperformancefixturemissing -->\nYWJj\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	workspace, err := New(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	paths, err := workspace.Paths()
+	if err != nil || len(paths) != 1 || paths[0].Path != "broken.md" {
+		t.Fatalf("paths=%v error=%v", paths, err)
+	}
+	if paths[0].Title != nil || len(paths[0].Tags) != 0 {
+		t.Fatal("path discovery returned parsed metadata")
+	}
+	if _, err := workspace.Files(); err == nil {
+		t.Fatal("fixture must fail metadata parsing")
+	}
+}

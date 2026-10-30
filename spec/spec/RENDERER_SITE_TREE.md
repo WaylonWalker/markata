@@ -42,3 +42,12 @@ placeholders. Existing nonempty Markdown drafts MUST survive format migration.
 Editor and generated appearance assets MUST revalidate and use content-versioned
 page references, so restarting a server at the same origin loads current code and
 site defaults.
+
+## Progressive startup
+
+`GET /workspace` MUST return discovered paths without loading document metadata.
+`GET /workspace?metadata=true` MUST provide titles and tags separately. The browser
+MUST open its selected source before requesting metadata, and MUST construct the
+Tags tree only when selected. Metadata failure MUST NOT block editing or preview.
+CLI `workspace --paths` and Python `workspace_files(metadata=False)` expose the
+same fast discovery path. Existing metadata API defaults remain compatible.

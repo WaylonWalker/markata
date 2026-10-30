@@ -116,6 +116,19 @@ func (w *Workspace) resolve(path string) (string, error) {
 	return resolved, nil
 }
 
+// Paths discovers source paths without reading or parsing document bodies.
+func (w *Workspace) Paths() ([]File, error) {
+	m, err := w.manager()
+	if err != nil {
+		return nil, err
+	}
+	files := make([]File, 0, len(m.Files()))
+	for _, path := range m.Files() {
+		files = append(files, File{Path: filepath.ToSlash(path)})
+	}
+	return files, nil
+}
+
 // Files runs Markata's glob and load plugins without rendering or writing a site.
 func (w *Workspace) Files() ([]File, error) {
 	m, err := w.manager()

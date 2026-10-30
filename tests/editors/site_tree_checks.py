@@ -12,8 +12,18 @@ def check_site_tree(page, url):
         Element.prototype.attachShadow = function(options) {
           return attach.call(this, {...options, mode:'open'});
         };''')
-    page.goto(url)
-    expect(page.frame_locator('#preview').locator('h1')).to_have_text('About this site')
+    # Metadata cannot finish until the selected source and preview are usable.
+    metadata_checked = []
+    def hold_metadata(route):
+        expect(page.frame_locator('#preview').locator('h1')).to_have_text('About this site')
+        expect(page.locator('#site-view option[value=feeds]')).to_be_disabled()
+        metadata_checked.append(True)
+        route.fulfill(status=200, content_type='application/json', body='{"files":[]}')
+    page.route('**/workspace?metadata=true', hold_metadata)
+    with page.expect_response('**/workspace?metadata=true'):
+        page.goto(url)
+    assert metadata_checked
+    page.unroute('**/workspace?metadata=true', hold_metadata)
     # Simulate an empty placeholder persisted by the first workspace build.
     workspace = page.request.get(url.rstrip('/') + '/workspace').json()
     key = workspace.get('rootUri') or workspace.get('root')
@@ -28,6 +38,7 @@ def check_site_tree(page, url):
     expect(preview.locator('h1')).to_have_text('Saved welcome')
     page.locator('#site-files').get_by_role('treeitem', name='growing.md', exact=True).click()
     expect(preview.locator('h1')).to_have_text('A growing garden')
+    expect(page.locator('#site-view option[value=feeds]')).to_be_enabled(timeout=30000)
     page.locator('#site-view').select_option('feeds')
     page.locator('#site-feeds').get_by_role('treeitem', name='welcome.md', exact=True).first.click()
     expect(preview.locator('h1')).to_have_text('Saved welcome')
@@ -36,6 +47,7 @@ def check_site_tree(page, url):
     page.locator('#site-view').select_option('files')
     page.locator('#site-files').get_by_role('treeitem', name='welcome.md', exact=True).first.click()
     expect(preview.locator('h1')).to_have_text('Saved welcome')
+    expect(page.locator('#site-view option[value=feeds]')).to_be_enabled(timeout=30000)
     page.locator('#site-view').select_option('feeds')
     page.locator('#site-feeds').get_by_role('treeitem', name='growing.md', exact=True).first.click()
     expect(preview.locator('h1')).to_have_text('A growing garden')
@@ -74,6 +86,11 @@ def check_site_tree(page, url):
     page.reload()
     expect(page.locator('#active-file')).to_have_text('posts/welcome.md')
     assert page.evaluate("document.querySelector('.CodeMirror').CodeMirror.getValue()") == ''
+    page.route('**/workspace?metadata=true', lambda route: route.abort())
+    page.evaluate("document.querySelector('.CodeMirror').CodeMirror.setValue('# Metadata offline')")
+    page.reload()
+    expect(preview.locator('h1')).to_have_text('Metadata offline')
+    expect(page.locator('#site-view option[value=feeds]')).to_have_text('Tags unavailable')
     assert not errors, errors
 
 

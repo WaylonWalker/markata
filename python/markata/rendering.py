@@ -309,11 +309,13 @@ async def render_async(markdown: str, *, inline_assets: bool = False,
     return _result(stdout, stderr, process.returncode)
 
 
-def workspace_files(root: str = ".", *, path: str | None = None, timeout: float = 30) -> dict:
+def workspace_files(root: str = ".", *, path: str | None = None, metadata: bool = True, timeout: float = 30) -> dict:
     """Discover Markata content, or read one source, through the Go loader."""
     command = [_command(False, "/markata-assets", False)[0], "workspace", "--workspace", str(root)]
     if path is not None:
         command += ["--file", path]
+    elif not metadata:
+        command += ["--paths"]
     try:
         process = subprocess.run(command, capture_output=True, timeout=timeout, check=False)
         if process.returncode:

@@ -66,3 +66,10 @@ Python hosts can pass `workspace="/path/to/site"` to `appearance()`, `render()`,
 and `render_async()`. The JSON command equivalent is
 `markata render --workspace /path/to/site --json` (Markdown on stdin), or
 `markata render --workspace /path/to/site --appearance` for controls and assets.
+
+The editor first discovers paths and opens the selected source. Titles and tags
+load afterward in the background. The Tags view becomes available when metadata
+is ready and builds its tree when opened. Metadata errors do not block editing.
+Use `markata workspace --paths --workspace PATH` or
+`workspace_files(PATH, metadata=False)` for discovery without parsing documents.
+Server clients can request `GET /workspace?metadata=true` when they need metadata.

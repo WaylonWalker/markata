@@ -1,7 +1,7 @@
 import {FileTree} from '@pierre/trees';
 
 let files = SITE_FILES;
-let workspaceKey = "example", metadata = [], selection = 0;
+let workspaceKey = "example", metadata = [], metadataByPath = new Map(), selection = 0;
 const storageKey = path => 'markata-workspace-v1:' + workspaceKey + ':' + path;
 let active = 'draft.md', drafts = {}, currentEditor, warning, label;
 let fileTree, feedTree, syncing = false;
@@ -71,6 +71,7 @@ async function open(path) {
   document.querySelector('#commands').disabled = !editable(path);
   currentEditor.setOption('mode', editable(path) ? 'gfm' : 'text/plain');
   label.textContent = path + (editable(path) ? '' : ' · read only');
+  label.title = metadataByPath.get(path)?.title || path;
   currentEditor.setValue(drafts[path]);
   currentEditor.clearHistory();
   document.querySelector('#download').textContent = editable(path) ? 'Download .md' : 'Download .toml';
@@ -118,22 +119,38 @@ window.MarkataSiteTree = {
       search:true,
       onSelectionChange(paths) { if (paths.length) open(paths[paths.length - 1]); }});
     fileTree.render({containerWrapper:document.querySelector('#site-files')});
-    // Feed aliases resolve to canonical source paths, so every view shares a draft.
-    for (const [path, text] of Object.entries(files)) {
-
-      const tags = metadata.find(file => file.path === path)?.tags || [];
-      for (const feed of tags) {
-        if (feed) aliases[`${feed}/${path}`] = path;
+    const tagOption = document.querySelector('#site-view option[value="feeds"]');
+    tagOption.disabled = true; tagOption.textContent = 'Tags (loading…)';
+    const buildTags = () => {
+      if (feedTree) return;
+      for (const file of metadata) {
+        for (const tag of file.tags || []) aliases[`${tag}/${file.path}`] = file.path;
       }
-    }
-    feedTree = new FileTree({paths:Object.keys(aliases), initialExpansion:'open', search:true,
-      onSelectionChange(paths) { const path = aliases[paths[paths.length - 1]]; if (path) open(path); }});
-    feedTree.render({containerWrapper:document.querySelector('#site-feeds')});
+      feedTree = new FileTree({paths:Object.keys(aliases),initialExpansion:'open',search:true,
+        onSelectionChange(paths) {const path=aliases[paths[paths.length-1]];if(path)open(path);}});
+      feedTree.render({containerWrapper:document.querySelector('#site-feeds')});
+      syncing = true;
+      try { syncSelection(feedTree, Object.keys(aliases).find(alias => aliases[alias] === active)); }
+      finally { syncing = false; }
+    };
     document.querySelector('#site-view').addEventListener('change', event => {
+      if (event.target.value === 'feeds') buildTags();
       document.querySelector('#site-files').hidden = event.target.value !== 'files';
       document.querySelector('#site-feeds').hidden = event.target.value !== 'feeds';
     });
     // Start with a real site post. The previous standalone draft stays in the tree.
     await open(selected in files || selected === 'draft.md' ? selected : (Object.keys(files)[0] || 'draft.md'));
+    // Yield to the initial preview; metadata is never part of attach's promise.
+    setTimeout(async () => {
+      try {
+        const response = await fetch('/workspace?metadata=true');
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || data.detail || 'Metadata unavailable');
+        metadata = data.files;
+        metadataByPath = new Map(metadata.map(file => [file.path,file]));
+        label.title = metadataByPath.get(active)?.title || active;
+        tagOption.textContent = 'Tags'; tagOption.disabled = false;
+      } catch { tagOption.textContent = 'Tags unavailable'; }
+    },0);
   }
 };

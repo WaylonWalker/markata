@@ -191,7 +191,13 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 			return
 		}
-		files, err := h.workspace.Files()
+		var files []editorworkspace.File
+		var err error
+		if r.URL.Query().Get("metadata") == "true" {
+			files, err = h.workspace.Files()
+		} else {
+			files, err = h.workspace.Paths()
+		}
 		if err != nil {
 			fail(w, 422, err.Error())
 			return

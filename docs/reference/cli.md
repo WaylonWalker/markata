@@ -2482,3 +2482,7 @@ go run ./cmd/markata-workbench --workspace /absolute/path/to/site
 List discovered source metadata as JSON with `markata workspace --workspace PATH`.
 Read original source with `markata workspace --workspace PATH --file posts/hello.md`.
 See the [workspace file tree guide](/docs/guides/renderer-site-tree/).
+
+Use `markata workspace --paths --workspace PATH` to list discovered source paths
+without loading document metadata. The editor uses this fast path on startup and
+loads titles and tags in the background.
