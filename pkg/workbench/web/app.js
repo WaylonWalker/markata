@@ -17,7 +17,8 @@ if (new URLSearchParams(location.search).has('example')) {
   fetch(document.body.dataset.exampleUrl).then(response => {
     if (!response.ok) throw new Error('Cannot load the command palette example.');
     return response.text();
-  }).then(markdown => {
+  }).then(async markdown => {
+    await workspaceReady;
     editor.setValue(markdown);
     editor.focus();
     setTimeout(() => document.querySelector('#commands').click(), 250);
@@ -111,7 +112,7 @@ function updatePreview(data) {
 function attributes() { return Object.fromEntries(appearanceKeys.map(k => [k, document.documentElement.getAttribute(k)])); }
 function syncAppearance() { frame.contentWindow?.postMessage({type:'appearance',attributes:attributes()}, '*'); }
 new MutationObserver(syncAppearance).observe(document.documentElement, {attributes:true,attributeFilter:appearanceKeys});
-window.addEventListener('load', () => { ready = true; render(); }, {once:true});
+window.addEventListener('load', async () => { await workspaceReady; ready = true; render(); }, {once:true});
 
 document.querySelector('#open').addEventListener('click', () => document.querySelector('#import').click());
 document.querySelector('#import').addEventListener('change', async event => {
@@ -130,4 +131,4 @@ document.querySelector('#import').addEventListener('change', async event => {
 });
 if (!saved.textContent) saveDraft();
 
-window.MarkataSiteTree.attach(editor, storageWarning);
+const workspaceReady = window.MarkataSiteTree.attach(editor, storageWarning);

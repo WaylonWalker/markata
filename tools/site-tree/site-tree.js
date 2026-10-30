@@ -19,6 +19,7 @@ function remember() {
   catch { warning(); }
 }
 async function open(path) {
+  if (syncing) return;
   const request = ++selection;
   if (path in files && files[path] === null && !(path in drafts)) {
     try {
@@ -119,6 +120,6 @@ window.MarkataSiteTree = {
       document.querySelector('#site-feeds').hidden = event.target.value !== 'feeds';
     });
     // Start with a real site post. The previous standalone draft stays in the tree.
-    fileTree.getItem(selected in files || selected === 'draft.md' ? selected : (Object.keys(files)[0] || 'draft.md'))?.select();
+    await open(selected in files || selected === 'draft.md' ? selected : (Object.keys(files)[0] || 'draft.md'));
   }
 };
