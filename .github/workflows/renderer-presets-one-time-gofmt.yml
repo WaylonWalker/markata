@@ -1,0 +1,31 @@
+name: Renderer presets one-time gofmt
+on:
+  push:
+    branches:
+      - feat/renderer-presets-unified
+    paths:
+      - .github/workflows/renderer-presets-one-time-gofmt.yml
+permissions:
+  contents: write
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/renderer-presets-unified
+          persist-credentials: true
+      - name: Format Go, remove this one-time workflow, and commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          gofmt -w             cmd/markata-go/cmd/render.go             cmd/markata-go/cmd/render_test.go             cmd/markata-go/cmd/serve_settings_test.go             pkg/config/merge.go             pkg/config/parser.go             pkg/config/validate.go             pkg/config/renderer_defaults_validate.go             pkg/config/render_profile_test.go             pkg/models/config.go             pkg/plugins/standalone_profile.go             pkg/plugins/standalone_profile_test.go             pkg/plugins/standalone_render.go             pkg/plugins/standalone_asset_parity_test.go             pkg/plugins/standalone_icons.go             pkg/plugins/publish_feed_shorts.go             pkg/workbench/handler.go             pkg/workbench/handler_test.go
+          git rm -- .github/workflows/renderer-presets-one-time-gofmt.yml
+          git add -- cmd/markata-go/cmd pkg/config pkg/models/config.go pkg/plugins pkg/workbench
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'style(renderer): gofmt config and adapters'
+          git push origin HEAD:feat/renderer-presets-unified
