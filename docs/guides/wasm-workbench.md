@@ -74,7 +74,12 @@ worker.onmessage = ({data}) => {
 
 The worker accepts optional `profile` (`web` or `offline-interactive`) and
 `inline_assets` fields in each render request. The workbench exposes these
-options in the Live preview toolbar. `offline-interactive` inlines managed
+options in the Live preview toolbar. To keep the WASM binary small, linked
+assets are shipped separately in the service-worker-cached static bundle.
+When inline assets are requested, the worker hydrates those exact managed
+assets from the local bundle and returns inline head/body tags. This is
+host-specific delivery; the Go standalone renderer still supports independently
+self-contained inline output when running natively. `offline-interactive` inlines managed
 assets and rejects detected remote media; it does **not** guarantee zero
 browser network requests from all authored or third-party content.
 `offline-static` is not available until static diagram/chart rendering exists.
