@@ -30,6 +30,9 @@ import (
 type MentionsPlugin struct {
 	// cssClass is the CSS class applied to mention links
 	cssClass string
+	// metadataHTTPClient is an optional test/client override. A nil client
+	// preserves the production timeout and HTTP instrumentation defaults.
+	metadataHTTPClient *http.Client
 }
 
 const mentionsCacheVersion = "mentions:v2"
@@ -533,8 +536,9 @@ func (p *MentionsPlugin) fetchMetadata(domain, cacheDir string, maxAge, timeout 
 		LastFetched: time.Now(),
 	}
 
-	client := &http.Client{
-		Timeout: timeout,
+	client := p.metadataHTTPClient
+	if client == nil {
+		client = &http.Client{Timeout: timeout}
 	}
 	buildstats.InstrumentHTTPClient(client)
 
