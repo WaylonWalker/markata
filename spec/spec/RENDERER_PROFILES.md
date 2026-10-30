@@ -7,7 +7,7 @@ Tracking: [#1854](https://github.com/WaylonWalker/markata/issues/1854).
 Share **one render profile vocabulary and one Go renderer** across:
 - the native `plugins.RenderStandalone` API,
 - the one-shot JSON CLI and Python sync/async wrappers,
-- future Go HTTP and browser/WASM adapters.
+- Go HTTP and browser/WASM adapters.
 
 `markdown.render_profile`, `markdown.render_asset_mode`, and `markdown.render_asset_base` are **renderer integration defaults**, not a site-builder
 plugin lifecycle setting. The existing `markata serve` settings sidebar discovers
@@ -67,11 +67,12 @@ assets are delivered, not the Markdown AST or feature detection. Generated
 initializer scripts are per-document and must not be deduplicated like static
 libraries.
 
-The next adapter PRs should accept **the same profile and asset options**:
+All three integrations share **the same profile and asset options**:
 - Go workbench HTTP: `profile`, `inline_assets`; its asset base remains fixed to the local `/appearance` server. Reuse
   `ResolveStandaloneProfile`, rather than a parallel asset-policy switch.
-- WASM: same profile enum, but expose native-only unsupported modes as explicit
-  capability errors. Worker cache and opaque-origin iframe rules remain platform-specific.
+- WASM: accepts web/offline-interactive, inline vs linked assets, and reports
+  native-only unsupported modes explicitly. Service-worker cache and sandboxed
+  preview rules remain platform-specific.
 - Python: covered by this PR; the CLI and Go implement the actual policy.
 
 #1854 remains open until strict browser-network assertions, Mermaid SVG prerender,
