@@ -122,6 +122,8 @@ Set `MARKATA_GO_SITE_DIR` in an alias or wrapper when repeatedly using one site.
   Select the workspace on the server (`markata-workbench --workspace` or `MARKATA_LSP_WORKSPACE`).
   FastAPI uses `markata-go lsp --browser-workspace` behind its stdio bridge.
   Drafts stay in memory. These examples do not open or save workspace files.
+  The editors complete command-catalog containers and attributes, plus Mermaid
+  diagram types and directions. Press Ctrl+Space to show completions.
   See `docs/guides/go-workbench.md` and `docs/guides/fastapi-editor.md` in the Markata repository.
 - `markata-go lsp doctor` (check local LSP command and project configuration)
 - `markata-go lsp doctor --no-verify-editor` (detect installed editors without loading their configuration)

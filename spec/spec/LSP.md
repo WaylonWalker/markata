@@ -16,14 +16,18 @@ Workspace file notifications from the browser MUST NOT cause filesystem reads.
 
 Both editors synchronize full unsaved buffers and request completion from the
 same LSP. They support wiki-link slugs and aliases, Markdown document paths,
-and existing contextual completions. Completion edits use UTF-16 positions,
+container names and modifiers from the command catalog, and documented container
+attributes and values. Mermaid completions include diagram types, flowchart
+directions, a flowchart starter, and class style properties. Existing frontmatter, admonition, and mention completions remain available.
+Completion edits use UTF-16 positions,
 preserve closing delimiters, and cannot apply to a changed buffer or cursor.
 Ctrl+Space requests completion explicitly. Broken-link diagnostics appear in
 the editor. Connection failures leave editing and preview available.
 
 The WebSocket endpoints reject foreign or missing browser origins, bound message
-sizes, limit completion responses to 200 items with `isIncomplete`, and release connections or subprocesses on disconnect. They are trusted
-local examples, not a multi-user remote workspace service. Existing stdio clients
+sizes, cap completion responses at 200 items, and release connections or subprocesses
+on disconnect. They are trusted local examples, not a multi-user remote workspace
+service. Existing stdio clients
 retain their workspace selection and Content-Length framing by default.
 
 ## Overview

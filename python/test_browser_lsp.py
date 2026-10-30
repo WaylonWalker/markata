@@ -82,6 +82,29 @@ class BrowserLSPTest(unittest.TestCase):
                         expect(page.locator(".CodeMirror-hints")).to_be_visible()
                         page.keyboard.press("Enter")
                         self.assertEqual(page.evaluate("document.querySelector('.CodeMirror').CodeMirror.getValue()"), wanted)
+                    contextual = [
+                        ("::::: md-i", 0, 10, "md-icon", "::::: md-icon"),
+                        ("::::: md-icon {data-s", 0, 21, "data-size", "::::: md-icon {data-size"),
+                        ("::::: md-icon {data-size=\"l\"", 0, 27, "lg", "::::: md-icon {data-size=\"lg\""),
+                        ("::: wa-details {sum", 0, 20, "summary", "::: wa-details {summary"),
+                        ("::: md-icon {data-size=\"lg\" data-s", 0, 34, "data-size", "::: md-icon {data-size=\"lg\" data-size"),
+                        ("::: road e", 0, 10, "editorial", "::: road editorial"),
+                        ("```mermaid\nflowchart T", 1, 11, "TD", "```mermaid\nflowchart TD"),
+                        ("```mermaid\ng", 1, 1, "graph", "```mermaid\ngraph"),
+                        ("```mermaid\nclassDef note c", 1, 15, "color", "```mermaid\nclassDef note color:"),
+                    ]
+                    for source, line, column, suggestion, expected in contextual:
+                        page.evaluate("""({source,line,column}) => {
+                          const cm=document.querySelector('.CodeMirror').CodeMirror;
+                          cm.setValue(source); cm.setCursor(line,column); cm.focus();
+                        }""", {"source":source,"line":line,"column":column})
+                        page.keyboard.press("Control+Space")
+                        expect(page.locator(".CodeMirror-hints")).to_be_visible()
+                        candidates = page.locator(".CodeMirror-hint").filter(has_text=suggestion).all()
+                        target = next((item for item in candidates if item.inner_text().split(" — ", 1)[0] == suggestion), None)
+                        self.assertIsNotNone(target, f"missing exact suggestion {suggestion}")
+                        target.click()
+                        self.assertEqual(page.evaluate("document.querySelector('.CodeMirror').CodeMirror.getValue()"), expected)
                     # Automatic completion after actual keyboard input.
                     page.evaluate("""() => {const cm=document.querySelector('.CodeMirror').CodeMirror;
                       cm.setValue(''); cm.setCursor(0,0); cm.focus();}""")

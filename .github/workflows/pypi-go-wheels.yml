@@ -23,6 +23,7 @@ on:
       - 'examples/command-palette-showcase.md'
       - 'examples/wasm-workbench/**'
       - 'pkg/workbench/**'
+      - 'pkg/lsp/**'
       - 'tests/editors/**'
       - 'scripts/wasm-workbench.py'
       - 'docs/guides/fastapi-editor.md'
@@ -91,7 +92,7 @@ jobs:
           "${RUNNER_TEMP}/markata-wheel-venv/bin/python" -m markata version
           "${RUNNER_TEMP}/markata-wheel-venv/bin/markata" version
           "${RUNNER_TEMP}/markata-wheel-venv/bin/markata" --help
-          "${RUNNER_TEMP}/markata-wheel-venv/bin/python" -m pip install fastapi httpx uvicorn playwright
+          "${RUNNER_TEMP}/markata-wheel-venv/bin/python" -m pip install fastapi httpx uvicorn websockets playwright
           "${RUNNER_TEMP}/markata-wheel-venv/bin/python" python/smoke_fastapi.py
           "${RUNNER_TEMP}/markata-wheel-venv/bin/python" -m unittest discover -s python/integration -v
       - name: Install browser for the live editor regression test

@@ -131,6 +131,10 @@ func (s *Server) handleCompletion(_ context.Context, msg *Message) error {
 		return s.sendCompletion(msg.ID, params, &CompletionList{Items: items})
 	}
 
+	if handled, err := s.handleMarkdownCompletion(msg, params, lines, line, col); handled {
+		return err
+	}
+
 	// Check if we're inside a mention (@handle)
 	if prefix, startCol, inMention := getMentionContext(line, col); inMention {
 		return s.handleMentionCompletion(msg, params, prefix, startCol, col)
