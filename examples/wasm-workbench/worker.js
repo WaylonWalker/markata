@@ -13,7 +13,7 @@ importScripts('wasm_exec.js');
   onmessage = ({data}) => {
     const started = performance.now();
     try {
-      const result = JSON.parse(markataRender(data.source));
+      const result = JSON.parse(markataRender(data.source, data.profile || 'web', Boolean(data.inline_assets)));
       postMessage({type:'result', revision:data.revision, result, render_ms:performance.now()-started});
     } catch (error) { postMessage({type:'result',revision:data.revision,result:{error:String(error)}}); }
   };
