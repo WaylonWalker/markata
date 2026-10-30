@@ -27,13 +27,14 @@ footer{height:37px;padding:9px 24px;border-top:1px solid var(--editor-divider);f
 #error{margin:0;padding:12px 24px;background:#ffeded;color:#932c2c;white-space:pre-wrap;max-height:160px;overflow:auto}
 @media(max-width:700px){header{padding:14px 18px}#workbench{grid-template-columns:1fr;height:auto}section{height:60dvh}section+section{border-left:0;border-top:1px solid var(--editor-divider)}footer{height:auto;min-height:37px}}
 
-.editor-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.editor-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 #keymap,#render-profile,#render-assets{font:12px system-ui;color:var(--color-text);background:var(--color-surface);border:1px solid var(--editor-divider);border-radius:4px;padding:3px 7px}
 .CodeMirror{flex:1;min-height:0;height:auto;background:var(--color-background);color:var(--color-text);font:14px/1.7 var(--font-code,ui-monospace,monospace)}
 .CodeMirror-gutters{background:var(--color-background);border-right:1px solid var(--editor-divider)}
 .CodeMirror-linenumber{color:var(--color-text-muted);opacity:.6}
 .CodeMirror-lines{padding:20px 0}.CodeMirror pre.CodeMirror-line{padding:0 16px}
 .CodeMirror-cursor{border-left-color:var(--color-text)}
+#render-profile,#render-assets{max-width:100%}
 .CodeMirror-selected,.CodeMirror-focused .CodeMirror-selected{background:color-mix(in srgb,var(--color-primary) 25%,var(--color-surface))}
 .cm-s-default .cm-header,.cm-s-default .cm-link{color:var(--color-primary)}
 .cm-s-default .cm-header{font-weight:700}.cm-s-default .cm-quote,.cm-s-default .cm-comment{color:var(--color-text-muted)}
