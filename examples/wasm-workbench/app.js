@@ -6,6 +6,8 @@
   const saved = document.querySelector('#saved');
   const errorBox = document.querySelector('#error');
   const offline = document.querySelector('#offline');
+  const renderProfile = document.querySelector('#render-profile');
+  const renderAssets = document.querySelector('#render-assets');
   const draftKey = 'markata-wasm-draft-v1';
   const initial = '# A place to think\n\nMarkata, running entirely in your browser.\n\n!!! note\n    Your draft stays on this device. Export a copy to keep it elsewhere.\n\n## Follow the idea\n\n```mermaid\ngraph LR\n  Markdown --> WASM --> Preview\n```\n\n## Small things, clearly\n\n```go\nmessage := "Hello from WebAssembly"\n```\n\n- [x] Keep rendering local\n- [ ] Make something useful\n';
   function showError(message) { errorBox.textContent = message; errorBox.hidden = false; }
@@ -69,7 +71,7 @@
   const previewPromise=preparePreview().catch(error => showError(String(error)));
   async function populateAssets(result) {
     return {...result,assets:await Promise.all(result.assets.map(async asset => {
-      if (asset.id.startsWith('generated-')) return asset;
+      if (asset.id.startsWith('generated-') || asset.content) return asset;
       return {...asset,content:await assetText(asset.id)};
     }))};
   }
@@ -80,12 +82,28 @@
     if (bytes > 200000) { showError('Document exceeds 200,000 UTF-8 bytes. Export it before shortening it.'); status.textContent='Preview paused · document too large'; return; }
     busy = true;
     status.textContent = 'Rendering on this device…';
-    worker.postMessage({source:source.value,revision});
+    worker.postMessage({source:source.value,revision,profile:renderProfile.value,inline_assets:renderAssets.value==='inline'});
   }
   function save() {
     try { localStorage.setItem(draftKey,source.value); saved.textContent='Draft saved on this device'; }
     catch { saved.textContent='Draft not saved · storage unavailable or full · export a copy'; }
   }
+  const rendererSettingsChanged = () => {
+    if (renderProfile.value === 'offline-interactive') {
+      renderAssets.value = 'inline';
+      renderAssets.disabled = true;
+    } else {
+      renderAssets.disabled = false;
+    }
+    revision++;
+    pending = true;
+    clearTimeout(timer);
+    timer = setTimeout(schedule, 0);
+  };
+  renderProfile.addEventListener('change', rendererSettingsChanged);
+  renderAssets.addEventListener('change', rendererSettingsChanged);
+  rendererSettingsChanged();
+
   editor.on('change',() => {
     editor.save(); revision++; pending = true;
     clearTimeout(timer);
