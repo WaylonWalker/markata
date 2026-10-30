@@ -42,6 +42,11 @@ func ResolveStandaloneProfile(options StandaloneOptions) (StandaloneOptions, err
 	}
 }
 
+const (
+	standaloneTagStyle = "style"
+	standaloneAttrSrc = "src"
+)
+
 var remoteCSSURL = regexp.MustCompile(`(?i)(?:url\s*\(\s*['"]?\s*|@import\s+(?:url\s*\(\s*)?['"]?\s*)(?:https?:)?//`)
 
 func isRemoteResourceURL(value string) bool {
@@ -53,7 +58,7 @@ func isRemoteResourceURL(value string) bool {
 	if err != nil {
 		return true // Invalid resource URLs cannot be certified offline.
 	}
-	return u.Scheme == "http" || u.Scheme == "https"
+	return u.Scheme == schemeHTTP || u.Scheme == schemeHTTPS
 }
 
 // checkStandaloneOfflineResources catches browser resource loads reachable from
@@ -65,44 +70,57 @@ func isRemoteResourceURL(value string) bool {
 // browser verification remains tracked in #1854.
 func checkStandaloneOfflineResources(result *StandaloneResult) error {
 	for _, asset := range result.Assets {
-		if isRemoteResourceURL(asset.URL) || remoteCSSURL.MatchString(asset.Content) && asset.Kind == "style" {
+		if isRemoteResourceURL(asset.URL) ||
+			(asset.Kind == standaloneTagStyle && remoteCSSURL.MatchString(asset.Content)) {
 			return fmt.Errorf("offline-interactive: asset %q has a remote dependency", asset.ID)
 		}
 	}
 	if len(result.ExternalURLs) > 0 {
-		return fmt.Errorf("offline-interactive: renderer declared external dependencies: %s", strings.Join(result.ExternalURLs, ", "))
+		return fmt.Errorf("offline-interactive: renderer declared external dependencies: %s",
+			strings.Join(result.ExternalURLs, ", "))
 	}
-	tokenizer := xhtml.NewTokenizer(strings.NewReader(result.HTML))
+	return checkStandaloneHTMLResources(result.HTML)
+}
+
+func checkStandaloneHTMLResources(markup string) error {
+	tokenizer := xhtml.NewTokenizer(strings.NewReader(markup))
 	for {
 		kind := tokenizer.Next()
-		if kind == xhtml.ErrorToken {
-			if tokenizer.Err() != nil && !errors.Is(tokenizer.Err(), io.EOF) {
-				return fmt.Errorf("offline-interactive: parse generated HTML: %w", tokenizer.Err())
+		switch kind {
+		case xhtml.ErrorToken:
+			if err := tokenizer.Err(); err != nil && !errors.Is(err, io.EOF) {
+				return fmt.Errorf("offline-interactive: parse generated HTML: %w", err)
 			}
 			return nil
-		}
-		if kind != xhtml.StartTagToken && kind != xhtml.SelfClosingTagToken {
-			continue
-		}
-		token := tokenizer.Token()
-		for _, attr := range token.Attr {
-			if attr.Key == "style" && remoteCSSURL.MatchString(attr.Val) {
-				return fmt.Errorf("offline-interactive: inline style has a remote resource")
-			}
-			if attr.Key == "srcset" {
-				for _, image := range strings.Split(attr.Val, ",") {
-					item := strings.Fields(strings.TrimSpace(image))
-					if len(item) > 0 && isRemoteResourceURL(item[0]) {
-						return fmt.Errorf("offline-interactive: %s srcset has a remote resource", token.Data)
-					}
-				}
-			}
-			if attr.Key == "src" || attr.Key == "poster" || attr.Key == "data" ||
-				(attr.Key == "href" && token.Data != "a") {
-				if isRemoteResourceURL(attr.Val) {
-					return fmt.Errorf("offline-interactive: %s %s loads a remote resource", token.Data, attr.Key)
+		case xhtml.StartTagToken, xhtml.SelfClosingTagToken:
+			token := tokenizer.Token()
+			for _, attr := range token.Attr {
+				if err := checkStandaloneHTMLResourceAttr(token.Data, attr); err != nil {
+					return err
 				}
 			}
 		}
 	}
+}
+
+func checkStandaloneHTMLResourceAttr(tag string, attr xhtml.Attribute) error {
+	if attr.Key == standaloneTagStyle && remoteCSSURL.MatchString(attr.Val) {
+		return fmt.Errorf("offline-interactive: inline style has a remote resource")
+	}
+	if attr.Key == "srcset" {
+		for _, image := range strings.Split(attr.Val, ",") {
+			item := strings.Fields(strings.TrimSpace(image))
+			if len(item) > 0 && isRemoteResourceURL(item[0]) {
+				return fmt.Errorf("offline-interactive: %s srcset has a remote resource", tag)
+			}
+		}
+		return nil
+	}
+	if attr.Key == standaloneAttrSrc || attr.Key == "poster" || attr.Key == "data" ||
+		(attr.Key == "href" && tag != "a") {
+		if isRemoteResourceURL(attr.Val) {
+			return fmt.Errorf("offline-interactive: %s %s loads a remote resource", tag, attr.Key)
+		}
+	}
+	return nil
 }
