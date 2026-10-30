@@ -118,10 +118,11 @@ Set `MARKATA_GO_SITE_DIR` in an alias or wrapper when repeatedly using one site.
 - `markata-go lint` (lint markdown files for common issues)
 - `markata-go lint --fix` (auto-fix fixable issues)
 - `markata-go lint --dry-run` (show files without linting)
+- `markata editor --workspace <site> --port 8766` (start the Go browser editor on loopback)
 - The Go and FastAPI browser editor examples use the existing LSP through a same-origin `/lsp` WebSocket.
-  Select the workspace on the server (`markata-workbench --workspace` or `MARKATA_LSP_WORKSPACE`).
+  Go uses `markata editor --workspace`; FastAPI uses `MARKATA_LSP_WORKSPACE`.
   FastAPI uses `markata-go lsp --browser-workspace` behind its stdio bridge.
-  Drafts stay in memory. These examples do not open or save workspace files.
+  Drafts stay in memory. The Go and Python editors open files discovered by Markata glob rules; edits stay in browser drafts and do not write source files.
   The editors complete command-catalog containers and attributes, plus Mermaid
   diagram types and directions. Press Ctrl+Space to show completions.
   See `docs/guides/go-workbench.md` and `docs/guides/fastapi-editor.md` in the Markata repository.
@@ -321,3 +322,10 @@ When blogroll is enabled, `markata-go lint` reports
 `unknown-mention` warnings for unresolved handles. Add a verified
 entry or alias to the blogroll before linking: CLI lint/build never
 searches social networks or guesses a person's identity.
+
+Use `markata workspace --workspace <site>` to inspect discovered document metadata as JSON.
+Add `--file <relative-path>` to read a discovered source. Python exposes the same API as `markata.workspace_files`.
+
+The editor applies the selected site configuration to appearance defaults and Markdown highlighting. Python renderer APIs accept `workspace=`; CLI rendering accepts `render --workspace <site>`. Browser preferences can override appearance defaults.
+For quick content discovery, use `markata workspace --paths --workspace <site>`.
+The editor loads path discovery first and document metadata in the background.

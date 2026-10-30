@@ -65,8 +65,12 @@ def main():
     parser.add_argument('--wasm-output', type=Path, required=True)
     args = parser.parse_args()
     with ExitStack() as stack:
-        python_url = stack.enter_context(serve_editor(load_editor().app))
-        process = subprocess.Popen([args.go_binary, '--listen', '127.0.0.1:0'], stderr=subprocess.PIPE, text=True)
+        site = Path(__file__).resolve().parents[2] / 'examples/editor-site'
+        demo = load_editor()
+        demo.LSP_WORKSPACE = site
+        demo.presentation = demo.appearance(asset_base="/appearance", workspace=str(site))
+        python_url = stack.enter_context(serve_editor(demo.app))
+        process = subprocess.Popen([args.go_binary, '--listen', '127.0.0.1:0', '--workspace', str(site)], stderr=subprocess.PIPE, text=True)
         stack.callback(process.wait, timeout=15)
         stack.callback(process.terminate)
         startup_timeout = threading.Timer(30, process.terminate)
@@ -92,6 +96,11 @@ def main():
         for name, url in [('Python', python_url), ('Go', match[0]), ('WASM', f'http://127.0.0.1:{server.server_port}/')]:
             fonts.append(check(browser, url))
             print(name + ': editor parity passed', flush=True)
+            if name != 'WASM':
+                from site_tree_checks import check_site_tree
+                with browser.new_context() as context:
+                    check_site_tree(context.new_page(), url)
+                print(name + ': workspace tree passed', flush=True)
         assert len(set(fonts)) == 1, fonts
 
 

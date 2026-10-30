@@ -14,6 +14,7 @@ import (
 	"io"
 	"log"
 	"mime"
+	"net"
 	"net/http"
 	"net/url"
 	"path"
@@ -21,7 +22,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/WaylonWalker/markata/pkg/editorworkspace"
 	"github.com/WaylonWalker/markata/pkg/lsp"
+	"github.com/WaylonWalker/markata/pkg/models"
 	"github.com/WaylonWalker/markata/pkg/plugins"
 )
 
@@ -36,6 +39,8 @@ var manifestPattern = regexp.MustCompile(`--(palette|aesthetic|fontpack)-manifes
 // Mount it at the root of an origin. Authored HTML is enabled for trusted local
 // editing; isolate its preview using an opaque-origin iframe sandbox.
 type Handler struct {
+	siteConfig     *models.Config
+	workspace      *editorworkspace.Workspace
 	language       http.Handler
 	languageConfig lsp.BrowserConfig
 	appearance     *plugins.StandaloneAppearance
@@ -53,6 +58,10 @@ func New() (*Handler, error) { return NewWithWorkspace(context.Background(), "."
 
 // NewWithWorkspace enables LSP for a server-selected workspace. Cancel ctx on shutdown.
 func NewWithWorkspace(ctx context.Context, root string) (*Handler, error) {
+	workspace, err := editorworkspace.New(root)
+	if err != nil {
+		return nil, err
+	}
 	config, err := lsp.BrowserWorkspace(root)
 	if err != nil {
 		return nil, err
@@ -61,11 +70,15 @@ func NewWithWorkspace(ctx context.Context, root string) (*Handler, error) {
 	if err != nil {
 		return nil, err
 	}
-	a, err := plugins.BuildStandaloneAppearance()
+	siteConfig, err := workspace.Config()
 	if err != nil {
 		return nil, err
 	}
-	h := &Handler{language: language, languageConfig: config, appearance: a, assets: a.Assets, gate: make(chan struct{}, 1), choices: map[string][]string{"data-theme": {"light", "dark"}, "data-text-size": {"small", "medium", "large", "x-large"}}}
+	a, err := plugins.BuildStandaloneAppearanceForSite(siteConfig, root)
+	if err != nil {
+		return nil, err
+	}
+	h := &Handler{siteConfig: siteConfig, workspace: workspace, language: language, languageConfig: config, appearance: a, assets: a.Assets, gate: make(chan struct{}, 1), choices: map[string][]string{"data-theme": {"light", "dark"}, "data-text-size": {"small", "medium", "large", "x-large"}}}
 	h.assets["css/fonts.css"] = bytes.ReplaceAll(h.assets["css/fonts.css"], []byte("/assets/fonts/"), []byte("/appearance/assets/fonts/"))
 	for _, name := range []string{"palette", "aesthetic", "fonts"} {
 		match := manifestPattern.FindSubmatch(h.assets["css/"+name+".css"])
@@ -104,7 +117,7 @@ func NewWithWorkspace(ctx context.Context, root string) (*Handler, error) {
 	controls := ""
 	for _, name := range a.Styles {
 		if name != "css/main.css" && name != "css/components.css" {
-			controls += styleLink(name)
+			controls += h.versionedStyleLink(name)
 		}
 	}
 	scripts := ""
@@ -112,7 +125,41 @@ func NewWithWorkspace(ctx context.Context, root string) (*Handler, error) {
 		scripts += `<script src="/appearance/` + name + `"></script>`
 	}
 	h.index = []byte(strings.NewReplacer("<!--EDITOR_HEAD-->", editorHead, "<!--APPEARANCE_HEAD-->", controls, "<!--PICKER-->", a.PickerHTML, "<!--APPEARANCE_SCRIPTS-->", scripts).Replace(string(page)))
+	if siteConfig != nil {
+		attrs := `<html lang="en"`
+		for _, key := range []string{"data-theme", "data-palette", "data-aesthetic", "data-fontpack", "data-text-size"} {
+			attrs += " " + key + `="` + html.EscapeString(a.Defaults[key]) + `"`
+		}
+		h.index = regexp.MustCompile(`<html[^>]*>`).ReplaceAll(h.index, []byte(attrs+">"))
+	}
+	h.versionEditorAssets()
 	return h, nil
+}
+
+// Version editor references so restarting on the same port cannot reuse stale code.
+var editorAssetReference = regexp.MustCompile(`(?:src|href)="/(editor|appearance)/([^"?]+)"`)
+
+func (h *Handler) versionEditorAssets() {
+	h.index = editorAssetReference.ReplaceAllFunc(h.index, func(reference []byte) []byte {
+		match := editorAssetReference.FindSubmatch(reference)
+		var data []byte
+		if string(match[1]) == "editor" {
+			var err error
+			data, err = web.ReadFile("web/" + string(match[2]))
+			if err != nil {
+				return reference
+			}
+		} else {
+			data = h.assets[string(match[2])]
+		}
+		hash := sha256.Sum256(data)
+		return []byte(strings.TrimSuffix(string(reference), `"`) + fmt.Sprintf("?v=%x", hash[:8]) + `"`)
+	})
+}
+
+func (h *Handler) versionedStyleLink(name string) string {
+	hash := sha256.Sum256(h.assets[name])
+	return `<link rel="stylesheet" href="/appearance/` + name + fmt.Sprintf("?v=%x", hash[:8]) + `">`
 }
 
 func styleLink(name string) string { return `<link rel="stylesheet" href="/appearance/` + name + `">` }
@@ -120,6 +167,8 @@ func styleLink(name string) string { return `<link rel="stylesheet" href="/appea
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	switch {
+	case (r.URL.Path == "/workspace" || r.URL.Path == "/workspace/file") && r.Method == http.MethodGet:
+		h.serveWorkspace(w, r)
 	case r.URL.Path == "/lsp":
 		h.language.ServeHTTP(w, r)
 	case r.URL.Path == "/lsp/config" && r.Method == http.MethodGet:
@@ -143,6 +192,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Security-Policy", "frame-ancestors 'self'")
 		serve(w, r, "index.html", h.index)
 	case strings.HasPrefix(r.URL.Path, "/appearance/"):
+		w.Header().Set("Cache-Control", "no-cache")
 		// The only mutation occurs under the render gate. Copy the slice header while
 		// holding it, then let concurrent asset requests proceed independently.
 		select {
@@ -159,6 +209,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		serve(w, r, r.URL.Path, data)
 	case strings.HasPrefix(r.URL.Path, "/editor/"):
+		w.Header().Set("Cache-Control", "no-cache")
 		name := strings.TrimPrefix(r.URL.Path, "/editor/")
 		data, err := web.ReadFile("web/" + name)
 		if err != nil {
@@ -241,7 +292,7 @@ func (h *Handler) prepareRender(r *http.Request, req *renderRequest) (*renderRes
 	cached := result != nil && h.lastSource == *req.Markdown
 	if !cached {
 		var err error
-		result, err = plugins.RenderStandalone(*req.Markdown, plugins.StandaloneOptions{Unsafe: true, AssetBase: "/appearance"})
+		result, err = plugins.RenderStandalone(*req.Markdown, plugins.StandaloneOptions{Config: h.siteConfig, Unsafe: true, AssetBase: "/appearance"})
 		if err != nil {
 			return nil, err
 		}
@@ -340,11 +391,16 @@ func (h *Handler) decodeRequest(w http.ResponseWriter, r *http.Request) *renderR
 
 func (h *Handler) document(result *plugins.StandaloneResult, attributes map[string]string) string {
 	defaults := map[string]string{"data-theme": "dark", "data-palette": "default-dark", "data-aesthetic": "minimal", "data-fontpack": "system", "data-text-size": "large"}
+	for key, value := range h.appearance.Defaults {
+		defaults[key] = value
+	}
 	for key, value := range attributes {
 		defaults[key] = value
 	}
 	if _, ok := attributes["data-palette"]; !ok && defaults["data-theme"] == "light" {
-		defaults["data-palette"] = "default-light"
+		if h.siteConfig == nil {
+			defaults["data-palette"] = "default-light"
+		}
 	}
 	attrs := ""
 	for _, key := range []string{"data-theme", "data-palette", "data-aesthetic", "data-fontpack", "data-text-size"} {
@@ -352,7 +408,7 @@ func (h *Handler) document(result *plugins.StandaloneResult, attributes map[stri
 	}
 	styles := ""
 	for _, name := range h.appearance.Styles {
-		styles += styleLink(name)
+		styles += h.versionedStyleLink(name)
 	}
 	bg, fg := "#131721", "#e5e7eb"
 	if defaults["data-theme"] == "light" {
@@ -360,4 +416,44 @@ func (h *Handler) document(result *plugins.StandaloneResult, attributes map[stri
 	}
 	initial := `<style>html{color-scheme:` + defaults["data-theme"] + `;background:` + bg + `}body{background:var(--color-background,` + bg + `);color:var(--color-text,` + fg + `)}</style>`
 	return `<!doctype html><html lang="en"` + attrs + `><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Markdown preview</title>` + initial + styles + h.featureHead(result) + `</head><body><main class="main-content"><div class="content-wrapper"><div class="post-shell"><article class="post h-entry"><div class="post-content e-content">` + result.HTML + `</div></article></div></div></main>` + strings.ReplaceAll(result.BodyEndHTML, "<script", `<script data-markata-generated="true"`) + h.bridge + `</body></html>`
+}
+
+func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
+	peer, _, peerErr := net.SplitHostPort(r.RemoteAddr)
+	if peerErr != nil || net.ParseIP(peer) == nil || !net.ParseIP(peer).IsLoopback() {
+		http.Error(w, "local workspace access required", http.StatusForbidden)
+		return
+	}
+	host, hostErr := url.Parse("//" + r.Host)
+	if hostErr != nil || host.User != nil || host.Path != "" || (host.Hostname() != "localhost" && (net.ParseIP(host.Hostname()) == nil || !net.ParseIP(host.Hostname()).IsLoopback())) {
+		http.Error(w, "local workspace access required", http.StatusForbidden)
+		return
+	}
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("Content-Type", "application/json")
+	if r.URL.Path == "/workspace/file" {
+		source, err := h.workspace.Read(r.URL.Query().Get("path"))
+		if err != nil {
+			fail(w, 404, err.Error())
+			return
+		}
+		if err := json.NewEncoder(w).Encode(map[string]string{"source": source}); err != nil {
+			return
+		}
+		return
+	}
+	var files []editorworkspace.File
+	var err error
+	if r.URL.Query().Get("metadata") == "true" {
+		files, err = h.workspace.Files()
+	} else {
+		files, err = h.workspace.Paths()
+	}
+	if err != nil {
+		fail(w, 422, err.Error())
+		return
+	}
+	if err := json.NewEncoder(w).Encode(map[string]any{"files": files, "rootUri": h.languageConfig.RootURI}); err != nil {
+		return
+	}
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/WaylonWalker/markata/pkg/editorworkspace"
 	"github.com/WaylonWalker/markata/pkg/plugins"
 
 	"github.com/spf13/cobra"
@@ -14,12 +15,23 @@ func newRenderCommand() *cobra.Command {
 	var options plugins.StandaloneOptions
 	var jsonOutput bool
 	var appearance bool
+	var workspaceRoot string
 	cmd := &cobra.Command{
 		Use: "render", Short: "Render Markdown from stdin without a site build",
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			if cmd.Flags().Changed("workspace") {
+				workspace, err := editorworkspace.New(workspaceRoot)
+				if err != nil {
+					return err
+				}
+				options.Config, err = workspace.Config()
+				if err != nil {
+					return err
+				}
+			}
 			if appearance {
-				result, err := plugins.BuildStandaloneAppearance()
+				result, err := plugins.BuildStandaloneAppearanceForSite(options.Config, workspaceRoot)
 				if err != nil {
 					return err
 				}
@@ -40,6 +52,7 @@ func newRenderCommand() *cobra.Command {
 			return err
 		},
 	}
+	cmd.Flags().StringVar(&workspaceRoot, "workspace", "", "apply site configuration from this workspace")
 	cmd.Flags().BoolVar(&appearance, "appearance", false, "Return reusable appearance controls and bundled assets as JSON")
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "Return HTML, feature signals and asset manifest as JSON")
 	cmd.Flags().BoolVar(&options.InlineAssets, "inline-assets", false, "Inline bundled CSS/JS in asset tags including vendored browser libraries")

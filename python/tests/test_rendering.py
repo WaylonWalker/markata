@@ -124,6 +124,16 @@ class AsyncRenderingTest(unittest.IsolatedAsyncioTestCase):
                 self.assertIsNotNone(processes[1].returncode)
 
 class AppearanceDocumentTest(unittest.TestCase):
+    def test_site_defaults_apply_without_explicit_document_options(self):
+        defaults = {'data-theme': 'light', 'data-palette': 'everforest-light',
+                    'data-aesthetic': 'minimal', 'data-fontpack': 'system', 'data-text-size': 'small'}
+        appearance = rendering.Appearance('', {}, (), (), '/assets',
+                                          {key: [value] for key, value in defaults.items()}, defaults)
+        result = rendering._result(json.dumps(PAYLOAD).encode(), b'', 0)
+        document = result.document(appearance=appearance)
+        for key, value in defaults.items():
+            self.assertIn(f'{key}="{value}"', document)
+
     def test_feature_head_html_excludes_shared_styles(self):
         result = rendering.RenderResult(
             html='', features={}, assets=(

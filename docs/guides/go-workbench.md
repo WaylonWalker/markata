@@ -9,14 +9,15 @@ tags:
   - markdown
 ---
 
-Run the editor from the Markata repository:
+Run the shipped Go editor command:
 
 ```bash
-go run ./cmd/markata-workbench --listen 127.0.0.1:8767 --workspace ./docs
+markata editor --workspace ./docs
 ```
 
-Open <http://127.0.0.1:8767/>. Edit Markdown on the left and view the preview on the right.
-Press Ctrl+C to stop the server. Without `--listen`, the server uses port 8766.
+Open the local URL printed by the command. Edit Markdown on the left and view the preview on the right.
+Press Ctrl+C to stop the server. The default address is `127.0.0.1:8766`.
+For a checkout build, run `go run ./cmd/markata-go editor --workspace ./docs`.
 
 The Go server calls Markata's standalone renderer directly. It starts no Python process and needs no WASM runtime.
 It uses the same Markdown renderer as the [Python API](./python-renderer/) and [FastAPI editor](./fastapi-editor/).
@@ -49,7 +50,7 @@ Broken wiki links receive an underline. The underline tooltip shows the diagnost
 
 The editor sends unsaved text as a synthetic `.markata/browser-draft.md` document.
 This document stays in memory. Markdown path suggestions start at the workspace root because the draft has no source file.
-The example does not open or save workspace files. File trees and document switching require separate integration.
+The Files tree opens source files from the selected workspace using Markata glob rules. The Tags view groups those files by loaded frontmatter. Edits stay in browser drafts; download a copy to keep changes outside the browser. See [workspace navigation](./renderer-site-tree/).
 Each WebSocket connection owns its own draft and index. Reload the page to index external file changes.
 
 The footer reports the language connection state. Editing and preview continue if the connection fails.

@@ -6,6 +6,7 @@ The Python environment must contain a standalone-renderer Markata wheel.
 from contextlib import contextmanager
 from pathlib import Path
 import os
+import json
 import subprocess
 import tempfile
 import unittest
@@ -42,6 +43,8 @@ class BrowserLSPTest(unittest.TestCase):
         cls.root = Path(cls.folder.name)
         (cls.root / "hello world.md").write_text(
             "---\ntitle: Hello World\nslug: hello\naliases: [greeting]\n---\nHello", encoding="utf-8")
+        (cls.root / "markata-go.toml").write_text("[markata-go.glob]\npatterns=['*.md']\n", encoding="utf-8")
+        (cls.root / "draft.md").write_text("---\ntitle: Workspace draft\n---\n# Real workspace draft", encoding="utf-8")
         cls.demo = load_editor()
         cls.demo.LSP_WORKSPACE = cls.root
         cls.python_server = serve_editor(cls.demo.app)
@@ -58,6 +61,28 @@ class BrowserLSPTest(unittest.TestCase):
         cls.browser = cls.driver.chromium.launch(**options)
         cls.addClassCleanup(cls.browser.close)
 
+    def test_real_draft_file_and_scratch_are_independent(self):
+        for name, url in [("Python", self.python_url), ("Go", self.go_url)]:
+            with self.subTest(server=name), self.browser.new_context() as context:
+                context.add_init_script("""const attach=Element.prototype.attachShadow;
+                  Element.prototype.attachShadow=function(options){return attach.call(this,{...options,mode:'open'});};""")
+                page=context.new_page()
+                listing=page.request.get(url.rstrip('/')+'/workspace').json()
+                root_key=listing.get('rootUri') or listing['root']
+                context.add_init_script("localStorage.setItem(" + json.dumps('markata-workspace-v1:'+root_key+':draft.md') + ", '# Older scratch')")
+                page.goto(url)
+                preview=page.frame_locator('#preview')
+                expect(preview.locator('h1')).to_have_text('Real workspace draft')
+                page.locator('#site-files').get_by_role('treeitem',name='Unsaved draft.md',exact=True).click()
+                expect(preview.locator('h1')).to_have_text('Older scratch')
+                page.locator('#import').set_input_files({'name':'draft.md','mimeType':'text/markdown','buffer':b'# Imported scratch'})
+                expect(preview.locator('h1')).to_have_text('Imported scratch')
+                expect(page.locator('#active-file')).to_have_text('Unsaved draft.md')
+                page.locator('#site-files').get_by_role('treeitem',name='draft.md',exact=True).click()
+                expect(preview.locator('h1')).to_have_text('Real workspace draft')
+                page.reload()
+                expect(preview.locator('h1')).to_have_text('Real workspace draft')
+
     def test_link_completion_and_diagnostics(self):
         for name, url in [("Python", self.python_url), ("Go", self.go_url)]:
             with self.subTest(server=name):
@@ -67,6 +92,7 @@ class BrowserLSPTest(unittest.TestCase):
                     errors = []
                     page.on("pageerror", lambda error: errors.append(str(error)))
                     page.goto(url)
+                    expect(page.frame_locator("#preview").locator("h1")).to_have_text("Real workspace draft")
                     expect(page.locator("#language-status")).to_contain_text("LSP connected")
                     for source, wanted in [("😀 [[gre]]", "😀 [[greeting]]"),
                                            ("😀 [Hello](hello)", "😀 [Hello](hello%20world.md)"),
@@ -141,6 +167,7 @@ class BrowserLSPTest(unittest.TestCase):
                     })();""")
                     page = context.new_page()
                     page.goto(url)
+                    expect(page.frame_locator("#preview").locator("h1")).to_have_text("Real workspace draft")
                     expect(page.locator("#language-status")).to_contain_text("LSP connected")
                     for move_only in [False, True]:
                         page.evaluate("""() => {
@@ -168,6 +195,7 @@ class BrowserLSPTest(unittest.TestCase):
                     page = context.new_page()
                     page.route("**/lsp/config", lambda route: route.abort())
                     page.goto(url)
+                    expect(page.frame_locator("#preview").locator("h1")).to_have_text("Real workspace draft")
                     expect(page.locator("#language-status")).to_contain_text("unavailable")
                     page.evaluate("document.querySelector('.CodeMirror').CodeMirror.setValue('# Still editing')")
                     expect(page.frame_locator("#preview").locator("h1")).to_have_text("Still editing")

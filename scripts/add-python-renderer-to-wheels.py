@@ -25,7 +25,7 @@ def add_renderer(wheel: Path) -> None:
                 if item.filename == "markata/rendering.py" or item.filename.endswith(".dist-info/licenses/lucide.txt"):
                     continue
                 if item.filename == "markata/__init__.py":
-                    imports = b"from .rendering import Appearance, appearance, RenderError, RenderResult, render, render_async"
+                    imports = b"from .rendering import Appearance, appearance, RenderError, RenderResult, render, render_async, workspace_files"
                     if imports not in content:
                         content += b"\n" + imports + b"\n"
                 archive.writestr(item, content)

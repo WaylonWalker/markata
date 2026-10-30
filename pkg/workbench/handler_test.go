@@ -269,7 +269,7 @@ func TestHandler_FragmentUpdatesOmitSharedCSS(t *testing.T) {
 			if strings.Contains(result.FeatureHeadHTML, name) {
 				t.Errorf("fragment repeats shared style %s", name)
 			}
-			if include && strings.Count(*result.Document, styleLink(name)) != 1 {
+			if include && strings.Count(*result.Document, `href="/appearance/`+name) != 1 {
 				t.Errorf("document must include %s exactly once", name)
 			}
 		}

@@ -727,6 +727,52 @@ markata-go reader update -c production.toml
 
 ---
 
+### editor
+
+The editor accepts `--port` (`-p`) to select its HTTP port. When a port is occupied,
+`editor` and `serve` suggest a rerun command. In an interactive terminal, Enter
+accepts an available port; `q` followed by Enter or Ctrl+C cancels.
+
+
+Run the browser-based Go Markdown editor against a selected workspace.
+
+#### Usage
+
+```bash
+markata editor [flags]
+```
+
+The editor uses Markata's Go renderer and LSP in the same process. It binds to
+loopback by default and prints its local URL. Browser drafts stay in memory;
+use **Download .md** to save a copy. The file tree opens discovered workspace sources. Edits remain browser drafts;
+the command does not save changes to source files.
+
+#### Flags
+
+| Flag | Description | Default |
+| --- | --- | --- |
+| `--workspace` | Markdown workspace used for language assistance | `.` |
+| `--listen` | Loopback HTTP address | `127.0.0.1:8766` |
+| `--port`, `-p` | HTTP port (overrides the port in `--listen`) | `8766` |
+
+#### Examples
+
+```bash
+# Open the editor for the current workspace
+markata editor
+
+# Select a site workspace
+markata editor --workspace ~/sites/blog
+
+# Change the local port
+markata editor --listen 127.0.0.1:8767
+```
+
+The listener accepts only `localhost` or a loopback IP address. See the
+[Go editor guide](/docs/guides/go-workbench/) for browser behavior and LSP completions.
+
+---
+
 ### serve
 
 Start a development server with live reload support.
@@ -2430,3 +2476,13 @@ go run ./cmd/markata-workbench --workspace /absolute/path/to/site
 ```
 
 `--workspace` selects the Markdown directory for completion. It defaults to the current directory.
+
+### workspace
+
+List discovered source metadata as JSON with `markata workspace --workspace PATH`.
+Read original source with `markata workspace --workspace PATH --file posts/hello.md`.
+See the [workspace file tree guide](/docs/guides/renderer-site-tree/).
+
+Use `markata workspace --paths --workspace PATH` to list discovered source paths
+without loading document metadata. The editor uses this fast path on startup and
+loads titles and tags in the background.

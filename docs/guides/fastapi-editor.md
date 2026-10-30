@@ -131,3 +131,10 @@ MARKATA_LSP_BINARY=/tmp/markata-editor-lsp \
 MARKATA_WORKBENCH_BINARY=/tmp/markata-editor-workbench \
 python python/test_browser_lsp.py -v
 ```
+
+## Workspace files
+
+Set `MARKATA_LSP_WORKSPACE` to a cloned site before starting the server.
+The Files tree uses Markata glob and load plugins through the bundled Go binary.
+Select a file to edit a browser draft; download it to keep a copy. See
+[workspace navigation](./renderer-site-tree/).
