@@ -166,6 +166,17 @@ func NewWebSocketHandler(ctx context.Context, root string, logger *log.Logger) (
 }
 
 func validBrowserOrigin(r *http.Request) bool {
+	// Host and Origin are client-controlled headers. Require the actual TCP
+	// peer to be loopback as well, even if --listen is configured broadly.
+	// Never trust X-Forwarded-For to grant filesystem-aware LSP access.
+	peer, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		return false
+	}
+	address := net.ParseIP(peer)
+	if address == nil || !address.IsLoopback() {
+		return false
+	}
 	if !isLocalBrowserHost(r.Host) || r.Header.Get("Sec-Fetch-Site") == "cross-site" {
 		return false
 	}

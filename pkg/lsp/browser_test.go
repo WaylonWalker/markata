@@ -224,3 +224,26 @@ func TestBrowserSession_IgnoresWatchedFiles(t *testing.T) {
 		t.Fatal("browser can trigger arbitrary disk reads")
 	}
 }
+
+func TestBrowserOrigin_RejectsSpoofedLocalhostFromRemotePeer(t *testing.T) {
+	for _, tc := range []struct {
+		peer    string
+		allowed bool
+	}{
+		{"127.0.0.1:42300", true},
+		{"[::1]:42300", true},
+		{"192.0.2.44:42300", false},
+		{"[2001:db8::44]:42300", false},
+		{"malformed", false},
+	} {
+		t.Run(tc.peer, func(t *testing.T) {
+			request := httptest.NewRequest(http.MethodGet, "http://localhost:8766/lsp", http.NoBody)
+			request.Host = "localhost:8766"
+			request.Header.Set("Origin", "http://localhost:8766")
+			request.RemoteAddr = tc.peer
+			if got := validBrowserOrigin(request); got != tc.allowed {
+				t.Fatalf("validBrowserOrigin(peer=%q) = %v, want %v", tc.peer, got, tc.allowed)
+			}
+		})
+	}
+}
