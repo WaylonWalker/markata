@@ -56,3 +56,18 @@ The full pinned Lucide catalog remains bundled for deterministic offline icon
 shortcodes. Its original Lucide ISC and derived Feather MIT notices remain
 embedded in the binary and are also distributed in wheel dist-info/licenses.
 Wheel RECORD entries cover the readable notice file.
+
+### Renderer profile defaults
+
+The standalone `--profile` option and Python `render(..., profile=...)`
+delegate to the same Go policy implementation. `web` preserves existing output.
+`offline-interactive` inlines managed CSS/JS and rejects detected remote
+media; it is **not** yet a comprehensive browser-network guarantee.
+`offline-static` rejects with a clear unsupported-capability error until
+Mermaid SVG and static chart rendering exist. All current call sites remain
+valid when no profile is provided.
+
+Use `--config path --site-render-profile` to opt into the profile stored in
+`[markata-go.markdown].render_profile` without running the site builder.
+The `markata serve` settings sidebar exposes that editable field. Automatic
+site config discovery is intentionally not enabled for bare standalone calls.
