@@ -181,6 +181,9 @@ type baseConfigData struct {
 	ErrorPages     parsedErrorPages
 	ResourceHints  parsedResourceHints
 	Highlight      parsedHighlight
+	RenderProfile  string
+	RenderAssetMode string
+	RenderAssetBase string
 	Footer         models.FooterConfig
 }
 
@@ -316,8 +319,11 @@ func buildConfig(src configSource) *models.Config {
 			SlugRules: append([]models.SlugRule{}, base.SlugRules...),
 		},
 		MarkdownConfig: models.MarkdownConfig{
-			Extensions: base.Extensions,
-			Highlight:  base.Highlight,
+			Extensions:    base.Extensions,
+			Highlight:     base.Highlight,
+			RenderProfile: base.RenderProfile,
+			RenderAssetMode: base.RenderAssetMode,
+			RenderAssetBase: base.RenderAssetBase,
 		},
 		Concurrency: base.Concurrency,
 		Theme:       base.Theme,
@@ -867,8 +873,11 @@ type tomlSlugRule struct {
 }
 
 type tomlMarkdownConfig struct {
-	Extensions []string        `toml:"extensions"`
-	Highlight  parsedHighlight `toml:"highlight"`
+	Extensions    []string        `toml:"extensions"`
+	Highlight     parsedHighlight `toml:"highlight"`
+	RenderProfile string          `toml:"render_profile"`
+	RenderAssetMode string          `toml:"render_asset_mode"`
+	RenderAssetBase string          `toml:"render_asset_base"`
 }
 
 type tomlFeedConfig struct {
@@ -2085,6 +2094,9 @@ func (c *tomlConfig) getBaseConfig() baseConfigData {
 		ErrorPages:     c.ErrorPages,
 		ResourceHints:  c.ResourceHints,
 		Highlight:      c.Markdown.Highlight,
+		RenderProfile:  c.Markdown.RenderProfile,
+		RenderAssetMode: c.Markdown.RenderAssetMode,
+		RenderAssetBase: c.Markdown.RenderAssetBase,
 		Footer:         c.Footer.toFooterConfig(),
 	}
 }
@@ -2404,8 +2416,11 @@ type yamlSlugRule struct {
 }
 
 type yamlMarkdownConfig struct {
-	Extensions []string        `yaml:"extensions"`
-	Highlight  parsedHighlight `yaml:"highlight"`
+	Extensions    []string        `yaml:"extensions"`
+	Highlight     parsedHighlight `yaml:"highlight"`
+	RenderProfile string          `yaml:"render_profile"`
+	RenderAssetMode string          `yaml:"render_asset_mode"`
+	RenderAssetBase string          `yaml:"render_asset_base"`
 }
 
 type yamlFeedConfig struct {
@@ -3751,6 +3766,9 @@ func (c *yamlConfig) getBaseConfig() baseConfigData {
 		ErrorPages:     c.ErrorPages,
 		ResourceHints:  c.ResourceHints,
 		Highlight:      c.Markdown.Highlight,
+		RenderProfile:  c.Markdown.RenderProfile,
+		RenderAssetMode: c.Markdown.RenderAssetMode,
+		RenderAssetBase: c.Markdown.RenderAssetBase,
 		Footer:         c.Footer.toFooterConfig(),
 	}
 }
@@ -3996,8 +4014,11 @@ type jsonSlugRule struct {
 }
 
 type jsonMarkdownConfig struct {
-	Extensions []string        `json:"extensions"`
-	Highlight  parsedHighlight `json:"highlight"`
+	Extensions    []string        `json:"extensions"`
+	Highlight     parsedHighlight `json:"highlight"`
+	RenderProfile string          `json:"render_profile"`
+	RenderAssetMode string          `json:"render_asset_mode"`
+	RenderAssetBase string          `json:"render_asset_base"`
 }
 
 func (g tomlGlobConfig) toSlugRules() []models.SlugRule {
@@ -5367,6 +5388,9 @@ func (c *jsonConfig) getBaseConfig() baseConfigData {
 		ErrorPages:     c.ErrorPages,
 		ResourceHints:  c.ResourceHints,
 		Highlight:      c.Markdown.Highlight,
+		RenderProfile:  c.Markdown.RenderProfile,
+		RenderAssetMode: c.Markdown.RenderAssetMode,
+		RenderAssetBase: c.Markdown.RenderAssetBase,
 		Footer:         c.Footer.toFooterConfig(),
 	}
 }
