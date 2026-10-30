@@ -145,17 +145,18 @@ class WorkbenchTest(unittest.TestCase):
           const worker = new Worker('worker.js');
           const next = () => new Promise(resolve => worker.onmessage=e=>resolve(e.data));
           await next();
-          async function render(source,revision) {const promise=next();worker.postMessage({source,revision});return promise;}
+          async function render(source,revision,profile='web') {const promise=next();worker.postMessage({source,revision,profile});return promise;}
           const invalid=await render(42,1);
           const oversized=await render('界'.repeat(70000),2);
           const samples=[];
           for(let i=0;i<8;i++) {const r=await render('# Heading\\n\\nA paragraph.\\n'.repeat(50),i+3);samples.push(r.render_ms);}
-          const final=await render('# Alive',20);worker.terminate();
-          return {invalid,oversized,samples,final};
+          const final=await render('# Alive',20);const unsupported=await render('# Static',21,'offline-static');worker.terminate();
+          return {invalid,oversized,samples,final,unsupported};
         }''')
         self.assertIn('error', result['invalid']['result'])
         self.assertIn('error', result['oversized']['result'])
         self.assertIn('<h1', result['final']['result']['html'])
+        self.assertIn('not supported', result['unsupported']['result']['error'])
         self.assertLess(len(str(result['final']['result'])), 10000, 'Bundled asset bytes leaked into every response')
         # Report measurements; do not impose machine-specific timing thresholds.
         print('Warm 50-section document median ms:', round(statistics.median(result['samples']), 2))
