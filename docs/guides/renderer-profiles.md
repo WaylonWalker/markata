@@ -39,7 +39,9 @@ render_asset_mode = "inline" # linked or inline; profile may force inline
 render_asset_base = "/markata-assets" # used for linked assets
 ```
 
-The **asset mode** and **asset base** are independent of the regular site\'s `assets.mode` and `assets.output_dir`; they configure standalone renderer integration output only. A configured profile and these asset settings are inherited by `--site-render-profile` (or Python `config_path=`). Explicit CLI overrides still take precedence.\n\nThe site build itself still uses its configured Mermaid, link-avatar, theme and
+The **asset mode** and **asset base** are independent of the regular site's `assets.mode` and `assets.output_dir`; they configure standalone renderer integration output only. A configured profile and these asset settings are inherited by `--site-render-profile` (or Python `config_path=`). Explicit CLI overrides still take precedence.
+
+The site build itself still uses its configured Mermaid, link-avatar, theme and
 asset plugins. This new setting is for **standalone renderer consumers that opt
 in to loading site config**; it does not yet guarantee that a complete static
 site is offline. See the full config and plugin settings for site behavior.
