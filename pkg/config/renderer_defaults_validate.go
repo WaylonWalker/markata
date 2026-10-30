@@ -8,7 +8,7 @@ import (
 
 const (
 	renderConfigOfflineInteractive = "offline-interactive"
-	renderConfigAssetInline = "inline"
+	renderConfigAssetInline        = "inline"
 )
 
 // validateRendererDefaults checks integration-only settings, keeping full site
