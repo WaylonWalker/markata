@@ -24,21 +24,7 @@ func newRenderCommand() *cobra.Command {
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if stdio {
-				if appearance || capabilities || jsonOutput || cmd.Flags().Changed("inline-assets") ||
-					cmd.Flags().Changed("asset-base") || cmd.Flags().Changed("unsafe") {
-					return fmt.Errorf("--stdio takes per-request JSON options and cannot be combined with other render mode flags")
-				}
-				if cmd.Flags().Changed("workspace") {
-					workspace, err := editorworkspace.New(workspaceRoot)
-					if err != nil {
-						return err
-					}
-					options.Config, err = workspace.Config()
-					if err != nil {
-						return err
-					}
-				}
-				return renderprotocol.ServeWithOptions(cmd.InOrStdin(), cmd.OutOrStdout(), options)
+				return runRenderStdio(cmd, workspaceRoot, options, appearance, capabilities, jsonOutput)
 			}
 			if capabilities {
 				if appearance || cmd.Flags().Changed("workspace") {
@@ -87,6 +73,24 @@ func newRenderCommand() *cobra.Command {
 	cmd.Flags().BoolVar(&options.Unsafe, "unsafe", false, "Allow raw authored HTML (trusted input only)")
 	cmd.Flags().StringVar(&options.AssetBase, "asset-base", "/markata-assets", "URL prefix for serving manifest assets")
 	return cmd
+}
+
+func runRenderStdio(cmd *cobra.Command, workspaceRoot string, options plugins.StandaloneOptions, appearance, capabilities, jsonOutput bool) error {
+	if appearance || capabilities || jsonOutput || cmd.Flags().Changed("inline-assets") ||
+		cmd.Flags().Changed("asset-base") || cmd.Flags().Changed("unsafe") {
+		return fmt.Errorf("--stdio takes per-request JSON options and cannot be combined with other render mode flags")
+	}
+	if cmd.Flags().Changed("workspace") {
+		workspace, err := editorworkspace.New(workspaceRoot)
+		if err != nil {
+			return err
+		}
+		options.Config, err = workspace.Config()
+		if err != nil {
+			return err
+		}
+	}
+	return renderprotocol.ServeWithOptions(cmd.InOrStdin(), cmd.OutOrStdout(), options)
 }
 
 func init() { rootCmd.AddCommand(newRenderCommand()) }

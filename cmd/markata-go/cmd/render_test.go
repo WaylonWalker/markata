@@ -105,7 +105,6 @@ func TestRenderCommand_StdioRejectsConflictingOptions(t *testing.T) {
 	}
 }
 
-
 func TestRenderCommand_StdioWorkspace(t *testing.T) {
 	cmd := newRenderCommand()
 	cmd.SetIn(strings.NewReader("{\"id\":\"workspace\",\"op\":\"render\",\"source\":\"# Configured\"}\n"))
