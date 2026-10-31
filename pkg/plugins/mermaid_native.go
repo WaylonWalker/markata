@@ -94,8 +94,8 @@ func (r *nativeMermaidRenderer) render(source string) (string, error) {
 		return "", fmt.Errorf("native Mermaid: %w", err)
 	}
 	if err := validateNativeMermaidSVG(svg); err != nil {
-        return "", fmt.Errorf("reject unsafe native Mermaid output: %w", err)
-    }
+		return "", fmt.Errorf("reject unsafe native Mermaid output: %w", err)
+	}
 	return string(svg), nil
 }
 
