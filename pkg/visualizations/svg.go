@@ -14,12 +14,14 @@ import (
 	"unicode"
 )
 
-const MaxSVGBytes = 4 << 20 // Bounded per-diagram SVG processing; configurable later.
+const MaxSVGBytes = 4 << 20 // 4 MiB per diagram until real-engine output budgets are established.
 
-// NewSVGAsset validates the static renderer output and supplies intrinsic
-// dimensions plus an immutable, content-addressed asset path.
-// It is deliberately restrictive: SVG from untrusted authors must be sanitized
-// BEFORE reaching a renderer. This check is not a general-purpose SVG sanitizer.
+const svgNamespace = "http://www.w3.org/2000/svg"
+
+// NewSVGAsset validates bounded SVG from a trusted backend renderer and
+// supplies intrinsic dimensions plus an immutable content-addressed path.
+// This is NOT a general-purpose sanitizer for untrusted SVG or a complete
+// offline browser-network audit.
 func NewSVGAsset(svg []byte) (Asset, error) {
 	if len(svg) == 0 || len(svg) > MaxSVGBytes {
 		return Asset{}, fmt.Errorf("SVG must contain 1..%d bytes", MaxSVGBytes)
@@ -39,78 +41,112 @@ func NewSVGAsset(svg []byte) (Asset, error) {
 	}, nil
 }
 
+type svgInspection struct {
+	rootSeen bool
+	depth    int
+	inStyle  bool
+	width    int
+	height   int
+}
+
 func inspectSVG(data []byte) (int, int, error) {
-	dec := xml.NewDecoder(bytes.NewReader(data))
-	var rootSeen bool
-	depth := 0
-	var width, height int
-	var inStyle bool
+	decoder := xml.NewDecoder(bytes.NewReader(data))
+	var state svgInspection
 	for {
-		token, err := dec.Token()
-		if err == io.EOF {
+		token, err := decoder.Token()
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {
 			return 0, 0, fmt.Errorf("invalid SVG XML: %w", err)
 		}
-		switch element := token.(type) {
-		case xml.Directive:
-			return 0, 0, errors.New("SVG directives and DOCTYPE are not allowed")
-		case xml.ProcInst:
-			if !strings.EqualFold(element.Target, "xml") {
-				return 0, 0, errors.New("SVG processing instructions are not allowed")
-			}
-		case xml.StartElement:
-			if depth == 0 {
-				if rootSeen || element.Name.Local != "svg" {
-					return 0, 0, errors.New("SVG must have one svg root")
-				}
-				rootSeen = true
-				width, height, err = rootDimensions(element.Attr)
-				if err != nil {
-					return 0, 0, err
-				}
-			}
-			depth++
-			if strings.EqualFold(element.Name.Local, "style") {
-				inStyle = true
-			}
-			if forbiddenElement(element.Name.Local) {
-				return 0, 0, fmt.Errorf("SVG element %q is not allowed in static output", element.Name.Local)
-			}
-			for _, attr := range element.Attr {
-				name := strings.ToLower(attr.Name.Local)
-				value := strings.TrimSpace(attr.Value)
-				if strings.HasPrefix(name, "on") || name == "base" || name == "src" {
-					return 0, 0, fmt.Errorf("SVG attribute %q is not allowed", name)
-				}
-				if name == "href" && !strings.HasPrefix(value, "#") {
-					return 0, 0, errors.New("SVG href must point to a local fragment")
-				}
-				if (name == "style" || name == "fill" || name == "stroke" || name == "filter" || name == "clip-path" || name == "mask") && unsafeCSS(value) {
-					return 0, 0, fmt.Errorf("SVG attribute %q contains external or active CSS", name)
-				}
-			}
-		case xml.EndElement:
-			if strings.EqualFold(element.Name.Local, "style") {
-				inStyle = false
-			}
-			depth--
-		case xml.CharData:
-			if depth == 0 && strings.TrimSpace(string(element)) != "" {
-				return 0, 0, errors.New("text outside SVG root")
-			}
-			// CSS in <style> can otherwise trigger a network request even when
-			// all href attributes are local. Scan CSS-bearing text conservatively.
-			if inStyle && unsafeCSS(string(element)) {
-				return 0, 0, errors.New("SVG contains external or active CSS")
-			}
+		if err := state.accept(token); err != nil {
+			return 0, 0, err
 		}
 	}
-	if !rootSeen || depth != 0 {
+	if !state.rootSeen || state.depth != 0 {
 		return 0, 0, errors.New("missing or incomplete SVG root")
 	}
-	return width, height, nil
+	return state.width, state.height, nil
+}
+
+func (state *svgInspection) accept(token xml.Token) error {
+	switch item := token.(type) {
+	case xml.Directive:
+		return errors.New("SVG directives and DOCTYPE are not allowed")
+	case xml.ProcInst:
+		if !strings.EqualFold(item.Target, "xml") || state.rootSeen {
+			return errors.New("SVG processing instructions are not allowed")
+		}
+	case xml.StartElement:
+		return state.start(item)
+	case xml.EndElement:
+		if strings.EqualFold(item.Name.Local, "style") {
+			state.inStyle = false
+		}
+		state.depth--
+	case xml.CharData:
+		if state.depth == 0 && strings.TrimSpace(string(item)) != "" {
+			return errors.New("text outside SVG root")
+		}
+		if state.inStyle && unsafeCSS(string(item)) {
+			return errors.New("SVG contains external or active CSS")
+		}
+	}
+	return nil
+}
+
+func (state *svgInspection) start(item xml.StartElement) error {
+	if state.depth == 0 {
+		if state.rootSeen || item.Name.Local != "svg" {
+			return errors.New("SVG must have one svg root")
+		}
+		if item.Name.Space != "" && item.Name.Space != svgNamespace {
+			return errors.New("SVG root has an unsupported namespace")
+		}
+		state.rootSeen = true
+		var err error
+		state.width, state.height, err = rootDimensions(item.Attr)
+		if err != nil {
+			return err
+		}
+	}
+	if err := validateSVGElement(item); err != nil {
+		return err
+	}
+	if strings.EqualFold(item.Name.Local, "style") {
+		state.inStyle = true
+	}
+	state.depth++
+	return nil
+}
+
+func validateSVGElement(item xml.StartElement) error {
+	if forbiddenElement(item.Name.Local) {
+		return fmt.Errorf("SVG element %q is not allowed in static output", item.Name.Local)
+	}
+	for _, attr := range item.Attr {
+		name := strings.ToLower(attr.Name.Local)
+		value := strings.TrimSpace(attr.Value)
+		if strings.HasPrefix(name, "on") || name == "base" || name == "src" {
+			return fmt.Errorf("SVG attribute %q is not allowed", name)
+		}
+		if name == "href" && !strings.HasPrefix(value, "#") {
+			return errors.New("SVG href must point to a local fragment")
+		}
+		if cssAttribute(name) && unsafeCSS(value) {
+			return fmt.Errorf("SVG attribute %q contains external or active CSS", name)
+		}
+	}
+	return nil
+}
+
+func cssAttribute(name string) bool {
+	switch name {
+	case "style", "fill", "stroke", "filter", "clip-path", "mask":
+		return true
+	}
+	return false
 }
 
 func forbiddenElement(name string) bool {
@@ -146,44 +182,62 @@ func unsafeCSS(css string) bool {
 
 func rootDimensions(attrs []xml.Attr) (int, int, error) {
 	var rawWidth, rawHeight, viewBox string
-	for _, a := range attrs {
-		switch a.Name.Local {
+	for _, attr := range attrs {
+		switch attr.Name.Local {
 		case "width":
-			rawWidth = a.Value
+			rawWidth = attr.Value
 		case "height":
-			rawHeight = a.Value
+			rawHeight = attr.Value
 		case "viewBox":
-			viewBox = a.Value
+			viewBox = attr.Value
 		}
 	}
-	w, wErr := pixelDimension(rawWidth)
-	h, hErr := pixelDimension(rawHeight)
-	if wErr != nil || hErr != nil {
+	width, widthErr := pixelDimension(rawWidth)
+	height, heightErr := pixelDimension(rawHeight)
+	if widthErr != nil || heightErr != nil {
 		return 0, 0, errors.New("SVG width and height must be positive CSS pixels")
 	}
-	if w > 0 && h > 0 {
-		return w, h, nil
-	}
-	fields := strings.FieldsFunc(viewBox, func(r rune) bool { return unicode.IsSpace(r) || r == ',' })
-	if len(fields) != 4 {
+	if viewBox == "" {
+		if width > 0 && height > 0 {
+			return width, height, nil
+		}
 		return 0, 0, errors.New("SVG needs positive dimensions or a four-number viewBox")
 	}
-	vw, err1 := strconv.ParseFloat(fields[2], 64)
-	vh, err2 := strconv.ParseFloat(fields[3], 64)
-	if err1 != nil || err2 != nil || !(vw > 0 && vh > 0) || math.IsInf(vw, 0) || math.IsInf(vh, 0) {
-		return 0, 0, errors.New("SVG viewBox size must be finite and positive")
+	vw, vh, err := parseViewBox(viewBox)
+	if err != nil {
+		return 0, 0, err
 	}
-	if w == 0 && h == 0 {
-		w, h = roundDimension(vw), roundDimension(vh)
-	} else if w == 0 {
-		w = roundDimension(float64(h) * vw / vh)
-	} else {
-		h = roundDimension(float64(w) * vh / vw)
+	switch {
+	case width == 0 && height == 0:
+		width, height = roundDimension(vw), roundDimension(vh)
+	case width == 0:
+		width = roundDimension(float64(height) * vw / vh)
+	case height == 0:
+		height = roundDimension(float64(width) * vh / vw)
 	}
-	if w == 0 || h == 0 {
+	if width == 0 || height == 0 {
 		return 0, 0, errors.New("SVG dimensions out of range")
 	}
-	return w, h, nil
+	return width, height, nil
+}
+
+func parseViewBox(viewBox string) (float64, float64, error) {
+	fields := strings.FieldsFunc(viewBox, func(r rune) bool { return unicode.IsSpace(r) || r == ',' })
+	if len(fields) != 4 {
+		return 0, 0, errors.New("SVG viewBox must contain four numbers")
+	}
+	values := [4]float64{}
+	for i, value := range fields {
+		n, err := strconv.ParseFloat(value, 64)
+		if err != nil || math.IsNaN(n) || math.IsInf(n, 0) {
+			return 0, 0, errors.New("SVG viewBox values must be finite numbers")
+		}
+		values[i] = n
+	}
+	if values[2] <= 0 || values[3] <= 0 {
+		return 0, 0, errors.New("SVG viewBox size must be positive")
+	}
+	return values[2], values[3], nil
 }
 
 func pixelDimension(s string) (int, error) {
@@ -195,11 +249,11 @@ func pixelDimension(s string) (int, error) {
 	if err != nil || !(value > 0) || math.IsInf(value, 0) {
 		return 0, errors.New("invalid SVG dimension")
 	}
-	d := roundDimension(value)
-	if d == 0 {
+	dimension := roundDimension(value)
+	if dimension == 0 {
 		return 0, errors.New("SVG dimension out of range")
 	}
-	return d, nil
+	return dimension, nil
 }
 
 func roundDimension(value float64) int {
