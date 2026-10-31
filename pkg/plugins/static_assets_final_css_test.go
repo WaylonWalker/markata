@@ -260,3 +260,83 @@ func TestRewriteCSSLinkReferencesOnlyLocalStylesheets(t *testing.T) {
 		}
 	}
 }
+
+func TestFinalCSSFingerprint_AfterRealMinifyAndPurgeColdWarm(t *testing.T) {
+	output := t.TempDir()
+	contentDir := t.TempDir()
+	cssDir := filepath.Join(output, "css")
+	if err := os.MkdirAll(cssDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	initial := []byte(`/* purge and minify this stylesheet */
+.used {
+  color: #aa0000;
+}
+.unused {
+  color: #00ff00;
+}
+`)
+	cssFile := filepath.Join(cssDir, "site.css")
+	if err := os.WriteFile(cssFile, initial, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	initialHash := fmt.Sprintf("%x", sha256.Sum256(initial))[:8]
+	htmlPath := filepath.Join(output, "index.html")
+	initialHTML := []byte(`<html><head><link rel="stylesheet" href="/css/site.` + initialHash + `.css"></head><body><div class="used">Visible</div></body></html>`)
+	if err := os.WriteFile(htmlPath, initialHTML, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	m := lifecycle.NewManager()
+	m.SetConfig(&lifecycle.Config{
+		ContentDir: contentDir,
+		OutputDir:  output,
+		Extra: map[string]interface{}{
+			"css_minify": map[string]interface{}{"enabled": true},
+			"css_purge":  map[string]interface{}{"enabled": true},
+		},
+	})
+	m.SetAssetHash("css/site.css", initialHash)
+	minifier := NewCSSMinifyPlugin()
+	if err := minifier.Configure(m); err != nil {
+		t.Fatal(err)
+	}
+	purger := NewCSSPurgePlugin()
+	static := NewStaticAssetsPlugin()
+	run := func() ([]byte, []byte, string) {
+		t.Helper()
+		if err := minifier.Write(m); err != nil {
+			t.Fatal(err)
+		}
+		if err := purger.Cleanup(m); err != nil {
+			t.Fatal(err)
+		}
+		if err := static.Cleanup(m); err != nil {
+			t.Fatal(err)
+		}
+		finalCSS, err := os.ReadFile(cssFile)
+		if err != nil {
+			t.Fatal(err)
+		}
+		hash := fmt.Sprintf("%x", sha256.Sum256(finalCSS))[:8]
+		if got := m.GetAssetHash("css/site.css"); got != hash {
+			t.Fatalf("published CSS hash = %s, want %s", got, hash)
+		}
+		versioned, err := os.ReadFile(filepath.Join(cssDir, "site."+hash+".css"))
+		if err != nil || !bytes.Equal(versioned, finalCSS) {
+			t.Fatalf("versioned CSS must match final transformed stylesheet: %v", err)
+		}
+		html, err := os.ReadFile(htmlPath)
+		if err != nil || !bytes.Contains(html, []byte("/css/site."+hash+".css")) {
+			t.Fatalf("published HTML references stale CSS: %v: %s", err, html)
+		}
+		return finalCSS, html, hash
+	}
+	coldCSS, coldHTML, coldHash := run()
+	if bytes.Equal(coldCSS, initial) || coldHash == initialHash {
+		t.Fatal("minify/purge did not change source CSS before hashing")
+	}
+	warmCSS, warmHTML, warmHash := run()
+	if !bytes.Equal(coldCSS, warmCSS) || !bytes.Equal(coldHTML, warmHTML) || coldHash != warmHash {
+		t.Fatalf("cold/warm CSS fingerprints or HTML differ: %s vs %s", coldHash, warmHash)
+	}
+}
