@@ -185,7 +185,7 @@ def mermaid_blocks(path):
 
 def examples(limit):
     paths = []
-    for dirname in ("docs", "examples", "rendering-fixtures", "benchmarks"):
+    for dirname in ("docs", "examples", "rendering-fixtures", "benchmarks", "pages", "spec", "tests", "pkg/agentskill/bundle"):
         root = ROOT / dirname
         if root.exists():
             paths += sorted(p for p in root.rglob("*") if p.suffix.lower() in (".md", ".mdx", ".markdown")
