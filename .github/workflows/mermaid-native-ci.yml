@@ -36,6 +36,12 @@ jobs:
             --binary "${RUNNER_TEMP}/mermaid-compare" \
             --output "${RUNNER_TEMP}/mermaid-native-ci" \
             --full --iterations 3
+      - name: Generate side-by-side SVG comparison gallery
+        if: always()
+        run: |
+          if [ -f "${RUNNER_TEMP}/mermaid-native-ci/comparison.json" ]; then
+            python3 tools/mermaid-compare/gallery.py "${RUNNER_TEMP}/mermaid-native-ci"
+          fi
       - name: Add compatibility report to CI summary
         if: always()
         run: |
