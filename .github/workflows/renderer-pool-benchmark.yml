@@ -85,6 +85,21 @@ jobs:
           if [ -f "${RUNNER_TEMP}/mermaid-candidates/comparison.json" ]; then
             python tools/mermaid-compare/gallery.py "${RUNNER_TEMP}/mermaid-candidates"
           fi
+      - name: Build concurrency-1 median latency bar chart including native Mermaid
+        if: always()
+        run: |
+          if [ -f "${RUNNER_TEMP}/renderer-pool-bench.json" ] && [ -f "${RUNNER_TEMP}/mermaid-candidates/comparison.json" ]; then
+            python tools/mermaid-compare/pool_latency_chart.py \
+              --pool-report "${RUNNER_TEMP}/renderer-pool-bench.json" \
+              --native-report "${RUNNER_TEMP}/mermaid-candidates/comparison.json" \
+              --output-dir "${RUNNER_TEMP}/mermaid-candidates"
+          fi
+      - name: Add concurrency-1 median latency chart table to summary
+        if: always()
+        run: |
+          if [ -f "${RUNNER_TEMP}/mermaid-candidates/median-render-latency-c1.md" ]; then
+            cat "${RUNNER_TEMP}/mermaid-candidates/median-render-latency-c1.md" >> "${GITHUB_STEP_SUMMARY}"
+          fi
       - name: Add candidate timings and differences to perf graph and summary
         if: always()
         run: |
