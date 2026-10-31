@@ -20,6 +20,7 @@ import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[2]
 CORE = {
+    "pool_mermaid": "flowchart LR\nA[Load] --> B[Render]\nB --> C[Serve]",
     "flowchart": "flowchart LR\n  A[Load] --> B{Valid?}\n  B -->|yes| C[Render]\n  B -->|no| D[Error]",
     "sequence": "sequenceDiagram\n  Alice->>Bob: Hello\n  Bob-->>Alice: Hi",
     "class": "classDiagram\n  class Animal {\n    +String name\n    +eat()\n  }",
