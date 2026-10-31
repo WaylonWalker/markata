@@ -19,7 +19,7 @@ The policy is specified in [CI.md](../../spec/spec/CI.md).
 
 CI runs on pushes and pull requests targeting `main`/`master`, daily at 08:23 UTC,
 and through **Actions → CI → Run workflow**. Lint, all three Linux race/coverage
-shards, their aggregate `Test (ubuntu-latest, 1.26)` check, and macOS/Windows tests
+shards, their aggregate `Test (ubuntu-latest, 1.27)` check, and macOS/Windows tests
 remain active. The CLI/search shard smoke-tests its existing binary with
 `version` and `--help`; there is no separate duplicate build.
 
