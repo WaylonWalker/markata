@@ -272,6 +272,12 @@ When composed config files contribute multiple `[[markata-go.feeds]]` entries wi
 - nested tables such as `formats` and `templates` also merge
 - later explicit values win
 
+For each parsed feed format, an omitted key inherits the corresponding
+`feed_defaults.formats` value. An explicit `false` disables that format even
+when the default is `true`. This rule applies to TOML, YAML, and JSON. Direct
+Go `FeedConfig` values without parsed presence information keep their existing
+all-or-nothing default behavior.
+
 ### Feed Timestamps
 
 Feed timestamps are deterministic and based on content, not build time:

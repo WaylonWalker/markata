@@ -1787,3 +1787,61 @@ native = true
 		t.Fatalf("explicit native=false ignored during merge: %+v", merged)
 	}
 }
+
+func TestParsedFeedFormatFalseAcrossFormats(t *testing.T) {
+	testCases := []struct {
+		name  string
+		data  string
+		parse func([]byte) (*models.Config, error)
+	}{
+		{
+			name:  "toml",
+			data:  "[markata-go]\n[[markata-go.feeds]]\nslug = \"draft\"\n[markata-go.feeds.formats]\nsitemap = false\n",
+			parse: ParseTOML,
+		},
+		{
+			name:  "yaml",
+			data:  "markata-go:\n  feeds:\n    - slug: draft\n      formats:\n        sitemap: false\n",
+			parse: ParseYAML,
+		},
+		{
+			name:  "json",
+			data:  `{"markata-go":{"feeds":[{"slug":"draft","formats":{"sitemap":false}}]}}`,
+			parse: ParseJSON,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg, err := tc.parse([]byte(tc.data))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(cfg.Feeds) != 1 {
+				t.Fatalf("expected 1 feed, got %d", len(cfg.Feeds))
+			}
+			feed := cfg.Feeds[0]
+			feed.ApplyDefaults(models.NewFeedDefaults())
+			if feed.Formats.Sitemap || !feed.Formats.HTML || !feed.Formats.RSS {
+				t.Fatalf("explicit false lost or absent defaults not inherited: %+v", feed.Formats)
+			}
+		})
+	}
+}
+
+func TestDefaultArchiveFeedInheritsFormats(t *testing.T) {
+	cfg, err := LoadWithDefaults()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, feed := range cfg.Feeds {
+		if feed.Slug != "archive" {
+			continue
+		}
+		feed.ApplyDefaults(cfg.FeedDefaults)
+		if !feed.Formats.HTML || !feed.Formats.Atom || !feed.Formats.JSON {
+			t.Fatalf("built-in archive lost default formats: %+v", feed.Formats)
+		}
+		return
+	}
+	t.Fatal("built-in archive feed missing")
+}

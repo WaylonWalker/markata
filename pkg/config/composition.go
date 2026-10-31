@@ -25,7 +25,7 @@ func loadResolvedConfig(configPath string) (*models.Config, error) {
 	}
 
 	warnings := normalizeRenderingTheme(rawWrapper)
-	defaultRaw, err := rawWrapperFromConfig(DefaultConfig())
+	defaultRaw, err := rawWrapperFromDefaultConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode default config: %w", err)
 	}
@@ -318,6 +318,34 @@ func rawWrapperFromConfig(config *models.Config) (map[string]any, error) {
 	}
 
 	return rawWrapper, nil
+}
+
+// rawWrapperFromDefaultConfig keeps unset formats on built-in feeds absent
+// from the raw layer. JSON serialization otherwise turns their zero values
+// into explicit false values before user config is merged.
+func rawWrapperFromDefaultConfig() (map[string]any, error) {
+	defaults := DefaultConfig()
+	raw, err := rawWrapperFromConfig(defaults)
+	if err != nil {
+		return nil, err
+	}
+	root, ok := raw["markata-go"].(map[string]any)
+	if !ok {
+		return raw, nil
+	}
+	feeds, ok := root["feeds"].([]any)
+	if !ok {
+		return raw, nil
+	}
+	for i := range defaults.Feeds {
+		if i >= len(feeds) || defaults.Feeds[i].Formats.HasAnyEnabled() {
+			continue
+		}
+		if rawFeed, ok := feeds[i].(map[string]any); ok {
+			delete(rawFeed, "formats")
+		}
+	}
+	return raw, nil
 }
 
 func populateExtra(config *models.Config, rawWrapper map[string]any) {

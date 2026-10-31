@@ -62,6 +62,9 @@ these settings when a feature appears to ignore the site config:
 Use `markata-go config show` or `markata-go config get <key>` to inspect the
 resolved typed values. Explicit `false` values are valid settings and must not
 be replaced by defaults.
+For feed output, set a key such as `[markata-go.feeds.formats] sitemap = false`
+when one feed must disable a default format. Other omitted feed format keys
+continue to inherit from `[markata-go.feed_defaults.formats]`.
 
 Full-site builds automatically write `/llms.txt` from the site description
 and a short list of published, indexable pages. Configure it via
