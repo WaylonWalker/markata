@@ -137,6 +137,7 @@ For developers who want full control and customization.
 ### Advanced
 - [Agent Skills](/docs/guides/agent-skills/) - Install the bundled markata-go site skill for coding agents
 - [Plugin Development](/docs/guides/plugin-development/) - Creating custom plugins
+- [Static SVG Foundation](/docs/guides/static-visualizations/) - Developer-only backend SVG contract and adapter roadmap
 - [Migration](/docs/guides/migration/) - Migrating from other static site generators
 - [Performance and Profiling](/docs/guides/performance/) - Benchmarking and profiling builds
 - [Resource Hints Implementation](/docs/reference/resource-hints-implementation/) - Technical details
