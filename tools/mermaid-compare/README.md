@@ -49,3 +49,20 @@ The harness deliberately records unsupported syntax and renderer failures.
 Its minimum gate is successful SVG for both engines on the six core families;
 all other example failures are listed, not hidden or misidentified as passing.
 Full Mermaid syntax parity has **not** been established.
+
+## First CI evidence (2026-10-31)
+
+[Successful combined CI run](https://github.com/WaylonWalker/markata/actions/runs/41238820829):
+24/24 unique fixtures rendered by **each** candidate; zero core errors. Across
+these fixtures the median of per-fixture p50 source-to-SVG timings was **0.0508 ms**
+for mmdg and **0.0219 ms** for go-mermaid on the GitHub Actions runner. These
+measurements are *not* comparable to the 53.54 ms full warm-pool Mermaid-request
+p50 from the same run. Six pairs rendered for human inspection show mmdg
+class/ER label and border overlap in some cases; go-mermaid is clearer there.
+
+**Font caveat:** go-mermaid's v0.1.6 `internal/svgutil.FaceFor` uses
+Helvetica/Times/Courier width tables (unknown named fonts fall back to
+Helvetica), so `WithFont("Your Decorative Face", 16)` selects that font in SVG
+but does **not** measure the actual Markata WOFF2 font. mmdg resolves locally
+installed TTF/OTF fonts, not necessarily Markata's packaged WOFF2 fontpacks.
+True font-pack parity and clipping tests remain a blocker for production.
