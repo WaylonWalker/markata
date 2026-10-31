@@ -29,6 +29,7 @@ func TestInvalidOrExternalSVG(t *testing.T) {
   `<svg viewBox="0 0 -1 2"/>`,
   `<!DOCTYPE svg [<!ENTITY x SYSTEM "file:///etc/passwd">]><svg viewBox="0 0 1 1"/>`,
   `<svg viewBox="0 0 1 1"><script>alert(1)</script></svg>`,
+  `<?xml-stylesheet href="https://example.com/evil.css"?><svg viewBox="0 0 1 1"/>`,
   `<svg viewBox="0 0 1 1"><foreignObject><p>no</p></foreignObject></svg>`,
   `<svg viewBox="0 0 1 1"><rect onclick="alert(1)"/></svg>`,
   `<svg viewBox="0 0 1 1"><use href="https://example.com/a.svg#symbol"/></svg>`,
@@ -59,6 +60,9 @@ func TestPublishAndFigure(t *testing.T) {
  asset.Path="assets/visualizations/forged.svg"
  if _,err:=Publish(root,asset);err==nil {t.Fatal("forged asset path accepted")}
  asset.Path=path
+ asset.Width=999
+ if _,err:=FigureHTML(asset,"descriptive","",false);err==nil {t.Fatal("forged dimensions accepted")}
+ asset.Width=960
  markup,err:=FigureHTML(asset,"A <B> & C",`A "caption"`,true)
  if err!=nil || !strings.Contains(markup,`width="960" height="540" loading="eager"`) ||
   !strings.Contains(markup,"A &lt;B&gt; &amp; C") ||
