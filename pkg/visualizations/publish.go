@@ -47,8 +47,11 @@ func FigureHTML(asset Asset, alt, caption string, aboveFold bool) (string, error
  if strings.TrimSpace(alt) == "" {
   return "", errors.New("SVG figure requires descriptive alternative text")
  }
- if asset.Width <= 0 || asset.Height <= 0 || asset.Path == "" {
-  return "", errors.New("SVG asset is missing intrinsic dimensions or path")
+ canonical, err := NewSVGAsset(asset.SVG)
+ if err != nil { return "", err }
+ if asset.Path != canonical.Path || asset.SHA256 != canonical.SHA256 ||
+  asset.Width != canonical.Width || asset.Height != canonical.Height {
+   return "", errors.New("SVG figure asset identity/dimensions do not match bytes")
  }
  loading := "lazy"
  if aboveFold { loading = "eager" }
