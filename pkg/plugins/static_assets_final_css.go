@@ -180,7 +180,11 @@ func refreshImageLibraryCSSOwnership(cache *buildcache.Cache, outputDir string, 
 		return nil
 	}
 	contentRoot, recordedOutput, owned := cache.GetImageLibraryOutputs()
-	if recordedOutput == "" || filepath.Clean(recordedOutput) != filepath.Clean(outputDir) {
+	absoluteOutput, err := filepath.Abs(outputDir)
+	if err != nil {
+		return fmt.Errorf("resolve CSS output directory for ownership: %w", err)
+	}
+	if recordedOutput == "" || filepath.Clean(recordedOutput) != filepath.Clean(absoluteOutput) {
 		return nil
 	}
 	changed := false
@@ -195,9 +199,9 @@ func refreshImageLibraryCSSOwnership(cache *buildcache.Cache, outputDir string, 
 	}
 	absolute := make(map[string]string, len(owned))
 	for relative, hash := range owned {
-		absolute[filepath.Join(outputDir, relative)] = hash
+		absolute[filepath.Join(absoluteOutput, relative)] = hash
 	}
-	cache.SetImageLibraryOutputs(contentRoot, outputDir, absolute)
+	cache.SetImageLibraryOutputs(contentRoot, absoluteOutput, absolute)
 	// The build-cache plugin saves earlier in Cleanup. Persist this post-write
 	// correction so a subsequent process also recognizes Markata-owned output.
 	return cache.Save()
