@@ -156,3 +156,24 @@ func TestSessionCachesParserByOptions(t *testing.T) {
 		t.Fatalf("unbounded parser cache: %d", len(s.renderers))
 	}
 }
+
+func TestServe_NativeMermaidMode(t *testing.T) {
+	source := "```mermaid\nflowchart LR\n A[Load] --> B[Serve]\n```"
+	request, err := json.Marshal(Request{ID: "native", Op: "render", Source: source,
+		Options: Options{MermaidMode: "go"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	responses := serveRequests(t, string(request)+"\n")
+	if len(responses) != 1 || !responses[0].OK || responses[0].Result == nil {
+		t.Fatalf("native protocol render failed: %+v", responses)
+	}
+	if !strings.Contains(responses[0].Result.HTML, "<svg") {
+		t.Fatal("native response missing SVG")
+	}
+	for _, asset := range responses[0].Result.Assets {
+		if strings.Contains(asset.ID, "mermaid.min.js") {
+			t.Fatal("native response shipped Mermaid browser runtime")
+		}
+	}
+}

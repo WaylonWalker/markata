@@ -401,6 +401,9 @@ func newMermaidRenderer(config models.MermaidConfig, paletteColors *mermaidPalet
 	case "client":
 		return &clientRenderer{config: config}, nil
 
+	case "go":
+		return newNativeMermaidRenderer(config, paletteColors), nil
+
 	case "cli":
 		// Validate CLI dependencies
 		info := checkCLIDependency(config.CLIConfig.MMDCPath)

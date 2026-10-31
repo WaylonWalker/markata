@@ -1564,7 +1564,7 @@ type MermaidConfig struct {
 	// Enabled controls whether mermaid processing is active (default: true)
 	Enabled bool `json:"enabled" yaml:"enabled" toml:"enabled"`
 
-	// Mode specifies how to render diagrams: "client" (browser), "cli" (mmdc), or "chromium" (Chrome/Chromium)
+	// Mode specifies how to render diagrams: "client" (browser), "go" (native SVG), "cli" (mmdc), or "chromium" (Chrome/Chromium)
 	// Default: "client"
 	Mode string `json:"mode" yaml:"mode" toml:"mode"`
 
@@ -1586,8 +1586,24 @@ type MermaidConfig struct {
 	// CLIConfig contains settings for CLI mode (npm mmdc)
 	CLIConfig *CLIRendererConfig `json:"cli" yaml:"cli" toml:"cli"`
 
+	// GoConfig contains layout and typography controls for native SVG mode.
+	GoConfig *GoMermaidRendererConfig `json:"go" yaml:"go" toml:"go"`
+
 	// ChromiumConfig contains settings for Chromium mode.
 	ChromiumConfig *ChromiumRendererConfig `json:"chromium" yaml:"chromium" toml:"chromium"`
+}
+
+// GoMermaidRendererConfig configures native SVG generation without a browser.
+// The font family is emitted into SVG. Custom font glyph widths are currently
+// approximated by go-mermaid and must be visually tested for clipping.
+type GoMermaidRendererConfig struct {
+	FontFamily            string  `json:"font_family" yaml:"font_family" toml:"font_family"`
+	FontSize              float64 `json:"font_size" yaml:"font_size" toml:"font_size"`
+	NodeSpacing           float64 `json:"node_spacing" yaml:"node_spacing" toml:"node_spacing"`
+	RankSpacing           float64 `json:"rank_spacing" yaml:"rank_spacing" toml:"rank_spacing"`
+	Padding               float64 `json:"padding" yaml:"padding" toml:"padding"`
+	CurvedEdges           bool    `json:"curved_edges" yaml:"curved_edges" toml:"curved_edges"`
+	TransparentBackground bool    `json:"transparent_background" yaml:"transparent_background" toml:"transparent_background"`
 }
 
 // CLIRendererConfig configures the CLI-based renderer (npm mmdc)
@@ -1624,6 +1640,7 @@ func NewMermaidConfig() MermaidConfig {
 		UseCSSVariables:  true,
 		Lightbox:         true,
 		LightboxSelector: ".glightbox-mermaid",
+		GoConfig:         &GoMermaidRendererConfig{FontFamily: "sans-serif", FontSize: 16, NodeSpacing: 50, RankSpacing: 50, Padding: 16},
 		CLIConfig: &CLIRendererConfig{
 			MMDCPath:  "",
 			ExtraArgs: "",

@@ -262,14 +262,17 @@ def _result(stdout: bytes, stderr: bytes, returncode: int) -> RenderResult:
 
 def render(markdown: str, *, inline_assets: bool = False,
            asset_base: str = "/markata-assets", unsafe: bool = False,
-           timeout: float = 30, workspace: str | None = None) -> RenderResult:
+           mermaid_mode: str = "client", timeout: float = 30, workspace: str | None = None) -> RenderResult:
     """Render using one bundled Go process; input is passed over stdin, never a shell.
 
     For a standalone response, use inline_assets=True and result.document().
     Otherwise serve bundled asset contents from result.assets below asset_base.
     Rich Markdown output is not an HTML sanitizer. Sanitize untrusted input/output.
     """
+    if mermaid_mode not in ("client", "go"):
+        raise ValueError("mermaid_mode must be client or go")
     command = _command(inline_assets, asset_base, unsafe)
+    command += ["--mermaid-mode", mermaid_mode]
     if workspace is not None:
         command += ['--workspace', str(workspace)]
     try:
@@ -282,9 +285,12 @@ def render(markdown: str, *, inline_assets: bool = False,
 
 async def render_async(markdown: str, *, inline_assets: bool = False,
                        asset_base: str = "/markata-assets", unsafe: bool = False,
-                       timeout: float = 30, workspace: str | None = None) -> RenderResult:
+                       mermaid_mode: str = "client", timeout: float = 30, workspace: str | None = None) -> RenderResult:
     """Render without blocking an ASGI event loop; reap the process on cancellation."""
+    if mermaid_mode not in ("client", "go"):
+        raise ValueError("mermaid_mode must be client or go")
     command = _command(inline_assets, asset_base, unsafe)
+    command += ["--mermaid-mode", mermaid_mode]
     if workspace is not None:
         command += ['--workspace', str(workspace)]
     try:

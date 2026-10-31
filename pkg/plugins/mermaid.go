@@ -16,6 +16,7 @@ import (
 
 const (
 	mermaidModeClient   = "client"
+	mermaidModeGo       = "go"
 	mermaidModeCLI      = "cli"
 	mermaidModeChromium = "chromium"
 )
@@ -76,6 +77,7 @@ func (p *MermaidPlugin) Configure(m *lifecycle.Manager) error {
 		p.parseMainConfig(cfgMap)
 		p.parseCLIConfig(cfgMap)
 		p.parseChromiumConfig(cfgMap)
+		p.parseGoConfig(cfgMap)
 	}
 
 	// Validate the selected mode and check dependencies
@@ -136,6 +138,55 @@ func (p *MermaidPlugin) parseCLIConfig(cfgMap map[string]interface{}) {
 	}
 }
 
+// parseGoConfig reads the opt-in native Go diagram renderer's style settings.
+func (p *MermaidPlugin) parseGoConfig(cfgMap map[string]interface{}) {
+	cfg, ok := cfgMap["go"].(map[string]interface{})
+	if !ok {
+		return
+	}
+	if p.config.GoConfig == nil {
+		p.config.GoConfig = &models.GoMermaidRendererConfig{}
+	}
+	n := p.config.GoConfig
+	if font, ok := cfg["font_family"].(string); ok && font != "" {
+		n.FontFamily = font
+	}
+	for _, item := range []struct {
+		key    string
+		target *float64
+	}{
+		{"font_size", &n.FontSize},
+		{"node_spacing", &n.NodeSpacing},
+		{"rank_spacing", &n.RankSpacing},
+		{"padding", &n.Padding},
+	} {
+		if value, ok := mermaidFloat(cfg[item.key]); ok && value > 0 {
+			*item.target = value
+		}
+	}
+	if v, ok := cfg["curved_edges"].(bool); ok {
+		n.CurvedEdges = v
+	}
+	if v, ok := cfg["transparent_background"].(bool); ok {
+		n.TransparentBackground = v
+	}
+}
+
+func mermaidFloat(value interface{}) (float64, bool) {
+	switch v := value.(type) {
+	case float64:
+		return v, true
+	case float32:
+		return float64(v), true
+	case int:
+		return float64(v), true
+	case int64:
+		return float64(v), true
+	default:
+		return 0, false
+	}
+}
+
 // parseChromiumConfig extracts Chromium renderer configuration from the config map.
 func (p *MermaidPlugin) parseChromiumConfig(cfgMap map[string]interface{}) {
 	chromCfg, ok := cfgMap["chromium"].(map[string]interface{})
@@ -165,11 +216,11 @@ func (p *MermaidPlugin) parseChromiumConfig(cfgMap map[string]interface{}) {
 func (p *MermaidPlugin) validateMode() error {
 	// Validate mode value
 	switch p.config.Mode {
-	case mermaidModeClient, mermaidModeCLI, mermaidModeChromium:
+	case mermaidModeClient, mermaidModeCLI, mermaidModeChromium, mermaidModeGo:
 		// valid modes
 	default:
 		return models.NewConfigValidationError("mermaid.mode", p.config.Mode,
-			"invalid mode: must be 'client', 'cli', or 'chromium'")
+			"invalid mode: must be 'client', 'go', 'cli', or 'chromium'")
 	}
 
 	// Check dependencies for non-client modes
@@ -206,6 +257,9 @@ func (p *MermaidPlugin) Render(m *lifecycle.Manager) (err error) {
 	if p.config.Mode != mermaidModeClient {
 		renderer, createErr := newMermaidRenderer(p.config, p.paletteColors)
 		if createErr != nil {
+			if p.config.Mode == mermaidModeGo {
+				return fmt.Errorf("native Mermaid renderer: %w", createErr)
+			}
 			p.config.Mode = mermaidModeClient
 		} else {
 			p.renderer = renderer
@@ -325,6 +379,12 @@ func (p *MermaidPlugin) diagramRenderHash(diagramCode string) string {
 			builder.WriteString("false")
 		}
 	}
+	if p.config.Mode == mermaidModeGo {
+		builder.WriteString("\ngo.version:")
+		builder.WriteString(nativeMermaidVersion)
+		builder.WriteString("\ngo.config:")
+		builder.WriteString(fmt.Sprintf("%+v", p.config.GoConfig))
+	}
 	if p.paletteColors != nil {
 		builder.WriteString("\npalette:")
 		builder.WriteString(p.paletteColors.themeVariablesJSON())
@@ -394,6 +454,8 @@ func (p *MermaidPlugin) rendererCacheKey() string {
 	}
 
 	switch p.config.Mode {
+	case mermaidModeGo:
+		return nativeMermaidVersion
 	case mermaidModeCLI:
 		info := checkCLIDependency(p.config.CLIConfig.MMDCPath)
 		if !info.IsInstalled {

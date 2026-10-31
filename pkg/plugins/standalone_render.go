@@ -21,6 +21,8 @@ type StandaloneOptions struct {
 	Unsafe       bool
 	InlineAssets bool
 	AssetBase    string
+	// MermaidMode selects "client" (default) or "go" (native SVG).
+	MermaidMode string
 	// OmitAssetContent keeps bundled assets linked and omits their bytes.
 	// Browser hosts must export and serve the native presentation bundle.
 	OmitAssetContent bool
@@ -82,7 +84,7 @@ func (renderer *StandaloneRenderer) Render(source string) (*StandaloneResult, er
 	}
 	post.ArticleHTML = article
 	r := &StandaloneResult{omitAssetContent: options.OmitAssetContent, SchemaVersion: StandaloneSchemaVersion, Features: map[string]bool{"mermaid": false, "chartjs": false}, Assets: []RenderAsset{}, ExternalURLs: []string{}}
-	if err := r.renderDiagrams(post); err != nil {
+	if err := r.renderDiagrams(post, options); err != nil {
 		return nil, err
 	}
 	post.Extra = map[string]interface{}{}
@@ -109,16 +111,41 @@ func (renderer *StandaloneRenderer) Render(source string) (*StandaloneResult, er
 	return r, nil
 }
 
-func (r *StandaloneResult) renderDiagrams(post *models.Post) error {
+func (r *StandaloneResult) renderDiagrams(post *models.Post, options StandaloneOptions) error {
 	mermaid := NewMermaidPlugin()
 	mermaid.config.Lightbox = false
 	mermaid.escapeClientSource = true
+	mode := options.MermaidMode
+	if mode == "" {
+		mode = mermaidModeClient
+	}
+	if mode != mermaidModeClient && mode != mermaidModeGo {
+		return fmt.Errorf("unsupported standalone Mermaid mode %q", mode)
+	}
+	mermaid.config.Mode = mode
+	if mode == mermaidModeGo {
+		if options.Config != nil {
+			mermaid.paletteColors = resolvePaletteColors(map[string]interface{}{"theme": options.Config.Theme})
+			if raw, ok := options.Config.Extra["mermaid"].(map[string]interface{}); ok {
+				mermaid.parseGoConfig(raw)
+			}
+		}
+		renderer, err := newMermaidRenderer(mermaid.config, mermaid.paletteColors)
+		if err != nil {
+			return fmt.Errorf("initialize native mermaid: %w", err)
+		}
+		mermaid.renderer = renderer
+		defer renderer.close()
+	}
 	var mermaidScript string
 	mermaid.scriptCollector = func(fragment string) {
 		mermaidScript = strings.Replace(fragment, mermaid.mermaidImportJS(), "const mermaid = window.mermaid;\n", 1)
 	}
 	if err := mermaid.processPost(post); err != nil {
 		return fmt.Errorf("render mermaid: %w", err)
+	}
+	if mode == mermaidModeGo && strings.Contains(post.ArticleHTML, `<pre class="mermaid">`) {
+		r.Features["mermaid"] = true
 	}
 	if mermaidScript != "" {
 		r.Features["mermaid"] = true
