@@ -1,3 +1,4 @@
+import {attachFilePicker} from './file-picker.js';
 import {FileTree} from '@pierre/trees';
 
 let files = SITE_FILES;
@@ -90,7 +91,7 @@ async function open(path) {
     }
   }
   currentEditor.setOption('readOnly', !editable(path));
-  document.querySelector('#commands').disabled = !editable(path);
+  // Commands remain available for file navigation from read-only sources.
   currentEditor.setOption('mode', editable(path) ? 'gfm' : 'text/plain');
   label.textContent = path + (editable(path) ? '' : ' · read only');
   label.title = metadataByPath.get(path)?.title || path;
@@ -100,6 +101,7 @@ async function open(path) {
   if (diskChanged) document.querySelector('#saved').textContent = 'File changed on disk · keeping your browser draft';
 }
 window.MarkataSiteTree = {
+  openPicker() { picker?.open(); },
   save() {
     if (!currentEditor) return false;
     if (!editable(active)) return true;
@@ -112,7 +114,11 @@ window.MarkataSiteTree = {
   filename: () => active === scratchPath ? 'draft.md' : active.split('/').pop(),
   markdown(text) {
     if (!editable(active)) return '````toml\n' + text + '\n````';
-    return text.replace(/^---\r?\n[\s\S]*?\r?\n---(?:\r?\n|$)/, '');
+    const frontmatter = text.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
+    if (!frontmatter) return text;
+    const image = frontmatter[1].match(/^image:\s*['"]?(\/images\/[^\s'"#?]+\.(?:jpg|jpeg|png|webp|gif|avif))['"]?\s*$/im)?.[1];
+    const body = text.slice(frontmatter[0].length);
+    return image ? `![Post image](/workspace/image?path=${encodeURIComponent(image.slice(1))})\n\n${body}` : body;
   },
   import(text) { open(scratchPath); currentEditor.setValue(text); },
   async attach(editor, storageWarning) {
@@ -127,6 +133,8 @@ window.MarkataSiteTree = {
       const box = document.querySelector('#error'); box.textContent = error.message; box.hidden = false;
       files = {};
     }
+    picker = attachFilePicker(editor, open);
+    picker.update([{path:'draft.md'}, ...metadata]);
     editor.on('beforeChange', (instance, change) => {
       if (!editable(active) && change.origin !== 'setValue') change.cancel();
     });
@@ -173,6 +181,7 @@ window.MarkataSiteTree = {
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || data.detail || 'Metadata unavailable');
         metadata = data.files;
+        picker.update([{path:'draft.md'}, ...metadata]);
         metadataByPath = new Map(metadata.map(file => [file.path,file]));
         label.title = metadataByPath.get(active)?.title || active;
         tagOption.textContent = 'Tags'; tagOption.disabled = false;

@@ -40,6 +40,7 @@ type workspaceSource interface {
 	Paths() ([]editorworkspace.File, error)
 	Files() ([]editorworkspace.File, error)
 	Read(string) (string, error)
+	ReadImage(string) ([]byte, error)
 }
 
 // Handler serves the editor, render API and bundled appearance assets.
@@ -196,7 +197,7 @@ func styleLink(name string) string { return `<link rel="stylesheet" href="/appea
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	switch {
-	case (r.URL.Path == "/workspace" || r.URL.Path == "/workspace/file") && r.Method == http.MethodGet:
+	case isWorkspaceRoute(r.URL.Path) && r.Method == http.MethodGet:
 		h.serveWorkspace(w, r)
 	case r.URL.Path == "/lsp":
 		h.language.ServeHTTP(w, r)
@@ -470,6 +471,10 @@ func (h *Handler) document(result *plugins.StandaloneResult, attributes map[stri
 	return `<!doctype html><html lang="en"` + attrs + `><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Markdown preview</title>` + initial + styles + h.featureHead(result) + `</head><body><main class="main-content"><div class="content-wrapper"><div class="post-shell"><article class="post h-entry"><div class="post-content e-content">` + result.HTML + `</div></article></div></div></main>` + strings.ReplaceAll(result.BodyEndHTML, "<script", `<script data-markata-generated="true"`) + h.bridge + `</body></html>`
 }
 
+func isWorkspaceRoute(path string) bool {
+	return path == "/workspace" || path == "/workspace/file" || path == "/workspace/image"
+}
+
 func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 	peer, _, peerErr := net.SplitHostPort(r.RemoteAddr)
 	if peerErr != nil || net.ParseIP(peer) == nil || !net.ParseIP(peer).IsLoopback() {
@@ -479,6 +484,17 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 	host, hostErr := url.Parse("//" + r.Host)
 	if hostErr != nil || host.User != nil || host.Path != "" || (host.Hostname() != "localhost" && (net.ParseIP(host.Hostname()) == nil || !net.ParseIP(host.Hostname()).IsLoopback())) {
 		http.Error(w, "local workspace access required", http.StatusForbidden)
+		return
+	}
+	if r.URL.Path == "/workspace/image" {
+		name := r.URL.Query().Get("path")
+		data, err := h.workspace.ReadImage(name)
+		if err != nil {
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Cache-Control", "no-store")
+		serve(w, r, name, data)
 		return
 	}
 	w.Header().Set("Cache-Control", "no-store")
