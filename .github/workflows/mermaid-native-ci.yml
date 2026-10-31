@@ -1,0 +1,52 @@
+name: Native Mermaid SVG smoke and compatibility
+
+on:
+  pull_request:
+    paths:
+      - 'tools/mermaid-compare/**'
+      - '.github/workflows/mermaid-native-ci.yml'
+      - 'pkg/plugins/mermaid*.go'
+      - 'docs/**/*.md'
+      - 'examples/**/*.md'
+      - 'rendering-fixtures/**/*.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-mermaid:
+    name: Native SVG fixtures (no browser / Node / Python packages)
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v7
+        with:
+          go-version: '1.26'
+          cache-dependency-path: tools/mermaid-compare/go.mod
+      - name: Build only the two isolated native renderer libraries
+        working-directory: tools/mermaid-compare
+        run: go build -mod=mod -o "${RUNNER_TEMP}/mermaid-compare" .
+      - name: Run every existing Mermaid example with fast timings
+        run: |
+          python3 tools/mermaid-compare/run.py \
+            --binary "${RUNNER_TEMP}/mermaid-compare" \
+            --output "${RUNNER_TEMP}/mermaid-native-ci" \
+            --full --iterations 3
+      - name: Add compatibility report to CI summary
+        if: always()
+        run: |
+          if [ -f "${RUNNER_TEMP}/mermaid-native-ci/comparison.md" ]; then
+            cat "${RUNNER_TEMP}/mermaid-native-ci/comparison.md" >> "${GITHUB_STEP_SUMMARY}"
+          fi
+      - name: Save SVGs, JSON, performance graph and differences
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: mermaid-native-ci
+          path: ${{ runner.temp }}/mermaid-native-ci
+          if-no-files-found: warn
+          retention-days: 7
