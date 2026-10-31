@@ -25,3 +25,22 @@
 #file-finder-results strong{font-size:13px;font-weight:600}#file-finder-results span{color:var(--color-text-muted,#52697f);font:12px/1.4 var(--font-code,ui-monospace,monospace);overflow-wrap:anywhere}
 #file-finder-results [aria-selected=true]{background:color-mix(in srgb,var(--color-primary,#245fc5) 12%,var(--color-background,#f4f7fb));border-color:var(--color-primary,#245fc5)}
 .file-finder :focus-visible{outline:2px solid var(--color-primary,#245fc5);outline-offset:2px}
+
+/* Quick Open uses the command dialog's palette colors, with readable file rows. */
+.files-open{min-height:40px;margin:8px 12px;padding:7px 10px;border:1px solid var(--editor-divider,#c8d5e2);border-radius:6px;background:var(--color-surface,#fff);color:var(--color-text,#203348);font:inherit;font-weight:600;cursor:pointer}
+.files-open:hover{border-color:var(--color-primary,#245fc5)}
+.files-open:focus-visible{outline:2px solid var(--color-primary,#245fc5);outline-offset:2px}
+.file-picker{display:flex;flex-direction:column}
+.file-picker:not([open]){display:none}
+#files-query{box-sizing:border-box;width:100%;min-height:44px;padding:10px 12px;border:1px solid var(--editor-divider,#c8d5e2);border-radius:6px;background:var(--color-surface,#fff);color:inherit;font:inherit}
+.file-picker [role=status]{margin:10px 0;color:var(--color-text-muted,#52697f);font-size:12px}
+#files-results{min-height:0;max-height:50dvh;overflow:auto;overscroll-behavior:contain}
+#files-results [role=option]{display:grid;gap:2px;min-height:52px;box-sizing:border-box;padding:9px 12px;border:1px solid transparent;border-radius:6px;cursor:pointer}
+#files-results [role=option]+[role=option]{margin-top:3px}
+#files-results [aria-selected=true]{background:color-mix(in srgb,var(--color-primary,#245fc5) 15%,var(--color-background,#f4f7fb));border-color:var(--color-primary,#245fc5)}
+#files-results [role=option]:hover{background:color-mix(in srgb,var(--color-primary,#245fc5) 10%,var(--color-background,#f4f7fb))}
+.file-result-name{font-size:14px;line-height:1.4}
+.file-result-path{font:12px/1.4 var(--font-code,ui-monospace,monospace);color:var(--color-text-muted,#52697f);overflow-wrap:anywhere}
+.file-result-title{font-size:12px;line-height:1.4;color:var(--color-text-muted,#52697f)}
+#files-results mark{border-radius:2px;padding:0 1px;background:color-mix(in srgb,var(--color-primary,#245fc5) 35%,transparent);color:inherit;font-weight:700}
+@media(max-width:480px){.file-picker{margin:4dvh auto auto;max-height:92dvh}#files-results{max-height:64dvh}#files-results [role=option]{min-height:56px}.files-open{min-height:44px}}

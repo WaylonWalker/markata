@@ -1,10 +1,17 @@
 import {createFileSearch} from './file-search.js';
 export function attachFilePicker(editor, openFile) {
   const dialog = document.createElement('dialog');
-  dialog.className = 'markdown-commands';
+  dialog.className = 'markdown-commands file-picker';
   dialog.setAttribute('aria-labelledby', 'files-title');
-  dialog.innerHTML = '<div class="commands-heading"><h2 id="files-title">Open file</h2><button type="button" aria-label="Close file picker">Close</button></div><label for="files-query">Find a workspace file</label><input id="files-query" type="search" placeholder="Filename, path, or title" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="true" aria-controls="files-results"><p role="status"></p><div id="files-results" role="listbox" aria-label="Workspace files"></div><p class="commands-help">↑ ↓ Choose · Enter Open · Esc Close</p>';
+  dialog.innerHTML = '<div class="commands-heading"><h2 id="files-title">Open file</h2><button type="button" class="commands-close" aria-label="Close file picker">Close</button></div><label for="files-query">Find a workspace file</label><input id="files-query" type="search" placeholder="Filename, path, or title" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="true" aria-controls="files-results"><p role="status"></p><div id="files-results" role="listbox" aria-label="Workspace files"></div><p class="commands-help">↑ ↓ Choose · Enter Open · Esc Close</p>';
   document.body.append(dialog);
+  const sidebarHeading = document.querySelector('#site-sidebar .pane-label');
+  if (sidebarHeading) {
+    const button = document.createElement('button');
+    button.type = 'button'; button.className = 'files-open'; button.textContent = 'Open file';
+    button.title = 'Open file (Ctrl/Cmd+P)'; button.addEventListener('click', show);
+    sidebarHeading.after(button);
+  }
   const query = dialog.querySelector('input'), list = dialog.querySelector('[role=listbox]');
   let search = createFileSearch([]), matches = [], active = 0;
   function select(index) {
@@ -28,9 +35,11 @@ export function attachFilePicker(editor, openFile) {
     matches.forEach((match,i) => {
       const row = document.createElement('div'); row.id = `file-result-${i}`; row.setAttribute('role','option');
       const name = document.createElement('strong'), path = document.createElement('code'), title = document.createElement('span');
+      name.className = 'file-result-name'; path.className = 'file-result-path'; title.className = 'file-result-title';
       highlighted(name, match[0], match.obj.name); highlighted(path, match[1], match.obj.path);
       highlighted(title, match[2], match.obj.title);
-      row.append(name,path,title);
+      row.append(name,path);
+      if (match.obj.title && match.obj.title !== match.obj.name) row.append(title);
       row.addEventListener('pointermove', () => select(i));
       row.addEventListener('click', () => choose(i)); list.append(row);
     }); select(0);

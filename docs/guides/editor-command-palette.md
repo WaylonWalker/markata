@@ -110,7 +110,7 @@ explains runtime differences.
 ## Open workspace files
 
 Press **Ctrl+P** (macOS: **Cmd+P**) to open the file picker in the workspace editor.
-You can also run **Open file** from the command palette. Ctrl/Cmd+Shift+P still
+You can also select **Open file** in the workspace sidebar or run **Open file** from the command palette. Ctrl/Cmd+Shift+P still
 opens commands.
 
 Type a filename abbreviation, path, or document title. Filename matches rank
