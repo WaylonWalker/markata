@@ -77,11 +77,17 @@ jobs:
       - name: Measure SVG-only costs, theme/font differences and Markata fixtures
         run: |
           flags=""
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then flags="--full"; fi
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then flags="--full --iterations 20"; else flags="--full --iterations 3"; fi
           python tools/mermaid-compare/run.py \
             --binary "${RUNNER_TEMP}/mermaid-compare" \
             --output "${RUNNER_TEMP}/mermaid-candidates" \
             ${flags}
+      - name: Generate native SVG side-by-side comparison gallery
+        if: always()
+        run: |
+          if [ -f "${RUNNER_TEMP}/mermaid-candidates/comparison.json" ]; then
+            python tools/mermaid-compare/gallery.py "${RUNNER_TEMP}/mermaid-candidates"
+          fi
       - name: Add candidate timings and differences to perf graph and summary
         if: always()
         run: |
