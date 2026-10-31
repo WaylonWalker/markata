@@ -11,6 +11,7 @@ from pathlib import Path
 
 def add_renderer(wheel: Path) -> None:
     source = Path(__file__).resolve().parent.parent / "python/markata/rendering.py"
+    pool_source = source.with_name("pool.py")
     with zipfile.ZipFile(wheel) as archive:
         members = [(item, archive.read(item)) for item in archive.infolist()]
     records = []
@@ -21,17 +22,21 @@ def add_renderer(wheel: Path) -> None:
                 if item.filename.endswith(".dist-info/RECORD"):
                     record_path = item.filename
                     continue
-                if item.filename == "markata/rendering.py":
+                if item.filename in {"markata/rendering.py", "markata/pool.py"}:
                     continue
                 if item.filename == "markata/__init__.py":
                     imports = b"from .rendering import Appearance, appearance, RenderError, RenderResult, render, render_async"
                     if imports not in content:
                         content += b"\n" + imports + b"\n"
+                    content += b"from .pool import RendererPool\n"
                 archive.writestr(item, content)
                 records.append(record(item.filename, content))
             content = source.read_bytes()
             archive.writestr("markata/rendering.py", content)
             records.append(record("markata/rendering.py", content))
+            pool_content = pool_source.read_bytes()
+            archive.writestr("markata/pool.py", pool_content)
+            records.append(record("markata/pool.py", pool_content))
             buffer = io.StringIO(newline="")
             writer = csv.writer(buffer)
             writer.writerows(records)
