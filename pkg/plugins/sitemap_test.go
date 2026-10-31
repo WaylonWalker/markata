@@ -301,6 +301,28 @@ func TestSitemapIndexOmitsNoindexAndDuplicateFeedSitemaps(t *testing.T) {
 			t.Errorf("sitemap index %q count = %d, want %d", loc, got[loc], count)
 		}
 	}
+
+	// Exercise the production writer, not only its in-memory index builder.
+	m.Config().OutputDir = t.TempDir()
+	m.Config().Extra["url"] = "https://example.com"
+	if err := NewSitemapPlugin().Write(m); err != nil {
+		t.Fatalf("Write() error = %v", err)
+	}
+	data, err := os.ReadFile(filepath.Join(m.Config().OutputDir, "sitemap.xml"))
+	if err != nil {
+		t.Fatalf("ReadFile(sitemap.xml) error = %v", err)
+	}
+	for loc, count := range want {
+		if actual := strings.Count(string(data), "<loc>"+loc+"</loc>"); actual != count {
+			t.Errorf("emitted sitemap.xml %q count = %d, want %d: %s", loc, actual, count, data)
+		}
+	}
+	for _, excluded := range []string{"draft", "disabled", "private"} {
+		loc := "https://example.com/" + excluded + "/sitemap.xml"
+		if strings.Contains(string(data), "<loc>"+loc+"</loc>") {
+			t.Errorf("emitted sitemap.xml advertises excluded feed %q: %s", loc, data)
+		}
+	}
 }
 
 func TestSitemapIndexLastModExcludesNonEmittedPosts(t *testing.T) {
