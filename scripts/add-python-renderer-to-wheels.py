@@ -28,7 +28,8 @@ def add_renderer(wheel: Path) -> None:
                     imports = b"from .rendering import Appearance, appearance, RenderError, RenderResult, render, render_async"
                     if imports not in content:
                         content += b"\n" + imports + b"\n"
-                    content += b"from .pool import RendererPool\n"
+                    if b"from .pool import RendererPool" not in content:
+                        content += b"from .pool import RendererPool\n"
                 archive.writestr(item, content)
                 records.append(record(item.filename, content))
             content = source.read_bytes()
