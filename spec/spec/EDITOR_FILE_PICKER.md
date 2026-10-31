@@ -16,6 +16,8 @@ Each result separates its filename, full path, and optional title; the selected
 result is visibly highlighted and kept in view while navigating by keyboard.
 Opening a file preserves the existing draft, source access and stale-request rules.
 Metadata updates rebuild the index and refresh an open picker.
+Files with a root-relative image path in frontmatter show a thumbnail after
+metadata loads. Image loading MUST not delay path search or file selection.
 
 Research: fuzzysort offers Sublime-style scoring and prepared targets with no
 runtime dependencies. uFuzzy favors configurable word matching; fzf-for-js ports

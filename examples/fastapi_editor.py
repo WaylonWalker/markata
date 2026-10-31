@@ -9,7 +9,7 @@ Open http://127.0.0.1:8765. Stop with Ctrl+C.
 """
 
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from pydantic import BaseModel, Field
 import uvicorn
 import asyncio
@@ -132,6 +132,19 @@ async def workspace_source(request: Request, path: str):
         return await asyncio.to_thread(workspace_files, str(LSP_WORKSPACE), path=path)
     except RenderError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
+
+
+@app.get("/workspace/image")
+async def workspace_image(request: Request, path: str):
+    require_local_workspace(request)
+    static_root = (LSP_WORKSPACE / "static").resolve()
+    candidate = Path(path)
+    if candidate.is_absolute() or candidate.suffix.lower() not in {".jpg", ".jpeg", ".png", ".webp", ".gif", ".avif"}:
+        raise HTTPException(status_code=404, detail="Image not found")
+    resolved = (static_root / candidate).resolve()
+    if not resolved.is_relative_to(static_root) or not resolved.is_file() or resolved.stat().st_size > 15 * 1024 * 1024:
+        raise HTTPException(status_code=404, detail="Image not found")
+    return FileResponse(resolved, headers={"Cache-Control": "no-store"})
 
 
 @app.get("/", response_class=HTMLResponse)

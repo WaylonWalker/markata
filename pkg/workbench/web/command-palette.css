@@ -27,6 +27,9 @@
 .file-picker [role=status]{margin:10px 0;color:var(--color-text-muted,#52697f);font-size:12px}
 #files-results{min-height:0;max-height:50dvh;overflow:auto;overscroll-behavior:contain}
 #files-results [role=option]{display:grid;gap:2px;min-height:52px;box-sizing:border-box;padding:9px 12px;border:1px solid transparent;border-radius:6px;cursor:pointer}
+#files-results [role=option].has-image{grid-template-columns:54px minmax(0,1fr);align-items:center;column-gap:12px}
+.file-result-image{width:54px;height:54px;border-radius:5px;object-fit:cover;background:var(--color-surface,#fff)}
+.file-result-details{display:grid;min-width:0;gap:2px}
 #files-results [role=option]+[role=option]{margin-top:3px}
 #files-results [aria-selected=true]{background:color-mix(in srgb,var(--color-primary,#245fc5) 15%,var(--color-background,#f4f7fb));border-color:var(--color-primary,#245fc5)}
 #files-results [role=option]:hover{background:color-mix(in srgb,var(--color-primary,#245fc5) 10%,var(--color-background,#f4f7fb))}

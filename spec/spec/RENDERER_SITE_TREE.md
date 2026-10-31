@@ -9,6 +9,10 @@ MUST preserve edits in memory and attempt to save drafts per source path in
 browser storage. Storage failures MUST leave navigation usable and show a warning.
 The existing single-document draft MUST remain available as `draft.md`.
 Markdown previews MUST omit the leading YAML frontmatter block.
+When frontmatter supplies a root-relative `image` path, the standalone preview
+MUST show that image above the Markdown body. Both servers MUST serve only
+regular image files contained by the workspace `static/` directory, including
+after symlink resolution. The preview MUST not modify the editor source.
 
 The sidebar MUST support keyboard navigation, have an accessible label, and adapt
 to narrow viewports. Runtime assets MUST be served locally without CDN requests.
