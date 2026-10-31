@@ -4,6 +4,10 @@ This package starts Markata's **backend-rendered visualization** roadmap. It
 does not add D2/Vega-Lite/Mermaid dependencies and does not change existing
 Chart.js or Mermaid behavior. It is not yet wired to Markata's site builder.
 
+The normative description is [the static visualization specification](../../spec/spec/STATIC_VISUALIZATIONS.md);
+the published [developer guide](../../docs/guides/static-visualizations.md)
+explains current availability, the Go adapter surface, and remaining integration work.
+
 ## Contract
 
 `Renderer.RenderSVG` returns static SVG for a fully specified `Request`.
