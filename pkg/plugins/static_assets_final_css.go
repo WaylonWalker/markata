@@ -88,7 +88,7 @@ func isStylesheetLink(attrs []html.Attribute) bool {
 		}
 	}
 	for _, item := range strings.Fields(rel) {
-		if item == "stylesheet" || (item == "preload" && strings.EqualFold(as, "style")) {
+		if item == cssStylesheetRel || (item == "preload" && strings.EqualFold(as, "style")) {
 			return true
 		}
 	}
