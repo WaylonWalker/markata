@@ -45,7 +45,24 @@ type StandaloneResult struct {
 // RenderStandalone uses the site's Markdown, Mermaid, and Chart.js renderers.
 // It performs no network access or filesystem writes and loads no site config.
 func RenderStandalone(source string, options StandaloneOptions) (*StandaloneResult, error) {
-	p := &RenderMarkdownPlugin{md: createMarkdownRenderer(palettes.DefaultChromaThemeDark, false, DefaultMarkdownExtensionConfig(), options.Unsafe)}
+	return NewStandaloneRenderer(options).Render(source)
+}
+
+// StandaloneRenderer keeps one configured Markdown parser warm for successive
+// independent documents. It must never be used concurrently.
+type StandaloneRenderer struct {
+	parser *RenderMarkdownPlugin
+	options StandaloneOptions
+}
+
+func NewStandaloneRenderer(options StandaloneOptions) *StandaloneRenderer {
+	parser := &RenderMarkdownPlugin{md: createMarkdownRenderer(
+		palettes.DefaultChromaThemeDark, false, DefaultMarkdownExtensionConfig(), options.Unsafe)}
+	return &StandaloneRenderer{parser: parser, options: options}
+}
+
+func (renderer *StandaloneRenderer) Render(source string) (*StandaloneResult, error) {
+	p, options := renderer.parser, renderer.options
 	post := &models.Post{Content: source, Extra: map[string]interface{}{}}
 	if err := p.renderPost(post); err != nil {
 		return nil, fmt.Errorf("render markdown: %w", err)
