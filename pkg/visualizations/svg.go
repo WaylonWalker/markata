@@ -49,7 +49,7 @@ type svgInspection struct {
 	height   int
 }
 
-func inspectSVG(data []byte) (int, int, error) {
+func inspectSVG(data []byte) (width, height int, err error) {
 	decoder := xml.NewDecoder(bytes.NewReader(data))
 	var state svgInspection
 	for {
@@ -180,7 +180,7 @@ func unsafeCSS(css string) bool {
 	}
 }
 
-func rootDimensions(attrs []xml.Attr) (int, int, error) {
+func rootDimensions(attrs []xml.Attr) (width, height int, err error) {
 	var rawWidth, rawHeight, viewBox string
 	for _, attr := range attrs {
 		switch attr.Name.Local {
@@ -221,7 +221,7 @@ func rootDimensions(attrs []xml.Attr) (int, int, error) {
 	return width, height, nil
 }
 
-func parseViewBox(viewBox string) (float64, float64, error) {
+func parseViewBox(viewBox string) (width, height float64, err error) {
 	fields := strings.FieldsFunc(viewBox, func(r rune) bool { return unicode.IsSpace(r) || r == ',' })
 	if len(fields) != 4 {
 		return 0, 0, errors.New("SVG viewBox must contain four numbers")
