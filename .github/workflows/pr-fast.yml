@@ -92,7 +92,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          unformatted=$(git ls-files '*.go' | xargs -r gofmt -l)
+          # Enforce formatting on touched Go files without failing unrelated
+          # changes on historical formatting debt (full lint remains in CI).
+          unformatted=$(git diff --name-only 'HEAD^' HEAD -- '*.go' |
+            while IFS= read -r file; do
+              [[ -f "$file" ]] || continue
+              gofmt -l "$file"
+            done)
           if [[ -n "$unformatted" ]]; then
             echo "::error::Unformatted Go files:"
             printf '%s\n' "$unformatted"
