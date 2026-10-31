@@ -47,7 +47,7 @@ func (engine *Engine) Render(ctx context.Context, source string) ([]byte, error)
 	}
 	compileOpts := &d2lib.CompileOptions{
 		LayoutResolver: resolver,
-		Ruler: engine.ruler,
+		Ruler:          engine.ruler,
 	}
 	diagram, _, err := d2lib.Compile(log.WithDefault(ctx), source, compileOpts, renderOpts)
 	if err != nil {
