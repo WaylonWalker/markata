@@ -36,8 +36,8 @@ func GetStandaloneCapabilities() StandaloneCapabilities {
 			"figures", "mermaid", "roads", "tables",
 		},
 		DiagramModes: map[string][]string{
-			"chartjs": {"client"},
-			"mermaid": {"client"},
+			"chartjs": {mermaidModeClient},
+			"mermaid": {mermaidModeClient},
 		},
 		AssetModes:       []string{"inline", "linked"},
 		LoadsSiteConfig:  false,
