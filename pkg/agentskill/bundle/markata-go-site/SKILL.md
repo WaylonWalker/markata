@@ -54,6 +54,16 @@ See `examples/editorial-visual-composition.md` for generic visual storytelling,
 and `examples/chart-composition.md` for a chart-driven article with actual
 Chart.js source blocks. Neither is project-specific boilerplate.
 
+## Current static-SVG backend availability
+
+Markata has an **internal** static SVG asset foundation in `pkg/visualizations`,
+but it is **not** yet an authoring feature. Do not invent `d2` or
+`vega-lite` Markdown fenced blocks, new config keys, or an `offline-static`
+guarantee. Until engine integration lands, author diagrams using supported
+Mermaid syntax and numerical charts using supported `chartjs` JSON, and
+verify the resulting page. See `docs/guides/static-visualizations.md`
+for the developer-only contract.
+
 ## Chart-first data visualization
 
 A request to visualize **measurements** needs a statistical encoding,
