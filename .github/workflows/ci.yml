@@ -79,9 +79,16 @@ jobs:
         with:
           go-version: ${{ env.LINT_GO_VERSION }}
           cache: true
+      # Temporary migration diagnostic: capture the canonical v2 configuration,
+      # then commit it and remove this conversion step in a follow-up commit.
+      - name: Migrate golangci-lint configuration to Go 1.27-compatible v2
+        run: |
+          go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0 migrate --skip-validation
+          echo '=== GOLANGCI_V2_CONFIG_BEGIN ==='
+          cat .golangci.yml
+          echo '=== GOLANGCI_V2_CONFIG_END ==='
       - name: Run golangci-lint
-        # Match just lint: v1 releases do not use the /v2 module path.
-        run: go run github.com/golangci/golangci-lint/cmd/golangci-lint@v1.64.8 run --timeout=5m
+        run: go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0 run --timeout=5m
 
   manifest-completeness:
     name: Font Manifest Completeness
