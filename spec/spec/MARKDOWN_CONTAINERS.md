@@ -147,6 +147,29 @@ monospace kickers. `::: md-grid pending` gives cards dashed borders, transparent
 backgrounds and muted icons. These features MUST work without JavaScript and
 respect reduced-motion preferences.
 
+## Sparklines
+
+`::: md-sparkline` with a `data-values` attribute of 2–500 finite numbers
+(separated by whitespace or commas) and a nonempty `data-label` MUST render,
+as the first child of its `div`, an inline
+`svg.md-sparkline-chart` with `viewBox="0 0 100 24"`,
+`preserveAspectRatio="none"`, `role="img"` and `focusable="false"`. It MUST
+contain a `polyline.md-sparkline-line` with
+`vector-effect="non-scaling-stroke"`. Only with the `area` modifier class
+(`::: md-sparkline area`) MUST it also contain a `polygon.md-sparkline-area`
+before the line, closing the line down to y=24. Points MUST be evenly spaced from x=0 to
+x=100. Values MUST map linearly from the series high (y=2) to the series low
+(y=22). A flat series MUST draw at y=12. Coordinates MUST be rounded to two
+decimals. Finite input values MUST produce finite coordinates even when the
+series range exceeds the largest representable float.
+
+The SVG `aria-label` MUST be `<label>: <n> points from <first> to <last>, low
+<low>, high <high>`, HTML-escaped. With invalid, missing or unlabeled data, no
+SVG is emitted and the container body MUST render unchanged. Other containers
+MUST NOT emit a sparkline, even with the same attributes. The default theme
+colors the line with `data-tone` like the other reporting components. It MUST
+render without JavaScript.
+
 ## Conformance tests
 
 Implementations SHOULD test at minimum:

@@ -30,6 +30,7 @@ that relationship more clearly.
 | Does one numeric variable relate to another? | `scatter` | Use `{x,y}` values, label both axes; note the fallback is source JSON, not a tabular scatter view |
 | How did publishing vary across calendar days? | `contribution-graph` | Heatmap is more useful than hundreds of thin daily bars |
 | One bounded task-completion value? | `md-progress` or `md-meter` | Do not force Chart.js onto a single known scalar |
+| The shape of a short series beside a headline number? | `md-sparkline` nested in `md-stat` | No axes; keep exact values in the text. Use `chartjs` when readers compare values |
 | Sequence, architecture, dependency or decision? | `road` or Mermaid | Chart.js is not a graph-topology/flowchart replacement |
 | A few exact values with no visual comparison? | Semantic table | Do not make a chart just to decorate the page |
 

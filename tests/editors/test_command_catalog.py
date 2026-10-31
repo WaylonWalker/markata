@@ -37,7 +37,7 @@ class CommandCatalogTest(unittest.TestCase):
             'md-card', 'md-box', 'md-layout', 'md-columns', 'md-grid', 'md-grid-rail',
             'md-grid-pending', 'md-stack', 'md-divider', 'md-connector', 'md-section',
             'md-icon', 'md-feature', 'md-status', 'md-stat', 'md-delta', 'md-meter',
-            'md-progress', 'md-checklist', 'md-source', 'footnote', 'attributes',
+            'md-progress', 'md-sparkline', 'md-checklist', 'md-source', 'footnote', 'attributes',
             'emoji', 'superscript', 'subscript', 'figure', 'hover-card', 'hover-template',
             'wikilink', 'post-embed', 'external-embed', 'youtube', 'toc', 'glossary',
             'contribution-graph', 'wa-html',

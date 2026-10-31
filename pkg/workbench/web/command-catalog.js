@@ -63,6 +63,7 @@
   container('md-delta', 'Before and after delta', 'md-delta', '{{text}}\n\n**+12 posts**', 'Change this month', 'data-tone="success"');
   container('md-meter', 'Measurement meter', 'md-meter', '{{text}}', '45% available', 'data-value="45" data-max="100" data-label="Available capacity"');
   container('md-progress', 'Progress gauge', 'md-progress', '{{text}}', '7 of 10 steps complete.', 'data-value="7" data-max="10" data-label="Steps complete"');
+  container('md-sparkline', 'Trend sparkline', 'md-sparkline', '{{text}}', 'Up 3x since year one', 'data-values="12 18 15 31 44" data-label="Jobs per year"');
   container('md-checklist', 'Interactive checklist', 'md-checklist', '- [ ] {{text}}\n- [ ] Verify the result', 'Prepare the draft');
   container('md-source', 'Markdown source disclosure', 'md-source', '```markdown\n{{text}}\n```', '**Example Markdown**', 'data-label="Show Markdown source"');
   container('container', 'Custom container', 'custom-class', '{{text}}', 'Your content.', '', 'Change custom-class to a class from your site.');
