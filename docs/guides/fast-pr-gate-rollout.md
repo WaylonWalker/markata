@@ -38,6 +38,45 @@ The Docker PR job no longer repeats a separate `go test ./...`; Docker image
 build and smoke tests remain in place, and publishing still tests source before
 advancing images.
 
+## Observed baseline: 2026-10-29 through 2026-10-31
+
+Queried the repository's completed Actions runs through October 31, identified
+91 completed pull-request runs of the `CI` workflow (47 cancelled, 32
+successful, and 11 failed), then selected the latest **25 non-cancelled runs** for latency
+statistics. The sample is 19 successes and 6 failures; cancelled runs are
+excluded from latency percentiles, **not** silently treated as successes.
+
+Wall time uses workflow `updated_at - created_at` (an approximation which can
+include rerun elapsed time); job runtime uses `completed_at - started_at`.
+Nearest-rank percentiles are reported in seconds, rounded to the nearest
+second.
+
+| Measure (25 sampled PR CI runs) | p50 | p90 |
+| --- | ---: | ---: |
+| CI workflow wall time | 323s (5m23s) | 445s (7m25s) |
+| Windows short tests | 257s | 409s |
+| macOS short tests | 118s | 140s |
+| Linux core race/coverage | 264s | 270s |
+| Linux CLI/search race/coverage | 273s | 287s |
+| Linux site integration race/coverage | 280s | 312s |
+| Lint | 186s | 195s |
+
+Windows has the largest p90; Linux site/CLI also contribute substantially to
+the critical path. **Do not assume Windows is always the bottleneck.** The
+sample's longest observed CI wall time was 1307s, associated with a rerun.
+One rerun exposed inconsistent job scheduling timestamps; do not subtract
+job creation times to claim accurate runner queue time without verifying the
+run attempt and dependency waits.
+
+Representative runs:
+[recent success](https://github.com/WaylonWalker/markata/actions/runs/41243717555),
+[Linux + Windows comparison](https://github.com/WaylonWalker/markata/actions/runs/41220799184),
+[slow rerun](https://github.com/WaylonWalker/markata/actions/runs/41133499891).
+
+This baseline measures the **existing** CI workflow, not the newly introduced
+`PR Gate`. Repeat the same sample method after its deployment; add separate
+runner queue and dependency-wait metrics from attempt-specific timestamps.
+
 ## Baseline and progression
 
 Before switching branch protection, record at least 20 completed, non-cancelled
