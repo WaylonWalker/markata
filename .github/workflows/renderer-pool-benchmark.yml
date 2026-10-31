@@ -5,9 +5,6 @@ on:
     paths:
       - '.github/workflows/renderer-pool-benchmark.yml'
       - 'python/benchmark_renderer_pool.py'
-      - 'tools/mermaid-compare/**'
-      - 'pkg/plugins/mermaid*.go'
-      - 'rendering-fixtures/**'
       - 'python/markata/pool.py'
       - 'python/markata/rendering.py'
       - 'pkg/renderprotocol/**'
