@@ -4,6 +4,7 @@ package plugins
 
 import (
     "encoding/xml"
+    "errors"
     "fmt"
     "io"
     "net/url"
@@ -26,7 +27,7 @@ func validateNativeMermaidSVG(data []byte) error {
     depth := 0
     for {
         tok, err := dec.Token()
-        if err == io.EOF {break}
+        if errors.Is(err,io.EOF) {break}
         if err != nil {return fmt.Errorf("native Mermaid SVG XML: %w",err)}
         switch t := tok.(type) {
         case xml.StartElement:
