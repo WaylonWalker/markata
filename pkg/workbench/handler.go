@@ -197,7 +197,7 @@ func styleLink(name string) string { return `<link rel="stylesheet" href="/appea
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	switch {
-	case (r.URL.Path == "/workspace" || r.URL.Path == "/workspace/file" || r.URL.Path == "/workspace/image") && r.Method == http.MethodGet:
+	case isWorkspaceRoute(r.URL.Path) && r.Method == http.MethodGet:
 		h.serveWorkspace(w, r)
 	case r.URL.Path == "/lsp":
 		h.language.ServeHTTP(w, r)
@@ -469,6 +469,10 @@ func (h *Handler) document(result *plugins.StandaloneResult, attributes map[stri
 	}
 	initial := `<style>html{color-scheme:` + defaults["data-theme"] + `;background:` + bg + `}body{background:var(--color-background,` + bg + `);color:var(--color-text,` + fg + `)}</style>`
 	return `<!doctype html><html lang="en"` + attrs + `><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Markdown preview</title>` + initial + styles + h.featureHead(result) + `</head><body><main class="main-content"><div class="content-wrapper"><div class="post-shell"><article class="post h-entry"><div class="post-content e-content">` + result.HTML + `</div></article></div></div></main>` + strings.ReplaceAll(result.BodyEndHTML, "<script", `<script data-markata-generated="true"`) + h.bridge + `</body></html>`
+}
+
+func isWorkspaceRoute(path string) bool {
+	return path == "/workspace" || path == "/workspace/file" || path == "/workspace/image"
 }
 
 func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
