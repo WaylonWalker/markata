@@ -30,14 +30,14 @@ func GetStandaloneCapabilities() StandaloneCapabilities {
 		SchemaVersion: StandaloneSchemaVersion,
 		Renderer:      "markata-standalone",
 		Formats:       []string{"html_fragment"},
-		Options:       []string{"asset_base", "inline_assets", "unsafe"},
+		Options:       []string{"asset_base", "inline_assets", "unsafe", "mermaid_mode"},
 		Features: []string{
 			"admonitions", "anchors", "chartjs", "checklists", "code",
 			"figures", "mermaid", "roads", "tables",
 		},
 		DiagramModes: map[string][]string{
 			"chartjs": {mermaidModeClient},
-			"mermaid": {mermaidModeClient},
+			"mermaid": availableMermaidModes(),
 		},
 		AssetModes:       []string{"inline", "linked"},
 		LoadsSiteConfig:  false,
