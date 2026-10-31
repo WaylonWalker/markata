@@ -92,7 +92,7 @@ def examples(limit):
     import html as htmlmod
     for file in sorted((ROOT / "pkg" / "plugins").glob("*mermaid*test.go")):
         raw_html = file.read_text(encoding="utf-8")
-        blocks = re.findall(r'<pre><code class="language-mermaid"[^>]*>([\\s\\S]*?)</code></pre>', raw_html)
+        blocks = re.findall(r'<pre><code class="language-mermaid"[^>]*>([\s\S]*?)</code></pre>', raw_html)
         for j, raw in enumerate(blocks, 1):
             source = htmlmod.unescape(raw).strip()
             total += 1
