@@ -13,6 +13,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/WaylonWalker/markata/pkg/buildcache"
 	"github.com/WaylonWalker/markata/pkg/lifecycle"
 	"github.com/WaylonWalker/markata/pkg/templates"
 	"golang.org/x/net/html"
@@ -118,6 +119,10 @@ func reconcileFinalCSSAssets(m *lifecycle.Manager, outputFS *os.Root, outputDir 
 		return nil
 	}
 
+	// Track pages whose bytes we change so their output-ownership fingerprints
+	// continue to describe the published bytes, not the pre-cleanup rendering.
+	updatedHTMLHashes := make(map[string]string)
+
 	// Cached HTML may reference either the original Configure hash or a final
 	// hash from an earlier build. Normalize every matching URL, not only the
 	// source-hash reference from this build.
@@ -146,14 +151,54 @@ func reconcileFinalCSSAssets(m *lifecycle.Manager, outputFS *os.Root, outputDir 
 		if bytes.Equal(data, after) {
 			return nil
 		}
-		return outputFS.WriteFile(relative, after, 0o644)
+		if err := outputFS.WriteFile(relative, after, 0o644); err != nil {
+			return err
+		}
+		updatedHTMLHashes[filepath.Clean(relative)] = buildcache.ContentHash(string(after))
+		return nil
 	})
 	if err != nil {
 		return fmt.Errorf("updating HTML CSS URLs: %w", err)
+	}
+	if err := refreshImageLibraryCSSOwnership(GetBuildCache(m), outputDir, updatedHTMLHashes); err != nil {
+		return fmt.Errorf("refreshing CSS-rewritten image library ownership: %w", err)
 	}
 	for path, hash := range finalHashes {
 		m.SetAssetHash(path, hash)
 	}
 	templates.SetAssetHashes(finalHashes)
 	return nil
+}
+
+// refreshImageLibraryCSSOwnership keeps the image library's ownership hashes
+// aligned with the final HTML after CSS links are rewritten in Cleanup. The
+// images plugin registers its hashes during Write, so otherwise an unchanged
+// warm build sees its own output as externally modified. Never adopt files
+// that the image library did not already own.
+func refreshImageLibraryCSSOwnership(cache *buildcache.Cache, outputDir string, updated map[string]string) error {
+	if cache == nil || len(updated) == 0 {
+		return nil
+	}
+	contentRoot, recordedOutput, owned := cache.GetImageLibraryOutputs()
+	if recordedOutput == "" || filepath.Clean(recordedOutput) != filepath.Clean(outputDir) {
+		return nil
+	}
+	changed := false
+	for relative, hash := range updated {
+		if _, ok := owned[filepath.Clean(relative)]; ok {
+			owned[filepath.Clean(relative)] = hash
+			changed = true
+		}
+	}
+	if !changed {
+		return nil
+	}
+	absolute := make(map[string]string, len(owned))
+	for relative, hash := range owned {
+		absolute[filepath.Join(outputDir, relative)] = hash
+	}
+	cache.SetImageLibraryOutputs(contentRoot, outputDir, absolute)
+	// The build-cache plugin saves earlier in Cleanup. Persist this post-write
+	// correction so a subsequent process also recognizes Markata-owned output.
+	return cache.Save()
 }
