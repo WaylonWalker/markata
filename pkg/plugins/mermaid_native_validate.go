@@ -16,7 +16,10 @@ import (
 // here even if a diagram library currently escapes content itself.
 const maxNativeMermaidSVGBytes = 16 << 20
 
-const nativeSVGSourceAttribute = "src"
+const (
+	nativeSVGSourceAttribute = "src"
+	nativeSVGStyleElement = "style"
+)
 
 var svgLocalURL = regexp.MustCompile(`(?i)url\(\s*#[a-z0-9_.:-]+\s*\)`)
 
@@ -71,7 +74,7 @@ func validateNativeSVGElement(t xml.StartElement, depth int, rootSeen bool) erro
 	switch name {
 	case "script", "foreignobject", "iframe", "object", "embed",
 		embedOptionImage, "use", "feimage", "animate", "animatetransform",
-		"animatemotion", "set", "style", "audio", templateTypeVideo:
+		"animatemotion", "set", nativeSVGStyleElement, "audio", templateTypeVideo:
 		return fmt.Errorf("native Mermaid SVG includes forbidden element %q", name)
 	}
 	if t.Name.Space != "" && t.Name.Space != "http://www.w3.org/2000/svg" {
