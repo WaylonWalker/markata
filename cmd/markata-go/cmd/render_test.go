@@ -93,9 +93,14 @@ func TestRenderCommand_Stdio(t *testing.T) {
 }
 
 func TestRenderCommand_StdioRejectsConflictingOptions(t *testing.T) {
-	cmd := newRenderCommand()
-	cmd.SetArgs([]string{"--stdio", "--unsafe"})
-	if err := cmd.Execute(); err == nil || !strings.Contains(err.Error(), "per-request JSON options") {
-		t.Fatalf("expected stdio option error, got %v", err)
+	for _, flags := range [][]string{
+		{"--stdio", "--unsafe"},
+		{"--stdio", "--workspace", "some-site"},
+	} {
+		cmd := newRenderCommand()
+		cmd.SetArgs(flags)
+		if err := cmd.Execute(); err == nil || !strings.Contains(err.Error(), "per-request JSON options") {
+			t.Fatalf("flags %v: expected stdio option error, got %v", flags, err)
+		}
 	}
 }

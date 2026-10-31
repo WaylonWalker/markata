@@ -17,7 +17,7 @@ const (
 	// MaxFrameBytes bounds one newline-delimited request, including JSON framing.
 	MaxFrameBytes = 1 << 20
 	// MaxSourceBytes matches the local editor's limit for individual documents.
-	MaxSourceBytes = 200_000
+	MaxSourceBytes    = 200_000
 	MaxRequestIDBytes = 128
 )
 
@@ -144,7 +144,7 @@ func Serve(in io.Reader, out io.Writer) error {
 
 // readFrame retains at most MaxFrameBytes while draining any oversized input
 // through its newline, so one bad frame does not desynchronize the stream.
-func readFrame(reader *bufio.Reader) ([]byte, bool, error) {
+func readFrame(reader *bufio.Reader) (data []byte, tooLarge bool, readErr error) {
 	var line []byte
 	oversized := false
 	for {

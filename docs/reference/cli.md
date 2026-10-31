@@ -2452,6 +2452,14 @@ contract without reading stdin. Check its `features`, `diagram_modes`, and
 standalone renderer, not site-build plugins or a selected workspace. Do not
 combine this flag with `--appearance` or `--workspace`.
 
+Use `markata render --stdio` for a long-running JSON Lines session. Send one
+JSON request per line with `id`, `op`, and, for rendering, `source`. Each
+nonempty request receives one JSON response line. Use `op: "capabilities"` to
+inspect support and `op: "shutdown"` to stop the process. Set render options
+per request in `options`; the command rejects `--workspace` and other render
+mode flags with `--stdio`. See the [stdio protocol](../../spec/spec/RENDERER_STDIO.md)
+for framing, limits, errors, and a working example.
+
 ## Go Markdown workbench demo
 
 From a source checkout, run the separate demo command:

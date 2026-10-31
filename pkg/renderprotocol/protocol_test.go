@@ -16,7 +16,7 @@ func serveRequests(t *testing.T, input string) []Response {
 	if err := Serve(strings.NewReader(input), &output); err != nil {
 		t.Fatal(err)
 	}
-	var responses []Response
+	responses := make([]Response, 0, strings.Count(input, "\n")+1)
 	for _, line := range strings.Split(strings.TrimSpace(output.String()), "\n") {
 		if line == "" {
 			continue

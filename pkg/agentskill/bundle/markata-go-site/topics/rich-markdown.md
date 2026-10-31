@@ -192,6 +192,11 @@ fields. See `docs/guides/python-renderer.md` for asset serving and API scope.
 Run `markata render --capabilities` to inspect the versioned standalone renderer
 contract before building an integration. This command returns JSON without reading
 stdin. Its feature list does not describe the full site build or a workspace.
+For repeated independent renders in an integration, use `markata render --stdio`
+and send one JSON request per line. Provide a unique `id`, `op: "render"`, and
+`source`; set `unsafe`, `inline_assets`, and `asset_base` inside per-request
+`options`. Read one JSON response per nonempty request line and stop with
+`op: "shutdown"`. This transport does not load a site workspace.
 
 For application integrations, `markata.appearance()` provides the site's picker and
 asset catalog. Use `result.document(appearance=...)` for site article layout instead
