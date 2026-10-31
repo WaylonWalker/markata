@@ -1,9 +1,9 @@
 package renderprotocol
 
 import (
-	"fmt"
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"strings"
 	"testing"
