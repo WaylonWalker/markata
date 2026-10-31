@@ -24,7 +24,7 @@ PR classification is intentionally conservative:
 - Only changes confined to `docs/**`, `docs-site/**`, `README.md`, or
   `CONTRIBUTING.md` qualify for the docs-only Go-test exemption. The existing
   documentation-site workflow still validates relevant documentation changes.
-- All other changes run gofmt, a CLI build and smoke check, and `go test -short ./...`
+- All other changes check gofmt on changed Go files, run a CLI build and smoke check, and `go test -short ./...`
   with the explicitly observational Build Lab characterization excluded.
 - Python-related source/packaging changes also run `python/tests` unit tests.
 - Main pushes, merge-group checks, and manual runs receive the broad path.
@@ -42,7 +42,7 @@ advancing images.
 
 Queried the repository's completed Actions runs through October 31, identified
 91 completed pull-request runs of the `CI` workflow (47 cancelled, 32
-successful, and 11 failed), then selected the latest **25 non-cancelled runs** for latency
+successful, 11 failed, and 1 other conclusion), then selected the latest **25 non-cancelled runs** for latency
 statistics. The sample is 19 successes and 6 failures; cancelled runs are
 excluded from latency percentiles, **not** silently treated as successes.
 
