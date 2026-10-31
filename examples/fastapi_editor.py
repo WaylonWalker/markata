@@ -17,16 +17,24 @@ import io
 import zipfile
 from time import perf_counter
 from fastapi import HTTPException, Response
+from contextlib import asynccontextmanager
 
 try:
-    from markata import RenderError, appearance, render_async
+    from markata import RenderError, RendererPool, appearance
 except ImportError as error:
     raise SystemExit(
         "Install a Markata wheel containing the standalone appearance and render_async APIs. "
         "See docs/guides/fastapi-editor.md."
     ) from error
 
-app = FastAPI(title="Markata live editor")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    async with RendererPool(workers=2) as pool:
+        app.state.render_pool = pool
+        yield
+
+
+app = FastAPI(title="Markata live editor", lifespan=lifespan)
 presentation = appearance(asset_base="/appearance")
 
 
@@ -47,7 +55,7 @@ async def preview(request: RenderRequest):
         return JSONResponse({"error": str(error)}, status_code=422)
     started = perf_counter()
     try:
-        result = await render_async(request.markdown, inline_assets=True, unsafe=True, timeout=15)
+        result = await app.state.render_pool.render(request.markdown, inline_assets=True, unsafe=True, timeout=15)
     except RenderError as error:
         return JSONResponse({"error": str(error)}, status_code=422)
     render_ms = (perf_counter() - started) * 1000

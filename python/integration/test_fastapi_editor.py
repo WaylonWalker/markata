@@ -70,7 +70,7 @@ class FastAPIEditorTest(unittest.TestCase):
     def test_invalid_requests_and_renderer_failures_are_reported(self):
         for payload in [{"markdown": "x" * 200_001}, {"markdown": "x", "appearance": {"data-palette": "missing"}}]:
             self.assertEqual(self.client.post("/render", json=payload).status_code, 422)
-        with patch.object(self.demo, "render_async", side_effect=self.demo.RenderError("Renderer unavailable")):
+        with patch.object(self.demo.app.state.render_pool, "render", side_effect=self.demo.RenderError("Renderer unavailable")):
             response = self.client.post("/render", json={"markdown": "# Hello"})
         self.assertEqual(response.status_code, 422)
         self.assertEqual(response.json()["error"], "Renderer unavailable")
