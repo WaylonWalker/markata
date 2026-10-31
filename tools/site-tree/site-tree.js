@@ -141,7 +141,11 @@ window.MarkataSiteTree = {
   filename: () => active === scratchPath ? 'draft.md' : active.split('/').pop(),
   markdown(text) {
     if (!editable(active)) return '````toml\n' + text + '\n````';
-    return text.replace(/^---\r?\n[\s\S]*?\r?\n---(?:\r?\n|$)/, '');
+    const frontmatter = text.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
+    if (!frontmatter) return text;
+    const image = frontmatter[1].match(/^image:\s*['"]?(\/images\/[^\s'"#?]+\.(?:jpg|jpeg|png|webp|gif|avif))['"]?\s*$/im)?.[1];
+    const body = text.slice(frontmatter[0].length);
+    return image ? `![Post image](/workspace/image?path=${encodeURIComponent(image.slice(1))})\n\n${body}` : body;
   },
   async import(text) { await open(scratchPath); currentEditor.setValue(text); this.save(); },
   openPost(slug) {

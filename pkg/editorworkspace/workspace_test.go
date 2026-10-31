@@ -1,10 +1,38 @@
 package editorworkspace
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"testing"
 )
+
+func TestWorkspace_ReadImageConfinesStaticFiles(t *testing.T) {
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, "static", "images"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	want := []byte("image bytes")
+	if err := os.WriteFile(filepath.Join(root, "static", "images", "photo.jpg"), want, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "private.jpg"), want, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	workspace, err := New(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := workspace.ReadImage("images/photo.jpg")
+	if err != nil || !bytes.Equal(got, want) {
+		t.Fatalf("ReadImage() = %q, %v", got, err)
+	}
+	for _, path := range []string{"../private.jpg", "images/photo.md", "/images/photo.jpg"} {
+		if _, err := workspace.ReadImage(path); err == nil {
+			t.Errorf("ReadImage(%q) accepted an unsafe path", path)
+		}
+	}
+}
 
 func TestWorkspace_ConfiguredDiscoveryAndSource(t *testing.T) {
 	root := t.TempDir()

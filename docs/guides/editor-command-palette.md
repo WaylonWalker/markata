@@ -117,6 +117,7 @@ Type a filename abbreviation, path, or document title. Filename matches rank
 above path and title matches. Titles become searchable after background metadata
 loads. Matching characters are highlighted, and full paths distinguish duplicate
 filenames. The picker shows up to 60 results; type more to narrow the list.
+Posts with an `image: /images/...` field show a thumbnail when metadata has loaded.
 Use Up/Down and Enter to open a file, or Escape to cancel. Opening another file
 preserves the current browser draft. Source files stay unchanged on disk.
 

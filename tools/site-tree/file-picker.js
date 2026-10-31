@@ -38,8 +38,17 @@ export function attachFilePicker(editor, openFile) {
       name.className = 'file-result-name'; path.className = 'file-result-path'; title.className = 'file-result-title';
       highlighted(name, match[0], match.obj.name); highlighted(path, match[1], match.obj.path);
       highlighted(title, match[2], match.obj.title);
-      row.append(name,path);
-      if (match.obj.title && match.obj.title !== match.obj.name) row.append(title);
+      const image = match.obj.image;
+      if (typeof image === 'string' && /^\/images\/[^?#]+\.(?:jpe?g|png|webp|gif|avif)$/i.test(image)) {
+        const thumb = document.createElement('img');
+        thumb.className = 'file-result-image'; thumb.alt = ''; thumb.loading = 'lazy';
+        thumb.src = '/workspace/image?path=' + encodeURIComponent(image.slice(1));
+        row.classList.add('has-image'); row.append(thumb);
+      }
+      const details = document.createElement('div'); details.className = 'file-result-details';
+      details.append(name,path);
+      if (match.obj.title && match.obj.title !== match.obj.name) details.append(title);
+      row.append(details);
       row.addEventListener('pointermove', () => select(i));
       row.addEventListener('click', () => choose(i)); list.append(row);
     }); select(0);
