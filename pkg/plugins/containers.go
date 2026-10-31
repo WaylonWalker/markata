@@ -474,7 +474,12 @@ func (r *containerHTMLRenderer) renderSparkline(w util.BufWriter, container *Con
 		x := width * float64(i) / float64(len(values)-1)
 		y := height / 2
 		if high > low {
-			y = pad + (high-v)/(high-low)*(height-2*pad)
+			fraction := (high - v) / (high - low)
+			if math.IsInf(high-low, 0) {
+				// Halve before subtracting when finite endpoints overflow the range.
+				fraction = (high/2 - v/2) / (high/2 - low/2)
+			}
+			y = pad + fraction*(height-2*pad)
 		}
 		points[i] = formatSparklineCoord(x) + "," + formatSparklineCoord(y)
 	}

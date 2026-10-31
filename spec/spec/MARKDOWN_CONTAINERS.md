@@ -160,7 +160,8 @@ contain a `polyline.md-sparkline-line` with
 before the line, closing the line down to y=24. Points MUST be evenly spaced from x=0 to
 x=100. Values MUST map linearly from the series high (y=2) to the series low
 (y=22). A flat series MUST draw at y=12. Coordinates MUST be rounded to two
-decimals.
+decimals. Finite input values MUST produce finite coordinates even when the
+series range exceeds the largest representable float.
 
 The SVG `aria-label` MUST be `<label>: <n> points from <first> to <last>, low
 <low>, high <high>`, HTML-escaped. With invalid, missing or unlabeled data, no

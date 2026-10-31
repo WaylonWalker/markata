@@ -80,3 +80,14 @@ func TestContainerSparklineOnlyRendersWhenOptedIn(t *testing.T) {
 		t.Fatalf("non-sparkline container rendered an SVG: %s", got)
 	}
 }
+
+func TestContainerSparklineFiniteExtremeValues(t *testing.T) {
+	got := renderContainerMarkdown(t, `::: md-sparkline {data-values="-1e308 0 1e308" data-label="Extremes"}
+
+Caption
+
+:::`)
+	if !strings.Contains(got, `points="0,22 50,12 100,2"`) {
+		t.Fatalf("finite extremes should render a linear trend: %s", got)
+	}
+}
