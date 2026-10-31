@@ -2446,6 +2446,12 @@ See [Python and FastAPI rendering](/docs/guides/python-renderer/).
 markup, ordered style/script paths, and base64 asset bytes. It does not read stdin.
 Host applications serve these assets and insert the controls in their own layouts.
 
+`markata render --capabilities` emits the standalone renderer's versioned JSON
+contract without reading stdin. Check its `features`, `diagram_modes`, and
+`asset_modes` before selecting an integration path. The report describes the
+standalone renderer, not site-build plugins or a selected workspace. Do not
+combine this flag with `--appearance` or `--workspace`.
+
 ## Go Markdown workbench demo
 
 From a source checkout, run the separate demo command:

@@ -27,7 +27,7 @@
 | `head_html` | Generated ordered head tags for styles |
 | `body_end_html` | Generated ordered body-end tags for scripts |
 
-`render` without `--json` emits the HTML fragment. `--inline-assets`, `--asset-base`, and `--unsafe` remain the existing options. No site configuration is loaded. Unsafe HTML remains opt-in and the output is **not** a sanitizer for untrusted content.
+`render` without `--json` emits the HTML fragment. `--inline-assets`, `--asset-base`, and `--unsafe` remain the existing options. The base standalone renderer does not load site configuration; the CLI can apply a selected workspace with `--workspace`. Unsafe HTML remains opt-in and the output is **not** a sanitizer for untrusted content.
 
 ## Implemented: capability discovery (first slice)
 
@@ -36,6 +36,7 @@ markata render --capabilities
 ```
 
 This prints a JSON description without reading document stdin or rendering Markdown. The reference fixture is `pkg/plugins/testdata/renderer_contract/capabilities.json`.
+`--capabilities` describes the base standalone renderer and cannot be combined with `--appearance` or `--workspace`.
 
 - `schema_version`: version of the **render result** supported by this engine.
 - `renderer`: identifies the standalone rendering implementation, not a transport.

@@ -51,9 +51,14 @@ func TestRenderCommand_Capabilities(t *testing.T) {
 }
 
 func TestRenderCommand_CapabilitiesConflict(t *testing.T) {
-	cmd := newRenderCommand()
-	cmd.SetArgs([]string{"--capabilities", "--appearance"})
-	if err := cmd.Execute(); err == nil || !strings.Contains(err.Error(), "cannot be combined") {
-		t.Fatalf("expected conflicting mode error, got %v", err)
+	for _, flags := range [][]string{
+		{"--capabilities", "--appearance"},
+		{"--capabilities", "--workspace", "some-site"},
+	} {
+		cmd := newRenderCommand()
+		cmd.SetArgs(flags)
+		if err := cmd.Execute(); err == nil || !strings.Contains(err.Error(), "cannot be combined") {
+			t.Fatalf("flags %v: expected conflicting mode error, got %v", flags, err)
+		}
 	}
 }
