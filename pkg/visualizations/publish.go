@@ -19,8 +19,9 @@ func Publish(outputDir string, asset Asset) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if asset.Path != canonical.Path || asset.SHA256 != canonical.SHA256 {
-		return "", errors.New("SVG asset identity does not match bytes")
+	if asset.Path != canonical.Path || asset.SHA256 != canonical.SHA256 ||
+		asset.Width != canonical.Width || asset.Height != canonical.Height {
+		return "", errors.New("SVG asset identity/dimensions do not match bytes")
 	}
 	path := filepath.Join(outputDir, filepath.FromSlash(canonical.Path))
 	if existing, err := os.ReadFile(path); err == nil {
