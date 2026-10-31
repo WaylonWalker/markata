@@ -46,6 +46,107 @@ CORE = {
 # Six core families must render with both engines; other families are measured, not
 # silently dropped: unsupported syntax is recorded in the report.
 REQUIRED = {"flowchart", "sequence", "class", "state", "er", "pie"}
+# Labels visible in SVG, not just valid XML.
+EXPECTED_LABELS = {
+    "flowchart": [
+        "Load",
+        "Valid?",
+        "Render"
+    ],
+    "sequence": [
+        "Alice",
+        "Bob",
+        "Hello"
+    ],
+    "class": [
+        "Animal",
+        "name"
+    ],
+    "state": [
+        "Active"
+    ],
+    "er": [
+        "CUSTOMER",
+        "ORDER",
+        "places"
+    ],
+    "pie": [
+        "Dogs",
+        "Cats"
+    ],
+    "gantt": [
+        "Build",
+        "Delivery"
+    ],
+    "gitgraph": [
+        "develop"
+    ],
+    "mindmap": [
+        "Idea",
+        "Design"
+    ],
+    "timeline": [
+        "2020",
+        "Started"
+    ],
+    "journey": [
+        "Write",
+        "Draft"
+    ],
+    "quadrant": [
+        "Low",
+        "High"
+    ],
+    "sankey": [
+        "Source",
+        "Process",
+        "Output"
+    ],
+    "requirement": [
+        "safety",
+        "user data remains safe"
+    ],
+    "c4": [
+        "Reader",
+        "Markata"
+    ],
+    "xychart": [
+        "jan",
+        "feb",
+        "mar"
+    ],
+    "block": [
+        "Markdown",
+        "SVG"
+    ],
+    "kanban": [
+        "Write docs",
+        "Tests"
+    ],
+    "packet": [
+        "Header",
+        "Payload"
+    ],
+    "radar": [
+        "Skill radar",
+        "Speed",
+        "Quality"
+    ],
+    "architecture": [
+        "DB",
+        "API"
+    ],
+    "treemap": [
+        "Project",
+        "Docs",
+        "Tests"
+    ],
+    "zenuml": [
+        "Alice",
+        "Bob"
+    ]
+}
+
 
 def mermaid_blocks(path):
     try:
@@ -136,7 +237,7 @@ def analyze(svg):
         "bytes": len(svg.encode()),
         "elements": len(nodes),
         "tags": dict(Counter(el.tag.split("}")[-1] for el in nodes)),
-        "text": " ".join(t.strip() for t in root.itertext() if t.strip())[:500],
+        "text": " ".join((el.text or "").strip() for el in nodes if el.tag.split("}")[-1].lower() not in ("style", "script") and (el.text or "").strip())[:2000],
     }
 
 def fmt(value):
@@ -192,6 +293,10 @@ def main():
                 if row.get("svg"):
                     try:
                         item.update(analyze(row["svg"]))
+                        if name in EXPECTED_LABELS:
+                            present = item["text"].casefold()
+                            item["missing_labels"] = [label for label in EXPECTED_LABELS[name]
+                                                      if label.casefold() not in present]
                         if not row.get("error"):
                             item["p50_ms"]=statistics.median(row["ns"])/1e6
                         (a.output / f"{i:03d}-{engine}.svg").write_text(row["svg"],encoding="utf-8")
@@ -225,6 +330,16 @@ def main():
     failures=[f"{name}:{backend} {report['cases'][name][backend].get('error')}"
               for name in REQUIRED for backend in ("mmdg","go-mermaid")
               if report["cases"][name][backend].get("error")]
+    for name in REQUIRED:
+        for backend in ("mmdg", "go-mermaid"):
+            missing = report["cases"][name][backend].get("missing_labels", [])
+            if missing:
+                failures.append(f"{name}:{backend} missing visible labels {missing}")
+    report["semantic_gaps"] = {
+        backend: {name: item[backend]["missing_labels"]
+                  for name, item in report["cases"].items() if item[backend].get("missing_labels")}
+        for backend in ("mmdg", "go-mermaid")
+    }
     report["required_failures"]=failures
     report["coverage"]={backend:sum(not r[backend].get("error") for r in report["cases"].values())
                        for backend in ("mmdg","go-mermaid")}
@@ -244,10 +359,14 @@ def main():
     lines+=["","## Theme and font changes","", "Output_changed means a difference, not correct measurements or no clipping.","",
             "```json",json.dumps(report["style_checks"],indent=2),"```",
             "","## Required failures","",*(failures or ["None"])]
+    lines.extend(["", "## Missing semantic content", "",
+                  "Visible label gaps are failures of fidelity even when SVG is valid.",
+                  "```json", json.dumps(report["semantic_gaps"], indent=2), "```"])
     (a.output/"comparison.md").write_text("\n".join(lines)+"\n")
     print(f"REPORT {a.output}/comparison.json")
     print(f"COVERAGE {report['coverage']} / {len(fixtures)}")
     print(f"REQUIRED_FAILURES {failures}")
+    print(f"SEMANTIC_GAPS {json.dumps(report['semantic_gaps'])}")
     print(f"THEME_FONT {json.dumps(report['style_checks'])}")
     # Optional full-suite compatibility gaps are reported, rather than making
     # every unrelated site fixture block the experimental research PR.
