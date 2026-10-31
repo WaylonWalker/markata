@@ -24,8 +24,7 @@ func newRenderCommand() *cobra.Command {
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if stdio {
-				if appearance || capabilities || jsonOutput || cmd.Flags().Changed("inline-assets") ||
-					cmd.Flags().Changed("asset-base") || cmd.Flags().Changed("unsafe") || cmd.Flags().Changed("mermaid-mode") {
+				if stdioHasConflictingFlags(cmd, appearance, capabilities, jsonOutput) {
 					return fmt.Errorf("--stdio takes per-request JSON options and cannot be combined with other render mode flags")
 				}
 				if cmd.Flags().Changed("workspace") {
@@ -88,6 +87,14 @@ func newRenderCommand() *cobra.Command {
 	cmd.Flags().StringVar(&options.AssetBase, "asset-base", "/markata-assets", "URL prefix for serving manifest assets")
 	cmd.Flags().StringVar(&options.MermaidMode, "mermaid-mode", "client", "Mermaid rendering: client (default) or go (native SVG)")
 	return cmd
+}
+
+func stdioHasConflictingFlags(cmd *cobra.Command, appearance, capabilities, jsonOutput bool) bool {
+	return appearance || capabilities || jsonOutput ||
+		cmd.Flags().Changed("inline-assets") ||
+		cmd.Flags().Changed("asset-base") ||
+		cmd.Flags().Changed("unsafe") ||
+		cmd.Flags().Changed("mermaid-mode")
 }
 
 func init() { rootCmd.AddCommand(newRenderCommand()) }
