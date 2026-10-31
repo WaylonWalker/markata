@@ -14,6 +14,7 @@ from pathlib import Path
 import platform
 import re
 import statistics
+import tomllib
 import subprocess
 import xml.etree.ElementTree as ET
 
@@ -147,6 +148,19 @@ EXPECTED_LABELS = {
     ]
 }
 
+
+def markata_palette(name):
+    """Resolve colors from the repository's actual built-in semantic palette."""
+    path = ROOT / "pkg" / "palettes" / "palettes" / (name + ".toml")
+    data = tomllib.loads(path.read_text(encoding="utf-8"))["palette"]
+    colors = data["colors"]
+    semantic = data["semantic"]
+    def color(role):
+        token = semantic[role]
+        return colors.get(token, token)
+    return {"background": color("bg-primary"), "fill": color("bg-surface"),
+            "stroke": color("accent"), "text": color("text-primary"),
+            "edge": color("text-primary")}
 
 def mermaid_blocks(path):
     try:
@@ -323,6 +337,24 @@ def main():
             }
             if newsvg:
                 (a.output / f"theme-font-{backend}.svg").write_text(newsvg,encoding="utf-8")
+        # Genuine Markata palette source files, not hand-picked example colors.
+        report["palette_checks"] = {}
+        palette_src = "flowchart LR\\n A[Readable contrast] --> B{Themed diagram}"
+        for palette_name in ("catppuccin-mocha", "catppuccin-latte", "everforest-dark", "everforest-light"):
+            pal = markata_palette(palette_name)
+            outputs = call(proc, palette_src, iterations=1, **pal)
+            report["palette_checks"][palette_name] = {}
+            for backend, row in outputs.items():
+                svg = row.get("svg", "")
+                report["palette_checks"][palette_name][backend] = {
+                    "error": row.get("error"),
+                    "background_present": pal["background"].lower() in svg.lower(),
+                    "text_present": pal["text"].lower() in svg.lower(),
+                    "accent_present": pal["stroke"].lower() in svg.lower(),
+                    "visible_labels": all(x in svg for x in ("Readable contrast", "Themed diagram")),
+                }
+                if svg:
+                    (a.output / f"palette-{palette_name}-{backend}.svg").write_text(svg, encoding="utf-8")
     finally:
         proc.stdin.close()
         proc.stdout.close()
@@ -362,11 +394,16 @@ def main():
     lines.extend(["", "## Missing semantic content", "",
                   "Visible label gaps are failures of fidelity even when SVG is valid.",
                   "```json", json.dumps(report["semantic_gaps"], indent=2), "```"])
+    lines.extend(["", "## Real Markata built-in palettes", "",
+                  "Four real semantic palette TOMLs (light and dark) were rendered by both engines.",
+                  "Passing CSS color presence does not validate custom WOFF2 font metrics.",
+                  "```json", json.dumps(report["palette_checks"], indent=2), "```"])
     (a.output/"comparison.md").write_text("\n".join(lines)+"\n")
     print(f"REPORT {a.output}/comparison.json")
     print(f"COVERAGE {report['coverage']} / {len(fixtures)}")
     print(f"REQUIRED_FAILURES {failures}")
     print(f"SEMANTIC_GAPS {json.dumps(report['semantic_gaps'])}")
+    print(f"MARKATA_PALETTES {json.dumps(report['palette_checks'])}")
     print(f"THEME_FONT {json.dumps(report['style_checks'])}")
     # Optional full-suite compatibility gaps are reported, rather than making
     # every unrelated site fixture block the experimental research PR.
