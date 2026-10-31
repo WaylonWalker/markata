@@ -83,6 +83,39 @@ func Handle(req Request) Response {
 	}
 }
 
+// session retains parsers for one stdio connection. Serve handles requests
+// sequentially: StandaloneRenderer is reusable but not concurrency-safe.
+type session struct {
+	renderers map[Options]*plugins.StandaloneRenderer
+}
+
+func (s *session) handle(req Request) Response {
+	if req.Op != "render" || req.ID == "" || len(req.ID) > MaxRequestIDBytes ||
+		len(req.Source) > MaxSourceBytes {
+		return Handle(req)
+	}
+	if s.renderers == nil {
+		s.renderers = make(map[Options]*plugins.StandaloneRenderer)
+	}
+	renderer := s.renderers[req.Options]
+	if renderer == nil {
+		// Bound renderer variants when clients choose arbitrary asset bases.
+		if len(s.renderers) >= 8 {
+			s.renderers = make(map[Options]*plugins.StandaloneRenderer)
+		}
+		renderer = plugins.NewStandaloneRenderer(plugins.StandaloneOptions{
+			Unsafe: req.Options.Unsafe, InlineAssets: req.Options.InlineAssets,
+			AssetBase: req.Options.AssetBase,
+		})
+		s.renderers[req.Options] = renderer
+	}
+	result, err := renderer.Render(req.Source)
+	if err != nil {
+		return failure(req.ID, "render_failed", err.Error())
+	}
+	return Response{ID: req.ID, OK: true, Result: result}
+}
+
 // DecodeRequest rejects unexpected fields and multiple JSON values in a line.
 func DecodeRequest(line []byte) (Request, error) {
 	var req Request
@@ -107,6 +140,7 @@ func DecodeRequest(line []byte) (Request, error) {
 func Serve(in io.Reader, out io.Writer) error {
 	reader := bufio.NewReaderSize(in, 64*1024)
 	encoder := json.NewEncoder(out)
+	state := &session{}
 	for {
 		line, oversized, err := readFrame(reader)
 		if errors.Is(err, io.EOF) {
@@ -132,7 +166,7 @@ func Serve(in io.Reader, out io.Writer) error {
 			}
 			continue
 		}
-		resp := Handle(req)
+		resp := state.handle(req)
 		if err := encoder.Encode(resp); err != nil {
 			return err
 		}
