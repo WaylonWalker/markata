@@ -37,10 +37,12 @@ func TestStandaloneCapabilities_DoNotClaimUnimplementedModes(t *testing.T) {
 	if caps.LoadsSiteConfig || caps.ExternalURLAudit {
 		t.Fatal("the standalone renderer neither loads site configuration nor audits authored external URLs")
 	}
-	for name, modes := range caps.DiagramModes {
-		if len(modes) != 1 || modes[0] != "client" {
-			t.Fatalf("%s incorrectly advertises prerendering: %v", name, modes)
-		}
+	if !reflect.DeepEqual(caps.DiagramModes["chartjs"], []string{"client"}) {
+		t.Fatalf("chartjs advertises unimplemented modes: %v", caps.DiagramModes["chartjs"])
+	}
+	if !reflect.DeepEqual(caps.DiagramModes["mermaid"], availableMermaidModes()) {
+		t.Fatalf("mermaid capabilities differ from supported build modes: got %v, want %v",
+			caps.DiagramModes["mermaid"], availableMermaidModes())
 	}
 	caps.Features[0] = "modified"
 	if GetStandaloneCapabilities().Features[0] == "modified" {
