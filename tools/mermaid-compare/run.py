@@ -32,6 +32,16 @@ CORE = {
     "journey": "journey\n  title Write\n  section Flow\n  Draft: 5: Author",
     "quadrant": "quadrantChart\n  x-axis Low --> High\n  y-axis Low --> High\n  point A: [0.3, 0.6]",
     "sankey": "sankey-beta\nSource,Process,10\nProcess,Output,10",
+    "requirement": "requirementDiagram\n  requirement safety {\n    id: req1\n    text: user data remains safe\n    risk: high\n    verifymethod: test\n  }",
+    "c4": "C4Context\n  Person(user, \"Reader\")\n  System(site, \"Markata\")\n  Rel(user, site, \"Visits\")",
+    "xychart": "xychart-beta\n  x-axis [jan, feb, mar]\n  y-axis \"Readers\" 0 --> 12\n  bar [4, 8, 10]",
+    "block": "block-beta\n  columns 2\n  A[Markdown] B[SVG]",
+    "kanban": "kanban\n  column1[To Do]\n    task1[Write docs]\n  column2[Done]\n    task2[Tests]",
+    "packet": "packet-beta\n  0-7: \"Header\"\n  8-15: \"Payload\"",
+    "radar": "radar-beta\n  title Skill radar\n  axis speed[Speed]\n  axis quality[Quality]\n  curve output[Markata]{speed: 5, quality: 8}",
+    "architecture": "architecture-beta\n  group api(cloud)[API]\n  service db(database)[DB] in api",
+    "treemap": "treemap-beta\n  \"Project\"\n    \"Docs\": 3\n    \"Tests\": 4",
+    "zenuml": "zenuml\n  Alice->Bob: request\n  Bob->Alice: response",
 }
 # All of these must render with both engines. Other families are measured, not
 # silently dropped: unsupported syntax is recorded in the report.
