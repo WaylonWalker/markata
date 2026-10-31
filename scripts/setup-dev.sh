@@ -24,7 +24,7 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 
 # Check if we're in the right directory
-if [[ ! -f "go.mod" ]] || ! grep -q "markata-go" go.mod 2>/dev/null; then
+if [[ ! -f "go.mod" ]] || ! grep -qE "^module github.com/WaylonWalker/markata$" go.mod 2>/dev/null; then
     error "This script must be run from the markata-go repository root"
     exit 1
 fi
@@ -39,7 +39,7 @@ if command -v go &> /dev/null; then
     GO_VERSION=$(go version | awk '{print $3}' | sed 's/go//')
     success "Go found: $GO_VERSION"
 else
-    error "Go is not installed. Please install Go 1.22+ from https://go.dev/dl/"
+    error "Go is not installed. Please install Go 1.27+ from https://go.dev/dl/"
     exit 1
 fi
 
