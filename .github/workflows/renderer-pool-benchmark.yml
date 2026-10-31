@@ -5,6 +5,9 @@ on:
     paths:
       - '.github/workflows/renderer-pool-benchmark.yml'
       - 'python/benchmark_renderer_pool.py'
+      - 'tools/mermaid-compare/**'
+      - 'pkg/plugins/mermaid*.go'
+      - 'rendering-fixtures/**'
       - 'python/markata/pool.py'
       - 'python/markata/rendering.py'
       - 'pkg/renderprotocol/**'
@@ -68,6 +71,31 @@ jobs:
           Path(os.environ["GITHUB_STEP_SUMMARY"]).write_text("\n".join(rows) + "\n")
           print("\n".join(rows))
           PY
+      - name: Build native Mermaid candidate libraries (separate Go module)
+        working-directory: tools/mermaid-compare
+        run: go build -mod=mod -o "${RUNNER_TEMP}/mermaid-compare" .
+      - name: Measure SVG-only costs, theme/font differences and Markata fixtures
+        run: |
+          flags=""
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then flags="--full"; fi
+          python tools/mermaid-compare/run.py \
+            --binary "${RUNNER_TEMP}/mermaid-compare" \
+            --output "${RUNNER_TEMP}/mermaid-candidates" \
+            ${flags}
+      - name: Add candidate timings and differences to perf graph and summary
+        if: always()
+        run: |
+          if [ -f "${RUNNER_TEMP}/mermaid-candidates/comparison.md" ]; then
+            cat "${RUNNER_TEMP}/mermaid-candidates/comparison.md" >> "${GITHUB_STEP_SUMMARY}"
+          fi
+      - name: Publish native comparison artifacts (SVG, JSON, Markdown, perf graph)
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: native-mermaid-comparison
+          path: ${{ runner.temp }}/mermaid-candidates
+          if-no-files-found: warn
+          retention-days: 14
       - name: Save machine-readable benchmark report
         uses: actions/upload-artifact@v7
         with:
