@@ -25,14 +25,20 @@ go test -run '^$' -bench BenchmarkNativeD2 -benchmem -benchtime=200ms -count=3 .
 ```
 
 A path-filtered workflow runs these commands on pull requests changing this
-directory. The warm benchmarks compile+render small, medium and large linear
-graphs with one shared D2 text ruler. They print median-ready Go benchmark
+directory. The workflow also downloads the official **D2 v0.9.0** Linux CLI
+archive, verifies it against its release SHA256SUMS, and runs the same graphs
+through the CLI in five sequential subprocess invocations. That provides a
+measured backend process-startup baseline. The warm native benchmarks
+compile+render small, medium and large linear graphs with one shared D2 text
+ruler. They print median-ready Go benchmark
 samples, raw SVG bytes, gzip size and allocation statistics. The smoke test
 logs a coarse embedded-font signal.
 
-These results are **not** published-page performance measurements. A later
-comparison must run the latest D2 executable on the *same* fixtures and
-compare cold start, warm throughput, binary size, fonts/theme compatibility,
+These results are **not** published-page performance measurements. This
+first comparison captures native warm in-process rendering against CLI
+per-process execution, but it does not yet measure full site-build latency,
+peak memory, custom-font/theme compatibility or matching visual output. A
+production decision must also compare binary size, fonts/theme compatibility,
 PNG/SVG fidelity and whether the resulting SVG meets
 `pkg/visualizations.NewSVGAsset` restrictions.
 
