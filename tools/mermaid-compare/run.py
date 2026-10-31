@@ -43,7 +43,7 @@ CORE = {
     "treemap": "treemap-beta\n  \"Project\"\n    \"Docs\": 3\n    \"Tests\": 4",
     "zenuml": "zenuml\n  Alice->Bob: request\n  Bob->Alice: response",
 }
-# All of these must render with both engines. Other families are measured, not
+# Six core families must render with both engines; other families are measured, not
 # silently dropped: unsupported syntax is recorded in the report.
 REQUIRED = {"flowchart", "sequence", "class", "state", "er", "pie"}
 
@@ -231,7 +231,7 @@ def main():
     (a.output/"comparison.json").write_text(json.dumps(report,indent=2)+"\n")
     perf_svg(report,a.output/"performance.svg")
     lines=["# Native Mermaid comparison (experimental)","",
-           f"Markdown blocks found: {total}; unique fixtures evaluated: {len(fixtures)}.",
+           f"Mermaid source blocks found: {total}; unique fixtures evaluated: {len(fixtures)}.",
            "Timings are **SVG-only**, not full Markata latency. Do not compare speedups directly to the pool benchmark.","",
            "| Diagram | mmdg p50 ms | go-mermaid p50 ms | Differences |","|---|---:|---:|---|"]
     for name,case in report["cases"].items():
