@@ -47,6 +47,10 @@ func inspectSVG(data []byte) (int, int, error) {
   switch element := token.(type) {
   case xml.Directive:
    return 0, 0, errors.New("SVG directives and DOCTYPE are not allowed")
+  case xml.ProcInst:
+   if !strings.EqualFold(element.Target, "xml") {
+    return 0, 0, errors.New("SVG processing instructions are not allowed")
+   }
   case xml.StartElement:
    if depth == 0 {
     if rootSeen || element.Name.Local != "svg" {
