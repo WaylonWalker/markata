@@ -304,6 +304,12 @@ func TestFinalCSSFingerprint_AfterRealMinifyAndPurgeColdWarm(t *testing.T) {
 	static := NewStaticAssetsPlugin()
 	run := func() ([]byte, []byte, string) {
 		t.Helper()
+		// Every full build first republishes raw stylesheet bytes in Write
+		// (from static assets or a CSS generator). Re-running minify/purge
+		// directly on the prior purged output is not a warm build.
+		if err := os.WriteFile(cssFile, initial, 0o600); err != nil {
+			t.Fatal(err)
+		}
 		if err := minifier.Write(m); err != nil {
 			t.Fatal(err)
 		}
