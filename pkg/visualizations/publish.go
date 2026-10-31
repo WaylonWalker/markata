@@ -7,6 +7,7 @@ import (
 	"html"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -73,8 +74,9 @@ func FigureHTML(asset Asset, alt, caption string, aboveFold bool) (string, error
 	if aboveFold {
 		loading = "eager"
 	}
-	markup := fmt.Sprintf(`<figure class="markata-visualization"><img src="/%s" width="%d" height="%d" loading="%s" decoding="async" alt="%s">`,
-		html.EscapeString(asset.Path), asset.Width, asset.Height, loading, html.EscapeString(alt))
+	markup := `<figure class="markata-visualization"><img src="/` + html.EscapeString(asset.Path) +
+		`" width="` + strconv.Itoa(asset.Width) + `" height="` + strconv.Itoa(asset.Height) +
+		`" loading="` + loading + `" decoding="async" alt="` + html.EscapeString(alt) + `">`
 	if caption != "" {
 		markup += "<figcaption>" + html.EscapeString(caption) + "</figcaption>"
 	}
