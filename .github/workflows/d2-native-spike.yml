@@ -1,0 +1,37 @@
+name: D2 native Go 1.26 compatibility spike
+
+on:
+  pull_request:
+    paths:
+      - 'benchmarks/d2-native/**'
+      - '.github/workflows/d2-native-spike.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-d2:
+    name: Native D2 / Go 1.26 SVG benchmarks
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: benchmarks/d2-native
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version: '1.26'
+          cache: false
+      - name: Resolve only isolated D2 dependencies
+        run: go mod tidy
+      - name: Check native D2 SVG output with race detector
+        run: go test -race -v -run '^TestNativeD2SVG$' -timeout=12m ./...
+      - name: Measure warm native D2 render and font payload
+        run: |
+          go test -run '^$' -bench '^BenchmarkNativeD2' -benchmem -benchtime=200ms -count=3 -timeout=12m ./... | tee native-d2-benchmark.txt
+          echo '### Native D2 Go 1.26 compatibility and SVG benchmark' >> "$GITHUB_STEP_SUMMARY"
+          echo '~~~' >> "$GITHUB_STEP_SUMMARY"
+          cat native-d2-benchmark.txt >> "$GITHUB_STEP_SUMMARY"
+          echo '~~~' >> "$GITHUB_STEP_SUMMARY"
