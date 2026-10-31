@@ -42,6 +42,34 @@ production decision must also compare binary size, fonts/theme compatibility,
 PNG/SVG fidelity and whether the resulting SVG meets
 `pkg/visualizations.NewSVGAsset` restrictions.
 
+## Initial measurements (GitHub Actions, 2026-10-31)
+
+[Workflow run 41246096778](https://github.com/WaylonWalker/markata/actions/runs/41246096778)
+passed both the native Go 1.26 race/smoke tests and the verified CLI comparison.
+
+| Diagram | Native Go v0.7.1 median, warm in-process | D2 CLI v0.9.0 median, fresh process | Native gzip bytes | CLI gzip bytes |
+| --- | ---: | ---: | ---: | ---: |
+| 3 nodes | 55.77 ms | 33.03 ms | 3,938 | 3,211 |
+| 18 nodes | 135.97 ms | 36.89 ms | 5,294 | 4,521 |
+| 72 nodes | 461.42 ms | 47.89 ms | 7,766 | 6,818 |
+
+Native medians are from three Go benchmark iterations (with warm, reused
+text ruler), while CLI medians are from five sequential subprocess executions
+after one warmup. Measurements include different **D2 versions**, so these
+numbers do **not** establish that subprocesses are intrinsically faster
+than native-Go invocation. Rather, D2 v0.9.0 may have substantial layout,
+text/renderer, or allocation optimizations that v0.7.1 lacks.
+
+On these fixtures, the native v0.7.1 benchmark also allocated approximately
+82 MiB (3 nodes), 106 MiB (18 nodes), and 198 MiB (72 nodes) *per render*.
+Native output sizes were 11,237 / 21,629 / 56,921 uncompressed bytes, while
+CLI v0.9.0 output 6,129 / 15,239 / 45,311 bytes.
+
+**Next experiment:** compile D2 v0.9.0 with Go 1.27 in an **independent**
+sidecar module and rerun the same in-process benchmark. That isolates the
+version change from the subprocess cost. Keep Markata's Go 1.26 production
+module unchanged until a benchmark-backed decision is made.
+
 ## Explicit constraints
 
 - The benchmark only tests Dagre, the built-in Grape Soda theme and no file
