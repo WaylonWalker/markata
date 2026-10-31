@@ -339,7 +339,7 @@ def main():
                 (a.output / f"theme-font-{backend}.svg").write_text(newsvg,encoding="utf-8")
         # Genuine Markata palette source files, not hand-picked example colors.
         report["palette_checks"] = {}
-        palette_src = "flowchart LR\\n A[Readable contrast] --> B{Themed diagram}"
+        palette_src = "flowchart LR\n A[Readable contrast] --> B{Themed diagram}"
         for palette_name in ("catppuccin-mocha", "catppuccin-latte", "everforest-dark", "everforest-light"):
             pal = markata_palette(palette_name)
             outputs = call(proc, palette_src, iterations=1, **pal)
@@ -372,6 +372,12 @@ def main():
                   for name, item in report["cases"].items() if item[backend].get("missing_labels")}
         for backend in ("mmdg", "go-mermaid")
     }
+    for palette_name, engines in report["palette_checks"].items():
+        for backend, check in engines.items():
+            if check.get("error") or not all(check.get(x) for x in (
+                "background_present", "text_present", "accent_present", "visible_labels"
+            )):
+                failures.append(f"{palette_name}:{backend} palette/label check failed: {check}")
     report["required_failures"]=failures
     report["coverage"]={backend:sum(not r[backend].get("error") for r in report["cases"].values())
                        for backend in ("mmdg","go-mermaid")}
