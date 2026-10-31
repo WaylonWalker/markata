@@ -147,9 +147,9 @@ async def index():
     cm_files = ['addon/hint/show-hint.css', 'lib/codemirror.css', 'lib/codemirror.js', 'mode/xml/xml.js', 'mode/markdown/markdown.js', 'mode/gfm/gfm.js', 'mode/javascript/javascript.js', 'mode/python/python.js', 'mode/css/css.js', 'mode/htmlmixed/htmlmixed.js', 'addon/mode/overlay.js', 'addon/edit/matchbrackets.js', 'addon/hint/show-hint.js', 'keymap/vim.js', 'keymap/emacs.js', 'keymap/sublime.js']
     cm_tags = ''.join('<link rel="stylesheet" href="/appearance/codemirror/' + n + '">' if n.endswith('.css') else '<script src="/appearance/codemirror/' + n + '"></script>' for n in cm_files)
     cm_tags += '<link rel="stylesheet" href="/appearance/command-palette.css"><script src="/appearance/command-catalog.js"></script><script src="/appearance/command-palette.js"></script>'
-    cm_tags += '<link rel="stylesheet" href="/appearance/site-tree.css"><script src="/appearance/site-tree.js"></script>'
+    cm_tags += '<script src="/appearance/site-tree.js"></script>'
     page = PAGE.replace('<body>' , '<body data-example-url="/appearance/command-palette-example.md">', 1)
-    page = page.replace('<head>', '<head>' + cm_tags + '<link rel="stylesheet" href="/editor/lsp.css"><script src="/editor/lsp.js"></script>', 1).replace('</head>', presentation.controls_head_html + '</head>', 1)
+    page = page.replace('<head>', '<head>' + cm_tags + '<link rel="stylesheet" href="/editor/lsp.css"><script src="/editor/lsp.js"></script>', 1).replace('</head>', presentation.controls_head_html + '<link rel="stylesheet" href="/appearance/site-tree.css"></head>', 1)
     page = page.replace('<button id="open"', presentation.picker_html + '<button id="open"', 1)
     for key, value in presentation.defaults.items():
         tag = re.search(r'<html[^>]*>', page).group(0)
