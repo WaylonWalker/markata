@@ -31,6 +31,11 @@ func TestInvalidOrExternalSVG(t *testing.T) {
 	invalid := []string{
 		`<svg xmlns="http://www.w3.org/2000/svg"><rect/></svg>`,
 		`<svg viewBox="0 0 -1 2"/>`,
+		`<svg xmlns="http://example.com/fake" viewBox="0 0 1 2"/>`,
+		`<svg width="40" height="40" viewBox="0 0 -1 2"/>`,
+		`<svg width="40" height="40" viewBox="NaN 0 10 10"/>`,
+		`<svg width="40" height="40" viewBox="0 0 Infinity 10"/>`,
+		`<svg width="50%" height="40" viewBox="0 0 10 20"/>`,
 		`<!DOCTYPE svg [<!ENTITY x SYSTEM "file:///etc/passwd">]><svg viewBox="0 0 1 1"/>`,
 		`<svg viewBox="0 0 1 1"><script>alert(1)</script></svg>`,
 		`<?xml-stylesheet href="https://example.com/evil.css"?><svg viewBox="0 0 1 1"/>`,
