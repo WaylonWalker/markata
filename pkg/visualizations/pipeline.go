@@ -46,10 +46,15 @@ type pending struct {
 
 // Pipeline memoizes successes and coalesces concurrent renders of one input.
 // Failures are never cached.
+const maxCacheEntries = 128
+const maxCacheBytes = 32 << 20
+
 type Pipeline struct {
  mu sync.Mutex
  entries map[string]Asset
  pending map[string]*pending
+ order []string
+ cacheBytes int
 }
 
 func (p *Pipeline) Compile(ctx context.Context, engine Renderer, req Request) (Asset, error) {
@@ -86,7 +91,17 @@ func (p *Pipeline) Compile(ctx context.Context, engine Renderer, req Request) (A
  p.mu.Lock()
  if err == nil {
   if p.entries == nil { p.entries = make(map[string]Asset) }
-  p.entries[key] = clone(asset)
+  if len(asset.SVG) <= maxCacheBytes {
+   for len(p.order) >= maxCacheEntries || p.cacheBytes + len(asset.SVG) > maxCacheBytes {
+    oldest := p.order[0]
+    p.order = p.order[1:]
+    p.cacheBytes -= len(p.entries[oldest].SVG)
+    delete(p.entries,oldest)
+   }
+   p.entries[key] = clone(asset)
+   p.order = append(p.order,key)
+   p.cacheBytes += len(asset.SVG)
+  }
  }
  active.asset, active.err = clone(asset), err
  delete(p.pending, key)
