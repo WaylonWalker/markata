@@ -214,7 +214,6 @@ func TestReconcileFinalCSSAssetsPreservesImageLibraryOwnership(t *testing.T) {
 	}
 }
 
-
 func TestRewriteCSSLinkReferencesOnlyLocalStylesheets(t *testing.T) {
 	matcher := regexp.MustCompile(`^css/components\.[0-9a-fA-F]{8}\.css$`)
 	changes := []finalCSSReplacement{{matcher: matcher, destination: "css/components.12345678.css"}}
