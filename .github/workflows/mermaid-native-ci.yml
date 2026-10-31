@@ -9,6 +9,10 @@ on:
       - 'docs/**/*.md'
       - 'examples/**/*.md'
       - 'rendering-fixtures/**/*.md'
+      - 'pages/**/*.md'
+      - 'spec/**/*.md'
+      - 'tests/**/*.md'
+      - 'pkg/agentskill/bundle/**/*.md'
   workflow_dispatch:
 
 permissions:
