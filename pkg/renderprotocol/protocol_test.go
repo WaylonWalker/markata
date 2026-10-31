@@ -1,6 +1,7 @@
 package renderprotocol
 
 import (
+	"fmt"
 	"bytes"
 	"encoding/json"
 	"reflect"
@@ -122,5 +123,38 @@ func TestHandle_RequiresID(t *testing.T) {
 	r := Handle(Request{Op: "capabilities"})
 	if r.OK || r.Error == nil || r.Error.Code != "invalid_id" {
 		t.Fatalf("missing ID incorrectly accepted: %+v", r)
+	}
+}
+
+
+func TestSessionCachesParserByOptions(t *testing.T) {
+	s := &session{}
+	first := s.handle(Request{ID: "1", Op: "render", Source: "# First"})
+	second := s.handle(Request{ID: "2", Op: "render", Source: "# Second"})
+	if !first.OK || !second.OK || !strings.Contains(second.Result.HTML, "Second") {
+		t.Fatalf("cannot reuse parser: first=%+v second=%+v", first, second)
+	}
+	normal := Options{}
+	cached := s.renderers[normal]
+	if cached == nil || len(s.renderers) != 1 {
+		t.Fatalf("missing reusable parser: %+v", s.renderers)
+	}
+	withHTML := s.handle(Request{ID: "3", Op: "render",
+		Source: "<b>trusted</b>", Options: Options{Unsafe: true}})
+	if !withHTML.OK || !strings.Contains(withHTML.Result.HTML, "<b>trusted</b>") {
+		t.Fatalf("unsafe option lost: %+v", withHTML)
+	}
+	if s.renderers[normal] != cached || len(s.renderers) != 2 {
+		t.Fatal("options shared state or original parser discarded")
+	}
+	for i := 0; i < 9; i++ {
+		response := s.handle(Request{ID: "variant", Op: "render", Source: "plain",
+			Options: Options{AssetBase: fmt.Sprintf("/assets-%d", i)}})
+		if !response.OK {
+			t.Fatalf("variant %d: %+v", i, response)
+		}
+	}
+	if len(s.renderers) > 8 {
+		t.Fatalf("unbounded parser cache: %d", len(s.renderers))
 	}
 }
