@@ -51,7 +51,7 @@ func RenderStandalone(source string, options StandaloneOptions) (*StandaloneResu
 // StandaloneRenderer keeps one configured Markdown parser warm for successive
 // independent documents. It must never be used concurrently.
 type StandaloneRenderer struct {
-	parser *RenderMarkdownPlugin
+	parser  *RenderMarkdownPlugin
 	options StandaloneOptions
 }
 
