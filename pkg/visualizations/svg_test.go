@@ -87,8 +87,11 @@ func TestPublishAndFigure(t *testing.T) {
 	}
 	asset.Path = path
 	asset.Width = 999
+	if _, err := Publish(root, asset); err == nil {
+		t.Fatal("forged published dimensions accepted")
+	}
 	if _, err := FigureHTML(asset, "description", "", false); err == nil {
-		t.Fatal("forged dimensions accepted")
+		t.Fatal("forged figure dimensions accepted")
 	}
 	asset.Width = 960
 	markup, err := FigureHTML(asset, `A <B> & C`, `A "caption"`, true)
