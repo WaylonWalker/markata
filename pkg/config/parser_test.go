@@ -1827,3 +1827,21 @@ func TestParsedFeedFormatFalseAcrossFormats(t *testing.T) {
 		})
 	}
 }
+
+func TestDefaultArchiveFeedInheritsFormats(t *testing.T) {
+	cfg, err := LoadWithDefaults()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, feed := range cfg.Feeds {
+		if feed.Slug != "archive" {
+			continue
+		}
+		feed.ApplyDefaults(cfg.FeedDefaults)
+		if !feed.Formats.HTML || !feed.Formats.Atom || !feed.Formats.JSON {
+			t.Fatalf("built-in archive lost default formats: %+v", feed.Formats)
+		}
+		return
+	}
+	t.Fatal("built-in archive feed missing")
+}
