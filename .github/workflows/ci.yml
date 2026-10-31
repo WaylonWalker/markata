@@ -20,8 +20,8 @@ permissions:
   contents: read
 
 env:
-  GO_VERSION: "1.26"
-  LINT_GO_VERSION: "1.26"
+  GO_VERSION: "1.27"
+  LINT_GO_VERSION: "1.27"
 
 jobs:
   changes:
@@ -152,7 +152,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [macos-latest, windows-latest]
-        go: ["1.26"]
+        go: ["1.27"]
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-go@v7
@@ -291,7 +291,7 @@ jobs:
           fail_ci_if_error: false
 
   test-linux:
-    name: Test (ubuntu-latest, 1.26)
+    name: Test (ubuntu-latest, 1.27)
     runs-on: ubuntu-latest
     if: always()
     needs: [test-linux-core, test-linux-cli, test-linux-site]
