@@ -22,7 +22,7 @@ type fakeRenderer struct {
 
 func (f *fakeRenderer) ID() string      { return f.name }
 func (f *fakeRenderer) Version() string { return f.version }
-func (f *fakeRenderer) RenderSVG(ctx context.Context, req Request) ([]byte, error) {
+func (f *fakeRenderer) RenderSVG(ctx context.Context, _ Request) ([]byte, error) {
 	f.calls.Add(1)
 	if f.pause != nil {
 		select {
