@@ -78,6 +78,21 @@ def examples(limit):
             name = f"{path.relative_to(ROOT).as_posix()}:{i}"
             seen[source] = name
             result.append((name, source))
+    # The existing Go plugin tests also contain real Mermaid examples as HTML.
+    import html as htmlmod
+    for file in sorted((ROOT / "pkg" / "plugins").glob("*mermaid*test.go")):
+        raw_html = file.read_text(encoding="utf-8")
+        blocks = re.findall(r'<pre><code class="language-mermaid"[^>]*>([\\s\\S]*?)</code></pre>', raw_html)
+        for j, raw in enumerate(blocks, 1):
+            source = htmlmod.unescape(raw).strip()
+            total += 1
+            if not source or source in seen:
+                continue
+            if limit is not None and len(result) - len(CORE) >= limit:
+                continue
+            name = f"{file.relative_to(ROOT).as_posix()}:go-test-{j}"
+            seen[source] = name
+            result.append((name, source))
     return result, total
 
 def call(proc, source, iterations=8, **theme):
