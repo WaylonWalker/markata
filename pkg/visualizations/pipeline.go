@@ -42,13 +42,14 @@ type Asset struct {
 	Height int
 }
 
-// Pipeline deduplicates successful renders within a process. It never caches
-// failures; separate builds can use the content-addressed published assets.
+// Keep the per-process cache bounded; published SVGs remain content-addressed.
 const (
 	maxCacheEntries = 128
 	maxCacheBytes   = 32 << 20
 )
 
+// Pipeline deduplicates successful renders within a process. It never caches
+// failures; separate builds can use the content-addressed published assets.
 type Pipeline struct {
 	mu         sync.Mutex
 	entries    map[string]Asset
