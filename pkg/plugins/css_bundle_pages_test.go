@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/WaylonWalker/markata/pkg/buildcache"
 	"github.com/WaylonWalker/markata/pkg/lifecycle"
 )
 
@@ -131,5 +132,60 @@ func writePageCSS(t *testing.T, output, path, content string) {
 	t.Helper()
 	if err := os.WriteFile(filepath.Join(output, path), []byte(content), 0o600); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestCSSBundlePages_RefreshesImageLibraryOwnershipAfterFinalCleanup(t *testing.T) {
+	output := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(output, "images"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	writePageCSS(t, output, "first.css", "p { color: red }")
+	writePageCSS(t, output, "second.css", "p { color: blue }")
+	page := filepath.Join(output, "images", "index.html")
+	initial := []byte(`<html><head><link rel="stylesheet" href="/first.css"><link rel="stylesheet" href="/second.css"></head><body>Images</body></html>`)
+	if err := os.WriteFile(page, initial, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	cacheDir := t.TempDir()
+	cache := buildcache.New(cacheDir)
+	cache.SetImageLibraryOutputs(output, output, map[string]string{
+		page: buildcache.ContentHash(string(initial)),
+	})
+	if err := cache.Save(); err != nil {
+		t.Fatal(err)
+	}
+	m := lifecycle.NewManager()
+	m.Cache().Set("build_cache", cache)
+	m.SetConfig(&lifecycle.Config{OutputDir: output, Extra: map[string]interface{}{
+		"css_bundle": map[string]interface{}{"enabled": true, "pages": []interface{}{"images/index.html"}},
+	}})
+	p := NewCSSBundlePlugin()
+	if err := p.Configure(m); err != nil {
+		t.Fatal(err)
+	}
+	if NewStaticAssetsPlugin().Priority(lifecycle.StageCleanup) >= p.Priority(lifecycle.StageCleanup) {
+		t.Fatal("page bundling needs published versioned CSS before it runs")
+	}
+	if err := p.Cleanup(m); err != nil {
+		t.Fatal(err)
+	}
+	bundled, err := os.ReadFile(page)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bytes.Equal(bundled, initial) {
+		t.Fatal("expected page bundling to rewrite image library HTML")
+	}
+	want := buildcache.ContentHash(string(bundled))
+	if got, ok := cache.ImageLibraryOutputHash(output, output, page); !ok || got != want {
+		t.Fatalf("bundled output ownership hash %q, owned=%v, want %q", got, ok, want)
+	}
+	loaded, err := buildcache.Load(cacheDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, ok := loaded.ImageLibraryOutputHash(output, output, page); !ok || got != want {
+		t.Fatalf("persisted bundled page hash %q, owned=%v, want %q", got, ok, want)
 	}
 }
