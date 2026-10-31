@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/WaylonWalker/markata/pkg/buildcache"
 	"github.com/WaylonWalker/markata/pkg/lifecycle"
 )
 
@@ -119,5 +120,77 @@ func TestReconcileFinalCSSAssetsUsesPublishedBytes(t *testing.T) {
 	if !strings.Contains(string(cached), `<link href="/css/components.`+newHash+`.css" rel="stylesheet">`) ||
 		!strings.Contains(string(cached), "<p>css/components.deadbeef.css</p>") {
 		t.Fatalf("cached HTML retains stale CSS reference: %s", cached)
+	}
+}
+
+
+// CSS links are finalized after image_library.Write records output ownership.
+// An incremental build must not reject Markata's own CSS rewrite as an
+// externally modified image-library page.
+func TestReconcileFinalCSSAssetsPreservesImageLibraryOwnership(t *testing.T) {
+	out := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(out, "css"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(out, "images"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	beforeCSS := []byte(".before { color: red }")
+	finalCSS := []byte(".after { color: blue }")
+	beforeHash := fmt.Sprintf("%x", sha256.Sum256(beforeCSS))[:8]
+	finalHash := fmt.Sprintf("%x", sha256.Sum256(finalCSS))[:8]
+	if err := os.WriteFile(filepath.Join(out, "css", "components.css"), finalCSS, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	page := filepath.Join(out, "images", "index.html")
+	inputHTML := []byte(`<html><head><link rel="stylesheet" href="/css/components.` + beforeHash + `.css"></head><body>Images</body></html>`)
+	if err := os.WriteFile(page, inputHTML, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	cachePath := filepath.Join(t.TempDir(), "build-cache.json")
+	cache := buildcache.New(cachePath)
+	cache.SetImageLibraryOutputs(out, out, map[string]string{page: buildcache.ContentHash(string(inputHTML))})
+	if err := cache.Save(); err != nil {
+		t.Fatal(err)
+	}
+
+	m := lifecycle.NewManager()
+	m.Cache().Set("build_cache", cache)
+	m.SetAssetHash("css/components.css", beforeHash)
+	root, err := os.OpenRoot(out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer root.Close()
+	if err := reconcileFinalCSSAssets(m, root, out); err != nil {
+		t.Fatal(err)
+	}
+	actual, err := os.ReadFile(page)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Contains(actual, []byte("components."+finalHash+".css")) {
+		t.Fatalf("HTML not reconciled: %s", actual)
+	}
+	want := buildcache.ContentHash(string(actual))
+	if tracked, ok := cache.ImageLibraryOutputHash(out, out, page); !ok || tracked != want {
+		t.Fatalf("tracked image library hash = %q (owned=%v), want %q", tracked, ok, want)
+	}
+	persisted, err := os.ReadFile(cachePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Contains(persisted, []byte(want)) {
+		t.Fatal("rewritten ownership hash was not persisted for the next warm build")
+	}
+	unowned := filepath.Join(out, "other.html")
+	if err := os.WriteFile(unowned, []byte("outside"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := refreshImageLibraryCSSOwnership(cache, out, map[string]string{"other.html": buildcache.ContentHash("outside")}); err != nil {
+		t.Fatal(err)
+	}
+	if cache.OwnsImageLibraryOutput(out, out, unowned) {
+		t.Fatal("must not adopt an unrelated HTML file")
 	}
 }
