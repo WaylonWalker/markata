@@ -16,10 +16,17 @@ func newRenderCommand() *cobra.Command {
 	var jsonOutput bool
 	var appearance bool
 	var workspaceRoot string
+	var capabilities bool
 	cmd := &cobra.Command{
 		Use: "render", Short: "Render Markdown from stdin without a site build",
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			if capabilities {
+				if appearance || cmd.Flags().Changed("workspace") {
+					return fmt.Errorf("--capabilities cannot be combined with --appearance or --workspace")
+				}
+				return json.NewEncoder(cmd.OutOrStdout()).Encode(plugins.GetStandaloneCapabilities())
+			}
 			if cmd.Flags().Changed("workspace") {
 				workspace, err := editorworkspace.New(workspaceRoot)
 				if err != nil {
@@ -53,6 +60,7 @@ func newRenderCommand() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&workspaceRoot, "workspace", "", "apply site configuration from this workspace")
+	cmd.Flags().BoolVar(&capabilities, "capabilities", false, "Describe supported standalone render features and modes as JSON")
 	cmd.Flags().BoolVar(&appearance, "appearance", false, "Return reusable appearance controls and bundled assets as JSON")
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "Return HTML, feature signals and asset manifest as JSON")
 	cmd.Flags().BoolVar(&options.InlineAssets, "inline-assets", false, "Inline bundled CSS/JS in asset tags including vendored browser libraries")

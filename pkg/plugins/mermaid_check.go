@@ -187,20 +187,20 @@ func verifyBrowser(path string) bool {
 // ValidateMermaidMode validates the mermaid rendering mode and checks dependencies
 func ValidateMermaidMode(mode string, cliConfig *CLIConfig, chromiumConfig *ChromiumConfig) *MermaidDependencyInfo {
 	switch mode {
-	case "client":
+	case mermaidModeClient:
 		// No dependencies needed for client-side rendering
 		return &MermaidDependencyInfo{
-			Mode:        "client",
+			Mode:        mermaidModeClient,
 			IsInstalled: true,
 		}
 
-	case "cli":
+	case mermaidModeCLI:
 		if cliConfig == nil {
 			cliConfig = &CLIConfig{}
 		}
 		return checkCLIDependency(cliConfig.MMDCPath)
 
-	case "chromium":
+	case mermaidModeChromium:
 		if chromiumConfig == nil {
 			chromiumConfig = &ChromiumConfig{}
 		}

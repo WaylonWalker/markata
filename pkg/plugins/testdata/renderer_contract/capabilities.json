@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "renderer": "markata-standalone",
+  "formats": ["html_fragment"],
+  "options": ["asset_base", "inline_assets", "unsafe"],
+  "features": [
+    "admonitions",
+    "anchors",
+    "chartjs",
+    "checklists",
+    "code",
+    "figures",
+    "mermaid",
+    "roads",
+    "tables"
+  ],
+  "diagram_modes": {
+    "chartjs": ["client"],
+    "mermaid": ["client"]
+  },
+  "asset_modes": ["inline", "linked"],
+  "loads_site_config": false,
+  "external_url_audit": false
+}

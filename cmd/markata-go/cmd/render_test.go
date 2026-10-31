@@ -26,3 +26,39 @@ func TestRenderCommand_JSON(t *testing.T) {
 		t.Fatal("incomplete result")
 	}
 }
+
+func TestRenderCommand_Capabilities(t *testing.T) {
+	cmd := newRenderCommand()
+	cmd.SetIn(strings.NewReader("this is not rendered"))
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"--capabilities"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	var capabilities plugins.StandaloneCapabilities
+	if err := json.Unmarshal(out.Bytes(), &capabilities); err != nil {
+		t.Fatal(err)
+	}
+	if capabilities.SchemaVersion != plugins.StandaloneSchemaVersion ||
+		capabilities.Renderer != "markata-standalone" || capabilities.LoadsSiteConfig ||
+		capabilities.ExternalURLAudit {
+		t.Fatalf("unexpected capabilities: %+v", capabilities)
+	}
+	if strings.Contains(out.String(), "this is not rendered") {
+		t.Fatal("capability discovery should not read or render stdin")
+	}
+}
+
+func TestRenderCommand_CapabilitiesConflict(t *testing.T) {
+	for _, flags := range [][]string{
+		{"--capabilities", "--appearance"},
+		{"--capabilities", "--workspace", "some-site"},
+	} {
+		cmd := newRenderCommand()
+		cmd.SetArgs(flags)
+		if err := cmd.Execute(); err == nil || !strings.Contains(err.Error(), "cannot be combined") {
+			t.Fatalf("flags %v: expected conflicting mode error, got %v", flags, err)
+		}
+	}
+}
