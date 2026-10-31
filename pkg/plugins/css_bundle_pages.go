@@ -19,10 +19,9 @@ import (
 	"golang.org/x/net/html/atom"
 )
 
-const (
-	pageStyleHref = "href"
-	cssStylesheetRel = "stylesheet"
-)
+const pageStyleHref = "href"
+
+const cssStylesheetRel = "stylesheet"
 
 var pageCSSURL = regexp.MustCompile(`(?i)url\(\s*["']?([^"')\s]+)`)
 
