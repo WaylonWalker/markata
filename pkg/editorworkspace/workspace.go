@@ -165,6 +165,10 @@ func (w *Workspace) Read(path string) (string, error) {
 	if !found {
 		return "", fmt.Errorf("source file is not in the workspace content globs")
 	}
+	return w.readSource(path)
+}
+
+func (w *Workspace) readSource(path string) (string, error) {
 	resolved, err := w.resolve(path)
 	if err != nil {
 		return "", err

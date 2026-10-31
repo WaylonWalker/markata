@@ -75,6 +75,7 @@ func (s *Server) RunMessages(ctx context.Context, receive func() ([]byte, error)
 			}
 			continue
 		}
+		s.refreshSharedIndex()
 		if err := s.handleMessage(ctx, &message); err != nil {
 			return err
 		}
@@ -125,6 +126,11 @@ func (s *Server) allowBrowserMessage(msg *Message) bool {
 // NewWebSocketHandler exposes a local, same-origin LSP endpoint. Every connection
 // gets its own session. Context cancellation closes active upgraded connections.
 func NewWebSocketHandler(ctx context.Context, root string, logger *log.Logger) (http.Handler, error) {
+	return NewWebSocketHandlerWithIndex(ctx, root, logger, nil)
+}
+
+// NewWebSocketHandlerWithIndex shares workspace parsing while isolating draft state.
+func NewWebSocketHandlerWithIndex(ctx context.Context, root string, logger *log.Logger, index IndexProvider) (http.Handler, error) {
 	config, err := BrowserWorkspace(root)
 	if err != nil {
 		return nil, err
@@ -137,6 +143,7 @@ func NewWebSocketHandler(ctx context.Context, root string, logger *log.Logger) (
 			http.Error(w, err.Error(), http.StatusServiceUnavailable)
 			return
 		}
+		server.sharedIndex = index
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
 			return

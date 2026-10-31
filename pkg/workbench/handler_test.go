@@ -21,6 +21,7 @@ func newHandler(t testing.TB) *Handler {
 	if err != nil {
 		t.Fatal(err)
 	}
+	t.Cleanup(func() { _ = h.Close() })
 	return h
 }
 func request(h *Handler, body string) *httptest.ResponseRecorder {

@@ -77,3 +77,26 @@ Server clients can request `GET /workspace?metadata=true` when they need metadat
 If the workspace contains a real `draft.md`, the scratch buffer appears as
 **Unsaved draft.md** (or a numbered variant if that name also exists). Imports
 open the scratch buffer, and real workspace files retain their own browser drafts.
+
+## Reuse server state
+
+The Go editor retains discovered paths and parsed document metadata for its workspace.
+Repeated file requests check cached membership and read only the selected source.
+The server reuses its Markdown renderer until the site configuration changes.
+Browser LSP sessions share parsed workspace data and keep unsaved documents private.
+
+A filesystem watcher refreshes changed documents after a short delay.
+Configuration and appearance changes refresh the renderer on its next request.
+A periodic scan recovers missed filesystem events.
+The Files and Tags trees refresh when you reload the browser page.
+
+Reopening a file or reloading the page loads its latest disk content if its browser draft has no edits.
+If the draft has edits, the editor preserves them.
+A warning identifies disk changes when the saved draft has a source version.
+Older saved drafts remain intact during migration.
+The editor does not write browser drafts to disk.
+
+Go hosts can open retained state with `editorworkspace.Open(ctx, root)`.
+Use `Paths()`, `Files()`, `Read(path)`, and `Snapshot()` for cached access.
+Call `Close()` when the host stops, or cancel the parent context.
+The existing `editorworkspace.New(root)` and Python helpers keep their one-shot behavior.

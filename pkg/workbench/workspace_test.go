@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/WaylonWalker/markata/pkg/editorworkspace"
 )
@@ -63,6 +64,7 @@ func TestWorkspaceSiteAppearance(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	t.Cleanup(func() { _ = handler.Close() })
 	for _, attr := range []string{`data-palette="everforest-light"`, `data-theme="light"`, `data-text-size="small"`} {
 		if !strings.Contains(string(handler.index), attr) {
 			t.Fatalf("editor missing %s", attr)
@@ -95,6 +97,7 @@ func TestWorkspaceWithoutConfig_DefaultPaletteIsAvailable(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	t.Cleanup(func() { _ = handler.Close() })
 	selected := handler.appearance.Defaults["data-palette"]
 	if selected != "default-dark" {
 		t.Fatalf("default palette = %q", selected)
@@ -107,5 +110,59 @@ func TestWorkspaceWithoutConfig_DefaultPaletteIsAvailable(t *testing.T) {
 	}
 	if !found {
 		t.Fatal("default palette absent from renderer choices")
+	}
+}
+
+func TestWorkspace_ReusesRendererAndReloadsConfiguration(t *testing.T) {
+	root := t.TempDir()
+	configPath := filepath.Join(root, "markata-go.toml")
+	writeConfig := func(size string) {
+		t.Helper()
+		if err := os.WriteFile(configPath, []byte("[markata-go.theme]\ntext_size='"+size+"'\n"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	writeConfig("small")
+	handler, err := NewWithWorkspace(context.Background(), root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = handler.Close() })
+	render := func() {
+		t.Helper()
+		request := httptest.NewRequest(http.MethodPost, "http://127.0.0.1/render", strings.NewReader(`{"markdown":"# Cached renderer"}`))
+		request.Header.Set("Content-Type", "application/json")
+		response := httptest.NewRecorder()
+		handler.ServeHTTP(response, request)
+		if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), "Cached renderer") {
+			t.Fatalf("render: %d %s", response.Code, response.Body.String())
+		}
+	}
+	original := handler.renderer
+	render()
+	render()
+	if handler.renderer != original {
+		t.Fatal("renderer rebuilt for unchanged configuration")
+	}
+	revision := handler.store.ConfigRevision()
+	writeConfig("large")
+	deadline := time.Now().Add(5 * time.Second)
+	for handler.store.ConfigRevision() == revision {
+		if time.Now().After(deadline) {
+			t.Fatal("configuration invalidation did not arrive")
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	render()
+	if handler.renderer == original {
+		t.Fatal("renderer retained stale configuration")
+	}
+	if handler.appearance.Defaults["data-text-size"] != "large" {
+		t.Fatal("appearance retained stale defaults")
+	}
+	refreshed := handler.renderer
+	render()
+	if handler.renderer != refreshed {
+		t.Fatal("refreshed renderer was not reused")
 	}
 }

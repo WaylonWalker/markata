@@ -8,6 +8,7 @@ const storageKey = path => legacyStorageKey('buffer:') + (path === scratchPath ?
 let active = 'draft.md', drafts = {}, currentEditor, warning, label;
 let fileTree, feedTree, syncing = false;
 const aliases = {};
+const baselines = {}, versions = {}, restored = {};
 function syncSelection(tree, path) {
   if (!tree || !path) return;
   for (const previous of tree.getSelectedPaths()) if (previous !== path) tree.getItem(previous)?.deselect();
@@ -15,19 +16,20 @@ function syncSelection(tree, path) {
 }
 const editable = path => /\.(md|markdown|mdown|mkd)$/i.test(path);
 function readDraft(path, fallback) {
+  delete restored[path];
   let cached = localStorage.getItem(storageKey(path));
   if (cached === null && (path === scratchPath || path !== 'draft.md')) cached = localStorage.getItem(legacyStorageKey(path === scratchPath ? 'draft.md' : path));
   if (cached === null) return fallback;
   try {
     const record = JSON.parse(cached);
-    if (record?.format === 'markata-draft-v2' && typeof record.source === 'string') return record.source;
+    if (['markata-draft-v2','markata-draft-v3'].includes(record?.format) && typeof record.source === 'string') { restored[path] = record; return record.source; }
   } catch { /* Legacy drafts contain plain Markdown. */ }
   // Earlier builds could persist an empty placeholder before loading source.
   // Preserve all nonempty legacy drafts; new records also preserve intentional blanks.
   return cached === '' && path !== scratchPath ? fallback : cached;
 }
 function writeDraft(path, source) {
-  localStorage.setItem(storageKey(path), JSON.stringify({format:'markata-draft-v2', source}));
+  localStorage.setItem(storageKey(path), JSON.stringify({format:'markata-draft-v3', source, dirty:path === scratchPath || source !== baselines[path], version:versions[path]}));
 }
 function remember() {
   if (!currentEditor || !editable(active)) return;
@@ -37,19 +39,37 @@ function remember() {
 }
 async function open(path) {
   if (syncing) return;
+  if (!Object.hasOwn(files,path) && path !== scratchPath) return;
   const request = ++selection;
-  if (Object.hasOwn(files, path) && files[path] === null && !(path in drafts)) {
+  let disk = null;
+  if (Object.hasOwn(files,path)) {
     try {
-      const response = await fetch("/workspace/file?path=" + encodeURIComponent(path));
+      const response = await fetch('/workspace/file?path=' + encodeURIComponent(path));
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || data.detail || "Cannot open source");
+      if (!response.ok) throw new Error(data.error || data.detail || 'Cannot open source');
       if (request !== selection) return;
-      files[path] = data.source;
+      disk = data;
     } catch (error) {
-      const box = document.querySelector("#error"); box.textContent = error.message; box.hidden = false; return;
+      const box = document.querySelector('#error'); box.textContent = error.message; box.hidden = false; return;
     }
   }
-  if (syncing || (!(Object.hasOwn(files, path)) && path !== scratchPath)) return;
+  remember();
+  let diskChanged = false;
+  if (disk) {
+    let previous, dirty, previousVersion;
+    if (Object.hasOwn(drafts,path)) {
+      previous = drafts[path]; dirty = previous !== baselines[path]; previousVersion = versions[path];
+    } else {
+      try { previous = readDraft(path,disk.source); }
+      catch { previous = disk.source; warning(); }
+      dirty = restored[path]?.format === 'markata-draft-v3' ? restored[path].dirty !== false : previous !== disk.source;
+      previousVersion = restored[path]?.version;
+    }
+    diskChanged = dirty && previousVersion && disk.version && previousVersion !== disk.version;
+    drafts[path] = dirty ? previous : disk.source;
+    files[path] = disk.source;
+    baselines[path] = disk.source; versions[path] = disk.version;
+  }
   syncing = true;
   try {
     syncSelection(fileTree, path);
@@ -60,7 +80,6 @@ async function open(path) {
     }
     syncSelection(feedTree, alias);
   } finally { syncing = false; }
-  remember();
   active = path;
   try { localStorage.setItem('markata-workspace-active-v1:' + workspaceKey, path); } catch { warning(); }
   if (!(path in drafts)) {
@@ -78,6 +97,7 @@ async function open(path) {
   currentEditor.setValue(drafts[path]);
   currentEditor.clearHistory();
   document.querySelector('#download').textContent = editable(path) ? 'Download .md' : 'Download .toml';
+  if (diskChanged) document.querySelector('#saved').textContent = 'File changed on disk · keeping your browser draft';
 }
 window.MarkataSiteTree = {
   save() {

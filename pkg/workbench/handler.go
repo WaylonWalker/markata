@@ -35,12 +35,23 @@ const maxSource = 200000
 
 var manifestPattern = regexp.MustCompile(`--(palette|aesthetic|fontpack)-manifest:\s*'((?:\\.|[^'])*)'`)
 
+type workspaceSource interface {
+	Config() (*models.Config, error)
+	Paths() ([]editorworkspace.File, error)
+	Files() ([]editorworkspace.File, error)
+	Read(string) (string, error)
+}
+
 // Handler serves the editor, render API and bundled appearance assets.
 // Mount it at the root of an origin. Authored HTML is enabled for trusted local
 // editing; isolate its preview using an opaque-origin iframe sandbox.
 type Handler struct {
+	store          *editorworkspace.Store
+	root           string
+	configRevision uint64
+	renderer       *plugins.StandaloneRenderer
 	siteConfig     *models.Config
-	workspace      *editorworkspace.Workspace
+	workspace      workspaceSource
 	language       http.Handler
 	languageConfig lsp.BrowserConfig
 	appearance     *plugins.StandaloneAppearance
@@ -58,27 +69,45 @@ func New() (*Handler, error) { return NewWithWorkspace(context.Background(), "."
 
 // NewWithWorkspace enables LSP for a server-selected workspace. Cancel ctx on shutdown.
 func NewWithWorkspace(ctx context.Context, root string) (*Handler, error) {
-	workspace, err := editorworkspace.New(root)
+	workspace, err := editorworkspace.Open(ctx, root)
 	if err != nil {
 		return nil, err
 	}
 	config, err := lsp.BrowserWorkspace(root)
 	if err != nil {
+		_ = workspace.Close()
 		return nil, err
 	}
-	language, err := lsp.NewWebSocketHandler(ctx, root, log.Default())
+	language, err := lsp.NewWebSocketHandlerWithIndex(ctx, root, log.Default(), workspace.Snapshot)
 	if err != nil {
+		_ = workspace.Close()
 		return nil, err
 	}
-	siteConfig, err := workspace.Config()
+	siteConfig, revision := workspace.Configuration()
+	handler, err := buildPresentation(root, workspace, config, language, siteConfig)
 	if err != nil {
+		_ = workspace.Close()
 		return nil, err
 	}
+	handler.store = workspace
+	handler.configRevision = revision
+	return handler, nil
+}
+
+// Close releases resources owned by a workbench created without a cancelable context.
+func (h *Handler) Close() error {
+	if h.store != nil {
+		return h.store.Close()
+	}
+	return nil
+}
+
+func buildPresentation(root string, workspace workspaceSource, config lsp.BrowserConfig, language http.Handler, siteConfig *models.Config) (*Handler, error) {
 	a, err := plugins.BuildStandaloneAppearanceForSite(siteConfig, root)
 	if err != nil {
 		return nil, err
 	}
-	h := &Handler{siteConfig: siteConfig, workspace: workspace, language: language, languageConfig: config, appearance: a, assets: a.Assets, gate: make(chan struct{}, 1), choices: map[string][]string{"data-theme": {"light", "dark"}, "data-text-size": {"small", "medium", "large", "x-large"}}}
+	h := &Handler{root: root, renderer: plugins.NewStandaloneRenderer(plugins.StandaloneOptions{Config: siteConfig, Unsafe: true, AssetBase: "/appearance"}), siteConfig: siteConfig, workspace: workspace, language: language, languageConfig: config, appearance: a, assets: a.Assets, gate: make(chan struct{}, 1), choices: map[string][]string{"data-theme": {"light", "dark"}, "data-text-size": {"small", "medium", "large", "x-large"}}}
 	h.assets["css/fonts.css"] = bytes.ReplaceAll(h.assets["css/fonts.css"], []byte("/assets/fonts/"), []byte("/appearance/assets/fonts/"))
 	for _, name := range []string{"palette", "aesthetic", "fonts"} {
 		match := manifestPattern.FindSubmatch(h.assets["css/"+name+".css"])
@@ -188,9 +217,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Allow", "GET, HEAD")
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 	case r.URL.Path == "/":
-		w.Header().Set("Cache-Control", "no-store")
-		w.Header().Set("Content-Security-Policy", "frame-ancestors 'self'")
-		serve(w, r, "index.html", h.index)
+		h.serveIndex(w, r)
 	case strings.HasPrefix(r.URL.Path, "/appearance/"):
 		w.Header().Set("Cache-Control", "no-cache")
 		// The only mutation occurs under the render gate. Copy the slice header while
@@ -198,6 +225,11 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		select {
 		case h.gate <- struct{}{}:
 		case <-r.Context().Done():
+			return
+		}
+		if err := h.refreshPresentation(); err != nil {
+			<-h.gate
+			fail(w, 422, err.Error())
 			return
 		}
 		data, ok := h.assets[strings.TrimPrefix(r.URL.Path, "/appearance/")]
@@ -220,6 +252,22 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	default:
 		http.NotFound(w, r)
 	}
+}
+
+func (h *Handler) serveIndex(w http.ResponseWriter, r *http.Request) {
+	if !h.acquire(r) {
+		return
+	}
+	if err := h.refreshPresentation(); err != nil {
+		<-h.gate
+		fail(w, 422, err.Error())
+		return
+	}
+	index := h.index
+	<-h.gate
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("Content-Security-Policy", "frame-ancestors 'self'")
+	serve(w, r, "index.html", index)
 }
 
 func serve(w http.ResponseWriter, r *http.Request, name string, data []byte) {
@@ -257,13 +305,17 @@ func (h *Handler) render(w http.ResponseWriter, r *http.Request) {
 		fail(w, 415, "send Content-Type: application/json")
 		return
 	}
-	req := h.decodeRequest(w, r)
-	if req == nil {
+	if !h.acquire(r) {
 		return
 	}
-	select {
-	case h.gate <- struct{}{}:
-	case <-r.Context().Done():
+	if err := h.refreshPresentation(); err != nil {
+		<-h.gate
+		fail(w, 422, err.Error())
+		return
+	}
+	req := h.decodeRequest(w, r)
+	if req == nil {
+		<-h.gate
 		return
 	}
 	started := time.Now()
@@ -292,7 +344,7 @@ func (h *Handler) prepareRender(r *http.Request, req *renderRequest) (*renderRes
 	cached := result != nil && h.lastSource == *req.Markdown
 	if !cached {
 		var err error
-		result, err = plugins.RenderStandalone(*req.Markdown, plugins.StandaloneOptions{Config: h.siteConfig, Unsafe: true, AssetBase: "/appearance"})
+		result, err = h.renderer.Render(*req.Markdown)
 		if err != nil {
 			return nil, err
 		}
@@ -437,7 +489,7 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 			fail(w, 404, err.Error())
 			return
 		}
-		if err := json.NewEncoder(w).Encode(map[string]string{"source": source}); err != nil {
+		if err := json.NewEncoder(w).Encode(map[string]string{"source": source, "version": editorworkspace.SourceVersion(source)}); err != nil {
 			return
 		}
 		return
@@ -456,4 +508,38 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(map[string]any{"files": files, "rootUri": h.languageConfig.RootURI}); err != nil {
 		return
 	}
+}
+
+func (h *Handler) acquire(r *http.Request) bool {
+	select {
+	case h.gate <- struct{}{}:
+		return true
+	case <-r.Context().Done():
+		return false
+	}
+}
+
+func (h *Handler) refreshPresentation() error {
+	if h.store == nil {
+		return nil
+	}
+	cfg, revision := h.store.Configuration()
+	if revision == h.configRevision {
+		return nil
+	}
+	next, err := buildPresentation(h.root, h.workspace, h.languageConfig, h.language, cfg)
+	if err != nil {
+		return err
+	}
+	h.siteConfig = next.siteConfig
+	h.appearance = next.appearance
+	h.choices = next.choices
+	h.assets = next.assets
+	h.index = next.index
+	h.bridge = next.bridge
+	h.renderer = next.renderer
+	h.lastResult = nil
+	h.lastSource = ""
+	h.configRevision = revision
+	return nil
 }
