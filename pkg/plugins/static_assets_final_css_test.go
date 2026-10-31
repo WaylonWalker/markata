@@ -202,6 +202,12 @@ func TestReconcileFinalCSSAssetsPreservesImageLibraryOwnership(t *testing.T) {
 	}
 	relativeOutput, err := filepath.Rel(wd, out)
 	if err != nil {
+		// Windows CI may check out on D: while t.TempDir is on C:.
+		// Cross-volume paths have no relative representation.
+		if filepath.VolumeName(wd) != filepath.VolumeName(out) {
+			t.Logf("skipping cross-volume relative output subcheck: %v", err)
+			return
+		}
 		t.Fatal(err)
 	}
 	if err := refreshImageLibraryCSSOwnership(cache, relativeOutput, map[string]string{
