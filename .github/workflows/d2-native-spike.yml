@@ -73,15 +73,8 @@ jobs:
           cache: false
       - name: Resolve D2 v0.9.0 in separate Go module
         run: go mod tidy
-      - name: Check current native D2 SVG output
-        run: go test -race -v -run '^Test(NativeD2SVG|D2CurrentSVGCanPublishAsMarkataAsset) with warm ruler
-        run: |
-          go test -run '^$' -bench '^BenchmarkNativeD2' -benchmem -benchtime=200ms -count=3 -timeout=12m ./... | tee current-native-benchmark.txt
-          echo '### Current D2 v0.9.0 native Go 1.27 baseline' >> "$GITHUB_STEP_SUMMARY"
-          echo '~~~' >> "$GITHUB_STEP_SUMMARY"
-          cat current-native-benchmark.txt >> "$GITHUB_STEP_SUMMARY"
-          echo '~~~' >> "$GITHUB_STEP_SUMMARY"
- -timeout=12m ./...
+      - name: Check current native D2 SVG output and Markata publisher
+        run: go test -race -v -run '^Test(NativeD2SVG|D2CurrentSVGCanPublishAsMarkataAsset)$' -timeout=12m ./...
       - name: Benchmark current native D2 with warm ruler
         run: |
           go test -run '^$' -bench '^BenchmarkNativeD2' -benchmem -benchtime=200ms -count=3 -timeout=12m ./... | tee current-native-benchmark.txt
