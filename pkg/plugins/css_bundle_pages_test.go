@@ -2,6 +2,8 @@ package plugins
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -187,5 +189,92 @@ func TestCSSBundlePages_RefreshesImageLibraryOwnershipAfterFinalCleanup(t *testi
 	}
 	if got, ok := loaded.ImageLibraryOutputHash(output, output, page); !ok || got != want {
 		t.Fatalf("persisted bundled page hash %q, owned=%v, want %q", got, ok, want)
+	}
+}
+
+func TestCSSBundlePages_FinalFingerprintThenBundleColdWarm(t *testing.T) {
+	out := t.TempDir()
+	for _, dir := range []string{"css", "images"} {
+		if err := os.MkdirAll(filepath.Join(out, dir), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	css := map[string]string{
+		"css/first.css":  ".first { color: red }",
+		"css/second.css": ".second { color: blue }",
+	}
+	m := lifecycle.NewManager()
+	m.SetConfig(&lifecycle.Config{OutputDir: out, Extra: map[string]interface{}{
+		"css_bundle": map[string]interface{}{"enabled": true, "pages": []interface{}{"images/index.html"}},
+	}})
+	var links strings.Builder
+	for asset, content := range css {
+		if err := os.WriteFile(filepath.Join(out, asset), []byte(content), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		// Rendered HTML may contain old Configure hashes prior to purge.
+		m.SetAssetHash(asset, "deadbeef")
+		fmt.Fprintf(&links, `<link rel="stylesheet" href="/%s">`, strings.TrimSuffix(asset, ".css")+".deadbeef.css")
+	}
+	initial := []byte("<html><head>" + links.String() + "</head><body>Images</body></html>")
+	page := filepath.Join(out, "images", "index.html")
+	if err := os.WriteFile(page, initial, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	cacheDir := t.TempDir()
+	cache := buildcache.New(cacheDir)
+	cache.SetImageLibraryOutputs(out, out, map[string]string{page: buildcache.ContentHash(string(initial))})
+	m.Cache().Set("build_cache", cache)
+	static := NewStaticAssetsPlugin()
+	bundle := NewCSSBundlePlugin()
+	if err := bundle.Configure(m); err != nil {
+		t.Fatal(err)
+	}
+	if err := static.Cleanup(m); err != nil {
+		t.Fatal(err)
+	}
+	for asset, content := range css {
+		hash := fmt.Sprintf("%x", sha256.Sum256([]byte(content)))[:8]
+		published := strings.TrimSuffix(asset, ".css") + "." + hash + ".css"
+		data, err := os.ReadFile(filepath.Join(out, published))
+		if err != nil || string(data) != content {
+			t.Fatalf("incorrect published versioned CSS %s: %v", published, err)
+		}
+	}
+	if err := bundle.Cleanup(m); err != nil {
+		t.Fatal(err)
+	}
+	final, err := os.ReadFile(page)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Contains(final, []byte(`data-css-sources=`)) || strings.Contains(string(final), "deadbeef.css") {
+		t.Fatalf("bundle did not use final CSS hashes: %s", final)
+	}
+	bundles, err := filepath.Glob(filepath.Join(out, "css", "page-*.css"))
+	if err != nil || len(bundles) != 1 {
+		t.Fatalf("expected one final CSS bundle: %v, %v", bundles, err)
+	}
+	bundleBytes, err := os.ReadFile(bundles[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, content := range css {
+		if !bytes.Contains(bundleBytes, []byte(content)) {
+			t.Fatalf("missing stylesheet in final bundle: %s", bundleBytes)
+		}
+	}
+	if got, ok := cache.ImageLibraryOutputHash(out, out, page); !ok || got != buildcache.ContentHash(string(final)) {
+		t.Fatal("final bundled HTML ownership does not match published bytes")
+	}
+	if err := static.Cleanup(m); err != nil {
+		t.Fatal(err)
+	}
+	if err := bundle.Cleanup(m); err != nil {
+		t.Fatal(err)
+	}
+	warm, err := os.ReadFile(page)
+	if err != nil || !bytes.Equal(warm, final) {
+		t.Fatalf("unchanged warm output differs from cold: %v", err)
 	}
 }
