@@ -3,6 +3,7 @@ package visualizations
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -119,5 +120,22 @@ func TestPipelineFailedRenderRetries(t *testing.T) {
 	}
 	if engine.calls.Load() != 2 {
 		t.Fatal("failures should not be cached")
+	}
+}
+
+func TestPipelineCacheBound(t *testing.T) {
+	var p Pipeline
+	engine := &fakeRenderer{name: "d2", version: "1"}
+	for i := 0; i < maxCacheEntries+2; i++ {
+		_, err := p.Compile(context.Background(), engine, Request{Source: fmt.Sprint(i)})
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	if got := len(p.entries); got != maxCacheEntries {
+		t.Fatalf("cached entries = %d, want %d", got, maxCacheEntries)
+	}
+	if got := p.cacheBytes; got > maxCacheBytes {
+		t.Fatalf("cache bytes = %d, max %d", got, maxCacheBytes)
 	}
 }
