@@ -193,4 +193,22 @@ func TestReconcileFinalCSSAssetsPreservesImageLibraryOwnership(t *testing.T) {
 	if cache.OwnsImageLibraryOutput(out, out, unowned) {
 		t.Fatal("must not adopt an unrelated HTML file")
 	}
+	// Configured output directories may be relative to the working directory.
+	// Their normalized root must still match the cache's absolute output root.
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	relativeOutput, err := filepath.Rel(wd, out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := refreshImageLibraryCSSOwnership(cache, relativeOutput, map[string]string{
+		"images/index.html": want,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if tracked, ok := cache.ImageLibraryOutputHash(out, out, page); !ok || tracked != want {
+		t.Fatalf("relative output root lost ownership: %q (owned=%v)", tracked, ok)
+	}
 }
