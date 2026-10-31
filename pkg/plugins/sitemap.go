@@ -240,17 +240,25 @@ func (p *SitemapPlugin) buildSitemapIndex(m *lifecycle.Manager, siteURL string) 
 	// Use the actual public pages sitemap, including generated landing pages.
 	// Unpublished, private, skipped, and noindex posts cannot affect its lastmod.
 	pagesLatest := sitemapURLsLastMod(p.buildPagesSitemap(m, siteURL).URLs)
-	entries := []SitemapIndexEntry{{Loc: siteURL + "/sitemap-pages.xml", LastMod: pagesLatest}}
+	pagesLoc := siteURL + "/sitemap-pages.xml"
+	entries := []SitemapIndexEntry{{Loc: pagesLoc, LastMod: pagesLatest}}
+	seen := map[string]bool{pagesLoc: true}
 	feedConfigs := getCachedFeedConfigs(m)
 
 	for i := range feedConfigs {
 		fc := &feedConfigs[i]
-		if fc.Formats.Sitemap && fc.Slug != "" && !fc.IncludesPrivate() {
-			entries = append(entries, SitemapIndexEntry{
-				Loc:     siteURL + "/" + fc.Slug + "/sitemap.xml",
-				LastMod: sitemapLastMod(fc.Posts),
-			})
+		if !fc.Formats.Sitemap || fc.Slug == "" || fc.IncludesPrivate() || sitemapNoindex(fc.Robots) {
+			continue
 		}
+		loc := siteURL + "/" + fc.Slug + "/sitemap.xml"
+		if seen[loc] {
+			continue
+		}
+		seen[loc] = true
+		entries = append(entries, SitemapIndexEntry{
+			Loc:     loc,
+			LastMod: sitemapLastMod(fc.Posts),
+		})
 	}
 
 	return &SitemapIndex{
