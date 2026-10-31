@@ -71,6 +71,8 @@ Responses include the echoed `id`, a typed success or error, and the existing re
 - **MCP:** expose small render/validate/capabilities tools reusing the engine; reference or deduplicate large assets rather than returning megabytes repeatedly.
 - **WASM:** report its runtime-specific capabilities rather than claiming native prerendering features it does not support.
 
+A separate internal [static SVG foundation](STATIC_VISUALIZATIONS.md) defines backend SVG identities, validation, and publication, but is not yet integrated with this standalone result or capability discovery.
+
 Config presets, strict offline verification, favicon controls, Mermaid SVG prerendering and static charts belong in [#1854](https://github.com/WaylonWalker/markata/issues/1854); this contract must be able to represent them without implying they already exist.
 
 ## Compatibility and verification gates
