@@ -48,3 +48,15 @@ same fixtures. Strongly prefer evaluating native v0.9.0 for production,
 *but* it requires upgrading Markata to Go 1.27 or using an isolated Go 1.27
 worker. Check release targets, wasm builds, binary sizes, themes/fonts, and
 the SVG asset validator before enabling by default.
+
+## SVG contract integration check
+
+The `TestD2CurrentSVGCanPublishAsMarkataAsset` test imports
+`github.com/WaylonWalker/markata/pkg/visualizations` through the isolated
+nested module's local `replace => ../..`. It runs real D2 v0.9.0 diagrams
+through the shared SVG validator, immutable publisher, and figure-markup
+helper. The workflow test selector must explicitly run this integration test.
+
+This experiment cannot establish universal syntax/theme compatibility;
+external links, images, HTML labels, and custom font resources still need
+separate fixtures.
