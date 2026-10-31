@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -123,7 +124,6 @@ func TestReconcileFinalCSSAssetsUsesPublishedBytes(t *testing.T) {
 	}
 }
 
-
 // CSS links are finalized after image_library.Write records output ownership.
 // An incremental build must not reject Markata's own CSS rewrite as an
 // externally modified image-library page.
@@ -147,8 +147,9 @@ func TestReconcileFinalCSSAssetsPreservesImageLibraryOwnership(t *testing.T) {
 	if err := os.WriteFile(page, inputHTML, 0o600); err != nil {
 		t.Fatal(err)
 	}
-	cachePath := filepath.Join(t.TempDir(), "build-cache.json")
-	cache := buildcache.New(cachePath)
+	cacheDir := t.TempDir()
+	cachePath := filepath.Join(cacheDir, buildcache.CacheFileName)
+	cache := buildcache.New(cacheDir)
 	cache.SetImageLibraryOutputs(out, out, map[string]string{page: buildcache.ContentHash(string(inputHTML))})
 	if err := cache.Save(); err != nil {
 		t.Fatal(err)
@@ -210,5 +211,47 @@ func TestReconcileFinalCSSAssetsPreservesImageLibraryOwnership(t *testing.T) {
 	}
 	if tracked, ok := cache.ImageLibraryOutputHash(out, out, page); !ok || tracked != want {
 		t.Fatalf("relative output root lost ownership: %q (owned=%v)", tracked, ok)
+	}
+}
+
+
+func TestRewriteCSSLinkReferencesOnlyLocalStylesheets(t *testing.T) {
+	matcher := regexp.MustCompile(`^css/components\.[0-9a-fA-F]{8}\.css$`)
+	changes := []finalCSSReplacement{{matcher: matcher, destination: "css/components.12345678.css"}}
+	input := []byte(`<html><head>
+<link rel="stylesheet" href="https://cdn.example/css/components.deadbeef.css">
+<link rel="stylesheet" href="//cdn.example/css/components.deadbeef.css">
+<link rel="canonical" href="/css/components.deadbeef.css">
+<link rel="stylesheet" href="/css/components.deadbeef.css?ref=1#theme">
+<link rel="preload" as="style" href="../css/components.deadbeef.css">
+<link rel="preload" as="script" href="/css/components.deadbeef.css">
+<link rel="stylesheet" href="css/components.deadbeef.css">
+<link rel="stylesheet" href="https://cdn.example/css/components.deadbeef.css">
+</head><body>css/components.deadbeef.css</body></html>`)
+	got, err := rewriteCSSLinkReferences(input, "nested/index.html", changes)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantChanged := []string{
+		`href="/css/components.12345678.css?ref=1#theme"`,
+		`href="../css/components.12345678.css"`,
+	}
+	for _, value := range wantChanged {
+		if !bytes.Contains(got, []byte(value)) {
+			t.Fatalf("expected rewritten local stylesheet %q: %s", value, got)
+		}
+	}
+	wantUntouched := []string{
+		`href="https://cdn.example/css/components.deadbeef.css"`,
+		`href="//cdn.example/css/components.deadbeef.css"`,
+		`rel="canonical" href="/css/components.deadbeef.css"`,
+		`as="script" href="/css/components.deadbeef.css"`,
+		`href="css/components.deadbeef.css"`,
+		`<body>css/components.deadbeef.css</body>`,
+	}
+	for _, value := range wantUntouched {
+		if !bytes.Contains(got, []byte(value)) {
+			t.Fatalf("unrelated reference changed %q: %s", value, got)
+		}
 	}
 }
