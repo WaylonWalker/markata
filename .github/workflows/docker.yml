@@ -44,6 +44,9 @@ jobs:
 
       # Do not advance the mutable main-channel tag until tests have passed.
       - name: Test source before publish
+        # PR builds already receive full CI; avoid a third duplicate Go test.
+        # Preserve this fail-closed gate before main/tag/dispatch publication.
+        if: github.event_name != 'pull_request'
         run: go test ./...
 
       - name: Verify the builder's embedded commit
