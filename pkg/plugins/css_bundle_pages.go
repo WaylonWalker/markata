@@ -19,7 +19,10 @@ import (
 	"golang.org/x/net/html/atom"
 )
 
-const pageStyleHref = "href"
+const (
+	pageStyleHref = "href"
+	cssStylesheetRel = "stylesheet"
+)
 
 var pageCSSURL = regexp.MustCompile(`(?i)url\(\s*["']?([^"')\s]+)`)
 
@@ -227,7 +230,7 @@ func (p *CSSBundlePlugin) localPageStylesheet(attrs []htmlparser.Attribute, outp
 		}
 	}
 	u, err := url.Parse(href)
-	if err != nil || rel != "stylesheet" || u.IsAbs() || u.Host != "" || !strings.HasPrefix(u.Path, "/") || u.RawQuery != "" || u.Fragment != "" {
+	if err != nil || rel != cssStylesheetRel || u.IsAbs() || u.Host != "" || !strings.HasPrefix(u.Path, "/") || u.RawQuery != "" || u.Fragment != "" {
 		return nil, false
 	}
 	local := filepath.FromSlash(strings.TrimPrefix(u.Path, "/"))
