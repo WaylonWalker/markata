@@ -68,6 +68,52 @@ jobs:
           Path(os.environ["GITHUB_STEP_SUMMARY"]).write_text("\n".join(rows) + "\n")
           print("\n".join(rows))
           PY
+      - name: Build native Mermaid candidate libraries (separate Go module)
+        working-directory: tools/mermaid-compare
+        run: go build -mod=mod -o "${RUNNER_TEMP}/mermaid-compare" .
+      - name: Measure SVG-only costs, theme/font differences and Markata fixtures
+        run: |
+          flags=""
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then flags="--full --iterations 20"; else flags="--full --iterations 3"; fi
+          python tools/mermaid-compare/run.py \
+            --binary "${RUNNER_TEMP}/mermaid-compare" \
+            --output "${RUNNER_TEMP}/mermaid-candidates" \
+            ${flags}
+      - name: Generate native SVG side-by-side comparison gallery
+        if: always()
+        run: |
+          if [ -f "${RUNNER_TEMP}/mermaid-candidates/comparison.json" ]; then
+            python tools/mermaid-compare/gallery.py "${RUNNER_TEMP}/mermaid-candidates"
+          fi
+      - name: Build concurrency-1 median latency bar chart including native Mermaid
+        if: always()
+        run: |
+          if [ -f "${RUNNER_TEMP}/renderer-pool-bench.json" ] && [ -f "${RUNNER_TEMP}/mermaid-candidates/comparison.json" ]; then
+            python tools/mermaid-compare/pool_latency_chart.py \
+              --pool-report "${RUNNER_TEMP}/renderer-pool-bench.json" \
+              --native-report "${RUNNER_TEMP}/mermaid-candidates/comparison.json" \
+              --output-dir "${RUNNER_TEMP}/mermaid-candidates"
+          fi
+      - name: Add concurrency-1 median latency chart table to summary
+        if: always()
+        run: |
+          if [ -f "${RUNNER_TEMP}/mermaid-candidates/median-render-latency-c1.md" ]; then
+            cat "${RUNNER_TEMP}/mermaid-candidates/median-render-latency-c1.md" >> "${GITHUB_STEP_SUMMARY}"
+          fi
+      - name: Add candidate timings and differences to perf graph and summary
+        if: always()
+        run: |
+          if [ -f "${RUNNER_TEMP}/mermaid-candidates/comparison.md" ]; then
+            cat "${RUNNER_TEMP}/mermaid-candidates/comparison.md" >> "${GITHUB_STEP_SUMMARY}"
+          fi
+      - name: Publish native comparison artifacts (SVG, JSON, Markdown, perf graph)
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: native-mermaid-comparison
+          path: ${{ runner.temp }}/mermaid-candidates
+          if-no-files-found: warn
+          retention-days: 14
       - name: Save machine-readable benchmark report
         uses: actions/upload-artifact@v7
         with:
