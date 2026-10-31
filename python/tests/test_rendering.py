@@ -87,12 +87,15 @@ class RenderingTest(unittest.TestCase):
                 self.assertIn(b'def main()', archive.read('markata/__init__.py'))
                 self.assertIn(b'from .rendering import', archive.read('markata/__init__.py'))
                 self.assertIn('markata/rendering.py', archive.namelist())
+                self.assertIn('markata/pool.py', archive.namelist())
+                self.assertIn(b'from .pool import RendererPool', archive.read('markata/__init__.py'))
                 self.assertEqual(archive.getinfo('markata/bin/markata').external_attr >> 16, 0o755)
                 notice = archive.read('markata-1.dist-info/licenses/lucide.txt')
                 self.assertEqual(notice, (ROOT / 'pkg/plugins/standalone_icons/LICENSE').read_bytes())
                 record = archive.read('markata-1.dist-info/RECORD').decode()
                 self.assertIn(','.join(module.record('markata-1.dist-info/licenses/lucide.txt', notice)), record)
                 self.assertIn(','.join(module.record('markata/rendering.py', archive.read('markata/rendering.py'))), record)
+                self.assertIn(','.join(module.record('markata/pool.py', archive.read('markata/pool.py'))), record)
 
 
 class AsyncRenderingTest(unittest.IsolatedAsyncioTestCase):

@@ -13,6 +13,7 @@ on:
       - 'python/**'
       - 'docs/guides/python-renderer.md'
       - 'pkg/plugins/standalone*'
+      - 'pkg/renderprotocol/**'
       - 'pkg/plugins/icons*'
       - 'pkg/themes/**'
       - 'pkg/templates/**'
@@ -75,6 +76,10 @@ jobs:
           python-version: '3.13'
       - name: Install Simon Willison's go-to-wheel
         run: python -m pip install go-to-wheel==0.2
+      - name: Test persistent Go render protocol and CLI
+        run: |
+          go test ./pkg/renderprotocol -count=1
+          go test ./cmd/markata-go/cmd -run '^TestRenderCommand_' -count=1
       - name: Test Python renderer protocol and wheel packaging
         run: python -m unittest discover -s python/tests -v
       - name: Build Go command into PyPI wheel artifacts (no upload)

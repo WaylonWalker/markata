@@ -12,8 +12,9 @@ markata render --stdio
 The process reads one JSON object per line from stdin and writes one JSON object
 per line to stdout. Embedded newlines in source must be escaped as `\\n` JSON
 characters. **Stdout is reserved for protocol output**; stderr is available for
-CLI errors. No site build, site config loading, or network request is performed
-by `RenderStandalone` itself. Authored HTML and URLs still have the usual
+CLI errors. Without `--workspace`, no site config is loaded. With `markata render --stdio --workspace PATH`,
+the site Markdown configuration is loaded once at process startup. No site
+build or authored URL network audit runs as a side effect. Authored HTML and URLs still have the usual
 security considerations.
 
 ## Request examples
@@ -61,8 +62,11 @@ Supported per-request `options`: `unsafe` (default false),
 - Renderer errors return `render_failed`; later requests remain usable.
 - Errors writing to stdout or reading from stdin terminate with a CLI error.
 
-Responses are **sequential, not concurrent**; a slow diagram render blocks
-later requests. There is no per-request cancellation yet. No shared site config
+Responses are **sequential, not concurrent** within one process; a slow diagram
+render blocks later requests in that process. Each process caches up to eight
+configured parser variants across successive requests, keyed by safety and
+asset options. Independent subprocesses can run in parallel. There is no
+per-request cancellation yet. No shared site config
 is loaded and no session-wide options or cache protocol is exposed. Feature
 assets may be repeated in each result; optimized asset deduplication and a
 Python persistent session wrapper are separate follow-ups.

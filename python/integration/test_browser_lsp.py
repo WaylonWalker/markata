@@ -28,24 +28,26 @@ class BrowserEndpointTest(unittest.TestCase):
             self.assertEqual(client.get("/editor/not-an-asset").status_code, 404)
 
     def test_foreign_or_missing_origin_never_starts_process(self):
-        with patch.object(self.demo.asyncio, "create_subprocess_exec", new_callable=AsyncMock) as spawn:
-            with TestClient(self.demo.app, client=("127.0.0.1", 50000)) as client:
+        # Start FastAPI's renderer pool before intercepting subprocess creation.
+        # The assertion concerns only rejected LSP WebSocket connections.
+        with TestClient(self.demo.app, client=("127.0.0.1", 50000)) as client:
+            with patch.object(self.demo.asyncio, "create_subprocess_exec", new_callable=AsyncMock) as spawn:
                 for headers in [{}, {"origin": "https://foreign.invalid"},
                                 {"host": "evil.invalid", "origin": "http://evil.invalid"}]:
                     with self.assertRaises(WebSocketDisconnect):
                         with client.websocket_connect("/lsp", headers=headers):
                             self.fail("Accepted invalid origin")
-            spawn.assert_not_awaited()
+                spawn.assert_not_awaited()
 
     def test_remote_peer_cannot_spoof_local_origin(self):
-        with patch.object(self.demo.asyncio, "create_subprocess_exec", new_callable=AsyncMock) as spawn:
-            with TestClient(self.demo.app, client=("198.51.100.9", 50000)) as client:
+        with TestClient(self.demo.app, client=("198.51.100.9", 50000)) as client:
+            with patch.object(self.demo.asyncio, "create_subprocess_exec", new_callable=AsyncMock) as spawn:
                 with self.assertRaises(WebSocketDisconnect):
                     with client.websocket_connect(
                         "/lsp", headers={"host": "localhost", "origin": "http://localhost"}
                     ):
                         self.fail("A remote client spoofed localhost headers")
-            spawn.assert_not_awaited()
+                spawn.assert_not_awaited()
 
     def test_missing_binary_closes_only_language_connection(self):
         with patch.object(self.demo, "lsp_command", return_value=["/nonexistent/markata"]):

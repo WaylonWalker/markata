@@ -83,6 +83,40 @@ func Handle(req Request) Response {
 	}
 }
 
+// session keeps configured parsers warm within one sequential stdio connection.
+// An individual StandaloneRenderer must never be shared across concurrent calls.
+type session struct {
+	renderers map[Options]*plugins.StandaloneRenderer
+	base      plugins.StandaloneOptions
+}
+
+func (s *session) handle(req Request) Response {
+	if req.Op != "render" || req.ID == "" || len(req.ID) > MaxRequestIDBytes ||
+		len(req.Source) > MaxSourceBytes {
+		return Handle(req)
+	}
+	if s.renderers == nil {
+		s.renderers = make(map[Options]*plugins.StandaloneRenderer)
+	}
+	renderer := s.renderers[req.Options]
+	if renderer == nil {
+		// Limit variants when clients provide arbitrary asset base URLs.
+		if len(s.renderers) >= 8 {
+			s.renderers = make(map[Options]*plugins.StandaloneRenderer)
+		}
+		renderer = plugins.NewStandaloneRenderer(plugins.StandaloneOptions{
+			Config: s.base.Config, Unsafe: req.Options.Unsafe,
+			InlineAssets: req.Options.InlineAssets, AssetBase: req.Options.AssetBase,
+		})
+		s.renderers[req.Options] = renderer
+	}
+	result, err := renderer.Render(req.Source)
+	if err != nil {
+		return failure(req.ID, "render_failed", err.Error())
+	}
+	return Response{ID: req.ID, OK: true, Result: result}
+}
+
 // DecodeRequest rejects unexpected fields and multiple JSON values in a line.
 func DecodeRequest(line []byte) (Request, error) {
 	var req Request
@@ -105,8 +139,15 @@ func DecodeRequest(line []byte) (Request, error) {
 // JSON response lines to out. A malformed request is isolated from later lines.
 // An oversized frame is consumed without buffering it fully in memory.
 func Serve(in io.Reader, out io.Writer) error {
+	return ServeWithOptions(in, out, plugins.StandaloneOptions{})
+}
+
+// ServeWithOptions pins the host's site configuration to this warm process.
+// Request-level asset and safety options remain isolated per document.
+func ServeWithOptions(in io.Reader, out io.Writer, options plugins.StandaloneOptions) error {
 	reader := bufio.NewReaderSize(in, 64*1024)
 	encoder := json.NewEncoder(out)
+	state := &session{base: options}
 	for {
 		line, oversized, err := readFrame(reader)
 		if errors.Is(err, io.EOF) {
@@ -132,7 +173,7 @@ func Serve(in io.Reader, out io.Writer) error {
 			}
 			continue
 		}
-		resp := Handle(req)
+		resp := state.handle(req)
 		if err := encoder.Encode(resp); err != nil {
 			return err
 		}

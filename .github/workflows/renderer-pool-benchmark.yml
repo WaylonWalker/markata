@@ -1,0 +1,76 @@
+name: Renderer pool performance
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/renderer-pool-benchmark.yml'
+      - 'python/benchmark_renderer_pool.py'
+      - 'python/markata/pool.py'
+      - 'python/markata/rendering.py'
+      - 'pkg/renderprotocol/**'
+      - 'pkg/plugins/standalone_render.go'
+      - 'cmd/markata-go/cmd/render.go'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  benchmark:
+    name: One-shot vs warm pool (Go 1.26 / Python 3.13)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v7
+        with:
+          go-version: '1.26'
+          cache: true
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - name: Build actual Go renderer
+        run: |
+          mkdir -p python/markata/bin
+          go build -o python/markata/bin/markata ./cmd/markata-go
+      - name: Benchmark fresh subprocess vs warm app-owned pool
+        env:
+          PYTHONPATH: python
+          MARKATA_BENCHMARK_OUTPUT: ${{ runner.temp }}/renderer-pool-bench.json
+        run: python python/benchmark_renderer_pool.py
+      - name: Publish benchmark table
+        env:
+          MARKATA_BENCHMARK_OUTPUT: ${{ runner.temp }}/renderer-pool-bench.json
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          report = json.loads(Path(os.environ["MARKATA_BENCHMARK_OUTPUT"]).read_text())
+          rows = [
+              "## Fresh subprocess vs warm renderer pool",
+              "",
+              "Direct Python API to bundled Go binary, on the same runner.",
+              "24 measured calls plus three warmups per case. Pool startup excluded from latency, included separately in JSON.",
+              "",
+              "| Fixture | Concurrency | One-shot p50 / p95 (ms) | Pool p50 / p95 (ms) | Latency speedup | Throughput speedup |",
+              "|---|---:|---:|---:|---:|---:|",
+          ]
+          for name, value in report["fixtures"].items():
+              for concurrency, item in value["cases"].items():
+                  direct, pool = item["one_shot"], item["pool"]
+                  rows.append(
+                      f"| {name} | {concurrency} | {direct['p50_ms']} / {direct['p95_ms']} | "
+                      f"{pool['p50_ms']} / {pool['p95_ms']} | "
+                      f"{item['latency_speedup']}x | {item['throughput_speedup']}x |"
+                  )
+          Path(os.environ["GITHUB_STEP_SUMMARY"]).write_text("\n".join(rows) + "\n")
+          print("\n".join(rows))
+          PY
+      - name: Save machine-readable benchmark report
+        uses: actions/upload-artifact@v7
+        with:
+          name: renderer-pool-benchmark
+          path: ${{ runner.temp }}/renderer-pool-bench.json
+          retention-days: 14

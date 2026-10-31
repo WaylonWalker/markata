@@ -3,7 +3,7 @@ import asyncio
 from html.parser import HTMLParser
 from pathlib import Path
 from unittest.mock import patch
-from markata import render, render_async
+from markata import render, render_async, RendererPool
 
 source = '# Hello\n\n```mermaid\ngraph TD\nA-->B\n```\n\n```chartjs\n{"type":"bar","data":{"labels":["A"],"datasets":[{"data":[1]}]}}\n```'
 result = render(source, inline_assets=True)
@@ -26,3 +26,16 @@ with patch.object(Path, 'chmod', side_effect=PermissionError('read-only installa
     assert 'Read-only sync' in render('# Read-only sync').html
     assert 'Read-only async' in asyncio.run(render_async('# Read-only async')).html
 print('Installed wheel renders without permission writes.')
+
+
+async def smoke_pool():
+    async with RendererPool(workers=2) as pool:
+        results = await asyncio.gather(
+            pool.render("# Warm one"),
+            pool.render("# Warm two"),
+            pool.render("# Reused worker"),
+        )
+        assert all("Warm" in item.html or "Reused" in item.html for item in results)
+
+asyncio.run(smoke_pool())
+print('Persistent pool and worker reuse verified against the bundled binary.')

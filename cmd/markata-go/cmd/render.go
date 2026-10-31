@@ -24,11 +24,21 @@ func newRenderCommand() *cobra.Command {
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if stdio {
-				if appearance || capabilities || jsonOutput || cmd.Flags().Changed("workspace") || cmd.Flags().Changed("inline-assets") ||
+				if appearance || capabilities || jsonOutput || cmd.Flags().Changed("inline-assets") ||
 					cmd.Flags().Changed("asset-base") || cmd.Flags().Changed("unsafe") {
 					return fmt.Errorf("--stdio takes per-request JSON options and cannot be combined with other render mode flags")
 				}
-				return renderprotocol.Serve(cmd.InOrStdin(), cmd.OutOrStdout())
+				if cmd.Flags().Changed("workspace") {
+					workspace, err := editorworkspace.New(workspaceRoot)
+					if err != nil {
+						return err
+					}
+					options.Config, err = workspace.Config()
+					if err != nil {
+						return err
+					}
+				}
+				return renderprotocol.ServeWithOptions(cmd.InOrStdin(), cmd.OutOrStdout(), options)
 			}
 			if capabilities {
 				if appearance || cmd.Flags().Changed("workspace") {

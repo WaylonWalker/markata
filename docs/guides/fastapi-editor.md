@@ -30,7 +30,9 @@ Replace the wheel path with your local wheel. With Python and dependencies alrea
 installed, `python examples/fastapi_editor.py` also works. The server listens on
 localhost, port 8765. Press Ctrl+C to stop it.
 
-Each preview calls `markata.render_async()` through FastAPI. Inline assets support
+Each preview uses an application-owned `RendererPool` through FastAPI. Two warm
+renderers start with the application's lifespan and retain the workspace's
+Markdown configuration. Inline assets support
 code highlighting, Mermaid, and Chart.js without separate asset routes. A fresh
 iframe document executes initialization scripts after each successful render.
 The iframe permits scripts and keeps the preview separate from the editor origin.
@@ -38,7 +40,8 @@ Authored HTML and inline styles are enabled for this local authoring tool.
 The preview remains isolated from the editor origin.
 
 The example limits input to 200,000 UTF-8 bytes and rendering to 15 seconds.
-Errors preserve the last successful preview. Each call starts a renderer process.
+Errors preserve the last successful preview. A crashed or timed-out renderer is
+replaced automatically; no new subprocess is started for ordinary requests.
 This example is a local development tool. It does not include accounts or shared storage.
 
 Use the appearance button beside **Download .md** to open Markata's full picker.
@@ -47,8 +50,8 @@ Selections apply to the preview and persist across edits. Markata supplies the
 palette catalog, styles, scripts, and fonts. No site build runs during editing.
 
 The footer shows Markata time, request time, input bytes, document bytes, and frame
-load time. Markata time includes process startup, rendering, asset collection, and
-JSON parsing. Request time also includes HTTP transfer and browser JSON parsing.
+load time. Markata time includes queue wait, rendering, asset collection, and JSON parsing,
+but normally excludes process startup. Request time also includes HTTP transfer and browser JSON parsing.
 Frame load time measures iframe loading, not completed asynchronous diagrams.
 The 250-millisecond typing delay is separate from these measurements.
 

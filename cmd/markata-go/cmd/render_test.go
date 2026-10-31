@@ -95,12 +95,34 @@ func TestRenderCommand_Stdio(t *testing.T) {
 func TestRenderCommand_StdioRejectsConflictingOptions(t *testing.T) {
 	for _, flags := range [][]string{
 		{"--stdio", "--unsafe"},
-		{"--stdio", "--workspace", "some-site"},
+		{"--stdio", "--inline-assets"},
 	} {
 		cmd := newRenderCommand()
 		cmd.SetArgs(flags)
 		if err := cmd.Execute(); err == nil || !strings.Contains(err.Error(), "per-request JSON options") {
 			t.Fatalf("flags %v: expected stdio option error, got %v", flags, err)
 		}
+	}
+}
+
+
+func TestRenderCommand_StdioWorkspace(t *testing.T) {
+	cmd := newRenderCommand()
+	cmd.SetIn(strings.NewReader("{\"id\":\"workspace\",\"op\":\"render\",\"source\":\"# Configured\"}\n"))
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"--stdio", "--workspace", t.TempDir()})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	var response struct {
+		OK     bool                      `json:"ok"`
+		Result *plugins.StandaloneResult `json:"result"`
+	}
+	if err := json.Unmarshal(out.Bytes(), &response); err != nil {
+		t.Fatal(err)
+	}
+	if !response.OK || response.Result == nil || !strings.Contains(response.Result.HTML, "Configured") {
+		t.Fatalf("workspace stdio render failed: %s", out.String())
 	}
 }
