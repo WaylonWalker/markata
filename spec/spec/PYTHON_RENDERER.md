@@ -25,3 +25,34 @@ helper. Python calls the bundled binary over stdin with argv, never a shell.
 One process is launched per call; timeouts and cancellation terminate and reap it.
 The async interface does not block the ASGI event loop. Protocol mismatch,
 missing executables, and renderer errors raise `RenderError`.
+
+## Editor feature parity
+
+The Python, Go, and WASM demos share the Go workbench's system typography,
+editor keymaps, appearance controls, Markdown import/export, and visible draft
+save feedback. Drafts remain recoverable after reload; storage failures must
+leave editing and export available. Each origin owns its own draft/preferences.
+
+All editors reject documents above 200,000 UTF-8 bytes before rendering or
+import replacement. Rejected imports preserve the current draft. Successful
+imports use the normal edit/save/render path. Errors clear after a valid render.
+HTTP endpoints enforce the same byte limit independently of browser validation.
+Edits use a 250 ms debounce and coalesce behind one active render; stale results
+must not replace newer previews. Shared CSS must not load full site layout
+styles into the editor shell. Preview article styles remain available.
+
+Runtime-specific differences remain: Python subprocess versus native Go versus
+browser WASM, inline versus linked/cached assets, browser offline support, and
+raw HTML policy. Documentation distinguishes those from shared editor features.
+
+## Wheel distribution contract
+
+Official wheels preserve executable permissions for POSIX binaries. Rendering
+from an executable, read-only installation must not require chmod or writes to
+site-packages. Permission repair is only a fallback for installations that lost
+the executable bit; such installations need writable permissions or reinstall.
+
+The full pinned Lucide catalog remains bundled for deterministic offline icon
+shortcodes. Its original Lucide ISC and derived Feather MIT notices remain
+embedded in the binary and are also distributed in wheel dist-info/licenses.
+Wheel RECORD entries cover the readable notice file.

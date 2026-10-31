@@ -33,6 +33,7 @@ The linter detects:
   - Invalid date formats (non-ISO 8601)
   - Malformed image links (missing alt text)
   - Protocol-less URLs (should use https://)
+  - Likely bare-domain Markdown link targets (e.g. [site](example.dev))
 
 When run without arguments, lints all files matching the configured glob patterns
 (defaults to **/*.md). Explicit file arguments override config patterns.

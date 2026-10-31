@@ -31,7 +31,7 @@ class RendererPool:
     """
 
     def __init__(self, *, workers: int = 2, max_pending: int = 64,
-                 command: Sequence[str] | None = None):
+                 command: Sequence[str] | None = None, workspace: str | None = None):
         if not 1 <= workers <= 64:
             raise ValueError("workers must be between 1 and 64")
         if max_pending < 0:
@@ -41,6 +41,7 @@ class RendererPool:
         self.workers = workers
         self.max_pending = max_pending
         self._command_override = tuple(command) if command is not None else None
+        self.workspace = str(workspace) if workspace is not None else None
         self._idle: asyncio.Queue[_Worker] = asyncio.Queue(maxsize=workers)
         self._slots = asyncio.Semaphore(workers + max_pending)
         self._children: set[_Worker] = set()
@@ -74,6 +75,8 @@ class RendererPool:
         command = self._command_override
         if command is None:
             command = (_command(False, "/markata-assets", False)[0], "render", "--stdio")
+            if self.workspace is not None:
+                command += ("--workspace", self.workspace)
         try:
             process = await asyncio.create_subprocess_exec(
                 *command, stdin=asyncio.subprocess.PIPE,

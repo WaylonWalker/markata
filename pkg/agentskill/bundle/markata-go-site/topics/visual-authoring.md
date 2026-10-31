@@ -67,6 +67,7 @@ primitive.
 | --- | --- |
 | Status, release readiness, project health | `md-status`, `md-stat`, `md-progress`, a short evidence table |
 | Numeric measurement with natural range | Native `md-meter` with explicit value and unit |
+| Trend behind a headline number | `md-sparkline` (`data-values`, `data-label`; add `area` to shade under the line) inside the `md-stat` |
 | Two or more options, before/after | `md-columns` with `md-card`, and semantic tables |
 | Ranked tradeoffs or comparison | Markdown table with visible labels; sortable if supported |
 | A time sequence, journey, change history | `::: road timeline`, `road steps`, or `road editorial` |

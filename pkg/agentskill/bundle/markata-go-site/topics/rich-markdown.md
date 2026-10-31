@@ -57,7 +57,7 @@ frontmatter.title, avoid duplicating it as the first body H1.
    with body text (as in visual reports and feature lists), use `md-feature` with
    `md-feature-icon` and `md-feature-body`.
 5. For data, prefer semantic Markdown tables, `md-status`, `md-stat`,
-   `md-meter`, `md-progress` and `md-delta`.
+   `md-meter`, `md-progress`, `md-sparkline` and `md-delta`.
 6. For measured trends and category comparisons, use `chartjs` blocks rather
    than Mermaid or a static diagram. Read `topics/chart-authoring.md`
    for valid bar/line/stacked/doughnut examples, scales, and fallbacks.
@@ -177,6 +177,9 @@ Reference docs in the Markata repository:
 - `docs/guides/markdown-chart-fallback.md`
 - `docs/guides/markdown-source-disclosure.md`
 
+Rail card grids stay connected when responsive: horizontal above 1000px, vertical
+with ring ticks below 1000px. Use the rail modifier instead of custom connector CSS.
+
 ### Standalone rendering and Python applications
 
 `markata render --json` reads Markdown from stdin and returns HTML, feature
@@ -186,15 +189,67 @@ bundled CSS/JS (including Mermaid and Chart.js). The official Python wheels expo
 handlers and `result.document()` for a complete HTML response. For existing
 layouts, insert the fragment inside `.post-content` and include both asset tag
 fields. See `docs/guides/python-renderer.md` for asset serving and API scope.
+Run `markata render --capabilities` to inspect the versioned standalone renderer
+contract before building an integration. This command returns JSON without reading
+stdin. Its feature list does not describe the full site build or a workspace.
+For repeated independent renders in an integration, use `markata render --stdio`
+and send one JSON request per line. Provide a unique `id`, `op: "render"`, and
+`source`; set `unsafe`, `inline_assets`, and `asset_base` inside per-request
+`options`. Read one JSON response per nonempty request line and stop with
+`op: "shutdown"`. This transport does not load a site workspace.
 
 For application integrations, `markata.appearance()` provides the site's picker and
 asset catalog. Use `result.document(appearance=...)` for site article layout instead
 of copying templates or modifying rendered HTML. Standalone rendering includes
 bundled Lucide icons. CodeMirror and application editing behavior stay application-side.
 
-Rail card grids stay connected when responsive: horizontal above 1000px, vertical
-with ring ticks below 1000px. Use the rail modifier instead of custom connector CSS.
+## Browser-local WASM rendering
+
+For browser-only Markdown apps, build `scripts/wasm-workbench.py --output DIR`.
+Use its persistent `worker.js` rather than a rendering server. Wait for `ready`,
+then send `{source, revision}`. Accept only the newest result. Serve the generated
+`appearance/` assets and the matching `wasm_exec.js` beside `markata.wasm`.
+Raw HTML is disabled; site-dependent plugins still require a full site build.
+Wait for the demo's **Ready offline** status before testing offline reload.
+See `docs/guides/wasm-workbench.md` for hosting headers and browser checks.
+
+For a server backed Go editor, run `go run ./cmd/markata-workbench` from the
+Markata source repository. The default URL is `http://127.0.0.1:8766/`; use
+`--listen 127.0.0.1:8767` when that port is occupied. Applications can embed
+`workbench.New()` from `pkg/workbench` at an origin root. It renders in process,
+serves local appearance assets, and preserves drafts in browser storage.
+This trusted local editor enables authored HTML inside a sandboxed preview.
+It does not load a site's configuration or run its full build lifecycle.
+See `docs/guides/go-workbench.md` for the HTTP contract and embedding example.
+
+The Go workbench follows the Python preview protocol: request the full document
+once, then set `include_document: false` and update the existing sandboxed frame
+with `html`, `feature_head_html`, and `body_end_html`. Keep shared appearance
+styles loaded between edits. Do not replace the iframe document on each render.
 
 For renderer integrations, reuse the benchmark site post and rendering fixtures.
 Run `python python/benchmark_editor.py` with an installed wheel and FastAPI dependencies.
 See `docs/guides/renderer-integration-benchmarks.md` for timing boundaries and host-specific results.
+
+For Go HTTP benchmarks, build `cmd/markata-workbench` and run
+`python python/benchmark_go_editor.py --binary /path/to/markata-workbench`.
+Use the same fixture hashes as the Python report. Keep cache misses separate
+from repeated cached renders, and distinguish linked assets from inline assets.
+See the integration benchmark guide for timing boundaries and stacking order.
+
+For comparable WASM fixture measurements, serve the browser workbench and run
+`uv run --with playwright python scripts/benchmark-wasm.py --output /tmp/wasm-benchmark.json`.
+The report measures worker rendering, excluding startup, transfer, layout, and paint.
+Keep these timings separate from HTTP latency.
+
+The Python, Go, and WASM workbenches share typography, import/export, draft save
+feedback, keymaps, and a 200,000 UTF-8 byte limit. Keep their editor UI consistent.
+Preserve separate runtime transports, offline support, and documented raw HTML
+policies. Browser storage belongs to each origin, including its port; compare
+fonts with matching appearance settings. See the integration benchmark guide's
+shared editor feature table before treating runtime differences as defects.
+
+Official renderer wheels include readable Lucide/Feather notices in dist-info/licenses.
+Executable installed wheels can render from read-only site-packages. Preserve
+the executable bit when packaging; prefer the persistent Go server for frequent
+interactive renders. See the Python renderer guide for packaging and size details.

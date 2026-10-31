@@ -173,3 +173,26 @@ The [single-file editor example](https://github.com/WaylonWalker/markata/blob/ma
 contains CodeMirror and application behavior. Markata supplies its preview document,
 icons, appearance picker, and assets. Applications must explicitly enable
 `unsafe=True` to render authored HTML and style blocks.
+
+## Installation size and offline icons
+
+The renderer retains the full pinned `lucide-static` 1.48.0 catalog for offline icon shortcodes.
+This provides consistent icon availability without downloads or a configurable subset.
+The catalog contains 2,118 SVG files: 1,026,506 source bytes, or approximately 0.98 MiB.
+Compressing their concatenated bytes with gzip produces approximately 97 KiB.
+These asset measurements do not measure the catalog's exact contribution to a compiled binary or wheel.
+A stripped Linux amd64 CLI built with Go 1.26.3 measured approximately 66 MiB before wheel compression.
+The complete CLI also contains themes, fonts, browser libraries, and build features.
+Wheel sizes vary by operating system and architecture.
+
+Lucide's ISC and derived Feather MIT notices remain embedded in the binary.
+Wheels also provide readable notices in `markata-<version>.dist-info/licenses/lucide.txt`.
+
+An installed POSIX binary with its executable bit preserved can render from read-only site-packages.
+Rendering does not require permission changes in that installation.
+If another installer removes the executable bit, reinstall the official wheel with executable permissions.
+The permission-repair fallback needs permission to change the binary's mode.
+
+Each Python render call starts a subprocess. The measured benchmark post took approximately 137 ms through the Python API.
+For frequent live edits, use the persistent Go workbench instead of starting a subprocess for every request.
+See [integration benchmarks](/docs/guides/renderer-integration-benchmarks/) for timing boundaries and reproduction commands.

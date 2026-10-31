@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/WaylonWalker/markata/pkg/editorworkspace"
 	"github.com/WaylonWalker/markata/pkg/plugins"
 	"github.com/WaylonWalker/markata/pkg/renderprotocol"
 
@@ -15,6 +16,7 @@ func newRenderCommand() *cobra.Command {
 	var options plugins.StandaloneOptions
 	var jsonOutput bool
 	var appearance bool
+	var workspaceRoot string
 	var capabilities bool
 	var stdio bool
 	cmd := &cobra.Command{
@@ -26,16 +28,36 @@ func newRenderCommand() *cobra.Command {
 					cmd.Flags().Changed("asset-base") || cmd.Flags().Changed("unsafe") {
 					return fmt.Errorf("--stdio takes per-request JSON options and cannot be combined with other render mode flags")
 				}
-				return renderprotocol.Serve(cmd.InOrStdin(), cmd.OutOrStdout())
+				if cmd.Flags().Changed("workspace") {
+					workspace, err := editorworkspace.New(workspaceRoot)
+					if err != nil {
+						return err
+					}
+					options.Config, err = workspace.Config()
+					if err != nil {
+						return err
+					}
+				}
+				return renderprotocol.ServeWithOptions(cmd.InOrStdin(), cmd.OutOrStdout(), options)
 			}
 			if capabilities {
-				if appearance {
-					return fmt.Errorf("--capabilities and --appearance cannot be combined")
+				if appearance || cmd.Flags().Changed("workspace") {
+					return fmt.Errorf("--capabilities cannot be combined with --appearance or --workspace")
 				}
 				return json.NewEncoder(cmd.OutOrStdout()).Encode(plugins.GetStandaloneCapabilities())
 			}
+			if cmd.Flags().Changed("workspace") {
+				workspace, err := editorworkspace.New(workspaceRoot)
+				if err != nil {
+					return err
+				}
+				options.Config, err = workspace.Config()
+				if err != nil {
+					return err
+				}
+			}
 			if appearance {
-				result, err := plugins.BuildStandaloneAppearance()
+				result, err := plugins.BuildStandaloneAppearanceForSite(options.Config, workspaceRoot)
 				if err != nil {
 					return err
 				}
@@ -56,6 +78,7 @@ func newRenderCommand() *cobra.Command {
 			return err
 		},
 	}
+	cmd.Flags().StringVar(&workspaceRoot, "workspace", "", "apply site configuration from this workspace")
 	cmd.Flags().BoolVar(&stdio, "stdio", false, "Keep rendering JSON Lines requests from stdin until EOF or shutdown")
 	cmd.Flags().BoolVar(&capabilities, "capabilities", false, "Describe supported standalone render features and modes as JSON")
 	cmd.Flags().BoolVar(&appearance, "appearance", false, "Return reusable appearance controls and bundled assets as JSON")

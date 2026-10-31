@@ -26,7 +26,7 @@ class Preview(BaseModel):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    async with RendererPool(workers=2, max_pending=64) as pool:
+    async with RendererPool(workers=2, max_pending=64, workspace='.') as pool:
         app.state.renderer_pool = pool
         yield
 
@@ -72,8 +72,9 @@ The pool requires a bundled Go executable supporting `markata render --stdio`.
 The original `render()` and `render_async()` remain backward-compatible one-shot
 APIs and do **not** implicitly start a pool.
 
-The initial stdio protocol does not load site configuration, so `workspace` is
-not a pool option yet. This is not an HTML sanitizer; keep `unsafe=False` for
+An optional `workspace='.'` loads Markata's site configuration once at startup,
+matching the standalone Python renderer's workspace behavior. Restart the pool
+after changing configuration. This is not an HTML sanitizer; keep `unsafe=False` for
 untrusted authored HTML and apply your application's own safety policy.
 
 ## Performance verification

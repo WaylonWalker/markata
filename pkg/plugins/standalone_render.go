@@ -16,9 +16,14 @@ import (
 
 // StandaloneOptions configures rendering without a site build.
 type StandaloneOptions struct {
+	// Config applies site Markdown and highlighting settings when supplied.
+	Config       *models.Config
 	Unsafe       bool
 	InlineAssets bool
 	AssetBase    string
+	// OmitAssetContent keeps bundled assets linked and omits their bytes.
+	// Browser hosts must export and serve the native presentation bundle.
+	OmitAssetContent bool
 }
 
 // RenderAsset is an ordered dependency for a rendered Markdown fragment.
@@ -33,41 +38,50 @@ type RenderAsset struct {
 
 // StandaloneResult includes markup and everything needed to present it.
 type StandaloneResult struct {
-	SchemaVersion int             `json:"schema_version"`
-	HTML          string          `json:"html"`
-	Features      map[string]bool `json:"features"`
-	Assets        []RenderAsset   `json:"assets"`
-	ExternalURLs  []string        `json:"external_urls"`
-	HeadHTML      string          `json:"head_html"`
-	BodyEndHTML   string          `json:"body_end_html"`
+	SchemaVersion    int             `json:"schema_version"`
+	HTML             string          `json:"html"`
+	Features         map[string]bool `json:"features"`
+	Assets           []RenderAsset   `json:"assets"`
+	ExternalURLs     []string        `json:"external_urls"`
+	HeadHTML         string          `json:"head_html"`
+	BodyEndHTML      string          `json:"body_end_html"`
+	omitAssetContent bool
 }
 
 // RenderStandalone uses the site's Markdown, Mermaid, and Chart.js renderers.
-// It performs no network access or filesystem writes and loads no site config.
+// It performs no network access or filesystem writes. Hosts may supply site config.
 func RenderStandalone(source string, options StandaloneOptions) (*StandaloneResult, error) {
 	return NewStandaloneRenderer(options).Render(source)
 }
 
-// StandaloneRenderer keeps one configured Markdown parser warm for successive
-// independent documents. It must never be used concurrently.
+// StandaloneRenderer reuses a configured Markdown parser for sequential renders.
+// It is not safe for concurrent use.
 type StandaloneRenderer struct {
 	parser  *RenderMarkdownPlugin
 	options StandaloneOptions
 }
 
+// NewStandaloneRenderer creates a renderer for a persistent host or worker.
 func NewStandaloneRenderer(options StandaloneOptions) *StandaloneRenderer {
-	parser := &RenderMarkdownPlugin{md: createMarkdownRenderer(
-		palettes.DefaultChromaThemeDark, false, DefaultMarkdownExtensionConfig(), options.Unsafe)}
-	return &StandaloneRenderer{parser: parser, options: options}
+	p := &RenderMarkdownPlugin{md: createMarkdownRenderer(palettes.DefaultChromaThemeDark, false, DefaultMarkdownExtensionConfig(), options.Unsafe)}
+	if options.Config != nil {
+		extra := map[string]interface{}{"theme": options.Config.Theme, "models_config": options.Config, "markdown": options.Config.MarkdownConfig}
+		chroma, numbers := p.resolveHighlightConfig(extra)
+		p.md = createMarkdownRenderer(chroma, numbers, p.resolveExtensionConfig(extra), options.Unsafe)
+	}
+	return &StandaloneRenderer{parser: p, options: options}
 }
 
+// Render renders one independent document with fresh IDs and feature signals.
 func (renderer *StandaloneRenderer) Render(source string) (*StandaloneResult, error) {
 	p, options := renderer.parser, renderer.options
 	post := &models.Post{Content: source, Extra: map[string]interface{}{}}
-	if err := p.renderPost(post); err != nil {
+	article, err := p.renderArticleHTML(source)
+	if err != nil {
 		return nil, fmt.Errorf("render markdown: %w", err)
 	}
-	r := &StandaloneResult{SchemaVersion: StandaloneSchemaVersion, Features: map[string]bool{"mermaid": false, "chartjs": false}, Assets: []RenderAsset{}, ExternalURLs: []string{}}
+	post.ArticleHTML = article
+	r := &StandaloneResult{omitAssetContent: options.OmitAssetContent, SchemaVersion: StandaloneSchemaVersion, Features: map[string]bool{"mermaid": false, "chartjs": false}, Assets: []RenderAsset{}, ExternalURLs: []string{}}
 	if err := r.renderDiagrams(post); err != nil {
 		return nil, err
 	}
@@ -125,7 +139,11 @@ func (r *StandaloneResult) renderDiagrams(post *models.Post) error {
 		}
 		r.Features["chartjs"] = true
 		name := strings.TrimPrefix(asset.URL, "/")
-		content, err := themes.ReadStatic(name)
+		var content []byte
+		var err error
+		if !r.omitAssetContent {
+			content, err = themes.ReadStatic(name)
+		}
 		if err != nil {
 			return fmt.Errorf("read chart library: %w", err)
 		}
@@ -177,7 +195,11 @@ func (r *StandaloneResult) addPresentationAssets() error {
 }
 
 func (r *StandaloneResult) addBundled(name, kind, placement string) error {
-	content, err := themes.ReadStatic(name)
+	var content []byte
+	var err error
+	if !r.omitAssetContent {
+		content, err = themes.ReadStatic(name)
+	}
 	if err != nil {
 		return fmt.Errorf("read render asset %s: %w", name, err)
 	}
@@ -253,7 +275,7 @@ func (r *StandaloneResult) collectScripts(fragment string) {
 func (a RenderAsset) tag(options StandaloneOptions) string {
 	url := a.URL
 	bundled := strings.HasPrefix(a.ID, "css/") || strings.HasPrefix(a.ID, "js/") || strings.HasPrefix(a.ID, "assets/vendor/")
-	if bundled && !options.InlineAssets {
+	if bundled && (!options.InlineAssets || options.OmitAssetContent) {
 		base := options.AssetBase
 		if base == "" {
 			base = "/markata-assets"

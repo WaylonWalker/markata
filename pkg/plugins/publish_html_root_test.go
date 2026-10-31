@@ -128,3 +128,86 @@ func TestPublishHTMLPlugin_HomepagePreservesUnrecognizedDirectories(t *testing.T
 		})
 	}
 }
+
+func TestPublishHTMLPlugin_ExplicitHomepageOutputChecks(t *testing.T) {
+	for _, tc := range []struct {
+		name        string
+		htmlEnabled bool
+	}{
+		{name: "HTML and alternate formats", htmlEnabled: true},
+		{name: "alternate formats only", htmlEnabled: false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			outputDir := t.TempDir()
+			config := &lifecycle.Config{
+				OutputDir: outputDir,
+				Extra: map[string]interface{}{
+					"url": "https://example.com",
+					"post_formats": models.PostFormatsConfig{
+						HTML:     &tc.htmlEnabled,
+						Markdown: true,
+						Text:     true,
+						ANSI:     true,
+						OG:       true,
+					},
+				},
+			}
+			title := "Homepage"
+			post := &models.Post{
+				Path:        "pages/post/index.md",
+				Slug:        "",
+				Title:       &title,
+				Content:     "# Homepage",
+				HTML:        "<html><body>Homepage</body></html>",
+				ArticleHTML: "<h1>Homepage</h1>",
+				Published:   true,
+			}
+			post.Set("_slug_explicit", true)
+
+			plugin := NewPublishHTMLPlugin()
+			if err := plugin.writePost(post, config, nil, createTestManager(t, config)); err != nil {
+				t.Fatalf("writePost() error = %v", err)
+			}
+			if !plugin.expectedPostOutputsExist(post, config) {
+				t.Fatal("root outputs exist but the incremental cache check rejected them")
+			}
+			if !plugin.postOutputExists(post, config) {
+				t.Fatal("root outputs exist but the emitted-output check rejected them")
+			}
+
+			// A missing required root-format file must invalidate the cache.
+			if err := os.Remove(filepath.Join(outputDir, "index.md")); err != nil {
+				t.Fatal(err)
+			}
+			if plugin.expectedPostOutputsExist(post, config) {
+				t.Fatal("missing index.md must force a rebuild")
+			}
+		})
+	}
+}
+
+func TestPublishHTMLPlugin_RootMarkdownOnlyEmission(t *testing.T) {
+	outputDir := t.TempDir()
+	htmlEnabled := false
+	config := &lifecycle.Config{
+		OutputDir: outputDir,
+		Extra: map[string]interface{}{
+			"post_formats": models.PostFormatsConfig{HTML: &htmlEnabled, Markdown: true},
+		},
+	}
+	post := &models.Post{Path: "index.md", Slug: "", Content: "# Home", Published: true}
+	post.Set("_slug_explicit", true)
+	plugin := NewPublishHTMLPlugin()
+	if err := plugin.writePost(post, config, nil, createTestManager(t, config)); err != nil {
+		t.Fatal(err)
+	}
+	if !plugin.expectedPostOutputsExist(post, config) || !plugin.postOutputExists(post, config) {
+		t.Fatal("root Markdown-only publication must be recognized as emitted")
+	}
+	if err := os.Remove(filepath.Join(outputDir, "index.md")); err != nil {
+		t.Fatal(err)
+	}
+	if plugin.postOutputExists(post, config) {
+		t.Fatal("missing root Markdown-only output must not be marked emitted")
+	}
+}

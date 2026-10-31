@@ -14,6 +14,7 @@ def add_renderer(wheel: Path) -> None:
     pool_source = source.with_name("pool.py")
     with zipfile.ZipFile(wheel) as archive:
         members = [(item, archive.read(item)) for item in archive.infolist()]
+    license_content = (source.parents[2] / 'pkg/plugins/standalone_icons/LICENSE').read_bytes()
     records = []
     temporary = wheel.with_suffix(".tmp")
     try:
@@ -22,10 +23,10 @@ def add_renderer(wheel: Path) -> None:
                 if item.filename.endswith(".dist-info/RECORD"):
                     record_path = item.filename
                     continue
-                if item.filename in {"markata/rendering.py", "markata/pool.py"}:
+                if item.filename in {"markata/rendering.py", "markata/pool.py"} or item.filename.endswith(".dist-info/licenses/lucide.txt"):
                     continue
                 if item.filename == "markata/__init__.py":
-                    imports = b"from .rendering import Appearance, appearance, RenderError, RenderResult, render, render_async"
+                    imports = b"from .rendering import Appearance, appearance, RenderError, RenderResult, render, render_async, workspace_files"
                     if imports not in content:
                         content += b"\n" + imports + b"\n"
                     if b"from .pool import RendererPool" not in content:
@@ -38,6 +39,9 @@ def add_renderer(wheel: Path) -> None:
             pool_content = pool_source.read_bytes()
             archive.writestr("markata/pool.py", pool_content)
             records.append(record("markata/pool.py", pool_content))
+            license_path = record_path.rsplit("/", 1)[0] + "/licenses/lucide.txt"
+            archive.writestr(license_path, license_content)
+            records.append(record(license_path, license_content))
             buffer = io.StringIO(newline="")
             writer = csv.writer(buffer)
             writer.writerows(records)

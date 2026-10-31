@@ -33,7 +33,7 @@ func (s *Server) handleInitialize(_ context.Context, msg *Message) error {
 				},
 			},
 			CompletionProvider: &CompletionOptions{
-				TriggerCharacters: []string{"[", "@", "!", "?", " "},
+				TriggerCharacters: []string{"[", "@", "!", "?", " ", "(", "/"},
 				ResolveProvider:   false,
 			},
 			HoverProvider:      true,
@@ -45,6 +45,7 @@ func (s *Server) handleInitialize(_ context.Context, msg *Message) error {
 		},
 	}
 
+	s.initialized = true
 	return s.sendResponse(msg.ID, result)
 }
 
@@ -54,7 +55,7 @@ func (s *Server) handleInitialized(_ context.Context, _ *Message) error {
 	s.logger.Println("Server initialized")
 
 	// Build the index
-	if s.rootURI != "" {
+	if s.rootURI != "" && s.sharedIndex == nil {
 		rootPath := uriToPath(s.rootURI)
 		s.logger.Printf("Building index from: %s", rootPath)
 		if err := s.index.Build(rootPath); err != nil {
@@ -156,6 +157,9 @@ func (s *Server) handleDidClose(_ context.Context, msg *Message) error {
 	s.docMu.Unlock()
 
 	// Clear diagnostics
+	if s.sharedIndex != nil {
+		s.sharedLoaded = false
+	}
 	return s.clearDiagnostics(params.TextDocument.URI)
 }
 

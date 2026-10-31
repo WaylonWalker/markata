@@ -300,11 +300,12 @@ func runServeCommand(cmd *cobra.Command, args []string) error {
 	serveSearchEndpoint = searchEndpoint
 	handler := mountServeAdmin(createHandler(outputPath, m, searchHandlerPath), runtime, m.Config().ContentDir, adminEnabled)
 
-	listener, err := net.Listen("tcp", addr)
+	listener, err := listenWithPortRecovery(cmd, addr)
 	if err != nil {
 		return diagnoseServeListenError(err, addr)
 	}
 	defer listener.Close()
+	addr = listener.Addr().String()
 
 	rebuildCh, closeWatcher, err := setupWatcher(ctx, m, &wg)
 	if err != nil {

@@ -27,7 +27,7 @@
 | `head_html` | Generated ordered head tags for styles |
 | `body_end_html` | Generated ordered body-end tags for scripts |
 
-`render` without `--json` emits the HTML fragment. `--inline-assets`, `--asset-base`, and `--unsafe` remain the existing options. No site configuration is loaded. Unsafe HTML remains opt-in and the output is **not** a sanitizer for untrusted content.
+`render` without `--json` emits the HTML fragment. `--inline-assets`, `--asset-base`, and `--unsafe` remain the existing options. The base standalone renderer does not load site configuration; the CLI can apply a selected workspace with `--workspace`. Unsafe HTML remains opt-in and the output is **not** a sanitizer for untrusted content.
 
 ## Implemented: capability discovery (first slice)
 
@@ -36,6 +36,7 @@ markata render --capabilities
 ```
 
 This prints a JSON description without reading document stdin or rendering Markdown. The reference fixture is `pkg/plugins/testdata/renderer_contract/capabilities.json`.
+`--capabilities` describes the base standalone renderer and cannot be combined with `--appearance` or `--workspace`.
 
 - `schema_version`: version of the **render result** supported by this engine.
 - `renderer`: identifies the standalone rendering implementation, not a transport.
@@ -47,25 +48,24 @@ The current standalone engine supports **client-mode Mermaid and Chart.js**. The
 
 Clients should check capabilities rather than assuming all Markata site features are available. Unknown future fields should be ignored. New capability names may be added in compatible releases.
 
-## Proposed next slice: transport-neutral request envelope
+## Implemented next slice: transport-neutral request envelope
 
-**Not implemented by this PR.** The proposed long-lived and service transports should share an envelope resembling:
+The JSON Lines stdio transport uses a request envelope resembling:
 
 ```json
 {
   "id": "doc-42",
   "op": "render",
   "source": "# Heading",
-  "options": {"inline_assets": false},
-  "source_uri": "memory:///doc-42.md"
+  "options": {"inline_assets": false}
 }
 ```
 
-Responses should include the echoed `id`, a typed success or error, and the existing render result. Proposed operations are `render`, `capabilities`, and `shutdown`. Error responses should have stable machine-readable codes, readable messages, and optional source locations. A rendering failure must not kill the persistent process. Detailed message framing, session settings, size limits, and cancellation are to be specified with the stdio/HTTP implementation; **none of these operations are currently supported by `markata render --json`**.
+Responses include the echoed `id`, a typed success or error, and the existing render result. Implemented operations are `render`, `capabilities`, and `shutdown`. Error responses have stable machine-readable codes and readable messages. A rendering failure does not kill the persistent process. See [RENDERER_STDIO.md](RENDERER_STDIO.md) for exact framing, supported fields, size limits, and failure behavior. These operations are available through `markata render --stdio`; `markata render --json` remains a one-shot command.
 
 ## Future transports and security boundaries
 
-- **Persistent JSON Lines / stdio:** one request per line, one correlated response per line; stdout exclusively protocol data, logs to stderr; bound input, avoid shared mutable configuration, recover from per-request errors.
+- **Persistent JSON Lines / stdio:** implemented with one request per line, one correlated response per line, bounded input, and per-request error recovery. Stdout is reserved for protocol data.
 - **HTTP:** use identical render semantics with explicit resource limits, authentication/CORS strategy and safe defaults. #1851 is a *local trusted editor*, not a public rendering service.
 - **LSP:** preserve existing editor features and translate rendering diagnostics to editor ranges where available. Generic LSP does not define an HTML-preview window.
 - **MCP:** expose small render/validate/capabilities tools reusing the engine; reference or deduplicate large assets rather than returning megabytes repeatedly.

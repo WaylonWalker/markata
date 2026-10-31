@@ -43,6 +43,7 @@ Check your project and LSP installation with "markata-go lsp doctor".`,
 	RunE: runLSPCommand,
 }
 
+var lspBrowserWorkspace string
 var lspSetupEditor string
 var lspSkipEditorVerification bool
 
@@ -72,6 +73,7 @@ Examples:
 
 func init() {
 	rootCmd.AddCommand(lspCmd)
+	lspCmd.Flags().StringVar(&lspBrowserWorkspace, "browser-workspace", "", "confine a browser bridge to this workspace and its in-memory draft")
 	lspCmd.AddCommand(lspDoctorCmd, lspSetupCmd)
 	lspSetupCmd.Flags().StringVarP(&lspSetupEditor, "editor", "e", "", "editor: generic, neovim, helix, emacs, zed, or vscode (default: all installed editors)")
 	lspDoctorCmd.Flags().BoolVar(&lspSkipEditorVerification, "no-verify-editor", false, "detect installed editors without loading their configuration")
@@ -101,6 +103,13 @@ func runLSPCommand(_ *cobra.Command, _ []string) error {
 
 	// Create and run the LSP server
 	srv := lsp.New(logger)
+	if lspBrowserWorkspace != "" {
+		var err error
+		srv, err = lsp.NewBrowserSession(logger, lspBrowserWorkspace)
+		if err != nil {
+			return err
+		}
+	}
 	if err := srv.Run(ctx, os.Stdin, os.Stdout); err != nil {
 		return fmt.Errorf("LSP server error: %w", err)
 	}

@@ -727,6 +727,52 @@ markata-go reader update -c production.toml
 
 ---
 
+### editor
+
+The editor accepts `--port` (`-p`) to select its HTTP port. When a port is occupied,
+`editor` and `serve` suggest a rerun command. In an interactive terminal, Enter
+accepts an available port; `q` followed by Enter or Ctrl+C cancels.
+
+
+Run the browser-based Go Markdown editor against a selected workspace.
+
+#### Usage
+
+```bash
+markata editor [flags]
+```
+
+The editor uses Markata's Go renderer and LSP in the same process. It binds to
+loopback by default and prints its local URL. Browser drafts stay in memory;
+use **Download .md** to save a copy. The file tree opens discovered workspace sources. Edits remain browser drafts;
+the command does not save changes to source files.
+
+#### Flags
+
+| Flag | Description | Default |
+| --- | --- | --- |
+| `--workspace` | Markdown workspace used for language assistance | `.` |
+| `--listen` | Loopback HTTP address | `127.0.0.1:8766` |
+| `--port`, `-p` | HTTP port (overrides the port in `--listen`) | `8766` |
+
+#### Examples
+
+```bash
+# Open the editor for the current workspace
+markata editor
+
+# Select a site workspace
+markata editor --workspace ~/sites/blog
+
+# Change the local port
+markata editor --listen 127.0.0.1:8767
+```
+
+The listener accepts only `localhost` or a loopback IP address. See the
+[Go editor guide](/docs/guides/go-workbench/) for browser behavior and LSP completions.
+
+---
+
 ### serve
 
 Start a development server with live reload support.
@@ -2399,3 +2445,58 @@ See [Python and FastAPI rendering](/docs/guides/python-renderer/).
 `markata render --appearance` emits versioned JSON with reusable appearance picker
 markup, ordered style/script paths, and base64 asset bytes. It does not read stdin.
 Host applications serve these assets and insert the controls in their own layouts.
+
+`markata render --capabilities` emits the standalone renderer's versioned JSON
+contract without reading stdin. Check its `features`, `diagram_modes`, and
+`asset_modes` before selecting an integration path. The report describes the
+standalone renderer, not site-build plugins or a selected workspace. Do not
+combine this flag with `--appearance` or `--workspace`.
+
+Use `markata render --stdio` for a long-running JSON Lines session. Send one
+JSON request per line with `id`, `op`, and, for rendering, `source`. Each
+nonempty request receives one JSON response line. Use `op: "capabilities"` to
+inspect support and `op: "shutdown"` to stop the process. Set render options
+per request in `options`; the command rejects `--workspace` and other render
+mode flags with `--stdio`. See the [stdio protocol](../../spec/spec/RENDERER_STDIO.md)
+for framing, limits, errors, and a working example.
+
+## Go Markdown workbench demo
+
+From a source checkout, run the separate demo command:
+
+```bash
+go run ./cmd/markata-workbench --listen 127.0.0.1:8767
+```
+
+The default listen address is `127.0.0.1:8766`. Use `--help` for command help.
+The [Go workbench guide](../guides/go-workbench/) covers editing, the render API,
+and embedding its HTTP handler in a Go application.
+
+### Browser LSP bridge
+
+```bash
+markata-go lsp --browser-workspace /absolute/path/to/site
+```
+
+This option keeps the stdio transport and confines a browser bridge to a server-selected workspace.
+It accepts the synthetic `.markata/browser-draft.md` URI and ignores browser requests to read watched files.
+The [FastAPI editor](../guides/fastapi-editor/) uses this option behind its WebSocket endpoint.
+Ordinary editor clients continue to use `markata-go lsp` without this option.
+
+The [Go editor example](../guides/go-workbench/) provides its own launch command:
+
+```bash
+go run ./cmd/markata-workbench --workspace /absolute/path/to/site
+```
+
+`--workspace` selects the Markdown directory for completion. It defaults to the current directory.
+
+### workspace
+
+List discovered source metadata as JSON with `markata workspace --workspace PATH`.
+Read original source with `markata workspace --workspace PATH --file posts/hello.md`.
+See the [workspace file tree guide](/docs/guides/renderer-site-tree/).
+
+Use `markata workspace --paths --workspace PATH` to list discovered source paths
+without loading document metadata. The editor uses this fast path on startup and
+loads titles and tags in the background.

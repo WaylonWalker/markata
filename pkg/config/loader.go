@@ -114,7 +114,7 @@ func LoadWithDefaults() (*models.Config, error) {
 	// default theme, including a palette for the theme picker.
 	emptyRaw := map[string]any{"markata-go": map[string]any{}}
 	warnings := normalizeRenderingTheme(emptyRaw)
-	defaultRaw, err := rawWrapperFromConfig(DefaultConfig())
+	defaultRaw, err := rawWrapperFromDefaultConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode default config: %w", err)
 	}
@@ -215,7 +215,7 @@ func LoadWithMergeOptions(options LoadOptions, basePath string, overridePaths ..
 	}
 
 	warnings := normalizeRenderingTheme(mergedRaw)
-	defaultRaw, err := rawWrapperFromConfig(DefaultConfig())
+	defaultRaw, err := rawWrapperFromDefaultConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode default config: %w", err)
 	}
@@ -305,7 +305,7 @@ func LoadFromString(data string, format Format) (*models.Config, error) {
 	}
 
 	warnings := normalizeRenderingTheme(resolvedRaw)
-	defaultRaw, err := rawWrapperFromConfig(DefaultConfig())
+	defaultRaw, err := rawWrapperFromDefaultConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode default config: %w", err)
 	}

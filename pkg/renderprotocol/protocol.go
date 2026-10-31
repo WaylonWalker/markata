@@ -17,7 +17,7 @@ const (
 	// MaxFrameBytes bounds one newline-delimited request, including JSON framing.
 	MaxFrameBytes = 1 << 20
 	// MaxSourceBytes matches the local editor's limit for individual documents.
-	MaxSourceBytes = 200_000
+	MaxSourceBytes    = 200_000
 	MaxRequestIDBytes = 128
 )
 
@@ -83,10 +83,11 @@ func Handle(req Request) Response {
 	}
 }
 
-// session retains parsers for one stdio connection. Serve handles requests
-// sequentially: StandaloneRenderer is reusable but not concurrency-safe.
+// session keeps configured parsers warm within one sequential stdio connection.
+// An individual StandaloneRenderer must never be shared across concurrent calls.
 type session struct {
 	renderers map[Options]*plugins.StandaloneRenderer
+	base      plugins.StandaloneOptions
 }
 
 func (s *session) handle(req Request) Response {
@@ -99,13 +100,13 @@ func (s *session) handle(req Request) Response {
 	}
 	renderer := s.renderers[req.Options]
 	if renderer == nil {
-		// Bound renderer variants when clients choose arbitrary asset bases.
+		// Limit variants when clients provide arbitrary asset base URLs.
 		if len(s.renderers) >= 8 {
 			s.renderers = make(map[Options]*plugins.StandaloneRenderer)
 		}
 		renderer = plugins.NewStandaloneRenderer(plugins.StandaloneOptions{
-			Unsafe: req.Options.Unsafe, InlineAssets: req.Options.InlineAssets,
-			AssetBase: req.Options.AssetBase,
+			Config: s.base.Config, Unsafe: req.Options.Unsafe,
+			InlineAssets: req.Options.InlineAssets, AssetBase: req.Options.AssetBase,
 		})
 		s.renderers[req.Options] = renderer
 	}
@@ -138,9 +139,15 @@ func DecodeRequest(line []byte) (Request, error) {
 // JSON response lines to out. A malformed request is isolated from later lines.
 // An oversized frame is consumed without buffering it fully in memory.
 func Serve(in io.Reader, out io.Writer) error {
+	return ServeWithOptions(in, out, plugins.StandaloneOptions{})
+}
+
+// ServeWithOptions pins the host's site configuration to this warm process.
+// Request-level asset and safety options remain isolated per document.
+func ServeWithOptions(in io.Reader, out io.Writer, options plugins.StandaloneOptions) error {
 	reader := bufio.NewReaderSize(in, 64*1024)
 	encoder := json.NewEncoder(out)
-	state := &session{}
+	state := &session{base: options}
 	for {
 		line, oversized, err := readFrame(reader)
 		if errors.Is(err, io.EOF) {
@@ -178,7 +185,7 @@ func Serve(in io.Reader, out io.Writer) error {
 
 // readFrame retains at most MaxFrameBytes while draining any oversized input
 // through its newline, so one bad frame does not desynchronize the stream.
-func readFrame(reader *bufio.Reader) ([]byte, bool, error) {
+func readFrame(reader *bufio.Reader) (data []byte, tooLarge bool, readErr error) {
 	var line []byte
 	oversized := false
 	for {

@@ -1,5 +1,46 @@
 # Language Server Protocol Specification
 
+## Browser editor examples
+
+The Go and FastAPI workbench examples expose `/lsp` as a same-origin WebSocket.
+Each text message contains one JSON-RPC object without Content-Length headers.
+The Go example uses the existing LSP handlers in process. FastAPI translates
+WebSocket messages to the existing stdio protocol of a server-owned executable.
+Each connection owns an independent LSP session and index.
+
+The server selects the workspace at startup. Browser initialize requests cannot
+change it. `/lsp/config` supplies a root URI and a synthetic `.markata/browser-draft.md` URI.
+Documents remain in memory. Neither example reads, saves, or switches source
+files through the browser. File trees and file operations are separate work.
+Workspace file notifications from the browser MUST NOT cause filesystem reads.
+
+Both editors synchronize full unsaved buffers and request completion from the
+same LSP. They support wiki-link slugs and aliases, Markdown document paths,
+container names and modifiers from the command catalog, and documented container
+attributes and values. Mermaid completions include diagram types, flowchart
+directions, a flowchart starter, and class style properties. Existing frontmatter, admonition, and mention completions remain available.
+Completion edits use UTF-16 positions,
+preserve closing delimiters, and cannot apply to a changed buffer or cursor.
+Ctrl+Space requests completion explicitly. Broken-link diagnostics appear in
+the editor. Connection failures leave editing and preview available.
+
+The WebSocket endpoints require an exact same-origin match and a `localhost` or
+loopback IP host. They reject foreign or missing browser origins and DNS-rebinding
+hostnames, bound message sizes, cap completion responses at 200 items, and release
+connections or subprocesses on disconnect. They are trusted local examples, not a
+multi-user remote workspace service. Existing stdio clients
+retain their workspace selection and Content-Length framing by default.
+
+The installed Go CLI MUST expose the same Go workbench as `markata editor`.
+It MUST use the existing `pkg/workbench` handler and LSP session rather than a
+second renderer or language server. The default listener MUST bind to loopback;
+an explicit listener address MUST also use a loopback host. The command MUST
+select its workspace at startup and print the actual local URL to stderr. It
+MUST stop cleanly on interrupt or termination. Browser drafts remain in memory
+and the command MUST NOT write workspace files. The workspace API can read and switch discovered files. Users can use
+the editor's download control to save a copy. File-tree navigation and workspace
+file editing remain separate features.
+
 ## Overview
 
 `markata-go lsp` starts the markata-go Language Server Protocol (LSP) server on
@@ -82,3 +123,7 @@ configuration surfaces. They are not a promise to automatically configure all
 editor versions. The generic integration contract is the stable compatibility
 surface; agents SHOULD inspect a repository's existing editor configuration and
 adapt the snippet to the installed client.
+
+The editor accepts `--port` (`-p`) to select its HTTP port. When a port is occupied,
+`editor` and `serve` suggest a rerun command. In an interactive terminal, Enter
+accepts an available port; `q` followed by Enter or Ctrl+C cancels.

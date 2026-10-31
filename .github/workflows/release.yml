@@ -11,6 +11,12 @@ on:
   # GitHub suppresses push-triggered workflows for GITHUB_TOKEN-created tags.
   workflow_dispatch:
 
+# Tag pushes and manual dispatches can target the same release. Queue duplicates
+# instead of racing GoReleaser or cancelling a publisher midway through uploads.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 permissions:
   contents: write
   packages: write

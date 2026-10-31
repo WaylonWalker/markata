@@ -29,6 +29,13 @@ class FastAPIEditorTest(unittest.TestCase):
         self.assertIn('data-picker-tab="font"', response.text)
         self.assertNotIn('href="/appearance/css/main.css"', response.text)
 
+    def test_utf8_byte_limit_rejects_multibyte_source_before_render(self):
+        with patch.object(self.demo.app.state.renderer_pool, 'render') as render:
+            response = self.client.post('/render', json={'markdown': '界' * 70000})
+            self.assertEqual(response.status_code, 422)
+            self.assertIn('UTF-8 bytes', response.json()['error'])
+            render.assert_not_called()
+
     def test_real_render_preserves_site_content_and_initial_appearance(self):
         markdown = '# :lucide-globe: Hello\n\n```python\nprint("héllo")\n```'
         response = self.client.post("/render", json={"markdown": markdown, "appearance": {
@@ -70,7 +77,7 @@ class FastAPIEditorTest(unittest.TestCase):
     def test_invalid_requests_and_renderer_failures_are_reported(self):
         for payload in [{"markdown": "x" * 200_001}, {"markdown": "x", "appearance": {"data-palette": "missing"}}]:
             self.assertEqual(self.client.post("/render", json=payload).status_code, 422)
-        with patch.object(self.demo.app.state.render_pool, "render", side_effect=self.demo.RenderError("Renderer unavailable")):
+        with patch.object(self.demo.app.state.renderer_pool, "render", side_effect=self.demo.RenderError("Renderer unavailable")):
             response = self.client.post("/render", json={"markdown": "# Hello"})
         self.assertEqual(response.status_code, 422)
         self.assertEqual(response.json()["error"], "Renderer unavailable")

@@ -66,7 +66,6 @@
     var rebuildTimer = null;
     var destroyed = false;
     var prefersReducedMotion = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
-    var hideSliderBelow = 24;
     var styles = getComputedStyle(section);
     var accentColor = styles.getPropertyValue('--garden-accent').trim() || '#ffcd11';
     var mutedColor = styles.getPropertyValue('--garden-muted').trim() || '#999';
@@ -184,7 +183,7 @@
 
         var control = limitInput.closest('.post-graph__control') || limitInput.parentElement;
         if (control) {
-          var shouldHide = totalConnections < hideSliderBelow;
+          var shouldHide = totalConnections <= minValue;
           control.hidden = shouldHide;
           control.style.display = shouldHide ? 'none' : '';
         }

@@ -118,6 +118,14 @@ Set `MARKATA_GO_SITE_DIR` in an alias or wrapper when repeatedly using one site.
 - `markata-go lint` (lint markdown files for common issues)
 - `markata-go lint --fix` (auto-fix fixable issues)
 - `markata-go lint --dry-run` (show files without linting)
+- `markata editor --workspace <site> --port 8766` (start the Go browser editor on loopback)
+- The Go and FastAPI browser editor examples use the existing LSP through a same-origin `/lsp` WebSocket.
+  Go uses `markata editor --workspace`; FastAPI uses `MARKATA_LSP_WORKSPACE`.
+  FastAPI uses `markata-go lsp --browser-workspace` behind its stdio bridge.
+  Drafts stay in memory. The Go and Python editors open files discovered by Markata glob rules; edits stay in browser drafts and do not write source files.
+  The editors complete command-catalog containers and attributes, plus Mermaid
+  diagram types and directions. Press Ctrl+Space to show completions.
+  See `docs/guides/go-workbench.md` and `docs/guides/fastapi-editor.md` in the Markata repository.
 - `markata-go lsp doctor` (check local LSP command and project configuration)
 - `markata-go lsp doctor --no-verify-editor` (detect installed editors without loading their configuration)
 - `markata-go lsp setup` (print setup guidance for each installed supported editor; use `--editor <editor>` for `generic`, `neovim`, `helix`, `emacs`, `zed`, or `vscode`)
@@ -314,3 +322,16 @@ When blogroll is enabled, `markata-go lint` reports
 `unknown-mention` warnings for unresolved handles. Add a verified
 entry or alias to the blogroll before linking: CLI lint/build never
 searches social networks or guesses a person's identity.
+
+Use `markata workspace --workspace <site>` to inspect discovered document metadata as JSON.
+Add `--file <relative-path>` to read a discovered source. Python exposes the same API as `markata.workspace_files`.
+
+The editor applies the selected site configuration to appearance defaults and Markdown highlighting. Python renderer APIs accept `workspace=`; CLI rendering accepts `render --workspace <site>`. Browser preferences can override appearance defaults.
+For quick content discovery, use `markata workspace --paths --workspace <site>`.
+The editor loads path discovery first and document metadata in the background.
+
+The Go editor retains workspace discovery, document metadata, renderer state, and
+shared LSP data for one running server. Filesystem changes invalidate that state.
+Reload the page to refresh the Files and Tags trees. Reopening a clean file loads
+its latest disk source. Edited browser drafts stay intact when the source changes.
+Browser drafts do not modify workspace files.

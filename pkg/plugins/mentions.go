@@ -30,6 +30,9 @@ import (
 type MentionsPlugin struct {
 	// cssClass is the CSS class applied to mention links
 	cssClass string
+	// metadataHTTPClient is an optional test/client override. A nil client
+	// preserves the production timeout and HTTP instrumentation defaults.
+	metadataHTTPClient *http.Client
 }
 
 const mentionsCacheVersion = "mentions:v2"
@@ -92,8 +95,12 @@ func (p *MentionsPlugin) Transform(m *lifecycle.Manager) error {
 	// Keep processing when the blogroll is empty: unknown ~attributions
 	// still need distinct styling and are caught by the offline linter.
 
-	// Fetch metadata for all unique domains
-	domainMap := p.fetchAllMetadata(m, handleMap)
+	// Only contacts referenced by loaded posts need network metadata. Keep
+	// the full handle map for unknown mentions and author rendering.
+	referenced := p.referencedHandles(m, handleMap)
+
+	// A post with no relevant handles must not contact unrelated sites.
+	domainMap := p.fetchAllMetadata(m, referenced)
 
 	// Store in memory cache for other plugins
 	m.Cache().Set("mentions_metadata", domainMap)
@@ -137,6 +144,48 @@ func (p *MentionsPlugin) Transform(m *lifecycle.Manager) error {
 		}
 		return nil
 	})
+}
+
+// referencedHandles selects contacts that the rendering passes can actually
+// link, without fetching unrelated blogroll entries or fenced-code literals.
+func (p *MentionsPlugin) referencedHandles(m *lifecycle.Manager, handleMap map[string]*mentionEntry) map[string]*mentionEntry {
+	referenced := make(map[string]*mentionEntry)
+	addHandle := func(handle string) {
+		normalized := strings.ToLower(handle)
+		if entry := handleMap[normalized]; entry != nil {
+			referenced[normalized] = entry
+			return
+		}
+		// Preserve exact domain handles, but retry without sentence punctuation.
+		normalized = mentionTrailingPunctRegex.ReplaceAllString(normalized, "")
+		if entry := handleMap[normalized]; entry != nil {
+			referenced[normalized] = entry
+		}
+	}
+	for _, post := range m.FilterPosts(func(post *models.Post) bool {
+		return !post.Skip && post.Content != ""
+	}) {
+		// Match the rendering pipeline: fenced code is inert, while chat
+		// titles are an exception to ordinary skipped admonition headers.
+		content := mentionsCodeBlockRegex.ReplaceAllString(post.Content, "")
+		for _, line := range strings.Split(content, "\n") {
+			if admonitionHeaderRegex.MatchString(line) {
+				groups := chatAdmonitionTitleRegex.FindStringSubmatch(line)
+				if len(groups) >= 7 {
+					if groups[3] != "" {
+						addHandle(groups[3])
+					} else {
+						addHandle(groups[5])
+					}
+				}
+				continue
+			}
+			for _, match := range mentionRegex.FindAllStringSubmatch(line, -1) {
+				addHandle(match[3])
+			}
+		}
+	}
+	return referenced
 }
 
 func (p *MentionsPlugin) computePostHash(post *models.Post, cacheSignature string) string {
@@ -487,8 +536,9 @@ func (p *MentionsPlugin) fetchMetadata(domain, cacheDir string, maxAge, timeout 
 		LastFetched: time.Now(),
 	}
 
-	client := &http.Client{
-		Timeout: timeout,
+	client := p.metadataHTTPClient
+	if client == nil {
+		client = &http.Client{Timeout: timeout}
 	}
 	buildstats.InstrumentHTTPClient(client)
 
