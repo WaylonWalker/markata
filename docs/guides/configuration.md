@@ -2156,6 +2156,17 @@ Each feed is defined as an array item. The default config ships with an archive 
 | `templates` | object | inherited | Templates (inherits from defaults) |
 | `archive_disabled` | bool | `false` | Disable `/{slug}/archive/*` syndication endpoints for this feed |
 
+Set an individual feed format to `false` to disable it while inheriting the
+other formats from `[markata-go.feed_defaults.formats]`. Omitted format keys
+keep their default values in TOML, YAML, and JSON configs. For example:
+
+```toml
+[[markata-go.feeds]]
+slug = "draft"
+[markata-go.feeds.formats]
+sitemap = false
+```
+
 ```toml
 # Main blog feed
 [[markata-go.feeds]]

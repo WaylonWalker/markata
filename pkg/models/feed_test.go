@@ -700,4 +700,3 @@ func TestFeedConfigApplyDefaultsPreservesExplicitFalse(t *testing.T) {
 		})
 	}
 }
-
