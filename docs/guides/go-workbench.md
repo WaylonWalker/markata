@@ -37,7 +37,8 @@ thin caret and **You** flag at the active location. When rendered text matches
 the source line, the preview caret follows the character cursor. For content
 that a renderer transforms or replaces, it falls back to the nearest mapped
 source position. The source pane keeps its normal caret on the actual text
-cursor. Preview updates preserve
+cursor. With the Vim keymap, the preview caret changes shape for normal,
+insert, replace, and visual modes. Preview updates preserve
 unchanged blocks, and layout changes refresh the source-to-preview mapping,
 including after images and fonts load. While you edit, the preview follows the
 caret after the matching content update completes, including when you keep

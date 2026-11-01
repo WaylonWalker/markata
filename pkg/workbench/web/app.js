@@ -250,6 +250,7 @@ keymap.addEventListener('change', () => {
   editor.setOption('keyMap', keymap.value);
   try { localStorage.setItem('markata-editor-keymap', keymap.value); } catch { storageWarning(); }
   focusEditorForWriting();
+  scrollSync.vimModeChanged();
 });
 let revision = 0, timer, busy = false, ready = false, lastEditAt = null;
 let previewStarted = false, previewReady = false, pendingPreview = null, activeRender = null;

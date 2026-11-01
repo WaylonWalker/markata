@@ -7,11 +7,11 @@ else if(values.includes(value))document.documentElement.setAttribute(key,value);
 }};
 
 let updates=Promise.resolve(), scriptSequence=0, latestVersion=0;
-let sourceLines=[], sourceLineCount=0, sourceLineOffset=0, sourcePositionAnchors=[], programmedTarget=null, scrollFrame=0, positionLine=-1, positionColumn=null, positionSourceText=null, positionPending=false, positionNode=null, lastExactPosition=null, scrollIntentUntil=0;
+let sourceLines=[], sourceLineCount=0, sourceLineOffset=0, sourcePositionAnchors=[], programmedTarget=null, scrollFrame=0, positionLine=-1, positionColumn=null, positionSourceText=null, positionPending=false, positionVimMode=null, positionNode=null, lastExactPosition=null, scrollIntentUntil=0;
 let articleObserver;
 const executedInlineScripts=new Set();
 let appearanceSignature=JSON.stringify(Object.fromEntries(Object.keys(allowed).map(key=>[key,document.documentElement.getAttribute(key)])));
-const markerStyle=document.createElement('style');markerStyle.textContent='.markata-sync-position{outline:1px solid color-mix(in srgb,var(--color-primary,#d39b32) 18%,transparent);outline-offset:2px;border-radius:3px}.markata-presence-layer{position:fixed;inset:0;z-index:2147483646;overflow:hidden;pointer-events:none}.markata-presence-cursor{--presence-color:var(--color-primary,#d39b32);position:fixed;width:1px;height:28px;background:var(--presence-color);opacity:.85;filter:drop-shadow(0 0 2px color-mix(in srgb,var(--presence-color) 35%,transparent))}.markata-presence-cursor[hidden]{display:none}.markata-presence-flag{position:absolute;bottom:calc(100% + 3px);left:-1px;padding:2px 6px;border-radius:3px 3px 3px 0;background:var(--presence-color);color:var(--color-on-primary,#11151d);font:600 10px/1.4 system-ui,sans-serif;white-space:nowrap;letter-spacing:.01em}';document.head.append(markerStyle);
+const markerStyle=document.createElement('style');markerStyle.textContent='.markata-sync-position{outline:1px solid color-mix(in srgb,var(--color-primary,#d39b32) 18%,transparent);outline-offset:2px;border-radius:3px}.markata-presence-layer{position:fixed;inset:0;z-index:2147483646;overflow:hidden;pointer-events:none}.markata-presence-cursor{--presence-color:var(--color-primary,#d39b32);position:fixed;width:1px;height:28px;background:var(--presence-color);opacity:.85;filter:drop-shadow(0 0 2px color-mix(in srgb,var(--presence-color) 35%,transparent))}.markata-presence-cursor[data-vim-mode="normal"],.markata-presence-cursor[data-vim-mode="visual"]{width:var(--presence-glyph-width,8px);height:var(--presence-line-height,20px);opacity:.48;filter:none;border-radius:2px}.markata-presence-cursor[data-vim-mode="visual"]{outline:1px solid color-mix(in srgb,var(--presence-color) 70%,transparent)}.markata-presence-cursor[data-vim-mode="replace"]{height:2px!important;opacity:.95;filter:none}.markata-presence-cursor[hidden]{display:none}.markata-presence-flag{position:absolute;bottom:calc(100% + 3px);left:-1px;padding:2px 6px;border-radius:3px 3px 3px 0;background:var(--presence-color);color:var(--color-on-primary,#11151d);font:600 10px/1.4 system-ui,sans-serif;white-space:nowrap;letter-spacing:.01em}';document.head.append(markerStyle);
 const presenceLayer=document.createElement('div');presenceLayer.className='markata-presence-layer';presenceLayer.setAttribute('aria-hidden','true');document.body.append(presenceLayer);
 const presenceParticipants=[{id:'local',label:'You',color:'var(--color-primary,#d39b32)'}];
 const presenceCursors=new Map();
@@ -100,7 +100,12 @@ const textPosition=(root,source,ch)=>{
   else{const last=chars.at(-1);if(!last)return null;range.setStart(last.node,last.offset+1);}
   range.collapse(true);
   const rect=range.getBoundingClientRect();
-  return rect.width||rect.height?rect:null;
+  const glyph=target||chars.at(-1);
+  const glyphRange=document.createRange();
+  if(target){glyphRange.setStart(glyph.node,glyph.offset);glyphRange.setEnd(glyph.node,Math.min(glyph.offset+1,glyph.node.nodeValue.length));}
+  else{glyphRange.setStart(glyph.node,Math.max(0,glyph.offset));glyphRange.setEnd(glyph.node,glyph.offset+1);}
+  const glyphRect=glyphRange.getBoundingClientRect();
+  return rect.width||rect.height?{left:rect.left,top:rect.top,height:rect.height,width:glyphRect.width}:null;
 };
 const syncPositionMarker=()=>{
   const article=document.querySelector('.post-content');
@@ -140,7 +145,11 @@ const syncPositionMarker=()=>{
       const markerTop=character?.top??(keepExact?lastExactPosition.top:top);
       cursor.style.left=`${Math.max(2,left==null?rect.left+(point?.nested?10:-7):left-1)}px`;
       cursor.style.top=`${Math.max(0,Math.min(innerHeight-lineHeight,markerTop))}px`;
+      cursor.dataset.vimMode=positionVimMode||'';
+      cursor.style.setProperty('--presence-glyph-width',`${Math.max(6,character?.width||8)}px`);
+      cursor.style.setProperty('--presence-line-height',`${lineHeight}px`);
       cursor.style.height=`${character?.height||lineHeight}px`;
+      if(positionVimMode==='replace')cursor.style.top=`${Math.max(0,Math.min(innerHeight-2,markerTop+lineHeight-2))}px`;
       if(!positionPending&&!character)lastExactPosition=null;
     }
   }
@@ -307,7 +316,7 @@ if(e.data?.type==='markdown-render'){
 return;
 }if(e.data?.type==='sync-scroll-lines'){sourceLines=e.data.lines||[];sourceLineCount=e.data.lineCount||0;sourceLineOffset=e.data.sourceOffset||0;requestAnimationFrame(()=>scrollState(false));return;
 }if(e.data?.type==='sync-scroll'){programmedTarget={id:e.data.id,y:Math.max(0,Math.min(e.data.y,document.documentElement.scrollHeight-innerHeight))};document.scrollingElement.scrollTop=programmedTarget.y;const id=e.data.id;setTimeout(()=>{if(programmedTarget?.id===id)programmedTarget=null;},300);return;
-}if(e.data?.type==='sync-position'){positionLine=e.data.line;positionColumn=Number.isFinite(e.data.ch)?e.data.ch:null;positionSourceText=typeof e.data.text==='string'?e.data.text:null;positionPending=e.data.pending===true;if(positionColumn==null)lastExactPosition=null;syncPositionMarker();return;
+}if(e.data?.type==='sync-position'){positionLine=e.data.line;positionColumn=Number.isFinite(e.data.ch)?e.data.ch:null;positionSourceText=typeof e.data.text==='string'?e.data.text:null;positionPending=e.data.pending===true;positionVimMode=['normal','insert','replace','visual'].includes(e.data.vimMode)?e.data.vimMode:null;if(positionColumn==null)lastExactPosition=null;syncPositionMarker();return;
 }if(e.data?.type==='appearance'){updates=updates.then(()=>{setAppearance(e.data.attributes);
 dispatchEvent(new Event('theme-change'));appearanceSignature=JSON.stringify(e.data.attributes||{});
 }).catch(console.error);

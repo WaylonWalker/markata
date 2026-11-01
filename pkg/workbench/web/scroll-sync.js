@@ -19,6 +19,13 @@ window.MarkataScrollSync = function (editor, frame, setting, workbench) {
   try { setting.checked = localStorage.getItem('markata-editor-scroll-sync') !== 'false'; } catch { /* storage is optional */ }
   const active = () => setting.checked && workbench.dataset.layout === 'split';
   const clamp = (n, max) => Math.max(0, Math.min(max, n));
+  const vimPresenceMode = () => {
+    const vim = editor.state.vim;
+    if (!vim) return null;
+    if (vim.visualMode) return 'visual';
+    if (editor.getOption('keyMap') === 'vim-replace') return 'replace';
+    return vim.insertMode ? 'insert' : 'normal';
+  };
   const position = (points, value, preferredLine = null) => {
     if (points.length < 2) return null;
     const lineAt = (start, end) => {
@@ -98,13 +105,14 @@ window.MarkataScrollSync = function (editor, frame, setting, workbench) {
   function markPreviewPosition(line, cursor = null) {
     line = clamp(Math.round(line || 0), editor.lastLine());
     const source = cursor ? editor.getLine(cursor.line) : null;
-    const key = cursor ? `${cursor.line}:${cursor.ch}:${source}` : '';
+    const mode = vimPresenceMode();
+    const key = `${cursor ? `${cursor.line}:${cursor.ch}:${source}` : ''}:${mode || ''}`;
     const pending = Boolean(cursor && contentUnrendered);
     if (line === lastMarkedLine && key === lastMarkedCursor && pending === lastMarkedPending) return;
     lastMarkedLine = line;
     lastMarkedCursor = key;
     lastMarkedPending = pending;
-    frame.contentWindow?.postMessage({type:'sync-position', line, ch:cursor?.ch ?? null, text:source, pending}, '*');
+    frame.contentWindow?.postMessage({type:'sync-position', line, ch:cursor?.ch ?? null, text:source, pending, vimMode:mode}, '*');
   }
   function editorToPreview(followCursor = false) {
     if (!active() || !preview || !lines.length) return;
@@ -163,6 +171,11 @@ window.MarkataScrollSync = function (editor, frame, setting, workbench) {
     if (contentUnrendered) { deferredCursorFollow = true; return; }
     requestAnimationFrame(() => editorToPreview(true));
   });
+  editor.on('vim-mode-change', () => {
+    const cursor = editor.getCursor();
+    lastMarkedLine = -1;
+    markPreviewPosition(cursor.line, cursor);
+  });
   window.addEventListener('message', event => {
     if (event.source !== frame.contentWindow || event.data?.type !== 'sync-scroll-state') return;
     preview = event.data;
@@ -195,6 +208,11 @@ window.MarkataScrollSync = function (editor, frame, setting, workbench) {
       const followCursor = deferredCursorFollow || editorFollowCursor;
       deferredCursorFollow = false;
       requestAnimationFrame(() => driver === 'preview' ? previewToEditor() : editorToPreview(followCursor));
+    },
+    vimModeChanged() {
+      const cursor = editor.getCursor();
+      lastMarkedLine = -1;
+      markPreviewPosition(cursor.line, cursor);
     },
     refresh() { if (driver === 'preview') previewToEditor(); else editorToPreview(); }
   };
