@@ -35,11 +35,14 @@ func frontmatterDocument(source string) (diagnostics.FrontmatterInspection, *yam
 		return inspection, nil, fmt.Errorf("frontmatter delimiters are malformed; fix the YAML in source mode")
 	}
 	document := &yaml.Node{}
-	if !inspection.HasFrontmatter || strings.TrimSpace(inspection.Frontmatter) == "" || strings.HasPrefix(strings.TrimSpace(inspection.Frontmatter), "#") && !strings.Contains(inspection.Frontmatter, ":") {
+	if !inspection.HasFrontmatter || strings.TrimSpace(inspection.Frontmatter) == "" {
 		return inspection, document, nil
 	}
 	if err := yaml.Unmarshal([]byte(inspection.Frontmatter), document); err != nil {
 		return inspection, nil, fmt.Errorf("invalid YAML frontmatter: %w", err)
+	}
+	if len(document.Content) == 0 { // comment-only YAML is a valid empty mapping
+		return inspection, document, nil
 	}
 	if len(document.Content) != 1 || document.Content[0].Kind != yaml.MappingNode {
 		return inspection, nil, fmt.Errorf("frontmatter must be a YAML object (mapping)")

@@ -231,8 +231,9 @@
       row.append(warning,nodeButton('Edit YAML',()=>setRaw(true)));
     } else if (type==='boolean' && field.kind==='boolean') {
       row.append(inputFor(field.value,'boolean',value=>setField(field.name,value)));
-    } else if (type==='list' && Array.isArray(field.value) && field.value.every(item=>typeof item==='string')) {
-      const tags=inputFor(field.value.join(', '),'text',text=>setField(field.name,text.split(',').map(t=>t.trim()).filter(Boolean)));
+    } else if (type==='list' && (typeof field.value==='string' || Array.isArray(field.value) && field.value.every(item=>typeof item==='string'))) {
+      const items=Array.isArray(field.value)?field.value:[field.value];
+      const tags=inputFor(items.join(', '),'text',text=>setField(field.name,text.split(',').map(t=>t.trim()).filter(Boolean)));
       tags.placeholder='Separate with commas';row.append(tags);
     } else if (type==='object'||type==='list'||field.kind==='object'||field.kind==='list') {
       row.append(structured(field.value,value=>setField(field.name,value)));
