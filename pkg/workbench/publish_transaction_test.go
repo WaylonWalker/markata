@@ -21,7 +21,9 @@ func publishPostRequest(t *testing.T, handler *Handler, path string, body any) *
 		t.Fatal(err)
 	}
 	request := httptest.NewRequest(http.MethodPost, path, bytes.NewReader(data))
-	request.Header.Set("Origin", "http://example.com")
+	request.RemoteAddr = "127.0.0.1:55555"
+	request.Host = "localhost:8766"
+	request.Header.Set("Origin", "http://localhost:8766")
 	request.Header.Set("Content-Type", "application/json")
 	recorder := httptest.NewRecorder()
 	handler.ServeHTTP(recorder, request)
@@ -120,6 +122,8 @@ func TestPublishRejectsStagedSelectedPath(t *testing.T) {
 func TestPublishCommitMustHaveSameOrigin(t *testing.T) {
 	_, handler := initPublishRepository(t)
 	request := httptest.NewRequest(http.MethodPost, "/workspace/publish/commit", strings.NewReader("{}"))
+	request.RemoteAddr = "127.0.0.1:55555"
+	request.Host = "localhost:8766"
 	recorder := httptest.NewRecorder()
 	handler.ServeHTTP(recorder, request)
 	if recorder.Code != http.StatusForbidden {
