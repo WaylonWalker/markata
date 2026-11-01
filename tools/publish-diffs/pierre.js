@@ -22,7 +22,7 @@ function render(host, before, after, options = {}) {
     diffStyle: options.layout === 'split' ? 'split' : 'stacked',
     theme: palettes,
     diffIndicators: 'bars',
-    preferredHighlighter: 'shiki-js'
+        preferredHighlighter: 'highlights'
   });
   view.render({
     fileContainer: host,

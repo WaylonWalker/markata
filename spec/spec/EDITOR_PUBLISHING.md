@@ -7,9 +7,11 @@ Status: incrementally implementing on the Go workbench, stacked on #1905.
 The writing interface MUST show a persistent Publish action in the top bar
 regardless of split/editor-only/preview-only layout. The command palette MUST
 offer "Publishing: Review & Publish" with publish, go live, deploy, release,
-and review aliases. Ctrl/Cmd+Shift+Enter MUST invoke the same action from all
-editor keymaps; Ctrl/Cmd+P and Ctrl/Cmd+Shift+P retain file-finder and palette
-behavior. Opening the dialog MUST NOT commit, push, build, or deploy.
+and review aliases. Ctrl/Cmd+Shift+Enter and Ctrl/Cmd+S MUST invoke the same
+review flow from all editor keymaps. In Vim mode, `:w` MUST invoke that flow;
+Emacs mode's Ctrl-X Ctrl-S MUST do the same. Ctrl/Cmd+P and Ctrl/Cmd+Shift+P
+retain file-finder and palette behavior. Opening the dialog MUST NOT commit,
+push, build, or deploy.
 
 A scratch file MUST NOT be treated as a site post. Its action MUST indicate that
 it needs to be saved to the site first. The editor MUST distinguish autosaved
@@ -19,10 +21,15 @@ The desktop review MUST support side-by-side rendered versions, while mobile
 MUST show one version at a time with tap targets and optional horizontal swiping.
 Keyboard and screen-reader access MUST not depend on swiping. The dialog MUST
 restore focus when dismissed and MUST not lose editor source.
+On desktop, the review dialog MUST use the available viewport height for its
+comparison panes while keeping its header and actions visible. Optional full-diff
+loading failures MUST replace the loading state with a readable error.
 
 The review header MUST summarize publish metadata differences as textual chips
 (not color alone). Especially show changes to draft/published flags, slug changes,
-and contradictory publication flags. Content changes need a full source comparison.
+and contradictory publication flags. YAML boolean values MUST be recognized
+case-insensitively. An already public, non-draft page MUST NOT offer Mark as
+public. Content changes need a full source comparison.
 
 ## Revision identity
 

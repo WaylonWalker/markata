@@ -18,7 +18,10 @@
     const fields = {};
     if (front) for (const line of front[1].split(/\r?\n/)) {
       const match = line.match(/^([a-z][\w-]*):\s*(.*?)\s*$/i);
-      if (match) fields[match[1].toLowerCase()] = match[2].replace(/^["']|["']$/g,'');
+      if (match) {
+        const key=match[1].toLowerCase(),value=match[2].replace(/^["']|["']$/g,'');
+        fields[key]=['true','false'].includes(value.toLowerCase())?value.toLowerCase():value;
+      }
     }
     return fields;
   }
@@ -43,6 +46,7 @@
     pierreRequest=new Promise((resolve,reject)=>{
       const script=document.createElement('script');
       script.src='/editor/pierre-diffs.bundle.js';
+      script.type='module';
       script.async=true;
       script.onload=()=>window.MarkataPierreDiff?resolve():reject(new Error('Pierre diff bundle did not initialize'));
       script.onerror=()=>reject(new Error('Optional Pierre bundle is not installed. Run the tools/publish-diffs build to enable Full diff.'));
@@ -55,6 +59,7 @@
     const host=dialog.querySelector('#publish-pierre-host');
     if(!state.data || state.mode!=='pierre')return;
     error.hidden=true;
+    host.dataset.state='loading';
     try{
       await loadPierre();
       if(state.mode!=='pierre' || !state.data)return;
@@ -62,7 +67,8 @@
         filename:state.path,newFile:!state.data.baseline_exists,
         layout:dialog.querySelector('[data-pierre-layout].active')?.dataset.pierreLayout||'stacked'
       });
-    }catch(e){error.textContent=e.message;error.hidden=false;}
+      host.dataset.state='ready';
+    }catch(e){host.replaceChildren();host.dataset.state='error';error.textContent=e.message;error.hidden=false;}
   }
   function setMode(mode) {
     state.mode = mode;
@@ -225,11 +231,11 @@
       const before=source.slice(0,end);
       const rest=source.slice(end);
       let changes=before;
-      if(/^published:\s*(true|false)\s*$/m.test(changes))
-        changes=changes.replace(/^published:\s*(true|false)\s*$/m,'published: true');
+      if(/^published:\s*(true|false)\s*$/im.test(changes))
+        changes=changes.replace(/^published:\s*(true|false)\s*$/im,'published: true');
       else changes+=newline+'published: true';
-      if(/^draft:\s*(true|false)\s*$/m.test(changes))
-        changes=changes.replace(/^draft:\s*(true|false)\s*$/m,'draft: false');
+      if(/^draft:\s*(true|false)\s*$/im.test(changes))
+        changes=changes.replace(/^draft:\s*(true|false)\s*$/im,'draft: false');
       next=changes+rest;
     }
     if(next===source)return;
@@ -311,9 +317,12 @@
   }
   function attach(instance) {
     editor=instance;
+    const startPublish=()=>{open();return true;};
+    editor.addKeyMap({'Ctrl-S':startPublish,'Cmd-S':startPublish,'Ctrl-X Ctrl-S':startPublish});
+    window.CodeMirror?.Vim?.defineEx('write','w',()=>open());
     button=document.createElement('button');
     button.type='button';button.id='publish-open';
-    button.textContent='Publish';button.title='Review & Publish (Ctrl/Cmd+Shift+Enter)';
+    button.textContent='Publish';button.title='Review & Publish (Ctrl/Cmd+S, Ctrl/Cmd+Shift+Enter, Vim :w)';
     button.setAttribute('aria-haspopup','dialog');
     const settings=document.querySelector('#settings-open');
     settings.parentElement.insertBefore(button,settings);

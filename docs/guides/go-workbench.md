@@ -261,7 +261,8 @@ To open the command palette with a complete example loaded, visit `/?example`.
 
 When editing a Markdown file inside a Git-backed workspace, select **Publish**
 in the upper-right header, search for **Publishing: Review & Publish** in the
-command palette, or press **Ctrl/Cmd+Shift+Enter**. These routes open the same
+command palette, or press **Ctrl/Cmd+S** or **Ctrl/Cmd+Shift+Enter**. Vim mode
+also accepts `:w`; Emacs mode accepts **Ctrl-X Ctrl-S**. Each opens the same
 review dialog; none of them publishes immediately.
 
 The dialog first waits until the exact text in the editor has been saved to
