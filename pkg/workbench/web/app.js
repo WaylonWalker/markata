@@ -2,8 +2,9 @@
 const source = document.querySelector('#source');
 const frame = document.querySelector('#preview');
 window.addEventListener('message',event=>{
-  if (event.source !== frame.contentWindow || event.data?.type !== 'open-post') return;
-  window.MarkataSiteTree?.openPost(event.data.slug);
+  if (event.source !== frame.contentWindow) return;
+  if (event.data?.type === 'open-post') window.MarkataSiteTree?.openPost(event.data.slug);
+  if (event.data?.type === 'preview-updated' && event.data.version === revision) finishPreview(event.data.version);
 });
 const status = document.querySelector('#status');
 const errorBox = document.querySelector('#error');
@@ -144,7 +145,12 @@ keymap.addEventListener('change', () => {
   editor.focus();
 });
 let revision = 0, timer, busy = false, ready = false;
-let previewStarted = false, previewReady = false, pendingPreview = null;
+let previewStarted = false, previewReady = false, pendingPreview = null, activeRender = null;
+function finishPreview(version) {
+  if (!activeRender || activeRender.version !== version || version !== revision) return;
+  const {data, roundTrip} = activeRender;
+  status.textContent = `Go ${data.render_ms.toFixed(1)} ms${data.cached ? ' (cached)' : ''} · preview updated · round trip ${Math.round(roundTrip)} ms · input ${(data.input_bytes/1024).toFixed(1)} KB · fragment ${((data.html_bytes)/1024).toFixed(1)} KB`;
+}
 function storageWarning() { saved.textContent = 'Draft not saved · storage unavailable or full · download a copy'; }
 function saveDraft() {
  if (window.MarkataSiteTree?.save()) return;
@@ -197,6 +203,8 @@ async function render() {
     const data = await response.json();
     if (version !== revision) return;
     if (!response.ok) throw new Error(data.error || 'Rendering failed.');
+    const roundTrip = performance.now()-started;
+    activeRender = {data, version, roundTrip};
     if (!previewStarted) {
       previewStarted = true;
       frame.onload = () => {
@@ -206,18 +214,18 @@ async function render() {
         if (pendingPreview) {
           const latest = pendingPreview;
           pendingPreview = null;
-          if (latest.version === revision) updatePreview(latest.data);
-        }
+          if (latest.version === revision) updatePreview(latest.data, latest.version);
+        } else finishPreview(activeRender?.version);
       };
       frame.srcdoc = data.document;
     } else if (!previewReady) {
       pendingPreview = {data, version};
     } else {
-      updatePreview(data);
+      updatePreview(data, version);
     }
     scrollSync.update(data.source_lines);
     errorBox.hidden = true;
-    status.textContent = `Go ${data.render_ms.toFixed(1)} ms${data.cached ? ' (cached)' : ''} · round trip ${Math.round(performance.now()-started)} ms · input ${(data.input_bytes/1024).toFixed(1)} KB · ${data.document_bytes ? 'document' : 'fragment'} ${((data.document_bytes || data.html_bytes)/1024).toFixed(1)} KB`;
+    status.textContent = 'Updating preview…';
   } catch (error) {
     if (version !== revision) return;
     errorBox.textContent = error.name === 'AbortError' ? 'Preview timed out. Edit the Markdown or reload to retry.' : error.message;
@@ -242,10 +250,10 @@ document.querySelector('#download').addEventListener('click', () => {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 });
 const appearanceKeys = ['data-palette','data-theme','data-aesthetic','data-fontpack','data-text-size'];
-function updatePreview(data) {
+function updatePreview(data, version) {
   frame.contentWindow?.postMessage({type:'markdown-render', html:data.html,
     source_lines:data.source_lines,
-    feature_head_html:data.feature_head_html, body_end_html:data.body_end_html,
+    feature_head_html:data.feature_head_html, body_end_html:data.body_end_html, version,
     attributes:attributes()}, '*');
 }
 function attributes() { return Object.fromEntries(appearanceKeys.map(k => [k, document.documentElement.getAttribute(k)])); }

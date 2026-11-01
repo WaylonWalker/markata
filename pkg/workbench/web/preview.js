@@ -83,6 +83,7 @@ addEventListener('message',e=>{if(e.source!==parent)return;
 if(e.data?.type==='markdown-render'){const article=document.querySelector('.post-content');
 if(article)article.innerHTML=e.data.html;
 sourceLines=e.data.source_lines||[];
+parent.postMessage({type:'preview-updated',version:e.data.version},'*');
 updates=updates.then(()=>renderMarkdown(e.data)).catch(console.error);
 return;
 }if(e.data?.type==='sync-scroll-lines'){sourceLines=e.data.lines||[];sourceLineCount=e.data.lineCount||0;requestAnimationFrame(()=>scrollState(false));return;
