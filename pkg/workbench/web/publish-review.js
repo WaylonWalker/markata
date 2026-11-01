@@ -7,7 +7,9 @@
   const sourceLimit = 200000;
   const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
   const esc = value => String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
-  const state = {path:null, data:null, mode:'side', loading:false, commit:null, busy:false};
+  const state = {path:null, data:null, mode:'rich', loading:false, commit:null, busy:false};
+  const comparisonMaps = {before:[],after:[]};
+  const comparisonMax = {before:0,after:0};
 
   function titleFromSource(source) {
     const front = source.match(/^---\r?\n([\s\S]*?)\r?\n---/);
@@ -75,7 +77,8 @@
     for (const tab of dialog.querySelectorAll('[data-publish-mode]')) {
       const on = tab.dataset.publishMode === mode;
       tab.classList.toggle('active',on);
-      tab.setAttribute('aria-pressed',String(on));
+      tab.setAttribute('aria-selected',String(on));
+      tab.tabIndex=on?0:-1;
     }
     for (const section of dialog.querySelectorAll('[data-publish-view]'))
       section.hidden = section.dataset.publishView !== mode;
@@ -136,7 +139,56 @@
       row.append(prefix,content); box.append(row);
     }
   }
-  async function renderVersion(source, frame) {
+  function comparisonScrollBridge(side) {
+    return "<script>(()=>{" +
+      "const side=" + JSON.stringify(side) + ";let intentUntil=0,frame=0;" +
+      "const content=document.querySelector('.post-content')||document.querySelector('main')||document.body;" +
+      "const anchors=()=>{const seen=new Map();return [...content.querySelectorAll('h1,h2,h3,h4,h5,h6,p,li,blockquote,pre,table,figure')].map(node=>{const text=(node.textContent||'').replace(/\\s+/g,' ').trim().slice(0,180);if(!text)return null;const base=node.tagName.toLowerCase()+':'+text,count=seen.get(base)||0;seen.set(base,count+1);return{key:base+'#'+count,top:Math.round(node.getBoundingClientRect().top+scrollY)}}).filter(Boolean)};" +
+      "let points=[];const sendMap=()=>{points=anchors();parent.postMessage({type:'publish-diff-map',side,points,max:Math.max(0,document.documentElement.scrollHeight-innerHeight),viewport:innerHeight},'*')};" +
+      "const sendScroll=()=>parent.postMessage({type:'publish-diff-scroll',side,top:scrollY,max:Math.max(0,document.documentElement.scrollHeight-innerHeight),viewport:innerHeight,user:performance.now()<intentUntil},'*');" +
+      "const scheduleMap=()=>{if(frame)return;frame=requestAnimationFrame(()=>{frame=0;sendMap();sendScroll()})};" +
+      "for(const name of ['wheel','touchstart','pointerdown'])addEventListener(name,()=>{intentUntil=performance.now()+700},{passive:true});" +
+      "addEventListener('keydown',event=>{if(['ArrowUp','ArrowDown','PageUp','PageDown','Home','End',' '].includes(event.key))intentUntil=performance.now()+700},true);" +
+      "addEventListener('scroll',sendScroll,{passive:true});addEventListener('resize',scheduleMap);addEventListener('load',scheduleMap,true);" +
+      "new ResizeObserver(scheduleMap).observe(content);" +
+      "addEventListener('message',event=>{if(event.source!==parent||event.data?.type!=='publish-diff-scroll-to')return;scrollTo(0,Math.max(0,event.data.top||0))});scheduleMap()})()</script>";
+  }
+  function updateCommitMessage() {
+    const input=dialog.querySelector('#publish-commit-message');
+    const bytes=new TextEncoder().encode(input.value).length;
+    dialog.querySelector('#publish-message-count').textContent=bytes+' / 4000 bytes';
+    const fields=state.data?frontmatter(state.data.current):{};
+    const canCommit=Boolean(state.data?.changed&&fields.published==='true'&&fields.draft!=='true');
+    dialog.querySelector('#publish-confirm').disabled=!canCommit||!input.value.trim()||bytes>4000;
+  }
+  function comparisonScrollSync(event) {
+    const before=dialog.querySelector('#publish-before-frame');
+    const after=dialog.querySelector('#publish-after-frame');
+    const source=event.source===before.contentWindow?'before':event.source===after.contentWindow?'after':null;
+    if(!source)return;
+    if(event.data?.type==='publish-diff-map'&&event.data.side===source) {
+      comparisonMaps[source]=Array.isArray(event.data.points)?event.data.points:[];
+      comparisonMax[source]=event.data.max||0;
+      return;
+    }
+    if(event.data?.type!=='publish-diff-scroll'||event.data.side!==source)return;
+    comparisonMax[source]=event.data.max||0;
+    if(!event.data.user||state.mode!=='side')return;
+    const target=source==='before'?'after':'before';
+    const targetFrame=target==='before'?before:after;
+    const targetPoints=comparisonMaps[target],byKey=new Map(targetPoints.map(point=>[point.key,point]));
+    const reference=event.data.top+event.data.viewport*.3;
+    let match=null,distance=Infinity;
+    for(const point of comparisonMaps[source]) {
+      const candidate=byKey.get(point.key);
+      if(candidate&&Math.abs(point.top-reference)<distance){match={point,candidate};distance=Math.abs(point.top-reference);}
+    }
+    const targetTop=match
+      ? match.candidate.top-(match.point.top-event.data.top)
+      : (event.data.max?event.data.top/event.data.max:0)*comparisonMax[target];
+    targetFrame.contentWindow?.postMessage({type:'publish-diff-scroll-to',top:targetTop},'*');
+  }
+  async function renderVersion(source, frame, side) {
     const appearance={};
     for (const key of ['data-palette','data-theme','data-aesthetic','data-fontpack','data-text-size']) {
       const value=document.documentElement.getAttribute(key);
@@ -146,7 +198,7 @@
       body:JSON.stringify({markdown:contentBody(source),include_document:true,appearance})});
     const result=await response.json();
     if(!response.ok||!result.document) throw new Error(result.error||'Could not render the comparison');
-    frame.srcdoc=result.document;
+    frame.srcdoc=result.document.replace('</body>',`${comparisonScrollBridge(side)}</body>`);
     return result;
   }
   async function awaitSaved(path, snapshot) {
@@ -200,18 +252,22 @@
       const fields=frontmatter(data.current);
       dialog.querySelector('#publish-mark-public').hidden=fields.published==='true' && fields.draft!=='true';
       dialog.querySelector('#publish-confirm').disabled=!data.changed || fields.published!=='true' || fields.draft==='true';
-      setSide('after');setMode('side');
+      dialog.querySelector('#publish-commit-message').value=`Publish: ${path}`;
+      updateCommitMessage();
+      comparisonMaps.before=[];comparisonMaps.after=[];
+      setSide('after');setMode('rich');
       dialog.querySelector('#publish-body').hidden=false;
       setNotice('Comparison against last Git commit, not necessarily the deployed site. Committing does not push or deploy.','info');
       const [before,after]=await Promise.all([
-        renderVersion(data.baseline,dialog.querySelector('#publish-before-frame')),
-        renderVersion(data.current,dialog.querySelector('#publish-after-frame'))
+        renderVersion(data.baseline,dialog.querySelector('#publish-before-frame'),'before'),
+        renderVersion(data.current,dialog.querySelector('#publish-after-frame'),'after')
       ]);
       try {
         window.MarkataRichPublishDiff.render(before,after,dialog.querySelector('#publish-rich-frame'));
       } catch(error) {
         const tab=dialog.querySelector('[data-publish-mode="rich"]');
         tab.disabled=true;tab.title=error.message;
+        setMode('side');
       }
     }catch(error){
       setNotice(error.message,'warning');
@@ -246,6 +302,12 @@
   async function commitReview() {
     const data=state.data;
     if(!data||state.busy||!data.changed)return;
+    const messageField=dialog.querySelector('#publish-commit-message');
+    const message=messageField.value.trim();
+    if(messageField.value!==message){messageField.value=message;updateCommitMessage();}
+    if(!message||new TextEncoder().encode(message).length>4000) {
+      setNotice('Enter a commit message of 1 to 4000 bytes before committing.','warning');return;
+    }
     if(state.path!==window.MarkataSiteTree?.activeFile?.()||editor.getValue()!==data.current) {
       setNotice('The document changed. Close and reopen review before committing.','warning');return;
     }
@@ -255,7 +317,7 @@
     try{
       const response=await fetch('/workspace/publish/commit',{
         method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({path:data.path,head:data.head,version:data.version})
+        body:JSON.stringify({path:data.path,head:data.head,version:data.version,message})
       });
       const result=await response.json();
       if(!response.ok)throw new Error(result.error||'Cannot commit this revision.');
@@ -330,13 +392,14 @@
     doc.id='publish-review';doc.setAttribute('aria-labelledby','publish-title');
     doc.innerHTML='<header class="publish-review-head"><div><small>REVIEW &amp; PUBLISH</small><h2 id="publish-title">Review changes</h2><p id="publish-path"></p></div><button type="button" id="publish-close" aria-label="Close publish review">✕</button></header>'+
     '<div id="publish-notice" role="status"></div><div id="publish-body" hidden><div id="publish-chips" aria-label="Change summary"></div>'+
-    '<nav class="publish-mode-tabs" aria-label="Comparison view"><button type="button" data-publish-mode="side">Side by side</button><button type="button" data-publish-mode="rich">Rendered diff</button><button type="button" data-publish-mode="source">Source diff</button><button type="button" data-publish-mode="pierre">Full diff</button></nav>'+
-    '<div data-publish-view="side"><div class="publish-side-tabs" role="group" aria-label="Version to read"><button data-publish-side="before" type="button">Last committed</button><button data-publish-side="after" type="button">Current draft</button></div>'+
+    '<nav class="publish-mode-tabs" role="tablist" aria-label="Comparison view"><button id="publish-tab-side" type="button" role="tab" aria-controls="publish-view-side" data-publish-mode="side">Side by side</button><button id="publish-tab-rich" type="button" role="tab" aria-controls="publish-view-rich" data-publish-mode="rich">Rendered diff</button><button id="publish-tab-source" type="button" role="tab" aria-controls="publish-view-source" data-publish-mode="source">Source diff</button><button id="publish-tab-pierre" type="button" role="tab" aria-controls="publish-view-pierre" data-publish-mode="pierre">Full diff</button><button id="publish-tab-message" type="button" role="tab" aria-controls="publish-view-message" data-publish-mode="message">Commit message</button></nav>'+
+    '<div id="publish-view-side" role="tabpanel" aria-labelledby="publish-tab-side" data-publish-view="side"><div class="publish-side-tabs" role="group" aria-label="Version to read"><button data-publish-side="before" type="button">Last committed</button><button data-publish-side="after" type="button">Current draft</button></div>'+
     '<div class="publish-comparison"><section data-publish-pane="before"><h3 id="publish-before-name">Last committed</h3><iframe id="publish-before-frame" title="Last committed rendering" sandbox="allow-scripts"></iframe></section>'+
     '<section data-publish-pane="after"><h3>Current saved draft</h3><iframe id="publish-after-frame" title="Current draft rendering" sandbox="allow-scripts"></iframe></section></div></div>'+
-    '<div data-publish-view="rich" hidden><p class="publish-rich-help">Structural comparison: inline changes for text, before/after blocks for complex elements. Use Side by side for exact rendering.</p><iframe id="publish-rich-frame" title="Unified rendered Markdown change annotations" sandbox="allow-scripts"></iframe></div>'+
-    '<div data-publish-view="pierre" hidden><div class="publish-pierre-actions"><span>Pierre source diff</span><button type="button" data-pierre-layout="stacked" class="active">Unified</button><button type="button" data-pierre-layout="split">Split</button></div><p id="publish-pierre-error" role="status" hidden></p><div id="publish-pierre-host"></div></div>'+
-    '<div data-publish-view="source" hidden><div id="publish-source-diff" role="region" tabindex="0" aria-label="Unified Markdown source diff"></div></div></div>'+
+    '<div id="publish-view-rich" role="tabpanel" aria-labelledby="publish-tab-rich" data-publish-view="rich" hidden><p class="publish-rich-help">Structural comparison: inline changes for text, before/after blocks for complex elements. Use Side by side for exact rendering.</p><iframe id="publish-rich-frame" title="Unified rendered Markdown change annotations" sandbox="allow-scripts"></iframe></div>'+
+    '<div id="publish-view-pierre" role="tabpanel" aria-labelledby="publish-tab-pierre" data-publish-view="pierre" hidden><div class="publish-pierre-actions"><span>Pierre source diff</span><button type="button" data-pierre-layout="stacked" class="active">Unified</button><button type="button" data-pierre-layout="split">Split</button></div><p id="publish-pierre-error" role="status" hidden></p><div id="publish-pierre-host"></div></div>'+
+    '<div id="publish-view-source" role="tabpanel" aria-labelledby="publish-tab-source" data-publish-view="source" hidden><div id="publish-source-diff" role="region" tabindex="0" aria-label="Unified Markdown source diff"></div></div>'+
+    '<div id="publish-view-message" role="tabpanel" aria-labelledby="publish-tab-message" data-publish-view="message" hidden><label for="publish-commit-message">Commit message</label><textarea id="publish-commit-message" rows="4" maxlength="4000" spellcheck="true"></textarea><p class="publish-message-help"><span id="publish-message-count">0 / 4000 bytes</span> Used for the local commit. Nothing is pushed from this screen.</p></div></div>'+
     '<footer class="publish-actions"><span>A Git commit is not a verified deployment.</span><button type="button" id="publish-back">Back to editing</button><button type="button" id="publish-mark-public" hidden>Mark as public</button><button type="button" id="publish-confirm" disabled>Commit selected page</button><button type="button" id="publish-push" hidden>Push to origin</button><button type="button" id="publish-live-check" hidden>Check live status</button></footer>';
     document.body.append(doc);dialog=doc;notice=doc.querySelector('#publish-notice');panels=doc.querySelector('#publish-body');
     button.addEventListener('click',open);
@@ -352,6 +415,18 @@
     doc.querySelector('#publish-live-check').addEventListener('click',checkLiveDeployment);
     doc.addEventListener('close',()=>{window.MarkataPierreDiff?.release?.(doc.querySelector('#publish-pierre-host'));editor.focus();});
     doc.querySelectorAll('[data-publish-mode]').forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.publishMode)));
+    doc.querySelector('.publish-mode-tabs').addEventListener('keydown',event=>{
+      if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
+      const tabs=[...doc.querySelectorAll('[data-publish-mode]:not(:disabled)')];
+      const current=tabs.indexOf(event.target.closest('[data-publish-mode]'));
+      if(current<0)return;
+      event.preventDefault();
+      const next=event.key==='Home'?0:event.key==='End'?tabs.length-1:(current+(event.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;
+      tabs[next].click();tabs[next].focus();
+    });
+    doc.querySelector('#publish-commit-message').addEventListener('input',updateCommitMessage);
+    doc.querySelector('#publish-commit-message').addEventListener('blur',event=>{event.currentTarget.value=event.currentTarget.value.trim();updateCommitMessage();});
+    window.addEventListener('message',comparisonScrollSync);
     doc.querySelectorAll('[data-pierre-layout]').forEach(b=>b.addEventListener('click',()=>{
       doc.querySelectorAll('[data-pierre-layout]').forEach(other=>other.classList.toggle('active',other===b));
       if(state.mode==='pierre')showPierre();

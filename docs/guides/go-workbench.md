@@ -267,17 +267,22 @@ review dialog; none of them publishes immediately.
 
 The dialog first waits until the exact text in the editor has been saved to
 the workspace. It then compares that saved source with the file from the last
-Git commit. Desktop shows rendered comparisons side by side; mobile can switch
-between versions by tapping or swiping. **Source diff** shows a unified raw
-Markdown comparison. Metadata chips identify draft/published flag changes,
-slug changes, and conflicting publication flags.
+Git commit. **Rendered diff** opens first. **Side by side** shows both rendered
+versions and keeps matching sections in view while you scroll; mobile can switch
+between versions by tapping or swiping. **Source diff** shows unified Markdown,
+and **Full diff** opens the detailed source viewer. The **Commit message** tab
+shows the message for the local commit and lets you edit it. Metadata chips
+identify draft/published flag changes, slug changes, and conflicting publication
+flags.
 
-**This is an initial, read-only review implementation.** "Last committed" is
-not necessarily the live site revision. Git commit, remote push, deployment,
-and confirmation are not wired up yet, and the final Publish action stays
-disabled until a deploy backend can verify success. A scratch file must first
-be created or opened as a workspace Markdown post. If the workspace has no Git
-history, the review reports this rather than assuming a baseline.
+The review can create a local Git commit for the selected page, using the
+message shown in the **Commit message** tab. After that commit, **Push to
+origin** is a separate action. Pushing does not prove that a deployment
+succeeded; when Builder Admin verification is configured, **Check live status**
+can confirm the deployed source revision. “Last committed” is not necessarily
+the live site revision. A scratch file must first be created or opened as a
+workspace Markdown post. If the workspace has no Git history, the review
+reports this rather than assuming a baseline.
 
 The publish contract and planned deployment safety gates are defined in
 [Editor publishing](../../spec/spec/EDITOR_PUBLISHING.md).

@@ -24,12 +24,20 @@ restore focus when dismissed and MUST not lose editor source.
 On desktop, the review dialog MUST use the available viewport height for its
 comparison panes while keeping its header and actions visible. Optional full-diff
 loading failures MUST replace the loading state with a readable error.
+Rendered diff MUST be the initial view. Comparison modes MUST be presented as
+keyboard-operable tabs. Side-by-side rendered panes MUST synchronize around
+matching rendered blocks when possible and fall back to relative scroll position
+when no block matches. Publication status summaries MUST look like informational
+chips, not action buttons.
 
 The review header MUST summarize publish metadata differences as textual chips
 (not color alone). Especially show changes to draft/published flags, slug changes,
 and contradictory publication flags. YAML boolean values MUST be recognized
 case-insensitively. An already public, non-draft page MUST NOT offer Mark as
 public. Content changes need a full source comparison.
+The review MUST provide a Commit message tab showing the exact message used for
+the local Git commit. The user MUST be able to edit it, and the server MUST use
+the supplied message for that commit.
 
 ## Revision identity
 

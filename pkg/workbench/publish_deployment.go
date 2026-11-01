@@ -33,6 +33,11 @@ type deploymentStatus struct {
 	Message          string `json:"message"`
 }
 
+const (
+	secureScheme   = "https"
+	insecureScheme = "http"
+)
+
 func evaluateDeployment(commit string, evidence deployEvidence) deploymentStatus {
 	status := deploymentStatus{
 		Configured: true, ExpectedCommit: commit, Status: "unknown",
@@ -70,10 +75,10 @@ func publishBuilderURL(raw string) (string, error) {
 		return "", fmt.Errorf("invalid builder endpoint")
 	}
 	host := u.Hostname()
-	if u.Scheme != "https" {
+	if u.Scheme != secureScheme {
 		ip := net.ParseIP(host)
 		loopback := strings.EqualFold(host, "localhost") || (ip != nil && ip.IsLoopback())
-		if u.Scheme != "http" || !loopback {
+		if u.Scheme != insecureScheme || !loopback {
 			return "", fmt.Errorf("builder endpoint must use HTTPS")
 		}
 	}
@@ -99,10 +104,12 @@ func (h *Handler) servePublishDeployment(w http.ResponseWriter, r *http.Request)
 	base := strings.TrimSpace(os.Getenv("MARKATA_PUBLISH_BUILDER_URL"))
 	token := strings.TrimSpace(os.Getenv("MARKATA_PUBLISH_BUILDER_TOKEN"))
 	if base == "" || token == "" {
-		_ = json.NewEncoder(w).Encode(deploymentStatus{
+		if err := json.NewEncoder(w).Encode(deploymentStatus{
 			Status: "unconfigured", ExpectedCommit: commit,
 			Message: "Deployment verification is not configured for this editor.",
-		})
+		}); err != nil {
+			return
+		}
 		return
 	}
 	endpoint, err := publishBuilderURL(base)
@@ -110,7 +117,8 @@ func (h *Handler) servePublishDeployment(w http.ResponseWriter, r *http.Request)
 		fail(w, 422, "invalid builder deployment configuration")
 		return
 	}
-	req, err := http.NewRequestWithContext(r.Context(), http.MethodGet, endpoint, nil)
+	// #nosec G704 -- endpoint is an explicit operator setting validated as an HTTPS origin (loopback HTTP for local use).
+	req, err := http.NewRequestWithContext(r.Context(), http.MethodGet, endpoint, http.NoBody)
 	if err != nil {
 		fail(w, 422, "cannot prepare builder status request")
 		return
@@ -120,6 +128,7 @@ func (h *Handler) servePublishDeployment(w http.ResponseWriter, r *http.Request)
 	client := &http.Client{Timeout: 7 * time.Second, CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
 		return http.ErrUseLastResponse
 	}}
+	// #nosec G704 -- redirects are disabled and the destination is the operator-configured builder origin.
 	resp, err := client.Do(req)
 	if err != nil {
 		fail(w, http.StatusBadGateway, "builder status is unreachable")
@@ -135,5 +144,7 @@ func (h *Handler) servePublishDeployment(w http.ResponseWriter, r *http.Request)
 		fail(w, http.StatusBadGateway, "invalid builder state response")
 		return
 	}
-	_ = json.NewEncoder(w).Encode(evaluateDeployment(commit, evidence))
+	if err := json.NewEncoder(w).Encode(evaluateDeployment(commit, evidence)); err != nil {
+		return
+	}
 }

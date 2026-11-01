@@ -21,19 +21,14 @@ await build({
   legalComments: 'eof',
   define: { 'process.env.NODE_ENV': '"production"' },
   plugins: [{
-    name: 'highlights-only',
+    name: 'markdown-only-highlighting',
     setup(builder) {
-      builder.onResolve({ filter: /^\.\/backends\/shiki\.js$/ }, args => {
-        if (args.importer.endsWith('/shared_highlighter.js'))
-          return { path: 'unused-shiki-backend', namespace: 'markata-publish-diff' };
-      });
       builder.onResolve({ filter: /^shiki\/langs$/ }, () => ({
-        path: 'unused-shiki-languages', namespace: 'markata-publish-diff'
+        path: 'markdown-languages', namespace: 'markata-publish-diff'
       }));
-      builder.onLoad({ filter: /.*/, namespace: 'markata-publish-diff' }, args => ({
-        contents: args.path === 'unused-shiki-backend'
-          ? 'export class ShikiHighlighter { static async create() { throw new Error("Only the bundled Highlights backend is available."); } }'
-          : 'export const bundledLanguages = {};',
+      builder.onLoad({ filter: /^markdown-languages$/, namespace: 'markata-publish-diff' }, () => ({
+        contents: 'export const bundledLanguages = { markdown: () => import("@shikijs/langs/markdown"), md: () => import("@shikijs/langs/markdown") };',
+        resolveDir: path.join(root, 'tools/publish-diffs'),
         loader: 'js'
       }));
     }

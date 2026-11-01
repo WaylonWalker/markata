@@ -15,5 +15,6 @@ Commit `pkg/workbench/web/pierre-diffs.bundle.js` and the generated
 The lightweight source diff remains available when the optional assets have not
 been built.
 
-Pinned: `@pierre/diffs` 1.6.2, `esbuild` 0.25.12. The build uses Pierre's
-Highlights backend and does not include Shiki's full language registry.
+Pinned: `@pierre/diffs` 1.6.2, `esbuild` 0.25.12. The build includes the
+Markdown grammar used for post source and keeps the other Shiki language packs
+out of the local diff assets.

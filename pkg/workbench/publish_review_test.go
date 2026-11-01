@@ -1,6 +1,7 @@
 package workbench
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -32,7 +33,8 @@ func (f publishWorkspaceFixture) Read(path string) (string, error) {
 
 func gitForReviewTest(t *testing.T, dir string, args ...string) {
 	t.Helper()
-	command := exec.Command("git", append([]string{"-C", dir}, args...)...)
+	// #nosec G204 -- test helper invokes fixed Git subcommands without a shell.
+	command := exec.CommandContext(context.Background(), "git", append([]string{"-C", dir}, args...)...)
 	if output, err := command.CombinedOutput(); err != nil {
 		t.Fatalf("git %v: %s: %v", args, output, err)
 	}
@@ -46,22 +48,22 @@ func TestPublishReviewUsesExactCommittedSourceNotWorkingIndex(t *testing.T) {
 	gitForReviewTest(t, dir, "init", "-q")
 	gitForReviewTest(t, dir, "config", "user.name", "Review Test")
 	gitForReviewTest(t, dir, "config", "user.email", "review@example.com")
-	if err := os.MkdirAll(filepath.Join(dir, "posts"), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Join(dir, "posts"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	path := filepath.Join(dir, "posts", "example.md")
 	before := "---\npublished: false\n---\n\n# Original\n"
 	after := "---\npublished: true\n---\n\n# Changed\n"
-	if err := os.WriteFile(path, []byte(before), 0644); err != nil {
+	if err := os.WriteFile(path, []byte(before), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	gitForReviewTest(t, dir, "add", "posts/example.md")
 	gitForReviewTest(t, dir, "commit", "-qm", "baseline")
-	if err := os.WriteFile(path, []byte(after), 0644); err != nil {
+	if err := os.WriteFile(path, []byte(after), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	handler := &Handler{root: dir, workspace: publishWorkspaceFixture{root: dir}}
-	request := httptest.NewRequest(http.MethodGet, "/workspace/publish/review?path=posts%2Fexample.md", nil)
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/workspace/publish/review?path=posts%2Fexample.md", http.NoBody)
 	recorder := httptest.NewRecorder()
 	handler.servePublishReview(recorder, request)
 	if recorder.Code != http.StatusOK {
@@ -87,8 +89,7 @@ func TestPublishReviewRejectsUnsafePaths(t *testing.T) {
 	handler := &Handler{root: dir, workspace: publishWorkspaceFixture{root: dir}}
 	for _, path := range []string{"../escape.md", "/tmp/elsewhere.md", "a.txt"} {
 		recorder := httptest.NewRecorder()
-		handler.servePublishReview(recorder, httptest.NewRequest(http.MethodGet,
-			"/workspace/publish/review?path="+path, nil))
+		handler.servePublishReview(recorder, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/workspace/publish/review?path="+path, http.NoBody))
 		if recorder.Code != http.StatusBadRequest {
 			t.Errorf("%q returned %d, expected 400", path, recorder.Code)
 		}
@@ -103,18 +104,17 @@ func TestPublishReviewUntrackedDocument(t *testing.T) {
 	gitForReviewTest(t, dir, "init", "-q")
 	gitForReviewTest(t, dir, "config", "user.name", "Review Test")
 	gitForReviewTest(t, dir, "config", "user.email", "review@example.com")
-	if err := os.WriteFile(filepath.Join(dir, "README.md"), []byte("base\n"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "README.md"), []byte("base\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	gitForReviewTest(t, dir, "add", "README.md")
 	gitForReviewTest(t, dir, "commit", "-qm", "baseline")
-	if err := os.WriteFile(filepath.Join(dir, "new.md"), []byte("# New\n"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "new.md"), []byte("# New\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	handler := &Handler{root: dir, workspace: publishWorkspaceFixture{root: dir}}
 	recorder := httptest.NewRecorder()
-	handler.servePublishReview(recorder, httptest.NewRequest(http.MethodGet,
-		"/workspace/publish/review?path=new.md", nil))
+	handler.servePublishReview(recorder, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/workspace/publish/review?path=new.md", http.NoBody))
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("status %d: %s", recorder.Code, recorder.Body.String())
 	}

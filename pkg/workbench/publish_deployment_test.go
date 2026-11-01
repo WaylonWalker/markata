@@ -1,6 +1,7 @@
 package workbench
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -36,7 +37,7 @@ func TestPublishDeploymentUsesCurrentReleaseFallback(t *testing.T) {
 			ID           string `json:"id"`
 			SourceCommit string `json:"source_commit"`
 			Current      bool   `json:"current"`
-		}{ID:"release-2",SourceCommit:expected,Current:true})
+		}{ID: "release-2", SourceCommit: expected, Current: true})
 	status := evaluateDeployment(expected, evidence)
 	if !status.Verified || status.ReleaseID != "release-2" {
 		t.Fatalf("expected live release fallback: %+v", status)
@@ -67,12 +68,16 @@ func TestPublishDeploymentWithoutConfiguredBuilderIsExplicit(t *testing.T) {
 	t.Setenv("MARKATA_PUBLISH_BUILDER_URL", "")
 	t.Setenv("MARKATA_PUBLISH_BUILDER_TOKEN", "")
 	handler := &Handler{}
-	request := httptest.NewRequest(http.MethodGet, "/workspace/publish/deployment?commit="+strings.Repeat("a",40), nil)
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/workspace/publish/deployment?commit="+strings.Repeat("a", 40), http.NoBody)
 	recorder := httptest.NewRecorder()
 	handler.servePublishDeployment(recorder, request)
-	if recorder.Code != http.StatusOK { t.Fatalf("status: %d", recorder.Code) }
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status: %d", recorder.Code)
+	}
 	var result deploymentStatus
-	if err := json.Unmarshal(recorder.Body.Bytes(), &result); err != nil { t.Fatal(err) }
+	if err := json.Unmarshal(recorder.Body.Bytes(), &result); err != nil {
+		t.Fatal(err)
+	}
 	if result.Verified || result.Configured || result.Status != "unconfigured" {
 		t.Fatalf("must not claim publication without builder configuration: %+v", result)
 	}

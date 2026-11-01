@@ -202,7 +202,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.serveWorkspace(w, r)
 	case r.URL.Path == "/workspace/publish/deployment" && r.Method == http.MethodGet:
 		h.serveWorkspace(w, r)
-	case (r.URL.Path == "/workspace/frontmatter/inspect" || r.URL.Path == "/workspace/frontmatter/edit") && r.Method == http.MethodPost:
+	case (r.URL.Path == frontmatterInspectPath || r.URL.Path == frontmatterEditPath) && r.Method == http.MethodPost:
 		h.serveWorkspace(w, r)
 	case (r.URL.Path == "/workspace/publish/review" && r.Method == http.MethodGet):
 		h.serveWorkspace(w, r)

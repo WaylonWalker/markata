@@ -8,8 +8,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/WaylonWalker/markata/pkg/diagnostics"
 	"gopkg.in/yaml.v3"
+
+	"github.com/WaylonWalker/markata/pkg/diagnostics"
 )
 
 // Frontmatter operations are in-memory transformations, not workspace writes.
@@ -28,6 +29,11 @@ type frontmatterProperty struct {
 }
 
 var frontmatterFieldName = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_-]*$`)
+
+const (
+	frontmatterInspectPath = "/workspace/frontmatter/inspect"
+	frontmatterEditPath    = "/workspace/frontmatter/edit"
+)
 
 func frontmatterDocument(source string) (diagnostics.FrontmatterInspection, *yaml.Node, error) {
 	inspection := diagnostics.InspectFrontmatter(source)
@@ -92,6 +98,8 @@ func frontmatterProperties(document *yaml.Node) ([]frontmatterProperty, error) {
 			case "!!null":
 				kind = "null"
 			}
+		case yaml.DocumentNode:
+			kind = "object"
 		}
 		fields = append(fields, frontmatterProperty{Name: key.Value, Value: decoded, Kind: kind})
 	}
@@ -111,6 +119,7 @@ func marshalFrontmatterField(name string, value any) (string, error) {
 	return out.String(), nil
 }
 
+//nolint:gocyclo // Keeps source-preserving YAML patch cases together for review.
 func replaceFrontmatterProperty(source, name string, value any, remove bool) (string, error) {
 	if !frontmatterFieldName.MatchString(name) || len(name) > 128 {
 		return "", fmt.Errorf("invalid frontmatter property name")
@@ -131,7 +140,7 @@ func replaceFrontmatterProperty(source, name string, value any, remove bool) (st
 		if strings.Contains(source, "\r\n") {
 			newline = "\r\n"
 		}
-		next := "---" + newline + strings.ReplaceAll(string(encoded), "\n", newline) + "---" + newline + source
+		next := "---" + newline + strings.ReplaceAll(encoded, "\n", newline) + "---" + newline + source
 		if _, _, err := frontmatterDocument(next); err != nil {
 			return "", err
 		}
@@ -206,7 +215,7 @@ func (h *Handler) serveFrontmatterEditor(w http.ResponseWriter, r *http.Request)
 		fail(w, http.StatusRequestEntityTooLarge, "document exceeds 200,000 bytes")
 		return
 	}
-	if r.URL.Path == "/workspace/frontmatter/inspect" {
+	if r.URL.Path == frontmatterInspectPath {
 		inspection, document, err := frontmatterDocument(request.Source)
 		if err != nil {
 			fail(w, http.StatusUnprocessableEntity, err.Error())
@@ -217,19 +226,23 @@ func (h *Handler) serveFrontmatterEditor(w http.ResponseWriter, r *http.Request)
 			fail(w, http.StatusUnprocessableEntity, err.Error())
 			return
 		}
-		_ = json.NewEncoder(w).Encode(map[string]any{
+		if err := json.NewEncoder(w).Encode(map[string]any{
 			"has_frontmatter": inspection.HasFrontmatter,
 			"fields":          fields,
-		})
+		}); err != nil {
+			return
+		}
 		return
 	}
-	if r.URL.Path == "/workspace/frontmatter/edit" {
+	if r.URL.Path == frontmatterEditPath {
 		source, err := replaceFrontmatterProperty(request.Source, request.Field, request.Value, request.Remove)
 		if err != nil {
 			fail(w, http.StatusUnprocessableEntity, err.Error())
 			return
 		}
-		_ = json.NewEncoder(w).Encode(map[string]string{"source": source})
+		if err := json.NewEncoder(w).Encode(map[string]string{"source": source}); err != nil {
+			return
+		}
 		return
 	}
 	fail(w, http.StatusNotFound, "unknown frontmatter operation")

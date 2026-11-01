@@ -14,14 +14,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/WaylonWalker/markata/pkg/editorworkspace"
 	"gopkg.in/yaml.v3"
+
+	"github.com/WaylonWalker/markata/pkg/editorworkspace"
 )
 
 type commitRequest struct {
 	Path    string `json:"path"`
 	Head    string `json:"head"`
 	Version string `json:"version"`
+	Message string `json:"message"`
 }
 type commitResult struct {
 	Status  string `json:"status"`
@@ -43,7 +45,8 @@ var gitHashPattern = regexp.MustCompile(`^[0-9a-f]{40,64}$`)
 var branchPattern = regexp.MustCompile(`^refs/heads/[a-zA-Z0-9][a-zA-Z0-9/_-]*$`)
 
 // commitGit runs a Git operation without interactive prompts or shell evaluation.
-func commitGit(ctx context.Context, dir string, index string, args ...string) (string, error) {
+func commitGit(ctx context.Context, dir, index string, args ...string) (string, error) {
+	// #nosec G204 G702 -- arguments are fixed Git subcommands and validated path/hash values; no shell is used.
 	cmd := exec.CommandContext(ctx, "git", append([]string{"-C", dir}, args...)...)
 	cmd.Env = append(os.Environ(), "GIT_TERMINAL_PROMPT=0", "GIT_OPTIONAL_LOCKS=0")
 	if index != "" {
@@ -59,7 +62,7 @@ func commitGit(ctx context.Context, dir string, index string, args ...string) (s
 	return strings.TrimSpace(string(output)), nil
 }
 
-func hashApprovedSource(ctx context.Context, root string, source string) (string, error) {
+func hashApprovedSource(ctx context.Context, root, source string) (string, error) {
 	cmd := exec.CommandContext(ctx, "git", "-C", root, "hash-object", "-w", "--stdin")
 	cmd.Env = append(os.Environ(), "GIT_TERMINAL_PROMPT=0")
 	cmd.Stdin = strings.NewReader(source)
@@ -145,6 +148,7 @@ func validatePublicationMetadata(source string) error {
 	return nil
 }
 
+//nolint:gocritic // Named results add no value to this path validation helper.
 func (h *Handler) publishPath(path string) (string, string, error) {
 	// Reuse workspace restrictions to reject paths outside the configured content set.
 	if !filepath.IsLocal(filepath.FromSlash(path)) || !strings.HasSuffix(strings.ToLower(path), ".md") {
@@ -174,6 +178,7 @@ func (h *Handler) publishPath(path string) (string, string, error) {
 	return root, filepath.ToSlash(relative), nil
 }
 
+//nolint:gocyclo // Explicit validation and failure responses keep the publish transaction auditable.
 func (h *Handler) servePublishCommit(w http.ResponseWriter, r *http.Request) {
 	var req commitRequest
 	if !readPublishInput(w, r, &req) {
@@ -257,7 +262,14 @@ func (h *Handler) servePublishCommit(w http.ResponseWriter, r *http.Request) {
 		fail(w, http.StatusConflict, "file has no new changes to commit")
 		return
 	}
-	message := "Publish: " + relative
+	message := strings.TrimSpace(req.Message)
+	if message == "" {
+		message = "Publish: " + relative
+	}
+	if len(message) > 4000 || strings.ContainsRune(message, '\x00') {
+		fail(w, 400, "commit message must be at most 4000 bytes and contain no NUL characters")
+		return
+	}
 	commit, err := commitGit(ctx, root, "", "commit-tree", tree, "-p", req.Head, "-m", message)
 	if err != nil {
 		fail(w, 422, "commit failed; configure your Git user name and email")
@@ -277,10 +289,12 @@ func (h *Handler) servePublishCommit(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "no-store")
-	_ = json.NewEncoder(w).Encode(commitResult{
+	if err := json.NewEncoder(w).Encode(commitResult{
 		Status: "committed-local", Commit: commit, Branch: ref,
 		Message: "Committed locally. Nothing has been pushed or deployed.",
-	})
+	}); err != nil {
+		return
+	}
 }
 
 func (h *Handler) servePublishPush(w http.ResponseWriter, r *http.Request) {
@@ -321,8 +335,10 @@ func (h *Handler) servePublishPush(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "no-store")
-	_ = json.NewEncoder(w).Encode(pushResult{
+	if err := json.NewEncoder(w).Encode(pushResult{
 		Status: "pushed-awaiting-deployment", Commit: req.Commit,
 		Message: "Pushed to remote. Deployment has not been verified.",
-	})
+	}); err != nil {
+		return
+	}
 }
