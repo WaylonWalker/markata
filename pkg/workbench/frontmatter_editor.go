@@ -35,7 +35,7 @@ func frontmatterDocument(source string) (diagnostics.FrontmatterInspection, *yam
 		return inspection, nil, fmt.Errorf("frontmatter delimiters are malformed; fix the YAML in source mode")
 	}
 	document := &yaml.Node{}
-	if !inspection.HasFrontmatter || strings.TrimSpace(inspection.Frontmatter) == "" {
+	if !inspection.HasFrontmatter || strings.TrimSpace(inspection.Frontmatter) == "" || strings.HasPrefix(strings.TrimSpace(inspection.Frontmatter), "#") && !strings.Contains(inspection.Frontmatter, ":") {
 		return inspection, document, nil
 	}
 	if err := yaml.Unmarshal([]byte(inspection.Frontmatter), document); err != nil {

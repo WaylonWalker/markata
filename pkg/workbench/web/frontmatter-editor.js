@@ -41,7 +41,7 @@
   let showMore = false;
 
   function frontmatterEnd(source) {
-    const match = /^---\r?\n[\s\S]*?\r?\n---(?:\r?\n|$)/.exec(source);
+    const match = /^---\r?\n(?:[\s\S]*?\r?\n)?---(?:\r?\n|$)/.exec(source);
     return match ? match[0].length : 0;
   }
 
@@ -156,7 +156,8 @@
     return 'text';
   }
   function emptyFor(kind) {
-    return ({list:[],object:{},boolean:false,number:0,null:null})[kind] ?? '';
+    const values={list:[],object:{},boolean:false,number:0,null:null};
+    return Object.hasOwn(values,kind) ? values[kind] : '';
   }
 
   // Recursive editor for arbitrary nested YAML maps, lists, and mixed author entries.
