@@ -226,3 +226,28 @@ Search for special syntax, then press **Enter** to insert it at your selection.
 See the [command palette guide](editor-command-palette.md) for the catalog and keyboard controls.
 
 To open the command palette with a complete example loaded, visit `/?example`.
+
+
+## Review changes before publishing (experimental)
+
+When editing a Markdown file inside a Git-backed workspace, select **Publish**
+in the upper-right header, search for **Publishing: Review & Publish** in the
+command palette, or press **Ctrl/Cmd+Shift+Enter**. These routes open the same
+review dialog; none of them publishes immediately.
+
+The dialog first waits until the exact text in the editor has been saved to
+the workspace. It then compares that saved source with the file from the last
+Git commit. Desktop shows rendered comparisons side by side; mobile can switch
+between versions by tapping or swiping. **Source diff** shows a unified raw
+Markdown comparison. Metadata chips identify draft/published flag changes,
+slug changes, and conflicting publication flags.
+
+**This is an initial, read-only review implementation.** "Last committed" is
+not necessarily the live site revision. Git commit, remote push, deployment,
+and confirmation are not wired up yet, and the final Publish action stays
+disabled until a deploy backend can verify success. A scratch file must first
+be created or opened as a workspace Markdown post. If the workspace has no Git
+history, the review reports this rather than assuming a baseline.
+
+The publish contract and planned deployment safety gates are defined in
+[Editor publishing](../../spec/spec/EDITOR_PUBLISHING.md).
