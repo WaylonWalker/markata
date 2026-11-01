@@ -7,7 +7,7 @@
   <meta name="description" content="Install Markata, set up your coding agent, and publish your first Markdown page.">
   <title>Markata — Markdown to website</title>
   <link rel="stylesheet" href="@@BASE@@assets/site.css">
-  <script defer src="@@BASE@@assets/tabs.js"></script>
+  <script defer src="@@BASE@@assets/md-tabs.js"></script>
 </head>
 <body>
   <header class="site-header shell">
@@ -31,24 +31,27 @@
     </section>
     <section id="install" class="section">
       <div class="section-intro"><p class="eyebrow">01 / install</p><h2>One command to start.</h2><p>Pick an install method. Releases are single binaries, with no Python runtime needed.</p></div>
-      <div class="installer" data-install-tabs>
-        <div class="tab-bar" role="tablist" aria-label="Installation methods">
-          <button type="button" role="tab" id="tab-curl" aria-controls="panel-curl" aria-selected="true" tabindex="0" data-tab="curl">curl</button>
-          <button type="button" role="tab" id="tab-bash" aria-controls="panel-bash" aria-selected="false" tabindex="-1" data-tab="bash">Bash</button>
-          <button type="button" role="tab" id="tab-mise" aria-controls="panel-mise" aria-selected="false" tabindex="-1" data-tab="mise">mise</button>
-          <button type="button" role="tab" id="tab-go" aria-controls="panel-go" aria-selected="false" tabindex="-1" data-tab="go">Go</button>
-          <button type="button" role="tab" id="tab-github" aria-controls="panel-github" aria-selected="false" tabindex="-1" data-tab="github">GitHub</button>
-          <button type="button" role="tab" id="tab-pypi" aria-controls="panel-pypi" aria-selected="false" tabindex="-1" data-tab="pypi">PyPI</button>
+      <!-- The same semantic tab structure emitted by Markata's native md-tabs renderer. -->
+      <div class="installer md-tabs" data-md-tabs data-style="boxed">
+        <div class="tab-bar md-tabs-nav" role="tablist" aria-label="Installation methods" hidden>
+          <button type="button" role="tab" id="md-tab-1-0-tab" aria-controls="md-tab-1-0-panel" aria-selected="true" tabindex="0">curl</button>
+          <button type="button" role="tab" id="md-tab-1-1-tab" aria-controls="md-tab-1-1-panel" aria-selected="false" tabindex="-1">Bash</button>
+          <button type="button" role="tab" id="md-tab-1-2-tab" aria-controls="md-tab-1-2-panel" aria-selected="false" tabindex="-1">mise</button>
+          <button type="button" role="tab" id="md-tab-1-3-tab" aria-controls="md-tab-1-3-panel" aria-selected="false" tabindex="-1">Go</button>
+          <button type="button" role="tab" id="md-tab-1-4-tab" aria-controls="md-tab-1-4-panel" aria-selected="false" tabindex="-1">GitHub</button>
+          <button type="button" role="tab" id="md-tab-1-5-tab" aria-controls="md-tab-1-5-panel" aria-selected="false" tabindex="-1">PyPI</button>
         </div>
-        <div class="install-panel" role="tabpanel" id="panel-curl" aria-labelledby="tab-curl" data-panel="curl"><pre><code>curl -fsSL https://raw.githubusercontent.com/WaylonWalker/markata/main/install.sh | bash
-markata version</code></pre><p>Linux / macOS · Read the <a href="https://github.com/WaylonWalker/markata/blob/main/install.sh">installer source</a> first.</p></div>
-        <div class="install-panel" role="tabpanel" id="panel-bash" aria-labelledby="tab-bash" data-panel="bash"><pre><code>curl -fsSLo install-markata.sh https://raw.githubusercontent.com/WaylonWalker/markata/main/install.sh
+        <div class="md-tabs-panels">
+          <section class="md-tab install-panel" role="tabpanel" id="md-tab-1-0-panel" aria-labelledby="md-tab-1-0-tab"><h3 class="md-tab-fallback-label">curl</h3><pre><code>curl -fsSL https://raw.githubusercontent.com/WaylonWalker/markata/main/install.sh | bash
+markata version</code></pre><p>Linux / macOS · Read the <a href="https://github.com/WaylonWalker/markata/blob/main/install.sh">installer source</a> first.</p></section>
+          <section class="md-tab install-panel" role="tabpanel" id="md-tab-1-1-panel" aria-labelledby="md-tab-1-1-tab"><h3 class="md-tab-fallback-label">Bash</h3><pre><code>curl -fsSLo install-markata.sh https://raw.githubusercontent.com/WaylonWalker/markata/main/install.sh
 less install-markata.sh
-bash install-markata.sh</code></pre><p>Inspect, then execute the shell script.</p></div>
-        <div class="install-panel" role="tabpanel" id="panel-mise" aria-labelledby="tab-mise" data-panel="mise"><pre><code>mise use -g github:WaylonWalker/markata</code></pre><p>Manage releases with mise. Historical downloads may provide the `markata-go` name.</p></div>
-        <div class="install-panel" role="tabpanel" id="panel-go" aria-labelledby="tab-go" data-panel="go"><pre><code>go install github.com/WaylonWalker/markata/cmd/markata@main</code></pre><p>Current source requires Go 1.27+. Use `@main` for the renamed entry point until a canonical tagged release.</p></div>
-        <div class="install-panel" role="tabpanel" id="panel-github" aria-labelledby="tab-github" data-panel="github"><p>Download the correct archive for your platform, verify its checksum, and move the extracted binary into your PATH.</p><p><a href="https://github.com/WaylonWalker/markata/releases">Browse GitHub Releases →</a></p></div>
-        <div class="install-panel warning-panel" role="tabpanel" id="panel-pypi" aria-labelledby="tab-pypi" data-panel="pypi"><pre><code>python -m pip install markata</code></pre><p><strong>Python Markata, not Go.</strong> PyPI still hosts the original Python project. Use another tab to install this Go binary. <a href="@@BASE@@docs/installation/">Details →</a></p></div>
+bash install-markata.sh</code></pre><p>Inspect, then execute the shell script.</p></section>
+          <section class="md-tab install-panel" role="tabpanel" id="md-tab-1-2-panel" aria-labelledby="md-tab-1-2-tab"><h3 class="md-tab-fallback-label">mise</h3><pre><code>mise use -g github:WaylonWalker/markata</code></pre><p>Manage releases with mise. Historical downloads may provide the `markata-go` name.</p></section>
+          <section class="md-tab install-panel" role="tabpanel" id="md-tab-1-3-panel" aria-labelledby="md-tab-1-3-tab"><h3 class="md-tab-fallback-label">Go</h3><pre><code>go install github.com/WaylonWalker/markata/cmd/markata@main</code></pre><p>Current source requires Go 1.27+. Use `@main` for the renamed entry point until a canonical tagged release.</p></section>
+          <section class="md-tab install-panel" role="tabpanel" id="md-tab-1-4-panel" aria-labelledby="md-tab-1-4-tab"><h3 class="md-tab-fallback-label">GitHub</h3><p>Download the correct archive for your platform, verify its checksum, and move the extracted binary into your PATH.</p><p><a href="https://github.com/WaylonWalker/markata/releases">Browse GitHub Releases →</a></p></section>
+          <section class="md-tab install-panel warning-panel" role="tabpanel" id="md-tab-1-5-panel" aria-labelledby="md-tab-1-5-tab"><h3 class="md-tab-fallback-label">PyPI</h3><pre><code>python -m pip install markata</code></pre><p><strong>Python Markata, not Go.</strong> PyPI still hosts the original Python project. Use another tab to install this Go binary. <a href="@@BASE@@docs/installation/">Details →</a></p></section>
+        </div>
       </div>
       <p class="small">The canonical Go executable is `markata`; `markata-go` remains a compatible alias. <a href="@@BASE@@docs/installation/">All installation details →</a></p>
     </section>
