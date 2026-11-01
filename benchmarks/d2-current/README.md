@@ -21,8 +21,7 @@ The path-filtered GitHub Action compares:
 
 Compare equal version and equal fixture before drawing conclusions about
 native versus subprocess execution. This is still a research experiment:
-packaging a separate Go 1.27-built native sidecar would require an explicit
-release/build design and trust/network/asset-policy integration.
+Markata's production module has upgraded to Go 1.27 in [PR #1901](https://github.com/WaylonWalker/markata/pull/1901), so a separate worker is no longer required solely for the Go version. The production adapter and its trust/network/asset-policy integration remain unimplemented.
 
 Tracked in [issue #1896](https://github.com/WaylonWalker/markata/issues/1896).
 
@@ -44,10 +43,9 @@ embedded font data URIs in these test cases.
 **Conclusion:** the earlier v0.7.1 native results were dominated by version
 differences, not by the intrinsic overhead of in-process Go rendering.
 D2 v0.9.0 native is substantially faster than the subprocess CLI on the
-same fixtures. Strongly prefer evaluating native v0.9.0 for production,
-*but* it requires upgrading Markata to Go 1.27 or using an isolated Go 1.27
-worker. Check release targets, wasm builds, binary sizes, themes/fonts, and
-the SVG asset validator before enabling by default.
+same fixtures. Markata has since upgraded to Go 1.27. Strongly prefer evaluating
+native v0.9.0 for production, but first check binary size, layouts,
+themes/fonts, assets, offline policy and actual builder integration.
 
 ## SVG contract integration check
 
@@ -60,3 +58,7 @@ helper. The workflow test selector must explicitly run this integration test.
 This experiment cannot establish universal syntax/theme compatibility;
 external links, images, HTML labels, and custom font resources still need
 separate fixtures.
+
+## Retest against upgraded Markata main
+
+[Workflow 41255950545](https://github.com/WaylonWalker/markata/actions/runs/41255950545) passed on a branch containing the merged Go 1.27 Markata baseline. Its native D2 v0.9.0 benchmark yielded medians of **1.050 / 3.692 / 13.382 ms** for 3 / 18 / 72 nodes (three samples each). Its Markata SVG policy/publisher test explicitly executed and passed all five fixture groups: simple, medium, large, labels and shapes. The root Markata binary still does **not** use D2; this is research evidence for the follow-up production adapter.
