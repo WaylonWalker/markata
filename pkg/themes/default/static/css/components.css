@@ -5697,3 +5697,109 @@ body.reader-mode::after {
     }
   }
 }
+
+/* Native Markdown tabs share the normal theme tokens. All panels remain
+   readable without JavaScript; the tab strip is revealed on enhancement. */
+@layer components {
+  .post-content .md-tabs {
+    box-sizing: border-box;
+    min-width: 0;
+    margin-block: var(--space-6, 1.5rem);
+    border: 1px solid var(--color-border-soft, var(--color-border));
+    border-radius: var(--radius-lg, .75rem);
+    background: var(--color-background);
+    overflow: hidden;
+  }
+  .post-content .md-tabs-nav {
+    display: flex;
+    gap: .125rem;
+    align-items: stretch;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: thin;
+    padding: .25rem .5rem 0;
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border-soft, var(--color-border));
+  }
+  .post-content .md-tabs [hidden] { display: none !important; }
+  .post-content .md-tabs-nav button {
+    appearance: none;
+    flex: 0 0 auto;
+    border: 1px solid transparent;
+    border-bottom: 2px solid transparent;
+    background: transparent;
+    color: var(--color-text-muted, var(--color-text));
+    font: inherit;
+    font-size: .9em;
+    line-height: 1.4;
+    padding: .65rem .9rem;
+    border-radius: var(--radius-sm, .375rem) var(--radius-sm, .375rem) 0 0;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .post-content .md-tabs-nav button:is(:hover, :focus-visible) {
+    color: var(--color-text);
+    background: var(--color-background);
+  }
+  .post-content .md-tabs-nav button[aria-selected="true"] {
+    color: var(--color-primary);
+    background: var(--color-background);
+    border-bottom-color: var(--color-primary);
+    font-weight: 650;
+  }
+  .post-content .md-tabs-nav button:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: -3px;
+  }
+  .post-content .md-tabs-panels { min-width: 0; }
+  .post-content .md-tab {
+    min-width: 0;
+    padding: clamp(.75rem, 2vw, 1.25rem);
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+  }
+  .post-content .md-tab + .md-tab {
+    border-top: 1px solid var(--color-border-soft, var(--color-border));
+  }
+  .post-content .md-tab > :first-child { margin-top: 0; }
+  .post-content .md-tab > :last-child { margin-bottom: 0; }
+  .post-content .md-tab-fallback-label {
+    font-size: 1em;
+    font-weight: 650;
+    margin-block: 0 .75rem;
+    color: var(--color-text);
+  }
+  .post-content .md-tabs[data-md-tabs-ready] .md-tab-fallback-label { display: none; }
+  .post-content .md-tabs[data-md-tabs-ready] .md-tab + .md-tab { border-top: 0; }
+  .post-content .md-tabs[data-style="underline"] {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+  .post-content .md-tabs[data-style="underline"] .md-tabs-nav {
+    background: transparent;
+    padding-inline: 0;
+  }
+  .post-content .md-tabs[data-style="underline"] .md-tab { padding-inline: 0; }
+  .post-content .md-tabs[data-style="pills"] .md-tabs-nav {
+    background: transparent;
+    border-bottom: 0;
+    gap: .35rem;
+    padding: .5rem;
+  }
+  .post-content .md-tabs[data-style="pills"] .md-tabs-nav button {
+    border: 0;
+    border-radius: var(--radius-lg, .75rem);
+    padding: .55rem .85rem;
+  }
+  .post-content .md-tabs[data-style="pills"] .md-tabs-nav button[aria-selected="true"] {
+    background: var(--color-surface);
+  }
+  @media print {
+    .post-content .md-tabs { overflow: visible; break-inside: auto; }
+    .post-content .md-tabs .md-tabs-nav { display: none !important; }
+    .post-content .md-tabs .md-tab { display: block !important; overflow: visible; break-inside: avoid; }
+    .post-content .md-tabs .md-tab + .md-tab { border-top: 1px solid var(--color-border); }
+    .post-content .md-tabs .md-tab-fallback-label { display: block !important; }
+  }
+}
