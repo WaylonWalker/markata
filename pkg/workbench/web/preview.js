@@ -6,11 +6,62 @@ if(value==null)document.documentElement.removeAttribute(key);
 else if(values.includes(value))document.documentElement.setAttribute(key,value);
 }};
 
-let updates=Promise.resolve(), scriptSequence=0;
-let sourceLines=[], sourceLineCount=0, sourcePoints=[], programmedTarget=null, scrollFrame=0;
+let updates=Promise.resolve(), scriptSequence=0, latestVersion=0;
+let sourceLines=[], sourceLineCount=0, sourcePoints=[], programmedTarget=null, scrollFrame=0, positionLine=-1, positionNode=null, scrollIntentUntil=0;
 let articleObserver;
-const markerStyle=document.createElement('style');markerStyle.textContent='.markata-sync-cursor{outline:2px solid color-mix(in srgb,var(--color-primary,#d39b32) 70%,transparent);outline-offset:3px;border-radius:3px}';document.head.append(markerStyle);
-const scrollState=user=>{
+const executedInlineScripts=new Set();
+let appearanceSignature=JSON.stringify(Object.fromEntries(Object.keys(allowed).map(key=>[key,document.documentElement.getAttribute(key)])));
+const markerStyle=document.createElement('style');markerStyle.textContent='.markata-sync-position{outline:2px solid color-mix(in srgb,var(--color-primary,#d39b32) 70%,transparent);outline-offset:3px;border-radius:3px}';document.head.append(markerStyle);
+const blockSignature=node=>{
+  if(node.matches('pre.mermaid'))return `mermaid:${node.dataset.markataMermaidSource??node.textContent}`;
+  const generated=node.matches('.markata-sync-position,[data-markata-code-enhanced],.chartjs-container')||node.getAttribute('class')===''||node.querySelector('[data-markata-ui],[data-markata-code-enhanced],.chartjs-container canvas');
+  if(!generated)return node.outerHTML;
+  const clone=node.cloneNode(true);
+  clone.querySelectorAll('[data-markata-ui],.markata-sync-position').forEach(child=>child.remove());
+  const normalizeCodeChrome=pre=>{
+    const generatedLanguage=pre.dataset.markataGeneratedLanguage==='true';
+    pre.removeAttribute('data-markata-code-enhanced');
+    pre.removeAttribute('data-markata-generated-language');
+    pre.classList.remove('md-code-enhanced','markata-sync-position');
+    if(generatedLanguage)pre.removeAttribute('data-language');
+    if(!pre.classList.length)pre.removeAttribute('class');
+  };
+  if(clone.hasAttribute('data-markata-code-enhanced')||clone.classList.contains('markata-sync-position'))normalizeCodeChrome(clone);
+  clone.querySelectorAll('[data-markata-code-enhanced]').forEach(normalizeCodeChrome);
+  if(clone.getAttribute('class')==='')clone.removeAttribute('class');
+  clone.querySelectorAll('.chartjs-container canvas').forEach(canvas=>canvas.remove());
+  clone.querySelectorAll('.chartjs-container [id]').forEach(element=>element.removeAttribute('id'));
+  clone.querySelectorAll('.chartjs-container details').forEach(details=>details.removeAttribute('open'));
+  return clone.outerHTML;
+};
+const patchArticle=(article,html)=>{
+  const template=document.createElement('template');template.innerHTML=html;
+  for(const child of [...article.childNodes])if(child.nodeType===Node.TEXT_NODE&&!child.textContent.trim())child.remove();
+  const previous=[...article.children],available=new Map();
+  for(const node of previous){const key=blockSignature(node);if(!available.has(key))available.set(key,[]);available.get(key).push(node);}
+  const changedNodes=[],retained=new Set(),next=[];
+  for(const fresh of [...template.content.children]){
+    const matches=available.get(blockSignature(fresh));
+    const existing=matches?.shift();
+    if(existing){next.push(existing);retained.add(existing);}
+    else{next.push(fresh);changedNodes.push(fresh);}
+  }
+  for(const node of previous)if(!retained.has(node))node.remove();
+  let cursor=article.firstElementChild;
+  for(const node of next){if(node===cursor)cursor=cursor.nextElementSibling;else article.insertBefore(node,cursor);}
+  return {changedNodes,total:next.length,retained:retained.size,removed:previous.length-retained.size};
+};
+const syncPositionMarker=()=>{
+  const article=document.querySelector('.post-content');
+  if(!article)return;
+  const point=sourcePoints.filter(anchor=>anchor.index>=0&&anchor.index<article.children.length&&anchor.line<=positionLine).at(-1)||sourcePoints.find(anchor=>anchor.index===0);
+  const next=point?article.children[point.index]:null;
+  if(positionNode===next)return;
+  positionNode?.classList.remove('markata-sync-position');
+  if(positionNode&&!positionNode.classList.length)positionNode.removeAttribute('class');
+  positionNode=next;positionNode?.classList.add('markata-sync-position');
+};
+const scrollState=(user,syncID=null)=>{
   const article=document.querySelector('.post-content');
   if(!article)return;
   const elements=[...article.children];
@@ -28,11 +79,20 @@ const scrollState=user=>{
   const bottom=rect.bottom+scrollY;
   if(endLine>points.at(-1).line&&bottom>points.at(-1).y)points.push({line:endLine,y:bottom,index:elements.length});
   sourcePoints=points;
-  parent.postMessage({type:'sync-scroll-state',user,top:scrollY,height:document.documentElement.scrollHeight,clientHeight:innerHeight,points},'*');
+  syncPositionMarker();
+  parent.postMessage({type:'sync-scroll-state',user,top:scrollY,height:document.documentElement.scrollHeight,clientHeight:innerHeight,points,sync_id:syncID},'*');
 };
+const noteScrollIntent=duration=>{scrollIntentUntil=performance.now()+duration;};
+document.addEventListener('wheel',()=>noteScrollIntent(250),{passive:true,capture:true});
+document.addEventListener('touchstart',()=>noteScrollIntent(500),{passive:true,capture:true});
+document.addEventListener('touchmove',()=>noteScrollIntent(250),{passive:true,capture:true});
+document.addEventListener('pointerdown',()=>noteScrollIntent(100),{passive:true,capture:true});
+document.addEventListener('pointermove',event=>{if(event.buttons)noteScrollIntent(250);},{passive:true,capture:true});
+document.addEventListener('pointerup',()=>noteScrollIntent(100),{passive:true,capture:true});
+document.addEventListener('keydown',event=>{const scrollKey=['ArrowUp','ArrowDown','PageUp','PageDown','Home','End'].includes(event.key)||(event.key===' '&&!event.target.closest?.('input,textarea,button,[contenteditable="true"]'));if(scrollKey)noteScrollIntent(250);},true);
 addEventListener('scroll',()=>{
   if(scrollFrame)cancelAnimationFrame(scrollFrame);
-  scrollFrame=requestAnimationFrame(()=>{scrollFrame=0;const isProgrammed=programmedTarget!=null&&Math.abs(scrollY-programmedTarget)<2;if(isProgrammed)programmedTarget=null;scrollState(!isProgrammed);});
+  scrollFrame=requestAnimationFrame(()=>{scrollFrame=0;const request=programmedTarget;const isProgrammed=request!=null&&Math.abs(scrollY-request.y)<2;if(isProgrammed)programmedTarget=null;scrollState(!isProgrammed&&performance.now()<scrollIntentUntil,isProgrammed?request.id:null);});
 },{passive:true});
 addEventListener('resize',()=>scrollState(false));
 const observeArticle=article=>{
@@ -47,9 +107,9 @@ if(document.fonts?.ready)document.fonts.ready.then(()=>scrollState(false));
 const originalScripts=new WeakMap();
 const scriptSource=s=>originalScripts.get(s) ?? s.textContent;
 
-const renderMarkdown=async data=>{const article=document.querySelector('.post-content');
+const renderMarkdown=async(data,changedNodes)=>{const article=document.querySelector('.post-content');
 if(!article)return;
-if(window.Chart)article.querySelectorAll('canvas').forEach(canvas=>window.Chart.getChart?.(canvas)?.destroy());
+if(window.Chart)changedNodes.forEach(node=>[...(node.matches('canvas')?[node]:[]),...node.querySelectorAll('canvas')].forEach(canvas=>window.Chart.getChart?.(canvas)?.destroy()));
 
 const head=document.createElement('template');
 head.innerHTML=data.feature_head_html;
@@ -68,11 +128,15 @@ document.head.append(style);
 const body=document.createElement('template');
 body.innerHTML=data.body_end_html;
 const sources=[...body.content.querySelectorAll('script')];
-const inlineScripts=new Set(sources.filter(s=>!s.src&&s.textContent.includes('rerenderMermaid')).map(s=>s.textContent));
-document.querySelectorAll('script[data-markata-generated]:not([src])').forEach(s=>{if(!inlineScripts.has(scriptSource(s))&&!s.textContent.includes('rerenderMermaid'))s.remove();
-});
+const chartChanged=changedNodes.some(node=>node.matches('.chartjs-container')||node.querySelector('.chartjs-container'));
+const changedDiagrams=changedNodes.flatMap(node=>[...(node.matches('pre.mermaid')?[node]:[]),...node.querySelectorAll('pre.mermaid')]);
 for(const source of sources){if(source.src&&[...document.scripts].some(s=>s.src===assetURL(source,'src')))continue;
-if(!source.src&&inlineScripts.has(source.textContent)&&[...document.scripts].some(s=>!s.src&&scriptSource(s)===source.textContent))continue;
+if(!source.src){
+  const scriptText=source.textContent;
+  if(executedInlineScripts.has(scriptText)||[...document.scripts].some(s=>!s.src&&scriptSource(s)===scriptText)){executedInlineScripts.add(scriptText);continue;}
+  if(/chartjs-\d+/.test(scriptText)&&!chartChanged)continue;
+  executedInlineScripts.add(scriptText);
+}
 const script=document.createElement('script');
 for(const attr of source.attributes)script.setAttribute(attr.name,attr.value);
 script.dataset.markataGenerated='true';
@@ -86,29 +150,40 @@ if(!source.src&&source.type==='module'){
     script.textContent+='\n;window.dispatchEvent(new Event('+JSON.stringify(event)+'));';
     document.body.append(script);
   });
+  script.remove();
 }else if(source.src){await new Promise(resolve=>{script.addEventListener('load',resolve,{once:true});
 script.addEventListener('error',resolve,{once:true});
 document.body.append(script);
 });
-}else document.body.append(script);
-}dispatchEvent(new Event('view-transition-complete'));
-setAppearance(data.attributes);
-dispatchEvent(new Event('theme-change'));
-observeArticle(article);requestAnimationFrame(()=>scrollState(false));
+}else{document.body.append(script);script.remove();}
+}
+window.markataInitCodeChrome?.(changedNodes);
+if(changedDiagrams.length)window.initMermaid?.(changedDiagrams);
+const nextAppearance=JSON.stringify(data.attributes||{});
+if(nextAppearance!==appearanceSignature){setAppearance(data.attributes);dispatchEvent(new Event('theme-change'));appearanceSignature=nextAppearance;}
+observeArticle(article);
 };
 
 addEventListener('message',e=>{if(e.source!==parent)return;
-if(e.data?.type==='markdown-render'){const article=document.querySelector('.post-content');
-if(article)article.innerHTML=e.data.html;
-sourceLines=e.data.source_lines||[];
-parent.postMessage({type:'preview-updated',version:e.data.version},'*');
-updates=updates.then(()=>renderMarkdown(e.data)).catch(console.error);
+if(e.data?.type==='markdown-render'){
+  latestVersion=Math.max(latestVersion,e.data.version||0);
+  updates=updates.then(async()=>{
+    if(e.data.version<latestVersion)return;
+    const article=document.querySelector('.post-content');if(!article)return;
+    sourceLines=e.data.source_lines||[];sourceLineCount=e.data.line_count||sourceLineCount;
+    const patch=patchArticle(article,e.data.html);
+    await renderMarkdown(e.data,patch.changedNodes);
+    if(e.data.version!==latestVersion)return;
+    scrollState(false);
+    const diagrams=patch.changedNodes.reduce((count,node)=>count+(node.matches('pre.mermaid')?1:0)+node.querySelectorAll('pre.mermaid').length,0);
+    parent.postMessage({type:'preview-updated',version:e.data.version,patch:{blocks:patch.total,changed:patch.changedNodes.length,reused:patch.retained,removed:patch.removed,diagrams,kinds:patch.changedNodes.map(node=>node.tagName.toLowerCase()+(node.classList.length?'.'+[...node.classList].join('.'):''))}},'*');
+  }).catch(console.error);
 return;
 }if(e.data?.type==='sync-scroll-lines'){sourceLines=e.data.lines||[];sourceLineCount=e.data.lineCount||0;requestAnimationFrame(()=>scrollState(false));return;
-}if(e.data?.type==='sync-scroll'){programmedTarget=Math.max(0,Math.min(e.data.y,document.documentElement.scrollHeight-innerHeight));document.scrollingElement.scrollTop=programmedTarget;setTimeout(()=>{programmedTarget=null;},300);return;
-}if(e.data?.type==='sync-cursor'){const article=document.querySelector('.post-content');if(!article)return;article.querySelectorAll('.markata-sync-cursor').forEach(node=>node.classList.remove('markata-sync-cursor'));const candidates=sourcePoints.filter(point=>point.index>=0&&point.index<article.children.length&&point.line<=e.data.line);const point=candidates.at(-1)||sourcePoints.find(anchor=>anchor.index===0);if(point)article.children[point.index]?.classList.add('markata-sync-cursor');return;
+}if(e.data?.type==='sync-scroll'){programmedTarget={id:e.data.id,y:Math.max(0,Math.min(e.data.y,document.documentElement.scrollHeight-innerHeight))};document.scrollingElement.scrollTop=programmedTarget.y;const id=e.data.id;setTimeout(()=>{if(programmedTarget?.id===id)programmedTarget=null;},300);return;
+}if(e.data?.type==='sync-position'){positionLine=e.data.line;syncPositionMarker();return;
 }if(e.data?.type==='appearance'){updates=updates.then(()=>{setAppearance(e.data.attributes);
-dispatchEvent(new Event('theme-change'));
+dispatchEvent(new Event('theme-change'));appearanceSignature=JSON.stringify(e.data.attributes||{});
 }).catch(console.error);
 }});
 document.addEventListener('click',event=>{

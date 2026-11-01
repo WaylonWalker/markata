@@ -20,8 +20,14 @@
     return Promise.reject(new Error('Clipboard API unavailable'));
   }
 
-  function initCodeChrome() {
-    document.querySelectorAll('.post-content pre').forEach((pre) => {
+  function initCodeChrome(root = document) {
+    const roots = Array.isArray(root) ? root : [root];
+    const blocks = roots.flatMap((node) => {
+      if (node.matches?.('pre')) return [node];
+      if (node === document) return [...document.querySelectorAll('.post-content pre')];
+      return [...(node.querySelectorAll?.('pre') || [])];
+    });
+    blocks.forEach((pre) => {
       if (pre.dataset.markataCodeEnhanced === 'true' ||
           pre.closest('.mermaid, [data-no-code-chrome]') ||
           pre.classList.contains('mermaid')) return;
@@ -40,6 +46,7 @@
       const language = codeClass.match(/(?:^|\s)language-([a-z0-9_+.-]+)/i);
       if (language && !pre.hasAttribute('data-language')) {
         pre.setAttribute('data-language', language[1]);
+        pre.dataset.markataGeneratedLanguage = 'true';
       }
 
       const button = document.createElement('button');

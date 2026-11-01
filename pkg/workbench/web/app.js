@@ -4,7 +4,10 @@ const frame = document.querySelector('#preview');
 window.addEventListener('message',event=>{
   if (event.source !== frame.contentWindow) return;
   if (event.data?.type === 'open-post') window.MarkataSiteTree?.openPost(event.data.slug);
-  if (event.data?.type === 'preview-updated' && event.data.version === revision) finishPreview(event.data.version);
+  if (event.data?.type === 'preview-updated' && event.data.version === revision) {
+    finishPreview(event.data.version);
+    scrollSync.previewUpdated();
+  }
 });
 const status = document.querySelector('#status');
 const errorBox = document.querySelector('#error');
@@ -313,6 +316,7 @@ async function render() {
     if (version !== revision) return;
     if (!response.ok) throw new Error(data.error || 'Rendering failed.');
     if (sourceLineOffset) data.source_lines = data.source_lines.map(line => line + sourceLineOffset);
+    scrollSync.update(data.source_lines, false);
     const roundTrip = performance.now()-started;
     activeRender = {data, version, roundTrip};
     if (!previewStarted) {
@@ -325,7 +329,10 @@ async function render() {
           const latest = pendingPreview;
           pendingPreview = null;
           if (latest.version === revision) updatePreview(latest.data, latest.version);
-        } else finishPreview(activeRender?.version);
+        } else {
+          scrollSync.previewUpdated();
+          finishPreview(activeRender?.version);
+        }
       };
       frame.srcdoc = data.document;
     } else if (!previewReady) {
@@ -333,7 +340,6 @@ async function render() {
     } else {
       updatePreview(data, version);
     }
-    scrollSync.update(data.source_lines);
     errorBox.hidden = true;
     status.textContent = 'Updating preview…';
   } catch (error) {
@@ -363,6 +369,7 @@ const appearanceKeys = ['data-palette','data-theme','data-aesthetic','data-fontp
 function updatePreview(data, version) {
   frame.contentWindow?.postMessage({type:'markdown-render', html:data.html,
     source_lines:data.source_lines,
+    line_count:editor.lineCount(),
     feature_head_html:data.feature_head_html, body_end_html:data.body_end_html, version,
     attributes:attributes()}, '*');
 }

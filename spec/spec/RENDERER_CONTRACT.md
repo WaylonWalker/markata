@@ -101,9 +101,20 @@ frontmatter, and MUST be strictly increasing together before interpolation; inva
 duplicate, or out-of-order anchors MUST be discarded. Preview anchors MUST use
 the rendered article's document coordinates and be refreshed after content,
 viewport, or observed article geometry changes. Scroll synchronization MUST use
-the same measured source position in either direction and MUST expose that
-position in both panes without moving the text cursor. Preview-only and
-editor-only layouts do not synchronize hidden panes.
+the same measured source position in either direction. The editor MUST keep its
+native caret at the actual text cursor; a scroll-position marker MUST NOT be
+rendered as an editor cursor or caret. Content-only preview updates MUST preserve
+the iframe document and unchanged rendered block nodes, and MUST NOT dispatch
+global navigation or theme-change events. New or changed feature blocks MUST be
+initialized without rerendering unchanged diagrams or components. Preview
+position updates MUST be deduplicated when the measured target has not changed.
+Only explicit pane input (wheel, touch, scrollbar or pointer drag, and scroll
+keys) may make a pane the scroll-sync driver. Scroll changes caused by rendering,
+image or font layout, browser scroll anchoring, or synchronization itself MUST
+not be treated as user scrolling. Cursor activity caused by text edits on the
+same logical source line MUST not move the preview; actual line changes may
+follow the source caret to its mapped preview block.
+Preview-only and editor-only layouts do not synchronize hidden panes.
 
 The Go workbench MUST bind Ctrl/Cmd+P to a fuzzy workspace file finder that
 searches Markdown paths, titles, slugs, and tags and opens the selected file in

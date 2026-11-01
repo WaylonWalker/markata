@@ -1,7 +1,21 @@
 // Source-line anchors keep documents with unequal rendered heights aligned.
 window.MarkataScrollSync = function (editor, frame, setting, workbench) {
-  let lines = [], preview = null, driver = 'editor', expectedEditorTop = null, markedLine = -1;
+  let lines = [], preview = null, driver = 'editor', expectedEditorTop = null;
+  let editorFollowCursor = true, lastMarkedLine = -1, lastCursorLine = -1;
+  let geometryKey = '', requestedPreview = null, previewRequestID = 0, editorScrollIntentUntil = 0;
+  let contentUnrendered = false, deferredCursorFollow = false;
   let framePending = false, editorPending = false;
+  const editorWrapper = editor.getWrapperElement();
+  const noteEditorScrollIntent = duration => { editorScrollIntentUntil = performance.now() + duration; };
+  editorWrapper.addEventListener('wheel', () => noteEditorScrollIntent(250), {passive:true});
+  editorWrapper.addEventListener('touchstart', () => noteEditorScrollIntent(500), {passive:true});
+  editorWrapper.addEventListener('touchmove', () => noteEditorScrollIntent(250), {passive:true});
+  editorWrapper.addEventListener('pointerdown', () => noteEditorScrollIntent(100), {passive:true});
+  editorWrapper.addEventListener('pointermove', event => { if (event.buttons) noteEditorScrollIntent(250); }, {passive:true});
+  editorWrapper.addEventListener('pointerup', () => noteEditorScrollIntent(100), {passive:true});
+  window.addEventListener('keydown', event => {
+    if (editor.hasFocus() && ['ArrowUp','ArrowDown','PageUp','PageDown','Home','End'].includes(event.key)) noteEditorScrollIntent(250);
+  }, true);
   try { setting.checked = localStorage.getItem('markata-editor-scroll-sync') !== 'false'; } catch { /* storage is optional */ }
   const active = () => setting.checked && workbench.dataset.layout === 'split';
   const clamp = (n, max) => Math.max(0, Math.min(max, n));
@@ -39,6 +53,14 @@ window.MarkataScrollSync = function (editor, frame, setting, workbench) {
     editor.scrollTo(null, top);
     setTimeout(() => { if (expectedEditorTop === top) expectedEditorTop = null; }, 300);
   };
+  const placePreview = y => {
+    const top = clamp(y, preview.height - preview.clientHeight);
+    if (Math.abs(preview.top - top) < 1 || (requestedPreview != null && Math.abs(requestedPreview.top - top) < 1)) return;
+    const id = ++previewRequestID;
+    requestedPreview = {id, top};
+    frame.contentWindow?.postMessage({type:'sync-scroll', y:top, id}, '*');
+    setTimeout(() => { if (requestedPreview?.id === id) requestedPreview = null; }, 300);
+  };
   const editorPoints = () => {
     const info = editor.getScrollInfo();
     const at = line => editor.heightAtLine(clamp(line, editor.lastLine()), 'local');
@@ -49,38 +71,36 @@ window.MarkataScrollSync = function (editor, frame, setting, workbench) {
       return points;
     }, []);
   };
-  function mark(line) {
+  function markPreviewPosition(line) {
     line = clamp(Math.round(line || 0), editor.lastLine());
-    if (markedLine >= 0) editor.removeLineClass(markedLine, 'background', 'markata-sync-cursor');
-    markedLine = line;
-    editor.addLineClass(markedLine, 'background', 'markata-sync-cursor');
-    frame.contentWindow?.postMessage({type:'sync-cursor', line}, '*');
+    if (line === lastMarkedLine) return;
+    lastMarkedLine = line;
+    frame.contentWindow?.postMessage({type:'sync-position', line}, '*');
   }
   function editorToPreview(followCursor = false) {
     if (!active() || !preview || !lines.length) return;
     const info = editor.getScrollInfo();
-    const cursorY = editor.heightAtLine(editor.getCursor().line, 'local');
+    const cursor = editor.getCursor();
+    const cursorY = editor.cursorCoords(cursor, 'local').top;
     const preferred = followCursor ? Math.max(.15, Math.min(.8, (cursorY - info.top) / info.clientHeight)) : .4;
     const sourcePoints = editorPoints();
-    const line = followCursor ? editor.getCursor().line : position(sourcePoints, info.top + info.clientHeight * preferred);
-    if (line != null) mark(line);
+    const line = followCursor ? cursor.line : position(sourcePoints, info.top + info.clientHeight * preferred);
+    if (line != null) markPreviewPosition(line);
     const sourceY = height(sourcePoints, line), previewY = height(preview.points, line);
     if (sourceY != null && previewY != null) {
       const ratio = sharedRatio(sourceY, info.height - info.clientHeight, info.clientHeight, previewY, preview.height - preview.clientHeight, preview.clientHeight, preferred);
-      placeEditor(sourceY, ratio, info);
-      frame.contentWindow?.postMessage({type:'sync-scroll', y:clamp(previewY - preview.clientHeight * ratio, preview.height - preview.clientHeight)}, '*');
+      placePreview(previewY - preview.clientHeight * ratio);
     }
   }
   function previewToEditor() {
     if (!active() || !preview || !lines.length) return;
     const info = editor.getScrollInfo(), preferred = .4;
     const line = position(preview.points, preview.top + preview.clientHeight * preferred);
-    if (line != null) mark(line);
+    if (line != null) markPreviewPosition(line);
     const editorY = height(editorPoints(), line), previewY = height(preview.points, line);
     if (editorY != null && previewY != null) {
       const ratio = sharedRatio(editorY, info.height - info.clientHeight, info.clientHeight, previewY, preview.height - preview.clientHeight, preview.clientHeight, preferred);
       placeEditor(editorY, ratio, info);
-      frame.contentWindow?.postMessage({type:'sync-scroll', y:clamp(previewY - preview.clientHeight * ratio, preview.height - preview.clientHeight)}, '*');
     }
   }
   editor.on('scroll', () => {
@@ -90,27 +110,51 @@ window.MarkataScrollSync = function (editor, frame, setting, workbench) {
       expectedEditorTop = null;
     }
     if (!active()) return;
+    if (performance.now() > editorScrollIntentUntil) return;
     driver = 'editor';
+    editorFollowCursor = false;
+    deferredCursorFollow = false;
     if (!editorPending) { editorPending = true; requestAnimationFrame(() => { editorPending = false; editorToPreview(); }); }
   });
-  editor.on('change', () => { driver = 'editor'; requestAnimationFrame(() => editorToPreview(true)); });
-  editor.on('cursorActivity', () => { if (editor.hasFocus()) { driver = 'editor'; mark(editor.getCursor().line); requestAnimationFrame(() => editorToPreview(true)); } });
+  editor.on('change', () => { driver = 'editor'; editorFollowCursor = false; contentUnrendered = true; });
+  editor.on('cursorActivity', () => {
+    if (!editor.hasFocus()) return;
+    const cursor = editor.getCursor();
+    if (cursor.line === lastCursorLine) return;
+    driver = 'editor'; editorFollowCursor = true;
+    lastCursorLine = cursor.line;
+    markPreviewPosition(cursor.line);
+    if (contentUnrendered) { deferredCursorFollow = true; return; }
+    requestAnimationFrame(() => editorToPreview(true));
+  });
   window.addEventListener('message', event => {
     if (event.source !== frame.contentWindow || event.data?.type !== 'sync-scroll-state') return;
     preview = event.data;
+    if (requestedPreview && event.data.sync_id === requestedPreview.id) requestedPreview = null;
+    const nextGeometryKey = `${preview.height}:${preview.clientHeight}:` + preview.points.map(point => `${point.line},${Math.round(point.y)}`).join(';');
+    const geometryChanged = nextGeometryKey !== geometryKey;
+    geometryKey = nextGeometryKey;
     if (event.data.user) driver = 'preview';
     if (event.data.user && !framePending) {
       framePending = true;
       requestAnimationFrame(() => { framePending = false; previewToEditor(); });
-    } else if (!event.data.user && driver === 'editor') editorToPreview();
+    } else if (!event.data.user && geometryChanged && !contentUnrendered) {
+      requestAnimationFrame(() => driver === 'preview' ? previewToEditor() : editorToPreview(editorFollowCursor));
+    }
   });
   setting.addEventListener('change', () => {
     try { localStorage.setItem('markata-editor-scroll-sync', String(setting.checked)); } catch { /* storage is optional */ }
-    if (setting.checked) { driver = 'editor'; editorToPreview(); }
+    if (setting.checked) { driver = 'editor'; editorFollowCursor = false; editorToPreview(); }
   });
   return {
-    update(sourceLines) { lines = sourceLines || []; frame.contentWindow?.postMessage({type:'sync-scroll-lines', lines, lineCount:editor.lineCount()}, '*'); },
+    update(sourceLines, notifyPreview = true) { lines = sourceLines || []; if (notifyPreview) frame.contentWindow?.postMessage({type:'sync-scroll-lines', lines, lineCount:editor.lineCount()}, '*'); },
     ready() { frame.contentWindow?.postMessage({type:'sync-scroll-lines', lines, lineCount:editor.lineCount()}, '*'); },
+    previewUpdated() {
+      contentUnrendered = false;
+      const followCursor = deferredCursorFollow || editorFollowCursor;
+      deferredCursorFollow = false;
+      requestAnimationFrame(() => driver === 'preview' ? previewToEditor() : editorToPreview(followCursor));
+    },
     refresh() { if (driver === 'preview') previewToEditor(); else editorToPreview(); }
   };
 };
