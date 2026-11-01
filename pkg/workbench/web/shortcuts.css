@@ -22,3 +22,5 @@
 .shortcut-capture{width:200px;min-width:0;padding:8px;border:2px solid var(--color-primary);border-radius:6px;background:var(--color-surface);color:inherit}
 #shortcuts-feedback{padding:0 20px 14px}
 @media(max-width:480px){.shortcuts-controls{grid-template-columns:1fr}.shortcut-row{padding:10px}.shortcut-binding{min-width:0}}
+
+.command-shortcut{margin-left:auto;padding:3px 6px;font:11px var(--font-code,monospace);border:1px solid var(--editor-divider);border-radius:4px;white-space:nowrap;background:var(--color-surface);color:var(--color-text-muted)}
