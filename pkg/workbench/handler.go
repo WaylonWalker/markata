@@ -200,6 +200,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case (r.URL.Path == "/workspace/publish/commit" || r.URL.Path == "/workspace/publish/push") && r.Method == http.MethodPost:
 		h.serveWorkspace(w, r)
+	case r.URL.Path == "/workspace/publish/deployment" && r.Method == http.MethodGet:
+		h.serveWorkspace(w, r)
 	case (r.URL.Path == "/workspace/publish/review" && r.Method == http.MethodGet):
 		h.serveWorkspace(w, r)
 	case (r.URL.Path == "/workspace" || r.URL.Path == "/workspace/templates") && r.Method == http.MethodGet || (r.URL.Path == "/workspace/file" && (r.Method == http.MethodGet || r.Method == http.MethodPut || r.Method == http.MethodPost)):
@@ -519,6 +521,10 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 	if r.URL.Path == "/workspace/publish/push" {
 		h.servePublishPush(w, r)
+		return
+	}
+	if r.URL.Path == "/workspace/publish/deployment" {
+		h.servePublishDeployment(w, r)
 		return
 	}
 	if r.URL.Path == "/workspace/publish/review" {
