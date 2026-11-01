@@ -141,10 +141,30 @@ func (w *Workspace) ReadImage(name string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	if info.Size() > 15<<20 {
+	const maxImageBytes = 15 << 20
+	if info.Size() > maxImageBytes {
 		return nil, fmt.Errorf("image exceeds 15 MiB")
 	}
-	return os.ReadFile(resolved)
+	file, err := os.Open(resolved)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	openedInfo, err := file.Stat()
+	if err != nil {
+		return nil, err
+	}
+	if !openedInfo.Mode().IsRegular() {
+		return nil, fmt.Errorf("not a regular image file")
+	}
+	data, err := io.ReadAll(io.LimitReader(file, maxImageBytes+1))
+	if err != nil {
+		return nil, err
+	}
+	if len(data) > maxImageBytes {
+		return nil, fmt.Errorf("image exceeds 15 MiB")
+	}
+	return data, nil
 }
 
 // Paths discovers source paths without reading or parsing document bodies.
