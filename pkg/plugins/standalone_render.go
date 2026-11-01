@@ -29,6 +29,8 @@ type StandaloneOptions struct {
 	OmitAssetContent bool
 }
 
+const standaloneFeatureTabs = "tabs"
+
 // RenderAsset is an ordered dependency for a rendered Markdown fragment.
 type RenderAsset struct {
 	ID        string `json:"id"`
@@ -121,7 +123,7 @@ func (renderer *StandaloneRenderer) Render(source string) (*StandaloneResult, er
 	for signal, feature := range map[string]string{
 		"needs_code_css": "code", "needs_admonitions_css": "admonitions",
 		"needs_roads": "roads", "has_figure": "figures", "has_anchor_links": "anchors",
-		"needs_md_tabs": "tabs",
+		"needs_md_tabs": standaloneFeatureTabs,
 	} {
 		r.Features[feature] = post.Extra[signal] == true
 	}
@@ -238,7 +240,7 @@ func (r *StandaloneResult) addPresentationAssets() error {
 	for _, item := range []struct{ feature, path string }{
 		{"roads", "js/roads.js"}, {"tables", "js/sortable-tables.js"},
 		{"checklists", "js/markdown-checklists.js"},
-		{"tabs", "js/md-tabs.js"},
+		{standaloneFeatureTabs, "js/md-tabs.js"},
 	} {
 		if r.Features[item.feature] {
 			if err := r.addBundled(item.path, standaloneScriptKind, "body_end"); err != nil {
