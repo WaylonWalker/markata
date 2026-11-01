@@ -505,7 +505,23 @@ func cachedOutputSlug(outputDir, outputPath string) string {
 		return ""
 	}
 	relative, err := filepath.Rel(root, target)
-	if err != nil || relative == "." || relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) || filepath.Base(relative) != "index.html" {
+	if err != nil || relative == "." || relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
+		// Clean builds render into a sibling staging directory, and the cache
+		// records that temporary output path. Recover its route only when the
+		// stage is an adjacent Markata build directory for this exact output.
+		parent := filepath.Dir(root)
+		stagedRelative, stagedErr := filepath.Rel(parent, target)
+		if stagedErr != nil || stagedRelative == ".." || strings.HasPrefix(stagedRelative, ".."+string(filepath.Separator)) {
+			return ""
+		}
+		parts := strings.Split(filepath.Clean(stagedRelative), string(filepath.Separator))
+		stagePrefix := "." + filepath.Base(root) + ".markata-build-"
+		if len(parts) < 3 || !strings.HasPrefix(parts[0], stagePrefix) {
+			return ""
+		}
+		relative = filepath.Join(parts[1:]...)
+	}
+	if filepath.Base(relative) != "index.html" {
 		return ""
 	}
 	slug := filepath.Dir(relative)

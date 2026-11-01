@@ -13,6 +13,41 @@ import (
 	"github.com/WaylonWalker/markata/pkg/terminalpage"
 )
 
+func TestCachedOutputSlug_ResolvesCleanBuildStage(t *testing.T) {
+	root := t.TempDir()
+	outputDir := filepath.Join(root, "output")
+
+	tests := []struct {
+		name       string
+		outputPath string
+		want       string
+	}{
+		{
+			name:       "published output",
+			outputPath: filepath.Join(outputDir, "old", "index.html"),
+			want:       "old",
+		},
+		{
+			name:       "clean build stage",
+			outputPath: filepath.Join(root, ".output.markata-build-123", "old", "index.html"),
+			want:       "old",
+		},
+		{
+			name:       "unrelated sibling",
+			outputPath: filepath.Join(root, ".other.markata-build-123", "old", "index.html"),
+			want:       "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := cachedOutputSlug(outputDir, tt.outputPath); got != tt.want {
+				t.Fatalf("cachedOutputSlug(%q, %q) = %q, want %q", outputDir, tt.outputPath, got, tt.want)
+			}
+		})
+	}
+}
+
 // createTestManager creates a minimal lifecycle manager for testing.
 func createTestManager(t *testing.T, config *lifecycle.Config) *lifecycle.Manager {
 	t.Helper()
