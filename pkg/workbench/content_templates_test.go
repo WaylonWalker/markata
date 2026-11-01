@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 func TestLoadSiteContentTemplates_SharedMarkdownStarter(t *testing.T) {
@@ -65,5 +67,66 @@ func TestValidateContentTemplateNames_RejectsDuplicateCanonicalName(t *testing.T
 	}
 	if err := validateContentTemplateNames(templates); err == nil {
 		t.Fatal("expected duplicate canonical name error")
+	}
+}
+
+func TestContentTemplates_ConfigPrecedenceAndPlacement(t *testing.T) {
+	root := t.TempDir()
+	cfg := &models.Config{}
+	cfg.ContentTemplates.Placement = map[string]string{"note": "custom-notes"}
+	cfg.ContentTemplates.Templates = []models.ContentTemplateConfig{
+		{Name: "note", Directory: "from-config", Frontmatter: map[string]interface{}{"title": "{{title}}"}, Body: "configured"},
+		{Name: "custom", Directory: "from-config", Frontmatter: map[string]interface{}{"published": false}, Body: "custom-body"},
+	}
+	handler := &Handler{root: root, siteConfig: cfg}
+	templates, err := handler.contentTemplates()
+	if err != nil {
+		t.Fatal(err)
+	}
+	byName := make(map[string]contentTemplate)
+	for _, item := range templates {
+		byName[contentTemplateKey(item)] = item
+	}
+	if got := byName["note"]; got.Directory != "from-config" || !strings.Contains(got.Source, "configured") {
+		t.Fatalf("config template must override built-in and placement: %#v", got)
+	}
+	if got := byName["custom"]; got.Directory != "from-config" || !strings.Contains(got.Source, "published: false") {
+		t.Fatalf("custom config template missing: %#v", got)
+	}
+
+	dir := filepath.Join(root, "content-templates")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	source := "---\nstarter:\n  name: note\n_directory: from-markdown\ntitle: '{{title}}'\n---\nMarkdown winner"
+	if err := os.WriteFile(filepath.Join(dir, "note.md"), []byte(source), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	templates, err = handler.contentTemplates()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, item := range templates {
+		if contentTemplateKey(item) == "note" {
+			if item.Directory != "from-markdown" || !strings.Contains(item.Source, "Markdown winner") {
+				t.Fatalf("Markdown starter must override config: %#v", item)
+			}
+			return
+		}
+	}
+	t.Fatal("missing note starter")
+}
+
+func TestSiteContentTemplate_RejectsUnclosedFrontmatter(t *testing.T) {
+	_, err := siteContentTemplateFromSource("broken.md", "broken", []byte("---\nstarter:\n  name: broken\nbody"))
+	if err == nil || !strings.Contains(err.Error(), "broken.md") {
+		t.Fatalf("expected named malformed frontmatter error, got %v", err)
+	}
+}
+
+func TestSiteContentTemplate_PreservesBodyWithoutFrontmatter(t *testing.T) {
+	template, err := siteContentTemplateFromSource("plain.md", "plain", []byte("Just {{title}}"))
+	if err != nil || template.Source != "Just {{title}}" {
+		t.Fatalf("plain starter must remain sparse: %#v %v", template, err)
 	}
 }
