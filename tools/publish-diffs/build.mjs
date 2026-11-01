@@ -1,5 +1,5 @@
 import { build } from 'esbuild';
-import { rm } from 'node:fs/promises';
+import { readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
@@ -34,3 +34,13 @@ await build({
     }
   }]
 });
+
+// Some bundled dependencies include literal tabs at the end of template
+// literal lines. They are data used by the Markdown highlighter, but fail
+// `git diff --check`; escape them without changing the runtime strings.
+const chunks = path.join(web, 'pierre-diffs');
+for (const file of await readdir(chunks)) {
+  const output = path.join(chunks, file);
+  const contents = await readFile(output, 'utf8');
+  await writeFile(output, contents.replace(/\t(?=\r?$)/gm, '\\t'));
+}
