@@ -141,7 +141,7 @@ func (p *PublishHTMLPlugin) Write(m *lifecycle.Manager) error {
 		// For incremental builds, check if we can skip this post
 		if cache != nil && post.InputHash != "" {
 			if !cache.ShouldRebuildWithSlug(post.Path, post.Slug, post.InputHash, post.Template) {
-				if p.expectedPostOutputsExist(post, config) {
+				if p.expectedPostOutputsExist(post, config) && !projectStaticShadowsPost(post, config) {
 					cache.MarkSkipped()
 					m.ContentLedger().MarkEmitted(post.Path)
 					return false
@@ -163,6 +163,19 @@ func (p *PublishHTMLPlugin) Write(m *lifecycle.Manager) error {
 		}
 		return nil
 	})
+}
+
+// projectStaticShadowsPost prevents a warm build from letting the static
+// copier replace an authored page that won the same path on a cold build.
+// Ordinary cached posts remain skippable; only a conflicting page is rewritten.
+func projectStaticShadowsPost(post *models.Post, config *lifecycle.Config) bool {
+	if post == nil || config == nil {
+		return false
+	}
+	staticDir := NewStaticAssetsPlugin().projectStaticDir(config)
+	name := filepath.Join(staticDir, filepath.FromSlash(strings.Trim(post.Slug, "/")), "index.html")
+	info, err := os.Stat(name)
+	return err == nil && info.Mode().IsRegular()
 }
 
 func (p *PublishHTMLPlugin) recordDraftInputs(posts []*models.Post, cache *buildcache.Cache) {
@@ -286,6 +299,11 @@ func (p *PublishHTMLPlugin) markChangedPosts(cache *buildcache.Cache, m *lifecyc
 	changed := cache.ShouldRebuildBatch(batch)
 	for path := range changed {
 		slug := slugByPath[path]
+		// An explicit slug rename invalidates links and backlinks pointing at
+		// both the old and the new route. Invalidate before updating the graph.
+		if oldSlug := cache.Graph.SlugForPath(path); oldSlug != "" && oldSlug != slug {
+			cache.MarkSlugChanged(oldSlug)
+		}
 		cache.MarkSlugChanged(slug)
 	}
 	for _, removedPath := range removed {
@@ -487,7 +505,23 @@ func cachedOutputSlug(outputDir, outputPath string) string {
 		return ""
 	}
 	relative, err := filepath.Rel(root, target)
-	if err != nil || relative == "." || relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) || filepath.Base(relative) != "index.html" {
+	if err != nil || relative == "." || relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
+		// Clean builds render into a sibling staging directory, and the cache
+		// records that temporary output path. Recover its route only when the
+		// stage is an adjacent Markata build directory for this exact output.
+		parent := filepath.Dir(root)
+		stagedRelative, stagedErr := filepath.Rel(parent, target)
+		if stagedErr != nil || stagedRelative == ".." || strings.HasPrefix(stagedRelative, ".."+string(filepath.Separator)) {
+			return ""
+		}
+		parts := strings.Split(filepath.Clean(stagedRelative), string(filepath.Separator))
+		stagePrefix := "." + filepath.Base(root) + ".markata-build-"
+		if len(parts) < 3 || !strings.HasPrefix(parts[0], stagePrefix) {
+			return ""
+		}
+		relative = filepath.Join(parts[1:]...)
+	}
+	if filepath.Base(relative) != "index.html" {
 		return ""
 	}
 	slug := filepath.Dir(relative)

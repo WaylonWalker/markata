@@ -115,11 +115,21 @@ func (p *LoadPlugin) Load(m *lifecycle.Manager) error {
 	if baseDir == "" {
 		baseDir = "."
 	}
+	cache := GetBuildCache(m)
+	previousSlugs := make(map[string]string, len(files))
+	if cache != nil {
+		for _, file := range files {
+			if cached := cache.GetCachedPost(file); cached != nil && cached.Slug != "" {
+				previousSlugs[file] = cached.Slug
+			}
+		}
+	}
+	defer p.invalidateLoadedSlugChanges(m, cache, previousSlugs)
 
 	// A normal build rescans the content globs, so the cache is the source of
 	// ownership information for files that disappeared since the last build.
 	// Keep those entries alive until the write stage can remove their outputs.
-	if cache := GetBuildCache(m); cache != nil {
+	if cache != nil {
 		missing := cache.MarkMissingPaths(files)
 		if len(missing) > 0 {
 			removed := append(lifecycle.GetServeRemovedPaths(m), missing...)
@@ -151,7 +161,6 @@ func (p *LoadPlugin) Load(m *lifecycle.Manager) error {
 	}
 
 	// Get build cache for ModTime-based skipping
-	cache := GetBuildCache(m)
 	if lifecycle.IsServeFullRebuild(m) || cache == nil {
 		if err := p.loadAllFiles(m, files, baseDir, cache, false); err != nil {
 			return err
@@ -176,6 +185,38 @@ func (p *LoadPlugin) Load(m *lifecycle.Manager) error {
 		return err
 	}
 	return nil
+}
+
+// invalidateLoadedSlugChanges captures route changes before Transform plugins
+// restore dependent HTML from cache. The post cache's current slug is updated
+// while loading changed files, so compare against the pre-load snapshot.
+func (p *LoadPlugin) invalidateLoadedSlugChanges(m *lifecycle.Manager, cache *buildcache.Cache, previousSlugs map[string]string) {
+	if m == nil || cache == nil || len(previousSlugs) == 0 {
+		return
+	}
+	for _, post := range m.Posts() {
+		if post == nil {
+			continue
+		}
+		oldSlug := previousSlugs[post.Path]
+		if oldSlug != "" && oldSlug != post.Slug {
+			cache.MarkSlugChanged(oldSlug)
+			cache.MarkSlugChanged(post.Slug)
+		}
+	}
+	changedSlugs := cache.GetChangedSlugs()
+	if len(changedSlugs) == 0 {
+		return
+	}
+	affectedPaths := cache.GetAffectedPosts(changedSlugs)
+	affected := lifecycle.GetServeAffectedPaths(m)
+	if affected == nil {
+		affected = make(map[string]bool)
+	}
+	for _, path := range affectedPaths {
+		affected[path] = true
+	}
+	lifecycle.SetServeAffectedPaths(m, affected)
 }
 
 func (p *LoadPlugin) loadFromCachedPosts(
