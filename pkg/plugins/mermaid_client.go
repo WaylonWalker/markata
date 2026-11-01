@@ -144,3 +144,4 @@ func (r *clientRenderer) close() error {
 }
 
 const mermaidJSVersion = "10.9.5"
+const nativeMermaidVersion = "go-mermaid/v0.1.6"
