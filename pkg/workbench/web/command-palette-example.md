@@ -1,6 +1,6 @@
 # From idea to published page
 
-A tour of Markata's custom Markdown. Every element below can be inserted from **Commands** with **Ctrl/Cmd+P**.
+A tour of Markata's custom Markdown. Every element below can be inserted from **Commands** with **Ctrl/Cmd+Shift+P**.
 
 ::: md-columns
 
@@ -129,7 +129,7 @@ This chart uses sample data to demonstrate the chart commands. These numbers are
 :::
 
 ??? note "Small syntax, useful details"
-    Mark ==important words==, show shortcuts such as ++Ctrl+P++, and write H~2~O or x^2^ without raw HTML.
+    Mark ==important words==, show shortcuts such as ++Ctrl+Shift+P++, and write H~2~O or x^2^ without raw HTML.
 
 ::: md-source {data-label="See the card syntax"}
 

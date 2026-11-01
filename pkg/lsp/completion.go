@@ -164,7 +164,10 @@ func (s *Server) workspaceFrontmatterValues(ctx *FrontmatterContext, params Comp
 	for _, post := range s.index.AllPosts() {
 		if ctx.CurrentField == "tags" {
 			for _, tag := range extractTagsFromMetadata(post.Metadata["tags"]) {
-				values[tag] = struct{}{}
+				cleanTag := strings.TrimSpace(tag)
+				if cleanTag != "" && !strings.EqualFold(cleanTag, "(No visible text)") {
+					values[tag] = struct{}{}
+				}
 			}
 			continue
 		}
@@ -185,6 +188,9 @@ func (s *Server) workspaceFrontmatterValues(ctx *FrontmatterContext, params Comp
 	}
 	items := make([]CompletionItem, 0, len(values))
 	for value := range values {
+		if strings.TrimSpace(value) == "" {
+			continue
+		}
 		if ctx.Prefix != "" && !strings.HasPrefix(strings.ToLower(value), strings.ToLower(ctx.Prefix)) {
 			continue
 		}

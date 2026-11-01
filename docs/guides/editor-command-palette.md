@@ -9,9 +9,11 @@ tags:
   - editor
 ---
 
-Select **Commands** above the Markdown editor, or press **Ctrl+P**.
-On macOS, press **Cmd+P**. **Ctrl/Cmd+K** also works.
-The palette works with the Default, Vim, Emacs, and Sublime keymaps.
+Select **Commands** above the Markdown editor, or press **Ctrl+Shift+P**.
+On macOS, press **Cmd+Shift+P**. **Ctrl/Cmd+K** also works.
+The dialog is titled **Command Palette** and works with the Default, Vim,
+Emacs, and Sublime keymaps. In the Go workbench, **Ctrl/Cmd+P** opens the
+fuzzy file finder.
 
 Search for a command, such as `callout`, `diagram`, or `highlight`.
 Use the arrow keys to choose a result, then press **Enter**.

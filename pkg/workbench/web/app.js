@@ -228,10 +228,10 @@ async function render() {
     if (version !== revision) { clearTimeout(timer); timer = setTimeout(render, 0); }
   }
 }
-editor.on('change', () => {
+editor.on('change', (_instance, change) => {
   editor.save(); revision++; clearTimeout(timer);
   updateFrontmatterSummary(editor.getValue());
-  saveDraft();
+  if (change.origin !== 'setValue') saveDraft();
   status.textContent = 'Waiting for edits…';
   timer = setTimeout(render, 250);
 });
@@ -271,3 +271,4 @@ document.querySelector('#import').addEventListener('change', async event => {
 if (!saved.textContent) saveDraft();
 
 const workspaceReady = window.MarkataSiteTree.attach(editor, storageWarning);
+workspaceReady.then(() => window.MarkataFileFinder?.attach(editor));

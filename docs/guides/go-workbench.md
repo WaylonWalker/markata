@@ -35,9 +35,14 @@ settings** to scroll each pane independently. The choice is saved in this browse
 Choose Default, Vim, Emacs, or Sublime keymaps in **Editor settings**.
 Code highlighting, icons, admonitions, tables, checklists, Mermaid, and Chart.js use local assets.
 
+Press **Ctrl+P** (**Cmd+P** on macOS) to find a site file by its path, title,
+slug, or tag. The finder shows the current and recently opened files when its
+search is empty.
+Select a result or press **Enter** to open it in the editor.
+
 Edits to selected site files save back to the workspace after a short pause.
 Unsaved scratch documents stay in browser storage. The browser also keeps a
-recovery copy of workspace edits. Use **Ctrl+P** and search for **Download
+recovery copy of workspace edits. Use **Ctrl+Shift+P** and search for **Download
 current file** to export a copy, or **Open Markdown file** to import a file as
 an unsaved draft.
 A storage error appears beside the render metrics. Editing and downloads remain available.
@@ -48,6 +53,9 @@ The preview updates after a 250 ms pause. One request runs at a time, and newer 
 Old responses cannot replace a newer draft. Errors preserve the last successful preview.
 The footer shows render time, round trip time, source size, and preview size.
 Repeated source uses a one-entry memory cache. Appearance changes update the preview without a render request.
+Workspace post embeds in `![[post-slug]]` or `![embed](path/to/post.md)` format
+render as cards linked to the matching site post. Fenced code examples remain
+literal source.
 
 ## Language assistance
 
@@ -190,9 +198,9 @@ the created file and autosaves later edits.
 The footer reports whether the draft was saved. Storage failures leave editing and downloads available.
 See [shared editor features and runtime differences](/docs/guides/renderer-integration-benchmarks/#shared-editor-features-and-runtime-differences) for the comparison.
 
-## Insert Markdown commands
+## Command palette and Markdown commands
 
-Select **Commands** or press **Ctrl+P** (**Cmd+P** on macOS).
+Select **Commands** or press **Ctrl+Shift+P** (**Cmd+Shift+P** on macOS).
 Search for special syntax, then press **Enter** to insert it at your selection.
 See the [command palette guide](editor-command-palette.md) for the catalog and keyboard controls.
 

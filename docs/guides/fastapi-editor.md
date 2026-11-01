@@ -109,7 +109,7 @@ See [shared editor features and runtime differences](/docs/guides/renderer-integ
 
 ## Insert Markdown commands
 
-Select **Commands** or press **Ctrl+P** (**Cmd+P** on macOS).
+Select **Commands** or press **Ctrl+Shift+P** (**Cmd+Shift+P** on macOS).
 Search for special syntax, then press **Enter** to insert it at your selection.
 See the [command palette guide](editor-command-palette.md) for the catalog and keyboard controls.
 

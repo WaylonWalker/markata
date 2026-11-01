@@ -1438,13 +1438,13 @@ Each example below shows the markdown syntax followed by how it renders.
 ```markdown
 !!! tip "Pro Tip"
     Use keyboard shortcuts to speed up your workflow.
-    Press `Ctrl+P` to open the command palette.
+    Press `Ctrl+Shift+P` to open the command palette.
 ```
 
 !!! tip "Pro Tip"
 
     Use keyboard shortcuts to speed up your workflow.
-    Press `Ctrl+P` to open the command palette.
+    Press `Ctrl+Shift+P` to open the command palette.
 
 **Warning:**
 

@@ -8,12 +8,12 @@
     const entries = [...commands, ...(options.actions || [])];
     const button = document.createElement('button');
     button.type = 'button'; button.id = 'commands';
-    button.textContent = 'Commands'; button.title = 'Commands (Ctrl/Cmd+P)';
+    button.textContent = 'Commands'; button.title = 'Command Palette (Ctrl/Cmd+Shift+P)';
     button.setAttribute('aria-haspopup', 'dialog');
     document.querySelector('.editor-toolbar').append(button);
     const dialog = document.createElement('dialog');
     dialog.className = 'markdown-commands'; dialog.setAttribute('aria-labelledby', 'commands-title');
-    dialog.innerHTML = '<div class="commands-heading"><h2 id="commands-title">Insert Markdown</h2><button type="button" class="commands-close" aria-label="Close commands">Close</button></div><label for="commands-query">Find a command</label><input id="commands-query" type="search" placeholder="Try callout, diagram, or highlight" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="true" aria-controls="commands-results"><p id="commands-count" role="status"></p><div id="commands-results" role="listbox" aria-label="Markdown commands"></div><p class="commands-help">↑ ↓ Choose · Enter Insert · Esc Close</p>';
+    dialog.innerHTML = '<div class="commands-heading"><h2 id="commands-title">Command Palette</h2><button type="button" class="commands-close" aria-label="Close commands">Close</button></div><label for="commands-query">Find a command or action</label><input id="commands-query" type="search" placeholder="Try callout, diagram, create, or download" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="true" aria-controls="commands-results"><p id="commands-count" role="status"></p><div id="commands-results" role="listbox" aria-label="Commands and actions"></div><p class="commands-help">↑ ↓ Choose · Enter Run · Esc Close</p>';
     document.body.append(dialog);
     const query = dialog.querySelector('input');
     const results = dialog.querySelector('[role=listbox]');
@@ -100,7 +100,7 @@
     document.addEventListener('keydown', event => {
       const key = event.key.toLowerCase();
       const modifier = event.ctrlKey || event.metaKey;
-      const shortcut = (key === 'k' && !event.shiftKey) || key === 'p';
+      const shortcut = (key === 'k' && !event.shiftKey) || (key === 'p' && event.shiftKey);
       if (!event.isComposing && modifier && shortcut && !event.altKey) {
         event.preventDefault(); event.stopPropagation(); open();
       }

@@ -91,6 +91,15 @@ render response MAY include zero-based source lines for top-level Markdown
 blocks to align unequal editor and preview heights. Preview-only and editor-only
 layouts do not synchronize hidden panes.
 
+The Go workbench MUST bind Ctrl/Cmd+P to a fuzzy workspace file finder that
+searches Markdown paths, titles, slugs, and tags and opens the selected file in
+the editor. The Markdown command palette MUST be labeled "Command Palette" and
+MUST open from Ctrl/Cmd+Shift+P or Ctrl/Cmd+K. Its visible Commands button MUST
+remain available.
+Workspace previews MUST resolve internal post embeds written as `![[slug]]` or
+`![embed](path/to/post.md)` into linked embed cards using indexed post metadata.
+Embed syntax inside fenced code blocks MUST remain unchanged.
+
 - **Persistent JSON Lines / stdio:** implemented with one request per line, one correlated response per line, bounded input, and per-request error recovery. Stdout is reserved for protocol data.
 - **HTTP:** use identical render semantics with explicit resource limits, authentication/CORS strategy and safe defaults. #1851 is a *local trusted editor*, not a public rendering service.
 - **LSP:** preserve existing editor features and translate rendering diagnostics to editor ranges where available. Generic LSP does not define an HTML-preview window.

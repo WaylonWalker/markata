@@ -353,7 +353,8 @@ func (h *Handler) prepareRender(r *http.Request, req *renderRequest) (*renderRes
 			index, revision = snapshot.Snapshot()
 		}
 	}
-	markdown := renderWorkbenchWikilinks(*req.Markdown, index)
+	markdown := renderWorkbenchEmbeds(*req.Markdown, index, h.root)
+	markdown = renderWorkbenchWikilinks(markdown, index)
 	cacheKey := fmt.Sprintf("%d\x00%s", revision, markdown)
 	result := h.lastResult
 	cached := result != nil && h.lastSource == cacheKey
