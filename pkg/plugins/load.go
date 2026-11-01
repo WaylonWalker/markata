@@ -209,7 +209,6 @@ func (p *LoadPlugin) invalidateLoadedSlugChanges(m *lifecycle.Manager, cache *bu
 		return
 	}
 	affectedPaths := cache.GetAffectedPosts(changedSlugs)
-	cache.MarkAffectedDependents(changedSlugs)
 	affected := lifecycle.GetServeAffectedPaths(m)
 	if affected == nil {
 		affected = make(map[string]bool)
