@@ -34,6 +34,12 @@ function fire(key, opts={}) {
   return {used,prevented,stopped};
 }
 assert.equal(shortcuts.getPreset(),'vscode');
+// An exact prefix and its longer chord cannot both be active.
+assert.equal(shortcuts.setBinding('publish','Mod+K').ok,false);
+assert.equal(shortcuts.setBinding('publish','Mod+K Mod+S Mod+P').ok,false);
+assert.equal(shortcuts.setBinding('publish','Mod+K Mod+T').ok,true);
+shortcuts.reset();
+
 assert.equal(fire('P',{ctrlKey:true,shiftKey:true}).used,true);
 assert.equal(palette,1);
 assert.equal(fire('k',{ctrlKey:true}).used,true);
@@ -82,6 +88,13 @@ assert.equal(explorer,2);
 assert.equal(fire('P',{ctrlKey:true,shiftKey:true}).used,true);
 assert.equal(palette,3);
 assert.equal(shortcuts.getPreset(),'vim');
+// Leader sequences cannot continue after switching out of normal mode.
+editor.state.vim.insertMode=false;
+assert.equal(fire(' ',{target:vimTarget}).used,true);
+editor.state.vim.insertMode=true;
+assert.equal(fire('e',{target:vimTarget}).used,false);
+assert.equal(explorer,2);
+editor.state.vim.insertMode=false;
 let opened = 0;
 shortcuts.register({id:'quickOpen',label:'Quick open',bindings:{vscode:'Mod+P',emacs:'Ctrl+X Ctrl+F'},run:()=>opened++});
 shortcuts.setPreset('emacs');
@@ -95,4 +108,17 @@ shortcuts.setPreset('writer');
 shortcuts.setPreset('vscode');
 assert.equal(shortcuts.bindingFor('publish'),'Alt+J'); // Overrides are per preset.
 
+// Mod is the platform's primary modifier, not both Control and Command.
+const macContext = {window:{navigator:{platform:'MacIntel'}},document,localStorage:{getItem:()=>null,setItem:()=>{}},setTimeout,clearTimeout};
+vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../../pkg/workbench/web/shortcuts.js'),'utf8'),macContext);
+let macFired=0;
+const macShortcuts=macContext.window.MarkataShortcuts;
+macShortcuts.register({id:'macSave',label:'Save',bindings:{vscode:'Mod+S'},run:()=>macFired++});
+const macEvent = (ctrlKey,metaKey) => ({
+ key:'s',ctrlKey,metaKey,altKey:false,shiftKey:false,isComposing:false,repeat:false,defaultPrevented:false,
+ target:{matches:()=>false,closest:()=>null},preventDefault(){},stopPropagation(){}
+});
+assert.equal(macShortcuts.dispatch(macEvent(true,false)),false);
+assert.equal(macShortcuts.dispatch(macEvent(false,true)),true);
+assert.equal(macFired,1);
 console.log('Shortcut registry tests passed');
