@@ -101,6 +101,11 @@ def main():
                 with browser.new_context() as context:
                     check_site_tree(context.new_page(), url)
                 print(name + ': workspace tree passed', flush=True)
+            if name == 'Go':
+                from shortcut_ui_checks import check_app_shortcuts
+                with browser.new_context() as context:
+                    check_app_shortcuts(context.new_page(), url)
+                print('Go: app keyboard shortcuts passed', flush=True)
         assert len(set(fonts)) == 1, fonts
 
 
