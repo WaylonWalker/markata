@@ -167,6 +167,15 @@
       dialog.querySelector('#publish-title').textContent='Review unavailable';
     }finally {state.loading=false;}
   }
+  function updatePublishButton() {
+    if (!button || !editor) return;
+    const path = canOpen();
+    const fields = frontmatter(editor.getValue());
+    const published = fields.published === 'true' && fields.draft !== 'true';
+    const conflicting = fields.draft === 'true' && fields.published === 'true';
+    button.textContent = !path ? 'Save to site' : conflicting ? 'Review changes' : published ? 'Publish updates' : 'Publish';
+    button.title = 'Review changes (Ctrl/Cmd+Shift+Enter)';
+  }
   function attach(instance) {
     editor=instance;
     button=document.createElement('button');
@@ -187,6 +196,10 @@
     '<footer class="publish-actions"><span>Nothing is published by opening this review.</span><button type="button" id="publish-back">Back to editing</button><button type="button" id="publish-confirm" disabled title="Deployment backend is not yet configured">Publish · coming next</button></footer>';
     document.body.append(doc);dialog=doc;notice=doc.querySelector('#publish-notice');panels=doc.querySelector('#publish-body');
     button.addEventListener('click',open);
+    editor.on('change',updatePublishButton);
+    const fileLabel = document.querySelector('#active-file');
+    if (fileLabel) new MutationObserver(updatePublishButton).observe(fileLabel,{subtree:true,characterData:true,childList:true});
+    updatePublishButton();
     doc.querySelector('#publish-close').addEventListener('click',()=>doc.close());
     doc.querySelector('#publish-back').addEventListener('click',()=>doc.close());
     doc.addEventListener('close',()=>editor.focus());
