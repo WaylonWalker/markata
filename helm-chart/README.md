@@ -83,6 +83,8 @@ just push
   auth origin.
 - Use `build.extraEnv` for host-specific `MARKATA_GO_*` overrides such as `MARKATA_GO_URL` or `MARKATA_GO_SEARCH_ENDPOINT`.
 - `storage.source.mode` and `storage.site.mode` default to `pvc` and can be set to `hostPath` for node-local content.
+- Set `storage.site.existingClaimName` to reuse a pre-existing site PVC; Helm then mounts that claim without creating or pruning it.
+- Set `namespaceOverride` when an existing workload's resources must stay in a namespace that does not follow `<project_identifier>-notes`.
 - Use `nodeSelector` when hostPath-backed content exists only on a specific node.
 - `build.cacheDir` defaults to `/data/site/.cache/xdg` so tool caches survive between builds on the site volume.
 - Enable `storage.cache` when you want a dedicated PVC for build caches. The build CronJob recreates `.markata` and `.markata-cache` in the source tree as symlinks into that cache volume, which keeps incremental state out of source sync paths.
@@ -105,6 +107,29 @@ offline:
 ```
 
 ## Host-specific build overrides
+
+### Git-backed Builder Admin source
+
+Builder Admin can seed a persistent source volume from a public Git repository before it starts.
+The source checkout is refreshed to the configured branch on pod startup. Enable signed webhooks
+to pull and build changes between restarts:
+
+```yaml
+builderAdmin:
+  sourceGit:
+    enabled: true
+    repository: https://github.com/WaylonWalker/markata.git
+    branch: main
+    depth: 1
+  webhook:
+    enabled: true
+    branch: main
+    existingSecretName: markata-docs-builder-webhook
+    existingSecretKey: webhook-secret
+```
+
+The source directory must be empty or already contain a Git checkout. The initializer fails safely
+if it finds unrelated files in the directory.
 
 Use `build.extraEnv` when the same content repo needs a different deploy hostname or search endpoint in one environment.
 

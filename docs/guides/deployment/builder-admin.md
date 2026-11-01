@@ -430,6 +430,31 @@ builderAdmin:
     existingSecretKey: webhook-secret
 ```
 
+For a public GitHub repository, the chart can initialize the source PVC as a
+shallow checkout before Builder Admin starts. It refreshes that checkout on
+pod startup; signed push webhooks keep it current between restarts:
+
+```yaml
+builderAdmin:
+  sourceGit:
+    enabled: true
+    repository: https://github.com/WaylonWalker/markata.git
+    branch: main
+    depth: 1
+  webhook:
+    enabled: true
+    branch: main
+    existingSecretName: markata-docs-builder-webhook
+    existingSecretKey: webhook-secret
+```
+
+`sourceGit` only seeds an empty source directory or refreshes an existing Git
+checkout. If the directory contains files but no `.git` repository, startup
+fails without deleting those files. The webhook continues to use a
+fast-forward-only pull and queues a build only when the checkout changes.
+Configure the builder's site config with `search.configPath` when the source
+repository uses a non-default config filename.
+
 Create separate releases for `main`, `dev`, and `qa` when they publish different domains. Give each
 release a distinct source checkout, site storage, builder-admin ingress host, and webhook secret.
 Point each repository webhook at its matching builder-admin host. Do not share a production webhook

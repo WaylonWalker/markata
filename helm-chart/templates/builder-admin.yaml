@@ -9,6 +9,7 @@
 {{- $_ := required "builderAdmin.auth.trustedProxyCIDRs must be non-empty when builder-admin is enabled" (first .Values.builderAdmin.auth.trustedProxyCIDRs) }}
 {{- $_ := required "builderAdmin.auth.headers.userID is required when builder-admin is enabled" .Values.builderAdmin.auth.headers.userID }}
 {{- if .Values.builderAdmin.webhook.enabled }}{{- $_ := required "builderAdmin.webhook.existingSecretName is required when builderAdmin.webhook.enabled" .Values.builderAdmin.webhook.existingSecretName }}{{- $_ := required "builderAdmin.webhook.existingSecretKey is required when builderAdmin.webhook.enabled" .Values.builderAdmin.webhook.existingSecretKey }}{{- end }}
+{{- if .Values.builderAdmin.sourceGit.enabled }}{{- $_ := required "builderAdmin.sourceGit.repository is required when builderAdmin.sourceGit.enabled" .Values.builderAdmin.sourceGit.repository }}{{- $_ := required "builderAdmin.sourceGit.branch is required when builderAdmin.sourceGit.enabled" .Values.builderAdmin.sourceGit.branch }}{{- if lt (int .Values.builderAdmin.sourceGit.depth) 1 }}{{ fail "builderAdmin.sourceGit.depth must be at least 1" }}{{ end }}{{- end }}
 {{- if .Values.builderAdmin.workspace.enabled }}
 {{- $_ := required "builderAdmin.workspace.mountPath is required when workspace is enabled" .Values.builderAdmin.workspace.mountPath }}
 {{- $_ := required "builderAdmin.workspace.workDir is required when workspace is enabled" .Values.builderAdmin.workspace.workDir }}
@@ -62,8 +63,66 @@ spec:
       imagePullSecrets:
         {{- toYaml .Values.imagePullSecrets | nindent 8 }}
       {{- end }}
-      {{- if and (ne (.Values.storage.source.mode | default "pvc") "hostPath") .Values.search.waitForSource.enabled }}
+      {{- if or .Values.builderAdmin.sourceGit.enabled (and (ne (.Values.storage.source.mode | default "pvc") "hostPath") .Values.search.waitForSource.enabled) }}
       initContainers:
+        {{- if .Values.builderAdmin.sourceGit.enabled }}
+        - name: initialize-source-git
+          image: {{ .Values.builderAdmin.sourceGit.image | quote }}
+          imagePullPolicy: {{ .Values.builderAdmin.sourceGit.pullPolicy }}
+          command:
+            - /bin/sh
+            - -ceu
+          args:
+            - |
+              source_volume=/data/source-volume
+              checkout="$source_volume/checkout"
+              for incomplete in "$source_volume"/.checkout-bootstrap.*; do
+                [ -e "$incomplete" ] || continue
+                rm -rf "$incomplete"
+              done
+              if git -C "$checkout" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+                git -C "$checkout" fetch --depth="$SOURCE_GIT_DEPTH" origin "$SOURCE_GIT_BRANCH"
+                git -C "$checkout" checkout -B "$SOURCE_GIT_BRANCH" "origin/$SOURCE_GIT_BRANCH"
+                git -C "$checkout" reset --hard "origin/$SOURCE_GIT_BRANCH"
+              else
+                if [ -e "$checkout" ]; then
+                  echo "source checkout path exists but is not a Git repository" >&2
+                  exit 1
+                fi
+                bootstrap=$(mktemp -d "$source_volume/.checkout-bootstrap.XXXXXX")
+                git clone --depth "$SOURCE_GIT_DEPTH" --branch "$SOURCE_GIT_BRANCH" \
+                  "$SOURCE_GIT_REPOSITORY" "$bootstrap/checkout"
+                mv "$bootstrap/checkout" "$checkout"
+                rmdir "$bootstrap"
+              fi
+              touch "$source_volume/.markata-notes-source-ready"
+          env:
+            - name: SOURCE_GIT_REPOSITORY
+              value: {{ .Values.builderAdmin.sourceGit.repository | quote }}
+            - name: SOURCE_GIT_BRANCH
+              value: {{ .Values.builderAdmin.sourceGit.branch | quote }}
+            - name: SOURCE_GIT_DEPTH
+              value: {{ .Values.builderAdmin.sourceGit.depth | quote }}
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: source
+              mountPath: /data/source-volume
+        {{- end }}
+        {{- if and (not .Values.builderAdmin.sourceGit.enabled) (ne (.Values.storage.source.mode | default "pvc") "hostPath") .Values.search.waitForSource.enabled }}
         - name: wait-for-source
           image: "{{ .Values.build.builderImage.name }}:{{ .Values.build.builderImage.tag }}"
           imagePullPolicy: {{ .Values.build.builderImage.pullPolicy }}
@@ -87,6 +146,7 @@ spec:
           volumeMounts:
             - name: source
               mountPath: /data/source
+        {{- end }}
       {{- end }}
       containers:
         - name: "{{ .Values.project_identifier }}-notes-builder-admin"
@@ -226,6 +286,9 @@ spec:
           volumeMounts:
             - name: source
               mountPath: /data/source
+              {{- if .Values.builderAdmin.sourceGit.enabled }}
+              subPath: checkout
+              {{- end }}
             - name: site
               mountPath: /data/site
             {{- if .Values.builderAdmin.workspace.enabled }}

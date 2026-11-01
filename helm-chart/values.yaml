@@ -1,6 +1,7 @@
 project_identifier: example
 project_name: example
 environment: prod
+namespaceOverride: ""
 
 # Public Markata images do not require registry credentials. Add secrets here
 # only when your environment mirrors or overrides them with a private registry.
@@ -127,6 +128,15 @@ builderAdmin:
     # MARKATA_GO_BUILDER_ADMIN_WEBHOOK_SECRET and is never placed in args.
     existingSecretName: ""
     existingSecretKey: webhook-secret
+  # Optionally seed and refresh the source checkout before Builder Admin starts.
+  # Webhook builds then use this checkout as their fast-forward-only remote.
+  sourceGit:
+    enabled: false
+    repository: ""
+    branch: main
+    depth: 1
+    image: alpine/git:2.47.2
+    pullPolicy: IfNotPresent
   # Builder admin is fail-closed: only source addresses in this list may supply
   # the identity headers injected by the protected Traefik route.
   auth:
@@ -291,6 +301,8 @@ storage:
       type: Directory
   site:
     mode: pvc
+    # Bind an existing claim instead of creating a chart-managed site PVC.
+    existingClaimName: ""
     # Empty uses the cluster's default StorageClass.
     storageClassName: ""
     size: 10Gi

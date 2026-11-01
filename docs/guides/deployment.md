@@ -1,6 +1,7 @@
 ---
 title: "Deployment Guide"
 description: "Guide to deploying markata-go sites to GitHub Pages, Netlify, Vercel, and self-hosted solutions"
+slug: "docs/guides/deployment-guide"
 date: 2024-01-15
 published: true
 tags:

@@ -1,6 +1,7 @@
 ---
 title: "Markata documentation"
 description: "Install Markata, teach your agent the site skill, and publish your first Markdown page."
+slug: ""
 date: 2026-10-18
 published: true
 tags: [documentation, getting-started]

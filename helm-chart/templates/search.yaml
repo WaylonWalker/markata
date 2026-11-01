@@ -140,6 +140,9 @@ spec:
             {{- if ne .Values.search.mode "read-only-index" }}
             - name: source
               mountPath: /data/source
+              {{- if .Values.builderAdmin.sourceGit.enabled }}
+              subPath: checkout
+              {{- end }}
             {{- end }}
             {{- if and (ne .Values.search.mode "read-only-index") .Values.search.localCache.enabled }}
             - name: search-cache
