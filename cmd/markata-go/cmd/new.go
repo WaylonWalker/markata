@@ -439,10 +439,17 @@ func parseTemplateFile(name, content string) ContentTemplate {
 	if err := yaml.Unmarshal([]byte(frontmatterYAML), &template.Frontmatter); err != nil {
 		template.ValidationError = fmt.Sprintf("invalid starter frontmatter: %v", err)
 	} else {
-		// Extract directory from frontmatter if present
-		if dir, ok := template.Frontmatter["_directory"].(string); ok {
-			template.Directory = dir
+		// An explicit _directory wins even if it matches the filename.
+		directoryExplicit := false
+		if rawDir, exists := template.Frontmatter["_directory"]; exists {
 			delete(template.Frontmatter, "_directory")
+			dir, ok := rawDir.(string)
+			if !ok || strings.TrimSpace(dir) == "" {
+				template.ValidationError = "_directory must be a non-empty string"
+			} else {
+				template.Directory = dir
+				directoryExplicit = true
+			}
 		}
 		if rawStarter, exists := template.Frontmatter["starter"]; exists {
 			starter, ok := rawStarter.(map[string]interface{})
@@ -456,9 +463,8 @@ func parseTemplateFile(name, content string) ContentTemplate {
 					template.ValidationError = "starter.description must be a string"
 				}
 				if canonicalName, ok := starter["name"].(string); ok && strings.TrimSpace(canonicalName) != "" {
-					defaultDirectory := template.Name
 					template.Name = strings.TrimSpace(canonicalName)
-					if template.Directory == defaultDirectory {
+					if !directoryExplicit {
 						template.Directory = template.Name
 					}
 				} else if _, exists := starter["name"]; exists {
