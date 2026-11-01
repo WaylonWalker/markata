@@ -8,6 +8,8 @@ Stacked on PR #1906 (publish review), itself based on #1905.
 - Opening Properties switches the editor pane to a full-height page-details
   inspector while keeping the live preview visible. The Markdown source and
   property form do not compete for the same vertical space.
+- Escape closes page details and returns focus to the Markdown source. The
+  command palette can open page details, add a property, or return to Markdown.
 - The inspector starts with a compact page summary, then presents existing
   fields in readable groups. Each field shows its human label and YAML key.
 - Add property is a focused flow: choose a known property or open the custom

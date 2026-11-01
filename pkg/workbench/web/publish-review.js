@@ -301,7 +301,12 @@
     const fields = frontmatter(editor.getValue());
     const published = fields.published === 'true' && fields.draft !== 'true';
     const conflicting = fields.draft === 'true' && fields.published === 'true';
-    button.textContent = !path ? 'Save to site' : conflicting ? 'Review changes' : published ? 'Publish updates' : 'Publish';
+    const label = !path ? 'Save to site' : conflicting ? 'Review changes' : published ? 'Publish updates' : 'Publish';
+    const icon=document.createElementNS('http://www.w3.org/2000/svg','svg');
+    icon.setAttribute('viewBox','0 0 24 24');icon.setAttribute('aria-hidden','true');icon.setAttribute('focusable','false');
+    const pathNode=document.createElementNS('http://www.w3.org/2000/svg','path');
+    pathNode.setAttribute('d','M12 15V3m0 0 4 4m-4-4L8 7M4 14v6h16v-6');icon.append(pathNode);
+    button.replaceChildren(icon,document.createTextNode(label));
     button.title = 'Review changes (Ctrl/Cmd+Shift+Enter)';
   }
   function attach(instance) {

@@ -265,6 +265,8 @@ window.MarkataFrontmatter.attach(editor);
 window.MarkataPublishReview.attach(editor);
 window.MarkataCommandPalette.attach(editor,{actions:[
   {id:'edit-properties',label:'Page: Edit Properties',description:'Open the visual frontmatter object editor.',aliases:'frontmatter metadata tags date title publish fields',run:()=>window.MarkataFrontmatter.open()},
+  {id:'add-property',label:'Page: Add a Property',description:'Search and add a frontmatter property.',aliases:'frontmatter metadata field key',run:()=>window.MarkataFrontmatter.openAddProperty()},
+  {id:'back-to-markdown',label:'Page: Back to Markdown',description:'Close page details and return to the article source.',aliases:'frontmatter source article escape close',run:()=>window.MarkataFrontmatter.close()},
   {id:'edit-frontmatter-yaml',label:'Page: Edit YAML Frontmatter',description:'Hand edit the raw YAML header.',aliases:'frontmatter source advanced raw metadata',run:()=>window.MarkataFrontmatter.editYAML()},
   {id:'review-publish',label:'Publishing: Review & Publish',description:'Compare saved Markdown with the last committed revision before publishing.',aliases:'publish go live deploy release review git',run:()=>setTimeout(()=>window.MarkataPublishReview.open(),0)},
   {id:'new-from-template',label:'New Post',description:'Choose a template, then set its title and path.',aliases:'new create post page template',run:showCreateDialog},

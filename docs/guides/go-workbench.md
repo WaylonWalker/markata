@@ -107,7 +107,9 @@ Each WebSocket connection owns its own draft and index. Reload the page to index
 Select a site file, then choose **Properties** to edit its frontmatter in the
 full-height page-details view. The live preview stays visible beside it. Choose
 **Back to Markdown** to return to the source, or **Edit YAML** to work directly
-with the frontmatter block.
+with the frontmatter block. Press **Escape** to return to the article. The
+command palette also has actions to open page details, add a property, and
+return to Markdown.
 
 The page summary shows the title, URL slug or source path, and publication
 state. Common fields appear first. Choose **Add property**, search for a known

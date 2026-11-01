@@ -74,3 +74,4 @@
 #publish-review #publish-pierre-host{min-height:120px;max-height:min(60dvh,700px);overflow:auto;font-family:var(--font-code,ui-monospace,monospace)}
 #publish-review #publish-pierre-host:empty:before{content:'Loading full diff…';color:var(--color-text-muted,#777);font-size:12px}
 @media(max-width:700px){#publish-review #publish-pierre-host{max-height:69dvh}}
+#publish-open svg{width:16px;height:16px;margin-right:7px;vertical-align:-3px;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.8}

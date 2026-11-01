@@ -445,10 +445,20 @@
       addField(name,document.querySelector('#fm-new-type').value);
     });
     document.addEventListener('keydown',event=>{
+      if(event.key==='Escape'&&expanded&&!document.querySelector('dialog[open]')){
+        event.preventDefault();closeProperties();editor.focus();return;
+      }
       if(event.isComposing||event.repeat||event.altKey===false||!event.shiftKey||(event.key.toLowerCase()!=='m')||!(event.metaKey||event.ctrlKey))return;
       event.preventDefault();toggleProperties();
     });
   }
 
-  window.MarkataFrontmatter = {attach,open:openProperties,editYAML:()=>setRaw(true),close:closeProperties};
+  function openAddProperty() {
+    openProperties().then(()=>{
+      addFlow.hidden=false;addToggle.setAttribute('aria-expanded','true');
+      addToggle.textContent='Close property picker';addSearch.focus();
+    });
+  }
+
+  window.MarkataFrontmatter = {attach,open:openProperties,openAddProperty,editYAML:()=>setRaw(true),close:closeProperties};
 })();
