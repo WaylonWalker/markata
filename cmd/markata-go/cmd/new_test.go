@@ -633,7 +633,7 @@ func TestGenerateTemplatedContent_ExpandsStarterVariables(t *testing.T) {
 func TestGenerateTemplatedContent_OmitsInheritedDefaults(t *testing.T) {
 	template := ContentTemplate{
 		Frontmatter: map[string]interface{}{"title": "{{title}}"},
-		Body: "## {{title}}",
+		Body:        "## {{title}}",
 	}
 	date := time.Date(2024, 1, 15, 0, 0, 0, 0, time.UTC)
 	content := generateTemplatedContent("My Page", "my-page", date, false, false, nil, template)
