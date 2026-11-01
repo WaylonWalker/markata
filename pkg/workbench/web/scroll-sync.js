@@ -1,7 +1,7 @@
 // Source-line anchors keep documents with unequal rendered heights aligned.
 window.MarkataScrollSync = function (editor, frame, setting, workbench) {
   let lines = [], anchors = [], sourceOffset = 0, preview = null, driver = 'editor', expectedEditorTop = null;
-  let editorFollowCursor = true, lastMarkedLine = -1, lastMarkedCursor = '', lastCursor = null;
+  let editorFollowCursor = true, lastMarkedLine = -1, lastMarkedCursor = '', lastMarkedPending = null, lastCursor = null;
   let geometryKey = '', requestedPreview = null, previewRequestID = 0, editorScrollIntentUntil = 0;
   let contentUnrendered = false, deferredCursorFollow = false;
   let framePending = false, editorPending = false;
@@ -99,10 +99,12 @@ window.MarkataScrollSync = function (editor, frame, setting, workbench) {
     line = clamp(Math.round(line || 0), editor.lastLine());
     const source = cursor ? editor.getLine(cursor.line) : null;
     const key = cursor ? `${cursor.line}:${cursor.ch}:${source}` : '';
-    if (line === lastMarkedLine && key === lastMarkedCursor) return;
+    const pending = Boolean(cursor && contentUnrendered);
+    if (line === lastMarkedLine && key === lastMarkedCursor && pending === lastMarkedPending) return;
     lastMarkedLine = line;
     lastMarkedCursor = key;
-    frame.contentWindow?.postMessage({type:'sync-position', line, ch:cursor?.ch ?? null, text:source}, '*');
+    lastMarkedPending = pending;
+    frame.contentWindow?.postMessage({type:'sync-position', line, ch:cursor?.ch ?? null, text:source, pending}, '*');
   }
   function editorToPreview(followCursor = false) {
     if (!active() || !preview || !lines.length) return;

@@ -7,7 +7,7 @@ else if(values.includes(value))document.documentElement.setAttribute(key,value);
 }};
 
 let updates=Promise.resolve(), scriptSequence=0, latestVersion=0;
-let sourceLines=[], sourceLineCount=0, sourceLineOffset=0, sourcePositionAnchors=[], programmedTarget=null, scrollFrame=0, positionLine=-1, positionColumn=null, positionSourceText=null, positionNode=null, scrollIntentUntil=0;
+let sourceLines=[], sourceLineCount=0, sourceLineOffset=0, sourcePositionAnchors=[], programmedTarget=null, scrollFrame=0, positionLine=-1, positionColumn=null, positionSourceText=null, positionPending=false, positionNode=null, lastExactPosition=null, scrollIntentUntil=0;
 let articleObserver;
 const executedInlineScripts=new Set();
 let appearanceSignature=JSON.stringify(Object.fromEntries(Object.keys(allowed).map(key=>[key,document.documentElement.getAttribute(key)])));
@@ -134,9 +134,14 @@ const syncPositionMarker=()=>{
       const lineHeight=Math.max(16,Math.min(20,parseFloat(getComputedStyle(next).lineHeight)||18));
       const top=rect.top+Math.max(0,rect.height-lineHeight)*progress;
       const character=textPosition(next,positionSourceText,positionColumn);
-      cursor.style.left=`${Math.max(2,character?character.left-1:rect.left+(point?.nested?10:-7))}px`;
-      cursor.style.top=`${Math.max(0,Math.min(innerHeight-lineHeight,character?character.top:top))}px`;
-      cursor.style.height=`${lineHeight}px`;
+      if(character){lastExactPosition={node:next,line:positionLine,left:character.left,top:character.top,height:lineHeight};}
+      const keepExact=positionPending&&lastExactPosition?.node===next&&lastExactPosition.line===positionLine;
+      const left=character?.left??(keepExact?lastExactPosition.left:null);
+      const markerTop=character?.top??(keepExact?lastExactPosition.top:top);
+      cursor.style.left=`${Math.max(2,left==null?rect.left+(point?.nested?10:-7):left-1)}px`;
+      cursor.style.top=`${Math.max(0,Math.min(innerHeight-lineHeight,markerTop))}px`;
+      cursor.style.height=`${character?.height||lineHeight}px`;
+      if(!positionPending&&!character)lastExactPosition=null;
     }
   }
 };
@@ -302,7 +307,7 @@ if(e.data?.type==='markdown-render'){
 return;
 }if(e.data?.type==='sync-scroll-lines'){sourceLines=e.data.lines||[];sourceLineCount=e.data.lineCount||0;sourceLineOffset=e.data.sourceOffset||0;requestAnimationFrame(()=>scrollState(false));return;
 }if(e.data?.type==='sync-scroll'){programmedTarget={id:e.data.id,y:Math.max(0,Math.min(e.data.y,document.documentElement.scrollHeight-innerHeight))};document.scrollingElement.scrollTop=programmedTarget.y;const id=e.data.id;setTimeout(()=>{if(programmedTarget?.id===id)programmedTarget=null;},300);return;
-}if(e.data?.type==='sync-position'){positionLine=e.data.line;positionColumn=Number.isFinite(e.data.ch)?e.data.ch:null;positionSourceText=typeof e.data.text==='string'?e.data.text:null;syncPositionMarker();return;
+}if(e.data?.type==='sync-position'){positionLine=e.data.line;positionColumn=Number.isFinite(e.data.ch)?e.data.ch:null;positionSourceText=typeof e.data.text==='string'?e.data.text:null;positionPending=e.data.pending===true;if(positionColumn==null)lastExactPosition=null;syncPositionMarker();return;
 }if(e.data?.type==='appearance'){updates=updates.then(()=>{setAppearance(e.data.attributes);
 dispatchEvent(new Event('theme-change'));appearanceSignature=JSON.stringify(e.data.attributes||{});
 }).catch(console.error);
