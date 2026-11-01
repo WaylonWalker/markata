@@ -64,6 +64,9 @@ completion after every character. Ctrl+Space requests completion immediately.
 The demo binds to 127.0.0.1 by default. It rejects cross-origin render requests
 and non-JSON content types. It has HTTP timeouts and graceful shutdown.
 The handler is reusable by a future builder; it does not depend on CLI globals.
+On desktop, the editor shell fills the viewport without document-level scrolling;
+the workspace panes own their scroll areas. Narrow mobile layouts may scroll the
+stacked editor and preview vertically.
 
 
 ## Integration benchmark
