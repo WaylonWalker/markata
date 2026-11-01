@@ -1125,6 +1125,10 @@ func (p *RenderMarkdownPlugin) detectCSSRequirements(post *models.Post) {
 		post.Extra = make(map[string]interface{})
 	}
 
+	// Only pages with native tabs request the tiny enhancement script.
+	// Store the boolean directly to avoid a branch in this shared detector.
+	post.Extra["needs_md_tabs"] = strings.Contains(post.ArticleHTML, "data-md-tabs")
+
 	// Detect admonitions - check for admonition class
 	if strings.Contains(post.ArticleHTML, `class="admonition`) {
 		post.Extra["needs_admonitions_css"] = true
