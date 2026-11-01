@@ -66,9 +66,9 @@ jobs:
           fi
           required_checks=(
             "Lint"
-            "Test (ubuntu-latest, 1.26)"
-            "Test (windows-latest, 1.26)"
-            "Test (macos-latest, 1.26)"
+            "Test (ubuntu-latest, 1.27)"
+            "Test (windows-latest, 1.27)"
+            "Test (macos-latest, 1.27)"
             "GoReleaser Check"
           )
           for check in "${required_checks[@]}"; do

@@ -59,7 +59,7 @@ Historical v0.13.0 release archives are named `markata-go_<version>_<os>_<arch>.
 
 ## Go (source build)
 
-Use **Go 1.26 or newer** for the current source module:
+Use **Go 1.27 or newer** for the current source module:
 
 ```bash
 go install github.com/WaylonWalker/markata/cmd/markata@main

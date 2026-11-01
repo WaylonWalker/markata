@@ -29,7 +29,7 @@ machines.
 
 ## Build and test, without publishing
 
-Run from the Go repository root with Go 1.26 and Python 3.10+:
+Run from the Go repository root with Go 1.27 and Python 3.10+:
 
 ```bash
 python -m pip install 'go-to-wheel==0.2'

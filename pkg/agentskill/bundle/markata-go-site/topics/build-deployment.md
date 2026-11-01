@@ -67,7 +67,7 @@ steps:
   - uses: actions/checkout@v4
   - uses: actions/setup-go@v5
     with:
-      go-version: '1.26'
+      go-version: '1.27'
   - run: go install github.com/WaylonWalker/markata-go/cmd/markata-go@latest
   - run: markata-go config validate
   - run: markata-go build --clean

@@ -25,7 +25,7 @@ uvx markata --help
 pip install markata
 pipx install markata
 
-# Go (1.26+; current source)
+# Go (1.27+; current source)
 go install github.com/WaylonWalker/markata/cmd/markata@main
 ```
 
