@@ -3,8 +3,8 @@ from playwright.sync_api import expect
 
 
 def check_commands(page, preview):
-    dialog = page.get_by_role('dialog', name='Insert Markdown')
-    query = page.get_by_role('combobox', name='Find a command')
+    dialog = page.get_by_role('dialog', name='Command Palette')
+    query = page.get_by_role('combobox', name='Find a command or action')
     value = lambda: page.evaluate("document.querySelector('.CodeMirror').CodeMirror.getValue()")
 
     def select_text(text, start=0, end=None):
@@ -19,7 +19,7 @@ def check_commands(page, preview):
     for keymap in ['default', 'vim', 'emacs', 'sublime']:
         page.locator('#keymap').select_option(keymap)
         select_text('Keep this text', 5, 9)
-        page.keyboard.press('Control+K')
+        page.keyboard.press('Control+Shift+P')
         expect(dialog).to_be_visible()
         expect(query).to_be_focused()
         query.fill('not-a-real-command')
@@ -37,10 +37,12 @@ def check_commands(page, preview):
     expect(dialog).to_be_visible()
     page.keyboard.press('Escape')
     expect(dialog).not_to_be_visible()
-    page.keyboard.press('Meta+K')
-    expect(dialog).to_be_visible()
-    page.keyboard.press('Escape')
-    expect(dialog).not_to_be_visible()
+    if not page.evaluate('Boolean(window.MarkataShortcuts)'):
+        # Standalone Python and WASM editors retain their Ctrl/Cmd+K shortcut.
+        page.keyboard.press('Meta+K')
+        expect(dialog).to_be_visible()
+        page.keyboard.press('Escape')
+        expect(dialog).not_to_be_visible()
     select_text('Important')
     page.locator('#commands').click()
     query.fill('HIGHLIGHT text')
