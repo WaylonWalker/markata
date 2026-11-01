@@ -55,3 +55,11 @@
  #publish-review .publish-actions span{flex-basis:100%}
 }
 @media(prefers-reduced-motion:no-preference){#publish-review button{transition:background .15s ease,border-color .15s ease}}
+
+
+#publish-review .publish-rich-help{font-size:11px;color:var(--color-text-muted,#777);line-height:1.6;margin:3px 0 12px}
+#publish-review #publish-rich-frame{width:100%;min-height:clamp(320px,50dvh,640px);border:1px solid var(--editor-divider,#ddd);border-radius:9px;background:var(--color-background,#fff)}
+#publish-review .publish-mode-tabs button:disabled{opacity:.45;cursor:not-allowed}
+#publish-review .publish-actions #publish-mark-public{border-color:var(--color-warning,#bd8a39);color:var(--color-text,#222)}
+#publish-review .publish-actions #publish-push{background:var(--color-primary,#6851ab);color:var(--color-on-primary,#fff);border-color:var(--color-primary,#6851ab)}
+@media(max-width:700px){#publish-review #publish-rich-frame{min-height:59dvh}#publish-review .publish-mode-tabs button{padding:8px 7px;font-size:11px}}
