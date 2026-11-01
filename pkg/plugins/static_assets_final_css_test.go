@@ -327,7 +327,18 @@ func TestFinalCSSFingerprint_AfterRealMinifyAndPurgeColdWarm(t *testing.T) {
 		if got := m.GetAssetHash("css/site.css"); got != hash {
 			t.Fatalf("published CSS hash = %s, want %s", got, hash)
 		}
-		versioned, err := os.ReadFile(filepath.Join(cssDir, "site."+hash+".css"))
+		versionedFiles, err := filepath.Glob(filepath.Join(cssDir, "site.*.css"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		var versioned []byte
+		for _, versionedPath := range versionedFiles {
+			if filepath.Base(versionedPath) != "site."+hash+".css" {
+				continue
+			}
+			versioned, err = os.ReadFile(versionedPath)
+			break
+		}
 		if err != nil || !bytes.Equal(versioned, finalCSS) {
 			t.Fatalf("versioned CSS must match final transformed stylesheet: %v", err)
 		}

@@ -18,6 +18,7 @@ import (
 	"github.com/WaylonWalker/markata/pkg/buildcache"
 	"github.com/WaylonWalker/markata/pkg/lifecycle"
 	"github.com/WaylonWalker/markata/pkg/templates"
+
 	"golang.org/x/net/html"
 	"golang.org/x/net/html/atom"
 )
@@ -26,8 +27,8 @@ import (
 // so purge/minification must only process the unversioned working stylesheet.
 var versionedCSSFilename = regexp.MustCompile(`\.[0-9a-fA-F]{8}\.css$`)
 
-func isVersionedCSSFile(path string) bool {
-	return versionedCSSFilename.MatchString(filepath.Base(path))
+func isVersionedCSSFile(filePath string) bool {
+	return versionedCSSFilename.MatchString(filepath.Base(filePath))
 }
 
 type finalCSSReplacement struct {
@@ -60,7 +61,7 @@ func rewriteCSSLinkReferences(input []byte, relativeHTML string, changes []final
 		}
 		changed := false
 		for i := range token.Attr {
-			if token.Attr[i].Key != "href" {
+			if token.Attr[i].Key != pageStyleHref {
 				continue
 			}
 			updated := rewriteLocalCSSHref(token.Attr[i].Val, relativeHTML, changes)
@@ -81,7 +82,7 @@ func isStylesheetLink(attrs []html.Attribute) bool {
 	var rel, as string
 	for _, attr := range attrs {
 		switch attr.Key {
-		case "rel":
+		case pageStyleRel:
 			rel = strings.ToLower(attr.Val)
 		case "as":
 			as = attr.Val

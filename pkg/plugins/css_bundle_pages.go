@@ -15,11 +15,13 @@ import (
 
 	"github.com/WaylonWalker/markata/pkg/buildcache"
 	"github.com/WaylonWalker/markata/pkg/lifecycle"
+
 	htmlparser "golang.org/x/net/html"
 	"golang.org/x/net/html/atom"
 )
 
 const pageStyleHref = "href"
+const pageStyleRel = "rel"
 
 const cssStylesheetRel = "stylesheet"
 
@@ -218,7 +220,7 @@ func (p *CSSBundlePlugin) localPageStylesheet(attrs []htmlparser.Attribute, outp
 		switch attr.Key {
 		case pageStyleHref:
 			href = attr.Val
-		case "rel":
+		case pageStyleRel:
 			rel = attr.Val
 		case "type":
 			if attr.Val != "text/css" {
