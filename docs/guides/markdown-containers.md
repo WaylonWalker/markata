@@ -71,6 +71,40 @@ Content
 
 This produces a container with the classes `panel`, `wide`, and `accent`, the ID `example`, and the custom `data-state` attribute.
 
+## Native tabs (no Web Awesome required)
+
+Native tabs use the same fenced-container syntax as `md-card`. Every
+panel is rendered to HTML on the server. Without JavaScript, all panels remain
+visible with headings; when JavaScript loads, a small keyboard-accessible tab
+strip replaces the headings. Printing expands all panels.
+
+````markdown
+::: md-tabs {data-label="Installation methods" style="boxed"}
+
+:::: md-tab {label="curl"}
+```bash
+curl -fsSL https://example.com/install.sh | bash
+```
+::::
+
+:::: md-tab {label="mise"}
+```bash
+mise use -g github:WaylonWalker/markata
+```
+::::
+
+:::
+````
+
+The outer `md-tabs` uses three colons, with direct child `md-tab`
+containers using four. Tabs may contain ordinary Markdown, code fences, cards,
+and nested blocks. Use `style="boxed"` (default), `style="underline"`,
+or `style="pills"`; `data-style` is also accepted. Use `data-label`
+to give the tab group an accessible name. Tab labels are plain text.
+On narrow screens the tab strip scrolls horizontally. Native tabs have no
+Web Awesome dependency and the enhancement script only loads on pages using
+them. Existing `wa-tabs` continue to work separately.
+
 ## Web Awesome example
 
 The same nesting rule is useful for components that transform Markdown containers after rendering:
