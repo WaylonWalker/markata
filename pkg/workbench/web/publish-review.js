@@ -36,6 +36,34 @@
     notice.textContent = message || '';
     notice.dataset.level = level;
   }
+  let pierreRequest;
+  function loadPierre() {
+    if(window.MarkataPierreDiff) return Promise.resolve();
+    if(pierreRequest) return pierreRequest;
+    pierreRequest=new Promise((resolve,reject)=>{
+      const script=document.createElement('script');
+      script.src='/editor/pierre-diffs.bundle.js';
+      script.async=true;
+      script.onload=()=>window.MarkataPierreDiff?resolve():reject(new Error('Pierre diff bundle did not initialize'));
+      script.onerror=()=>reject(new Error('Optional Pierre bundle is not installed. Run the tools/publish-diffs build to enable Full diff.'));
+      document.head.append(script);
+    });
+    return pierreRequest;
+  }
+  async function showPierre() {
+    const error=dialog.querySelector('#publish-pierre-error');
+    const host=dialog.querySelector('#publish-pierre-host');
+    if(!state.data || state.mode!=='pierre')return;
+    error.hidden=true;
+    try{
+      await loadPierre();
+      if(state.mode!=='pierre' || !state.data)return;
+      window.MarkataPierreDiff.render(host,state.data.baseline,state.data.current,{
+        filename:state.path,newFile:!state.data.baseline_exists,
+        layout:dialog.querySelector('[data-pierre-layout].active')?.dataset.pierreLayout||'stacked'
+      });
+    }catch(e){error.textContent=e.message;error.hidden=false;}
+  }
   function setMode(mode) {
     state.mode = mode;
     for (const tab of dialog.querySelectorAll('[data-publish-mode]')) {
@@ -45,6 +73,7 @@
     }
     for (const section of dialog.querySelectorAll('[data-publish-view]'))
       section.hidden = section.dataset.publishView !== mode;
+    if(mode==='pierre')showPierre();
   }
   function setSide(side) {
     selected = side;
@@ -268,11 +297,12 @@
     doc.id='publish-review';doc.setAttribute('aria-labelledby','publish-title');
     doc.innerHTML='<header class="publish-review-head"><div><small>REVIEW &amp; PUBLISH</small><h2 id="publish-title">Review changes</h2><p id="publish-path"></p></div><button type="button" id="publish-close" aria-label="Close publish review">✕</button></header>'+
     '<div id="publish-notice" role="status"></div><div id="publish-body" hidden><div id="publish-chips" aria-label="Change summary"></div>'+
-    '<nav class="publish-mode-tabs" aria-label="Comparison view"><button type="button" data-publish-mode="side">Side by side</button><button type="button" data-publish-mode="rich">Rendered diff</button><button type="button" data-publish-mode="source">Source diff</button></nav>'+
+    '<nav class="publish-mode-tabs" aria-label="Comparison view"><button type="button" data-publish-mode="side">Side by side</button><button type="button" data-publish-mode="rich">Rendered diff</button><button type="button" data-publish-mode="source">Source diff</button><button type="button" data-publish-mode="pierre">Full diff</button></nav>'+
     '<div data-publish-view="side"><div class="publish-side-tabs" role="group" aria-label="Version to read"><button data-publish-side="before" type="button">Last committed</button><button data-publish-side="after" type="button">Current draft</button></div>'+
     '<div class="publish-comparison"><section data-publish-pane="before"><h3 id="publish-before-name">Last committed</h3><iframe id="publish-before-frame" title="Last committed rendering" sandbox="allow-scripts"></iframe></section>'+
     '<section data-publish-pane="after"><h3>Current saved draft</h3><iframe id="publish-after-frame" title="Current draft rendering" sandbox="allow-scripts"></iframe></section></div></div>'+
     '<div data-publish-view="rich" hidden><p class="publish-rich-help">Structural comparison: inline changes for text, before/after blocks for complex elements. Use Side by side for exact rendering.</p><iframe id="publish-rich-frame" title="Unified rendered Markdown change annotations" sandbox="allow-scripts"></iframe></div>'+
+    '<div data-publish-view="pierre" hidden><div class="publish-pierre-actions"><span>Pierre source diff</span><button type="button" data-pierre-layout="stacked" class="active">Unified</button><button type="button" data-pierre-layout="split">Split</button></div><p id="publish-pierre-error" role="status" hidden></p><div id="publish-pierre-host"></div></div>'+
     '<div data-publish-view="source" hidden><div id="publish-source-diff" role="region" tabindex="0" aria-label="Unified Markdown source diff"></div></div></div>'+
     '<footer class="publish-actions"><span>A Git commit is not a verified deployment.</span><button type="button" id="publish-back">Back to editing</button><button type="button" id="publish-mark-public" hidden>Mark as public</button><button type="button" id="publish-confirm" disabled>Commit selected page</button><button type="button" id="publish-push" hidden>Push to origin</button></footer>';
     document.body.append(doc);dialog=doc;notice=doc.querySelector('#publish-notice');panels=doc.querySelector('#publish-body');
@@ -286,8 +316,12 @@
     doc.querySelector('#publish-mark-public').addEventListener('click',markPublicAndReviewAgain);
     doc.querySelector('#publish-confirm').addEventListener('click',commitReview);
     doc.querySelector('#publish-push').addEventListener('click',pushReview);
-    doc.addEventListener('close',()=>editor.focus());
+    doc.addEventListener('close',()=>{window.MarkataPierreDiff?.release?.(doc.querySelector('#publish-pierre-host'));editor.focus();});
     doc.querySelectorAll('[data-publish-mode]').forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.publishMode)));
+    doc.querySelectorAll('[data-pierre-layout]').forEach(b=>b.addEventListener('click',()=>{
+      doc.querySelectorAll('[data-pierre-layout]').forEach(other=>other.classList.toggle('active',other===b));
+      if(state.mode==='pierre')showPierre();
+    }));
     doc.querySelectorAll('[data-publish-side]').forEach(b=>b.addEventListener('click',()=>setSide(b.dataset.publishSide)));
     const gesture=doc.querySelector('.publish-comparison');
     let start=null;
