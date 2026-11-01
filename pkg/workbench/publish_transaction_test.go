@@ -55,6 +55,7 @@ func TestPublishCommitIsolatesSelectedFileAndPreservesRealIndex(t *testing.T) {
 	root, handler := initPublishRepository(t)
 	first, err := gitOutputForTest(root, "rev-parse", "HEAD")
 	if err != nil { t.Fatal(err) }
+	first = strings.TrimSpace(first)
 	approved := "---\npublished: true\n---\n\n# Revised\n"
 	if err := os.WriteFile(filepath.Join(root, "posts", "one.md"), []byte(approved), 0644); err != nil { t.Fatal(err) }
 	if err := os.WriteFile(filepath.Join(root, "unrelated.md"), []byte("# Staged unrelated\n"), 0644); err != nil { t.Fatal(err) }
@@ -75,15 +76,16 @@ func TestPublishCommitIsolatesSelectedFileAndPreservesRealIndex(t *testing.T) {
 		t.Fatalf("unrelated file included: %q %v", unrelated, err)
 	}
 	staged, err := gitOutputForTest(root, "diff", "--cached", "--name-only")
-	if err != nil || staged != "unrelated.md" { t.Fatalf("original staged index not preserved: %q %v", staged, err) }
+	if err != nil || strings.TrimSpace(staged) != "unrelated.md" { t.Fatalf("original staged index not preserved: %q %v", staged, err) }
 	status, err := gitOutputForTest(root, "status", "--porcelain", "--", "posts/one.md")
-	if err != nil || status != "" { t.Fatalf("selected file left dirty: %q %v", status, err) }
+	if err != nil || strings.TrimSpace(status) != "" { t.Fatalf("selected file left dirty: %q %v", status, err) }
 }
 
 func TestPublishCommitRejectsStaleAndPrivateContent(t *testing.T) {
 	root, handler := initPublishRepository(t)
 	head, err := gitOutputForTest(root, "rev-parse", "HEAD")
 	if err != nil { t.Fatal(err) }
+	head = strings.TrimSpace(head)
 	content := "---\npublished: false\ndraft: true\n---\n\n# Still draft\n"
 	if err := os.WriteFile(filepath.Join(root, "posts", "one.md"), []byte(content), 0644); err != nil { t.Fatal(err) }
 	request := commitRequest{Path: "posts/one.md", Head: head, Version: editorworkspace.SourceVersion(content)}
@@ -103,6 +105,7 @@ func TestPublishRejectsStagedSelectedPath(t *testing.T) {
 	root, handler := initPublishRepository(t)
 	head, err := gitOutputForTest(root, "rev-parse", "HEAD")
 	if err != nil { t.Fatal(err) }
+	head = strings.TrimSpace(head)
 	content := "---\npublished: true\n---\n\n# Updated\n"
 	if err := os.WriteFile(filepath.Join(root, "posts", "one.md"), []byte(content), 0644); err != nil { t.Fatal(err) }
 	gitForReviewTest(t, root, "add", "posts/one.md")
