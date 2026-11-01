@@ -641,7 +641,7 @@ func runInteractiveMode(cmd *cobra.Command, templates map[string]ContentTemplate
 
 	// Get draft status (only prompt if not explicitly set via flag)
 	if !cmd.Flags().Changed("draft") {
-		newDraft = promptYesNoNew(reader, "Create as draft?", false)
+		newDraft = promptYesNoNew(reader, "Create as draft?", starterDraftDefault(template))
 	}
 
 	errln()
