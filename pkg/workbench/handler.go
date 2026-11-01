@@ -497,17 +497,17 @@ func (h *Handler) document(result *plugins.StandaloneResult, attributes map[stri
 	return `<!doctype html><html lang="en"` + attrs + `><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Markdown preview</title>` + initial + styles + h.featureHead(result) + `</head><body><main class="main-content"><div class="content-wrapper"><div class="post-shell"><article class="post h-entry"><div class="post-content e-content">` + result.HTML + `</div></article></div></div></main>` + strings.ReplaceAll(result.BodyEndHTML, "<script", `<script data-markata-generated="true"`) + h.bridge + `</body></html>`
 }
 
-func isWorkspaceRoute(path, method string) bool {
+func isWorkspaceRoute(routePath, method string) bool {
 	switch {
-	case path == "/workspace" || path == "/workspace/templates" || path == "/workspace/image":
+	case routePath == "/workspace" || routePath == "/workspace/templates" || routePath == "/workspace/image":
 		return method == http.MethodGet
-	case path == "/workspace/file":
+	case routePath == "/workspace/file":
 		return method == http.MethodGet || method == http.MethodPut || method == http.MethodPost
-	case path == "/workspace/publish/commit" || path == "/workspace/publish/push":
+	case routePath == "/workspace/publish/commit" || routePath == "/workspace/publish/push":
 		return method == http.MethodPost
-	case path == "/workspace/publish/deployment" || path == "/workspace/publish/review":
+	case routePath == "/workspace/publish/deployment" || routePath == "/workspace/publish/review":
 		return method == http.MethodGet
-	case path == frontmatterInspectPath || path == frontmatterEditPath:
+	case routePath == frontmatterInspectPath || routePath == frontmatterEditPath:
 		return method == http.MethodPost
 	default:
 		return false
