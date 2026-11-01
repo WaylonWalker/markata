@@ -314,6 +314,9 @@ func TestGenerateTemplatedContent(t *testing.T) {
 		Frontmatter: map[string]interface{}{
 			"templateKey": "post",
 			"layout":      "post.html",
+			"title":       "{{title}}",
+			"slug":        "{{slug}}",
+			"date":        "{{date}}",
 		},
 		Body:   "Start writing here...",
 		Source: "builtin",
@@ -567,30 +570,48 @@ func TestParseTemplateFile_ReportsInvalidStarterMetadata(t *testing.T) {
 	}
 }
 
-func TestResolveTemplateSelection_RejectsAliasShadowingCanonicalName(t *testing.T) {
+func TestResolveTemplateSelection_PrefersCanonicalOverAlias(t *testing.T) {
 	templates := map[string]ContentTemplate{
 		"post":  {Name: "post", Directory: "posts"},
 		"guide": {Name: "guide", Directory: "guides", Aliases: []string{"post"}},
 	}
-	if _, _, ok := resolveTemplateSelection("post", templates); ok {
-		t.Fatal("expected canonical/alias collision to be rejected")
+	template, canonical, ok := resolveTemplateSelection("post", templates)
+	if !ok || canonical != "post" || template.Name != "post" {
+		t.Fatalf("canonical selection failed: %q, %#v, %t", canonical, template, ok)
 	}
 }
 
-func TestValidateTemplateAliases_ReportsCanonicalNameCollision(t *testing.T) {
-	templates := map[string]ContentTemplate{
-		"post":  {Name: "post", Directory: "posts"},
-		"guide": {Name: "guide", Directory: "guides", Aliases: []string{"post"}},
+func TestResolveTemplateSelection_RejectsAmbiguousAliasButKeepsNames(t *testing.T) {
+	templates := builtinTemplates()
+	templates["guide"] = ContentTemplate{Name: "guide", Directory: "guides", Aliases: []string{"tutorial"}}
+	if _, _, ok := resolveTemplateSelection("tutorial", templates); ok {
+		t.Fatal("expected ambiguous tutorial alias to be rejected")
 	}
-	validateTemplateAliases(templates)
-	if templates["post"].ValidationError == "" || templates["guide"].ValidationError == "" {
-		t.Fatalf("expected both conflicting starters to be marked invalid: %#v", templates)
+	if template, _, ok := resolveTemplateSelection("article", templates); !ok || template.Name != "article" {
+		t.Fatal("article canonical name must remain usable")
+	}
+	if template, _, ok := resolveTemplateSelection("guide", templates); !ok || template.Name != "guide" {
+		t.Fatal("guide canonical name must remain usable")
+	}
+}
+
+func TestLoadTemplatesFromDir_ReportsDuplicateCanonicalName(t *testing.T) {
+	directory := t.TempDir()
+	for _, name := range []string{"one.md", "two.md"} {
+		if err := os.WriteFile(filepath.Join(directory, name), []byte("---\nstarter:\n  name: guide\n---\nBody"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	templates := map[string]ContentTemplate{}
+	loadTemplatesFromDir(directory, templates)
+	if got := templates["guide"].ValidationError; !strings.Contains(got, "one.md") || !strings.Contains(got, "two.md") {
+		t.Fatalf("duplicate starter conflict must identify both files: %q", got)
 	}
 }
 
 func TestValidateTemplateAliases_KeepsBuiltinsUsable(t *testing.T) {
 	templates := builtinTemplates()
-	validateTemplateAliases(templates)
+	// The built-ins must resolve by canonical name.
 	for name, template := range templates {
 		if template.ValidationError != "" {
 			t.Errorf("built-in %q unexpectedly invalid: %s", name, template.ValidationError)
@@ -606,6 +627,45 @@ func TestGenerateTemplatedContent_ExpandsStarterVariables(t *testing.T) {
 		if !strings.Contains(content, expected) {
 			t.Errorf("content missing %q:\n%s", expected, content)
 		}
+	}
+}
+
+func TestGenerateTemplatedContent_OmitsInheritedDefaults(t *testing.T) {
+	template := ContentTemplate{
+		Frontmatter: map[string]interface{}{"title": "{{title}}"},
+		Body: "## {{title}}",
+	}
+	date := time.Date(2024, 1, 15, 0, 0, 0, 0, time.UTC)
+	content := generateTemplatedContent("My Page", "my-page", date, false, false, nil, template)
+	if !strings.Contains(content, "title: My Page") || !strings.Contains(content, "## My Page") {
+		t.Fatalf("starter title was not expanded: %s", content)
+	}
+	for _, field := range []string{"slug:", "date:", "published:", "draft:", "tags:", "description:"} {
+		if strings.Contains(content, field) {
+			t.Errorf("inherited default %q should not be written: %s", field, content)
+		}
+	}
+}
+
+func TestGenerateTemplatedContent_ExplicitOverrides(t *testing.T) {
+	template := ContentTemplate{Frontmatter: map[string]interface{}{
+		"draft": true, "published": false, "tags": []string{"starter"},
+	}}
+	date := time.Date(2024, 1, 15, 0, 0, 0, 0, time.UTC)
+	content := generateTemplatedContent("Page", "page", date, false, true, []string{}, template)
+	for _, expected := range []string{"draft: false", "published: true", "tags: []"} {
+		if !strings.Contains(content, expected) {
+			t.Errorf("explicit override missing %q: %s", expected, content)
+		}
+	}
+}
+
+func TestGenerateTemplatedContent_NoFrontmatterProducesPlainBody(t *testing.T) {
+	template := ContentTemplate{Body: "Hello {{title}}"}
+	date := time.Date(2024, 1, 15, 0, 0, 0, 0, time.UTC)
+	content := generateTemplatedContent("World", "world", date, false, false, nil, template)
+	if content != "Hello World\n" {
+		t.Fatalf("unexpected generated body: %q", content)
 	}
 }
 
