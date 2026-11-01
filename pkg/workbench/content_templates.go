@@ -82,7 +82,14 @@ func (h *Handler) contentTemplates() ([]contentTemplate, error) {
 		return nil, err
 	}
 	// Site-authored Markdown is the highest-priority starter definition.
+	// Duplicate names among Markdown files are errors, not silent overrides.
+	seenLocal := make(map[string]string, len(local))
 	for _, siteTemplate := range local {
+		key := strings.ToLower(strings.TrimSpace(siteTemplate.Name))
+		if previous, exists := seenLocal[key]; exists {
+			return nil, fmt.Errorf("duplicate content starter %q in %s and %s", siteTemplate.Name, previous, siteTemplate.ID)
+		}
+		seenLocal[key] = siteTemplate.ID
 		templates = upsertContentTemplate(templates, siteTemplate)
 	}
 	if err := validateContentTemplateNames(templates); err != nil {
