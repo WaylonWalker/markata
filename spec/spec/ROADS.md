@@ -82,6 +82,10 @@ Reduced motion MUST disable reveal animations. The modifiers MAY be combined.
 | `data-road-progress="N"` | Static percentage from 0 to 100 (optional `%` suffix). |
 | `data-road-current="N"` | Number of completed milestones (0 through the number of entries). |
 
+At 0%, no entries are active. At 100%, every entry is active. Milestone mode
+uses the same boundaries: 0 completed entries leaves all entries inactive, and
+the total entry count marks every entry active.
+
 The `--road-accent` and `--road-muted` CSS custom properties set the colors.
 They default to `--color-primary` and `--color-border-strong`.
 

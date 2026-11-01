@@ -31,7 +31,8 @@ Rules:
 For authored completion, use `data-road-progress-mode="static"` with
 `data-road-progress="65"`, or `data-road-progress-mode="milestones"` with
 `data-road-current="2"`. Fixed values persist across scroll and resize. Keep
-the source list readable without JavaScript.
+the source list readable without JavaScript. At 0, no milestone is active; at
+100% or when every milestone is complete, all milestones are active.
 
 ## Choosing a style
 

@@ -77,6 +77,8 @@ The normal scroll-driven progress remains the default.
 road's range. Invalid values fall back to scroll progress. Fixed progress stays
 the same after scroll, resize, and view transitions. The original links remain
 available if JavaScript does not run.
+At 0, no entries are active. At 100%, or when all milestones are complete, all
+entries are active.
 
 ## Choose a style
 
