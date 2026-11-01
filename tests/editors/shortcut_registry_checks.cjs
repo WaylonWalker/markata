@@ -82,5 +82,17 @@ assert.equal(explorer,2);
 assert.equal(fire('P',{ctrlKey:true,shiftKey:true}).used,true);
 assert.equal(palette,3);
 assert.equal(shortcuts.getPreset(),'vim');
+let opened = 0;
+shortcuts.register({id:'quickOpen',label:'Quick open',bindings:{vscode:'Mod+P',emacs:'Ctrl+X Ctrl+F'},run:()=>opened++});
+shortcuts.setPreset('emacs');
+assert.equal(fire('x',{ctrlKey:true}).used,true);
+assert.equal(fire('f',{ctrlKey:true}).used,true);
+assert.equal(opened,1);
+assert.equal(fire('k',{ctrlKey:true}).used,false); // Emacs kill-line isn't captured by app.
+shortcuts.setPreset('vscode');
+shortcuts.setBinding('publish','Alt+J');
+shortcuts.setPreset('writer');
+shortcuts.setPreset('vscode');
+assert.equal(shortcuts.bindingFor('publish'),'Alt+J'); // Overrides are per preset.
 
 console.log('Shortcut registry tests passed');
