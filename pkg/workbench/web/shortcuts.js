@@ -9,11 +9,12 @@
     catch { return {}; }
   })();
   let preset = presets.includes(persisted.preset) ? persisted.preset : 'vscode';
-  let overrides = persisted.bindings && typeof persisted.bindings === 'object' ? persisted.bindings : {};
+  let overridesByPreset = persisted.overridesByPreset && typeof persisted.overridesByPreset === 'object' ? persisted.overridesByPreset : {};
+  let overrides = overridesByPreset[preset] || {};
   let editor, pending = '', pendingTimer, dialog, search, list, feedback, returnFocus;
 
   function persist() {
-    try { localStorage.setItem(storageKey, JSON.stringify({preset, bindings:overrides})); }
+    try { localStorage.setItem(storageKey, JSON.stringify({preset, overridesByPreset})); }
     catch { /* Shortcut handling works with blocked storage. */ }
   }
   function register(command) {
@@ -40,15 +41,16 @@
     const other = conflict(binding, id);
     if (other) return {ok:false, error:'Already used by ' + other.label + '.'};
     overrides = {...overrides, [id]:binding};
+    overridesByPreset = {...overridesByPreset, [preset]:overrides};
     persist();
     render();
     return {ok:true};
   }
-  function reset() { overrides = {}; persist(); render(); }
+  function reset() { overrides = {}; overridesByPreset = {...overridesByPreset,[preset]:{}}; persist(); render(); }
   function setPreset(value) {
     if (!presets.includes(value)) return;
     preset = value;
-    overrides = {};
+    overrides = overridesByPreset[preset] || {};
     clearPending();
     persist();
     render();
@@ -66,8 +68,10 @@
     else if (key === 'ArrowLeft') key = 'Left';
     else if (key === 'ArrowRight') key = 'Right';
     else if (key.length === 1) key = key.toUpperCase();
-    return [event.ctrlKey || event.metaKey ? 'Mod' : '', event.altKey ? 'Alt' : '',
-      event.shiftKey && key !== 'Shift' ? 'Shift' : '', key].filter(Boolean).join('+');
+    const modifier = preset === 'emacs' && event.ctrlKey && !event.metaKey ? 'Ctrl' :
+      event.ctrlKey || event.metaKey ? 'Mod' : '';
+    const shifted = event.shiftKey && key !== 'Shift' && /^[A-Za-z0-9]$/.test(key);
+    return [modifier, event.altKey ? 'Alt' : '', shifted ? 'Shift' : '', key].filter(Boolean).join('+');
   }
   function clearPending() {
     pending = '';
@@ -143,6 +147,7 @@
     function finish() { if (input.isConnected) input.replaceWith(button); render(); }
     input.addEventListener('blur', finish);
     input.addEventListener('keydown', event => {
+      if (event.key === 'Tab') { finish(); return; }
       event.preventDefault(); event.stopPropagation();
       if (event.key === 'Escape') { finish(); return; }
       if (event.key === 'Backspace') {
@@ -185,7 +190,12 @@
     dialog.querySelector('#shortcuts-preset').addEventListener('change', event => setPreset(event.target.value));
     dialog.querySelector('#shortcuts-reset').addEventListener('click', reset);
     dialog.querySelector('#shortcuts-close').addEventListener('click', () => dialog.close());
-    dialog.addEventListener('close', () => { if (returnFocus?.isConnected) returnFocus.focus(); else editor?.focus(); });
+    dialog.addEventListener('close', () => {
+      const closedParent = returnFocus?.closest?.('dialog');
+      if (closedParent && !closedParent.open) document.querySelector('#settings-open')?.focus();
+      else if (returnFocus?.isConnected) returnFocus.focus();
+      else editor?.focus();
+    });
   }
   function init(instance) {
     editor = instance;
