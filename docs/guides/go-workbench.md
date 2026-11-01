@@ -32,6 +32,9 @@ Scrolling either pane keeps the corresponding Markdown visible in the other.
 When you write or move the cursor, the preview follows the editor. Scroll sync
 is on by default; turn off **Sync editor and preview scrolling** in **Editor
 settings** to scroll each pane independently. The choice is saved in this browser.
+In split view, a subtle position marker shows the corresponding source line and
+preview block. The preview mapping refreshes when rendered content or its layout
+changes, including after images and fonts load.
 Choose Default, Vim, Emacs, or Sublime keymaps in **Editor settings**.
 In Vim mode, press `/` to search forward, `?` to search backward, then `n` or
 `N` to move between matches.

@@ -7,25 +7,43 @@ else if(values.includes(value))document.documentElement.setAttribute(key,value);
 }};
 
 let updates=Promise.resolve(), scriptSequence=0;
-let sourceLines=[], sourceLineCount=0, programmed=false, scrollFrame=0;
+let sourceLines=[], sourceLineCount=0, sourcePoints=[], programmedTarget=null, scrollFrame=0;
+let articleObserver;
+const markerStyle=document.createElement('style');markerStyle.textContent='.markata-sync-cursor{outline:2px solid color-mix(in srgb,var(--color-primary,#d39b32) 70%,transparent);outline-offset:3px;border-radius:3px}';document.head.append(markerStyle);
 const scrollState=user=>{
   const article=document.querySelector('.post-content');
   if(!article)return;
   const elements=[...article.children];
-  const points=[{line:0,y:0}];
+  const rect=article.getBoundingClientRect();
+  const firstLine=Number.isFinite(sourceLines[0])?sourceLines[0]:0;
+  const points=[{line:firstLine,y:rect.top+scrollY,index:0}];
   for(let i=0;i<Math.min(elements.length,sourceLines.length);i++){
     const line=sourceLines[i];
-    if(line<=points.at(-1).line)continue;
-    points.push({line,y:elements[i].getBoundingClientRect().top+scrollY});
+    const y=elements[i].getBoundingClientRect().top+scrollY;
+    const previous=points.at(-1);
+    if(!Number.isFinite(line)||!Number.isFinite(y)||line<=previous.line||y<=previous.y)continue;
+    points.push({line,y,index:i});
   }
-  points.push({line:Math.max(sourceLineCount,(sourceLines.at(-1)??0)+1),y:document.documentElement.scrollHeight});
+  const endLine=Math.max(sourceLineCount,(sourceLines.at(-1)??0)+1);
+  const bottom=rect.bottom+scrollY;
+  if(endLine>points.at(-1).line&&bottom>points.at(-1).y)points.push({line:endLine,y:bottom,index:elements.length});
+  sourcePoints=points;
   parent.postMessage({type:'sync-scroll-state',user,top:scrollY,height:document.documentElement.scrollHeight,clientHeight:innerHeight,points},'*');
 };
 addEventListener('scroll',()=>{
   if(scrollFrame)cancelAnimationFrame(scrollFrame);
-  scrollFrame=requestAnimationFrame(()=>{scrollFrame=0;scrollState(!programmed);programmed=false;});
+  scrollFrame=requestAnimationFrame(()=>{scrollFrame=0;const isProgrammed=programmedTarget!=null&&Math.abs(scrollY-programmedTarget)<2;if(isProgrammed)programmedTarget=null;scrollState(!isProgrammed);});
 },{passive:true});
 addEventListener('resize',()=>scrollState(false));
+const observeArticle=article=>{
+  if(!article)return;
+  if(!articleObserver){
+    articleObserver=new ResizeObserver(()=>requestAnimationFrame(()=>scrollState(false)));
+    article.addEventListener('load',()=>requestAnimationFrame(()=>scrollState(false)),true);
+  }
+  articleObserver.disconnect();articleObserver.observe(article);
+};
+if(document.fonts?.ready)document.fonts.ready.then(()=>scrollState(false));
 const originalScripts=new WeakMap();
 const scriptSource=s=>originalScripts.get(s) ?? s.textContent;
 
@@ -76,7 +94,7 @@ document.body.append(script);
 }dispatchEvent(new Event('view-transition-complete'));
 setAppearance(data.attributes);
 dispatchEvent(new Event('theme-change'));
-requestAnimationFrame(()=>scrollState(false));
+observeArticle(article);requestAnimationFrame(()=>scrollState(false));
 };
 
 addEventListener('message',e=>{if(e.source!==parent)return;
@@ -87,7 +105,8 @@ parent.postMessage({type:'preview-updated',version:e.data.version},'*');
 updates=updates.then(()=>renderMarkdown(e.data)).catch(console.error);
 return;
 }if(e.data?.type==='sync-scroll-lines'){sourceLines=e.data.lines||[];sourceLineCount=e.data.lineCount||0;requestAnimationFrame(()=>scrollState(false));return;
-}if(e.data?.type==='sync-scroll'){programmed=true;scrollTo({top:e.data.y,behavior:'instant'});setTimeout(()=>{programmed=false;},100);return;
+}if(e.data?.type==='sync-scroll'){programmedTarget=Math.max(0,Math.min(e.data.y,document.documentElement.scrollHeight-innerHeight));document.scrollingElement.scrollTop=programmedTarget;setTimeout(()=>{programmedTarget=null;},300);return;
+}if(e.data?.type==='sync-cursor'){const article=document.querySelector('.post-content');if(!article)return;article.querySelectorAll('.markata-sync-cursor').forEach(node=>node.classList.remove('markata-sync-cursor'));const candidates=sourcePoints.filter(point=>point.index>=0&&point.index<article.children.length&&point.line<=e.data.line);const point=candidates.at(-1)||sourcePoints.find(anchor=>anchor.index===0);if(point)article.children[point.index]?.classList.add('markata-sync-cursor');return;
 }if(e.data?.type==='appearance'){updates=updates.then(()=>{setAppearance(e.data.attributes);
 dispatchEvent(new Event('theme-change'));
 }).catch(console.error);

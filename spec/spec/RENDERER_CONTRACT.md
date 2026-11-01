@@ -95,10 +95,15 @@ labels.
 In split layout, source and preview scrolling MUST synchronize in both directions
 by default. The active pane controls the position; editing or moving the source
 cursor makes the editor the active pane. Users MUST be able to disable scrolling
-sync in editor settings, and the setting MUST persist locally. The workbench
-render response MAY include zero-based source lines for top-level Markdown
-blocks to align unequal editor and preview heights. Preview-only and editor-only
-layouts do not synchronize hidden panes.
+sync in editor settings, and the setting MUST persist locally. Source line and
+pixel anchors MUST refer to the original editor document, including any stripped
+frontmatter, and MUST be strictly increasing together before interpolation; invalid,
+duplicate, or out-of-order anchors MUST be discarded. Preview anchors MUST use
+the rendered article's document coordinates and be refreshed after content,
+viewport, or observed article geometry changes. Scroll synchronization MUST use
+the same measured source position in either direction and MUST expose that
+position in both panes without moving the text cursor. Preview-only and
+editor-only layouts do not synchronize hidden panes.
 
 The Go workbench MUST bind Ctrl/Cmd+P to a fuzzy workspace file finder that
 searches Markdown paths, titles, slugs, and tags and opens the selected file in

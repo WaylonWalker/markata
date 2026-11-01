@@ -287,7 +287,12 @@ function updateFrontmatterSummary(markdown) {
 }
 async function render() {
   if (!ready || busy) return;
-  const version = revision, markdown = window.MarkataSiteTree?.markdown(source.value) ?? source.value;
+  const version = revision, originalMarkdown = source.value;
+  const markdown = window.MarkataSiteTree?.markdown(originalMarkdown) ?? originalMarkdown;
+  const frontmatter = originalMarkdown.match(/^---\r?\n[\s\S]*?\r?\n---(?:\r?\n|$)/);
+  const sourceLineOffset = frontmatter && markdown !== originalMarkdown
+    ? (frontmatter[0].match(/\n/g) || []).length
+    : 0;
   const bytes = new TextEncoder().encode(markdown).length;
   if (bytes > 200000) {
     errorBox.textContent = 'Document exceeds 200,000 UTF-8 bytes. Download your draft or shorten it.';
@@ -307,6 +312,7 @@ async function render() {
     const data = await response.json();
     if (version !== revision) return;
     if (!response.ok) throw new Error(data.error || 'Rendering failed.');
+    if (sourceLineOffset) data.source_lines = data.source_lines.map(line => line + sourceLineOffset);
     const roundTrip = performance.now()-started;
     activeRender = {data, version, roundTrip};
     if (!previewStarted) {
