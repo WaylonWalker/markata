@@ -81,3 +81,26 @@ workspace change while reviewing, scratch files, new/untracked posts, missing Gi
 large diffs, injected HTML, hidden metadata changes, mobile tap and swipe,
 keyboard focus, exact source bytes, preview rendering failures, unrelated staged
 files, Git conflicts, failed builds, stale deployments, and explicit confirmation.
+
+
+## Publishing implementation progress (experimental stack)
+
+- The review surface can compare exact last-committed and saved versions, show
+  semantic metadata warnings, render side-by-side, and show a source diff.
+- Committing and pushing are **separate** explicit operations. The commit
+  endpoint checks expected HEAD and source SHA-256 and stages the approved
+  source in an isolated Git index. Publication flags must already indicate
+  public content before a Git commit. The UI offers an explicit Mark as
+  public action, then reopens review.
+- A successful Git push is still **not** a verified public deployment. Live
+  status needs a deployment-specific integration and content revision receipt.
+- The rendered-diff comparison aligns structural blocks and annotates plain
+  text word differences; tables, code, diagrams, and complex containers use
+  whole-block comparisons. The side-by-side rendering remains authoritative.
+- Full source review uses Pierre's vanilla FileDiff, compiled to a local,
+  lazy-loaded optional asset. Never fetch third-party code at publish time.
+  Build the asset with tools/publish-diffs. The lightweight source diff must
+  continue working without that asset.
+
+The code is intentionally marked experimental until the exact Git workflow,
+bundled asset, Playwright and deployment recovery paths are verified.
