@@ -13,12 +13,17 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/WaylonWalker/markata/pkg/buildcache"
 	"github.com/WaylonWalker/markata/pkg/lifecycle"
+
 	htmlparser "golang.org/x/net/html"
 	"golang.org/x/net/html/atom"
 )
 
 const pageStyleHref = "href"
+const pageStyleRel = "rel"
+
+const cssStylesheetRel = "stylesheet"
 
 var pageCSSURL = regexp.MustCompile(`(?i)url\(\s*["']?([^"')\s]+)`)
 
@@ -34,6 +39,7 @@ func (p *CSSBundlePlugin) Cleanup(m *lifecycle.Manager) error {
 	if !p.config.Enabled || len(p.config.Pages) == 0 || m.Config().Extra["fast_mode"] == true {
 		return nil
 	}
+	updatedHTMLHashes := make(map[string]string)
 	for _, page := range p.config.Pages {
 		if !filepath.IsLocal(page) || strings.ToLower(filepath.Ext(page)) != ".html" {
 			return fmt.Errorf("CSS bundle page must be an output-relative HTML path: %q", page)
@@ -52,7 +58,14 @@ func (p *CSSBundlePlugin) Cleanup(m *lifecycle.Manager) error {
 			if err := os.WriteFile(path, bundled, 0o644); err != nil {
 				return fmt.Errorf("writing CSS bundle page %q: %w", page, err)
 			}
+			updatedHTMLHashes[filepath.Clean(page)] = buildcache.ContentHash(string(bundled))
 		}
+	}
+	// This runs after static-assets CSS reconciliation so bundled pages read
+	// real versioned stylesheets. Update ownership again for any pages changed
+	// by bundling rather than leaving the next warm build with stale hashes.
+	if err := refreshImageLibraryCSSOwnership(GetBuildCache(m), m.Config().OutputDir, updatedHTMLHashes); err != nil {
+		return fmt.Errorf("updating bundled page ownership: %w", err)
 	}
 	return nil
 }
@@ -207,7 +220,7 @@ func (p *CSSBundlePlugin) localPageStylesheet(attrs []htmlparser.Attribute, outp
 		switch attr.Key {
 		case pageStyleHref:
 			href = attr.Val
-		case "rel":
+		case pageStyleRel:
 			rel = attr.Val
 		case "type":
 			if attr.Val != "text/css" {
@@ -218,7 +231,7 @@ func (p *CSSBundlePlugin) localPageStylesheet(attrs []htmlparser.Attribute, outp
 		}
 	}
 	u, err := url.Parse(href)
-	if err != nil || rel != "stylesheet" || u.IsAbs() || u.Host != "" || !strings.HasPrefix(u.Path, "/") || u.RawQuery != "" || u.Fragment != "" {
+	if err != nil || rel != cssStylesheetRel || u.IsAbs() || u.Host != "" || !strings.HasPrefix(u.Path, "/") || u.RawQuery != "" || u.Fragment != "" {
 		return nil, false
 	}
 	local := filepath.FromSlash(strings.TrimPrefix(u.Path, "/"))
