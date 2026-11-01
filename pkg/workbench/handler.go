@@ -198,6 +198,8 @@ func styleLink(name string) string { return `<link rel="stylesheet" href="/appea
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	switch {
+	case (r.URL.Path == "/workspace/publish/review" && r.Method == http.MethodGet):
+		h.serveWorkspace(w, r)
 	case (r.URL.Path == "/workspace" || r.URL.Path == "/workspace/templates") && r.Method == http.MethodGet || (r.URL.Path == "/workspace/file" && (r.Method == http.MethodGet || r.Method == http.MethodPut || r.Method == http.MethodPost)):
 		h.serveWorkspace(w, r)
 	case r.URL.Path == "/lsp":
@@ -509,6 +511,10 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("Content-Type", "application/json")
+	if r.URL.Path == "/workspace/publish/review" {
+		h.servePublishReview(w, r)
+		return
+	}
 	if r.URL.Path == "/workspace/templates" {
 		templates, err := h.contentTemplates()
 		if err != nil {
