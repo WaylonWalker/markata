@@ -32,8 +32,9 @@ Scrolling either pane keeps the corresponding Markdown visible in the other.
 When you write or move the cursor, the preview follows the editor. Scroll sync
 is on by default; turn off **Sync editor and preview scrolling** in **Editor
 settings** to scroll each pane independently. The choice is saved in this browser.
-In split view, a subtle marker shows the corresponding preview block. The source
-pane keeps its normal caret on the actual text cursor. Preview updates preserve
+In split view, a subtle marker shows the corresponding preview block, with a
+thin caret and **You** flag at the active location. The source pane keeps its
+normal caret on the actual text cursor. Preview updates preserve
 unchanged blocks, and layout changes refresh the source-to-preview mapping,
 including after images and fonts load. While you edit, the preview follows the
 caret after the matching content update completes, including when you keep

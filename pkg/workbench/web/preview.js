@@ -11,7 +11,10 @@ let sourceLines=[], sourceLineCount=0, sourceLineOffset=0, sourcePositionAnchors
 let articleObserver;
 const executedInlineScripts=new Set();
 let appearanceSignature=JSON.stringify(Object.fromEntries(Object.keys(allowed).map(key=>[key,document.documentElement.getAttribute(key)])));
-const markerStyle=document.createElement('style');markerStyle.textContent='.markata-sync-position{outline:1px solid color-mix(in srgb,var(--color-primary,#d39b32) 38%,transparent);outline-offset:2px;border-radius:3px}';document.head.append(markerStyle);
+const markerStyle=document.createElement('style');markerStyle.textContent='.markata-sync-position{outline:1px solid color-mix(in srgb,var(--color-primary,#d39b32) 18%,transparent);outline-offset:2px;border-radius:3px}.markata-presence-layer{position:fixed;inset:0;z-index:2147483646;overflow:hidden;pointer-events:none}.markata-presence-cursor{--presence-color:var(--color-primary,#d39b32);position:fixed;width:1px;height:28px;background:var(--presence-color);opacity:.85;filter:drop-shadow(0 0 2px color-mix(in srgb,var(--presence-color) 35%,transparent))}.markata-presence-cursor[hidden]{display:none}.markata-presence-flag{position:absolute;bottom:calc(100% + 3px);left:-1px;padding:2px 6px;border-radius:3px 3px 3px 0;background:var(--presence-color);color:var(--color-on-primary,#11151d);font:600 10px/1.4 system-ui,sans-serif;white-space:nowrap;letter-spacing:.01em}';document.head.append(markerStyle);
+const presenceLayer=document.createElement('div');presenceLayer.className='markata-presence-layer';presenceLayer.setAttribute('aria-hidden','true');document.body.append(presenceLayer);
+const presenceParticipants=[{id:'local',label:'You',color:'var(--color-primary,#d39b32)'}];
+const presenceCursors=new Map();
 const blockSignature=node=>{
   if(node.matches('pre.mermaid'))return `mermaid:${node.dataset.markataMermaidSource??node.textContent}`;
   const generated=node.matches('.markata-sync-position,[data-markata-code-enhanced],.chartjs-container,[data-markata-source-line],[data-markata-source-end-line]')||node.getAttribute('class')===''||node.querySelector('[data-markata-ui],[data-markata-code-enhanced],.chartjs-container canvas,[data-markata-source-line],[data-markata-source-end-line]');
@@ -86,6 +89,17 @@ const syncPositionMarker=()=>{
   positionNode?.classList.remove('markata-sync-position');
   if(positionNode&&!positionNode.classList.length)positionNode.removeAttribute('class');
   positionNode=next;positionNode?.classList.add('markata-sync-position');
+  for(const participant of presenceParticipants){
+    let cursor=presenceCursors.get(participant.id);
+    if(!cursor){cursor=document.createElement('div');cursor.className='markata-presence-cursor';cursor.hidden=true;cursor.dataset.presenceId=participant.id;const flag=document.createElement('span');flag.className='markata-presence-flag';cursor.append(flag);presenceLayer.append(cursor);presenceCursors.set(participant.id,cursor);}
+    cursor.querySelector('.markata-presence-flag').textContent=participant.label;
+    cursor.style.setProperty('--presence-color',participant.color);
+    if(!next){cursor.hidden=true;continue;}
+    const rect=next.getBoundingClientRect();
+    const visible=rect.bottom>0&&rect.top<innerHeight&&rect.right>0&&rect.left<innerWidth;
+    cursor.hidden=!visible;
+    if(visible){cursor.style.left=`${Math.max(2,rect.left-7)}px`;cursor.style.top=`${Math.max(20,rect.top)}px`;cursor.style.height=`${Math.max(16,Math.min(36,rect.height))}px`;}
+  }
 };
 const scrollState=(user,syncID=null)=>{
   const article=document.querySelector('.post-content');

@@ -67,6 +67,10 @@ The handler is reusable by a future builder; it does not depend on CLI globals.
 On desktop, the editor shell fills the viewport without document-level scrolling;
 the workspace panes own their scroll areas. Narrow mobile layouts may scroll the
 stacked editor and preview vertically.
+In split layout, the preview marks the rendered block for the active source
+cursor and shows a compact labeled caret. Presence markers use participant IDs,
+labels, and colors so additional editor cursors can be added without changing
+the marker rendering model.
 
 
 ## Integration benchmark
