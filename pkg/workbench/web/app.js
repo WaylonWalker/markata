@@ -1,12 +1,12 @@
 
 const source = document.querySelector('#source');
 const frame = document.querySelector('#preview');
-const sourceVisibleText = value => String(value||'').replace(/^\s{0,3}(?:#{1,6}\s+|>\s?|[-*+]\s+|\d+\.\s+)/,'').replace(/!\[([^\]]*)\]\([^)]+\)/g,'$1').replace(/\[([^\]]+)\]\([^)]+\)/g,'$1').replace(/\[([^\]]+)\]\[[^\]]*\]/g,'$1').replace(/<[^>]*>/g,'').replace(/[`*_~]/g,'').replace(/\s+/g,' ').trim();
+const sourceVisibleText = value => String(value||'').replace(/^\s{0,3}(?:#{1,6}\s+|>\s?|[-*+]\s+|\d+\.\s+)/,'').replace(/!\[([^\]]*)\]\([^)]+\)/g,'$1').replace(/\[([^\]]+)\]\([^)]+\)/g,'$1').replace(/\[([^\]]+)\]\[[^\]]*\]/g,'$1').replace(/<[^>]*>/g,'').replace(/[`*_~]/g,'').replace(/[‘’]/g,"'").replace(/[“”]/g,'"').replace(/[–—]/g,'-').replace(/\s+/g,' ').trim();
 const placeEditorCursor = position => {
   const lines = editor.getValue().split(/\r?\n/);
   const start = Math.max(0,Math.min(lines.length-1,Number(position.line)||0));
   const end = Math.max(start,Math.min(lines.length-1,Number(position.endLine)||start));
-  const clicked = String(position.text||'');
+  const clicked = String(position.text||'').replace(/[‘’]/g,"'").replace(/[“”]/g,'"').replace(/[–—]/g,'-');
   const findSourceMatch = (from,to) => {
     let match=null;
     for(let i=from;i<=to;i++){

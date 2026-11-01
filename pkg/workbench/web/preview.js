@@ -76,7 +76,12 @@ const syncSourceLines=(existing,fresh)=>{
 const visibleSourceText=source=>{
   const decoded=document.createElement('textarea');
   decoded.innerHTML=String(source||'').replace(/^\s{0,3}(?:#{1,6}\s+|>\s?|[-*+]\s+|\d+\.\s+)/,'').replace(/!\[([^\]]*)\]\([^)]+\)/g,'$1').replace(/\[([^\]]+)\]\([^)]+\)/g,'$1').replace(/\[([^\]]+)\]\[[^\]]*\]/g,'$1').replace(/<[^>]*>/g,'').replace(/[`*_~]/g,'');
-  return decoded.value.replace(/\s+/g,' ').trim();
+  return decoded.value.replace(/[‘’]/g,"'").replace(/[“”]/g,'"').replace(/[–—]/g,'-').replace(/\s+/g,' ').trim();
+};
+const visibleSourcePrefix=source=>{
+  const decoded=document.createElement('textarea');
+  decoded.innerHTML=String(source||'').replace(/^\s{0,3}(?:#{1,6}\s+|>\s?|[-*+]\s+|\d+\.\s+)/,'').replace(/!\[([^\]]*)\]\([^)]+\)/g,'$1').replace(/\[([^\]]+)\]\([^)]+\)/g,'$1').replace(/\[([^\]]+)\]\[[^\]]*\]/g,'$1').replace(/<[^>]*>/g,'').replace(/[`*_~]/g,'');
+  return decoded.value.replace(/[‘’]/g,"'").replace(/[“”]/g,'"').replace(/[–—]/g,'-').replace(/\s+/g,' ').replace(/^\s+/,'');
 };
 const textPosition=(root,source,ch)=>{
   const wanted=visibleSourceText(source);
@@ -84,7 +89,7 @@ const textPosition=(root,source,ch)=>{
   const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
   const chars=[];let node,lastWasSpace=true;
   while((node=walker.nextNode()))for(let offset=0;offset<node.nodeValue.length;offset++){
-    const value=node.nodeValue[offset];
+    const value=node.nodeValue[offset].replace(/[‘’]/g,"'").replace(/[“”]/g,'"').replace(/[–—]/g,'-');
     if(/\s/.test(value)){if(!lastWasSpace&&chars.length){chars.push({value:' ',node,offset});lastWasSpace=true;}continue;}
     chars.push({value,node,offset});lastWasSpace=false;
   }
@@ -92,7 +97,7 @@ const textPosition=(root,source,ch)=>{
   const rendered=chars.map(char=>char.value).join('');
   const start=rendered.indexOf(wanted);
   if(start<0)return null;
-  const prefix=visibleSourceText(String(source).slice(0,Math.max(0,ch??0)));
+  const prefix=visibleSourcePrefix(String(source).slice(0,Math.max(0,ch??0)));
   const index=start+Math.min(prefix.length,wanted.length);
   const target=chars[index];
   const range=document.createRange();
