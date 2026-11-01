@@ -782,6 +782,13 @@ func applyNewWizardState(state *newWizardState, templates map[string]ContentTemp
 	// Apply template-specific fields from wizard
 	applyTemplateFields(state, enhancedTemplate.Frontmatter)
 
+	// An unmodified tag selector is not an explicit empty-tags override.
+	// Preserve the starter's tags unless the user supplied replacements.
+	tags := state.Tags
+	if len(tags) == 0 {
+		tags = nil
+	}
+
 	// The wizard has no publication control. Preserve starter/site defaults.
-	return writeContentFile(state.Title, slug, outputDir, false, false, state.Tags, enhancedTemplate)
+	return writeContentFile(state.Title, slug, outputDir, false, false, tags, enhancedTemplate)
 }
