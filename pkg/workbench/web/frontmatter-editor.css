@@ -194,12 +194,15 @@
 .fm-field-head {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
   align-items: center;
   gap: 3px 8px;
   min-width: 0;
 }
 
 .fm-field-head label {
+  grid-column: 1;
+  grid-row: 1;
   min-width: 0;
   color: var(--color-text);
   font-size: 13px;
@@ -218,27 +221,25 @@
   grid-column: 2;
   grid-row: 1 / span 2;
   display: grid;
-  width: 28px;
+  width: 24px;
+  height: 24px;
   place-items: center;
-  min-height: 27px;
+  min-height: 24px;
   padding: 0;
-  border-color: transparent;
+  border: 0;
+  border-radius: 0;
   background: transparent;
-  color: color-mix(in srgb, var(--color-error, #c44) 72%, var(--color-text));
-  font-size: 19px;
-  line-height: 1;
+  color: color-mix(in srgb, var(--color-error, #c44) 78%, var(--color-text));
 }
 
 .fm-field-head .fm-remove:hover {
-  border-color: color-mix(in srgb, var(--color-error, #c44) 35%, transparent);
-  background: color-mix(in srgb, var(--color-error, #c44) 10%, transparent);
   color: var(--color-error, #c44);
 }
 
 .fm-field-head .fm-remove svg {
   display: block;
-  width: 15px;
-  height: 15px;
+  width: 16px;
+  height: 16px;
   fill: none;
   stroke: currentColor;
   stroke-linecap: round;
@@ -249,6 +250,7 @@
 .fm-field > small,
 .fm-field > p {
   grid-column: 1;
+  grid-row: 2;
   margin: 0;
   color: var(--color-text-muted);
   font-size: 11px;
@@ -259,6 +261,8 @@
 .fm-field > .fm-structured,
 .fm-field > button {
   grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
   max-width: 620px;
 }
 
@@ -598,6 +602,13 @@
   .fm-field > small,
   .fm-field > p {
     grid-column: 1;
+    grid-row: auto;
+  }
+
+  .fm-field > .fm-input,
+  .fm-field > .fm-structured,
+  .fm-field > button {
+    grid-row: auto;
   }
 
   .fm-field-head {
