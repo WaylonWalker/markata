@@ -96,7 +96,11 @@
     const isVimNormal = preset === 'vim' && inEditor && editor &&
       editor.getOption('keyMap') === 'vim' && !editor.state.vim?.insertMode;
     const key = stroke(event);
-    if (textInput && !inEditor) { clearPending(); return false; }
+    // Keep ordinary typing native, but global modified shortcuts still work
+    // from the file-view selector and other non-modal form controls.
+    if (textInput && !inEditor && !event.ctrlKey && !event.metaKey && !event.altKey) {
+      clearPending(); return false;
+    }
     // Plain text should never become an app command while writing.
     if (!isVimNormal && !event.ctrlKey && !event.metaKey && !event.altKey && event.key.length === 1) {
       clearPending(); return false;
