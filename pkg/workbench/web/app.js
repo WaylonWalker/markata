@@ -316,8 +316,12 @@ async function render() {
     const data = await response.json();
     if (version !== revision) return;
     if (!response.ok) throw new Error(data.error || 'Rendering failed.');
-    if (sourceLineOffset) data.source_lines = data.source_lines.map(line => line + sourceLineOffset);
-    scrollSync.update(data.source_lines, false);
+    if (sourceLineOffset) {
+      data.source_lines = data.source_lines.map(line => line + sourceLineOffset);
+      data.source_anchors = data.source_anchors.map(line => line + sourceLineOffset);
+    }
+    data.source_offset = sourceLineOffset;
+    scrollSync.update(data.source_lines, false, sourceLineOffset, data.source_anchors);
     activeRender = {data, version, editAt:lastEditAt, startedAt:started};
     if (!previewStarted) {
       previewStarted = true;
@@ -370,6 +374,8 @@ const appearanceKeys = ['data-palette','data-theme','data-aesthetic','data-fontp
 function updatePreview(data, version) {
   frame.contentWindow?.postMessage({type:'markdown-render', html:data.html,
     source_lines:data.source_lines,
+    source_anchors:data.source_anchors,
+    source_offset:data.source_offset || 0,
     line_count:editor.lineCount(),
     feature_head_html:data.feature_head_html, body_end_html:data.body_end_html, version,
     attributes:attributes()}, '*');

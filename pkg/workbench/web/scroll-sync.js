@@ -1,6 +1,6 @@
 // Source-line anchors keep documents with unequal rendered heights aligned.
 window.MarkataScrollSync = function (editor, frame, setting, workbench) {
-  let lines = [], preview = null, driver = 'editor', expectedEditorTop = null;
+  let lines = [], anchors = [], sourceOffset = 0, preview = null, driver = 'editor', expectedEditorTop = null;
   let editorFollowCursor = true, lastMarkedLine = -1, lastCursorLine = -1;
   let geometryKey = '', requestedPreview = null, previewRequestID = 0, editorScrollIntentUntil = 0;
   let contentUnrendered = false, deferredCursorFollow = false;
@@ -19,16 +19,39 @@ window.MarkataScrollSync = function (editor, frame, setting, workbench) {
   try { setting.checked = localStorage.getItem('markata-editor-scroll-sync') !== 'false'; } catch { /* storage is optional */ }
   const active = () => setting.checked && workbench.dataset.layout === 'split';
   const clamp = (n, max) => Math.max(0, Math.min(max, n));
-  const position = (points, value) => {
+  const position = (points, value, preferredLine = null) => {
     if (points.length < 2) return null;
-    if (value <= points[0].y) return points[0].line;
-    for (let i = 1; i < points.length; i++) {
-      if (value <= points[i].y) {
-        const a = points[i - 1], b = points[i];
-        return a.line + (b.line - a.line) * (value - a.y) / Math.max(1, b.y - a.y);
+    const lineAt = (start, end) => {
+      let selected = end;
+      if (Number.isFinite(preferredLine)) {
+        let distance = Infinity;
+        for (let i = start; i <= end; i++) {
+          const nextDistance = Math.abs(points[i].line - preferredLine);
+          if (nextDistance < distance || (nextDistance === distance && points[i].line > points[selected].line)) {
+            selected = i;
+            distance = nextDistance;
+          }
+        }
       }
+      return points[selected].line;
+    };
+    let start = 0, end = 0;
+    while (end + 1 < points.length && points[end + 1].y === points[start].y) end++;
+    let previousY = points[start].y, previousLine = lineAt(start, end);
+    if (value <= previousY) return previousLine;
+    start = end + 1;
+    while (start < points.length) {
+      end = start;
+      while (end + 1 < points.length && points[end + 1].y === points[start].y) end++;
+      const nextY = points[start].y, nextLine = lineAt(start, end);
+      if (value <= nextY) {
+        return previousLine + (nextLine - previousLine) * (value - previousY) / Math.max(1, nextY - previousY);
+      }
+      previousY = nextY;
+      previousLine = nextLine;
+      start = end + 1;
     }
-    return points.at(-1).line;
+    return previousLine;
   };
   const height = (points, line) => {
     if (points.length < 2) return null;
@@ -64,7 +87,8 @@ window.MarkataScrollSync = function (editor, frame, setting, workbench) {
   const editorPoints = () => {
     const info = editor.getScrollInfo();
     const at = line => editor.heightAtLine(clamp(line, editor.lastLine()), 'local');
-    const raw = [{line:0,y:at(0)}, ...lines.map(line => ({line,y:at(line)})), {line:editor.lineCount(),y:info.height}];
+    const sourceLines = [...new Set([...lines, ...anchors])].sort((a,b) => a-b);
+    const raw = [{line:0,y:at(0)}, ...sourceLines.map(line => ({line,y:at(line)})), {line:editor.lineCount(),y:info.height}];
     return raw.reduce((points, point) => {
       const previous = points.at(-1);
       if (Number.isFinite(point.line) && Number.isFinite(point.y) && (!previous || (point.line > previous.line && point.y > previous.y))) points.push(point);
@@ -95,7 +119,7 @@ window.MarkataScrollSync = function (editor, frame, setting, workbench) {
   function previewToEditor() {
     if (!active() || !preview || !lines.length) return;
     const info = editor.getScrollInfo(), preferred = .4;
-    const line = position(preview.points, preview.top + preview.clientHeight * preferred);
+    const line = position(preview.visual_points || preview.points, preview.top + preview.clientHeight * preferred, lastMarkedLine >= 0 ? lastMarkedLine : null);
     if (line != null) markPreviewPosition(line);
     const editorY = height(editorPoints(), line), previewY = height(preview.points, line);
     if (editorY != null && previewY != null) {
@@ -153,8 +177,13 @@ window.MarkataScrollSync = function (editor, frame, setting, workbench) {
     if (setting.checked) { driver = 'editor'; editorFollowCursor = false; editorToPreview(); }
   });
   return {
-    update(sourceLines, notifyPreview = true) { lines = sourceLines || []; if (notifyPreview) frame.contentWindow?.postMessage({type:'sync-scroll-lines', lines, lineCount:editor.lineCount()}, '*'); },
-    ready() { frame.contentWindow?.postMessage({type:'sync-scroll-lines', lines, lineCount:editor.lineCount()}, '*'); },
+    update(sourceLines, notifyPreview = true, offset = 0, sourceAnchors = []) {
+      lines = sourceLines || [];
+      anchors = sourceAnchors || [];
+      sourceOffset = offset;
+      if (notifyPreview) frame.contentWindow?.postMessage({type:'sync-scroll-lines', lines, anchors, sourceOffset, lineCount:editor.lineCount()}, '*');
+    },
+    ready() { frame.contentWindow?.postMessage({type:'sync-scroll-lines', lines, anchors, sourceOffset, lineCount:editor.lineCount()}, '*'); },
     previewUpdated() {
       contentUnrendered = false;
       const followCursor = deferredCursorFollow || editorFollowCursor;

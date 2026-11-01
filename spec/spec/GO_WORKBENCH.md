@@ -11,7 +11,9 @@ whole request is limited to 1 MiB. Invalid JSON and appearance options return
 runs at a time per handler; queue admission observes request cancellation.
 
 Responses contain `document`, `html`, `feature_head_html`, `body_end_html`,
-`render_ms`, `input_bytes`, `html_bytes`, `document_bytes`, and `cached`.
+`source_lines`, `source_anchors`, `render_ms`, `input_bytes`, `html_bytes`,
+`document_bytes`, and `cached`. `source_lines` maps top-level rendered blocks;
+`source_anchors` maps nested container starts and ends to editor lines.
 The optional `include_document` boolean defaults to true for API compatibility.
 With false, `document` is null and `document_bytes` is zero. Fragment responses
 contain no shared appearance CSS or document shell.
@@ -42,7 +44,13 @@ the actual caret line remains the synchronization target through the completed
 patch, including edits that leave the caret on the same source line. Its preview
 marker is refreshed against the new source map. Draft and keymap persistence are
 best effort; storage failure is visible and does not prevent editing or
-downloading Markdown. Appearance updates do not re-render Markdown. The server
+downloading Markdown. Workbench-only source-line attributes on Markdown
+containers provide additional scroll anchors without changing the editor text
+or its line count. For nested content, the preview marker selects the narrowest
+container span containing the caret. Source ordered mapping handles side-by-side
+content; preview scrolling uses visual order and preserves the previously active
+source branch when several blocks share one pixel row. Appearance updates do not
+re-render Markdown. The server
 does not store drafts.
 
 Automatic LSP completion waits for a short typing pause instead of requesting a

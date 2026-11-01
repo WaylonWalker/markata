@@ -39,7 +39,11 @@ including after images and fonts load. While you edit, the preview follows the
 caret after the matching content update completes, including when you keep
 typing on the same line. Scroll changes caused by a render or a delayed
 image/font layout are not mistaken for manual scrolling. The preview marker is
-subtle and marks the rendered block for the current caret line.
+subtle and marks the rendered block for the current caret line. Nested Markdown
+container boundaries add source anchors to improve scroll alignment in long
+sections; these markers exist only in the preview render and do not change your
+source. Within nested content, the marker follows the narrowest container that
+contains the caret line.
 Choose Default, Vim, Emacs, or Sublime keymaps in **Editor settings**.
 In Vim mode, press `/` to search forward, `?` to search backward, then `n` or
 `N` to move between matches.

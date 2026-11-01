@@ -95,11 +95,15 @@ labels.
 In split layout, source and preview scrolling MUST synchronize in both directions
 by default. The active pane controls the position; editing or moving the source
 cursor makes the editor the active pane. Users MUST be able to disable scrolling
-sync in editor settings, and the setting MUST persist locally. Source line and
-pixel anchors MUST refer to the original editor document, including any stripped
-frontmatter, and MUST be strictly increasing together before interpolation; invalid,
-duplicate, or out-of-order anchors MUST be discarded. Preview anchors MUST use
-the rendered article's document coordinates and be refreshed after content,
+sync in editor settings, and the setting MUST persist locally. Source line
+anchors MUST refer to the original editor document, including any stripped
+frontmatter, and MUST be strictly increasing before interpolation. Editor-to-
+preview anchors remain in source order, so preview coordinates may decrease for
+side-by-side content. Preview-to-editor anchors use visual order; equal pixel
+positions select the source line nearest the last synchronized line, with the
+greatest source line breaking ties. Without a prior source line, they select the
+greatest source line at that position. Preview anchors
+MUST use rendered article document coordinates and refresh after content,
 viewport, or observed article geometry changes. Scroll synchronization MUST use
 the same measured source position in either direction. The editor MUST keep its
 native caret at the actual text cursor; a scroll-position marker MUST NOT be
@@ -116,6 +120,11 @@ the corresponding content patch is ready. After the patch, a focused editor's
 actual caret line MUST remain the synchronization target even when editing did
 not change its logical line; the preview marker MUST be resolved again against
 the updated source map.
+The workbench MAY add start-line and end-line attributes to container openers in
+the render input. This instrumentation MUST preserve authored editor text and
+line count, ignore fenced code, and use the attributes as additional nested
+preview anchors. When several nested containers contain the caret line, the
+preview marker MUST select the narrowest source span, then the deepest element.
 Preview-only and editor-only layouts do not synchronize hidden panes.
 
 The Go workbench MUST bind Ctrl/Cmd+P to a fuzzy workspace file finder that

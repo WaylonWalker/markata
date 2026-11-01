@@ -124,6 +124,31 @@ func TestHandler_Favicon(t *testing.T) {
 	}
 }
 
+func TestHandler_RenderMarksContainerSourceLines(t *testing.T) {
+	h := newHandler(t)
+	source := "::: md-section\n\nA section paragraph.\n\n:::"
+	body, err := json.Marshal(map[string]string{"markdown": source})
+	if err != nil {
+		t.Fatal(err)
+	}
+	response := request(h, string(body))
+	if response.Code != http.StatusOK {
+		t.Fatalf("render returned %d: %s", response.Code, response.Body)
+	}
+	var result renderResponse
+	if err := json.Unmarshal(response.Body.Bytes(), &result); err != nil {
+		t.Fatal(err)
+	}
+	for _, marker := range []string{`data-markata-source-line="0"`, `data-markata-source-end-line="4"`} {
+		if !strings.Contains(result.HTML, marker) {
+			t.Fatalf("rendered container has no workbench marker %s: %s", marker, result.HTML)
+		}
+	}
+	if len(result.SourceAnchors) != 2 || result.SourceAnchors[0] != 0 || result.SourceAnchors[1] != 4 {
+		t.Fatalf("source anchors = %v, want [0 4]", result.SourceAnchors)
+	}
+}
+
 func TestHandler_RequestContract(t *testing.T) {
 	h := newHandler(t)
 	cases := []struct {

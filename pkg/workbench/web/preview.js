@@ -7,17 +7,23 @@ else if(values.includes(value))document.documentElement.setAttribute(key,value);
 }};
 
 let updates=Promise.resolve(), scriptSequence=0, latestVersion=0;
-let sourceLines=[], sourceLineCount=0, sourcePoints=[], programmedTarget=null, scrollFrame=0, positionLine=-1, positionNode=null, scrollIntentUntil=0;
+let sourceLines=[], sourceLineCount=0, sourceLineOffset=0, sourcePositionAnchors=[], programmedTarget=null, scrollFrame=0, positionLine=-1, positionNode=null, scrollIntentUntil=0;
 let articleObserver;
 const executedInlineScripts=new Set();
 let appearanceSignature=JSON.stringify(Object.fromEntries(Object.keys(allowed).map(key=>[key,document.documentElement.getAttribute(key)])));
 const markerStyle=document.createElement('style');markerStyle.textContent='.markata-sync-position{outline:1px solid color-mix(in srgb,var(--color-primary,#d39b32) 38%,transparent);outline-offset:2px;border-radius:3px}';document.head.append(markerStyle);
 const blockSignature=node=>{
   if(node.matches('pre.mermaid'))return `mermaid:${node.dataset.markataMermaidSource??node.textContent}`;
-  const generated=node.matches('.markata-sync-position,[data-markata-code-enhanced],.chartjs-container')||node.getAttribute('class')===''||node.querySelector('[data-markata-ui],[data-markata-code-enhanced],.chartjs-container canvas');
+  const generated=node.matches('.markata-sync-position,[data-markata-code-enhanced],.chartjs-container,[data-markata-source-line],[data-markata-source-end-line]')||node.getAttribute('class')===''||node.querySelector('[data-markata-ui],[data-markata-code-enhanced],.chartjs-container canvas,[data-markata-source-line],[data-markata-source-end-line]');
   if(!generated)return node.outerHTML;
   const clone=node.cloneNode(true);
-  clone.querySelectorAll('[data-markata-ui],.markata-sync-position').forEach(child=>child.remove());
+  if(clone.hasAttribute('data-markata-source-line'))clone.removeAttribute('data-markata-source-line');
+  clone.querySelectorAll('[data-markata-source-line],[data-markata-source-end-line]').forEach(child=>{
+    child.removeAttribute('data-markata-source-line');child.removeAttribute('data-markata-source-end-line');
+  });
+  clone.removeAttribute('data-markata-source-end-line');
+  clone.querySelectorAll('[data-markata-ui]').forEach(child=>child.remove());
+  clone.querySelectorAll('.markata-sync-position').forEach(child=>child.classList.remove('markata-sync-position'));
   const normalizeCodeChrome=pre=>{
     const generatedLanguage=pre.dataset.markataGeneratedLanguage==='true';
     pre.removeAttribute('data-markata-code-enhanced');
@@ -46,7 +52,7 @@ const patchArticle=(article,html)=>{
   for(const fresh of [...template.content.children]){
     const matches=available.get(blockSignature(fresh));
     const existing=matches?.shift();
-    if(existing){next.push(existing);retained.add(existing);}
+    if(existing){syncSourceLines(existing,fresh);next.push(existing);retained.add(existing);}
     else{next.push(fresh);changedNodes.push(fresh);}
   }
   for(const node of previous)if(!retained.has(node))node.remove();
@@ -54,11 +60,28 @@ const patchArticle=(article,html)=>{
   for(const node of next){if(node===cursor)cursor=cursor.nextElementSibling;else article.insertBefore(node,cursor);}
   return {changedNodes,total:next.length,retained:retained.size,removed:previous.length-retained.size,parseMs,reconcileMs:performance.now()-reconcileStarted};
 };
+const syncSourceLines=(existing,fresh)=>{
+  const selector='[data-markata-source-line],[data-markata-source-end-line]';
+  const markers=node=>[...(node.matches(selector)?[node]:[]),...node.querySelectorAll(selector)];
+  const current=markers(existing),next=markers(fresh);
+  if(current.length!==next.length)return;
+  for(let i=0;i<current.length;i++)for(const attribute of ['data-markata-source-line','data-markata-source-end-line']){
+    const value=next[i].getAttribute(attribute);
+    if(value==null)current[i].removeAttribute(attribute);else current[i].setAttribute(attribute,value);
+  }
+};
 const syncPositionMarker=()=>{
   const article=document.querySelector('.post-content');
   if(!article)return;
-  const point=sourcePoints.filter(anchor=>anchor.index>=0&&anchor.index<article.children.length&&anchor.line<=positionLine).at(-1)||sourcePoints.find(anchor=>anchor.index===0);
-  const next=point?article.children[point.index]:null;
+  let block=null,container=null;
+  for(const anchor of sourcePositionAnchors){
+    if(!anchor.nested){if(anchor.line<=positionLine)block=anchor;continue;}
+    if(anchor.line>positionLine||anchor.endLine<positionLine)continue;
+    if(!container||(anchor.endLine-anchor.line<container.endLine-container.line)||
+      (anchor.endLine-anchor.line===container.endLine-container.line&&anchor.depth>container.depth))container=anchor;
+  }
+  const point=container||block||sourcePositionAnchors[0];
+  const next=point?.node||(point&&point.index>=0&&point.index<article.children.length?article.children[point.index]:null);
   if(positionNode===next)return;
   positionNode?.classList.remove('markata-sync-position');
   if(positionNode&&!positionNode.classList.length)positionNode.removeAttribute('class');
@@ -71,20 +94,54 @@ const scrollState=(user,syncID=null)=>{
   const rect=article.getBoundingClientRect();
   const firstLine=Number.isFinite(sourceLines[0])?sourceLines[0]:0;
   const points=[{line:firstLine,y:rect.top+scrollY,index:0}];
+  const positionAnchors=[];
   for(let i=0;i<Math.min(elements.length,sourceLines.length);i++){
     if(elements[i].getClientRects().length===0)continue;
     const line=sourceLines[i];
     const y=elements[i].getBoundingClientRect().top+scrollY;
-    const previous=points.at(-1);
-    if(!Number.isFinite(line)||!Number.isFinite(y)||line<=previous.line||y<=previous.y)continue;
+    if(Number.isFinite(line)&&Number.isFinite(y))positionAnchors.push({line,index:i,node:elements[i],nested:false});
+    if(!Number.isFinite(line)||!Number.isFinite(y))continue;
     points.push({line,y,index:i});
+  }
+  const selector='[data-markata-source-line],[data-markata-source-end-line]';
+  for(const element of article.querySelectorAll(selector)){
+    if(element.getClientRects().length===0)continue;
+    const rect=element.getBoundingClientRect();
+    let root=element,depth=0;
+    while(root.parentElement&&root.parentElement!==article){root=root.parentElement;depth++;}
+    const index=elements.indexOf(root);
+    if(index<0)continue;
+    const startValue=element.getAttribute('data-markata-source-line');
+    const endValue=element.getAttribute('data-markata-source-end-line');
+    const start=startValue==null?NaN:Number(startValue);
+    const end=endValue==null?NaN:Number(endValue);
+    let startLine=null,endLine=null;
+    if(Number.isFinite(start)){
+      startLine=start+sourceLineOffset;
+      endLine=Number.isFinite(end)?end+sourceLineOffset:Math.max(startLine,sourceLineCount);
+      const y=rect.top+scrollY;
+      points.push({line:startLine,y,index});
+      positionAnchors.push({line:startLine,endLine,index,node:element,nested:true,depth});
+    }
+    if(Number.isFinite(end)&&startLine!=null){
+      const line=end+sourceLineOffset,y=rect.bottom+scrollY;
+      points.push({line,y,index});
+    }
+  }
+  sourcePositionAnchors=positionAnchors.sort((a,b)=>a.line-b.line);
+  points.sort((a,b)=>a.line-b.line);
+  const ordered=[];
+  for(const point of points){
+    if(!Number.isFinite(point.line)||!Number.isFinite(point.y))continue;
+    if(ordered.at(-1)?.line===point.line)ordered[ordered.length-1]=point;
+    else if(!ordered.length||point.line>ordered.at(-1).line)ordered.push(point);
   }
   const endLine=Math.max(sourceLineCount,(sourceLines.at(-1)??0)+1);
   const bottom=rect.bottom+scrollY;
-  if(endLine>points.at(-1).line&&bottom>points.at(-1).y)points.push({line:endLine,y:bottom,index:elements.length});
-  sourcePoints=points;
+  if(endLine>ordered.at(-1).line&&bottom>=ordered.at(-1).y)ordered.push({line:endLine,y:bottom,index:elements.length});
+  const visualPoints=[...ordered].sort((a,b)=>a.y-b.y||a.line-b.line);
   syncPositionMarker();
-  parent.postMessage({type:'sync-scroll-state',user,top:scrollY,height:document.documentElement.scrollHeight,clientHeight:innerHeight,points,sync_id:syncID},'*');
+  parent.postMessage({type:'sync-scroll-state',user,top:scrollY,height:document.documentElement.scrollHeight,clientHeight:innerHeight,points:ordered,visual_points:visualPoints,sync_id:syncID},'*');
 };
 const noteScrollIntent=duration=>{scrollIntentUntil=performance.now()+duration;};
 document.addEventListener('wheel',()=>noteScrollIntent(250),{passive:true,capture:true});
@@ -175,7 +232,7 @@ if(e.data?.type==='markdown-render'){
     if(e.data.version<latestVersion)return;
     const article=document.querySelector('.post-content');if(!article)return;
     const updateStarted=performance.now();
-    sourceLines=e.data.source_lines||[];sourceLineCount=e.data.line_count||sourceLineCount;
+    sourceLines=e.data.source_lines||[];sourceLineCount=e.data.line_count||sourceLineCount;sourceLineOffset=e.data.source_offset||0;
     const patch=patchArticle(article,e.data.html);
     const patchFinished=performance.now();
     await renderMarkdown(e.data,patch.changedNodes);
@@ -187,7 +244,7 @@ if(e.data?.type==='markdown-render'){
     parent.postMessage({type:'preview-updated',version:e.data.version,patch:{blocks:patch.total,changed:patch.changedNodes.length,reused:patch.retained,removed:patch.removed,diagrams,kinds:patch.changedNodes.map(node=>node.tagName.toLowerCase()+(node.classList.length?'.'+[...node.classList].join('.'):'')),timing:{html_parse_ms:patch.parseMs,dom_patch_ms:patch.reconcileMs,features_ms:featuresFinished-patchFinished,total_ms:updateFinished-updateStarted}}},'*');
   }).catch(console.error);
 return;
-}if(e.data?.type==='sync-scroll-lines'){sourceLines=e.data.lines||[];sourceLineCount=e.data.lineCount||0;requestAnimationFrame(()=>scrollState(false));return;
+}if(e.data?.type==='sync-scroll-lines'){sourceLines=e.data.lines||[];sourceLineCount=e.data.lineCount||0;sourceLineOffset=e.data.sourceOffset||0;requestAnimationFrame(()=>scrollState(false));return;
 }if(e.data?.type==='sync-scroll'){programmedTarget={id:e.data.id,y:Math.max(0,Math.min(e.data.y,document.documentElement.scrollHeight-innerHeight))};document.scrollingElement.scrollTop=programmedTarget.y;const id=e.data.id;setTimeout(()=>{if(programmedTarget?.id===id)programmedTarget=null;},300);return;
 }if(e.data?.type==='sync-position'){positionLine=e.data.line;syncPositionMarker();return;
 }if(e.data?.type==='appearance'){updates=updates.then(()=>{setAppearance(e.data.attributes);

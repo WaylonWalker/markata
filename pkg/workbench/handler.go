@@ -362,6 +362,7 @@ func (h *Handler) prepareRender(r *http.Request, req *renderRequest) (*renderRes
 	}
 	markdown := renderWorkbenchEmbeds(*req.Markdown, index, h.root)
 	markdown = renderWorkbenchWikilinks(markdown, index)
+	markdown, sourceAnchors := markSourceContainers(markdown)
 	cacheKey := fmt.Sprintf("%d\x00%s", revision, markdown)
 	result := h.lastResult
 	cached := result != nil && h.lastSource == cacheKey
@@ -378,7 +379,7 @@ func (h *Handler) prepareRender(r *http.Request, req *renderRequest) (*renderRes
 		}
 		h.lastSource, h.lastResult = cacheKey, result
 	}
-	response := &renderResponse{HTML: result.HTML, SourceLines: h.renderer.SourceLines(markdown), FeatureHeadHTML: h.featureHead(result), BodyEndHTML: result.BodyEndHTML, InputBytes: len(*req.Markdown), HTMLBytes: len(result.HTML), Cached: cached}
+	response := &renderResponse{HTML: result.HTML, SourceLines: h.renderer.SourceLines(markdown), SourceAnchors: sourceAnchors, FeatureHeadHTML: h.featureHead(result), BodyEndHTML: result.BodyEndHTML, InputBytes: len(*req.Markdown), HTMLBytes: len(result.HTML), Cached: cached}
 	if req.IncludeDocument == nil || *req.IncludeDocument {
 		document := h.document(result, req.Appearance)
 		response.Document, response.DocumentBytes = &document, len(document)
@@ -397,6 +398,7 @@ type renderResponse struct {
 	Document        *string `json:"document"`
 	HTML            string  `json:"html"`
 	SourceLines     []int   `json:"source_lines"`
+	SourceAnchors   []int   `json:"source_anchors"`
 	FeatureHeadHTML string  `json:"feature_head_html"`
 	BodyEndHTML     string  `json:"body_end_html"`
 	RenderMS        float64 `json:"render_ms"`
