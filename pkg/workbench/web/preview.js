@@ -92,12 +92,14 @@ dispatchEvent(new Event('theme-change'));
 }).catch(console.error);
 }});
 document.addEventListener('click',event=>{
-const link=event.target.closest?.('a.wikilink');
+const link=event.target.closest?.('a');
 if(!link)return;
-const path=new URL(link.getAttribute('href'),location.href).pathname;
+const href=link.getAttribute('href')||'';
+if(!link.classList.contains('wikilink')&&(!href.startsWith('/')||href.startsWith('//')))return;
+const path=new URL(href,location.href).pathname;
 const slug=decodeURIComponent(path.replace(/^\/+|\/+$/g,''));
 if(!slug)return;
 event.preventDefault();
 parent.postMessage({type:'open-post',slug},'*');
-});
+},true);
 })();
