@@ -82,36 +82,134 @@ const toggleProblems = () => {problemsPanel.hidden = !problemsPanel.hidden; prob
 problemToggle.addEventListener('click',toggleProblems);
 document.querySelector('#problems-close').addEventListener('click',toggleProblems);
 const createDialog = document.querySelector('#create-dialog');
-const createTemplateSelect = document.querySelector('#create-template');
 const createError = document.querySelector('#create-error');
+const templatePicker = document.querySelector('#template-picker');
+const templateQuery = document.querySelector('#template-picker-query');
+const templateResults = document.querySelector('#template-picker-results');
+const templateCount = document.querySelector('#template-picker-count');
+const createTitle = document.querySelector('#create-title');
+const createSlug = document.querySelector('#create-slug');
+const createDirectory = document.querySelector('#create-directory');
+const createPathPreview = document.querySelector('#create-path-preview');
 let contentTemplates = [];
 async function showCreateDialog() {
-  createError.hidden = true;
   try {
     const response = await fetch('/workspace/templates',{cache:'no-store'});
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Templates are unavailable.');
     contentTemplates = data.templates || [];
-    createTemplateSelect.replaceChildren(...contentTemplates.map(template => {
-      const option = document.createElement('option'); option.value = template.id; option.textContent = template.name; return option;
-    }));
-    const updateDescription = () => {
-      const selected = contentTemplates.find(template => template.id === createTemplateSelect.value);
-      document.querySelector('#create-description').textContent = selected?.description || '';
-    };
-    createTemplateSelect.onchange = updateDescription; updateDescription();
+    templateQuery.value = '';
+    renderTemplateChoices();
+    templatePicker.showModal();
+    templateQuery.focus();
+  } catch (error) {
+    createError.textContent = error.message; createError.hidden = false;
     createDialog.showModal();
-  } catch (error) { createError.textContent = error.message; createError.hidden = false; createDialog.showModal(); }
+  }
 }
+let templateMatches = [], activeTemplate = 0;
+function templateScore(template, query) {
+  const haystack = `${template.name} ${template.description} ${template.id}`.toLowerCase();
+  if (!query) return 0;
+  const exact = haystack.indexOf(query);
+  if (exact >= 0) return exact;
+  let cursor = 0, gaps = 0;
+  for (const char of query) {
+    const position = haystack.indexOf(char, cursor);
+    if (position < 0) return Infinity;
+    gaps += position - cursor; cursor = position + 1;
+  }
+  return 100 + gaps;
+}
+function chooseTemplate(template) {
+  if (!template) return;
+  templatePicker.dataset.selectedTemplate = template.id;
+  templatePicker.close();
+  createError.hidden = true;
+  document.querySelector('#create-description').textContent = template.description || template.name;
+  const titleMatch = template.source.match(/^title:\s*(.*)$/m);
+  const title = titleMatch?.[1]?.trim().replace(/^(?:"([\s\S]*)"|'([\s\S]*)')$/, '$1$2') || template.name;
+  createTitle.value = title;
+  createSlug.value = '';
+  createSlug.placeholder = slugify(title) || 'post-title';
+  createDirectory.value = defaultContentDirectory(template);
+  updateCreatePathPreview();
+  createDialog.showModal();
+  createTitle.focus();
+  createTitle.select();
+}
+function renderTemplateChoices() {
+  const query = templateQuery.value.trim().toLowerCase();
+  templateMatches = contentTemplates.map(template => ({template,score:templateScore(template,query)}))
+    .filter(item => Number.isFinite(item.score))
+    .sort((a,b) => a.score-b.score || a.template.name.localeCompare(b.template.name))
+    .slice(0,40).map(item => item.template);
+  templateCount.textContent = templateMatches.length ? `${templateMatches.length} template${templateMatches.length===1?'':'s'}` : 'No matching templates';
+  templateResults.replaceChildren(...templateMatches.map((template,index) => {
+    const button = document.createElement('button');
+    button.type = 'button'; button.className = 'template-choice'; button.setAttribute('role','option');
+    button.setAttribute('aria-selected',String(index===activeTemplate)); button.id = `template-choice-${index}`;
+    const name = document.createElement('strong'); name.textContent = template.name;
+    const description = document.createElement('span'); description.textContent = template.description || template.id;
+    button.append(name,description);
+    button.addEventListener('pointermove',() => selectTemplateChoice(index));
+    button.addEventListener('click',() => chooseTemplate(template));
+    return button;
+  }));
+  activeTemplate = Math.min(activeTemplate,Math.max(0,templateMatches.length-1));
+  selectTemplateChoice(activeTemplate);
+}
+function selectTemplateChoice(index) {
+  activeTemplate = index;
+  [...templateResults.children].forEach((item,i) => item.setAttribute('aria-selected',String(i===index)));
+  const row = templateResults.children[index];
+  if (row) {templateQuery.setAttribute('aria-activedescendant',row.id);row.scrollIntoView({block:'nearest'});}
+  else templateQuery.removeAttribute('aria-activedescendant');
+}
+function slugify(value) {
+  return value.normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase()
+    .replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+}
+function defaultContentDirectory(template) {
+  const key = template.id.replace(/^builtin:/,'');
+  return ({thought:'pages/thoughts',note:'pages/notes',photo:'pages/photos'})[key] || 'pages/blog';
+}
+function updateCreatePathPreview() {
+  const slug = createSlug.value.trim() || slugify(createTitle.value) || 'new-post';
+  const directory = createDirectory.value.trim().replace(/\\/g,'/').replace(/^\/+|\/+$/g,'');
+  createSlug.placeholder = slugify(createTitle.value) || 'post-title';
+  createPathPreview.textContent = `${directory ? `${directory}/` : ''}${slug}.md`;
+}
+templateQuery.addEventListener('input',() => {activeTemplate=0;renderTemplateChoices();});
+templatePicker.querySelector('#template-picker-close').addEventListener('click',() => templatePicker.close());
+templatePicker.addEventListener('keydown',event => {
+  if (event.isComposing) return;
+  if (event.key === 'Escape') {event.preventDefault();event.stopPropagation();templatePicker.close();return;}
+  if (!['ArrowDown','ArrowUp','Enter'].includes(event.key)) return;
+  event.preventDefault();
+  if (event.key === 'Enter') chooseTemplate(templateMatches[activeTemplate]);
+  else if (templateMatches.length) selectTemplateChoice((activeTemplate+(event.key==='ArrowDown'?1:-1)+templateMatches.length)%templateMatches.length);
+});
+templatePicker.addEventListener('close',() => {if(!createDialog.open)editor.focus();});
+createDialog.addEventListener('close',() => {if(!templatePicker.open)editor.focus();});
+document.querySelector('#create-back').addEventListener('click',() => {createDialog.close();templateQuery.value='';renderTemplateChoices();templatePicker.showModal();templateQuery.focus();});
 document.querySelector('#create-close').addEventListener('click',() => createDialog.close());
 document.querySelector('#create-cancel').addEventListener('click',() => createDialog.close());
+createTitle.addEventListener('input',updateCreatePathPreview);
+createSlug.addEventListener('input',updateCreatePathPreview);
+createDirectory.addEventListener('input',updateCreatePathPreview);
 document.querySelector('#create-form').addEventListener('submit',async event => {
   event.preventDefault(); createError.hidden = true;
-  const template = contentTemplates.find(item => item.id === createTemplateSelect.value);
-  const path = document.querySelector('#create-path').value.trim();
-  if (!template || !path) return;
+  const template = contentTemplates.find(item => item.id === templatePicker.dataset.selectedTemplate);
+  const title = createTitle.value.trim();
+  const slug = createSlug.value.trim() || slugify(title);
+  const directory = createDirectory.value.trim().replace(/\\/g,'/').replace(/^\/+|\/+$/g,'');
+  const path = `${directory ? `${directory}/` : ''}${slug}.md`;
+  if (!template || !title || !slug || !path) return;
+  const source = template.source.replace(/^title:\s*.*$/m,`title: ${JSON.stringify(title)}`)
+    .replace(/^(#{1,6})\s+.*$/m,(heading,level) => `${level} ${title}`);
   try {
-    const response = await fetch('/workspace/file?path=' + encodeURIComponent(path),{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:template.source});
+    const response = await fetch('/workspace/file?path=' + encodeURIComponent(path),{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:source});
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Cannot create this file.');
     window.MarkataSiteTree?.activate(path);
@@ -119,7 +217,7 @@ document.querySelector('#create-form').addEventListener('submit',async event => 
   } catch (error) { createError.textContent = error.message; createError.hidden = false; }
 });
 window.MarkataCommandPalette.attach(editor,{actions:[
-  {id:'new-from-template',label:'New from template',description:'Create a site Markdown file from a built-in or local template.',aliases:'new create post page',run:showCreateDialog},
+  {id:'new-from-template',label:'New Post',description:'Choose a template, then set its title and path.',aliases:'new create post page template',run:showCreateDialog},
   {id:'open-markdown',label:'Open Markdown file',description:'Import a local Markdown file into an unsaved draft.',aliases:'file import',run:()=>document.querySelector('#open').click()},
   {id:'download-markdown',label:'Download current file',description:'Save the current source as a Markdown file.',aliases:'export save',run:()=>document.querySelector('#download').click()}
 ]});
@@ -139,10 +237,16 @@ const keymap = document.querySelector('#keymap');
 try { keymap.value = localStorage.getItem('markata-editor-keymap') || 'default'; } catch { storageWarning(); }
 if (!keymap.value) keymap.value = 'default';
 editor.setOption('keyMap', keymap.value);
+function focusEditorForWriting() {
+  editor.focus();
+  if (keymap.value === 'vim' && window.CodeMirror?.Vim && !editor.state.vim?.insertMode) {
+    window.CodeMirror.Vim.handleKey(editor,'i');
+  }
+}
 keymap.addEventListener('change', () => {
   editor.setOption('keyMap', keymap.value);
   try { localStorage.setItem('markata-editor-keymap', keymap.value); } catch { storageWarning(); }
-  editor.focus();
+  focusEditorForWriting();
 });
 let revision = 0, timer, busy = false, ready = false;
 let previewStarted = false, previewReady = false, pendingPreview = null, activeRender = null;
@@ -259,7 +363,7 @@ function updatePreview(data, version) {
 function attributes() { return Object.fromEntries(appearanceKeys.map(k => [k, document.documentElement.getAttribute(k)])); }
 function syncAppearance() { frame.contentWindow?.postMessage({type:'appearance',attributes:attributes()}, '*'); }
 new MutationObserver(syncAppearance).observe(document.documentElement, {attributes:true,attributeFilter:appearanceKeys});
-window.addEventListener('load', async () => { await workspaceReady; ready = true; render(); }, {once:true});
+window.addEventListener('load', async () => { await workspaceReady; ready = true; render(); focusEditorForWriting(); }, {once:true});
 
 document.querySelector('#open').addEventListener('click', () => document.querySelector('#import').click());
 document.querySelector('#import').addEventListener('change', async event => {

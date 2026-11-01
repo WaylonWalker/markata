@@ -141,8 +141,8 @@ func buildPresentation(root string, workspace workspaceSource, config lsp.Browse
 		return nil, err
 	}
 	// Editor CSS precedes theme overrides. Site article layout belongs in the iframe.
-	editorHead := `<link rel="stylesheet" href="/editor/codemirror/lib/codemirror.css"><link rel="stylesheet" href="/editor/codemirror/addon/hint/show-hint.css"><link rel="stylesheet" href="/editor/lsp.css"><script src="/editor/lsp.js"></script>`
-	for _, name := range []string{"lib/codemirror", "mode/xml/xml", "mode/markdown/markdown", "mode/gfm/gfm", "mode/javascript/javascript", "mode/python/python", "mode/css/css", "mode/htmlmixed/htmlmixed", "addon/mode/overlay", "addon/edit/matchbrackets", "addon/hint/show-hint", "keymap/vim", "keymap/emacs", "keymap/sublime"} {
+	editorHead := `<link rel="stylesheet" href="/editor/codemirror/lib/codemirror.css"><link rel="stylesheet" href="/editor/codemirror/addon/hint/show-hint.css"><link rel="stylesheet" href="/editor/codemirror/addon/dialog/dialog.css"><link rel="stylesheet" href="/editor/lsp.css"><script src="/editor/lsp.js"></script>`
+	for _, name := range []string{"lib/codemirror", "mode/xml/xml", "mode/markdown/markdown", "mode/gfm/gfm", "mode/javascript/javascript", "mode/python/python", "mode/css/css", "mode/htmlmixed/htmlmixed", "addon/mode/overlay", "addon/edit/matchbrackets", "addon/hint/show-hint", "addon/search/searchcursor", "addon/dialog/dialog", "keymap/vim", "keymap/emacs", "keymap/sublime"} {
 		editorHead += `<script src="/editor/codemirror/` + name + `.js"></script>`
 	}
 	controls := ""

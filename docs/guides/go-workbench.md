@@ -33,12 +33,16 @@ When you write or move the cursor, the preview follows the editor. Scroll sync
 is on by default; turn off **Sync editor and preview scrolling** in **Editor
 settings** to scroll each pane independently. The choice is saved in this browser.
 Choose Default, Vim, Emacs, or Sublime keymaps in **Editor settings**.
+In Vim mode, press `/` to search forward, `?` to search backward, then `n` or
+`N` to move between matches.
 Code highlighting, icons, admonitions, tables, checklists, Mermaid, and Chart.js use local assets.
 
 Press **Ctrl+P** (**Cmd+P** on macOS) to find a site file by its path, title,
 slug, or tag. The finder shows the current and recently opened files when its
 search is empty.
 Select a result or press **Enter** to open it in the editor.
+Choose **Feeds** or **Tags** in the workspace selector to browse posts by feed
+or tag. Feed names are shown as roots with folders relative to the workspace.
 
 Edits to selected site files save back to the workspace after a short pause.
 Unsaved scratch documents stay in browser storage. The browser also keeps a
@@ -191,10 +195,13 @@ It separates initial renders, uncached edits, and cached edits. Raw samples and 
 ## Shared editor behavior
 
 Use the command palette to import or export a Markdown file. An oversized import leaves the current document intact.
-Search for **New from template** in the command palette to create a Markdown
-file from a built-in starter or a `.md` file in the site's `templates/`
-directory. Choose a new path in an existing content folder; the editor opens
-the created file and autosaves later edits.
+Search for **New Post** in the command palette to open a fuzzy picker for
+built-in starters and `.md` files in the site's `templates/` directory. Choose
+a starter to open its details form. The title and destination folder start with
+template defaults. The slug field stays empty when using the suggestion; its
+ghost text and the destination path update as the title changes. Enter a custom
+slug only when you want to override the title-derived filename. Creating the
+post opens the new file in the editor, where later edits autosave to the site.
 The footer reports whether the draft was saved. Storage failures leave editing and downloads available.
 See [shared editor features and runtime differences](/docs/guides/renderer-integration-benchmarks/#shared-editor-features-and-runtime-differences) for the comparison.
 

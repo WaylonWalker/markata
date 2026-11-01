@@ -83,6 +83,15 @@ The Go workbench MUST offer built-in Markdown starters and local Markdown
 starters from the workspace `templates/` directory. Creating content MUST
 require a new Markdown path inside an existing workspace directory and MUST
 not overwrite an existing file.
+The New Post command MUST open a fuzzy template picker before the details form.
+After a template is selected, the details form MUST start with the template's
+title and a default destination folder. The slug field MUST remain empty when
+using the suggested slug; its placeholder and the displayed destination path
+MUST update as the title changes. If the author enters a slug, that value MUST
+take precedence over the title-derived suggestion.
+Feed navigation MUST use feed names as tree roots and paths relative to the
+workspace root beneath them; absolute filesystem paths MUST NOT appear as feed
+labels.
 In split layout, source and preview scrolling MUST synchronize in both directions
 by default. The active pane controls the position; editing or moving the source
 cursor makes the editor the active pane. Users MUST be able to disable scrolling

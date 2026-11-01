@@ -197,9 +197,22 @@ window.MarkataSiteTree = {
       finally { syncing = false; }
     };
     const buildFeeds = feeds => {
-      if (feedTree) return;
-      for (const feed of feeds || []) for (const path of feed.paths || []) feedAliases[`${feed.title}/${path}`] = path;
-      feedTree = new FileTree({paths:Object.keys(feedAliases),initialExpansion:'open',search:true,
+      if (feedTree || !feeds?.length) return;
+      let rootPath = '';
+      try { rootPath = decodeURIComponent(new URL(workspaceKey).pathname).replace(/\\/g,'/').replace(/\/+$/,''); }
+      catch { /* Display paths without an absolute host root when the root is not a URI. */ }
+      for (const feed of feeds || []) for (const path of feed.paths || []) {
+        let displayPath = String(path).replace(/\\/g,'/');
+        if (rootPath && displayPath.startsWith(`${rootPath}/`)) displayPath = displayPath.slice(rootPath.length + 1);
+        displayPath = displayPath.replace(/^\/+/, '');
+        const file = metadataByPath.get(displayPath);
+        let leaf = String(file?.slug || displayPath.replace(/\//g,' — ')).replace(/\//g,' — ');
+        const root = `${feed.title} (${feed.paths.length.toLocaleString()})`;
+        const base = leaf;
+        for (let suffix=2; Object.hasOwn(feedAliases,`${root}/${leaf}`); suffix++) leaf = `${base} (${suffix})`;
+        feedAliases[`${root}/${leaf}`] = path;
+      }
+      feedTree = new FileTree({paths:Object.keys(feedAliases),initialExpansion:0,search:true,
         onSelectionChange(paths) {const path=feedAliases[paths[paths.length-1]];if(path)open(path);}});
       feedTree.render({containerWrapper:document.querySelector('#site-feeds')});
       syncing = true;
@@ -241,6 +254,7 @@ window.MarkataSiteTree = {
         workspaceCounts.feeds = feeds.length;
         window.MarkataSiteTree.feeds = feeds;
         feedOption.textContent = `Feeds (${feeds.length})`; feedOption.disabled = false;
+        if (document.querySelector('#site-view').value === 'feeds') buildFeeds(feeds);
         updateWorkspaceContext(document.querySelector('#site-view').value);
       } catch { tagOption.textContent = 'Tags unavailable'; feedOption.textContent = 'Feeds unavailable'; }
     },0);
