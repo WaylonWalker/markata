@@ -364,6 +364,64 @@
   min-width: 0;
 }
 
+.fm-tag-editor {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.fm-tag-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.fm-tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  padding: 3px 5px 3px 9px;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 32%, var(--editor-divider));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-primary) 9%, var(--color-surface));
+  color: var(--color-text);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.fm-tag-chip button {
+  display: grid;
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  min-height: 20px !important;
+  place-items: center;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 50% !important;
+  background: transparent !important;
+  color: var(--color-text-muted) !important;
+  font-size: 15px !important;
+  line-height: 1;
+}
+
+.fm-tag-chip button:hover {
+  background: color-mix(in srgb, var(--color-error, #c44) 12%, transparent) !important;
+  color: var(--color-error, #c44) !important;
+}
+
+.fm-tag-add {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.fm-tag-add button {
+  min-width: 58px;
+}
+
 .fm-items {
   display: grid;
   gap: 7px;

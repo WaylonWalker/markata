@@ -114,7 +114,8 @@ return to Markdown.
 The page summary shows the title, URL slug or source path, and publication
 state. Common fields appear first. Choose **Add property**, search for a known
 field, and select it.
-Open **Custom property** to add a site-specific YAML field. Advanced fields
+Open **Custom property** to add a site-specific YAML field. Edit tags as chips:
+remove one tag at a time or enter a tag and choose **Add**. Advanced fields
 remain available under **Show advanced properties**.
 
 Property edits update the Markdown source and use the normal workspace save

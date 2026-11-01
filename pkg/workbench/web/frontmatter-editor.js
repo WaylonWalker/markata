@@ -168,6 +168,30 @@
     control.className='fm-input';
     return control;
   }
+
+  function tagChips(value,commit) {
+    const items=Array.isArray(value)?value.map(String):value==null||value===''?[]:[String(value)];
+    const wrapper=document.createElement('div');wrapper.className='fm-tag-editor';
+    const chips=document.createElement('div');chips.className='fm-tag-chips';
+    for(const [index,item] of items.entries()){
+      const chip=document.createElement('span');chip.className='fm-tag-chip';
+      const text=document.createElement('span');text.textContent=item;
+      const remove=nodeButton('×',()=>commit(items.filter((_,i)=>i!==index)),'Remove tag '+item);
+      remove.setAttribute('aria-label','Remove tag '+item);chip.append(text,remove);chips.append(chip);
+    }
+    wrapper.append(chips);
+    const row=document.createElement('div');row.className='fm-tag-add';
+    const input=document.createElement('input');input.className='fm-input';input.type='text';input.placeholder='Add a tag';input.setAttribute('aria-label','New tag');
+    const add=()=>{
+      const tag=input.value.trim();
+      if(!tag||items.includes(tag))return;
+      const pending=commit([...items,tag]);
+      Promise.resolve(pending).then(()=>document.querySelector('#fm-fields [data-field="tags"] .fm-tag-add input')?.focus());
+    };
+    input.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();add();}});
+    row.append(input,nodeButton('Add',add,'Add tag'));wrapper.append(row);
+    return wrapper;
+  }
   function valueType(v) {
     if (v===null) return 'null';
     if (Array.isArray(v)) return 'list';
@@ -258,6 +282,8 @@
     if (field.kind==='alias') {
       const warning=document.createElement('p');warning.textContent='YAML alias: edit this value in source mode to preserve anchors.';
       row.append(warning,nodeButton('Edit YAML',()=>setRaw(true)));
+    } else if (field.name==='tags') {
+      row.append(tagChips(field.value,value=>setField(field.name,value)));
     } else if (type==='boolean' && field.kind==='boolean') {
       row.append(inputFor(field.value,'boolean',value=>setField(field.name,value)));
     } else if (type==='list' && (typeof field.value==='string' || Array.isArray(field.value) && field.value.every(item=>typeof item==='string'))) {
