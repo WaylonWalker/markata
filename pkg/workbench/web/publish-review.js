@@ -220,7 +220,7 @@
         id:'publishing.review', label:'Publishing: Review & Publish', category:'Publishing',
         description:'Compare this saved draft with its last committed revision. No deployment happens yet.',
         aliases:'publish go live deploy release review git',
-        bindings:{vscode:'Mod+Shift+Enter',writer:'Mod+Shift+Enter',vim:'Mod+Shift+Enter',emacs:'Mod+Shift+Enter'},
+        bindings:{vscode:'Mod+Shift+Enter',writer:'Mod+Shift+Enter',vim:'Mod+Shift+Enter',emacs:'Ctrl+Shift+Enter'},
         run:open
       });
     } else {
