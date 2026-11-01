@@ -1460,3 +1460,19 @@ func TestRenderMarkdownPlugin_DetectRoads(t *testing.T) {
 		})
 	}
 }
+
+func TestRenderMarkdownPlugin_PreservesFixedRoadAttributes(t *testing.T) {
+	post := &models.Post{Content: `::: road timeline {data-road-progress-mode="static" data-road-progress="65"}
+
+- [Design](#design)
+- [Release](#release)
+:::`}
+	if err := NewRenderMarkdownPlugin().renderPost(post); err != nil {
+		t.Fatal(err)
+	}
+	for _, attribute := range []string{`data-road-progress-mode="static"`, `data-road-progress="65"`} {
+		if !strings.Contains(post.ArticleHTML, attribute) {
+			t.Errorf("rendered road is missing %s: %s", attribute, post.ArticleHTML)
+		}
+	}
+}

@@ -52,6 +52,32 @@ Each list item is one milestone:
 Wikilinks work too. A milestone written as `[[my-post]]` uses that post's
 title, and its hover card shows the post's description.
 
+## Set fixed progress
+
+Use fixed progress for a roadmap whose completion does not depend on scrolling.
+The normal scroll-driven progress remains the default.
+
+```markdown
+::: road timeline {data-road-progress-mode="static" data-road-progress="65"}
+- [Design](/design/)
+- [Build](/build/)
+- [Release](/release/)
+:::
+
+::: road steps {data-road-progress-mode="milestones" data-road-current="2"}
+- [Design](/design/)
+- [Build](/build/)
+- [Test](/test/)
+- [Release](/release/)
+:::
+```
+
+`static` accepts a percentage from 0 to 100, with or without a `%` suffix.
+`milestones` accepts the number of completed entries. Values are clamped to the
+road's range. Invalid values fall back to scroll progress. Fixed progress stays
+the same after scroll, resize, and view transitions. The original links remain
+available if JavaScript does not run.
+
 ## Choose a style
 
 Put the style name after `road`. The default style is `winding`.

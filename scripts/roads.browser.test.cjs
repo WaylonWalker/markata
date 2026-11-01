@@ -121,3 +121,59 @@ test('reveal is progressive, motion-safe, idempotent, and optional', async () =>
     }
   } finally { await browser.close(); }
 });
+
+test('fixed progress stays authored across scroll, resize, and view transitions', async () => {
+  const browser = await chromium.launch({args:['--no-sandbox'], executablePath:process.env.CHROMIUM_EXECUTABLE || undefined});
+  try {
+    const page = await browser.newPage({viewport:{width:900, height:700}});
+    const errors = [];
+    page.on('pageerror', (error) => errors.push(error.message));
+    await page.setContent(`<!doctype html><style>.road{margin-top:80px}</style>
+      <div class="road timeline" data-road-progress-mode="static" data-road-progress="0" id="zero"><ul><li><a href="#a">A</a></li><li><a href="#b">B</a></li></ul></div>
+      <div class="road timeline" data-road-progress-mode="static" data-road-progress="50" id="half"><ul><li><a href="#a">A</a></li><li><a href="#b">B</a></li></ul></div>
+      <div class="road timeline" data-road-progress-mode="static" data-road-progress="100" id="full"><ul><li><a href="#a">A</a></li><li><a href="#b">B</a></li></ul></div>
+      <div class="road git" data-road-progress-mode="milestones" data-road-current="1" id="git"><ul><li><a href="#main">main</a></li><li><a href="#feature">feature from main</a></li></ul></div>
+      <div class="road editorial" data-road-progress-mode="milestones" data-road-current="1" id="editorial"><h3><a href="#first">First</a></h3><p>First body</p><h3><a href="#second">Second</a></h3><p>Second body</p></div>
+      <div style="height:1200px"></div>`);
+    await page.addScriptTag({content:asset('js/roads.js')});
+    const state = async (selector) => page.locator(selector).evaluate((root) => ({
+      active: [...root.querySelectorAll('.road-point, .road-entry')].map((point) => point.classList.contains('active')),
+      progress: root.querySelector('.road-progress')?.style.strokeDashoffset || '',
+      fill: root.querySelector('.road-fill')?.style.height || '',
+    }));
+    const initial = {
+      zero: await state('#zero'), half: await state('#half'),
+      full: await state('#full'), git: await state('#git'), editorial: await state('#editorial'),
+    };
+    assert.deepEqual(initial.zero.active, [false, false]);
+    assert.deepEqual(initial.half.active, [true, false]);
+    assert.deepEqual(initial.full.active, [true, true]);
+    assert.deepEqual(initial.git.active, [true, false]);
+    assert.deepEqual(initial.editorial.active, [true, false]);
+    await page.evaluate(async () => {
+      window.scrollTo(0, document.body.scrollHeight);
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      window.dispatchEvent(new Event('view-transition-complete'));
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    });
+    await page.setViewportSize({width:390, height:700});
+    assert.deepEqual(await state('#zero'), initial.zero);
+    assert.deepEqual(await state('#half'), initial.half);
+    assert.deepEqual(await state('#full'), initial.full);
+    assert.deepEqual(await state('#git'), initial.git);
+    assert.deepEqual(await state('#editorial'), initial.editorial);
+    assert.deepEqual(errors, []);
+  } finally { await browser.close(); }
+});
+
+test('fixed progress markup remains a readable list without JavaScript', async () => {
+  const browser = await chromium.launch({args:['--no-sandbox'], executablePath:process.env.CHROMIUM_EXECUTABLE || undefined});
+  try {
+    const context = await browser.newContext({javaScriptEnabled:false});
+    const page = await context.newPage();
+    await page.setContent('<div class="road timeline" data-road-progress-mode="static" data-road-progress="65"><ul><li><a href="/one/">One</a></li><li><a href="/two/">Two</a></li></ul></div>');
+    assert.deepEqual(Array.from(await page.locator('.road a').allTextContents()), ['One', 'Two']);
+    assert.equal(await page.locator('.road a').evaluateAll((links) => links.every((link) => link.getAttribute('href'))), true);
+    await context.close();
+  } finally { await browser.close(); }
+});
