@@ -540,7 +540,7 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path == "/workspace/templates" {
 		templates, err := h.contentTemplates()
 		if err != nil {
-			fail(w, 422, "cannot load content templates")
+			fail(w, 422, "cannot load content templates: "+err.Error())
 			return
 		}
 		if err := json.NewEncoder(w).Encode(map[string]any{"templates": templates}); err != nil {

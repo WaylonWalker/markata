@@ -154,7 +154,7 @@ async function showCreateDialog() {
 }
 let templateMatches = [], activeTemplate = 0;
 function templateScore(template, query) {
-  const haystack = `${template.name} ${template.description} ${template.id}`.toLowerCase();
+  const haystack = `${template.name} ${(template.aliases || []).join(' ')} ${template.description} ${template.id}`.toLowerCase();
   if (!query) return 0;
   const exact = haystack.indexOf(query);
   if (exact >= 0) return exact;
@@ -173,7 +173,8 @@ function chooseTemplate(template) {
   createError.hidden = true;
   document.querySelector('#create-description').textContent = template.description || template.name;
   const titleMatch = template.source.match(/^title:\s*(.*)$/m);
-  const title = titleMatch?.[1]?.trim().replace(/^(?:"([\s\S]*)"|'([\s\S]*)')$/, '$1$2') || template.name;
+  const parsedTitle = titleMatch?.[1]?.trim().replace(/^(?:"([\s\S]*)"|'([\s\S]*)')$/, '$1$2');
+  const title = !parsedTitle || parsedTitle.includes('{{') ? template.name : parsedTitle;
   createTitle.value = title;
   createSlug.value = '';
   createSlug.placeholder = slugify(title) || 'post-title';
@@ -216,6 +217,7 @@ function slugify(value) {
     .replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
 }
 function defaultContentDirectory(template) {
+  if (template.directory) return template.directory;
   const key = template.id.replace(/^builtin:/,'');
   return ({thought:'pages/thoughts',note:'pages/notes',photo:'pages/photos'})[key] || 'pages/blog';
 }
@@ -251,8 +253,7 @@ document.querySelector('#create-form').addEventListener('submit',async event => 
   const directory = createDirectory.value.trim().replace(/\\/g,'/').replace(/^\/+|\/+$/g,'');
   const path = `${directory ? `${directory}/` : ''}${slug}.md`;
   if (!template || !title || !slug || !path) return;
-  const source = template.source.replace(/^title:\s*.*$/m,`title: ${JSON.stringify(title)}`)
-    .replace(/^(#{1,6})\s+.*$/m,(heading,level) => `${level} ${title}`);
+  const source = window.MarkataContentStarters.render(template.source,title,slug);
   try {
     const response = await fetch('/workspace/file?path=' + encodeURIComponent(path),{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:source});
     const data = await response.json();

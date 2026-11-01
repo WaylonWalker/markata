@@ -1991,8 +1991,16 @@ Create markdown files in the `content-templates/` directory (or your configured 
 ```markdown
 ---
 # content-templates/changelog.md
+starter:
+  name: changelog
+  description: Record notable changes for a release.
+  aliases:
+    - release-notes
 templateKey: changelog
 _directory: changelogs
+title: "{{title}}"
+date: "{{date}}"
+published: false
 version: ""
 ---
 
@@ -2004,6 +2012,13 @@ version: ""
 ```
 
 The `_directory` field in frontmatter specifies the output directory and is removed from generated content.
+
+Markdown starters are shared by `markata-go new`, its interactive TUI, and the
+web workbench. Optional `starter.name`, `starter.description`, and
+`starter.aliases` fields describe the starter without consuming page
+frontmatter keys. Supported variables are `{{title}}`, `{{slug}}`, `{{date}}`, and
+`{{datetime}}`. See [Shared Markdown content starters](content-starters.md)
+for the full format and examples.
 
 **Usage:**
 

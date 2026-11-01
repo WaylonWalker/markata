@@ -723,11 +723,17 @@ func applyNewWizardState(state *newWizardState, templates map[string]ContentTemp
 	if !ok {
 		return fmt.Errorf("unknown template %q", state.Template)
 	}
+	if !safeStarterDirectory(template.Directory) {
+		return fmt.Errorf("starter %q has an unsafe output directory %q", template.Name, template.Directory)
+	}
 
 	// Override directory from wizard state
 	outputDir := state.Directory
 	if outputDir == "" {
 		outputDir = template.Directory
+	}
+	if !safeStarterDirectory(outputDir) {
+		return fmt.Errorf("unsafe output directory %q", outputDir)
 	}
 
 	slug := generateSlug(state.Title)
@@ -750,5 +756,5 @@ func applyNewWizardState(state *newWizardState, templates map[string]ContentTemp
 	applyTemplateFields(state, enhancedTemplate.Frontmatter)
 
 	// Use draft=false, published=true (new defaults)
-	return writeContentFile(state.Title, slug, outputDir, false, state.Tags, enhancedTemplate)
+	return writeContentFile(state.Title, slug, outputDir, false, true, state.Tags, enhancedTemplate)
 }
