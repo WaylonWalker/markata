@@ -577,6 +577,27 @@ func TestParseTemplateFile_ReportsInvalidStarterMetadata(t *testing.T) {
 	}
 }
 
+func TestResolveTemplateSelection_SiteAliasDoesNotInjectFields(t *testing.T) {
+	templates := map[string]ContentTemplate{
+		"guide": {
+			Name:        "guide",
+			Source:      "file",
+			Directory:   "guides",
+			Aliases:     []string{"tutorial"},
+			Frontmatter: map[string]interface{}{"title": "{{title}}"},
+		},
+	}
+	resolved, canonical, ok := resolveTemplateSelection("tutorial", templates)
+	if !ok || canonical != "guide" {
+		t.Fatalf("site alias did not resolve: %#v %q", resolved, canonical)
+	}
+	for _, key := range []string{"template", "templateKey"} {
+		if _, exists := resolved.Frontmatter[key]; exists {
+			t.Errorf("site alias injected %q into content", key)
+		}
+	}
+}
+
 func TestResolveTemplateSelection_PrefersCanonicalOverAlias(t *testing.T) {
 	templates := map[string]ContentTemplate{
 		"post":  {Name: "post", Directory: "posts"},
