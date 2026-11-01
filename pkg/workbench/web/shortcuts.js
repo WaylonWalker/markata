@@ -4,6 +4,8 @@
   const commands = new Map();
   const storageKey = 'markata-app-shortcuts-v1';
   const presets = ['writer', 'vscode', 'vim', 'emacs'];
+  const platform = (typeof navigator !== 'undefined' ? navigator : window.navigator)?.platform || '';
+  const isMac = /Mac|iPhone|iPad|iPod/i.test(platform);
   const persisted = (() => {
     try { return JSON.parse(localStorage.getItem(storageKey) || '{}'); }
     catch { return {}; }
@@ -33,17 +35,22 @@
   }
   function conflict(binding, except) {
     if (!binding) return null;
-    return [...commands.values()].find(command => command.id !== except && bindingFor(command) === binding) || null;
+    return [...commands.values()].find(command => {
+      if (command.id === except) return false;
+      const other = bindingFor(command);
+      return other && (other === binding || other.startsWith(binding + ' ') || binding.startsWith(other + ' '));
+    }) || null;
   }
   function setBinding(id, binding) {
     if (!commands.has(id) || (binding && (binding.length > 80 || !/^[A-Za-z0-9+?\\ ._-]+$/.test(binding))))
       return {ok:false, error:'Unrecognized shortcut.'};
     const other = conflict(binding, id);
-    if (other) return {ok:false, error:'Already used by ' + other.label + '.'};
+    if (other) return {ok:false, error:'Conflicts with ' + other.label + ' (' + bindingFor(other) + ').'};
     overrides = {...overrides, [id]:binding};
     overridesByPreset = {...overridesByPreset, [preset]:overrides};
     persist();
-    render();
+    // The recorder must not discard its focused input while saving a binding.
+    if (!dialog?.querySelector('.shortcut-capture')) render();
     return {ok:true};
   }
   function reset() { overrides = {}; overridesByPreset = {...overridesByPreset,[preset]:{}}; persist(); render(); }
@@ -68,8 +75,9 @@
     else if (key === 'ArrowLeft') key = 'Left';
     else if (key === 'ArrowRight') key = 'Right';
     else if (key.length === 1) key = key.toUpperCase();
-    const modifier = preset === 'emacs' && event.ctrlKey && !event.metaKey ? 'Ctrl' :
-      event.ctrlKey || event.metaKey ? 'Mod' : '';
+    const primary = isMac ? event.metaKey : event.ctrlKey;
+    const modifier = preset === 'emacs' && event.ctrlKey ? 'Ctrl' :
+      primary ? 'Mod' : event.ctrlKey ? 'Ctrl' : event.metaKey ? 'Meta' : '';
     const shifted = event.shiftKey && key !== 'Shift' && (event.key.length !== 1 || /^[A-Za-z0-9]$/.test(key));
     return [modifier, event.altKey ? 'Alt' : '', shifted ? 'Shift' : '', key].filter(Boolean).join('+');
   }
@@ -89,6 +97,12 @@
       editor.getOption('keyMap') === 'vim' && !editor.state.vim?.insertMode;
     const key = stroke(event);
     if (textInput && !inEditor) { clearPending(); return false; }
+    // Plain text should never become an app command while writing.
+    if (!isVimNormal && !event.ctrlKey && !event.metaKey && !event.altKey && event.key.length === 1) {
+      clearPending(); return false;
+    }
+    // Never finish a Vim leader chord after leaving Vim normal mode.
+    if (pending.startsWith('Space') && !isVimNormal) { clearPending(); return false; }
     if (key === 'Space' && !isVimNormal) { clearPending(); return false; }
     let sequence = pending ? pending + ' ' + key : key;
     let options = [...commands.values()].filter(command =>
@@ -130,6 +144,7 @@
       name.append(title, category);
       const record = document.createElement('button'); record.type = 'button';
       record.className = 'shortcut-binding';
+      record.dataset.commandId = command.id;
       record.textContent = bindingFor(command) || 'Unbound';
       record.title = 'Change shortcut for ' + command.label;
       record.addEventListener('click', () => capture(command, record));
@@ -144,34 +159,47 @@
     input.placeholder = 'Press keys · Esc cancels';
     button.replaceWith(input); input.focus();
     let first = '';
-    function finish() { if (input.isConnected) input.replaceWith(button); render(); }
-    input.addEventListener('blur', finish);
+    function finish(restoreFocus = false) {
+      if (!input.isConnected) return;
+      input.removeEventListener('blur', onBlur);
+      button.textContent = bindingFor(command) || 'Unbound';
+      input.replaceWith(button);
+      if (restoreFocus) button.focus();
+    }
+    function onBlur() { finish(false); }
+    input.addEventListener('blur', onBlur);
     input.addEventListener('keydown', event => {
-      if (event.key === 'Tab') { finish(); return; }
+      if (event.key === 'Tab') return; // Normal browser focus navigation.
       event.preventDefault(); event.stopPropagation();
-      if (event.key === 'Escape') { finish(); return; }
+      if (event.key === 'Escape') { finish(true); return; }
+      if (event.key === 'Enter' && first) {
+        const result = setBinding(command.id, first);
+        feedback.textContent = result.ok ? command.label + ': ' + first : result.error;
+        if (result.ok) finish(true);
+        return;
+      }
       if (event.key === 'Backspace') {
         const result = setBinding(command.id, '');
         feedback.textContent = result.ok ? 'Shortcut removed.' : result.error;
-        finish(); return;
+        finish(true); return;
       }
-      if (['Control','Meta','Alt','Shift','Tab'].includes(event.key)) return;
+      if (['Control','Meta','Alt','Shift'].includes(event.key)) return;
       const next = stroke(event);
-      if (!first && ['Mod+K', 'Mod+X', 'Alt+X', 'Space'].includes(next)) {
-        first = next; input.placeholder = next + ' … next key'; return;
+      if (!first && ['Mod+K', 'Ctrl+X', 'Alt+X', 'Space'].includes(next)) {
+        first = next; input.placeholder = next + ' … next key (Enter accepts single key)'; return;
       }
       const sequence = first ? first + ' ' + next : next;
       const result = setBinding(command.id, sequence);
       feedback.textContent = result.ok ? command.label + ': ' + sequence : result.error;
-      if (result.ok) finish();
+      if (result.ok) finish(true);
       else { first = ''; input.placeholder = 'Try another shortcut'; }
     });
   }
   function openSettings() {
     if (!dialog) buildSettings();
     const current = document.querySelector('dialog[open]');
-    if (current && current !== dialog) current.close();
     returnFocus = document.activeElement;
+    if (current && current !== dialog) current.close();
     dialog.showModal(); search.value = ''; feedback.textContent = '';
     render(); search.focus();
   }
