@@ -8,7 +8,8 @@
     const entries = () => {
       const registered = (window.MarkataShortcuts?.all() || []).map(action => ({
         id: action.id, label: action.label, description: action.description || '',
-        aliases: action.aliases || '', run: () => setTimeout(() => window.MarkataShortcuts.execute(action.id), 0)
+        aliases: action.aliases || '', shortcut: window.MarkataShortcuts.bindingFor(action.id),
+        run: () => setTimeout(() => window.MarkataShortcuts.execute(action.id), 0)
       }));
       return [...new Map([...commands, ...(options.actions || []), ...registered].map(item => [item.id,item])).values()];
     };
@@ -46,6 +47,12 @@
         const label = document.createElement('strong'); label.textContent = command.label;
         const detail = document.createElement('span'); detail.textContent = command.description;
         row.append(label, detail);
+        if (command.shortcut) {
+          const shortcut = document.createElement('kbd');
+          shortcut.className = 'command-shortcut';
+          shortcut.textContent = command.shortcut;
+          row.append(shortcut);
+        }
         if (command.syntax) {const syntax = document.createElement('code'); syntax.textContent = command.syntax; row.append(syntax);}
         row.addEventListener('pointermove', () => select(index));
         row.addEventListener('click', () => insert(command));
