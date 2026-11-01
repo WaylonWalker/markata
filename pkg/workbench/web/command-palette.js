@@ -5,7 +5,7 @@
 
   window.MarkataCommandPalette = {attach};
   function attach(editor, options = {}) {
-    const entries = [...commands, ...(options.actions || [])];
+    const entries = [...(options.actions || []), ...commands];
     const button = document.createElement('button');
     button.type = 'button'; button.id = 'commands';
     button.textContent = 'Commands'; button.title = 'Command Palette (Ctrl/Cmd+Shift+P)';
