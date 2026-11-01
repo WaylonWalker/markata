@@ -234,7 +234,7 @@ func hasLinkClosingParen(line string, pos int) bool {
 }
 
 func isLikelyBareDomain(destination string) bool {
-	if destination == "" || strings.ContainsAny(destination, ":\\@%") ||
+	if destination == "" || strings.ContainsAny(destination, ":\\@") ||
 		strings.HasPrefix(destination, ".") || strings.HasPrefix(destination, "/") ||
 		strings.HasPrefix(destination, "#") || strings.HasPrefix(destination, "?") {
 		return false
