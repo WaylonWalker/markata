@@ -7,7 +7,7 @@
   const sourceLimit = 200000;
   const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
   const esc = value => String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
-  const state = {path:null, data:null, mode:'side', loading:false};
+  const state = {path:null, data:null, mode:'side', loading:false, commit:null, busy:false};
 
   function titleFromSource(source) {
     const front = source.match(/^---\r?\n([\s\S]*?)\r?\n---/);
@@ -135,7 +135,11 @@
       dialog.querySelector('#publish-body').hidden=true;
       return;
     }
-    state.loading=true;state.path=path;
+    state.loading=true;state.path=path;state.data=null;state.commit=null;
+    dialog.querySelector('#publish-confirm').hidden=false;
+    dialog.querySelector('#publish-confirm').disabled=true;
+    dialog.querySelector('#publish-push').hidden=true;
+    dialog.querySelector('#publish-mark-public').hidden=true;
     dialog.showModal();
     dialog.querySelector('#publish-body').hidden=true;
     dialog.querySelector('#publish-title').textContent='Preparing review…';
@@ -155,9 +159,12 @@
       dialog.querySelector('#publish-before-name').textContent=data.baseline_exists?'Last committed':'New page';
       renderChips(data);
       renderDiff(data);
+      const fields=frontmatter(data.current);
+      dialog.querySelector('#publish-mark-public').hidden=fields.published==='true' && fields.draft!=='true';
+      dialog.querySelector('#publish-confirm').disabled=!data.changed || fields.published!=='true' || fields.draft==='true';
       setSide('after');setMode('side');
       dialog.querySelector('#publish-body').hidden=false;
-      setNotice('Review only. Last committed is not necessarily the version currently deployed; publishing and deployment are not connected yet.','info');
+      setNotice('Comparison against last Git commit, not necessarily the deployed site. Committing does not push or deploy.','info');
       await Promise.all([
         renderVersion(data.baseline,dialog.querySelector('#publish-before-frame')),
         renderVersion(data.current,dialog.querySelector('#publish-after-frame'))
@@ -167,6 +174,70 @@
       dialog.querySelector('#publish-body').hidden=true;
       dialog.querySelector('#publish-title').textContent='Review unavailable';
     }finally {state.loading=false;}
+  }
+  function markPublicAndReviewAgain() {
+    const source=editor.getValue();
+    const newline=source.includes('\r\n')?'\r\n':'\n';
+    let next=source;
+    if (!source.startsWith('---'+newline)) {
+      next='---'+newline+'published: true'+newline+'draft: false'+newline+'---'+newline+newline+source;
+    } else {
+      const end=source.indexOf(newline+'---',3+newline.length);
+      if(end<0){setNotice('Fix malformed YAML frontmatter before publishing.','warning');return;}
+      const before=source.slice(0,end);
+      const rest=source.slice(end);
+      let changes=before;
+      if(/^published:\s*(true|false)\s*$/m.test(changes))
+        changes=changes.replace(/^published:\s*(true|false)\s*$/m,'published: true');
+      else changes+=newline+'published: true';
+      if(/^draft:\s*(true|false)\s*$/m.test(changes))
+        changes=changes.replace(/^draft:\s*(true|false)\s*$/m,'draft: false');
+      next=changes+rest;
+    }
+    if(next===source)return;
+    editor.operation(()=>editor.replaceRange(next,{line:0,ch:0},{line:editor.lastLine(),ch:editor.getLine(editor.lastLine()).length},'+publish-meta'));
+    dialog.close();
+    setTimeout(open,0);
+  }
+  async function commitReview() {
+    const data=state.data;
+    if(!data||state.busy||!data.changed)return;
+    if(state.path!==window.MarkataSiteTree?.activeFile?.()||editor.getValue()!==data.current) {
+      setNotice('The document changed. Close and reopen review before committing.','warning');return;
+    }
+    state.busy=true;
+    const btn=dialog.querySelector('#publish-confirm');
+    btn.disabled=true;btn.textContent='Creating commit…';
+    try{
+      const response=await fetch('/workspace/publish/commit',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({path:data.path,head:data.head,version:data.version})
+      });
+      const result=await response.json();
+      if(!response.ok)throw new Error(result.error||'Cannot commit this revision.');
+      state.commit=result;
+      btn.hidden=true;
+      dialog.querySelector('#publish-mark-public').hidden=true;
+      dialog.querySelector('#publish-push').hidden=false;
+      setNotice('Committed only this page to Git. Other staged files were excluded. Push separately to trigger your configured deployment pipeline.','info');
+    }catch(err){setNotice(err.message,'warning');btn.disabled=false;}
+    finally{state.busy=false;btn.textContent='Commit selected page';}
+  }
+  async function pushReview() {
+    if(state.busy||!state.commit)return;
+    const btn=dialog.querySelector('#publish-push');
+    state.busy=true;btn.disabled=true;btn.textContent='Pushing…';
+    try {
+      const response=await fetch('/workspace/publish/push?path='+encodeURIComponent(state.path),{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({commit:state.commit.commit,branch:state.commit.branch})
+      });
+      const result=await response.json();
+      if(!response.ok)throw new Error(result.error||'Push failed. The local commit is retained.');
+      btn.hidden=true;
+      setNotice('Pushed to origin. Deployment is not yet verified; check your builder or hosting status before considering the page live.','info');
+    }catch(err){setNotice(err.message,'warning');btn.disabled=false;}
+    finally{state.busy=false;btn.textContent='Push to origin';}
   }
   function updatePublishButton() {
     if (!button || !editor) return;
@@ -194,7 +265,7 @@
     '<div class="publish-comparison"><section data-publish-pane="before"><h3 id="publish-before-name">Last committed</h3><iframe id="publish-before-frame" title="Last committed rendering" sandbox="allow-scripts"></iframe></section>'+
     '<section data-publish-pane="after"><h3>Current saved draft</h3><iframe id="publish-after-frame" title="Current draft rendering" sandbox="allow-scripts"></iframe></section></div></div>'+
     '<div data-publish-view="source" hidden><div id="publish-source-diff" role="region" tabindex="0" aria-label="Unified Markdown source diff"></div></div></div>'+
-    '<footer class="publish-actions"><span>Nothing is published by opening this review.</span><button type="button" id="publish-back">Back to editing</button><button type="button" id="publish-confirm" disabled title="Deployment backend is not yet configured">Publish · coming next</button></footer>';
+    '<footer class="publish-actions"><span>A Git commit is not a verified deployment.</span><button type="button" id="publish-back">Back to editing</button><button type="button" id="publish-mark-public" hidden>Mark as public</button><button type="button" id="publish-confirm" disabled>Commit selected page</button><button type="button" id="publish-push" hidden>Push to origin</button></footer>';
     document.body.append(doc);dialog=doc;notice=doc.querySelector('#publish-notice');panels=doc.querySelector('#publish-body');
     button.addEventListener('click',open);
     editor.on('change',updatePublishButton);
@@ -203,6 +274,9 @@
     updatePublishButton();
     doc.querySelector('#publish-close').addEventListener('click',()=>doc.close());
     doc.querySelector('#publish-back').addEventListener('click',()=>doc.close());
+    doc.querySelector('#publish-mark-public').addEventListener('click',markPublicAndReviewAgain);
+    doc.querySelector('#publish-confirm').addEventListener('click',commitReview);
+    doc.querySelector('#publish-push').addEventListener('click',pushReview);
     doc.addEventListener('close',()=>editor.focus());
     doc.querySelectorAll('[data-publish-mode]').forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.publishMode)));
     doc.querySelectorAll('[data-publish-side]').forEach(b=>b.addEventListener('click',()=>setSide(b.dataset.publishSide)));
