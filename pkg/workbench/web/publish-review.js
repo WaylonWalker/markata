@@ -170,6 +170,7 @@
     dialog.querySelector('#publish-confirm').hidden=false;
     dialog.querySelector('#publish-confirm').disabled=true;
     dialog.querySelector('#publish-push').hidden=true;
+    dialog.querySelector('#publish-live-check').hidden=true;
     dialog.querySelector('#publish-mark-public').hidden=true;
     dialog.showModal();
     dialog.querySelector('#publish-body').hidden=true;
@@ -260,6 +261,23 @@
     }catch(err){setNotice(err.message,'warning');btn.disabled=false;}
     finally{state.busy=false;btn.textContent='Commit selected page';}
   }
+  async function checkLiveDeployment() {
+    if(!state.commit || state.busy)return;
+    const btn=dialog.querySelector('#publish-live-check');
+    state.busy=true;btn.disabled=true;btn.textContent='Checking…';
+    try{
+      const response=await fetch('/workspace/publish/deployment?commit='+encodeURIComponent(state.commit.commit),{cache:'no-store'});
+      const result=await response.json();
+      if(!response.ok)throw new Error(result.error||'Cannot verify deployment.');
+      if(result.verified){
+        btn.hidden=true;
+        setNotice('Live · Verified source revision '+result.live_source_commit.slice(0,10)+(result.release_id?' · release '+result.release_id:'')+'.','info');
+      } else {
+        setNotice(result.message||'Deployment has not been verified.','warning');
+      }
+    }catch(error){setNotice(error.message,'warning');}
+    finally{state.busy=false;btn.disabled=false;btn.textContent='Check live status';}
+  }
   async function pushReview() {
     if(state.busy||!state.commit)return;
     const btn=dialog.querySelector('#publish-push');
@@ -272,7 +290,8 @@
       const result=await response.json();
       if(!response.ok)throw new Error(result.error||'Push failed. The local commit is retained.');
       btn.hidden=true;
-      setNotice('Pushed to origin. Deployment is not yet verified; check your builder or hosting status before considering the page live.','info');
+      dialog.querySelector('#publish-live-check').hidden=false;
+      setNotice('Pushed to origin. Click Check live status to verify the current builder release, if configured.','info');
     }catch(err){setNotice(err.message,'warning');btn.disabled=false;}
     finally{state.busy=false;btn.textContent='Push to origin';}
   }
@@ -304,7 +323,7 @@
     '<div data-publish-view="rich" hidden><p class="publish-rich-help">Structural comparison: inline changes for text, before/after blocks for complex elements. Use Side by side for exact rendering.</p><iframe id="publish-rich-frame" title="Unified rendered Markdown change annotations" sandbox="allow-scripts"></iframe></div>'+
     '<div data-publish-view="pierre" hidden><div class="publish-pierre-actions"><span>Pierre source diff</span><button type="button" data-pierre-layout="stacked" class="active">Unified</button><button type="button" data-pierre-layout="split">Split</button></div><p id="publish-pierre-error" role="status" hidden></p><div id="publish-pierre-host"></div></div>'+
     '<div data-publish-view="source" hidden><div id="publish-source-diff" role="region" tabindex="0" aria-label="Unified Markdown source diff"></div></div></div>'+
-    '<footer class="publish-actions"><span>A Git commit is not a verified deployment.</span><button type="button" id="publish-back">Back to editing</button><button type="button" id="publish-mark-public" hidden>Mark as public</button><button type="button" id="publish-confirm" disabled>Commit selected page</button><button type="button" id="publish-push" hidden>Push to origin</button></footer>';
+    '<footer class="publish-actions"><span>A Git commit is not a verified deployment.</span><button type="button" id="publish-back">Back to editing</button><button type="button" id="publish-mark-public" hidden>Mark as public</button><button type="button" id="publish-confirm" disabled>Commit selected page</button><button type="button" id="publish-push" hidden>Push to origin</button><button type="button" id="publish-live-check" hidden>Check live status</button></footer>';
     document.body.append(doc);dialog=doc;notice=doc.querySelector('#publish-notice');panels=doc.querySelector('#publish-body');
     button.addEventListener('click',open);
     editor.on('change',updatePublishButton);
@@ -316,6 +335,7 @@
     doc.querySelector('#publish-mark-public').addEventListener('click',markPublicAndReviewAgain);
     doc.querySelector('#publish-confirm').addEventListener('click',commitReview);
     doc.querySelector('#publish-push').addEventListener('click',pushReview);
+    doc.querySelector('#publish-live-check').addEventListener('click',checkLiveDeployment);
     doc.addEventListener('close',()=>{window.MarkataPierreDiff?.release?.(doc.querySelector('#publish-pierre-host'));editor.focus();});
     doc.querySelectorAll('[data-publish-mode]').forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.publishMode)));
     doc.querySelectorAll('[data-pierre-layout]').forEach(b=>b.addEventListener('click',()=>{
