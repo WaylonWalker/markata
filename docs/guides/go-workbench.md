@@ -24,13 +24,25 @@ It uses the same Markdown renderer as the [Python API](./python-renderer/) and [
 The preview does not build a site. The language service indexes Markdown and reads workspace configuration for existing mention support.
 
 Use the appearance picker to select a palette, color mode, style, font, or text size.
-Use the keymap selector for Default, Vim, Emacs, or Sublime editing.
+Open **Editor settings** to choose line wrapping, keymap, and layout. Drag the
+divider between the source and preview panes to resize them. Choose **Editor
+only** or **Preview only** to focus on one pane; **Editor and preview** restores
+the split.
+Scrolling either pane keeps the corresponding Markdown visible in the other.
+When you write or move the cursor, the preview follows the editor. Scroll sync
+is on by default; turn off **Sync editor and preview scrolling** in **Editor
+settings** to scroll each pane independently. The choice is saved in this browser.
+Choose Default, Vim, Emacs, or Sublime keymaps in **Editor settings**.
 Code highlighting, icons, admonitions, tables, checklists, Mermaid, and Chart.js use local assets.
 
-The editor stores drafts and preferences in browser storage for the current origin.
-Use **Download .md** to save your draft to a file.
+Edits to selected site files save back to the workspace after a short pause.
+Unsaved scratch documents stay in browser storage. The browser also keeps a
+recovery copy of workspace edits. Use **Ctrl+P** and search for **Download
+current file** to export a copy, or **Open Markdown file** to import a file as
+an unsaved draft.
 A storage error appears beside the render metrics. Editing and downloads remain available.
-The server does not store drafts. Drafts on port 8765 remain separate from drafts on other ports.
+The server writes only selected workspace files. Scratch drafts remain local to
+the browser origin, so drafts on one port remain separate from drafts on another.
 
 The preview updates after a 250 ms pause. One request runs at a time, and newer edits replace pending edits.
 Old responses cannot replace a newer draft. Errors preserve the last successful preview.
@@ -47,10 +59,14 @@ Type `[[` for wiki-link suggestions, including aliases. Type `[label](` for Mark
 Press **Ctrl+Space** to request suggestions at the cursor. Use the arrow keys and Enter to select a suggestion.
 Existing frontmatter, admonition, and mention completion also use the LSP.
 Broken wiki links receive an underline. The underline tooltip shows the diagnostic message.
+The workbench preview resolves valid `[[wikilinks]]` against the site's workspace index.
+Click a resolved wikilink in the preview to open that post in the editor.
+Select the error and warning counts in the bottom status bar to inspect diagnostics and
+jump to their source locations.
 
 The editor sends unsaved text as a synthetic `.markata/browser-draft.md` document.
 This document stays in memory. Markdown path suggestions start at the workspace root because the draft has no source file.
-The Files tree opens source files from the selected workspace using Markata glob rules. The Tags view groups those files by loaded frontmatter. Edits stay in browser drafts; download a copy to keep changes outside the browser. See [workspace navigation](./renderer-site-tree/).
+The Files tree opens source files from the selected workspace using Markata glob rules. The Feeds view groups files by configured feed filters, and the Tags view groups them by loaded frontmatter. The selector shows file, feed, and tag counts. See [workspace navigation](./renderer-site-tree/).
 Each WebSocket connection owns its own draft and index. Reload the page to index external file changes.
 
 The footer reports the language connection state. Editing and preview continue if the connection fails.
@@ -166,14 +182,17 @@ It separates initial renders, uncached edits, and cached edits. Raw samples and 
 
 ## Shared editor behavior
 
-Use **Open .md** to import a Markdown file. An oversized file leaves the current draft intact.
-Use **Download .md** to keep a copy outside browser storage.
+Use the command palette to import or export a Markdown file. An oversized import leaves the current document intact.
+Search for **New from template** in the command palette to create a Markdown
+file from a built-in starter or a `.md` file in the site's `templates/`
+directory. Choose a new path in an existing content folder; the editor opens
+the created file and autosaves later edits.
 The footer reports whether the draft was saved. Storage failures leave editing and downloads available.
 See [shared editor features and runtime differences](/docs/guides/renderer-integration-benchmarks/#shared-editor-features-and-runtime-differences) for the comparison.
 
 ## Insert Markdown commands
 
-Select **Commands** or press **Ctrl+Shift+P** (**Cmd+Shift+P** on macOS).
+Select **Commands** or press **Ctrl+P** (**Cmd+P** on macOS).
 Search for special syntax, then press **Enter** to insert it at your selection.
 See the [command palette guide](editor-command-palette.md) for the catalog and keyboard controls.
 

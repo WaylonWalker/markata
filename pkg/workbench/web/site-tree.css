@@ -5,6 +5,7 @@
 .site-tree{flex:1;min-height:0;height:100%;color:var(--color-text,var(--ink));--trees-theme-sidebar-bg:var(--color-background,var(--paper));--trees-theme-sidebar-fg:var(--color-text,var(--ink));--trees-theme-list-active-selection-bg:color-mix(in srgb,var(--color-primary,var(--accent)) 20%,transparent);--trees-theme-list-hover-bg:color-mix(in srgb,var(--color-primary,var(--accent)) 10%,transparent);--trees-theme-input-bg:var(--color-surface,var(--paper));--trees-theme-input-fg:var(--color-text,var(--ink));--trees-theme-list-active-selection-fg:var(--color-text,var(--ink));--trees-theme-focus-ring:var(--color-primary,var(--accent))}
 .site-tree[hidden]{display:none}
 #site-sidebar p{font-size:12px;line-height:1.5;padding:12px;margin:0;color:var(--color-text-muted,var(--muted));border-top:1px solid var(--editor-divider)}
+#site-sidebar .workspace-context{padding:7px 12px;border-top:0;border-bottom:1px solid var(--editor-divider);font-size:11px;line-height:1.4}
 #active-file{font:12px var(--font-code,ui-monospace,monospace);letter-spacing:normal;text-transform:none;overflow-wrap:anywhere}
 @media(max-width:1000px) and (min-width:701px){#workbench{grid-template-columns:190px minmax(0,1fr)}#workbench>section:last-child{grid-column:2}#site-sidebar{grid-row:span 2}}
 @media(max-width:700px){#workbench{grid-template-columns:1fr}#site-sidebar{height:240px;border-right:0;border-bottom:1px solid var(--editor-divider)}.site-tree{height:150px}#site-sidebar p{padding:6px 12px}}

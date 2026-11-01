@@ -151,6 +151,56 @@ func (s *Store) Read(path string) (string, error) {
 	return s.workspace.readSource(path)
 }
 
+// Write atomically replaces an already-discovered source file.
+func (s *Store) Write(path, source string) error {
+	if err := s.ctx.Err(); err != nil {
+		return err
+	}
+	if len(source) > 200000 {
+		return fmt.Errorf("source exceeds 200,000 bytes")
+	}
+	s.mu.RLock()
+	_, ok := s.paths[path]
+	s.mu.RUnlock()
+	if !ok {
+		return fmt.Errorf("source file is not in the workspace content globs")
+	}
+	return s.workspace.writeSource(path, source)
+}
+
+// Create adds a Markdown file in a directory that already contains discovered content.
+func (s *Store) Create(path, source string) error {
+	if err := s.ctx.Err(); err != nil {
+		return err
+	}
+	if len(source) > 200000 {
+		return fmt.Errorf("source exceeds 200,000 bytes")
+	}
+	local := filepath.Clean(filepath.FromSlash(path))
+	if !filepath.IsLocal(local) || !isMarkdownSource(local) {
+		return fmt.Errorf("new workspace path must be a local Markdown file")
+	}
+	path = filepath.ToSlash(local)
+	directory := filepath.ToSlash(filepath.Dir(local))
+	s.mu.RLock()
+	_, exists := s.paths[path]
+	allowedDirectory := false
+	for existing := range s.paths {
+		if filepath.ToSlash(filepath.Dir(filepath.FromSlash(existing))) == directory {
+			allowedDirectory = true
+			break
+		}
+	}
+	s.mu.RUnlock()
+	if exists {
+		return fmt.Errorf("workspace file already exists")
+	}
+	if !allowedDirectory {
+		return fmt.Errorf("new files must use a directory with discovered workspace content")
+	}
+	return s.workspace.Create(path, source)
+}
+
 // Snapshot shares parsed workspace information, without sharing mutable drafts.
 func (s *Store) Snapshot() (index *lsp.Index, revision uint64) {
 	s.mu.Lock()
@@ -210,7 +260,7 @@ func (s *Store) Files() ([]File, error) {
 		parsed := make(map[string]metadataEntry)
 		for _, post := range manager.Posts() {
 			path := filepath.ToSlash(post.Path)
-			parsed[path] = metadataEntry{file: File{Path: path, Title: post.Title, Tags: append([]string(nil), post.Tags...)}, info: lsp.LoadedPostInfo(s.indexRoot, post)}
+			parsed[path] = metadataEntry{file: File{Path: path, Slug: post.Slug, Title: post.Title, Tags: append([]string(nil), post.Tags...)}, info: lsp.LoadedPostInfo(s.indexRoot, post)}
 		}
 		s.mu.Lock()
 		s.stats.MetadataLoads += uint64(len(changed))

@@ -7,6 +7,25 @@ else if(values.includes(value))document.documentElement.setAttribute(key,value);
 }};
 
 let updates=Promise.resolve(), scriptSequence=0;
+let sourceLines=[], sourceLineCount=0, programmed=false, scrollFrame=0;
+const scrollState=user=>{
+  const article=document.querySelector('.post-content');
+  if(!article)return;
+  const elements=[...article.children];
+  const points=[{line:0,y:0}];
+  for(let i=0;i<Math.min(elements.length,sourceLines.length);i++){
+    const line=sourceLines[i];
+    if(line<=points.at(-1).line)continue;
+    points.push({line,y:elements[i].getBoundingClientRect().top+scrollY});
+  }
+  points.push({line:Math.max(sourceLineCount,(sourceLines.at(-1)??0)+1),y:document.documentElement.scrollHeight});
+  parent.postMessage({type:'sync-scroll-state',user,top:scrollY,height:document.documentElement.scrollHeight,clientHeight:innerHeight,points},'*');
+};
+addEventListener('scroll',()=>{
+  if(scrollFrame)cancelAnimationFrame(scrollFrame);
+  scrollFrame=requestAnimationFrame(()=>{scrollFrame=0;scrollState(!programmed);programmed=false;});
+},{passive:true});
+addEventListener('resize',()=>scrollState(false));
 const originalScripts=new WeakMap();
 const scriptSource=s=>originalScripts.get(s) ?? s.textContent;
 
@@ -57,15 +76,28 @@ document.body.append(script);
 }dispatchEvent(new Event('view-transition-complete'));
 setAppearance(data.attributes);
 dispatchEvent(new Event('theme-change'));
+requestAnimationFrame(()=>scrollState(false));
 };
 
 addEventListener('message',e=>{if(e.source!==parent)return;
 if(e.data?.type==='markdown-render'){const article=document.querySelector('.post-content');
 if(article)article.innerHTML=e.data.html;
+sourceLines=e.data.source_lines||[];
 updates=updates.then(()=>renderMarkdown(e.data)).catch(console.error);
 return;
+}if(e.data?.type==='sync-scroll-lines'){sourceLines=e.data.lines||[];sourceLineCount=e.data.lineCount||0;requestAnimationFrame(()=>scrollState(false));return;
+}if(e.data?.type==='sync-scroll'){programmed=true;scrollTo({top:e.data.y,behavior:'instant'});setTimeout(()=>{programmed=false;},100);return;
 }if(e.data?.type==='appearance'){updates=updates.then(()=>{setAppearance(e.data.attributes);
 dispatchEvent(new Event('theme-change'));
 }).catch(console.error);
 }});
+document.addEventListener('click',event=>{
+const link=event.target.closest?.('a.wikilink');
+if(!link)return;
+const path=new URL(link.getAttribute('href'),location.href).pathname;
+const slug=decodeURIComponent(path.replace(/^\/+|\/+$/g,''));
+if(!slug)return;
+event.preventDefault();
+parent.postMessage({type:'open-post',slug},'*');
+});
 })();

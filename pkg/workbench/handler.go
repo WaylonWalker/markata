@@ -40,6 +40,8 @@ type workspaceSource interface {
 	Paths() ([]editorworkspace.File, error)
 	Files() ([]editorworkspace.File, error)
 	Read(string) (string, error)
+	Write(string, string) error
+	Create(string, string) error
 }
 
 // Handler serves the editor, render API and bundled appearance assets.
@@ -196,7 +198,7 @@ func styleLink(name string) string { return `<link rel="stylesheet" href="/appea
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	switch {
-	case (r.URL.Path == "/workspace" || r.URL.Path == "/workspace/file") && r.Method == http.MethodGet:
+	case (r.URL.Path == "/workspace" || r.URL.Path == "/workspace/templates") && r.Method == http.MethodGet || (r.URL.Path == "/workspace/file" && (r.Method == http.MethodGet || r.Method == http.MethodPut || r.Method == http.MethodPost)):
 		h.serveWorkspace(w, r)
 	case r.URL.Path == "/lsp":
 		h.language.ServeHTTP(w, r)
@@ -340,11 +342,24 @@ func (h *Handler) prepareRender(r *http.Request, req *renderRequest) (*renderRes
 	if err := r.Context().Err(); err != nil {
 		return nil, err
 	}
+	var index *lsp.Index
+	var revision uint64
+	if snapshot, ok := h.workspace.(interface{ Snapshot() (*lsp.Index, uint64) }); ok {
+		index, revision = snapshot.Snapshot()
+		if index == nil {
+			if _, err := h.workspace.Files(); err != nil {
+				return nil, fmt.Errorf("load workspace metadata for preview: %w", err)
+			}
+			index, revision = snapshot.Snapshot()
+		}
+	}
+	markdown := renderWorkbenchWikilinks(*req.Markdown, index)
+	cacheKey := fmt.Sprintf("%d\x00%s", revision, markdown)
 	result := h.lastResult
-	cached := result != nil && h.lastSource == *req.Markdown
+	cached := result != nil && h.lastSource == cacheKey
 	if !cached {
 		var err error
-		result, err = h.renderer.Render(*req.Markdown)
+		result, err = h.renderer.Render(markdown)
 		if err != nil {
 			return nil, err
 		}
@@ -353,9 +368,9 @@ func (h *Handler) prepareRender(r *http.Request, req *renderRequest) (*renderRes
 				h.assets[asset.ID] = []byte(asset.Content)
 			}
 		}
-		h.lastSource, h.lastResult = *req.Markdown, result
+		h.lastSource, h.lastResult = cacheKey, result
 	}
-	response := &renderResponse{HTML: result.HTML, FeatureHeadHTML: h.featureHead(result), BodyEndHTML: result.BodyEndHTML, InputBytes: len(*req.Markdown), HTMLBytes: len(result.HTML), Cached: cached}
+	response := &renderResponse{HTML: result.HTML, SourceLines: h.renderer.SourceLines(markdown), FeatureHeadHTML: h.featureHead(result), BodyEndHTML: result.BodyEndHTML, InputBytes: len(*req.Markdown), HTMLBytes: len(result.HTML), Cached: cached}
 	if req.IncludeDocument == nil || *req.IncludeDocument {
 		document := h.document(result, req.Appearance)
 		response.Document, response.DocumentBytes = &document, len(document)
@@ -373,6 +388,7 @@ type renderRequest struct {
 type renderResponse struct {
 	Document        *string `json:"document"`
 	HTML            string  `json:"html"`
+	SourceLines     []int   `json:"source_lines"`
 	FeatureHeadHTML string  `json:"feature_head_html"`
 	BodyEndHTML     string  `json:"body_end_html"`
 	RenderMS        float64 `json:"render_ms"`
@@ -483,7 +499,46 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("Content-Type", "application/json")
+	if r.URL.Path == "/workspace/templates" {
+		templates, err := h.contentTemplates()
+		if err != nil {
+			fail(w, 422, "cannot load content templates")
+			return
+		}
+		if err := json.NewEncoder(w).Encode(map[string]any{"templates": templates}); err != nil {
+			return
+		}
+		return
+	}
 	if r.URL.Path == "/workspace/file" {
+		if r.Method == http.MethodPut || r.Method == http.MethodPost {
+			body, err := io.ReadAll(io.LimitReader(r.Body, maxSource+1))
+			if err != nil {
+				fail(w, 400, "cannot read source")
+				return
+			}
+			if len(body) > maxSource {
+				fail(w, 413, "document exceeds 200,000 bytes")
+				return
+			}
+			path := r.URL.Query().Get("path")
+			if r.Method == http.MethodPost {
+				err = h.workspace.Create(path, string(body))
+			} else {
+				err = h.workspace.Write(path, string(body))
+			}
+			if err != nil {
+				fail(w, 422, err.Error())
+				return
+			}
+			if r.Method == http.MethodPost {
+				w.WriteHeader(http.StatusCreated)
+			}
+			if err := json.NewEncoder(w).Encode(map[string]string{"version": editorworkspace.SourceVersion(string(body))}); err != nil {
+				return
+			}
+			return
+		}
 		source, err := h.workspace.Read(r.URL.Query().Get("path"))
 		if err != nil {
 			fail(w, 404, err.Error())
@@ -505,7 +560,11 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 		fail(w, 422, err.Error())
 		return
 	}
-	if err := json.NewEncoder(w).Encode(map[string]any{"files": files, "rootUri": h.languageConfig.RootURI}); err != nil {
+	response := map[string]any{"files": files, "rootUri": h.languageConfig.RootURI}
+	if r.URL.Query().Get("metadata") == "true" {
+		response["feeds"] = h.workspaceFeeds()
+	}
+	if err := json.NewEncoder(w).Encode(response); err != nil {
 		return
 	}
 }

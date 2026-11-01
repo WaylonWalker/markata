@@ -19,6 +19,7 @@ func (s *Server) handleInitialize(_ context.Context, msg *Message) error {
 	} else if params.RootPath != nil {
 		s.rootURI = pathToURI(*params.RootPath)
 	}
+	s.images = loadManagedImages(uriToPath(s.rootURI))
 
 	s.logger.Printf("Initializing with root: %s", s.rootURI)
 

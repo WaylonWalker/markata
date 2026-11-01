@@ -92,6 +92,13 @@ var frontmatterFields = []FrontmatterField{
 		Snippet:     "template: ${1:post.html}",
 	},
 	{
+		Name:        "templateKey",
+		Type:        "string",
+		Description: "Built-in or site template key for this post",
+		Required:    false,
+		Snippet:     "templateKey: ${1:blog-post}",
+	},
+	{
 		Name:         "skip",
 		Type:         "boolean",
 		Description:  "Skip this post during processing",

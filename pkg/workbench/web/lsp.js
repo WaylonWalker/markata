@@ -9,6 +9,10 @@
     const pos = p => ({line:p.line, ch:p.character});
     const rpcPos = p => ({line:p.line, character:p.ch});
     const label = message => { status.textContent = message; };
+    function plainSnippet(text) {
+      return text.replace(/\$\{\d+\|([^,|}]+)(?:,[^|}]*)?\|\}/g,'$1')
+        .replace(/\$\{\d+:([^}]*)\}/g,'$1').replace(/\$\{\d+\}/g,'').replace(/\$\d+/g,'');
+    }
     function clearMarks() { marks.splice(0).forEach(mark => mark.clear()); }
     function send(method, params, id) {
       if (socket?.readyState !== WebSocket.OPEN) throw new Error('Language service disconnected');
@@ -33,6 +37,7 @@
       clearTimeout(autoTimer);
       clearMarks();
       editor.closeHint?.();
+      window.MarkataWorkbenchDiagnostics?.update([]);
       pending.forEach(({reject,timeout}) => {clearTimeout(timeout); reject(new Error('Language service disconnected'));});
       pending.clear();
       label('Language service unavailable · editing and preview remain available');
@@ -47,7 +52,8 @@
         if (!ready || ticket !== generation || text !== editor.getValue() || current.line !== cursor.line || current.ch !== cursor.ch) return;
         const list = (Array.isArray(result) ? result : result?.items || []).map(item => {
           const edit = item.textEdit;
-          return {text:edit?.newText ?? item.insertText ?? item.label,
+          const inserted = edit?.newText ?? item.insertText ?? item.label;
+          return {text:item.insertTextFormat === 2 ? plainSnippet(inserted) : inserted,
             displayText:item.detail ? `${item.label} — ${item.detail}` : item.label,
             from:edit ? pos(edit.range.start) : cursor, to:edit ? pos(edit.range.end) : cursor};
         });
@@ -100,6 +106,7 @@
           // Full-sync notifications arrive in wire order. Ignore diagnostics while a newer edit is pending.
           if (timer || (message.params.version !== undefined && message.params.version !== version)) return;
           clearMarks();
+          window.MarkataWorkbenchDiagnostics?.update(message.params.diagnostics);
           for (const diagnostic of message.params.diagnostics) {
             marks.push(editor.markText(pos(diagnostic.range.start),pos(diagnostic.range.end),
               {className:'markata-lsp-diagnostic',title:diagnostic.message}));

@@ -29,6 +29,8 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/WaylonWalker/markata/pkg/imageindex"
 )
 
 // Server is the LSP server implementation for markata-go.
@@ -42,6 +44,7 @@ type Server struct {
 	sharedIndex    IndexProvider
 	sharedRevision uint64
 	sharedLoaded   bool
+	images         []imageindex.Image
 
 	// documents tracks open documents by URI
 	documents map[string]*Document

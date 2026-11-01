@@ -65,6 +65,32 @@ Responses include the echoed `id`, a typed success or error, and the existing re
 
 ## Future transports and security boundaries
 
+The Go workbench may add workspace-aware authoring transforms around the
+standalone renderer. These transforms are editor conveniences and MUST remain
+separate from `markata render`'s site-independent contract. In particular,
+resolved wikilinks in a workbench preview use the selected site's LSP index;
+they do not imply that standalone rendering now loads a complete site.
+
+The local Go workbench MUST save edits to an existing selected workspace file
+automatically. Writes MUST stay inside the selected workspace, replace files
+atomically, and reject oversized content. Unsaved scratch documents remain in
+browser storage until the author uses an explicit export action. The browser
+may retain a recovery copy, but it MUST report whether the site file was saved.
+The workbench MUST provide a resizable editor/preview split and editor-only,
+preview-only, and split layouts. Internal wikilinks in the preview MUST open
+the matching workspace document in the editor.
+The Go workbench MUST offer built-in Markdown starters and local Markdown
+starters from the workspace `templates/` directory. Creating content MUST
+require a new Markdown path inside an existing workspace directory and MUST
+not overwrite an existing file.
+In split layout, source and preview scrolling MUST synchronize in both directions
+by default. The active pane controls the position; editing or moving the source
+cursor makes the editor the active pane. Users MUST be able to disable scrolling
+sync in editor settings, and the setting MUST persist locally. The workbench
+render response MAY include zero-based source lines for top-level Markdown
+blocks to align unequal editor and preview heights. Preview-only and editor-only
+layouts do not synchronize hidden panes.
+
 - **Persistent JSON Lines / stdio:** implemented with one request per line, one correlated response per line, bounded input, and per-request error recovery. Stdout is reserved for protocol data.
 - **HTTP:** use identical render semantics with explicit resource limits, authentication/CORS strategy and safe defaults. #1851 is a *local trusted editor*, not a public rendering service.
 - **LSP:** preserve existing editor features and translate rendering diagnostics to editor ranges where available. Generic LSP does not define an HTML-preview window.

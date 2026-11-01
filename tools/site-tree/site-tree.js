@@ -6,9 +6,32 @@ let scratchPath = 'draft.md';
 const legacyStorageKey = path => 'markata-workspace-v1:' + workspaceKey + ':' + path;
 const storageKey = path => legacyStorageKey('buffer:') + (path === scratchPath ? 'scratch' : 'file:' + path);
 let active = 'draft.md', drafts = {}, currentEditor, warning, label;
-let fileTree, feedTree, syncing = false;
-const aliases = {};
+let fileTree, feedTree, tagTree, syncing = false;
+const aliases = {}, feedAliases = {};
 const baselines = {}, versions = {}, restored = {};
+let workspaceCounts = {files:0,feeds:0,tags:0};
+const saveTimers = {}, saveQueues = {}, saveRevisions = {};
+function saveToSite(path, source) {
+  const revision = saveRevisions[path] = (saveRevisions[path] || 0) + 1;
+  clearTimeout(saveTimers[path]);
+  saveTimers[path] = setTimeout(() => {
+    saveQueues[path] = (saveQueues[path] || Promise.resolve()).catch(() => {}).then(async () => {
+      if (revision !== saveRevisions[path]) return;
+      const response = await fetch('/workspace/file?path=' + encodeURIComponent(path), {
+        method:'PUT', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:source
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Cannot save to the site');
+      baselines[path] = source;
+      versions[path] = data.version;
+      if (active === path && currentEditor.getValue() === source) {
+        document.querySelector('#saved').textContent = 'Saved to site';
+      }
+    }).catch(error => {
+      if (active === path) document.querySelector('#saved').textContent = `Site save failed · ${error.message} · recovery copy kept`;
+    });
+  },350);
+}
 function syncSelection(tree, path) {
   if (!tree || !path) return;
   for (const previous of tree.getSelectedPaths()) if (previous !== path) tree.getItem(previous)?.deselect();
@@ -73,12 +96,14 @@ async function open(path) {
   syncing = true;
   try {
     syncSelection(fileTree, path);
-    const selectedAlias = feedTree?.getSelectedPaths().find(alias => aliases[alias] === path);
-    const alias = selectedAlias || Object.keys(aliases).find(alias => aliases[alias] === path);
-    for (const previous of feedTree?.getSelectedPaths() || []) {
-      if (previous !== alias) feedTree.getItem(previous)?.deselect();
+    for (const [tree, lookup] of [[feedTree,feedAliases],[tagTree,aliases]]) {
+      const selectedAlias = tree?.getSelectedPaths().find(alias => lookup[alias] === path);
+      const alias = selectedAlias || Object.keys(lookup).find(alias => lookup[alias] === path);
+      for (const previous of tree?.getSelectedPaths() || []) {
+        if (previous !== alias) tree.getItem(previous)?.deselect();
+      }
+      syncSelection(tree, alias);
     }
-    syncSelection(feedTree, alias);
   } finally { syncing = false; }
   active = path;
   try { localStorage.setItem('markata-workspace-active-v1:' + workspaceKey, path); } catch { warning(); }
@@ -107,6 +132,7 @@ window.MarkataSiteTree = {
     try { writeDraft(active, drafts[active]);
       document.querySelector('#saved').textContent = 'Draft saved on this device'; }
     catch { warning(); }
+    if (Object.hasOwn(baselines, active)) saveToSite(active, drafts[active]);
     return true;
   },
   filename: () => active === scratchPath ? 'draft.md' : active.split('/').pop(),
@@ -115,6 +141,11 @@ window.MarkataSiteTree = {
     return text.replace(/^---\r?\n[\s\S]*?\r?\n---(?:\r?\n|$)/, '');
   },
   import(text) { open(scratchPath); currentEditor.setValue(text); },
+  openPost(slug) {
+    const post = metadata.find(file => file.slug?.toLowerCase() === slug.toLowerCase());
+    if (post) open(post.path);
+  },
+  activate(path) { localStorage.setItem('markata-workspace-active-v1:' + workspaceKey,path); },
   async attach(editor, storageWarning) {
     currentEditor = editor; warning = storageWarning;
     try {
@@ -145,24 +176,46 @@ window.MarkataSiteTree = {
       search:true,
       onSelectionChange(paths) { if (paths.length) open(paths[paths.length - 1]); }});
     fileTree.render({containerWrapper:document.querySelector('#site-files')});
-    const tagOption = document.querySelector('#site-view option[value="feeds"]');
-    tagOption.disabled = true; tagOption.textContent = 'Tags (loading…)';
+    const feedOption = document.querySelector('#site-view option[value="feeds"]');
+    const tagOption = document.querySelector('#site-view option[value="tags"]');
+    feedOption.disabled = true; tagOption.disabled = true;
+    feedOption.textContent = 'Feeds (loading…)'; tagOption.textContent = 'Tags (loading…)';
     const buildTags = () => {
       if (feedTree) return;
       for (const file of metadata) {
         for (const tag of file.tags || []) aliases[`${tag}/${file.path}`] = file.path;
       }
-      feedTree = new FileTree({paths:Object.keys(aliases),initialExpansion:'open',search:true,
+      tagTree = new FileTree({paths:Object.keys(aliases),initialExpansion:'open',search:true,
         onSelectionChange(paths) {const path=aliases[paths[paths.length-1]];if(path)open(path);}});
-      feedTree.render({containerWrapper:document.querySelector('#site-feeds')});
+      tagTree.render({containerWrapper:document.querySelector('#site-tags')});
       syncing = true;
-      try { syncSelection(feedTree, Object.keys(aliases).find(alias => aliases[alias] === active)); }
+      try { syncSelection(tagTree, Object.keys(aliases).find(alias => aliases[alias] === active)); }
       finally { syncing = false; }
     };
+    const buildFeeds = feeds => {
+      if (feedTree) return;
+      for (const feed of feeds || []) for (const path of feed.paths || []) feedAliases[`${feed.title}/${path}`] = path;
+      feedTree = new FileTree({paths:Object.keys(feedAliases),initialExpansion:'open',search:true,
+        onSelectionChange(paths) {const path=feedAliases[paths[paths.length-1]];if(path)open(path);}});
+      feedTree.render({containerWrapper:document.querySelector('#site-feeds')});
+      syncing = true;
+      try { syncSelection(feedTree, Object.keys(feedAliases).find(alias => feedAliases[alias] === active)); }
+      finally { syncing = false; }
+    };
+    const updateWorkspaceContext = view => {
+      const context = document.querySelector('#site-context');
+      const count = workspaceCounts[view] || 0;
+      context.textContent = view === 'files' ? `${count} source files in this site.`
+        : view === 'feeds' ? `${count} configured feeds · select a post to open it.`
+        : `${count} tags from loaded frontmatter.`;
+    };
     document.querySelector('#site-view').addEventListener('change', event => {
-      if (event.target.value === 'feeds') buildTags();
+      if (event.target.value === 'feeds') buildFeeds(window.MarkataSiteTree.feeds || []);
+      if (event.target.value === 'tags') buildTags();
       document.querySelector('#site-files').hidden = event.target.value !== 'files';
       document.querySelector('#site-feeds').hidden = event.target.value !== 'feeds';
+      document.querySelector('#site-tags').hidden = event.target.value !== 'tags';
+      updateWorkspaceContext(event.target.value);
     });
     // Start with a real site post. The previous standalone draft stays in the tree.
     await open(Object.hasOwn(files, selected) || selected === scratchPath ? selected : (Object.keys(files)[0] || scratchPath));
@@ -175,8 +228,17 @@ window.MarkataSiteTree = {
         metadata = data.files;
         metadataByPath = new Map(metadata.map(file => [file.path,file]));
         label.title = metadataByPath.get(active)?.title || active;
-        tagOption.textContent = 'Tags'; tagOption.disabled = false;
-      } catch { tagOption.textContent = 'Tags unavailable'; }
+        const tags = new Set(metadata.flatMap(file => file.tags || []));
+        workspaceCounts.files = metadata.length;
+        workspaceCounts.tags = tags.size;
+        document.querySelector('#site-view option[value="files"]').textContent = `Files (${metadata.length})`;
+        tagOption.textContent = `Tags (${tags.size})`; tagOption.disabled = false;
+        const feeds = data.feeds || [];
+        workspaceCounts.feeds = feeds.length;
+        window.MarkataSiteTree.feeds = feeds;
+        feedOption.textContent = `Feeds (${feeds.length})`; feedOption.disabled = false;
+        updateWorkspaceContext(document.querySelector('#site-view').value);
+      } catch { tagOption.textContent = 'Tags unavailable'; feedOption.textContent = 'Feeds unavailable'; }
     },0);
   }
 };

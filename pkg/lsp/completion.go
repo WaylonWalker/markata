@@ -119,6 +119,9 @@ func (s *Server) handleCompletion(_ context.Context, msg *Message) error {
 	frontmatterCtx := getFrontmatterContext(doc.Content, params.Position.Line, col)
 	if frontmatterCtx.InFrontmatter && (frontmatterCtx.IsFieldName || frontmatterCtx.IsFieldValue) {
 		items := getFrontmatterCompletions(frontmatterCtx, params)
+		if frontmatterCtx.IsFieldValue {
+			items = append(items, s.workspaceFrontmatterValues(frontmatterCtx, params, line)...)
+		}
 		return s.sendCompletion(msg.ID, params, &CompletionList{
 			IsIncomplete: false,
 			Items:        items,
@@ -151,6 +154,46 @@ func (s *Server) handleCompletion(_ context.Context, msg *Message) error {
 	}
 
 	return s.handleWikilinkCompletion(msg, params, prefix, startCol, col)
+}
+
+func (s *Server) workspaceFrontmatterValues(ctx *FrontmatterContext, params CompletionParams, line string) []CompletionItem {
+	if s.index == nil {
+		return nil
+	}
+	values := make(map[string]struct{})
+	for _, post := range s.index.AllPosts() {
+		if ctx.CurrentField == "tags" {
+			for _, tag := range extractTagsFromMetadata(post.Metadata["tags"]) {
+				values[tag] = struct{}{}
+			}
+			continue
+		}
+		if value, ok := post.Metadata[ctx.CurrentField]; ok {
+			if text, ok := value.(string); ok && text != "" {
+				values[text] = struct{}{}
+			}
+		}
+	}
+	start := ctx.StartCol
+	if start == 0 {
+		if colon := strings.IndexByte(line, ':'); colon >= 0 {
+			start = colon + 1
+			for start < len(line) && (line[start] == ' ' || line[start] == '\t') {
+				start++
+			}
+		}
+	}
+	items := make([]CompletionItem, 0, len(values))
+	for value := range values {
+		if ctx.Prefix != "" && !strings.HasPrefix(strings.ToLower(value), strings.ToLower(ctx.Prefix)) {
+			continue
+		}
+		items = append(items, CompletionItem{Label: value, Kind: CompletionItemKindValue,
+			Detail: "Value used in this site", InsertText: value, InsertTextFormat: InsertTextFormatPlainText,
+			TextEdit: &TextEdit{Range: Range{Start: Position{Line: params.Position.Line, Character: start}, End: Position{Line: params.Position.Line, Character: params.Position.Character}}, NewText: value}})
+	}
+	sort.Slice(items, func(i, j int) bool { return items[i].Label < items[j].Label })
+	return items
 }
 
 // handleWikilinkCompletion handles completion for [[wikilinks]].
@@ -559,6 +602,12 @@ func getDocumentLinkContext(line string, col int) (prefix string, startCol int, 
 }
 
 func (s *Server) handleDocumentLinkCompletion(msg *Message, params CompletionParams, prefix string, start, col int) error {
+	if isManagedImageContext(string(s.documentLine(params.TextDocument.URI, params.Position.Line)), col) {
+		return s.handleImageLinkCompletion(msg, params, prefix, start, col)
+	}
+	if prefix == "" {
+		return s.sendCompletion(msg.ID, params, &CompletionList{Items: []CompletionItem{}})
+	}
 	items := make([]CompletionItem, 0)
 	source := uriToPath(params.TextDocument.URI)
 	// The browser draft has no source file. Its document paths start at the workspace root.
@@ -590,6 +639,49 @@ func (s *Server) handleDocumentLinkCompletion(msg *Message, params CompletionPar
 		items = append(items, CompletionItem{Label: target, Kind: CompletionItemKindFile, Detail: post.Title,
 			Documentation: &MarkupContent{Kind: "markdown", Value: formatPostDocumentation(post)},
 			TextEdit:      &TextEdit{Range: Range{Start: Position{Line: params.Position.Line, Character: start}, End: Position{Line: params.Position.Line, Character: col}}, NewText: target}})
+	}
+	sort.Slice(items, func(i, j int) bool { return items[i].Label < items[j].Label })
+	return s.sendCompletion(msg.ID, params, &CompletionList{Items: items})
+}
+
+func (s *Server) documentLine(uri string, lineNumber int) string {
+	s.docMu.RLock()
+	doc := s.documents[uri]
+	s.docMu.RUnlock()
+	if doc == nil {
+		return ""
+	}
+	lines := strings.Split(doc.Content, "\n")
+	if lineNumber < 0 || lineNumber >= len(lines) {
+		return ""
+	}
+	return lines[lineNumber]
+}
+
+func isManagedImageContext(line string, col int) bool {
+	match := documentLinkStart.FindStringSubmatchIndex(line[:min(col, len(line))])
+	if match == nil || !strings.HasPrefix(line[match[0]:match[1]], "!") {
+		return false
+	}
+	full := line[match[0]:match[1]]
+	close := strings.Index(full, "](")
+	open := strings.IndexByte(full, '[')
+	return close >= 0 && open >= 0 && !strings.EqualFold(strings.TrimSpace(full[open+1:close]), "embed")
+}
+
+func (s *Server) handleImageLinkCompletion(msg *Message, params CompletionParams, prefix string, start, col int) error {
+	items := make([]CompletionItem, 0)
+	for _, image := range s.images {
+		if prefix != "" && !strings.HasPrefix(strings.ToLower(image.Src), strings.ToLower(prefix)) {
+			continue
+		}
+		detail := image.MIMEType
+		if image.Width > 0 && image.Height > 0 {
+			detail = fmt.Sprintf("%s · %d × %d", detail, image.Width, image.Height)
+		}
+		items = append(items, CompletionItem{Label: image.Src, Kind: CompletionItemKindFile,
+			Detail: detail, Documentation: &MarkupContent{Kind: "markdown", Value: "**Alt text:** " + image.Alt},
+			TextEdit: &TextEdit{Range: Range{Start: Position{Line: params.Position.Line, Character: start}, End: Position{Line: params.Position.Line, Character: col}}, NewText: image.Src}})
 	}
 	sort.Slice(items, func(i, j int) bool { return items[i].Label < items[j].Label })
 	return s.sendCompletion(msg.ID, params, &CompletionList{Items: items})

@@ -9,8 +9,8 @@ tags:
   - editor
 ---
 
-Select **Commands** above the Markdown editor, or press **Ctrl+K**.
-On macOS, press **Cmd+K**. The **Ctrl/Cmd+Shift+P** shortcut also works.
+Select **Commands** above the Markdown editor, or press **Ctrl+P**.
+On macOS, press **Cmd+P**. **Ctrl/Cmd+K** also works.
 The palette works with the Default, Vim, Emacs, and Sublime keymaps.
 
 Search for a command, such as `callout`, `diagram`, or `highlight`.
@@ -94,7 +94,8 @@ Replace sample image paths and IDs before publishing.
 
 Open the workbench with `?example` to load the sample in the editor and open the command palette.
 For example, visit `http://localhost:8766/?example` for the Go workbench.
-You can also open `examples/command-palette-showcase.md` with **Open .md**.
+In the Go workbench, use the **Open Markdown file** command to import
+`examples/command-palette-showcase.md` as a scratch draft.
 The example combines icon cards, a steps road, a feature row, metrics, Mermaid, and a Chart.js chart.
 It also shows Web Awesome source with its site requirement clearly identified.
 The chart data is illustrative.
