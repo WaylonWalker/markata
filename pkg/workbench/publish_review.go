@@ -40,8 +40,7 @@ func gitOutput(ctx context.Context, dir string, args ...string) (string, error) 
 	if len(output) > 2<<20 {
 		return "", fmt.Errorf("git response is too large")
 	}
-	return strings.TrimSuffix(string(output), "
-"), nil
+	return string(output), nil
 }
 
 func (h *Handler) servePublishReview(w http.ResponseWriter, r *http.Request) {
@@ -73,7 +72,13 @@ func (h *Handler) servePublishReview(w http.ResponseWriter, r *http.Request) {
 		fail(w, http.StatusUnprocessableEntity, "this workspace is not in a Git repository")
 		return
 	}
-	relative, err := filepath.Rel(root, filepath.Join(absoluteWorkspace, filepath.FromSlash(path)))
+	root = strings.TrimSpace(root)
+	resolvedPath, pathErr := filepath.EvalSymlinks(filepath.Join(absoluteWorkspace, filepath.FromSlash(path)))
+	if pathErr != nil {
+		fail(w, http.StatusUnprocessableEntity, "cannot resolve source path")
+		return
+	}
+	relative, err := filepath.Rel(root, resolvedPath)
 	if err != nil || !filepath.IsLocal(relative) {
 		fail(w, http.StatusUnprocessableEntity, "file is outside Git repository")
 		return
@@ -85,6 +90,7 @@ func (h *Handler) servePublishReview(w http.ResponseWriter, r *http.Request) {
 	}
 	// The colon form anchors the path in this exact revision; it does not
 	// resolve arbitrary refs or allow a user to supply Git revision syntax.
+	head = strings.TrimSpace(head)
 	baseline, err := gitOutput(ctx, absoluteWorkspace, "show", head+":"+filepath.ToSlash(relative))
 	exists := err == nil
 	if err != nil {
