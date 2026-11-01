@@ -68,9 +68,12 @@ On desktop, the editor shell fills the viewport without document-level scrolling
 the workspace panes own their scroll areas. Narrow mobile layouts may scroll the
 stacked editor and preview vertically.
 In split layout, the preview marks the rendered block for the active source
-cursor and shows a compact labeled caret. Presence markers use participant IDs,
-labels, and colors so additional editor cursors can be added without changing
-the marker rendering model.
+cursor and shows a compact labeled caret. When source text matches rendered
+text, the preview caret SHOULD map the editor's character offset to a rendered
+text range. For transformed or replaced content, it MUST fall back to the
+nearest source-mapped position. Presence markers use participant IDs, labels,
+and colors so additional editor cursors can be added without changing the
+marker rendering model.
 
 
 ## Integration benchmark

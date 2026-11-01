@@ -7,7 +7,7 @@ else if(values.includes(value))document.documentElement.setAttribute(key,value);
 }};
 
 let updates=Promise.resolve(), scriptSequence=0, latestVersion=0;
-let sourceLines=[], sourceLineCount=0, sourceLineOffset=0, sourcePositionAnchors=[], programmedTarget=null, scrollFrame=0, positionLine=-1, positionNode=null, scrollIntentUntil=0;
+let sourceLines=[], sourceLineCount=0, sourceLineOffset=0, sourcePositionAnchors=[], programmedTarget=null, scrollFrame=0, positionLine=-1, positionColumn=null, positionSourceText=null, positionNode=null, scrollIntentUntil=0;
 let articleObserver;
 const executedInlineScripts=new Set();
 let appearanceSignature=JSON.stringify(Object.fromEntries(Object.keys(allowed).map(key=>[key,document.documentElement.getAttribute(key)])));
@@ -73,6 +73,35 @@ const syncSourceLines=(existing,fresh)=>{
     if(value==null)current[i].removeAttribute(attribute);else current[i].setAttribute(attribute,value);
   }
 };
+const visibleSourceText=source=>{
+  const decoded=document.createElement('textarea');
+  decoded.innerHTML=String(source||'').replace(/^\s{0,3}(?:#{1,6}\s+|>\s?|[-*+]\s+|\d+\.\s+)/,'').replace(/!\[([^\]]*)\]\([^)]+\)/g,'$1').replace(/\[([^\]]+)\]\([^)]+\)/g,'$1').replace(/\[([^\]]+)\]\[[^\]]*\]/g,'$1').replace(/<[^>]*>/g,'').replace(/[`*_~]/g,'');
+  return decoded.value.replace(/\s+/g,' ').trim();
+};
+const textPosition=(root,source,ch)=>{
+  const wanted=visibleSourceText(source);
+  if(!wanted)return null;
+  const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
+  const chars=[];let node,lastWasSpace=true;
+  while((node=walker.nextNode()))for(let offset=0;offset<node.nodeValue.length;offset++){
+    const value=node.nodeValue[offset];
+    if(/\s/.test(value)){if(!lastWasSpace&&chars.length){chars.push({value:' ',node,offset});lastWasSpace=true;}continue;}
+    chars.push({value,node,offset});lastWasSpace=false;
+  }
+  while(chars.at(-1)?.value===' ')chars.pop();
+  const rendered=chars.map(char=>char.value).join('');
+  const start=rendered.indexOf(wanted);
+  if(start<0)return null;
+  const prefix=visibleSourceText(String(source).slice(0,Math.max(0,ch??0)));
+  const index=start+Math.min(prefix.length,wanted.length);
+  const target=chars[index];
+  const range=document.createRange();
+  if(target)range.setStart(target.node,target.offset);
+  else{const last=chars.at(-1);if(!last)return null;range.setStart(last.node,last.offset+1);}
+  range.collapse(true);
+  const rect=range.getBoundingClientRect();
+  return rect.width||rect.height?rect:null;
+};
 const syncPositionMarker=()=>{
   const article=document.querySelector('.post-content');
   if(!article)return;
@@ -104,8 +133,9 @@ const syncPositionMarker=()=>{
       const progress=span>0?Math.max(0,Math.min(1,(positionLine-point.line)/span)):0;
       const lineHeight=Math.max(16,Math.min(20,parseFloat(getComputedStyle(next).lineHeight)||18));
       const top=rect.top+Math.max(0,rect.height-lineHeight)*progress;
-      cursor.style.left=`${Math.max(2,rect.left+(point?.nested?10:-7))}px`;
-      cursor.style.top=`${Math.max(0,Math.min(innerHeight-lineHeight,top))}px`;
+      const character=textPosition(next,positionSourceText,positionColumn);
+      cursor.style.left=`${Math.max(2,character?character.left-1:rect.left+(point?.nested?10:-7))}px`;
+      cursor.style.top=`${Math.max(0,Math.min(innerHeight-lineHeight,character?character.top:top))}px`;
       cursor.style.height=`${lineHeight}px`;
     }
   }
@@ -272,7 +302,7 @@ if(e.data?.type==='markdown-render'){
 return;
 }if(e.data?.type==='sync-scroll-lines'){sourceLines=e.data.lines||[];sourceLineCount=e.data.lineCount||0;sourceLineOffset=e.data.sourceOffset||0;requestAnimationFrame(()=>scrollState(false));return;
 }if(e.data?.type==='sync-scroll'){programmedTarget={id:e.data.id,y:Math.max(0,Math.min(e.data.y,document.documentElement.scrollHeight-innerHeight))};document.scrollingElement.scrollTop=programmedTarget.y;const id=e.data.id;setTimeout(()=>{if(programmedTarget?.id===id)programmedTarget=null;},300);return;
-}if(e.data?.type==='sync-position'){positionLine=e.data.line;syncPositionMarker();return;
+}if(e.data?.type==='sync-position'){positionLine=e.data.line;positionColumn=Number.isFinite(e.data.ch)?e.data.ch:null;positionSourceText=typeof e.data.text==='string'?e.data.text:null;syncPositionMarker();return;
 }if(e.data?.type==='appearance'){updates=updates.then(()=>{setAppearance(e.data.attributes);
 dispatchEvent(new Event('theme-change'));appearanceSignature=JSON.stringify(e.data.attributes||{});
 }).catch(console.error);

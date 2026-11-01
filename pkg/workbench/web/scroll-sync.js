@@ -1,7 +1,7 @@
 // Source-line anchors keep documents with unequal rendered heights aligned.
 window.MarkataScrollSync = function (editor, frame, setting, workbench) {
   let lines = [], anchors = [], sourceOffset = 0, preview = null, driver = 'editor', expectedEditorTop = null;
-  let editorFollowCursor = true, lastMarkedLine = -1, lastCursorLine = -1;
+  let editorFollowCursor = true, lastMarkedLine = -1, lastMarkedCursor = '', lastCursor = null;
   let geometryKey = '', requestedPreview = null, previewRequestID = 0, editorScrollIntentUntil = 0;
   let contentUnrendered = false, deferredCursorFollow = false;
   let framePending = false, editorPending = false;
@@ -95,11 +95,14 @@ window.MarkataScrollSync = function (editor, frame, setting, workbench) {
       return points;
     }, []);
   };
-  function markPreviewPosition(line) {
+  function markPreviewPosition(line, cursor = null) {
     line = clamp(Math.round(line || 0), editor.lastLine());
-    if (line === lastMarkedLine) return;
+    const source = cursor ? editor.getLine(cursor.line) : null;
+    const key = cursor ? `${cursor.line}:${cursor.ch}:${source}` : '';
+    if (line === lastMarkedLine && key === lastMarkedCursor) return;
     lastMarkedLine = line;
-    frame.contentWindow?.postMessage({type:'sync-position', line}, '*');
+    lastMarkedCursor = key;
+    frame.contentWindow?.postMessage({type:'sync-position', line, ch:cursor?.ch ?? null, text:source}, '*');
   }
   function editorToPreview(followCursor = false) {
     if (!active() || !preview || !lines.length) return;
@@ -109,7 +112,7 @@ window.MarkataScrollSync = function (editor, frame, setting, workbench) {
     const preferred = followCursor ? Math.max(.15, Math.min(.8, (cursorY - info.top) / info.clientHeight)) : .4;
     const sourcePoints = editorPoints();
     const line = followCursor ? cursor.line : position(sourcePoints, info.top + info.clientHeight * preferred);
-    if (line != null) markPreviewPosition(line);
+    if (line != null) markPreviewPosition(line, followCursor ? cursor : null);
     const sourceY = height(sourcePoints, line), previewY = height(preview.points, line);
     if (sourceY != null && previewY != null) {
       const ratio = sharedRatio(sourceY, info.height - info.clientHeight, info.clientHeight, previewY, preview.height - preview.clientHeight, preview.clientHeight, preferred);
@@ -150,10 +153,11 @@ window.MarkataScrollSync = function (editor, frame, setting, workbench) {
   editor.on('cursorActivity', () => {
     if (!editor.hasFocus()) return;
     const cursor = editor.getCursor();
-    if (cursor.line === lastCursorLine) return;
+    if (lastCursor && cursor.line === lastCursor.line && cursor.ch === lastCursor.ch) return;
     driver = 'editor'; editorFollowCursor = true;
-    lastCursorLine = cursor.line;
-    markPreviewPosition(cursor.line);
+    lastCursor = cursor;
+    lastMarkedLine = -1;
+    markPreviewPosition(cursor.line, cursor);
     if (contentUnrendered) { deferredCursorFollow = true; return; }
     requestAnimationFrame(() => editorToPreview(true));
   });
