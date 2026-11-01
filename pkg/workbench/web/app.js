@@ -219,8 +219,11 @@ document.querySelector('#create-form').addEventListener('submit',async event => 
     createDialog.close(); location.reload();
   } catch (error) { createError.textContent = error.message; createError.hidden = false; }
 });
+window.MarkataFrontmatter.attach(editor);
 window.MarkataPublishReview.attach(editor);
 window.MarkataCommandPalette.attach(editor,{actions:[
+  {id:'edit-properties',label:'Page: Edit Properties',description:'Open the visual frontmatter object editor.',aliases:'frontmatter metadata tags date title publish fields',run:()=>window.MarkataFrontmatter.open()},
+  {id:'edit-frontmatter-yaml',label:'Page: Edit YAML Frontmatter',description:'Hand edit the raw YAML header.',aliases:'frontmatter source advanced raw metadata',run:()=>window.MarkataFrontmatter.editYAML()},
   {id:'review-publish',label:'Publishing: Review & Publish',description:'Compare saved Markdown with the last committed revision before publishing.',aliases:'publish go live deploy release review git',run:()=>setTimeout(()=>window.MarkataPublishReview.open(),0)},
   {id:'new-from-template',label:'New Post',description:'Choose a template, then set its title and path.',aliases:'new create post page template',run:showCreateDialog},
   {id:'open-markdown',label:'Open Markdown file',description:'Import a local Markdown file into an unsaved draft.',aliases:'file import',run:()=>document.querySelector('#open').click()},
