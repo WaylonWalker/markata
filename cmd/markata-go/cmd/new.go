@@ -363,14 +363,17 @@ func resolveTemplateSelection(name string, templates map[string]ContentTemplate)
 		return ContentTemplate{}, "", false
 	}
 	template := templates[canonical]
-	frontmatter := make(map[string]interface{}, len(template.Frontmatter))
-	for key, value := range template.Frontmatter {
-		frontmatter[key] = value
+	// Built-in aliases historically select their own rendering template.
+	// Site-authored aliases are discovery names, not content metadata.
+	if template.Source == "builtin" {
+		frontmatter := make(map[string]interface{}, len(template.Frontmatter))
+		for key, value := range template.Frontmatter {
+			frontmatter[key] = value
+		}
+		frontmatter["template"] = name
+		frontmatter["templateKey"] = name
+		template.Frontmatter = frontmatter
 	}
-	// Retain the existing alias-specific page template behavior.
-	frontmatter["template"] = name
-	frontmatter["templateKey"] = name
-	template.Frontmatter = frontmatter
 	return template, canonical, true
 }
 
