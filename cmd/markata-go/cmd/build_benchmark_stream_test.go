@@ -10,7 +10,6 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -290,39 +289,10 @@ func (w *benchmarkCountingWriter) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-func TestBenchmarkJSONStreamAllocation(t *testing.T) {
+// Buffered writes are a correctness property, so keep this assertion in the
+// race-enabled test suite rather than with the uninstrumented allocation guard.
+func TestBenchmarkJSONStreamBufferedWrites(t *testing.T) {
 	result := benchmarkStreamFixture(1500, 24)
-	measure := func(write func(io.Writer, *BuildResult) error) uint64 {
-		t.Helper()
-		// Warm reusable encoding/json pools before measuring. GC bounds leftover
-		// buffers between implementations; fixture allocation is excluded.
-		if err := write(io.Discard, result); err != nil {
-			t.Fatal(err)
-		}
-		runtime.GC()
-		var before, after runtime.MemStats
-		runtime.ReadMemStats(&before)
-		if err := write(io.Discard, result); err != nil {
-			t.Fatal(err)
-		}
-		runtime.ReadMemStats(&after)
-		return after.TotalAlloc - before.TotalAlloc
-	}
-	legacy, streamed := measure(legacyBenchmarkJSON), measure(writeBenchmarkJSON)
-	t.Logf("legacy = %d B, streamed = %d B; allocation reduction = %.2f%%",
-		legacy, streamed, 100*(1-float64(streamed)/float64(legacy)))
-	// Compiler escape analysis and sync.Pool reuse vary across Go versions and
-	// CI runs. Guard both the proportional improvement and the absolute
-	// footprint of this fixed 1500-entry fixture, rather than requiring a
-	// fragile 87.5% improvement on a noisy single TotalAlloc sample.
-	// Observed Go 1.27 runs reduced allocations by ~81-86%.
-	if streamed >= legacy/4 {
-		t.Fatalf("stream allocated %d bytes; want below 1/4 of legacy %d", streamed, legacy)
-	}
-	const maxStreamAllocationBytes = 48 << 20
-	if streamed >= maxStreamAllocationBytes {
-		t.Fatalf("stream allocated %d bytes; want below %d bytes", streamed, maxStreamAllocationBytes)
-	}
 	var output benchmarkCountingWriter
 	if err := writeBenchmarkJSON(&output, result); err != nil {
 		t.Fatal(err)
@@ -330,7 +300,6 @@ func TestBenchmarkJSONStreamAllocation(t *testing.T) {
 	if output.calls > int(output.bytes/4096)+2 {
 		t.Fatalf("unbuffered writes: %d calls for %d bytes", output.calls, output.bytes)
 	}
-	runtime.KeepAlive(result)
 }
 
 func BenchmarkBenchmarkJSON(b *testing.B) {
