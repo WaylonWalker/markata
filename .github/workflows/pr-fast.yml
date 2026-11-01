@@ -1,0 +1,154 @@
+# First-stage fast merge validation. The existing CI matrix remains in place
+# until the new gate is measured, verified, and selected in repository rules.
+name: Fast PR validation
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  merge_group:
+  workflow_dispatch:
+
+concurrency:
+  group: fast-pr-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  fast:
+    # Stable job name for future branch-protection / merge-queue requirements.
+    name: PR Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # PR merge refs have the base commit as the first parent.
+          fetch-depth: 2
+          persist-credentials: false
+
+      - name: Classify PR changes (fail closed)
+        id: scope
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          # Non-PR events do not get the documentation-only exemption.
+          if [[ "$EVENT_NAME" != "pull_request" ]]; then
+            echo "docs_only=false" >> "$GITHUB_OUTPUT"
+            echo "python=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          changed=$(gh api --paginate \
+            "/repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/files?per_page=100" \
+            --jq '.[].filename')
+          if [[ -z "$changed" ]]; then
+            echo "::error::Could not classify changed files (empty PR file list)"
+            exit 1
+          fi
+          docs_only=true
+          python=false
+          while IFS= read -r path; do
+            case "$path" in
+              docs/*|docs-site/*|README.md|CONTRIBUTING.md)
+                ;;
+              *)
+                docs_only=false
+                ;;
+            esac
+            case "$path" in
+              python/*|scripts/build-pypi-wheels.sh|scripts/check-pypi-wheels.py|scripts/add-python-renderer-to-wheels.py)
+                python=true
+                ;;
+            esac
+          done <<< "$changed"
+          echo "docs_only=$docs_only" >> "$GITHUB_OUTPUT"
+          echo "python=$python" >> "$GITHUB_OUTPUT"
+          echo "Docs-only: $docs_only; Python impact: $python" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Check patch whitespace
+        shell: bash
+        run: |
+          set -euo pipefail
+          # A missing parent is a validation error, not a green skipped check.
+          git rev-parse 'HEAD^' > /dev/null
+          git diff --check 'HEAD^' HEAD
+
+      - uses: actions/setup-go@v7
+        if: steps.scope.outputs.docs_only != 'true'
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Check gofmt
+        if: steps.scope.outputs.docs_only != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Enforce formatting on touched Go files without failing unrelated
+          # changes on historical formatting debt (full lint remains in CI).
+          unformatted=$(git diff --name-only 'HEAD^' HEAD -- '*.go' |
+            while IFS= read -r file; do
+              [[ -f "$file" ]] || continue
+              gofmt -l "$file"
+            done)
+          if [[ -n "$unformatted" ]]; then
+            echo "::error::Unformatted Go files:"
+            printf '%s\n' "$unformatted"
+            exit 1
+          fi
+
+      - name: Build CLI and run short Go suite
+        if: steps.scope.outputs.docs_only != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          start=$SECONDS
+          trap 'echo "Fast Go build + short tests: $((SECONDS-start))s" >> "$GITHUB_STEP_SUMMARY"' EXIT
+
+          go build -o "$RUNNER_TEMP/markata-go" ./cmd/markata-go
+          "$RUNNER_TEMP/markata-go" version
+          "$RUNNER_TEMP/markata-go" --help > /dev/null
+          export MARKATA_GO_TEST_BINARY="$RUNNER_TEMP/markata-go"
+          export MARKATA_GO_TEST_BINARY_REVISION="$(git rev-parse HEAD)"
+          # The Build Lab characterization is observational and belongs in full CI.
+          go test -short -timeout=15m \
+            -skip '^TestBuildLab_LinkedAndFixtureMutationsCharacterizeProduct$' ./...
+
+      - uses: actions/setup-python@v7
+        if: steps.scope.outputs.python == 'true'
+        with:
+          python-version: '3.13'
+
+      - name: Python renderer unit tests
+        if: steps.scope.outputs.python == 'true'
+        shell: bash
+        env:
+          PYTHONPATH: python
+        run: python -m unittest discover -s python/tests -v
+
+      - name: Summarize validation selection
+        if: always()
+        shell: bash
+        env:
+          CLASSIFY_RESULT: ${{ steps.scope.outcome }}
+          DOCS_ONLY: ${{ steps.scope.outputs.docs_only }}
+          PYTHON_IMPACT: ${{ steps.scope.outputs.python }}
+          GO_RESULT: ${{ steps.scope.outputs.docs_only != 'true' && 'selected' || 'docs-only-exemption' }}
+        run: |
+          {
+            echo "## Fast PR gate"
+            echo ""
+            echo "- Classification: $CLASSIFY_RESULT"
+            echo "- Go validation: $GO_RESULT"
+            echo "- Python impact: $PYTHON_IMPACT"
+            echo "- PR-only docs exemption: $DOCS_ONLY"
+            echo "- Workflow: $GITHUB_WORKFLOW; SHA: $GITHUB_SHA"
+          } >> "$GITHUB_STEP_SUMMARY"

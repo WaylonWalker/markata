@@ -1,0 +1,96 @@
+name: Native Mermaid integration
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/native-mermaid-integration.yml'
+      - 'pkg/plugins/mermaid*'
+      - 'pkg/plugins/standalone*'
+      - 'pkg/models/config.go'
+      - 'pkg/renderprotocol/**'
+      - 'cmd/markata-go/cmd/render.go'
+      - 'python/markata/**'
+      - 'python/benchmark_renderer_pool.py'
+      - 'go.mod'
+      - 'go.sum'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native:
+    name: Go native SVG + Python smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v7
+        with:
+          go-version: '1.27'
+          cache: true
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - name: Resolve and verify Go dependency checksums
+        run: |
+          go mod tidy
+          echo '=== dependency diff begin ==='
+          git diff -- go.mod go.sum
+          echo '=== dependency diff end ==='
+      - name: Report Go formatting adjustments
+        run: |
+          gofmt -w pkg/plugins/mermaid.go pkg/plugins/mermaid_client.go pkg/plugins/mermaid_native.go pkg/plugins/mermaid_native_test.go pkg/plugins/mermaid_native_validate.go pkg/plugins/mermaid_native_validate_test.go pkg/plugins/mermaid_render.go pkg/plugins/mermaid_wasm.go pkg/plugins/standalone_render.go pkg/plugins/standalone_capabilities.go pkg/models/config.go pkg/renderprotocol/protocol.go pkg/renderprotocol/protocol_test.go cmd/markata-go/cmd/render.go
+          echo '=== formatting diff begin ==='
+          git diff -- pkg/plugins/mermaid.go pkg/plugins/mermaid_client.go pkg/plugins/mermaid_native.go pkg/plugins/mermaid_native_test.go pkg/plugins/mermaid_native_validate.go pkg/plugins/mermaid_native_validate_test.go pkg/plugins/mermaid_render.go pkg/plugins/mermaid_wasm.go pkg/plugins/standalone_render.go pkg/plugins/standalone_capabilities.go pkg/models/config.go pkg/renderprotocol/protocol.go pkg/renderprotocol/protocol_test.go cmd/markata-go/cmd/render.go
+          echo '=== formatting diff end ==='
+      - name: Fast Go unit, protocol and native Mermaid tests
+        run: |
+          go test ./pkg/plugins ./pkg/renderprotocol ./cmd/markata-go/cmd -run 'TestNativeMermaid|TestValidateNativeMermaidSVG|TestRenderStandalone_Native|TestServe_Native|TestMermaidPlugin' -count=1 -timeout=90s
+      - name: Race tests (manual heavy verification)
+        if: github.event_name == 'workflow_dispatch'
+        run: go test -race ./pkg/plugins ./pkg/renderprotocol -run 'TestNativeMermaid|TestValidateNativeMermaidSVG|TestRenderStandalone_Native|TestServe_Native' -count=1 -timeout=180s
+      - name: Build production binary
+        run: |
+          mkdir -p python/markata/bin
+          go build -o python/markata/bin/markata ./cmd/markata-go
+      - name: Verify Python warm pool API
+        env:
+          PYTHONPATH: python
+        run: |
+          python -m unittest discover -s python/tests -p 'test_pool.py' -v
+          python - <<'PY'
+          import asyncio
+          from markata.pool import RendererPool
+          async def run():
+              async with RendererPool(workers=1) as pool:
+                  source = '### Diagram\n\n' + chr(96)*3 + 'mermaid\nflowchart LR\nA[Load] --> B[Serve]\n' + chr(96)*3
+                  result = await pool.render(source,mermaid_mode='go')
+                  assert result.features.get('mermaid'),result.features
+                  assert '<svg' in result.html,result.html
+                  assert not any('mermaid.min.js' in str(a) for a in result.assets)
+                  print('Native SVG through warm pool: OK')
+          asyncio.run(run())
+          PY
+      - name: Archive normalized Go files for follow-up review
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: native-mermaid-normalized-build
+          path: |
+            go.mod
+            go.sum
+            pkg/plugins/mermaid_native.go
+            pkg/plugins/mermaid_native_test.go
+            pkg/plugins/mermaid.go
+            pkg/plugins/mermaid_render.go
+            pkg/plugins/mermaid_client.go
+            pkg/plugins/mermaid_wasm.go
+            pkg/plugins/standalone_render.go
+            pkg/plugins/standalone_capabilities.go
+            pkg/models/config.go
+            pkg/renderprotocol/protocol.go
+            pkg/renderprotocol/protocol_test.go
+            cmd/markata-go/cmd/render.go
+          retention-days: 7

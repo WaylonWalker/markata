@@ -13,6 +13,13 @@ transfer, render time, total asset bytes, or Lighthouse score. Verify
 network/LCP/TBT/CLS separately. Prefer fixes in the static generator over
 browser runtime work. Do not cut useful content to meet the budget.
 
+A proposed static SVG backend publishes content-addressed external images
+with intrinsic dimensions, but it is currently an **internal** package,
+not an active site-build option. Once integrated, measure SVG file transfer
+bytes (including embedded fonts), the SVG element/paint cost, and browser
+CLS separately from the HTML-only page-weight report. Do not claim that
+image dimensions alone certify zero CLS on a responsive layout.
+
 Regular builds warn without failing. Use `--page-weight=false` only to skip
 the scan; `--page-weight-html-kb=96` changes the post-size warning threshold.
 Run a clean site rebuild after shared template changes because incremental

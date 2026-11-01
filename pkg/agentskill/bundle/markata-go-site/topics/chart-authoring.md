@@ -18,6 +18,14 @@ A chart is a first-class visual option alongside `md-stat`, `md-card`,
 comparison, trend or distribution, choose a chart if it will communicate
 that relationship more clearly.
 
+## Static SVG status
+
+The internal `pkg/visualizations` SVG foundation does not render charts from
+Markdown yet. `vega-lite` fences and an `offline-static` chart mode are not
+supported authoring syntax. Continue writing supported `chartjs` JSON with
+its accessible no-JavaScript data fallback; a data fallback is not an SVG
+chart and the canvas still needs browser JavaScript.
+
 ## Choose the chart from the question
 
 | Reader's question | Prefer | Notes |

@@ -127,7 +127,7 @@ class RendererPool:
 
     async def render(self, markdown: str, *, inline_assets: bool = False,
                      asset_base: str = "/markata-assets", unsafe: bool = False,
-                     timeout: float = 30) -> RenderResult:
+                     mermaid_mode: str = "client", timeout: float = 30) -> RenderResult:
         """Render on a warm worker; cancellation/timeout replaces that worker."""
         if not self._started or self._closed:
             raise RenderError("RendererPool must be started inside an async lifespan")
@@ -135,6 +135,8 @@ class RendererPool:
             raise RenderError(f"Renderer pool cannot recover a worker: {self._failure}")
         if timeout <= 0:
             raise ValueError("timeout must be positive")
+        if mermaid_mode not in ("client", "go"):
+            raise ValueError("mermaid_mode must be client or go")
         if not isinstance(markdown, str):
             raise TypeError("markdown must be a string")
         if len(markdown.encode("utf-8")) > _MAX_SOURCE_BYTES:
@@ -150,7 +152,8 @@ class RendererPool:
                         response = await self._exchange(
                             worker, "render", source=markdown,
                             options={"inline_assets": inline_assets,
-                                     "asset_base": asset_base, "unsafe": unsafe},
+                                     "asset_base": asset_base, "unsafe": unsafe,
+                                     "mermaid_mode": mermaid_mode},
                         )
                     except BaseException:
                         self._retire(worker)

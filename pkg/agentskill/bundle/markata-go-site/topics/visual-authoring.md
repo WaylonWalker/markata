@@ -7,6 +7,13 @@ building blocks. Do not assume the user wants a screenshot, generated image,
 app, or proprietary UI syntax. Select the output medium from the request. Use
 plain prose or a normal table when graphics would add no value.
 
+## Renderer availability
+
+A shared backend SVG cache/publisher exists internally, but D2 and Vega-Lite
+fences are **not** implemented. Do not author `d2` or `vega-lite` blocks as
+if they were supported: use existing Mermaid for graph topology and Chart.js
+for data charts until a tested adapter and authoring guide ship.
+
 ## Decide whether to compose a page or draw one diagram
 
 **A visual document is an information design, not a synonym for Mermaid.**

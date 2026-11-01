@@ -1,6 +1,6 @@
 module github.com/WaylonWalker/markata
 
-go 1.26.0
+go 1.27.0
 
 require (
 	github.com/BurntSushi/toml v1.6.0
@@ -35,6 +35,7 @@ require (
 	github.com/yuin/goldmark v1.8.6
 	github.com/yuin/goldmark-emoji v1.0.6
 	github.com/yuin/goldmark-highlighting/v2 v2.0.0-20230729083705-37449abec8cc
+	github.com/zkrebbekx/go-mermaid v0.1.6
 	go.abhg.dev/goldmark/anchor v0.2.0
 	golang.org/x/crypto v0.58.0
 	golang.org/x/image v0.47.0

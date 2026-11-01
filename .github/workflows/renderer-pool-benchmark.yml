@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   benchmark:
-    name: One-shot vs warm pool (Go 1.26 / Python 3.13)
+    name: One-shot vs warm pool (Go 1.27 / Python 3.13)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -26,7 +26,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-go@v7
         with:
-          go-version: '1.26'
+          go-version: '1.27'
           cache: true
       - uses: actions/setup-python@v7
         with:

@@ -19,7 +19,7 @@ The policy is specified in [CI.md](../../spec/spec/CI.md).
 
 CI runs on pushes and pull requests targeting `main`/`master`, daily at 08:23 UTC,
 and through **Actions → CI → Run workflow**. Lint, all three Linux race/coverage
-shards, their aggregate `Test (ubuntu-latest, 1.26)` check, and macOS/Windows tests
+shards, their aggregate `Test (ubuntu-latest, 1.27)` check, and macOS/Windows tests
 remain active. The CLI/search shard smoke-tests its existing binary with
 `version` and `--help`; there is no separate duplicate build.
 
@@ -105,10 +105,22 @@ and faster-build guidance). No update is needed: these changes govern product
 maintainer CI, not site-author commands, build behavior, deployment workflows,
 or benchmarking guidance.
 
-## Linter installation
+## Golangci-lint v2 on Go 1.27
 
-CI runs the same pinned v1.64.8 `go run` command as `just lint`, using
-the configured Go toolchain and all rules in `.golangci.yml`. The v1 module
-path has no `/v2` segment. `just lint-new` remains the local changed-code
-check; CI continues to lint the full repository. No bundled site-skill update
-is needed because this repair changes only product-repository CI installation.
+Go 1.27 uses `golangci-lint` **v2.15.0**, rather than the older v1.64.8
+tool which cannot decode the Go 1.27 compiler export format. The migrated
+`.golangci.yml` retains all existing configured linters.
+
+The new v2 analyzers also surfaced hundreds of historical findings in
+untouched files. To keep meaningful merge protection while progressively
+resolving that debt (tracked in
+[issue #1902](https://github.com/WaylonWalker/markata/issues/1902)),
+PR and push CI now rejects **new findings relative to the PR base or previous
+main commit**. Scheduled CI runs the same new-issue gate plus a
+**full-tree lint audit** that reports failures without blocking the daily
+build. The full audit is deliberately visible, not suppressed.
+
+For local work, run `just lint` after fetching `origin/main` to enforce
+new findings, or `just lint-full` to inspect all existing diagnostics.
+`just lint-fast` uses the supported v2 `--fast-only` mode. Once issue
+#1902 is resolved, restoring blocking full-tree lint is the exit criterion.

@@ -69,6 +69,25 @@ async def main():
                     "pool_startup_ms": startup_ms,
                     "latency_speedup": round(baseline["p50_ms"]/max(warm["p50_ms"], 0.001), 2),
                     "throughput_speedup": round(warm["requests_per_second"]/max(baseline["requests_per_second"], 0.001), 2)}
+            if name == "mermaid":
+                # Same Python -> warm Go -> Markdown -> assets request boundary.
+                # The only change is generating the diagram as native SVG.
+                async with RendererPool(workers=concurrency) as native_pool:
+                    async def native_render(source, *, inline_assets=False):
+                        return await native_pool.render(source, inline_assets=inline_assets,
+                                                        mermaid_mode="go")
+                    warm_native = await sample(native_render, source, count, concurrency, warmups)
+                    result = await native_pool.render(source, mermaid_mode="go")
+                    assert result.features.get("mermaid"), "native SVG missing Mermaid feature"
+                    assert "<svg" in result.html, "native SVG not embedded in response"
+                    assert not any("mermaid.min.js" in str(asset) for asset in result.assets), (
+                        "native SVG unexpectedly ships Mermaid browser JS")
+                data["pool_native"] = warm_native
+                data["native_vs_client_speedup"] = round(
+                    warm["p50_ms"] / max(warm_native["p50_ms"], 0.001), 2)
+                print(f"BENCH native-mermaid concurrency={concurrency} "
+                      f"pool-client={warm} pool-native={warm_native} "
+                      f"speedup={data['native_vs_client_speedup']}x", flush=True)
             case[str(concurrency)] = data
             print(f"BENCH {name} concurrency={concurrency} direct={baseline} warm={warm} "
                   f"latency_speedup={data['latency_speedup']}x", flush=True)

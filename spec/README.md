@@ -53,6 +53,7 @@ The docs explain *why* and *usage* - user-friendly guides, examples, tutorials.
 | `CONTAINERS.md` | `docs/guides/deployment/docker.md` |
 | `CI.md` | `docs/guides/maintainer-ci.md` |
 | `ROADS.md` | `docs/guides/roads.md` |
+| `STATIC_VISUALIZATIONS.md` | `docs/guides/static-visualizations.md` |
 
 **Documentation lives in `docs/` and is built as part of the site itself.**
 
@@ -61,6 +62,7 @@ The docs explain *why* and *usage* - user-friendly guides, examples, tutorials.
 | File | Description |
 |------|-------------|
 | [INSTALL.md](./spec/INSTALL.md) | Entry point with language/library choices |
+| [STATIC_VISUALIZATIONS.md](./spec/STATIC_VISUALIZATIONS.md) | Internal backend SVG rendering, asset cache/publication, trust limits |
 | [SPEC.md](./spec/SPEC.md) | Core architecture, CLI, concurrency |
 | [EDITORIAL_HISTORY.md](./spec/EDITORIAL_HISTORY.md) | Editorial history, lazy source comparisons, and editor credits |
 | [EDITORIAL_AUTHORING.md](./spec/EDITORIAL_AUTHORING.md) | Isolated attributed commits for humans and agents |

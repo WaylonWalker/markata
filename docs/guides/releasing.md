@@ -20,7 +20,7 @@ A release is complete only when **the tested tag, published artifacts, pinned wo
 - Check any open release-affecting PRs and verify the approved source contains the intended code and docs.
 - Do not tag a moving `main` branch by accident: record the exact commit and compare it to the final release ref.
 
-Local maintainer commands (Go 1.26 required):
+Local maintainer commands (Go 1.27 required):
 
 ```bash
 git fetch origin --tags
