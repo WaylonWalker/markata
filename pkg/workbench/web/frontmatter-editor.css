@@ -284,10 +284,43 @@
 }
 
 .fm-switch input {
-  width: 18px;
-  height: 18px;
+  position: relative;
+  width: 38px;
+  height: 22px;
   margin: 0;
-  accent-color: var(--color-primary);
+  appearance: none;
+  border: 1px solid var(--editor-divider);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-text-muted) 28%, var(--color-surface));
+  cursor: pointer;
+  transition: background-color 140ms ease, border-color 140ms ease;
+}
+
+.fm-switch input::after {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-text);
+  content: "";
+  transition: transform 140ms ease;
+}
+
+.fm-switch input:checked {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+}
+
+.fm-switch input:checked::after {
+  background: var(--color-on-primary, #151515);
+  transform: translateX(16px);
+}
+
+.fm-switch input:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .fm-switch span {
