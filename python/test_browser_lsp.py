@@ -102,7 +102,8 @@ class BrowserLSPTest(unittest.TestCase):
                     page.keyboard.press('Control+A')
                     page.keyboard.type('# Private browser edit')
                     expect(preview.locator('h1')).to_have_text('Private browser edit')
-                    expect(page.locator('#saved')).to_contain_text('Saved to site')
+                    saved_label = 'Saved to site' if name == 'Go' else 'Draft saved on this device'
+                    expect(page.locator('#saved')).to_contain_text(saved_label)
                     source_path.write_text('# External conflicting edit', encoding="utf-8")
                     page.reload()
                     expect(preview.locator('h1')).to_have_text('Private browser edit')
