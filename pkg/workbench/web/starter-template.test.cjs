@@ -29,3 +29,21 @@ test("literal placeholder text entered as a title is not expanded again", () => 
   assert.match(result, /title: "\{\{slug\}\}"/);
   assert.match(result, /subtitle: "\{\{slug\}\}"/);
 });
+
+test("minimal starter does not materialize inherited defaults", () => {
+  const source = '---\ntitle: "{{title}}"\n---\n\n## {{title}}\n';
+  const result = render(source, "A Guide", "a-guide", new Date("2024-02-03T04:05:06Z"));
+  assert.match(result, /title: "A Guide"/);
+  assert.match(result, /## A Guide/);
+  for (const key of ["slug", "date", "draft", "published", "tags", "description"]) {
+    assert.doesNotMatch(result, new RegExp(`^${key}:`, "m"));
+  }
+});
+
+test("frontmatter without a title remains sparse", () => {
+  const result = render("---\npublished: false\n---\n## {{title}}", "A Guide", "a-guide");
+  assert.match(result, /published: false/);
+  assert.match(result, /## A Guide/);
+  assert.doesNotMatch(result, /^title:/m);
+  assert.doesNotMatch(result, /^slug:/m);
+});
