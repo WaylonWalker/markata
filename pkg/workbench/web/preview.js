@@ -194,8 +194,11 @@ const changedDiagrams=changedNodes.flatMap(node=>[...(node.matches('pre.mermaid'
 for(const source of sources){if(source.src&&[...document.scripts].some(s=>s.src===assetURL(source,'src')))continue;
 if(!source.src){
   const scriptText=source.textContent;
-  if(executedInlineScripts.has(scriptText)||[...document.scripts].some(s=>!s.src&&scriptSource(s)===scriptText)){executedInlineScripts.add(scriptText);continue;}
-  if(/chartjs-\d+/.test(scriptText)&&!chartChanged)continue;
+  const chartID=scriptText.match(/chartjs-\d+/)?.[0];
+  if(chartID){
+    const canvas=document.getElementById(chartID);
+    if(!canvas||(!chartChanged&&window.Chart?.getChart?.(canvas))){executedInlineScripts.add(scriptText);continue;}
+  }else if(executedInlineScripts.has(scriptText)||[...document.scripts].some(s=>!s.src&&scriptSource(s)===scriptText)){executedInlineScripts.add(scriptText);continue;}
   executedInlineScripts.add(scriptText);
 }
 const script=document.createElement('script');

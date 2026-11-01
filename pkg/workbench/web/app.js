@@ -402,5 +402,5 @@ document.querySelector('#import').addEventListener('change', async event => {
 });
 if (!saved.textContent) saveDraft();
 
-const workspaceReady = window.MarkataSiteTree.attach(editor, storageWarning);
+const workspaceReady = window.MarkataSiteTree.attach(editor, storageWarning, {saveToSite:true});
 workspaceReady.then(() => window.MarkataFileFinder?.attach(editor));
