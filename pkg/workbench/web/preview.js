@@ -332,4 +332,26 @@ if(!slug)return;
 event.preventDefault();
 parent.postMessage({type:'open-post',slug},'*');
 },true);
+document.addEventListener('click',event=>{
+  if(event.button!==0||event.target.closest?.('a')||!window.getSelection()?.isCollapsed)return;
+  const article=document.querySelector('.post-content');
+  if(!article)return;
+  let range=document.caretRangeFromPoint?.(event.clientX,event.clientY)||null;
+  if(!range&&document.caretPositionFromPoint){const caret=document.caretPositionFromPoint(event.clientX,event.clientY);if(caret){range=document.createRange();range.setStart(caret.offsetNode,caret.offset);range.collapse(true);}}
+  if(!range||!article.contains(range.startContainer))return;
+  let textBlock=range.startContainer.nodeType===Node.TEXT_NODE?range.startContainer.parentElement:range.startContainer;
+  textBlock=textBlock?.closest?.('p,h1,h2,h3,h4,h5,h6,li,td,th,blockquote,pre')||null;
+  if(!textBlock||!article.contains(textBlock))return;
+  const text=String(textBlock.innerText||textBlock.textContent||'').replace(/\s+/g,' ').trim();
+  if(!text)return;
+  const before=document.createRange();before.selectNodeContents(textBlock);before.setEnd(range.startContainer,range.startOffset);
+  const offset=String(before.toString()).replace(/\s+/g,' ').trimStart().length;
+  let root=textBlock;while(root.parentElement&&root.parentElement!==article)root=root.parentElement;
+  const index=[...article.children].indexOf(root);if(index<0)return;
+  const nested=sourcePositionAnchors.filter(anchor=>anchor.nested&&anchor.index===index&&anchor.node.contains(textBlock)).sort((a,b)=>b.depth-a.depth)[0];
+  const start=(nested?.line??((sourceLines[index]??0)+sourceLineOffset))-1;
+  const nextTop=sourceLines.slice(index+1).find(Number.isFinite);
+  const end=(nested?.endLine??(nextTop==null?sourceLineOffset+sourceLineCount:nextTop+sourceLineOffset-1))-1;
+  parent.postMessage({type:'place-editor-cursor',line:start,endLine:Math.max(start,end),text,offset},'*');
+},true);
 })();

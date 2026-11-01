@@ -1,9 +1,51 @@
 
 const source = document.querySelector('#source');
 const frame = document.querySelector('#preview');
+const sourceVisibleText = value => String(value||'').replace(/^\s{0,3}(?:#{1,6}\s+|>\s?|[-*+]\s+|\d+\.\s+)/,'').replace(/!\[([^\]]*)\]\([^)]+\)/g,'$1').replace(/\[([^\]]+)\]\([^)]+\)/g,'$1').replace(/\[([^\]]+)\]\[[^\]]*\]/g,'$1').replace(/<[^>]*>/g,'').replace(/[`*_~]/g,'').replace(/\s+/g,' ').trim();
+const placeEditorCursor = position => {
+  const lines = editor.getValue().split(/\r?\n/);
+  const start = Math.max(0,Math.min(lines.length-1,Number(position.line)||0));
+  const end = Math.max(start,Math.min(lines.length-1,Number(position.endLine)||start));
+  const clicked = String(position.text||'');
+  const findSourceMatch = (from,to) => {
+    let match=null;
+    for(let i=from;i<=to;i++){
+      const parts=[];
+      for(let j=i;j<=to&&j<i+16;j++){
+        if(!lines[j].trim())break;
+        const visible=sourceVisibleText(lines[j]);
+        if(visible)parts.push({line:j,text:visible,raw:lines[j]});
+        const joined=parts.map(part=>part.text).join(' ');
+        const index=joined?clicked.indexOf(joined):-1;
+        if(index>=0&&(!match||joined.length>match.length))match={parts,index,length:joined.length};
+      }
+    }
+    return match;
+  };
+  const best=findSourceMatch(start,end)||findSourceMatch(0,lines.length-1);
+  let line=start,ch=0;
+  if(best){
+    const within=Math.max(0,Math.min(best.length,Number(position.offset)||0)-best.index);
+    let consumed=0;
+    for(const part of best.parts){
+      if(within<=consumed+part.text.length){
+        line=part.line;
+        const leading=part.raw.length-part.raw.trimStart().length;
+        const syntax=part.raw.slice(leading).match(/^(?:#{1,6}\s+|>\s?|[-*+]\s+|\d+[.)]\s+)/)?.[0].length||0;
+        ch=Math.min(part.raw.length,leading+syntax+Math.max(0,within-consumed));
+        break;
+      }
+      consumed+=part.text.length+1;
+    }
+  }
+  ch=Math.max(0,Math.min(lines[line]?.length||0,ch));
+  editor.focus();
+  editor.setCursor({line,ch});
+};
 window.addEventListener('message',event=>{
   if (event.source !== frame.contentWindow) return;
   if (event.data?.type === 'open-post') window.MarkataSiteTree?.openPost(event.data.slug);
+  if (event.data?.type === 'place-editor-cursor') placeEditorCursor(event.data);
   if (event.data?.type === 'preview-updated' && event.data.version === revision) {
     finishPreview(event.data.version);
     scrollSync.previewUpdated();

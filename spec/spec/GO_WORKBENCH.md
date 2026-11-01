@@ -74,7 +74,9 @@ text range. For transformed or replaced content, it MUST fall back to the
 nearest source-mapped position. In Vim mode, the presence caret MUST reflect
 normal, insert, replace, and visual cursor shapes. Presence markers use
 participant IDs, labels, and colors so additional editor cursors can be added
-without changing the marker rendering model.
+without changing the marker rendering model. Clicking rendered text in the
+preview MUST move the source cursor to the matching source position when a
+source match exists; links MUST retain their normal navigation behavior.
 
 
 ## Integration benchmark

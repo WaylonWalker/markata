@@ -36,7 +36,9 @@ In split view, a subtle marker shows the corresponding preview block, with a
 thin caret and **You** flag at the active location. When rendered text matches
 the source line, the preview caret follows the character cursor. For content
 that a renderer transforms or replaces, it falls back to the nearest mapped
-source position. The source pane keeps its normal caret on the actual text
+source position. Click rendered text to move the source caret to the matching
+text when possible; links keep their normal navigation behavior. The source
+pane keeps its normal caret on the actual text
 cursor. With the Vim keymap, the preview caret changes shape for normal,
 insert, replace, and visual modes. Preview updates preserve
 unchanged blocks, and layout changes refresh the source-to-preview mapping,
