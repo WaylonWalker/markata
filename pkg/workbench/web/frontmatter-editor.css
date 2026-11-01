@@ -162,12 +162,12 @@
 }
 
 .fm-group {
-  margin: 10px 0 18px;
+  margin: 8px 0 14px;
 }
 
 .fm-group h3 {
   margin: 0;
-  padding: 4px 0 7px;
+  padding: 3px 0 6px;
   border-bottom: 1px solid var(--editor-divider);
   color: var(--color-text-muted);
   font: 650 10px/1.3 var(--font-code, ui-monospace, monospace);
@@ -177,11 +177,11 @@
 
 .fm-field {
   display: grid;
-  grid-template-columns: minmax(120px, .82fr) minmax(0, 1.5fr);
+  grid-template-columns: minmax(150px, .8fr) minmax(150px, .8fr) minmax(260px, 1.5fr);
   align-items: center;
-  gap: 7px 14px;
+  gap: 8px 18px;
   min-width: 0;
-  padding: 12px 5px;
+  padding: 9px 5px;
   border-bottom: 1px solid var(--editor-divider);
 }
 
@@ -226,8 +226,8 @@
 
 .fm-field > small,
 .fm-field > p {
-  grid-column: 1;
-  margin: -3px 0 0;
+  grid-column: 2;
+  margin: 0;
   color: var(--color-text-muted);
   font-size: 11px;
   line-height: 1.4;
@@ -236,7 +236,8 @@
 .fm-field > .fm-input,
 .fm-field > .fm-structured,
 .fm-field > button {
-  grid-column: 2;
+  grid-column: 3;
+  max-width: 620px;
 }
 
 #frontmatter-panel .fm-input,
@@ -513,6 +514,23 @@
   #fm-status {
     grid-column: 3;
     grid-row: 1 / span 2;
+  }
+}
+
+@media (max-width: 1200px) {
+  .fm-field {
+    grid-template-columns: minmax(120px, .8fr) minmax(0, 1.4fr);
+  }
+
+  .fm-field > small,
+  .fm-field > p {
+    grid-column: 1;
+  }
+
+  .fm-field > .fm-input,
+  .fm-field > .fm-structured,
+  .fm-field > button {
+    grid-column: 2;
   }
 }
 
