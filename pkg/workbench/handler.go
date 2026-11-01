@@ -353,7 +353,7 @@ func (h *Handler) prepareRender(r *http.Request, req *renderRequest) (*renderRes
 	var revision uint64
 	if snapshot, ok := h.workspace.(interface{ Snapshot() (*lsp.Index, uint64) }); ok {
 		index, revision = snapshot.Snapshot()
-		if index == nil {
+		if index == nil || revision == 0 {
 			if _, err := h.workspace.Files(); err != nil {
 				return nil, fmt.Errorf("load workspace metadata for preview: %w", err)
 			}
@@ -522,6 +522,10 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 	if r.URL.Path == "/workspace/file" {
 		if r.Method == http.MethodPut || r.Method == http.MethodPost {
+			if !sameOriginWorkspaceMutation(r) {
+				fail(w, http.StatusForbidden, "same-origin workspace writes are required")
+				return
+			}
 			body, err := io.ReadAll(io.LimitReader(r.Body, maxSource+1))
 			if err != nil {
 				fail(w, 400, "cannot read source")
@@ -531,11 +535,11 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 				fail(w, 413, "document exceeds 200,000 bytes")
 				return
 			}
-			path := r.URL.Query().Get("path")
+			sourcePath := r.URL.Query().Get("path")
 			if r.Method == http.MethodPost {
-				err = h.workspace.Create(path, string(body))
+				err = h.workspace.Create(sourcePath, string(body))
 			} else {
-				err = h.workspace.Write(path, string(body))
+				err = h.workspace.Write(sourcePath, string(body))
 			}
 			if err != nil {
 				fail(w, 422, err.Error())
@@ -577,6 +581,28 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		return
 	}
+}
+
+func sameOriginWorkspaceMutation(r *http.Request) bool {
+	origin := r.Header.Get("Origin")
+	if origin == "" {
+		return false
+	}
+	u, err := url.Parse(origin)
+	scheme := "http"
+	if r.TLS != nil {
+		scheme = "https"
+	}
+	if r.URL.Scheme != "" {
+		scheme = r.URL.Scheme
+	}
+	if err != nil || u.User != nil || u.Host == "" || u.Host != r.Host || u.Path != "" || u.RawPath != "" || u.RawQuery != "" || u.Fragment != "" || u.Scheme != scheme {
+		return false
+	}
+	if site := r.Header.Get("Sec-Fetch-Site"); site != "" && site != "same-origin" {
+		return false
+	}
+	return true
 }
 
 func (h *Handler) acquire(r *http.Request) bool {

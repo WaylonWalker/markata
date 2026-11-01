@@ -19,12 +19,13 @@ func loadManagedImages(root string) []imageindex.Image {
 		return nil
 	}
 	images := make([]imageindex.Image, 0, len(index.Images))
-	for _, image := range index.Images {
+	for i := range index.Images {
+		image := &index.Images[i]
 		parsed, err := url.Parse(image.Src)
 		if err != nil || parsed.IsAbs() || parsed.Host != "" || strings.Contains(image.Src, "${") || !strings.HasPrefix(image.MIMEType, "image/") {
 			continue
 		}
-		images = append(images, image)
+		images = append(images, *image)
 	}
 	return images
 }

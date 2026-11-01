@@ -64,6 +64,8 @@ an unsaved draft.
 A storage error appears beside the render metrics. Editing and downloads remain available.
 The server writes only selected workspace files. Scratch drafts remain local to
 the browser origin, so drafts on one port remain separate from drafts on another.
+Workspace saves and new-post creation require a same-origin browser request.
+The server rejects missing or foreign origins before it changes a site file.
 
 The preview updates after a 100 ms pause. One request runs at a time, and newer edits replace pending edits.
 Old responses cannot replace a newer draft. Errors preserve the last successful preview.

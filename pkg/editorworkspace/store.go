@@ -198,7 +198,10 @@ func (s *Store) Create(path, source string) error {
 	if !allowedDirectory {
 		return fmt.Errorf("new files must use a directory with discovered workspace content")
 	}
-	return s.workspace.Create(path, source)
+	if err := s.workspace.Create(path, source); err != nil {
+		return err
+	}
+	return s.refresh(nil, false)
 }
 
 // Snapshot shares parsed workspace information, without sharing mutable drafts.

@@ -48,7 +48,8 @@ func (h *Handler) workspaceFeeds() []feedEntry {
 		}
 	}
 	feeds := make([]feedEntry, 0, len(h.siteConfig.Feeds))
-	for _, config := range h.siteConfig.Feeds {
+	for i := range h.siteConfig.Feeds {
+		config := &h.siteConfig.Feeds[i]
 		entry := feedEntry{Slug: config.Slug, Title: config.Title, Description: config.Description, Paths: []string{}}
 		matches := posts
 		if config.Filter != "" {

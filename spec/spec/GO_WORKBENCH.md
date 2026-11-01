@@ -36,6 +36,11 @@ are served locally. Authored images and links may access external networks.
 `GET /favicon.ico` serves the bundled Markata favicon so browsers do not report
 a missing icon for the workbench origin.
 
+Workspace reads require a loopback client and a localhost or loopback Host.
+`PUT` and `POST /workspace/file` also require an exact same-origin `Origin`;
+when `Sec-Fetch-Site` is present, it must be `same-origin`. Missing, malformed,
+or foreign origins are rejected with HTTP 403 before the workspace is changed.
+
 The browser waits 100 ms after the latest edit before rendering, runs at most one
 request at a time, coalesces pending edits, and rejects stale revisions. The
 status reports Go render time separately from total edit-to-preview latency.

@@ -7,12 +7,12 @@ import (
 
 	"github.com/alecthomas/chroma/v2/styles"
 
+	"github.com/yuin/goldmark/text"
+	xhtml "golang.org/x/net/html"
+
 	"github.com/WaylonWalker/markata/pkg/models"
 	"github.com/WaylonWalker/markata/pkg/palettes"
 	"github.com/WaylonWalker/markata/pkg/themes"
-	"github.com/yuin/goldmark/text"
-
-	xhtml "golang.org/x/net/html"
 )
 
 // StandaloneOptions configures rendering without a site build.

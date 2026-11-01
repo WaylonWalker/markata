@@ -235,7 +235,7 @@ func writeNewSource(parent, target, source string) error {
 	tmpName := tmp.Name()
 	defer os.Remove(tmpName)
 	if err = tmp.Chmod(0o644); err == nil {
-		_, err = io.WriteString(tmp, source)
+		_, err = tmp.WriteString(source)
 	}
 	if err == nil {
 		err = tmp.Sync()
@@ -276,7 +276,7 @@ func (w *Workspace) writeSource(path, source string) error {
 	tmpName := tmp.Name()
 	defer os.Remove(tmpName)
 	if err = tmp.Chmod(info.Mode().Perm()); err == nil {
-		_, err = io.WriteString(tmp, source)
+		_, err = tmp.WriteString(source)
 	}
 	if err == nil {
 		err = tmp.Sync()

@@ -54,8 +54,9 @@ func TestHandler_RenderAndAssets(t *testing.T) {
 		if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
 			t.Fatal(err)
 		}
-		if response.Cached != (i == 1) || response.InputBytes != len(source) || response.DocumentBytes != len(response.Document) {
-			t.Fatalf("invalid metrics: %+v", response)
+		documentBytes := len(response.Document)
+		if response.Cached != (i == 1) || response.InputBytes != len(source) || response.DocumentBytes != documentBytes {
+			t.Fatalf("invalid metrics: cached=%t want %t, input=%d want %d, document=%d actual=%d", response.Cached, i == 1, response.InputBytes, len(source), response.DocumentBytes, documentBytes)
 		}
 		for _, part := range []string{`data-theme="light"`, `data-palette="default-light"`, `class="post h-entry"`, `<svg`, `mermaid`, `chart`} {
 			if !strings.Contains(response.Document, part) {
@@ -338,7 +339,7 @@ func TestHandler_FragmentUpdatesOmitSharedCSS(t *testing.T) {
 			t.Fatal("fragment includes document shell")
 		}
 		if !result.Cached || result.HTML != first.HTML || result.FeatureHeadHTML != first.FeatureHeadHTML || result.BodyEndHTML != first.BodyEndHTML {
-			t.Fatal("cached fragment differs from initial content")
+			t.Fatalf("cached fragment differs: cached=%t html=%t featureHead=%t bodyEnd=%t", result.Cached, result.HTML == first.HTML, result.FeatureHeadHTML == first.FeatureHeadHTML, result.BodyEndHTML == first.BodyEndHTML)
 		}
 		if strings.Contains(w.Body.String(), "palette.css") || strings.Contains(w.Body.String(), "fontpack-manifest") {
 			t.Fatal("fragment contains shared appearance CSS")

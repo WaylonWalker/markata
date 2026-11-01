@@ -51,6 +51,71 @@ func TestWorkspaceHTTP(t *testing.T) {
 	}
 }
 
+func TestWorkspaceFileMutationRequiresSameOrigin(t *testing.T) {
+	tests := []struct {
+		name, method, path, origin, fetchSite string
+		status                                int
+	}{
+		{"PUT cross-origin", http.MethodPut, "post.md", "http://attacker.test", "cross-site", http.StatusForbidden},
+		{"POST cross-origin", http.MethodPost, "new-post.md", "http://attacker.test", "cross-site", http.StatusForbidden},
+		{"PUT missing origin", http.MethodPut, "post.md", "", "", http.StatusForbidden},
+		{"POST null origin", http.MethodPost, "new-post.md", "null", "cross-site", http.StatusForbidden},
+		{"PUT wrong scheme", http.MethodPut, "post.md", "https://127.0.0.1", "same-origin", http.StatusForbidden},
+		{"PUT cross-site metadata", http.MethodPut, "post.md", "http://127.0.0.1", "cross-site", http.StatusForbidden},
+		{"PUT same-origin", http.MethodPut, "post.md", "http://127.0.0.1", "same-origin", http.StatusOK},
+		{"POST same-origin", http.MethodPost, "new-post.md", "http://127.0.0.1", "same-origin", http.StatusCreated},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			root := t.TempDir()
+			if err := os.WriteFile(filepath.Join(root, "markata-go.toml"), []byte("[markata-go.glob]\npatterns = ['*.md']\n"), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			original := "# Original"
+			if err := os.WriteFile(filepath.Join(root, "post.md"), []byte(original), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			workspace, err := editorworkspace.New(root)
+			if err != nil {
+				t.Fatal(err)
+			}
+			handler := &Handler{workspace: workspace}
+			request := httptest.NewRequestWithContext(context.Background(), test.method, "http://127.0.0.1/workspace/file?path="+test.path, strings.NewReader("# Replaced"))
+			request.RemoteAddr = "127.0.0.1:1234"
+			if test.origin != "" {
+				request.Header.Set("Origin", test.origin)
+			}
+			if test.fetchSite != "" {
+				request.Header.Set("Sec-Fetch-Site", test.fetchSite)
+			}
+			response := httptest.NewRecorder()
+			handler.ServeHTTP(response, request)
+			if response.Code != test.status {
+				t.Fatalf("status %d body %s; want %d", response.Code, response.Body.String(), test.status)
+			}
+
+			writtenPath := filepath.Join(root, filepath.FromSlash(test.path))
+			content, err := os.ReadFile(writtenPath)
+			if test.method == http.MethodPost && test.status == http.StatusForbidden {
+				if !os.IsNotExist(err) {
+					t.Fatalf("cross-origin POST created a file: content=%q err=%v", content, err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			want := original
+			if test.status != http.StatusForbidden {
+				want = "# Replaced"
+			}
+			if string(content) != want {
+				t.Fatalf("file content = %q, want %q", content, want)
+			}
+		})
+	}
+}
+
 func TestWorkspaceSiteAppearance(t *testing.T) {
 	root := t.TempDir()
 	config := "[markata-go.theme]\npalette = 'everforest'\npalette_light = 'everforest-light'\npalette_dark = 'everforest-dark'\nfallback_mode = 'light'\naesthetic = 'minimal'\ntext_size = 'small'\ncustom_css = 'editor.css'\n[markata-go.markdown.highlight]\nline_numbers = true\n"

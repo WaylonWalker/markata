@@ -608,10 +608,11 @@ func getDocumentLinkContext(line string, col int) (prefix string, startCol int, 
 }
 
 func (s *Server) handleDocumentLinkCompletion(msg *Message, params CompletionParams, prefix string, start, col int) error {
-	if isManagedImageContext(string(s.documentLine(params.TextDocument.URI, params.Position.Line)), col) {
+	line := s.documentLine(params.TextDocument.URI, params.Position.Line)
+	if isManagedImageContext(line, col) {
 		return s.handleImageLinkCompletion(msg, params, prefix, start, col)
 	}
-	if prefix == "" {
+	if prefix == "" && isEmbedImageContext(line, col) {
 		return s.sendCompletion(msg.ID, params, &CompletionList{Items: []CompletionItem{}})
 	}
 	items := make([]CompletionItem, 0)
@@ -666,18 +667,30 @@ func (s *Server) documentLine(uri string, lineNumber int) string {
 
 func isManagedImageContext(line string, col int) bool {
 	match := documentLinkStart.FindStringSubmatchIndex(line[:min(col, len(line))])
-	if match == nil || !strings.HasPrefix(line[match[0]:match[1]], "!") {
+	if len(match) < 2 || !strings.HasPrefix(line[match[0]:match[1]], "!") {
 		return false
 	}
 	full := line[match[0]:match[1]]
-	close := strings.Index(full, "](")
+	linkClose := strings.Index(full, "](")
 	open := strings.IndexByte(full, '[')
-	return close >= 0 && open >= 0 && !strings.EqualFold(strings.TrimSpace(full[open+1:close]), "embed")
+	return linkClose >= 0 && open >= 0 && !strings.EqualFold(strings.TrimSpace(full[open+1:linkClose]), "embed")
+}
+
+func isEmbedImageContext(line string, col int) bool {
+	match := documentLinkStart.FindStringSubmatchIndex(line[:min(col, len(line))])
+	if len(match) < 2 || !strings.HasPrefix(line[match[0]:match[1]], "!") {
+		return false
+	}
+	full := line[match[0]:match[1]]
+	linkClose := strings.Index(full, "](")
+	open := strings.IndexByte(full, '[')
+	return linkClose >= 0 && open >= 0 && strings.EqualFold(strings.TrimSpace(full[open+1:linkClose]), "embed")
 }
 
 func (s *Server) handleImageLinkCompletion(msg *Message, params CompletionParams, prefix string, start, col int) error {
 	items := make([]CompletionItem, 0)
-	for _, image := range s.images {
+	for i := range s.images {
+		image := &s.images[i]
 		if prefix != "" && !strings.HasPrefix(strings.ToLower(image.Src), strings.ToLower(prefix)) {
 			continue
 		}
