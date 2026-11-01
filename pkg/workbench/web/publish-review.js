@@ -27,7 +27,8 @@
   }
   function canOpen() {
     const path = window.MarkataSiteTree?.activeFile?.();
-    if (!path || !/\.md$/i.test(path) || path === 'draft.md') return null;
+    const files = window.MarkataSiteTree?.files?.();
+    if (!path || !/\.md$/i.test(path) || !Array.isArray(files) || !files.some(file => file.path === path)) return null;
     return path;
   }
   function setNotice(message, level='info') {
