@@ -36,7 +36,7 @@ type newWizardState struct {
 	CustomDir        string // intermediate: custom directory input
 	Tags             []string
 	CustomTag        string
-	Private          bool // legacy state; new wizard tracks an explicit privacy choice
+	Private          bool   // legacy state; new wizard tracks an explicit privacy choice
 	PrivateChoice    string // inherit, private, or public
 	Authors          []string
 	UseDefaultAuthor bool
