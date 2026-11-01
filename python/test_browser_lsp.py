@@ -97,7 +97,7 @@ class BrowserLSPTest(unittest.TestCase):
                     source_path.write_text('# External clean edit', encoding="utf-8")
                     page.reload()
                     expect(preview.locator('h1')).to_have_text('External clean edit')
-                    editor = page.locator('.CodeMirror textarea')
+                    editor = page.locator('.CodeMirror')
                     editor.click()
                     page.keyboard.press('Control+A')
                     page.keyboard.type('# Private browser edit')
