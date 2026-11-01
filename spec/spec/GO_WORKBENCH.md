@@ -31,11 +31,22 @@ The preview uses the shared standalone appearance assets and ordered renderer
 assets. The handler permits raw authored HTML for local trusted editing. The
 browser isolates preview scripts in an opaque-origin iframe sandbox. All assets
 are served locally. Authored images and links may access external networks.
+`GET /favicon.ico` serves the bundled Markata favicon so browsers do not report
+a missing icon for the workbench origin.
 
-The browser debounces edits, runs at most one request at a time, coalesces pending
-edits, and rejects stale revisions. Draft and keymap persistence are best effort;
-storage failure is visible and does not prevent editing or downloading Markdown.
-Appearance updates do not re-render Markdown. The server does not store drafts.
+The browser waits 100 ms after the latest edit before rendering, runs at most one
+request at a time, coalesces pending edits, and rejects stale revisions. The
+status reports Go render time separately from total edit-to-preview latency.
+Content patches preserve unchanged preview blocks. When the editor has focus,
+the actual caret line remains the synchronization target through the completed
+patch, including edits that leave the caret on the same source line. Its preview
+marker is refreshed against the new source map. Draft and keymap persistence are
+best effort; storage failure is visible and does not prevent editing or
+downloading Markdown. Appearance updates do not re-render Markdown. The server
+does not store drafts.
+
+Automatic LSP completion waits for a short typing pause instead of requesting a
+completion after every character. Ctrl+Space requests completion immediately.
 
 The demo binds to 127.0.0.1 by default. It rejects cross-origin render requests
 and non-JSON content types. It has HTTP timeouts and graceful shutdown.

@@ -35,9 +35,11 @@ settings** to scroll each pane independently. The choice is saved in this browse
 In split view, a subtle marker shows the corresponding preview block. The source
 pane keeps its normal caret on the actual text cursor. Preview updates preserve
 unchanged blocks, and layout changes refresh the source-to-preview mapping,
-including after images and fonts load. Typing on one source line does not move
-the preview on every keystroke. Scroll changes caused by a render or a delayed
-image/font layout are not mistaken for manual scrolling.
+including after images and fonts load. While you edit, the preview follows the
+caret after the matching content update completes, including when you keep
+typing on the same line. Scroll changes caused by a render or a delayed
+image/font layout are not mistaken for manual scrolling. The preview marker is
+subtle and marks the rendered block for the current caret line.
 Choose Default, Vim, Emacs, or Sublime keymaps in **Editor settings**.
 In Vim mode, press `/` to search forward, `?` to search backward, then `n` or
 `N` to move between matches.
@@ -59,9 +61,9 @@ A storage error appears beside the render metrics. Editing and downloads remain 
 The server writes only selected workspace files. Scratch drafts remain local to
 the browser origin, so drafts on one port remain separate from drafts on another.
 
-The preview updates after a 250 ms pause. One request runs at a time, and newer edits replace pending edits.
+The preview updates after a 100 ms pause. One request runs at a time, and newer edits replace pending edits.
 Old responses cannot replace a newer draft. Errors preserve the last successful preview.
-The footer shows render time, round trip time, source size, and preview size.
+The footer shows Go render time, total edit-to-preview time, source size, and preview size.
 Repeated source uses a one-entry memory cache. Appearance changes update the preview without a render request.
 Workspace post embeds in `![[post-slug]]` or `![embed](path/to/post.md)` format
 render as cards linked to the matching site post. Fenced code examples remain
@@ -74,7 +76,7 @@ The server indexes the directory from `--workspace`. The default directory is th
 The browser LSP accepts same-origin connections on `localhost` or a loopback IP only.
 
 Type `[[` for wiki-link suggestions, including aliases. Type `[label](` for Markdown document paths.
-Press **Ctrl+Space** to request suggestions at the cursor. Use the arrow keys and Enter to select a suggestion.
+Automatic suggestions wait for a short typing pause. Press **Ctrl+Space** to request suggestions immediately at the cursor. Use the arrow keys and Enter to select a suggestion.
 Existing frontmatter, admonition, and mention completion also use the LSP.
 Broken wiki links receive an underline. The underline tooltip shows the diagnostic message.
 The workbench preview resolves valid `[[wikilinks]]` against the site's workspace index.

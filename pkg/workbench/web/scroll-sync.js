@@ -116,7 +116,13 @@ window.MarkataScrollSync = function (editor, frame, setting, workbench) {
     deferredCursorFollow = false;
     if (!editorPending) { editorPending = true; requestAnimationFrame(() => { editorPending = false; editorToPreview(); }); }
   });
-  editor.on('change', () => { driver = 'editor'; editorFollowCursor = false; contentUnrendered = true; });
+  editor.on('change', () => {
+    contentUnrendered = true;
+    if (!editor.hasFocus()) return;
+    driver = 'editor';
+    editorFollowCursor = true;
+    deferredCursorFollow = true;
+  });
   editor.on('cursorActivity', () => {
     if (!editor.hasFocus()) return;
     const cursor = editor.getCursor();

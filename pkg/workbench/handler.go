@@ -220,6 +220,13 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 	case r.URL.Path == "/":
 		h.serveIndex(w, r)
+	case r.URL.Path == "/favicon.ico":
+		data, err := web.ReadFile("web/favicon.ico")
+		if err != nil {
+			http.NotFound(w, r)
+			return
+		}
+		serve(w, r, "favicon.ico", data)
 	case strings.HasPrefix(r.URL.Path, "/appearance/"):
 		w.Header().Set("Cache-Control", "no-cache")
 		// The only mutation occurs under the render gate. Copy the slice header while

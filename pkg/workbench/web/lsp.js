@@ -42,11 +42,11 @@
       pending.clear();
       label('Language service unavailable · editing and preview remain available');
     }
-    async function complete() {
+    async function complete(syncDocument = true) {
       if (!ready || editor.somethingSelected()) return;
       const ticket = ++generation, text = editor.getValue(), cursor = editor.getCursor();
       try {
-        sync();
+        if (syncDocument) sync();
         const result = await request('textDocument/completion', {textDocument:{uri},position:rpcPos(cursor)});
         const current = editor.getCursor();
         if (!ready || ticket !== generation || text !== editor.getValue() || current.line !== cursor.line || current.ch !== cursor.ch) return;
@@ -74,7 +74,7 @@
       if (ready && change.origin === '+input') {
         clearTimeout(autoTimer);
         // CodeMirror emits cursorActivity after inputRead in the same operation.
-        autoTimer = setTimeout(complete,0);
+        autoTimer = setTimeout(() => complete(false),180);
       }
     });
     function dispose() {

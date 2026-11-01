@@ -11,7 +11,7 @@ let sourceLines=[], sourceLineCount=0, sourcePoints=[], programmedTarget=null, s
 let articleObserver;
 const executedInlineScripts=new Set();
 let appearanceSignature=JSON.stringify(Object.fromEntries(Object.keys(allowed).map(key=>[key,document.documentElement.getAttribute(key)])));
-const markerStyle=document.createElement('style');markerStyle.textContent='.markata-sync-position{outline:2px solid color-mix(in srgb,var(--color-primary,#d39b32) 70%,transparent);outline-offset:3px;border-radius:3px}';document.head.append(markerStyle);
+const markerStyle=document.createElement('style');markerStyle.textContent='.markata-sync-position{outline:1px solid color-mix(in srgb,var(--color-primary,#d39b32) 38%,transparent);outline-offset:2px;border-radius:3px}';document.head.append(markerStyle);
 const blockSignature=node=>{
   if(node.matches('pre.mermaid'))return `mermaid:${node.dataset.markataMermaidSource??node.textContent}`;
   const generated=node.matches('.markata-sync-position,[data-markata-code-enhanced],.chartjs-container')||node.getAttribute('class')===''||node.querySelector('[data-markata-ui],[data-markata-code-enhanced],.chartjs-container canvas');
@@ -35,7 +35,10 @@ const blockSignature=node=>{
   return clone.outerHTML;
 };
 const patchArticle=(article,html)=>{
+  const parseStarted=performance.now();
   const template=document.createElement('template');template.innerHTML=html;
+  const parseMs=performance.now()-parseStarted;
+  const reconcileStarted=performance.now();
   for(const child of [...article.childNodes])if(child.nodeType===Node.TEXT_NODE&&!child.textContent.trim())child.remove();
   const previous=[...article.children],available=new Map();
   for(const node of previous){const key=blockSignature(node);if(!available.has(key))available.set(key,[]);available.get(key).push(node);}
@@ -49,7 +52,7 @@ const patchArticle=(article,html)=>{
   for(const node of previous)if(!retained.has(node))node.remove();
   let cursor=article.firstElementChild;
   for(const node of next){if(node===cursor)cursor=cursor.nextElementSibling;else article.insertBefore(node,cursor);}
-  return {changedNodes,total:next.length,retained:retained.size,removed:previous.length-retained.size};
+  return {changedNodes,total:next.length,retained:retained.size,removed:previous.length-retained.size,parseMs,reconcileMs:performance.now()-reconcileStarted};
 };
 const syncPositionMarker=()=>{
   const article=document.querySelector('.post-content');
@@ -69,6 +72,7 @@ const scrollState=(user,syncID=null)=>{
   const firstLine=Number.isFinite(sourceLines[0])?sourceLines[0]:0;
   const points=[{line:firstLine,y:rect.top+scrollY,index:0}];
   for(let i=0;i<Math.min(elements.length,sourceLines.length);i++){
+    if(elements[i].getClientRects().length===0)continue;
     const line=sourceLines[i];
     const y=elements[i].getBoundingClientRect().top+scrollY;
     const previous=points.at(-1);
@@ -170,13 +174,17 @@ if(e.data?.type==='markdown-render'){
   updates=updates.then(async()=>{
     if(e.data.version<latestVersion)return;
     const article=document.querySelector('.post-content');if(!article)return;
+    const updateStarted=performance.now();
     sourceLines=e.data.source_lines||[];sourceLineCount=e.data.line_count||sourceLineCount;
     const patch=patchArticle(article,e.data.html);
+    const patchFinished=performance.now();
     await renderMarkdown(e.data,patch.changedNodes);
+    const featuresFinished=performance.now();
     if(e.data.version!==latestVersion)return;
     scrollState(false);
+    const updateFinished=performance.now();
     const diagrams=patch.changedNodes.reduce((count,node)=>count+(node.matches('pre.mermaid')?1:0)+node.querySelectorAll('pre.mermaid').length,0);
-    parent.postMessage({type:'preview-updated',version:e.data.version,patch:{blocks:patch.total,changed:patch.changedNodes.length,reused:patch.retained,removed:patch.removed,diagrams,kinds:patch.changedNodes.map(node=>node.tagName.toLowerCase()+(node.classList.length?'.'+[...node.classList].join('.'):''))}},'*');
+    parent.postMessage({type:'preview-updated',version:e.data.version,patch:{blocks:patch.total,changed:patch.changedNodes.length,reused:patch.retained,removed:patch.removed,diagrams,kinds:patch.changedNodes.map(node=>node.tagName.toLowerCase()+(node.classList.length?'.'+[...node.classList].join('.'):'')),timing:{html_parse_ms:patch.parseMs,dom_patch_ms:patch.reconcileMs,features_ms:featuresFinished-patchFinished,total_ms:updateFinished-updateStarted}}},'*');
   }).catch(console.error);
 return;
 }if(e.data?.type==='sync-scroll-lines'){sourceLines=e.data.lines||[];sourceLineCount=e.data.lineCount||0;requestAnimationFrame(()=>scrollState(false));return;

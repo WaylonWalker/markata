@@ -99,6 +99,31 @@ func TestHandler_RenderAndAssets(t *testing.T) {
 	}
 }
 
+func TestHandler_Favicon(t *testing.T) {
+	h := newHandler(t)
+	icon, err := web.ReadFile("web/favicon.ico")
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost/favicon.ico", http.NoBody))
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /favicon.ico returned %d", w.Code)
+	}
+	if !strings.HasPrefix(w.Header().Get("Content-Type"), "image/") {
+		t.Fatalf("favicon content type = %q", w.Header().Get("Content-Type"))
+	}
+	if !bytes.Equal(w.Body.Bytes(), icon) {
+		t.Fatal("favicon route did not return the bundled Markata icon")
+	}
+
+	page := httptest.NewRecorder()
+	h.ServeHTTP(page, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost/", http.NoBody))
+	if !strings.Contains(page.Body.String(), `<link rel="icon" href="/favicon.ico">`) {
+		t.Fatal("workbench page does not link its favicon")
+	}
+}
+
 func TestHandler_RequestContract(t *testing.T) {
 	h := newHandler(t)
 	cases := []struct {

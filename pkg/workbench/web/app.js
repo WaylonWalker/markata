@@ -251,12 +251,13 @@ keymap.addEventListener('change', () => {
   try { localStorage.setItem('markata-editor-keymap', keymap.value); } catch { storageWarning(); }
   focusEditorForWriting();
 });
-let revision = 0, timer, busy = false, ready = false;
+let revision = 0, timer, busy = false, ready = false, lastEditAt = null;
 let previewStarted = false, previewReady = false, pendingPreview = null, activeRender = null;
 function finishPreview(version) {
   if (!activeRender || activeRender.version !== version || version !== revision) return;
-  const {data, roundTrip} = activeRender;
-  status.textContent = `Go ${data.render_ms.toFixed(1)} ms${data.cached ? ' (cached)' : ''} · preview updated · round trip ${Math.round(roundTrip)} ms · input ${(data.input_bytes/1024).toFixed(1)} KB · fragment ${((data.html_bytes)/1024).toFixed(1)} KB`;
+  const {data} = activeRender;
+  const liveTime = Math.round(performance.now() - (activeRender.editAt ?? activeRender.startedAt));
+  status.textContent = `Go ${data.render_ms.toFixed(1)} ms${data.cached ? ' (cached)' : ''} · preview ${liveTime} ms · input ${(data.input_bytes/1024).toFixed(1)} KB · fragment ${((data.html_bytes)/1024).toFixed(1)} KB`;
 }
 function storageWarning() { saved.textContent = 'Draft not saved · storage unavailable or full · download a copy'; }
 function saveDraft() {
@@ -317,8 +318,7 @@ async function render() {
     if (!response.ok) throw new Error(data.error || 'Rendering failed.');
     if (sourceLineOffset) data.source_lines = data.source_lines.map(line => line + sourceLineOffset);
     scrollSync.update(data.source_lines, false);
-    const roundTrip = performance.now()-started;
-    activeRender = {data, version, roundTrip};
+    activeRender = {data, version, editAt:lastEditAt, startedAt:started};
     if (!previewStarted) {
       previewStarted = true;
       frame.onload = () => {
@@ -354,10 +354,11 @@ async function render() {
 }
 editor.on('change', (_instance, change) => {
   editor.save(); revision++; clearTimeout(timer);
+  lastEditAt = performance.now();
   updateFrontmatterSummary(editor.getValue());
   if (change.origin !== 'setValue') saveDraft();
   status.textContent = 'Waiting for edits…';
-  timer = setTimeout(render, 250);
+  timer = setTimeout(render, 100);
 });
 document.querySelector('#download').addEventListener('click', () => {
   const url = URL.createObjectURL(new Blob([source.value], {type:'text/markdown;charset=utf-8'}));

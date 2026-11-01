@@ -111,9 +111,11 @@ position updates MUST be deduplicated when the measured target has not changed.
 Only explicit pane input (wheel, touch, scrollbar or pointer drag, and scroll
 keys) may make a pane the scroll-sync driver. Scroll changes caused by rendering,
 image or font layout, browser scroll anchoring, or synchronization itself MUST
-not be treated as user scrolling. Cursor activity caused by text edits on the
-same logical source line MUST not move the preview; actual line changes may
-follow the source caret to its mapped preview block.
+not be treated as user scrolling. Text edits MUST NOT move the preview before
+the corresponding content patch is ready. After the patch, a focused editor's
+actual caret line MUST remain the synchronization target even when editing did
+not change its logical line; the preview marker MUST be resolved again against
+the updated source map.
 Preview-only and editor-only layouts do not synchronize hidden panes.
 
 The Go workbench MUST bind Ctrl/Cmd+P to a fuzzy workspace file finder that
