@@ -49,6 +49,9 @@
 .fm-heading {
   display: grid;
   flex: none;
+  width: 100%;
+  max-width: 960px;
+  margin-inline: auto;
   grid-template-columns: minmax(0, 1fr) minmax(175px, .82fr);
   align-items: stretch;
   gap: 18px;
@@ -153,6 +156,9 @@
 
 #fm-fields {
   flex: 1 1 auto;
+  width: 100%;
+  max-width: 960px;
+  margin-inline: auto;
   min-height: 0;
   overflow: auto;
   overscroll-behavior: contain;
@@ -177,7 +183,7 @@
 
 .fm-field {
   display: grid;
-  grid-template-columns: minmax(150px, .8fr) minmax(150px, .8fr) minmax(260px, 1.5fr);
+  grid-template-columns: minmax(150px, .72fr) minmax(0, 1.28fr);
   align-items: center;
   gap: 8px 18px;
   min-width: 0;
@@ -242,7 +248,7 @@
 
 .fm-field > small,
 .fm-field > p {
-  grid-column: 2;
+  grid-column: 1;
   margin: 0;
   color: var(--color-text-muted);
   font-size: 11px;
@@ -252,7 +258,7 @@
 .fm-field > .fm-input,
 .fm-field > .fm-structured,
 .fm-field > button {
-  grid-column: 3;
+  grid-column: 2;
   max-width: 620px;
 }
 
@@ -563,23 +569,6 @@
   #fm-status {
     grid-column: 3;
     grid-row: 1 / span 2;
-  }
-}
-
-@media (max-width: 1200px) {
-  .fm-field {
-    grid-template-columns: minmax(120px, .8fr) minmax(0, 1.4fr);
-  }
-
-  .fm-field > small,
-  .fm-field > p {
-    grid-column: 1;
-  }
-
-  .fm-field > .fm-input,
-  .fm-field > .fm-structured,
-  .fm-field > button {
-    grid-column: 2;
   }
 }
 
