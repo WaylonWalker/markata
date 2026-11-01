@@ -556,6 +556,13 @@ func TestParseTemplateFile_UsesCanonicalNameAsDefaultDirectory(t *testing.T) {
 	}
 }
 
+func TestParseTemplateFile_ExplicitDirectoryWinsOverCanonicalName(t *testing.T) {
+	template := parseTemplateFile("guide", "---\nstarter:\n  name: how-to\n_directory: guide\n---\n\nBody\n")
+	if template.Name != "how-to" || template.Directory != "guide" {
+		t.Fatalf("explicit directory lost: %#v", template)
+	}
+}
+
 func TestParseTemplateFile_ReportsInvalidStarterMetadata(t *testing.T) {
 	for _, content := range []string{
 		"---\nstarter: invalid\n---\nBody\n",
