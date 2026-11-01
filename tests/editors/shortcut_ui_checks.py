@@ -5,6 +5,7 @@ from playwright.sync_api import expect
 def check_app_shortcuts(page, url):
     page.goto(url)
     expect(page.locator('#site-sidebar')).to_be_visible()
+    expect(page.locator('.file-finder')).to_have_count(1, timeout=15000)
     page.keyboard.press('Control+Shift+P')
     expect(page.locator('.markdown-commands[open]')).to_be_visible()
     page.keyboard.press('Escape')
