@@ -208,7 +208,7 @@ func runHuhNewWizard(templates map[string]ContentTemplate) (*newWizardState, err
 	theme := createHuhThemeForPalette(currentCLIPalette)
 
 	state := &newWizardState{
-		Template: "post",
+		Template:      "post",
 		PrivateChoice: "inherit",
 	}
 	if _, resolvedName, ok := resolveTemplateSelection(newTemplate, templates); ok {
