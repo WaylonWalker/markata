@@ -214,7 +214,7 @@ func getFrontmatterContext(content string, line, col int) *FrontmatterContext {
 	}
 
 	// Analyze what we're completing
-	return analyzeLineContext(currentLine, col, existingFields)
+	return analyzeLineContext(lines, line, currentLine, col, existingFields)
 }
 
 // findFrontmatterBoundaries finds the start and end lines of frontmatter.
@@ -259,7 +259,7 @@ func collectExistingFields(lines []string, startLine, endLine int) map[string]bo
 }
 
 // analyzeLineContext determines what kind of completion is needed on the current line.
-func analyzeLineContext(line string, col int, existingFields map[string]bool) *FrontmatterContext {
+func analyzeLineContext(lines []string, lineNumber int, line string, col int, existingFields map[string]bool) *FrontmatterContext {
 	ctx := &FrontmatterContext{
 		InFrontmatter:  true,
 		ExistingFields: existingFields,
@@ -273,7 +273,33 @@ func analyzeLineContext(line string, col int, existingFields map[string]bool) *F
 	// Check if we're in a list item (indented with - )
 	trimmedLine := strings.TrimLeft(line, " \t")
 	if strings.HasPrefix(trimmedLine, "- ") {
-		// We're in a list value, don't provide field completion
+		// Keep the parent key for completions in YAML list values (for example,
+		// tags: followed by - go). Only the current item is replaced.
+		for previous := lineNumber - 1; previous >= 0; previous-- {
+			parent := lines[previous]
+			if strings.TrimSpace(parent) == "" {
+				continue
+			}
+			if len(parent) == len(strings.TrimLeft(parent, " \t")) {
+				if colon := strings.IndexByte(parent, ':'); colon > 0 {
+					ctx.CurrentField = strings.TrimSpace(parent[:colon])
+					ctx.IsFieldValue = true
+					itemStart := len(line) - len(trimmedLine) + 2
+					for itemStart < len(line) && (line[itemStart] == ' ' || line[itemStart] == '\t') {
+						itemStart++
+					}
+					ctx.StartCol = itemStart
+					if col > itemStart {
+						ctx.Prefix = strings.TrimSpace(line[itemStart:col])
+					}
+				}
+				break
+			}
+			// The nearest indented non-list value ends the parent list.
+			if !strings.HasPrefix(strings.TrimLeft(parent, " \t"), "-") {
+				break
+			}
+		}
 		return ctx
 	}
 
