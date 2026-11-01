@@ -36,6 +36,6 @@ The Emacs app preset provides Alt+X for the command palette and editor-independe
 
 Keyboard bindings are stored in browser local storage. The shortcut dialog reports conflicts and supports disabling an action with Backspace while recording. Markata never captures a shortcut while a modal is open, during IME composition, or when typing in a form field.
 
-The **Review & Publish** shortcut opens the same read-only dialog as the Publish button. It cannot commit, push, deploy, or bypass publication confirmation. See [Editor publishing](../spec/EDITOR_PUBLISHING.md) for the deployment contract.
+The **Review & Publish** shortcut opens the same read-only dialog as the Publish button. It cannot commit, push, deploy, or bypass publication confirmation. See [Editor publishing](../../spec/spec/EDITOR_PUBLISHING.md) for the deployment contract.
 
 The Python and offline WASM workbenches retain their existing command palette shortcuts; this app-wide registry currently targets the Go site-backed workbench.
