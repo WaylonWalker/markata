@@ -59,3 +59,14 @@ func TestFrontmatterEditorRefusesMalformedAndUnsafeFields(t *testing.T) {
 		}
 	}
 }
+
+func TestFrontmatterEditorPreservesCommentOnlyHeader(t *testing.T) {
+	source := "---\n# Metadata intentionally empty\n---\nContent\n"
+	edited, err := replaceFrontmatterProperty(source, "title", "A note", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(edited, "# Metadata intentionally empty") || !strings.Contains(edited, "title: A note") {
+		t.Fatalf("comment-only header lost: %q", edited)
+	}
+}

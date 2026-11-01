@@ -69,7 +69,10 @@ func frontmatterProperties(document *yaml.Node) ([]frontmatterProperty, error) {
 	for i := 0; i+1 < len(content); i += 2 {
 		key, value := content[i], content[i+1]
 		var decoded any
-		if err := value.Decode(&decoded); err != nil {
+		if value.Kind == yaml.ScalarNode && value.Tag == "!!timestamp" {
+			// Keep author-supplied date formatting rather than exposing a UTC JSON timestamp.
+			decoded = value.Value
+		} else if err := value.Decode(&decoded); err != nil {
 			return nil, err
 		}
 		kind := "string"
