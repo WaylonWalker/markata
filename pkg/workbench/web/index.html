@@ -105,6 +105,9 @@ header{flex-wrap:wrap}#open{background:var(--color-surface,white);border:1px sol
 <script src="/editor/command-catalog.js" defer></script>
 <script src="/editor/command-palette.js" defer></script>
 <script src="/editor/file-finder.js" defer></script>
+<link rel="stylesheet" href="/editor/publish-review.css">
+<script src="/editor/publish-rich-diff.js" defer></script>
+<script src="/editor/publish-review.js" defer></script>
 <link rel="stylesheet" href="/editor/site-tree.css"><script src="/editor/site-tree.js" defer></script></head><body data-example-url="/editor/command-palette-example.md">
 <header><div><h1>Markata Go workbench</h1><p>Write Markdown. Render directly in Go.</p></div><!--PICKER--><button id="settings-open" type="button" aria-label="Editor settings" title="Editor settings"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 7h9m4 0h3M4 17h3m4 0h9M13 4v6M7 14v6"/></svg></button></header>
 <dialog id="settings-dialog"><header><div><h2>Editor settings</h2><p>Choose how the source pane behaves.</p></div><button id="settings-close" type="button" aria-label="Close settings">×</button></header><div class="settings-options"><label><input id="setting-wrap" type="checkbox" checked> Wrap long lines</label><label><input id="setting-scroll-sync" type="checkbox" checked> Sync editor and preview scrolling</label><label for="setting-layout">Layout</label><select id="setting-layout"><option value="split">Editor and preview</option><option value="editor">Editor only</option><option value="preview">Preview only</option></select><label for="keymap">Keymap</label><select id="keymap" aria-label="Editor keymap"><option value="default">Default</option><option value="vim">Vim</option><option value="emacs">Emacs</option><option value="sublime">Sublime</option></select></div></dialog>

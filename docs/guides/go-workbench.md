@@ -233,3 +233,61 @@ Search for special syntax, then press **Enter** to insert it at your selection.
 See the [command palette guide](editor-command-palette.md) for the catalog and keyboard controls.
 
 To open the command palette with a complete example loaded, visit `/?example`.
+
+
+## Review changes before publishing (experimental)
+
+When editing a Markdown file inside a Git-backed workspace, select **Publish**
+in the upper-right header, search for **Publishing: Review & Publish** in the
+command palette, or press **Ctrl/Cmd+Shift+Enter**. These routes open the same
+review dialog; none of them publishes immediately.
+
+The dialog first waits until the exact text in the editor has been saved to
+the workspace. It then compares that saved source with the file from the last
+Git commit. Desktop shows rendered comparisons side by side; mobile can switch
+between versions by tapping or swiping. **Source diff** shows a unified raw
+Markdown comparison. Metadata chips identify draft/published flag changes,
+slug changes, and conflicting publication flags.
+
+**This is an initial, read-only review implementation.** "Last committed" is
+not necessarily the live site revision. Git commit, remote push, deployment,
+and confirmation are not wired up yet, and the final Publish action stays
+disabled until a deploy backend can verify success. A scratch file must first
+be created or opened as a workspace Markdown post. If the workspace has no Git
+history, the review reports this rather than assuming a baseline.
+
+The publish contract and planned deployment safety gates are defined in
+[Editor publishing](../../spec/spec/EDITOR_PUBLISHING.md).
+
+
+### Verify a remote publication with Builder Admin (opt-in)
+
+Publishing has deliberately separate steps: review the exact Markdown and
+frontmatter, commit only that selected page, then explicitly push to `origin`.
+A successful push **does not** prove the site is live.
+
+For a site deployed through Markata Builder Admin, the local editor can
+optionally verify the current release's recorded source Git commit:
+
+```sh
+export MARKATA_PUBLISH_BUILDER_URL="https://builder.example.com"
+export MARKATA_PUBLISH_BUILDER_TOKEN="<your authorized bearer token>"
+markata editor --workspace ./site
+```
+
+Use an API token authorized for Builder Admin's `/api/v1/state`. The editor
+stores neither the token nor builder URL in the browser; the local backend
+makes a short, authenticated, server-side GET request. Remote builder URLs
+must use HTTPS (loopback HTTP is permitted for development). Redirects are
+not followed, so bearer tokens cannot be forwarded to a different host.
+
+After pushing, select **Check live status**. This checks
+`revision.live_source_commit`, with a fallback to the current release's
+source revision when available. It reports **Live · Verified** only if that
+revision matches the exact pushed SHA. Unknown revision, unavailable API,
+unconfigured auth, failed build, and different live SHA never count as success.
+
+This verification identifies the release's **source Git revision**, not
+its byte-for-byte rendered output, CDN cache rollout, or availability at
+every public edge. Site URL health checks and other deployment providers
+need dedicated follow-up adapters.
