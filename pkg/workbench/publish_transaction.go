@@ -87,13 +87,10 @@ func readPublishInput(w http.ResponseWriter, r *http.Request, dst any) bool {
 func validatePublicationMetadata(source string) error {
 	// Do not silently rewrite YAML or publish a page still explicitly marked a draft.
 	// Recognize only unambiguous top-level fields; reject malformed YAML and duplicates.
-	if !strings.HasPrefix(source, "---
-") && !strings.HasPrefix(source, "---
-") {
+	if !strings.HasPrefix(source, "---"+string(rune(10))) && !strings.HasPrefix(source, "---"+string([]rune{13, 10})) {
 		return fmt.Errorf("add YAML frontmatter and set published: true before committing")
 	}
-	end := strings.Index(source[4:], "
----")
+	end := strings.Index(source[4:], string(rune(10))+"---")
 	if end < 0 {
 		return fmt.Errorf("invalid frontmatter boundary")
 	}
