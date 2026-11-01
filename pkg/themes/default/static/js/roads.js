@@ -427,7 +427,7 @@
       r.marker.style.opacity = reach > 0 && reach < rail.height ? 1 : 0;
       r.entries.forEach((e) => {
         const d = e.dot.getBoundingClientRect();
-        e.el.classList.toggle("active", d.top + d.height / 2 - rail.top <= reach + 1);
+        e.el.classList.toggle("active", reach > 0 && d.top + d.height / 2 - rail.top <= reach + 1);
       });
       return;
     }

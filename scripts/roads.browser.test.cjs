@@ -128,28 +128,48 @@ test('fixed progress stays authored across scroll, resize, and view transitions'
     const page = await browser.newPage({viewport:{width:900, height:700}});
     const errors = [];
     page.on('pageerror', (error) => errors.push(error.message));
-    await page.setContent(`<!doctype html><style>.road{margin-top:80px}</style>
-      <div class="road timeline" data-road-progress-mode="static" data-road-progress="0" id="zero"><ul><li><a href="#a">A</a></li><li><a href="#b">B</a></li></ul></div>
-      <div class="road timeline" data-road-progress-mode="static" data-road-progress="50" id="half"><ul><li><a href="#a">A</a></li><li><a href="#b">B</a></li></ul></div>
-      <div class="road timeline" data-road-progress-mode="static" data-road-progress="100" id="full"><ul><li><a href="#a">A</a></li><li><a href="#b">B</a></li></ul></div>
-      <div class="road git" data-road-progress-mode="milestones" data-road-current="1" id="git"><ul><li><a href="#main">main</a></li><li><a href="#feature">feature from main</a></li></ul></div>
-      <div class="road editorial" data-road-progress-mode="milestones" data-road-current="1" id="editorial"><h3><a href="#first">First</a></h3><p>First body</p><h3><a href="#second">Second</a></h3><p>Second body</p></div>
+    const cases = [];
+    const markup = (style, mode, value, id) => {
+      const attribute = mode === 'static'
+        ? `data-road-progress="${value}"`
+        : `data-road-current="${value}"`;
+      const entries = style === 'editorial'
+        ? '<h3><a href="#first">First</a></h3><p>First body</p><h3><a href="#second">Second</a></h3><p>Second body</p>'
+        : '<ul><li><a href="#first">First</a></li><li><a href="#second">Second</a></li></ul>';
+      return `<div class="road ${style}" data-road-progress-mode="${mode}" ${attribute} id="${id}">${entries}</div>`;
+    };
+    for (const style of ['timeline', 'git', 'editorial']) {
+      for (const [name, value, activeCount] of [['zero', 0, 0], ['half', 50, 1], ['full', 100, 2]]) {
+        const id = `${style}-${name}`;
+        cases.push({id, expected: [true, true].map((_, index) => index < activeCount)});
+      }
+      for (const [name, value, activeCount] of [['none', 0, 0], ['one', 1, 1], ['both', 2, 2]]) {
+        const id = `${style}-milestone-${name}`;
+        cases.push({id, expected: [true, true].map((_, index) => index < activeCount)});
+      }
+    }
+    await page.setContent(`<!doctype html><style>${asset('css/roads.css')}</style><style>.road{margin-top:80px}</style>
+      ${cases.map(({id}) => {
+        const [style, progressType, name] = id.split('-');
+        const isMilestone = progressType === 'milestone';
+        const value = isMilestone ? ({none:0, one:1, both:2})[name] : ({zero:0, half:50, full:100})[progressType];
+        return markup(style, isMilestone ? 'milestones' : 'static', value, id);
+      }).join('')}
       <div style="height:1200px"></div>`);
     await page.addScriptTag({content:asset('js/roads.js')});
+    await page.waitForTimeout(100);
     const state = async (selector) => page.locator(selector).evaluate((root) => ({
+      mode: root.dataset.roadProgressMode,
+      progressValue: root.dataset.roadProgress,
+      current: root.dataset.roadCurrent,
       active: [...root.querySelectorAll('.road-point, .road-entry')].map((point) => point.classList.contains('active')),
-      progress: root.querySelector('.road-progress')?.style.strokeDashoffset || '',
-      fill: root.querySelector('.road-fill')?.style.height || '',
     }));
-    const initial = {
-      zero: await state('#zero'), half: await state('#half'),
-      full: await state('#full'), git: await state('#git'), editorial: await state('#editorial'),
-    };
-    assert.deepEqual(initial.zero.active, [false, false]);
-    assert.deepEqual(initial.half.active, [true, false]);
-    assert.deepEqual(initial.full.active, [true, true]);
-    assert.deepEqual(initial.git.active, [true, false]);
-    assert.deepEqual(initial.editorial.active, [true, false]);
+    const initial = new Map();
+    for (const scenario of cases) {
+      const snapshot = await state(`#${scenario.id}`);
+      assert.deepEqual(snapshot.active, scenario.expected, `${scenario.id} active entries: ${JSON.stringify(snapshot)}`);
+      initial.set(scenario.id, snapshot);
+    }
     await page.evaluate(async () => {
       window.scrollTo(0, document.body.scrollHeight);
       await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
@@ -157,11 +177,13 @@ test('fixed progress stays authored across scroll, resize, and view transitions'
       await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     });
     await page.setViewportSize({width:390, height:700});
-    assert.deepEqual(await state('#zero'), initial.zero);
-    assert.deepEqual(await state('#half'), initial.half);
-    assert.deepEqual(await state('#full'), initial.full);
-    assert.deepEqual(await state('#git'), initial.git);
-    assert.deepEqual(await state('#editorial'), initial.editorial);
+    for (const scenario of cases) {
+      const after = await state(`#${scenario.id}`);
+      assert.deepEqual(after.active, initial.get(scenario.id).active, `${scenario.id} active entries after scroll and resize`);
+      assert.equal(after.mode, initial.get(scenario.id).mode);
+      assert.equal(after.progressValue, initial.get(scenario.id).progressValue);
+      assert.equal(after.current, initial.get(scenario.id).current);
+    }
     assert.deepEqual(errors, []);
   } finally { await browser.close(); }
 });
