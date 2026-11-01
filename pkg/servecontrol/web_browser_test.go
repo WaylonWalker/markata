@@ -79,6 +79,7 @@ func TestBrowserKeyboardNavigationAndHistory(t *testing.T) {
 	}
 	if err := chromedp.Do(browser,
 		chromedp.KeyEvent(kb.Escape),
+		chromedp.Poll(`location.hash === "#/pages?item=page%3Aposts%2Ffirst.md"`, nil, chromedp.WithPollingTimeout(5*time.Second)),
 		evaluateInto(`location.hash`, &hash),
 		evaluateInto(`document.querySelector('#title').textContent`, &section),
 	); err != nil {
@@ -89,6 +90,7 @@ func TestBrowserKeyboardNavigationAndHistory(t *testing.T) {
 	}
 	if err := chromedp.Do(browser,
 		evaluateVoid(`history.forward()`),
+		chromedp.Poll(`location.hash === "#/pages?item=page%3Aposts%2Fsecond.md"`, nil, chromedp.WithPollingTimeout(5*time.Second)),
 		evaluateInto(`location.hash`, &hash),
 	); err != nil {
 		t.Fatal(err)
@@ -98,6 +100,7 @@ func TestBrowserKeyboardNavigationAndHistory(t *testing.T) {
 	}
 	if err := chromedp.Do(browser,
 		chromedp.KeyEvent(kb.Escape),
+		chromedp.Poll(`location.hash === "#/pages?item=page%3Aposts%2Ffirst.md"`, nil, chromedp.WithPollingTimeout(5*time.Second)),
 		evaluateInto(`location.hash`, &hash),
 	); err != nil {
 		t.Fatal(err)
