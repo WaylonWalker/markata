@@ -229,6 +229,17 @@
   color: var(--color-error, #c44);
 }
 
+.fm-field-head .fm-remove svg {
+  display: block;
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.7;
+}
+
 .fm-field > small,
 .fm-field > p {
   grid-column: 2;

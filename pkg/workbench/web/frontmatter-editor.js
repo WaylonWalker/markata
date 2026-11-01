@@ -242,9 +242,14 @@
     label.textContent=def?.label||field.name;
     label.id='fm-label-'+(++fieldId);
     const key=document.createElement('code');key.textContent=field.name;
-    const remove=nodeButton('×',()=>setField(field.name,null,true),'Remove '+(def?.label||field.name)+' from this page');
+    const remove=nodeButton('',()=>setField(field.name,null,true),'Remove '+(def?.label||field.name)+' from this page');
     remove.setAttribute('aria-label','Remove '+(def?.label||field.name));
     remove.className='fm-remove';
+    const icon=document.createElementNS('http://www.w3.org/2000/svg','svg');
+    icon.setAttribute('viewBox','0 0 24 24');icon.setAttribute('aria-hidden','true');icon.setAttribute('focusable','false');
+    const path=document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('d','M4 7h16M10 11v6m4-6v6M6 7l1 14h10l1-14M9 7V4h6v3');
+    icon.append(path);remove.append(icon);
     head.append(label,key,remove);
     row.append(head);
     if (def?.help) {
