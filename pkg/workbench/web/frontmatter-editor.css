@@ -192,17 +192,17 @@
 }
 
 .fm-field-head {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-rows: auto auto;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 3px 8px;
+  justify-content: flex-start;
+  gap: 1px 7px;
   min-width: 0;
 }
 
 .fm-field-head label {
-  grid-column: 1;
-  grid-row: 1;
+  flex: 0 1 auto;
+  max-width: calc(100% - 32px);
   min-width: 0;
   color: var(--color-text);
   font-size: 13px;
@@ -210,16 +210,17 @@
 }
 
 .fm-field-head code {
-  grid-column: 1;
+  order: 3;
+  flex: 0 0 100%;
   overflow: hidden;
   color: var(--color-text-muted);
   font: 10px/1.4 var(--font-code, ui-monospace, monospace);
   text-overflow: ellipsis;
 }
 
-.fm-field-head .fm-remove {
-  grid-column: 2;
-  grid-row: 1 / span 2;
+#frontmatter-panel .fm-field-head .fm-remove {
+  order: 2;
+  flex: 0 0 24px;
   display: grid;
   width: 24px;
   height: 24px;
@@ -232,7 +233,9 @@
   color: color-mix(in srgb, var(--color-error, #c44) 78%, var(--color-text));
 }
 
-.fm-field-head .fm-remove:hover {
+#frontmatter-panel .fm-field-head .fm-remove:hover {
+  border: 0;
+  background: transparent;
   color: var(--color-error, #c44);
 }
 
@@ -609,10 +612,6 @@
   .fm-field > .fm-structured,
   .fm-field > button {
     grid-row: auto;
-  }
-
-  .fm-field-head {
-    grid-template-columns: minmax(0, 1fr) auto;
   }
 
   .fm-footer {
