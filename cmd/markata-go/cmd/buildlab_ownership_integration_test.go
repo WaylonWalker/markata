@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/buildlab"
+	"github.com/WaylonWalker/markata/pkg/buildlab"
 )
 
 // These are strict cold/warm equivalence contracts for known incremental
