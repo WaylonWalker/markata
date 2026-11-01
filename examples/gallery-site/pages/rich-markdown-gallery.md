@@ -266,3 +266,35 @@ is blocked. Interactive charts remain an opt-in enhancement.
 These HTML disclosure controls work without a JavaScript runtime.
 
 </details>
+
+## Native Markdown tabs
+
+Tabs render fully on the server, even if JavaScript is disabled.
+
+::: md-tabs {style="boxed" data-label="Install options"}
+
+:::: md-tab {label="curl"}
+
+```bash
+curl -fsSL https://example.com/install.sh | bash
+```
+
+::::
+
+:::: md-tab {label="mise"}
+
+```bash
+mise use -g github:WaylonWalker/markata
+```
+
+::::
+
+:::: md-tab {label="Go"}
+
+```bash
+go install github.com/WaylonWalker/markata/cmd/markata@main
+```
+
+::::
+
+:::

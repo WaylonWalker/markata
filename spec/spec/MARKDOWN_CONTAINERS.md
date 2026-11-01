@@ -2,6 +2,23 @@
 
 This document specifies fenced Markdown containers using `:::` delimiters.
 
+## Native tabs
+
+`::: md-tabs` with direct `:::: md-tab {label="..."}` children MUST render
+server-side content and an accessible tablist. Groups MUST have one or more
+tabs and no other direct content blocks; invalid groups remain ordinary
+Markdown containers. Labels MUST be escaped plain text; missing labels use
+"Tab N". IDs MUST be unique and stable within a document. The default style
+is `boxed`; `underline` and `pills` are supported. Group
+`data-label` names the tablist.
+
+The tablist MUST remain hidden and every panel with its label MUST remain
+readable without JavaScript. When enhanced, tabs MUST support click, Left/
+Right/Home/End keyboard navigation, correct focus, `aria-selected` and
+panel visibility. Printing MUST show every panel and its label regardless
+of active tab. Assets load only for pages using native tabs. This is
+independent of Web Awesome `wa-tabs`.
+
 ## Opening syntax
 
 A container opener MUST:

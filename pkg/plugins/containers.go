@@ -115,6 +115,39 @@ func splitSectionKicker(heading *ast.Heading, source []byte) {
 	}
 }
 
+// tabsTransformer assigns document-local IDs to valid groups only. Invalid
+// groups remain ordinary visible Markdown containers.
+type tabsTransformer struct{}
+
+func (t *tabsTransformer) Transform(doc *ast.Document, _ text.Reader, _ parser.Context) {
+	group := 0
+	if err := ast.Walk(doc, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
+		c, ok := n.(*Container)
+		if !entering || !ok || !slices.Contains(c.Classes, "md-tabs") {
+			return ast.WalkContinue, nil
+		}
+		var tabs []*Container
+		for node := c.FirstChild(); node != nil; node = node.NextSibling() {
+			tab, ok := node.(*Container)
+			if !ok || !slices.Contains(tab.Classes, "md-tab") {
+				return ast.WalkContinue, nil
+			}
+			tabs = append(tabs, tab)
+		}
+		if len(tabs) == 0 {
+			return ast.WalkContinue, nil
+		}
+		group++
+		c.TabsID = group
+		for i, tab := range tabs {
+			tab.TabsID, tab.TabIndex = group, i
+		}
+		return ast.WalkContinue, nil
+	}); err != nil {
+		return
+	}
+}
+
 // Container is an AST node representing a container block (::: class).
 type Container struct {
 	ast.BaseBlock
@@ -125,7 +158,9 @@ type Container struct {
 	// ExtraAttrs holds additional attributes
 	ExtraAttrs map[string]string
 	// Depth holds the number of leading colons used to open the container
-	Depth int
+	Depth    int
+	TabsID   int
+	TabIndex int
 }
 
 // Kind returns the kind of this node.
@@ -358,6 +393,23 @@ func (r *containerHTMLRenderer) renderContainer(w util.BufWriter, _ []byte, n as
 		}
 	}
 
+	if container.TabsID > 0 && slices.Contains(container.Classes, "md-tabs") {
+		if entering {
+			renderNativeTabsOpen(w, container)
+		} else {
+			_, _ = w.WriteString("</div></div>\n")
+		}
+		return ast.WalkContinue, nil
+	}
+	if container.TabsID > 0 && slices.Contains(container.Classes, "md-tab") {
+		id := nativeTabID(container.TabsID, container.TabIndex)
+		if entering {
+			_, _ = w.WriteString(`<section class="md-tab" role="tabpanel" id="` + id + `-panel" aria-labelledby="` + id + `-tab"><h3 class="md-tab-fallback-label">` + escapeHTMLAttr(nativeTabLabel(container, container.TabIndex)) + "</h3>\n")
+		} else {
+			_, _ = w.WriteString("</section>\n")
+		}
+		return ast.WalkContinue, nil
+	}
 	tag := "div"
 	if slices.Contains(container.Classes, "md-section") {
 		tag = "section"
@@ -401,6 +453,66 @@ func (r *containerHTMLRenderer) renderContainer(w util.BufWriter, _ []byte, n as
 	}
 
 	return ast.WalkContinue, nil
+}
+
+func nativeTabID(group, index int) string {
+	return "md-tab-" + strconv.Itoa(group) + "-" + strconv.Itoa(index)
+}
+
+func nativeTabLabel(tab *Container, index int) string {
+	label := strings.TrimSpace(tab.ExtraAttrs["label"])
+	if label == "" {
+		label = strings.TrimSpace(tab.ExtraAttrs["title"])
+	}
+	if label == "" {
+		label = "Tab " + strconv.Itoa(index+1)
+	}
+	return label
+}
+
+//nolint:errcheck // Goldmark handles writes at the renderer boundary.
+func renderNativeTabsOpen(w util.BufWriter, group *Container) {
+	style := group.ExtraAttrs["data-style"]
+	if style == "" {
+		style = group.ExtraAttrs["style"]
+	}
+	switch style {
+	case "underline", "pills":
+	default:
+		style = "boxed"
+	}
+	label := strings.TrimSpace(group.ExtraAttrs["data-label"])
+	if label == "" {
+		label = "Tabs"
+	}
+	_, _ = w.WriteString(`<div class="`)
+	for i, class := range group.Classes {
+		if i > 0 {
+			_, _ = w.WriteString(" ")
+		}
+		_, _ = w.WriteString(escapeHTMLAttr(class))
+	}
+	_, _ = w.WriteString(`" data-md-tabs data-style="` + style + `"`)
+	if group.ContainerID != "" {
+		_, _ = w.WriteString(` id="` + escapeHTMLAttr(group.ContainerID) + `"`)
+	}
+	_, _ = w.WriteString(`>
+<div class="md-tabs-nav" role="tablist" aria-label="` + escapeHTMLAttr(label) + `" hidden>`)
+	i := 0
+	for node := group.FirstChild(); node != nil; node = node.NextSibling() {
+		tab, ok := node.(*Container)
+		if !ok {
+			continue
+		}
+		id := nativeTabID(group.TabsID, i)
+		selected, focusable := BoolFalse, "-1"
+		if i == 0 {
+			selected, focusable = BoolTrue, "0"
+		}
+		_, _ = w.WriteString(`<button type="button" role="tab" id="` + id + `-tab" aria-controls="` + id + `-panel" aria-selected="` + selected + `" tabindex="` + focusable + `">` + escapeHTMLAttr(nativeTabLabel(tab, i)) + "</button>")
+		i++
+	}
+	_, _ = w.WriteString(`</div><div class="md-tabs-panels">`)
 }
 
 // renderGauge turns an opt-in Markdown container into a native, accessible
@@ -555,7 +667,7 @@ type ContainerExtension struct{}
 // Extend adds the container parser and renderer to goldmark.
 func (e *ContainerExtension) Extend(m goldmark.Markdown) {
 	m.Parser().AddOptions(
-		parser.WithASTTransformers(util.Prioritized(&sectionTransformer{}, 50)),
+		parser.WithASTTransformers(util.Prioritized(&sectionTransformer{}, 50), util.Prioritized(&tabsTransformer{}, 55)),
 		parser.WithBlockParsers(
 			// Lower priority than admonitions so !!! takes precedence
 			util.Prioritized(newContainerParser(), 800),
