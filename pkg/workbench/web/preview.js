@@ -85,10 +85,11 @@ const syncPositionMarker=()=>{
   }
   const point=container||block||sourcePositionAnchors[0];
   const next=point?.node||(point&&point.index>=0&&point.index<article.children.length?article.children[point.index]:null);
-  if(positionNode===next)return;
-  positionNode?.classList.remove('markata-sync-position');
-  if(positionNode&&!positionNode.classList.length)positionNode.removeAttribute('class');
-  positionNode=next;positionNode?.classList.add('markata-sync-position');
+  if(positionNode!==next){
+    positionNode?.classList.remove('markata-sync-position');
+    if(positionNode&&!positionNode.classList.length)positionNode.removeAttribute('class');
+    positionNode=next;positionNode?.classList.add('markata-sync-position');
+  }
   for(const participant of presenceParticipants){
     let cursor=presenceCursors.get(participant.id);
     if(!cursor){cursor=document.createElement('div');cursor.className='markata-presence-cursor';cursor.hidden=true;cursor.dataset.presenceId=participant.id;const flag=document.createElement('span');flag.className='markata-presence-flag';cursor.append(flag);presenceLayer.append(cursor);presenceCursors.set(participant.id,cursor);}
@@ -98,7 +99,15 @@ const syncPositionMarker=()=>{
     const rect=next.getBoundingClientRect();
     const visible=rect.bottom>0&&rect.top<innerHeight&&rect.right>0&&rect.left<innerWidth;
     cursor.hidden=!visible;
-    if(visible){cursor.style.left=`${Math.max(2,rect.left-7)}px`;cursor.style.top=`${Math.max(20,rect.top)}px`;cursor.style.height=`${Math.max(16,Math.min(36,rect.height))}px`;}
+    if(visible){
+      const span=point?.nested?point.endLine-point.line:0;
+      const progress=span>0?Math.max(0,Math.min(1,(positionLine-point.line)/span)):0;
+      const lineHeight=Math.max(16,Math.min(20,parseFloat(getComputedStyle(next).lineHeight)||18));
+      const top=rect.top+Math.max(0,rect.height-lineHeight)*progress;
+      cursor.style.left=`${Math.max(2,rect.left+(point?.nested?10:-7))}px`;
+      cursor.style.top=`${Math.max(0,Math.min(innerHeight-lineHeight,top))}px`;
+      cursor.style.height=`${lineHeight}px`;
+    }
   }
 };
 const scrollState=(user,syncID=null)=>{
