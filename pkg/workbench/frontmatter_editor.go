@@ -98,6 +98,19 @@ func frontmatterProperties(document *yaml.Node) ([]frontmatterProperty, error) {
 	return fields, nil
 }
 
+func marshalFrontmatterField(name string, value any) (string, error) {
+	var out strings.Builder
+	encoder := yaml.NewEncoder(&out)
+	encoder.SetIndent(2)
+	if err := encoder.Encode(map[string]any{name: value}); err != nil {
+		return "", err
+	}
+	if err := encoder.Close(); err != nil {
+		return "", err
+	}
+	return out.String(), nil
+}
+
 func replaceFrontmatterProperty(source, name string, value any, remove bool) (string, error) {
 	if !frontmatterFieldName.MatchString(name) || len(name) > 128 {
 		return "", fmt.Errorf("invalid frontmatter property name")
@@ -110,7 +123,7 @@ func replaceFrontmatterProperty(source, name string, value any, remove bool) (st
 		if remove {
 			return source, nil
 		}
-		encoded, err := yaml.Marshal(map[string]any{name: value})
+		encoded, err := marshalFrontmatterField(name, value)
 		if err != nil {
 			return "", err
 		}
@@ -152,11 +165,11 @@ func replaceFrontmatterProperty(source, name string, value any, remove bool) (st
 	}
 	var encoded string
 	if !remove {
-		raw, err := yaml.Marshal(map[string]any{name: value})
+		raw, err := marshalFrontmatterField(name, value)
 		if err != nil {
 			return "", fmt.Errorf("cannot encode property: %w", err)
 		}
-		encoded = string(raw)
+		encoded = raw
 		if strings.Contains(source, "
 ") {
 			encoded = strings.ReplaceAll(encoded, "
