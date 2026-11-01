@@ -36,36 +36,79 @@ func (h *Handler) contentTemplates() ([]contentTemplate, error) {
 	builtins := builtinContentTemplates(today)
 	templates := append([]contentTemplate(nil), builtins...)
 	directory := "content-templates"
-	if h.siteConfig != nil && h.siteConfig.ContentTemplates.Directory != "" {
-		directory = h.siteConfig.ContentTemplates.Directory
+	if h.siteConfig != nil {
+		configured := h.siteConfig.ContentTemplates
+		if configured.Directory != "" {
+			directory = configured.Directory
+		}
+		for i := range templates {
+			if placement, ok := configured.Placement[contentTemplateKey(templates[i])]; ok {
+				if !safeStarterOutputDirectory(placement) {
+					return nil, fmt.Errorf("unsafe content starter placement %q", placement)
+				}
+				templates[i].Directory = placement
+			}
+		}
+		for _, configTemplate := range configured.Templates {
+			if strings.TrimSpace(configTemplate.Name) == "" {
+				return nil, fmt.Errorf("configured content starter needs a name")
+			}
+			outputDir := configTemplate.Directory
+			if outputDir == "" {
+				outputDir = configTemplate.Name
+			}
+			if !safeStarterOutputDirectory(outputDir) {
+				return nil, fmt.Errorf("configured starter %q has unsafe directory %q", configTemplate.Name, outputDir)
+			}
+			var source strings.Builder
+			if len(configTemplate.Frontmatter) > 0 {
+				header, err := yaml.Marshal(configTemplate.Frontmatter)
+				if err != nil {
+					return nil, fmt.Errorf("configured starter %q: %w", configTemplate.Name, err)
+				}
+				source.WriteString("---\n")
+				source.Write(header)
+				source.WriteString("---\n\n")
+			}
+			source.WriteString(configTemplate.Body)
+			templates = upsertContentTemplate(templates, contentTemplate{
+				ID: "config:" + configTemplate.Name, Name: configTemplate.Name,
+				Description: "Site-configured starter", Directory: outputDir, Source: source.String(),
+			})
+		}
 	}
 	local, err := loadSiteContentTemplates(h.root, directory)
 	if err != nil {
 		return nil, err
 	}
+	// Site-authored Markdown is the highest-priority starter definition.
 	for _, siteTemplate := range local {
-		found := false
-		for i := range templates {
-			if strings.TrimPrefix(templates[i].ID, "builtin:") == siteTemplate.Name {
-				templates[i] = siteTemplate
-				found = true
-				break
-			}
-		}
-		if !found {
-			templates = append(templates, siteTemplate)
-		}
+		templates = upsertContentTemplate(templates, siteTemplate)
 	}
 	if err := validateContentTemplateNames(templates); err != nil {
 		return nil, err
 	}
-	if len(templates) > len(builtins) {
-		builtinCount := len(builtins)
-		sort.Slice(templates[builtinCount:], func(i, j int) bool {
-			return templates[builtinCount+i].Name < templates[builtinCount+j].Name
-		})
-	}
+	sort.SliceStable(templates, func(i, j int) bool {
+		return strings.ToLower(templates[i].Name) < strings.ToLower(templates[j].Name)
+	})
 	return templates, nil
+}
+
+func contentTemplateKey(template contentTemplate) string {
+	if strings.HasPrefix(template.ID, "builtin:") {
+		return strings.TrimPrefix(template.ID, "builtin:")
+	}
+	return template.Name
+}
+
+func upsertContentTemplate(templates []contentTemplate, selected contentTemplate) []contentTemplate {
+	for i := range templates {
+		if strings.EqualFold(contentTemplateKey(templates[i]), selected.Name) {
+			templates[i] = selected
+			return templates
+		}
+	}
+	return append(templates, selected)
 }
 
 func validateContentTemplateNames(templates []contentTemplate) error {
@@ -177,6 +220,10 @@ func readSiteContentTemplate(templateRoot *os.Root, relative string) (*contentTe
 
 func siteContentTemplateFromSource(relative, name string, source []byte) (*contentTemplate, error) {
 	frontmatter, body := splitStarterSource(string(source))
+	trimmed := strings.TrimPrefix(string(source), "\ufeff")
+	if (strings.HasPrefix(trimmed, "---\n") || strings.HasPrefix(trimmed, "---\r\n")) && string(body) == string(source) {
+		return nil, fmt.Errorf("starter %s is missing its closing frontmatter delimiter", filepath.ToSlash(relative))
+	}
 	if len(frontmatter) == 0 {
 		name = strings.NewReplacer("-", " ", "_", " ").Replace(name)
 		return &contentTemplate{ID: "local:" + filepath.ToSlash(relative), Name: name, Description: "Site template · " + filepath.ToSlash(relative), Directory: name, Source: string(source)}, nil
