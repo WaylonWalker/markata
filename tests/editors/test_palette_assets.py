@@ -2,6 +2,8 @@
 import ast
 import base64
 import io
+import shutil
+import subprocess
 from pathlib import Path
 import unittest
 import zipfile
@@ -18,6 +20,11 @@ class PaletteAssetsTest(unittest.TestCase):
             for name in ['command-catalog.js', 'command-palette.js', 'command-palette.css', 'command-palette-example.md']:
                 self.assertEqual(archive.read(name), (ROOT / 'pkg/workbench/web' / name).read_bytes(),
                                  f'Regenerate the Python editor asset bundle: {name}')
+
+    @unittest.skipUnless(shutil.which('node'), 'Node.js is not installed')
+    def test_app_shortcut_registry(self):
+        subprocess.run(['node', str(ROOT / 'tests/editors/shortcut_registry_checks.cjs')],
+                       cwd=ROOT, check=True, capture_output=True, text=True)
 
 
 if __name__ == '__main__':
