@@ -12,6 +12,10 @@ func TestBareDomainLinkDestinations(t *testing.T) {
 	}{
 		{"reported reproduction", "[pype.dev](pype.dev)", 1},
 		{"path query fragment", "[site](blog.example.dev/posts?q=1#intro)", 1},
+		{"percent-encoded query", "[site](example.dev/search?q=hello%20world)", 1},
+		{"percent-encoded path", "[site](example.dev/a%2Fb)", 1},
+		{"percent-encoded hostname", "[site](exa%6Dple.dev/path)", 0},
+		{"percent-encoded local file", "[local](README.md?name=hello%20world)", 0},
 		{"angle wrapped", "[site](<example.com/docs>)", 1},
 		{"nested label", "[a [nested] label](example.org)", 1},
 		{"multiple", "[a](example.org) and [b](example.net)", 2},
