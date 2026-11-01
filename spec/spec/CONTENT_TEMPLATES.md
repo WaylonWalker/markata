@@ -67,11 +67,14 @@ All editors MUST:
 5. Expand the standard variables below in both starter frontmatter and body.
 6. Omit starter metadata from generated frontmatter.
 7. Preserve all other starter frontmatter values and body content.
-8. Reject paths that escape the site root and report invalid starter metadata.
+8. Serialize only fields already present in the selected starter or values
+   explicitly overridden during creation; do not inject implicit defaults.
+9. Reject paths that escape the site root and report invalid starter metadata.
 
-Site-authored starters override a built-in starter with the same canonical
-name. CLI/TUI MUST report an ambiguous alias instead of silently choosing a
-starter. The web workbench may show multiple canonical results for an alias
+Site-authored starters override a config starter or built-in starter with
+the same canonical name. Canonical names MUST remain selectable even when a
+different starter uses that name as an alias. CLI/TUI MUST report an ambiguous
+alias instead of silently choosing a starter. The web workbench may show multiple canonical results for an alias
 search; it MUST NOT silently select one. Existing built-in alias catalogs may
 differ between editor surfaces for compatibility.
 Starter output directories MUST be relative paths that remain inside the site
@@ -94,10 +97,24 @@ MUST escape substitutions for the surrounding YAML scalar context; they MUST
 NOT parse and re-serialize the body as YAML.
 
 Editors may provide standard creation fields such as tags, draft/published,
-private, and authors. A field explicitly selected by the user takes precedence
-over the starter default. Unselected fields preserve their starter values. A
-missing date defaults to the current local date; missing publication fields
-use each editor's documented creation defaults.
+private, and authors. The precedence order is:
+
+1. Values explicitly supplied by the user (including `false`, cleared values,
+   and empty lists).
+2. Values present in a site-authored Markdown starter.
+3. Site-configured template and site-level defaults.
+4. Markata built-in defaults.
+
+An editor MAY show inherited or computed defaults in its controls, but MUST NOT
+serialize them into new content unless the user explicitly selects an override.
+Unselected fields preserve the starter's values or remain absent. For example,
+when a starter specifies only `title: "{{title}}"`, creating a page should
+write that title but MUST NOT insert `slug`, `date`, `published`, `draft`,
+`tags`, or `description` keys. The title supplied for a file path does not
+require an absent `title` frontmatter field to be created. A missing date
+resolves to the current local date at runtime; missing publication fields use
+the site's effective defaults without being written into the new file.
+Explicit CLI flags and TUI/web changes override starter values.
 
 ## Editor extensions
 
@@ -114,6 +131,9 @@ JavaScript embedded in a starter are out of scope.
 - Existing TOML `content_templates.templates` definitions remain supported.
 - Markdown starters in the configured `content_templates.directory` take
   precedence over same-named config templates and built-ins.
+- TOML/JSON/YAML configured templates take precedence over built-ins, and
+  configured placements apply where no higher-precedence starter specifies
+  its own output directory.
 - Web workbench discovery MUST use the same configured/default directory and
   metadata contract as the CLI.
 - The interactive TUI uses the same resolved catalog as non-interactive CLI.
@@ -126,7 +146,8 @@ Starters MUST NOT be interpreted as executable code.
 
 ## Conformance
 
-An editor conforms when the same starter file, site root, and creation inputs
-produce equivalent frontmatter defaults, substituted values, body, and output
-directory in that editor. Differences in prompts and visual presentation are
+An editor conforms when the same starter file, site root, and explicitly
+selected creation inputs produce equivalent persisted frontmatter, substituted
+values, body, and output directory. Editors MAY display different effective
+fallbacks without writing them to the file. Differences in prompts and visual presentation are
 allowed.
