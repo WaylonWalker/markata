@@ -70,7 +70,7 @@
     else if (key.length === 1) key = key.toUpperCase();
     const modifier = preset === 'emacs' && event.ctrlKey && !event.metaKey ? 'Ctrl' :
       event.ctrlKey || event.metaKey ? 'Mod' : '';
-    const shifted = event.shiftKey && key !== 'Shift' && /^[A-Za-z0-9]$/.test(key);
+    const shifted = event.shiftKey && key !== 'Shift' && (event.key.length !== 1 || /^[A-Za-z0-9]$/.test(key));
     return [modifier, event.altKey ? 'Alt' : '', shifted ? 'Shift' : '', key].filter(Boolean).join('+');
   }
   function clearPending() {
