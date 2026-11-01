@@ -112,6 +112,7 @@
     const result=await response.json();
     if(!response.ok||!result.document) throw new Error(result.error||'Could not render the comparison');
     frame.srcdoc=result.document;
+    return result;
   }
   async function awaitSaved(path, snapshot) {
     window.MarkataSiteTree.save();
@@ -136,6 +137,7 @@
       return;
     }
     state.loading=true;state.path=path;state.data=null;state.commit=null;
+    dialog.querySelector('[data-publish-mode="rich"]').disabled=false;
     dialog.querySelector('#publish-confirm').hidden=false;
     dialog.querySelector('#publish-confirm').disabled=true;
     dialog.querySelector('#publish-push').hidden=true;
@@ -165,10 +167,16 @@
       setSide('after');setMode('side');
       dialog.querySelector('#publish-body').hidden=false;
       setNotice('Comparison against last Git commit, not necessarily the deployed site. Committing does not push or deploy.','info');
-      await Promise.all([
+      const [before,after]=await Promise.all([
         renderVersion(data.baseline,dialog.querySelector('#publish-before-frame')),
         renderVersion(data.current,dialog.querySelector('#publish-after-frame'))
       ]);
+      try {
+        window.MarkataRichPublishDiff.render(before,after,dialog.querySelector('#publish-rich-frame'));
+      } catch(error) {
+        const tab=dialog.querySelector('[data-publish-mode="rich"]');
+        tab.disabled=true;tab.title=error.message;
+      }
     }catch(error){
       setNotice(error.message,'warning');
       dialog.querySelector('#publish-body').hidden=true;
@@ -260,10 +268,11 @@
     doc.id='publish-review';doc.setAttribute('aria-labelledby','publish-title');
     doc.innerHTML='<header class="publish-review-head"><div><small>REVIEW &amp; PUBLISH</small><h2 id="publish-title">Review changes</h2><p id="publish-path"></p></div><button type="button" id="publish-close" aria-label="Close publish review">✕</button></header>'+
     '<div id="publish-notice" role="status"></div><div id="publish-body" hidden><div id="publish-chips" aria-label="Change summary"></div>'+
-    '<nav class="publish-mode-tabs" aria-label="Comparison view"><button type="button" data-publish-mode="side">Side by side</button><button type="button" data-publish-mode="source">Source diff</button></nav>'+
+    '<nav class="publish-mode-tabs" aria-label="Comparison view"><button type="button" data-publish-mode="side">Side by side</button><button type="button" data-publish-mode="rich">Rendered diff</button><button type="button" data-publish-mode="source">Source diff</button></nav>'+
     '<div data-publish-view="side"><div class="publish-side-tabs" role="group" aria-label="Version to read"><button data-publish-side="before" type="button">Last committed</button><button data-publish-side="after" type="button">Current draft</button></div>'+
     '<div class="publish-comparison"><section data-publish-pane="before"><h3 id="publish-before-name">Last committed</h3><iframe id="publish-before-frame" title="Last committed rendering" sandbox="allow-scripts"></iframe></section>'+
     '<section data-publish-pane="after"><h3>Current saved draft</h3><iframe id="publish-after-frame" title="Current draft rendering" sandbox="allow-scripts"></iframe></section></div></div>'+
+    '<div data-publish-view="rich" hidden><p class="publish-rich-help">Structural comparison: inline changes for text, before/after blocks for complex elements. Use Side by side for exact rendering.</p><iframe id="publish-rich-frame" title="Unified rendered Markdown change annotations" sandbox="allow-scripts"></iframe></div>'+
     '<div data-publish-view="source" hidden><div id="publish-source-diff" role="region" tabindex="0" aria-label="Unified Markdown source diff"></div></div></div>'+
     '<footer class="publish-actions"><span>A Git commit is not a verified deployment.</span><button type="button" id="publish-back">Back to editing</button><button type="button" id="publish-mark-public" hidden>Mark as public</button><button type="button" id="publish-confirm" disabled>Commit selected page</button><button type="button" id="publish-push" hidden>Push to origin</button></footer>';
     document.body.append(doc);dialog=doc;notice=doc.querySelector('#publish-notice');panels=doc.querySelector('#publish-body');
