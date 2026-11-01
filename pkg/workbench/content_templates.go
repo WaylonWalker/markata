@@ -95,9 +95,12 @@ func (h *Handler) contentTemplates() ([]contentTemplate, error) {
 	if err := validateContentTemplateNames(templates); err != nil {
 		return nil, err
 	}
-	sort.SliceStable(templates, func(i, j int) bool {
-		return strings.ToLower(templates[i].Name) < strings.ToLower(templates[j].Name)
-	})
+	if len(templates) > len(builtins) {
+		builtinCount := len(builtins)
+		sort.Slice(templates[builtinCount:], func(i, j int) bool {
+			return strings.ToLower(templates[builtinCount+i].Name) < strings.ToLower(templates[builtinCount+j].Name)
+		})
+	}
 	return templates, nil
 }
 
