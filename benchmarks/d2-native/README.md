@@ -3,15 +3,14 @@
 **Research experiment only.** No new Markata user-facing feature, runtime
 dependency, Markdown syntax, or site-builder integration is introduced.
 
-The production Markata module currently targets Go 1.26. D2's official
+At the time this historical comparison began, Markata targeted Go 1.26. It has since upgraded to **Go 1.27** in [PR #1901](https://github.com/WaylonWalker/markata/pull/1901). D2's official
 [v0.8.2](https://github.com/d2lang/d2/blob/v0.8.2/go.mod) and
 [v0.9.0](https://github.com/d2lang/d2/blob/v0.9.0/go.mod) modules declare
 Go 1.27. The older [v0.7.1](https://github.com/d2lang/d2/blob/v0.7.1/go.mod)
 uses the `oss.terrastruct.com/d2` import path and Go 1.24.
 
 This nested Go module pins D2 **v0.7.1** specifically to test whether
-native, in-process D2 SVG output is a viable renderer without changing
-Markata's Go toolchain or increasing its default binary size.
+native, in-process D2 SVG output is viable under the former Go 1.26 baseline without changing the root module dependency graph.
 
 ## Run
 
@@ -65,10 +64,7 @@ On these fixtures, the native v0.7.1 benchmark also allocated approximately
 Native output sizes were 11,237 / 21,629 / 56,921 uncompressed bytes, while
 CLI v0.9.0 output 6,129 / 15,239 / 45,311 bytes.
 
-**Next experiment:** compile D2 v0.9.0 with Go 1.27 in an **independent**
-sidecar module and rerun the same in-process benchmark. That isolates the
-version change from the subprocess cost. Keep Markata's Go 1.26 production
-module unchanged until a benchmark-backed decision is made.
+**Follow-up completed:** [the D2 v0.9.0 native benchmark](../d2-current/) now runs in a separate Go 1.27 module and has passed against the upgraded production Go 1.27 baseline; see [run 41255950545](https://github.com/WaylonWalker/markata/actions/runs/41255950545). No D2 dependency has been added to Markata's root module.
 
 ## Explicit constraints
 
@@ -78,5 +74,4 @@ module unchanged until a benchmark-backed decision is made.
 - A pinned older library version may miss syntax added in newer releases.
   Do not silently imply parity with the current D2 CLI.
 - No claim that D2 is safe for untrusted authored diagrams is made here.
-- Once evidence exists, choose the production adapter in [issue #1896](https://github.com/WaylonWalker/markata/issues/1896)
-  and implement on top of [foundation PR #1892](https://github.com/WaylonWalker/markata/pull/1892).
+- The native D2 v0.9.0 option is favored by measured performance. Implement the production adapter separately under [issue #1896](https://github.com/WaylonWalker/markata/issues/1896), using the SVG foundation merged in [PR #1892](https://github.com/WaylonWalker/markata/pull/1892).
