@@ -23,6 +23,14 @@ type contentTemplate struct {
 	Source      string   `json:"source"`
 }
 
+type siteStarterMetadata struct {
+	name             string
+	description      string
+	directory        string
+	aliases          []string
+	cleanFrontmatter []byte
+}
+
 func (h *Handler) contentTemplates() ([]contentTemplate, error) {
 	today := time.Now().Format("2006-01-02")
 	builtins := builtinContentTemplates(today)
@@ -173,56 +181,56 @@ func siteContentTemplateFromSource(relative, name string, source []byte) (*conte
 		name = strings.NewReplacer("-", " ", "_", " ").Replace(name)
 		return &contentTemplate{ID: "local:" + filepath.ToSlash(relative), Name: name, Description: "Site template · " + filepath.ToSlash(relative), Directory: name, Source: string(source)}, nil
 	}
-	name, description, outputDirectory, aliases, cleanFrontmatter, err := parseSiteStarterMetadata(relative, name, frontmatter)
+	metadata, err := parseSiteStarterMetadata(relative, name, frontmatter)
 	if err != nil {
 		return nil, err
 	}
 	var rendered bytes.Buffer
 	rendered.WriteString("---\n")
-	rendered.Write(cleanFrontmatter)
+	rendered.Write(metadata.cleanFrontmatter)
 	rendered.WriteString("---\n")
 	rendered.Write(body)
-	return &contentTemplate{ID: "local:" + filepath.ToSlash(relative), Name: name, Description: description, Directory: outputDirectory, Aliases: aliases, Source: rendered.String()}, nil
+	return &contentTemplate{ID: "local:" + filepath.ToSlash(relative), Name: metadata.name, Description: metadata.description, Directory: metadata.directory, Aliases: metadata.aliases, Source: rendered.String()}, nil
 }
 
-func parseSiteStarterMetadata(relative, name string, frontmatter []byte) (string, string, string, []string, []byte, error) {
+func parseSiteStarterMetadata(relative, name string, frontmatter []byte) (siteStarterMetadata, error) {
 	var metadata map[string]any
 	if err := yaml.Unmarshal(frontmatter, &metadata); err != nil {
-		return "", "", "", nil, nil, fmt.Errorf("parse starter %s: %w", filepath.ToSlash(relative), err)
+		return siteStarterMetadata{}, fmt.Errorf("parse starter %s: %w", filepath.ToSlash(relative), err)
 	}
 	if metadata == nil {
-		return "", "", "", nil, nil, fmt.Errorf("parse starter %s: frontmatter must be a mapping", filepath.ToSlash(relative))
+		return siteStarterMetadata{}, fmt.Errorf("parse starter %s: frontmatter must be a mapping", filepath.ToSlash(relative))
 	}
 	starter, err := starterMetadataMap(relative, metadata)
 	if err != nil {
-		return "", "", "", nil, nil, err
+		return siteStarterMetadata{}, err
 	}
 	if rawName, exists := starter["name"]; exists {
 		value, ok := rawName.(string)
 		if !ok || strings.TrimSpace(value) == "" {
-			return "", "", "", nil, nil, fmt.Errorf("starter %s starter.name must be a non-empty string", filepath.ToSlash(relative))
+			return siteStarterMetadata{}, fmt.Errorf("starter %s starter.name must be a non-empty string", filepath.ToSlash(relative))
 		}
 		name = strings.TrimSpace(value)
 	}
 	description, err := siteStarterDescription(relative, starter)
 	if err != nil {
-		return "", "", "", nil, nil, err
+		return siteStarterMetadata{}, err
 	}
 	outputDirectory, err := siteStarterDirectory(relative, name, metadata)
 	if err != nil {
-		return "", "", "", nil, nil, err
+		return siteStarterMetadata{}, err
 	}
 	aliases, err := siteStarterAliases(relative, starter)
 	if err != nil {
-		return "", "", "", nil, nil, err
+		return siteStarterMetadata{}, err
 	}
 	delete(metadata, "starter")
 	delete(metadata, "_directory")
 	cleanFrontmatter, err := yaml.Marshal(metadata)
 	if err != nil {
-		return "", "", "", nil, nil, err
+		return siteStarterMetadata{}, err
 	}
-	return name, description, outputDirectory, aliases, cleanFrontmatter, nil
+	return siteStarterMetadata{name: name, description: description, directory: outputDirectory, aliases: aliases, cleanFrontmatter: cleanFrontmatter}, nil
 }
 
 func starterMetadataMap(relative string, metadata map[string]any) (map[string]any, error) {

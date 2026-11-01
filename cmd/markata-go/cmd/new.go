@@ -326,7 +326,8 @@ func validateTemplateAliases(templates map[string]ContentTemplate) {
 	for name := range templates {
 		owners[strings.ToLower(strings.TrimSpace(name))] = name
 	}
-	for name, template := range templates {
+	for name := range templates {
+		template := templates[name]
 		for _, alias := range templateAliases(name, template) {
 			key := strings.ToLower(strings.TrimSpace(alias))
 			if owner, exists := owners[key]; exists && owner != name {
@@ -370,7 +371,8 @@ func formatTemplateEntry(name string, template ContentTemplate) string {
 
 func resolveTemplateSelection(name string, templates map[string]ContentTemplate) (ContentTemplate, string, bool) {
 	canonical := ""
-	for candidate, item := range templates {
+	for candidate := range templates {
+		item := templates[candidate]
 		for _, alias := range templateAliases(candidate, item) {
 			if alias == name {
 				if canonical != "" && canonical != candidate {
@@ -677,7 +679,7 @@ func runInteractiveMode(cmd *cobra.Command, templates map[string]ContentTemplate
 }
 
 // writeContentFile creates the content file with the given parameters.
-func writeContentFile(title, slug, outputDir string, draft bool, draftSet bool, tags []string, template ContentTemplate) error {
+func writeContentFile(title, slug, outputDir string, draft, draftSet bool, tags []string, template ContentTemplate) error {
 	if template.ValidationError != "" {
 		return fmt.Errorf("invalid starter %q: %s", template.Name, template.ValidationError)
 	}
@@ -831,7 +833,7 @@ func listTemplates() error {
 }
 
 // generateTemplatedContent creates the markdown content with template-specific frontmatter.
-func generateTemplatedContent(title, slug string, date time.Time, draft bool, draftSet bool, tags []string, template ContentTemplate) string {
+func generateTemplatedContent(title, slug string, date time.Time, draft, draftSet bool, tags []string, template ContentTemplate) string {
 	// Build frontmatter map
 	fm := make(map[string]interface{})
 

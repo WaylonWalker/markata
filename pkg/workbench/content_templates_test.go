@@ -14,7 +14,7 @@ func TestLoadSiteContentTemplates_SharedMarkdownStarter(t *testing.T) {
 		t.Fatal(err)
 	}
 	content := "---\nstarter:\n  name: guide\n  description: A reusable guide\n  aliases:\n    - tutorial\n_directory: guides\ntemplateKey: guide\ndescription: Page description\ntitle: '{{title}}'\n---\n\n## {{title}}\n"
-	if err := os.WriteFile(filepath.Join(directory, "guide.md"), []byte(content), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(directory, "guide.md"), []byte(content), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	templates, err := loadSiteContentTemplates(root, "content-templates")
@@ -46,7 +46,7 @@ func TestLoadSiteContentTemplates_DefaultDirectoryUsesCanonicalName(t *testing.T
 		t.Fatal(err)
 	}
 	content := "---\nstarter:\n  name: how-to\n---\n\nBody\n"
-	if err := os.WriteFile(filepath.Join(directory, "guide.md"), []byte(content), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(directory, "guide.md"), []byte(content), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	templates, err := loadSiteContentTemplates(root, "content-templates")
