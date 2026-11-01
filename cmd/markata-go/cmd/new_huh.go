@@ -17,6 +17,9 @@ import (
 
 // Template name constants used for conditional wizard groups.
 const (
+	tmplPost    = "post"
+	privacyChoicePublic  = encryptPostActionPublic
+	privacyChoicePrivate = "private"
 	tmplPhoto   = "photo"
 	tmplVideo   = "video"
 	tmplLink    = "link"
@@ -208,7 +211,7 @@ func runHuhNewWizard(templates map[string]ContentTemplate) (*newWizardState, err
 	theme := createHuhThemeForPalette(currentCLIPalette)
 
 	state := &newWizardState{
-		Template:      "post",
+		Template:      tmplPost,
 		PrivateChoice: "inherit",
 	}
 	if _, resolvedName, ok := resolveTemplateSelection(newTemplate, templates); ok {
@@ -404,8 +407,8 @@ func runHuhNewWizard(templates map[string]ContentTemplate) (*newWizardState, err
 			Description("Keep the starter setting, or explicitly override it").
 			Options(
 				huh.NewOption("Keep starter default", "inherit"),
-				huh.NewOption("Private", "private"),
-				huh.NewOption("Public", "public"),
+				huh.NewOption("Private", privacyChoicePrivate),
+				huh.NewOption("Public", privacyChoicePublic),
 			).
 			Value(&state.PrivateChoice),
 	)
@@ -534,11 +537,14 @@ func buildSummary(state *newWizardState, ctx *siteContext) string {
 	effectiveDraft := starterDraftDefault(selectedTemplate)
 	sb.WriteString(fmt.Sprintf("Draft:     %t (effective)\n", effectiveDraft))
 	sb.WriteString(fmt.Sprintf("Published: %t (effective)\n", !effectiveDraft))
-	effectivePrivate, _ := selectedTemplate.Frontmatter["private"].(bool)
+	effectivePrivate := false
+	if inheritedPrivacy, ok := selectedTemplate.Frontmatter["private"].(bool); ok {
+		effectivePrivate = inheritedPrivacy
+	}
 	switch state.PrivateChoice {
-	case "private":
+	case privacyChoicePrivate:
 		effectivePrivate = true
-	case "public":
+	case privacyChoicePublic:
 		effectivePrivate = false
 	}
 	sb.WriteString(fmt.Sprintf("Private:   %t (effective)\n", effectivePrivate))
@@ -761,9 +767,9 @@ func applyNewWizardState(state *newWizardState, templates map[string]ContentTemp
 
 	// Inherited values stay in the starter; only explicit choices are written.
 	switch state.PrivateChoice {
-	case "private":
+	case privacyChoicePrivate:
 		enhancedTemplate.Frontmatter["private"] = true
-	case "public":
+	case privacyChoicePublic:
 		enhancedTemplate.Frontmatter["private"] = false
 	}
 
