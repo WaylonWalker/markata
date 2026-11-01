@@ -4,6 +4,8 @@ const frame = document.querySelector('#preview');
 window.addEventListener('message',event=>{
   if (event.source !== frame.contentWindow) return;
   if (event.data?.type === 'open-post') window.MarkataSiteTree?.openPost(event.data.slug);
+  if (event.data?.type === 'workbench-preview-focus-editor')
+    window.MarkataShortcuts?.execute('workbench.focusEditor');
   if (event.data?.type === 'preview-updated' && event.data.version === revision) {
     finishPreview(event.data.version);
     scrollSync.previewUpdated();
@@ -30,9 +32,14 @@ const workbench = document.querySelector('#workbench');
 const layoutSetting = document.querySelector('#setting-layout');
 try { layoutSetting.value = localStorage.getItem('markata-editor-layout') || 'split'; } catch { storageWarning(); }
 function setLayout(layout) {
+  const previouslyFocusedPane = document.activeElement?.closest?.('#editor-pane, #preview-pane')?.id;
   workbench.dataset.layout = ['split','editor','preview'].includes(layout) ? layout : 'split';
   layoutSetting.value = workbench.dataset.layout;
   try { localStorage.setItem('markata-editor-layout',workbench.dataset.layout); } catch { storageWarning(); }
+  if (previouslyFocusedPane === 'editor-pane' && workbench.dataset.layout === 'preview')
+    document.querySelector('#preview-pane')?.focus();
+  if (previouslyFocusedPane === 'preview-pane' && workbench.dataset.layout === 'editor')
+    editor.focus();
   requestAnimationFrame(() => editor.refresh());
 }
 setLayout(layoutSetting.value);
@@ -222,7 +229,15 @@ document.querySelector('#create-form').addEventListener('submit',async event => 
 const appShortcuts = window.MarkataShortcuts;
 appShortcuts.init(editor);
 function toggleSidebar(visible = workbench.classList.contains('sidebar-hidden')) {
+  const sidebar = document.querySelector('#site-sidebar');
+  const focusedInside = sidebar.contains(document.activeElement);
+  if (!visible && focusedInside) {
+    if (workbench.dataset.layout === 'preview') document.querySelector('#preview-pane').focus();
+    else editor.focus();
+  }
   workbench.classList.toggle('sidebar-hidden', !visible);
+  sidebar.inert = !visible;
+  sidebar.setAttribute('aria-hidden', String(!visible));
   editor.refresh();
 }
 function focusExplorer() {
@@ -241,7 +256,7 @@ registerApp('workbench.focusEditor','Focus Editor','Navigation',
   () => {if(workbench.dataset.layout==='preview')setLayout('split');focusEditorForWriting();});
 registerApp('workbench.focusPreview','Focus Preview','Navigation',
   {vscode:'Mod+Alt+2',writer:'Mod+Alt+2',vim:'Space 2',emacs:'Alt+2'},
-  () => {if(workbench.dataset.layout==='editor')setLayout('split');frame.focus();});
+  () => {if(workbench.dataset.layout==='editor')setLayout('split');document.querySelector('#preview-pane').focus();});
 registerApp('workbench.preview','Toggle Preview Only','Layout',
   {vscode:'Mod+Alt+V',writer:'Mod+Alt+V',vim:'Space P V',emacs:'Alt+V'},
   () => setLayout(workbench.dataset.layout==='preview'?'split':'preview'));
@@ -268,6 +283,8 @@ registerApp('workbench.shortcutSettings','Keyboard Shortcuts','Settings',
   () => appShortcuts.openSettings(),'View, change, or reset application keybindings.');
 window.MarkataPublishReview.attach(editor);
 window.MarkataCommandPalette.attach(editor);
+document.querySelector('#preview-focus-editor').addEventListener('click', () =>
+  appShortcuts.execute('workbench.focusEditor'));
 window.MarkataEditorLSP.connect(editor, document.querySelector('#language-status'));
 if (new URLSearchParams(location.search).has('example')) {
   fetch(document.body.dataset.exampleUrl).then(response => {
