@@ -127,15 +127,11 @@ func replaceFrontmatterProperty(source, name string, value any, remove bool) (st
 		if err != nil {
 			return "", err
 		}
-		newline := "
-"
-		if strings.Contains(source, "
-") {
-			newline = "
-"
+		newline := "\n"
+		if strings.Contains(source, "\r\n") {
+			newline = "\r\n"
 		}
-		next := "---" + newline + strings.ReplaceAll(string(encoded), "
-", newline) + "---" + newline + source
+		next := "---" + newline + strings.ReplaceAll(string(encoded), "\n", newline) + "---" + newline + source
 		if _, _, err := frontmatterDocument(next); err != nil {
 			return "", err
 		}
@@ -145,8 +141,7 @@ func replaceFrontmatterProperty(source, name string, value any, remove bool) (st
 	// Keep all unchanged YAML and all body bytes exactly as authored, including
 	// comments, quoting, key order, and mixed line endings. Re-encode only the
 	// property the user changed.
-	lines := strings.SplitAfter(source, "
-")
+	lines := strings.SplitAfter(source, "\n")
 	closeIndex := inspection.ClosingLine - 1
 	content := []*yaml.Node{}
 	if len(document.Content) > 0 {
@@ -170,11 +165,8 @@ func replaceFrontmatterProperty(source, name string, value any, remove bool) (st
 			return "", fmt.Errorf("cannot encode property: %w", err)
 		}
 		encoded = raw
-		if strings.Contains(source, "
-") {
-			encoded = strings.ReplaceAll(encoded, "
-", "
-")
+		if strings.Contains(source, "\r\n") {
+			encoded = strings.ReplaceAll(encoded, "\n", "\r\n")
 		}
 	}
 	if start == -1 {
@@ -227,7 +219,7 @@ func (h *Handler) serveFrontmatterEditor(w http.ResponseWriter, r *http.Request)
 		}
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"has_frontmatter": inspection.HasFrontmatter,
-			"fields": fields,
+			"fields":          fields,
 		})
 		return
 	}
