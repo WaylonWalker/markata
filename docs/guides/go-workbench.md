@@ -32,6 +32,8 @@ Scrolling either pane keeps the corresponding Markdown visible in the other.
 When you write or move the cursor, the preview follows the editor. Scroll sync
 is on by default; turn off **Sync editor and preview scrolling** in **Editor
 settings** to scroll each pane independently. The choice is saved in this browser.
+At the end of a document, both panes keep extra scroll space so the last lines
+can move above the bottom edge while you write.
 In split view, a subtle marker shows the corresponding preview block, with a
 thin caret and **You** flag at the active location. When rendered text matches
 the source line, the preview caret follows the character cursor. For content

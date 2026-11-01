@@ -115,6 +115,8 @@ const textPosition=(root,source,ch)=>{
 const syncPositionMarker=()=>{
   const article=document.querySelector('.post-content');
   if(!article)return;
+  const scrollOff=140;
+  article.style.paddingBottom=`${scrollOff}px`;
   let block=null,container=null;
   for(const anchor of sourcePositionAnchors){
     if(!anchor.nested){if(anchor.line<=positionLine)block=anchor;continue;}
@@ -209,7 +211,7 @@ const scrollState=(user,syncID=null)=>{
     else if(!ordered.length||point.line>ordered.at(-1).line)ordered.push(point);
   }
   const endLine=Math.max(sourceLineCount,(sourceLines.at(-1)??0)+1);
-  const bottom=rect.bottom+scrollY;
+  const bottom=rect.bottom+scrollY-scrollOff;
   if(endLine>ordered.at(-1).line&&bottom>=ordered.at(-1).y)ordered.push({line:endLine,y:bottom,index:elements.length});
   const visualPoints=[...ordered].sort((a,b)=>a.y-b.y||a.line-b.line);
   syncPositionMarker();

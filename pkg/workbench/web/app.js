@@ -59,7 +59,7 @@ try { source.value = localStorage.getItem('markata-workbench-draft') ?? initial;
 catch { source.value = initial; storageWarning(); }
 const editor = CodeMirror.fromTextArea(source, {
   mode:'gfm', lineNumbers:true, lineWrapping:true, matchBrackets:true,
-  indentUnit:2, tabSize:4, viewportMargin:10, screenReaderLabel:'Markdown source'
+  indentUnit:2, tabSize:4, viewportMargin:10, cursorScrollMargin:110, screenReaderLabel:'Markdown source'
 });
 const settingsDialog = document.querySelector('#settings-dialog');
 document.querySelector('#settings-open').addEventListener('click',() => settingsDialog.showModal());
