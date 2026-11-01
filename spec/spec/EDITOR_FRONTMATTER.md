@@ -5,6 +5,14 @@ Stacked on PR #1906 (publish review), itself based on #1905.
 ## Interaction
 - Closed by default, header folded in CodeMirror; Properties button, palette,
   and Ctrl/Cmd+Alt+Shift+M expose the form.
+- Opening Properties switches the editor pane to a full-height page-details
+  inspector while keeping the live preview visible. The Markdown source and
+  property form do not compete for the same vertical space.
+- The inspector starts with a compact page summary, then presents existing
+  fields in readable groups. Each field shows its human label and YAML key.
+- Add property is a focused flow: choose a known property or open the custom
+  field controls only when needed. Advanced and site-specific fields stay
+  available without taking over the common editing path.
 - Edit YAML reveals the original source header; Hide YAML folds it back.
 - Common metadata is quickly discoverable; all other valid root-level YAML
   properties are available through an add/search picker or custom key, including

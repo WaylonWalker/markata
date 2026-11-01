@@ -102,6 +102,23 @@ This document stays in memory. Markdown path suggestions start at the workspace 
 The Files tree opens source files from the selected workspace using Markata glob rules. The Feeds view groups files by configured feed filters, and the Tags view groups them by loaded frontmatter. The selector shows file, feed, and tag counts. See [workspace navigation](./renderer-site-tree/).
 Each WebSocket connection owns its own draft and index. Reload the page to index external file changes.
 
+## Edit page properties
+
+Select a site file, then choose **Properties** to edit its frontmatter in the
+full-height page-details view. The live preview stays visible beside it. Choose
+**Back to Markdown** to return to the source, or **Edit YAML** to work directly
+with the frontmatter block.
+
+The page summary shows the title, URL slug or source path, and publication
+state. Common fields appear first. Choose **Add property**, search for a known
+field, and select it.
+Open **Custom property** to add a site-specific YAML field. Advanced fields
+remain available under **Show advanced properties**.
+
+Property edits update the Markdown source and use the normal workspace save
+and preview behavior. Press **Ctrl+Z** or **Cmd+Z** to undo an edit. Use
+**Remove** to delete a property from the page.
+
 The footer reports the language connection state. Editing and preview continue if the connection fails.
 Reload the page to reconnect. The browser adapter is shared with the [FastAPI example](./fastapi-editor/).
 
