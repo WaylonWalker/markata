@@ -348,8 +348,8 @@ func resolveTemplateSelection(name string, templates map[string]ContentTemplate)
 		return template, name, true
 	}
 	canonical := ""
-	for candidate, item := range templates {
-		for _, alias := range templateAliases(candidate, item) {
+	for candidate := range templates {
+		for _, alias := range templateAliases(candidate, templates[candidate]) {
 			if alias != name {
 				continue
 			}
