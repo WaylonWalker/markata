@@ -231,7 +231,7 @@ func readSiteContentTemplate(templateRoot *os.Root, relative string) (*contentTe
 func siteContentTemplateFromSource(relative, name string, source []byte) (*contentTemplate, error) {
 	frontmatter, body := splitStarterSource(string(source))
 	trimmed := strings.TrimPrefix(string(source), "\ufeff")
-	if (strings.HasPrefix(trimmed, "---\n") || strings.HasPrefix(trimmed, "---\r\n")) && string(body) == string(source) {
+	if (strings.HasPrefix(trimmed, "---\n") || strings.HasPrefix(trimmed, "---\r\n")) && bytes.Equal(body, source) {
 		return nil, fmt.Errorf("starter %s is missing its closing frontmatter delimiter", filepath.ToSlash(relative))
 	}
 	if len(frontmatter) == 0 {
