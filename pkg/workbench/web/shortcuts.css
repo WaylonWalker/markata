@@ -1,0 +1,24 @@
+#workbench.sidebar-hidden{grid-template-columns:0 minmax(0,var(--editor-width,1fr)) 7px minmax(0,1fr)}
+#workbench.sidebar-hidden #site-sidebar{visibility:hidden;overflow:hidden;border:0;pointer-events:none}
+#workbench.sidebar-hidden[data-layout="editor"],#workbench.sidebar-hidden[data-layout="preview"]{grid-template-columns:0 minmax(0,1fr)}
+#workbench.sidebar-hidden ~ #problems-panel{left:0}
+@media(max-width:1000px) and (min-width:701px){#workbench.sidebar-hidden,#workbench.sidebar-hidden[data-layout]{grid-template-columns:0 minmax(0,var(--editor-width,1fr)) 7px minmax(0,1fr)}}
+@media(max-width:700px){#workbench.sidebar-hidden,#workbench.sidebar-hidden[data-layout]{grid-template-columns:1fr}#workbench.sidebar-hidden #site-sidebar{display:none}}
+#shortcuts-dialog{width:min(740px,calc(100vw - 24px));max-height:90dvh;overflow:auto;padding:0;border:1px solid var(--editor-divider);border-radius:12px;background:var(--color-background);color:var(--color-text);font:14px system-ui,sans-serif}
+#shortcuts-dialog::backdrop{background:#080b10a8}
+#shortcuts-dialog .shortcuts-header{display:flex;justify-content:space-between;gap:16px;align-items:start;padding:18px 20px;border-bottom:1px solid var(--editor-divider)}
+#shortcuts-dialog h2{font-size:19px;margin:0}
+#shortcuts-dialog p{color:var(--color-text-muted);font-size:12px;margin:5px 0}
+#shortcuts-close{border:0;background:transparent;color:inherit;font-size:23px;cursor:pointer}
+.shortcuts-controls{display:grid;grid-template-columns:1fr 2fr;gap:10px;align-items:center;padding:16px 20px}
+.shortcuts-controls select,.shortcuts-controls input{width:100%;min-width:0;padding:9px;border:1px solid var(--editor-divider);border-radius:6px;background:var(--color-surface);color:inherit;font:inherit}
+.shortcuts-meta{padding:8px 20px;display:flex;justify-content:space-between;gap:8px;border-block:1px solid var(--editor-divider);color:var(--color-text-muted);font-size:12px}
+.shortcuts-meta button,.shortcuts-settings-link{padding:8px 10px;border:1px solid var(--editor-divider);border-radius:6px;color:inherit;background:var(--color-surface);cursor:pointer}
+#shortcuts-list{max-height:48dvh;overflow:auto}
+.shortcut-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 20px;border-bottom:1px solid var(--editor-divider)}
+.shortcut-row div{display:grid;gap:2px}
+.shortcut-row small{color:var(--color-text-muted)}
+.shortcut-binding{min-width:120px;text-align:center;padding:7px;border:1px solid var(--editor-divider);background:var(--color-surface);color:inherit;border-radius:6px;font:12px var(--font-code,monospace);cursor:pointer}
+.shortcut-capture{width:200px;min-width:0;padding:8px;border:2px solid var(--color-primary);border-radius:6px;background:var(--color-surface);color:inherit}
+#shortcuts-feedback{padding:0 20px 14px}
+@media(max-width:480px){.shortcuts-controls{grid-template-columns:1fr}.shortcut-row{padding:10px}.shortcut-binding{min-width:0}}
