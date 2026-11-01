@@ -36,7 +36,8 @@ type newWizardState struct {
 	CustomDir        string // intermediate: custom directory input
 	Tags             []string
 	CustomTag        string
-	Private          bool
+	Private          bool // legacy state; new wizard tracks an explicit privacy choice
+	PrivateChoice    string // inherit, private, or public
 	Authors          []string
 	UseDefaultAuthor bool
 
@@ -208,6 +209,7 @@ func runHuhNewWizard(templates map[string]ContentTemplate) (*newWizardState, err
 
 	state := &newWizardState{
 		Template: "post",
+		PrivateChoice: "inherit",
 	}
 	if _, resolvedName, ok := resolveTemplateSelection(newTemplate, templates); ok {
 		state.Template = resolvedName
@@ -395,13 +397,17 @@ func runHuhNewWizard(templates map[string]ContentTemplate) (*newWizardState, err
 	tagsGroup := huh.NewGroup(tagFields...)
 
 	// --- Group 4: Privacy ---
+	// Inheriting is distinct from explicitly selecting public (false).
 	privateGroup := huh.NewGroup(
-		huh.NewConfirm().
-			Title("Is this post private?").
-			Description("Private posts are excluded from feeds and search").
-			Value(&state.Private).
-			Affirmative("Yes").
-			Negative("No"),
+		huh.NewSelect[string]().
+			Title("Privacy").
+			Description("Keep the starter setting, or explicitly override it").
+			Options(
+				huh.NewOption("Keep starter default", "inherit"),
+				huh.NewOption("Private", "private"),
+				huh.NewOption("Public", "public"),
+			).
+			Value(&state.PrivateChoice),
 	)
 
 	// --- Group 5: Authors (conditional - only for multi-author sites) ---
@@ -524,9 +530,18 @@ func buildSummary(state *newWizardState, ctx *siteContext) string {
 	sb.WriteString(fmt.Sprintf("Title:     %s\n", state.Title))
 	sb.WriteString(fmt.Sprintf("Template:  %s\n", state.Template))
 	sb.WriteString(fmt.Sprintf("File:      %s\n", fullPath))
-	sb.WriteString("Draft:     false\n")
-	sb.WriteString("Published: true\n")
-	sb.WriteString(fmt.Sprintf("Private:   %t\n", state.Private))
+	selectedTemplate := ctx.Templates[state.Template]
+	effectiveDraft := starterDraftDefault(selectedTemplate)
+	sb.WriteString(fmt.Sprintf("Draft:     %t (effective)\n", effectiveDraft))
+	sb.WriteString(fmt.Sprintf("Published: %t (effective)\n", !effectiveDraft))
+	effectivePrivate, _ := selectedTemplate.Frontmatter["private"].(bool)
+	switch state.PrivateChoice {
+	case "private":
+		effectivePrivate = true
+	case "public":
+		effectivePrivate = false
+	}
+	sb.WriteString(fmt.Sprintf("Private:   %t (effective)\n", effectivePrivate))
 
 	// Template-specific fields
 	sb.WriteString(buildTemplateSummary(state))
@@ -744,8 +759,13 @@ func applyNewWizardState(state *newWizardState, templates map[string]ContentTemp
 		enhancedTemplate.Frontmatter = make(map[string]interface{})
 	}
 
-	// Set private flag
-	enhancedTemplate.Frontmatter["private"] = state.Private
+	// Inherited values stay in the starter; only explicit choices are written.
+	switch state.PrivateChoice {
+	case "private":
+		enhancedTemplate.Frontmatter["private"] = true
+	case "public":
+		enhancedTemplate.Frontmatter["private"] = false
+	}
 
 	// Set authors if provided
 	if len(state.Authors) > 0 {
@@ -755,6 +775,6 @@ func applyNewWizardState(state *newWizardState, templates map[string]ContentTemp
 	// Apply template-specific fields from wizard
 	applyTemplateFields(state, enhancedTemplate.Frontmatter)
 
-	// Use draft=false, published=true (new defaults)
-	return writeContentFile(state.Title, slug, outputDir, false, true, state.Tags, enhancedTemplate)
+	// The wizard has no publication control. Preserve starter/site defaults.
+	return writeContentFile(state.Title, slug, outputDir, false, false, state.Tags, enhancedTemplate)
 }
