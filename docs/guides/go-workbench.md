@@ -24,18 +24,65 @@ It uses the same Markdown renderer as the [Python API](./python-renderer/) and [
 The preview does not build a site. The language service indexes Markdown and reads workspace configuration for existing mention support.
 
 Use the appearance picker to select a palette, color mode, style, font, or text size.
-Use the keymap selector for Default, Vim, Emacs, or Sublime editing.
+Open **Editor settings** to choose line wrapping, keymap, and layout. Drag the
+divider between the source and preview panes to resize them. Choose **Editor
+only** or **Preview only** to focus on one pane; **Editor and preview** restores
+the split.
+Scrolling either pane keeps the corresponding Markdown visible in the other.
+When you write or move the cursor, the preview follows the editor. Scroll sync
+is on by default; turn off **Sync editor and preview scrolling** in **Editor
+settings** to scroll each pane independently. The choice is saved in this browser.
+At the end of a document, both panes keep extra scroll space so the last lines
+can move above the bottom edge while you write.
+In split view, a subtle marker shows the corresponding preview block, with a
+thin caret and **You** flag at the active location. When rendered text matches
+the source line, the preview caret follows the character cursor. For content
+that a renderer transforms or replaces, it falls back to the nearest mapped
+source position. Click rendered text to move the source caret to the matching
+text when possible; links keep their normal navigation behavior. The source
+pane keeps its normal caret on the actual text
+cursor. With the Vim keymap, the preview caret changes shape for normal,
+insert, replace, and visual modes. Preview updates preserve
+unchanged blocks, and layout changes refresh the source-to-preview mapping,
+including after images and fonts load. While you edit, the preview follows the
+caret after the matching content update completes, including when you keep
+typing on the same line. Scroll changes caused by a render or a delayed
+image/font layout are not mistaken for manual scrolling. The preview marker is
+subtle and marks the rendered block for the current caret line. Nested Markdown
+container boundaries add source anchors to improve scroll alignment in long
+sections; these markers exist only in the preview render and do not change your
+source. Within nested content, the marker follows the narrowest container that
+contains the caret line.
+Choose Default, Vim, Emacs, or Sublime keymaps in **Editor settings**.
+In Vim mode, press `/` to search forward, `?` to search backward, then `n` or
+`N` to move between matches.
 Code highlighting, icons, admonitions, tables, checklists, Mermaid, and Chart.js use local assets.
 
-The editor stores drafts and preferences in browser storage for the current origin.
-Use **Download .md** to save your draft to a file.
-A storage error appears beside the render metrics. Editing and downloads remain available.
-The server does not store drafts. Drafts on port 8765 remain separate from drafts on other ports.
+Press **Ctrl+P** (**Cmd+P** on macOS) to find a site file by its path, title,
+slug, or tag. The finder shows the current and recently opened files when its
+search is empty.
+Select a result or press **Enter** to open it in the editor.
+Choose **Feeds** or **Tags** in the workspace selector to browse posts by feed
+or tag. Feed names are shown as roots with folders relative to the workspace.
 
-The preview updates after a 250 ms pause. One request runs at a time, and newer edits replace pending edits.
+Edits to selected site files save back to the workspace after a short pause.
+Unsaved scratch documents stay in browser storage. The browser also keeps a
+recovery copy of workspace edits. Use **Ctrl+Shift+P** and search for **Download
+current file** to export a copy, or **Open Markdown file** to import a file as
+an unsaved draft.
+A storage error appears beside the render metrics. Editing and downloads remain available.
+The server writes only selected workspace files. Scratch drafts remain local to
+the browser origin, so drafts on one port remain separate from drafts on another.
+Workspace saves and new-post creation require a same-origin browser request.
+The server rejects missing or foreign origins before it changes a site file.
+
+The preview updates after a 100 ms pause. One request runs at a time, and newer edits replace pending edits.
 Old responses cannot replace a newer draft. Errors preserve the last successful preview.
-The footer shows render time, round trip time, source size, and preview size.
+The footer shows Go render time, total edit-to-preview time, source size, and preview size.
 Repeated source uses a one-entry memory cache. Appearance changes update the preview without a render request.
+Workspace post embeds in `![[post-slug]]` or `![embed](path/to/post.md)` format
+render as cards linked to the matching site post. Fenced code examples remain
+literal source.
 
 ## Language assistance
 
@@ -44,14 +91,38 @@ The server indexes the directory from `--workspace`. The default directory is th
 The browser LSP accepts same-origin connections on `localhost` or a loopback IP only.
 
 Type `[[` for wiki-link suggestions, including aliases. Type `[label](` for Markdown document paths.
-Press **Ctrl+Space** to request suggestions at the cursor. Use the arrow keys and Enter to select a suggestion.
+Automatic suggestions wait for a short typing pause. Press **Ctrl+Space** to request suggestions immediately at the cursor. Use the arrow keys and Enter to select a suggestion.
 Existing frontmatter, admonition, and mention completion also use the LSP.
 Broken wiki links receive an underline. The underline tooltip shows the diagnostic message.
+The workbench preview resolves valid `[[wikilinks]]` against the site's workspace index.
+Click a resolved wikilink in the preview to open that post in the editor.
+Select the error and warning counts in the bottom status bar to inspect diagnostics and
+jump to their source locations.
 
 The editor sends unsaved text as a synthetic `.markata/browser-draft.md` document.
 This document stays in memory. Markdown path suggestions start at the workspace root because the draft has no source file.
-The Files tree opens source files from the selected workspace using Markata glob rules. The Tags view groups those files by loaded frontmatter. Edits stay in browser drafts; download a copy to keep changes outside the browser. See [workspace navigation](./renderer-site-tree/).
+The Files tree opens source files from the selected workspace using Markata glob rules. The Feeds view groups files by configured feed filters, and the Tags view groups them by loaded frontmatter. The selector shows file, feed, and tag counts. See [workspace navigation](./renderer-site-tree/).
 Each WebSocket connection owns its own draft and index. Reload the page to index external file changes.
+
+## Edit page properties
+
+Select a site file, then choose **Properties** to edit its frontmatter in the
+full-height page-details view. The live preview stays visible beside it. Choose
+**Back to Markdown** to return to the source, or **Edit YAML** to work directly
+with the frontmatter block. Press **Escape** to return to the article. The
+command palette also has actions to open page details, add a property, and
+return to Markdown.
+
+The page summary shows the title, URL slug or source path, and publication
+state. Common fields appear first. Choose **Add property**, search for a known
+field, and select it.
+Open **Custom property** to add a site-specific YAML field. Edit tags as chips:
+remove one tag at a time or enter a tag and choose **Add**. Advanced fields
+remain available under **Show advanced properties**.
+
+Property edits update the Markdown source and use the normal workspace save
+and preview behavior. Press **Ctrl+Z** or **Cmd+Z** to undo an edit. Use
+**Remove** to delete a property from the page.
 
 The footer reports the language connection state. Editing and preview continue if the connection fails.
 Reload the page to reconnect. The browser adapter is shared with the [FastAPI example](./fastapi-editor/).
@@ -166,15 +237,85 @@ It separates initial renders, uncached edits, and cached edits. Raw samples and 
 
 ## Shared editor behavior
 
-Use **Open .md** to import a Markdown file. An oversized file leaves the current draft intact.
-Use **Download .md** to keep a copy outside browser storage.
+Use the command palette to import or export a Markdown file. An oversized import leaves the current document intact.
+Search for **New Post** in the command palette to open a fuzzy picker for
+built-in starters and `.md` files in the site's `templates/` directory. Choose
+a starter to open its details form. The title and destination folder start with
+template defaults. The slug field stays empty when using the suggestion; its
+ghost text and the destination path update as the title changes. Enter a custom
+slug only when you want to override the title-derived filename. Creating the
+post opens the new file in the editor, where later edits autosave to the site.
 The footer reports whether the draft was saved. Storage failures leave editing and downloads available.
 See [shared editor features and runtime differences](/docs/guides/renderer-integration-benchmarks/#shared-editor-features-and-runtime-differences) for the comparison.
 
-## Insert Markdown commands
+## Command palette and Markdown commands
 
 Select **Commands** or press **Ctrl+Shift+P** (**Cmd+Shift+P** on macOS).
 Search for special syntax, then press **Enter** to insert it at your selection.
 See the [command palette guide](editor-command-palette.md) for the catalog and keyboard controls.
 
 To open the command palette with a complete example loaded, visit `/?example`.
+
+
+## Review changes before publishing (experimental)
+
+When editing a Markdown file inside a Git-backed workspace, select **Publish**
+in the upper-right header, search for **Publishing: Review & Publish** in the
+command palette, or press **Ctrl/Cmd+S** or **Ctrl/Cmd+Shift+Enter**. Vim mode
+also accepts `:w`; Emacs mode accepts **Ctrl-X Ctrl-S**. Each opens the same
+review dialog; none of them publishes immediately.
+
+The dialog first waits until the exact text in the editor has been saved to
+the workspace. It then compares that saved source with the file from the last
+Git commit. **Rendered diff** opens first. **Side by side** shows both rendered
+versions and keeps matching sections in view while you scroll; mobile can switch
+between versions by tapping or swiping. **Source diff** shows unified Markdown,
+and **Full diff** opens the detailed source viewer. The **Commit message** tab
+shows the message for the local commit and lets you edit it. Metadata chips
+identify draft/published flag changes, slug changes, and conflicting publication
+flags.
+
+The review can create a local Git commit for the selected page, using the
+message shown in the **Commit message** tab. After that commit, **Push to
+origin** is a separate action. Pushing does not prove that a deployment
+succeeded; when Builder Admin verification is configured, **Check live status**
+can confirm the deployed source revision. “Last committed” is not necessarily
+the live site revision. A scratch file must first be created or opened as a
+workspace Markdown post. If the workspace has no Git history, the review
+reports this rather than assuming a baseline.
+
+The publish contract and planned deployment safety gates are defined in
+[Editor publishing](../../spec/spec/EDITOR_PUBLISHING.md).
+
+
+### Verify a remote publication with Builder Admin (opt-in)
+
+Publishing has deliberately separate steps: review the exact Markdown and
+frontmatter, commit only that selected page, then explicitly push to `origin`.
+A successful push **does not** prove the site is live.
+
+For a site deployed through Markata Builder Admin, the local editor can
+optionally verify the current release's recorded source Git commit:
+
+```sh
+export MARKATA_PUBLISH_BUILDER_URL="https://builder.example.com"
+export MARKATA_PUBLISH_BUILDER_TOKEN="<your authorized bearer token>"
+markata editor --workspace ./site
+```
+
+Use an API token authorized for Builder Admin's `/api/v1/state`. The editor
+stores neither the token nor builder URL in the browser; the local backend
+makes a short, authenticated, server-side GET request. Remote builder URLs
+must use HTTPS (loopback HTTP is permitted for development). Redirects are
+not followed, so bearer tokens cannot be forwarded to a different host.
+
+After pushing, select **Check live status**. This checks
+`revision.live_source_commit`, with a fallback to the current release's
+source revision when available. It reports **Live · Verified** only if that
+revision matches the exact pushed SHA. Unknown revision, unavailable API,
+unconfigured auth, failed build, and different live SHA never count as success.
+
+This verification identifies the release's **source Git revision**, not
+its byte-for-byte rendered output, CDN cache rollout, or availability at
+every public edge. Site URL health checks and other deployment providers
+need dedicated follow-up adapters.

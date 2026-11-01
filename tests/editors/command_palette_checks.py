@@ -2,9 +2,19 @@
 from playwright.sync_api import expect
 
 
+def select_keymap(page, keymap):
+    selector = page.locator('#keymap')
+    settings_were_closed = not selector.is_visible()
+    if settings_were_closed:
+        page.get_by_role('button', name='Editor settings').click()
+    selector.select_option(keymap)
+    if settings_were_closed:
+        page.get_by_role('button', name='Close settings').click()
+
+
 def check_commands(page, preview):
-    dialog = page.get_by_role('dialog', name='Insert Markdown')
-    query = page.get_by_role('combobox', name='Find a command')
+    dialog = page.get_by_role('dialog', name='Command Palette')
+    query = page.get_by_role('combobox', name='Find a command or action')
     value = lambda: page.evaluate("document.querySelector('.CodeMirror').CodeMirror.getValue()")
 
     def select_text(text, start=0, end=None):
@@ -17,7 +27,7 @@ def check_commands(page, preview):
 
     # Each keymap must permit opening the palette. Cancellation preserves selection.
     for keymap in ['default', 'vim', 'emacs', 'sublime']:
-        page.locator('#keymap').select_option(keymap)
+        select_keymap(page, keymap)
         select_text('Keep this text', 5, 9)
         page.keyboard.press('Control+K')
         expect(dialog).to_be_visible()
@@ -32,7 +42,7 @@ def check_commands(page, preview):
         assert page.evaluate("document.querySelector('.CodeMirror').CodeMirror.getSelection()") == 'this'
         assert page.evaluate("document.querySelector('.CodeMirror').CodeMirror.hasFocus()")
 
-    page.locator('#keymap').select_option('default')
+    select_keymap(page, 'default')
     page.keyboard.press('Control+Shift+P')
     expect(dialog).to_be_visible()
     page.keyboard.press('Escape')

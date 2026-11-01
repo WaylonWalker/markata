@@ -16,3 +16,12 @@
 #commands-results [aria-selected=true]{background:color-mix(in srgb,var(--color-primary,#245fc5) 12%,var(--color-background,#f4f7fb));border-color:var(--color-primary,#245fc5)}
 #commands:focus-visible,.markdown-commands :focus-visible{outline:2px solid var(--color-primary,#245fc5);outline-offset:3px}
 @media(max-width:480px){.markdown-commands{padding:14px}#commands-results [role=option]{column-gap:8px}#commands-results code{max-width:135px}}
+.file-finder{box-sizing:border-box;width:min(720px,calc(100vw - 24px));max-height:80dvh;margin:8dvh auto auto;padding:18px;border:1px solid var(--editor-divider,#c8d5e2);border-radius:10px;background:var(--color-background,#f4f7fb);color:var(--color-text,#203348);box-shadow:0 20px 80px #0005;font:14px/1.5 system-ui,sans-serif}
+.file-finder::backdrop{background:#0007}.file-finder-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px}.file-finder-heading h2{margin:0;font:600 18px/1.3 system-ui,sans-serif}
+.file-finder-close{border:1px solid var(--editor-divider,#c8d5e2);border-radius:5px;padding:5px 10px;background:var(--color-surface,#fff);color:inherit;cursor:pointer}.file-finder label{display:block;margin-bottom:5px;font-weight:600}
+#file-finder-query{box-sizing:border-box;width:100%;padding:10px 12px;border:1px solid var(--editor-divider,#c8d5e2);border-radius:6px;background:var(--color-surface,#fff);color:inherit;font:inherit}
+#file-finder-count,.file-finder-help{margin:8px 0;color:var(--color-text-muted,#52697f);font-size:12px}#file-finder-results{max-height:52dvh;overflow:auto;overscroll-behavior:contain}
+#file-finder-results [role=option]{display:flex;width:100%;flex-direction:column;align-items:flex-start;gap:1px;padding:8px 10px;border:1px solid transparent;border-radius:5px;background:transparent;color:inherit;text-align:left;font:inherit;cursor:pointer}
+#file-finder-results strong{font-size:13px;font-weight:600}#file-finder-results span{color:var(--color-text-muted,#52697f);font:12px/1.4 var(--font-code,ui-monospace,monospace);overflow-wrap:anywhere}
+#file-finder-results [aria-selected=true]{background:color-mix(in srgb,var(--color-primary,#245fc5) 12%,var(--color-background,#f4f7fb));border-color:var(--color-primary,#245fc5)}
+.file-finder :focus-visible{outline:2px solid var(--color-primary,#245fc5);outline-offset:2px}

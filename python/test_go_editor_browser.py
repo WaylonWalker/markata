@@ -108,5 +108,40 @@ class GoEditorBrowserTest(unittest.TestCase):
         self.assertEqual(self.frame.evaluate("window.__persistentPreview"), "retained")
 
 
+    def test_publish_rich_diff_marks_prose_and_safely_escapes_text(self):
+        result = self.page.evaluate("""() => window.MarkataRichPublishDiff.richHTML(
+          '<h1>A title</h1><p>A small page.</p>',
+          '<h1>A title</h1><p>A more useful page.</p>'
+        )""")
+        self.assertIn('mk-rich-insert', result)
+        self.assertIn('mk-rich-delete', result)
+        self.assertIn('<h1>A title</h1>', result)
+        risky = self.page.evaluate("""() => window.MarkataRichPublishDiff.richHTML(
+          '<p>Keep the old text</p>',
+          '<p>&lt;script&gt;not executable&lt;/script&gt;</p>'
+        )""")
+        self.assertNotIn('<script>', risky)
+        self.assertIn('&lt;script&gt;', risky)
+
+    def test_publish_rich_diff_keeps_complex_blocks_as_before_after(self):
+        result = self.page.evaluate("""() => window.MarkataRichPublishDiff.richHTML(
+          '<pre><code>old()</code></pre>',
+          '<pre><code>new()</code></pre>'
+        )""")
+        self.assertIn('mk-rich-remove', result)
+        self.assertIn('mk-rich-add', result)
+        self.assertIn('old()', result)
+        self.assertIn('new()', result)
+
+    def test_publish_review_shortcut_opens_without_writing(self):
+        # No Git checkout in this temporary fixture: provide a recoverable
+        # state rather than fabricating a deployed version.
+        self.page.keyboard.press('Control+Shift+Enter')
+        expect(self.page.locator('#publish-review')).to_be_visible()
+        expect(self.page.locator('#publish-confirm')).to_be_disabled()
+        self.page.locator('#publish-close').click()
+        expect(self.page.locator('#publish-review')).not_to_be_visible()
+
+
 if __name__ == "__main__":
     unittest.main()

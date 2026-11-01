@@ -65,6 +65,81 @@ Responses include the echoed `id`, a typed success or error, and the existing re
 
 ## Future transports and security boundaries
 
+The Go workbench may add workspace-aware authoring transforms around the
+standalone renderer. These transforms are editor conveniences and MUST remain
+separate from `markata render`'s site-independent contract. In particular,
+resolved wikilinks in a workbench preview use the selected site's LSP index;
+they do not imply that standalone rendering now loads a complete site.
+
+The local Go workbench MUST save edits to an existing selected workspace file
+automatically. Writes MUST stay inside the selected workspace, replace files
+atomically, and reject oversized content. Unsaved scratch documents remain in
+browser storage until the author uses an explicit export action. The browser
+may retain a recovery copy, but it MUST report whether the site file was saved.
+The workbench MUST provide a resizable editor/preview split and editor-only,
+preview-only, and split layouts. Internal wikilinks in the preview MUST open
+the matching workspace document in the editor.
+The Go workbench MUST offer built-in Markdown starters and local Markdown
+starters from the workspace `templates/` directory. Creating content MUST
+require a new Markdown path inside an existing workspace directory and MUST
+not overwrite an existing file.
+The New Post command MUST open a fuzzy template picker before the details form.
+After a template is selected, the details form MUST start with the template's
+title and a default destination folder. The slug field MUST remain empty when
+using the suggested slug; its placeholder and the displayed destination path
+MUST update as the title changes. If the author enters a slug, that value MUST
+take precedence over the title-derived suggestion.
+Feed navigation MUST use feed names as tree roots and paths relative to the
+workspace root beneath them; absolute filesystem paths MUST NOT appear as feed
+labels.
+In split layout, source and preview scrolling MUST synchronize in both directions
+by default. The active pane controls the position; editing or moving the source
+cursor makes the editor the active pane. Users MUST be able to disable scrolling
+sync in editor settings, and the setting MUST persist locally. Source line
+anchors MUST refer to the original editor document, including any stripped
+frontmatter, and MUST be strictly increasing before interpolation. Editor-to-
+preview anchors remain in source order, so preview coordinates may decrease for
+side-by-side content. Preview-to-editor anchors use visual order; equal pixel
+positions select the source line nearest the last synchronized line, with the
+greatest source line breaking ties. Without a prior source line, they select the
+greatest source line at that position. Preview anchors
+MUST use rendered article document coordinates and refresh after content,
+viewport, or observed article geometry changes. Scroll synchronization MUST use
+the same measured source position in either direction. The editor MUST keep its
+native caret at the actual text cursor; a scroll-position marker MUST NOT be
+rendered as an editor cursor or caret. Content-only preview updates MUST preserve
+the iframe document and unchanged rendered block nodes, and MUST NOT dispatch
+global navigation or theme-change events. New or changed feature blocks MUST be
+initialized without rerendering unchanged diagrams or components. Preview
+position updates MUST be deduplicated when the measured target has not changed.
+Only explicit pane input (wheel, touch, scrollbar or pointer drag, and scroll
+keys) may make a pane the scroll-sync driver. Scroll changes caused by rendering,
+image or font layout, browser scroll anchoring, or synchronization itself MUST
+not be treated as user scrolling. Text edits MUST NOT move the preview before
+the corresponding content patch is ready. After the patch, a focused editor's
+actual caret line MUST remain the synchronization target even when editing did
+not change its logical line; the preview marker MUST be resolved again against
+the updated source map.
+The workbench MAY add start-line and end-line attributes to container openers in
+the render input. This instrumentation MUST preserve authored editor text and
+line count, ignore fenced code, and use the attributes as additional nested
+preview anchors. When several nested containers contain the caret line, the
+preview marker MUST select the narrowest source span, then the deepest element.
+Preview-only and editor-only layouts do not synchronize hidden panes.
+In split layout, the Markdown editor MUST provide cursor scroll-off space after
+the final source line. The preview MUST provide matching scroll-off space after
+the final rendered article content. Their terminal source anchors MUST include
+the same scroll-off space so source and preview positions remain aligned.
+
+The Go workbench MUST bind Ctrl/Cmd+P to a fuzzy workspace file finder that
+searches Markdown paths, titles, slugs, and tags and opens the selected file in
+the editor. The Markdown command palette MUST be labeled "Command Palette" and
+MUST open from Ctrl/Cmd+Shift+P or Ctrl/Cmd+K. Its visible Commands button MUST
+remain available.
+Workspace previews MUST resolve internal post embeds written as `![[slug]]` or
+`![embed](path/to/post.md)` into linked embed cards using indexed post metadata.
+Embed syntax inside fenced code blocks MUST remain unchanged.
+
 - **Persistent JSON Lines / stdio:** implemented with one request per line, one correlated response per line, bounded input, and per-request error recovery. Stdout is reserved for protocol data.
 - **HTTP:** use identical render semantics with explicit resource limits, authentication/CORS strategy and safe defaults. #1851 is a *local trusted editor*, not a public rendering service.
 - **LSP:** preserve existing editor features and translate rendering diagnostics to editor ranges where available. Generic LSP does not define an HTML-preview window.

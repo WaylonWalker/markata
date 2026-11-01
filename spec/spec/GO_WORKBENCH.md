@@ -11,7 +11,9 @@ whole request is limited to 1 MiB. Invalid JSON and appearance options return
 runs at a time per handler; queue admission observes request cancellation.
 
 Responses contain `document`, `html`, `feature_head_html`, `body_end_html`,
-`render_ms`, `input_bytes`, `html_bytes`, `document_bytes`, and `cached`.
+`source_lines`, `source_anchors`, `render_ms`, `input_bytes`, `html_bytes`,
+`document_bytes`, and `cached`. `source_lines` maps top-level rendered blocks;
+`source_anchors` maps nested container starts and ends to editor lines.
 The optional `include_document` boolean defaults to true for API compatibility.
 With false, `document` is null and `document_bytes` is zero. Fragment responses
 contain no shared appearance CSS or document shell.
@@ -31,15 +33,50 @@ The preview uses the shared standalone appearance assets and ordered renderer
 assets. The handler permits raw authored HTML for local trusted editing. The
 browser isolates preview scripts in an opaque-origin iframe sandbox. All assets
 are served locally. Authored images and links may access external networks.
+`GET /favicon.ico` serves the bundled Markata favicon so browsers do not report
+a missing icon for the workbench origin.
 
-The browser debounces edits, runs at most one request at a time, coalesces pending
-edits, and rejects stale revisions. Draft and keymap persistence are best effort;
-storage failure is visible and does not prevent editing or downloading Markdown.
-Appearance updates do not re-render Markdown. The server does not store drafts.
+Workspace reads require a loopback client and a localhost or loopback Host.
+`PUT` and `POST /workspace/file` also require an exact same-origin `Origin`;
+when `Sec-Fetch-Site` is present, it must be `same-origin`. Missing, malformed,
+or foreign origins are rejected with HTTP 403 before the workspace is changed.
+
+The browser waits 100 ms after the latest edit before rendering, runs at most one
+request at a time, coalesces pending edits, and rejects stale revisions. The
+status reports Go render time separately from total edit-to-preview latency.
+Content patches preserve unchanged preview blocks. When the editor has focus,
+the actual caret line remains the synchronization target through the completed
+patch, including edits that leave the caret on the same source line. Its preview
+marker is refreshed against the new source map. Draft and keymap persistence are
+best effort; storage failure is visible and does not prevent editing or
+downloading Markdown. Workbench-only source-line attributes on Markdown
+containers provide additional scroll anchors without changing the editor text
+or its line count. For nested content, the preview marker selects the narrowest
+container span containing the caret. Source ordered mapping handles side-by-side
+content; preview scrolling uses visual order and preserves the previously active
+source branch when several blocks share one pixel row. Appearance updates do not
+re-render Markdown. The server
+does not store drafts.
+
+Automatic LSP completion waits for a short typing pause instead of requesting a
+completion after every character. Ctrl+Space requests completion immediately.
 
 The demo binds to 127.0.0.1 by default. It rejects cross-origin render requests
 and non-JSON content types. It has HTTP timeouts and graceful shutdown.
 The handler is reusable by a future builder; it does not depend on CLI globals.
+On desktop, the editor shell fills the viewport without document-level scrolling;
+the workspace panes own their scroll areas. Narrow mobile layouts may scroll the
+stacked editor and preview vertically.
+In split layout, the preview marks the rendered block for the active source
+cursor and shows a compact labeled caret. When source text matches rendered
+text, the preview caret SHOULD map the editor's character offset to a rendered
+text range. For transformed or replaced content, it MUST fall back to the
+nearest source-mapped position. In Vim mode, the presence caret MUST reflect
+normal, insert, replace, and visual cursor shapes. Presence markers use
+participant IDs, labels, and colors so additional editor cursors can be added
+without changing the marker rendering model. Clicking rendered text in the
+preview MUST move the source cursor to the matching source position when a
+source match exists; links MUST retain their normal navigation behavior.
 
 
 ## Integration benchmark

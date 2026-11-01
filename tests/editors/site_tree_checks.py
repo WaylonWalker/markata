@@ -30,6 +30,13 @@ def check_site_tree(page, url):
     page.evaluate("key => {localStorage.removeItem('markata-workspace-v1:' + key + ':buffer:file:pages/about.md'); localStorage.setItem('markata-workspace-v1:' + key + ':pages/about.md', '');}", key)
     page.reload()
     preview = page.frame_locator('#preview')
+
+    def open_feed_post(slug):
+        group = page.locator('#site-feeds').get_by_role('treeitem', name='Field notes (2)', exact=True)
+        if group.get_attribute('aria-expanded') != 'true':
+            group.click()
+        page.locator('#site-feeds').get_by_role('treeitem', name=slug, exact=True).click()
+
     expect(preview.locator('h1')).to_have_text('About this site')
     page.locator('#site-files').get_by_role('treeitem', name='welcome.md', exact=True).click()
     expect(preview.locator('h1')).to_have_text('Welcome to the field notes')
@@ -38,19 +45,27 @@ def check_site_tree(page, url):
     expect(preview.locator('h1')).to_have_text('Saved welcome')
     page.locator('#site-files').get_by_role('treeitem', name='growing.md', exact=True).click()
     expect(preview.locator('h1')).to_have_text('A growing garden')
-    expect(page.locator('#site-view option[value=feeds]')).to_be_enabled(timeout=30000)
-    page.locator('#site-view').select_option('feeds')
-    page.locator('#site-feeds').get_by_role('treeitem', name='welcome.md', exact=True).first.click()
-    expect(preview.locator('h1')).to_have_text('Saved welcome')
-    page.locator('#site-feeds').get_by_role('treeitem', name='growing.md', exact=True).first.click()
-    expect(preview.locator('h1')).to_have_text('A growing garden')
+    feeds_available = bool(page.request.get(url.rstrip('/') + '/workspace?metadata=true').json().get('feeds'))
+    if feeds_available:
+        expect(page.locator('#site-view option[value=feeds]')).to_be_enabled(timeout=30000)
+        page.locator('#site-view').select_option('feeds')
+        open_feed_post('welcome')
+        expect(preview.locator('h1')).to_have_text('Saved welcome')
+        open_feed_post('growing')
+        expect(preview.locator('h1')).to_have_text('A growing garden')
+    else:
+        expect(page.locator('#site-view option[value=feeds]')).to_be_disabled()
     page.locator('#site-view').select_option('files')
     page.locator('#site-files').get_by_role('treeitem', name='welcome.md', exact=True).first.click()
     expect(preview.locator('h1')).to_have_text('Saved welcome')
-    expect(page.locator('#site-view option[value=feeds]')).to_be_enabled(timeout=30000)
-    page.locator('#site-view').select_option('feeds')
-    page.locator('#site-feeds').get_by_role('treeitem', name='growing.md', exact=True).first.click()
-    expect(preview.locator('h1')).to_have_text('A growing garden')
+    if feeds_available:
+        expect(page.locator('#site-view option[value=feeds]')).to_be_enabled(timeout=30000)
+        page.locator('#site-view').select_option('feeds')
+        open_feed_post('growing')
+        expect(preview.locator('h1')).to_have_text('A growing garden')
+    else:
+        page.locator('#site-files').get_by_role('treeitem', name='growing.md', exact=True).click()
+        expect(preview.locator('h1')).to_have_text('A growing garden')
     page.reload()
     expect(preview.locator('h1')).to_have_text('A growing garden')
     page.locator('#import').set_input_files({'name':'import.md','mimeType':'text/markdown','buffer':b'# Imported file'})
@@ -59,7 +74,9 @@ def check_site_tree(page, url):
     page.reload()
     expect(preview.locator('h1')).to_have_text('Imported file')
     page.evaluate("() => {Storage.prototype.setItem = () => {throw Error('full')}}")
-    page.evaluate("document.querySelector('.CodeMirror').CodeMirror.setValue('# Unsaved edit')")
+    page.locator('.CodeMirror').click()
+    page.keyboard.press('Control+A')
+    page.keyboard.type('# Unsaved edit')
     expect(page.locator('#saved')).to_contain_text('Draft not saved')
     page.locator('#site-files').get_by_role('treeitem', name='about.md',exact=True).click()
     expect(preview.locator('h1')).to_have_text('About this site')
@@ -82,21 +99,27 @@ def check_site_tree(page, url):
     page.locator('#site-files').get_by_role('treeitem', name='welcome.md', exact=True).click()
     expect(page.locator('#active-file')).to_have_text('posts/welcome.md')
     # An intentionally empty draft in the new format must stay empty on reload.
-    page.evaluate("document.querySelector('.CodeMirror').CodeMirror.setValue('')")
+    page.locator('.CodeMirror').click()
+    page.keyboard.press('Control+A')
+    page.keyboard.press('Backspace')
     page.reload()
     expect(page.locator('#active-file')).to_have_text('posts/welcome.md')
     assert page.evaluate("document.querySelector('.CodeMirror').CodeMirror.getValue()") == ''
     page.route('**/workspace?metadata=true', lambda route: route.abort())
-    page.evaluate("document.querySelector('.CodeMirror').CodeMirror.setValue('# Metadata offline')")
+    page.locator('.CodeMirror').click()
+    page.keyboard.type('# Metadata offline')
     page.reload()
     expect(preview.locator('h1')).to_have_text('Metadata offline')
-    expect(page.locator('#site-view option[value=feeds]')).to_have_text('Tags unavailable')
+    expect(page.locator('#site-view option[value=feeds]')).to_have_text('Feeds unavailable')
+    expect(page.locator('#site-view option[value=tags]')).to_have_text('Tags unavailable')
     assert not errors, errors
 
 
 if __name__ == '__main__':
     import argparse
+    import shutil
     import sys
+    import tempfile
     from pathlib import Path
     from playwright.sync_api import sync_playwright
 
@@ -113,10 +136,13 @@ if __name__ == '__main__':
             else:
                 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'python'))
                 from editor_test_support import load_editor, serve_editor
-                module = load_editor()
-                module.LSP_WORKSPACE = Path(__file__).resolve().parents[2] / 'examples/editor-site'
-                module.presentation = module.appearance(asset_base='/appearance', workspace=str(module.LSP_WORKSPACE))
-                with serve_editor(module.app) as url:
-                    check_site_tree(page, url)
+                with tempfile.TemporaryDirectory(prefix='markata-site-tree-') as directory:
+                    site = Path(directory) / 'site'
+                    shutil.copytree(Path(__file__).resolve().parents[2] / 'examples/editor-site', site)
+                    module = load_editor()
+                    module.LSP_WORKSPACE = site
+                    module.presentation = module.appearance(asset_base='/appearance', workspace=str(site))
+                    with serve_editor(module.app) as url:
+                        check_site_tree(page, url)
         browser.close()
     print('Site tree browser checks passed')

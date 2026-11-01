@@ -71,6 +71,28 @@ func TestStore_ReusesDiscoveryAndMetadata(t *testing.T) {
 	}
 }
 
+func TestStore_CreateRefreshesPathsImmediately(t *testing.T) {
+	store, _ := storeFixture(t)
+	if err := store.Create("three.md", "---\ntitle: Three\n---\n# Third"); err != nil {
+		t.Fatal(err)
+	}
+	files, err := store.Paths()
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, file := range files {
+		found = found || file.Path == "three.md"
+	}
+	if len(files) != 3 || !found {
+		t.Fatalf("paths after create = %+v, want three files including three.md", files)
+	}
+	source, err := store.Read("three.md")
+	if err != nil || !strings.Contains(source, "# Third") {
+		t.Fatalf("created source = %q err=%v", source, err)
+	}
+}
+
 func TestStore_UpdatesOnlyChangedMetadata(t *testing.T) {
 	store, root := storeFixture(t)
 	if _, err := store.Files(); err != nil {

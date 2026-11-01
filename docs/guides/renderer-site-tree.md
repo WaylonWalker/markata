@@ -18,22 +18,25 @@ before starting `examples/fastapi_editor.py`.
 The Files tree lists content discovered by Markata's glob plugin. The editor
 reads `markata-go.toml`, YAML, or JSON configuration from the selected workspace.
 It uses the configured glob patterns and gitignore behavior. Without a config,
-it discovers Markdown under `pages/` and `posts/` with Markata's defaults. The Tags view groups
-loaded documents by their frontmatter tags.
+it discovers Markdown under `pages/` and `posts/` with Markata's defaults. The
+Feeds view groups posts selected by configured feed filters. The Tags view groups
+loaded documents by their frontmatter tags. The selector shows each view's count.
 
 Select a file to load its original source, including frontmatter. Edit it and
-view the Go-rendered preview. Drafts stay in browser storage, scoped to the
-workspace and path. Switching files keeps each draft. **Download .md** exports
-the active draft. This iteration does not write changes to the cloned files.
-The scratch `draft.md` buffer remains available for imported documents.
+view the Go-rendered preview. The Go workbench saves selected Markdown files to
+the site after a short pause and keeps a browser recovery copy. Scratch drafts
+and imported files stay in browser storage. Use the command palette to export
+the active file or import a Markdown file. The scratch `draft.md` buffer remains
+available for imported documents.
 
-Only discovered files inside the selected workspace can be read. Files reached
-through symlinks outside the workspace are excluded. Source reads are limited
-to 200,000 bytes; a failed read leaves the current editor buffer intact.
+Only discovered files inside the selected workspace can be read or written.
+Files reached through symlinks outside the workspace are excluded. Reads and
+writes are limited to 200,000 bytes; a failed read or save leaves the current
+editor buffer intact.
 
 ## API usage
 
-Go applications can use `editorworkspace.New(root)`, `Files()`, and `Read(path)`
+Go applications can use `editorworkspace.New(root)`, `Files()`, `Read(path)`, and `Write(path, source)`
 from `github.com/WaylonWalker/markata/pkg/editorworkspace`. Discovery uses the
 existing glob and load plugins without running a site build.
 
@@ -50,7 +53,9 @@ The CLI exposes the JSON interface as `markata workspace --workspace /path/to/si
 and `markata workspace --workspace /path/to/site --file posts/hello.md`.
 
 The Go and FastAPI servers provide `GET /workspace` and
-`GET /workspace/file?path=posts/hello.md`. The browser loads source on demand.
+`GET /workspace/file?path=posts/hello.md`. The Go server also accepts
+`PUT /workspace/file?path=posts/hello.md` for autosave. The browser loads source
+on demand.
 See the [Go editor guide](./go-workbench/) and [Python editor guide](./fastapi-editor/).
 
 ## Site defaults
@@ -67,7 +72,8 @@ and `render_async()`. The JSON command equivalent is
 `markata render --workspace /path/to/site --json` (Markdown on stdin), or
 `markata render --workspace /path/to/site --appearance` for controls and assets.
 
-The editor first discovers paths and opens the selected source. Titles and tags
+The editor first discovers paths and opens the selected source. Titles, tags, and
+feed membership
 load afterward in the background. The Tags view becomes available when metadata
 is ready and builds its tree when opened. Metadata errors do not block editing.
 Use `markata workspace --paths --workspace PATH` or
@@ -88,13 +94,15 @@ Browser LSP sessions share parsed workspace data and keep unsaved documents priv
 A filesystem watcher refreshes changed documents after a short delay.
 Configuration and appearance changes refresh the renderer on its next request.
 A periodic scan recovers missed filesystem events.
-The Files and Tags trees refresh when you reload the browser page.
+The Files, Feeds, and Tags trees refresh when you reload the browser page.
 
 Reopening a file or reloading the page loads its latest disk content if its browser draft has no edits.
 If the draft has edits, the editor preserves them.
 A warning identifies disk changes when the saved draft has a source version.
 Older saved drafts remain intact during migration.
-The editor does not write browser drafts to disk.
+The Go workbench automatically saves edits to selected workspace Markdown files.
+Scratch drafts and imports stay in browser storage until you export them. The
+browser retains a recovery copy if a site save fails.
 
 Go hosts can open retained state with `editorworkspace.Open(ctx, root)`.
 Use `Paths()`, `Files()`, `Read(path)`, and `Snapshot()` for cached access.

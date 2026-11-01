@@ -14,6 +14,10 @@ tags:
 
 Frontmatter is the **metadata block** at the top of your Markdown files that tells markata-go how to process, display, and organize your content. This guide covers everything you need to know about using frontmatter effectively.
 
+In the workbench editor, press **Ctrl+Space** to request metadata completion.
+Known field values are suggested while editing scalar values and YAML list
+items, including existing site tags.
+
 ## Table of Contents
 
 - [What is Frontmatter?](#what-is-frontmatter)

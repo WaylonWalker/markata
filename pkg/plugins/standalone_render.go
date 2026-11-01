@@ -7,11 +7,12 @@ import (
 
 	"github.com/alecthomas/chroma/v2/styles"
 
+	"github.com/yuin/goldmark/text"
+	xhtml "golang.org/x/net/html"
+
 	"github.com/WaylonWalker/markata/pkg/models"
 	"github.com/WaylonWalker/markata/pkg/palettes"
 	"github.com/WaylonWalker/markata/pkg/themes"
-
-	xhtml "golang.org/x/net/html"
 )
 
 // StandaloneOptions configures rendering without a site build.
@@ -61,6 +62,32 @@ func RenderStandalone(source string, options StandaloneOptions) (*StandaloneResu
 type StandaloneRenderer struct {
 	parser  *RenderMarkdownPlugin
 	options StandaloneOptions
+}
+
+// SourceLines returns the zero-based source line for each top-level rendered block.
+// It uses the same parser as Render so custom Markdown blocks keep their position.
+func (renderer *StandaloneRenderer) SourceLines(source string) []int {
+	prepared := []byte(prepareMarkdownAttribution(source))
+	root := renderer.parser.md.Parser().Parse(text.NewReader(prepared))
+	lines := make([]int, 0)
+	for node := root.FirstChild(); node != nil; node = node.NextSibling() {
+		start := node
+		for start.Lines().Len() == 0 && start.FirstChild() != nil {
+			start = start.FirstChild()
+		}
+		if start.Lines().Len() == 0 {
+			continue
+		}
+		offset := start.Lines().At(0).Start
+		line := 0
+		for _, b := range prepared[:offset] {
+			if b == '\n' {
+				line++
+			}
+		}
+		lines = append(lines, line)
+	}
+	return lines
 }
 
 // NewStandaloneRenderer creates a renderer for a persistent host or worker.

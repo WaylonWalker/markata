@@ -4,20 +4,21 @@
   const commands = window.MarkataMarkdownCommands;
 
   window.MarkataCommandPalette = {attach};
-  function attach(editor) {
+  function attach(editor, options = {}) {
+    const entries = [...commands, ...(options.actions || [])];
     const button = document.createElement('button');
     button.type = 'button'; button.id = 'commands';
-    button.textContent = 'Commands'; button.title = 'Commands (Ctrl/Cmd+K)';
+    button.textContent = 'Commands'; button.title = 'Command Palette (Ctrl/Cmd+Shift+P)';
     button.setAttribute('aria-haspopup', 'dialog');
     document.querySelector('.editor-toolbar').append(button);
     const dialog = document.createElement('dialog');
     dialog.className = 'markdown-commands'; dialog.setAttribute('aria-labelledby', 'commands-title');
-    dialog.innerHTML = '<div class="commands-heading"><h2 id="commands-title">Insert Markdown</h2><button type="button" class="commands-close" aria-label="Close commands">Close</button></div><label for="commands-query">Find a command</label><input id="commands-query" type="search" placeholder="Try callout, diagram, or highlight" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="true" aria-controls="commands-results"><p id="commands-count" role="status"></p><div id="commands-results" role="listbox" aria-label="Markdown commands"></div><p class="commands-help">↑ ↓ Choose · Enter Insert · Esc Close</p>';
+    dialog.innerHTML = '<div class="commands-heading"><h2 id="commands-title">Command Palette</h2><button type="button" class="commands-close" aria-label="Close commands">Close</button></div><label for="commands-query">Find a command or action</label><input id="commands-query" type="search" placeholder="Try callout, diagram, create, or download" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="true" aria-controls="commands-results"><p id="commands-count" role="status"></p><div id="commands-results" role="listbox" aria-label="Commands and actions"></div><p class="commands-help">↑ ↓ Choose · Enter Run · Esc Close</p>';
     document.body.append(dialog);
     const query = dialog.querySelector('input');
     const results = dialog.querySelector('[role=listbox]');
     const count = dialog.querySelector('[role=status]');
-    let matches = commands, active = 0, selection;
+    let matches = entries, active = 0, selection;
     function select(index) {
       active = index;
       [...results.children].forEach((row, i) => row.setAttribute('aria-selected', String(i === active)));
@@ -29,7 +30,7 @@
     }
     function refresh() {
       const words = query.value.toLowerCase().trim().split(/\s+/).filter(Boolean);
-      const filtered = commands.filter(c => words.every(word => `${c.label} ${c.description} ${c.syntax} ${c.aliases}`.toLowerCase().includes(word)));
+      const filtered = entries.filter(c => words.every(word => `${c.label} ${c.description} ${c.syntax || ''} ${c.aliases || ''}`.toLowerCase().includes(word)));
       matches = filtered.slice(0, 60);
       results.replaceChildren();
       count.textContent = filtered.length > 60 ? `Showing 60 of ${filtered.length} commands. Refine your search to see more.` : filtered.length ? `${filtered.length} commands` : 'No matching commands. Try another word or clear the search.';
@@ -38,8 +39,8 @@
         row.id = `markdown-command-${command.id}`; row.setAttribute('role','option');
         const label = document.createElement('strong'); label.textContent = command.label;
         const detail = document.createElement('span'); detail.textContent = command.description;
-        const syntax = document.createElement('code'); syntax.textContent = command.syntax;
-        row.append(label, detail, syntax);
+        row.append(label, detail);
+        if (command.syntax) {const syntax = document.createElement('code'); syntax.textContent = command.syntax; row.append(syntax);}
         row.addEventListener('pointermove', () => select(index));
         row.addEventListener('click', () => insert(command));
         results.append(row);
@@ -53,6 +54,7 @@
     }
     function close() { dialog.close(); }
     function insert(command) {
+      if (typeof command.run === 'function') {command.run(); close(); return;}
       const text = command.useSelection === false ? command.placeholder : selection.text || command.placeholder;
       // Keep all lines of a selected passage inside an indented block.
       const indent = command.template.slice(0, command.template.indexOf('{{text}}')).match(/\n( +)$/)?.[1] || '';

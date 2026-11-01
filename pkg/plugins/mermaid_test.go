@@ -192,6 +192,20 @@ func TestMermaidPlugin_BasicFlowchart(t *testing.T) {
 	}
 }
 
+func TestMermaidPlugin_CSSVariableScriptRendersScopedBlocks(t *testing.T) {
+	script := NewMermaidPlugin().cssVariablesScript()
+	for _, want := range []string{
+		"window.initMermaid = (root = document) =>",
+		"Array.isArray(root) ? root : [root]",
+		"block.dataset.markataMermaidSource = source",
+		"mermaid.run({ nodes: blocks })",
+	} {
+		if !strings.Contains(script, want) {
+			t.Errorf("Mermaid script does not support scoped rendering: missing %q", want)
+		}
+	}
+}
+
 func TestMermaidPlugin_SequenceDiagram(t *testing.T) {
 	p := NewMermaidPlugin()
 	post := &models.Post{
@@ -1060,7 +1074,8 @@ func TestMermaidCSSVariablesUseThemeSurfaceAndBorder(t *testing.T) {
 		"Mermaid 10 does not accept color-mix()",
 		"new WeakMap()",
 		"removeAttribute('data-processed')",
-		"diagramSources.set(block, block.textContent || '')",
+		"const source = block.textContent || ''",
+		"block.dataset.markataMermaidSource = source",
 		"window.addEventListener('theme-change'",
 		"window.addEventListener('palette-change'",
 		"window.addEventListener('color-mode-change'",

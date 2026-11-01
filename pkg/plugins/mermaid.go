@@ -638,12 +638,17 @@ func (p *MermaidPlugin) cssVariablesScript() string {
 ` + p.mermaidImportJS() + `
   const diagramSources = new WeakMap();
   let renderQueue = Promise.resolve();
-  const renderDiagrams = async () => {
-    const blocks = [...document.querySelectorAll('pre.mermaid')];
+  const renderDiagrams = async (root = document) => {
+    const roots = Array.isArray(root) ? root : [root];
+    const blocks = roots.flatMap(node => node.matches?.('pre.mermaid') ? [node] : [...(node.querySelectorAll?.('pre.mermaid') || [])]);
     if (blocks.length === 0) return;
 
     for (const block of blocks) {
-      if (!diagramSources.has(block)) diagramSources.set(block, block.textContent || '');
+      if (!diagramSources.has(block)) {
+        const source = block.textContent || '';
+        diagramSources.set(block, source);
+        block.dataset.markataMermaidSource = source;
+      }
       block.removeAttribute('data-processed');
       block.textContent = diagramSources.get(block);
     }
@@ -704,8 +709,8 @@ func (p *MermaidPlugin) cssVariablesScript() string {
     ensureMermaidLightbox();
   };
 
-  window.initMermaid = () => {
-    renderQueue = renderQueue.then(renderDiagrams).catch(e => {
+  window.initMermaid = (root = document) => {
+    renderQueue = renderQueue.then(() => renderDiagrams(root)).catch(e => {
       console.error('mermaid.run failed:', e);
     });
     return renderQueue;

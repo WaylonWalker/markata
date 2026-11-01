@@ -54,8 +54,9 @@ func TestHandler_RenderAndAssets(t *testing.T) {
 		if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
 			t.Fatal(err)
 		}
-		if response.Cached != (i == 1) || response.InputBytes != len(source) || response.DocumentBytes != len(response.Document) {
-			t.Fatalf("invalid metrics: %+v", response)
+		documentBytes := len(response.Document)
+		if response.Cached != (i == 1) || response.InputBytes != len(source) || response.DocumentBytes != documentBytes {
+			t.Fatalf("invalid metrics: cached=%t want %t, input=%d want %d, document=%d actual=%d", response.Cached, i == 1, response.InputBytes, len(source), response.DocumentBytes, documentBytes)
 		}
 		for _, part := range []string{`data-theme="light"`, `data-palette="default-light"`, `class="post h-entry"`, `<svg`, `mermaid`, `chart`} {
 			if !strings.Contains(response.Document, part) {
@@ -96,6 +97,56 @@ func TestHandler_RenderAndAssets(t *testing.T) {
 				}
 			}
 		}
+	}
+}
+
+func TestHandler_Favicon(t *testing.T) {
+	h := newHandler(t)
+	icon, err := web.ReadFile("web/favicon.ico")
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost/favicon.ico", http.NoBody))
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /favicon.ico returned %d", w.Code)
+	}
+	if !strings.HasPrefix(w.Header().Get("Content-Type"), "image/") {
+		t.Fatalf("favicon content type = %q", w.Header().Get("Content-Type"))
+	}
+	if !bytes.Equal(w.Body.Bytes(), icon) {
+		t.Fatal("favicon route did not return the bundled Markata icon")
+	}
+
+	page := httptest.NewRecorder()
+	h.ServeHTTP(page, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost/", http.NoBody))
+	if !strings.Contains(page.Body.String(), `<link rel="icon" href="/favicon.ico">`) {
+		t.Fatal("workbench page does not link its favicon")
+	}
+}
+
+func TestHandler_RenderMarksContainerSourceLines(t *testing.T) {
+	h := newHandler(t)
+	source := "::: md-section\n\nA section paragraph.\n\n:::"
+	body, err := json.Marshal(map[string]string{"markdown": source})
+	if err != nil {
+		t.Fatal(err)
+	}
+	response := request(h, string(body))
+	if response.Code != http.StatusOK {
+		t.Fatalf("render returned %d: %s", response.Code, response.Body)
+	}
+	var result renderResponse
+	if err := json.Unmarshal(response.Body.Bytes(), &result); err != nil {
+		t.Fatal(err)
+	}
+	for _, marker := range []string{`data-markata-source-line="0"`, `data-markata-source-end-line="4"`} {
+		if !strings.Contains(result.HTML, marker) {
+			t.Fatalf("rendered container has no workbench marker %s: %s", marker, result.HTML)
+		}
+	}
+	if len(result.SourceAnchors) != 2 || result.SourceAnchors[0] != 0 || result.SourceAnchors[1] != 4 {
+		t.Fatalf("source anchors = %v, want [0 4]", result.SourceAnchors)
 	}
 }
 
@@ -288,7 +339,7 @@ func TestHandler_FragmentUpdatesOmitSharedCSS(t *testing.T) {
 			t.Fatal("fragment includes document shell")
 		}
 		if !result.Cached || result.HTML != first.HTML || result.FeatureHeadHTML != first.FeatureHeadHTML || result.BodyEndHTML != first.BodyEndHTML {
-			t.Fatal("cached fragment differs from initial content")
+			t.Fatalf("cached fragment differs: cached=%t html=%t featureHead=%t bodyEnd=%t", result.Cached, result.HTML == first.HTML, result.FeatureHeadHTML == first.FeatureHeadHTML, result.BodyEndHTML == first.BodyEndHTML)
 		}
 		if strings.Contains(w.Body.String(), "palette.css") || strings.Contains(w.Body.String(), "fontpack-manifest") {
 			t.Fatal("fragment contains shared appearance CSS")

@@ -9,9 +9,11 @@ tags:
   - editor
 ---
 
-Select **Commands** above the Markdown editor, or press **Ctrl+K**.
-On macOS, press **Cmd+K**. The **Ctrl/Cmd+Shift+P** shortcut also works.
-The palette works with the Default, Vim, Emacs, and Sublime keymaps.
+Select **Commands** above the Markdown editor, or press **Ctrl+Shift+P**.
+On macOS, press **Cmd+Shift+P**. **Ctrl/Cmd+K** also works.
+The dialog is titled **Command Palette** and works with the Default, Vim,
+Emacs, and Sublime keymaps. In the Go workbench, **Ctrl/Cmd+P** opens the
+fuzzy file finder.
 
 Search for a command, such as `callout`, `diagram`, or `highlight`.
 Use the arrow keys to choose a result, then press **Enter**.
@@ -94,7 +96,8 @@ Replace sample image paths and IDs before publishing.
 
 Open the workbench with `?example` to load the sample in the editor and open the command palette.
 For example, visit `http://localhost:8766/?example` for the Go workbench.
-You can also open `examples/command-palette-showcase.md` with **Open .md**.
+In the Go workbench, use the **Open Markdown file** command to import
+`examples/command-palette-showcase.md` as a scratch draft.
 The example combines icon cards, a steps road, a feature row, metrics, Mermaid, and a Chart.js chart.
 It also shows Web Awesome source with its site requirement clearly identified.
 The chart data is illustrative.
