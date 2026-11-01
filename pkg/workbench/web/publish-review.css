@@ -63,3 +63,14 @@
 #publish-review .publish-actions #publish-mark-public{border-color:var(--color-warning,#bd8a39);color:var(--color-text,#222)}
 #publish-review .publish-actions #publish-push{background:var(--color-primary,#6851ab);color:var(--color-on-primary,#fff);border-color:var(--color-primary,#6851ab)}
 @media(max-width:700px){#publish-review #publish-rich-frame{min-height:59dvh}#publish-review .publish-mode-tabs button{padding:8px 7px;font-size:11px}}
+
+
+#publish-review .publish-pierre-actions{display:flex;align-items:center;gap:6px;margin-bottom:12px;font-size:12px;color:var(--color-text-muted,#777)}
+#publish-review .publish-pierre-actions span{margin-right:auto;font-weight:600}
+#publish-review .publish-pierre-actions button{border:1px solid var(--editor-divider,#ddd);border-radius:6px;padding:8px 11px;background:transparent;color:inherit;cursor:pointer}
+#publish-review .publish-pierre-actions button.active{background:var(--color-surface,#eee);color:var(--color-text,#222)}
+#publish-review #publish-pierre-error{padding:11px;border:1px solid var(--color-warning,#bf922d);border-radius:7px;font-size:12px;color:var(--color-text,#222)}
+#publish-review #publish-pierre-error[hidden]{display:none}
+#publish-review #publish-pierre-host{min-height:120px;max-height:min(60dvh,700px);overflow:auto;font-family:var(--font-code,ui-monospace,monospace)}
+#publish-review #publish-pierre-host:empty:before{content:'Loading full diff…';color:var(--color-text-muted,#777);font-size:12px}
+@media(max-width:700px){#publish-review #publish-pierre-host{max-height:69dvh}}
