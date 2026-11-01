@@ -62,6 +62,11 @@
   <link rel="stylesheet" href="{{ 'css/fonts.css' | theme_asset_hashed }}">
   {% endif %}
 
+  {# Native tabs need no JavaScript for reading; enhance only on tab pages. #}
+  {% if needs_md_tabs %}
+  <script src="{{ 'js/md-tabs.js' | theme_asset_hashed }}" defer></script>
+  {% endif %}
+
   <!-- Conditional CSS: only loaded when page content requires it -->
   {% if needs_admonitions_css %}
   <link rel="stylesheet" href="{{ 'css/admonitions.css' | theme_asset_hashed }}">
