@@ -59,6 +59,21 @@ func commitGit(ctx context.Context, dir string, index string, args ...string) (s
 	return strings.TrimSpace(string(output)), nil
 }
 
+func hashApprovedSource(ctx context.Context, root string, source string) (string, error) {
+	cmd := exec.CommandContext(ctx, "git", "-C", root, "hash-object", "-w", "--stdin")
+	cmd.Env = append(os.Environ(), "GIT_TERMINAL_PROMPT=0")
+	cmd.Stdin = strings.NewReader(source)
+	out, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+	blob := strings.TrimSpace(string(out))
+	if !gitHashPattern.MatchString(blob) {
+		return "", fmt.Errorf("invalid Git blob hash")
+	}
+	return blob, nil
+}
+
 func readPublishInput(w http.ResponseWriter, r *http.Request, dst any) bool {
 	if r.Method != http.MethodPost {
 		w.Header().Set("Allow", "POST")
@@ -216,8 +231,16 @@ func (h *Handler) servePublishCommit(w http.ResponseWriter, r *http.Request) {
 		fail(w, 422, "cannot prepare isolated Git tree")
 		return
 	}
-	if _, err = commitGit(ctx, root, index, "add", "--", relative); err != nil {
-		fail(w, 422, "cannot add selected file to isolated Git tree")
+	// Store the reviewed bytes directly rather than re-reading the working tree.
+	// This closes the race if another process edits the file between checking
+	// the snapshot digest and preparing the isolated index.
+	blob, err := hashApprovedSource(ctx, root, source)
+	if err != nil {
+		fail(w, 422, "cannot store reviewed source")
+		return
+	}
+	if _, err = commitGit(ctx, root, index, "update-index", "--add", "--cacheinfo", "100644,"+blob+","+relative); err != nil {
+		fail(w, 422, "cannot stage reviewed blob in isolated tree")
 		return
 	}
 	tree, err := commitGit(ctx, root, index, "write-tree")
