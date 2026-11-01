@@ -17,7 +17,7 @@ import (
 
 // Template name constants used for conditional wizard groups.
 const tmplPost = "post"
-const privacyChoicePublic = encryptPostActionPublic
+const privacyChoicePublic = string(encryptPostActionPublic)
 const privacyChoicePrivate = "private"
 
 const (
