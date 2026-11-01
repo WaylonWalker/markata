@@ -242,7 +242,7 @@
     label.textContent=def?.label||field.name;
     label.id='fm-label-'+(++fieldId);
     const key=document.createElement('code');key.textContent=field.name;
-    const remove=nodeButton('Remove',()=>setField(field.name,null,true),'Remove '+(def?.label||field.name)+' from this page');
+    const remove=nodeButton('×',()=>setField(field.name,null,true),'Remove '+(def?.label||field.name)+' from this page');
     remove.setAttribute('aria-label','Remove '+(def?.label||field.name));
     remove.className='fm-remove';
     head.append(label,key,remove);

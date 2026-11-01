@@ -211,16 +211,21 @@
 .fm-field-head .fm-remove {
   grid-column: 2;
   grid-row: 1 / span 2;
+  display: grid;
+  width: 28px;
+  place-items: center;
   min-height: 27px;
-  padding: 4px 7px;
+  padding: 0;
   border-color: transparent;
   background: transparent;
-  color: var(--color-text-muted);
-  font-size: 11px;
+  color: color-mix(in srgb, var(--color-error, #c44) 72%, var(--color-text));
+  font-size: 19px;
+  line-height: 1;
 }
 
 .fm-field-head .fm-remove:hover {
   border-color: color-mix(in srgb, var(--color-error, #c44) 35%, transparent);
+  background: color-mix(in srgb, var(--color-error, #c44) 10%, transparent);
   color: var(--color-error, #c44);
 }
 
