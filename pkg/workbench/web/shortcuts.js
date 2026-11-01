@@ -36,7 +36,7 @@
     return [...commands.values()].find(command => command.id !== except && bindingFor(command) === binding) || null;
   }
   function setBinding(id, binding) {
-    if (!commands.has(id) || (binding && !/^((Mod|Alt|Shift|Ctrl)\+)*[A-Za-z0-9\\]+(?: ((Mod|Alt|Shift|Ctrl)\+)*[A-Za-z0-9\\]+)*$/.test(binding)))
+    if (!commands.has(id) || (binding && (binding.length > 80 || !/^[A-Za-z0-9+?\\/ ._-]+$/.test(binding))))
       return {ok:false, error:'Unrecognized shortcut.'};
     const other = conflict(binding, id);
     if (other) return {ok:false, error:'Already used by ' + other.label + '.'};
