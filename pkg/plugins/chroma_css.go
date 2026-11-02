@@ -148,11 +148,17 @@ func (p *ChromaCSSPlugin) generateThemeCSS(style *chroma.Style) (string, error) 
 	sb.WriteString("/* Syntax highlighting - generated from Chroma theme: ")
 	sb.WriteString(p.chromaTheme)
 	sb.WriteString(" */\n\n")
+	// Keep syntax rules in the same cascade layer as the default theme's
+	// code-block styles. Unlayered Chroma CSS overrides aesthetic presets
+	// (notably Minimal's code-block surface), even when those presets use
+	// more specific selectors in @layer overrides.
+	sb.WriteString("@layer components {\n")
 
 	// Write the CSS for the style
 	if err := formatter.WriteCSS(&sb, style); err != nil {
 		return "", err
 	}
+	sb.WriteString("}\n")
 
 	return sb.String(), nil
 }
@@ -161,6 +167,9 @@ func (p *ChromaCSSPlugin) generateThemeCSS(style *chroma.Style) (string, error) 
 func (p *ChromaCSSPlugin) generatePaletteCSS() string {
 	var sb strings.Builder
 	sb.WriteString("/* Syntax highlighting - generated from palette code colors */\n\n")
+	// Match code.css's component layer so aesthetic overrides can style the
+	// containing <pre> without an unlayered .chroma background masking them.
+	sb.WriteString("@layer components {\n")
 	sb.WriteString(`.chroma { color: var(--color-code-text, var(--color-text, currentColor)); background-color: var(--color-code-bg, var(--color-surface, transparent)); }
 .chroma .err { color: var(--color-error, #dc2626); background-color: color-mix(in srgb, var(--color-error, #dc2626) 14%, transparent); }
 .chroma .lntd { vertical-align: top; padding: 0; margin: 0; border: 0; }
@@ -179,6 +188,7 @@ func (p *ChromaCSSPlugin) generatePaletteCSS() string {
 .chroma .gi { color: var(--color-success, #059669); background-color: color-mix(in srgb, var(--color-success, #059669) 14%, transparent); }
 .chroma .gd { color: var(--color-error, #dc2626); background-color: color-mix(in srgb, var(--color-error, #dc2626) 14%, transparent); }
 `)
+	sb.WriteString("}\n")
 	return sb.String()
 }
 
