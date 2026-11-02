@@ -10,7 +10,6 @@ tags:
   - optimization
 ---
 
-# Performance Benchmarking
 
 markata-go includes a comprehensive benchmarking suite for measuring and optimizing build performance. This guide covers how to run benchmarks locally, interpret results, and use profiling tools to identify bottlenecks.
 

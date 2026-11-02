@@ -9,7 +9,6 @@ tags:
   - templates
 ---
 
-# Calendar Feed Views
 
 Every normal Markata-Go HTML feed includes a **Calendar** view by default. You do not need a second feed, a template override, or special calendar configuration.
 

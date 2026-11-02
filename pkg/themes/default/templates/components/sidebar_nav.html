@@ -1,0 +1,45 @@
+{# Hierarchical navigation for documentation pages. #}
+<nav class="sidebar-nav" aria-label="Documentation navigation">
+  {% if sidebar_title %}<h2 class="sidebar-title">{{ sidebar_title }}</h2>{% endif %}
+  {% if sidebar_items %}
+  <ul class="sidebar-nav-list">
+    {% for item in sidebar_items %}
+    <li class="sidebar-nav-item{% if item.has_children %} sidebar-nav-item--has-children{% endif %}{% if post.href == item.href %} sidebar-nav-item--active{% endif %}">
+      {% if item.href %}
+      <a href="{{ item.href }}" class="sidebar-nav-link{% if post.href == item.href %} sidebar-nav-link--active{% endif %}"{% if post.href == item.href %} aria-current="page"{% endif %}>{{ item.title }}</a>
+      {% else %}
+      <span class="sidebar-nav-label">{{ item.title }}</span>
+      {% endif %}
+      {% if item.has_children %}
+      <ul class="sidebar-nav-children">
+        {% for child in item.children %}
+        <li class="sidebar-nav-item{% if child.has_children %} sidebar-nav-item--has-children{% endif %}{% if post.href == child.href %} sidebar-nav-item--active{% endif %}">
+          {% if child.href %}
+          <a href="{{ child.href }}" class="sidebar-nav-link{% if post.href == child.href %} sidebar-nav-link--active{% endif %}"{% if post.href == child.href %} aria-current="page"{% endif %}>{{ child.title }}</a>
+          {% else %}<span class="sidebar-nav-label">{{ child.title }}</span>{% endif %}
+          {% if child.has_children %}
+          <ul class="sidebar-nav-children">
+            {% for grandchild in child.children %}
+            <li class="sidebar-nav-item{% if post.href == grandchild.href %} sidebar-nav-item--active{% endif %}">
+              <a href="{{ grandchild.href }}" class="sidebar-nav-link{% if post.href == grandchild.href %} sidebar-nav-link--active{% endif %}"{% if post.href == grandchild.href %} aria-current="page"{% endif %}>{{ grandchild.title }}</a>
+            </li>
+            {% endfor %}
+          </ul>
+          {% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% elif config.sidebar.nav %}
+  <ul class="sidebar-nav-list">
+    {% for item in config.sidebar.nav %}
+    <li class="sidebar-nav-item{% if post.href == item.href %} sidebar-nav-item--active{% endif %}">
+      <a href="{{ item.href }}" class="sidebar-nav-link{% if post.href == item.href %} sidebar-nav-link--active{% endif %}"{% if post.href == item.href %} aria-current="page"{% endif %}>{{ item.title }}</a>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</nav>

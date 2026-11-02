@@ -9,7 +9,6 @@ tags:
   - github-pages
 ---
 
-# Deploy to GitHub Pages
 
 GitHub Pages provides free hosting for static sites directly from a GitHub repository. It's the easiest way to deploy if your code is already on GitHub.
 

@@ -9,7 +9,7 @@ tags:
   - validation
 ---
 
-# Slow 3G A/A validation
+## Slow 3G A/A validation
 
 This report validates PR [#1554](https://github.com/WaylonWalker/markata-go/pull/1554)
 against a fresh build of the actual WaylonWalker.com working source. These are

@@ -8,7 +8,6 @@ tags:
   - advanced
 ---
 
-# Advanced Usage
 
 This guide is for power users who want to leverage markata-go's full capabilities. It covers complex configurations, optimization techniques, and advanced patterns that go beyond the basics.
 

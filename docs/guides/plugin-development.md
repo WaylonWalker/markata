@@ -9,7 +9,7 @@ tags:
   - development
 ---
 
-# Plugin Development Guide
+## Plugin Development Guide
 
 This guide explains how to create plugins for markata-go, a comprehensive, extendable static site generator written in Go.
 

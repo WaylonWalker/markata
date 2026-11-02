@@ -8,7 +8,7 @@ tags:
   - cli
 ---
 
-# Actionable CLI errors
+## Actionable CLI errors
 
 Issue: #1288
 

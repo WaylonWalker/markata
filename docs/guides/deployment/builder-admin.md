@@ -10,7 +10,6 @@ tags:
   - performance
 ---
 
-# Builder Admin
 
 The builder admin service keeps a warm markata-go build worker running inside your cluster.
 

@@ -11,7 +11,7 @@ tags:
   - ci-cd
 ---
 
-# Quality Assurance for Your markata-go Site
+## Quality Assurance for Your markata-go Site
 
 Maintaining high-quality content is essential for any professional site. This guide covers tools and practices for validating frontmatter, linting Markdown, checking links, and ensuring accessibility in your markata-go site.
 

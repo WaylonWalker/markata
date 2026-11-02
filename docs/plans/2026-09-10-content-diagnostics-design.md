@@ -9,7 +9,6 @@ tags:
   - content
 ---
 
-# Content Diagnostics Ledger Design
 
 ## Decision
 

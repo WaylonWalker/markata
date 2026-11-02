@@ -21,7 +21,15 @@ use the same configuration and renderer through Builder Admin.
   supported language.
 - Highlighting MUST remain present in the generated HTML without client-side
   JavaScript.
-- The site MUST use Markata's documentation layout and theme assets.
+- The site MUST use templates bundled with Markata's default theme, without
+  templates from the Markata repository's main-site override directory.
+- The default theme MUST provide a documentation page template that renders
+  the configured documentation sidebar and post content.
+- Rendered documentation pages MUST have one page-level H1. Markdown content
+  MUST follow Markata's frontmatter-title convention and use H2 headings for
+  sections below the generated page title.
+- The docs site MUST use the built-in template and theme behavior so its own
+  public documentation exercises Markata's default rendering path.
 - The docs layout MUST render a hierarchical sidebar from Markdown files under
   `docs/`, so newly added guides appear in navigation without a separate nav
   list.

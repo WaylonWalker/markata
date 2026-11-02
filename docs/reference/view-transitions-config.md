@@ -9,7 +9,6 @@ tags:
   - reference
 ---
 
-# View Transitions Configuration
 
 Complete reference for configuring the View Transitions API behavior in markata-go.
 

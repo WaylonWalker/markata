@@ -50,23 +50,47 @@
 }
 
 /* ==========================================================================
-   Docs Layout - 3-panel with sidebar, content, TOC
+   Docs Layout - reading column with optional navigation and table of contents
    ========================================================================== */
 
 .layout--docs .layout-container {
+  grid-template-columns: var(--sidebar-width, var(--layout-sidebar-width)) minmax(0, 1fr);
+  grid-template-areas: "sidebar content";
+  gap: var(--space-6);
+  max-width: calc(var(--layout-sidebar-width) + var(--layout-content-max-width) + var(--space-6));
+}
+
+.layout--docs .layout-container--with-toc {
   grid-template-columns: var(--sidebar-width, var(--layout-sidebar-width)) minmax(0, 1fr) var(--toc-width, var(--layout-toc-width));
   grid-template-areas: "sidebar content toc";
-  gap: var(--space-6);
   max-width: calc(var(--layout-sidebar-width) + var(--layout-content-max-width) + var(--layout-toc-width) + var(--space-12));
 }
 
-/* Sidebar on right variant */
-.layout--docs .layout-sidebar--right ~ .layout-content {
-  grid-area: content;
+.layout--docs .layout-container--sidebar-right.layout-container--with-toc {
+  grid-template-columns: minmax(0, 1fr) var(--toc-width, var(--layout-toc-width)) var(--sidebar-width, var(--layout-sidebar-width));
+  grid-template-areas: "content toc sidebar";
 }
 
+.layout--docs .layout-container--toc-only {
+  grid-template-columns: minmax(0, 1fr) var(--toc-width, var(--layout-toc-width));
+  grid-template-areas: "content toc";
+  max-width: calc(var(--layout-content-max-width) + var(--layout-toc-width) + var(--space-6));
+}
+
+.layout--docs .layout-container--sidebar-right:not(.layout-container--with-toc) {
+  grid-template-columns: minmax(0, 1fr) var(--sidebar-width, var(--layout-sidebar-width));
+  grid-template-areas: "content sidebar";
+}
+
+.layout--docs .layout-container--content-only:not(.layout-container--with-toc) {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "content";
+  max-width: var(--layout-content-max-width);
+}
+
+/* Sidebar on right variant */
 .layout--docs .layout-sidebar--right {
-  grid-area: toc;
+  grid-area: sidebar;
 }
 
 .layout--docs .layout-toc--left {
@@ -650,9 +674,19 @@
 
 /* Large screens: Hide TOC */
 @media (max-width: 1280px) {
-  .layout--docs .layout-container {
+  .layout--docs .layout-container:not(.layout-container--content-only) {
     grid-template-columns: var(--sidebar-width, var(--layout-sidebar-width)) minmax(0, 1fr);
     grid-template-areas: "sidebar content";
+  }
+
+  .layout--docs .layout-container--sidebar-right:not(.layout-container--content-only) {
+    grid-template-columns: minmax(0, 1fr) var(--sidebar-width, var(--layout-sidebar-width));
+    grid-template-areas: "content sidebar";
+  }
+
+  .layout--docs .layout-container--content-only {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "content";
   }
 
   .layout-toc {

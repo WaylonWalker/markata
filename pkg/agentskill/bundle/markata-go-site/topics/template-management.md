@@ -41,6 +41,10 @@ Templates are resolved in this order:
 
 That means a file in the site's `templates/` directory wins.
 
+The default theme includes `layouts/docs.html` for the docs layout. Use
+`layout.name = "docs"` before creating a project override; add
+`templates/layouts/docs.html` only when the page needs different markup.
+
 ## Default Files To Know
 
 - `templates/base.html`

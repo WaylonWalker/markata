@@ -10,7 +10,6 @@ tags:
   - customization
 ---
 
-# Link Avatars
 
 The `link_avatars` plugin automatically adds small favicon icons next to external links in your content. This helps readers quickly identify link destinations before clicking.
 

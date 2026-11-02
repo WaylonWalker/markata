@@ -11,7 +11,7 @@ tags:
   - feeds
 ---
 
-# Blogroll & Reader
+## Blogroll & Reader
 
 The blogroll plugin lets you curate a list of blogs you follow and automatically fetch their RSS/Atom feeds to create:
 

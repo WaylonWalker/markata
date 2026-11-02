@@ -8,7 +8,6 @@ tags:
   - typography
 ---
 
-# Font packs
 
 Markata defaults to the offline `system` pack. It makes no external font
 requests and emits no font binaries. To choose another pack, add this to the

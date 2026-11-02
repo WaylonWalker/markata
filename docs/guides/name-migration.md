@@ -8,7 +8,6 @@ tags:
   - migration
 ---
 
-# Markata naming migration
 
 The Go static site generator formerly known as **markata-go** is now **Markata**.
 The repository rename is complete, but Markata remains on the **0.x** release

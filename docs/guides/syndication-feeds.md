@@ -10,7 +10,6 @@ tags:
   - atom
 ---
 
-# Syndication Feeds
 
 This guide covers generating syndication feeds for your markata-go site: **Sitemap**, **RSS**, **Atom**, and **JSON Feed**. Each format serves different consumers - search engines, feed readers, and JavaScript applications.
 

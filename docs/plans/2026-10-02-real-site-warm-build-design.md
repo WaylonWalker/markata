@@ -8,7 +8,6 @@ tags:
   - build
 ---
 
-# Real-Site Warm Build Optimization
 
 ## Findings
 

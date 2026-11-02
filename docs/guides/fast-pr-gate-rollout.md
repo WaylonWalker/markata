@@ -8,7 +8,6 @@ tags:
   - ci
 ---
 
-# Fast PR gate rollout
 
 Tracking issue: [#1747](https://github.com/WaylonWalker/markata/issues/1747).
 

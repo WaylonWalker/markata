@@ -9,7 +9,6 @@ tags:
   - docker
 ---
 
-# Deploy with Docker
 
 Docker provides a consistent, reproducible environment for building and serving your markata-go site. It's ideal for self-hosting, local development, and integration with container orchestration platforms.
 

@@ -9,7 +9,6 @@ tags:
   - maintenance
 ---
 
-# Maintainer CI
 
 This guide describes CI for the **markata-go product repository** (issue #1487).
 For site-author deployments, use the [[ci-cd-guide|CI/CD guide]] instead.

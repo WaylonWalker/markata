@@ -8,7 +8,6 @@ tags:
   - troubleshooting
 ---
 
-# Troubleshooting
 
 This guide covers common issues users encounter when working with markata-go and how to resolve them.
 

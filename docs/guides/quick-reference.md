@@ -10,7 +10,6 @@ tags:
   - reference
 ---
 
-# Quick Reference
 
 A quick reference for common markata-go commands, configuration snippets, and troubleshooting tips.
 
