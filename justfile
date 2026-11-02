@@ -277,3 +277,13 @@ perf-generate:
     @echo "Generating benchmark fixture..."
     go run benchmarks/generate_posts.go
     @echo "Generated benchmark posts in benchmarks/site/posts/"
+
+# Local merge preflight. Go build/test/gofmt implementation is shared with PR Gate.
+pr-check *args:
+    python3 scripts/ci/pr_check.py {{args}}
+
+ci-diagnose run:
+    python3 scripts/ci/diagnose.py --run {{run}}
+
+test-ci-helpers:
+    python3 -m unittest discover -s scripts/ci -p 'test_*.py'

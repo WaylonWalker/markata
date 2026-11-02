@@ -1,0 +1,25 @@
+name: CI failure diagnostics
+# Read completed run logs on main only; never execute pull-request code.
+on:
+  workflow_run:
+    workflows: [CI, Fast PR validation, Docker, WASM workbench, Go Markata PyPI wheels, Archive startup browser regressions, Documentation site]
+    types: [completed]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  diagnose:
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - run: python3 -m unittest discover -s scripts/ci -p 'test_*.py'
+      - name: Summarize failure
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FAILED_RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          python3 scripts/ci/diagnose.py --run "$FAILED_RUN_ID" --repo "$GITHUB_REPOSITORY" --summary "$GITHUB_STEP_SUMMARY"
