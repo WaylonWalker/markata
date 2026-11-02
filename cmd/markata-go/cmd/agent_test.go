@@ -12,7 +12,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-
 func TestResolveAgentWriteTargets_MultipleAndLegacy(t *testing.T) {
 	tests := []struct {
 		name    string
