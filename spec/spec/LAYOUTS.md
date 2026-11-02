@@ -30,6 +30,12 @@ Markata-go provides four built-in layout presets. Each preset configures compone
 
 The 3-panel documentation layout optimized for technical content.
 
+The documentation navigation MUST preserve the hierarchy supplied by
+`sidebar_items`. Items with children MUST render as keyboard-accessible
+disclosure groups. The current page and each ancestor group MUST be open in
+the generated HTML; unrelated groups MUST start closed. Directory index pages
+with children MUST remain directly reachable from their group.
+
 ```
 +------------------------------------------------------------------+
 |                         HEADER (minimal)                          |

@@ -1365,6 +1365,36 @@ func sidebarItemsToMaps(items []models.SidebarNavItem) []map[string]interface{} 
 	return result
 }
 
+func sidebarItemsToMapsForPage(items []models.SidebarNavItem, currentHref string) []map[string]interface{} {
+	if items == nil {
+		return nil
+	}
+	result := make([]map[string]interface{}, len(items))
+	for i, item := range items {
+		children := sidebarItemsToMapsForPage(item.Children, currentHref)
+		isCurrent := currentHref != "" && item.Href == currentHref
+		containsCurrent := isCurrent
+		for _, child := range children {
+			if child["contains_current"] == true {
+				containsCurrent = true
+				break
+			}
+		}
+		itemMap := map[string]interface{}{
+			"title":            item.Title,
+			"href":             item.Href,
+			"has_children":     len(children) > 0,
+			"is_current":       isCurrent,
+			"contains_current": containsCurrent,
+		}
+		if len(children) > 0 {
+			itemMap["children"] = children
+		}
+		result[i] = itemMap
+	}
+	return result
+}
+
 // ToPongo2 converts the Context to a pongo2.Context for template execution.
 func (c Context) ToPongo2() pongo2.Context {
 	postMap := postToMap(c.Post)
@@ -1376,6 +1406,7 @@ func (c Context) ToPongo2() pongo2.Context {
 	}
 
 	resolvedContentSidebar := resolveContentSidebar(configMap, c.Post)
+	currentHref, _ := postMap["href"].(string)
 	ctx := pongo2.Context{
 		"post":                     postMap,
 		"body":                     c.Body,
@@ -1384,7 +1415,7 @@ func (c Context) ToPongo2() pongo2.Context {
 		"page":                     feedPageToMap(c.FeedPage),
 		"posts":                    PostsToMaps(c.Posts),
 		"core":                     c.Core,
-		"sidebar_items":            sidebarItemsToMaps(c.SidebarItems),
+		"sidebar_items":            sidebarItemsToMapsForPage(c.SidebarItems, currentHref),
 		"sidebar_title":            c.SidebarTitle,
 		"resolved_content_sidebar": resolvedContentSidebar,
 		"resolved_doc_sidebar":     ResolveDocSidebar(c.Config, c.BlogLayout),

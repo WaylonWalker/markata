@@ -1,6 +1,6 @@
 ---
-title: "Markata documentation"
-description: "Install Markata, teach your agent the site skill, and publish your first Markdown page."
+title: "Build with Markata"
+description: "Write Markdown, build a fast static site, and publish it with Markata."
 slug: ""
 date: 2026-10-18
 published: true
@@ -8,29 +8,21 @@ tags: [documentation, getting-started]
 ---
 
 
-**A fast static site generator for people and their agents.**
+Markata turns a folder of posts into a site you own. Start with the short path below; add feeds, themes, and plugins when you need them.
 
-Let's be honest. We're all running agents these days. They manage everything.
+::: road steps
+- [Install Markata](/docs/installation/)
+- [Create a site](/docs/quickstart/)
+- [Write your first post](/docs/guides/authoring/)
+- [Publish your site](/docs/guides/deployment/)
 
-Write Markdown. Give your agent the right context. Publish a site you own.
+:::
 
-## Start here
+## Keep learning
 
-1. [Install Markata](/docs/installation/) using curl, a shell, mise, GitHub Releases, or Go.
-2. [Quickstart](/docs/quickstart/) — create your first site and preview it locally.
-3. [Set up your agent](/docs/guides/agent-skills/) — install the bundled `markata-go-site` skill.
-4. [Write your first post](/docs/guides/authoring/) — Markdown, frontmatter, drafts, images, and links.
-5. [Publish](/docs/guides/deployment/) — deploy the generated static files.
+Explore the [authoring guide](/docs/guides/authoring/) to write posts, then adjust [configuration](/docs/guides/configuration/) and [themes](/docs/guides/themes/) as your site grows. For more, see [feeds and RSS](/docs/guides/feeds/) or the [CLI reference](/docs/reference/cli/).
 
-## Explore as you grow
-
-- [Configuration](/docs/guides/configuration/)
-- [Themes](/docs/guides/themes/)
-- [Feeds and RSS](/docs/guides/feeds/)
-- [Templates](/docs/guides/templates/)
-- [Plugins](/docs/reference/plugins/)
-- [CLI reference](/docs/reference/cli/)
-- [Naming migration](/docs/guides/name-migration/)
+For agent-assisted authoring, install the bundled [Markata site skill](/docs/guides/agent-skills/). Keep drafts private, review generated changes, and publish when they're ready.
 
 ## Releases
 
@@ -44,6 +36,4 @@ Markata is still **0.x**. The older `markata-go` command remains compatible. New
 
 If something fails, run `markata triage` or see the [triage guide](/docs/guides/triage/).
 
-Use Markata in a web application: [Python and FastAPI rendering](/docs/guides/python-renderer/),
-the [Go workbench](/docs/guides/go-workbench/), or the [browser WASM workbench](/docs/guides/wasm-workbench/).
-See [renderer integration benchmarks](/docs/guides/renderer-integration-benchmarks/) for measured timings.
+Use Markata in an application with the [Python and FastAPI renderer](/docs/guides/python-renderer/), [Go workbench](/docs/guides/go-workbench/), or [browser workbench](/docs/guides/wasm-workbench/).

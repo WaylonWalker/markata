@@ -33,6 +33,14 @@ use the same configuration and renderer through Builder Admin.
 - The docs layout MUST render a hierarchical sidebar from Markdown files under
   `docs/`, so newly added guides appear in navigation without a separate nav
   list.
+- Sidebar directory groups MUST use native disclosure controls. The current
+  page and ancestor groups MUST be visible on page load; unrelated groups MUST
+  start collapsed.
+- The docs index MUST provide a short, visually clear start path using the
+  built-in `md-*` article primitives without repeating navigation already
+  present in the header and sidebar.
+- Documentation code fences MUST use the default theme's language/title chrome
+  and copy control, including terminal framing for shell examples.
 - Markdown files under `docs/` MUST preserve their `docs/` URL prefix unless a
   page declares a custom slug.
 - `docs/index.md` MUST be the root homepage through an explicit empty slug.
