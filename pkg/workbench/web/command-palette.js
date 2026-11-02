@@ -5,7 +5,14 @@
 
   window.MarkataCommandPalette = {attach};
   function attach(editor, options = {}) {
-    const entries = [...commands, ...(options.actions || [])];
+    const entries = () => {
+      const registered = (window.MarkataShortcuts?.all() || []).map(action => ({
+        id: action.id, label: action.label, description: action.description || '',
+        aliases: action.aliases || '', shortcut: window.MarkataShortcuts.bindingFor(action.id),
+        run: () => setTimeout(() => window.MarkataShortcuts.execute(action.id), 0)
+      }));
+      return [...new Map([...commands, ...(options.actions || []), ...registered].map(item => [item.id,item])).values()];
+    };
     const button = document.createElement('button');
     button.type = 'button'; button.id = 'commands';
     button.textContent = 'Commands'; button.title = 'Command Palette (Ctrl/Cmd+Shift+P)';
@@ -18,7 +25,7 @@
     const query = dialog.querySelector('input');
     const results = dialog.querySelector('[role=listbox]');
     const count = dialog.querySelector('[role=status]');
-    let matches = entries, active = 0, selection;
+    let matches = entries(), active = 0, selection;
     function select(index) {
       active = index;
       [...results.children].forEach((row, i) => row.setAttribute('aria-selected', String(i === active)));
@@ -30,7 +37,7 @@
     }
     function refresh() {
       const words = query.value.toLowerCase().trim().split(/\s+/).filter(Boolean);
-      const filtered = entries.filter(c => words.every(word => `${c.label} ${c.description} ${c.syntax || ''} ${c.aliases || ''}`.toLowerCase().includes(word)));
+      const filtered = entries().filter(c => words.every(word => `${c.label} ${c.description} ${c.syntax || ''} ${c.aliases || ''}`.toLowerCase().includes(word)));
       matches = filtered.slice(0, 60);
       results.replaceChildren();
       count.textContent = filtered.length > 60 ? `Showing 60 of ${filtered.length} commands. Refine your search to see more.` : filtered.length ? `${filtered.length} commands` : 'No matching commands. Try another word or clear the search.';
@@ -40,6 +47,12 @@
         const label = document.createElement('strong'); label.textContent = command.label;
         const detail = document.createElement('span'); detail.textContent = command.description;
         row.append(label, detail);
+        if (command.shortcut) {
+          const shortcut = document.createElement('kbd');
+          shortcut.className = 'command-shortcut';
+          shortcut.textContent = command.shortcut;
+          row.append(shortcut);
+        }
         if (command.syntax) {const syntax = document.createElement('code'); syntax.textContent = command.syntax; row.append(syntax);}
         row.addEventListener('pointermove', () => select(index));
         row.addEventListener('click', () => insert(command));
@@ -96,14 +109,22 @@
         else if (matches.length) select((active + (event.key === 'ArrowDown' ? 1 : -1) + matches.length) % matches.length);
       }
     });
-    // Capture before Vim, Emacs or browser shortcuts can consume the event.
-    document.addEventListener('keydown', event => {
-      const key = event.key.toLowerCase();
-      const modifier = event.ctrlKey || event.metaKey;
-      const shortcut = (key === 'k' && !event.shiftKey) || (key === 'p' && event.shiftKey);
-      if (!event.isComposing && modifier && shortcut && !event.altKey) {
-        event.preventDefault(); event.stopPropagation(); open();
-      }
-    }, true);
+    if (window.MarkataShortcuts) {
+      window.MarkataShortcuts.register({
+        id:'workbench.commandPalette', label:'Command Palette', category:'Navigation',
+        description:'Search every writing or application command.',
+        bindings:{vscode:'Mod+Shift+P',writer:'Mod+K',vim:'Mod+Shift+P',emacs:'Alt+X'},
+        run:open
+      });
+    } else {
+      // Shared Python/WASM workbenches still use the original handler.
+      document.addEventListener('keydown', event => {
+        const key=event.key.toLowerCase(), modifier=event.ctrlKey||event.metaKey;
+        if (!event.isComposing && modifier && !event.altKey &&
+          ((key==='k'&&!event.shiftKey)||(key==='p'&&event.shiftKey))) {
+          event.preventDefault();event.stopPropagation();open();
+        }
+      },true);
+    }
   }
 })();
