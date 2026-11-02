@@ -89,38 +89,14 @@ jobs:
 
       - name: Check gofmt
         if: steps.scope.outputs.docs_only != 'true'
-        shell: bash
-        run: |
-          set -euo pipefail
-          # Enforce formatting on touched Go files without failing unrelated
-          # changes on historical formatting debt (full lint remains in CI).
-          unformatted=$(git diff --name-only 'HEAD^' HEAD -- '*.go' |
-            while IFS= read -r file; do
-              [[ -f "$file" ]] || continue
-              gofmt -l "$file"
-            done)
-          if [[ -n "$unformatted" ]]; then
-            echo "::error::Unformatted Go files:"
-            printf '%s\n' "$unformatted"
-            exit 1
-          fi
+        run: python3 scripts/ci/pr_check.py --base HEAD^ --only-format
 
       - name: Build CLI and run short Go suite
         if: steps.scope.outputs.docs_only != 'true'
-        shell: bash
-        run: |
-          set -euo pipefail
-          start=$SECONDS
-          trap 'echo "Fast Go build + short tests: $((SECONDS-start))s" >> "$GITHUB_STEP_SUMMARY"' EXIT
+        run: python3 scripts/ci/pr_check.py --base HEAD^ --only-go
 
-          go build -o "$RUNNER_TEMP/markata-go" ./cmd/markata-go
-          "$RUNNER_TEMP/markata-go" version
-          "$RUNNER_TEMP/markata-go" --help > /dev/null
-          export MARKATA_GO_TEST_BINARY="$RUNNER_TEMP/markata-go"
-          export MARKATA_GO_TEST_BINARY_REVISION="$(git rev-parse HEAD)"
-          # The Build Lab characterization is observational and belongs in full CI.
-          go test -short -timeout=15m \
-            -skip '^TestBuildLab_LinkedAndFixtureMutationsCharacterizeProduct$' ./...
+      - name: Check CI helper contracts
+        run: python3 -m unittest discover -s scripts/ci -p 'test_*.py'
 
       - uses: actions/setup-python@v7
         if: steps.scope.outputs.python == 'true'

@@ -14,6 +14,12 @@ This guide describes CI for the **markata-go product repository** (issue #1487).
 For site-author deployments, use the [[ci-cd-guide|CI/CD guide]] instead.
 The policy is specified in [CI.md](../../spec/spec/CI.md).
 
+## Agent merge preflight
+
+Run `git fetch origin main`, then `just pr-check` before pushing. This shares Go formatting and short-suite execution with the fast PR gate, and selects generated docs, rendering-contract and editor checks. For editor changes, also run `just pr-check --browser`. Full platform and release gates still apply.
+
+Use `just ci-diagnose RUN_ID` for read-only failed-job log classification; completed failing workflows also receive a separate diagnostic job summary. Neither tool retries jobs or changes their results.
+
 ## Routine validation
 
 CI runs on pushes and pull requests targeting `main`/`master`, daily at 08:23 UTC,
@@ -36,7 +42,7 @@ and manual CI runs execute all specialized checks regardless of paths.
 Docs-only PRs still receive ordinary checks rather than skipping the entire
 workflow and potentially leaving required checks pending.
 
-The detection job uses `dorny/paths-filter@v3`: PRs use the changed-files API,
+The detection job uses `dorny/paths-filter@v4`: PRs use the changed-files API,
 including fork PRs, while pushes compare against the previous push commit.
 Only this job gets `pull-requests: read`, alongside `contents: read`.
 If detection fails, do not interpret skipped specialized jobs as validation.

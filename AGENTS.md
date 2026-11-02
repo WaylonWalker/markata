@@ -2,6 +2,16 @@
 
 This document provides guidelines for AI coding agents working in the markata-go codebase.
 
+## Merge readiness and CI triage
+
+Before marking a PR ready, fetch origin/main and run `just pr-check`. For editor changes also run `just pr-check --browser` with Playwright/Chromium. Local checks are **not** substitutes for platform or release gates.
+
+- Batch related changes before pushing, rather than repeatedly pushing untested commits.
+- Check the latest head SHA with `gh pr checks`, not old or cancelled runs.
+- Use `just ci-diagnose RUN_ID` or `gh run view RUN_ID --log-failed` to find the first underlying failure.
+- Retry identical SHAs only for evidence-backed flakiness or infrastructure failures; never bypass required checks.
+- CI uses Go 1.27 and golangci-lint v2.15.0. `just lint-new` gates new issues; `just lint-full` audits legacy debt.
+
 ## GitHub Workflow
 
 **This project uses a formal GitHub workflow.** All work should be tracked and managed through GitHub:
@@ -61,7 +71,7 @@ gh release create v0.2.0 --generate-notes  # Create release with auto-generated 
 
 ## Project Overview
 
-**markata-go** is a static site generator written in Go 1.22+. It processes Markdown files with frontmatter through a plugin-based lifecycle system to generate HTML sites.
+**markata-go** is a static site generator written in Go 1.27+. It processes Markdown files with frontmatter through a plugin-based lifecycle system to generate HTML sites.
 
 Key dependencies: cobra (CLI), pongo2 (templating), goldmark (Markdown), fsnotify (live reload)
 
@@ -285,9 +295,9 @@ go vet ./...          # Check for common issues
 | `just lint-gentle` | ~20-25s | Full lint with reduced CPU (4 cores), good when multitasking |
 
 **Recommended workflow for agents:**
-1. Use `just lint-fast` during development iteration
-2. Use `just lint-new` before creating commits  
-3. Use `just lint` before creating PRs (CI runs this)
+1. Run `just lint-fast` during iteration.
+2. Run `just pr-check` before pushing.
+3. For editor changes also run `just pr-check --browser`, then inspect latest PR checks.
 
 **Note:** Full lint runs 36 linters across ~120K lines of code. The `--fast` flag runs only linters that don't require type-checking, which is sufficient for catching most issues during development.
 

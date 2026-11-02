@@ -74,9 +74,13 @@ explicit and preserve the existing check names and commands.
 
 See [Maintainer CI](../../docs/guides/maintainer-ci.md) for operational guidance.
 
+## Agent preflight and failure triage
+
+- Run a fail-closed local merge preflight before agent PR readiness, including Go formatting, short tests, new lint and selected generated docs/contract/editor checks.
+- Fast PR validation MUST share executable Go formatting and short-test logic with the local preflight.
+- Read-only diagnostics on completed failed workflows MUST NOT execute PR code, alter conclusions, or retry jobs.
+- Required-check migration remains separate and MUST be supported by shadow fast-gate evidence.
+
 ## Pinned lint installation
 
-CI MUST run the full pinned golangci-lint v1.64.8 check using its v1
-module path, matching `just lint`. Installation MUST use the selected Go
-toolchain. A newer action must not substitute a v2 module path for a v1
-release. All configured lint rules and the five-minute timeout remain active.
+Use Go 1.27 and golangci-lint v2.15.0. New findings are gated using `--new-from-rev` on PRs/pushes. A scheduled nonblocking full-tree lint audit tracks legacy debt (issue #1902), with configured linters retained.
