@@ -93,7 +93,7 @@ func TestAgentWriteCommands_MultipleTargets(t *testing.T) {
 	if count := strings.Count(stdout.String(), "Installed "); count != 2 {
 		t.Fatalf("expected two installs, got %d: %s", count, stdout.String())
 	}
-	var files []string
+	files := make([]string, 0, 2)
 	for _, agent := range []string{"github-copilot", "claude-code"} {
 		target, err := normalizeAgentInstallTarget(agent)
 		if err != nil {
@@ -172,7 +172,10 @@ func TestRunAgentWriteTargets_MultipleGlobalTargets(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, agent := range []string{"github-copilot", "claude-code"} {
-		target, _ := normalizeAgentInstallTarget(agent)
+		target, err := normalizeAgentInstallTarget(agent)
+		if err != nil {
+			t.Fatal(err)
+		}
 		location, err := agentSkillInstallDir("", agentskill.SiteSkillName, target, true)
 		if err != nil {
 			t.Fatal(err)
