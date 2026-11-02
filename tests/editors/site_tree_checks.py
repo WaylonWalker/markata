@@ -30,6 +30,12 @@ def check_site_tree(page, url):
     page.evaluate("key => {localStorage.removeItem('markata-workspace-v1:' + key + ':buffer:file:pages/about.md'); localStorage.setItem('markata-workspace-v1:' + key + ':pages/about.md', '');}", key)
     page.reload()
     preview = page.frame_locator('#preview')
+    def open_feed_post(slug):
+        group = page.locator('#site-feeds').get_by_role('treeitem', name='Field notes (2)', exact=True)
+        if group.get_attribute('aria-expanded') != 'true':
+            group.click()
+        page.locator('#site-feeds').get_by_role('treeitem', name=slug, exact=True).click()
+
     expect(preview.locator('h1')).to_have_text('About this site')
     page.locator('#site-files').get_by_role('treeitem', name='welcome.md', exact=True).click()
     expect(preview.locator('h1')).to_have_text('Welcome to the field notes')
@@ -38,19 +44,27 @@ def check_site_tree(page, url):
     expect(preview.locator('h1')).to_have_text('Saved welcome')
     page.locator('#site-files').get_by_role('treeitem', name='growing.md', exact=True).click()
     expect(preview.locator('h1')).to_have_text('A growing garden')
-    expect(page.locator('#site-view option[value=feeds]')).to_be_enabled(timeout=30000)
-    page.locator('#site-view').select_option('feeds')
-    page.locator('#site-feeds').get_by_role('treeitem', name='welcome.md', exact=True).first.click()
-    expect(preview.locator('h1')).to_have_text('Saved welcome')
-    page.locator('#site-feeds').get_by_role('treeitem', name='growing.md', exact=True).first.click()
-    expect(preview.locator('h1')).to_have_text('A growing garden')
+    feeds_available = bool(page.request.get(url.rstrip('/') + '/workspace?metadata=true').json().get('feeds'))
+    if feeds_available:
+        expect(page.locator('#site-view option[value=feeds]')).to_be_enabled(timeout=30000)
+        page.locator('#site-view').select_option('feeds')
+        open_feed_post('welcome')
+        expect(preview.locator('h1')).to_have_text('Saved welcome')
+        open_feed_post('growing')
+        expect(preview.locator('h1')).to_have_text('A growing garden')
+    else:
+        expect(page.locator('#site-view option[value=feeds]')).to_be_disabled()
     page.locator('#site-view').select_option('files')
     page.locator('#site-files').get_by_role('treeitem', name='welcome.md', exact=True).first.click()
     expect(preview.locator('h1')).to_have_text('Saved welcome')
-    expect(page.locator('#site-view option[value=feeds]')).to_be_enabled(timeout=30000)
-    page.locator('#site-view').select_option('feeds')
-    page.locator('#site-feeds').get_by_role('treeitem', name='growing.md', exact=True).first.click()
-    expect(preview.locator('h1')).to_have_text('A growing garden')
+    if feeds_available:
+        expect(page.locator('#site-view option[value=feeds]')).to_be_enabled(timeout=30000)
+        page.locator('#site-view').select_option('feeds')
+        open_feed_post('growing')
+        expect(preview.locator('h1')).to_have_text('A growing garden')
+    else:
+        page.locator('#site-files').get_by_role('treeitem', name='growing.md', exact=True).click()
+        expect(preview.locator('h1')).to_have_text('A growing garden')
     page.reload()
     expect(preview.locator('h1')).to_have_text('A growing garden')
     page.locator('#import').set_input_files({'name':'import.md','mimeType':'text/markdown','buffer':b'# Imported file'})
@@ -90,7 +104,8 @@ def check_site_tree(page, url):
     page.evaluate("document.querySelector('.CodeMirror').CodeMirror.setValue('# Metadata offline')")
     page.reload()
     expect(preview.locator('h1')).to_have_text('Metadata offline')
-    expect(page.locator('#site-view option[value=feeds]')).to_have_text('Tags unavailable')
+    expect(page.locator('#site-view option[value=feeds]')).to_have_text('Feeds unavailable')
+    expect(page.locator('#site-view option[value=tags]')).to_have_text('Tags unavailable')
     assert not errors, errors
 
 
