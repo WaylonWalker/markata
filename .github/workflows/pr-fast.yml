@@ -134,6 +134,23 @@ jobs:
           PYTHONPATH: python
         run: python -m unittest discover -s python/tests -v
 
+      - name: Install Chromium for Go editor browser test
+        if: steps.scope.outputs.python == 'true'
+        shell: bash
+        run: |
+          python -m pip install playwright
+          python -m playwright install --with-deps chromium
+
+      - name: Go editor publish browser test
+        if: steps.scope.outputs.python == 'true'
+        shell: bash
+        env:
+          MARKATA_GO_EDITOR_BINARY: ${{ runner.temp }}/markata-go-editor
+        run: |
+          set -euo pipefail
+          go build -o "$MARKATA_GO_EDITOR_BINARY" ./cmd/markata-go
+          python -m unittest python.test_go_editor_publish_flow -v
+
       - name: Summarize validation selection
         if: always()
         shell: bash

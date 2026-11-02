@@ -96,6 +96,11 @@ workspace change while reviewing, scratch files, new/untracked posts, missing Gi
 large diffs, injected HTML, hidden metadata changes, mobile tap and swipe,
 keyboard focus, exact source bytes, preview rendering failures, unrelated staged
 files, Git conflicts, failed builds, stale deployments, and explicit confirmation.
+The browser suite MUST include an isolated end-to-end path that edits boolean and
+tag frontmatter through Page details, opens review with Rendered diff selected,
+switches comparison tabs, edits the commit message, commits the selected page,
+and pushes to a temporary bare Git remote. It MUST verify the exact remote commit
+message and revision, and MUST NOT use a developer site or production remote.
 
 
 ## Publishing implementation progress (experimental stack)
