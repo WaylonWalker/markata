@@ -70,6 +70,8 @@ The docs explain *why* and *usage* - user-friendly guides, examples, tutorials.
 | [CLI_SITE_DIR.md](./spec/CLI_SITE_DIR.md) | Cross-directory site selection and agent workflows |
 | [CLI_UX.md](./spec/CLI_UX.md) | Shared CLI UX rules for streams, color, and prompts |
 | [CLI_TRIAGE.md](./spec/CLI_TRIAGE.md) | Agent-first troubleshooting, safe diagnostics, and pipeable prompt handoff |
+| [CLI_NEW.md](./spec/CLI_NEW.md) | Content creation command and interactive wizard |
+| [CONTENT_TEMPLATES.md](./spec/CONTENT_TEMPLATES.md) | Shared Markdown starters for CLI, TUI, and web workbench |
 | [SERVE_CONTROL_CENTER.md](./spec/SERVE_CONTROL_CENTER.md) | Shared local serve session runtime, resources, and terminal/web clients |
 | [LSP.md](./spec/LSP.md) | Language Server Protocol integration and setup guidance |
 | [CONTAINERS.md](./spec/CONTAINERS.md) | Container images and runtime environments |

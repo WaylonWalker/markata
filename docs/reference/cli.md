@@ -1452,6 +1452,15 @@ servings: 4
 
 The `_directory` field in frontmatter sets the output directory (removed from generated content).
 
+The same Markdown starter files are available to the interactive TUI and web
+workbench. Starter metadata may include `starter.name`,
+`starter.description`, and `starter.aliases`; this mapping is for discovery
+and does not become page frontmatter. Use
+`{{title}}`, `{{slug}}`, `{{date}}`, and `{{datetime}}` for shared substitutions
+in frontmatter values and body text. See the [content starters guide](../guides/content-starters.md)
+for an example and the [starter specification](../../spec/spec/CONTENT_TEMPLATES.md)
+for compatibility and precedence rules.
+
 #### Interactive Mode
 
 When called without a title argument (or no arguments at all), the command launches an
