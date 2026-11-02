@@ -154,6 +154,36 @@ func TestRunAgentWriteTargets_DeduplicatesSharedDestinations(t *testing.T) {
 	}
 }
 
+func TestRunAgentWriteTargets_MultipleGlobalTargets(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+	t.Setenv("HOMEDRIVE", filepath.VolumeName(home))
+	t.Setenv("HOMEPATH", strings.TrimPrefix(home, filepath.VolumeName(home)))
+	cmd := &cobra.Command{Use: "install"}
+	cmd.SetOut(new(bytes.Buffer))
+	oldCmd := currentCmd
+	currentCmd = cmd
+	t.Cleanup(func() { currentCmd = oldCmd })
+	targets, _, err := resolveAgentWriteTargets([]string{"github-copilot", "claude-code"}, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := runAgentWriteTargets(nil, targets, true, agentskill.SiteSkillName, false, false, "install"); err != nil {
+		t.Fatal(err)
+	}
+	for _, agent := range []string{"github-copilot", "claude-code"} {
+		target, _ := normalizeAgentInstallTarget(agent)
+		location, err := agentSkillInstallDir("", agentskill.SiteSkillName, target, true)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := os.Stat(filepath.Join(location, "SKILL.md")); err != nil {
+			t.Fatalf("global installation missing for %s: %v", agent, err)
+		}
+	}
+}
+
 func TestRunAgentWriteTargets_ContinuesAfterFailure(t *testing.T) {
 	root := t.TempDir()
 	blocked := filepath.Join(root, ".claude", "skills", agentskill.SiteSkillName)
