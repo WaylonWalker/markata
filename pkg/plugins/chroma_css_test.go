@@ -110,6 +110,14 @@ func TestChromaCSSPlugin_Write(t *testing.T) {
 	if !strings.Contains(css, ".chroma") {
 		t.Error("expected .chroma class in CSS")
 	}
+	// The generated rules must not be unlayered: otherwise .chroma's
+	// palette background masks @layer overrides used by aesthetic presets.
+	if !strings.Contains(css, "@layer components {\n") {
+		t.Error("expected generated palette syntax CSS in components layer")
+	}
+	if !strings.HasSuffix(strings.TrimSpace(css), "}") {
+		t.Error("expected a closing component-layer brace")
+	}
 	if !strings.Contains(css, "--color-code-keyword") {
 		t.Error("expected palette-native code color variables in CSS")
 	}
@@ -175,6 +183,9 @@ func TestChromaCSSPlugin_Write_DifferentThemes(t *testing.T) {
 
 			if !strings.Contains(string(content), tt.wantClass) {
 				t.Errorf("expected %q class in CSS for theme %s", tt.wantClass, tt.theme)
+			}
+			if !strings.Contains(string(content), "@layer components {\n") {
+				t.Errorf("expected explicit %s syntax CSS in components layer", tt.theme)
 			}
 
 			// Verify theme name is in header
