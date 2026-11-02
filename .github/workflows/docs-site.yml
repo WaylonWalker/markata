@@ -1,4 +1,4 @@
-name: Documentation website
+name: Documentation site
 
 on:
   push:
@@ -6,14 +6,26 @@ on:
     paths:
       - 'docs/**'
       - 'docs-site/**'
-      - 'scripts/build_docs_site.py'
+      - 'markata-docs.toml'
+      - 'cmd/markata-go/**'
+      - 'pkg/**'
+      - 'templates/**'
+      - 'static/**'
+      - 'go.mod'
+      - 'go.sum'
       - '.github/workflows/docs-site.yml'
   pull_request:
     branches: [main]
     paths:
       - 'docs/**'
       - 'docs-site/**'
-      - 'scripts/build_docs_site.py'
+      - 'markata-docs.toml'
+      - 'cmd/markata-go/**'
+      - 'pkg/**'
+      - 'templates/**'
+      - 'static/**'
+      - 'go.mod'
+      - 'go.sum'
       - '.github/workflows/docs-site.yml'
   workflow_dispatch:
 
@@ -26,108 +38,27 @@ concurrency:
 
 jobs:
   verify:
-    name: Build and validate documentation
+    name: Build and validate documentation with Markata
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
+      - uses: actions/setup-go@v7
         with:
-          python-version: '3.12'
-      - name: Install Markdown renderer
-        run: python -m pip install "Markdown==3.8.2"
-      - name: Build at the homelab domain root
-        env:
-          DOCS_BASE_PATH: /
+          go-version-file: go.mod
+          cache: true
+      - name: Build documentation site with Markata
+        run: go run ./cmd/markata-go --config markata-docs.toml build --clean
+      - name: Check the emitted documentation routes and assets
         run: |
-          python scripts/build_docs_site.py
           test -s docs-site/_site/index.html
           test -s docs-site/_site/docs/quickstart/index.html
           test -s docs-site/_site/docs/installation/index.html
           test -s docs-site/_site/docs/guides/agent-skills/index.html
           test -s docs-site/_site/docs/guides/authoring/index.html
-          grep -F 'href="/assets/site.css"' docs-site/_site/index.html
-          grep -F 'href="/docs/quickstart/"' docs-site/_site/index.html
-          python -m compileall -q scripts/build_docs_site.py
-      - name: Validate native homepage tabs
-        run: python docs-site/test_native_tabs.py
-      - name: Test homelab builder
-        run: |
-          python docs-site/test_builder_admin.py
-          docker build -f docs-site/Dockerfile.builder -t markata-docs-builder:verify .
-          docker run --rm --entrypoint python markata-docs-builder:verify -c "import ast,pathlib; ast.parse(pathlib.Path('/app/builder_admin.py').read_text())"
-      - name: Build nginx image for smoke test
-        run: docker build -f docs-site/Dockerfile -t markata-docs:verify .
-      - name: Smoke test nginx and deep links
-        shell: bash
-        run: |
-          docker run -d --rm --name markata-docs-verify -p 127.0.0.1:18080:8080 markata-docs:verify
-          trap 'docker rm -f markata-docs-verify >/dev/null 2>&1 || true' EXIT
-          for attempt in {1..30}; do
-            if curl -fsS http://127.0.0.1:18080/healthz >/dev/null; then break; fi
-            sleep 1
-          done
-          curl -fsS http://127.0.0.1:18080/ | grep -F 'Your words.'
-          curl -fsS http://127.0.0.1:18080/docs/quickstart/ | grep -F 'Quickstart'
-          curl -fsS http://127.0.0.1:18080/docs/guides/authoring/ | grep -F 'Write your first post'
-          curl -fsS http://127.0.0.1:18080/assets/site.css >/dev/null
-          test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:18080/docs/missing-page/)" = 404
-
-  publish:
-    name: Publish homelab image
-    if: github.event_name != 'pull_request'
-    needs: verify
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
-        with:
-          python-version: '3.12'
-      - name: Build the static site artifact
-        env:
-          DOCS_BASE_PATH: /
-        run: |
-          python -m pip install "Markdown==3.8.2"
-          python scripts/build_docs_site.py
-          test -s docs-site/_site/index.html
-      - uses: docker/setup-buildx-action@v4
-      - uses: docker/login-action@v4
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Publish live builder image
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          file: docs-site/Dockerfile.builder
-          platforms: linux/amd64
-          push: true
-          tags: |
-            ghcr.io/waylonwalker/markata-docs-builder:0.0.${{ github.run_number }}
-            ghcr.io/waylonwalker/markata-docs-builder:sha-${{ github.sha }}
-            ghcr.io/waylonwalker/markata-docs-builder:latest
-          labels: |
-            org.opencontainers.image.source=https://github.com/WaylonWalker/markata
-            org.opencontainers.image.revision=${{ github.sha }}
-          cache-from: type=gha,scope=markata-docs-builder
-          cache-to: type=gha,mode=max,scope=markata-docs-builder
-      - name: Publish versioned and commit-pinned image
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          file: docs-site/Dockerfile
-          platforms: linux/amd64
-          push: true
-          tags: |
-            ghcr.io/waylonwalker/markata-docs:0.0.${{ github.run_number }}
-            ghcr.io/waylonwalker/markata-docs:sha-${{ github.sha }}
-            ghcr.io/waylonwalker/markata-docs:latest
-          labels: |
-            org.opencontainers.image.source=https://github.com/WaylonWalker/markata
-            org.opencontainers.image.revision=${{ github.sha }}
-            org.opencontainers.image.title=Markata documentation
-          cache-from: type=gha,scope=markata-docs
-          cache-to: type=gha,mode=max,scope=markata-docs
+          test -s docs-site/_site/docs/guides/deployment/index.html
+          test -s docs-site/_site/docs/guides/deployment-guide/index.html
+          test -s docs-site/_site/favicon.ico
+          grep -F 'class="chroma"' docs-site/_site/docs/guides/authoring/index.html
+          grep -F 'aria-label="Sidebar navigation"' docs-site/_site/docs/guides/authoring/index.html
+          grep -F 'href="/favicon.ico"' docs-site/_site/docs/guides/authoring/index.html
+          grep -F 'href="/docs/guides/authoring/"' docs-site/_site/index.html

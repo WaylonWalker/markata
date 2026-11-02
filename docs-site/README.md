@@ -1,44 +1,37 @@
-# Markata documentation website and homelab builder
+# Markata documentation site
 
-This site's authoring source is `docs/**/*.md`, its custom homepage is `docs-site/home.html`, and the renderer is `scripts/build_docs_site.py`. It uses Python Markdown to preserve the current documentation layout. It is not yet a native Markata CLI site: do not point `markata builder-admin` at the repository root and assume it will publish these pages.
+The public documentation is built from `docs/**/*.md` by Markata itself. The
+site-specific configuration is `markata-docs.toml`; it keeps the existing
+`/docs/.../` routes, uses Markata's documentation layout and code highlighter,
+and sets `docs/index.md` as the homepage.
 
-The custom homepage uses the **same `md-tabs` HTML contract and `pkg/themes/default/static/js/md-tabs.js` controller** as native Markata Markdown tabs. `scripts/build_docs_site.py` copies the controller to `assets/md-tabs.js` at build time; do not reintroduce a separate docs-only tab implementation. The homepage HTML is hand-authored (not rendered with Markata's Goldmark plugin), since the docs builder remains Python Markdown. With JS disabled, all install options remain visible; print expands all options.
-
-
-## Local preview
+## Build locally
 
 ```bash
-python -m pip install 'Markdown==3.8.2'
-DOCS_BASE_PATH=/ python scripts/build_docs_site.py
-python docs-site/test_native_tabs.py
-python -m http.server --directory docs-site/_site 8000
+go run ./cmd/markata-go --config markata-docs.toml build --clean
+go run ./cmd/markata-go --config markata-docs.toml serve
 ```
 
-Browse <http://localhost:8000>.
+The generated site is in `docs-site/_site/`. No separate Python Markdown
+renderer or syntax-highlighting package is used.
 
 ## Homelab hosting
 
-The Argo deployment lives in [WaylonWalker/homelab-argo](https://github.com/WaylonWalker/homelab-argo/tree/main/k8s/markata-docs), with `markata-docs` Argo Application. This follows the builder-and-site split from waylonwalker.com:
+The Argo CD application combines the Markata Helm chart with the homelab
+ingresses. The chart runs the same Markata Go builder used locally, keeps
+published releases on the existing `markata-docs-site` volume, and serves the
+current release with its public site deployment.
 
-- **Public**: https://markata.waylonwalker.com — Nginx serves `/data/site/current` from a persistent Longhorn volume.
-- **Protected builder**: https://build.markata.waylonwalker.com — HLab-authenticated admin for Build now, status, releases, and rollback.
-- **Background updates**: `docs-site/builder_admin.py` polls the canonical GitHub `main` every 45 seconds and only rebuilds after a source SHA change, or manual trigger. It publishes releases atomically and retains previous versions.
-- **Images**: `.github/workflows/docs-site.yml` checks both the static docs site and the live builder on PRs. On `main`, it publishes `ghcr.io/waylonwalker/markata-docs-builder` and the immutable `ghcr.io/waylonwalker/markata-docs` fallback/seed image.
-- **No Python runtime on public Nginx**: Python is limited to the builder pod.
+Builder Admin initializes a persistent Git checkout of
+`WaylonWalker/markata`. A signed GitHub Push webhook at
+`https://build.markata.waylonwalker.com/webhook` fast-forwards `main` and queues
+a Markata build. The authenticated Builder Admin interface remains at
+`https://build.markata.waylonwalker.com/`.
 
-The builder image version is pinned explicitly in homelab-argo for controlled upgrades. The docs contents themselves refresh from `main` without a fresh container build or Argo sync. The initial fallback image seeds a new site PVC before the builder's first checkout; it is not the active publishing mechanism afterward.
+The webhook HMAC secret is stored in the Kubernetes Secret referenced by
+`builderAdmin.webhook` in homelab values. It is not stored in this repository.
+Create that secret before rolling out the chart, then configure a GitHub
+repository webhook for Push events with the matching secret.
 
-The builder HTTP handler assumes it is reachable **only through Traefik**, which strips any client-provided identity headers before HLab ForwardAuth. The application also requires an identity header from a configured trusted cluster CIDR and same-origin POSTs. Never expose the Service directly as a public unauthenticated endpoint.
-
-## Debugging
-
-```bash
-kubectl -n markata-docs get deploy,pods,pvc,ingress
-kubectl -n markata-docs logs deploy/markata-docs-builder -c builder --tail=100
-kubectl -n markata-docs rollout status deploy/markata-docs
-curl -fsSI https://markata.waylonwalker.com/docs/quickstart/
-```
-
-The source clone is ephemeral; the current release, retained releases, and build history are persisted on Longhorn. If the builder is unavailable, the last published site stays online.
-
-Do not apply `kubernetes/markata-go-docs.yaml` alongside the Argo resources. GitHub Pages has been retired for this documentation website.
+See `homelab-argo/k8s/markata-docs/README.md` for rollout and verification
+steps.
