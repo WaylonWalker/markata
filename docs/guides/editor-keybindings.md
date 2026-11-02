@@ -36,7 +36,7 @@ The Emacs app preset provides Alt+X for the command palette and editor-independe
 
 Keyboard bindings are stored in browser local storage. The shortcut dialog reports conflicts and supports disabling an action with Backspace while recording. Markata does not dispatch app shortcuts while a modal is open or during IME composition. Ordinary form typing stays native; modified app shortcuts such as Ctrl/Cmd+B still work while the workspace selector is focused. A focused sidebar returns focus to the visible editor when hidden.
 
-The **Review & Publish** shortcut opens the same read-only dialog as the Publish button. It cannot commit, push, deploy, or bypass publication confirmation. See [Editor publishing](../../spec/spec/EDITOR_PUBLISHING.md) for the deployment contract.
+The **Review & Publish** shortcut opens the same comparison and publishing review dialog as the Publish button. Opening it never commits, pushes, deploys, or bypasses confirmation. Any Git commit, push, or deployment verification requires a separate explicit action in the dialog and the configured publishing prerequisites. See [Editor publishing](../../spec/spec/EDITOR_PUBLISHING.md) for the deployment contract.
 
 Use **Focus preview** to focus its containing pane without trapping your keyboard inside an iframe. If you click into the rendered preview, press Ctrl/Cmd+Alt+1 to return to writing, or select **Back to editor** above the preview. The app keymap remains customizable; the iframe escape shortcut currently uses the default binding.
 
