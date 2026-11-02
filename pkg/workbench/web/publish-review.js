@@ -441,11 +441,21 @@
       if(Math.abs(dx)>55 && Math.abs(dx)>Math.abs(dy)*1.6)setSide(dx<0?'after':'before');
       start=null;
     },{passive:true});
-    document.addEventListener('keydown',event=>{
-      if(event.isComposing||event.altKey||!event.shiftKey||!(event.ctrlKey||event.metaKey)||event.key!=='Enter')return;
-      if(document.querySelector('dialog[open]'))return;
-      event.preventDefault();event.stopPropagation();open();
-    },true);
+    if (window.MarkataShortcuts) {
+      window.MarkataShortcuts.register({
+        id:'publishing.review', label:'Publishing: Review & Publish', category:'Publishing',
+        description:'Review saved and committed changes before publishing.',
+        aliases:'publish go live deploy release review git',
+        bindings:{vscode:'Mod+Shift+Enter',writer:'Mod+Shift+Enter',vim:'Mod+Shift+Enter',emacs:'Ctrl+Shift+Enter'},
+        run:open
+      });
+    } else {
+      document.addEventListener('keydown',event=>{
+        if(event.isComposing||event.altKey||!event.shiftKey||!(event.ctrlKey||event.metaKey)||event.key!=='Enter')return;
+        if(document.querySelector('dialog[open]'))return;
+        event.preventDefault();event.stopPropagation();open();
+      },true);
+    }
   }
   window.MarkataPublishReview={attach,open};
 })();

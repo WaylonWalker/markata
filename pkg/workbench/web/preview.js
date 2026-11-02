@@ -6,6 +6,15 @@ if(value==null)document.documentElement.removeAttribute(key);
 else if(values.includes(value))document.documentElement.setAttribute(key,value);
 }};
 
+// The sandboxed frame cannot bubble navigation shortcuts to the parent workbench.
+document.addEventListener('keydown', event => {
+  const isMac = /Mac|iPhone|iPad|iPod/i.test(navigator.platform || '');
+  if (event.isComposing || !event.altKey || event.shiftKey ||
+    !(isMac ? event.metaKey && !event.ctrlKey : event.ctrlKey && !event.metaKey) ||
+    event.key !== '1') return;
+  event.preventDefault();
+  parent.postMessage({type:'workbench-preview-focus-editor'}, '*');
+}, true);
 let updates=Promise.resolve(), scriptSequence=0, latestVersion=0;
 let sourceLines=[], sourceLineCount=0, sourceLineOffset=0, sourcePositionAnchors=[], programmedTarget=null, scrollFrame=0, positionLine=-1, positionColumn=null, positionSourceText=null, positionPending=false, positionVimMode=null, positionNode=null, lastExactPosition=null, scrollIntentUntil=0;
 let articleObserver;

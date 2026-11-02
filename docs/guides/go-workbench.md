@@ -53,6 +53,14 @@ container boundaries add source anchors to improve scroll alignment in long
 sections; these markers exist only in the preview render and do not change your
 source. Within nested content, the marker follows the narrowest container that
 contains the caret line.
+For the Go site-backed workbench, **Editor settings → Keyboard shortcuts…** opens
+application-wide key bindings. Choose Writer, VS Code, Vim, or Emacs application
+presets independently of the editor's Default/Vim/Emacs/Sublime text keymaps.
+The command palette displays active shortcuts; the registry also supports
+multi-key chords, search, per-preset overrides, and resets. The preview pane
+includes a **Back to editor** control for keyboard navigation.
+See [Keyboard shortcuts](./editor-keybindings/).
+
 Choose Default, Vim, Emacs, or Sublime keymaps in **Editor settings**.
 In Vim mode, press `/` to search forward, `?` to search backward, then `n` or
 `N` to move between matches.
