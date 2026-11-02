@@ -10,7 +10,7 @@ tags:
 ---
 
 Select **Commands** above the Markdown editor, or press **Ctrl+Shift+P**.
-On macOS, press **Cmd+Shift+P**. **Ctrl/Cmd+K** also works.
+On macOS, press **Cmd+Shift+P**. In the Go workbench's **Writer** application preset, **Ctrl/Cmd+K** also opens the palette; the VS Code preset reserves Ctrl/Cmd+K for key sequences.
 The dialog is titled **Command Palette** and works with the Default, Vim,
 Emacs, and Sublime keymaps. In the Go workbench, **Ctrl/Cmd+P** opens the
 fuzzy file finder.

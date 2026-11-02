@@ -46,6 +46,8 @@ window.addEventListener('message',event=>{
   if (event.source !== frame.contentWindow) return;
   if (event.data?.type === 'open-post') window.MarkataSiteTree?.openPost(event.data.slug);
   if (event.data?.type === 'place-editor-cursor') placeEditorCursor(event.data);
+  if (event.data?.type === 'workbench-preview-focus-editor')
+    window.MarkataShortcuts?.execute('workbench.focusEditor');
   if (event.data?.type === 'preview-updated' && event.data.version === revision) {
     finishPreview(event.data.version);
     scrollSync.previewUpdated();
@@ -72,9 +74,14 @@ const workbench = document.querySelector('#workbench');
 const layoutSetting = document.querySelector('#setting-layout');
 try { layoutSetting.value = localStorage.getItem('markata-editor-layout') || 'split'; } catch { storageWarning(); }
 function setLayout(layout) {
+  const previouslyFocusedPane = document.activeElement?.closest?.('#editor-pane, #preview-pane')?.id;
   workbench.dataset.layout = ['split','editor','preview'].includes(layout) ? layout : 'split';
   layoutSetting.value = workbench.dataset.layout;
   try { localStorage.setItem('markata-editor-layout',workbench.dataset.layout); } catch { storageWarning(); }
+  if (previouslyFocusedPane === 'editor-pane' && workbench.dataset.layout === 'preview')
+    document.querySelector('#preview-pane')?.focus();
+  if (previouslyFocusedPane === 'preview-pane' && workbench.dataset.layout === 'editor')
+    editor.focus();
   requestAnimationFrame(() => editor.refresh());
 }
 setLayout(layoutSetting.value);
@@ -263,17 +270,71 @@ document.querySelector('#create-form').addEventListener('submit',async event => 
   } catch (error) { createError.textContent = error.message; createError.hidden = false; }
 });
 window.MarkataFrontmatter.attach(editor);
+const appShortcuts = window.MarkataShortcuts;
+appShortcuts.init(editor);
+function toggleSidebar(visible = workbench.classList.contains('sidebar-hidden')) {
+  const sidebar = document.querySelector('#site-sidebar');
+  const focusedInside = sidebar.contains(document.activeElement);
+  if (!visible && focusedInside) {
+    if (workbench.dataset.layout === 'preview') document.querySelector('#preview-pane').focus();
+    else editor.focus();
+  }
+  workbench.classList.toggle('sidebar-hidden', !visible);
+  sidebar.inert = !visible;
+  sidebar.setAttribute('aria-hidden', String(!visible));
+  editor.refresh();
+}
+function focusExplorer() {
+  toggleSidebar(true);
+  const tree = document.querySelector('.site-tree:not([hidden])');
+  (tree?.querySelector('[tabindex="0"], button, [role="treeitem"]') || document.querySelector('#site-view'))?.focus();
+}
+const registerApp = (id,label,category,bindings,run,description='') =>
+  appShortcuts.register({id,label,category,bindings,run,description});
+registerApp('workbench.toggleSidebar','Toggle File Explorer','Navigation',
+  {vscode:'Mod+B',writer:'Mod+\\',vim:'Space E',emacs:'Ctrl+X Ctrl+B'},toggleSidebar);
+registerApp('workbench.focusExplorer','Focus File Explorer','Navigation',
+  {vscode:'Mod+Shift+E',writer:'Mod+Shift+E',vim:'Space F E',emacs:'Ctrl+X Ctrl+E'},focusExplorer);
+registerApp('workbench.focusEditor','Focus Editor','Navigation',
+  {vscode:'Mod+Alt+1',writer:'Mod+Alt+1',vim:'Space 1',emacs:'Alt+1'},
+  () => {if(workbench.dataset.layout==='preview')setLayout('split');focusEditorForWriting();});
+registerApp('workbench.focusPreview','Focus Preview','Navigation',
+  {vscode:'Mod+Alt+2',writer:'Mod+Alt+2',vim:'Space 2',emacs:'Alt+2'},
+  () => {if(workbench.dataset.layout==='editor')setLayout('split');document.querySelector('#preview-pane').focus();});
+registerApp('workbench.preview','Toggle Preview Only','Layout',
+  {vscode:'Mod+Alt+V',writer:'Mod+Alt+V',vim:'Space P V',emacs:'Alt+V'},
+  () => setLayout(workbench.dataset.layout==='preview'?'split':'preview'));
+registerApp('workbench.lineWrap','Toggle Line Wrapping','Writing',
+  {vscode:'Alt+Z',writer:'Alt+Z',vim:'Alt+Z',emacs:''},
+  () => {wrapSetting.checked=!wrapSetting.checked;wrapSetting.dispatchEvent(new Event('change'));});
+registerApp('workbench.problems','Toggle Problems','Diagnostics',
+  {vscode:'Mod+Shift+M',writer:'Mod+Shift+M',vim:'Space X',emacs:''},toggleProblems);
+registerApp('workbench.save','Save Now','Writing',
+  {vscode:'Mod+S',writer:'Mod+S',vim:'Mod+S',emacs:'Ctrl+X Ctrl+S'},
+  () => {editor.save();saveDraft();},
+  'Flush the current draft or selected workspace post to storage.');
+registerApp('workbench.newPost','New Post','Files',
+  {vscode:'Mod+Alt+N',writer:'Mod+Alt+N',vim:'Space F N',emacs:''},
+  showCreateDialog,'Create a workspace post from a template.');
+registerApp('workbench.openMarkdown','Open Markdown File','Files',
+  {vscode:'',writer:'',vim:'',emacs:''},
+  () => document.querySelector('#open').click(),'Import a local Markdown file as a draft.');
+registerApp('workbench.downloadMarkdown','Download Markdown File','Files',
+  {vscode:'',writer:'',vim:'',emacs:''},
+  () => document.querySelector('#download').click(),'Export the current source as Markdown.');
+registerApp('workbench.shortcutSettings','Keyboard Shortcuts','Settings',
+  {vscode:'Mod+K Mod+S',writer:'Mod+Alt+K',vim:'Space ?',emacs:'Alt+Shift+K'},
+  () => appShortcuts.openSettings(),'View, change, or reset application keybindings.');
 window.MarkataPublishReview.attach(editor);
 window.MarkataCommandPalette.attach(editor,{actions:[
   {id:'edit-properties',label:'Page: Edit Properties',description:'Open the visual frontmatter object editor.',aliases:'frontmatter metadata tags date title publish fields',run:()=>window.MarkataFrontmatter.open()},
   {id:'add-property',label:'Page: Add a Property',description:'Search and add a frontmatter property.',aliases:'frontmatter metadata field key',run:()=>window.MarkataFrontmatter.openAddProperty()},
   {id:'back-to-markdown',label:'Page: Back to Markdown',description:'Close page details and return to the article source.',aliases:'frontmatter source article escape close',run:()=>window.MarkataFrontmatter.close()},
   {id:'edit-frontmatter-yaml',label:'Page: Edit YAML Frontmatter',description:'Hand edit the raw YAML header.',aliases:'frontmatter source advanced raw metadata',run:()=>window.MarkataFrontmatter.editYAML()},
-  {id:'review-publish',label:'Publishing: Review & Publish',description:'Compare saved Markdown with the last committed revision before publishing.',aliases:'publish go live deploy release review git',run:()=>setTimeout(()=>window.MarkataPublishReview.open(),0)},
-  {id:'new-from-template',label:'New Post',description:'Choose a template, then set its title and path.',aliases:'new create post page template',run:showCreateDialog},
-  {id:'open-markdown',label:'Open Markdown file',description:'Import a local Markdown file into an unsaved draft.',aliases:'file import',run:()=>document.querySelector('#open').click()},
-  {id:'download-markdown',label:'Download current file',description:'Save the current source as a Markdown file.',aliases:'export save',run:()=>document.querySelector('#download').click()}
+
 ]});
+document.querySelector('#preview-focus-editor').addEventListener('click', () =>
+  appShortcuts.execute('workbench.focusEditor'));
 window.MarkataEditorLSP.connect(editor, document.querySelector('#language-status'));
 if (new URLSearchParams(location.search).has('example')) {
   fetch(document.body.dataset.exampleUrl).then(response => {
