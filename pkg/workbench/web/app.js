@@ -363,6 +363,8 @@ keymap.addEventListener('change', () => {
   focusEditorForWriting();
   scrollSync.vimModeChanged();
 });
+// Rejected imports must not be dismissed by an already-running preview response.
+let rejectedImportRevision = -1;
 let revision = 0, timer, busy = false, ready = false, lastEditAt = null;
 let previewStarted = false, previewReady = false, pendingPreview = null, activeRender = null;
 function finishPreview(version) {
@@ -456,7 +458,7 @@ async function render() {
     } else {
       updatePreview(data, version);
     }
-    errorBox.hidden = true;
+    if (rejectedImportRevision !== version) errorBox.hidden = true;
     status.textContent = 'Updating preview…';
   } catch (error) {
     if (version !== revision) return;
@@ -503,6 +505,7 @@ document.querySelector('#import').addEventListener('change', async event => {
   event.target.value = '';
   if (!file) return;
   if (file.size > 200000) {
+    rejectedImportRevision = revision;
     errorBox.textContent = 'Document exceeds 200,000 UTF-8 bytes. Your current draft has been kept.';
     errorBox.hidden = false; return;
   }
@@ -510,7 +513,7 @@ document.querySelector('#import').addEventListener('change', async event => {
     const text = await file.text();
     if (new TextEncoder().encode(text).length > 200000) throw new Error('Document exceeds 200,000 UTF-8 bytes.');
     window.MarkataSiteTree.import(text);
-  } catch (error) { errorBox.textContent = 'Cannot open file: ' + error.message; errorBox.hidden = false; }
+  } catch (error) { rejectedImportRevision = revision; errorBox.textContent = 'Cannot open file: ' + error.message; errorBox.hidden = false; }
 });
 if (!saved.textContent) saveDraft();
 

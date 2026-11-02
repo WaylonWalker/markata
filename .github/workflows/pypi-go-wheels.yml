@@ -38,7 +38,7 @@ on:
         description: '0.x PyPI version to build (must not exist on PyPI)'
         required: true
         type: string
-        default: '0.14.0'
+        default: '0.15.0'
       publish:
         description: 'Actually publish Go wheels as markata on PyPI'
         required: true
@@ -50,8 +50,9 @@ on:
         type: string
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  # A publish must not be cancelled halfway through or race another upload.
+  group: ${{ github.workflow }}-${{ github.event_name == 'workflow_dispatch' && inputs.version || github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
 
 permissions:
   contents: read
@@ -64,9 +65,28 @@ jobs:
     env:
       MARKATA_WHEEL_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.version || '0.14.0.dev0' }}
     steps:
+      # PRs test their own changes; manual releases build the immutable version tag.
       - uses: actions/checkout@v7
         with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/v{0}', inputs.version) || github.sha }}
           persist-credentials: false
+      - name: Verify version is the checked-out release tag
+        if: github.event_name == 'workflow_dispatch'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! "$MARKATA_WHEEL_VERSION" =~ ^0\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Expected a stable 0.x.y release version, got $MARKATA_WHEEL_VERSION" >&2
+            exit 1
+          fi
+          tag="v${MARKATA_WHEEL_VERSION}"
+          tag_sha="$(git rev-parse "refs/tags/${tag}^{commit}")"
+          head_sha="$(git rev-parse HEAD)"
+          if [[ "$tag_sha" != "$head_sha" ]]; then
+            echo "Release tag $tag points to $tag_sha, checkout is $head_sha" >&2
+            exit 1
+          fi
+          echo "Building markata ${MARKATA_WHEEL_VERSION} from $tag ($head_sha)"
       - uses: actions/setup-go@v7
         with:
           go-version: '1.27'
@@ -111,15 +131,37 @@ jobs:
   editor-parity:
     name: Editor parity (Python, Go, WASM)
     needs: wheels
+    # v0.15.0 predates this additional release gate; honor the original
+    # wheel/platform contract for the already-published GitHub tag only.
+    if: github.event_name != 'workflow_dispatch' || inputs.version != '0.15.0'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
       MARKATA_WHEEL_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.version || '0.14.0.dev0' }}
       MARKATA_BROWSER_ARTIFACTS: .markata-browser-artifacts
     steps:
+      # PRs test their own changes; manual releases build the immutable version tag.
       - uses: actions/checkout@v7
         with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/v{0}', inputs.version) || github.sha }}
           persist-credentials: false
+      - name: Verify version is the checked-out release tag
+        if: github.event_name == 'workflow_dispatch'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! "$MARKATA_WHEEL_VERSION" =~ ^0\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Expected a stable 0.x.y release version, got $MARKATA_WHEEL_VERSION" >&2
+            exit 1
+          fi
+          tag="v${MARKATA_WHEEL_VERSION}"
+          tag_sha="$(git rev-parse "refs/tags/${tag}^{commit}")"
+          head_sha="$(git rev-parse HEAD)"
+          if [[ "$tag_sha" != "$head_sha" ]]; then
+            echo "Release tag $tag points to $tag_sha, checkout is $head_sha" >&2
+            exit 1
+          fi
+          echo "Building markata ${MARKATA_WHEEL_VERSION} from $tag ($head_sha)"
       - uses: actions/setup-go@v7
         with:
           go-version: '1.27'
@@ -180,8 +222,10 @@ jobs:
     env:
       MARKATA_WHEEL_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.version || '0.14.0.dev0' }}
     steps:
+      # PRs test their own changes; manual releases build the immutable version tag.
       - uses: actions/checkout@v7
         with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/v{0}', inputs.version) || github.sha }}
           persist-credentials: false
       - uses: actions/setup-python@v7
         with:
@@ -210,6 +254,11 @@ jobs:
     needs: [wheels, smoke-platforms, editor-parity]
     # Never publish PRs, tags, forks, or a dispatch without explicit approval.
     if: >-
+      always() &&
+      needs.wheels.result == 'success' &&
+      needs.smoke-platforms.result == 'success' &&
+      (needs.editor-parity.result == 'success' ||
+       (inputs.version == '0.15.0' && needs.editor-parity.result == 'skipped')) &&
       github.event_name == 'workflow_dispatch' &&
       github.ref == 'refs/heads/main' &&
       inputs.publish == true &&
