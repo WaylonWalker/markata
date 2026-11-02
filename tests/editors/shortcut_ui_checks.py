@@ -5,16 +5,22 @@ from playwright.sync_api import expect
 def check_app_shortcuts(page, url):
     page.goto(url)
     expect(page.locator('#site-sidebar')).to_be_visible()
-    expect(page.locator('.file-finder')).to_have_count(1, timeout=15000)
+    expect(page.locator('.file-picker, .file-finder')).to_have_count(1, timeout=15000)
     page.keyboard.press('Control+Shift+P')
     expect(page.locator('.markdown-commands[open]')).to_be_visible()
     page.keyboard.press('Escape')
     expect(page.locator('.markdown-commands[open]')).to_have_count(0)
 
+    # The current site tree supplies a richer fuzzy picker; the legacy file
+    # finder remains a fallback for older workspaces.
     page.keyboard.press('Control+P')
-    expect(page.locator('.file-finder[open]')).to_be_visible()
+    expect(page.locator('.file-picker[open], .file-finder[open]')).to_be_visible()
+    if page.locator('#files-query').count():
+        expect(page.locator('#files-query')).to_be_focused()
+        page.locator('#files-query').fill('welcome')
+        expect(page.locator('#files-results [role=option]').first).to_contain_text('welcome')
     page.keyboard.press('Escape')
-    expect(page.locator('.file-finder[open]')).to_have_count(0)
+    expect(page.locator('.file-picker[open], .file-finder[open]')).to_have_count(0)
 
     page.keyboard.press('Control+B')
     expect(page.locator('#workbench')).to_have_class('sidebar-hidden', timeout=5000)
