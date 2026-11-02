@@ -4,6 +4,8 @@ from contextlib import ExitStack
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 import re
+import os
+import time
 from pathlib import Path
 import shutil
 import subprocess
@@ -21,6 +23,7 @@ from command_palette_checks import check_commands, select_keymap
 
 def check(browser, url):
     context = browser.new_context(accept_downloads=True)
+    context.tracing.start(screenshots=True, snapshots=True, sources=True)
     try:
         page = context.new_page()
         errors = []
@@ -74,6 +77,20 @@ def check(browser, url):
         typography = lambda locator: locator.evaluate('e => [getComputedStyle(e).fontFamily, getComputedStyle(e).fontSize]')
         return repr([typography(page.locator('header h1')), typography(page.locator('.CodeMirror')),
                      typography(preview.locator('.post-content')), typography(preview.locator('h1'))])
+    except Exception:
+        # Record the failing variant's browser state before closing its context.
+        directory = os.environ.get("MARKATA_BROWSER_ARTIFACTS")
+        if directory:
+            try:
+                folder = Path(directory)
+                folder.mkdir(parents=True, exist_ok=True)
+                stamp = time.time_ns()
+                for index, current in enumerate(context.pages):
+                    current.screenshot(path=str(folder / f"parity-{stamp}-{index}.png"), full_page=True)
+                context.tracing.stop(path=str(folder / f"parity-{stamp}.zip"))
+            except Exception as artifact_error:
+                print(f"Could not capture browser evidence: {artifact_error}", file=sys.stderr)
+        raise
     finally:
         context.close()
 
