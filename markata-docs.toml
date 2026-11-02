@@ -10,6 +10,7 @@ lang = "en"
 [markata-go.glob]
 patterns = ["docs/**/*.md"]
 slug_mode = "path"
+use_gitignore = false
 
 [markata-go.auto_feeds.tags]
 enabled = false
