@@ -29,6 +29,8 @@ func TestDefaultTemplates_ContainsExpectedFiles(t *testing.T) {
 		"base.html",
 		"post.html",
 		"feed.html",
+		"layouts/docs.html",
+		"layouts/landing.html",
 		"card.html",
 		"reader.html",
 	}

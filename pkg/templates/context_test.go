@@ -28,6 +28,29 @@ func TestPostToMap_TitleSize(t *testing.T) {
 	}
 }
 
+func TestConfigToMap_PreservesExplicitFalseLayoutDefaults(t *testing.T) {
+	closed := false
+	config := &models.Config{}
+	config.Layout.Docs.SidebarDefaultOpen = &closed
+	config.Layout.Docs.TocDefaultOpen = &closed
+
+	configMap := GetConfigMap(config)
+	layout, ok := configMap["layout"].(map[string]interface{})
+	if !ok {
+		t.Fatal("layout config is missing from template context")
+	}
+	docs, ok := layout["docs"].(map[string]interface{})
+	if !ok {
+		t.Fatal("docs layout config is missing from template context")
+	}
+	if got := docs["sidebar_default_open"]; got != false {
+		t.Fatalf("sidebar_default_open = %v, want false", got)
+	}
+	if got := docs["toc_default_open"]; got != false {
+		t.Fatalf("toc_default_open = %v, want false", got)
+	}
+}
+
 func TestPostToMap_InlinksOutlinks(t *testing.T) {
 	sourceTitle := "Source"
 	targetTitle := "Target"

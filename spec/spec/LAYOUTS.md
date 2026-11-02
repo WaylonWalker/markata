@@ -17,6 +17,12 @@ The layout system provides configurable page structures for different content ty
 
 Markata-go provides four built-in layout presets. Each preset configures components appropriately for its use case.
 
+The default theme MUST bundle a template for every built-in layout preset.
+`LayoutConfig.Paths` MUST select the longest matching URL prefix before the
+global layout name, so a landing page can coexist with documentation pages.
+Template context conversion MUST preserve explicit `false` values for
+collapsible sidebar and TOC defaults.
+
 ### Layout Preset Overview
 
 | Layout | Sidebar | TOC | Header | Footer | Best For |
@@ -138,6 +144,11 @@ entries. The sidebar uses `toc_position` and `toc_width` from
 ### `landing` Layout
 
 Full-width layout for marketing pages and home pages.
+
+The bundled default theme MUST provide `layouts/landing.html`. Packaged sites
+that select `landing` MUST NOT depend on repository-local override templates.
+The landing template MUST render optional frontmatter hero fields and Markdown
+body content while omitting documentation sidebars and article metadata.
 
 ```
 +------------------------------------------------------------------+

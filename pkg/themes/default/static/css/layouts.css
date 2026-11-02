@@ -430,6 +430,33 @@
   gap: var(--space-3);
 }
 
+@media (max-width: 768px) {
+  .layout--landing .site-header .container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+  }
+
+  .layout--landing .site-header .site-title {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .layout--landing .site-header .header-actions {
+    flex: 0 0 auto;
+    min-width: 0;
+  }
+
+  .layout--landing .site-header .site-nav {
+    flex: 0 0 100%;
+    min-width: 0;
+    width: auto;
+    max-width: 100%;
+    margin: 0;
+    overflow-x: auto;
+  }
+}
+
 /* ==========================================================================
    Footer Styles for Layouts
    ========================================================================== */
@@ -847,6 +874,88 @@
   .layout-content {
     max-width: 100%;
     padding: 0;
+  }
+}
+
+}
+
+@layer overrides {
+
+/* Page-level overrides must beat the global base layout rules. */
+html:has(body.layout--landing),
+html:has(body.layout--docs) {
+  overflow-x: clip;
+}
+
+.layout--landing .layout-container--landing {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.layout--landing main.layout-content--landing {
+  width: 100%;
+  max-width: 1200px;
+  box-sizing: border-box;
+}
+
+.layout--landing .post-content {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: clip;
+}
+
+.layout--landing .hero {
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 960px;
+}
+
+.layout--landing .hero-title {
+  font-size: clamp(2.5rem, 5.2vw, 4.5rem);
+}
+
+@media (max-width: 768px) {
+  .layout--landing .site-header,
+  .layout--landing .site-header .container {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .layout--landing .site-header {
+    overflow-x: clip;
+  }
+
+  .layout--landing .site-header .site-nav,
+  .layout--landing .md-tabs-nav {
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+  }
+}
+
+@media (max-width: 1024px) {
+  .layout--docs .layout-container {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .layout--docs main.layout-content {
+    width: 100%;
+    max-width: 800px;
+    box-sizing: border-box;
+  }
+
+  .layout--docs .layout-container--with-toc {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "content";
+  }
+
+  .layout--docs .layout-container--with-toc > .layout-toc {
+    display: none;
   }
 }
 

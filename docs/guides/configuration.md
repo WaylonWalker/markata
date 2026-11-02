@@ -1485,6 +1485,18 @@ name = "docs"  # Default layout for all pages
 "blog" = "blog"
 ```
 
+The longest matching prefix wins. A root mapping can select a landing layout
+for `/` while a more specific prefix keeps its own layout:
+
+```toml
+[markata-go.layout.paths]
+"/" = "landing"
+"/docs/" = "docs"
+```
+
+This keeps the homepage full width and preserves the documentation sidebar on
+pages such as `/docs/quickstart/`.
+
 #### Documentation Layout (`[markata-go.layout.docs]`)
 
 The default theme includes a documentation page template. Set `name = "docs"`
@@ -1510,6 +1522,7 @@ need to replace the built-in markup.
 [markata-go.layout.docs]
 sidebar_position = "left"
 sidebar_width = "280px"
+sidebar_default_open = false # Keep the mobile navigation drawer closed on page load
 toc_position = "right"
 toc_width = "220px"
 content_max_width = "800px"
