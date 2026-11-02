@@ -1,8 +1,8 @@
 name: Go Markata PyPI wheels
 
-# PRs build and inspect wheels without secrets. Publishing only happens on an
-# explicit main-branch workflow dispatch, confirmed by a human, after PyPI
-# trusts this exact workflow for the existing "markata" project.
+# PRs validate wheels without publishing. A successful GitHub Release workflow
+# automatically publishes the same verified tag to PyPI via trusted OIDC.
+# Manual dispatch remains available for recovering a missed tagged release.
 on:
   pull_request:
     paths:
@@ -32,32 +32,113 @@ on:
       - 'cmd/markata-go/**'
       - 'go.mod'
       - 'go.sum'
+  # GITHUB_TOKEN-created releases do not emit an automatic release event.
+  # workflow_run observes the completed Release workflow on the default branch.
+  workflow_run:
+    workflows: [Release]
+    types: [completed]
   workflow_dispatch:
     inputs:
       version:
-        description: '0.x PyPI version to build (must not exist on PyPI)'
+        description: 'Existing stable GitHub release version to publish/reconcile on PyPI'
         required: true
         type: string
         default: '0.15.0'
-      publish:
-        description: 'Actually publish Go wheels as markata on PyPI'
-        required: true
-        type: boolean
-        default: false
-      confirm:
-        description: 'For publishing, type REPLACE_PYTHON_MARKATA_WITH_GO'
-        required: false
-        type: string
 
 concurrency:
   # A publish must not be cancelled halfway through or race another upload.
-  group: ${{ github.workflow }}-${{ github.event_name == 'workflow_dispatch' && inputs.version || github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
+  group: ${{ github.workflow }}-${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_branch || inputs.version || github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
 
 jobs:
+  release-source:
+    name: Verify version, GitHub release and existing PyPI state
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_repository.full_name == github.repository &&
+       startsWith(github.event.workflow_run.head_branch, 'v0.'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.source.outputs.version }}
+      commit: ${{ steps.source.outputs.commit }}
+      already_published: ${{ steps.source.outputs.already_published }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Validate tag, release artifacts and PyPI state
+        id: source
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REQUESTED_VERSION: ${{ inputs.version }}
+          RELEASE_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          RELEASE_SHA: ${{ github.event.workflow_run.head_sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT_NAME" == "pull_request" ]]; then
+            echo "version=0.14.0.dev0" >> "$GITHUB_OUTPUT"
+            echo "commit=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+            echo "already_published=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [[ "$EVENT_NAME" == "workflow_dispatch" && "$GITHUB_REF" != "refs/heads/main" ]]; then
+            echo "Manual publishing must be dispatched from main" >&2
+            exit 1
+          fi
+          if [[ "$EVENT_NAME" == "workflow_run" ]]; then
+            tag="$RELEASE_BRANCH"
+          else
+            tag="v${REQUESTED_VERSION}"
+          fi
+          if [[ ! "$tag" =~ ^v0\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Expected stable 0.x.y release tag, got $tag" >&2
+            exit 1
+          fi
+          version="${tag#v}"
+          tag_sha="$(git rev-parse "refs/tags/${tag}^{commit}")"
+          if [[ "$EVENT_NAME" == "workflow_run" && "$RELEASE_SHA" != "$tag_sha" ]]; then
+            echo "Release workflow SHA does not match $tag (possible moved tag)" >&2
+            exit 1
+          fi
+          gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${tag}" |
+            jq -e --arg tag "$tag" '.tag_name == $tag and .draft == false and .prerelease == false and ([.assets[].name] | index("checksums.txt") != null)' >/dev/null
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "commit=$tag_sha" >> "$GITHUB_OUTPUT"
+          # Re-running successful releases must not overwrite immutable PyPI files.
+          python - "$version" "$GITHUB_OUTPUT" <<'PY'
+          import json
+          import sys
+          import urllib.error
+          import urllib.request
+          version, output = sys.argv[1:]
+          url = f"https://pypi.org/pypi/markata/{version}/json"
+          try:
+              with urllib.request.urlopen(url, timeout=20) as response:
+                  existing = json.load(response)
+          except urllib.error.HTTPError as error:
+              if error.code != 404:
+                  raise
+              existing = None
+          published = False
+          if existing:
+              wheels = [file["filename"] for file in existing.get("urls", []) if file["filename"].endswith(".whl")]
+              if len(wheels) != 8 or any(not name.startswith(f"markata-{version}-") for name in wheels):
+                  raise SystemExit(f"PyPI {version} exists but does not have the expected eight wheels: {wheels}")
+              published = True
+          with open(output, "a", encoding="utf-8") as stream:
+              stream.write(f"already_published={str(published).lower()}\n")
+          print(f"Validated {version}; already published: {published}")
+          PY
+
   wheels:
     name: Build and verify eight Go wheels
     runs-on: ubuntu-latest
