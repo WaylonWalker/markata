@@ -7,9 +7,19 @@
   function attach(editor) {
     const workspace = window.MarkataSiteTree;
     if (!workspace?.files || !workspace?.openFile) return;
-    // The site tree's image-aware picker owns Ctrl/Cmd+P when available.
-    // Do not attach a second dialog to the same shortcut.
-    if (typeof workspace.openPicker === 'function') return;
+    // The newer site tree has a searchable, image-aware picker. Keep it as
+    // the only file picker while registering its action with the app keymap.
+    if (typeof workspace.openPicker === 'function') {
+      if (window.MarkataShortcuts) {
+        window.MarkataShortcuts.register({
+          id:'workbench.quickOpen', label:'Go to File', category:'Navigation',
+          description:'Find a workspace file by title, slug or path.',
+          bindings:{vscode:'Mod+P',writer:'Mod+P',vim:'Mod+P',emacs:'Ctrl+X Ctrl+F'},
+          run:()=>workspace.openPicker()
+        });
+      }
+      return;
+    }
 
     const dialog = document.createElement('dialog');
     dialog.className = 'file-finder';
@@ -134,10 +144,19 @@
       const bounds = dialog.getBoundingClientRect();
       if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) dialog.close();
     });
-    document.addEventListener('keydown', event => {
-      if (event.isComposing || event.altKey || event.shiftKey || !(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'p') return;
-      event.preventDefault(); event.stopPropagation();
-      if (!dialog.open) open();
-    }, true);
+    if (window.MarkataShortcuts) {
+      window.MarkataShortcuts.register({
+        id:'workbench.quickOpen', label:'Go to File', category:'Navigation',
+        description:'Find a site document by title, slug, path or tag.',
+        bindings:{vscode:'Mod+P',writer:'Mod+P',vim:'Mod+P',emacs:'Ctrl+X Ctrl+F'},
+        run:open
+      });
+    } else {
+      document.addEventListener('keydown', event => {
+        if (event.isComposing || event.altKey || event.shiftKey || !(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'p') return;
+        event.preventDefault();event.stopPropagation();
+        if (!dialog.open) open();
+      },true);
+    }
   }
 })();

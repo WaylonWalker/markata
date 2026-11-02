@@ -10,7 +10,7 @@ tags:
 ---
 
 Select **Commands** above the Markdown editor, or press **Ctrl+Shift+P**.
-On macOS, press **Cmd+Shift+P**. **Ctrl/Cmd+K** also works.
+On macOS, press **Cmd+Shift+P**. **Ctrl/Cmd+K** also opens the palette in standalone Python/WASM editors and the Go workbench's **Writer** application preset; the Go **VS Code** app preset reserves Ctrl/Cmd+K for shortcut chords.
 The dialog is titled **Command Palette** and works with the Default, Vim,
 Emacs, and Sublime keymaps. In the Go workbench, **Ctrl/Cmd+P** opens the
 fuzzy file finder.
@@ -123,3 +123,5 @@ preserves the current browser draft. Source files stay unchanged on disk.
 
 The picker uses locally bundled [fuzzysort](https://github.com/farzher/fuzzysort).
 Search runs in the browser over discovered files without fetching source content.
+
+In the Go workbench, application shortcuts are configurable separately from CodeMirror's text-editing keymap. See the [keyboard shortcuts guide](editor-keybindings.md) for presets, chords, and overrides.

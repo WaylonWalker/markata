@@ -29,7 +29,7 @@ def check_commands(page, preview):
     for keymap in ['default', 'vim', 'emacs', 'sublime']:
         select_keymap(page, keymap)
         select_text('Keep this text', 5, 9)
-        page.keyboard.press('Control+K')
+        page.keyboard.press('Control+Shift+P')
         expect(dialog).to_be_visible()
         expect(query).to_be_focused()
         query.fill('not-a-real-command')
@@ -47,10 +47,12 @@ def check_commands(page, preview):
     expect(dialog).to_be_visible()
     page.keyboard.press('Escape')
     expect(dialog).not_to_be_visible()
-    page.keyboard.press('Meta+K')
-    expect(dialog).to_be_visible()
-    page.keyboard.press('Escape')
-    expect(dialog).not_to_be_visible()
+    if not page.evaluate('Boolean(window.MarkataShortcuts)'):
+        # Standalone Python and WASM workbenches still support Meta+K.
+        page.keyboard.press('Meta+K')
+        expect(dialog).to_be_visible()
+        page.keyboard.press('Escape')
+        expect(dialog).not_to_be_visible()
     select_text('Important')
     page.locator('#commands').click()
     query.fill('HIGHLIGHT text')
