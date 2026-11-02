@@ -141,33 +141,19 @@ jobs:
 
   wheels:
     name: Build and verify eight Go wheels
+    needs: release-source
     runs-on: ubuntu-latest
     timeout-minutes: 50
     env:
-      MARKATA_WHEEL_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.version || '0.14.0.dev0' }}
+      MARKATA_WHEEL_VERSION: ${{ needs.release-source.outputs.version }}
     steps:
-      # PRs test their own changes; manual releases build the immutable version tag.
+      # Build the exact validated release commit rather than mutable main.
       - uses: actions/checkout@v7
         with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/v{0}', inputs.version) || github.sha }}
+          ref: ${{ needs.release-source.outputs.commit }}
           persist-credentials: false
-      - name: Verify version is the checked-out release tag
-        if: github.event_name == 'workflow_dispatch'
-        shell: bash
-        run: |
-          set -euo pipefail
-          if [[ ! "$MARKATA_WHEEL_VERSION" =~ ^0\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Expected a stable 0.x.y release version, got $MARKATA_WHEEL_VERSION" >&2
-            exit 1
-          fi
-          tag="v${MARKATA_WHEEL_VERSION}"
-          tag_sha="$(git rev-parse "refs/tags/${tag}^{commit}")"
-          head_sha="$(git rev-parse HEAD)"
-          if [[ "$tag_sha" != "$head_sha" ]]; then
-            echo "Release tag $tag points to $tag_sha, checkout is $head_sha" >&2
-            exit 1
-          fi
-          echo "Building markata ${MARKATA_WHEEL_VERSION} from $tag ($head_sha)"
+      - name: Confirm verified source commit
+        run: test "$(git rev-parse HEAD)" = "${{ needs.release-source.outputs.commit }}"
       - uses: actions/setup-go@v7
         with:
           go-version: '1.27'
@@ -177,9 +163,12 @@ jobs:
           python-version: '3.13'
       - name: Install Simon Willison's go-to-wheel
         run: python -m pip install go-to-wheel==0.2
-      - name: Test persistent Go render protocol and CLI
+      - name: Test persistent Go render protocol and CLI (when present in tag)
         run: |
-          go test ./pkg/renderprotocol -count=1
+          # v0.15.0 predates pkg/renderprotocol; do not fail on a future test's absent directory.
+          if [[ -d pkg/renderprotocol ]]; then
+            go test ./pkg/renderprotocol -count=1
+          fi
           go test ./cmd/markata-go/cmd -run '^TestRenderCommand_' -count=1
       - name: Test Python renderer protocol and wheel packaging
         run: python -m unittest discover -s python/tests -v
@@ -211,38 +200,22 @@ jobs:
 
   editor-parity:
     name: Editor parity (Python, Go, WASM)
-    needs: wheels
-    # v0.15.0 predates this additional release gate; honor the original
-    # wheel/platform contract for the already-published GitHub tag only.
-    if: github.event_name != 'workflow_dispatch' || inputs.version != '0.15.0'
+    needs: [release-source, wheels]
+    # v0.15.0 predates the added browser parity gate; PRs still execute it.
+    if: github.event_name == 'pull_request' || needs.release-source.outputs.version != '0.15.0'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      MARKATA_WHEEL_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.version || '0.14.0.dev0' }}
+      MARKATA_WHEEL_VERSION: ${{ needs.release-source.outputs.version }}
       MARKATA_BROWSER_ARTIFACTS: .markata-browser-artifacts
     steps:
-      # PRs test their own changes; manual releases build the immutable version tag.
+      # Build the exact validated release commit rather than mutable main.
       - uses: actions/checkout@v7
         with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/v{0}', inputs.version) || github.sha }}
+          ref: ${{ needs.release-source.outputs.commit }}
           persist-credentials: false
-      - name: Verify version is the checked-out release tag
-        if: github.event_name == 'workflow_dispatch'
-        shell: bash
-        run: |
-          set -euo pipefail
-          if [[ ! "$MARKATA_WHEEL_VERSION" =~ ^0\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Expected a stable 0.x.y release version, got $MARKATA_WHEEL_VERSION" >&2
-            exit 1
-          fi
-          tag="v${MARKATA_WHEEL_VERSION}"
-          tag_sha="$(git rev-parse "refs/tags/${tag}^{commit}")"
-          head_sha="$(git rev-parse HEAD)"
-          if [[ "$tag_sha" != "$head_sha" ]]; then
-            echo "Release tag $tag points to $tag_sha, checkout is $head_sha" >&2
-            exit 1
-          fi
-          echo "Building markata ${MARKATA_WHEEL_VERSION} from $tag ($head_sha)"
+      - name: Confirm verified source commit
+        run: test "$(git rev-parse HEAD)" = "${{ needs.release-source.outputs.commit }}"
       - uses: actions/setup-go@v7
         with:
           go-version: '1.27'
@@ -294,19 +267,19 @@ jobs:
 
   smoke-platforms:
     name: Install Go CLI on ${{ matrix.os }}
-    needs: wheels
+    needs: [release-source, wheels]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [macos-latest, windows-latest]
     env:
-      MARKATA_WHEEL_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.version || '0.14.0.dev0' }}
+      MARKATA_WHEEL_VERSION: ${{ needs.release-source.outputs.version }}
     steps:
-      # PRs test their own changes; manual releases build the immutable version tag.
+      # Build the exact validated release commit rather than mutable main.
       - uses: actions/checkout@v7
         with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/v{0}', inputs.version) || github.sha }}
+          ref: ${{ needs.release-source.outputs.commit }}
           persist-credentials: false
       - uses: actions/setup-python@v7
         with:
