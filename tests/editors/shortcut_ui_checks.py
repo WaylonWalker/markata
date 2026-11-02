@@ -47,9 +47,28 @@ def check_app_shortcuts(page, url):
     page.locator('#settings-close').click()
     page.set_viewport_size({'width': 1280, 'height': 720})
 
+    # Re-establish in-page editor focus after closing a modal. Browser-level
+    # Ctrl+K shortcuts can otherwise move focus to the address bar.
+    page.locator('.CodeMirror').click()
+    page.evaluate("""() => {
+      window.__shortcutKeyTrace = [];
+      window.addEventListener('keydown', e => {
+        window.__shortcutKeyTrace.push({
+          key:e.key,ctrl:e.ctrlKey,meta:e.metaKey,
+          focus:document.activeElement?.tagName,
+          active:document.activeElement?.id
+        });
+      }, true);
+    }""")
     page.keyboard.press('Control+K')
     page.keyboard.press('Control+S')
-    expect(page.locator('#shortcuts-dialog[open]')).to_be_visible()
+    assert page.locator('#shortcuts-dialog[open]').is_visible(), page.evaluate("""() => ({
+      preset:window.MarkataShortcuts?.getPreset(),
+      binding:window.MarkataShortcuts?.bindingFor('workbench.shortcutSettings'),
+      events:window.__shortcutKeyTrace,
+      dialogs:[...document.querySelectorAll('dialog[open]')].map(e=>e.id),
+      active:document.activeElement?.outerHTML?.slice(0,200)
+    })""")
     expect(page.locator('#shortcuts-list')).to_contain_text('Review & Publish')
     recorder = page.locator('[data-command-id="workbench.save"]')
     recorder.click()
