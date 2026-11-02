@@ -100,31 +100,73 @@ jobs:
           "${RUNNER_TEMP}/markata-wheel-venv/bin/python" -m pip install fastapi httpx uvicorn websockets playwright
           "${RUNNER_TEMP}/markata-wheel-venv/bin/python" python/smoke_fastapi.py
           "${RUNNER_TEMP}/markata-wheel-venv/bin/python" -m unittest discover -s python/integration -v
-      - name: Install browser for the live editor regression test
-        run: '"${RUNNER_TEMP}/markata-wheel-venv/bin/python" -m playwright install --with-deps chromium'
-      - name: Exercise the live editor with the installed wheel
-        run: '"${RUNNER_TEMP}/markata-wheel-venv/bin/python" python/test_editor_browser.py -v'
-      - name: Build all editor demos and verify shared behavior
-        run: |
-          "${RUNNER_TEMP}/markata-wheel-venv/bin/python" -m unittest discover -s tests/editors -p 'test_*.py' -v
-          go build -o "${RUNNER_TEMP}/markata-workbench" ./cmd/markata-workbench
-          python scripts/wasm-workbench.py
-          "${RUNNER_TEMP}/markata-wheel-venv/bin/python" tests/editors/test_parity.py --go-binary "${RUNNER_TEMP}/markata-workbench" --wasm-output .wasm-workbench
-      - name: Exercise LSP completion in the Python and Go browser examples
-        shell: bash
-        run: |
-          set -euo pipefail
-          go build -o "${RUNNER_TEMP}/markata-example-lsp" ./cmd/markata-go
-          go build -o "${RUNNER_TEMP}/markata-example-workbench" ./cmd/markata-workbench
-          MARKATA_LSP_BINARY="${RUNNER_TEMP}/markata-example-lsp" \
-          MARKATA_WORKBENCH_BINARY="${RUNNER_TEMP}/markata-example-workbench" \
-          "${RUNNER_TEMP}/markata-wheel-venv/bin/python" python/test_browser_lsp.py -v
       - name: Save inspected wheel artifacts
         uses: actions/upload-artifact@v7
         with:
           name: markata-go-pypi-wheels
           path: dist/pypi-wheels/*.whl
           if-no-files-found: error
+          retention-days: 7
+
+  editor-parity:
+    name: Editor parity (Python, Go, WASM)
+    needs: wheels
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      MARKATA_WHEEL_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.version || '0.14.0.dev0' }}
+      MARKATA_BROWSER_ARTIFACTS: .markata-browser-artifacts
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v7
+        with:
+          go-version: '1.27'
+          cache: true
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - uses: actions/download-artifact@v8
+        with:
+          name: markata-go-pypi-wheels
+          path: dist/pypi-wheels
+      - name: Install verified Linux wheel and browser dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m venv "$RUNNER_TEMP/editor-venv"
+          wheel="dist/pypi-wheels/markata-${MARKATA_WHEEL_VERSION}-py3-none-manylinux_2_17_x86_64.whl"
+          "$RUNNER_TEMP/editor-venv/bin/python" -m pip install --no-index --no-deps "$wheel"
+          "$RUNNER_TEMP/editor-venv/bin/python" -m pip install fastapi httpx uvicorn websockets playwright==1.64.1
+          "$RUNNER_TEMP/editor-venv/bin/python" -m playwright install --with-deps chromium
+      - name: Exercise live editor with installed wheel
+        run: '"$RUNNER_TEMP/editor-venv/bin/python" python/test_editor_browser.py -v'
+      - name: Verify editor units and Python/Go/WASM parity
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/editor-venv/bin/python" -m unittest discover -s tests/editors -p 'test_*.py' -v
+          go build -o "$RUNNER_TEMP/markata-workbench" ./cmd/markata-workbench
+          python scripts/wasm-workbench.py
+          "$RUNNER_TEMP/editor-venv/bin/python" tests/editors/test_parity.py \
+            --go-binary "$RUNNER_TEMP/markata-workbench" --wasm-output .wasm-workbench
+      - name: Verify browser LSP integration
+        shell: bash
+        run: |
+          set -euo pipefail
+          go build -o "$RUNNER_TEMP/markata-example-lsp" ./cmd/markata-go
+          MARKATA_LSP_BINARY="$RUNNER_TEMP/markata-example-lsp" \
+          MARKATA_WORKBENCH_BINARY="$RUNNER_TEMP/markata-workbench" \
+          "$RUNNER_TEMP/editor-venv/bin/python" python/test_browser_lsp.py -v
+      - name: Upload browser failure screenshots and traces
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: editor-parity-browser-evidence
+          path: .markata-browser-artifacts/
+          include-hidden-files: true
+          if-no-files-found: warn
           retention-days: 7
 
   smoke-platforms:
@@ -165,7 +207,7 @@ jobs:
 
   publish:
     name: Publish markata 0.x Go wheels to PyPI
-    needs: [wheels, smoke-platforms]
+    needs: [wheels, smoke-platforms, editor-parity]
     # Never publish PRs, tags, forks, or a dispatch without explicit approval.
     if: >-
       github.event_name == 'workflow_dispatch' &&

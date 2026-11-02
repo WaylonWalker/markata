@@ -129,3 +129,9 @@ For local work, run `just lint` after fetching `origin/main` to enforce
 new findings, or `just lint-full` to inspect all existing diagnostics.
 `just lint-fast` uses the supported v2 `--fast-only` mode. Once issue
 #1902 is resolved, restoring blocking full-tree lint is the exit criterion.
+
+## Editor parity and wheel packaging
+
+The PyPI workflow now has distinct **Build and verify eight Go wheels** and **Editor parity (Python, Go, WASM)** jobs. The editor job downloads and installs the exact wheel artifact from the build job, validates live editor behavior, browser parity, and LSP integration, and uploads Playwright screenshots/traces on failure. This isolates editor regressions from wheel packaging and avoids building eight wheels twice.
+
+Explicit releases require passing wheel packaging, macOS/Windows installs and editor parity. Browser evidence is retained for seven days. This is not a change to the shadow fast PR gate or existing required-check policy.
