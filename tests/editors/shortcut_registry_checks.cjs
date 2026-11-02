@@ -44,6 +44,9 @@ assert.equal(fire('P',{ctrlKey:true,shiftKey:true}).used,true);
 assert.equal(palette,1);
 assert.equal(fire('k',{ctrlKey:true}).used,true);
 assert.equal(settings,0);
+// A real browser emits another Ctrl keydown if the user releases Ctrl between
+// strokes; the chord must remain pending until the second actual key.
+assert.equal(fire('Control',{ctrlKey:true}).used,false);
 assert.equal(fire('s',{ctrlKey:true}).used,true);
 assert.equal(settings,1);
 assert.equal(fire('Enter',{ctrlKey:true,shiftKey:true}).used,true);
