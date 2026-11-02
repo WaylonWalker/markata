@@ -229,6 +229,19 @@ uv run --with playwright python python/test_go_editor_browser.py -v
 Set `MARKATA_TEST_CHROMIUM` to your Chromium executable.
 The tests check retained stylesheets, fragment responses, conditional styles, charts, and diagrams.
 
+The publishing browser test uses its own temporary Git site and bare remote. It
+edits page properties, reviews the rendered and source diffs, commits an edited
+message, and pushes only to that temporary remote:
+
+```bash
+go build -o /tmp/markata-go-editor ./cmd/markata-go
+MARKATA_GO_EDITOR_BINARY=/tmp/markata-go-editor \
+uv run --with playwright python -m unittest python.test_go_editor_publish_flow -v
+```
+
+The pull request fast gate runs this test when Python browser-test files change.
+It installs Chromium and uses the same disposable Git fixture.
+
 
 ## Benchmark the server
 
