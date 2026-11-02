@@ -34,12 +34,17 @@ def check_app_shortcuts(page, url):
     page.keyboard.press('Control+Alt+1')
     assert page.evaluate("document.activeElement.closest('.CodeMirror') !== null")
 
+    # Layout select lives in a modal; open it before interacting.
+    page.locator('#settings-open').click()
     page.locator('#setting-layout').select_option('editor')
+    page.locator('#settings-close').click()
     page.set_viewport_size({'width': 960, 'height': 800})
     page.keyboard.press('Control+B')
     assert len(page.locator('#workbench').evaluate("e => getComputedStyle(e).gridTemplateColumns.split(' ')")) == 2
     page.keyboard.press('Control+B')
+    page.locator('#settings-open').click()
     page.locator('#setting-layout').select_option('split')
+    page.locator('#settings-close').click()
     page.set_viewport_size({'width': 1280, 'height': 720})
 
     page.keyboard.press('Control+K')
