@@ -52,11 +52,21 @@ def check_app_shortcuts(page, url):
     page.locator('.CodeMirror').click()
     page.evaluate("""() => {
       window.__shortcutKeyTrace = [];
+      window.__shortcutErrors = [];
+      window.addEventListener('error', e => window.__shortcutErrors.push(e.message));
+      window.addEventListener('unhandledrejection', e => window.__shortcutErrors.push(String(e.reason)));
       window.addEventListener('keydown', e => {
-        window.__shortcutKeyTrace.push({
-          key:e.key,ctrl:e.ctrlKey,meta:e.metaKey,
-          focus:document.activeElement?.tagName,
-          active:document.activeElement?.id
+        const state = {
+          key:e.key,ctrl:e.ctrlKey,meta:e.metaKey,shift:e.shiftKey,
+          alt:e.altKey,repeat:e.repeat,composing:e.isComposing,
+          initialPrevented:e.defaultPrevented,
+          focus:document.activeElement?.tagName, active:document.activeElement?.id
+        };
+        window.__shortcutKeyTrace.push(state);
+        queueMicrotask(() => {
+          state.finalPrevented = e.defaultPrevented;
+          state.stopped = e.cancelBubble;
+          state.dialogs = [...document.querySelectorAll('dialog[open]')].map(d => d.id);
         });
       }, true);
     }""")
@@ -67,6 +77,7 @@ def check_app_shortcuts(page, url):
       binding:window.MarkataShortcuts?.bindingFor('workbench.shortcutSettings'),
       events:window.__shortcutKeyTrace,
       dialogs:[...document.querySelectorAll('dialog[open]')].map(e=>e.id),
+      errors:window.__shortcutErrors,
       active:document.activeElement?.outerHTML?.slice(0,200)
     })""")
     expect(page.locator('#shortcuts-list')).to_contain_text('Review & Publish')
