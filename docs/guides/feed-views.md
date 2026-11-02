@@ -98,6 +98,44 @@ grouping. Smaller or unclassified feeds retain the classic view.
 Custom HTML templates, such as `feed-photo-grid.html`, take precedence
 over automatic layout detection.
 
+
+### Opt-in CSS grid, masonry, and subgrid
+
+The default theme also ships **CSS layout classes** for custom feed templates.
+These are not `presentation` values: setting `presentation = "masonry"` or
+`presentation = "grid"` is not supported. Use a feed template override when you
+want these layouts instead of the built-in classic/editorial/etc. presentation.
+
+In a customized `feed.html`, apply the same class to the outer `.feed.h-feed`
+element **and** its inner `.posts.posts-list` element (keep the existing
+pagination, calendar attributes, and card loop):
+
+```html
+<div class="feed h-feed feed-layout-grid">
+  <!-- Keep the existing feed header and controls here. -->
+  <div class="posts posts-list feed-layout-grid" id="posts-list">
+    <!-- Render the existing card-router output here. -->
+  </div>
+</div>
+```
+
+Use `feed-layout-masonry` in both places to opt into native masonry instead.
+The outer class disables the default single-column `.feed.h-feed` selector in
+`feeds.css`; the inner class activates the layout rules in `cards.css`.
+Applying the class to only one element does **not** reliably enable the layout.
+
+| Class | When supported | Progressive fallback |
+| --- | --- | --- |
+| `feed-layout-grid` | Responsive CSS grid columns | Grid still works without subgrid; cards use their normal internal layout |
+| `feed-layout-masonry` | Native CSS masonry via `@supports (grid-template-rows: masonry)` | Cards remain in normal document flow when native masonry is unavailable |
+
+On grid feeds, browsers supporting CSS subgrid align card headers, body/excerpts,
+and metadata/footer into three shared row tracks. Subgrid is deliberately **not**
+applied to masonry, because masonry packs items by height instead of aligning
+rows. Both modes are CSS-only: no JavaScript masonry library or external asset
+is required. Keep the original card markup and test the template at mobile and
+desktop widths, including a browser without native masonry.
+
 Editorial grouping uses Monday-start publishing weeks. Weekly headings show relative
 calendar time (This week, Last week, 2 weeks ago, 2 months ago, 2 years ago)
 with the exact week range as a smaller caption. Relative labels are rendered
