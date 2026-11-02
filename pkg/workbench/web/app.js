@@ -292,7 +292,7 @@ function focusExplorer() {
 const registerApp = (id,label,category,bindings,run,description='') =>
   appShortcuts.register({id,label,category,bindings,run,description});
 registerApp('workbench.toggleSidebar','Toggle File Explorer','Navigation',
-  {vscode:'Mod+B',writer:'Mod+\\\\',vim:'Space E',emacs:'Ctrl+X Ctrl+B'},toggleSidebar);
+  {vscode:'Mod+B',writer:'Mod+\\',vim:'Space E',emacs:'Ctrl+X Ctrl+B'},toggleSidebar);
 registerApp('workbench.focusExplorer','Focus File Explorer','Navigation',
   {vscode:'Mod+Shift+E',writer:'Mod+Shift+E',vim:'Space F E',emacs:'Ctrl+X Ctrl+E'},focusExplorer);
 registerApp('workbench.focusEditor','Focus Editor','Navigation',
@@ -331,7 +331,7 @@ window.MarkataCommandPalette.attach(editor,{actions:[
   {id:'add-property',label:'Page: Add a Property',description:'Search and add a frontmatter property.',aliases:'frontmatter metadata field key',run:()=>window.MarkataFrontmatter.openAddProperty()},
   {id:'back-to-markdown',label:'Page: Back to Markdown',description:'Close page details and return to the article source.',aliases:'frontmatter source article escape close',run:()=>window.MarkataFrontmatter.close()},
   {id:'edit-frontmatter-yaml',label:'Page: Edit YAML Frontmatter',description:'Hand edit the raw YAML header.',aliases:'frontmatter source advanced raw metadata',run:()=>window.MarkataFrontmatter.editYAML()},
-  {id:'review-publish',label:'Publishing: Review & Publish',description:'Review changes before publishing.',aliases:'publish go live deploy release review git',run:()=>setTimeout(()=>window.MarkataPublishReview.open(),0)}
+
 ]});
 document.querySelector('#preview-focus-editor').addEventListener('click', () =>
   appShortcuts.execute('workbench.focusEditor'));
