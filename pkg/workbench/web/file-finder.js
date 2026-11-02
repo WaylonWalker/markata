@@ -7,6 +7,9 @@
   function attach(editor) {
     const workspace = window.MarkataSiteTree;
     if (!workspace?.files || !workspace?.openFile) return;
+    // The site tree's image-aware picker owns Ctrl/Cmd+P when available.
+    // Do not attach a second dialog to the same shortcut.
+    if (typeof workspace.openPicker === 'function') return;
 
     const dialog = document.createElement('dialog');
     dialog.className = 'file-finder';

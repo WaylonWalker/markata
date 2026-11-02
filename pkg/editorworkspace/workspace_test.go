@@ -1,10 +1,74 @@
 package editorworkspace
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"testing"
 )
+
+func TestWorkspace_ReadImageConfinesStaticFiles(t *testing.T) {
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, "static", "images"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	want := []byte("image bytes")
+	if err := os.WriteFile(filepath.Join(root, "static", "images", "photo.jpg"), want, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "private.jpg"), want, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	workspace, err := New(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := workspace.ReadImage("images/photo.jpg")
+	if err != nil || !bytes.Equal(got, want) {
+		t.Fatalf("ReadImage() = %q, %v", got, err)
+	}
+	for _, path := range []string{"../private.jpg", "images/photo.md", "/images/photo.jpg"} {
+		if _, err := workspace.ReadImage(path); err == nil {
+			t.Errorf("ReadImage(%q) accepted an unsafe path", path)
+		}
+	}
+}
+
+func TestWorkspace_ReadImageSizeAndFileType(t *testing.T) {
+	root := t.TempDir()
+	images := filepath.Join(root, "static", "images")
+	if err := os.MkdirAll(images, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	photo := filepath.Join(images, "large.jpg")
+	if err := os.WriteFile(photo, nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	const maxImageBytes = 15 << 20
+	if err := os.Truncate(photo, maxImageBytes); err != nil {
+		t.Fatal(err)
+	}
+	workspace, err := New(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := workspace.ReadImage("images/large.jpg")
+	if err != nil || len(data) != maxImageBytes {
+		t.Fatalf("image at byte limit: got %d bytes, error %v", len(data), err)
+	}
+	if err := os.Truncate(photo, maxImageBytes+1); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := workspace.ReadImage("images/large.jpg"); err == nil {
+		t.Fatal("accepted image exceeding 15 MiB")
+	}
+	if err := os.Mkdir(filepath.Join(images, "directory.jpg"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := workspace.ReadImage("images/directory.jpg"); err == nil {
+		t.Fatal("accepted directory as image")
+	}
+}
 
 func TestWorkspace_ConfiguredDiscoveryAndSource(t *testing.T) {
 	root := t.TempDir()

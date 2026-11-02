@@ -42,6 +42,7 @@ type workspaceSource interface {
 	Read(string) (string, error)
 	Write(string, string) error
 	Create(string, string) error
+	ReadImage(string) ([]byte, error)
 }
 
 // Handler serves the editor, render API and bundled appearance assets.
@@ -198,15 +199,7 @@ func styleLink(name string) string { return `<link rel="stylesheet" href="/appea
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	switch {
-	case (r.URL.Path == "/workspace/publish/commit" || r.URL.Path == "/workspace/publish/push") && r.Method == http.MethodPost:
-		h.serveWorkspace(w, r)
-	case r.URL.Path == "/workspace/publish/deployment" && r.Method == http.MethodGet:
-		h.serveWorkspace(w, r)
-	case (r.URL.Path == frontmatterInspectPath || r.URL.Path == frontmatterEditPath) && r.Method == http.MethodPost:
-		h.serveWorkspace(w, r)
-	case (r.URL.Path == "/workspace/publish/review" && r.Method == http.MethodGet):
-		h.serveWorkspace(w, r)
-	case (r.URL.Path == "/workspace" || r.URL.Path == "/workspace/templates") && r.Method == http.MethodGet || (r.URL.Path == "/workspace/file" && (r.Method == http.MethodGet || r.Method == http.MethodPut || r.Method == http.MethodPost)):
+	case isWorkspaceRoute(r.URL.Path, r.Method):
 		h.serveWorkspace(w, r)
 	case r.URL.Path == "/lsp":
 		h.language.ServeHTTP(w, r)
@@ -504,6 +497,23 @@ func (h *Handler) document(result *plugins.StandaloneResult, attributes map[stri
 	return `<!doctype html><html lang="en"` + attrs + `><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Markdown preview</title>` + initial + styles + h.featureHead(result) + `</head><body><main class="main-content"><div class="content-wrapper"><div class="post-shell"><article class="post h-entry"><div class="post-content e-content">` + result.HTML + `</div></article></div></div></main>` + strings.ReplaceAll(result.BodyEndHTML, "<script", `<script data-markata-generated="true"`) + h.bridge + `</body></html>`
 }
 
+func isWorkspaceRoute(routePath, method string) bool {
+	switch {
+	case routePath == "/workspace" || routePath == "/workspace/templates" || routePath == "/workspace/image":
+		return method == http.MethodGet
+	case routePath == "/workspace/file":
+		return method == http.MethodGet || method == http.MethodPut || method == http.MethodPost
+	case routePath == "/workspace/publish/commit" || routePath == "/workspace/publish/push":
+		return method == http.MethodPost
+	case routePath == "/workspace/publish/deployment" || routePath == "/workspace/publish/review":
+		return method == http.MethodGet
+	case routePath == frontmatterInspectPath || routePath == frontmatterEditPath:
+		return method == http.MethodPost
+	default:
+		return false
+	}
+}
+
 func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 	peer, _, peerErr := net.SplitHostPort(r.RemoteAddr)
 	if peerErr != nil || net.ParseIP(peer) == nil || !net.ParseIP(peer).IsLoopback() {
@@ -513,6 +523,17 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 	host, hostErr := url.Parse("//" + r.Host)
 	if hostErr != nil || host.User != nil || host.Path != "" || (host.Hostname() != "localhost" && (net.ParseIP(host.Hostname()) == nil || !net.ParseIP(host.Hostname()).IsLoopback())) {
 		http.Error(w, "local workspace access required", http.StatusForbidden)
+		return
+	}
+	if r.URL.Path == "/workspace/image" {
+		name := r.URL.Query().Get("path")
+		data, err := h.workspace.ReadImage(name)
+		if err != nil {
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Cache-Control", "no-store")
+		serve(w, r, name, data)
 		return
 	}
 	w.Header().Set("Cache-Control", "no-store")

@@ -204,6 +204,14 @@ func (s *Store) Create(path, source string) error {
 	return s.refresh(nil, false)
 }
 
+// ReadImage serves a contained static image for the editor preview.
+func (s *Store) ReadImage(name string) ([]byte, error) {
+	if err := s.ctx.Err(); err != nil {
+		return nil, err
+	}
+	return s.workspace.ReadImage(name)
+}
+
 // Snapshot shares parsed workspace information, without sharing mutable drafts.
 func (s *Store) Snapshot() (index *lsp.Index, revision uint64) {
 	s.mu.Lock()
@@ -263,7 +271,11 @@ func (s *Store) Files() ([]File, error) {
 		parsed := make(map[string]metadataEntry)
 		for _, post := range manager.Posts() {
 			path := filepath.ToSlash(post.Path)
-			parsed[path] = metadataEntry{file: File{Path: path, Slug: post.Slug, Title: post.Title, Tags: append([]string(nil), post.Tags...)}, info: lsp.LoadedPostInfo(s.indexRoot, post)}
+			image := ""
+			if value, ok := post.Extra["image"].(string); ok {
+				image = value
+			}
+			parsed[path] = metadataEntry{file: File{Path: path, Slug: post.Slug, Title: post.Title, Tags: append([]string(nil), post.Tags...), Image: image}, info: lsp.LoadedPostInfo(s.indexRoot, post)}
 		}
 		s.mu.Lock()
 		s.stats.MetadataLoads += uint64(len(changed))
