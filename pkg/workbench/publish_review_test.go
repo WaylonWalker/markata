@@ -30,6 +30,7 @@ func (f publishWorkspaceFixture) Read(path string) (string, error) {
 	body, err := os.ReadFile(filepath.Join(f.root, filepath.FromSlash(path)))
 	return string(body), err
 }
+func (publishWorkspaceFixture) ReadImage(string) ([]byte, error) { return nil, os.ErrNotExist }
 
 func gitForReviewTest(t *testing.T, dir string, args ...string) {
 	t.Helper()
