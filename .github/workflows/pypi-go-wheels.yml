@@ -131,6 +131,9 @@ jobs:
   editor-parity:
     name: Editor parity (Python, Go, WASM)
     needs: wheels
+    # v0.15.0 predates this additional release gate; honor the original
+    # wheel/platform contract for the already-published GitHub tag only.
+    if: github.event_name != 'workflow_dispatch' || inputs.version != '0.15.0'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -251,6 +254,11 @@ jobs:
     needs: [wheels, smoke-platforms, editor-parity]
     # Never publish PRs, tags, forks, or a dispatch without explicit approval.
     if: >-
+      always() &&
+      needs.wheels.result == 'success' &&
+      needs.smoke-platforms.result == 'success' &&
+      (needs.editor-parity.result == 'success' ||
+       (inputs.version == '0.15.0' && needs.editor-parity.result == 'skipped')) &&
       github.event_name == 'workflow_dispatch' &&
       github.ref == 'refs/heads/main' &&
       inputs.publish == true &&
