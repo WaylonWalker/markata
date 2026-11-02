@@ -59,6 +59,6 @@ jobs:
           test -s docs-site/_site/docs/guides/deployment-guide/index.html
           test -s docs-site/_site/favicon.ico
           grep -F 'class="chroma"' docs-site/_site/docs/guides/authoring/index.html
-          grep -F 'aria-label="Sidebar navigation"' docs-site/_site/docs/guides/authoring/index.html
+          grep -F 'aria-label="Documentation navigation"' docs-site/_site/docs/guides/authoring/index.html
           grep -F 'href="/favicon.ico"' docs-site/_site/docs/guides/authoring/index.html
           grep -F 'href="/docs/guides/authoring/"' docs-site/_site/index.html
