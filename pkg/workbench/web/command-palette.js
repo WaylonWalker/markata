@@ -6,12 +6,16 @@
   window.MarkataCommandPalette = {attach};
   function attach(editor, options = {}) {
     const entries = () => {
+      const openFileActions = typeof window.MarkataSiteTree?.openPicker === 'function' ?
+        [{id:'open-file',label:'Open file',description:'Fuzzy search workspace files',
+          syntax:'Ctrl/Cmd+P',aliases:'find quick open picker',
+          action:() => window.MarkataSiteTree.openPicker()}] : [];
       const registered = (window.MarkataShortcuts?.all() || []).map(action => ({
         id: action.id, label: action.label, description: action.description || '',
         aliases: action.aliases || '', shortcut: window.MarkataShortcuts.bindingFor(action.id),
         run: () => setTimeout(() => window.MarkataShortcuts.execute(action.id), 0)
       }));
-      return [...new Map([...commands, ...(options.actions || []), ...registered].map(item => [item.id,item])).values()];
+      return [...new Map([...openFileActions, ...commands, ...(options.actions || []), ...registered].map(item => [item.id,item])).values()];
     };
     const button = document.createElement('button');
     button.type = 'button'; button.id = 'commands';
@@ -68,6 +72,8 @@
     function close() { dialog.close(); }
     function insert(command) {
       if (typeof command.run === 'function') {command.run(); close(); return;}
+      if (typeof command.action === 'function') {close(); command.action(); return;}
+      if (editor.getOption('readOnly')) return;
       const text = command.useSelection === false ? command.placeholder : selection.text || command.placeholder;
       // Keep all lines of a selected passage inside an indented block.
       const indent = command.template.slice(0, command.template.indexOf('{{text}}')).match(/\n( +)$/)?.[1] || '';
