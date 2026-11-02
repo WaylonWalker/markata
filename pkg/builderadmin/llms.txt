@@ -1,0 +1,70 @@
+# markata-go Builder Admin
+
+> Operator guide for the authenticated markata-go builder control plane: inspect builds, diagnose failures, run refresh tasks, and manage published releases.
+
+Builder Admin is a long-running build worker with a browser dashboard and a versioned machine API. This document describes **Builder Admin itself**, not an llms.txt generated for the websites it publishes. It is operational documentation, not a grant of AI-crawler access or permission to make changes.
+
+## Entry points
+
+- [Operator dashboard](/): Browser UI with jobs, build/release history, and logs.
+- [Agent API documentation](/api/v1/llms.txt): This guide, accessible using a validated bearer token.
+- [Current state](/api/v1/state): JSON state, revision status, queued/running operations, completed builds, releases, and configured refresh task names.
+- [Builder Admin deployment and authentication guide](https://github.com/WaylonWalker/markata-go/blob/main/docs/guides/deployment/builder-admin.md): Full configuration, ingress, SSO, webhook, and release workflow documentation.
+
+## How to sign in
+
+**Browser operators:** Open the configured HTTPS Builder Admin URL. Its protected ingress handles sign-in through your site's ForwardAuth/SSO provider (for example hlab-auth or Authentik). Complete the provider's normal session or passkey flow and return to the dashboard. Builder Admin does not have a separate username/password login endpoint. If access is denied, request operator access from the administrator; never attempt to bypass the ingress.
+
+**Automation and AI agents:** Obtain an authorized **personal bearer token** from the configured identity provider, with the operator-access scope required by the site's ForwardAuth policy (for example `gobuilder:access`). For hlab-auth deployments, this is the same credential used for the `hlab` CLI and can be supplied as `HLAB_TOKEN`. The provider must support bearer ForwardAuth on `/api/` routes. Use the **HTTPS ingress URL**, not an in-cluster Service, port-forward, or localhost. Never fabricate `X-Hlab-*` identity/auth-method headers: only ForwardAuth may supply them.
+
+Example (set the real ingress URL and your already-issued token locally):
+
+```sh
+export BUILDER_URL="https://builder.example.com"
+# Set HLAB_TOKEN securely using your approved credential source; never print it.
+curl -fsS -H "Authorization: Bearer ${HLAB_TOKEN}" \
+  "${BUILDER_URL}/api/v1/llms.txt"
+curl -fsS -H "Authorization: Bearer ${HLAB_TOKEN}" \
+  "${BUILDER_URL}/api/v1/state"
+```
+
+A `401` or `403` means authentication or authorization did not succeed: verify the correct ingress, token validity, and configured operator scope through your administrator. Do not retry by forging trusted headers. Browser session cookies and CSRF forms are for the web UI; the versioned machine API requires bearer authentication.
+
+## Read-only workflow for agents
+
+1. `GET /api/v1/state` to inspect `state.queue`, `state.running`, `state.builds`, `state.refresh`, `releases`, `current_release_id`, `refresh_tasks`, `revision`, and `control_center`.
+2. `GET /api/v1/builds/{build-id}` for a queued, running, or completed build record.
+3. `GET /api/v1/refreshes/{refresh-id}` for refresh operation details.
+4. `GET /api/v1/logs/{filename}` for logs referenced by records; avoid guessing filenames. Logs may include sensitive operational details, so do not copy them into public reports.
+5. When diagnosing a new builder revision, inspect `revision` and the last successful build before recommending a rebuild. Check whether an operation is already queued or running to avoid duplicates.
+
+These endpoints return data for the authenticated operator. Don't assume a queued request is finished; poll its operation detail or `/api/v1/state` for the terminal status.
+
+## Changes and write operations (ask the operator first)
+
+The following endpoints **enqueue** operations and affect the build or published release. They require an authorized bearer token and explicit operator approval before an agent calls them:
+
+- `POST /api/v1/builds`: Queue a full site build.
+- `POST /api/v1/refresh/{task-name}`: Queue a configured refresh task. Choose a task from `refresh_tasks` in `GET /api/v1/state`.
+- `POST /api/v1/releases/{release-id}/rollback`: Promote a retained release; this changes the live rendered site **without reverting source Git history**. Verify the target release before requesting approval.
+
+For example, **only after approval**:
+
+```sh
+curl -fsS -X POST -H "Authorization: Bearer ${HLAB_TOKEN}" \
+  "${BUILDER_URL}/api/v1/builds"
+```
+
+Successful enqueue responses are HTTP `202 Accepted` with an `operation.id` and `status: "queued"`. Read the returned ID and poll the matching build or refresh detail endpoint, or `GET /api/v1/state`. A full queue returns HTTP `503` with `Retry-After`; respect that header and do not hammer the queue. API errors use JSON `error.code` and `error.message`.
+
+## Browser UI versus machine API
+
+- Browser UI: `/` with interactive Jobs, Builds, Releases, Refresh, and logs. Browser mutations require its secure CSRF cookie, token, and matching Origin.
+- Machine API: `/api/v1/` accepts bearer-authenticated requests. An `Authorization` header **alone** does not bypass ForwardAuth; the proxy must validate it and provide the trusted bearer assertion.
+- `/health` is a Kubernetes health probe, not an authenticated state API or a login endpoint.
+- `/webhook` is for HMAC-signed Git push deliveries when enabled, not for manually queueing work.
+- Retained release previews are available through protected `/__preview/{release-id}/` links on the **public site host**, not the Builder Admin origin. They remain authenticated and expire with release pruning.
+
+## Operating principles
+
+Start with read-only inspection. Do not expose tokens, cookies, trusted proxy headers, private paths, or raw logs to untrusted recipients. Confirm requested environment and release before any build, refresh, or rollback. When reporting results, distinguish accepted/queued operations from completed successful deployments.
