@@ -33,7 +33,7 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         posts.mkdir()
         post = posts / "publish-flow.md"
         post.write_text(
-            "---\ntitle: Publish flow fixture\npublished: true\ndraft: false\n"
+            "---\ntitle: Publish flow fixture\npublished: false\ndraft: false\n"
             "tags:\n  - initial\n---\n\n# Before\n\nInitial copy.\n",
             encoding="utf-8",
         )
@@ -108,7 +108,6 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         expect(tags.locator(".fm-tag-chip")).to_have_count(2)
         expect(tags.locator(".fm-tag-chip").nth(1)).to_contain_text("browser-test")
         published = page.locator('[data-field="published"] input[type="checkbox"]')
-        published.uncheck()
         published.check()
         expect(page.locator("#source")).to_have_value(re.compile(r"published: true"))
         expect(page.locator("#source")).to_have_value(re.compile(r"browser-test"))
@@ -124,6 +123,7 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         expect(review.locator('[data-publish-mode="rich"]')).to_have_attribute("aria-selected", "true")
         review.get_by_role("tab", name="Source diff").click()
         expect(review.locator('[data-publish-view="source"]')).to_be_visible()
+        expect(review.locator('[data-publish-view="source"]')).to_contain_text("published")
         review.get_by_role("tab", name="Commit message").click()
         message = "Publish browser fixture: revised post"
         review.locator("#publish-commit-message").fill(message)
@@ -131,6 +131,10 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         review.get_by_role("button", name="Commit selected page").click()
         expect(review.get_by_role("button", name="Push to origin")).to_be_visible()
         self.assertEqual(self.git(self.site, "log", "-1", "--format=%B"), message)
+        committed_post = self.git(self.site, "show", "HEAD:posts/publish-flow.md")
+        self.assertIn("published: true", committed_post)
+        self.assertIn("browser-test", committed_post)
+        self.assertIn("Revised copy for browser verification.", committed_post)
 
         commit = self.git(self.site, "rev-parse", "HEAD")
         review.get_by_role("button", name="Push to origin").click()
