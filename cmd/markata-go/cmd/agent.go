@@ -544,14 +544,14 @@ func runAgentDoctorCommand(cmd *cobra.Command, args []string) error {
 	}
 	info, err := os.Stat(skillDir)
 	if err != nil || !info.IsDir() {
-		return newExitCodeError(doctorExitError, fmt.Errorf("skill not installed at %s; run 'markata-go agent install' first", skillDir))
+		return newExitCodeError(doctorExitError, fmt.Errorf("skill not installed at %s; run '%s' first", skillDir, cliCommand("agent install")))
 	}
 
 	manifest, err := agentskill.ReadManifest(skillDir)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			outlnf("Skill at %s has no manifest.", skillDir)
-			outlnf("Re-install with 'markata-go agent install --force' to enable drift detection.")
+			outlnf("Re-install with '%s' to enable drift detection.", cliCommand("agent install --force"))
 			return newExitCodeError(doctorExitDrift, nil)
 		}
 		return newExitCodeError(doctorExitError, fmt.Errorf("read manifest: %w", err))
@@ -588,7 +588,7 @@ func runAgentDoctorCommand(cmd *cobra.Command, args []string) error {
 
 	outlnf("")
 	if report.HasDrift() {
-		outlnf("%s Run 'markata-go agent update' to update.", agentYellow("Skill has %d issue(s).", report.IssueCount()))
+		outlnf("%s Run '%s' to update.", agentYellow("Skill has %d issue(s).", report.IssueCount()), cliCommand("agent update"))
 		return newExitCodeError(doctorExitDrift, nil)
 	}
 
@@ -620,7 +620,7 @@ func runAgentRemoveCommand(cmd *cobra.Command, args []string) error {
 	info, err := os.Stat(skillDir)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			return fmt.Errorf("skill not installed at %s; run 'markata-go agent install' first", skillDir)
+			return fmt.Errorf("skill not installed at %s; run '%s' first", skillDir, cliCommand("agent install"))
 		}
 		return fmt.Errorf("stat skill directory %q: %w", skillDir, err)
 	}
