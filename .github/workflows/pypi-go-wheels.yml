@@ -305,18 +305,19 @@ jobs:
 
   publish:
     name: Publish markata 0.x Go wheels to PyPI
-    needs: [wheels, smoke-platforms, editor-parity]
-    # Never publish PRs, tags, forks, or a dispatch without explicit approval.
+    needs: [release-source, wheels, smoke-platforms, editor-parity]
+    # A verified, completed GitHub release authorizes publication. Manual
+    # recovery must be dispatched from main; PRs never receive publishing rights.
     if: >-
       always() &&
+      needs.release-source.result == 'success' &&
+      needs.release-source.outputs.already_published == 'false' &&
       needs.wheels.result == 'success' &&
       needs.smoke-platforms.result == 'success' &&
       (needs.editor-parity.result == 'success' ||
-       (inputs.version == '0.15.0' && needs.editor-parity.result == 'skipped')) &&
-      github.event_name == 'workflow_dispatch' &&
-      github.ref == 'refs/heads/main' &&
-      inputs.publish == true &&
-      inputs.confirm == 'REPLACE_PYTHON_MARKATA_WITH_GO'
+       (needs.release-source.outputs.version == '0.15.0' && needs.editor-parity.result == 'skipped')) &&
+      (github.event_name == 'workflow_run' ||
+       (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'))
     runs-on: ubuntu-latest
     environment:
       name: pypi
@@ -333,3 +334,44 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: dist/
+
+  verify-pypi:
+    name: Verify published version on PyPI
+    needs: [release-source, wheels, smoke-platforms, editor-parity, publish]
+    if: >-
+      always() &&
+      github.event_name != 'pull_request' &&
+      needs.release-source.result == 'success' &&
+      needs.wheels.result == 'success' &&
+      needs.smoke-platforms.result == 'success' &&
+      (needs.editor-parity.result == 'success' ||
+       (needs.release-source.outputs.version == '0.15.0' && needs.editor-parity.result == 'skipped')) &&
+      (needs.publish.result == 'success' || needs.release-source.outputs.already_published == 'true')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Confirm all eight distribution wheels are indexed
+        env:
+          VERSION: ${{ needs.release-source.outputs.version }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import time
+          import urllib.request
+          version = os.environ['VERSION']
+          url = f'https://pypi.org/pypi/markata/{version}/json'
+          for attempt in range(8):
+              try:
+                  with urllib.request.urlopen(url, timeout=20) as response:
+                      data = json.load(response)
+                  names = [entry['filename'] for entry in data.get('urls', []) if entry['filename'].endswith('.whl')]
+                  if len(names) == 8 and all(name.startswith(f'markata-{version}-') for name in names):
+                      print(f'PyPI markata {version}: all eight wheels verified')
+                      break
+                  print(f'Attempt {attempt + 1}: found {len(names)} wheels')
+              except Exception as error:
+                  print(f'Attempt {attempt + 1}: {error}')
+              if attempt == 7:
+                  raise SystemExit(f'PyPI markata {version} verification failed')
+              time.sleep(8)
+          PY
