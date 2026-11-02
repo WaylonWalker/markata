@@ -10,7 +10,7 @@ tags:
 ---
 
 Select **Commands** above the Markdown editor, or press **Ctrl+Shift+P**.
-On macOS, press **Cmd+Shift+P**. In the Go workbench's **Writer** application preset, **Ctrl/Cmd+K** also opens the palette; the VS Code preset reserves Ctrl/Cmd+K for key sequences.
+On macOS, press **Cmd+Shift+P**. **Ctrl/Cmd+K** also opens the palette in standalone Python/WASM editors and the Go workbench's **Writer** application preset; the Go **VS Code** app preset reserves Ctrl/Cmd+K for shortcut chords.
 The dialog is titled **Command Palette** and works with the Default, Vim,
 Emacs, and Sublime keymaps. In the Go workbench, **Ctrl/Cmd+P** opens the
 fuzzy file finder.
@@ -106,3 +106,22 @@ See the [Markdown guide](markdown.md), [container guide](markdown-containers.md)
 [roads guide](roads.md), [icon guide](icons.md), and [Web Awesome guide](webawesome.md)
 for syntax details. The [editor comparison](renderer-integration-benchmarks.md#shared-editor-features-and-runtime-differences)
 explains runtime differences.
+
+## Open workspace files
+
+Press **Ctrl+P** (macOS: **Cmd+P**) to open the file picker in the workspace editor.
+You can also select **Open file** in the workspace sidebar or run **Open file** from the command palette. Ctrl/Cmd+Shift+P still
+opens commands.
+
+Type a filename abbreviation, path, or document title. Filename matches rank
+above path and title matches. Titles become searchable after background metadata
+loads. Matching characters are highlighted, and full paths distinguish duplicate
+filenames. The picker shows up to 60 results; type more to narrow the list.
+Posts with an `image: /images/...` field show a thumbnail when metadata has loaded.
+Use Up/Down and Enter to open a file, or Escape to cancel. Opening another file
+preserves the current browser draft. Source files stay unchanged on disk.
+
+The picker uses locally bundled [fuzzysort](https://github.com/farzher/fuzzysort).
+Search runs in the browser over discovered files without fetching source content.
+
+In the Go workbench, application shortcuts are configurable separately from CodeMirror's text-editing keymap. See the [keyboard shortcuts guide](editor-keybindings.md) for presets, chords, and overrides.
