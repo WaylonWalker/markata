@@ -27,6 +27,20 @@
   let clipCounter = 0;
 
   const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
+  const progressMode = (root, count) => {
+    const mode = (root.dataset.roadProgressMode || "scroll").toLowerCase();
+    if (mode === "static") {
+      const raw = (root.dataset.roadProgress || "").trim();
+      if (!/^(?:\d+(?:\.\d+)?|\.\d+)%?$/.test(raw)) return null;
+      return clamp(parseFloat(raw) / 100, 0, 1);
+    }
+    if (mode === "milestones") {
+      const current = (root.dataset.roadCurrent || "").trim();
+      if (!/^(?:0|[1-9]\d*)$/.test(current)) return null;
+      return clamp(Number(current) / Math.max(count, 1), 0, 1);
+    }
+    return null;
+  };
   const rand = (i) => { const s = Math.sin(i * 12.9898 + 78.233) * 43758.5453; return s - Math.floor(s); };
 
   const collect = (list, depth, out) => {
@@ -246,7 +260,7 @@
     }
     entries.forEach((e) => { if (!e.body.textContent.trim() && !e.body.querySelector("img, video, iframe")) e.body.remove(); });
     root.prepend(rail);
-    return { root, style: "editorial", editorial: true, fill, marker, entries, length: 1 };
+    return { root, style: "editorial", editorial: true, fill, marker, entries, length: 1, fixed: progressMode(root, entries.length) };
   };
 
   const build = (root) => {
@@ -326,6 +340,7 @@
       return { el: link };
     });
 
+    r.fixed = progressMode(root, r.points.length);
     list.remove();
     root.appendChild(inner);
     root.setAttribute("role", "list");
@@ -402,21 +417,21 @@
   const update = (r) => {
     if (!r.length) return;
     const rect = (r.inner || r.root).getBoundingClientRect(), vh = window.innerHeight;
-    if (rect.bottom < -vh || rect.top > vh * 2) return;
+    if (r.fixed === null && (rect.bottom < -vh || rect.top > vh * 2)) return;
     if (r.editorial) {
       // The fill tracks the reading line, so entries light up as you reach them.
       const rail = r.fill.parentElement.getBoundingClientRect();
-      const reach = reduceMotion ? rail.height : clamp(vh * 0.55 - rail.top, 0, rail.height);
+      const reach = r.fixed !== null ? rail.height * r.fixed : reduceMotion ? rail.height : clamp(vh * 0.55 - rail.top, 0, rail.height);
       r.fill.style.height = `${reach}px`;
       r.marker.style.transform = `translate(-50%, ${reach}px) translateY(-50%)`;
       r.marker.style.opacity = reach > 0 && reach < rail.height ? 1 : 0;
       r.entries.forEach((e) => {
         const d = e.dot.getBoundingClientRect();
-        e.el.classList.toggle("active", d.top + d.height / 2 - rail.top <= reach + 1);
+        e.el.classList.toggle("active", reach > 0 && d.top + d.height / 2 - rail.top <= reach + 1);
       });
       return;
     }
-    const t = reduceMotion ? 1 : clamp((vh * 0.8 - rect.top) / (rect.height + vh * 0.3), 0, 1);
+    const t = r.fixed !== null ? r.fixed : reduceMotion ? 1 : clamp((vh * 0.8 - rect.top) / (rect.height + vh * 0.3), 0, 1);
     if (r.git) {
       const reveal = r.h * t;
       r.clipRect.setAttribute("height", `${reveal + 50}`);
