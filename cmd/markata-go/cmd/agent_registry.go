@@ -131,6 +131,39 @@ func suggestAgentNames(name string) []string {
 	return suggestions
 }
 
+// resolveAgentWriteTargets validates every explicit target before a write begins.
+// Legacy --target may accompany --agent only when it names one of the targets.
+func resolveAgentWriteTargets(agentFlags []string, legacyTarget string) ([]agentInstallTarget, bool, error) {
+	targets := make([]agentInstallTarget, 0, len(agentFlags)+1)
+	seen := make(map[string]bool, len(agentFlags)+1)
+	for _, name := range agentFlags {
+		if strings.TrimSpace(name) == "" {
+			return nil, false, fmt.Errorf("--agent requires a non-empty agent name")
+		}
+		target, err := normalizeAgentInstallTarget(name)
+		if err != nil {
+			return nil, false, err
+		}
+		if !seen[target.Name] {
+			targets = append(targets, target)
+			seen[target.Name] = true
+		}
+	}
+	if strings.TrimSpace(legacyTarget) != "" {
+		legacy, err := normalizeAgentInstallTarget(legacyTarget)
+		if err != nil {
+			return nil, false, err
+		}
+		if len(agentFlags) != 0 && !seen[legacy.Name] {
+			return nil, false, fmt.Errorf("--agent %q conflicts with legacy --target %q", strings.Join(agentFlags, ", "), legacyTarget)
+		}
+		if !seen[legacy.Name] {
+			targets = append(targets, legacy)
+		}
+	}
+	return targets, len(targets) != 0, nil
+}
+
 func resolveAgentInstallTarget(agentFlag, legacyTarget string, global bool) (agentInstallTarget, error) {
 	explicit, explicitSet, err := selectedAgentFlagValue(agentFlag, legacyTarget)
 	if err != nil {
