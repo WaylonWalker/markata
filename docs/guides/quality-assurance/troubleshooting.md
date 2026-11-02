@@ -10,7 +10,6 @@ tags:
   - troubleshooting
 ---
 
-# Troubleshooting Quality Checks
 
 This guide covers common issues you may encounter when setting up and running content quality checks for your markata-go site, along with their solutions.
 

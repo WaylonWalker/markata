@@ -10,7 +10,6 @@ tags:
   - content-negotiation
 ---
 
-# Post Output Formats
 
 markata-go can generate multiple output formats for each post beyond the standard HTML. This enables use cases like providing raw markdown for API consumers, plain text for accessibility, ANSI terminal output for `curl`, or generating social media preview cards.
 

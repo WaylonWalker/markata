@@ -9,7 +9,6 @@ tags:
   - icons
 ---
 
-# Icon Shortcodes
 
 markata-go renders Zensical-style icon shortcodes directly in Markdown.
 

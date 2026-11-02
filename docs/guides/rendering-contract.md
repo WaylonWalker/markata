@@ -9,7 +9,6 @@ tags:
   - rendering
 ---
 
-# Rendering presentation contract
 
 Markata-Go uses rendering contract version 1 for portable presentation settings.
 The authoring source is `spec/rendering-contract/contract-v1.json`.

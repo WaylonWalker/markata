@@ -10,7 +10,6 @@ tags:
   - cli
 ---
 
-# CLI Reference
 
 markata-go provides a command-line interface for building, serving, and managing your static site.
 

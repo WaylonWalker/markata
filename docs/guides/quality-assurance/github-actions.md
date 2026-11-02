@@ -11,7 +11,6 @@ tags:
   - ci-cd
 ---
 
-# GitHub Actions for Content Quality
 
 GitHub Actions provides powerful CI/CD capabilities for validating your markata-go site content. This guide covers workflows for build validation, link checking, and content quality gates.
 

@@ -1,4 +1,12 @@
-# PyPI installation of Go Markata using Simon Willison's go-to-wheel
+---
+title: "PyPI installation of Go Markata using Simon Willison's go-to-wheel"
+description: "Decision (October 18, 2026): pip install markata should install the Go"
+date: 2026-10-31
+published: true
+tags:
+  - documentation
+---
+
 
 **Decision (October 18, 2026): `pip install markata` should install the Go
 implementation.** This is an intentional handoff of the existing PyPI

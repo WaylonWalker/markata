@@ -8,7 +8,6 @@ tags:
   - themes
 ---
 
-# Closed Drawer Rendering
 
 Refs #1719.
 

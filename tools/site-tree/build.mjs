@@ -17,11 +17,11 @@ await build({entryPoints:[path.join(root,'tools/site-tree/site-tree.js')], bundl
   define:{SITE_FILES:JSON.stringify(files)}, legalComments:'eof'});
 // Retain notices for the browser runtime and its bundled dependencies.
 const licenses = [
-  '@pierre/trees/LICENSE.md', '@pierre/trees/NOTICE.md',
+  'fuzzysort/LICENSE', '@pierre/trees/LICENSE.md', '@pierre/trees/NOTICE.md',
   '@pierre/theming/LICENSE.md', 'preact/LICENSE', 'preact-render-to-string/LICENSE'
 ];
 const notices = await Promise.all(licenses.map(async name =>
   name + '\n\n' + await readFile(new URL('node_modules/' + name, import.meta.url), 'utf8')));
-await writeFile(path.join(root,'pkg/workbench/web/site-tree.LICENSE'), notices.join('\n\n'));
+await writeFile(path.join(root,'pkg/workbench/web/site-tree.LICENSE'), notices.join('\n\n').replace(/\r\n/g, '\n'));
 const {execFileSync} = await import('node:child_process');
 execFileSync('python3', [path.join(root,'scripts/package-python-editor-assets.py')], {stdio:'inherit'});

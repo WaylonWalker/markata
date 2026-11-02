@@ -8,7 +8,6 @@ tags:
   - feeds
 ---
 
-# Feed views
 
 Built-in feeds expose three presentation views by default: `default`, `simple`, and `calendar`. An opt-in fourth view, `shorts`, adds a full-screen photo/video player.
 `default` is the feed's normal card/grid page and is always required. `simple` is the compact

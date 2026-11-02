@@ -10,7 +10,6 @@ tags:
   - media
 ---
 
-# Embedding YouTube Videos
 
 markata-go automatically converts YouTube URLs into responsive embedded videos. Just paste a YouTube link on its own line, and it becomes a playable video embed.
 

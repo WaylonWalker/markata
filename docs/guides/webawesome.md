@@ -10,7 +10,6 @@ tags:
   - webawesome
 ---
 
-# Web Awesome Components
 
 markata-go can render [Web Awesome](https://webawesome.com/) components from Markdown. The built-in shortcuts focus on content patterns that make sense for blogs and docs: comparisons, expandable details, tabs, copy buttons, QR codes, badges, tags, tooltips, carousels, and animated images.
 

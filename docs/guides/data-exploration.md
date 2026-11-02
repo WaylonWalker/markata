@@ -9,7 +9,6 @@ tags:
   - cli
 ---
 
-# Data Exploration
 
 Use `list` for scriptable output and `tui` for interactive browsing.
 

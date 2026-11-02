@@ -389,6 +389,17 @@ When webhook support is enabled, the chart MUST render a separate exact `/webhoo
 without the operator ForwardAuth middleware. Its HMAC secret MUST be supplied from a Kubernetes
 Secret rather than a command-line argument.
 
+The chart MAY initialize the source directory from a configured Git repository before starting
+Builder Admin. When enabled, an empty source directory MUST be cloned at the configured branch;
+an existing checkout MUST be fast-forwarded to that branch before the service starts. A non-empty
+directory without a Git checkout MUST fail without deleting its contents. The init step MUST NOT
+receive webhook secrets; subsequent signed push events remain responsible for source updates and
+queued builds.
+
+When the backing filesystem creates reserved root entries such as `lost+found`, the chart MUST
+place the checkout in a dedicated child directory and mount that checkout as the builder source.
+The source-ready marker, when used, MUST remain outside the Git checkout.
+
 The default rendered-release retention MUST keep at least 25 releases, including the current live release, so operators have more than ten rollback targets by default.
 
 ## Retained build workspace reuse

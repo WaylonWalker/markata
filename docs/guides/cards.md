@@ -9,7 +9,6 @@ tags:
   - cards
 ---
 
-# Card Types
 
 Cards are how posts appear in feed listings. Different types of content benefit from different visual treatments - a photo post should emphasize the image, while a blog post should show the title and excerpt.
 

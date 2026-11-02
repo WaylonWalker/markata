@@ -1,0 +1,56 @@
+[markata-go]
+title = "Markata"
+description = "Documentation for Markata, the Markdown static site generator."
+url = "https://markata.dev"
+output_dir = "docs-site/_site"
+templates_dir = "pkg/themes/default/templates"
+assets_dir = "static"
+lang = "en"
+
+[markata-go.glob]
+patterns = ["docs/**/*.md"]
+slug_mode = "path"
+use_gitignore = false
+
+[markata-go.auto_feeds.tags]
+enabled = false
+
+[markata-go.layout]
+name = "docs"
+
+[markata-go.layout.docs]
+sidebar_position = "left"
+
+[markata-go.sidebar]
+enabled = true
+title = "Documentation"
+auto_generate = { directory = "docs", order_by = "filename" }
+
+[[markata-go.nav]]
+label = "Quickstart"
+url = "/docs/quickstart/"
+
+[[markata-go.nav]]
+label = "Installation"
+url = "/docs/installation/"
+
+[[markata-go.nav]]
+label = "Agents"
+url = "/docs/guides/agent-skills/"
+
+[[markata-go.nav]]
+label = "Authoring"
+url = "/docs/guides/authoring/"
+
+[[markata-go.nav]]
+label = "All docs"
+url = "/docs/"
+
+[[markata-go.nav]]
+label = "GitHub"
+url = "https://github.com/WaylonWalker/markata"
+external = true
+
+[[markata-go.head.link]]
+rel = "icon"
+href = "/favicon.ico"

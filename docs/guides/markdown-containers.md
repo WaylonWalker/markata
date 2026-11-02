@@ -10,7 +10,6 @@ tags:
   - containers
 ---
 
-# Markdown Containers
 
 markata-go supports fenced Markdown containers for grouping content in a `<div>` with classes, an optional ID, and custom attributes.
 

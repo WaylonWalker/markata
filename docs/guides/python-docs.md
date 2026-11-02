@@ -9,7 +9,6 @@ tags:
   - python
 ---
 
-# Python Source Docs
 
 Use the optional `python_docs` plugin to turn Python modules into source-backed documentation pages.
 

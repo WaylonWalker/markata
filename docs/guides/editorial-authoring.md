@@ -8,7 +8,7 @@ tags:
   - cli
 ---
 
-# Editorial authoring
+## Editorial authoring
 
 Use the editorial commands when a person or agent is editing a post and the
 result needs a durable author, role, commit, and GitHub link.

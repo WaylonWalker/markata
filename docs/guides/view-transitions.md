@@ -10,7 +10,6 @@ tags:
   - performance
 ---
 
-# View Transitions API
 
 Smooth, animated transitions between pages and views using the modern View Transitions API. This implementation provides a polished user experience with automatic transitions for all internal navigation.
 

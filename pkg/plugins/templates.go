@@ -16,6 +16,7 @@ import (
 	"github.com/WaylonWalker/markata/pkg/lifecycle"
 	"github.com/WaylonWalker/markata/pkg/logging"
 	"github.com/WaylonWalker/markata/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/sidebar"
 	"github.com/WaylonWalker/markata/pkg/templates"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -51,6 +52,7 @@ type TemplatesPlugin struct {
 	config        *lifecycle.Config
 	localPreviews map[string]string
 	siteURL       string
+	sidebar       *sidebar.Builder
 	sidebarPostMu sync.RWMutex
 	sidebarPosts  map[sidebarPostKey]sidebarPostJSON
 }
@@ -356,7 +358,13 @@ func (p *TemplatesPlugin) Render(m *lifecycle.Manager) error {
 		}
 	}
 	navFeeds = previewFeeds(config, m.Posts(), navFeeds)
-	navPreviews := buildNavPreviews(ToModelsConfig(config), m.Posts(), navFeeds, getBlogrollConfig(config), parseRandomPostConfig(config))
+	modelsConfig := ToModelsConfig(config)
+	navPreviews := buildNavPreviews(modelsConfig, m.Posts(), navFeeds, getBlogrollConfig(config), parseRandomPostConfig(config))
+	feedMap := make(map[string]*models.FeedConfig, len(navFeeds))
+	for i := range navFeeds {
+		feedMap[navFeeds[i].Slug] = &navFeeds[i]
+	}
+	p.sidebar = sidebar.NewBuilder(modelsConfig, feedMap, m.Posts())
 	m.Cache().Set("nav_previews", navPreviews)
 	p.localPreviews = encodeLocalPreviews(buildLocalPreviews(m.Posts(), navFeeds))
 	p.siteURL = ToModelsConfig(config).URL
@@ -706,6 +714,10 @@ func (p *TemplatesPlugin) renderPost(post *models.Post, config *lifecycle.Config
 	modelsConfig := applyPostFormatsToConfig(ToModelsConfig(config), resolvePostFormats(post, config))
 	articleHTML := annotateLocalPreviewLinks(post.ArticleHTML, post.Href, p.siteURL, p.localPreviews)
 	ctx := templates.NewContext(post, articleHTML, modelsConfig)
+	if p.sidebar != nil {
+		items, title := p.sidebar.ResolveForPost(post)
+		ctx = ctx.WithSidebar(items, title)
+	}
 	tagPreviews := make(map[string]string, len(post.Tags))
 	for _, tag := range post.Tags {
 		if preview := localPreviewForTag(tag, p.localPreviews); preview != "" {

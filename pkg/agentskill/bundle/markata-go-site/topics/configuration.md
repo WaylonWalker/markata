@@ -191,6 +191,10 @@ patterns = ["docs/**/*.md"]
 name = "docs"
 ```
 
+The default theme includes the docs page template and navigation sidebar.
+Use `layout.name = "docs"` without copying a site template; add
+`templates/layouts/docs.html` only when the site needs different markup.
+
 For feed-specific patterns, read `../reference/feed-patterns.md`.
 
 ## Layout Config Is Often The Right Answer

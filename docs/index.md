@@ -1,12 +1,12 @@
 ---
 title: "Markata documentation"
 description: "Install Markata, teach your agent the site skill, and publish your first Markdown page."
+slug: ""
 date: 2026-10-18
 published: true
 tags: [documentation, getting-started]
 ---
 
-# Markata documentation
 
 **A fast static site generator for people and their agents.**
 
@@ -34,7 +34,8 @@ Write Markdown. Give your agent the right context. Publish a site you own.
 
 ## Releases
 
-- [v0.14.0 release notes](/docs/releases/v0.14.0/) — what's new, compatibility and upgrade guidance (release preparation)
+- [Release archive](/docs/releases/) — themes, highlights, and upgrade notes for every published version
+- [v0.15.0 release notes](/docs/releases/v0-15-0/) — rendering beyond the static-site build
 - [Release and deployment runbook](/docs/guides/releasing/) — tag, artifacts, GitOps rollout, build verification and rollback
 
 Markata is still **0.x**. The older `markata-go` command remains compatible. New Go sites should continue to use `markata-go.toml` and `[markata-go]` until the configuration migration is complete.

@@ -11,7 +11,6 @@ tags:
   - linting
 ---
 
-# Pre-commit Hooks for Content Quality
 
 Pre-commit hooks automatically validate your content before each commit, catching issues early in the development cycle. This guide shows you how to set up comprehensive content quality checks for your markata-go site.
 

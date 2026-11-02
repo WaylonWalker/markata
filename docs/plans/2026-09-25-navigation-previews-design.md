@@ -8,7 +8,7 @@ tags:
   - navigation
 ---
 
-# Navigation previews
+## Navigation previews
 
 The default header and footer navigation components add a compact editorial card to local links that resolve to a generated feed, a published post, or an enabled Reader, Blogroll, or Random route. The card appears on hover and keyboard focus. It uses the current theme colors, a subtle underline cue, and a short entrance animation. On narrow and touch layouts, the card is hidden so the scrollable nav remains usable. Reduced-motion settings remove the animation.
 

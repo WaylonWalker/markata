@@ -1,4 +1,12 @@
-# Nginx-native redirects
+---
+title: "Nginx-native redirects"
+description: "The built-in redirects plugin generates nginx-native redirect rules from the same static/redirects file used for static HTML fallbacks."
+date: 2026-09-27
+published: true
+tags:
+  - documentation
+---
+
 
 The built-in redirects plugin generates nginx-native redirect rules from the same `static/_redirects` file used for static HTML fallbacks.
 

@@ -10,7 +10,6 @@ tags:
   - bridging
 ---
 
-# WebMentions & Social Bridging
 
 markata-go supports the IndieWeb WebMention protocol for connecting your static site to the decentralized social web. This includes:
 

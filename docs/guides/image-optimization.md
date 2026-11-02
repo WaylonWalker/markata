@@ -9,7 +9,6 @@ tags:
   - performance
 ---
 
-# Image Optimization
 
 The `image_optimization` plugin generates AVIF and WebP variants for local images and rewrites HTML to use a `<picture>` element with the original image as the fallback.
 

@@ -10,7 +10,6 @@ tags:
   - standards
 ---
 
-# Standard Web Txt Files
 
 markata-go supports generating standard web txt files at their expected canonical URLs. This enables creating files like `robots.txt`, `llms.txt`, and `humans.txt` that web crawlers, AI models, and humans expect to find at the root of your site.
 

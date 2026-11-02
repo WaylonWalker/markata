@@ -160,6 +160,10 @@ jobs:
         run: helm lint helm-chart
       - name: Test nginx CORS behavior
         run: ./helm-chart/tests/nginx-cors.sh
+      - name: Test existing site claim binding
+        run: ./helm-chart/tests/site-volume-name.sh
+      - name: Test search cache mount behavior
+        run: ./helm-chart/tests/search-local-cache.sh
 
   test:
     name: Test

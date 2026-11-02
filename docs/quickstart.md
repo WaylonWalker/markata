@@ -6,7 +6,6 @@ published: true
 tags: [documentation, getting-started]
 ---
 
-# Quickstart
 
 Already installed? This is the shortest path from an empty directory to a local website.
 

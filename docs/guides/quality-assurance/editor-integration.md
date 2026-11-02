@@ -12,7 +12,6 @@ tags:
   - vscode
 ---
 
-# Editor Integration
 
 Use the Language Server Protocol (LSP) for live wikilink completions, broken-link diagnostics, hover details, and go-to-definition. Use `markata-go lint` when you also need content-quality checks in an editor's quickfix or Problems panel.
 

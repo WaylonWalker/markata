@@ -5,7 +5,6 @@ published: true
 tags: [performance, navigation, feeds]
 ---
 
-# Progressive feed sidebars
 
 A post's current feed remains in the HTML for immediate browsing and
 no-JavaScript navigation. If the post belongs to several feeds, other feed

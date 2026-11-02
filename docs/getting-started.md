@@ -6,7 +6,7 @@ published: true
 tags: [documentation, getting-started]
 ---
 
-# Getting started
+## Getting started
 
 You do not need to learn the entire plugin system before publishing something.
 

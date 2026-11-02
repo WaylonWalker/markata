@@ -9,7 +9,6 @@ tags:
   - cache
 ---
 
-# Troubleshooting Build Inconsistencies
 
 If you're getting different build results on different machines, follow this diagnostic guide.
 

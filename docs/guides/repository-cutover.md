@@ -1,4 +1,12 @@
-# Markata GitHub repository cutover — owner runbook
+---
+title: "Markata GitHub repository cutover — owner runbook"
+description: "| GitHub repository | Before | After | Stable repository ID |"
+date: 2026-10-18
+published: true
+tags:
+  - documentation
+---
+
 
 > **Historical runbook:** The GitHub repository swap was completed on
 > October 18, 2026. Do **not** rerun the rename command. Go is at

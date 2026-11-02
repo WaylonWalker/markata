@@ -10,7 +10,6 @@ tags:
   - knowledge-graph
 ---
 
-# Garden View
 
 The garden view plugin generates a knowledge graph of your site's content, showing how posts relate through tags and internal links. It exports the graph as JSON and renders an interactive garden page.
 

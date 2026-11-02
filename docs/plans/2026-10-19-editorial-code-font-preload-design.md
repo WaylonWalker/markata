@@ -8,7 +8,6 @@ tags:
   - fonts
 ---
 
-# Editorial Code Font Preload
 
 Refs #1737.
 

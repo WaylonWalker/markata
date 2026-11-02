@@ -1,4 +1,12 @@
-# Markdown example preview and source
+---
+title: "Markdown example preview and source"
+description: "A source disclosure can follow any rendered Markdown example. Markata renders"
+date: 2026-10-21
+published: true
+tags:
+  - documentation
+---
+
 
 A source disclosure can follow any rendered Markdown example. Markata renders
 this as native HTML `<details>`, so it supports mouse, keyboard, and

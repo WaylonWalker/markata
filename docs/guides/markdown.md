@@ -11,7 +11,6 @@ tags:
   - content
 ---
 
-# Markdown Features
 
 markata-go supports standard Markdown (CommonMark), GitHub Flavored Markdown (GFM) extensions, and several powerful additions like admonitions, wikilinks, and automatic table of contents generation. This guide covers everything you need to know about writing content in markata-go.
 

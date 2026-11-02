@@ -6,7 +6,6 @@ published: true
 tags: [documentation, installation]
 ---
 
-# Install Markata
 
 The preferred executable is **`markata`**. The installer also installs the compatibility command **`markata-go`**.
 

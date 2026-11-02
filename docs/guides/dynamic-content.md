@@ -9,7 +9,7 @@ tags:
   - templates
 ---
 
-# Dynamic Content (Jinja in Markdown)
+## Dynamic Content (Jinja in Markdown)
 
 The `jinja_md` plugin lets you use Jinja2 template syntax directly inside your Markdown files. This enables dynamic content generation: listing recent posts, showing related articles, creating series navigation, and more.
 

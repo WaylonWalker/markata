@@ -9,7 +9,6 @@ tags:
   - reproducibility
 ---
 
-# Build Lab
 
 Build Lab compares a baseline binary with a candidate binary. It runs each
 build in an isolated temporary workspace and records output manifests and

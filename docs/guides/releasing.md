@@ -8,7 +8,7 @@ tags: [release, operations, deployment]
 
 > **Historical release documentation:** These instructions describe the PyPI handoff before it occurred. Current PyPI releases install the Go CLI after the version break; older pinned releases are the Python implementation. See [installation](/docs/installation/).
 
-# Release and deployment runbook
+## Release and deployment runbook
 
 A release is complete only when **the tested tag, published artifacts, pinned workloads, completed content builds, and live sites agree**. Creating a GitHub Release or updating a container tag is not enough.
 

@@ -10,7 +10,6 @@ tags:
   - authoring
 ---
 
-# Image Library
 
 markata-go can generate an image inventory and a page for finding images used
 by your site. The default output is:

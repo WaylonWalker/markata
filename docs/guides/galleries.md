@@ -9,7 +9,6 @@ tags:
   - galleries
 ---
 
-# Photo galleries
 
 Create a gallery page with `template: gallery.html` and a list of images:
 

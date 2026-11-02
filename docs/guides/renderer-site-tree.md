@@ -67,6 +67,11 @@ resolve from that workspace, as does an explicit `fontpacks_file`.
 Saved browser appearance preferences take priority over site defaults.
 The preview remains an article preview; it does not run page templates or a site build.
 
+Shot posts with an `image: /images/...` frontmatter field show that image above
+their Markdown body in the editor preview. The image loads from the workspace's
+`static/images/` directory. The editor preview does not apply the site's feed
+photo-grid template; use a site build to inspect the complete feed layout.
+
 Python hosts can pass `workspace="/path/to/site"` to `appearance()`, `render()`,
 and `render_async()`. The JSON command equivalent is
 `markata render --workspace /path/to/site --json` (Markdown on stdin), or

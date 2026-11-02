@@ -9,7 +9,6 @@ tags:
   - templates
 ---
 
-# Templates Guide
 
 markata-go uses [pongo2](https://github.com/flosch/pongo2), a Django/Jinja2-like template engine for Go. This guide covers everything you need to know about creating and customizing templates.
 

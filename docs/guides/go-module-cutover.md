@@ -1,4 +1,12 @@
-# Go module import path cutover
+---
+title: "Go module import path cutover"
+description: "The canonical Go source module for Markata (still on the 0.x line) is"
+date: 2026-10-27
+published: true
+tags:
+  - documentation
+---
+
 
 The canonical Go source module for **Markata** (still on the 0.x line) is
 `github.com/WaylonWalker/markata`, following the October 18, 2026

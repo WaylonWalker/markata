@@ -595,6 +595,9 @@ mono_crash.*
 [Dd]ebugPublic/
 [Rr]elease/
 [Rr]eleases/
+# Release notes are source content for the documentation site, not artifacts.
+!docs/releases/
+!docs/releases/**
 x64/
 x86/
 [Ww][Ii][Nn]32/

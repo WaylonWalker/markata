@@ -5,7 +5,7 @@ date: 2026-10-03
 published: false
 ---
 
-# Retained workspace and incremental publication
+## Retained workspace and incremental publication
 
 Issue #1421 tracks repeated full-tree preparation. Production spends approximately
 169 seconds in preparation and 30 seconds in the engine. Same-filesystem promotion

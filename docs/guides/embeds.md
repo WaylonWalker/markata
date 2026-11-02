@@ -9,7 +9,6 @@ tags:
   - content
 ---
 
-# Embeds
 
 The embeds plugin lets you embed rich preview cards for both internal posts and external URLs in your markdown content.
 

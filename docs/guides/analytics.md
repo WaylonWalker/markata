@@ -11,7 +11,6 @@ tags:
   - visualization
 ---
 
-# Analytics & Visualizations
 
 markata-go provides several plugins for visualizing data directly in your markdown content. This guide covers the contribution graph and chart visualization plugins.
 

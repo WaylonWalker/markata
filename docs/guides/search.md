@@ -11,7 +11,6 @@ tags:
   - bleve
 ---
 
-# Site Search
 
 markata-go supports two search architectures:
 

@@ -11,7 +11,6 @@ tags:
   - configuration
 ---
 
-# Custom Linting Rules
 
 This guide covers how to configure linting rules for your specific needs, including markdownlint customization, custom frontmatter validation, and creating project-specific style guides.
 

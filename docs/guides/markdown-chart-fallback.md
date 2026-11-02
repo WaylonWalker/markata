@@ -5,7 +5,6 @@ date: 2026-10-26
 published: true
 ---
 
-# Accessible Chart.js figures and fallbacks
 
 `chartjs` fenced blocks render a standard HTML **data table at build time**.
 They retain a JavaScript-free representation even if the Chart.js CDN is

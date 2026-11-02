@@ -1,0 +1,80 @@
+{# Markata's built-in documentation layout. #}
+{% extends "base.html" %}
+
+{% block title %}{{ post.title_text | default:config.title | default:'My Site' }}{% endblock %}
+{% block description %}{{ post.description | default:config.description | default:'' }}{% endblock %}
+{% block body_class %}layout layout--docs{% endblock %}
+
+{% block header %}
+<header class="site-header site-header--{{ config.layout.docs.header_style | default:'minimal' }}{% if config.header.sticky %} site-header--sticky{% endif %}" data-pagefind-ignore>
+  <div class="container">
+    <a href="/" class="site-title">
+      {% if config.header.show_logo and config.logo %}
+      <img src="{{ config.logo }}" alt="{{ config.title }}" class="site-logo" width="32" height="32">
+      {% endif %}
+      {% if config.header.show_title | default:true %}{{ config.title | default:'Home' }}{% endif %}
+    </a>
+    {% include "components/nav.html" %}
+    <div class="header-controls">
+      {% if config.search.enabled and config.header.show_search %}
+      {% include "components/search.html" %}
+      {% endif %}
+      {% include "partials/palette-switcher.html" %}
+      {% if config.sidebar.enabled %}
+      <button class="mobile-menu-toggle" type="button" aria-label="Toggle documentation navigation" aria-expanded="false" aria-controls="docs-sidebar">
+        <span class="hamburger-line" aria-hidden="true"></span>
+        <span class="hamburger-line" aria-hidden="true"></span>
+        <span class="hamburger-line" aria-hidden="true"></span>
+      </button>
+      {% endif %}
+    </div>
+  </div>
+</header>
+{% endblock %}
+
+{% block main %}
+{% set has_toc = config.toc.enabled and resolved_doc_sidebar.enabled and post.Extra.toc %}
+<div class="layout-container{% if has_toc %} layout-container--with-toc{% endif %}{% if has_toc and not config.sidebar.enabled %} layout-container--toc-only{% endif %}{% if not config.sidebar.enabled %} layout-container--content-only{% endif %}{% if config.layout.docs.sidebar_position == 'right' %} layout-container--sidebar-right{% endif %}" style="--layout-sidebar-width: {{ config.layout.docs.sidebar_width | default:'280px' }}; --layout-content-max-width: {{ config.layout.docs.content_max_width | default:'800px' }}; --layout-toc-width: {{ config.layout.docs.toc_width | default:'220px' }}">
+  {% if config.sidebar.enabled %}
+  <aside class="layout-sidebar layout-sidebar--{{ config.layout.docs.sidebar_position | default:'left' }}" id="docs-sidebar" data-collapsible="{{ config.layout.docs.sidebar_collapsible | default:true | yesno:'true,false' }}" data-open="{{ config.layout.docs.sidebar_default_open | default:true | yesno:'true,false' }}" style="--sidebar-width: {{ config.layout.docs.sidebar_width | default:'280px' }}">
+    <div class="sidebar-content">
+      {% include "components/sidebar_nav.html" %}
+    </div>
+  </aside>
+  <div class="sidebar-overlay"></div>
+  {% endif %}
+
+  <main class="layout-content" id="main-content" tabindex="-1">
+    <article class="post h-entry" data-pagefind-body>
+      <header class="post-header">
+        <h1 class="p-name" id="{{ post.title_text | slugify }}" data-pagefind-meta="title">{{ post.title_html | safe }}</h1>
+        {% if post.description %}<p class="post-description p-summary">{{ post.description }}</p>{% endif %}
+        {% include "components/post_byline.html" %}
+      </header>
+      <div class="post-content{% if post.css_class %} {{ post.css_class }}{% endif %}">
+        {{ body | safe }}
+      </div>
+    </article>
+  </main>
+
+  {% if has_toc %}
+  <div class="layout-toc layout-toc--{{ config.layout.docs.toc_position | default:'right' }}">
+    {% include "components/doc_sidebar.html" %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block footer %}
+{% if config.layout.docs.footer_style != 'none' %}
+{% with footer_style=config.layout.docs.footer_style|default:"minimal" %}
+{% include "components/footer.html" %}
+{% endwith %}
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{{ block.Super() }}
+<script src="{{ 'js/layout.js' | theme_asset_hashed }}" defer></script>
+{% if config.toc.scroll_spy %}<script src="{{ 'js/scroll-spy.js' | theme_asset_hashed }}" defer></script>{% endif %}
+{% endblock %}
