@@ -273,6 +273,13 @@ jobs:
           start=$SECONDS
           go test -v -race -timeout=30m -coverprofile=coverage-cli.out -covermode=atomic ./cmd/markata-go/cmd ./pkg/search ./pkg/searchapi
           echo "CLI/search race + coverage: $((SECONDS-start))s" >> "$GITHUB_STEP_SUMMARY"
+      # Allocation thresholds are meaningful only without race/coverage
+      # instrumentation. Correctness and write-buffering checks stay in -race.
+      - name: Check streaming JSON allocations (uninstrumented)
+        run: |
+          start=$SECONDS
+          go test -v -count=1 -run '^TestBenchmarkJSONStreamAllocation$' ./cmd/markata-go/cmd
+          echo "Streaming JSON allocation regression: $((SECONDS-start))s" >> "$GITHUB_STEP_SUMMARY"
       - uses: codecov/codecov-action@v7
         with:
           files: ./coverage-cli.out

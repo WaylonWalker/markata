@@ -5,8 +5,10 @@ from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 import re
 from pathlib import Path
+import shutil
 import subprocess
 import sys
+import tempfile
 import threading
 
 from playwright.sync_api import sync_playwright, expect
@@ -14,7 +16,7 @@ from playwright.sync_api import sync_playwright, expect
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'python'))
 from editor_test_support import load_editor, serve_editor
-from command_palette_checks import check_commands
+from command_palette_checks import check_commands, select_keymap
 
 
 def check(browser, url):
@@ -24,18 +26,24 @@ def check(browser, url):
         errors = []
         page.on('pageerror', lambda error: errors.append(str(error)))
         page.goto(url)
+        favicon_url = page.locator('link[rel=icon]').evaluate('element => element.href')
+        assert favicon_url.endswith('/favicon.ico'), favicon_url
+        favicon = page.request.get(favicon_url)
+        assert favicon.status == 200, f'{favicon_url} returned {favicon.status}'
+        assert favicon.body() == (ROOT / 'pkg/workbench/web/favicon.ico').read_bytes()
         preview = page.frame_locator('#preview')
         expect(preview.locator('h1')).to_be_visible(timeout=60000)
         check_commands(page, preview)
         expect(page.locator('#saved')).to_contain_text('Draft saved')
         assert page.locator('header h1').evaluate("e => getComputedStyle(e).fontFamily") != 'Georgia, serif'
         assert not page.locator('link[href$="/css/main.css"]').count()
-        page.locator('#keymap').select_option('vim')
+        select_keymap(page, 'vim')
         page.locator('#import').set_input_files({'name': 'draft.md', 'mimeType': 'text/markdown', 'buffer': '# Imported café\n\nKeep this draft.'.encode()})
         expect(preview.locator('h1')).to_have_text('Imported café')
         page.reload()
         expect(preview.locator('h1')).to_have_text('Imported café', timeout=60000)
         expect(page.locator('#keymap')).to_have_value('vim')
+        select_keymap(page, 'default')
         # Bytes, rather than characters, determine the import limit.
         page.locator('#import').set_input_files({'name': 'large.md', 'mimeType': 'text/markdown', 'buffer': ('界' * 70000).encode()})
         expect(page.locator('#error')).to_be_visible()
@@ -45,11 +53,22 @@ def check(browser, url):
         expect(page.locator('#error')).to_be_hidden()
         # Storage failure must keep editing and export available.
         page.evaluate("() => { Storage.prototype.setItem = function() {throw Error('storage full')} }")
-        page.evaluate("document.querySelector('.CodeMirror').CodeMirror.setValue('# Unsaved draft')")
+        page.evaluate("""() => {
+          const editor = document.querySelector('.CodeMirror').CodeMirror;
+          editor.setSelection(editor.posFromIndex(0), editor.posFromIndex(editor.getValue().length));
+          editor.focus();
+        }""")
+        page.keyboard.type('# Unsaved draft')
         expect(page.locator('#saved')).to_contain_text('Draft not saved')
         expect(preview.locator('h1')).to_have_text('Unsaved draft')
         with page.expect_download() as download:
-            page.locator('#download').click()
+            if page.locator('#download').is_visible():
+                page.locator('#download').click()
+            else:
+                page.locator('#commands').click()
+                query = page.get_by_role('combobox', name='Find a command or action')
+                query.fill('Download current file')
+                page.keyboard.press('Enter')
         assert Path(download.value.path()).read_text() == '# Unsaved draft'
         assert not errors, errors
         typography = lambda locator: locator.evaluate('e => [getComputedStyle(e).fontFamily, getComputedStyle(e).fontSize]')
@@ -65,7 +84,9 @@ def main():
     parser.add_argument('--wasm-output', type=Path, required=True)
     args = parser.parse_args()
     with ExitStack() as stack:
-        site = Path(__file__).resolve().parents[2] / 'examples/editor-site'
+        fixture_site = Path(__file__).resolve().parents[2] / 'examples/editor-site'
+        site = Path(stack.enter_context(tempfile.TemporaryDirectory(prefix='markata-editor-parity-'))) / 'site'
+        shutil.copytree(fixture_site, site)
         demo = load_editor()
         demo.LSP_WORKSPACE = site
         demo.presentation = demo.appearance(asset_base="/appearance", workspace=str(site))
@@ -94,18 +115,18 @@ def main():
         stack.callback(browser.close)
         fonts = []
         for name, url in [('Python', python_url), ('Go', match[0]), ('WASM', f'http://127.0.0.1:{server.server_port}/')]:
-            fonts.append(check(browser, url))
-            print(name + ': editor parity passed', flush=True)
-            if name != 'WASM':
+            if name == 'Go':
                 from site_tree_checks import check_site_tree
                 with browser.new_context() as context:
                     check_site_tree(context.new_page(), url)
                 print(name + ': workspace tree passed', flush=True)
-            if name == 'Go':
-                from shortcut_ui_checks import check_app_shortcuts
+            fonts.append(check(browser, url))
+            print(name + ': editor parity passed', flush=True)
+            if name == 'Python':
+                from site_tree_checks import check_site_tree
                 with browser.new_context() as context:
-                    check_app_shortcuts(context.new_page(), url)
-                print('Go: app keyboard shortcuts passed', flush=True)
+                    check_site_tree(context.new_page(), url)
+                print(name + ': workspace tree passed', flush=True)
         assert len(set(fonts)) == 1, fonts
 
 

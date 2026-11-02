@@ -31,6 +31,7 @@ type publishReview struct {
 // gitOutput runs bounded, non-interactive reads. It is never used to execute
 // an editor-supplied Git command or mutate repository state.
 func gitOutput(ctx context.Context, dir string, args ...string) (string, error) {
+	// #nosec G204 G702 -- args are fixed Git subcommands assembled by this package; no shell is used.
 	command := exec.CommandContext(ctx, "git", append([]string{"-C", dir}, args...)...)
 	command.Env = append(command.Environ(), "GIT_TERMINAL_PROMPT=0", "GIT_OPTIONAL_LOCKS=0")
 	output, err := command.Output()
@@ -105,10 +106,12 @@ func (h *Handler) servePublishReview(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "no-store")
-	_ = json.NewEncoder(w).Encode(publishReview{
+	if err := json.NewEncoder(w).Encode(publishReview{
 		Path: path, Head: head, Baseline: baseline, Current: current,
 		BaselineExists: exists, Changed: !exists || baseline != current,
-		Version: editorworkspace.SourceVersion(current),
+		Version:      editorworkspace.SourceVersion(current),
 		BaselineKind: "last-committed", CanPublish: false,
-	})
+	}); err != nil {
+		return
+	}
 }

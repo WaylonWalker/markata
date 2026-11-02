@@ -198,6 +198,12 @@ func styleLink(name string) string { return `<link rel="stylesheet" href="/appea
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	switch {
+	case (r.URL.Path == "/workspace/publish/commit" || r.URL.Path == "/workspace/publish/push") && r.Method == http.MethodPost:
+		h.serveWorkspace(w, r)
+	case r.URL.Path == "/workspace/publish/deployment" && r.Method == http.MethodGet:
+		h.serveWorkspace(w, r)
+	case (r.URL.Path == frontmatterInspectPath || r.URL.Path == frontmatterEditPath) && r.Method == http.MethodPost:
+		h.serveWorkspace(w, r)
 	case (r.URL.Path == "/workspace/publish/review" && r.Method == http.MethodGet):
 		h.serveWorkspace(w, r)
 	case (r.URL.Path == "/workspace" || r.URL.Path == "/workspace/templates") && r.Method == http.MethodGet || (r.URL.Path == "/workspace/file" && (r.Method == http.MethodGet || r.Method == http.MethodPut || r.Method == http.MethodPost)):
@@ -511,6 +517,22 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("Content-Type", "application/json")
+	if r.URL.Path == "/workspace/publish/commit" {
+		h.servePublishCommit(w, r)
+		return
+	}
+	if r.URL.Path == "/workspace/publish/push" {
+		h.servePublishPush(w, r)
+		return
+	}
+	if r.URL.Path == "/workspace/publish/deployment" {
+		h.servePublishDeployment(w, r)
+		return
+	}
+	if r.URL.Path == "/workspace/frontmatter/inspect" || r.URL.Path == "/workspace/frontmatter/edit" {
+		h.serveFrontmatterEditor(w, r)
+		return
+	}
 	if r.URL.Path == "/workspace/publish/review" {
 		h.servePublishReview(w, r)
 		return
@@ -518,7 +540,7 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path == "/workspace/templates" {
 		templates, err := h.contentTemplates()
 		if err != nil {
-			fail(w, 422, "cannot load content templates")
+			fail(w, 422, "cannot load content templates: "+err.Error())
 			return
 		}
 		if err := json.NewEncoder(w).Encode(map[string]any{"templates": templates}); err != nil {

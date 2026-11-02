@@ -79,6 +79,11 @@ class WorkbenchTest(unittest.TestCase):
         self.assertIn('# Still local\n\nNo server.', Path(info.value.path()).read_text())
         expect(self.page.locator('#saved')).to_have_text('Draft saved on this device')
 
+    def test_markata_favicon_is_served(self):
+        response = self.page.request.get(self.url + 'favicon.ico')
+        self.assertEqual(response.status, 200)
+        self.assertEqual(response.body(), (ROOT / 'pkg/workbench/web/favicon.ico').read_bytes())
+
     def test_repeated_rich_previews_and_fast_edits(self):
         chart = '\n```chartjs\n{"type":"bar","data":{"labels":["A"],"datasets":[{"label":"Value","data":[2]}]}}\n```'
         diagram = '\n```mermaid\ngraph LR\nA-->B\n```'

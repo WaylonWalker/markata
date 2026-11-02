@@ -14,6 +14,7 @@ func TestRenderStandalone_ConditionalAssets(t *testing.T) {
 		{"admonition", "!!! note\n    Hello", "admonitions", "css/admonitions.css"},
 		{"table", "| A | B |\n|---|---|\n|1|2|", "tables", "js/sortable-tables.js"},
 		{"checklist", "::: md-checklist\n\n- [ ] Todo\n\n:::", "checklists", "js/markdown-checklists.js"},
+		{"tabs", "::: md-tabs\n\n:::: md-tab {label=\"Shell\"}\nmarkata version\n::::\n:::", "tabs", "js/md-tabs.js"},
 		{"road", "::: road\nHello\n:::", "roads", "js/roads.js"},
 		{"mermaid", "```mermaid\nflowchart TD\n A-->B\n```", "mermaid", "assets/vendor/mermaid/mermaid.min.js"},
 		{"chartjs", "```chartjs\n{\"type\":\"bar\",\"data\":{\"labels\":[\"A\"],\"datasets\":[{\"data\":[1]}]}}\n```", "chartjs", "assets/vendor/chartjs/chart.min.js"},

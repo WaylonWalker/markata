@@ -16,6 +16,10 @@ import (
 )
 
 // Template name constants used for conditional wizard groups.
+const tmplPost = "post"
+const privacyChoicePublic = string(encryptPostActionPublic)
+const privacyChoicePrivate = "private"
+
 const (
 	tmplPhoto   = "photo"
 	tmplVideo   = "video"
@@ -36,7 +40,8 @@ type newWizardState struct {
 	CustomDir        string // intermediate: custom directory input
 	Tags             []string
 	CustomTag        string
-	Private          bool
+	Private          bool   // legacy state; new wizard tracks an explicit privacy choice
+	PrivateChoice    string // inherit, private, or public
 	Authors          []string
 	UseDefaultAuthor bool
 
@@ -207,7 +212,8 @@ func runHuhNewWizard(templates map[string]ContentTemplate) (*newWizardState, err
 	theme := createHuhThemeForPalette(currentCLIPalette)
 
 	state := &newWizardState{
-		Template: "post",
+		Template:      tmplPost,
+		PrivateChoice: "inherit",
 	}
 	if _, resolvedName, ok := resolveTemplateSelection(newTemplate, templates); ok {
 		state.Template = resolvedName
@@ -395,13 +401,17 @@ func runHuhNewWizard(templates map[string]ContentTemplate) (*newWizardState, err
 	tagsGroup := huh.NewGroup(tagFields...)
 
 	// --- Group 4: Privacy ---
+	// Inheriting is distinct from explicitly selecting public (false).
 	privateGroup := huh.NewGroup(
-		huh.NewConfirm().
-			Title("Is this post private?").
-			Description("Private posts are excluded from feeds and search").
-			Value(&state.Private).
-			Affirmative("Yes").
-			Negative("No"),
+		huh.NewSelect[string]().
+			Title("Privacy").
+			Description("Keep the starter setting, or explicitly override it").
+			Options(
+				huh.NewOption("Keep starter default", "inherit"),
+				huh.NewOption("Private", privacyChoicePrivate),
+				huh.NewOption("Public", privacyChoicePublic),
+			).
+			Value(&state.PrivateChoice),
 	)
 
 	// --- Group 5: Authors (conditional - only for multi-author sites) ---
@@ -524,9 +534,21 @@ func buildSummary(state *newWizardState, ctx *siteContext) string {
 	sb.WriteString(fmt.Sprintf("Title:     %s\n", state.Title))
 	sb.WriteString(fmt.Sprintf("Template:  %s\n", state.Template))
 	sb.WriteString(fmt.Sprintf("File:      %s\n", fullPath))
-	sb.WriteString("Draft:     false\n")
-	sb.WriteString("Published: true\n")
-	sb.WriteString(fmt.Sprintf("Private:   %t\n", state.Private))
+	selectedTemplate := ctx.Templates[state.Template]
+	effectiveDraft := starterDraftDefault(selectedTemplate)
+	sb.WriteString(fmt.Sprintf("Draft:     %t (effective)\n", effectiveDraft))
+	sb.WriteString(fmt.Sprintf("Published: %t (effective)\n", !effectiveDraft))
+	effectivePrivate := false
+	if inheritedPrivacy, ok := selectedTemplate.Frontmatter["private"].(bool); ok {
+		effectivePrivate = inheritedPrivacy
+	}
+	switch state.PrivateChoice {
+	case privacyChoicePrivate:
+		effectivePrivate = true
+	case privacyChoicePublic:
+		effectivePrivate = false
+	}
+	sb.WriteString(fmt.Sprintf("Private:   %t (effective)\n", effectivePrivate))
 
 	// Template-specific fields
 	sb.WriteString(buildTemplateSummary(state))
@@ -723,11 +745,17 @@ func applyNewWizardState(state *newWizardState, templates map[string]ContentTemp
 	if !ok {
 		return fmt.Errorf("unknown template %q", state.Template)
 	}
+	if !safeStarterDirectory(template.Directory) {
+		return fmt.Errorf("starter %q has an unsafe output directory %q", template.Name, template.Directory)
+	}
 
 	// Override directory from wizard state
 	outputDir := state.Directory
 	if outputDir == "" {
 		outputDir = template.Directory
+	}
+	if !safeStarterDirectory(outputDir) {
+		return fmt.Errorf("unsafe output directory %q", outputDir)
 	}
 
 	slug := generateSlug(state.Title)
@@ -738,8 +766,13 @@ func applyNewWizardState(state *newWizardState, templates map[string]ContentTemp
 		enhancedTemplate.Frontmatter = make(map[string]interface{})
 	}
 
-	// Set private flag
-	enhancedTemplate.Frontmatter["private"] = state.Private
+	// Inherited values stay in the starter; only explicit choices are written.
+	switch state.PrivateChoice {
+	case privacyChoicePrivate:
+		enhancedTemplate.Frontmatter["private"] = true
+	case privacyChoicePublic:
+		enhancedTemplate.Frontmatter["private"] = false
+	}
 
 	// Set authors if provided
 	if len(state.Authors) > 0 {
@@ -749,6 +782,13 @@ func applyNewWizardState(state *newWizardState, templates map[string]ContentTemp
 	// Apply template-specific fields from wizard
 	applyTemplateFields(state, enhancedTemplate.Frontmatter)
 
-	// Use draft=false, published=true (new defaults)
-	return writeContentFile(state.Title, slug, outputDir, false, state.Tags, enhancedTemplate)
+	// An unmodified tag selector is not an explicit empty-tags override.
+	// Preserve the starter's tags unless the user supplied replacements.
+	tags := state.Tags
+	if len(tags) == 0 {
+		tags = nil
+	}
+
+	// The wizard has no publication control. Preserve starter/site defaults.
+	return writeContentFile(state.Title, slug, outputDir, false, false, tags, enhancedTemplate)
 }

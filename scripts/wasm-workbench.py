@@ -25,6 +25,7 @@ def build(output):
     goroot = subprocess.check_output(['go', 'env', 'GOROOT'], text=True).strip()
     shutil.copyfile(Path(goroot) / 'lib/wasm/wasm_exec.js', output / 'wasm_exec.js')
     shutil.copytree(ROOT / 'examples/wasm-workbench', output, dirs_exist_ok=True)
+    shutil.copyfile(ROOT / 'pkg/workbench/web/favicon.ico', output / 'favicon.ico')
     for name in ['command-catalog.js', 'command-palette.js', 'command-palette.css', 'command-palette-example.md']:
         shutil.copyfile(ROOT / 'pkg/workbench/web' / name, output / name)
     appearance = json.loads((output / 'appearance.json').read_text())

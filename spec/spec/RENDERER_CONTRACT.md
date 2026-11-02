@@ -126,6 +126,10 @@ line count, ignore fenced code, and use the attributes as additional nested
 preview anchors. When several nested containers contain the caret line, the
 preview marker MUST select the narrowest source span, then the deepest element.
 Preview-only and editor-only layouts do not synchronize hidden panes.
+In split layout, the Markdown editor MUST provide cursor scroll-off space after
+the final source line. The preview MUST provide matching scroll-off space after
+the final rendered article content. Their terminal source anchors MUST include
+the same scroll-off space so source and preview positions remain aligned.
 
 The Go workbench MUST bind Ctrl/Cmd+P to a fuzzy workspace file finder that
 searches Markdown paths, titles, slugs, and tags and opens the selected file in

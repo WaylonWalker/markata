@@ -48,6 +48,8 @@ jobs:
           grep -F 'href="/assets/site.css"' docs-site/_site/index.html
           grep -F 'href="/docs/quickstart/"' docs-site/_site/index.html
           python -m compileall -q scripts/build_docs_site.py
+      - name: Validate native homepage tabs
+        run: python docs-site/test_native_tabs.py
       - name: Test homelab builder
         run: |
           python docs-site/test_builder_admin.py

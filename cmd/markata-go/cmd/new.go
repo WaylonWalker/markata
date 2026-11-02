@@ -50,11 +50,14 @@ var (
 
 // ContentTemplate represents a content template with its configuration.
 type ContentTemplate struct {
-	Name        string
-	Directory   string
-	Frontmatter map[string]interface{}
-	Body        string
-	Source      string // "builtin", "config", or "file"
+	Name            string
+	Description     string
+	Aliases         []string
+	ValidationError string
+	Directory       string
+	Frontmatter     map[string]interface{}
+	Body            string
+	Source          string // "builtin", "config", or "file"
 }
 
 // ToMarkdown converts a ContentTemplate to a markdown file format with YAML frontmatter.
@@ -317,54 +320,60 @@ func loadTemplates() map[string]ContentTemplate {
 	return templates
 }
 
-func formatTemplateName(name string) string {
-	aliases := contentTemplateAliases[name]
-	if len(aliases) == 0 {
-		return name
-	}
-
-	return fmt.Sprintf("%s (aka: %s)", name, strings.Join(aliases, ", "))
+func templateAliases(name string, template ContentTemplate) []string {
+	aliases := append([]string(nil), contentTemplateAliases[name]...)
+	aliases = append(aliases, template.Aliases...)
+	return aliases
 }
 
 func formatTemplateEntry(name string, template ContentTemplate) string {
-	return fmt.Sprintf("%s -> %s/ (%s)", formatTemplateName(name), template.Directory, template.Source)
-}
-
-func resolveTemplateAlias(name string) (string, bool) {
-	for canonical, aliases := range contentTemplateAliases {
-		for _, alias := range aliases {
-			if alias == name {
-				return canonical, true
-			}
-		}
+	aliases := templateAliases(name, template)
+	label := name
+	if len(aliases) > 0 {
+		label = fmt.Sprintf("%s (aka: %s)", name, strings.Join(aliases, ", "))
 	}
-
-	return "", false
+	entry := fmt.Sprintf("%s -> %s/ (%s)", label, template.Directory, template.Source)
+	if template.Description != "" {
+		entry += " — " + template.Description
+	}
+	if template.ValidationError != "" {
+		entry += " [invalid: " + template.ValidationError + "]"
+	}
+	return entry
 }
 
 func resolveTemplateSelection(name string, templates map[string]ContentTemplate) (ContentTemplate, string, bool) {
+	// Canonical names always win over aliases, even when an alias is ambiguous.
 	if template, exists := templates[name]; exists {
 		return template, name, true
 	}
-
-	canonical, ok := resolveTemplateAlias(name)
-	if !ok {
+	canonical := ""
+	for candidate := range templates {
+		for _, alias := range templateAliases(candidate, templates[candidate]) {
+			if alias != name {
+				continue
+			}
+			if canonical != "" && canonical != candidate {
+				return ContentTemplate{}, "", false
+			}
+			canonical = candidate
+		}
+	}
+	if canonical == "" {
 		return ContentTemplate{}, "", false
 	}
-
-	template, exists := templates[canonical]
-	if !exists {
-		return ContentTemplate{}, "", false
+	template := templates[canonical]
+	// Built-in aliases historically select their own rendering template.
+	// Site-authored aliases are discovery names, not content metadata.
+	if template.Source == "builtin" {
+		frontmatter := make(map[string]interface{}, len(template.Frontmatter))
+		for key, value := range template.Frontmatter {
+			frontmatter[key] = value
+		}
+		frontmatter["template"] = name
+		frontmatter["templateKey"] = name
+		template.Frontmatter = frontmatter
 	}
-
-	frontmatter := make(map[string]interface{}, len(template.Frontmatter))
-	for k, v := range template.Frontmatter {
-		frontmatter[k] = v
-	}
-	frontmatter["template"] = name
-	frontmatter["templateKey"] = name
-	template.Frontmatter = frontmatter
-
 	return template, canonical, true
 }
 
@@ -376,6 +385,7 @@ func loadTemplatesFromDir(dir string, templates map[string]ContentTemplate) {
 		return
 	}
 
+	sources := make(map[string]string)
 	for _, entry := range entries {
 		if entry.IsDir() {
 			continue
@@ -393,7 +403,14 @@ func loadTemplatesFromDir(dir string, templates map[string]ContentTemplate) {
 
 		template := parseTemplateFile(name, string(content))
 		template.Source = "file"
-		templates[name] = template
+		if previous, duplicate := sources[template.Name]; duplicate {
+			first := templates[template.Name]
+			first.ValidationError = fmt.Sprintf("duplicate canonical starter %q in %s and %s", template.Name, previous, path)
+			templates[template.Name] = first
+			continue
+		}
+		sources[template.Name] = path
+		templates[template.Name] = template
 	}
 }
 
@@ -415,17 +432,63 @@ func parseTemplateFile(name, content string) ContentTemplate {
 	// Find end of frontmatter
 	parts := strings.SplitN(content[3:], "---", 2)
 	if len(parts) < 2 {
+		template.ValidationError = "frontmatter is missing its closing delimiter"
 		template.Body = strings.TrimSpace(content)
 		return template
 	}
 
 	// Parse frontmatter YAML
 	frontmatterYAML := strings.TrimSpace(parts[0])
-	if err := yaml.Unmarshal([]byte(frontmatterYAML), &template.Frontmatter); err == nil {
-		// Extract directory from frontmatter if present
-		if dir, ok := template.Frontmatter["_directory"].(string); ok {
-			template.Directory = dir
+	if err := yaml.Unmarshal([]byte(frontmatterYAML), &template.Frontmatter); err != nil {
+		template.ValidationError = fmt.Sprintf("invalid starter frontmatter: %v", err)
+	} else {
+		// An explicit _directory wins even if it matches the filename.
+		directoryExplicit := false
+		if rawDir, exists := template.Frontmatter["_directory"]; exists {
 			delete(template.Frontmatter, "_directory")
+			dir, ok := rawDir.(string)
+			if !ok || strings.TrimSpace(dir) == "" {
+				template.ValidationError = "_directory must be a non-empty string"
+			} else {
+				template.Directory = dir
+				directoryExplicit = true
+			}
+		}
+		if rawStarter, exists := template.Frontmatter["starter"]; exists {
+			starter, ok := rawStarter.(map[string]interface{})
+			if !ok {
+				template.ValidationError = "starter metadata must be a mapping"
+				delete(template.Frontmatter, "starter")
+			} else {
+				if description, ok := starter["description"].(string); ok {
+					template.Description = description
+				} else if _, exists := starter["description"]; exists {
+					template.ValidationError = "starter.description must be a string"
+				}
+				if canonicalName, ok := starter["name"].(string); ok && strings.TrimSpace(canonicalName) != "" {
+					template.Name = strings.TrimSpace(canonicalName)
+					if !directoryExplicit {
+						template.Directory = template.Name
+					}
+				} else if _, exists := starter["name"]; exists {
+					template.ValidationError = "starter.name must be a non-empty string"
+				}
+				if rawAliases, exists := starter["aliases"]; exists {
+					aliases, ok := rawAliases.([]interface{})
+					if !ok {
+						template.ValidationError = "starter.aliases must be a list of strings"
+					}
+					for _, alias := range aliases {
+						value, ok := alias.(string)
+						if !ok || strings.TrimSpace(value) == "" {
+							template.ValidationError = "starter.aliases must contain non-empty strings"
+							continue
+						}
+						template.Aliases = append(template.Aliases, strings.TrimSpace(value))
+					}
+				}
+				delete(template.Frontmatter, "starter")
+			}
 		}
 	}
 
@@ -587,7 +650,7 @@ func runInteractiveMode(cmd *cobra.Command, templates map[string]ContentTemplate
 
 	// Get draft status (only prompt if not explicitly set via flag)
 	if !cmd.Flags().Changed("draft") {
-		newDraft = promptYesNoNew(reader, "Create as draft?", false)
+		newDraft = promptYesNoNew(reader, "Create as draft?", starterDraftDefault(template))
 	}
 
 	errln()
@@ -600,7 +663,10 @@ func runInteractiveMode(cmd *cobra.Command, templates map[string]ContentTemplate
 }
 
 // writeContentFile creates the content file with the given parameters.
-func writeContentFile(title, slug, outputDir string, draft bool, tags []string, template ContentTemplate) error {
+func writeContentFile(title, slug, outputDir string, draft, draftSet bool, tags []string, template ContentTemplate) error {
+	if template.ValidationError != "" {
+		return fmt.Errorf("invalid starter %q: %s", template.Name, template.ValidationError)
+	}
 	filename := slug + ".md"
 	fullPath := filepath.Join(outputDir, filename)
 
@@ -616,7 +682,7 @@ func writeContentFile(title, slug, outputDir string, draft bool, tags []string, 
 
 	// Generate content
 	now := time.Now()
-	content := generateTemplatedContent(title, slug, now, draft, tags, template)
+	content := generateTemplatedContent(title, slug, now, draft, draftSet, tags, template)
 
 	// Write file (0o644 is appropriate for content files that should be world-readable)
 	if err := os.WriteFile(fullPath, []byte(content), 0o644); err != nil { //nolint:gosec // content files should be readable
@@ -690,6 +756,8 @@ func runNewCommand(cmd *cobra.Command, args []string) error {
 		title = args[0]
 		if newTags != "" {
 			tags = parseTags(newTags)
+		} else if cmd.Flags().Changed("tags") {
+			tags = []string{}
 		}
 	}
 
@@ -701,6 +769,9 @@ func runNewCommand(cmd *cobra.Command, args []string) error {
 	if outputDir == "" {
 		outputDir = template.Directory
 	}
+	if !cmd.Flags().Changed("dir") && !safeStarterDirectory(outputDir) {
+		return fmt.Errorf("starter %q has an unsafe output directory %q", template.Name, outputDir)
+	}
 	if siteDirSelected && !filepath.IsAbs(outputDir) {
 		outputDir = filepath.Join(activeSiteDir, outputDir)
 	}
@@ -708,7 +779,30 @@ func runNewCommand(cmd *cobra.Command, args []string) error {
 	// Generate slug from title
 	slug := generateSlug(title)
 
-	return writeContentFile(title, slug, outputDir, newDraft, tags, template)
+	draftSet := cmd.Flags().Changed("draft")
+	if len(args) == 0 && !draftSet {
+		// An interactive answer is an override only if it changes the starter default.
+		draftSet = newDraft != starterDraftDefault(template)
+	}
+	return writeContentFile(title, slug, outputDir, newDraft, draftSet, tags, template)
+}
+
+func starterDraftDefault(template ContentTemplate) bool {
+	if draft, ok := template.Frontmatter["draft"].(bool); ok {
+		return draft
+	}
+	if published, ok := template.Frontmatter["published"].(bool); ok {
+		return !published
+	}
+	return false
+}
+
+func safeStarterDirectory(directory string) bool {
+	if directory == "" || filepath.IsAbs(directory) {
+		return false
+	}
+	clean := filepath.Clean(directory)
+	return clean != ".." && !strings.HasPrefix(clean, ".."+string(filepath.Separator))
 }
 
 // listTemplates prints available templates.
@@ -739,58 +833,69 @@ func listTemplates() error {
 }
 
 // generateTemplatedContent creates the markdown content with template-specific frontmatter.
-func generateTemplatedContent(title, slug string, date time.Time, draft bool, tags []string, template ContentTemplate) string {
-	published := !draft
-
-	// Build frontmatter map
-	fm := make(map[string]interface{})
-
-	// Add template-specific frontmatter first (can be overridden)
-	for k, v := range template.Frontmatter {
-		fm[k] = v
+func generateTemplatedContent(title, slug string, date time.Time, draft, draftSet bool, tags []string, template ContentTemplate) string {
+	// Only the selected starter's frontmatter and explicit user overrides are
+	// serialized. A value inferred from site/built-in defaults is not a field.
+	fm := make(map[string]interface{}, len(template.Frontmatter))
+	for key, value := range template.Frontmatter {
+		fm[key] = expandStarterValue(value, title, slug, date)
 	}
-
-	// Add standard fields (these override template defaults)
-	fm["title"] = title
-	fm["slug"] = slug
-	fm["date"] = date.Format("2006-01-02")
-	fm["published"] = published
-	fm["draft"] = draft
-
-	// Handle tags
-	if len(tags) > 0 {
+	if _, exists := fm["title"]; exists {
+		fm["title"] = title
+	}
+	if draftSet {
+		fm["published"] = !draft
+		fm["draft"] = draft
+	}
+	if tags != nil {
 		fm["tags"] = tags
-	} else if _, exists := fm["tags"]; !exists {
-		fm["tags"] = []string{}
 	}
 
-	// Add description if not present
-	if _, exists := fm["description"]; !exists {
-		fm["description"] = ""
+	body := expandStarterText(template.Body, title, slug, date)
+	if body == "" {
+		body = "Write your content here..."
 	}
-
-	// Serialize frontmatter to YAML
+	if len(fm) == 0 {
+		return body + "\n"
+	}
 	fmBytes, err := yaml.Marshal(fm)
 	if err != nil {
-		// Fallback to simple format
+		// Preserve the existing fallback on invalid frontmatter values.
 		return generatePostContentWithTags(title, slug, date, draft, tags)
 	}
-
-	// Build content
 	var sb strings.Builder
 	sb.WriteString("---\n")
 	sb.Write(fmBytes)
 	sb.WriteString("---\n\n")
-
-	// Use template body or default
-	body := template.Body
-	if body == "" {
-		body = "Write your content here..."
-	}
 	sb.WriteString(body)
 	sb.WriteString("\n")
-
 	return sb.String()
+}
+
+func expandStarterValue(value interface{}, title, slug string, date time.Time) interface{} {
+	switch typed := value.(type) {
+	case string:
+		return expandStarterText(typed, title, slug, date)
+	case []interface{}:
+		out := make([]interface{}, len(typed))
+		for i, item := range typed {
+			out[i] = expandStarterValue(item, title, slug, date)
+		}
+		return out
+	case map[string]interface{}:
+		out := make(map[string]interface{}, len(typed))
+		for key, item := range typed {
+			out[key] = expandStarterValue(item, title, slug, date)
+		}
+		return out
+	default:
+		return value
+	}
+}
+
+func expandStarterText(value, title, slug string, date time.Time) string {
+	replacer := strings.NewReplacer("{{title}}", title, "{{slug}}", slug, "{{date}}", date.Format("2006-01-02"), "{{datetime}}", date.UTC().Format(time.RFC3339))
+	return replacer.Replace(value)
 }
 
 // generateSlug creates a URL-safe slug from a title.

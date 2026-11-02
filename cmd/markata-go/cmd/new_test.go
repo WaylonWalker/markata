@@ -314,13 +314,16 @@ func TestGenerateTemplatedContent(t *testing.T) {
 		Frontmatter: map[string]interface{}{
 			"templateKey": "post",
 			"layout":      "post.html",
+			"title":       "{{title}}",
+			"slug":        "{{slug}}",
+			"date":        "{{date}}",
 		},
 		Body:   "Start writing here...",
 		Source: "builtin",
 	}
 
 	date := time.Date(2024, 1, 15, 0, 0, 0, 0, time.UTC)
-	content := generateTemplatedContent("My Test Post", "my-test-post", date, true, []string{"go", "test"}, template)
+	content := generateTemplatedContent("My Test Post", "my-test-post", date, true, true, []string{"go", "test"}, template)
 
 	// Check frontmatter delimiters
 	if !strings.HasPrefix(content, "---\n") {
@@ -524,5 +527,188 @@ func TestContentTemplatesConfig_GetPlacement(t *testing.T) {
 				t.Errorf("GetPlacement(%q) = %q, want %q", tt.templateName, dir, tt.expected)
 			}
 		})
+	}
+}
+
+func TestParseTemplateFile_StarterMetadata(t *testing.T) {
+	content := "---\nstarter:\n  name: how-to\n  description: A useful guide\n  aliases:\n    - tutorial\n_directory: guides\ndescription: Page description\ntitle: \"{{title}}\"\ndate: \"{{date}}\"\n---\n\n## {{title}}\n"
+	template := parseTemplateFile("guide", content)
+	if template.Name != "how-to" || template.Directory != "guides" || template.Description != "A useful guide" {
+		t.Fatalf("template metadata = %#v", template)
+	}
+	if len(template.Aliases) != 1 || template.Aliases[0] != "tutorial" {
+		t.Fatalf("aliases = %#v", template.Aliases)
+	}
+	for _, key := range []string{"starter", "_directory"} {
+		if _, ok := template.Frontmatter[key]; ok {
+			t.Errorf("metadata %q leaked into generated frontmatter", key)
+		}
+	}
+	if template.Frontmatter["description"] != "Page description" {
+		t.Fatal("page description frontmatter was not preserved")
+	}
+}
+
+func TestParseTemplateFile_UsesCanonicalNameAsDefaultDirectory(t *testing.T) {
+	template := parseTemplateFile("guide", "---\nstarter:\n  name: how-to\n---\n\nBody\n")
+	if template.Name != "how-to" || template.Directory != "how-to" {
+		t.Fatalf("name/directory = %q/%q, want how-to/how-to", template.Name, template.Directory)
+	}
+}
+
+func TestParseTemplateFile_ExplicitDirectoryWinsOverCanonicalName(t *testing.T) {
+	template := parseTemplateFile("guide", "---\nstarter:\n  name: how-to\n_directory: guide\n---\n\nBody\n")
+	if template.Name != "how-to" || template.Directory != "guide" {
+		t.Fatalf("explicit directory lost: %#v", template)
+	}
+}
+
+func TestParseTemplateFile_ReportsInvalidStarterMetadata(t *testing.T) {
+	for _, content := range []string{
+		"---\nstarter: invalid\n---\nBody\n",
+		"---\nstarter:\n  aliases: one\n---\nBody\n",
+		"---\nstarter: [broken\n---\nBody\n",
+		"---\nstarter:\n  name: no-close\n",
+	} {
+		template := parseTemplateFile("broken", content)
+		if template.ValidationError == "" {
+			t.Fatalf("invalid starter metadata was not reported: %s", content)
+		}
+	}
+}
+
+func TestResolveTemplateSelection_SiteAliasDoesNotInjectFields(t *testing.T) {
+	templates := map[string]ContentTemplate{
+		"guide": {
+			Name:        "guide",
+			Source:      "file",
+			Directory:   "guides",
+			Aliases:     []string{"tutorial"},
+			Frontmatter: map[string]interface{}{"title": "{{title}}"},
+		},
+	}
+	resolved, canonical, ok := resolveTemplateSelection("tutorial", templates)
+	if !ok || canonical != "guide" {
+		t.Fatalf("site alias did not resolve: %#v %q", resolved, canonical)
+	}
+	for _, key := range []string{"template", "templateKey"} {
+		if _, exists := resolved.Frontmatter[key]; exists {
+			t.Errorf("site alias injected %q into content", key)
+		}
+	}
+}
+
+func TestResolveTemplateSelection_PrefersCanonicalOverAlias(t *testing.T) {
+	templates := map[string]ContentTemplate{
+		"post":  {Name: "post", Directory: "posts"},
+		"guide": {Name: "guide", Directory: "guides", Aliases: []string{"post"}},
+	}
+	template, canonical, ok := resolveTemplateSelection("post", templates)
+	if !ok || canonical != "post" || template.Name != "post" {
+		t.Fatalf("canonical selection failed: %q, %#v, %t", canonical, template, ok)
+	}
+}
+
+func TestResolveTemplateSelection_RejectsAmbiguousAliasButKeepsNames(t *testing.T) {
+	templates := builtinTemplates()
+	templates["guide"] = ContentTemplate{Name: "guide", Directory: "guides", Aliases: []string{"tutorial"}}
+	if _, _, ok := resolveTemplateSelection("tutorial", templates); ok {
+		t.Fatal("expected ambiguous tutorial alias to be rejected")
+	}
+	if template, _, ok := resolveTemplateSelection("article", templates); !ok || template.Name != "article" {
+		t.Fatal("article canonical name must remain usable")
+	}
+	if template, _, ok := resolveTemplateSelection("guide", templates); !ok || template.Name != "guide" {
+		t.Fatal("guide canonical name must remain usable")
+	}
+}
+
+func TestLoadTemplatesFromDir_ReportsDuplicateCanonicalName(t *testing.T) {
+	directory := t.TempDir()
+	for _, name := range []string{"one.md", "two.md"} {
+		if err := os.WriteFile(filepath.Join(directory, name), []byte("---\nstarter:\n  name: guide\n---\nBody"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	templates := map[string]ContentTemplate{}
+	loadTemplatesFromDir(directory, templates)
+	if got := templates["guide"].ValidationError; !strings.Contains(got, "one.md") || !strings.Contains(got, "two.md") {
+		t.Fatalf("duplicate starter conflict must identify both files: %q", got)
+	}
+}
+
+func TestValidateTemplateAliases_KeepsBuiltinsUsable(t *testing.T) {
+	templates := builtinTemplates()
+	// The built-ins must resolve by canonical name.
+	for name, template := range templates {
+		if template.ValidationError != "" {
+			t.Errorf("built-in %q unexpectedly invalid: %s", name, template.ValidationError)
+		}
+	}
+}
+
+func TestGenerateTemplatedContent_ExpandsStarterVariables(t *testing.T) {
+	template := ContentTemplate{Frontmatter: map[string]interface{}{"subtitle": "{{title}} ({{slug}})", "when": "{{date}}"}, Body: "## {{title}} on {{datetime}}"}
+	date := time.Date(2024, 1, 15, 12, 30, 0, 0, time.UTC)
+	content := generateTemplatedContent("A Guide", "a-guide", date, false, false, nil, template)
+	for _, expected := range []string{"subtitle: A Guide (a-guide)", "when: \"2024-01-15\"", "## A Guide on 2024-01-15T12:30:00Z"} {
+		if !strings.Contains(content, expected) {
+			t.Errorf("content missing %q:\n%s", expected, content)
+		}
+	}
+}
+
+func TestGenerateTemplatedContent_OmitsInheritedDefaults(t *testing.T) {
+	template := ContentTemplate{
+		Frontmatter: map[string]interface{}{"title": "{{title}}"},
+		Body:        "## {{title}}",
+	}
+	date := time.Date(2024, 1, 15, 0, 0, 0, 0, time.UTC)
+	content := generateTemplatedContent("My Page", "my-page", date, false, false, nil, template)
+	if !strings.Contains(content, "title: My Page") || !strings.Contains(content, "## My Page") {
+		t.Fatalf("starter title was not expanded: %s", content)
+	}
+	for _, field := range []string{"slug:", "date:", "published:", "draft:", "tags:", "description:"} {
+		if strings.Contains(content, field) {
+			t.Errorf("inherited default %q should not be written: %s", field, content)
+		}
+	}
+}
+
+func TestGenerateTemplatedContent_ExplicitOverrides(t *testing.T) {
+	template := ContentTemplate{Frontmatter: map[string]interface{}{
+		"draft": true, "published": false, "tags": []string{"starter"},
+	}}
+	date := time.Date(2024, 1, 15, 0, 0, 0, 0, time.UTC)
+	content := generateTemplatedContent("Page", "page", date, false, true, []string{}, template)
+	for _, expected := range []string{"draft: false", "published: true", "tags: []"} {
+		if !strings.Contains(content, expected) {
+			t.Errorf("explicit override missing %q: %s", expected, content)
+		}
+	}
+}
+
+func TestGenerateTemplatedContent_NoFrontmatterProducesPlainBody(t *testing.T) {
+	template := ContentTemplate{Body: "Hello {{title}}"}
+	date := time.Date(2024, 1, 15, 0, 0, 0, 0, time.UTC)
+	content := generateTemplatedContent("World", "world", date, false, false, nil, template)
+	if content != "Hello World\n" {
+		t.Fatalf("unexpected generated body: %q", content)
+	}
+}
+
+func TestGenerateTemplatedContent_PreservesUnselectedStarterDefaults(t *testing.T) {
+	template := ContentTemplate{Frontmatter: map[string]interface{}{
+		"published":   false,
+		"draft":       true,
+		"tags":        []interface{}{"site-tag"},
+		"description": "Starter description",
+	}}
+	date := time.Date(2024, 1, 15, 0, 0, 0, 0, time.UTC)
+	content := generateTemplatedContent("A Guide", "a-guide", date, false, false, nil, template)
+	for _, expected := range []string{"published: false", "draft: true", "- site-tag", "description: Starter description"} {
+		if !strings.Contains(content, expected) {
+			t.Errorf("content missing preserved value %q:\n%s", expected, content)
+		}
 	}
 }

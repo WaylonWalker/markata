@@ -14,7 +14,7 @@ assignment = next(node for node in ast.parse(source).body if isinstance(node, as
                   and any(isinstance(target, ast.Name) and target.id == 'ASSET_BUNDLE' for target in node.targets))
 output = io.BytesIO()
 with zipfile.ZipFile(io.BytesIO(base64.b64decode(assignment.value.value))) as archive:
-    names = set(archive.namelist()) | {'site-tree.js', 'site-tree.css', 'site-tree.LICENSE'}
+    names = set(archive.namelist()) | {'favicon.ico', 'site-tree.js', 'site-tree.css', 'site-tree.LICENSE'}
     with zipfile.ZipFile(output, 'w', zipfile.ZIP_DEFLATED) as updated:
         for name in sorted(names):
             asset = root / 'pkg/workbench/web' / name

@@ -64,6 +64,19 @@ completion after every character. Ctrl+Space requests completion immediately.
 The demo binds to 127.0.0.1 by default. It rejects cross-origin render requests
 and non-JSON content types. It has HTTP timeouts and graceful shutdown.
 The handler is reusable by a future builder; it does not depend on CLI globals.
+On desktop, the editor shell fills the viewport without document-level scrolling;
+the workspace panes own their scroll areas. Narrow mobile layouts may scroll the
+stacked editor and preview vertically.
+In split layout, the preview marks the rendered block for the active source
+cursor and shows a compact labeled caret. When source text matches rendered
+text, the preview caret SHOULD map the editor's character offset to a rendered
+text range. For transformed or replaced content, it MUST fall back to the
+nearest source-mapped position. In Vim mode, the presence caret MUST reflect
+normal, insert, replace, and visual cursor shapes. Presence markers use
+participant IDs, labels, and colors so additional editor cursors can be added
+without changing the marker rendering model. Clicking rendered text in the
+preview MUST move the source cursor to the matching source position when a
+source match exists; links MUST retain their normal navigation behavior.
 
 
 ## Integration benchmark

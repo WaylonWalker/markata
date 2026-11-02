@@ -38,6 +38,25 @@ func browserFixture(t *testing.T) (string, BrowserConfig) {
 	return root, config
 }
 
+func TestLoadManagedImages_UsesConfiguredOutputDirectory(t *testing.T) {
+	root := t.TempDir()
+	if err := os.WriteFile(filepath.Join(root, "markata-go.toml"), []byte("[markata-go]\noutput_dir = \"public\"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	output := filepath.Join(root, "public")
+	if err := os.MkdirAll(output, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	images := `{"$schema":"markata://schemas/image-index/v1","schema":"markata.image-index","schema_version":1,"generator":{"name":"test","version":"1"},"image_count":1,"images":[{"src":"/images/managed.png","width":100,"height":50,"alt":"Managed","mime_type":"image/png","cover":false,"uses":[]}]}`
+	if err := os.WriteFile(filepath.Join(output, "images.json"), []byte(images), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	got := loadManagedImages(root)
+	if len(got) != 1 || got[0].Src != "/images/managed.png" {
+		t.Fatalf("loadManagedImages() = %#v, want configured image index", got)
+	}
+}
+
 func browserConnect(t *testing.T, server *httptest.Server) *websocket.Conn {
 	t.Helper()
 	conn, response, err := websocket.DefaultDialer.Dial("ws"+strings.TrimPrefix(server.URL, "http"), http.Header{"Origin": {server.URL}})

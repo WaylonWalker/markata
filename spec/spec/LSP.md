@@ -19,6 +19,10 @@ same LSP. They support wiki-link slugs and aliases, Markdown document paths,
 container names and modifiers from the command catalog, and documented container
 attributes and values. Mermaid completions include diagram types, flowchart
 directions, a flowchart starter, and class style properties. Existing frontmatter, admonition, and mention completions remain available.
+Frontmatter completions MUST retain the parent field context inside YAML list
+items so values such as `tags` can be completed. Image path completion MUST read
+the managed image index from the configured output directory, defaulting to
+`output` when no site configuration is available.
 Completion edits use UTF-16 positions,
 preserve closing delimiters, and cannot apply to a changed buffer or cursor.
 Ctrl+Space requests completion explicitly. Broken-link diagnostics appear in

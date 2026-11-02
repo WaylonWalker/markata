@@ -129,8 +129,12 @@ def main() -> None:
     if OUT.exists():
         shutil.rmtree(OUT)
     (OUT / "assets").mkdir(parents=True)
-    for name in ("site.css", "tabs.js"):
-        shutil.copyfile(SITE / name, OUT / "assets" / name)
+    shutil.copyfile(SITE / "site.css", OUT / "assets" / "site.css")
+    # Keep the docs homepage on the same native tab controller as Markata sites.
+    shutil.copyfile(
+        ROOT / "pkg" / "themes" / "default" / "static" / "js" / "md-tabs.js",
+        OUT / "assets" / "md-tabs.js",
+    )
     (OUT / "index.html").write_text(
         (SITE / "home.html").read_text(encoding="utf-8").replace("@@BASE@@", BASE),
         encoding="utf-8",

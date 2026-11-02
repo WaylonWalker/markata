@@ -131,19 +131,10 @@
       const bounds = dialog.getBoundingClientRect();
       if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) dialog.close();
     });
-    if (window.MarkataShortcuts) {
-      window.MarkataShortcuts.register({
-        id:'workbench.quickOpen', label:'Go to File', category:'Navigation',
-        description:'Find a site document by title, slug, path or tag.',
-        bindings:{vscode:'Mod+P',writer:'Mod+P',vim:'Mod+P',emacs:'Ctrl+X Ctrl+F'},
-        run:open
-      });
-    } else {
-      document.addEventListener('keydown', event => {
-        if (event.isComposing || event.altKey || event.shiftKey || !(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'p') return;
-        event.preventDefault();event.stopPropagation();
-        if (!dialog.open) open();
-      },true);
-    }
+    document.addEventListener('keydown', event => {
+      if (event.isComposing || event.altKey || event.shiftKey || !(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'p') return;
+      event.preventDefault(); event.stopPropagation();
+      if (!dialog.open) open();
+    }, true);
   }
 })();

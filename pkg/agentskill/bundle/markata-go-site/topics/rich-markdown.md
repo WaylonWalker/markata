@@ -71,6 +71,35 @@ frontmatter.title, avoid duplicating it as the first body H1.
    it; custom `preserve` lists replace the defaults. Verify the *published*
    code.css still has `.md-code-copy` and `.md-code-enhanced` positioning.
 
+## Native Markdown tabs
+
+For install alternatives and code examples in different languages, prefer
+native `md-tabs` (no Web Awesome runtime required):
+
+````markdown
+::: md-tabs {style="boxed" data-label="Installation methods"}
+
+:::: md-tab {label="Shell"}
+```bash
+markata version
+```
+::::
+
+:::: md-tab {label="Go"}
+```bash
+go version
+```
+::::
+
+:::
+````
+
+Use direct child `md-tab` blocks and matching fence depths. Options:
+`style="boxed|underline|pills"`, `data-label` on the group,
+`label` on each tab. Native panels are server-rendered and readable
+without JS; their enhancement script is page-scoped. Print expands
+all panels. `wa-tabs` remains available for Web Awesome users.
+
 ## Icons alongside text
 
 ````markdown

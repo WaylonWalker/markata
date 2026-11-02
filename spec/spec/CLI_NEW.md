@@ -1,5 +1,10 @@
 # CLI `new` Command Specification
 
+> **Shared starter format:** CLI, interactive CLI (TUI), and web workbench
+> content creation MUST use the same site-authored Markdown starter files.
+> The editor interface may differ, but template discovery and generated
+> content MUST follow the contract in [Shared Markdown Starters](CONTENT_TEMPLATES.md).
+
 This document specifies the `markata-go new` command behavior, including the
 interactive TUI wizard powered by charmbracelet/huh.
 

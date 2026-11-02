@@ -2,11 +2,15 @@
 
 This site's authoring source is `docs/**/*.md`, its custom homepage is `docs-site/home.html`, and the renderer is `scripts/build_docs_site.py`. It uses Python Markdown to preserve the current documentation layout. It is not yet a native Markata CLI site: do not point `markata builder-admin` at the repository root and assume it will publish these pages.
 
+The custom homepage uses the **same `md-tabs` HTML contract and `pkg/themes/default/static/js/md-tabs.js` controller** as native Markata Markdown tabs. `scripts/build_docs_site.py` copies the controller to `assets/md-tabs.js` at build time; do not reintroduce a separate docs-only tab implementation. The homepage HTML is hand-authored (not rendered with Markata's Goldmark plugin), since the docs builder remains Python Markdown. With JS disabled, all install options remain visible; print expands all options.
+
+
 ## Local preview
 
 ```bash
 python -m pip install 'Markdown==3.8.2'
 DOCS_BASE_PATH=/ python scripts/build_docs_site.py
+python docs-site/test_native_tabs.py
 python -m http.server --directory docs-site/_site 8000
 ```
 

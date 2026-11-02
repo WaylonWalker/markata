@@ -32,8 +32,17 @@ Scrolling either pane keeps the corresponding Markdown visible in the other.
 When you write or move the cursor, the preview follows the editor. Scroll sync
 is on by default; turn off **Sync editor and preview scrolling** in **Editor
 settings** to scroll each pane independently. The choice is saved in this browser.
-In split view, a subtle marker shows the corresponding preview block. The source
-pane keeps its normal caret on the actual text cursor. Preview updates preserve
+At the end of a document, both panes keep extra scroll space so the last lines
+can move above the bottom edge while you write.
+In split view, a subtle marker shows the corresponding preview block, with a
+thin caret and **You** flag at the active location. When rendered text matches
+the source line, the preview caret follows the character cursor. For content
+that a renderer transforms or replaces, it falls back to the nearest mapped
+source position. Click rendered text to move the source caret to the matching
+text when possible; links keep their normal navigation behavior. The source
+pane keeps its normal caret on the actual text
+cursor. With the Vim keymap, the preview caret changes shape for normal,
+insert, replace, and visual modes. Preview updates preserve
 unchanged blocks, and layout changes refresh the source-to-preview mapping,
 including after images and fonts load. While you edit, the preview follows the
 caret after the matching content update completes, including when you keep
@@ -44,12 +53,6 @@ container boundaries add source anchors to improve scroll alignment in long
 sections; these markers exist only in the preview render and do not change your
 source. Within nested content, the marker follows the narrowest container that
 contains the caret line.
-Choose Default, Vim, Emacs, or Sublime **text-editing keymaps** in **Editor settings**.
-For the Go site-backed workbench, **Editor settings → Keyboard shortcuts…** opens
-the application-wide command bindings. Choose a Writer, VS Code, Vim, or Emacs
-**application preset** independently of the editor text keymap; search commands,
-record overrides, reset conflicts, and use the command palette for discoverability.
-See [Keyboard shortcuts](./editor-keybindings/).
 Choose Default, Vim, Emacs, or Sublime keymaps in **Editor settings**.
 In Vim mode, press `/` to search forward, `?` to search backward, then `n` or
 `N` to move between matches.
@@ -100,6 +103,26 @@ The editor sends unsaved text as a synthetic `.markata/browser-draft.md` documen
 This document stays in memory. Markdown path suggestions start at the workspace root because the draft has no source file.
 The Files tree opens source files from the selected workspace using Markata glob rules. The Feeds view groups files by configured feed filters, and the Tags view groups them by loaded frontmatter. The selector shows file, feed, and tag counts. See [workspace navigation](./renderer-site-tree/).
 Each WebSocket connection owns its own draft and index. Reload the page to index external file changes.
+
+## Edit page properties
+
+Select a site file, then choose **Properties** to edit its frontmatter in the
+full-height page-details view. The live preview stays visible beside it. Choose
+**Back to Markdown** to return to the source, or **Edit YAML** to work directly
+with the frontmatter block. Press **Escape** to return to the article. The
+command palette also has actions to open page details, add a property, and
+return to Markdown.
+
+The page summary shows the title, URL slug or source path, and publication
+state. Common fields appear first. Choose **Add property**, search for a known
+field, and select it.
+Open **Custom property** to add a site-specific YAML field. Edit tags as chips:
+remove one tag at a time or enter a tag and choose **Add**. Advanced fields
+remain available under **Show advanced properties**.
+
+Property edits update the Markdown source and use the normal workspace save
+and preview behavior. Press **Ctrl+Z** or **Cmd+Z** to undo an edit. Use
+**Remove** to delete a property from the page.
 
 The footer reports the language connection state. Editing and preview continue if the connection fails.
 Reload the page to reconnect. The browser adapter is shared with the [FastAPI example](./fastapi-editor/).
@@ -238,22 +261,61 @@ To open the command palette with a complete example loaded, visit `/?example`.
 
 When editing a Markdown file inside a Git-backed workspace, select **Publish**
 in the upper-right header, search for **Publishing: Review & Publish** in the
-command palette, or press **Ctrl/Cmd+Shift+Enter**. These routes open the same
+command palette, or press **Ctrl/Cmd+S** or **Ctrl/Cmd+Shift+Enter**. Vim mode
+also accepts `:w`; Emacs mode accepts **Ctrl-X Ctrl-S**. Each opens the same
 review dialog; none of them publishes immediately.
 
 The dialog first waits until the exact text in the editor has been saved to
 the workspace. It then compares that saved source with the file from the last
-Git commit. Desktop shows rendered comparisons side by side; mobile can switch
-between versions by tapping or swiping. **Source diff** shows a unified raw
-Markdown comparison. Metadata chips identify draft/published flag changes,
-slug changes, and conflicting publication flags.
+Git commit. **Rendered diff** opens first. **Side by side** shows both rendered
+versions and keeps matching sections in view while you scroll; mobile can switch
+between versions by tapping or swiping. **Source diff** shows unified Markdown,
+and **Full diff** opens the detailed source viewer. The **Commit message** tab
+shows the message for the local commit and lets you edit it. Metadata chips
+identify draft/published flag changes, slug changes, and conflicting publication
+flags.
 
-**This is an initial, read-only review implementation.** "Last committed" is
-not necessarily the live site revision. Git commit, remote push, deployment,
-and confirmation are not wired up yet, and the final Publish action stays
-disabled until a deploy backend can verify success. A scratch file must first
-be created or opened as a workspace Markdown post. If the workspace has no Git
-history, the review reports this rather than assuming a baseline.
+The review can create a local Git commit for the selected page, using the
+message shown in the **Commit message** tab. After that commit, **Push to
+origin** is a separate action. Pushing does not prove that a deployment
+succeeded; when Builder Admin verification is configured, **Check live status**
+can confirm the deployed source revision. “Last committed” is not necessarily
+the live site revision. A scratch file must first be created or opened as a
+workspace Markdown post. If the workspace has no Git history, the review
+reports this rather than assuming a baseline.
 
 The publish contract and planned deployment safety gates are defined in
 [Editor publishing](../../spec/spec/EDITOR_PUBLISHING.md).
+
+
+### Verify a remote publication with Builder Admin (opt-in)
+
+Publishing has deliberately separate steps: review the exact Markdown and
+frontmatter, commit only that selected page, then explicitly push to `origin`.
+A successful push **does not** prove the site is live.
+
+For a site deployed through Markata Builder Admin, the local editor can
+optionally verify the current release's recorded source Git commit:
+
+```sh
+export MARKATA_PUBLISH_BUILDER_URL="https://builder.example.com"
+export MARKATA_PUBLISH_BUILDER_TOKEN="<your authorized bearer token>"
+markata editor --workspace ./site
+```
+
+Use an API token authorized for Builder Admin's `/api/v1/state`. The editor
+stores neither the token nor builder URL in the browser; the local backend
+makes a short, authenticated, server-side GET request. Remote builder URLs
+must use HTTPS (loopback HTTP is permitted for development). Redirects are
+not followed, so bearer tokens cannot be forwarded to a different host.
+
+After pushing, select **Check live status**. This checks
+`revision.live_source_commit`, with a fallback to the current release's
+source revision when available. It reports **Live · Verified** only if that
+revision matches the exact pushed SHA. Unknown revision, unavailable API,
+unconfigured auth, failed build, and different live SHA never count as success.
+
+This verification identifies the release's **source Git revision**, not
+its byte-for-byte rendered output, CDN cache rollout, or availability at
+every public edge. Site URL health checks and other deployment providers
+need dedicated follow-up adapters.

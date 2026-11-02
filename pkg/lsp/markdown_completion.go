@@ -25,6 +25,7 @@ var containerClasses = []markdownSuggestion{
 	{"md-progress", "md-progress", "Progress gauge"}, {"md-section", "md-section", "Story section"},
 	{"md-source", "md-source", "Markdown source disclosure"}, {"md-sparkline", "md-sparkline", "Trend sparkline"},
 	{"md-stack", "md-stack", "Vertical stack"},
+	{"md-tab", "md-tab", "Native tab panel"}, {"md-tabs", "md-tabs", "Native accessible tabs"},
 	{"md-stat", "md-stat", "Metric statistic"}, {"md-status", "md-status", "Status badge"},
 	{"wa-animated-image", "wa-animated-image", "Web Awesome animated image"}, {"wa-badge", "wa-badge", "Web Awesome badge"},
 	{"wa-carousel", "wa-carousel", "Web Awesome carousel"}, {"wa-comparison", "wa-comparison", "Web Awesome image comparison"},

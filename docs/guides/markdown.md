@@ -28,6 +28,7 @@ markata-go supports standard Markdown (CommonMark), GitHub Flavored Markdown (GF
 - [Heading Anchors](#heading-anchors)
 - [Footnotes](#footnotes)
 - [Lucide icons](/docs/guides/icons/) - inline SVG icons, centered icon cards, and feature rows
+- [Native Markdown tabs](/docs/guides/markdown-containers/#native-tabs-no-web-awesome-required) - tabbed code and install instructions
 - [Rich Markdown layouts](/docs/guides/markdown-containers/) - responsive cards, grids, and diagrams
 - [Roads](/docs/guides/roads/) - scroll-drawn timelines and roadmaps (separate guide)
 
