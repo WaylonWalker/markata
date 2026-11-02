@@ -7,6 +7,19 @@
   function attach(editor) {
     const workspace = window.MarkataSiteTree;
     if (!workspace?.files || !workspace?.openFile) return;
+    // The newer site tree has a searchable, image-aware picker. Keep it as
+    // the only file picker while registering its action with the app keymap.
+    if (typeof workspace.openPicker === 'function') {
+      if (window.MarkataShortcuts) {
+        window.MarkataShortcuts.register({
+          id:'workbench.quickOpen', label:'Go to File', category:'Navigation',
+          description:'Find a workspace file by title, slug or path.',
+          bindings:{vscode:'Mod+P',writer:'Mod+P',vim:'Mod+P',emacs:'Ctrl+X Ctrl+F'},
+          run:()=>workspace.openPicker()
+        });
+      }
+      return;
+    }
 
     const dialog = document.createElement('dialog');
     dialog.className = 'file-finder';
