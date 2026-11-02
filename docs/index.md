@@ -14,6 +14,82 @@ Let's be honest. We're all running agents these days. They manage everything.
 
 Write Markdown. Give your agent the right context. Publish a site you own.
 
+## Install Markata
+
+Choose an installation method. Markata is a single Go-based CLI; you don't need Python to run it.
+
+::: md-tabs {#homepage-install data-label="Installation methods" style="boxed"}
+
+:::: md-tab {label="curl"}
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/WaylonWalker/markata/main/install.sh | bash
+markata version
+```
+
+Linux / macOS. [Review the installer source](https://github.com/WaylonWalker/markata/blob/main/install.sh) before running it.
+
+::::
+
+:::: md-tab {label="Bash"}
+
+```bash
+curl -fsSLo install-markata.sh https://raw.githubusercontent.com/WaylonWalker/markata/main/install.sh
+less install-markata.sh
+bash install-markata.sh
+markata version
+```
+
+Download and inspect the installer before executing it.
+
+::::
+
+:::: md-tab {label="mise"}
+
+```bash
+mise use -g github:WaylonWalker/markata
+markata version
+```
+
+Install from GitHub Releases. Older release archives may use the `markata-go` executable name.
+
+::::
+
+:::: md-tab {label="Go"}
+
+```bash
+go install github.com/WaylonWalker/markata/cmd/markata@main
+markata version
+```
+
+Build the current source with Go 1.27 or newer.
+
+::::
+
+:::: md-tab {label="GitHub"}
+
+Download the appropriate binary from [GitHub Releases](https://github.com/WaylonWalker/markata/releases), verify the checksum, and add it to your `PATH`.
+
+::::
+
+:::: md-tab {label="PyPI"}
+
+```bash
+uv tool install markata
+# or run without installing:
+uvx markata --help
+# or use pip:
+pip install markata
+```
+
+Current `markata` PyPI releases install the Go CLI; older pinned versions are the original Python implementation.
+
+::::
+
+:::
+
+See [all installation options](/docs/installation/) for platform details and troubleshooting.
+
 ## Start here
 
 1. [Install Markata](/docs/installation/) using curl, a shell, mise, GitHub Releases, or Go.
