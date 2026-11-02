@@ -22,6 +22,14 @@ def check_app_shortcuts(page, url):
     page.keyboard.press('Escape')
     expect(page.locator('.file-picker[open], .file-finder[open]')).to_have_count(0)
 
+    # The new picker also remains reachable through the shared command palette.
+    page.keyboard.press('Control+Shift+P')
+    expect(page.locator('.markdown-commands[open]')).to_be_visible()
+    page.locator('#commands-query').fill('open file')
+    page.keyboard.press('Enter')
+    expect(page.locator('#files-query')).to_be_focused()
+    page.keyboard.press('Escape')
+
     page.keyboard.press('Control+B')
     expect(page.locator('#workbench')).to_have_class('sidebar-hidden', timeout=5000)
     page.keyboard.press('Control+B')
