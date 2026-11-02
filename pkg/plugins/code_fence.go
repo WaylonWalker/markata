@@ -43,8 +43,8 @@ var (
 // (csv), so they are routed around the highlighter entirely.
 var pluginFenceLanguages = map[string]bool{
 	"csv":     true,
-	"chartjs": true,
-	"mermaid": true,
+	"chartjs": true, //nolint:goconst // Plugins match this exact fenced language identifier.
+	"mermaid": true, //nolint:goconst // Plugins match this exact fenced language identifier.
 }
 
 // KindPluginFence is the AST node kind for fences handed to other plugins.
@@ -223,10 +223,12 @@ func parseHighlightRanges(spec string) []interface{} {
 }
 
 // codeFenceDisplayLang maps lexer names to friendlier badge labels.
+const codeFenceLangShell = "shell"
+
 var codeFenceDisplayLang = map[string]string{
-	"js": "javascript", "ts": "typescript", "py": "python", "sh": "shell",
-	"yml": "yaml", "md": "markdown", "rb": "ruby", "rs": "rust", "kt": "kotlin",
-	"console": "shell", "shell-session": "shell", "plaintext": "", "text": "", "txt": "",
+	"js": "javascript", "ts": "typescript", "py": "python", //nolint:goconst // Display label; other package uses refer to the Python executable.
+	"sh": codeFenceLangShell, "yml": "yaml", "md": formatMarkdown, "rb": "ruby", "rs": "rust", "kt": "kotlin",
+	"console": codeFenceLangShell, "shell-session": codeFenceLangShell, "plaintext": "", formatText: "", formatTxt: "",
 }
 
 // writeCodeFenceHeader emits the static portion of the code chrome (title and
@@ -309,7 +311,7 @@ func codeFenceWrapper(w util.BufWriter, c highlighting.CodeBlockContext, enterin
 	writeCodeFenceHeader(w, lang, title)
 	if !c.Highlighted() {
 		_, _ = w.WriteString("<pre><code")
-		if len(lang) > 0 {
+		if lang != "" {
 			_, _ = w.WriteString(` class="language-`)
 			_, _ = w.Write(util.EscapeHTML([]byte(lang)))
 			_, _ = w.WriteString(`"`)

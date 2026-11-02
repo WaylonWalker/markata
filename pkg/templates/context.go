@@ -1404,7 +1404,10 @@ func (c Context) ToPongo2() pongo2.Context {
 	}
 
 	resolvedContentSidebar := resolveContentSidebar(configMap, c.Post)
-	currentHref, _ := postMap["href"].(string)
+	currentHref := ""
+	if href, ok := postMap["href"].(string); ok {
+		currentHref = href
+	}
 	ctx := pongo2.Context{
 		"post":                     postMap,
 		"body":                     c.Body,
