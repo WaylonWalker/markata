@@ -46,11 +46,13 @@ interactive terminal without --agent, markata-go detects installed agents and
 offers to install for all of them. Declining opens a fuzzy picker. Scripts
 retain the environment-detected target or universal project layout; global
 installs require an explicit --agent when prompting is unavailable.
+Repeat --agent or comma-separate names to install for several agents at once.
 
 Examples:
   markata-go agent install
   markata-go agent setup
   markata-go agent install --agent claude-code
+  markata-go agent install --agent github-copilot --agent claude-code
   markata-go agent install --global
   markata-go agent install --agent opencode --global
   markata-go agent install ../my-site --dry-run
@@ -96,10 +98,12 @@ var agentUpdateCmd = &cobra.Command{
 	Long: `Update the installed markata-go site skill in place.
 
 This is the user-friendly equivalent of running 'markata-go agent install --force'.
+Repeat --agent or comma-separate names to update several agents at once.
 
 Examples:
   markata-go agent update
   markata-go agent update --agent claude-code
+  markata-go agent update -g --agent github-copilot --agent claude-code
   markata-go agent update --agent opencode --global --dry-run
   markata-go agent update ../my-site`,
 	Args: cobra.MaximumNArgs(1),
@@ -123,7 +127,7 @@ Examples:
 }
 
 var (
-	agentInstallAgent        string
+	agentInstallAgent        []string
 	agentInstallLegacyTarget string
 	agentInstallName         string
 	agentInstallForce        bool
@@ -135,7 +139,7 @@ var (
 	agentDoctorName         string
 	agentDoctorGlobal       bool
 
-	agentUpdateAgent        string
+	agentUpdateAgent        []string
 	agentUpdateLegacyTarget string
 	agentUpdateName         string
 	agentUpdateDryRun       bool
@@ -156,7 +160,7 @@ func init() {
 	agentCmd.AddCommand(agentRemoveCmd)
 
 	installFlags := agentInstallCmd.Flags()
-	installFlags.StringVar(&agentInstallAgent, "agent", "", fmt.Sprintf("target agent (%s)", strings.Join(supportedAgentNames(), ", ")))
+	installFlags.StringSliceVar(&agentInstallAgent, "agent", nil, fmt.Sprintf("target agent (repeat or comma-separate; %s)", strings.Join(supportedAgentNames(), ", ")))
 	installFlags.StringVarP(&agentInstallLegacyTarget, "target", "", "", "legacy alias for --agent")
 	installFlags.BoolVarP(&agentInstallGlobal, "global", "g", false, "install into the selected agent's user-level skill directory")
 	installFlags.StringVar(&agentInstallName, "name", agentskill.SiteSkillName, "installed skill directory name")
@@ -165,7 +169,7 @@ func init() {
 	markTargetHidden(installFlags)
 
 	updateFlags := agentUpdateCmd.Flags()
-	updateFlags.StringVar(&agentUpdateAgent, "agent", "", fmt.Sprintf("target agent (%s)", strings.Join(supportedAgentNames(), ", ")))
+	updateFlags.StringSliceVar(&agentUpdateAgent, "agent", nil, fmt.Sprintf("target agent (repeat or comma-separate; %s)", strings.Join(supportedAgentNames(), ", ")))
 	updateFlags.StringVarP(&agentUpdateLegacyTarget, "target", "", "", "legacy alias for --agent")
 	updateFlags.BoolVarP(&agentUpdateGlobal, "global", "g", false, "update the selected agent's user-level skill directory")
 	updateFlags.StringVar(&agentUpdateName, "name", agentskill.SiteSkillName, "installed skill directory name")
@@ -199,16 +203,12 @@ func runAgentInstallCommand(cmd *cobra.Command, args []string) error {
 	if _, err := resolveAgentProjectRoot(args, agentInstallGlobal); err != nil {
 		return err
 	}
-	selected, explicit, err := selectedAgentFlagValue(agentInstallAgent, agentInstallLegacyTarget)
+	targets, explicit, err := resolveAgentWriteTargets(agentInstallAgent, agentInstallLegacyTarget)
 	if err != nil {
 		return err
 	}
 	if explicit {
-		target, err := normalizeAgentInstallTarget(selected)
-		if err != nil {
-			return err
-		}
-		return runAgentWriteCommand(args, target, agentInstallGlobal, agentInstallName, agentInstallDryRun, agentInstallForce, "install")
+		return runAgentWriteTargets(args, targets, agentInstallGlobal, agentInstallName, agentInstallDryRun, agentInstallForce, "install")
 	}
 	interactive := !noInput && os.Getenv("TERM") != triageDumb &&
 		streamIsTerminal(cmd.InOrStdin()) && streamIsTerminal(cmd.OutOrStdout())
@@ -248,7 +248,7 @@ func runAgentInstallCommand(cmd *cobra.Command, args []string) error {
 	} else {
 		outlnf("No supported installed agents detected; choose an agent manually.")
 	}
-	selected, err = pickInstallAgent(cmd)
+	selected, err := pickInstallAgent(cmd)
 	if err != nil {
 		return err
 	}
@@ -260,21 +260,7 @@ func runAgentInstallCommand(cmd *cobra.Command, args []string) error {
 }
 
 func installDetectedAgentTargets(args []string, detected []agentInstallTarget) error {
-	seen := make(map[string]bool)
-	for _, target := range detected {
-		path := target.ProjectPath
-		if agentInstallGlobal {
-			path = target.GlobalPath
-		}
-		if seen[path] {
-			continue
-		}
-		seen[path] = true
-		if err := runAgentWriteCommand(args, target, agentInstallGlobal, agentInstallName, agentInstallDryRun, agentInstallForce, "install"); err != nil {
-			return fmt.Errorf("%s: %w", target.Name, err)
-		}
-	}
-	return nil
+	return runAgentWriteTargets(args, detected, agentInstallGlobal, agentInstallName, agentInstallDryRun, agentInstallForce, "install")
 }
 
 // Detection uses agent-specific executables and user configuration, not the
@@ -343,11 +329,45 @@ func runAgentListAgentsCommand(cmd *cobra.Command, _ []string) error {
 
 func runAgentUpdateCommand(cmd *cobra.Command, args []string) error {
 	currentCmd = cmd
-	target, err := resolveAgentInstallTarget(agentUpdateAgent, agentUpdateLegacyTarget, agentUpdateGlobal)
+	targets, explicit, err := resolveAgentWriteTargets(agentUpdateAgent, agentUpdateLegacyTarget)
 	if err != nil {
 		return err
 	}
-	return runAgentWriteCommand(args, target, agentUpdateGlobal, agentUpdateName, agentUpdateDryRun, true, "update")
+	if !explicit {
+		target, err := resolveAgentInstallTarget("", "", agentUpdateGlobal)
+		if err != nil {
+			return err
+		}
+		targets = []agentInstallTarget{target}
+	}
+	return runAgentWriteTargets(args, targets, agentUpdateGlobal, agentUpdateName, agentUpdateDryRun, true, "update")
+}
+
+// runAgentWriteTargets resolves each distinct destination once. Several agents
+// share .agents/skills; writing them repeatedly would overwrite one manifest.
+func runAgentWriteTargets(args []string, targets []agentInstallTarget, global bool, name string, dryRun, force bool, operation string) error {
+	if _, err := resolveAgentProjectRoot(args, global); err != nil {
+		return err
+	}
+	if err := validateSkillName(name); err != nil {
+		return err
+	}
+	seen := make(map[string]bool, len(targets))
+	var failures []error
+	for _, target := range targets {
+		path := target.ProjectPath
+		if global {
+			path = target.GlobalPath
+		}
+		if seen[path] {
+			continue
+		}
+		seen[path] = true
+		if err := runAgentWriteCommand(args, target, global, name, dryRun, force, operation); err != nil {
+			failures = append(failures, fmt.Errorf("%s: %w", target.Name, err))
+		}
+	}
+	return errors.Join(failures...)
 }
 
 func runAgentWriteCommand(args []string, target agentInstallTarget, global bool, name string, dryRun, force bool, operation string) error {
