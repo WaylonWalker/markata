@@ -88,6 +88,8 @@
   }
   function dispatch(event) {
     if (event.defaultPrevented || event.isComposing || event.key === 'Process' || event.repeat) return false;
+    // Releasing and pressing a modifier between strokes must not cancel a pending chord.
+    if (['Control', 'Meta', 'Alt', 'Shift'].includes(event.key)) return false;
     if (document.querySelector('dialog[open]')) { clearPending(); return false; }
     const target = event.target;
     const textInput = target && (target.matches?.('input, textarea, select, [contenteditable="true"]') ||
