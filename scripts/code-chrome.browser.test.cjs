@@ -8,6 +8,7 @@ const root = path.join(__dirname, '../pkg/themes/default/static');
 const codeJS = fs.readFileSync(path.join(root, 'js/code-chrome.js'), 'utf8');
 const shortcutsJS = fs.readFileSync(path.join(root, 'js/shortcuts-registry.js'), 'utf8');
 const codeCSS = fs.readFileSync(path.join(root, 'css/code.css'), 'utf8');
+const aestheticCSS = fs.readFileSync(path.join(root, 'css/aesthetic.css'), 'utf8');
 const longCommand = 'kubectl get nodes --output=custom-columns=NAME:.metadata.name,STATUS:.status.conditions[0].type,READY:.status.conditions[0].status --sort-by=.metadata.name';
 
 const markup = `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -87,6 +88,35 @@ test('code remains readable without JavaScript', async () => {
     assert.equal(await page.locator('.md-code-copy').count(), 0);
     assert.equal(await page.locator('#source pre code').textContent(), `kubectl get pods -A\n${longCommand}\n`);
     await context.close();
+  } finally {
+    await browser.close();
+  }
+});
+
+test('Minimal aesthetic keeps its code-block surface over the palette highlighting background', async () => {
+  const browser = await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_EXECUTABLE || undefined,args:['--no-sandbox']});
+  try {
+    const page = await browser.newPage();
+    // Ayu Dark deliberately gives code-bg the same color as the page. If
+    // generated .chroma rules are unlayered, they override the Minimal preset
+    // and make the entire code block disappear into that background.
+    await page.setContent(`<!doctype html><html data-aesthetic="minimal"><head><style>
+      @layer reset, tokens, base, components, utilities, overrides;
+      :root {--color-background:#0d1017;--color-code-bg:#0d1017;--color-text:#bfbdb6;
+        --color-surface:#131721;--color-border:#1c232f;--space-4:1rem;--space-6:1.5rem;
+        --radius-lg:.75rem;--font-mono:monospace;--text-sm:.875rem;}
+      body {background-color:var(--color-background);color:var(--color-text);}
+    </style><style>${codeCSS}</style><style>${aestheticCSS}</style>
+    <style>@layer components {.chroma {background-color:var(--color-code-bg);}}</style>
+    </head><body><article class="post-content">
+      <pre class="chroma"><code>markata config init</code></pre>
+    </article></body></html>`);
+    const colors = await page.evaluate(() => ({
+      code: getComputedStyle(document.querySelector('pre.chroma')).backgroundColor,
+      page: getComputedStyle(document.body).backgroundColor,
+    }));
+    assert.notEqual(colors.code, colors.page,
+      'Minimal code block must remain visible even when palette code-bg equals page background');
   } finally {
     await browser.close();
   }
