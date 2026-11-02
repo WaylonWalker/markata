@@ -18,7 +18,7 @@ with sync_playwright() as driver:
     expect(page.locator('#files-results [role=option]').first).to_contain_text('draft.md')
     page.keyboard.press('Enter')
     expect(page.locator('#active-file')).to_have_text('draft.md')
-    page.keyboard.press('Control+k')
+    page.keyboard.press('Control+Shift+p' if page.evaluate('Boolean(window.MarkataShortcuts)') else 'Control+k')
     page.locator('#commands-query').fill('open file')
     page.keyboard.press('Enter')
     expect(query).to_be_focused()
