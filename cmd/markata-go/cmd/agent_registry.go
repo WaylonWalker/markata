@@ -99,7 +99,7 @@ func normalizeAgentInstallTarget(name string) (agentInstallTarget, error) {
 		for _, suggestion := range suggestAgentNames(canonical) {
 			message += fmt.Sprintf("\nDid you mean --agent %s?", suggestion)
 		}
-		return agentInstallTarget{}, fmt.Errorf("%s\nRun 'markata-go agent list-agents' for supported values", message)
+		return agentInstallTarget{}, fmt.Errorf("%s\nRun '%s' for supported values", message, cliCommand("agent list-agents"))
 	}
 	return target, nil
 }
@@ -137,7 +137,7 @@ func resolveAgentInstallTarget(agentFlag, legacyTarget string, global bool) (age
 		return agentInstallTarget{}, err
 	}
 	if global && !explicitSet {
-		return agentInstallTarget{}, fmt.Errorf("--global requires --agent without an interactive picker; use '--agent github-copilot' or run 'markata-go agent list-agents' for supported values")
+		return agentInstallTarget{}, fmt.Errorf("--global requires --agent without an interactive picker; use '--agent github-copilot' or run '%s' for supported values", cliCommand("agent list-agents"))
 	}
 	if explicitSet {
 		return normalizeAgentInstallTarget(explicit)
