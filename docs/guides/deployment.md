@@ -10,7 +10,7 @@ tags:
   - hosting
 ---
 
-# Deployment and Hosting Guide
+## Deployment and Hosting Guide
 
 This guide covers deploying markata-go sites to various hosting platforms, from managed services like GitHub Pages and Netlify to self-hosted solutions using nginx or Docker.
 

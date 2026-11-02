@@ -10,7 +10,6 @@ tags:
   - assets
 ---
 
-# Vendoring Icon Packs
 
 markata-go has two related icon-vendoring paths:
 

@@ -10,7 +10,7 @@ tags:
   - cli
 ---
 
-# Troubleshooting with `markata triage`
+## Troubleshooting with `markata triage`
 
 When your Markata site behaves unexpectedly, start with:
 

@@ -7,7 +7,6 @@ published: true
 tags: [documentation, getting-started]
 ---
 
-# Markata documentation
 
 **A fast static site generator for people and their agents.**
 

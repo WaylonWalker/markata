@@ -10,7 +10,6 @@ tags:
   - learning
 ---
 
-# Guides Hub
 
 Welcome to the markata-go documentation! Choose a learning path based on your goals, or browse individual guides below.
 

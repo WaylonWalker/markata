@@ -9,7 +9,6 @@ tags:
   - lifecycle
 ---
 
-# PostIndex Correctness and Consolidation
 
 ## Goal
 

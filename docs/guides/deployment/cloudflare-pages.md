@@ -9,7 +9,6 @@ tags:
   - cloudflare-pages
 ---
 
-# Deploy to Cloudflare Pages
 
 Cloudflare Pages provides fast global CDN deployment with unlimited bandwidth and Workers integration. It's an excellent choice for high-traffic sites.
 

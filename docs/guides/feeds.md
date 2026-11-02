@@ -9,7 +9,7 @@ tags:
   - feeds
 ---
 
-# Feeds
+## Feeds
 
 For a photo-first shots archive, set `html = "feed-photo-grid.html"` under the feed's `[markata-go.feeds.templates]` table. See the [photo galleries guide](/docs/guides/galleries/).
 

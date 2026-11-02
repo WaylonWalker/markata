@@ -11,7 +11,6 @@ tags:
   - systemd
 ---
 
-# Self-Hosting Guide
 
 This guide covers deploying markata-go sites on your own infrastructure. Whether you prefer Docker containers, systemd services, or manual setups, you'll find everything you need to self-host your static site.
 

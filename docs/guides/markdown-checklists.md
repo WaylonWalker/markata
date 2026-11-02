@@ -1,4 +1,12 @@
-# Interactive Markdown checklists
+---
+title: "Interactive Markdown checklists"
+description: "Ordinary GFM task lists in Markata remain static, disabled, readable checkboxes."
+date: 2026-10-21
+published: true
+tags:
+  - documentation
+---
+
 
 Ordinary GFM task lists in Markata remain static, disabled, readable checkboxes.
 To let a reader check off tasks, wrap one or more task lists with the

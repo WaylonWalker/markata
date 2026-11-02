@@ -2,8 +2,9 @@
 
 The public documentation is built from `docs/**/*.md` by Markata itself. The
 site-specific configuration is `markata-docs.toml`; it keeps the existing
-`/docs/.../` routes, uses Markata's documentation layout and code highlighter,
-and sets `docs/index.md` as the homepage.
+`/docs/.../` routes and uses Markata's bundled default templates, theme, and
+code highlighter. `docs/index.md` is the homepage. The docs site does not load
+the repository's main-site template overrides.
 
 ## Build locally
 
@@ -24,7 +25,7 @@ current release with its public site deployment.
 
 Builder Admin initializes a persistent Git checkout of
 `WaylonWalker/markata`. A signed GitHub Push webhook at
-`https://build.markata.waylonwalker.com/webhook` fast-forwards `main` and queues
+`https://markata.waylonwalker.com/webhook` fast-forwards `main` and queues
 a Markata build. The authenticated Builder Admin interface remains at
 `https://build.markata.waylonwalker.com/`.
 

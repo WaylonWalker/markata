@@ -9,7 +9,6 @@ tags:
   - cli
 ---
 
-# Serve Control Center
 
 Start a local development session:
 

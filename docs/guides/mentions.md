@@ -9,7 +9,6 @@ tags:
   - social
 ---
 
-# @Mentions
 
 The mentions plugin transforms `@handle` syntax in your markdown content into HTML links. It resolves handles from three sources:
 

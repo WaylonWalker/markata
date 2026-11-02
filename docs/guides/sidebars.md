@@ -11,7 +11,6 @@ tags:
   - sidebar
 ---
 
-# Sidebar Navigation
 
 markata-go provides a powerful sidebar system that adapts to your site structure. You can have different sidebars for different sections, auto-generate navigation from feeds, or combine multiple feeds into a unified sidebar.
 

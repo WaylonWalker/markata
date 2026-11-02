@@ -9,7 +9,6 @@ tags:
   - diagnostics
 ---
 
-# Content Diagnostics
 
 After a successful full build completes, markata-go writes a
 sanitized diagnostics artifact below the configured output directory:

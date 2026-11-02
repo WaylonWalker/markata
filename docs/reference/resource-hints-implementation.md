@@ -11,7 +11,6 @@ tags:
   - performance
 ---
 
-# Resource Hints: Page-Specific Implementation
 
 This document explains the technical implementation of page-specific resource hints and the migration from the previous site-wide approach.
 

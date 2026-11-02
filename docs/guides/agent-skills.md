@@ -6,7 +6,6 @@ published: true
 tags: [documentation, agents]
 ---
 
-# Give your agent the Markata skill
 
 Let's be honest: a lot of websites get built alongside coding agents. **Give the agent the instructions that ship with Markata**, rather than a stale prompt found in a chat.
 

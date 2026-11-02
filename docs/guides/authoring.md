@@ -6,7 +6,6 @@ published: true
 tags: [documentation, authoring]
 ---
 
-# Write your first post
 
 You don't need templates or plugins to start. **Markdown is the source.** Markata turns it into pages.
 

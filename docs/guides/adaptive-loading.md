@@ -8,7 +8,6 @@ tags:
   - themes
 ---
 
-# Adaptive Loading
 
 Markata-Go sites keep article text available immediately and let the browser
 load images and video with native HTML behavior. Visitors can choose how much

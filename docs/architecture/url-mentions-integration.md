@@ -1,4 +1,12 @@
-# URL mentions provider integration (initial foundation)
+---
+title: "URL mentions provider integration (initial foundation)"
+description: "The pkg/urlmentions package consumes version 1.0 of the public URL mentions protocol."
+date: 2026-10-22
+published: true
+tags:
+  - documentation
+---
+
 
 The `pkg/urlmentions` package consumes version 1.0 of the public URL mentions protocol.
 

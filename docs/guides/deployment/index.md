@@ -9,7 +9,6 @@ tags:
   - hosting
 ---
 
-# Deployment Guide
 
 markata-go generates static sites that can be deployed anywhere that serves HTML files. This guide helps you choose the best platform for your needs.
 

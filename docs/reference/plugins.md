@@ -10,7 +10,7 @@ tags:
   - plugins
 ---
 
-# Built-in Plugins Reference
+## Built-in Plugins Reference
 
 This reference documents all built-in plugins that ship with markata-go. Plugins are organized by their lifecycle stage.
 

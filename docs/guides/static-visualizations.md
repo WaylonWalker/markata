@@ -6,7 +6,6 @@ published: true
 tags: [documentation, rendering, performance, development]
 ---
 
-# Static SVG visualization foundation
 
 Markata is developing a shared backend rendering pipeline so diagrams and charts
 can arrive as **finished SVG assets**, with no visualization engine running in the

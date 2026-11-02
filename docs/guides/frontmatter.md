@@ -10,7 +10,7 @@ tags:
   - content
 ---
 
-# Frontmatter
+## Frontmatter
 
 Frontmatter is the **metadata block** at the top of your Markdown files that tells markata-go how to process, display, and organize your content. This guide covers everything you need to know about using frontmatter effectively.
 

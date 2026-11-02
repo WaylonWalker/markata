@@ -5,7 +5,6 @@ published: true
 tags: [documentation, editor, frontmatter]
 ---
 
-# Editing page properties
 
 In the Markata workbench, **Properties** (beside the current file name) opens the
 visual frontmatter editor. You can also use the command palette

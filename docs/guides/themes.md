@@ -12,7 +12,7 @@ tags:
   - aesthetics
 ---
 
-# Themes, Palettes, and Aesthetics
+## Themes, Palettes, and Aesthetics
 
 markata-go makes it easy to customize your site's appearance. You can go from zero configuration to a beautiful site, then progressively customize as needed.
 

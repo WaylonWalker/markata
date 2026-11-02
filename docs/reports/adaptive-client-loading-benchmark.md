@@ -9,7 +9,6 @@ tags:
   - benchmark
 ---
 
-# Adaptive Client Loading Benchmark
 
 Historical measurements from implementation commit `bbb5cb53`. The hardening
 report supersedes its policy, autoplay, browser coverage, and readiness findings.

@@ -11,7 +11,6 @@ tags:
   - navigation
 ---
 
-# Keyboard Navigation
 
 markata-go sites include comprehensive keyboard shortcuts for power users and those who prefer keyboard navigation. All shortcuts are designed to be intuitive, following conventions from popular tools like Vim and GitHub.
 

@@ -11,7 +11,6 @@ tags:
   - gitlab
 ---
 
-# GitLab CI/CD
 
 GitLab CI/CD provides integrated continuous integration and deployment directly within GitLab. This guide covers deploying markata-go sites to GitLab Pages and other platforms.
 

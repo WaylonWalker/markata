@@ -10,7 +10,6 @@ tags:
   - pins
 ---
 
-# Pins
 
 Markata includes a built-in `/pins/` page for saved links. Published posts appear
 there when they have a non-empty `link` or `url` field. Items appear newest first.

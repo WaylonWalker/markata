@@ -9,7 +9,6 @@ tags:
   - navigation
 ---
 
-# Terminal UI
 
 Launch the terminal UI with `markata-go tui`.
 

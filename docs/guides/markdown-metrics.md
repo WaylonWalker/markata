@@ -10,7 +10,7 @@ tags:
   - containers
 ---
 
-# Status, metrics, gauges, and sparklines
+## Status, metrics, gauges, and sparklines
 
 Markata's Markdown containers can render compact, theme-aware operational
 summaries without using JavaScript. Combine these components with the

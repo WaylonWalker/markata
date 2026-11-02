@@ -11,7 +11,6 @@ tags:
   - themes
 ---
 
-# Roads
 
 A road is a path that draws itself as the reader scrolls. Each milestone on the
 path is a link from your post. Use roads for roadmaps, release histories,

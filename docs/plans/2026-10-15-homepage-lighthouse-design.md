@@ -6,7 +6,6 @@ published: false
 tags: [performance]
 ---
 
-# Homepage Lighthouse improvements
 
 The local waylonwalker.com homepage already scores 100 for accessibility,
 best practices, and SEO. Its mobile render is delayed by the shared stylesheet

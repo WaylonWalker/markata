@@ -9,7 +9,7 @@ tags:
   - reference
 ---
 
-# Configuration
+## Configuration
 
 markata-go uses a flexible configuration system that supports multiple file formats, environment variable overrides, and intelligent merging from multiple sources.
 
@@ -1487,7 +1487,10 @@ name = "docs"  # Default layout for all pages
 
 #### Documentation Layout (`[markata-go.layout.docs]`)
 
-Three-panel layout with sidebar navigation, content, and table of contents.
+The default theme includes a documentation page template. Set `name = "docs"`
+to get a documentation sidebar, a centered reading column, and an optional
+table of contents. Add a project template at `layouts/docs.html` only when you
+need to replace the built-in markup.
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
@@ -1513,6 +1516,12 @@ content_max_width = "800px"
 header_style = "minimal"
 footer_style = "minimal"
 ```
+
+The default template uses Markata's shared base page, theme assets, sidebar
+navigation, and post typography. It reads sidebar entries from
+`[markata-go.sidebar]` and table-of-contents entries from the document
+headings. A project `templates/layouts/docs.html` takes precedence when you
+need custom markup.
 
 #### Blog Layout (`[markata-go.layout.blog]`)
 

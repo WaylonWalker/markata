@@ -9,7 +9,6 @@ tags:
   - benchmark
 ---
 
-# Adaptive Loading Hardening
 
 An audit of the existing full-document View Transition navigator found that it
 could reset loading attributes to server defaults. The final follow-up preserves

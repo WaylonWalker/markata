@@ -10,7 +10,6 @@ tags:
   - optimization
 ---
 
-# Resource Hints
 
 The Resource Hints plugin automatically generates and injects resource hints (`dns-prefetch`, `preconnect`, `preload`, `prefetch`) into your HTML pages to improve performance.
 

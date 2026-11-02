@@ -9,7 +9,6 @@ tags:
   - netlify
 ---
 
-# Deploy to Netlify
 
 Netlify offers continuous deployment, serverless functions, form handling, and a powerful CDN. It's excellent for teams and sites that need more than just static hosting.
 

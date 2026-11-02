@@ -8,7 +8,7 @@ tags:
   - diagrams
 ---
 
-# Native Mermaid SVG renderer (experimental)
+## Native Mermaid SVG renderer (experimental)
 
 Markata can render Mermaid diagrams entirely inside its Go process, without
 starting Chromium, launching mmdc or shipping Mermaid.js to the browser.

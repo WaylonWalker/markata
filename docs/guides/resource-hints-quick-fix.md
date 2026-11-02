@@ -10,7 +10,7 @@ tags:
   - troubleshooting
 ---
 
-# Quick Fix: Excessive DNS-Prefetch Links
+## Quick Fix: Excessive DNS-Prefetch Links
 
 ## TL;DR
 
