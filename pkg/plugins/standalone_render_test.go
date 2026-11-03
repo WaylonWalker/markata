@@ -21,7 +21,7 @@ func TestRenderStandalone_ConditionalAssets(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r, err := RenderStandalone(tt.source, StandaloneOptions{InlineAssets: true})
+			r, err := RenderStandalone(tt.source, StandaloneOptions{InlineAssets: true, MermaidMode: "client"})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -85,7 +85,7 @@ func TestRenderStandalone_RawHTMLPolicy(t *testing.T) {
 }
 
 func TestRenderStandalone_MermaidEscapesMarkup(t *testing.T) {
-	r, err := RenderStandalone("```mermaid\ngraph TD\nA[\"</pre><script>alert(1)</script>\"]\n```", StandaloneOptions{})
+	r, err := RenderStandalone("```mermaid\ngraph TD\nA[\"</pre><script>alert(1)</script>\"]\n```", StandaloneOptions{MermaidMode: "client"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -95,7 +95,7 @@ func TestRenderStandalone_MermaidEscapesMarkup(t *testing.T) {
 }
 
 func TestRenderStandalone_DependenciesPrecedeInitializers(t *testing.T) {
-	r, err := RenderStandalone("```mermaid\ngraph TD\nA-->B\n```", StandaloneOptions{})
+	r, err := RenderStandalone("```mermaid\ngraph TD\nA-->B\n```", StandaloneOptions{MermaidMode: "client"})
 	if err != nil {
 		t.Fatal(err)
 	}
