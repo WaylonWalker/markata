@@ -18,7 +18,8 @@ import (
 )
 
 // ContributionGraphPlugin converts contribution-graph JSON code blocks into
-// rendered Cal-Heatmap calendar heatmaps showing GitHub-style activity.
+// native SVG calendar heatmaps showing GitHub-style activity.
+// Client-side Cal-Heatmap remains available by explicit configuration.
 // It runs at the render stage (after markdown conversion).
 type ContributionGraphPlugin struct {
 	config    models.ContributionGraphConfig
@@ -70,6 +71,12 @@ func (p *ContributionGraphPlugin) Configure(m *lifecycle.Manager) error {
 	if cfgMap, ok := graphConfig.(map[string]interface{}); ok {
 		if enabled, ok := cfgMap["enabled"].(bool); ok {
 			p.config.Enabled = enabled
+		}
+		if mode, ok := cfgMap["mode"].(string); ok && mode != "" {
+			if mode != "go" && mode != "client" {
+				return fmt.Errorf("contribution_graph.mode must be go or client, got %q", mode)
+			}
+			p.config.Mode = mode
 		}
 		if cdnURL, ok := cfgMap["cdn_url"].(string); ok && cdnURL != "" {
 			p.config.CDNURL = cdnURL
@@ -182,6 +189,17 @@ func (p *ContributionGraphPlugin) processPost(m *lifecycle.Manager, post *models
 		}
 
 		maxValue := p.computeColorScaleMax(data, optionsMap)
+
+		// Native SVG is the default: no Cal-Heatmap, D3, Popper, or script assets.
+		// Explicit client mode preserves the full interactive Cal-Heatmap contract.
+		if p.config.Mode != "client" {
+			svg, err := renderNativeContributionGraph(data, optionsMap, maxValue, graphID)
+			if err != nil {
+				return fmt.Sprintf(`<div class="%s contribution-graph-error"><p>Contribution Graph Error: %s</p></div>`,
+					html.EscapeString(p.config.ContainerClass), html.EscapeString(err.Error()))
+			}
+			return fmt.Sprintf(`<div class="%s">%s</div>`, html.EscapeString(p.config.ContainerClass), svg)
+		}
 
 		// Marshal data and options back to JSON for the script
 		dataJSON, err := json.Marshal(data)
