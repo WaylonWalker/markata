@@ -27,6 +27,7 @@ type Options struct {
 	InlineAssets bool   `json:"inline_assets,omitempty"`
 	AssetBase    string `json:"asset_base,omitempty"`
 	MermaidMode  string `json:"mermaid_mode,omitempty"`
+	ChartMode    string `json:"chart_mode,omitempty"`
 }
 
 // Request is the v1 request envelope shared by future protocol adapters.
@@ -72,6 +73,7 @@ func Handle(req Request) Response {
 		result, err := plugins.RenderStandalone(req.Source, plugins.StandaloneOptions{
 			Unsafe: req.Options.Unsafe, InlineAssets: req.Options.InlineAssets,
 			AssetBase: req.Options.AssetBase, MermaidMode: req.Options.MermaidMode,
+			ChartMode: req.Options.ChartMode,
 		})
 		if err != nil {
 			return failure(req.ID, "render_failed", err.Error())
@@ -108,7 +110,7 @@ func (s *session) handle(req Request) Response {
 		renderer = plugins.NewStandaloneRenderer(plugins.StandaloneOptions{
 			Config: s.base.Config, Unsafe: req.Options.Unsafe,
 			InlineAssets: req.Options.InlineAssets, AssetBase: req.Options.AssetBase,
-			MermaidMode: req.Options.MermaidMode,
+			MermaidMode: req.Options.MermaidMode, ChartMode: req.Options.ChartMode,
 		})
 		s.renderers[req.Options] = renderer
 	}
