@@ -1,6 +1,6 @@
 ---
 title: "Native Mermaid SVG renderer"
-description: "Opt-in browser-free Mermaid diagrams with Go, Markata palettes and warm Python rendering"
+description: "Default browser-free Mermaid diagrams with Go, Markata palettes and warm Python rendering"
 published: true
 tags:
   - mermaid
@@ -8,16 +8,16 @@ tags:
   - diagrams
 ---
 
-## Native Mermaid SVG renderer (experimental)
+## Native Mermaid SVG renderer (default)
 
 Markata can render Mermaid diagrams entirely inside its Go process, without
 starting Chromium, launching mmdc or shipping Mermaid.js to the browser.
 
-Native SVG is **opt-in**. Existing `client`, `cli` and `chromium` modes remain
-available. Client mode remains the default until syntax, typography and visual
-verification are complete.
+Native SVG is the default on native Go builds. Existing `client`, `cli` and
+`chromium` modes remain available as explicit choices. WASM workers continue to
+use `client` because native Go Mermaid is unavailable in their target.\n\nUnsupported diagram syntax returns an actionable error (never silently falls\nback to a browser); use `mode = "client"` or `mode = "chromium"` for diagrams\nthat require the full Mermaid.js grammar. The Python API, CLI `render`, and\nsite builder select `go` by default.
 
-## Enable in a site
+## Customize in a site
 
 ```toml
 [markata-go.mermaid]
@@ -54,13 +54,12 @@ before relying on them. `sans-serif` is the conservative baseline.
 async with RendererPool(workers=2) as pool:
     response = await pool.render(
         "```mermaid\nflowchart LR\n  A[Load] --> B[Serve]\n```",
-        mermaid_mode="go",
+        # mermaid_mode="go" is now the default
     )
     assert "<svg" in response.html
 ```
 
-The one-shot `render(..., mermaid_mode="go")` and
-`render_async(..., mermaid_mode="go")` APIs work too.
+The one-shot `render(...)` and `render_async(...)` APIs also use the native\nmode by default. Explicitly pass `mermaid_mode="client"` to use browser mode.
 
 Native mode returns SVG immediately and does not require the Mermaid.js asset.
 The existing presentation CSS still applies. No extra subprocess is created
