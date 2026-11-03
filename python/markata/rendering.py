@@ -285,7 +285,7 @@ def render(markdown: str, *, inline_assets: bool = False,
 
 async def render_async(markdown: str, *, inline_assets: bool = False,
                        asset_base: str = "/markata-assets", unsafe: bool = False,
-                       mermaid_mode: str = "client", timeout: float = 30, workspace: str | None = None) -> RenderResult:
+                       mermaid_mode: str = "go", timeout: float = 30, workspace: str | None = None) -> RenderResult:
     """Render without blocking an ASGI event loop; reap the process on cancellation."""
     if mermaid_mode not in ("client", "go"):
         raise ValueError("mermaid_mode must be client or go")
