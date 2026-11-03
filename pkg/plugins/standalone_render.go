@@ -204,9 +204,22 @@ func (r *StandaloneResult) renderDiagrams(post *models.Post, options StandaloneO
 		r.collectScripts(mermaidScript)
 	}
 	chart := NewChartJSPlugin()
+	if options.Config != nil && options.Config.Extra != nil {
+		switch raw := options.Config.Extra["chartjs"].(type) {
+		case map[string]interface{}:
+			if mode, ok := raw["mode"].(string); ok {
+				chart.config.Mode = mode
+			}
+		case models.ChartJSConfig:
+			chart.config.Mode = raw.Mode
+		}
+	}
 	chart.scriptCollector = func(fragment string) { r.collectScripts(fragment) }
 	if err := chart.processPost(post); err != nil {
 		return fmt.Errorf("render chartjs: %w", err)
+	}
+	if strings.Contains(post.ArticleHTML, `class="chartjs-native"`) {
+		r.Features["chartjs"] = true
 	}
 	for i := range r.Assets {
 		asset := &r.Assets[i]
