@@ -71,6 +71,12 @@ func (p *ChartJSPlugin) Configure(m *lifecycle.Manager) error {
 		if enabled, ok := cfgMap["enabled"].(bool); ok {
 			p.config.Enabled = enabled
 		}
+		if mode, ok := cfgMap["mode"].(string); ok && mode != "" {
+			if mode != "auto" && mode != "go" && mode != "client" {
+				return fmt.Errorf("chartjs.mode must be auto, go, or client, got %q", mode)
+			}
+			p.config.Mode = mode
+		}
 		if cdnURL, ok := cfgMap["cdn_url"].(string); ok && cdnURL != "" {
 			p.config.CDNURL = cdnURL
 		}
@@ -181,6 +187,22 @@ func (p *ChartJSPlugin) processPost(post *models.Post) error {
 		if display == chartDataCollapsed {
 			fallback = strings.Replace(fallback, `class="chartjs-data" open`, `class="chartjs-data"`, 1)
 		}
+
+		// Prefer a deterministic Go SVG for simple, static charts. Advanced
+		// Chart.js configurations retain their client renderer in auto mode.
+		if p.config.Mode != "client" {
+			svg, nativeErr := renderNativeChartSVG(chartConfig, chartID, options.Title)
+			if nativeErr == nil {
+				container := fmt.Sprintf(`<div class="%s chartjs-native">%s<div id="%s-data">%s</div></div>`,
+					html.EscapeString(p.config.ContainerClass), svg, chartID, fallback)
+				return chartFigureHTML(options, chartConfig, chartID, container)
+			}
+			if p.config.Mode == "go" {
+				return fmt.Sprintf(`<div class="%s chartjs-error"><p>Native chart unsupported: %s</p></div>`,
+					html.EscapeString(p.config.ContainerClass), html.EscapeString(nativeErr.Error()))
+			}
+		}
+
 		// Preserve legacy output byte-for-byte unless the chart opts into the
 		// new presentation/disclosure options. Legacy initialization targets
 		// the wrapper div; opted-in charts target the actual disclosure.
