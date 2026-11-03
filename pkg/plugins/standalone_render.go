@@ -22,7 +22,7 @@ type StandaloneOptions struct {
 	Unsafe       bool
 	InlineAssets bool
 	AssetBase    string
-	// MermaidMode selects "client" (default) or "go" (native SVG).
+	// MermaidMode selects "go" (native SVG, default on native builds) or "client".
 	MermaidMode string
 	// OmitAssetContent keeps bundled assets linked and omits their bytes.
 	// Browser hosts must export and serve the native presentation bundle.
@@ -146,8 +146,23 @@ func (r *StandaloneResult) renderDiagrams(post *models.Post, options StandaloneO
 	mermaid.config.Lightbox = false
 	mermaid.escapeClientSource = true
 	mode := options.MermaidMode
+	if mode == "" && options.Config != nil && options.Config.Extra != nil {
+		if raw, ok := options.Config.Extra["mermaid"].(map[string]interface{}); ok {
+			if configured, ok := raw["mode"].(string); ok {
+				mode = configured
+			}
+		}
+	}
 	if mode == "" {
+		// WASM builds only advertise client rendering; do not select a Go
+		// renderer that is unavailable in the browser worker.
 		mode = mermaidModeClient
+		for _, supported := range availableMermaidModes() {
+			if supported == mermaidModeGo {
+				mode = mermaidModeGo
+				break
+			}
+		}
 	}
 	if mode != mermaidModeClient && mode != mermaidModeGo {
 		return fmt.Errorf("unsupported standalone Mermaid mode %q", mode)
@@ -171,10 +186,11 @@ func (r *StandaloneResult) renderDiagrams(post *models.Post, options StandaloneO
 	mermaid.scriptCollector = func(fragment string) {
 		mermaidScript = strings.Replace(fragment, mermaid.mermaidImportJS(), "const mermaid = window.mermaid;\n", 1)
 	}
+	hasMermaid := strings.Contains(post.ArticleHTML, `class="language-mermaid"`) || strings.Contains(post.ArticleHTML, `class="mermaid"`)
 	if err := mermaid.processPost(post); err != nil {
 		return fmt.Errorf("render mermaid: %w", err)
 	}
-	if mode == mermaidModeGo && strings.Contains(post.ArticleHTML, `<pre class="mermaid">`) {
+	if mode == mermaidModeGo && hasMermaid {
 		r.Features["mermaid"] = true
 	}
 	if mermaidScript != "" {
