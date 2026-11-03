@@ -49,7 +49,7 @@ build:
     enabled: false
     url: ""
   mermaid:
-    mode: client
+    mode: go
   lock:
     enabled: true
     dirName: ".markata-notes-build-lock"
@@ -100,7 +100,7 @@ builderAdmin:
   # Experimental: route queued builds through the serial DAG executor. Keep false
   # until Build Lab and production canaries have established output equivalence.
   dag: false
-  mermaidMode: client
+  mermaidMode: go
   releases:
     keep: 25
   history:
