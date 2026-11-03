@@ -74,7 +74,7 @@ test('built documentation works across layouts, themes, sizes, and viewport widt
         const response = await page.goto(`${origin}${route}`, { waitUntil: 'networkidle' });
         assert.equal(response.status(), 200, `${route} responds successfully`);
         await page.evaluate(() => document.fonts.ready);
-        await page.addStyleTag({ content: '*,*::before,*::after{animation:none!important;transition:none!important;caret-color:transparent!important}' });
+        await page.addStyleTag({ content: '*,*::before,*::after{animation:none!important;transition:none!important;caret-color:transparent!important}html,body,body :not(code):not(pre):not(kbd):not(samp){font-family:"Liberation Sans",Arial,sans-serif!important;font-synthesis:none!important}' });
         await page.waitForTimeout(100);
         assert.equal(await page.locator('html').getAttribute('data-theme'), mode, `${route} applies ${mode} theme`);
         assert.equal(await page.locator('html').getAttribute('data-text-size'), 'medium', 'docs use medium text size');

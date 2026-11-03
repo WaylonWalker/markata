@@ -397,10 +397,14 @@ h6:hover .heading-anchor,
 }
 
 @media (max-width: 640px) {
+  .post-content :is(h1, h2, h3, h4, h5, h6) {
+    padding-inline-end: 1.25rem;
+  }
+
   .post-content :is(h1, h2, h3, h4, h5, h6) .heading-anchor {
-    position: static;
-    margin-inline-start: 0.25rem;
-    vertical-align: middle;
+    left: auto;
+    right: 0;
+    margin-inline-start: 0;
   }
 }
 
