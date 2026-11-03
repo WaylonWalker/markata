@@ -15,7 +15,12 @@ starting Chromium, launching mmdc or shipping Mermaid.js to the browser.
 
 Native SVG is the default on native Go builds. Existing `client`, `cli` and
 `chromium` modes remain available as explicit choices. WASM workers continue to
-use `client` because native Go Mermaid is unavailable in their target.\n\nUnsupported diagram syntax returns an actionable error (never silently falls\nback to a browser); use `mode = "client"` or `mode = "chromium"` for diagrams\nthat require the full Mermaid.js grammar. The Python API, CLI `render`, and\nsite builder select `go` by default.
+use `client` because native Go Mermaid is unavailable in their target.
+
+Unsupported diagram syntax returns an actionable error (never silently falls
+back to a browser); use `mode = "client"` or `mode = "chromium"` for diagrams
+that require the full Mermaid.js grammar. The Python API, CLI `render`, and
+site builder select `go` by default.
 
 ## Customize in a site
 
@@ -53,13 +58,17 @@ before relying on them. `sans-serif` is the conservative baseline.
 ```python
 async with RendererPool(workers=2) as pool:
     response = await pool.render(
-        "```mermaid\nflowchart LR\n  A[Load] --> B[Serve]\n```",
+        "```mermaid
+flowchart LR
+  A[Load] --> B[Serve]
+```",
         # mermaid_mode="go" is now the default
     )
     assert "<svg" in response.html
 ```
 
-The one-shot `render(...)` and `render_async(...)` APIs also use the native\nmode by default. Explicitly pass `mermaid_mode="client"` to use browser mode.
+The one-shot `render(...)` and `render_async(...)` APIs also use the native
+mode by default. Explicitly pass `mermaid_mode="client"` to use browser mode.
 
 Native mode returns SVG immediately and does not require the Mermaid.js asset.
 The existing presentation CSS still applies. No extra subprocess is created
