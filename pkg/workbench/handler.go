@@ -2,6 +2,8 @@
 // in Go applications. The handler owns no listeners and stores no drafts.
 package workbench
 
+const workbenchTextSizeAttribute = "data-text-size"
+
 import (
 	"bytes"
 	"context"
@@ -110,7 +112,7 @@ func buildPresentation(root string, workspace workspaceSource, config lsp.Browse
 	if err != nil {
 		return nil, err
 	}
-	h := &Handler{root: root, renderer: plugins.NewStandaloneRenderer(plugins.StandaloneOptions{Config: siteConfig, Unsafe: true, AssetBase: "/appearance", MermaidMode: "client"}), siteConfig: siteConfig, workspace: workspace, language: language, languageConfig: config, appearance: a, assets: a.Assets, gate: make(chan struct{}, 1), choices: map[string][]string{"data-theme": {"light", "dark"}, "data-text-size": {"small", "medium", "large", "x-large"}}}
+	h := &Handler{root: root, renderer: plugins.NewStandaloneRenderer(plugins.StandaloneOptions{Config: siteConfig, Unsafe: true, AssetBase: "/appearance", MermaidMode: "client"}), siteConfig: siteConfig, workspace: workspace, language: language, languageConfig: config, appearance: a, assets: a.Assets, gate: make(chan struct{}, 1), choices: map[string][]string{"data-theme": {"light", "dark"}, workbenchTextSizeAttribute: {"small", "medium", "large", "x-large"}}}
 	h.assets["css/fonts.css"] = bytes.ReplaceAll(h.assets["css/fonts.css"], []byte("/assets/fonts/"), []byte("/appearance/assets/fonts/"))
 	for _, name := range []string{"palette", "aesthetic", "fonts"} {
 		match := manifestPattern.FindSubmatch(h.assets["css/"+name+".css"])
@@ -159,7 +161,7 @@ func buildPresentation(root string, workspace workspaceSource, config lsp.Browse
 	h.index = []byte(strings.NewReplacer("<!--EDITOR_HEAD-->", editorHead, "<!--APPEARANCE_HEAD-->", controls, "<!--PICKER-->", a.PickerHTML, "<!--APPEARANCE_SCRIPTS-->", scripts).Replace(string(page)))
 	if siteConfig != nil {
 		attrs := `<html lang="en"`
-		for _, key := range []string{"data-theme", "data-palette", "data-aesthetic", "data-fontpack", "data-text-size"} {
+		for _, key := range []string{"data-theme", "data-palette", "data-aesthetic", "data-fontpack", workbenchTextSizeAttribute} {
 			attrs += " " + key + `="` + html.EscapeString(a.Defaults[key]) + `"`
 		}
 		h.index = regexp.MustCompile(`<html[^>]*>`).ReplaceAll(h.index, []byte(attrs+">"))
@@ -469,7 +471,7 @@ func (h *Handler) decodeRequest(w http.ResponseWriter, r *http.Request) *renderR
 }
 
 func (h *Handler) document(result *plugins.StandaloneResult, attributes map[string]string) string {
-	defaults := map[string]string{"data-theme": "dark", "data-palette": "default-dark", "data-aesthetic": "minimal", "data-fontpack": "system", "data-text-size": "large"}
+	defaults := map[string]string{"data-theme": "dark", "data-palette": "default-dark", "data-aesthetic": "minimal", "data-fontpack": "system", workbenchTextSizeAttribute: "large"}
 	for key, value := range h.appearance.Defaults {
 		defaults[key] = value
 	}
@@ -482,7 +484,7 @@ func (h *Handler) document(result *plugins.StandaloneResult, attributes map[stri
 		}
 	}
 	attrs := ""
-	for _, key := range []string{"data-theme", "data-palette", "data-aesthetic", "data-fontpack", "data-text-size"} {
+	for _, key := range []string{"data-theme", "data-palette", "data-aesthetic", "data-fontpack", workbenchTextSizeAttribute} {
 		attrs += " " + key + `="` + html.EscapeString(defaults[key]) + `"`
 	}
 	styles := ""
