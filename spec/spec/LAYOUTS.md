@@ -154,6 +154,11 @@ string list for intentional line breaks. When `title_lines` is present, the
 template MUST render each line as escaped text inside the semantic page heading.
 The lines MUST retain the same wording and order as the full title. Without
 `title_lines`, the template MUST render the full title as a single text value.
+On viewports at or below 768 CSS pixels, the landing header MUST place the
+title and theme controls on the first row, optional search on its own row, and
+navigation below them. At or below 390 CSS pixels, header links MUST wrap
+without creating page-level horizontal overflow. A landing-page fragment
+destination MUST include scroll offset for the shared header height.
 
 ```
 +------------------------------------------------------------------+
@@ -997,6 +1002,11 @@ On mobile devices (< 768px):
 2. **TOC** - Collapses to floating button or hides
 3. **Header** - Remains sticky with hamburger toggle
 4. **Content** - Expands to full width
+
+Layouts MUST reflow without depending on page-level `overflow-x: hidden` or
+`overflow-x: clip` to conceal content. Code blocks may scroll within their
+own bounded container; generated heading anchors MUST not widen narrow reading
+columns.
 
 ```css
 /* Responsive layout */

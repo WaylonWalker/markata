@@ -161,6 +161,10 @@
   padding: 0;
 }
 
+.layout--landing #install {
+  scroll-margin-top: calc(var(--layout-header-height) + var(--space-4));
+}
+
 .layout-content--bare {
   padding: var(--space-4);
 }
@@ -428,33 +432,6 @@
   display: flex;
   align-items: center;
   gap: var(--space-3);
-}
-
-@media (max-width: 768px) {
-  .layout--landing .site-header .container {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-  }
-
-  .layout--landing .site-header .site-title {
-    flex: 1 1 auto;
-    min-width: 0;
-  }
-
-  .layout--landing .site-header .header-actions {
-    flex: 0 0 auto;
-    min-width: 0;
-  }
-
-  .layout--landing .site-header .site-nav {
-    flex: 0 0 100%;
-    min-width: 0;
-    width: auto;
-    max-width: 100%;
-    margin: 0;
-    overflow-x: auto;
-  }
 }
 
 /* ==========================================================================
@@ -897,11 +874,7 @@
 
 @layer overrides {
 
-/* Page-level overrides must beat the global base layout rules. */
-html:has(body.layout--landing),
-html:has(body.layout--docs) {
-  overflow-x: clip;
-}
+/* Landing layout content uses the shared component and layout tokens. */
 
 .layout--landing .layout-container--landing {
   display: block;
@@ -920,7 +893,6 @@ html:has(body.layout--docs) {
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
-  overflow-x: clip;
 }
 
 .layout--landing .hero {
@@ -1023,16 +995,69 @@ html:has(body.layout--docs) {
     box-sizing: border-box;
   }
 
-  .layout--landing .site-header {
-    overflow-x: clip;
-  }
-
   .layout--landing .site-header .site-nav,
   .layout--landing .md-tabs-nav {
     max-width: 100%;
     overflow-x: auto;
     overscroll-behavior-inline: contain;
   }
+}
+
+@media (max-width: 390px) {
+  .layout--landing .site-header .site-nav,
+  .layout--docs .site-header .site-nav {
+    flex-wrap: wrap;
+    overflow-x: visible;
+    margin-inline: 0;
+    padding-inline: 0;
+  }
+}
+
+/* The landing header uses a different actions wrapper than the article header. */
+@layer components {
+  @media (max-width: 768px) {
+    .layout--landing .site-header .container {
+      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-areas:
+        "title controls"
+        "search search"
+        "nav nav";
+      min-width: 0;
+    }
+
+    .layout--landing .site-header .header-actions {
+      display: contents;
+    }
+
+    .layout--landing .site-header .site-title {
+      grid-area: title;
+      min-width: 0;
+    }
+
+    .layout--landing .site-header .site-nav {
+      grid-area: nav;
+      justify-content: flex-start;
+      flex-wrap: nowrap;
+      min-width: 0;
+      max-width: 100%;
+      overflow-x: auto;
+      overscroll-behavior-inline: contain;
+      margin-inline: calc(-1 * var(--space-3));
+      padding-inline: var(--space-3);
+    }
+
+    .layout--landing .site-header .header-actions .search-container--navbar {
+      grid-area: search;
+      width: 100%;
+      min-width: 0;
+    }
+
+    .layout--landing .site-header .header-actions .theme-switcher {
+      grid-area: controls;
+      justify-self: end;
+    }
+  }
+
 }
 
 @media (max-width: 1024px) {
