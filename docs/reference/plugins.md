@@ -3761,7 +3761,7 @@ jinja: true
 
 **Name:** `mermaid`  
 **Stage:** Render (post_render)  
-**Purpose:** Converts Mermaid code blocks into rendered diagrams. Supports client-side rendering (default), CLI-based pre-rendering via mmdc, or headless Chromium pre-rendering.
+**Purpose:** Converts Mermaid code blocks into rendered diagrams. Defaults to native Go SVG rendering; also supports explicit client-side Mermaid.js, CLI pre-rendering via mmdc, or headless Chromium.
 
 **Status:** Enabled by default. Set `enabled = false` to disable.
 
@@ -3769,7 +3769,7 @@ jinja: true
 ```toml
 [markata-go.mermaid]
 enabled = true                                              # Enabled by default; set to false to disable
-mode = "client"                                             # "client", "cli", or "chromium"
+mode = "go"                                                 # default native SVG; optional: "client", "cli", "chromium"
 cdn_url = "/assets/vendor/mermaid/mermaid.min.js"      # Mermaid URL (client mode, local by default)
 theme = "default"                                           # Mermaid theme (default, dark, forest, neutral)
 use_css_variables = true                                    # Derive diagram colors from site CSS palette (default: true)
