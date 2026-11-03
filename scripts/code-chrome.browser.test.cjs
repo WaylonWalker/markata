@@ -39,11 +39,11 @@ for (const width of [320, 1440]) {
         });
       });
       await page.addScriptTag({content:codeJS});
-      assert.equal(await page.locator('.md-code-copy').count(), 1, 'only code blocks, never Mermaid, get controls');
-      assert.equal(await page.locator('#source pre').getAttribute('data-language'), 'bash');
-      assert.equal(await page.locator('pre.mermaid .md-code-copy').count(), 0);
+      assert.equal(await page.locator('.code-block__copy').count(), 1, 'only code blocks, never Mermaid, get controls');
+      assert.equal(await page.locator('#source .code-block').getAttribute('data-lang'), 'bash');
+      assert.equal(await page.locator('pre.mermaid .code-block__copy').count(), 0);
 
-      const button = page.getByRole('button',{name:'Copy code block'});
+      const button = page.getByRole('button',{name:'Copy code'});
       await button.focus();
       assert.equal(await button.evaluate(el => getComputedStyle(el).outlineStyle), 'solid', 'keyboard focus must be visible');
       await page.keyboard.press('Enter');
@@ -53,7 +53,7 @@ for (const width of [320, 1440]) {
         'global Enter shortcuts must not intercept native button activation');
       const metrics = await page.evaluate(() => {
         const pre = document.querySelector('#source pre');
-        const button = pre.querySelector('.md-code-copy');
+        const button = pre.closest('.code-block').querySelector('.code-block__copy');
         const code = pre.querySelector('code');
         const b = button.getBoundingClientRect();
         const c = code.getBoundingClientRect();
@@ -69,9 +69,9 @@ for (const width of [320, 1440]) {
         window.dispatchEvent(new Event('view-transition-complete'));
         window.markataInitCodeChrome();
       });
-      assert.equal(await page.locator('.md-code-copy').count(), 1, 'SPA navigation gets one fresh control');
-      assert.equal(await page.locator('#source pre').getAttribute('data-language'), 'go');
-      assert.equal(await page.locator('.md-code-copy').getAttribute('data-markata-ui'), 'code-copy');
+      assert.equal(await page.locator('.code-block__copy').count(), 1, 'SPA navigation gets one fresh control');
+      assert.equal(await page.locator('#source .code-block').getAttribute('data-lang'), 'go');
+      assert.equal(await page.locator('.code-block__copy').getAttribute('data-markata-ui'), 'code-copy');
       await context.close();
     } finally {
       await browser.close();
@@ -85,7 +85,7 @@ test('code remains readable without JavaScript', async () => {
     const context = await browser.newContext({javaScriptEnabled:false});
     const page = await context.newPage();
     await page.setContent(markup);
-    assert.equal(await page.locator('.md-code-copy').count(), 0);
+    assert.equal(await page.locator('.code-block__copy').count(), 0);
     assert.equal(await page.locator('#source pre code').textContent(), `kubectl get pods -A\n${longCommand}\n`);
     await context.close();
   } finally {
