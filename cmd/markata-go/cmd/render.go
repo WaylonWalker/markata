@@ -85,7 +85,7 @@ func newRenderCommand() *cobra.Command {
 	cmd.Flags().BoolVar(&options.InlineAssets, "inline-assets", false, "Inline bundled CSS/JS in asset tags including vendored browser libraries")
 	cmd.Flags().BoolVar(&options.Unsafe, "unsafe", false, "Allow raw authored HTML (trusted input only)")
 	cmd.Flags().StringVar(&options.AssetBase, "asset-base", "/markata-assets", "URL prefix for serving manifest assets")
-	cmd.Flags().StringVar(&options.MermaidMode, "mermaid-mode", "go", "Mermaid rendering: go (default, native SVG) or client (browser)")
+	cmd.Flags().StringVar(&options.MermaidMode, "mermaid-mode", "", "Mermaid rendering: go (default, native SVG) or client (browser)")
 	return cmd
 }
 
