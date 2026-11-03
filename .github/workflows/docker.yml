@@ -197,6 +197,14 @@ jobs:
             fi
             echo 'EOF'
           } >> "$GITHUB_ENV"
+          {
+            echo 'BROWSER_BUILDER_IMAGE_TARGETS<<EOF'
+            echo "$REGISTRY/${repo}-browser-builder"
+            if [[ "$repo" == "waylonwalker/markata" ]]; then
+              echo "$REGISTRY/waylonwalker/markata-go-browser-builder"
+            fi
+            echo 'EOF'
+          } >> "$GITHUB_ENV"
 
       - name: Set Trivy cache directory
         run: echo "TRIVY_CACHE_DIR=${{ runner.temp }}/trivy-cache" >> $GITHUB_ENV
@@ -255,6 +263,39 @@ jobs:
             COMMIT=${{ github.sha }}
             BUILD_DATE=${{ github.event.head_commit.timestamp }}
 
+      - name: Extract metadata for Docker (browser builder)
+        id: meta_browser
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.BROWSER_BUILDER_IMAGE_TARGETS }}
+          tags: |
+            # Set latest tag for default branch
+            type=raw,value=latest,enable={{is_default_branch}}
+            # Tag with branch name
+            type=ref,event=branch
+            # Tag with semver
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}},enable=${{ !startsWith(github.ref, 'refs/tags/v0.') }}
+            # Tag with commit SHA
+            type=sha,prefix=sha-
+
+      - name: Build and push (browser builder)
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          target: browser-builder-runtime
+          platforms: ${{ env.DOCKER_PLATFORMS }}
+          push: true
+          tags: ${{ steps.meta_browser.outputs.tags }}
+          labels: ${{ steps.meta_browser.outputs.labels }}
+          cache-from: type=gha,scope=markata-go-browser-builder
+          cache-to: type=gha,mode=max,scope=markata-go-browser-builder
+          build-args: |
+            VERSION=${{ github.ref_name }}
+            COMMIT=${{ github.sha }}
+            BUILD_DATE=${{ github.event.head_commit.timestamp }}
+
       - name: Cache Trivy database
         uses: actions/cache@v6
         with:
@@ -278,6 +319,22 @@ jobs:
         with:
           sarif_file: "trivy-results-builder.sarif"
           category: trivy-builder
+
+      - name: Run Trivy vulnerability scanner (browser builder)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-browser-builder:${{ steps.meta_browser.outputs.version }}
+          format: "sarif"
+          output: "trivy-results-browser-builder.sarif"
+          severity: "CRITICAL,HIGH"
+          cache-dir: ${{ env.TRIVY_CACHE_DIR }}
+
+      - name: Upload Trivy scan results (browser builder)
+        if: github.ref == 'refs/heads/main'
+        uses: github/codeql-action/upload-sarif@v4.39.1
+        with:
+          sarif_file: "trivy-results-browser-builder.sarif"
+          category: trivy-browser-builder
 
   # Separate jobs for PR builds - build only, don't push
   build-pr-minimal:
@@ -368,3 +425,25 @@ jobs:
         run: |
           docker run --rm markata-go-builder:pr-${{ github.event.number }} sh -c "markata-go --help"
           docker run --rm markata-go-builder:pr-${{ github.event.number }} sh -c "rsync --version"
+          docker run --rm markata-go-builder:pr-${{ github.event.number }} sh -c "! command -v chromium"
+
+      - name: Build image (browser builder)
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          target: browser-builder-runtime
+          platforms: linux/amd64
+          push: false
+          tags: markata-go-browser-builder:pr-${{ github.event.number }}
+          cache-from: type=gha,scope=markata-go-browser-builder
+          cache-to: type=gha,mode=max,scope=markata-go-browser-builder
+          build-args: |
+            VERSION=pr-${{ github.event.number }}
+            COMMIT=${{ github.sha }}
+            BUILD_DATE=${{ github.event.pull_request.updated_at }}
+          load: true
+
+      - name: Test image (browser builder)
+        run: |
+          docker run --rm markata-go-browser-builder:pr-${{ github.event.number }} sh -c "markata-go --help"
+          docker run --rm markata-go-browser-builder:pr-${{ github.event.number }} sh -c "chromium --version"
