@@ -20,10 +20,11 @@ Docker provides a consistent, reproducible environment for building and serving 
 
 ## Official markata-go Images
 
-markata-go publishes two official container images for different workflows:
+Markata publishes three container variants for different workflows:
 
 - `ghcr.io/waylonwalker/markata-go:<version>`: Minimal runtime image (scratch) that runs the `markata-go` binary directly.
-- `ghcr.io/waylonwalker/markata-go-builder:<version>`: Builder image with `/bin/sh`, `aws`, `openssl`, core utilities, `rsync`, image encoders (`avifenc`, `cwebp`), Pagefind (standalone binary), Tailwind CLI (standalone binary), bundled CDN asset cache, bundled Mermaid JS, and Chromium for mermaid rendering (via Go-native chromedp, no Node.js required).
+- `ghcr.io/waylonwalker/markata-go-builder:<version>`: Standard browser-free builder with `/bin/sh`, `aws`, `openssl`, core utilities, `rsync`, image encoders (`avifenc`, `cwebp`), standalone Pagefind and Tailwind CLI, and a bundled offline asset cache. Native Mermaid SVG needs no Node.js or Chromium.
+- `ghcr.io/waylonwalker/markata-go-browser-builder:<version>`: Opt-in compatibility builder containing Chromium for sites explicitly configured with Mermaid `mode = "chromium"`.
 
 ### Builder Image Quick Start
 
@@ -60,7 +61,9 @@ mode = "chromium"
 no_sandbox = true
 ```
 
-The builder image includes Chromium. For custom images, see
+Use the optional `ghcr.io/waylonwalker/markata-go-browser-builder:<version>`
+image for this mode; the standard builder intentionally does not include
+Chromium. For custom images, see
 [Chromium in Containers](../configuration.md#chromium-in-containers-docker-distrobox-podman)
 in the configuration guide for installation options including the lightweight
 `chrome-headless-shell` binary that requires no root access.
