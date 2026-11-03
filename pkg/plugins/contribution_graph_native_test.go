@@ -13,7 +13,7 @@ func TestNativeContributionGraph_DefaultNoBrowserAssets(t *testing.T) {
 	if err := p.processPost(nil, post); err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(post.ArticleHTML, "<svg") || !strings.Contains(post.ArticleHTML, "2024-02-29") {
+	if !strings.Contains(post.ArticleHTML, "<svg") || !strings.Contains(post.ArticleHTML, "Feb 29, 2024") {
 		t.Fatalf("expected native year SVG: %s", post.ArticleHTML)
 	}
 	if !strings.Contains(post.ArticleHTML, "var(--color-primary") {
@@ -34,7 +34,7 @@ func TestNativeContributionGraph_UnsupportedOptionsRequireExplicitClient(t *test
 		t.Fatal(err)
 	}
 	if !strings.Contains(post.ArticleHTML, "contribution-graph-error") ||
-	   !strings.Contains(post.ArticleHTML, "mode = &#34;client&#34;") {
+		!strings.Contains(post.ArticleHTML, "mode = &#34;client&#34;") {
 		t.Fatalf("unsupported native options should give an actionable error: %s", post.ArticleHTML)
 	}
 	if strings.Contains(post.ArticleHTML, "<script") {
