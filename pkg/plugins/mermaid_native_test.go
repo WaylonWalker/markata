@@ -146,7 +146,9 @@ func TestNativeMermaidBackend_FamiliesAndMalformedInput(t *testing.T) {
 // The native library is the default on native targets, not just an opt-in mode.
 func TestRenderStandalone_DefaultsToNativeMermaid(t *testing.T) {
 	result, err := RenderStandalone("```mermaid\nflowchart LR\n A[Load] --> B[Serve]\n```", StandaloneOptions{})
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	if !result.Features["mermaid"] || !strings.Contains(result.HTML, "<svg") {
 		t.Fatalf("default Mermaid should render SVG: %+v", result)
 	}
@@ -163,7 +165,9 @@ func TestRenderStandalone_SiteConfigOverridesDefaultMermaid(t *testing.T) {
 		"mermaid": map[string]interface{}{"mode": "client"},
 	}}
 	result, err := RenderStandalone("```mermaid\nflowchart LR\n A --> B\n```", StandaloneOptions{Config: cfg})
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	if !strings.Contains(result.HTML, "<pre class=\"mermaid\">") {
 		t.Fatalf("explicit client mode not honored: %s", result.HTML)
 	}
