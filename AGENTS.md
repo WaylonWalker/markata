@@ -641,7 +641,7 @@ This project has ~30+ hoisted regex patterns across 6 files (`blogroll.go`, `oem
 ### Dependencies Note
 
 The following dependencies may appear unused but are actively used elsewhere in the codebase. Do NOT remove or flag them:
-- `chromedp` -- used for critical CSS extraction
+- `chromedp` -- used for the optional Mermaid Chromium compatibility renderer and browser tests; critical CSS extraction is native Go
 - `charmbracelet/bubbletea` -- used for TUI components
 - `steam` plugin -- generates steam game pages
 - Theme switcher, keyboard shortcuts -- active UI features
