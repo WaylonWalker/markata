@@ -54,6 +54,7 @@ LABEL org.opencontainers.image.licenses="MIT"
 # Note: nodejs/npm/@mermaid-js/mermaid-cli are NOT needed here because
 # markata-go's "chromium" mode uses chromedp (Go-native CDP) directly,
 # and pagefind is installed as a standalone binary below.
+# Browser-compatible Mermaid builds use the separate browser-builder-runtime target.
 RUN apk add --no-cache \
     aws-cli \
     ca-certificates \
