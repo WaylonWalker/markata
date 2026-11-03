@@ -262,7 +262,7 @@ def _result(stdout: bytes, stderr: bytes, returncode: int) -> RenderResult:
 
 def render(markdown: str, *, inline_assets: bool = False,
            asset_base: str = "/markata-assets", unsafe: bool = False,
-           mermaid_mode: str = "client", timeout: float = 30, workspace: str | None = None) -> RenderResult:
+           mermaid_mode: str = "go", timeout: float = 30, workspace: str | None = None) -> RenderResult:
     """Render using one bundled Go process; input is passed over stdin, never a shell.
 
     For a standalone response, use inline_assets=True and result.document().
