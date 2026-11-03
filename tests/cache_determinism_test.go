@@ -1704,7 +1704,9 @@ date: 2024-01-01
 ---
 `+"```mermaid\ngraph TD\nA-->B\n```\n")
 
-	site.buildWithCache()
+	// This explicitly exercises the legacy client mode because native SVG does not
+	// need to import the browser Mermaid.js bundle.
+	site.buildWithCacheAndConfig(site.defaultConfig() + "\n[markata-go.mermaid]\nmode = \"client\"\n")
 
 	for _, rel := range []string{
 		"assets/vendor/mermaid/mermaid.min.js",
