@@ -61,6 +61,8 @@ build:
     name: ghcr.io/waylonwalker/markata-go-builder
     tag: "latest"
     pullPolicy: IfNotPresent
+  # Change builderImage.name to markata-go-browser-builder only for explicit
+  # Mermaid Chromium compatibility mode. Native Go SVG requires no browser.
   builderImage:
     name: ghcr.io/waylonwalker/markata-go-builder
     tag: "latest"
