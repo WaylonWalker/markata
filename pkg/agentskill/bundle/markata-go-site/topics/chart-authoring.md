@@ -6,7 +6,7 @@ Use this topic for **chart**, **charts**, **graph**, **plot**, **data visualizat
 **time series**, **dashboard**, **analytics report**, or a visual post
 with meaningful numerical comparisons.
 
-Markata supports Chart.js 4 via fenced `chartjs` JSON blocks and a separate
+Markata supports native SVG for common static charts and Chart.js 4 for advanced/interactive rendering via fenced `chartjs` JSON blocks and a separate
 `contribution-graph` renderer for calendar heatmaps. This is **published
 Markdown**, not a proprietary chart widget schema. **Do not** output an
 HTML-like chat-chart component or assume a screenshot substitutes for the
