@@ -86,6 +86,7 @@ func newRenderCommand() *cobra.Command {
 	cmd.Flags().BoolVar(&options.Unsafe, "unsafe", false, "Allow raw authored HTML (trusted input only)")
 	cmd.Flags().StringVar(&options.AssetBase, "asset-base", "/markata-assets", "URL prefix for serving manifest assets")
 	cmd.Flags().StringVar(&options.MermaidMode, "mermaid-mode", "", "Mermaid rendering: go (default, native SVG) or client (browser)")
+	cmd.Flags().StringVar(&options.ChartMode, "chart-mode", "", "Chart rendering: auto (default, native SVG where supported), go, or client (Chart.js)")
 	return cmd
 }
 
@@ -94,7 +95,8 @@ func stdioHasConflictingFlags(cmd *cobra.Command, appearance, capabilities, json
 		cmd.Flags().Changed("inline-assets") ||
 		cmd.Flags().Changed("asset-base") ||
 		cmd.Flags().Changed("unsafe") ||
-		cmd.Flags().Changed("mermaid-mode")
+		cmd.Flags().Changed("mermaid-mode") ||
+		cmd.Flags().Changed("chart-mode")
 }
 
 func init() { rootCmd.AddCommand(newRenderCommand()) }
