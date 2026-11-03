@@ -46,8 +46,13 @@ test('built documentation works across layouts, themes, sizes, and viewport widt
         await context.addInitScript((theme) => localStorage.setItem('color-mode', theme), mode);
         const page = await context.newPage();
         const failedAssets = [];
+        const consoleErrors = [];
         page.on('response', (response) => {
           if (response.url().startsWith(origin) && response.status() >= 400) failedAssets.push(`${response.status()} ${response.url()}`);
+        });
+        page.on('pageerror', (error) => consoleErrors.push(error.message));
+        page.on('console', (message) => {
+          if (message.type() === 'error') consoleErrors.push(message.text());
         });
         const response = await page.goto(`${origin}${route}`, { waitUntil: 'networkidle' });
         assert.equal(response.status(), 200, `${route} responds successfully`);
@@ -56,7 +61,9 @@ test('built documentation works across layouts, themes, sizes, and viewport widt
         assert.equal(await page.locator('html').getAttribute('data-theme'), mode, `${route} applies ${mode} theme`);
         assert.equal(await page.locator('html').getAttribute('data-text-size'), 'medium', 'docs use medium text size');
         assert.ok(await page.locator('link[rel="stylesheet"]').count() > 0, 'page links stylesheets');
+        assert.equal(await page.locator('link[rel="icon"]').getAttribute('href'), '/favicon.ico', 'page links the site favicon');
         assert.deepEqual(failedAssets, [], 'same-origin assets load successfully');
+        assert.deepEqual(consoleErrors, [], `${route} has no browser console errors`);
         const overflow = await page.evaluate(() => ({
           width: document.documentElement.scrollWidth,
           offenders: [...document.querySelectorAll('body *')].filter((element) => element.getBoundingClientRect().right > innerWidth + 1).slice(0, 8).map((element) => {
