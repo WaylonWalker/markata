@@ -73,7 +73,7 @@ jobs:
           grep -E 'js/md-tabs(\.[[:xdigit:]]{8})?\.js' docs-site/_site/index.html
       - name: Install browser test dependencies
         run: |
-          npm install --no-save --no-package-lock playwright@1.56.1
+          npm install --no-save --no-package-lock playwright@1.56.1 pixelmatch@5.3.0 pngjs@7.0.0
           npx --no-install playwright install --with-deps chromium
       - name: Verify rendered homepage and documentation in browsers
         run: node --test scripts/docs-site.browser.test.cjs
