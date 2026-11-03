@@ -1,104 +1,104 @@
 package plugins
 
 import (
-    "encoding/json"
-    "fmt"
-    "html"
-    "math"
-    "strings"
-    "time"
+	"encoding/json"
+	"fmt"
+	"html"
+	"math"
+	"strings"
+	"time"
 )
 
 // renderNativeContributionGraph creates a responsive, palette-aware SVG calendar
 // using only Go. It intentionally supports the GitHub-style year/day layout.
 // Authors requiring other Cal-Heatmap domains can set mode = "client".
 func renderNativeContributionGraph(data interface{}, options map[string]interface{}, maxValue int, graphID string) (string, error) {
-    for key := range options {
-        switch key {
-        case "year", "domain", "subDomain", "maxValue", "maxPercentile":
-        default:
-            return "", fmt.Errorf("native contribution graph does not support option %q; set contribution_graph.mode = \"client\"", key)
-        }
-    }
-    if domain, ok := options["domain"]; ok && domain != "year" {
-        return "", fmt.Errorf("native contribution graph supports domain = \"year\" only; set contribution_graph.mode = \"client\"")
-    }
-    if subDomain, ok := options["subDomain"]; ok && subDomain != "day" {
-        return "", fmt.Errorf("native contribution graph supports subDomain = \"day\" only; set contribution_graph.mode = \"client\"")
-    }
+	for key := range options {
+		switch key {
+		case "year", "domain", "subDomain", "maxValue", "maxPercentile":
+		default:
+			return "", fmt.Errorf("native contribution graph does not support option %q; set contribution_graph.mode = \"client\"", key)
+		}
+	}
+	if domain, ok := options["domain"]; ok && domain != "year" {
+		return "", fmt.Errorf("native contribution graph supports domain = \"year\" only; set contribution_graph.mode = \"client\"")
+	}
+	if subDomain, ok := options["subDomain"]; ok && subDomain != "day" {
+		return "", fmt.Errorf("native contribution graph supports subDomain = \"day\" only; set contribution_graph.mode = \"client\"")
+	}
 
-    year := time.Now().UTC().Year()
-    if value, ok := options["year"].(float64); ok {
-        year = int(value)
-        if float64(year) != value {
-            return "", fmt.Errorf("invalid contribution graph year %v", value)
-        }
-    }
-    if year < 1 || year > 9998 {
-        return "", fmt.Errorf("contribution graph year must be between 1 and 9998")
-    }
-    var points []contributionGraphDataPoint
-    encoded, err := json.Marshal(data)
-    if err != nil {
-        return "", fmt.Errorf("encode contribution data: %w", err)
-    }
-    if err := json.Unmarshal(encoded, &points); err != nil {
-        return "", fmt.Errorf("parse contribution data: %w", err)
-    }
-    values := make(map[string]int, len(points))
-    for _, point := range points {
-        day, err := time.Parse("2006-01-02", point.Date)
-        if err != nil || day.Format("2006-01-02") != point.Date {
-            return "", fmt.Errorf("invalid contribution date %q", point.Date)
-        }
-        if point.Value < 0 {
-            return "", fmt.Errorf("negative contribution value for %s", point.Date)
-        }
-        values[point.Date] = point.Value
-    }
-    if maxValue < 1 {
-        maxValue = 1
-    }
+	year := time.Now().UTC().Year()
+	if value, ok := options["year"].(float64); ok {
+		year = int(value)
+		if float64(year) != value {
+			return "", fmt.Errorf("invalid contribution graph year %v", value)
+		}
+	}
+	if year < 1 || year > 9998 {
+		return "", fmt.Errorf("contribution graph year must be between 1 and 9998")
+	}
+	var points []contributionGraphDataPoint
+	encoded, err := json.Marshal(data)
+	if err != nil {
+		return "", fmt.Errorf("encode contribution data: %w", err)
+	}
+	if err := json.Unmarshal(encoded, &points); err != nil {
+		return "", fmt.Errorf("parse contribution data: %w", err)
+	}
+	values := make(map[string]int, len(points))
+	for _, point := range points {
+		day, err := time.Parse("2006-01-02", point.Date)
+		if err != nil || day.Format("2006-01-02") != point.Date {
+			return "", fmt.Errorf("invalid contribution date %q", point.Date)
+		}
+		if point.Value < 0 {
+			return "", fmt.Errorf("negative contribution value for %s", point.Date)
+		}
+		values[point.Date] = point.Value
+	}
+	if maxValue < 1 {
+		maxValue = 1
+	}
 
-    first := time.Date(year, time.January, 1, 0, 0, 0, 0, time.UTC)
-    end := first.AddDate(1, 0, 0)
-    gridStart := first.AddDate(0, 0, -int(first.Weekday()))
-    dayCount := int(end.Sub(gridStart).Hours() / 24)
-    weeks := (dayCount + 6) / 7
-    const cell, step, left, top = 11, 14, 38, 26
-    width := left + step*weeks + 4
-    height := top + step*7 + 8
+	first := time.Date(year, time.January, 1, 0, 0, 0, 0, time.UTC)
+	end := first.AddDate(1, 0, 0)
+	gridStart := first.AddDate(0, 0, -int(first.Weekday()))
+	dayCount := int(end.Sub(gridStart).Hours() / 24)
+	weeks := (dayCount + 6) / 7
+	const cell, step, left, top = 11, 14, 38, 26
+	width := left + step*weeks + 4
+	height := top + step*7 + 8
 
-    var out strings.Builder
-    fmt.Fprintf(&out, "<svg xmlns=\"http://www.w3.org/2000/svg\" class=\"contribution-graph-svg\" viewBox=\"0 0 %d %d\" role=\"img\" aria-label=\"Contributions in %d\" style=\"display:block;width:100%%;max-width:%dpx;height:auto;margin:auto\">", width, height, year, width)
-    fmt.Fprintf(&out, "<title>%d contribution calendar</title>", year)
-    for month := time.January; month <= time.December; month++ {
-        start := time.Date(year, month, 1, 0, 0, 0, 0, time.UTC)
-        week := int(start.Sub(gridStart).Hours()/24) / 7
-        fmt.Fprintf(&out, "<text x=\"%d\" y=\"13\" font-size=\"10\" fill=\"var(--color-text-muted, #657076)\">%s</text>", left+step*week, month.String()[:3])
-    }
-    for _, day := range []struct{ weekday, label string; row int }{
-        {"Monday", "Mon", 1}, {"Wednesday", "Wed", 3}, {"Friday", "Fri", 5},
-    } {
-        fmt.Fprintf(&out, "<text x=\"0\" y=\"%d\" font-size=\"10\" fill=\"var(--color-text-muted, #657076)\">%s</text>", top+step*day.row+9, day.label)
-    }
+	var out strings.Builder
+	fmt.Fprintf(&out, "<svg xmlns=\"http://www.w3.org/2000/svg\" class=\"contribution-graph-svg\" viewBox=\"0 0 %d %d\" role=\"img\" aria-labelledby=\"%s-title\" style=\"display:block;width:100%%;max-width:%dpx;height:auto;margin:auto\">", width, height, graphID, width)
+	fmt.Fprintf(&out, "<title id=\"%s-title\">%d contribution calendar</title>", graphID, year)
+	for month := time.January; month <= time.December; month++ {
+		start := time.Date(year, month, 1, 0, 0, 0, 0, time.UTC)
+		week := int(start.Sub(gridStart).Hours()/24) / 7
+		fmt.Fprintf(&out, "<text x=\"%d\" y=\"13\" font-size=\"10\" fill=\"var(--color-text-muted, #657076)\">%s</text>", left+step*week, month.String()[:3])
+	}
+	for _, day := range []struct{ label string; row int }{
+		{"Mon", 1}, {"Wed", 3}, {"Fri", 5},
+	} {
+		fmt.Fprintf(&out, "<text x=\"0\" y=\"%d\" font-size=\"10\" fill=\"var(--color-text-muted, #657076)\">%s</text>", top+step*day.row+9, day.label)
+	}
 
-    for date := gridStart; date.Before(end); date = date.AddDate(0, 0, 1) {
-        if date.Before(first) {
-            continue
-        }
-        key := date.Format("2006-01-02")
-        value := values[key]
-        week := int(date.Sub(gridStart).Hours()/24) / 7
-        x, y := left+step*week, top+step*int(date.Weekday())
-        fill := "var(--color-surface, #ebedf0)"
-        opacity := 1.0
-        if value > 0 {
-            fill = "var(--color-primary, #216e39)"
-            opacity = math.Min(1, 0.2+0.8*float64(value)/float64(maxValue))
-        }
-        fmt.Fprintf(&out, "<rect x=\"%d\" y=\"%d\" width=\"%d\" height=\"%d\" rx=\"2\" fill=\"%s\" fill-opacity=\"%.3f\"><title>%d posts on %s</title></rect>", x, y, cell, cell, fill, opacity, value, html.EscapeString(date.Format("Jan 2, 2006")))
-    }
-    out.WriteString("</svg>")
-    return out.String(), nil
+	for date := gridStart; date.Before(end); date = date.AddDate(0, 0, 1) {
+		if date.Before(first) {
+			continue
+		}
+		key := date.Format("2006-01-02")
+		value := values[key]
+		week := int(date.Sub(gridStart).Hours()/24) / 7
+		x, y := left+step*week, top+step*int(date.Weekday())
+		fill := "var(--color-surface, #ebedf0)"
+		opacity := 1.0
+		if value > 0 {
+			fill = "var(--color-primary, #216e39)"
+			opacity = math.Min(1, 0.2+0.8*float64(value)/float64(maxValue))
+		}
+		fmt.Fprintf(&out, "<rect x=\"%d\" y=\"%d\" width=\"%d\" height=\"%d\" rx=\"2\" fill=\"%s\" fill-opacity=\"%.3f\"><title>%d posts on %s</title></rect>", x, y, cell, cell, fill, opacity, value, html.EscapeString(date.Format("Jan 2, 2006")))
+	}
+	out.WriteString("</svg>")
+	return out.String(), nil
 }
