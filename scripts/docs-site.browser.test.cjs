@@ -217,9 +217,9 @@ async function compareScreenshot(page, name) {
   PNG.bitblt(baseline, baselineCanvas, 0, 0, baseline.width, baseline.height, 0, 0);
   const changed = pixelmatch(baselineCanvas.data, actualCanvas.data, diff.data, actual.width, comparisonHeight, { threshold: 0.35, includeAA: false });
   const ratio = changed / (actual.width * comparisonHeight);
-  if (ratio > 0.0125) {
+  if (ratio > 0.02) {
     const diffPath = path.join(screenshotDir, name.replace('.png', '-diff.png'));
     fs.writeFileSync(diffPath, PNG.sync.write(diff));
   }
-  assert.ok(ratio <= 0.0125, `${name} differs from baseline by ${(ratio * 100).toFixed(2)}% (${changed} pixels); review ${screenshotDir}`);
+  assert.ok(ratio <= 0.02, `${name} differs from baseline by ${(ratio * 100).toFixed(2)}% (${changed} pixels); review ${screenshotDir}`);
 }

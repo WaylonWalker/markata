@@ -26,7 +26,8 @@ It compares homepage and Quickstart screenshots with the reviewed PNGs in
 `scripts/visual-baselines/docs-site/`; failures upload screenshots and pixel
 diffs as workflow artifacts. The comparison ignores anti-aliasing, allows a
 small height delta, uses a per-pixel color threshold, and caps changed pixels
-at 1.25% of the full page.
+at 2% of the full page. Larger changes fail and upload screenshots and pixel
+diffs for review.
 
 To run the browser check locally, install the same pinned packages and
 Chromium, build the site, then run the test command above. Review screenshot
