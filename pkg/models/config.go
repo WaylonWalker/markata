@@ -1728,6 +1728,9 @@ func NewChartJSConfig() ChartJSConfig {
 
 // ContributionGraphConfig configures the contribution_graph plugin.
 type ContributionGraphConfig struct {
+	// Mode chooses native Go SVG (default) or Cal-Heatmap in the browser (client).
+	Mode string `json:"mode" yaml:"mode" toml:"mode"`
+
 	// Enabled controls whether contribution graph processing is active (default: true)
 	Enabled bool `json:"enabled" yaml:"enabled" toml:"enabled"`
 
@@ -1748,6 +1751,7 @@ type ContributionGraphConfig struct {
 // NewContributionGraphConfig creates a new ContributionGraphConfig with default values.
 func NewContributionGraphConfig() ContributionGraphConfig {
 	return ContributionGraphConfig{
+		Mode:               "go",
 		Enabled:            true,
 		CDNURL:             "/assets/vendor/cal-heatmap",
 		ContainerClass:     "contribution-graph-container",
