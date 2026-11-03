@@ -596,6 +596,24 @@ With syntax highlighting (optional):
 </code></pre>
 ```
 
+Fenced code info strings MAY include a quoted title:
+
+````markdown
+```bash title="Terminal"
+markata build
+```
+
+```go title="main.go"
+package main
+```
+````
+
+The renderer MUST preserve language and title metadata in semantic HTML for
+the theme to present as code-block chrome. Copy controls MUST copy code text
+only. With JavaScript disabled, highlighted code and its title MUST remain
+readable. Plugin-owned fences such as Mermaid MUST preserve their plain fence
+markup for the owning plugin.
+
 ---
 
 ## Admonitions

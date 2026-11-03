@@ -46,6 +46,9 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
       - name: Build documentation site with Markata
         run: go run ./cmd/markata-go --config markata-docs.toml build --clean
       - name: Check the emitted documentation routes and assets
@@ -62,3 +65,23 @@ jobs:
           grep -F 'aria-label="Documentation navigation"' docs-site/_site/docs/guides/authoring/index.html
           grep -F 'href="/favicon.ico"' docs-site/_site/docs/guides/authoring/index.html
           grep -F 'href="/docs/guides/authoring/"' docs-site/_site/index.html
+          # Homepage install choices are a native Markdown feature, not a custom template.
+          # Catch migrations that silently drop the installation tabs or their controller.
+          grep -F 'data-md-tabs' docs-site/_site/index.html
+          grep -F 'aria-label="Installation methods"' docs-site/_site/index.html
+          grep -F 'id="md-tab-1-5-panel"' docs-site/_site/index.html
+          grep -E 'js/md-tabs(\.[[:xdigit:]]{8})?\.js' docs-site/_site/index.html
+      - name: Install browser test dependencies
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.1
+          npx --no-install playwright install --with-deps chromium
+      - name: Verify rendered homepage and documentation in browsers
+        run: node --test scripts/docs-site.browser.test.cjs
+      - name: Save documentation screenshots
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: docs-site-browser-screenshots
+          path: docs-site/_site/.screenshots/
+          include-hidden-files: true
+          if-no-files-found: ignore

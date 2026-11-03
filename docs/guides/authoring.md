@@ -13,7 +13,7 @@ You don't need templates or plugins to start. **Markdown is the source.** Markat
 
 From your site directory:
 
-```bash
+```bash title="Terminal"
 markata new "Hello, internet"
 ```
 
@@ -21,7 +21,7 @@ This normally creates `pages/post/hello-internet.md`. Open it in your editor.
 
 You'll see YAML frontmatter between two `---` lines. The body is ordinary Markdown.
 
-```markdown
+```markdown title="pages/post/hello-internet.md"
 ---
 title: "Hello, internet"
 date: 2026-10-18
@@ -48,7 +48,7 @@ Keep the frontmatter simple: `title`, `date`, `published`, `draft`, and optional
 
 ## Preview your words
 
-```bash
+```bash title="Terminal"
 markata serve
 ```
 
@@ -56,7 +56,7 @@ Visit [http://localhost:8000](http://localhost:8000). Save your post; the develo
 
 ## Draft before you publish
 
-```bash
+```bash title="Terminal"
 markata new "An unfinished idea" --draft
 ```
 
@@ -66,7 +66,7 @@ For an existing post, set `draft: true`. To publish, set `draft: false` and `pub
 
 Use ordinary Markdown for external links and images:
 
-```markdown
+```markdown title="Markdown"
 [My favorite reference](https://example.com)
 ![A description of the photograph](/images/my-photo.jpg)
 ```
@@ -98,7 +98,7 @@ Review the result yourself before changing `draft` or deploying.
 
 ## Ship it
 
-```bash
+```bash title="Terminal"
 markata config validate
 markata build
 ```

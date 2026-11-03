@@ -3,8 +3,9 @@
 The public documentation is built from `docs/**/*.md` by Markata itself. The
 site-specific configuration is `markata-docs.toml`; it keeps the existing
 `/docs/.../` routes and uses Markata's bundled default templates, theme, and
-code highlighter. `docs/index.md` is the homepage. The docs site does not load
-the repository's main-site template overrides.
+code highlighter. `docs/index.md` is the homepage and uses the bundled landing
+layout. The `/docs/` path prefix keeps the docs layout and generated sidebar.
+The docs site does not load the repository's main-site template overrides.
 
 ## Build locally
 

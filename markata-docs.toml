@@ -18,8 +18,21 @@ enabled = false
 [markata-go.layout]
 name = "docs"
 
+[markata-go.layout.paths]
+"/" = "landing"
+"/docs/" = "docs"
+
 [markata-go.layout.docs]
 sidebar_position = "left"
+sidebar_default_open = false
+
+[markata-go.layout.landing]
+header_style = "transparent"
+footer_style = "minimal"
+hero_enabled = true
+
+[markata-go.theme]
+text_size = "medium"
 
 [markata-go.sidebar]
 enabled = true

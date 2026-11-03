@@ -42,8 +42,8 @@
            id="sidebar"
            role="navigation"
            aria-label="Documentation navigation"
-           data-collapsible="{{ config.layout.docs.sidebar_collapsible | default:true | yesno:'true,false' }}"
-           data-open="{{ config.layout.docs.sidebar_default_open | default:true | yesno:'true,false' }}"
+           data-collapsible="{{ config.layout.docs.sidebar_collapsible | yesno:'true,false' }}"
+           data-open="{{ config.layout.docs.sidebar_default_open | yesno:'true,false' }}"
            style="--sidebar-width: {{ config.layout.docs.sidebar_width | default:'280px' }}">
         <div class="sidebar-content">
             {% include "components/sidebar_nav.html" %}
@@ -71,8 +71,8 @@
     <aside class="layout-toc layout-toc--{{ config.layout.docs.toc_position | default:'right' }}"
            role="complementary"
            aria-label="Table of Contents"
-           data-collapsible="{{ config.layout.docs.toc_collapsible | default:true | yesno:'true,false' }}"
-           data-open="{{ config.layout.docs.toc_default_open | default:true | yesno:'true,false' }}"
+           data-collapsible="{{ config.layout.docs.toc_collapsible | yesno:'true,false' }}"
+           data-open="{{ config.layout.docs.toc_default_open | yesno:'true,false' }}"
            style="--toc-width: {{ config.layout.docs.toc_width | default:'220px' }}">
         <div class="toc-content">
             <h2 class="toc-title">{{ config.toc.title | default:'On this page' }}</h2>
