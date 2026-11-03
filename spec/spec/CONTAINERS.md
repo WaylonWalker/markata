@@ -1,11 +1,12 @@
 # Container Images
 
-markata-go provides official container images for two primary use cases: minimal runtime execution and build/publish workflows.
+markata-go provides official container images for minimal runtime execution, browser-free build/publish workflows, and optional Chromium-based compatibility builds.
 
 ## Image Names
 
 - Minimal image: `ghcr.io/waylonwalker/markata-go:<version>`
 - Builder image: `ghcr.io/waylonwalker/markata-go-builder:<version>`
+- Browser-enabled builder: `ghcr.io/waylonwalker/markata-go-browser-builder:<version>`
 
 Both images MUST publish a matching `:latest` tag for the most recent stable release.
 
@@ -43,8 +44,6 @@ The builder image MUST include:
 ### Optional Tools
 
 The builder image MAY include:
-
-- `chromium` (for Mermaid Chromium rendering via Go-native chromedp)
 - `git`
 - `libavif-apps` (provides `avifenc`)
 - `libwebp-tools` (provides `cwebp`)
@@ -53,7 +52,7 @@ The builder image MAY include:
 - `openssh-client` (for rsync over SSH)
 - `tzdata`
 
-Note: `nodejs`, `npm`, and `@mermaid-js/mermaid-cli` are NOT required. Mermaid rendering uses chromedp (Go CDP) directly, and pagefind is installed as a standalone musl-static binary.
+Native Mermaid rendering uses an in-process Go SVG renderer and does not need Chromium, Node.js, npm, or mmdc. The standard builder MUST NOT install Chromium. The separate optional browser-enabled builder MUST install Chromium for explicit compatibility-mode rendering, and MAY otherwise inherit all builder-runtime tools. Pagefind is installed as a standalone musl-static binary.
 
 ### Behavior
 
@@ -66,7 +65,7 @@ Note: `nodejs`, `npm`, and `@mermaid-js/mermaid-cli` are NOT required. Mermaid r
 ## Tagging and Versioning
 
 - All container tags MUST follow semantic versioning.
-- The builder and minimal images MUST use the same tag for a given release.
+- All three images MUST use the same tag for a given release.
 - `:latest` MUST point to the most recent stable release.
 
 ## Helm Site Server
