@@ -2,8 +2,6 @@
 // in Go applications. The handler owns no listeners and stores no drafts.
 package workbench
 
-const workbenchTextSizeAttribute = "data-text-size"
-
 import (
 	"bytes"
 	"context"
@@ -29,6 +27,8 @@ import (
 	"github.com/WaylonWalker/markata/pkg/models"
 	"github.com/WaylonWalker/markata/pkg/plugins"
 )
+
+const workbenchTextSizeAttribute = "data-text-size"
 
 //go:embed web
 var web embed.FS
