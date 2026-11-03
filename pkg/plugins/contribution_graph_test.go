@@ -147,6 +147,7 @@ func TestContributionGraphPlugin_ProcessPost_Disabled(t *testing.T) {
 	p := NewContributionGraphPlugin()
 	p.config.Mode = "client"
 	p.SetConfig(models.ContributionGraphConfig{
+		Mode: "client",
 		Enabled: false,
 		CDNURL:  "https://cdn.jsdelivr.net/npm/cal-heatmap@4",
 	})
@@ -160,6 +161,7 @@ func TestContributionGraphPlugin_ProcessPost_CustomContainerClass(t *testing.T) 
 	p := NewContributionGraphPlugin()
 	p.config.Mode = "client"
 	p.SetConfig(models.ContributionGraphConfig{
+		Mode: "client",
 		Enabled:        true,
 		CDNURL:         "https://example.com/cal-heatmap",
 		ContainerClass: "my-custom-graph",
@@ -335,6 +337,7 @@ func TestContributionGraphPlugin_ProcessPost_GlobalScaleMaxPercentile(t *testing
 	p := NewContributionGraphPlugin()
 	p.config.Mode = "client"
 	p.SetConfig(models.ContributionGraphConfig{
+		Mode: "client",
 		Enabled:            true,
 		CDNURL:             "https://example.com/cal-heatmap",
 		ContainerClass:     "contribution-graph-container",
