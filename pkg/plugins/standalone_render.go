@@ -147,10 +147,13 @@ func (r *StandaloneResult) renderDiagrams(post *models.Post, options StandaloneO
 	mermaid.escapeClientSource = true
 	mode := options.MermaidMode
 	if mode == "" && options.Config != nil && options.Config.Extra != nil {
-		if raw, ok := options.Config.Extra["mermaid"].(map[string]interface{}); ok {
+		switch raw := options.Config.Extra["mermaid"].(type) {
+		case map[string]interface{}:
 			if configured, ok := raw["mode"].(string); ok {
 				mode = configured
 			}
+		case models.MermaidConfig:
+			mode = raw.Mode
 		}
 	}
 	if mode == "" {
