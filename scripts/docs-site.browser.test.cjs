@@ -75,7 +75,9 @@ test('built documentation works across layouts, themes, sizes, and viewport widt
         assert.ok(overflow.width <= width + 1, `${route} has no page overflow at ${width}px: ${JSON.stringify(overflow)}; main: ${JSON.stringify(contentBounds)}`);
 
         if (route === '/') {
-          assert.equal(await page.locator('h1').first().innerText(), 'Your words. On your web.');
+          assert.equal((await page.locator('.hero-title').innerText()).replace(/\s+/g, ' ').trim(), 'Your words. On your web.');
+          assert.equal((await page.locator('.hero-eyebrow').innerText()).toLowerCase(), 'markdown to website');
+          assert.equal(await page.locator('.hero-title-line').count(), 2);
           assert.equal(await page.locator('[data-md-tabs] [role="tab"]').count(), 6);
           await page.screenshot({ path: path.join(screenshotDir, `home-${width}-${mode}.png`), fullPage: width > 600 });
         } else {

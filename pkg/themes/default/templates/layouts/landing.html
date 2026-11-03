@@ -35,8 +35,17 @@
     {% if config.layout.landing.hero_enabled and post.hero %}
     <section class="hero" aria-label="Hero">
         <div class="hero-content">
+            {% if post.hero.eyebrow %}
+            <p class="hero-eyebrow">{{ post.hero.eyebrow }}</p>
+            {% endif %}
             {% if post.hero.title %}
-            <h1 class="hero-title">{{ post.hero.title }}</h1>
+            <h1 class="hero-title">
+                {% if post.hero.title_lines %}
+                {% for line in post.hero.title_lines %}<span class="hero-title-line">{{ line }}</span>{% endfor %}
+                {% else %}
+                {{ post.hero.title }}
+                {% endif %}
+            </h1>
             {% endif %}
             {% if post.hero.subtitle %}
             <p class="hero-subtitle">{{ post.hero.subtitle }}</p>

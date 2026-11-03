@@ -1585,6 +1585,19 @@ header_sticky = true
 hero_enabled = true
 ```
 
+Landing pages can define an eyebrow and explicit title lines in frontmatter.
+The title remains the semantic heading and page title; `title_lines` only
+controls its visual line breaks.
+
+```yaml
+hero:
+  title: "Your words. On your web."
+  eyebrow: "Markdown to website"
+  title_lines:
+    - "Your words."
+    - "On your web."
+```
+
 ### Sidebar Configuration (`[markata-go.sidebar]`)
 
 Configure the sidebar navigation component for documentation and guides.

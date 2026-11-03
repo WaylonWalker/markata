@@ -148,7 +148,12 @@ Full-width layout for marketing pages and home pages.
 The bundled default theme MUST provide `layouts/landing.html`. Packaged sites
 that select `landing` MUST NOT depend on repository-local override templates.
 The landing template MUST render optional frontmatter hero fields and Markdown
-body content while omitting documentation sidebars and article metadata.
+body content while omitting documentation sidebars and article metadata. Hero
+frontmatter MAY include an `eyebrow` string above the title and a `title_lines`
+string list for intentional line breaks. When `title_lines` is present, the
+template MUST render each line as escaped text inside the semantic page heading.
+The lines MUST retain the same wording and order as the full title. Without
+`title_lines`, the template MUST render the full title as a single text value.
 
 ```
 +------------------------------------------------------------------+

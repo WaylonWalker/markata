@@ -7,6 +7,10 @@ published: true
 tags: [documentation, getting-started]
 hero:
   title: "Your words. On your web."
+  title_lines:
+    - "Your words."
+    - "On your web."
+  eyebrow: "Markdown to website"
   subtitle: "A fast static site generator for people and their agents."
   cta_primary:
     text: "Install Markata"
@@ -15,8 +19,6 @@ hero:
     text: "Read the quickstart"
     href: "/docs/quickstart/"
 ---
-
-Write Markdown. Let Markata build your site. Publish it anywhere.
 
 ## One command to start
 
