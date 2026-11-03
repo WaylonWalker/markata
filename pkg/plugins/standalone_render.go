@@ -24,6 +24,8 @@ type StandaloneOptions struct {
 	AssetBase    string
 	// MermaidMode selects "go" (native SVG, default on native builds) or "client".
 	MermaidMode string
+	// ChartMode selects auto (native if supported, default), go, or client.
+	ChartMode string
 	// OmitAssetContent keeps bundled assets linked and omits their bytes.
 	// Browser hosts must export and serve the native presentation bundle.
 	OmitAssetContent bool
@@ -204,7 +206,7 @@ func (r *StandaloneResult) renderDiagrams(post *models.Post, options StandaloneO
 		r.collectScripts(mermaidScript)
 	}
 	chart := NewChartJSPlugin()
-	if options.Config != nil && options.Config.Extra != nil {
+	if options.Config != nil && options.Config.Extra != nil && options.ChartMode == "" {
 		switch raw := options.Config.Extra["chartjs"].(type) {
 		case map[string]interface{}:
 			if mode, ok := raw["mode"].(string); ok {
@@ -214,11 +216,17 @@ func (r *StandaloneResult) renderDiagrams(post *models.Post, options StandaloneO
 			chart.config.Mode = raw.Mode
 		}
 	}
+	if options.ChartMode != "" {
+		chart.config.Mode = options.ChartMode
+	}
+	if chart.config.Mode != "auto" && chart.config.Mode != "go" && chart.config.Mode != "client" {
+		return fmt.Errorf("unsupported standalone chart mode %q", chart.config.Mode)
+	}
 	chart.scriptCollector = func(fragment string) { r.collectScripts(fragment) }
 	if err := chart.processPost(post); err != nil {
 		return fmt.Errorf("render chartjs: %w", err)
 	}
-	if strings.Contains(post.ArticleHTML, `class="chartjs-native"`) {
+	if strings.Contains(post.ArticleHTML, "chartjs-native") {
 		r.Features["chartjs"] = true
 	}
 	for i := range r.Assets {
