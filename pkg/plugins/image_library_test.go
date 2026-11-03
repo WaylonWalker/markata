@@ -135,6 +135,20 @@ func TestImageLibraryPage_RendersVideoMetadataAndEmbedLabel(t *testing.T) {
 	}
 }
 
+func TestImageLibraryPage_TruncatesLongCaptionExcerpts(t *testing.T) {
+	caption := strings.Repeat("long caption text ", 100)
+	page := newImageLibraryPage(imageindex.Index{Images: []imageindex.Image{{
+		Src:  "/images/example.png",
+		Uses: []imageindex.Use{{Href: "/post/", Title: "Post", Caption: caption}},
+	}}})
+	if got := page.Images[0].Uses[0].Caption; len([]rune(got)) > imageLibraryCaptionMaxRunes+1 || !strings.HasSuffix(got, "…") {
+		t.Fatalf("caption excerpt = %q, want at most %d runes ending in ellipsis", got, imageLibraryCaptionMaxRunes+1)
+	}
+	if got := page.Images[0].SearchText; len([]rune(got)) > imageLibraryCaptionMaxRunes+100 {
+		t.Fatalf("search text retained oversized caption: %d runes", len([]rune(got)))
+	}
+}
+
 func TestImageLibraryPage_FormatsAddedAtInUTC(t *testing.T) {
 	addedAt := time.Date(2026, time.January, 2, 23, 30, 0, 0, time.FixedZone("west", -8*60*60))
 	page := newImageLibraryPage(imageindex.Index{Images: []imageindex.Image{{Src: "/images/photo.png", AddedAt: &addedAt}}})
