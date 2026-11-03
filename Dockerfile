@@ -64,7 +64,6 @@ RUN apk add --no-cache \
     libavif-apps \
     libwebp-tools \
     openssl \
-    chromium \
     openssh-client \
     rsync \
     tzdata
@@ -113,6 +112,11 @@ WORKDIR /site
 
 # Default command opens a shell for scripts
 CMD ["sh"]
+
+# Optional compatibility image for authors who explicitly choose Mermaid
+# Chromium mode. Ordinary native builds use browser-free builder-runtime.
+FROM builder-runtime AS browser-builder-runtime
+RUN apk add --no-cache chromium
 
 # =============================================================================
 # Runtime Stage
