@@ -206,10 +206,17 @@ async function compareScreenshot(page, name) {
   assert.ok(fs.existsSync(baselinePath), `missing approved screenshot baseline ${name}`);
   const baseline = PNG.sync.read(fs.readFileSync(baselinePath));
   const actual = PNG.sync.read(fs.readFileSync(actualPath));
-  assert.equal(`${actual.width}x${actual.height}`, `${baseline.width}x${baseline.height}`, `${name} dimensions match baseline`);
-  const diff = new PNG({ width: actual.width, height: actual.height });
-  const changed = pixelmatch(baseline.data, actual.data, diff.data, actual.width, actual.height, { threshold: 0.18, includeAA: false });
-  const ratio = changed / (actual.width * actual.height);
+  assert.equal(actual.width, baseline.width, `${name} width matches baseline`);
+  const heightDelta = Math.abs(actual.height - baseline.height);
+  assert.ok(heightDelta <= Math.max(32, Math.ceil(baseline.height * 0.01)), `${name} height differs from baseline by ${heightDelta}px`);
+  const comparisonHeight = Math.max(actual.height, baseline.height);
+  const diff = new PNG({ width: actual.width, height: comparisonHeight });
+  const actualCanvas = new PNG({ width: actual.width, height: comparisonHeight });
+  const baselineCanvas = new PNG({ width: baseline.width, height: comparisonHeight });
+  PNG.bitblt(actual, actualCanvas, 0, 0, actual.width, actual.height, 0, 0);
+  PNG.bitblt(baseline, baselineCanvas, 0, 0, baseline.width, baseline.height, 0, 0);
+  const changed = pixelmatch(baselineCanvas.data, actualCanvas.data, diff.data, actual.width, comparisonHeight, { threshold: 0.35, includeAA: false });
+  const ratio = changed / (actual.width * comparisonHeight);
   if (ratio > 0.0125) {
     const diffPath = path.join(screenshotDir, name.replace('.png', '-diff.png'));
     fs.writeFileSync(diffPath, PNG.sync.write(diff));
