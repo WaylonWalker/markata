@@ -19,7 +19,7 @@ All three modes are configured under `[markata-go.mermaid]`:
 ```toml
 [markata-go.mermaid]
 enabled = true
-mode = "client"                    # "client", "cli", or "chromium"
+mode = "go"                        # "go" (native default), "client", "cli", "chromium"
 theme = "default"                  # default, dark, forest, neutral
 use_css_variables = true           # Apply site palette to diagrams
 lightbox = true                    # Enable click-to-zoom lightbox
@@ -39,7 +39,7 @@ no_sandbox = false                 # Disable Chromium sandbox (required in conta
 
 ## Mode Details
 
-### Client Mode (Default)
+### Client Mode (Explicit Compatibility)
 
 **Rendering:** Browser-side via Mermaid.js CDN  
 **Stage:** Render (post-processing)  
@@ -130,6 +130,10 @@ mmdc --version
 - CLI tool maintenance dependency
 
 ---
+
+### Native Go Mode (Default)
+
+Native Mermaid generation runs inside the Go process without a browser, Node, or mmdc. Unsupported syntax produces an explicit error; select `client` or `chromium` explicitly to use Mermaid.js.
 
 ### Chromium Mode (chromedp)
 
