@@ -167,7 +167,9 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	_ = json.NewEncoder(w).Encode(struct {
+	if err := json.NewEncoder(w).Encode(struct {
 		Sites []SiteSummary `json:"sites"`
-	}{Sites: h.registry.ListFor(subject)})
+	}{Sites: h.registry.ListFor(subject)}); err != nil {
+		return // Response may already have been partially written.
+	}
 }
