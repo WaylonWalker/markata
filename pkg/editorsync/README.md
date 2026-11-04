@@ -44,9 +44,19 @@ acknowledgment means *SQLite committed*, not Git publication.
 
 The Go tests simulate interrupted acknowledgment and retry, concurrent
 creation, stale revisions, identity spoofing, and a forced receipt-write failure.
-Conflicts currently return a typed error: **the client MUST retain the unsent
-edit**. Server-preserved conflict copies and authorized sync feeds are not yet
-implemented, so this must not be exposed as family-grade multi-device sync.
+For stale edits to an **existing private document**, the server now commits
+the exact rejected source, full mutation fingerprint, deletion intent and
+observed revision to `editor_conflicts` **before** returning a
+`ConflictError{Preserved: true}`. The same UUID/intent replays the original
+conflict, while a changed intent is rejected. `ReadPrivateConflict` retrieves
+a copy only for the original authenticated subject; no HTTP route is mounted.
+
+A stale mutation referring to a document that **no longer exists** cannot be
+stored with the current conflict table's document foreign key, so the server
+returns `Preserved: false` in that case; the browser MUST retain its outbox
+entry. It is still not family-grade multi-device sync: the browser outbox,
+authorized feeds, orphan conflict recovery, backup/restore and a resolution
+UI remain unimplemented.
 
 ## Next steps before enabling a sync endpoint
 
@@ -54,8 +64,8 @@ implemented, so this must not be exposed as family-grade multi-device sync.
   cross-platform build and binary-size impact. Add restore/WAL replay and
   multi-process busy-contention tests before production use.
 - Configure and validate backup/restore, media storage and site isolation.
-- Extend transactions to shared drafts, Git-imported source revisions, and
-  durable conflict copies with idempotent conflict retry semantics.
+- Extend transactions to shared drafts, Git-imported source revisions and
+  recovery of stale edits whose original server document no longer exists.
 - Preserve unsigned offline changes if client checkpoints expire, then
   reconcile conflicts explicitly without silently overwriting content.
 - Implement permission-filtered snapshots and feeds and subject-bound cursors;

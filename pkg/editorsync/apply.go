@@ -48,6 +48,7 @@ type Receipt struct {
 // device's unsent edit. The browser must retain its outbox entry on this error.
 type ConflictError struct {
 	CurrentRevision int64
+	Preserved       bool
 }
 
 func (e *ConflictError) Error() string {
@@ -108,6 +109,11 @@ func (e *Engine) applyPrivateTransaction(ctx context.Context, tx *sql.Tx, m Muta
 	} else if exists {
 		return oldReceipt, nil
 	}
+	if conflict, exists, err := findSyncConflict(ctx, tx, m, digest); err != nil {
+		return Receipt{}, err
+	} else if exists {
+		return Receipt{}, conflict
+	}
 	old, exists, err := currentSyncDocument(ctx, tx, m.SiteID, m.DocumentID)
 	if err != nil {
 		return Receipt{}, err
@@ -116,7 +122,19 @@ func (e *Engine) applyPrivateTransaction(ctx context.Context, tx *sql.Tx, m Muta
 		return Receipt{}, ErrWriteForbidden
 	}
 	if !sameStoredSyncRevision(old.Revision, m.BaseRevision) {
-		return Receipt{}, &ConflictError{CurrentRevision: old.Revision}
+		// A stale edit of an existing private document is durably retained
+		// before we report a conflict. Unknown documents cannot be linked
+		// through the current v1 foreign key and remain client-owned.
+		if !exists {
+			return Receipt{}, &ConflictError{CurrentRevision: 0, Preserved: false}
+		}
+		if err := persistSyncConflict(ctx, tx, m, digest, old.Revision); err != nil {
+			return Receipt{}, err
+		}
+		if err := tx.Commit(); err != nil {
+			return Receipt{}, fmt.Errorf("commit sync conflict: %w", err)
+		}
+		return Receipt{}, &ConflictError{CurrentRevision: old.Revision, Preserved: true}
 	}
 	sequence, err := nextSyncSequence(ctx, tx, m.SiteID)
 	if err != nil {
@@ -281,6 +299,47 @@ func appendSyncAudit(ctx context.Context, tx *sql.Tx, m Mutation, receipt Receip
 		receipt.Revision, receipt.Sequence,
 	); err != nil {
 		return fmt.Errorf("persist sync receipt: %w", err)
+	}
+	return nil
+}
+
+func findSyncConflict(ctx context.Context, tx *sql.Tx, m Mutation, digest string) (*ConflictError, bool, error) {
+	var storedDigest string
+	var revision int64
+	err := tx.QueryRowContext(ctx,
+		`SELECT payload_digest, current_revision
+		FROM editor_conflicts
+		WHERE site_id=? AND subject_id=? AND mutation_id=?`,
+		m.SiteID, m.SubjectID, m.MutationID,
+	).Scan(&storedDigest, &revision)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, false, nil
+	}
+	if err != nil {
+		return nil, false, fmt.Errorf("query stored sync conflict: %w", err)
+	}
+	if storedDigest != digest {
+		return nil, false, ErrMutationIDReuse
+	}
+	return &ConflictError{CurrentRevision: revision, Preserved: true}, true, nil
+}
+
+func persistSyncConflict(ctx context.Context, tx *sql.Tx, m Mutation, digest string, currentRevision int64) error {
+	sum := sha256.Sum256(m.Source)
+	deleted := 0
+	if m.Deleted {
+		deleted = 1
+	}
+	_, err := tx.ExecContext(ctx,
+		`INSERT INTO editor_conflicts
+		(site_id,subject_id,mutation_id,document_id,stale_base_revision,
+		current_revision,proposed_hash,proposed_source,payload_digest,proposed_deleted)
+		VALUES (?,?,?,?,?,?,?,?,?,?)`,
+		m.SiteID, m.SubjectID, m.MutationID, m.DocumentID, m.BaseRevision,
+		currentRevision, hex.EncodeToString(sum[:]), nonNullSyncSource(m.Source), digest, deleted,
+	)
+	if err != nil {
+		return fmt.Errorf("persist rejected sync mutation: %w", err)
 	}
 	return nil
 }
