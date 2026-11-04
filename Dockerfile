@@ -54,6 +54,7 @@ LABEL org.opencontainers.image.licenses="MIT"
 # Note: nodejs/npm/@mermaid-js/mermaid-cli are NOT needed here because
 # markata-go's "chromium" mode uses chromedp (Go-native CDP) directly,
 # and pagefind is installed as a standalone binary below.
+# Browser-compatible Mermaid builds use the separate browser-builder-runtime target.
 RUN apk add --no-cache \
     aws-cli \
     ca-certificates \
@@ -64,28 +65,36 @@ RUN apk add --no-cache \
     libavif-apps \
     libwebp-tools \
     openssl \
-    chromium \
     openssh-client \
     rsync \
     tzdata
 
-# Install pagefind as a standalone binary (musl-static, no Node.js needed)
+# Select architecture-matching standalone assets for multi-platform images.
+# Release tags publish both x86_64 and aarch64 Pagefind MUSL archives.
+ARG TARGETARCH
 ARG PAGEFIND_VERSION=v1.4.0
-RUN wget -q "https://github.com/Pagefind/pagefind/releases/download/${PAGEFIND_VERSION}/pagefind-${PAGEFIND_VERSION}-x86_64-unknown-linux-musl.tar.gz" \
-        -O /tmp/pagefind.tar.gz \
-    && tar xzf /tmp/pagefind.tar.gz -C /usr/local/bin/ pagefind \
-    && chmod +x /usr/local/bin/pagefind \
-    && rm /tmp/pagefind.tar.gz
+RUN set -eu; \
+    case "${TARGETARCH}" in amd64) pagefind_arch=x86_64 ;; arm64) pagefind_arch=aarch64 ;; *) echo "Unsupported TARGETARCH: ${TARGETARCH}" >&2; exit 1 ;; esac; \
+    artifact="pagefind-${PAGEFIND_VERSION}-${pagefind_arch}-unknown-linux-musl.tar.gz"; \
+    url="https://github.com/Pagefind/pagefind/releases/download/${PAGEFIND_VERSION}/${artifact}"; \
+    wget -q "${url}" -O /tmp/pagefind.tar.gz; \
+    wget -q "${url}.sha256" -O /tmp/pagefind.tar.gz.sha256; \
+    expected="$(cut -d' ' -f1 /tmp/pagefind.tar.gz.sha256)"; \
+    printf '%s  %s\n' "${expected}" /tmp/pagefind.tar.gz | sha256sum -c -; \
+    tar xzf /tmp/pagefind.tar.gz -C /usr/local/bin/ pagefind; \
+    chmod +x /usr/local/bin/pagefind; \
+    rm /tmp/pagefind.tar.gz /tmp/pagefind.tar.gz.sha256
 
-# Install Tailwind CSS CLI as a standalone binary (musl-static)
+# Tailwind releases architecture-specific MUSL executables and checksums.
 ARG TAILWIND_VERSION=v4.2.1
-RUN wget -q "https://github.com/tailwindlabs/tailwindcss/releases/download/${TAILWIND_VERSION}/tailwindcss-linux-x64-musl" \
-        -O /tmp/tailwindcss-linux-x64-musl \
-    && wget -q "https://github.com/tailwindlabs/tailwindcss/releases/download/${TAILWIND_VERSION}/sha256sums.txt" \
-        -O /tmp/sha256sums.txt \
-    && cd /tmp && grep "tailwindcss-linux-x64-musl" sha256sums.txt | sha256sum -c - \
-    && install -m 0755 tailwindcss-linux-x64-musl /usr/local/bin/tailwindcss \
-    && rm tailwindcss-linux-x64-musl sha256sums.txt
+RUN set -eu; \
+    case "${TARGETARCH}" in amd64) tailwind_bin=tailwindcss-linux-x64-musl ;; arm64) tailwind_bin=tailwindcss-linux-arm64-musl ;; *) echo "Unsupported TARGETARCH: ${TARGETARCH}" >&2; exit 1 ;; esac; \
+    wget -q "https://github.com/tailwindlabs/tailwindcss/releases/download/${TAILWIND_VERSION}/${tailwind_bin}" -O "/tmp/${tailwind_bin}"; \
+    wget -q "https://github.com/tailwindlabs/tailwindcss/releases/download/${TAILWIND_VERSION}/sha256sums.txt" -O /tmp/sha256sums.txt; \
+    cd /tmp; \
+    grep "${tailwind_bin}$" sha256sums.txt | sha256sum -c -; \
+    install -m 0755 "${tailwind_bin}" /usr/local/bin/tailwindcss; \
+    rm "${tailwind_bin}" sha256sums.txt
 
 # Copy the binary
 COPY --from=builder /app/markata-go /usr/local/bin/markata-go
@@ -113,6 +122,11 @@ WORKDIR /site
 
 # Default command opens a shell for scripts
 CMD ["sh"]
+
+# Optional compatibility image for authors who explicitly choose Mermaid
+# Chromium mode. Ordinary native builds use browser-free builder-runtime.
+FROM builder-runtime AS browser-builder-runtime
+RUN apk add --no-cache chromium
 
 # =============================================================================
 # Runtime Stage

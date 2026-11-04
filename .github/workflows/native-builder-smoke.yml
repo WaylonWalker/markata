@@ -1,0 +1,60 @@
+name: Native and Browser Builder Smoke
+
+on:
+  pull_request:
+    paths:
+      - Dockerfile
+      - .github/workflows/docker.yml
+      - .github/workflows/native-builder-smoke.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  builder-targets:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [amd64, arm64]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - name: Build native builder
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          target: builder-runtime
+          platforms: linux/${{ matrix.arch }}
+          push: false
+          load: true
+          tags: markata-native-builder:${{ matrix.arch }}
+          cache-from: type=gha,scope=builder-smoke-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=builder-smoke-${{ matrix.arch }}
+      - name: Verify browser-free builder
+        run: |
+          docker run --rm --platform linux/${{ matrix.arch }} markata-native-builder:${{ matrix.arch }} sh -ec '
+            markata-go --help >/dev/null
+            pagefind --version
+            tailwindcss --help >/dev/null
+            ! command -v chromium
+          '
+      - name: Build optional browser builder
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          target: browser-builder-runtime
+          platforms: linux/${{ matrix.arch }}
+          push: false
+          load: true
+          tags: markata-browser-builder:${{ matrix.arch }}
+          cache-from: type=gha,scope=browser-builder-smoke-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=browser-builder-smoke-${{ matrix.arch }}
+      - name: Verify browser compatibility image
+        run: |
+          docker run --rm --platform linux/${{ matrix.arch }} markata-browser-builder:${{ matrix.arch }} sh -ec '
+            markata-go --help >/dev/null
+            chromium --version
+          '
