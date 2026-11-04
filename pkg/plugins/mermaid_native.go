@@ -105,7 +105,6 @@ func (r *nativeMermaidRenderer) render(source string) (string, error) {
 
 func (r *nativeMermaidRenderer) close() error { return nil }
 
-
 // Only rewrite SVG paint attributes, never author-supplied node labels or URLs.
 // The fallback preserves the server-rendered appearance until the CSS palette
 // loads; CSS variables let the same SVG respond to live light/dark changes.
@@ -116,7 +115,7 @@ func nativeMermaidPaletteCSS(svg []byte, palette *mermaidPaletteColors) []byte {
 		return svg
 	}
 	type paint struct {
-		color string
+		color    string
 		variable string
 	}
 	colors := []paint{
@@ -133,7 +132,7 @@ func nativeMermaidPaletteCSS(svg []byte, palette *mermaidPaletteColors) []byte {
 		}
 		seen[entry.color] = true
 		replacements = append(replacements, entry.color,
-			"var("+entry.variable+", "+entry.color+")")
+			"var(" + entry.variable + ", " + entry.color + ")")
 	}
 	if len(replacements) == 0 {
 		return svg
