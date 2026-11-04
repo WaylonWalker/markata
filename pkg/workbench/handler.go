@@ -34,7 +34,7 @@ const (
 	workbenchAestheticAttribute = "data-aesthetic"
 	workbenchPaletteAttribute   = "data-palette"
 	workbenchFontpackAttribute  = "data-fontpack"
-	workbenchLightMode         = "light"
+	workbenchLightMode          = "light"
 )
 
 //go:embed web
