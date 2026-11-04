@@ -92,7 +92,7 @@ RUN set -eu; \
     wget -q "https://github.com/tailwindlabs/tailwindcss/releases/download/${TAILWIND_VERSION}/${tailwind_bin}" -O "/tmp/${tailwind_bin}"; \
     wget -q "https://github.com/tailwindlabs/tailwindcss/releases/download/${TAILWIND_VERSION}/sha256sums.txt" -O /tmp/sha256sums.txt; \
     cd /tmp; \
-    grep "  ${tailwind_bin}$" sha256sums.txt | sha256sum -c -; \
+    grep "${tailwind_bin}$" sha256sums.txt | sha256sum -c -; \
     install -m 0755 "${tailwind_bin}" /usr/local/bin/tailwindcss; \
     rm "${tailwind_bin}" sha256sums.txt
 
