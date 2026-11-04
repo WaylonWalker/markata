@@ -1,6 +1,7 @@
 package editorsync
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"errors"
@@ -43,7 +44,7 @@ func TestPrivateConflictPersistsAcrossRestart(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if string(proposed) != string(stale.Source) || digest != stale.Digest() ||
+		if !bytes.Equal(proposed, stale.Source) || digest != stale.Digest() ||
 			baseRevision != 0 || currentRevision != 1 || deleted != 0 {
 			t.Fatal("stale source or intent not persisted exactly")
 		}
@@ -51,7 +52,7 @@ func TestPrivateConflictPersistsAcrossRestart(t *testing.T) {
 			WHERE site_id=? AND document_id=?`, base.SiteID, base.DocumentID).Scan(&current); err != nil {
 			t.Fatal(err)
 		}
-		if string(current) != string(base.Source) {
+		if !bytes.Equal(current, base.Source) {
 			t.Fatal("conflict overwrote live server document")
 		}
 		if err := db.QueryRowContext(ctx, "SELECT COUNT(*) FROM editor_changes").Scan(&changes); err != nil {
@@ -285,7 +286,7 @@ func TestReadPrivateConflictIsOwnerScoped(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if record.DocumentID != m.DocumentID || string(record.Source) != string(m.Source) ||
+	if record.DocumentID != m.DocumentID || !bytes.Equal(record.Source, m.Source) ||
 		record.PayloadDigest != m.Digest() || record.Deleted || record.CurrentRevision != 1 {
 		t.Fatalf("incorrect private conflict record: %+v", record)
 	}
@@ -320,7 +321,7 @@ func TestOrphanConflictIsDurableAndPrivateAfterRestart(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if record.DocumentID != m.DocumentID || string(record.Source) != string(m.Source) ||
+	if record.DocumentID != m.DocumentID || !bytes.Equal(record.Source, m.Source) ||
 		record.StaleBaseRevision != 99 || record.PayloadDigest != m.Digest() {
 		t.Fatalf("orphan conflict lost proposal metadata: %+v", record)
 	}
