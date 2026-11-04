@@ -210,3 +210,39 @@ func TestApplyConcurrentCreatePreservesSingleWriter(t *testing.T) {
 		t.Fatalf("expected 1 accepted + 1 conflict; got %d accepted, %d conflicts", accepted, conflicts)
 	}
 }
+
+func TestApplyDeletionWithEmptySource(t *testing.T) {
+	ctx := context.Background()
+	db, err := OpenSQLite(ctx, filepath.Join(t.TempDir(), "delete.sqlite"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if err := db.Close(); err != nil {
+			t.Errorf("close SQLite: %v", err)
+		}
+	}()
+	engine := newPrivateTestEngine(t, db)
+	m := testMutation()
+	m.BaseRevision = 0
+	if _, err := engine.Apply(ctx, m.SubjectID, m); err != nil {
+		t.Fatal(err)
+	}
+	m.MutationID = "8eb7a4ab-4b5d-4ba7-b189-40ff3dd0eafb"
+	m.BaseRevision = 1
+	m.Deleted = true
+	m.Source = nil
+	if _, err := engine.Apply(ctx, m.SubjectID, m); err != nil {
+		t.Fatalf("empty-body deletion must not write SQL NULL: %v", err)
+	}
+	var deleted, sourceLen, sourceNull int
+	if err := db.QueryRowContext(ctx,
+		"SELECT deleted, length(source), source IS NULL FROM editor_documents WHERE site_id=? AND document_id=?",
+		m.SiteID, m.DocumentID,
+	).Scan(&deleted, &sourceLen, &sourceNull); err != nil {
+		t.Fatal(err)
+	}
+	if deleted != 1 || sourceLen != 0 || sourceNull != 0 {
+		t.Fatalf("incorrect tombstone deleted=%d len=%d null=%d", deleted, sourceLen, sourceNull)
+	}
+}
