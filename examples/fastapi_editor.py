@@ -99,7 +99,12 @@ async def preview(request: RenderRequest):
         return JSONResponse({"error": str(error)}, status_code=422)
     started = perf_counter()
     try:
-        result = await app.state.renderer_pool.render(request.markdown, inline_assets=True, unsafe=True, timeout=15)
+        # The live preview is interactive: retain Mermaid.js redraw behavior while
+        # published sites default to the native Go SVG backend.
+        result = await app.state.renderer_pool.render(
+            request.markdown, inline_assets=True, unsafe=True,
+            mermaid_mode="client", timeout=15,
+        )
     except RenderError as error:
         return JSONResponse({"error": str(error)}, status_code=422)
     render_ms = (perf_counter() - started) * 1000
