@@ -3,6 +3,7 @@ package plugins
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"html"
 	"math"
@@ -73,8 +74,8 @@ func (p *ContributionGraphPlugin) Configure(m *lifecycle.Manager) error {
 			p.config.Enabled = enabled
 		}
 		if mode, ok := cfgMap["mode"].(string); ok && mode != "" {
-			if mode != "go" && mode != "client" {
-				return fmt.Errorf("contribution_graph.mode must be go or client, got %q", mode)
+			if mode != "auto" && mode != "go" && mode != "client" {
+				return fmt.Errorf("contribution_graph.mode must be auto, go, or client, got %q", mode)
 			}
 			p.config.Mode = mode
 		}
@@ -194,11 +195,14 @@ func (p *ContributionGraphPlugin) processPost(m *lifecycle.Manager, post *models
 		// Explicit client mode preserves the full interactive Cal-Heatmap contract.
 		if p.config.Mode != "client" {
 			svg, err := renderNativeContributionGraph(data, optionsMap, maxValue, graphID)
-			if err != nil {
+			if err == nil {
+				return fmt.Sprintf(`<div class="%s">%s</div>`, html.EscapeString(p.config.ContainerClass), svg)
+			}
+			if p.config.Mode == "go" || !errors.Is(err, errNativeContributionGraphUnsupported) {
 				return fmt.Sprintf(`<div class="%s contribution-graph-error"><p>Contribution Graph Error: %s</p></div>`,
 					html.EscapeString(p.config.ContainerClass), html.EscapeString(err.Error()))
 			}
-			return fmt.Sprintf(`<div class="%s">%s</div>`, html.EscapeString(p.config.ContainerClass), svg)
+			// In auto mode, legacy layouts are rendered with Cal-Heatmap.
 		}
 
 		// Marshal data and options back to JSON for the script

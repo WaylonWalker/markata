@@ -215,7 +215,9 @@ func renderNativeCartesian(out *strings.Builder, chartType string, labels []stri
 		fmt.Fprintf(out, "<path d=\"%s\" fill=\"none\" stroke=\"%s\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>", path.String(), nativeChartColor(0))
 		for i, value := range values {
 			x := left + plotW/2
-			if n > 1 { x = left + float64(i)*plotW/float64(n-1) }
+			if n > 1 {
+				x = left + float64(i)*plotW/float64(n-1)
+			}
 			fmt.Fprintf(out, "<circle cx=\"%.2f\" cy=\"%.2f\" r=\"4\" fill=\"%s\"><title>%s: %g</title></circle>", x, valueY(value), nativeChartColor(0), html.EscapeString(labels[i]), value)
 		}
 	}
@@ -232,20 +234,33 @@ func renderNativeScatter(out *strings.Builder, dataset map[string]interface{}) e
 	minX, maxX, minY, maxY := math.Inf(1), math.Inf(-1), math.Inf(1), math.Inf(-1)
 	for _, rawPoint := range raw {
 		pair, ok := rawPoint.(map[string]interface{})
-		if !ok { return fmt.Errorf("scatter points must contain x and y") }
+		if !ok {
+			return fmt.Errorf("scatter points must contain x and y")
+		}
 		x, xok := pair["x"].(float64)
 		y, yok := pair["y"].(float64)
 		if !xok || !yok || math.IsNaN(x) || math.IsNaN(y) || math.IsInf(x, 0) || math.IsInf(y, 0) {
 			return fmt.Errorf("scatter points must contain finite x and y")
 		}
 		points = append(points, point{x, y})
-		minX, maxX = math.Min(minX,x), math.Max(maxX,x)
-		minY, maxY = math.Min(minY,y), math.Max(maxY,y)
+		minX, maxX = math.Min(minX, x), math.Max(maxX, x)
+		minY, maxY = math.Min(minY, y), math.Max(maxY, y)
 	}
-	if maxX == minX { maxX++ }
-	if maxY == minY { maxY++ }
+	if maxX == minX {
+		maxX++
+	}
+	if maxY == minY {
+		maxY++
+	}
 	nativeChartAxes(out, minY, maxY)
 	const left, top, plotH, plotW = 65.0, 25.0, 245.0, 625.0
+	// Show the numerical x scale: position alone is ambiguous for scatter data.
+	for tick := 0; tick <= 4; tick++ {
+		value := minX + float64(tick)*(maxX-minX)/4
+		x := left + float64(tick)*plotW/4
+		fmt.Fprintf(out, "<line x1=\"%.1f\" y1=\"%.1f\" x2=\"%.1f\" y2=\"%.1f\" stroke=\"var(--color-border, #d1d5db)\"/>", x, top+plotH, x, top+plotH+4)
+		fmt.Fprintf(out, "<text x=\"%.1f\" y=\"%.1f\" text-anchor=\"middle\" font-size=\"11\" fill=\"var(--color-text-muted, #6b7280)\">%g</text>", x, top+plotH+21, value)
+	}
 	for _, p := range points {
 		cx := left + (p.x-minX)*plotW/(maxX-minX)
 		cy := top + (maxY-p.y)*plotH/(maxY-minY)
@@ -260,7 +275,9 @@ func renderNativePie(out *strings.Builder, donut bool, labels []string, values [
 	}
 	sum := 0.0
 	for _, v := range values {
-		if v < 0 { return fmt.Errorf("pie values must be nonnegative") }
+		if v < 0 {
+			return fmt.Errorf("pie values must be nonnegative")
+		}
 		sum += v
 	}
 	if sum == 0 {
@@ -269,7 +286,9 @@ func renderNativePie(out *strings.Builder, donut bool, labels []string, values [
 	const cx, cy, radius = 275.0, 165.0, 112.0
 	start := -math.Pi/2
 	for i, value := range values {
-		if value == 0 { continue }
+		if value == 0 {
+			continue
+		}
 		delta := 2*math.Pi*value/sum
 		if delta >= 2*math.Pi-1e-10 {
 			fmt.Fprintf(out, "<circle cx=\"%.1f\" cy=\"%.1f\" r=\"%.1f\" fill=\"%s\"><title>%s: %g</title></circle>", cx, cy, radius, nativeChartColor(i), html.EscapeString(labels[i]), value)
@@ -278,7 +297,9 @@ func renderNativePie(out *strings.Builder, donut bool, labels []string, values [
 			x1, y1 := cx+radius*math.Cos(start), cy+radius*math.Sin(start)
 			x2, y2 := cx+radius*math.Cos(end), cy+radius*math.Sin(end)
 			large := 0
-			if delta > math.Pi { large = 1 }
+			if delta > math.Pi {
+				large = 1
+			}
 			fmt.Fprintf(out, "<path d=\"M %.2f %.2f L %.2f %.2f A %.2f %.2f 0 %d 1 %.2f %.2f Z\" fill=\"%s\"><title>%s: %g</title></path>", cx, cy, x1, y1, radius, radius, large, x2, y2, nativeChartColor(i), html.EscapeString(labels[i]), value)
 		}
 		start += delta

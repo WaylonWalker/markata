@@ -206,6 +206,11 @@ func (r *StandaloneResult) renderDiagrams(post *models.Post, options StandaloneO
 		r.collectScripts(mermaidScript)
 	}
 	chart := NewChartJSPlugin()
+	// WASM hosts run interactive previews. Keep their default on Chart.js;
+	// explicit chart_mode=go remains available for static export.
+	if options.ChartMode == "" && len(availableMermaidModes()) == 1 {
+		chart.config.Mode = "client"
+	}
 	if options.Config != nil && options.Config.Extra != nil && options.ChartMode == "" {
 		switch raw := options.Config.Extra["chartjs"].(type) {
 		case map[string]interface{}:

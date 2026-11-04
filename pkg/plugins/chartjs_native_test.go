@@ -9,7 +9,9 @@ import (
 func TestChartJS_NativeAutoBasicBarNoBrowserBundle(t *testing.T) {
 	p := NewChartJSPlugin()
 	post := &models.Post{ArticleHTML: `<pre><code class="language-chartjs">{"type":"bar","data":{"labels":["A","B"],"datasets":[{"label":"Votes","data":[12,19]}]}}</code></pre>`}
-	if err := p.processPost(post); err != nil { t.Fatal(err) }
+	if err := p.processPost(post); err != nil {
+		t.Fatal(err)
+	}
 	if !strings.Contains(post.ArticleHTML, "<svg") || !strings.Contains(post.ArticleHTML, "chartjs-data") {
 		t.Fatalf("native chart should retain its data table: %s", post.ArticleHTML)
 	}
@@ -31,7 +33,9 @@ func TestChartJS_NativeAutoSupportedTypes(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			p := NewChartJSPlugin()
 			post := &models.Post{ArticleHTML: "<pre><code class=\"language-chartjs\">" + source + "</code></pre>"}
-			if err := p.processPost(post); err != nil { t.Fatal(err) }
+			if err := p.processPost(post); err != nil {
+				t.Fatal(err)
+			}
 			if !strings.Contains(post.ArticleHTML, "<svg") || strings.Contains(post.ArticleHTML, "<script") {
 				t.Fatalf("%s was not rendered natively: %s", name, post.ArticleHTML)
 			}
@@ -43,14 +47,18 @@ func TestChartJS_AutoFallbackAndStrictGo(t *testing.T) {
 	source := `<pre><code class="language-chartjs">{"type":"bar","data":{"labels":["A"],"datasets":[{"data":[10]}]},"options":{"plugins":{"legend":{"display":false}}}}</code></pre>`
 	auto := NewChartJSPlugin()
 	post := &models.Post{ArticleHTML: source}
-	if err := auto.processPost(post); err != nil { t.Fatal(err) }
+	if err := auto.processPost(post); err != nil {
+		t.Fatal(err)
+	}
 	if !strings.Contains(post.ArticleHTML, "new Chart(ctx,") {
 		t.Fatalf("advanced options must retain full Chart.js: %s", post.ArticleHTML)
 	}
 	strict := NewChartJSPlugin()
 	strict.config.Mode = "go"
 	other := &models.Post{ArticleHTML: source}
-	if err := strict.processPost(other); err != nil { t.Fatal(err) }
+	if err := strict.processPost(other); err != nil {
+		t.Fatal(err)
+	}
 	if !strings.Contains(other.ArticleHTML, "Native chart unsupported") || strings.Contains(other.ArticleHTML, "new Chart") {
 		t.Fatalf("strict native mode must report unsupported chart options: %s", other.ArticleHTML)
 	}
@@ -59,13 +67,37 @@ func TestChartJS_AutoFallbackAndStrictGo(t *testing.T) {
 func TestRenderStandalone_DefaultAutoNativeChart(t *testing.T) {
 	source := "```chartjs\n{\"type\":\"bar\",\"data\":{\"labels\":[\"A\"],\"datasets\":[{\"data\":[10]}]}}\n```"
 	result, err := RenderStandalone(source, StandaloneOptions{})
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	if !result.Features["chartjs"] || !strings.Contains(result.HTML, "<svg") {
 		t.Fatalf("native chart feature not surfaced: %+v", result)
 	}
 	for _, asset := range result.Assets {
 		if strings.Contains(asset.ID, "chart.min.js") {
 			t.Fatalf("static chart shipped client library: %s", asset.ID)
+		}
+	}
+}
+
+func TestNativeScatter_NumericXAxisLabels(t *testing.T) {
+	svg, err := renderNativeChartSVG(map[string]interface{}{
+		"type": "scatter",
+		"data": map[string]interface{}{
+			"datasets": []interface{}{map[string]interface{}{
+				"data": []interface{}{
+					map[string]interface{}{"x": float64(10), "y": float64(5)},
+					map[string]interface{}{"x": float64(20), "y": float64(15)},
+				},
+			}},
+		},
+	}, "scatter-axis-test", "Scatter values")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{">10</text>", ">20</text>", "x: 10, y: 5"} {
+		if !strings.Contains(svg, want) {
+			t.Fatalf("missing numerical axis mark %q: %s", want, svg)
 		}
 	}
 }
