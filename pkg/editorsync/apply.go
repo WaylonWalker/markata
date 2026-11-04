@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"strconv"
 )
 
 // MVP supports private drafts only. Shared/published content and conflict-copy
@@ -114,7 +115,7 @@ func (e *Engine) applyPrivateTransaction(ctx context.Context, tx *sql.Tx, m Muta
 	if exists && (old.Owner != m.SubjectID || old.Visibility != Private) {
 		return Receipt{}, ErrWriteForbidden
 	}
-	if old.Revision < 0 || old.Revision != int64(m.BaseRevision) {
+	if !sameStoredSyncRevision(old.Revision, m.BaseRevision) {
 		return Receipt{}, &ConflictError{CurrentRevision: old.Revision}
 	}
 	sequence, err := nextSyncSequence(ctx, tx, m.SiteID)
@@ -133,6 +134,13 @@ func (e *Engine) applyPrivateTransaction(ctx context.Context, tx *sql.Tx, m Muta
 		return Receipt{}, fmt.Errorf("commit sync mutation: %w", err)
 	}
 	return receipt, nil
+}
+
+// SQLite revisions are signed int64, while the incoming mutation's base is
+// unsigned. Comparing their canonical decimal values avoids any overflowing
+// narrowing/widening casts (including negative/corrupt database values).
+func sameStoredSyncRevision(stored int64, proposed uint64) bool {
+	return stored >= 0 && strconv.FormatInt(stored, 10) == strconv.FormatUint(proposed, 10)
 }
 
 type currentDocument struct {
