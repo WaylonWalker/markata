@@ -84,7 +84,10 @@ func renderNativeContributionGraph(data interface{}, options map[string]interfac
 		week := int(start.Sub(gridStart).Hours()/24) / 7
 		fmt.Fprintf(&out, "<text x=\"%d\" y=\"13\" font-size=\"10\" fill=\"var(--color-text-muted, #657076)\">%s</text>", left+step*week, month.String()[:3])
 	}
-	for _, day := range []struct{ label string; row int }{
+	for _, day := range []struct {
+		label string
+		row   int
+	}{
 		{"Mon", 1}, {"Wed", 3}, {"Fri", 5},
 	} {
 		fmt.Fprintf(&out, "<text x=\"0\" y=\"%d\" font-size=\"10\" fill=\"var(--color-text-muted, #657076)\">%s</text>", top+step*day.row+9, day.label)
