@@ -59,20 +59,8 @@ func (e *ConflictError) Unwrap() error { return ErrRevisionConflict }
 // the same mutation ID/payload returns the original durable receipt. Editing
 // shared/public source, persisted conflict copies and transport are later work.
 func (e *Engine) Apply(ctx context.Context, principal string, m Mutation) (receipt Receipt, resultErr error) {
-	if e == nil || e.db == nil || e.authorize == nil || principal == "" || m.SubjectID != principal {
-		return Receipt{}, ErrWriteForbidden
-	}
-	if err := m.Validate(); err != nil {
+	if err := e.validatePrivateMutation(ctx, principal, m); err != nil {
 		return Receipt{}, err
-	}
-	if m.Visibility != Private {
-		return Receipt{}, ErrUnsupportedVisibility
-	}
-	if m.BaseRevision > math.MaxInt64 {
-		return Receipt{}, errors.New("invalid base revision")
-	}
-	if err := e.authorize(ctx, principal, m.SiteID); err != nil {
-		return Receipt{}, ErrWriteForbidden
 	}
 	tx, err := e.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -86,6 +74,33 @@ func (e *Engine) Apply(ctx context.Context, principal string, m Mutation) (recei
 			receipt = Receipt{}
 		}
 	}()
+	return e.applyPrivateTransaction(ctx, tx, m)
+}
+
+// Keep authentication, site write permission and revision bounds together
+// before starting a transaction; the transaction checks document ownership.
+func (e *Engine) validatePrivateMutation(ctx context.Context, principal string, m Mutation) error {
+	if e == nil || e.db == nil || e.authorize == nil || principal == "" || m.SubjectID != principal {
+		return ErrWriteForbidden
+	}
+	if err := m.Validate(); err != nil {
+		return err
+	}
+	if m.Visibility != Private {
+		return ErrUnsupportedVisibility
+	}
+	if m.BaseRevision > math.MaxInt64 {
+		return errors.New("invalid base revision")
+	}
+	if err := e.authorize(ctx, principal, m.SiteID); err != nil {
+		return ErrWriteForbidden
+	}
+	return nil
+}
+
+// applyPrivateTransaction owns the commit: callers may acknowledge a receipt
+// only after its corresponding revision and audit rows are durable.
+func (e *Engine) applyPrivateTransaction(ctx context.Context, tx *sql.Tx, m Mutation) (receipt Receipt, resultErr error) {
 	digest := m.Digest()
 	if oldReceipt, exists, err := findSyncReceipt(ctx, tx, m, digest); err != nil {
 		return Receipt{}, err
@@ -99,7 +114,7 @@ func (e *Engine) Apply(ctx context.Context, principal string, m Mutation) (recei
 	if exists && (old.Owner != principal || old.Visibility != Private) {
 		return Receipt{}, ErrWriteForbidden
 	}
-	if uint64(old.Revision) != m.BaseRevision {
+	if old.Revision < 0 || old.Revision != int64(m.BaseRevision) {
 		return Receipt{}, &ConflictError{CurrentRevision: old.Revision}
 	}
 	sequence, err := nextSyncSequence(ctx, tx, m.SiteID)
