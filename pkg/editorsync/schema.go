@@ -146,8 +146,40 @@ func Migrate(ctx context.Context, db *sql.DB) (resultErr error) {
 	if strings.TrimSpace(statement.String()) != "" {
 		return errors.New("unterminated editor sync migration statement")
 	}
+	if err := migrateEditorConflictColumns(ctx, tx); err != nil {
+		return err
+	}
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("commit editor sync migration: %w", err)
+	}
+	return nil
+}
+
+func migrateEditorConflictColumns(ctx context.Context, tx *sql.Tx) error {
+	// CREATE TABLE IF NOT EXISTS cannot upgrade the original v1 conflict table.
+	// These fixed ALTER statements are idempotent because we check the SQLite
+	// schema inside the same migration transaction first.
+	columns := []struct {
+		name string
+		sql  string
+	}{
+		{"payload_digest", "ALTER TABLE editor_conflicts ADD COLUMN payload_digest TEXT NOT NULL DEFAULT '' CHECK (length(payload_digest) IN (0, 64))"},
+		{"proposed_deleted", "ALTER TABLE editor_conflicts ADD COLUMN proposed_deleted INTEGER NOT NULL DEFAULT 0 CHECK (proposed_deleted IN (0, 1))"},
+	}
+	for _, column := range columns {
+		var count int
+		err := tx.QueryRowContext(ctx,
+			"SELECT COUNT(*) FROM pragma_table_info('editor_conflicts') WHERE name = ?",
+			column.name,
+		).Scan(&count)
+		if err != nil {
+			return fmt.Errorf("inspect conflict schema: %w", err)
+		}
+		if count == 0 {
+			if _, err := tx.ExecContext(ctx, column.sql); err != nil {
+				return fmt.Errorf("migrate conflict %s: %w", column.name, err)
+			}
+		}
 	}
 	return nil
 }

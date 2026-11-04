@@ -1,4 +1,4 @@
--- Hosted editor draft revision schema, v1 (SQLite).
+-- Hosted editor draft revision schema, v2 (SQLite).
 -- This is deliberately not a public API. All authorization is enforced in Go.
 -- Per-site counters sequence edits; browser-facing cursors must be opaque and scoped.
 CREATE TABLE IF NOT EXISTS editor_sites (
@@ -71,6 +71,8 @@ CREATE TABLE IF NOT EXISTS editor_changes (
 );
 
 -- Conflicting edits are retained for review rather than overwritten.
+-- Old v1 databases are extended with payload_digest and proposed_deleted by Migrate;
+-- empty legacy digests must not be mistaken for verified mutation receipts.
 CREATE TABLE IF NOT EXISTS editor_conflicts (
   site_id TEXT NOT NULL,
   subject_id TEXT NOT NULL,
@@ -80,6 +82,8 @@ CREATE TABLE IF NOT EXISTS editor_conflicts (
   current_revision INTEGER NOT NULL CHECK (current_revision >= 1),
   proposed_hash TEXT NOT NULL CHECK (length(proposed_hash) = 64),
   proposed_source BLOB NOT NULL,
+  payload_digest TEXT NOT NULL DEFAULT '' CHECK (length(payload_digest) IN (0, 64)),
+  proposed_deleted INTEGER NOT NULL DEFAULT 0 CHECK (proposed_deleted IN (0, 1)),
   PRIMARY KEY (site_id, subject_id, mutation_id),
   FOREIGN KEY (site_id, document_id) REFERENCES editor_documents(site_id, document_id)
 );
