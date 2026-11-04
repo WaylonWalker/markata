@@ -12,56 +12,75 @@ import (
 
 var errNativeContributionGraphUnsupported = errors.New("unsupported native contribution graph layout")
 
-// renderNativeContributionGraph creates a responsive, palette-aware SVG calendar
-// using only Go. It intentionally supports the GitHub-style year/day layout.
-// Authors requiring other Cal-Heatmap domains can set mode = "client".
-func renderNativeContributionGraph(data interface{}, options map[string]interface{}, maxValue int, graphID string) (string, error) {
-	for key := range options {
+
+const contributionGraphYearDomain = "year"
+
+func nativeContributionGraphYear(options map[string]interface{}) (int, error) {
+	for key, value := range options {
 		switch key {
-		case "year", "domain", "subDomain", "maxValue", "maxPercentile":
+		case contributionGraphYearDomain, "domain", "subDomain", "maxValue", "maxPercentile":
 		case "range":
-			if value, ok := options[key].(float64); !ok || value != 1 {
-				return "", fmt.Errorf("%w: range must be 1; set contribution_graph.mode = \"client\"", errNativeContributionGraphUnsupported)
+			if n, ok := value.(float64); !ok || n != 1 {
+				return 0, fmt.Errorf("%w: range must be 1; set contribution_graph.mode = \"client\"", errNativeContributionGraphUnsupported)
 			}
 		default:
-			return "", fmt.Errorf("%w: option %q; set contribution_graph.mode = \"client\"", errNativeContributionGraphUnsupported, key)
+			return 0, fmt.Errorf("%w: option %q; set contribution_graph.mode = \"client\"", errNativeContributionGraphUnsupported, key)
 		}
 	}
-	if domain, ok := options["domain"]; ok && domain != "year" {
-		return "", fmt.Errorf("%w: native contribution graph supports domain = \"year\" only; set contribution_graph.mode = \"client\"", errNativeContributionGraphUnsupported)
+	if domain, ok := options["domain"]; ok && domain != contributionGraphYearDomain {
+		return 0, fmt.Errorf("%w: native contribution graph supports domain = \"year\" only; set contribution_graph.mode = \"client\"", errNativeContributionGraphUnsupported)
 	}
 	if subDomain, ok := options["subDomain"]; ok && subDomain != "day" {
-		return "", fmt.Errorf("%w: native contribution graph supports subDomain = \"day\" only; set contribution_graph.mode = \"client\"", errNativeContributionGraphUnsupported)
+		return 0, fmt.Errorf("%w: native contribution graph supports subDomain = \"day\" only; set contribution_graph.mode = \"client\"", errNativeContributionGraphUnsupported)
 	}
 
 	year := time.Now().UTC().Year()
-	if value, ok := options["year"].(float64); ok {
+	if value, ok := options[contributionGraphYearDomain].(float64); ok {
 		year = int(value)
 		if float64(year) != value {
-			return "", fmt.Errorf("invalid contribution graph year %v", value)
+			return 0, fmt.Errorf("invalid contribution graph year %v", value)
 		}
 	}
 	if year < 1 || year > 9998 {
-		return "", fmt.Errorf("contribution graph year must be between 1 and 9998")
+		return 0, fmt.Errorf("contribution graph year must be between 1 and 9998")
 	}
+	return year, nil
+}
+
+func nativeContributionGraphValues(data interface{}) (map[string]int, error) {
 	var points []contributionGraphDataPoint
 	encoded, err := json.Marshal(data)
 	if err != nil {
-		return "", fmt.Errorf("encode contribution data: %w", err)
+		return nil, fmt.Errorf("encode contribution data: %w", err)
 	}
 	if err := json.Unmarshal(encoded, &points); err != nil {
-		return "", fmt.Errorf("parse contribution data: %w", err)
+		return nil, fmt.Errorf("parse contribution data: %w", err)
 	}
 	values := make(map[string]int, len(points))
 	for _, point := range points {
 		day, err := time.Parse("2006-01-02", point.Date)
 		if err != nil || day.Format("2006-01-02") != point.Date {
-			return "", fmt.Errorf("invalid contribution date %q", point.Date)
+			return nil, fmt.Errorf("invalid contribution date %q", point.Date)
 		}
 		if point.Value < 0 {
-			return "", fmt.Errorf("negative contribution value for %s", point.Date)
+			return nil, fmt.Errorf("negative contribution value for %s", point.Date)
 		}
 		values[point.Date] = point.Value
+	}
+	return values, nil
+}
+
+// renderNativeContributionGraph creates a responsive, palette-aware SVG calendar
+// using only Go. It intentionally supports the GitHub-style year/day layout.
+// Authors requiring other Cal-Heatmap domains can set mode = "client".
+func renderNativeContributionGraph(data interface{}, options map[string]interface{}, maxValue int, graphID string) (string, error) {
+	year, err := nativeContributionGraphYear(options)
+	if err != nil {
+		return "", err
+	}
+	values, err := nativeContributionGraphValues(data)
+	if err != nil {
+		return "", err
 	}
 	if maxValue < 1 {
 		maxValue = 1
