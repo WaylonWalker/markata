@@ -31,6 +31,8 @@ jobs:
             gofmt -d pkg/editorsync/*.go
             exit 1
           fi
+      - name: Vet editor sync package
+        run: go vet ./pkg/editorsync
       - name: Test editor sync with the real Go SQLite driver
         run: go test -race -count=1 ./pkg/editorsync
 
