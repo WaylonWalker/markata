@@ -34,6 +34,15 @@ func OpenSQLite(ctx context.Context, path string) (*sql.DB, error) {
 	if err != nil || !info.IsDir() {
 		return nil, errors.New("editor sync SQLite parent directory must already exist")
 	}
+	// New database files must not inherit a permissive default creation mode:
+	// they can contain unpublished private drafts.
+	file, err := os.OpenFile(abs, os.O_RDWR|os.O_CREATE, 0o600)
+	if err != nil {
+		return nil, fmt.Errorf("create private editor sync SQLite file: %w", err)
+	}
+	if err := file.Close(); err != nil {
+		return nil, fmt.Errorf("close private editor sync SQLite file: %w", err)
+	}
 	params := url.Values{}
 	params.Add("_pragma", "foreign_keys(1)")
 	params.Add("_pragma", "busy_timeout(5000)")
