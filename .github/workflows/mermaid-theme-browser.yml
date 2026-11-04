@@ -8,6 +8,7 @@ on:
       - "pkg/themes/default/static/js/code-chrome.js"
       - "examples/gallery-site/pages/rich-markdown-gallery.md"
       - "scripts/mermaid-theme.browser.test.cjs"
+      - "scripts/mermaid-native-theme.browser.test.cjs"
       - "scripts/code-chrome.browser.test.cjs"
       - ".github/workflows/mermaid-theme-browser.yml"
   workflow_dispatch:
@@ -36,7 +37,8 @@ jobs:
           SCREENSHOT_DIR: test-results/mermaid-theme
         run: |
           node --check scripts/mermaid-theme.browser.test.cjs
-          node --test scripts/mermaid-theme.browser.test.cjs scripts/code-chrome.browser.test.cjs
+          node --check scripts/mermaid-native-theme.browser.test.cjs
+          node --test scripts/mermaid-theme.browser.test.cjs scripts/mermaid-native-theme.browser.test.cjs scripts/code-chrome.browser.test.cjs
       - name: Upload theme screenshots
         if: always()
         uses: actions/upload-artifact@v4
