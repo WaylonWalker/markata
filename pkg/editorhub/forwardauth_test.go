@@ -131,8 +131,7 @@ func TestForwardAuthConfigFailsClosed(t *testing.T) {
 		{"broad public network", func(c *ForwardAuthConfig) { c.TrustedProxyCIDRs = []string{"128.0.0.0/1"} }},
 		{"broad IPv6 network", func(c *ForwardAuthConfig) { c.TrustedProxyCIDRs = []string{"2001:db8::/32"} }},
 		{"no subject header", func(c *ForwardAuthConfig) { c.SubjectHeader = "" }},
-		{"invalid subject header", func(c *ForwardAuthConfig) { c.SubjectHeader = "X-Identity
-X-Other:" }},
+		{"invalid subject header", func(c *ForwardAuthConfig) { c.SubjectHeader = "X-Identity\r\nX-Other:" }},
 		{"same header", func(c *ForwardAuthConfig) { c.SubjectHeader = c.AuthMethodHeader }},
 		{"no method header", func(c *ForwardAuthConfig) { c.AuthMethodHeader = "" }},
 		{"no allowed methods", func(c *ForwardAuthConfig) { c.AllowedAuthMethods = nil }},
