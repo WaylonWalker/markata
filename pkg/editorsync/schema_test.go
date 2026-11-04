@@ -8,13 +8,13 @@ import (
 
 func testMutation() Mutation {
 	return Mutation{
-		SiteID: "family-blog",
-		DocumentID: "post-001",
-		SubjectID: "subject-42",
-		MutationID: "8eb7a4ab-4b5d-4ba7-b189-40ff3dd0eafa",
+		SiteID:       "family-blog",
+		DocumentID:   "post-001",
+		SubjectID:    "subject-42",
+		MutationID:   "8eb7a4ab-4b5d-4ba7-b189-40ff3dd0eafa",
 		BaseRevision: 3,
-		Visibility: Private,
-		Source: []byte("# Hello\n"),
+		Visibility:   Private,
+		Source:       []byte("# Hello\n"),
 	}
 }
 
@@ -24,7 +24,7 @@ func TestMutationValidation(t *testing.T) {
 		t.Fatalf("valid mutation: %v", err)
 	}
 	tests := []struct {
-		name string
+		name   string
 		change func(*Mutation)
 	}{
 		{"invalid site", func(m *Mutation) { m.SiteID = "../bad" }},
@@ -53,7 +53,7 @@ func TestDigestCoversEntireMutationAndIsStable(t *testing.T) {
 		t.Fatal("digest is not stable SHA-256")
 	}
 	for _, tt := range []struct {
-		name string
+		name   string
 		change func(*Mutation)
 	}{
 		{"site", func(m *Mutation) { m.SiteID = "other-site" }},
