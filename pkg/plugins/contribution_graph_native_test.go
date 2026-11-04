@@ -27,8 +27,9 @@ func TestNativeContributionGraph_DefaultNoBrowserAssets(t *testing.T) {
 	}
 }
 
-func TestNativeContributionGraph_UnsupportedOptionsRequireExplicitClient(t *testing.T) {
+func TestNativeContributionGraph_StrictNativeRejectsUnsupportedOptions(t *testing.T) {
 	p := NewContributionGraphPlugin()
+	p.config.Mode = "go"
 	post := &models.Post{ArticleHTML: `<pre><code class="language-contribution-graph">{"data":[],"options":{"domain":"month","range":12}}</code></pre>`}
 	if err := p.processPost(nil, post); err != nil {
 		t.Fatal(err)
@@ -51,5 +52,31 @@ func TestNativeContributionGraph_ExplicitClientCompatibility(t *testing.T) {
 	}
 	if !strings.Contains(post.ArticleHTML, "new CalHeatmap()") {
 		t.Fatal("client mode must preserve Cal-Heatmap")
+	}
+}
+
+func TestNativeContributionGraph_AutoPreservesDocumentedLegacyLayouts(t *testing.T) {
+	for _, options := range []string{
+		`{"year":2024,"domain":"month","subDomain":"day","range":3}`,
+		`{"year":2024,"domain":"year","subDomain":"day","range":3}`,
+		`{"year":2024,"domain":"year","subDomain":"day","cellSize":12}`,
+	} {
+		t.Run(options, func(t *testing.T) {
+			p := NewContributionGraphPlugin()
+			src := `{"data":[{"date":"2024-01-01","value":1}],"options":` + options + `}`
+			post := &models.Post{ArticleHTML: `<pre><code class="language-contribution-graph">` + src + `</code></pre>`}
+			if err := p.processPost(nil, post); err != nil { t.Fatal(err) }
+			if !strings.Contains(post.ArticleHTML, "new CalHeatmap()") || strings.Contains(post.ArticleHTML, "contribution-graph-error") {
+				t.Fatalf("legacy config should use Cal-Heatmap in auto mode: %s", post.ArticleHTML)
+			}
+		})
+	}
+}
+func TestNativeContributionGraph_AutoAcceptsYearRangeOne(t *testing.T) {
+	p := NewContributionGraphPlugin()
+	post := &models.Post{ArticleHTML: `<pre><code class="language-contribution-graph">{"data":[{"date":"2024-01-01","value":1}],"options":{"year":2024,"domain":"year","range":1}}</code></pre>`}
+	if err := p.processPost(nil, post); err != nil { t.Fatal(err) }
+	if !strings.Contains(post.ArticleHTML, "<svg") || strings.Contains(post.ArticleHTML, "new CalHeatmap()") {
+		t.Fatalf("default year range one should be browser-free: %s", post.ArticleHTML)
 	}
 }

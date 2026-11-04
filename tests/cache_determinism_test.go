@@ -1706,7 +1706,11 @@ date: 2024-01-01
 
 	// This explicitly exercises the legacy client mode because native SVG does not
 	// need to import the browser Mermaid.js bundle.
-	site.buildWithCacheAndConfig(site.defaultConfig() + "\n[markata-go.mermaid]\nmode = \"client\"\n")
+	// This helper passes plugin settings through lifecycle.Config.Extra; writing
+	// the TOML alone does not configure the direct lifecycle test runner.
+	site.buildWithCacheConfigAndExtra("", map[string]interface{}{
+		"mermaid": map[string]interface{}{"mode": "client"},
+	})
 
 	for _, rel := range []string{
 		"assets/vendor/mermaid/mermaid.min.js",
