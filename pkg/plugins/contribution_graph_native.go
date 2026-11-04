@@ -12,7 +12,6 @@ import (
 
 var errNativeContributionGraphUnsupported = errors.New("unsupported native contribution graph layout")
 
-
 const contributionGraphYearDomain = "year"
 
 func nativeContributionGraphYear(options map[string]interface{}) (int, error) {
