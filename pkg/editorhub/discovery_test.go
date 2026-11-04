@@ -38,7 +38,7 @@ func fixture(t *testing.T) (*Registry, *Handler) {
 
 func serve(t *testing.T, h *Handler, method, path, subject string) *httptest.ResponseRecorder {
 	t.Helper()
-	req := httptest.NewRequest(method, path, nil)
+	req := httptest.NewRequest(method, path, http.NoBody)
 	if subject != "" {
 		req = req.WithContext(context.WithValue(req.Context(), testSubjectKey{}, subject))
 	}
@@ -105,14 +105,14 @@ func TestFailClosedAndNoWorkbenchSurface(t *testing.T) {
 			t.Errorf("%s %s: got %d want %d", tc.method, tc.path, rr.Code, tc.want)
 		}
 	}
-	req := httptest.NewRequest("GET", "/api/v1/sites", nil)
+	req := httptest.NewRequest("GET", "/api/v1/sites", http.NoBody)
 	req.Header.Set("X-Hlab-User-Id", "writer-a")
 	rr := httptest.NewRecorder()
 	h.ServeHTTP(rr, req)
 	if rr.Code != 401 {
 		t.Error("untrusted identity header bypassed auth")
 	}
-	req = httptest.NewRequest("GET", "/api/v1/sites", nil)
+	req = httptest.NewRequest("GET", "/api/v1/sites", http.NoBody)
 	req = req.WithContext(context.WithValue(req.Context(), testSubjectKey{}, "writer-a"))
 	req.Header.Set("Sec-Fetch-Site", "cross-site")
 	rr = httptest.NewRecorder()
