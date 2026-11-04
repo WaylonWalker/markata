@@ -3,6 +3,7 @@ package plugins
 import (
 	"strings"
 	"testing"
+
 	"github.com/WaylonWalker/markata/pkg/models"
 )
 

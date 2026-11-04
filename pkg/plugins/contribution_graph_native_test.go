@@ -65,17 +65,22 @@ func TestNativeContributionGraph_AutoPreservesDocumentedLegacyLayouts(t *testing
 			p := NewContributionGraphPlugin()
 			src := `{"data":[{"date":"2024-01-01","value":1}],"options":` + options + `}`
 			post := &models.Post{ArticleHTML: `<pre><code class="language-contribution-graph">` + src + `</code></pre>`}
-			if err := p.processPost(nil, post); err != nil { t.Fatal(err) }
+			if err := p.processPost(nil, post); err != nil {
+				t.Fatal(err)
+			}
 			if !strings.Contains(post.ArticleHTML, "new CalHeatmap()") || strings.Contains(post.ArticleHTML, "contribution-graph-error") {
 				t.Fatalf("legacy config should use Cal-Heatmap in auto mode: %s", post.ArticleHTML)
 			}
 		})
 	}
 }
+
 func TestNativeContributionGraph_AutoAcceptsYearRangeOne(t *testing.T) {
 	p := NewContributionGraphPlugin()
 	post := &models.Post{ArticleHTML: `<pre><code class="language-contribution-graph">{"data":[{"date":"2024-01-01","value":1}],"options":{"year":2024,"domain":"year","range":1}}</code></pre>`}
-	if err := p.processPost(nil, post); err != nil { t.Fatal(err) }
+	if err := p.processPost(nil, post); err != nil {
+		t.Fatal(err)
+	}
 	if !strings.Contains(post.ArticleHTML, "<svg") || strings.Contains(post.ArticleHTML, "new CalHeatmap()") {
 		t.Fatalf("default year range one should be browser-free: %s", post.ArticleHTML)
 	}
