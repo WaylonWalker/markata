@@ -132,7 +132,7 @@ func nativeMermaidPaletteCSS(svg []byte, palette *mermaidPaletteColors) []byte {
 		}
 		seen[entry.color] = true
 		replacements = append(replacements, entry.color,
-			"var(" + entry.variable + ", " + entry.color + ")")
+			"var("+entry.variable+", "+entry.color+")")
 	}
 	if len(replacements) == 0 {
 		return svg
