@@ -22,19 +22,22 @@ go test ./pkg/editorsync
 python3 -m unittest discover -s pkg/editorsync -p 'test_schema.py' -v
 ```
 
-The Python standard-library `sqlite3` test exercises the actual SQLite
-schema, constraints, immutable revisions, and transaction rollback without
-bringing a second Go SQLite dependency into every Markata build. The Go tests
-check mutation validation and fingerprints.
+The Python standard-library `sqlite3` test exercises schema constraints,
+immutable revisions, and rollback. The Go tests additionally exercise the real
+pure-Go SQLite driver, schema migration, file restart and receipt persistence.
+`OpenSQLite` is the opt-in file-backed opener: it requires an existing trusted
+parent directory, creates new database files with owner-only permissions,
+enables WAL/foreign keys/bounded busy timeout, and serializes initial writes
+through one connection. Existing database-file permissions and backups remain
+an operator responsibility. This may increase test/binary build costs, so
+cross-platform release and CI impact must be reviewed.
 
 ## Next steps before enabling a sync endpoint
 
-- Choose and pin a maintained Go SQLite driver after cross-platform build,
-  dependency and performance evaluation; the current repository has no SQLite
-  driver. Run Go integration tests against a **real temporary SQLite database**
-  on restart/crash, concurrent mutations, and WAL replay.
-- Configure `PRAGMA foreign_keys = ON` **per connection**; a file database
-  must also enable WAL, a bounded busy timeout and a backup/restore policy.
+- Finish assessing the pinned `modernc.org/sqlite v1.61.1` driver's
+  cross-platform build and binary-size impact. Add restore/WAL replay and
+  multi-process busy-contention tests before production use.
+- Configure and validate backup/restore, media storage and site isolation.
 - Implement transactional ApplyMutation that compares the exact base revision,
   persists document + immutable version + change event + mutation receipt in
   one commit, and acknowledges **only after that commit succeeds**.
