@@ -172,3 +172,27 @@ func TestRenderStandalone_SiteConfigOverridesDefaultMermaid(t *testing.T) {
 		t.Fatalf("explicit client mode not honored: %s", result.HTML)
 	}
 }
+
+func TestNativeMermaidPaletteCSS_LiveThemeWithoutMutatingLabels(t *testing.T) {
+	palette := &mermaidPaletteColors{
+		Background: "#102030",
+		Surface: "#203040",
+		TextColor: "#f0e0d0",
+		Accent: "#aabbcc",
+	}
+	original := []byte(`<svg xmlns="http://www.w3.org/2000/svg"><rect fill="#203040" stroke="#aabbcc"/><text fill="#f0e0d0">A #203040 label</text></svg>`)
+	svg := nativeMermaidPaletteCSS(original, palette)
+	for _, want := range []string{
+		`fill="var(--color-surface, #203040)"`,
+		`stroke="var(--color-primary, #aabbcc)"`,
+		`fill="var(--color-text, #f0e0d0)"`,
+		`>A #203040 label</text>`,
+	} {
+		if !strings.Contains(string(svg), want) {
+			t.Fatalf("missing %q from %s", want, svg)
+		}
+	}
+	if err := validateNativeMermaidSVG(svg); err != nil {
+		t.Fatalf("CSS variable SVG should remain safe: %v", err)
+	}
+}
