@@ -100,6 +100,9 @@ func TestForwardAuthRejectsUntrustedRequests(t *testing.T) {
 			if tc.method != "" {
 				req.Header.Add("X-Hlab-Auth-Method", tc.method)
 			}
+			// A forged client X-Forwarded-For is never a substitute for
+			// the direct network peer used by the trust decision.
+			req.Header.Set("X-Forwarded-For", "10.42.7.19")
 			if tc.dupSubject {
 				req.Header.Add("X-Hlab-User-Id", "mallory")
 			}
@@ -124,6 +127,9 @@ func TestForwardAuthConfigFailsClosed(t *testing.T) {
 		{"link-local CIDR", func(c *ForwardAuthConfig) { c.TrustedProxyCIDRs = []string{"169.254.1.2/32"} }},
 		{"overlapping CIDR", func(c *ForwardAuthConfig) { c.TrustedProxyCIDRs = []string{"0.0.0.0/1"} }},
 		{"invalid CIDR", func(c *ForwardAuthConfig) { c.TrustedProxyCIDRs = []string{"not-a-cidr"} }},
+		{"broad private network", func(c *ForwardAuthConfig) { c.TrustedProxyCIDRs = []string{"10.0.0.0/8"} }},
+		{"broad public network", func(c *ForwardAuthConfig) { c.TrustedProxyCIDRs = []string{"128.0.0.0/1"} }},
+		{"broad IPv6 network", func(c *ForwardAuthConfig) { c.TrustedProxyCIDRs = []string{"2001:db8::/32"} }},
 		{"no subject header", func(c *ForwardAuthConfig) { c.SubjectHeader = "" }},
 		{"invalid subject header", func(c *ForwardAuthConfig) { c.SubjectHeader = "X-Identity
 X-Other:" }},
