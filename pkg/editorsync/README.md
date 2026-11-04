@@ -32,17 +32,32 @@ through one connection. Existing database-file permissions and backups remain
 an operator responsibility. This may increase test/binary build costs, so
 cross-platform release and CI impact must be reviewed.
 
+## Private-draft transaction POC (stacked PR #1961)
+
+`NewEngine` requires both an authenticated, caller-supplied site write
+authorizer and a SQLite handle. `Engine.Apply` currently accepts **private
+drafts only**, enforces owner identity and base revision, and atomically stores
+the current document, immutable version, per-site change record and mutation
+receipt. A repeated UUID and unchanged payload returns the original durable
+receipt, even after database restart; a changed payload is rejected. Server
+acknowledgment means *SQLite committed*, not Git publication.
+
+The Go tests simulate interrupted acknowledgment and retry, concurrent
+creation, stale revisions, identity spoofing, and a forced receipt-write failure.
+Conflicts currently return a typed error: **the client MUST retain the unsent
+edit**. Server-preserved conflict copies and authorized sync feeds are not yet
+implemented, so this must not be exposed as family-grade multi-device sync.
+
 ## Next steps before enabling a sync endpoint
 
 - Finish assessing the pinned `modernc.org/sqlite v1.61.1` driver's
   cross-platform build and binary-size impact. Add restore/WAL replay and
   multi-process busy-contention tests before production use.
 - Configure and validate backup/restore, media storage and site isolation.
-- Implement transactional ApplyMutation that compares the exact base revision,
-  persists document + immutable version + change event + mutation receipt in
-  one commit, and acknowledges **only after that commit succeeds**.
-- Reject mutation UUID reuse with a different digest, preserve conflicts, and
-  preserve unsigned offline changes if a client checkpoint expires.
+- Extend transactions to shared drafts, Git-imported source revisions, and
+  durable conflict copies with idempotent conflict retry semantics.
+- Preserve unsigned offline changes if client checkpoints expire, then
+  reconcile conflicts explicitly without silently overwriting content.
 - Implement permission-filtered snapshots and feeds and subject-bound cursors;
   nothing in this package may bypass the authorization boundaries of #1951.
 - Add a true offline browser outbox and attach it to this API only after

@@ -17,3 +17,21 @@ jobs:
       - uses: actions/checkout@v4
       - name: Verify editor SQLite schema with standard-library sqlite3
         run: python3 -m unittest discover -s pkg/editorsync -p 'test_schema.py' -v
+  sqlite-go:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Check editor sync Go formatting
+        run: |
+          if [ -n "$(gofmt -l pkg/editorsync/*.go)" ]; then
+            gofmt -d pkg/editorsync/*.go
+            exit 1
+          fi
+      - name: Vet editor sync package
+        run: go vet ./pkg/editorsync
+      - name: Test editor sync with the real Go SQLite driver
+        run: go test -race -count=1 ./pkg/editorsync
