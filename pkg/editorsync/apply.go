@@ -194,7 +194,7 @@ func writeCurrentSyncDocument(ctx context.Context, tx *sql.Tx, m Mutation, old c
 			(site_id,document_id,owner_subject,visibility,revision,changed_seq,content_hash,source,deleted)
 			VALUES (?,?,?,?,?,?,?,?,?)`,
 			m.SiteID, m.DocumentID, m.SubjectID, string(Private), receipt.Revision,
-			receipt.Sequence, hash, m.Source, deleted,
+			receipt.Sequence, hash, nonNullSyncSource(m.Source), deleted,
 		); err != nil {
 			return fmt.Errorf("create sync document: %w", err)
 		}
@@ -203,7 +203,7 @@ func writeCurrentSyncDocument(ctx context.Context, tx *sql.Tx, m Mutation, old c
 	result, err := tx.ExecContext(ctx,
 		`UPDATE editor_documents SET revision=?, changed_seq=?, content_hash=?, source=?, deleted=?
 		WHERE site_id=? AND document_id=? AND revision=? AND owner_subject=? AND visibility='private'`,
-		receipt.Revision, receipt.Sequence, hash, m.Source, deleted,
+		receipt.Revision, receipt.Sequence, hash, nonNullSyncSource(m.Source), deleted,
 		m.SiteID, m.DocumentID, old.Revision, m.SubjectID,
 	)
 	if err != nil {
@@ -219,6 +219,15 @@ func writeCurrentSyncDocument(ctx context.Context, tx *sql.Tx, m Mutation, old c
 	return nil
 }
 
+// SQLite treats a nil byte slice as NULL. Private draft and tombstone
+// content must remain a non-null, possibly empty, BLOB.
+func nonNullSyncSource(source []byte) []byte {
+	if source == nil {
+		return []byte{}
+	}
+	return source
+}
+
 func appendSyncAudit(ctx context.Context, tx *sql.Tx, m Mutation, receipt Receipt, hash string) error {
 	deleted := 0
 	if m.Deleted {
@@ -229,7 +238,7 @@ func appendSyncAudit(ctx context.Context, tx *sql.Tx, m Mutation, receipt Receip
 		(site_id,document_id,revision,changed_seq,owner_subject,visibility,content_hash,source,deleted)
 		VALUES (?,?,?,?,?,?,?,?,?)`,
 		m.SiteID, m.DocumentID, receipt.Revision, receipt.Sequence, m.SubjectID, string(Private),
-		hash, m.Source, deleted,
+		hash, nonNullSyncSource(m.Source), deleted,
 	); err != nil {
 		return fmt.Errorf("append immutable revision: %w", err)
 	}
