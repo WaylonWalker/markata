@@ -35,4 +35,3 @@ jobs:
         run: go vet ./pkg/editorsync
       - name: Test editor sync with the real Go SQLite driver
         run: go test -race -count=1 ./pkg/editorsync
-
