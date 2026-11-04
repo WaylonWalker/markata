@@ -122,12 +122,8 @@ func (e *Engine) applyPrivateTransaction(ctx context.Context, tx *sql.Tx, m Muta
 		return Receipt{}, ErrWriteForbidden
 	}
 	if !sameStoredSyncRevision(old.Revision, m.BaseRevision) {
-		// A stale edit of an existing private document is durably retained
-		// before we report a conflict. Unknown documents cannot be linked
-		// through the current v1 foreign key and remain client-owned.
-		if !exists {
-			return Receipt{}, &ConflictError{CurrentRevision: 0, Preserved: false}
-		}
+		// Both existing-document and orphaned-document conflicts are
+		// recorded before returning a durable conflict response.
 		if err := persistSyncConflict(ctx, tx, m, digest, old.Revision); err != nil {
 			return Receipt{}, err
 		}
@@ -308,8 +304,12 @@ func findSyncConflict(ctx context.Context, tx *sql.Tx, m Mutation, digest string
 	var revision int64
 	err := tx.QueryRowContext(ctx,
 		`SELECT payload_digest, current_revision
-		FROM editor_conflicts
-		WHERE site_id=? AND subject_id=? AND mutation_id=?`,
+		FROM editor_conflicts WHERE site_id=? AND subject_id=? AND mutation_id=?
+		UNION ALL
+		SELECT payload_digest, current_revision
+		FROM editor_orphan_conflicts WHERE site_id=? AND subject_id=? AND mutation_id=?
+		LIMIT 1`,
+		m.SiteID, m.SubjectID, m.MutationID,
 		m.SiteID, m.SubjectID, m.MutationID,
 	).Scan(&storedDigest, &revision)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -329,6 +329,20 @@ func persistSyncConflict(ctx context.Context, tx *sql.Tx, m Mutation, digest str
 	deleted := 0
 	if m.Deleted {
 		deleted = 1
+	}
+	if currentRevision == 0 {
+		_, err := tx.ExecContext(ctx,
+			`INSERT INTO editor_orphan_conflicts
+			(site_id,subject_id,mutation_id,document_id,stale_base_revision,
+			current_revision,proposed_hash,proposed_source,payload_digest,proposed_deleted)
+			VALUES (?,?,?,?,?,?,?,?,?,?)`,
+			m.SiteID, m.SubjectID, m.MutationID, m.DocumentID, m.BaseRevision,
+			currentRevision, hex.EncodeToString(sum[:]), nonNullSyncSource(m.Source), digest, deleted,
+		)
+		if err != nil {
+			return fmt.Errorf("persist orphaned sync mutation: %w", err)
+		}
+		return nil
 	}
 	_, err := tx.ExecContext(ctx,
 		`INSERT INTO editor_conflicts

@@ -38,8 +38,13 @@ func (e *Engine) ReadPrivateConflict(ctx context.Context, principal, siteID, mut
 	err := e.db.QueryRowContext(ctx,
 		`SELECT document_id, stale_base_revision, current_revision, payload_digest,
 		proposed_source, proposed_deleted FROM editor_conflicts
-		WHERE site_id=? AND subject_id=? AND mutation_id=?`,
-		siteID, principal, mutationID,
+		WHERE site_id=? AND subject_id=? AND mutation_id=?
+		UNION ALL
+		SELECT document_id, stale_base_revision, current_revision, payload_digest,
+		proposed_source, proposed_deleted FROM editor_orphan_conflicts
+		WHERE site_id=? AND subject_id=? AND mutation_id=?
+		LIMIT 1`,
+		siteID, principal, mutationID, siteID, principal, mutationID,
 	).Scan(&record.DocumentID, &record.StaleBaseRevision, &record.CurrentRevision,
 		&record.PayloadDigest, &record.Source, &deleted)
 	if errors.Is(err, sql.ErrNoRows) {
