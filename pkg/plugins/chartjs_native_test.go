@@ -69,3 +69,25 @@ func TestRenderStandalone_DefaultAutoNativeChart(t *testing.T) {
 		}
 	}
 }
+
+func TestNativeScatter_NumericXAxisLabels(t *testing.T) {
+	svg, err := renderNativeChartSVG(map[string]interface{}{
+		"type": "scatter",
+		"data": map[string]interface{}{
+			"datasets": []interface{}{map[string]interface{}{
+				"data": []interface{}{
+					map[string]interface{}{"x": float64(10), "y": float64(5)},
+					map[string]interface{}{"x": float64(20), "y": float64(15)},
+				},
+			}},
+		},
+	}, "scatter-axis-test", "Scatter values")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{">10</text>", ">20</text>", "x: 10, y: 5"} {
+		if !strings.Contains(svg, want) {
+			t.Fatalf("missing numerical axis mark %q: %s", want, svg)
+		}
+	}
+}
