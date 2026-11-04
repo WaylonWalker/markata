@@ -246,3 +246,25 @@ func TestApplyDeletionWithEmptySource(t *testing.T) {
 		t.Fatalf("incorrect tombstone deleted=%d len=%d null=%d", deleted, sourceLen, sourceNull)
 	}
 }
+
+func TestSQLiteRevisionComparisonNeverOverflows(t *testing.T) {
+	for _, test := range []struct {
+		signed   int64
+		unsigned uint64
+		match    bool
+	}{
+		{0, 0, true},
+		{1, 1, true},
+		{99, 99, true},
+		{-1, ^uint64(0), false},
+		{0, ^uint64(0), false},
+		{1, 2, false},
+		{9223372036854775807, 9223372036854775807, true},
+		{9223372036854775807, 9223372036854775808, false},
+	} {
+		if got := sameStoredSyncRevision(test.signed, test.unsigned); got != test.match {
+			t.Errorf("compare revision %d to %d: got %v, want %v",
+				test.signed, test.unsigned, got, test.match)
+		}
+	}
+}
