@@ -51,12 +51,15 @@ observed revision to `editor_conflicts` **before** returning a
 conflict, while a changed intent is rejected. `ReadPrivateConflict` retrieves
 a copy only for the original authenticated subject; no HTTP route is mounted.
 
-A stale mutation referring to a document that **no longer exists** cannot be
-stored with the current conflict table's document foreign key, so the server
-returns `Preserved: false` in that case; the browser MUST retain its outbox
-entry. It is still not family-grade multi-device sync: the browser outbox,
-authorized feeds, orphan conflict recovery, backup/restore and a resolution
-UI remain unimplemented.
+Orphaned mutations whose document no longer exists are stored in the
+`editor_orphan_conflicts` journal instead of weakening the original foreign
+key. Their exact contents, deletion intent and mutation receipts remain
+recoverable after restart, scoped to the authenticated author. Conflicts do
+not create live document versions or change-feed entries.
+
+This is still not family-grade multi-device sync: a browser offline outbox,
+authorized change feed, conflict resolution UI, backup/restore and
+token-revocation handling remain unimplemented.
 
 ## Next steps before enabling a sync endpoint
 
@@ -64,8 +67,8 @@ UI remain unimplemented.
   cross-platform build and binary-size impact. Add restore/WAL replay and
   multi-process busy-contention tests before production use.
 - Configure and validate backup/restore, media storage and site isolation.
-- Extend transactions to shared drafts, Git-imported source revisions and
-  recovery of stale edits whose original server document no longer exists.
+- Extend transactions to shared drafts and Git-imported source revisions,
+  and implement an explicit acknowledged conflict-resolution workflow.
 - Preserve unsigned offline changes if client checkpoints expire, then
   reconcile conflicts explicitly without silently overwriting content.
 - Implement permission-filtered snapshots and feeds and subject-bound cursors;

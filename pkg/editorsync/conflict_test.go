@@ -300,9 +300,48 @@ func TestReadPrivateConflictIsOwnerScoped(t *testing.T) {
 	}
 }
 
-func TestUnknownDocumentConflictRequiresLocalRecovery(t *testing.T) {
+func TestOrphanConflictIsDurableAndPrivateAfterRestart(t *testing.T) {
 	ctx := context.Background()
-	db, err := OpenSQLite(ctx, filepath.Join(t.TempDir(), "orphan.sqlite"))
+	path := filepath.Join(t.TempDir(), "orphan.sqlite")
+	db, err := OpenSQLite(ctx, path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	engine := newPrivateTestEngine(t, db)
+	m := testMutation()
+	m.BaseRevision = 99
+	m.Source = []byte("# Offline copy absent on server")
+	_, err = engine.Apply(ctx, m.SubjectID, m)
+	var conflict *ConflictError
+	if !errors.As(err, &conflict) || !conflict.Preserved || conflict.CurrentRevision != 0 {
+		t.Fatalf("orphaned draft must be persisted before conflict response: %v", err)
+	}
+	record, err := engine.ReadPrivateConflict(ctx, m.SubjectID, m.SiteID, m.MutationID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if record.DocumentID != m.DocumentID || string(record.Source) != string(m.Source) ||
+		record.StaleBaseRevision != 99 || record.PayloadDigest != m.Digest() {
+		t.Fatalf("orphan conflict lost proposal metadata: %+v", record)
+	}
+	if _, err := engine.ReadPrivateConflict(ctx, "bob", m.SiteID, m.MutationID); !errors.Is(err, ErrConflictNotFound) {
+		t.Fatalf("orphan conflict leaked to other site writer: %v", err)
+	}
+	var conflicts, documents, changes int
+	if err := db.QueryRowContext(ctx,
+		`SELECT (SELECT COUNT(*) FROM editor_orphan_conflicts),
+		(SELECT COUNT(*) FROM editor_documents),
+		(SELECT COUNT(*) FROM editor_changes)`,
+	).Scan(&conflicts, &documents, &changes); err != nil {
+		t.Fatal(err)
+	}
+	if conflicts != 1 || documents != 0 || changes != 0 {
+		t.Fatalf("orphan wrongly published: conflicts=%d documents=%d changes=%d", conflicts, documents, changes)
+	}
+	if err := db.Close(); err != nil {
+		t.Fatal(err)
+	}
+	db, err = OpenSQLite(ctx, path)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -311,19 +350,64 @@ func TestUnknownDocumentConflictRequiresLocalRecovery(t *testing.T) {
 			t.Errorf("close SQLite: %v", err)
 		}
 	}()
+	engine = newPrivateTestEngine(t, db)
+	_, err = engine.Apply(ctx, m.SubjectID, m)
+	if !errors.As(err, &conflict) || !conflict.Preserved || conflict.CurrentRevision != 0 {
+		t.Fatalf("orphan retry must replay original conflict: %v", err)
+	}
+	changed := m
+	changed.Source = []byte("# Unauthorized mutation-ID reuse")
+	if _, err := engine.Apply(ctx, changed.SubjectID, changed); !errors.Is(err, ErrMutationIDReuse) {
+		t.Fatalf("UUID reused with changed intent must fail: %v", err)
+	}
+	deletion := m
+	deletion.MutationID = "8eb7a4ab-4b5d-4ba7-b189-40ff3dd0eafd"
+	deletion.Deleted = true
+	deletion.Source = nil
+	_, err = engine.Apply(ctx, deletion.SubjectID, deletion)
+	if !errors.As(err, &conflict) || !conflict.Preserved {
+		t.Fatalf("orphaned delete must persist empty source: %v", err)
+	}
+	var deleted, sourceNull, sourceLen int
+	if err := db.QueryRowContext(ctx,
+		`SELECT proposed_deleted, proposed_source IS NULL, length(proposed_source)
+		FROM editor_orphan_conflicts WHERE mutation_id=?`, deletion.MutationID,
+	).Scan(&deleted, &sourceNull, &sourceLen); err != nil {
+		t.Fatal(err)
+	}
+	if deleted != 1 || sourceNull != 0 || sourceLen != 0 {
+		t.Fatalf("orphan delete intent lost: deleted=%d null=%d len=%d", deleted, sourceNull, sourceLen)
+	}
+}
+
+func TestOrphanConflictFailedInsertNeverAcknowledged(t *testing.T) {
+	ctx := context.Background()
+	db, err := OpenSQLite(ctx, filepath.Join(t.TempDir(), "orphan-failure.sqlite"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if err := db.Close(); err != nil {
+			t.Errorf("close SQLite: %v", err)
+		}
+	}()
+	if _, err := db.ExecContext(ctx, `CREATE TRIGGER fail_orphan BEFORE INSERT
+		ON editor_orphan_conflicts BEGIN SELECT RAISE(ABORT, 'simulated disk failure'); END`); err != nil {
+		t.Fatal(err)
+	}
 	engine := newPrivateTestEngine(t, db)
 	m := testMutation()
-	m.BaseRevision = 99
+	m.BaseRevision = 17
 	_, err = engine.Apply(ctx, m.SubjectID, m)
 	var conflict *ConflictError
-	if !errors.As(err, &conflict) || conflict.Preserved {
-		t.Fatalf("unknown-document conflict must explicitly remain local: %v", err)
+	if err == nil || (errors.As(err, &conflict) && conflict.Preserved) {
+		t.Fatalf("failed orphan write incorrectly claimed durability: %v", err)
 	}
 	var count int
-	if err := db.QueryRowContext(ctx, "SELECT COUNT(*) FROM editor_conflicts").Scan(&count); err != nil {
+	if err := db.QueryRowContext(ctx, "SELECT COUNT(*) FROM editor_orphan_conflicts").Scan(&count); err != nil {
 		t.Fatal(err)
 	}
 	if count != 0 {
-		t.Fatal("unknown document conflict created inconsistent linked row")
+		t.Fatal("failed orphan mutation left an acknowledged conflict")
 	}
 }

@@ -1,4 +1,4 @@
--- Hosted editor draft revision schema, v2 (SQLite).
+-- Hosted editor draft revision schema, v3 (SQLite).
 -- This is deliberately not a public API. All authorization is enforced in Go.
 -- Per-site counters sequence edits; browser-facing cursors must be opaque and scoped.
 CREATE TABLE IF NOT EXISTS editor_sites (
@@ -87,6 +87,28 @@ CREATE TABLE IF NOT EXISTS editor_conflicts (
   PRIMARY KEY (site_id, subject_id, mutation_id),
   FOREIGN KEY (site_id, document_id) REFERENCES editor_documents(site_id, document_id)
 );
+
+-- A rejected mutation may target a document absent from this server.
+-- Keep its source separately: the existing editor_conflicts foreign key
+-- requires a current document, and removing it would risk legacy migrations.
+-- No foreign key to site/document: the authenticated Go authorizer enforces
+-- site access and exact principal ownership before writing or reading.
+CREATE TABLE IF NOT EXISTS editor_orphan_conflicts (
+  site_id TEXT NOT NULL,
+  subject_id TEXT NOT NULL,
+  mutation_id TEXT NOT NULL,
+  document_id TEXT NOT NULL,
+  stale_base_revision INTEGER NOT NULL CHECK (stale_base_revision >= 1),
+  current_revision INTEGER NOT NULL DEFAULT 0 CHECK (current_revision = 0),
+  proposed_hash TEXT NOT NULL CHECK (length(proposed_hash) = 64),
+  proposed_source BLOB NOT NULL,
+  payload_digest TEXT NOT NULL CHECK (length(payload_digest) = 64),
+  proposed_deleted INTEGER NOT NULL DEFAULT 0 CHECK (proposed_deleted IN (0, 1)),
+  PRIMARY KEY (site_id, subject_id, mutation_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_editor_orphan_conflicts_owner
+  ON editor_orphan_conflicts(site_id, subject_id, document_id);
 
 CREATE INDEX IF NOT EXISTS idx_editor_versions_snapshot
   ON editor_document_versions(site_id, changed_seq, document_id);
