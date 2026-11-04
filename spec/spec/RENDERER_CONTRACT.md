@@ -44,7 +44,7 @@ This prints a JSON description without reading document stdin or rendering Markd
 - `loads_site_config`: false until configuration is explicitly supported in standalone rendering.
 - `external_url_audit`: false until authored and generated resource references are fully audited.
 
-The current standalone engine supports **client-mode Mermaid and Chart.js**. The *site builder* has additional Mermaid render modes; those are not advertised here because this entry point does not expose them.
+The standalone renderer supports **native Go SVG Mermaid by default** (or explicit `client` mode) and client-mode Chart.js. Other Mermaid modes (`cli` and `chromium`) remain site-builder-only.
 
 Clients should check capabilities rather than assuming all Markata site features are available. Unknown future fields should be ignored. New capability names may be added in compatible releases.
 

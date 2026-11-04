@@ -142,3 +142,57 @@ func TestNativeMermaidBackend_FamiliesAndMalformedInput(t *testing.T) {
 		t.Fatal("invalid syntax succeeded")
 	}
 }
+
+// The native library is the default on native targets, not just an opt-in mode.
+func TestRenderStandalone_DefaultsToNativeMermaid(t *testing.T) {
+	result, err := RenderStandalone("```mermaid\nflowchart LR\n A[Load] --> B[Serve]\n```", StandaloneOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !result.Features["mermaid"] || !strings.Contains(result.HTML, "<svg") {
+		t.Fatalf("default Mermaid should render SVG: %+v", result)
+	}
+	for _, asset := range result.Assets {
+		if strings.Contains(asset.ID, "mermaid.min.js") {
+			t.Fatalf("default native rendering loaded browser Mermaid: %s", asset.ID)
+		}
+	}
+}
+
+// A site's explicit choice still overrides the native default.
+func TestRenderStandalone_SiteConfigOverridesDefaultMermaid(t *testing.T) {
+	cfg := &models.Config{Extra: map[string]interface{}{
+		"mermaid": map[string]interface{}{"mode": "client"},
+	}}
+	result, err := RenderStandalone("```mermaid\nflowchart LR\n A --> B\n```", StandaloneOptions{Config: cfg})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(result.HTML, "<pre class=\"mermaid\">") {
+		t.Fatalf("explicit client mode not honored: %s", result.HTML)
+	}
+}
+
+func TestNativeMermaidPaletteCSS_LiveThemeWithoutMutatingLabels(t *testing.T) {
+	palette := &mermaidPaletteColors{
+		Background: "#102030",
+		Surface:    "#203040",
+		TextColor:  "#f0e0d0",
+		Accent:     "#aabbcc",
+	}
+	original := []byte(`<svg xmlns="http://www.w3.org/2000/svg"><rect fill="#203040" stroke="#aabbcc"/><text fill="#f0e0d0">A #203040 label</text></svg>`)
+	svg := nativeMermaidPaletteCSS(original, palette)
+	for _, want := range []string{
+		`fill="var(--color-surface, #203040)"`,
+		`stroke="var(--color-primary, #aabbcc)"`,
+		`fill="var(--color-text, #f0e0d0)"`,
+		`>A #203040 label</text>`,
+	} {
+		if !strings.Contains(string(svg), want) {
+			t.Fatalf("missing %q from %s", want, svg)
+		}
+	}
+	if err := validateNativeMermaidSVG(svg); err != nil {
+		t.Fatalf("CSS variable SVG should remain safe: %v", err)
+	}
+}

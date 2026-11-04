@@ -28,6 +28,15 @@ import (
 	"github.com/WaylonWalker/markata/pkg/plugins"
 )
 
+const (
+	workbenchTextSizeAttribute  = "data-text-size"
+	workbenchThemeAttribute     = "data-theme"
+	workbenchAestheticAttribute = "data-aesthetic"
+	workbenchPaletteAttribute   = "data-palette"
+	workbenchFontpackAttribute  = "data-fontpack"
+	workbenchLightMode          = "light"
+)
+
 //go:embed web
 var web embed.FS
 
@@ -110,7 +119,7 @@ func buildPresentation(root string, workspace workspaceSource, config lsp.Browse
 	if err != nil {
 		return nil, err
 	}
-	h := &Handler{root: root, renderer: plugins.NewStandaloneRenderer(plugins.StandaloneOptions{Config: siteConfig, Unsafe: true, AssetBase: "/appearance"}), siteConfig: siteConfig, workspace: workspace, language: language, languageConfig: config, appearance: a, assets: a.Assets, gate: make(chan struct{}, 1), choices: map[string][]string{"data-theme": {"light", "dark"}, "data-text-size": {"small", "medium", "large", "x-large"}}}
+	h := &Handler{root: root, renderer: plugins.NewStandaloneRenderer(plugins.StandaloneOptions{Config: siteConfig, Unsafe: true, AssetBase: "/appearance", MermaidMode: "client"}), siteConfig: siteConfig, workspace: workspace, language: language, languageConfig: config, appearance: a, assets: a.Assets, gate: make(chan struct{}, 1), choices: map[string][]string{workbenchThemeAttribute: {workbenchLightMode, "dark"}, workbenchTextSizeAttribute: {"small", "medium", "large", "x-large"}}}
 	h.assets["css/fonts.css"] = bytes.ReplaceAll(h.assets["css/fonts.css"], []byte("/assets/fonts/"), []byte("/appearance/assets/fonts/"))
 	for _, name := range []string{"palette", "aesthetic", "fonts"} {
 		match := manifestPattern.FindSubmatch(h.assets["css/"+name+".css"])
@@ -159,7 +168,7 @@ func buildPresentation(root string, workspace workspaceSource, config lsp.Browse
 	h.index = []byte(strings.NewReplacer("<!--EDITOR_HEAD-->", editorHead, "<!--APPEARANCE_HEAD-->", controls, "<!--PICKER-->", a.PickerHTML, "<!--APPEARANCE_SCRIPTS-->", scripts).Replace(string(page)))
 	if siteConfig != nil {
 		attrs := `<html lang="en"`
-		for _, key := range []string{"data-theme", "data-palette", "data-aesthetic", "data-fontpack", "data-text-size"} {
+		for _, key := range []string{workbenchThemeAttribute, workbenchPaletteAttribute, workbenchAestheticAttribute, workbenchFontpackAttribute, workbenchTextSizeAttribute} {
 			attrs += " " + key + `="` + html.EscapeString(a.Defaults[key]) + `"`
 		}
 		h.index = regexp.MustCompile(`<html[^>]*>`).ReplaceAll(h.index, []byte(attrs+">"))
@@ -469,20 +478,20 @@ func (h *Handler) decodeRequest(w http.ResponseWriter, r *http.Request) *renderR
 }
 
 func (h *Handler) document(result *plugins.StandaloneResult, attributes map[string]string) string {
-	defaults := map[string]string{"data-theme": "dark", "data-palette": "default-dark", "data-aesthetic": "minimal", "data-fontpack": "system", "data-text-size": "large"}
+	defaults := map[string]string{workbenchThemeAttribute: "dark", workbenchPaletteAttribute: "default-dark", workbenchAestheticAttribute: "minimal", workbenchFontpackAttribute: "system", workbenchTextSizeAttribute: "large"}
 	for key, value := range h.appearance.Defaults {
 		defaults[key] = value
 	}
 	for key, value := range attributes {
 		defaults[key] = value
 	}
-	if _, ok := attributes["data-palette"]; !ok && defaults["data-theme"] == "light" {
+	if _, ok := attributes[workbenchPaletteAttribute]; !ok && defaults[workbenchThemeAttribute] == workbenchLightMode {
 		if h.siteConfig == nil {
-			defaults["data-palette"] = "default-light"
+			defaults[workbenchPaletteAttribute] = "default-light"
 		}
 	}
 	attrs := ""
-	for _, key := range []string{"data-theme", "data-palette", "data-aesthetic", "data-fontpack", "data-text-size"} {
+	for _, key := range []string{workbenchThemeAttribute, workbenchPaletteAttribute, workbenchAestheticAttribute, workbenchFontpackAttribute, workbenchTextSizeAttribute} {
 		attrs += " " + key + `="` + html.EscapeString(defaults[key]) + `"`
 	}
 	styles := ""
@@ -490,10 +499,10 @@ func (h *Handler) document(result *plugins.StandaloneResult, attributes map[stri
 		styles += h.versionedStyleLink(name)
 	}
 	bg, fg := "#131721", "#e5e7eb"
-	if defaults["data-theme"] == "light" {
+	if defaults[workbenchThemeAttribute] == workbenchLightMode {
 		bg, fg = "#fff", "#1f2937"
 	}
-	initial := `<style>html{color-scheme:` + defaults["data-theme"] + `;background:` + bg + `}body{background:var(--color-background,` + bg + `);color:var(--color-text,` + fg + `)}</style>`
+	initial := `<style>html{color-scheme:` + defaults[workbenchThemeAttribute] + `;background:` + bg + `}body{background:var(--color-background,` + bg + `);color:var(--color-text,` + fg + `)}</style>`
 	return `<!doctype html><html lang="en"` + attrs + `><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Markdown preview</title>` + initial + styles + h.featureHead(result) + `</head><body><main class="main-content"><div class="content-wrapper"><div class="post-shell"><article class="post h-entry"><div class="post-content e-content">` + result.HTML + `</div></article></div></div></main>` + strings.ReplaceAll(result.BodyEndHTML, "<script", `<script data-markata-generated="true"`) + h.bridge + `</body></html>`
 }
 

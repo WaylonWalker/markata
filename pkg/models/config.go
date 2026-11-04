@@ -1565,7 +1565,7 @@ type MermaidConfig struct {
 	Enabled bool `json:"enabled" yaml:"enabled" toml:"enabled"`
 
 	// Mode specifies how to render diagrams: "client" (browser), "go" (native SVG), "cli" (mmdc), or "chromium" (Chrome/Chromium)
-	// Default: "client"
+	// Default: "go" (native SVG on supported builds; WASM hosts use client mode)
 	Mode string `json:"mode" yaml:"mode" toml:"mode"`
 
 	// CDNURL is the URL for the Mermaid.js library (client mode only)
@@ -1634,7 +1634,7 @@ type ChromiumRendererConfig struct {
 func NewMermaidConfig() MermaidConfig {
 	return MermaidConfig{
 		Enabled:          true,
-		Mode:             "client",
+		Mode:             "go",
 		CDNURL:           "/assets/vendor/mermaid/mermaid.min.js",
 		Theme:            "default",
 		UseCSSVariables:  true,

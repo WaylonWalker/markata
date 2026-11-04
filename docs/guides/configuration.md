@@ -1311,7 +1311,7 @@ the typed setting disabled.
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `enabled` | bool | `true` | Whether mermaid diagram processing is active |
-| `mode` | string | `"client"` | Rendering mode: `client` (browser-side), `cli` (mmdc), or `chromium` (headless Chrome) |
+| `mode` | string | `"go"` | Rendering mode: `go` (native SVG), `client` (browser), `cli` (mmdc), or `chromium` (headless Chrome) |
 | `cdn_url` | string | `/assets/vendor/mermaid/mermaid.min.js` | Mermaid JS URL (local by default) |
 | `theme` | string | `"default"` | Mermaid theme: `default`, `dark`, `forest`, `neutral`. Ignored when `use_css_variables` is true. |
 | `use_css_variables` | bool | `true` | Derive diagram colors from site CSS custom properties. Nodes and edge labels use the surface color, labels use the text color, borders and edges use the border color (falling back to the primary color), and clusters use the background color. |
