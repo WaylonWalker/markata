@@ -155,3 +155,34 @@ func TestRegistryValidationAndCopy(t *testing.T) {
 		t.Error("caller mutated registry")
 	}
 }
+
+func TestSiteCapabilitiesFailClosed(t *testing.T) {
+	registry, _ := fixture(t)
+	tests := []struct {
+		subject, site string
+		permission    Permission
+		want          bool
+	}{
+		{"writer-a", "a-shared", PermissionRead, true},
+		{"writer-a", "a-shared", PermissionWrite, true},
+		{"writer-a", "a-shared", PermissionPublish, false},
+		{"writer-a", "z-personal", PermissionPublish, true},
+		{"writer-b", "a-shared", PermissionRead, true},
+		{"writer-b", "a-shared", PermissionWrite, false},
+		{"writer-b", "secret", PermissionRead, false},
+		{"writer-a", "secret", PermissionRead, false},
+		{"", "a-shared", PermissionRead, false},
+		{"writer-a", "", PermissionRead, false},
+		{"writer-a", "missing", PermissionRead, false},
+		{"writer-a", "a-shared", Permission("admin"), false},
+	}
+	for _, test := range tests {
+		if got := registry.Allows(test.subject, test.site, test.permission); got != test.want {
+			t.Errorf("allows(%q, %q, %q) = %v, want %v", test.subject, test.site, test.permission, got, test.want)
+		}
+	}
+	var nilRegistry *Registry
+	if nilRegistry.Allows("writer-a", "a-shared", PermissionRead) {
+		t.Error("nil registry authorized access")
+	}
+}
