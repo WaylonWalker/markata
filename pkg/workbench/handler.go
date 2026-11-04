@@ -29,11 +29,12 @@ import (
 )
 
 const (
-	workbenchTextSizeAttribute = "data-text-size"
-	workbenchThemeAttribute = "data-theme"
+	workbenchTextSizeAttribute  = "data-text-size"
+	workbenchThemeAttribute     = "data-theme"
 	workbenchAestheticAttribute = "data-aesthetic"
-	workbenchPaletteAttribute = "data-palette"
-	workbenchFontpackAttribute = "data-fontpack"
+	workbenchPaletteAttribute   = "data-palette"
+	workbenchFontpackAttribute  = "data-fontpack"
+	workbenchLightMode          = "light"
 )
 
 //go:embed web
