@@ -74,12 +74,13 @@ func TestNativeContributionGraph_AutoPreservesDocumentedLegacyLayouts(t *testing
 		})
 	}
 }
+
 func TestNativeContributionGraph_AutoAcceptsYearRangeOne(t *testing.T) {
 	p := NewContributionGraphPlugin()
 	post := &models.Post{ArticleHTML: `<pre><code class="language-contribution-graph">{"data":[{"date":"2024-01-01","value":1}],"options":{"year":2024,"domain":"year","range":1}}</code></pre>`}
 	if err := p.processPost(nil, post); err != nil {
-				t.Fatal(err)
-			}
+		t.Fatal(err)
+	}
 	if !strings.Contains(post.ArticleHTML, "<svg") || strings.Contains(post.ArticleHTML, "new CalHeatmap()") {
 		t.Fatalf("default year range one should be browser-free: %s", post.ArticleHTML)
 	}
