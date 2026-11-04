@@ -1,6 +1,7 @@
 package editorsync
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -75,7 +76,7 @@ func TestSQLiteDurableOpenRestartAndDuplicateReceipt(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if string(stored) != string(content) || revision != 1 || seq != 1 {
+	if !bytes.Equal(stored, content) || revision != 1 || seq != 1 {
 		t.Fatalf("unexpected durable revision=%d seq=%d source=%q", revision, seq, stored)
 	}
 	_, err = db.ExecContext(ctx,
