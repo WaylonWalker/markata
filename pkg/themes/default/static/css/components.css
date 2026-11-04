@@ -2295,6 +2295,8 @@
 /* Visually hidden class for screen reader content */
 .visually-hidden {
   position: absolute;
+  inset-inline-start: -10000px;
+  contain: paint;
   width: 1px;
   height: 1px;
   padding: 0;

@@ -20,11 +20,11 @@ hero:
     href: "/docs/quickstart/"
 ---
 
-## One command to start
+## One command to start {#install}
 
 Choose an install method. Markata is a Go CLI; Python is not required to run it.
 
-::: md-tabs {#install data-label="Installation methods" style="boxed"}
+::: md-tabs {data-label="Installation methods" style="boxed"}
 
 :::: md-tab {label="curl"}
 
