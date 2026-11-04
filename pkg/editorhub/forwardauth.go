@@ -51,6 +51,12 @@ func NewForwardAuthAuthenticator(config ForwardAuthConfig) (Authenticator, error
 		if err != nil || prefix.Bits() == 0 || prefix.Addr().Is4In6() {
 			return nil, fmt.Errorf("invalid trusted proxy CIDR %q", raw)
 		}
+		// Restrict the network identity check to narrow proxy ranges.
+		// Wider pod or private networks can include untrusted workloads.
+		if (prefix.Addr().Is4() && prefix.Bits() < 24) ||
+			(prefix.Addr().Is6() && prefix.Bits() < 112) {
+			return nil, fmt.Errorf("trusted proxy CIDR %q is too broad", raw)
+		}
 		prefix = prefix.Masked()
 		for _, forbidden := range deniedProxyRanges {
 			if prefix.Overlaps(forbidden) {
