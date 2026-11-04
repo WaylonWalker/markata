@@ -193,7 +193,7 @@ var settingDocs = map[string]string{
 	"ContributionGraphConfig.CDNURL":               "CDNURL is the URL for the Cal-Heatmap library",
 	"ContributionGraphConfig.ContainerClass":       "ContainerClass is the CSS class for the graph container div (default: \"contribution-graph-container\")",
 	"ContributionGraphConfig.Enabled":              "Enabled controls whether contribution graph processing is active (default: true)",
-	"ContributionGraphConfig.Mode":                 "Mode chooses native Go SVG (default) or Cal-Heatmap in the browser (client).",
+	"ContributionGraphConfig.Mode":                 "Mode chooses auto (native when supported, client otherwise), strict go, or client.",
 	"ContributionGraphConfig.ScaleMaxPercentile":   "ScaleMaxPercentile caps the color scale at this percentile when set to a value between 0 and 100. A value of 0 disables percentile-based outlier control.",
 	"ContributionGraphConfig.Theme":                "Theme is the Cal-Heatmap color theme (default: \"light\")",
 	"CriticalCSSConfig.Enabled":                    "Enabled controls whether critical CSS optimization is active (default: false)",
