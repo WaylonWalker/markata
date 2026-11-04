@@ -34,6 +34,7 @@ const (
 	workbenchAestheticAttribute = "data-aesthetic"
 	workbenchPaletteAttribute   = "data-palette"
 	workbenchFontpackAttribute  = "data-fontpack"
+	workbenchLightMode         = "light"
 )
 
 //go:embed web
@@ -118,7 +119,7 @@ func buildPresentation(root string, workspace workspaceSource, config lsp.Browse
 	if err != nil {
 		return nil, err
 	}
-	h := &Handler{root: root, renderer: plugins.NewStandaloneRenderer(plugins.StandaloneOptions{Config: siteConfig, Unsafe: true, AssetBase: "/appearance", MermaidMode: "client"}), siteConfig: siteConfig, workspace: workspace, language: language, languageConfig: config, appearance: a, assets: a.Assets, gate: make(chan struct{}, 1), choices: map[string][]string{workbenchThemeAttribute: {"light", "dark"}, workbenchTextSizeAttribute: {"small", "medium", "large", "x-large"}}}
+	h := &Handler{root: root, renderer: plugins.NewStandaloneRenderer(plugins.StandaloneOptions{Config: siteConfig, Unsafe: true, AssetBase: "/appearance", MermaidMode: "client"}), siteConfig: siteConfig, workspace: workspace, language: language, languageConfig: config, appearance: a, assets: a.Assets, gate: make(chan struct{}, 1), choices: map[string][]string{workbenchThemeAttribute: {workbenchLightMode, "dark"}, workbenchTextSizeAttribute: {"small", "medium", "large", "x-large"}}}
 	h.assets["css/fonts.css"] = bytes.ReplaceAll(h.assets["css/fonts.css"], []byte("/assets/fonts/"), []byte("/appearance/assets/fonts/"))
 	for _, name := range []string{"palette", "aesthetic", "fonts"} {
 		match := manifestPattern.FindSubmatch(h.assets["css/"+name+".css"])
@@ -484,7 +485,7 @@ func (h *Handler) document(result *plugins.StandaloneResult, attributes map[stri
 	for key, value := range attributes {
 		defaults[key] = value
 	}
-	if _, ok := attributes[workbenchPaletteAttribute]; !ok && defaults[workbenchThemeAttribute] == "light" {
+	if _, ok := attributes[workbenchPaletteAttribute]; !ok && defaults[workbenchThemeAttribute] == workbenchLightMode {
 		if h.siteConfig == nil {
 			defaults[workbenchPaletteAttribute] = "default-light"
 		}
@@ -498,7 +499,7 @@ func (h *Handler) document(result *plugins.StandaloneResult, attributes map[stri
 		styles += h.versionedStyleLink(name)
 	}
 	bg, fg := "#131721", "#e5e7eb"
-	if defaults[workbenchThemeAttribute] == "light" {
+	if defaults[workbenchThemeAttribute] == workbenchLightMode {
 		bg, fg = "#fff", "#1f2937"
 	}
 	initial := `<style>html{color-scheme:` + defaults[workbenchThemeAttribute] + `;background:` + bg + `}body{background:var(--color-background,` + bg + `);color:var(--color-text,` + fg + `)}</style>`
