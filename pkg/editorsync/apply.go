@@ -111,7 +111,7 @@ func (e *Engine) applyPrivateTransaction(ctx context.Context, tx *sql.Tx, m Muta
 	if err != nil {
 		return Receipt{}, err
 	}
-	if exists && (old.Owner != principal || old.Visibility != Private) {
+	if exists && (old.Owner != m.SubjectID || old.Visibility != Private) {
 		return Receipt{}, ErrWriteForbidden
 	}
 	if old.Revision < 0 || old.Revision != int64(m.BaseRevision) {
