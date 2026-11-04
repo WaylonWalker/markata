@@ -33,65 +33,25 @@ var deniedProxyRanges = []netip.Prefix{
 // match explicit allowlists. Use NetworkPolicy to ensure that only the intended
 // reverse proxy can access this endpoint; a broad pod CIDR is not sufficient.
 func NewForwardAuthAuthenticator(config ForwardAuthConfig) (Authenticator, error) {
-	if len(config.TrustedProxyCIDRs) == 0 {
-		return nil, errors.New("at least one trusted proxy CIDR is required")
-	}
-	if len(config.AllowedAuthMethods) == 0 {
-		return nil, errors.New("at least one auth method is required")
-	}
 	if !validAssertionHeader(config.SubjectHeader) || !validAssertionHeader(config.AuthMethodHeader) {
 		return nil, errors.New("invalid or missing ForwardAuth assertion header")
 	}
 	if strings.EqualFold(config.SubjectHeader, config.AuthMethodHeader) {
 		return nil, errors.New("subject and auth method headers must differ")
 	}
-	prefixes := make([]netip.Prefix, 0, len(config.TrustedProxyCIDRs))
-	for _, raw := range config.TrustedProxyCIDRs {
-		prefix, err := netip.ParsePrefix(raw)
-		if err != nil || prefix.Bits() == 0 || prefix.Addr().Is4In6() {
-			return nil, fmt.Errorf("invalid trusted proxy CIDR %q", raw)
-		}
-		// Restrict the network identity check to narrow proxy ranges.
-		// Wider pod or private networks can include untrusted workloads.
-		if (prefix.Addr().Is4() && prefix.Bits() < 24) ||
-			(prefix.Addr().Is6() && prefix.Bits() < 112) {
-			return nil, fmt.Errorf("trusted proxy CIDR %q is too broad", raw)
-		}
-		prefix = prefix.Masked()
-		for _, forbidden := range deniedProxyRanges {
-			if prefix.Overlaps(forbidden) {
-				return nil, fmt.Errorf("trusted proxy CIDR %q overlaps loopback or link-local space", raw)
-			}
-		}
-		prefixes = append(prefixes, prefix)
+	prefixes, err := parseEditorProxyCIDRs(config.TrustedProxyCIDRs)
+	if err != nil {
+		return nil, err
 	}
-	methods := make(map[string]struct{}, len(config.AllowedAuthMethods))
-	for _, method := range config.AllowedAuthMethods {
-		if method == "" || len(method) > 64 || !validMethodName(method) {
-			return nil, fmt.Errorf("invalid allowed auth method %q", method)
-		}
-		methods[strings.ToLower(method)] = struct{}{}
+	methods, err := parseEditorAuthMethods(config.AllowedAuthMethods)
+	if err != nil {
+		return nil, err
 	}
 	subjectHeader := http.CanonicalHeaderKey(config.SubjectHeader)
 	methodHeader := http.CanonicalHeaderKey(config.AuthMethodHeader)
 	return func(r *http.Request) (string, error) {
-		host, _, err := net.SplitHostPort(r.RemoteAddr)
-		if err != nil {
-			return "", errors.New("request has no trusted network peer")
-		}
-		peer, err := netip.ParseAddr(host)
-		if err != nil || !peer.IsValid() || peer.Is4In6() {
-			return "", errors.New("request has invalid network peer")
-		}
-		trusted := false
-		for _, prefix := range prefixes {
-			if prefix.Contains(peer) {
-				trusted = true
-				break
-			}
-		}
-		if !trusted {
-			return "", errors.New("request did not originate from a trusted proxy")
+		if err := requireEditorTrustedPeer(r.RemoteAddr, prefixes); err != nil {
+			return "", err
 		}
 		subject, err := singleAssertion(r.Header, subjectHeader, 256)
 		if err != nil {
@@ -106,6 +66,62 @@ func NewForwardAuthAuthenticator(config ForwardAuthConfig) (Authenticator, error
 		}
 		return subject, nil
 	}, nil
+}
+
+func parseEditorProxyCIDRs(cidrs []string) ([]netip.Prefix, error) {
+	if len(cidrs) == 0 {
+		return nil, errors.New("at least one trusted proxy CIDR is required")
+	}
+	prefixes := make([]netip.Prefix, 0, len(cidrs))
+	for _, raw := range cidrs {
+		prefix, err := netip.ParsePrefix(raw)
+		if err != nil || prefix.Bits() == 0 || prefix.Addr().Is4In6() {
+			return nil, fmt.Errorf("invalid trusted proxy CIDR %q", raw)
+		}
+		if (prefix.Addr().Is4() && prefix.Bits() < 24) ||
+			(prefix.Addr().Is6() && prefix.Bits() < 112) {
+			return nil, fmt.Errorf("trusted proxy CIDR %q is too broad", raw)
+		}
+		prefix = prefix.Masked()
+		for _, forbidden := range deniedProxyRanges {
+			if prefix.Overlaps(forbidden) {
+				return nil, fmt.Errorf("trusted proxy CIDR %q overlaps loopback or link-local space", raw)
+			}
+		}
+		prefixes = append(prefixes, prefix)
+	}
+	return prefixes, nil
+}
+
+func parseEditorAuthMethods(allowed []string) (map[string]struct{}, error) {
+	if len(allowed) == 0 {
+		return nil, errors.New("at least one auth method is required")
+	}
+	methods := make(map[string]struct{}, len(allowed))
+	for _, method := range allowed {
+		if method == "" || len(method) > 64 || !validMethodName(method) {
+			return nil, fmt.Errorf("invalid allowed auth method %q", method)
+		}
+		methods[strings.ToLower(method)] = struct{}{}
+	}
+	return methods, nil
+}
+
+func requireEditorTrustedPeer(remote string, prefixes []netip.Prefix) error {
+	host, _, err := net.SplitHostPort(remote)
+	if err != nil {
+		return errors.New("request has no trusted network peer")
+	}
+	peer, err := netip.ParseAddr(host)
+	if err != nil || !peer.IsValid() || peer.Is4In6() {
+		return errors.New("request has invalid network peer")
+	}
+	for _, prefix := range prefixes {
+		if prefix.Contains(peer) {
+			return nil
+		}
+	}
+	return errors.New("request did not originate from a trusted proxy")
 }
 
 func validAssertionHeader(name string) bool {
