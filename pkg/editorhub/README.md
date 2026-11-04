@@ -40,4 +40,4 @@ ordering, immutability, and refusal to serve privileged routes.
 This package is deliberately **not connected to an ingress, CLI, the Go
 workbench, or Builder Admin**. The next POC slices are secure hosted identity
 verification and then a separate durable, offline draft/sync protocol. No
-production family site or public GitHub repository has been modified.
+production family site has been modified or exposed.
