@@ -17,6 +17,7 @@ workbench.
 - `NewRegistry` accepts trusted server-side site configuration. It rejects
   duplicate/invalid IDs, wildcard subjects and impossible permission sets.
   It copies grants so mutating the original configuration cannot grant access.
+- `Registry.Allows(subject, siteID, permission)` supplies a fail-closed site capability gate for future handlers. This is **not** a substitute for per-document private-draft/media authorization.
 - `GET /api/v1/sites` returns only explicitly readable sites, sorted by
   opaque ID. Each entry contains only `id`, `name` and `permissions`.
   It returns no repository, internal builder, filesystem or draft metadata.
