@@ -2,12 +2,15 @@ package plugins
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"html"
 	"math"
 	"strings"
 	"time"
 )
+
+var errNativeContributionGraphUnsupported = errors.New("unsupported native contribution graph layout")
 
 // renderNativeContributionGraph creates a responsive, palette-aware SVG calendar
 // using only Go. It intentionally supports the GitHub-style year/day layout.
@@ -16,15 +19,19 @@ func renderNativeContributionGraph(data interface{}, options map[string]interfac
 	for key := range options {
 		switch key {
 		case "year", "domain", "subDomain", "maxValue", "maxPercentile":
+		case "range":
+			if value, ok := options[key].(float64); !ok || value != 1 {
+				return "", fmt.Errorf("%w: range must be 1; set contribution_graph.mode = \"client\"", errNativeContributionGraphUnsupported)
+			}
 		default:
-			return "", fmt.Errorf("native contribution graph does not support option %q; set contribution_graph.mode = \"client\"", key)
+			return "", fmt.Errorf("%w: option %q; set contribution_graph.mode = \"client\"", errNativeContributionGraphUnsupported, key)
 		}
 	}
 	if domain, ok := options["domain"]; ok && domain != "year" {
-		return "", fmt.Errorf("native contribution graph supports domain = \"year\" only; set contribution_graph.mode = \"client\"")
+		return "", fmt.Errorf("%w: native contribution graph supports domain = \"year\" only; set contribution_graph.mode = \"client\"", errNativeContributionGraphUnsupported)
 	}
 	if subDomain, ok := options["subDomain"]; ok && subDomain != "day" {
-		return "", fmt.Errorf("native contribution graph supports subDomain = \"day\" only; set contribution_graph.mode = \"client\"")
+		return "", fmt.Errorf("%w: native contribution graph supports subDomain = \"day\" only; set contribution_graph.mode = \"client\"", errNativeContributionGraphUnsupported)
 	}
 
 	year := time.Now().UTC().Year()
