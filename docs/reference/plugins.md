@@ -2003,7 +2003,7 @@ A doughnut chart is useful for showing a primary metric with breakdown:
 ```toml
 [markata-go.contribution_graph]
 enabled = true
-mode = "go"                                            # native SVG default; "client" uses Cal-Heatmap
+mode = "auto"                                          # native SVG where supported; fallback to Cal-Heatmap
 cdn_url = "/assets/vendor/cal-heatmap"                # Cal-Heatmap base URL (local by default)
 container_class = "contribution-graph-container"
 theme = "light"
@@ -2014,7 +2014,7 @@ scale_max_percentile = 0
 | Option | Default | Description |
 |--------|---------|-------------|
 | `enabled` | `true` | Enable/disable the plugin |
-| `mode` | `go` | Native SVG; set `client` for Cal-Heatmap (advanced domain/subDomain/range) |
+| `mode` | `auto` | Native SVG for supported layouts, Cal-Heatmap fallback for advanced ones. `go` requires native SVG; `client` always uses Cal-Heatmap. |
 | `cdn_url` | `/assets/vendor/cal-heatmap` | Cal-Heatmap base URL (local by default) |
 | `container_class` | `contribution-graph-container` | CSS class for wrapper div |
 | `theme` | `light` | Color theme (light, dark) |
