@@ -111,7 +111,7 @@ func writeDigestField(h hash.Hash, data []byte) {
 // production database, or configure site permissions. Openers must enable
 // SQLite foreign_keys on every connection, WAL, bounded busy_timeout and
 // backups. A driver-backed integration test is required before enabling sync.
-func Migrate(ctx context.Context, db *sql.DB) error {
+func Migrate(ctx context.Context, db *sql.DB) (resultErr error) {
 	if db == nil {
 		return errors.New("SQLite database is required")
 	}
@@ -123,7 +123,11 @@ func Migrate(ctx context.Context, db *sql.DB) error {
 	if err != nil {
 		return fmt.Errorf("begin editor sync migration: %w", err)
 	}
-	defer func() { _ = tx.Rollback() }()
+	defer func() {
+		if rollbackErr := tx.Rollback(); rollbackErr != nil && !errors.Is(rollbackErr, sql.ErrTxDone) {
+			resultErr = errors.Join(resultErr, fmt.Errorf("rollback editor sync migration: %w", rollbackErr))
+		}
+	}()
 	var statement strings.Builder
 	for _, line := range strings.Split(string(source), "\n") {
 		trimmed := strings.TrimSpace(line)
