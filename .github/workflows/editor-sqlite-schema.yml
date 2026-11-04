@@ -1,0 +1,19 @@
+name: Editor SQLite Schema
+
+on:
+  pull_request:
+    paths:
+      - 'pkg/editorsync/**'
+      - '.github/workflows/editor-sqlite-schema.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sqlite-schema:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify editor SQLite schema with standard-library sqlite3
+        run: python3 -m unittest discover -s pkg/editorsync -p 'test_schema.py' -v
