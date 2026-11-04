@@ -75,6 +75,42 @@ func NewRegistry(sites []Site) (*Registry, error) {
 	return registry, nil
 }
 
+// Permission identifies an action on a site. Document-level visibility must
+// still be checked separately before serving private drafts or media.
+type Permission string
+
+const (
+	PermissionRead    Permission = "read"
+	PermissionWrite   Permission = "write"
+	PermissionPublish Permission = "publish"
+)
+
+// Allows evaluates a site-scoped capability. Unknown permissions and subjects
+// fail closed; this never grants access to private documents by itself.
+func (r *Registry) Allows(subject, siteID string, permission Permission) bool {
+	if r == nil || subject == "" || siteID == "" {
+		return false
+	}
+	i := sort.Search(len(r.sites), func(i int) bool { return r.sites[i].ID >= siteID })
+	if i == len(r.sites) || r.sites[i].ID != siteID {
+		return false
+	}
+	grant, ok := r.sites[i].Grants[subject]
+	if !ok {
+		return false
+	}
+	switch permission {
+	case PermissionRead:
+		return grant.Read
+	case PermissionWrite:
+		return grant.Write
+	case PermissionPublish:
+		return grant.Publish
+	default:
+		return false
+	}
+}
+
 // ListFor returns only explicitly readable sites. It does not reveal that
 // hidden sites exist or how many private sites are configured.
 func (r *Registry) ListFor(subject string) []SiteSummary {
