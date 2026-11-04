@@ -194,7 +194,7 @@ func renderNativeCartesian(out *strings.Builder, chartType string, labels []stri
 		}
 		y := valueY(value)
 		if chartType == "bar" {
-			height := math.Abs(y-baseY)
+			height := math.Abs(y - baseY)
 			fmt.Fprintf(out, "<rect x=\"%.2f\" y=\"%.2f\" width=\"%.2f\" height=\"%.2f\" rx=\"3\" fill=\"%s\"><title>%s: %g</title></rect>", x-barWidth/2, math.Min(y, baseY), barWidth, height, nativeChartColor(0), html.EscapeString(labels[i]), value)
 		} else {
 			if i == 0 {
@@ -284,16 +284,16 @@ func renderNativePie(out *strings.Builder, donut bool, labels []string, values [
 		return fmt.Errorf("pie chart needs a positive total")
 	}
 	const cx, cy, radius = 275.0, 165.0, 112.0
-	start := -math.Pi/2
+	start := -math.Pi / 2
 	for i, value := range values {
 		if value == 0 {
 			continue
 		}
-		delta := 2*math.Pi*value/sum
+		delta := 2 * math.Pi * value / sum
 		if delta >= 2*math.Pi-1e-10 {
 			fmt.Fprintf(out, "<circle cx=\"%.1f\" cy=\"%.1f\" r=\"%.1f\" fill=\"%s\"><title>%s: %g</title></circle>", cx, cy, radius, nativeChartColor(i), html.EscapeString(labels[i]), value)
 		} else {
-			end := start+delta
+			end := start + delta
 			x1, y1 := cx+radius*math.Cos(start), cy+radius*math.Sin(start)
 			x2, y2 := cx+radius*math.Cos(end), cy+radius*math.Sin(end)
 			large := 0
