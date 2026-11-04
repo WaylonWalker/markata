@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"strings"
 
+	// Register the pure-Go SQLite database/sql driver for this opt-in package.
 	_ "modernc.org/sqlite"
 )
 
