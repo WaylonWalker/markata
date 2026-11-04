@@ -5,7 +5,9 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -92,5 +94,26 @@ func TestSQLiteRejectsMissingParent(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "missing", "sync.sqlite")
 	if _, err := OpenSQLite(context.Background(), path); err == nil {
 		t.Fatal("created an unexpected parent directory")
+	}
+}
+
+func TestSQLiteNewDatabaseFileIsPrivate(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("POSIX permissions do not map directly to Windows ACLs")
+	}
+	file := filepath.Join(t.TempDir(), "private.sqlite")
+	db, err := OpenSQLite(context.Background(), file)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Close(); err != nil {
+		t.Fatal(err)
+	}
+	info, err := os.Stat(file)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Mode().Perm()&0o077 != 0 {
+		t.Fatalf("database permissions should be owner-only, got %04o", info.Mode().Perm())
 	}
 }
