@@ -246,6 +246,13 @@ func renderNativeScatter(out *strings.Builder, dataset map[string]interface{}) e
 	if maxY == minY { maxY++ }
 	nativeChartAxes(out, minY, maxY)
 	const left, top, plotH, plotW = 65.0, 25.0, 245.0, 625.0
+	// Show the numerical x scale: position alone is ambiguous for scatter data.
+	for tick := 0; tick <= 4; tick++ {
+		value := minX + float64(tick)*(maxX-minX)/4
+		x := left + float64(tick)*plotW/4
+		fmt.Fprintf(out, "<line x1=\"%.1f\" y1=\"%.1f\" x2=\"%.1f\" y2=\"%.1f\" stroke=\"var(--color-border, #d1d5db)\"/>", x, top+plotH, x, top+plotH+4)
+		fmt.Fprintf(out, "<text x=\"%.1f\" y=\"%.1f\" text-anchor=\"middle\" font-size=\"11\" fill=\"var(--color-text-muted, #6b7280)\">%g</text>", x, top+plotH+21, value)
+	}
 	for _, p := range points {
 		cx := left + (p.x-minX)*plotW/(maxX-minX)
 		cy := top + (maxY-p.y)*plotH/(maxY-minY)
