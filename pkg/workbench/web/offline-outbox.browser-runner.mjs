@@ -14,6 +14,7 @@ const root = dirname(fileURLToPath(import.meta.url));
 const assets = new Map([
   ['/offline-outbox.browser.html', ['offline-outbox.browser.html', 'text/html; charset=utf-8']],
   ['/offline-outbox.mjs', ['offline-outbox.mjs', 'text/javascript; charset=utf-8']],
+  ['/offline-sync.mjs', ['offline-sync.mjs', 'text/javascript; charset=utf-8']],
 ]);
 const server = createServer(async (request, response) => {
   const asset = assets.get(request.url);
