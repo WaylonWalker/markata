@@ -75,3 +75,36 @@ trusted proxy fails to strip a client-supplied header.
 
 This stacked slice introduces no ingress, server listener, browser auth cookie,
 write endpoint, or production deployment.
+
+## Private mutation HTTP transport POC (#1970)
+
+`NewPrivateMutationHandler(registry, authenticate, engine, allowedOrigin)`
+returns one **unmounted**, private-draft-only route:
+`POST /api/v1/sites/{site}/mutations`. No LSP, local filesystem, Git, builder
+admin, publish, list or public site endpoint is added here.
+
+The handler requires an injected **trusted** `editorhub.Authenticator` that
+derives a stable subject from a proven ingress decision, and an independent
+explicit site `write` grant. Browser JSON cannot supply or override the
+subject/site/visibility; these are taken from the verified context, route and
+server-owned private-draft policy. The underlying `editorsync.Engine` checks
+the same author identity/permission and transactionally commits before
+returning a receipt. Replays of the same UUID return the original receipt;
+stale revisions return a recoverable conflict response.
+
+Browser writes must have an exact configured HTTPS `Origin` and
+`X-Markata-Sync-Intent: write`. Unsupported origins, missing/duplicate
+headers, cross-site fetch metadata, absent login, read-only users and
+unexpected JSON fields fail closed. This is an additional CSRF barrier, not a
+replacement for a validated hlab-auth browser session, trusted proxy and
+NetworkPolicy. The handler does not enable permissive CORS.
+
+Successful responses expose only the mutation ID, accepted document revision
+and intent hash. Internal per-site change sequences are never returned:
+they may contain other users' private activity.
+
+Run `go test -race ./pkg/editorhub ./pkg/editorsync`. The handler is not
+installed in any server/CLI/ingress. It is **not safe to mount publicly** until
+the #1956 live ForwardAuth/Origin/CSRF tests prove trust boundaries, and the
+read endpoints, log retention, offline browser outbox and conflict UX are
+reviewed independently.
