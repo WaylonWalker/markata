@@ -115,14 +115,18 @@ export class LocalDraftOutbox {
 
   // Each keystroke/batch can be locally committed without creating a new
   // server mutation. The server outbox snapshots a revision only at enqueue.
-  async saveDraft({siteId, subjectId, documentId, source, deleted = false}) {
+  async saveDraft({siteId, subjectId, documentId, source, deleted = false, expectedLocalRevision}) {
     scope(siteId, subjectId);
     documentID(documentId);
     sourceText(source);
     if (typeof deleted !== 'boolean') throw new TypeError('Invalid deletion intent');
+    requireRevision(expectedLocalRevision);
     return this.driver.write(['drafts'], async tx => {
       const key = [siteId, subjectId, documentId];
       const prior = await tx.get('drafts', key);
+      if ((prior?.localRevision ?? 0) !== expectedLocalRevision) {
+        throw new Error('Local draft changed in another tab; reload and reconcile before saving');
+      }
       const draft = {
         siteId, subjectId, documentId, source, deleted,
         localRevision: (prior?.localRevision || 0) + 1,
@@ -183,11 +187,21 @@ export class LocalDraftOutbox {
     return this.driver.write(['mutations'], tx => tx.get('mutations', [siteId, subjectId, mutationId]));
   }
 
+  // Only queued entries may be retried automatically. Conflict entries must
+  // wait for explicit reconciliation; never loop on a rejected mutation.
   async listUnsent(siteId, subjectId) {
     scope(siteId, subjectId);
     return this.driver.write(['mutations'], async tx =>
       (await tx.forScope('mutations', siteId, subjectId))
-        .filter(m => m.state === 'queued' || m.state === 'conflict')
+        .filter(m => m.state === 'queued')
+        .sort((a, b) => a.documentId.localeCompare(b.documentId)));
+  }
+
+  async listConflicts(siteId, subjectId) {
+    scope(siteId, subjectId);
+    return this.driver.write(['mutations'], async tx =>
+      (await tx.forScope('mutations', siteId, subjectId))
+        .filter(m => m.state === 'conflict')
         .sort((a, b) => a.documentId.localeCompare(b.documentId)));
   }
 

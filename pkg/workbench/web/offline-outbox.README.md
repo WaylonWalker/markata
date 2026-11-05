@@ -4,7 +4,12 @@
 
 `offline-outbox.mjs` is a small native IndexedDB adapter and testable
 local-draft state machine. No framework, GitHub credentials or network
-connection is required. `saveDraft` resolves **after the database transaction
+connection is required. `saveDraft` requires the caller's last seen
+`expectedLocalRevision`. That value is compared inside the transaction, so
+a stale browser tab fails instead of silently overwriting newer local edits.
+The editor must offer reconciliation when this happens.
+
+`saveDraft` resolves **after the database transaction
 commits**; only then may the editor claim “Saved on this device.” A quota
 failure or aborted transaction rejects the promise and must show a warning,
 not a false saved indicator.
@@ -15,6 +20,8 @@ mutations on one document. A retry reuses the frozen payload, even if the user
 has typed newer content. `acknowledge` updates the server revision only for
 a matching committed receipt, without overwriting newer local edits.
 `recordConflict` retains the original proposal for explicit reconciliation.
+`listUnsent` includes only queued mutations eligible for automatic retry;
+`listConflicts` separately exposes rejected mutations for explicit review.
 
 All reads and writes are keyed by *site ID, authenticated stable subject ID,
 and document or mutation ID*. The IDs must come from a trusted authenticated
