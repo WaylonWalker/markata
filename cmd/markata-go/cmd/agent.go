@@ -384,7 +384,7 @@ func runAgentListAgentsCommand(cmd *cobra.Command, _ []string) error {
 
 func runAgentUpdateCommand(cmd *cobra.Command, args []string) error {
 	currentCmd = cmd
-	_, explicit, err := selectedAgentFlagValue(agentUpdateAgent, agentUpdateLegacyTarget)
+	_, explicit, err := resolveAgentWriteTargets(agentUpdateAgent, agentUpdateLegacyTarget)
 	if err != nil {
 		return err
 	}
