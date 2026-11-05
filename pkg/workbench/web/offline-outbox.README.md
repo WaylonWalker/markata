@@ -26,9 +26,19 @@ bootstrap, **never from an arbitrary user-editable browser setting**.
 node --test pkg/workbench/web/offline-outbox.test.mjs
 ```
 
-The tests use a fault-injectable in-memory transactional driver to check 100
-offline edits, hard-reload semantics, idempotency, failed commits, stale
-replies, conflicts and logical per-user/site partitioning.
+The unit tests use a fault-injectable in-memory transactional driver to
+check 100 offline edits, re-instantiated store recovery, idempotency, failed
+commits, stale replies, conflicts and logical per-user/site partitioning.
+Run the native browser smoke check as well:
+
+```sh
+node pkg/workbench/web/offline-outbox.browser-runner.mjs
+```
+
+That starts a localhost-only server, launches Chromium/Chrome with a disposable
+profile, and verifies real IndexedDB commit, re-open, retry and preservation of
+newer edits after a server receipt. The script cleans up the profile and makes
+no network request to GitHub or the editor API.
 
 **This is not a cryptographic account isolation boundary.** IndexedDB is
 origin-scoped and contains plaintext drafts. Any script running on the same
