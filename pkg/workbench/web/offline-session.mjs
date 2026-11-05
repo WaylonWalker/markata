@@ -12,7 +12,7 @@ function validSubject(subject) {
 // A null response intentionally pauses OfflineMutationSync without deleting
 // anything from IndexedDB on logout, unavailable session or network errors.
 export async function fetchVerifiedSyncIdentity(siteId, {fetchFn = globalThis.fetch} = {}) {
-  if (!SITE_RE.test(siteId) || typeof fetchFn !== 'function') {
+  if (typeof siteId !== 'string' || !SITE_RE.test(siteId) || typeof fetchFn !== 'function') {
     throw new TypeError('Verified sync identity needs a site ID and same-origin fetch');
   }
   try {
@@ -25,11 +25,11 @@ export async function fetchVerifiedSyncIdentity(siteId, {fetchFn = globalThis.fe
       headers: {Accept: 'application/json'},
     });
     if (!response || response.status !== 200 || response.redirected === true ||
-        response.type === 'opaque') {
+        response.type === 'opaque' || response.type === 'opaqueredirect') {
       return null;
     }
     const contentType = response.headers?.get?.('content-type');
-    if (contentType && !/^application\/json(?:\s*;|\s*$)/i.test(contentType)) {
+    if (typeof contentType !== 'string' || !/^application\/json(?:\s*;|\s*$)/i.test(contentType)) {
       return null;
     }
     const payload = await response.json();
