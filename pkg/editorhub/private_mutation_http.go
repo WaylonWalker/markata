@@ -17,10 +17,10 @@ import (
 // with a proven trusted ForwardAuth path can safely register this handler.
 // No browser-provided subject or builder operator capability is accepted.
 type privateMutationHTTP struct {
-	registry      *Registry
+	registry     *Registry
 	authenticate Authenticator
-	engine        *editorsync.Engine
-	origin        string
+	engine       *editorsync.Engine
+	origin       string
 }
 
 // NewPrivateMutationHandler creates one private-draft write route. It must
@@ -87,8 +87,8 @@ func (h *privateMutationHTTP) apply(w http.ResponseWriter, r *http.Request) {
 		Digest     string `json:"digest"`
 	}{
 		MutationID: receipt.MutationID,
-		Revision: receipt.Revision,
-		Digest: receipt.PayloadDigest,
+		Revision:   receipt.Revision,
+		Digest:     receipt.PayloadDigest,
 	}); err != nil {
 		return // Response may already be committed.
 	}
