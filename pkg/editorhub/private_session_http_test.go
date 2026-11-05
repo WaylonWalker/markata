@@ -138,3 +138,39 @@ func TestPrivateSessionConstructorRejectsUnsafeInputs(t *testing.T) {
 		t.Fatal("missing registry accepted")
 	}
 }
+
+func TestPrivateSessionRechecksRevocationOnEveryRequest(t *testing.T) {
+	registry, err := NewRegistry([]Site{{
+		ID: "test-site", Name: "Test Site",
+		Grants: map[string]Grant{"alice": {Read: true, Write: true}},
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	allowed := true
+	auth := func(*http.Request) (string, error) {
+		if !allowed {
+			return "", errors.New("session revoked")
+		}
+		return "alice", nil
+	}
+	handler, err := NewPrivateSessionHandler(registry, auth, privateHTTPOrigin)
+	if err != nil {
+		t.Fatal(err)
+	}
+	request := httptest.NewRequest(http.MethodGet, privateHTTPOrigin+"/api/v1/session", http.NoBody)
+	first := httptest.NewRecorder()
+	handler.ServeHTTP(first, request)
+	if first.Code != http.StatusOK {
+		t.Fatalf("valid session rejected: %d", first.Code)
+	}
+	allowed = false
+	second := httptest.NewRecorder()
+	handler.ServeHTTP(second, request)
+	if second.Code != http.StatusUnauthorized || strings.Contains(second.Body.String(), "alice") {
+		t.Fatalf("revoked session accepted or identity leaked: %d %s", second.Code, second.Body.String())
+	}
+	if second.Header().Get("Cache-Control") != "private, no-store" {
+		t.Fatal("revoked session response must not be cached")
+	}
+}
