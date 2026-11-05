@@ -102,6 +102,11 @@ export class OfflineMutationSync {
       } catch {
         return {status: 'retry_network', synced};
       }
+      // The user might have logged out or switched accounts while the POST
+      // was in flight. Keep the same UUID queued for safe retry after reauth.
+      if (!matchesScope(await this.verifiedIdentity(), this.siteId, this.subjectId)) {
+        return {status: 'paused_auth', synced};
+      }
       if (response.status === 401 || response.status === 403) {
         return {status: 'paused_auth', synced};
       }
