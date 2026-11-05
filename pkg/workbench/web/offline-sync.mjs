@@ -71,11 +71,11 @@ export class OfflineMutationSync {
     const key = 'markata-sync-v1:' + this.siteId + ':' + this.subjectId;
     return this.locks.request(key, {mode: 'exclusive', ifAvailable: true}, async lock => {
       if (!lock) return {status: 'busy_other_tab', synced: 0};
-      return this.drainLocked();
+      return this.#drainLocked();
     });
   }
 
-  async drainLocked() {
+  async #drainLocked() {
     let synced = 0;
     if (!matchesScope(await this.verifiedIdentity(), this.siteId, this.subjectId)) {
       return {status: 'paused_auth', synced};
