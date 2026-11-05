@@ -144,13 +144,13 @@ func (h *privateMutationHTTP) getConflict(w http.ResponseWriter, r *http.Request
 		SourceBase64      string `json:"source_base64"`
 		Deleted           bool   `json:"deleted"`
 	}{
-		MutationID: record.MutationID,
-		DocumentID: record.DocumentID,
+		MutationID:        record.MutationID,
+		DocumentID:        record.DocumentID,
 		StaleBaseRevision: record.StaleBaseRevision,
-		CurrentRevision: record.CurrentRevision,
-		Digest: record.PayloadDigest,
-		SourceBase64: base64.StdEncoding.EncodeToString(record.Source),
-		Deleted: record.Deleted,
+		CurrentRevision:   record.CurrentRevision,
+		Digest:            record.PayloadDigest,
+		SourceBase64:      base64.StdEncoding.EncodeToString(record.Source),
+		Deleted:           record.Deleted,
 	}); err != nil {
 		return // Response may already be committed.
 	}
