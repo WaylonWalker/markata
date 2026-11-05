@@ -108,3 +108,35 @@ installed in any server/CLI/ingress. It is **not safe to mount publicly** until
 the #1956 live ForwardAuth/Origin/CSRF tests prove trust boundaries, and the
 read endpoints, log retention, offline browser outbox and conflict UX are
 reviewed independently.
+## Private read HTTP POC (#1970)
+
+`NewPrivateReadHandler` is an opt-in, **unmounted** HTTP adapter for
+`editorsync.PrivateReader` (private drafts only). It requires an injected
+verified subject authenticator, server-owned site registry with explicit
+read grants, and the private SQLite reader with its own per-request
+authorization. This does not mount the loopback workbench, Git, Builder
+Admin or any site file route.
+
+Routes are `POST /api/v1/sites/{site}/snapshots` (first metadata page),
+`GET /api/v1/sites/{site}/documents?cursor=...&limit=...` (continued
+metadata pages), `GET /api/v1/sites/{site}/changes?cursor=...` (incremental
+owner-private events and tombstones), and
+`GET /api/v1/sites/{site}/documents/{id}?revision=...` (on-demand exact
+source bytes encoded as base64). Pages are capped at 100 items.
+The wire DTOs use explicit snake_case field names and never emit internal
+per-site change sequence numbers, other users' source, or absolute paths.
+
+The initial snapshot POST requires an exact, configured HTTPS `Origin`.
+Every request checks authenticated subject and site permissions; the
+underlying read engine also enforces document ownership. An invalid or
+other-user cursor is rejected, while expiry returns HTTP 410 with
+`{"code":"checkpoint_expired"}` to trigger a new authorized snapshot.
+The browser MUST keep its unsent outbox during that resnapshot.
+
+**Not ready for hosting:** no actual hlab-auth ingress, distributed
+session invalidation, retention-backed change history, shared/published
+document transitions, browser-side reconnect, media, or performance
+benchmark on thousands of posts. Before enabling public ingress, validate
+#1956's peer/header stripping and session assertions and review HTTP
+cache, CSP, Origin and CORS behavior in the full deployment. Never use a
+test authenticator in a deployed service.
