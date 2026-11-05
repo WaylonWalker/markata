@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Offline outbox browser smoke</title></head>
+<body>
+<output id="result" data-result="pending">Running native IndexedDB smoke checks</output>
+<script type="module">
+import {openBrowserDraftStore} from './offline-outbox.mjs';
+
+const result = document.querySelector('#result');
+const scope = {siteId: 'test-blog', subjectId: 'owner-alpha', documentId: 'page-one'};
+const id = 'acb1446b-2e8b-4e9e-8d7c-7347ef16f234';
+function check(value, message) {
+  if (!value) throw new Error(message);
+}
+try {
+  const store = await openBrowserDraftStore();
+  const local = await store.saveDraft({...scope, source: '# Written while offline'});
+  check(local.localRevision >= 1, 'initial save revision missing');
+  const reopened = await openBrowserDraftStore();
+  const saved = await reopened.getDraft(scope.siteId, scope.subjectId, scope.documentId);
+  check(saved.source === '# Written while offline', 'committed source absent after reopening database');
+
+  const mutation = await reopened.enqueue({...scope, mutationId: id, baseRevision: 0});
+  check(mutation.source === saved.source && mutation.state === 'queued', 'mutation intent not frozen');
+  await store.saveDraft({...scope, source: '# More edits after outbound snapshot'});
+  const replay = await reopened.enqueue({...scope, mutationId: id, baseRevision: 0});
+  check(replay.source === mutation.source, 'retry changed original payload');
+  const ack = await reopened.acknowledge({siteId: scope.siteId, subjectId: scope.subjectId,
+    mutationId: id, acceptedRevision: 1});
+  check(ack.state === 'accepted', 'committed receipt not applied');
+  const newer = await store.getDraft(scope.siteId, scope.subjectId, scope.documentId);
+  check(newer.source === '# More edits after outbound snapshot' &&
+    newer.syncedLocalRevision < newer.localRevision && newer.serverRevision === 1,
+    'acknowledgment overwrote newer device-local edits');
+
+  check(await reopened.getDraft(scope.siteId, 'another-account', scope.documentId) === undefined,
+    'other logical account saw cached draft via scoped API');
+  result.dataset.result = 'pass';
+  result.textContent = 'Offline outbox native IndexedDB smoke: PASS';
+} catch (error) {
+  result.dataset.result = 'fail';
+  result.textContent = 'Offline outbox native IndexedDB smoke: FAIL ' + error.message;
+}
+</script>
+</body></html>
