@@ -113,6 +113,11 @@ export class OfflineMutationSync {
       if (response.status === 409) {
         let rejected;
         try { rejected = await response.json(); } catch { return {status: 'retry_server', synced}; }
+        // Response parsing may be asynchronous. A logout/account switch in
+        // that interval must not mutate the prior subject's local outbox.
+        if (!matchesScope(await this.verifiedIdentity(), this.siteId, this.subjectId)) {
+          return {status: 'paused_auth', synced};
+        }
         if (rejected?.code !== 'revision_conflict' || !Number.isSafeInteger(rejected.current_revision) ||
             rejected.current_revision < 0 || rejected.preserved !== true) {
           return {status: 'retry_server', synced};
@@ -128,6 +133,9 @@ export class OfflineMutationSync {
       }
       let receipt;
       try { receipt = await response.json(); } catch { return {status: 'retry_server', synced}; }
+      if (!matchesScope(await this.verifiedIdentity(), this.siteId, this.subjectId)) {
+        return {status: 'paused_auth', synced};
+      }
       if (receipt?.mutation_id !== mutation.mutationId || receipt.digest !== digest ||
           !Number.isSafeInteger(receipt.revision) ||
           receipt.revision !== mutation.baseRevision + 1) {
