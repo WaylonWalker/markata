@@ -13,6 +13,8 @@ import (
 	"github.com/WaylonWalker/markata/pkg/editorsync"
 )
 
+const privateReadCrossSite = "cross-site"
+
 // PrivateReadHTTP is deliberately unmounted. No browser can access it unless
 // an application explicitly registers it behind a verified trusted ingress.
 type PrivateReadHTTP struct {
@@ -42,7 +44,7 @@ func (h *PrivateReadHTTP) authorize(w http.ResponseWriter, r *http.Request) (str
 	w.Header().Set("Cache-Control", "private, no-store")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.Header().Set("Vary", "Cookie, Authorization, Origin")
-	if r.Header.Get("Sec-Fetch-Site") == "cross-site" || r.Header.Get("Sec-Fetch-Site") == "cross-origin" {
+	if r.Header.Get("Sec-Fetch-Site") == privateReadCrossSite || r.Header.Get("Sec-Fetch-Site") == "cross-origin" {
 		http.Error(w, "cross-site access forbidden", http.StatusForbidden)
 		return "", false
 	}
@@ -63,14 +65,14 @@ func validReadSubject(subject string) bool {
 		!strings.ContainsAny(subject, "\x00\r\n") && utf8.ValidString(subject)
 }
 
-func privateReadPageLimit(r *http.Request, allowCursor bool) (int, string, error) {
+func privateReadPageLimit(r *http.Request, allowCursor bool) (limit int, cursor string, resultErr error) {
 	q := r.URL.Query()
 	for name, values := range q {
 		if name != "limit" && (name != "cursor" || !allowCursor) || len(values) != 1 {
 			return 0, "", errors.New("invalid read query")
 		}
 	}
-	limit := 50
+	limit = 50
 	if raw := q.Get("limit"); raw != "" {
 		n, err := strconv.Atoi(raw)
 		if err != nil || n < 1 || n > 100 {
@@ -125,7 +127,9 @@ func changesHTTPPage(page editorsync.PrivateChangesPage) privateHTTPChangesPage 
 
 func privateReadJSON(w http.ResponseWriter, value any) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	_ = json.NewEncoder(w).Encode(value)
+	if err := json.NewEncoder(w).Encode(value); err != nil {
+		return // The response may already have been committed.
+	}
 }
 
 func privateReadError(w http.ResponseWriter, err error) {
@@ -137,7 +141,9 @@ func privateReadError(w http.ResponseWriter, err error) {
 	case errors.Is(err, editorsync.ErrExpiredSyncCursor):
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.WriteHeader(http.StatusGone)
-		_ = json.NewEncoder(w).Encode(map[string]string{"code": "checkpoint_expired"})
+		if err := json.NewEncoder(w).Encode(map[string]string{"code": "checkpoint_expired"}); err != nil {
+			return // The response may already have been committed.
+		}
 	case errors.Is(err, editorsync.ErrInvalidSyncCursor):
 		http.Error(w, "invalid cursor", http.StatusBadRequest)
 	default:
@@ -151,7 +157,7 @@ func (h *PrivateReadHTTP) snapshot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if origins := r.Header.Values("Origin"); len(origins) != 1 || origins[0] != h.origin ||
-		r.Header.Get("Sec-Fetch-Site") == "cross-site" || r.ContentLength != 0 {
+		r.Header.Get("Sec-Fetch-Site") == privateReadCrossSite || r.ContentLength != 0 {
 		http.Error(w, "invalid snapshot request", http.StatusForbidden)
 		return
 	}
