@@ -14,6 +14,8 @@ import (
 	"github.com/WaylonWalker/markata/pkg/editorsync"
 )
 
+const privateWriteCrossSite = "cross-site"
+
 // privateMutationHTTP is intentionally unmounted. Only a hosted application
 // with a proven trusted ForwardAuth path can safely register this handler.
 // No browser-provided subject or builder operator capability is accepted.
@@ -102,7 +104,7 @@ func (h *privateMutationHTTP) getConflict(w http.ResponseWriter, r *http.Request
 	w.Header().Set("Cache-Control", "private, no-store")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.Header().Set("Vary", "Origin, Cookie, Authorization")
-	if r.Header.Get("Sec-Fetch-Site") == "cross-site" ||
+	if r.Header.Get("Sec-Fetch-Site") == privateWriteCrossSite ||
 		r.Header.Get("Sec-Fetch-Site") == "cross-origin" {
 		http.Error(w, "cross-site request forbidden", http.StatusForbidden)
 		return
@@ -124,12 +126,13 @@ func (h *privateMutationHTTP) getConflict(w http.ResponseWriter, r *http.Request
 	}
 	record, err := h.engine.ReadPrivateConflict(r.Context(), subject, site, r.PathValue("mutation"))
 	if err != nil {
-		if errors.Is(err, editorsync.ErrConflictNotFound) {
+		switch {
+		case errors.Is(err, editorsync.ErrConflictNotFound):
 			// Unknown and another author's conflict must be indistinguishable.
 			http.Error(w, "conflict not found", http.StatusNotFound)
-		} else if errors.Is(err, editorsync.ErrWriteForbidden) {
+		case errors.Is(err, editorsync.ErrWriteForbidden):
 			http.Error(w, "write forbidden", http.StatusForbidden)
-		} else {
+		default:
 			http.Error(w, "private conflict temporarily unavailable", http.StatusServiceUnavailable)
 		}
 		return
@@ -157,7 +160,7 @@ func (h *privateMutationHTTP) getConflict(w http.ResponseWriter, r *http.Request
 }
 
 func (h *privateMutationHTTP) validWriteOrigin(r *http.Request) bool {
-	if r.Header.Get("Sec-Fetch-Site") == "cross-site" ||
+	if r.Header.Get("Sec-Fetch-Site") == privateWriteCrossSite ||
 		r.Header.Get("Sec-Fetch-Site") == "cross-origin" {
 		return false
 	}
