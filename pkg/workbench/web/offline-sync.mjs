@@ -87,6 +87,11 @@ export class OfflineMutationSync {
         return {status: 'paused_auth', synced};
       }
       const digest = await mutationDigest(mutation, this.cryptoAPI);
+      // Digest generation is asynchronous. If the user logs out while WebCrypto
+      // works, never send the previous account's source afterward.
+      if (!matchesScope(await this.verifiedIdentity(), this.siteId, this.subjectId)) {
+        return {status: 'paused_auth', synced};
+      }
       const body = JSON.stringify({
         document_id: mutation.documentId, mutation_id: mutation.mutationId,
         base_revision: mutation.baseRevision, source: mutation.source, deleted: mutation.deleted,
