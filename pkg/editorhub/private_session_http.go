@@ -7,6 +7,8 @@ import (
 	"net/url"
 )
 
+const privateSessionHTTPS = "https"
+
 // PrivateSessionHTTP returns the current verified subject and authorized sites.
 // It never returns cookies, tokens, proxy assertions or Git credentials.
 // No public editor mounts this handler until the real ForwardAuth path is proven.
@@ -18,7 +20,7 @@ type PrivateSessionHTTP struct {
 
 func NewPrivateSessionHandler(registry *Registry, authenticate Authenticator, allowedOrigin string) (http.Handler, error) {
 	origin, err := url.Parse(allowedOrigin)
-	if err != nil || origin == nil || origin.Scheme != "https" || origin.Host == "" ||
+	if err != nil || origin == nil || origin.Scheme != privateSessionHTTPS || origin.Host == "" ||
 		origin.User != nil || origin.Path != "" || origin.RawQuery != "" || origin.Fragment != "" ||
 		registry == nil || authenticate == nil {
 		return nil, errors.New("private session needs a registry, trusted authenticator and exact HTTPS origin")
