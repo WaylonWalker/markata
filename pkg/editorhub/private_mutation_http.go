@@ -1,6 +1,7 @@
 package editorhub
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"io"
@@ -41,6 +42,7 @@ func NewPrivateMutationHandler(registry *Registry, authenticate Authenticator, e
 	}
 	mux := http.NewServeMux()
 	mux.Handle("POST /api/v1/sites/{site}/mutations", http.HandlerFunc(handler.apply))
+	mux.Handle("GET /api/v1/sites/{site}/conflicts/{mutation}", http.HandlerFunc(handler.getConflict))
 	return mux, nil
 }
 
@@ -89,6 +91,66 @@ func (h *privateMutationHTTP) apply(w http.ResponseWriter, r *http.Request) {
 		MutationID: receipt.MutationID,
 		Revision:   receipt.Revision,
 		Digest:     receipt.PayloadDigest,
+	}); err != nil {
+		return // Response may already be committed.
+	}
+}
+
+// getConflict returns a durable private rejection copy only to its original
+// authenticated author; site write access alone is not sufficient.
+func (h *privateMutationHTTP) getConflict(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Cache-Control", "private, no-store")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.Header().Set("Vary", "Origin, Cookie, Authorization")
+	if r.Header.Get("Sec-Fetch-Site") == "cross-site" ||
+		r.Header.Get("Sec-Fetch-Site") == "cross-origin" {
+		http.Error(w, "cross-site request forbidden", http.StatusForbidden)
+		return
+	}
+	if origins := r.Header.Values("Origin"); len(origins) > 1 ||
+		(len(origins) == 1 && origins[0] != h.origin) {
+		http.Error(w, "wrong editor origin", http.StatusForbidden)
+		return
+	}
+	subject, err := h.authenticate(r)
+	if err != nil || !validMutationSubject(subject) {
+		http.Error(w, "authentication required", http.StatusUnauthorized)
+		return
+	}
+	site := r.PathValue("site")
+	if !h.registry.Allows(subject, site, PermissionWrite) {
+		http.Error(w, "write forbidden", http.StatusForbidden)
+		return
+	}
+	record, err := h.engine.ReadPrivateConflict(r.Context(), subject, site, r.PathValue("mutation"))
+	if err != nil {
+		if errors.Is(err, editorsync.ErrConflictNotFound) {
+			// Unknown and another author's conflict must be indistinguishable.
+			http.Error(w, "conflict not found", http.StatusNotFound)
+		} else if errors.Is(err, editorsync.ErrWriteForbidden) {
+			http.Error(w, "write forbidden", http.StatusForbidden)
+		} else {
+			http.Error(w, "private conflict temporarily unavailable", http.StatusServiceUnavailable)
+		}
+		return
+	}
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	if err := json.NewEncoder(w).Encode(struct {
+		MutationID        string `json:"mutation_id"`
+		DocumentID        string `json:"document_id"`
+		StaleBaseRevision int64  `json:"stale_base_revision"`
+		CurrentRevision   int64  `json:"current_revision"`
+		Digest            string `json:"digest"`
+		SourceBase64      string `json:"source_base64"`
+		Deleted           bool   `json:"deleted"`
+	}{
+		MutationID: record.MutationID,
+		DocumentID: record.DocumentID,
+		StaleBaseRevision: record.StaleBaseRevision,
+		CurrentRevision: record.CurrentRevision,
+		Digest: record.PayloadDigest,
+		SourceBase64: base64.StdEncoding.EncodeToString(record.Source),
+		Deleted: record.Deleted,
 	}); err != nil {
 		return // Response may already be committed.
 	}
