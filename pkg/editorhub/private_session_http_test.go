@@ -1,6 +1,7 @@
 package editorhub
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -158,7 +159,7 @@ func TestPrivateSessionRechecksRevocationOnEveryRequest(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	request := httptest.NewRequest(http.MethodGet, privateHTTPOrigin+"/api/v1/session", http.NoBody)
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, privateHTTPOrigin+"/api/v1/session", http.NoBody)
 	first := httptest.NewRecorder()
 	handler.ServeHTTP(first, request)
 	if first.Code != http.StatusOK {
