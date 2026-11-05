@@ -78,3 +78,28 @@ token-revocation handling remain unimplemented.
 
 No public ingress, Git operations, browser sync, or production family site is
 modified by this slice.
+
+## Read-only private sync POC (#1965)
+
+`NewPrivateReader` requires a separate injected site-read authorizer and a
+persistent, server-held 32-byte authenticated-encryption key. No browser or
+public endpoint is mounted. A `Snapshot` starts at the site's internal
+high-watermark and pages through immutable document history, returning only
+metadata for documents owned by the authenticated subject and marked private
+as of that checkpoint. Lazy `SourceAtRevision` hydration is separately
+authorized on each call; do not fetch a large blog's full source up front.
+
+A completed snapshot yields an encrypted, subject/site-scoped
+`ChangesCursor`. `Changes` returns private-owner events including tombstones
+and advances over other users' invisible events without exposing their IDs.
+Tokens are encrypted (not plaintext base64), authenticated, purpose-bound and
+expiring. Incorrect, tampered and expired tokens fail closed. Keep the key
+stable across restarts until outstanding cursors expire; a rotated key forces
+a full re-snapshot. Reader errors must never delete local unsent mutations.
+
+**Not production sync:** this initial feed only covers private drafts, not
+shared drafts, published files, permission-changing events, or media. It is
+not yet a complete browser outbox, resumable HTTP protocol, conflict-resolution
+UI or Git reconciliation. Before hosted deployment, add snapshot paging and
+large-site query benchmarks, restore/checkpoint expiry tests, ACL-revocation
+checks, retention handling and authorized media hydration.
