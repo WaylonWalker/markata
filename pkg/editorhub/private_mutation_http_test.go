@@ -214,9 +214,19 @@ func TestPrivateHTTPConstructorRequiresTrustedInputs(t *testing.T) {
 		t.Fatal(err)
 	}
 	auth := func(*http.Request) (string, error) { return "alice", nil }
+	_, engine := newHTTPMutationFixture(t)
 	for _, origin := range []string{"", "http://editor.example.test", "https://editor.example.test/path", "https://user@editor.example.test"} {
-		if handler, err := NewPrivateMutationHandler(registry, auth, nil, origin); err == nil || handler != nil {
-			t.Fatalf("accepted invalid origin or missing engine %q", origin)
+		if handler, err := NewPrivateMutationHandler(registry, auth, engine, origin); err == nil || handler != nil {
+			t.Fatalf("accepted invalid editor origin %q", origin)
 		}
+	}
+	if handler, err := NewPrivateMutationHandler(registry, auth, nil, privateHTTPOrigin); err == nil || handler != nil {
+		t.Fatal("missing SQLite writer accepted")
+	}
+	if handler, err := NewPrivateMutationHandler(registry, nil, engine, privateHTTPOrigin); err == nil || handler != nil {
+		t.Fatal("missing trusted authenticator accepted")
+	}
+	if handler, err := NewPrivateMutationHandler(nil, auth, engine, privateHTTPOrigin); err == nil || handler != nil {
+		t.Fatal("missing site registry accepted")
 	}
 }
