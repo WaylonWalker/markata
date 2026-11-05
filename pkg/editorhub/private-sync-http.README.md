@@ -23,7 +23,9 @@ stripping, trusted proxy peer and NetworkPolicy, session assertion,
 revocation, CSRF and same-origin behavior. Browser-local private drafts
 remain plaintext until the separate device-account isolation work is done.
 
-Conflict-copy retrieval from draft PR #1975 remains separate, and will need
-explicit routing review before being added to this composition.
+Owner-only conflict-copy retrieval from merged PR #1975 is included here.
+Existing and orphaned rejected drafts can be recovered only by their original
+authenticated author; a site write grant alone cannot expose another writer's
+private conflict source. This is recovery, not automatic conflict resolution.
 
 Verify with `go test -race -count=1 ./pkg/editorhub ./pkg/editorsync`.
