@@ -74,6 +74,8 @@ test('cross-origin or malformed session responses never yield a verified identit
   const invalid = [
     response(200, writer, {redirected: true}),
     response(200, writer, {contentType: 'text/html'}),
+    response(200, writer, {contentType: ''}),
+    {...response(200, writer), type: 'opaqueredirect'},
     response(200, {...writer, subject_id: 'alice\n'}),
     response(200, {...writer, subject_id: ''}),
     response(200, {...writer, sites: []}),
@@ -89,6 +91,7 @@ test('cross-origin or malformed session responses never yield a verified identit
     fetchFn: async () => ({...response(200, writer), type: 'opaque'}),
   }), null);
   await assert.rejects(fetchVerifiedSyncIdentity('BAD SITE', {fetchFn: async () => response(200, writer)}), /site ID/);
+  await assert.rejects(fetchVerifiedSyncIdentity(undefined, {fetchFn: async () => response(200, writer)}), /site ID/);
 });
 
 test('offline mutation sync can use a fresh session bootstrap without localStorage identity', async () => {
