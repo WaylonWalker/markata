@@ -43,20 +43,27 @@ async function resolveChrome() {
   throw new Error('Chromium/Chrome is not installed; native IndexedDB test cannot run');
 }
 
-async function debuggerTab(profile, expectedURL) {
-  for (let attempt = 0; attempt < 140; attempt++) {
+async function debuggerTab(profile, expectedURL, processHandle) {
+  const deadline = Date.now() + 45000;
+  let lastState = 'waiting for DevToolsActivePort';
+  while (Date.now() < deadline) {
+    if (processHandle.exitCode !== null) {
+      throw new Error('Chrome exited before opening the test page: ' + processHandle.exitCode);
+    }
     try {
       const portFile = await readFile(join(profile, 'DevToolsActivePort'), 'utf8');
       const port = Number(portFile.split('\n')[0]);
       if (!Number.isSafeInteger(port) || port <= 0) throw new Error('Invalid Chrome debug port');
       const response = await fetch('http://127.0.0.1:' + port + '/json/list', {signal: AbortSignal.timeout(1500)});
       const pages = await response.json();
+      lastState = 'DevTools pages: ' + pages.filter(item => item.type === 'page')
+        .map(item => item.url).slice(0, 4).join(', ');
       const page = pages.find(item => item.type === 'page' && item.url === expectedURL);
       if (page?.webSocketDebuggerUrl) return page.webSocketDebuggerUrl;
     } catch { /* Browser may still be starting. */ }
     await pause(100);
   }
-  throw new Error('Chrome did not open the local smoke page within 14 seconds');
+  throw new Error('Chrome did not open the local smoke page within 45 seconds (' + lastState + ')');
 }
 
 async function connectDebugger(url) {
@@ -117,6 +124,7 @@ async function awaitBrowserCompletion(debuggerClient) {
 let profile;
 let chromeProcess;
 let debuggerClient;
+let chromeStderr = '';
 try {
   await new Promise((resolve, reject) => {
     server.once('error', reject);
@@ -130,13 +138,16 @@ try {
     '--no-first-run', '--no-default-browser-check', '--no-proxy-server',
     '--remote-debugging-port=0', '--remote-allow-origins=*',
     '--user-data-dir=' + profile, pageURL,
-  ], {stdio: 'ignore'});
-  const socketURL = await debuggerTab(profile, pageURL);
+  ], {stdio: ['ignore', 'ignore', 'pipe']});
+  chromeProcess.stderr.on('data', chunk => {
+    chromeStderr = (chromeStderr + String(chunk)).slice(-4000);
+  });
+  const socketURL = await debuggerTab(profile, pageURL, chromeProcess);
   debuggerClient = await connectDebugger(socketURL);
   await awaitBrowserCompletion(debuggerClient);
   process.stdout.write('Native Chromium IndexedDB persistence and replay smoke passed\n');
 } catch (error) {
-  process.stderr.write('Native IndexedDB browser smoke failed: ' + error.message + '\n');
+  process.stderr.write('Native IndexedDB browser smoke failed: ' + error.message + '\nChrome stderr: ' + chromeStderr.slice(-1200) + '\n');
   process.exitCode = 1;
 } finally {
   debuggerClient?.socket.close();
