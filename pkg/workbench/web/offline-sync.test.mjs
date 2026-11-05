@@ -230,3 +230,33 @@ test('logout during asynchronous conflict JSON decoding leaves original proposal
   assert.equal(store.conflicts.length, 0);
   assert.equal(store.mutations[0].state, 'queued');
 });
+
+test('logout while calculating the async digest never sends prior account source', async () => {
+  let active = true;
+  let uploads = 0;
+  const store = new FakeOutbox();
+  const nativeCrypto = globalThis.crypto;
+  const cryptoAPI = {
+    subtle: {
+      digest: async (...args) => {
+        const result = await nativeCrypto.subtle.digest(...args);
+        active = false;
+        return result;
+      },
+    },
+  };
+  const controller = new OfflineMutationSync({
+    store, siteId: initial.siteId, subjectId: initial.subjectId,
+    verifiedIdentity: async () => active
+      ? {siteId: initial.siteId, subjectId: initial.subjectId, verified: true}
+      : null,
+    locks: new ExclusiveLocks(), cryptoAPI,
+    fetchFn: async () => {
+      uploads++;
+      throw new Error('Network should not be reached after logout');
+    },
+  });
+  assert.deepEqual(await controller.syncOnce(), {status: 'paused_auth', synced: 0});
+  assert.equal(uploads, 0);
+  assert.equal(store.mutations[0].state, 'queued');
+});
