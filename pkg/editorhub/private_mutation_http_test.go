@@ -66,7 +66,7 @@ func newHTTPMutationFixture(t *testing.T) (http.Handler, *editorsync.Engine) {
 }
 
 func mutationRequest(subject, body string) *http.Request {
-	request := httptest.NewRequest(http.MethodPost, privateHTTPOrigin+privateHTTPPath, strings.NewReader(body))
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodPost, privateHTTPOrigin+privateHTTPPath, strings.NewReader(body))
 	request.Header.Set("Content-Type", "application/json")
 	request.Header.Set("Origin", privateHTTPOrigin)
 	request.Header.Set("X-Markata-Sync-Intent", "write")
