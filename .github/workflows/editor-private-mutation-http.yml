@@ -1,0 +1,28 @@
+name: Editor Private Mutation HTTP
+
+on:
+  pull_request:
+    paths:
+      - 'pkg/editorhub/private_mutation_http*.go'
+      - '.github/workflows/editor-private-mutation-http.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  private-mutation-http:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Verify private HTTP handler formatting
+        run: |
+          test -z "$(gofmt -l pkg/editorhub/private_mutation_http*.go)"
+      - name: Vet private mutation transport
+        run: go vet ./pkg/editorhub ./pkg/editorsync
+      - name: Run authenticated HTTP and SQLite recovery tests
+        run: go test -race -count=1 ./pkg/editorhub ./pkg/editorsync
