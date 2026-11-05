@@ -196,3 +196,14 @@ The permission-repair fallback needs permission to change the binary's mode.
 Each Python render call starts a subprocess. The measured benchmark post took approximately 137 ms through the Python API.
 For frequent live edits, use the persistent Go workbench instead of starting a subprocess for every request.
 See [integration benchmarks](/docs/guides/renderer-integration-benchmarks/) for timing boundaries and reproduction commands.
+
+
+## Native diagram and static-chart defaults
+
+The Python one-shot and persistent-pool renderers default to `mermaid_mode="go"`
+(native Mermaid SVG) and `chart_mode="auto"` (native SVG for simple single-series
+bar, line/area, scatter, pie and doughnut charts, with explicit Chart.js
+compatibility for advanced options). Set `chart_mode="go"` for strict native
+output, or `chart_mode="client"` to force Chart.js. The `chart_mode` and
+`mermaid_mode` settings work across `render`, `render_async`, `RendererPool`
+and the `markata render --stdio` protocol.

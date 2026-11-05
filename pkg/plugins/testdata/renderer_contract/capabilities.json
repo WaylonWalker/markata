@@ -2,7 +2,7 @@
   "schema_version": 1,
   "renderer": "markata-standalone",
   "formats": ["html_fragment"],
-  "options": ["asset_base", "inline_assets", "unsafe", "mermaid_mode"],
+  "options": ["asset_base", "chart_mode", "inline_assets", "unsafe", "mermaid_mode"],
   "features": [
     "admonitions",
     "anchors",
@@ -15,7 +15,7 @@
     "tables"
   ],
   "diagram_modes": {
-    "chartjs": ["client"],
+    "chartjs": ["auto", "go", "client"],
     "mermaid": ["client", "go"]
   },
   "asset_modes": ["inline", "linked"],

@@ -1702,6 +1702,9 @@ func NewMDVideoConfig() MDVideoConfig {
 
 // ChartJSConfig configures the chartjs plugin.
 type ChartJSConfig struct {
+	// Mode selects auto (native where supported), go (strict native), or client.
+	Mode string `json:"mode" yaml:"mode" toml:"mode"`
+
 	// Enabled controls whether Chart.js processing is active (default: true)
 	Enabled bool `json:"enabled" yaml:"enabled" toml:"enabled"`
 
@@ -1719,6 +1722,7 @@ type ChartJSConfig struct {
 // NewChartJSConfig creates a new ChartJSConfig with default values.
 func NewChartJSConfig() ChartJSConfig {
 	return ChartJSConfig{
+		Mode:           "auto",
 		Enabled:        true,
 		CDNURL:         "/assets/vendor/chartjs/chart.min.js",
 		ContainerClass: "chartjs-container",

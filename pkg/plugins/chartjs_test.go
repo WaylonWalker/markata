@@ -12,6 +12,7 @@ import (
 
 func TestChartJSPlugin_Name(t *testing.T) {
 	p := NewChartJSPlugin()
+	p.config.Mode = "client"
 	if got := p.Name(); got != "chartjs" {
 		t.Errorf("Name() = %q, want %q", got, "chartjs")
 	}
@@ -19,6 +20,7 @@ func TestChartJSPlugin_Name(t *testing.T) {
 
 func TestChartJSPlugin_ProcessPost_NoChartJS(t *testing.T) {
 	p := NewChartJSPlugin()
+	p.config.Mode = "client"
 
 	post := &models.Post{
 		ArticleHTML: "<p>Hello world</p>",
@@ -37,6 +39,7 @@ func TestChartJSPlugin_ProcessPost_NoChartJS(t *testing.T) {
 
 func TestChartJSPlugin_ProcessPost_ValidChart(t *testing.T) {
 	p := NewChartJSPlugin()
+	p.config.Mode = "client"
 
 	post := &models.Post{
 		ArticleHTML: `<p>Check out this chart:</p>
@@ -81,6 +84,7 @@ func TestChartJSPlugin_ProcessPost_ValidChart(t *testing.T) {
 
 func TestChartJSPlugin_ProcessPost_InvalidJSON(t *testing.T) {
 	p := NewChartJSPlugin()
+	p.config.Mode = "client"
 
 	post := &models.Post{
 		ArticleHTML: `<pre><code class="language-chartjs">{ invalid json }</code></pre>`,
@@ -102,6 +106,7 @@ func TestChartJSPlugin_ProcessPost_InvalidJSON(t *testing.T) {
 
 func TestChartJSPlugin_ProcessPost_MultipleCharts(t *testing.T) {
 	p := NewChartJSPlugin()
+	p.config.Mode = "client"
 
 	post := &models.Post{
 		ArticleHTML: `<pre><code class="language-chartjs">{"type": "bar", "data": {}}</code></pre>
@@ -129,6 +134,7 @@ func TestChartJSPlugin_ProcessPost_MultipleCharts(t *testing.T) {
 
 func TestChartJSPlugin_ProcessPost_SkipPost(t *testing.T) {
 	p := NewChartJSPlugin()
+	p.config.Mode = "client"
 
 	post := &models.Post{
 		Skip:        true,
@@ -149,6 +155,7 @@ func TestChartJSPlugin_ProcessPost_SkipPost(t *testing.T) {
 
 func TestChartJSPlugin_ProcessPost_EmptyHTML(t *testing.T) {
 	p := NewChartJSPlugin()
+	p.config.Mode = "client"
 
 	post := &models.Post{
 		ArticleHTML: "",
@@ -166,7 +173,9 @@ func TestChartJSPlugin_ProcessPost_EmptyHTML(t *testing.T) {
 
 func TestChartJSPlugin_ProcessPost_Disabled(t *testing.T) {
 	p := NewChartJSPlugin()
+	p.config.Mode = "client"
 	p.SetConfig(models.ChartJSConfig{
+		Mode: "client",
 		Enabled: false,
 		CDNURL:  "https://cdn.jsdelivr.net/npm/chart.js",
 	})
@@ -180,7 +189,9 @@ func TestChartJSPlugin_ProcessPost_Disabled(t *testing.T) {
 
 func TestChartJSPlugin_ProcessPost_CustomContainerClass(t *testing.T) {
 	p := NewChartJSPlugin()
+	p.config.Mode = "client"
 	p.SetConfig(models.ChartJSConfig{
+		Mode: "client",
 		Enabled:        true,
 		CDNURL:         "https://example.com/chart.js",
 		ContainerClass: "my-custom-chart",
@@ -205,6 +216,7 @@ func TestChartJSPlugin_ProcessPost_CustomContainerClass(t *testing.T) {
 
 func TestChartJSPlugin_ProcessPost_HTMLEntities(t *testing.T) {
 	p := NewChartJSPlugin()
+	p.config.Mode = "client"
 
 	// Goldmark encodes special characters, so we test that they get decoded
 	post := &models.Post{
@@ -227,6 +239,7 @@ func TestChartJSPlugin_ProcessPost_HTMLEntities(t *testing.T) {
 
 func TestChartJSPlugin_ProcessPost_PreserveSurroundingContent(t *testing.T) {
 	p := NewChartJSPlugin()
+	p.config.Mode = "client"
 
 	post := &models.Post{
 		ArticleHTML: `<h1>Title</h1>
@@ -250,6 +263,7 @@ func TestChartJSPlugin_ProcessPost_PreserveSurroundingContent(t *testing.T) {
 
 func TestChartJSPlugin_StaticTableFallback(t *testing.T) {
 	p := NewChartJSPlugin()
+	p.config.Mode = "client"
 	post := &models.Post{ArticleHTML: `<pre><code class="language-chartjs">{
 		"type": "bar",
 		"data": {"labels": ["First", "&lt;script&gt;unsafe&lt;/script&gt;"],
@@ -280,6 +294,7 @@ func TestChartJSPlugin_StaticTableFallback(t *testing.T) {
 
 func TestChartJSPlugin_UnstructuredChartRetainsSourceWithoutJS(t *testing.T) {
 	p := NewChartJSPlugin()
+	p.config.Mode = "client"
 	post := &models.Post{ArticleHTML: `<pre><code class="language-chartjs">{"type":"scatter","data":{"datasets":[{"data":[{"x":1,"y":2}]}]}}</code></pre>`}
 	if err := p.processPost(post); err != nil {
 		t.Fatal(err)
@@ -294,6 +309,7 @@ func TestChartJSPlugin_UnstructuredChartRetainsSourceWithoutJS(t *testing.T) {
 
 func TestChartJSPlugin_EscapesAuthoredInlineScriptClosers(t *testing.T) {
 	p := NewChartJSPlugin()
+	p.config.Mode = "client"
 	post := &models.Post{ArticleHTML: `<pre><code class="language-chartjs">{"type":"bar","data":{"labels":["&lt;/script&gt;&lt;script&gt;alert(1)"],"datasets":[{"data":[7]}]}}</code></pre>`}
 	if err := p.processPost(post); err != nil {
 		t.Fatal(err)
@@ -384,6 +400,7 @@ func TestChartJSPlugin_DataDisplay(t *testing.T) {
 				`"type":"scatter"`,
 			} {
 				p := NewChartJSPlugin()
+	p.config.Mode = "client"
 				p.config.DataDisplay = tc.site
 				post := &models.Post{ArticleHTML: `<pre><code class="language-chartjs">{` + tc.override + config + `}</code></pre>`}
 				if err := p.processPost(post); err != nil {
@@ -417,6 +434,7 @@ func TestChartJSPlugin_ConfigureDataDisplay(t *testing.T) {
 		m := lifecycle.NewManager()
 		m.Config().Extra = map[string]interface{}{"chartjs": map[string]interface{}{"data_display": value}}
 		p := NewChartJSPlugin()
+	p.config.Mode = "client"
 		err := p.Configure(m)
 		valid := value == "open" || value == "collapsed"
 		if (err == nil) != valid {

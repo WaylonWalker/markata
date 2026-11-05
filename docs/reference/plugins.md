@@ -1755,7 +1755,7 @@ type Link struct {
 
 **Name:** `chartjs`  
 **Stage:** Render (after render_markdown)  
-**Purpose:** Converts `chartjs` code blocks into interactive Chart.js charts.
+**Purpose:** Renders simple static `chartjs` code blocks as native SVG and uses Chart.js for advanced configurations.
 
 **Status:** Enabled by default. Set `enabled = false` to disable.
 
@@ -1763,6 +1763,7 @@ type Link struct {
 ```toml
 [markata-go.chartjs]
 enabled = true                                         # Enabled by default; set to false to disable
+mode = "auto"                                         # native SVG when supported, otherwise Chart.js; "go" strict or "client"
 cdn_url = "/assets/vendor/chartjs/chart.min.js"        # Chart.js URL (local by default)
 container_class = "chartjs-container"                  # CSS class for wrapper div
 ```
@@ -1771,6 +1772,7 @@ container_class = "chartjs-container"                  # CSS class for wrapper d
 | Option | Default | Description |
 |--------|---------|-------------|
 | `enabled` | `true` | Enable/disable the plugin |
+| `mode` | `auto` | Native Go SVG for simple single-series charts; Chart.js for advanced options. Set `go` to require static SVG, or `client` for the full Chart.js renderer. |
 | `cdn_url` | `/assets/vendor/chartjs/chart.min.js` | Chart.js URL (local by default) |
 | `container_class` | `chartjs-container` | CSS class for wrapper div |
 | `data_display` | `open` | Initial fallback disclosure state: `open` or `collapsed` |
@@ -1797,7 +1799,15 @@ initialization. See [chart figures and fallbacks](../guides/markdown-chart-fallb
 ```
 ````
 
-**HTML output:**
+**Native HTML output (default for simple data, without Chart.js):**
+```html
+<div class="chartjs-container chartjs-native">
+  <svg class="chartjs-native-svg" role="img" viewBox="0 0 720 340">...</svg>
+  <div class="chartjs-data">Chart data table...</div>
+</div>
+```
+
+**Client/fallback HTML output:**
 ```html
 <div class="chartjs-container">
   <canvas id="chart-abc123"></canvas>
@@ -1810,11 +1820,14 @@ initialization. See [chart figures and fallbacks](../guides/markdown-chart-fallb
 </div>
 ```
 
-**Supported chart types:**
-- `bar`, `line`, `pie`, `doughnut`, `radar`, `polarArea`, `bubble`, `scatter`
+**Chart types:**
+- Native SVG (single numeric dataset, default settings): `bar`, `line` (including filled area), `scatter`, `pie`, `doughnut`.
+- Chart.js (auto fallback or `mode = "client"`): `bar`, `line`, `pie`, `doughnut`, `radar`, `polarArea`, `bubble`, `scatter`, and advanced options/custom colors.
+
+Native SVG uses palette CSS variables, includes an accessible title, and preserves the original data-table fallback. An unsupported configuration in strict `mode = "go"` produces a visible error; in `auto` it uses the existing Chart.js renderer.
 
 **Template requirements:**
-Include Chart.js in your base template:
+Only the client/fallback mode needs Chart.js. Markata injects its vendored script when needed; if integrating manually, use:
 ```html
 <script src="/assets/vendor/chartjs/chart.min.js"></script>
 ```

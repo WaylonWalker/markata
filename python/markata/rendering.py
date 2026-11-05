@@ -262,7 +262,7 @@ def _result(stdout: bytes, stderr: bytes, returncode: int) -> RenderResult:
 
 def render(markdown: str, *, inline_assets: bool = False,
            asset_base: str = "/markata-assets", unsafe: bool = False,
-           mermaid_mode: str = "go", timeout: float = 30, workspace: str | None = None) -> RenderResult:
+           mermaid_mode: str = "go", chart_mode: str = "auto", timeout: float = 30, workspace: str | None = None) -> RenderResult:
     """Render using one bundled Go process; input is passed over stdin, never a shell.
 
     For a standalone response, use inline_assets=True and result.document().
@@ -271,8 +271,10 @@ def render(markdown: str, *, inline_assets: bool = False,
     """
     if mermaid_mode not in ("client", "go"):
         raise ValueError("mermaid_mode must be client or go")
+    if chart_mode not in ("auto", "go", "client"):
+        raise ValueError("chart_mode must be auto, go, or client")
     command = _command(inline_assets, asset_base, unsafe)
-    command += ["--mermaid-mode", mermaid_mode]
+    command += ["--mermaid-mode", mermaid_mode, "--chart-mode", chart_mode]
     if workspace is not None:
         command += ['--workspace', str(workspace)]
     try:
@@ -285,12 +287,14 @@ def render(markdown: str, *, inline_assets: bool = False,
 
 async def render_async(markdown: str, *, inline_assets: bool = False,
                        asset_base: str = "/markata-assets", unsafe: bool = False,
-                       mermaid_mode: str = "go", timeout: float = 30, workspace: str | None = None) -> RenderResult:
+                       mermaid_mode: str = "go", chart_mode: str = "auto", timeout: float = 30, workspace: str | None = None) -> RenderResult:
     """Render without blocking an ASGI event loop; reap the process on cancellation."""
     if mermaid_mode not in ("client", "go"):
         raise ValueError("mermaid_mode must be client or go")
+    if chart_mode not in ("auto", "go", "client"):
+        raise ValueError("chart_mode must be auto, go, or client")
     command = _command(inline_assets, asset_base, unsafe)
-    command += ["--mermaid-mode", mermaid_mode]
+    command += ["--mermaid-mode", mermaid_mode, "--chart-mode", chart_mode]
     if workspace is not None:
         command += ['--workspace', str(workspace)]
     try:

@@ -14,7 +14,7 @@ reader's browser.
 > **Availability:** This is a **developer-only foundation** in
 > `pkg/visualizations`. There is **no supported `d2` or `vega-lite` Markdown
 > fence**, site configuration section, or new `markata render` capability yet.
-> The existing `mermaid` and `chartjs` syntax and output are unchanged.
+> The plugin-level native Mermaid and basic Chart.js SVG modes now exist; this shared pipeline remains an independent foundation and is not yet the publisher for those plugins.
 
 ## What the foundation provides
 
@@ -101,7 +101,7 @@ D2 is the intended first backend adapter, followed by Vega-Lite through
 Site-builder integration will need base-path-aware asset links and a
 version-compatible addition to the existing render asset manifest.
 
-Mermaid and Chart.js remain the supported authoring tools until those
+Mermaid and Chart.js remain the supported authoring tools while their native SVG backends are expanded. These
 follow-ups land. See the [Markdown guide](/docs/guides/markdown/),
 [accessible Chart.js figures](/docs/guides/markdown-chart-fallback/),
 and [renderer interoperability contract](/docs/guides/python-renderer/).
