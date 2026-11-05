@@ -69,16 +69,26 @@ async function connectDebugger(url) {
   socket.addEventListener('message', event => {
     const message = JSON.parse(event.data);
     const waiter = pending.get(message.id);
-    if (!waiter) return;
-    pending.delete(message.id);
-    waiter(message);
+    if (waiter) waiter(message);
+  });
+  socket.addEventListener('close', () => {
+    for (const waiter of pending.values()) waiter({error: {message: 'Chrome debugger disconnected'}});
   });
   return {
     socket,
     command(method, params) {
       return new Promise((resolve, reject) => {
         const id = ++nextID;
-        pending.set(id, message => message.error ? reject(new Error(message.error.message)) : resolve(message.result));
+        const timeout = setTimeout(() => {
+          pending.delete(id);
+          reject(new Error('Timed out waiting for Chrome ' + method));
+        }, 5000);
+        pending.set(id, message => {
+          clearTimeout(timeout);
+          pending.delete(id);
+          if (message.error) reject(new Error(message.error.message));
+          else resolve(message.result);
+        });
         socket.send(JSON.stringify({id, method, params}));
       });
     },
