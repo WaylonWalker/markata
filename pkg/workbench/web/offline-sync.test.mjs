@@ -173,3 +173,18 @@ test('network/server errors and missing browser Web Locks do not drop the queue'
   assert.deepEqual(await noLock.controller.syncOnce(), {status: 'paused_no_web_locks', synced: 0});
   assert.equal(noLock.store.mutations[0].source, '# First');
 });
+
+test('identity switch during an in-flight HTTP response preserves queued source for old user', async () => {
+  let identityChecks = 0;
+  const scope = {siteId: initial.siteId, subjectId: initial.subjectId, verified: true};
+  const {store, controller} = setup({
+    verifiedIdentity: async () => ++identityChecks <= 2 ? scope : null,
+    fetchFn: async () => response(200, {
+      mutation_id: initial.mutationId, revision: 1, digest: await mutationDigest(initial),
+    }),
+  });
+  assert.deepEqual(await controller.syncOnce(), {status: 'paused_auth', synced: 0});
+  assert.equal(store.acks.length, 0);
+  assert.equal(store.mutations[0].state, 'queued');
+  assert.equal(store.mutations[0].source, '# First');
+});
