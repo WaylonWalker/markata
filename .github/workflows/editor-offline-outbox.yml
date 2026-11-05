@@ -1,0 +1,31 @@
+name: Editor Offline Outbox
+
+on:
+  pull_request:
+    paths:
+      - 'pkg/workbench/web/offline-outbox.mjs'
+      - 'pkg/workbench/web/offline-outbox.test.mjs'
+      - 'pkg/workbench/web/offline-outbox.browser.html'
+      - 'pkg/workbench/web/offline-outbox.browser-runner.mjs'
+      - '.github/workflows/editor-offline-outbox.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  offline-outbox:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check offline outbox module syntax
+        run: |
+          node --check pkg/workbench/web/offline-outbox.mjs
+          node --check pkg/workbench/web/offline-outbox.test.mjs
+      - name: Test local draft and outbox transaction semantics
+        run: node --test pkg/workbench/web/offline-outbox.test.mjs
+      - name: Verify native IndexedDB in headless Chrome
+        run: node pkg/workbench/web/offline-outbox.browser-runner.mjs
