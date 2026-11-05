@@ -26,6 +26,7 @@ func newHTTPMutationFixture(t *testing.T) (http.Handler, *editorsync.Engine) {
 		ID: "family-blog", Name: "Family Blog", Grants: map[string]Grant{
 			"alice": {Read: true, Write: true},
 			"bob":   {Read: true},
+			"eve":   {Read: true, Write: true},
 		},
 	}})
 	if err != nil {
