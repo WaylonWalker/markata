@@ -5,6 +5,8 @@ on:
     paths:
       - 'pkg/workbench/web/offline-outbox.mjs'
       - 'pkg/workbench/web/offline-outbox.test.mjs'
+      - 'pkg/workbench/web/offline-sync.mjs'
+      - 'pkg/workbench/web/offline-sync.test.mjs'
       - 'pkg/workbench/web/offline-outbox.browser.html'
       - 'pkg/workbench/web/offline-outbox.browser-runner.mjs'
       - '.github/workflows/editor-offline-outbox.yml'
@@ -25,7 +27,9 @@ jobs:
         run: |
           node --check pkg/workbench/web/offline-outbox.mjs
           node --check pkg/workbench/web/offline-outbox.test.mjs
+          node --check pkg/workbench/web/offline-sync.mjs
+          node --check pkg/workbench/web/offline-sync.test.mjs
       - name: Test local draft and outbox transaction semantics
-        run: node --test pkg/workbench/web/offline-outbox.test.mjs
+        run: node --test pkg/workbench/web/offline-outbox.test.mjs pkg/workbench/web/offline-sync.test.mjs
       - name: Verify native IndexedDB in headless Chrome
         run: node pkg/workbench/web/offline-outbox.browser-runner.mjs
