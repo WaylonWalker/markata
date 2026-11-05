@@ -1,0 +1,31 @@
+name: Editor Private Sync Composition
+
+on:
+  pull_request:
+    paths:
+      - 'pkg/editorhub/private_sync_http*.go'
+      - '.github/workflows/editor-private-sync-composition.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  private-sync-composition:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Check formatting
+        run: |
+          if [ -n "$(gofmt -l pkg/editorhub/private_sync_http*.go)" ]; then
+            gofmt -d pkg/editorhub/private_sync_http*.go
+            exit 1
+          fi
+      - name: Vet private sync
+        run: go vet ./pkg/editorhub ./pkg/editorsync
+      - name: Go race integration tests
+        run: go test -race -count=1 ./pkg/editorhub ./pkg/editorsync
