@@ -65,7 +65,7 @@ func TestHTTPConflictRecoveryIsOwnerPrivate(t *testing.T) {
 		subject string
 		want    int
 	}{
-		{"eve", http.StatusNotFound}, // Has site write permission, not the rejected source.
+		{"eve", http.StatusNotFound},  // Has site write permission, not the rejected source.
 		{"bob", http.StatusForbidden}, // Site read access alone is insufficient.
 		{"", http.StatusUnauthorized},
 		{"stranger", http.StatusForbidden},
