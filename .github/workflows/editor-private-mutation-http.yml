@@ -21,7 +21,10 @@ jobs:
           cache: true
       - name: Verify private HTTP handler formatting
         run: |
-          test -z "$(gofmt -l pkg/editorhub/private_mutation_http*.go)"
+          if [ -n "$(gofmt -l pkg/editorhub/private_mutation_http*.go)" ]; then
+            gofmt -d pkg/editorhub/private_mutation_http*.go
+            exit 1
+          fi
       - name: Vet private mutation transport
         run: go vet ./pkg/editorhub ./pkg/editorsync
       - name: Run authenticated HTTP and SQLite recovery tests
