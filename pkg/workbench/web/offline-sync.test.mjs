@@ -188,3 +188,45 @@ test('identity switch during an in-flight HTTP response preserves queued source 
   assert.equal(store.mutations[0].state, 'queued');
   assert.equal(store.mutations[0].source, '# First');
 });
+
+test('logout during asynchronous receipt JSON decoding cannot acknowledge a previous account', async () => {
+  let active = true;
+  const {store, controller} = setup({
+    verifiedIdentity: async () => active
+      ? {siteId: initial.siteId, subjectId: initial.subjectId, verified: true}
+      : null,
+    fetchFn: async () => ({
+      status: 200,
+      json: async () => {
+        active = false;
+        return {
+          mutation_id: initial.mutationId,
+          revision: 1,
+          digest: await mutationDigest(initial),
+        };
+      },
+    }),
+  });
+  assert.deepEqual(await controller.syncOnce(), {status: 'paused_auth', synced: 0});
+  assert.equal(store.acks.length, 0);
+  assert.equal(store.mutations[0].state, 'queued');
+});
+
+test('logout during asynchronous conflict JSON decoding leaves original proposal queued', async () => {
+  let active = true;
+  const {store, controller} = setup({
+    verifiedIdentity: async () => active
+      ? {siteId: initial.siteId, subjectId: initial.subjectId, verified: true}
+      : null,
+    fetchFn: async () => ({
+      status: 409,
+      json: async () => {
+        active = false;
+        return {code: 'revision_conflict', current_revision: 2, preserved: true};
+      },
+    }),
+  });
+  assert.deepEqual(await controller.syncOnce(), {status: 'paused_auth', synced: 0});
+  assert.equal(store.conflicts.length, 0);
+  assert.equal(store.mutations[0].state, 'queued');
+});
