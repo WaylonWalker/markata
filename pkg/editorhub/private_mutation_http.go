@@ -15,6 +15,7 @@ import (
 )
 
 const privateWriteCrossSite = "cross-site"
+const privateCrossOrigin = "cross-origin"
 
 // privateMutationHTTP is intentionally unmounted. Only a hosted application
 // with a proven trusted ForwardAuth path can safely register this handler.
@@ -105,7 +106,7 @@ func (h *privateMutationHTTP) getConflict(w http.ResponseWriter, r *http.Request
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.Header().Set("Vary", "Origin, Cookie, Authorization")
 	if r.Header.Get("Sec-Fetch-Site") == privateWriteCrossSite ||
-		r.Header.Get("Sec-Fetch-Site") == "cross-origin" {
+		r.Header.Get("Sec-Fetch-Site") == privateCrossOrigin {
 		http.Error(w, "cross-site request forbidden", http.StatusForbidden)
 		return
 	}
@@ -161,7 +162,7 @@ func (h *privateMutationHTTP) getConflict(w http.ResponseWriter, r *http.Request
 
 func (h *privateMutationHTTP) validWriteOrigin(r *http.Request) bool {
 	if r.Header.Get("Sec-Fetch-Site") == privateWriteCrossSite ||
-		r.Header.Get("Sec-Fetch-Site") == "cross-origin" {
+		r.Header.Get("Sec-Fetch-Site") == privateCrossOrigin {
 		return false
 	}
 	origins := r.Header.Values("Origin")
