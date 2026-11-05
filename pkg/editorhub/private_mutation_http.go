@@ -79,17 +79,19 @@ func (h *privateMutationHTTP) apply(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	_ = json.NewEncoder(w).Encode(struct {
+	// The internal per-site change sequence may contain other authors' private
+	// edits. Never expose that sequence in a browser receipt.
+	if err := json.NewEncoder(w).Encode(struct {
 		MutationID string `json:"mutation_id"`
 		Revision   int64  `json:"revision"`
-		Sequence   int64  `json:"sequence"`
 		Digest     string `json:"digest"`
 	}{
 		MutationID: receipt.MutationID,
 		Revision: receipt.Revision,
-		Sequence: receipt.Sequence,
 		Digest: receipt.PayloadDigest,
-	})
+	}); err != nil {
+		return // Response may already be committed.
+	}
 }
 
 func (h *privateMutationHTTP) validWriteOrigin(r *http.Request) bool {
@@ -159,11 +161,13 @@ func (*privateMutationHTTP) writeMutationError(w http.ResponseWriter, err error)
 	if errors.As(err, &conflict) {
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.WriteHeader(http.StatusConflict)
-		_ = json.NewEncoder(w).Encode(struct {
+		if err := json.NewEncoder(w).Encode(struct {
 			Code            string `json:"code"`
 			CurrentRevision int64  `json:"current_revision"`
 			Preserved       bool   `json:"preserved"`
-		}{"revision_conflict", conflict.CurrentRevision, conflict.Preserved})
+		}{"revision_conflict", conflict.CurrentRevision, conflict.Preserved}); err != nil {
+			return // Response may already be committed.
+		}
 		return
 	}
 	// Database and transaction errors are not reflected to the browser.
