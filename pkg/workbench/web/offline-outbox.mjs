@@ -164,6 +164,9 @@ export class LocalDraftOutbox {
       if (draft.serverRevision !== baseRevision) {
         throw new Error('Base revision does not match the locally confirmed server revision');
       }
+      if (draft.syncedLocalRevision === draft.localRevision) {
+        throw new Error('No new local edits require synchronization');
+      }
       const mutation = {
         siteId, subjectId, documentId, mutationId,
         baseRevision, visibility: 'private', source: draft.source,
@@ -225,6 +228,7 @@ export class LocalDraftOutbox {
     return this.driver.write(['mutations'], async tx => {
       const mutation = await tx.get('mutations', [siteId, subjectId, mutationId]);
       if (!mutation || mutation.state === 'accepted') throw new Error('Unknown pending mutation');
+      if (mutation.state === 'conflict') return mutation;
       const conflicted = {...mutation, state: 'conflict', currentRevision};
       await tx.put('mutations', conflicted);
       return conflicted;
