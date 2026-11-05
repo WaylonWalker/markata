@@ -173,7 +173,7 @@ func TestPrivateHTTPRejectsForgedHeadersAndUnauthorizedWriters(t *testing.T) {
 			r.Header.Set("Sec-Fetch-Site", "cross-site")
 			return r
 		}(), http.StatusForbidden},
-		{"spoofed body subject", mutationRequest("alice", strings.TrimSuffix(acceptedPrivateBody(), "}") + `,"subject_id":"bob"}`), http.StatusBadRequest},
+		{"spoofed body subject", mutationRequest("alice", strings.TrimSuffix(acceptedPrivateBody(), "}")+`,"subject_id":"bob"}`), http.StatusBadRequest},
 		{"wrong content type", func() *http.Request {
 			r := mutationRequest("alice", acceptedPrivateBody())
 			r.Header.Set("Content-Type", "text/plain")
