@@ -280,11 +280,14 @@ To open the command palette with a complete example loaded, visit `/?example`.
 
 ## Review changes before publishing (experimental)
 
-When editing a Markdown file inside a Git-backed workspace, select **Publish**
-in the upper-right header, search for **Publishing: Review & Publish** in the
+When editing a Markdown file inside a Git-backed workspace, select **Review changes**
+in the upper-right header, search for **Publishing: Review changes** in the
 command palette, or press **Ctrl/Cmd+S** or **Ctrl/Cmd+Shift+Enter**. Vim mode
 also accepts `:w`; Emacs mode accepts **Ctrl-X Ctrl-S**. Each opens the same
-review dialog; none of them publishes immediately.
+review dialog; none of them publishes immediately. In the current experimental
+workbench, **Commit selected page** and **Push to origin** remain explicit
+separate steps. The planned **Discard changes…** action is not available yet;
+do not confuse closing review with discarding saved edits.
 
 The dialog first waits until the exact text in the editor has been saved to
 the workspace. It then compares that saved source with the file from the last
