@@ -14,6 +14,11 @@ import (
     "github.com/WaylonWalker/markata/pkg/editorworkspace"
 )
 
+type discardWorkspaceFixture struct{ publishWorkspaceFixture }
+func (f discardWorkspaceFixture) Write(path, source string) error {
+    return os.WriteFile(filepath.Join(f.root,filepath.FromSlash(path)),[]byte(source),0600)
+}
+
 func TestPublishDiscardTrackedFileAndStaleChecks(t *testing.T) {
     if _, err := exec.LookPath("git"); err != nil { t.Skip("git unavailable") }
     dir := t.TempDir()
@@ -31,7 +36,7 @@ func TestPublishDiscardTrackedFileAndStaleChecks(t *testing.T) {
     headOutput,err := headCommand.Output()
     if err != nil { t.Fatal(err) }
     head := string(bytes.TrimSpace(headOutput))
-    h := &Handler{root:dir,workspace:publishWorkspaceFixture{root:dir}}
+    h := &Handler{root:dir,workspace:discardWorkspaceFixture{publishWorkspaceFixture{root:dir}}}
     send := func(version, expectedHead string, origin bool) *httptest.ResponseRecorder {
         t.Helper()
         data,err := json.Marshal(discardRequest{Path:"posts/example.md",Version:version,Head:expectedHead})
@@ -76,7 +81,7 @@ func TestPublishDiscardUntrackedFileIsPreserved(t *testing.T) {
     reqData,_:=json.Marshal(discardRequest{Path:"new.md",Head:head,Version:editorworkspace.SourceVersion(content)})
     req:=httptest.NewRequest(http.MethodPost,"http://127.0.0.1:8766/workspace/publish/discard",bytes.NewReader(reqData))
     req.Header.Set("Origin","http://127.0.0.1:8766")
-    h:=&Handler{root:dir,workspace:publishWorkspaceFixture{root:dir}}
+    h:=&Handler{root:dir,workspace:discardWorkspaceFixture{publishWorkspaceFixture{root:dir}}}
     response:=httptest.NewRecorder()
     h.servePublishDiscard(response,req)
     if response.Code!=http.StatusUnprocessableEntity {t.Fatalf("expected safe rejection: %d %s",response.Code,response.Body.String())}
