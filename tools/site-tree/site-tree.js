@@ -155,6 +155,7 @@ window.MarkataSiteTree = {
   files: () => metadata.map(file => ({...file})),
   openFile(path) { if (Object.hasOwn(files, path)) open(path); },
   activeFile: () => active,
+  isSiteFile: path => Object.hasOwn(files, path),
   workspaceId: () => workspaceKey,
   activate(path) { localStorage.setItem('markata-workspace-active-v1:' + workspaceKey,path); },
   async attach(editor, storageWarning, options = {}) {
