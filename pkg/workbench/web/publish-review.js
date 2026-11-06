@@ -366,16 +366,13 @@
   function updatePublishButton() {
     if (!button || !editor) return;
     const path = canOpen();
-    const fields = frontmatter(editor.getValue());
-    const published = fields.published === 'true' && fields.draft !== 'true';
-    const conflicting = fields.draft === 'true' && fields.published === 'true';
-    const label = !path ? 'Save to site' : conflicting ? 'Review changes' : published ? 'Publish updates' : 'Publish';
+    const label = !path ? 'Save to site' : 'Review changes';
     const icon=document.createElementNS('http://www.w3.org/2000/svg','svg');
     icon.setAttribute('viewBox','0 0 24 24');icon.setAttribute('aria-hidden','true');icon.setAttribute('focusable','false');
     const pathNode=document.createElementNS('http://www.w3.org/2000/svg','path');
     pathNode.setAttribute('d','M12 15V3m0 0 4 4m-4-4L8 7M4 14v6h16v-6');icon.append(pathNode);
     button.replaceChildren(icon,document.createTextNode(label));
-    button.title = 'Review changes (Ctrl/Cmd+Shift+Enter)';
+    button.title = 'Review changes (Ctrl/Cmd+S, Ctrl/Cmd+Shift+Enter)';
   }
   function attach(instance) {
     editor=instance;
@@ -384,13 +381,13 @@
     window.CodeMirror?.Vim?.defineEx('write','w',()=>open());
     button=document.createElement('button');
     button.type='button';button.id='publish-open';
-    button.textContent='Publish';button.title='Review & Publish (Ctrl/Cmd+S, Ctrl/Cmd+Shift+Enter, Vim :w)';
+    button.textContent='Review changes';button.title='Review changes (Ctrl/Cmd+S, Ctrl/Cmd+Shift+Enter, Vim :w)';
     button.setAttribute('aria-haspopup','dialog');
     const settings=document.querySelector('#settings-open');
     settings.parentElement.insertBefore(button,settings);
     const doc=document.createElement('dialog');
     doc.id='publish-review';doc.setAttribute('aria-labelledby','publish-title');
-    doc.innerHTML='<header class="publish-review-head"><div><small>REVIEW &amp; PUBLISH</small><h2 id="publish-title">Review changes</h2><p id="publish-path"></p></div><button type="button" id="publish-close" aria-label="Close publish review">✕</button></header>'+
+    doc.innerHTML='<header class="publish-review-head"><div><small>REVIEW CHANGES</small><h2 id="publish-title">Review changes</h2><p id="publish-path"></p></div><button type="button" id="publish-close" aria-label="Close publish review">✕</button></header>'+
     '<div id="publish-notice" role="status"></div><div id="publish-body" hidden><div id="publish-chips" aria-label="Change summary"></div>'+
     '<nav class="publish-mode-tabs" role="tablist" aria-label="Comparison view"><button id="publish-tab-side" type="button" role="tab" aria-controls="publish-view-side" data-publish-mode="side">Side by side</button><button id="publish-tab-rich" type="button" role="tab" aria-controls="publish-view-rich" data-publish-mode="rich">Rendered diff</button><button id="publish-tab-source" type="button" role="tab" aria-controls="publish-view-source" data-publish-mode="source">Source diff</button><button id="publish-tab-pierre" type="button" role="tab" aria-controls="publish-view-pierre" data-publish-mode="pierre">Full diff</button><button id="publish-tab-message" type="button" role="tab" aria-controls="publish-view-message" data-publish-mode="message">Commit message</button></nav>'+
     '<div id="publish-view-side" role="tabpanel" aria-labelledby="publish-tab-side" data-publish-view="side"><div class="publish-side-tabs" role="group" aria-label="Version to read"><button data-publish-side="before" type="button">Last committed</button><button data-publish-side="after" type="button">Current draft</button></div>'+
@@ -443,9 +440,9 @@
     },{passive:true});
     if (window.MarkataShortcuts) {
       window.MarkataShortcuts.register({
-        id:'publishing.review', label:'Publishing: Review & Publish', category:'Publishing',
+        id:'publishing.review', label:'Publishing: Review changes', category:'Publishing',
         description:'Review saved and committed changes before publishing.',
-        aliases:'publish go live deploy release review git',
+        aliases:'review changes publish go live deploy release git',
         bindings:{vscode:'Mod+Shift+Enter',writer:'Mod+Shift+Enter',vim:'Mod+Shift+Enter',emacs:'Ctrl+Shift+Enter'},
         run:open
       });
