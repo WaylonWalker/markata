@@ -32,7 +32,13 @@
   }
   function canOpen() {
     const path = window.MarkataSiteTree?.activeFile?.();
-    if (!path || !/\.md$/i.test(path) || !window.MarkataSiteTree?.isSiteFile?.(path)) return null;
+    if (!path || !/\.md$/i.test(path)) return null;
+    // The site tree is compiled into a separate browser bundle. Do not
+    // require a newly added source-only API to recognize existing files.
+    // Only the known scratch aliases need special treatment here. The
+    // server authoritatively validates paths on the review request.
+    if (/^Unsaved draft(?: \d+)?\.md$/i.test(path)) return null;
+    if (path === 'draft.md' && !window.MarkataSiteTree?.files?.()?.some(file => file.path === path)) return null;
     return path;
   }
   function setNotice(message, level='info') {
@@ -217,11 +223,14 @@
     if(state.loading||dialog.open)return;
     const path=canOpen();
     if(!path) {
+      dialog.dataset.unavailable='true';
+      dialog.querySelector('#publish-confirm').disabled=true;
       dialog.showModal();setNotice('This is a browser-only or non-Markdown file. Create or open a site Markdown post before reviewing publication.','warning');
       dialog.querySelector('#publish-title').textContent='Save to site first';
       dialog.querySelector('#publish-body').hidden=true;
       return;
     }
+    dialog.dataset.unavailable='false';
     state.loading=true;state.path=path;state.data=null;state.commit=null;
     dialog.querySelector('[data-publish-mode="rich"]').disabled=false;
     dialog.querySelector('#publish-confirm').hidden=false;
@@ -271,6 +280,7 @@
     }catch(error){
       setNotice(error.message,'warning');
       dialog.querySelector('#publish-body').hidden=true;
+      dialog.dataset.unavailable='true';
       dialog.querySelector('#publish-title').textContent='Review unavailable';
     }finally {state.loading=false;}
   }
