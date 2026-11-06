@@ -81,3 +81,10 @@
 #publish-review .publish-message-help{display:flex;justify-content:space-between;gap:16px;color:var(--color-text-muted,#777);font-size:11px;line-height:1.5;margin:8px 2px}
 #publish-review #publish-message-count{font:11px ui-monospace,monospace;white-space:nowrap}
 #publish-open svg{width:16px;height:16px;margin-right:7px;vertical-align:-3px;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.8}
+
+/* Git-style change gutter: blue=modified, green=added, red=deleted. */
+.CodeMirror-gutter.markata-change-gutter{width:5px}
+.markata-change-marker{display:block;width:4px;min-height:1.35em;border-radius:2px}
+.markata-change-marker.add{background:var(--color-success,#34a66c)}
+.markata-change-marker.modify{background:var(--color-primary,#548ee5)}
+.markata-change-marker.del{background:var(--color-error,#db6464);height:4px;min-height:4px}
