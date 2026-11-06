@@ -88,3 +88,7 @@
 .markata-change-marker.add{background:var(--color-success,#34a66c)}
 .markata-change-marker.modify{background:var(--color-primary,#548ee5)}
 .markata-change-marker.del{background:var(--color-error,#db6464);height:4px;min-height:4px}
+
+/* A blocked review is a compact explanation, not an empty fullscreen modal. */
+#publish-review[data-unavailable="true"]{height:auto;min-height:0}
+#publish-review[data-unavailable="true"] .publish-actions{flex:0 0 auto}
