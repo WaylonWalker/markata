@@ -32,8 +32,7 @@
   }
   function canOpen() {
     const path = window.MarkataSiteTree?.activeFile?.();
-    const files = window.MarkataSiteTree?.files?.();
-    if (!path || !/\.md$/i.test(path) || !Array.isArray(files) || !files.some(file => file.path === path)) return null;
+    if (!path || !/\.md$/i.test(path) || !window.MarkataSiteTree?.isSiteFile?.(path)) return null;
     return path;
   }
   function setNotice(message, level='info') {
@@ -374,8 +373,66 @@
     button.replaceChildren(icon,document.createTextNode(label));
     button.title = 'Review changes (Ctrl/Cmd+S, Ctrl/Cmd+Shift+Enter)';
   }
+
+  // Git-style gutter. Always compare against the committed Git blob, never
+  // against the last autosaved workspace revision (which changes as we type).
+  let gutterPath=null, gutterBase=null, gutterRequest=0, gutterTimer=null;
+  function clearChangeGutter() {
+    editor?.clearGutter('markata-change-gutter');
+  }
+  function markChange(line, type) {
+    if (line<0 || line>=editor.lineCount()) return;
+    const marker=document.createElement('span');
+    marker.className='markata-change-marker '+type;
+    marker.setAttribute('aria-label',type==='add'?'Added line':type==='del'?'Deleted lines above':'Modified line');
+    marker.title=marker.getAttribute('aria-label')+' since last Git commit';
+    editor.setGutterMarker(line,'markata-change-gutter',marker);
+  }
+  function drawChangeGutter() {
+    clearChangeGutter();
+    if(gutterPath!==canOpen()||typeof gutterBase!=='string')return;
+    const changes=diffLines(gutterBase,editor.getValue());
+    if(changes.some(change=>change.type==='note'))return;
+    let oldLine=0,newLine=0;
+    for(let i=0;i<changes.length;) {
+      if(changes[i].type==='same'){oldLine++;newLine++;i++;continue;}
+      const from=newLine;let deleted=0,added=0;
+      while(i<changes.length && changes[i].type!=='same'){
+        if(changes[i].type==='del'){oldLine++;deleted++;}
+        if(changes[i].type==='add'){newLine++;added++;}
+        i++;
+      }
+      for(let n=0;n<added;n++)markChange(from+n,deleted?'modify':'add');
+      if(deleted&&!added)markChange(Math.min(from,editor.lineCount()-1),'del');
+    }
+  }
+  async function refreshChangeGutter() {
+    const path=canOpen(), request=++gutterRequest;
+    gutterPath=path;gutterBase=null;clearChangeGutter();
+    if(!path)return;
+    try {
+      const response=await fetch('/workspace/publish/review?path='+encodeURIComponent(path),{cache:'no-store'});
+      if(!response.ok)return;
+      const data=await response.json();
+      if(request!==gutterRequest||canOpen()!==path)return;
+      gutterBase=data.baseline_exists?data.baseline:'';
+      drawChangeGutter();
+    } catch { /* Missing Git or offline: no fabricated change markers. */ }
+  }
+  function scheduleChangeGutter() {
+    clearTimeout(gutterTimer);
+    const path=canOpen();
+    if(path!==gutterPath){refreshChangeGutter();return;}
+    gutterTimer=setTimeout(drawChangeGutter,160);
+  }
+
   function attach(instance) {
     editor=instance;
+    editor.setOption('gutters',['CodeMirror-linenumbers','markata-change-gutter']);
+    editor.on('change',scheduleChangeGutter);
+    const activeLabel=document.querySelector('#active-file');
+    if(activeLabel)new MutationObserver(refreshChangeGutter).observe(activeLabel,{childList:true,characterData:true,subtree:true});
+    setTimeout(refreshChangeGutter,0);
     const startPublish=()=>{open();return true;};
     editor.addKeyMap({'Ctrl-S':startPublish,'Cmd-S':startPublish,'Ctrl-X Ctrl-S':startPublish});
     window.CodeMirror?.Vim?.defineEx('write','w',()=>open());
