@@ -92,3 +92,12 @@
 /* A blocked review is a compact explanation, not an empty fullscreen modal. */
 #publish-review[data-unavailable="true"]{height:auto;min-height:0}
 #publish-review[data-unavailable="true"] .publish-actions{flex:0 0 auto}
+
+#publish-review #publish-discard{margin-right:auto;color:var(--color-error,#d45c5c);border-color:color-mix(in srgb,var(--color-error,#d45c5c) 55%,transparent);background:transparent}
+#publish-review #publish-discard:disabled{opacity:.45;cursor:not-allowed}
+#publish-review #publish-discard-warning{margin:8px 20px;padding:9px 12px;font-size:12px;border-radius:6px;color:var(--color-text-muted,#777);background:var(--color-surface,#eee)}
+#publish-review #publish-discard-warning[hidden],#publish-review #publish-discard-confirmation[hidden]{display:none}
+#publish-review #publish-discard-confirmation{flex:0 0 auto;margin:8px 20px 0;padding:12px;border:1px solid var(--color-error,#d45c5c);border-radius:8px;background:var(--color-surface,#eee)}
+#publish-review #publish-discard-confirmation p{margin:0 0 10px;font-size:13px;line-height:1.5}
+#publish-review #publish-discard-confirmation button{padding:8px 11px;margin-right:8px;border-radius:6px;border:1px solid var(--editor-divider,#ddd);background:transparent;color:inherit;cursor:pointer}
+#publish-review #publish-discard-accept{background:var(--color-error,#d45c5c)!important;color:#fff!important}
