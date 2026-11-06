@@ -333,10 +333,12 @@
       });
       const result=await response.json();
       if (!response.ok)throw new Error(result.error||'Could not discard reviewed changes.');
-      // Reload the site tree and recovery state rather than leaving the old
-      // editor buffer to autosave over the restored file.
-      window.MarkataSiteTree?.clearRecoveryFor?.(data.path);
-      location.reload();
+      // Set the live editor and its recovery copy to the exact server-acknowledged
+      // baseline. Reloading here would restore an older dirty browser buffer.
+      editor.setValue(data.baseline);
+      window.MarkataSiteTree?.save();
+      dialog.querySelector('#publish-discard-confirmation').hidden=true;
+      dialog.close();
     } catch(error) {
       setNotice(error.message,'warning');
       dialog.querySelector('#publish-discard-confirmation').hidden=true;
