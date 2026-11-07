@@ -340,7 +340,14 @@
         return;
       }
       editor.setValue(data.baseline);
-      await awaitSaved(data.path,data.baseline);
+      if (!window.MarkataSiteTree?.reconcileRestored?.(data.path,data.baseline,result.version))
+        throw new Error('Restore succeeded on disk but browser recovery could not be reconciled. Reload this file before editing.');
+      // Verify the real file after the server acknowledges it, rather than
+      // calling the ordinary Save flow with the pre-discard source version.
+      const check=await fetch('/workspace/file?path='+encodeURIComponent(data.path),{cache:'no-store'});
+      const saved=await check.json();
+      if (!check.ok || saved.source!==data.baseline || saved.version!==result.version)
+        throw new Error('Disk changed again after discard. Reopen the file and resolve the new version.');
       refreshChangeGutter();
       dialog.querySelector('#publish-discard-confirmation').hidden=true;
       dialog.close();
