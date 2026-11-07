@@ -82,6 +82,9 @@ func TestWorkspaceFileMutationRequiresSameOrigin(t *testing.T) {
 			handler := &Handler{workspace: workspace}
 			request := httptest.NewRequestWithContext(context.Background(), test.method, "http://127.0.0.1/workspace/file?path="+test.path, strings.NewReader("# Replaced"))
 			request.RemoteAddr = "127.0.0.1:1234"
+			if test.method == http.MethodPut && test.status == http.StatusOK {
+				request.Header.Set("X-Markata-Expected-Version", editorworkspace.SourceVersion(original))
+			}
 			if test.origin != "" {
 				request.Header.Set("Origin", test.origin)
 			}
