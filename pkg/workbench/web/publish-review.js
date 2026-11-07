@@ -8,6 +8,7 @@
   const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
   const esc = value => String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   const state = {path:null, data:null, mode:'rich', loading:false, commit:null, busy:false};
+  let reviewGeneration = 0;
   const comparisonMaps = {before:[],after:[]};
   const comparisonMax = {before:0,after:0};
 
@@ -203,8 +204,9 @@
       body:JSON.stringify({markdown:contentBody(source),include_document:true,appearance})});
     const result=await response.json();
     if(!response.ok||!result.document) throw new Error(result.error||'Could not render the comparison');
-    frame.srcdoc=result.document.replace('</body>',`${comparisonScrollBridge(side)}</body>`);
-    return result;
+    // Do not mutate an iframe until the caller verifies this is still the
+    // active review. Responses from closed dialogs must not resurrect old HTML.
+    return {result, document:result.document.replace('</body>',`${comparisonScrollBridge(side)}</body>`)};
   }
   async function awaitSaved(path, snapshot) {
     window.MarkataSiteTree.save();
@@ -231,7 +233,11 @@
       return;
     }
     dialog.dataset.unavailable='false';
+    const generation=++reviewGeneration;
     state.loading=true;state.path=path;state.data=null;state.commit=null;
+    for (const id of ['publish-before-frame','publish-after-frame','publish-rich-frame']) {
+      dialog.querySelector('#'+id).srcdoc='<!doctype html><html><body><p>Preparing current comparison…</p></body></html>';
+    }
     dialog.querySelector('[data-publish-mode="rich"]').disabled=false;
     dialog.querySelector('#publish-confirm').hidden=false;
     dialog.querySelector('#publish-confirm').disabled=true;
@@ -276,14 +282,18 @@
         renderVersion(data.baseline,dialog.querySelector('#publish-before-frame'),'before'),
         renderVersion(data.current,dialog.querySelector('#publish-after-frame'),'after')
       ]);
+      if(generation!==reviewGeneration || !dialog.open) return;
+      dialog.querySelector('#publish-before-frame').srcdoc=before.document;
+      dialog.querySelector('#publish-after-frame').srcdoc=after.document;
       try {
-        window.MarkataRichPublishDiff.render(before,after,dialog.querySelector('#publish-rich-frame'));
+        window.MarkataRichPublishDiff.render(before.result,after.result,dialog.querySelector('#publish-rich-frame'));
       } catch(error) {
         const tab=dialog.querySelector('[data-publish-mode="rich"]');
         tab.disabled=true;tab.title=error.message;
         setMode('side');
       }
     }catch(error){
+      if(generation!==reviewGeneration || !dialog.open) return;
       setNotice(error.message,'warning');
       dialog.querySelector('#publish-body').hidden=true;
       dialog.dataset.unavailable='true';
@@ -590,7 +600,11 @@
     doc.querySelector('#publish-confirm').addEventListener('click',commitReview);
     doc.querySelector('#publish-push').addEventListener('click',pushReview);
     doc.querySelector('#publish-live-check').addEventListener('click',checkLiveDeployment);
-    doc.addEventListener('close',()=>{window.MarkataPierreDiff?.release?.(doc.querySelector('#publish-pierre-host'));editor.focus();});
+    doc.addEventListener('close',()=>{
+      reviewGeneration++;
+      window.MarkataPierreDiff?.release?.(doc.querySelector('#publish-pierre-host'));
+      editor.focus();
+    });
     doc.querySelectorAll('[data-publish-mode]').forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.publishMode)));
     doc.querySelector('.publish-mode-tabs').addEventListener('keydown',event=>{
       if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
