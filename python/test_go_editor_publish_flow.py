@@ -174,14 +174,14 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         page.goto(self.url)
         self.open_site_file(page, "posts/autosave-clean.md")
         post = self.site / "posts/autosave-clean.md"
-        self.edit_source(page, "# First autosave\\n")
+        self.edit_source(page, "# First autosave\n")
         expect(page.locator("#saved")).to_have_text("Saved to site", timeout=10000)
         self.assertEqual(post.read_text(encoding="utf-8"), "# First autosave\n")
 
         page.reload()
         expect(page.locator("#active-file")).to_contain_text("posts/autosave-clean.md")
         self.assertEqual(page.evaluate("document.querySelector('.CodeMirror').CodeMirror.getValue()"), "# First autosave\n")
-        self.edit_source(page, "# Second autosave\\n")
+        self.edit_source(page, "# Second autosave\n")
         expect(page.locator("#saved")).to_have_text("Saved to site", timeout=10000)
         self.assertEqual(post.read_text(encoding="utf-8"), "# Second autosave\n")
         self.assertEqual(errors, [])
