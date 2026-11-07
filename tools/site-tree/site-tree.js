@@ -102,10 +102,17 @@ async function open(path) {
     } else {
       try { previous = readDraft(path,disk.source); }
       catch { previous = disk.source; warning(); }
-      dirty = restored[path]?.format === 'markata-draft-v3' ? restored[path].dirty !== false : previous !== disk.source;
       previousVersion = restored[path]?.version;
+      dirty = restored[path]?.format === 'markata-draft-v3' ? restored[path].dirty !== false : previous !== disk.source;
+      // A previous successful autosave was clean when acknowledged, but if
+      // another process later changes the file it is now a competing revision.
+      // Preserve that exact browser copy instead of trusting the old dirty flag.
+      if (restored[path] && previous !== disk.source &&
+          (!previousVersion || previousVersion !== disk.version)) dirty = true;
     }
-    // Legacy recovery without a source-version token is also unsafe to\n    // sync automatically; keep its draft until the writer reconciles.\n    diskChanged = Boolean(dirty && (!previousVersion || previousVersion !== disk.version));
+    // A dirty recovery without a version is unsafe too: keep it, but fail
+    // closed on autosave until the user reconciles the filesystem revision.
+    diskChanged = Boolean(dirty && (!previousVersion || previousVersion !== disk.version));
     drafts[path] = dirty ? previous : disk.source;
     files[path] = disk.source;
     baselines[path] = disk.source;
