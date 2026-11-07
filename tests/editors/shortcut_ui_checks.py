@@ -94,7 +94,7 @@ def check_app_shortcuts(page, url):
       errors:window.__shortcutErrors,
       active:document.activeElement?.outerHTML?.slice(0,200)
     })""")
-    expect(page.locator('#shortcuts-list')).to_contain_text('Review & Publish')
+    expect(page.locator('#shortcuts-list')).to_contain_text('Publishing: Review changes')
     recorder = page.locator('[data-command-id="workbench.save"]')
     recorder.click()
     page.keyboard.press('Control+Alt+J')
