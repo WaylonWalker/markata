@@ -158,7 +158,7 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         # flight. The preview must eventually reflect the newest revision,
         # including during rapid typing immediately after a Discard.
         for number in range(4):
-            fresh += f"\\nLive revision {number}.\\n"
+            fresh += f"\nLive revision {number}.\n"
             self.edit_source(page, fresh)
             page.wait_for_timeout(140)
         expect(page.frame_locator("#preview").locator(".post-content")).to_contain_text(
