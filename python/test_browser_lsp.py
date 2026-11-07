@@ -83,6 +83,28 @@ class BrowserLSPTest(unittest.TestCase):
                 page.reload()
                 expect(preview.locator('h1')).to_have_text('Real workspace draft')
 
+    def test_go_recent_files_are_scoped_and_survive_reload(self):
+        with self.browser.new_context() as context:
+            page = context.new_page()
+            errors = []
+            page.on("pageerror", lambda error: errors.append(str(error)))
+            page.goto(self.go_url)
+            page.wait_for_function(
+                "() => Boolean(window.MarkataSiteTree?.files?.().some(file => file.path === 'hello world.md'))"
+            )
+            for path in ("hello world.md", "draft.md"):
+                page.evaluate("(path) => window.MarkataSiteTree.openFile(path)", path)
+                expect(page.locator("#active-file")).to_have_text(path)
+            recent = page.locator("#recent-files-list")
+            expect(recent.locator("button")).to_have_count(2)
+            expect(recent.locator("button").first).to_have_attribute("title", "draft.md")
+            page.reload()
+            expect(recent.locator("button")).to_have_count(2)
+            recent.locator('button[title="hello world.md"]').click()
+            expect(page.locator("#active-file")).to_have_text("hello world.md")
+            expect(recent.locator("button").first).to_have_attribute("title", "hello world.md")
+            self.assertEqual(errors, [])
+
     def test_external_edits_refresh_clean_buffers_and_preserve_drafts(self):
         source_path = self.root / "draft.md"
         original = source_path.read_text(encoding="utf-8")
