@@ -37,7 +37,13 @@ class GoEditorPublishFlowTest(unittest.TestCase):
             "tags:\n  - initial\n---\n\n# Before\n\nInitial copy.\n",
             encoding="utf-8",
         )
-        cls.git(cls.site, "add", "posts/publish-flow.md")
+        long_post = posts / "long-gutter.md"
+        long_post.write_text(
+            "---\\ntitle: Long gutter fixture\\npublished: false\\n---\\n\\n"
+            + "".join(f"Line {index}: stable content\\n" for index in range(600)),
+            encoding="utf-8",
+        )
+        cls.git(cls.site, "add", "posts/publish-flow.md", "posts/long-gutter.md")
         cls.git(cls.site, "commit", "-m", "Fixture baseline")
         cls.git(cls.site, "push", "-u", "origin", "main")
 
@@ -117,7 +123,7 @@ class GoEditorPublishFlowTest(unittest.TestCase):
           const editor=document.querySelector('.CodeMirror').CodeMirror;
           editor.setValue(editor.getValue().replace('# Before\\n\\nInitial copy.', '# After\\n\\nRevised copy for browser verification.'));
         }""")
-        page.get_by_role("button", name="Publish updates").click()
+        page.get_by_role("button", name="Review changes").click()
         review = page.locator("#publish-review")
         expect(review).to_be_visible()
         expect(review.locator('[data-publish-mode="rich"]')).to_have_attribute("aria-selected", "true")
@@ -141,6 +147,30 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         expect(review.get_by_role("button", name="Check live status")).to_be_visible()
         self.assertEqual(self.git(self.remote, "rev-parse", "refs/heads/main"), commit)
         self.assertEqual(self.git(self.remote, "log", "-1", "--format=%B", "refs/heads/main"), message)
+        self.assertEqual(errors, [])
+
+
+    def test_git_gutter_large_document(self):
+        context = self.browser.new_context()
+        self.addCleanup(context.close)
+        page = context.new_page()
+        errors = []
+        page.on("pageerror", lambda error: errors.append(str(error)))
+        page.goto(self.url)
+        expect(page.locator("#active-file")).to_contain_text("posts/publish-flow.md")
+        page.evaluate("window.MarkataSiteTree.openFile('posts/long-gutter.md')")
+        expect(page.locator("#active-file")).to_contain_text("posts/long-gutter.md")
+        expect(page.locator("#markata-gutter-status")).to_contain_text("No Git changes")
+        page.evaluate("""() => {
+          const editor=document.querySelector('.CodeMirror').CodeMirror;
+          const line=300;
+          editor.replaceRange(' locally edited', {line, ch:editor.getLine(line).length});
+          editor.scrollIntoView({line,ch:0});
+        }""")
+        expect(page.locator("#markata-gutter-status")).to_contain_text("Git change region")
+        marker = page.locator(".CodeMirror-gutter-wrapper .markata-change-marker")
+        expect(marker.first).to_be_visible()
+        self.assertGreater(marker.count(), 0)
         self.assertEqual(errors, [])
 
 
