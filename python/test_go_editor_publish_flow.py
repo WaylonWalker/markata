@@ -105,6 +105,7 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         errors = []
         page.on("pageerror", lambda error: errors.append(str(error)))
         page.goto(self.url)
+        page.evaluate("window.MarkataSiteTree.openFile('posts/publish-flow.md')")
         expect(page.locator("#active-file")).to_contain_text("posts/publish-flow.md")
 
         page.get_by_role("button", name="Properties", exact=True).click()
@@ -157,6 +158,7 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         errors = []
         page.on("pageerror", lambda error: errors.append(str(error)))
         page.goto(self.url)
+        page.evaluate("window.MarkataSiteTree.openFile('posts/publish-flow.md')")
         expect(page.locator("#active-file")).to_contain_text("posts/publish-flow.md")
         page.evaluate("window.MarkataSiteTree.openFile('posts/long-gutter.md')")
         expect(page.locator("#active-file")).to_contain_text("posts/long-gutter.md")
