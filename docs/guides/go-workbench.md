@@ -294,6 +294,23 @@ this control yet. Discard does not create a Git commit or deploy anything.
 A different process changing the filesystem simultaneously is not covered by a
 cross-process transaction; use a disposable test post while this is experimental.
 
+### Autosave and external edits
+
+The browser keeps a local recovery draft and autosaves to the loopback Go editor
+workspace. Each successful `GET /workspace/file` returns a 64-character source
+version (SHA-256 of the exact file bytes). The browser sends this as
+`X-Markata-Expected-Version` with each `PUT /workspace/file`.
+
+The Go editor rejects a missing version with HTTP 428 and a stale version with
+HTTP 409 **without writing the file**. For a conflict, the browser retains its
+recovery copy and shows a save error; reopen the file to inspect/reconcile the
+external revision. An older recovery record without a version token also
+fails closed. An acknowledged save updates the browser's recovery version so a
+normal reload does not invent a conflict. The current local Go handler
+serializes its own workspace writes and Discard restores, but unrelated
+filesystem writers can still race with the final write. This is not a
+cross-process or hosted synchronization transaction.
+
 The dialog first waits until the exact text in the editor has been saved to
 the workspace. It then compares that saved source with the file from the last
 Git commit. **Rendered diff** opens first. **Side by side** shows both rendered
