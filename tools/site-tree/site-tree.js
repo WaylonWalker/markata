@@ -19,8 +19,14 @@ function saveToSite(path, source) {
   saveTimers[path] = setTimeout(() => {
     saveQueues[path] = (saveQueues[path] || Promise.resolve()).catch(() => {}).then(async () => {
       if (revision !== saveRevisions[path]) return;
+      const expected = versions[path];
+      // No known version means an older recovered draft cannot safely
+      // overwrite a disk file. Keep browser recovery until user reconciles.
+      if (typeof expected !== 'string' || !/^[0-9a-f]{64}$/.test(expected))
+        throw new Error('Cannot safely sync without a known disk version; browser draft kept');
       const response = await fetch('/workspace/file?path=' + encodeURIComponent(path), {
-        method:'PUT', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:source
+        method:'PUT', headers:{'Content-Type':'text/plain;charset=utf-8',
+          'X-Markata-Expected-Version':expected}, body:source
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Cannot save to the site');
@@ -93,7 +99,10 @@ async function open(path) {
     diskChanged = dirty && previousVersion && disk.version && previousVersion !== disk.version;
     drafts[path] = dirty ? previous : disk.source;
     files[path] = disk.source;
-    baselines[path] = disk.source; versions[path] = disk.version;
+    baselines[path] = disk.source;
+    // Keep the original expected version of a dirty browser draft when the
+    // filesystem moved. Autosave will conflict rather than overwrite it.
+    versions[path] = diskChanged ? previousVersion : disk.version;
   }
   syncing = true;
   try {
