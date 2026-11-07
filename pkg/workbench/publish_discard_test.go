@@ -52,7 +52,7 @@ func TestPublishDiscardTrackedFileAndStaleChecks(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		req := httptest.NewRequest(http.MethodPost, "http://127.0.0.1:8766/workspace/publish/discard", bytes.NewReader(data))
+		req := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "http://127.0.0.1:8766/workspace/publish/discard", bytes.NewReader(data))
 		if origin {
 			req.Header.Set("Origin", "http://127.0.0.1:8766")
 		}
@@ -115,8 +115,11 @@ func TestPublishDiscardUntrackedFileIsPreserved(t *testing.T) {
 	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	reqData, _ := json.Marshal(discardRequest{Path: "new.md", Head: head, Version: editorworkspace.SourceVersion(content)})
-	req := httptest.NewRequest(http.MethodPost, "http://127.0.0.1:8766/workspace/publish/discard", bytes.NewReader(reqData))
+	reqData, err := json.Marshal(discardRequest{Path: "new.md", Head: head, Version: editorworkspace.SourceVersion(content)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "http://127.0.0.1:8766/workspace/publish/discard", bytes.NewReader(reqData))
 	req.Header.Set("Origin", "http://127.0.0.1:8766")
 	h := &Handler{root: dir, workspace: discardWorkspaceFixture{publishWorkspaceFixture{root: dir}}}
 	response := httptest.NewRecorder()
