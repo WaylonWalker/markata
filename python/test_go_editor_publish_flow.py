@@ -131,9 +131,39 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         expect(page.locator("#markata-gutter-status")).to_contain_text("No Git changes")
         self.assertEqual((self.site / "posts/discard-flow.md").read_text(encoding="utf-8"), original)
         self.assertEqual(page.evaluate("document.querySelector('.CodeMirror').CodeMirror.getValue()"), original)
+
+        # Regression: a Discard followed by fresh typing must not reuse the
+        # previous review iframe or the old preview cursor/scroll geometry.
+        fresh = original + "\\nFirst fresh paragraph.\\n\\nSecond fresh paragraph.\\n"
+        self.edit_source(page, fresh)
+        expect(page.locator("#saved")).to_have_text("Saved to site", timeout=10000)
+        expect(page.frame_locator("#preview").locator(".post-content")).to_contain_text("Second fresh paragraph.")
+        expect(page.locator("#markata-gutter-status")).to_contain_text("Git change region")
+        page.evaluate("""() => {
+          const editor=document.querySelector('.CodeMirror').CodeMirror;
+          const line=editor.getValue().split('\\n').findIndex(text=>text.includes('Second fresh paragraph.'));
+          editor.focus(); editor.setCursor({line,ch:4});
+        }""")
+        expect(page.frame_locator("#preview").locator(".markata-sync-position")).to_contain_text(
+            "Second fresh paragraph.", timeout=10000
+        )
+        page.get_by_role("button", name="Review changes").click()
+        expect(review).to_be_visible()
+        expect(review.locator("#publish-source-diff")).to_contain_text("First fresh paragraph.")
+        expect(review.locator("#publish-source-diff")).to_contain_text("Second fresh paragraph.")
+        expect(review.locator("#publish-source-diff")).not_to_contain_text("Unpublished local edit")
+        expect(page.frame_locator("#publish-rich-frame").locator(".post-content")).to_contain_text(
+            "Second fresh paragraph.", timeout=10000
+        )
+        expect(page.frame_locator("#publish-rich-frame").locator(".post-content")).not_to_contain_text(
+            "Unpublished local edit"
+        )
+        review.locator("#publish-back").click()
+        expect(review).not_to_be_visible()
+        self.assertEqual((self.site / "posts/discard-flow.md").read_text(encoding="utf-8"), fresh)
         page.reload()
         expect(page.locator("#active-file")).to_contain_text("posts/discard-flow.md")
-        self.assertEqual(page.evaluate("document.querySelector('.CodeMirror').CodeMirror.getValue()"), original)
+        self.assertEqual(page.evaluate("document.querySelector('.CodeMirror').CodeMirror.getValue()"), fresh)
         self.assertEqual(self.git(self.site, "diff", "--cached", "--name-only"), "")
         self.assertEqual(errors, [])
 
