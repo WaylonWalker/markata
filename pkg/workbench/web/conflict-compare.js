@@ -32,14 +32,23 @@
     document.body.append(dialog);
 
     let currentComparison = null;
+    let requestNumber = 0;
+    let conflictPath = null;
     const pathIsMarkdown = path => typeof path === 'string' && /\.(?:md|markdown|mdown|mkd)$/i.test(path);
     const hasConflict = () => /(?:Site save failed|File changed on disk)/i.test(status.textContent || '');
     function update() {
       const path = workspace.activeFile();
-      button.hidden = !(pathIsMarkdown(path) && hasConflict());
+      button.hidden = !(pathIsMarkdown(path) && path === conflictPath && hasConflict());
     }
-    const observer = new MutationObserver(update);
+    conflictPath = hasConflict() ? workspace.activeFile() : null;
+    const observer = new MutationObserver(() => {
+      conflictPath = hasConflict() ? workspace.activeFile() : null;
+      update();
+    });
     observer.observe(status, {childList:true, characterData:true, subtree:true});
+    const activeObserver = new MutationObserver(update);
+    const activeLabel = document.querySelector('#active-file');
+    if (activeLabel) activeObserver.observe(activeLabel, {childList:true, characterData:true, subtree:true});
     update();
 
     function download(source, path, suffix) {
@@ -60,6 +69,7 @@
       const path = workspace.activeFile();
       if (!pathIsMarkdown(path) || !hasConflict()) return;
       const browserSource = editor.getValue();
+      const request = ++requestNumber;
       currentComparison = {path, browserSource, diskSource:null};
       dialog.querySelector('#workspace-conflict-path').textContent = path;
       dialog.querySelector('#workspace-conflict-browser').textContent = browserSource;
@@ -72,14 +82,14 @@
         const data = await response.json();
         if (!response.ok || typeof data.source !== 'string')
           throw new Error(data.error || 'Unable to read the disk copy.');
-        if (!currentComparison || currentComparison.path !== path || !dialog.open) return;
+        if (request !== requestNumber || !currentComparison || currentComparison.path !== path || !dialog.open) return;
         currentComparison.diskSource = data.source;
         dialog.querySelector('#workspace-conflict-disk').textContent = data.source;
         dialog.querySelector('#workspace-conflict-state').textContent =
           'Read-only comparison. Download either copy before resolving the conflict manually.';
         dialog.querySelector('#workspace-conflict-download-disk').disabled = false;
       } catch (error) {
-        if (!dialog.open) return;
+        if (request !== requestNumber || !dialog.open) return;
         dialog.querySelector('#workspace-conflict-disk').textContent = '';
         dialog.querySelector('#workspace-conflict-state').textContent =
           'Could not read the current disk copy: ' + error.message;
@@ -96,8 +106,11 @@
     function close() { dialog.close(); }
     dialog.querySelector('#workspace-conflict-close').addEventListener('click', close);
     dialog.querySelector('#workspace-conflict-done').addEventListener('click', close);
-    dialog.addEventListener('close', () => { currentComparison = null; update(); button.focus(); });
-    window.addEventListener('pagehide', () => observer.disconnect(), {once:true});
+    dialog.addEventListener('close', () => { requestNumber++; currentComparison = null; update(); button.focus(); });
+    window.addEventListener('pagehide', () => {
+      observer.disconnect();
+      activeObserver.disconnect();
+    }, {once:true});
   }
   window.MarkataConflictCompare = {attach};
 })();
