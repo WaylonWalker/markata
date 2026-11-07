@@ -605,6 +605,25 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			sourcePath := r.URL.Query().Get("path")
+			if r.Method == http.MethodPut {
+				// Browser autosave is compare-and-swap against the exact source bytes
+				// it last loaded or successfully wrote. Reject stale saves rather
+				// than overwriting a newer file from another editor process.
+				expected := r.Header.Get("X-Markata-Expected-Version")
+				if !gitHashPattern.MatchString(expected) || len(expected) != 64 {
+					fail(w, http.StatusPreconditionRequired, "expected source version required; reload before saving")
+					return
+				}
+				current, readErr := h.workspace.Read(sourcePath)
+				if readErr != nil {
+					fail(w, http.StatusUnprocessableEntity, "cannot read workspace source before saving")
+					return
+				}
+				if editorworkspace.SourceVersion(current) != expected {
+					fail(w, http.StatusConflict, "file changed on disk; browser recovery copy kept; reopen and resolve conflict")
+					return
+				}
+			}
 			if r.Method == http.MethodPost {
 				err = h.workspace.Create(sourcePath, string(body))
 			} else {
