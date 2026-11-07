@@ -79,7 +79,7 @@ func (h *Handler) servePublishDiscard(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(map[string]string{
-		"status":         "restored-local",
+		"status":          "restored-local",
 		discardVersionKey: editorworkspace.SourceVersion(baseline),
 	}); err != nil {
 		return
