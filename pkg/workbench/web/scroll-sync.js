@@ -196,6 +196,25 @@ window.MarkataScrollSync = function (editor, frame, setting, workbench) {
     if (setting.checked) { driver = 'editor'; editorFollowCursor = false; editorToPreview(); }
   });
   return {
+    // A file switch or Discard setValue() invalidates the old article geometry.
+    // Never align a new cursor against anchors from the previous source.
+    reset() {
+      lines = [];
+      anchors = [];
+      sourceOffset = 0;
+      preview = null;
+      geometryKey = '';
+      requestedPreview = null;
+      expectedEditorTop = null;
+      lastMarkedLine = -1;
+      lastMarkedCursor = '';
+      lastMarkedPending = null;
+      lastCursor = null;
+      editorFollowCursor = true;
+      deferredCursorFollow = true;
+      driver = 'editor';
+      contentUnrendered = true;
+    },
     update(sourceLines, notifyPreview = true, offset = 0, sourceAnchors = []) {
       lines = sourceLines || [];
       anchors = sourceAnchors || [];
