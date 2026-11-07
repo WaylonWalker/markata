@@ -137,6 +137,21 @@ async function open(path) {
 }
 window.MarkataSiteTree = {
   openPicker() { picker?.open(); },
+  // Called only after the version-checked Discard endpoint confirms a restore.
+  // Invalidate delayed saves of the pre-discard browser buffer and mark this
+  // exact source/version clean in local recovery storage.
+  reconcileRestored(path, source, version) {
+    if (!currentEditor || active !== path || !Object.hasOwn(files, path) ||
+        !/^[0-9a-f]{64}$/.test(version)) return false;
+    saveRevisions[path] = (saveRevisions[path] || 0) + 1;
+    clearTimeout(saveTimers[path]);
+    drafts[path] = source;
+    baselines[path] = source;
+    versions[path] = version;
+    try { writeDraft(path, source); } catch { warning(); }
+    document.querySelector('#saved').textContent = 'Restored committed version · saved to site';
+    return true;
+  },
   save() {
     if (!currentEditor) return false;
     if (!editable(active)) return true;
@@ -144,7 +159,7 @@ window.MarkataSiteTree = {
     try { writeDraft(active, drafts[active]);
       document.querySelector('#saved').textContent = 'Draft saved on this device'; }
     catch { warning(); }
-    if (siteAutosave && Object.hasOwn(baselines, active)) saveToSite(active, drafts[active]);
+    if (siteAutosave && Object.hasOwn(baselines, active) && drafts[active] !== baselines[active]) saveToSite(active, drafts[active]);
     return true;
   },
   filename: () => active === scratchPath ? 'draft.md' : active.split('/').pop(),
