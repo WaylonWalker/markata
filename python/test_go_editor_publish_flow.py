@@ -45,7 +45,9 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         )
         discard_post = posts / "discard-flow.md"
         discard_post.write_text("---\\ntitle: Discard fixture\\npublished: false\\n---\\n\\n# Original\\n", encoding="utf-8")
-        cls.git(cls.site, "add", "posts/publish-flow.md", "posts/long-gutter.md", "posts/discard-flow.md")
+        external_post = posts / "external-edit.md"
+        external_post.write_text("# First external version\\n", encoding="utf-8")
+        cls.git(cls.site, "add", "posts/publish-flow.md", "posts/long-gutter.md", "posts/discard-flow.md", "posts/external-edit.md")
         cls.git(cls.site, "commit", "-m", "Fixture baseline")
         cls.git(cls.site, "push", "-u", "origin", "main")
 
@@ -132,6 +134,35 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         expect(page.locator("#active-file")).to_contain_text("posts/discard-flow.md")
         self.assertEqual(page.evaluate("document.querySelector('.CodeMirror').CodeMirror.getValue()"), original)
         self.assertEqual(self.git(self.site, "diff", "--cached", "--name-only"), "")
+        self.assertEqual(errors, [])
+
+    def test_autosave_preserves_external_edit_and_browser_recovery(self):
+        context = self.browser.new_context()
+        self.addCleanup(context.close)
+        page = context.new_page()
+        errors = []
+        page.on("pageerror", lambda error: errors.append(str(error)))
+        page.goto(self.url)
+        page.evaluate("window.MarkataSiteTree.openFile('posts/external-edit.md')")
+        expect(page.locator("#active-file")).to_contain_text("posts/external-edit.md")
+        expect(page.locator("#markata-gutter-status")).to_contain_text("No Git changes")
+
+        # Another process changes the file after the browser has loaded it.
+        post = self.site / "posts/external-edit.md"
+        external = "# Changed by external editor\\n"
+        post.write_text(external, encoding="utf-8")
+        browser_draft = "# Uncommitted browser edit\\n"
+        page.evaluate("""(text) => document.querySelector('.CodeMirror').CodeMirror.setValue(text)""", browser_draft)
+        expect(page.locator("#saved")).to_contain_text("Site save failed", timeout=10000)
+        expect(page.locator("#saved")).to_contain_text("browser recovery copy kept")
+        self.assertEqual(post.read_text(encoding="utf-8"), external)
+
+        # The dirty recovery copy must survive a reload without replacing disk.
+        page.reload()
+        expect(page.locator("#active-file")).to_contain_text("posts/external-edit.md")
+        expect(page.locator("#saved")).to_contain_text("File changed on disk")
+        self.assertEqual(page.evaluate("document.querySelector('.CodeMirror').CodeMirror.getValue()"), browser_draft)
+        self.assertEqual(post.read_text(encoding="utf-8"), external)
         self.assertEqual(errors, [])
 
     def test_frontmatter_review_commit_message_and_temporary_push(self):
