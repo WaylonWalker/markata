@@ -101,3 +101,11 @@
 #publish-review #publish-discard-confirmation p{margin:0 0 10px;font-size:13px;line-height:1.5}
 #publish-review #publish-discard-confirmation button{padding:8px 11px;margin-right:8px;border-radius:6px;border:1px solid var(--editor-divider,#ddd);background:transparent;color:inherit;cursor:pointer}
 #publish-review #publish-discard-accept{background:var(--color-error,#d45c5c)!important;color:#fff!important}
+
+/* Compact, observable Git gutter state beside the autosave status. */
+#markata-gutter-status{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--color-text-muted,#777);padding:2px 7px;border:1px solid var(--editor-divider,#ddd);border-radius:6px;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#markata-gutter-status[data-state="changed"]{color:var(--color-primary,#548ee5)}
+#markata-gutter-status[data-state="warning"]{color:var(--color-warning,#ba8635)}
+#markata-gutter-status[data-state="clean"]{color:var(--color-success,#34a66c)}
+.CodeMirror-gutter.markata-change-gutter{width:6px!important;min-width:6px!important}
+.CodeMirror .markata-change-marker{display:block;width:5px;min-width:5px;min-height:1.5em}
