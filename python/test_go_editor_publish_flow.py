@@ -39,8 +39,8 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         )
         long_post = posts / "long-gutter.md"
         long_post.write_text(
-            "---\\ntitle: Long gutter fixture\\npublished: false\\n---\\n\\n"
-            + "".join(f"Line {index}: stable content\\n" for index in range(600)),
+            "---\ntitle: Long gutter fixture\npublished: false\n---\n\n"
+            + "".join(f"Line {index}: stable content\n" for index in range(600)),
             encoding="utf-8",
         )
         cls.git(cls.site, "add", "posts/publish-flow.md", "posts/long-gutter.md")
