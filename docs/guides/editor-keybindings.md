@@ -25,7 +25,7 @@ In the Go workbench, open **Editor settings → Keyboard shortcuts…** or press
 | Toggle Problems panel | Ctrl/Cmd+Shift+M | Ctrl/Cmd+Shift+M |
 | Save now | Ctrl/Cmd+S | Ctrl/Cmd+S |
 | New post from template | Ctrl/Cmd+Alt+N | Ctrl/Cmd+Alt+N |
-| Review & Publish | Ctrl/Cmd+Shift+Enter | Ctrl/Cmd+Shift+Enter |
+| Review changes | Ctrl/Cmd+Shift+Enter | Ctrl/Cmd+Shift+Enter |
 | Shortcut settings | Ctrl/Cmd+K, Ctrl/Cmd+S | Ctrl/Cmd+Alt+K |
 
 A comma between key combinations denotes a **sequence**, not a simultaneous key press. On some platforms, an operating-system shortcut may take precedence. You can remap Markata actions through settings.
