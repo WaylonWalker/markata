@@ -81,3 +81,31 @@
 #publish-review .publish-message-help{display:flex;justify-content:space-between;gap:16px;color:var(--color-text-muted,#777);font-size:11px;line-height:1.5;margin:8px 2px}
 #publish-review #publish-message-count{font:11px ui-monospace,monospace;white-space:nowrap}
 #publish-open svg{width:16px;height:16px;margin-right:7px;vertical-align:-3px;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.8}
+
+/* Git-style change gutter: blue=modified, green=added, red=deleted. */
+.CodeMirror-gutter.markata-change-gutter{width:5px}
+.markata-change-marker{display:block;width:4px;min-height:1.35em;border-radius:2px}
+.markata-change-marker.add{background:var(--color-success,#34a66c)}
+.markata-change-marker.modify{background:var(--color-primary,#548ee5)}
+.markata-change-marker.del{background:var(--color-error,#db6464);height:4px;min-height:4px}
+
+/* A blocked review is a compact explanation, not an empty fullscreen modal. */
+#publish-review[data-unavailable="true"]{height:auto;min-height:0}
+#publish-review[data-unavailable="true"] .publish-actions{flex:0 0 auto}
+
+#publish-review #publish-discard{margin-right:auto;color:var(--color-error,#d45c5c);border-color:color-mix(in srgb,var(--color-error,#d45c5c) 55%,transparent);background:transparent}
+#publish-review #publish-discard:disabled{opacity:.45;cursor:not-allowed}
+#publish-review #publish-discard-warning{margin:8px 20px;padding:9px 12px;font-size:12px;border-radius:6px;color:var(--color-text-muted,#777);background:var(--color-surface,#eee)}
+#publish-review #publish-discard-warning[hidden],#publish-review #publish-discard-confirmation[hidden]{display:none}
+#publish-review #publish-discard-confirmation{flex:0 0 auto;margin:8px 20px 0;padding:12px;border:1px solid var(--color-error,#d45c5c);border-radius:8px;background:var(--color-surface,#eee)}
+#publish-review #publish-discard-confirmation p{margin:0 0 10px;font-size:13px;line-height:1.5}
+#publish-review #publish-discard-confirmation button{padding:8px 11px;margin-right:8px;border-radius:6px;border:1px solid var(--editor-divider,#ddd);background:transparent;color:inherit;cursor:pointer}
+#publish-review #publish-discard-accept{background:var(--color-error,#d45c5c)!important;color:#fff!important}
+
+/* Compact, observable Git gutter state beside the autosave status. */
+#markata-gutter-status{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--color-text-muted,#777);padding:2px 7px;border:1px solid var(--editor-divider,#ddd);border-radius:6px;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#markata-gutter-status[data-state="changed"]{color:var(--color-primary,#548ee5)}
+#markata-gutter-status[data-state="warning"]{color:var(--color-warning,#ba8635)}
+#markata-gutter-status[data-state="clean"]{color:var(--color-success,#34a66c)}
+.CodeMirror-gutter.markata-change-gutter{width:6px!important;min-width:6px!important}
+.CodeMirror .markata-change-marker{display:block;width:5px;min-width:5px;min-height:1.5em}

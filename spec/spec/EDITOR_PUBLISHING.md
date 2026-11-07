@@ -4,9 +4,9 @@ Status: incrementally implementing on the Go workbench, stacked on #1905.
 
 ## User-facing contract
 
-The writing interface MUST show a persistent Publish action in the top bar
+The writing interface MUST show a persistent **Review changes** action in the top bar
 regardless of split/editor-only/preview-only layout. The command palette MUST
-offer "Publishing: Review & Publish" with publish, go live, deploy, release,
+offer "Publishing: Review changes" with publish, go live, deploy, release,
 and review aliases. Ctrl/Cmd+Shift+Enter and Ctrl/Cmd+S MUST invoke the same
 review flow from all editor keymaps. In Vim mode, `:w` MUST invoke that flow;
 Emacs mode's Ctrl-X Ctrl-S MUST do the same. Ctrl/Cmd+P and Ctrl/Cmd+Shift+P
@@ -65,6 +65,37 @@ means a useful "review unavailable" state, never a fabricated baseline. A new
 untracked post MUST be identified as having no previous committed revision.
 Markup renders in isolated iframe previews; source diff is shown via text nodes
 and cannot execute user HTML.
+
+## Review action and discard contract
+
+**Review changes** is the only primary editor entry point. Review shows a frozen,
+exact saved draft against its clearly labeled committed baseline. The review
+must offer **Publish**, **Discard changes…**, and **Keep editing**. Keep editing
+must never mutate any draft. Publish may guide the writer through explicit
+commit, push, and verified deployment stages; it must not declare the page live
+until deployment verification succeeds.
+
+Discard is a separate destructive action, not a synonym for closing Review or
+undoing a single edit. It MUST require confirmation naming the document and the
+baseline being restored. An existing tracked document reverts its workspace
+draft to the exact committed blob; a never-committed document removes only that
+new draft from the active workspace. Discard MUST NOT mutate unrelated files,
+the Git index, HEAD, staged work, external drafts, or builder deployments.
+
+The backend MUST validate the authorized site and document, exact reviewed
+source identity, expected committed baseline, and any newer editor/outbox edits
+before applying a discard. Stale or concurrent changes MUST fail closed and
+require re-review; an offline client MUST retain pending edits instead of
+silently discarding them. The hosted sync backend MUST record a new durable
+revision or tombstone, with idempotent retry semantics and change-feed updates,
+rather than erasing history or conflict copies. A successful local-only discard
+MUST NOT claim remote synchronization. The loopback-only workbench endpoint
+MUST NOT be exposed on hosted ingress.
+
+Until a version-checked backend exists, the interface MUST NOT expose an
+enabled Discard control that gives the impression of a safe restore. The first
+implementation slice may rename and unify review entry points without claiming
+to have implemented discard or hosted publish.
 
 ## Next steps: publishing back end
 

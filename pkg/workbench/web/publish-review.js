@@ -32,8 +32,13 @@
   }
   function canOpen() {
     const path = window.MarkataSiteTree?.activeFile?.();
-    const files = window.MarkataSiteTree?.files?.();
-    if (!path || !/\.md$/i.test(path) || !Array.isArray(files) || !files.some(file => file.path === path)) return null;
+    if (!path || !/\.md$/i.test(path)) return null;
+    // The site tree is compiled into a separate browser bundle. Do not
+    // require a newly added source-only API to recognize existing files.
+    // Only the known scratch aliases need special treatment here. The
+    // server authoritatively validates paths on the review request.
+    if (/^Unsaved draft(?: \d+)?\.md$/i.test(path)) return null;
+    if (path === 'draft.md' && !window.MarkataSiteTree?.files?.()?.some(file => file.path === path)) return null;
     return path;
   }
   function setNotice(message, level='info') {
@@ -218,15 +223,21 @@
     if(state.loading||dialog.open)return;
     const path=canOpen();
     if(!path) {
+      dialog.dataset.unavailable='true';
+      dialog.querySelector('#publish-confirm').disabled=true;
       dialog.showModal();setNotice('This is a browser-only or non-Markdown file. Create or open a site Markdown post before reviewing publication.','warning');
       dialog.querySelector('#publish-title').textContent='Save to site first';
       dialog.querySelector('#publish-body').hidden=true;
       return;
     }
+    dialog.dataset.unavailable='false';
     state.loading=true;state.path=path;state.data=null;state.commit=null;
     dialog.querySelector('[data-publish-mode="rich"]').disabled=false;
     dialog.querySelector('#publish-confirm').hidden=false;
     dialog.querySelector('#publish-confirm').disabled=true;
+    dialog.querySelector('#publish-discard').hidden=true;
+    dialog.querySelector('#publish-discard-warning').hidden=true;
+    dialog.querySelector('#publish-discard-confirmation').hidden=true;
     dialog.querySelector('#publish-push').hidden=true;
     dialog.querySelector('#publish-live-check').hidden=true;
     dialog.querySelector('#publish-mark-public').hidden=true;
@@ -244,6 +255,9 @@
       if(data.current!==snapshot || window.MarkataSiteTree?.activeFile?.()!==path || editor.getValue()!==snapshot)
         throw new Error('The document changed while preparing the review. Close and reopen to compare the latest text.');
       state.data=data;
+      dialog.querySelector('#publish-discard').hidden=!data.changed;
+      dialog.querySelector('#publish-discard').disabled=!data.baseline_exists;
+      dialog.querySelector('#publish-discard-warning').hidden=data.baseline_exists;
       dialog.querySelector('#publish-title').textContent=titleFromSource(data.current)||path.split('/').pop();
       dialog.querySelector('#publish-path').textContent=path;
       dialog.querySelector('#publish-before-name').textContent=data.baseline_exists?'Last committed':'New page';
@@ -272,6 +286,7 @@
     }catch(error){
       setNotice(error.message,'warning');
       dialog.querySelector('#publish-body').hidden=true;
+      dialog.dataset.unavailable='true';
       dialog.querySelector('#publish-title').textContent='Review unavailable';
     }finally {state.loading=false;}
   }
@@ -298,6 +313,38 @@
     editor.operation(()=>editor.replaceRange(next,{line:0,ch:0},{line:editor.lastLine(),ch:editor.getLine(editor.lastLine()).length},'+publish-meta'));
     dialog.close();
     setTimeout(open,0);
+  }
+  async function discardReviewed() {
+    const data=state.data;
+    if (!data || state.busy || !data.baseline_exists) return;
+    if (state.path!==window.MarkataSiteTree?.activeFile?.() || editor.getValue()!==data.current) {
+      setNotice('Draft changed since review. Reopen Review changes before discarding.','warning');return;
+    }
+    const button=dialog.querySelector('#publish-discard-accept');
+    state.busy=true;
+    button.disabled=true;
+    button.textContent='Restoring…';
+    try {
+      // Save timers may still be pending: read exact source before requesting
+      // restoration; the backend also rejects a stale source/version.
+      const response=await fetch('/workspace/publish/discard',{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({path:data.path,head:data.head,version:data.version})
+      });
+      const result=await response.json();
+      if (!response.ok)throw new Error(result.error||'Could not discard reviewed changes.');
+      // Set the live editor and its recovery copy to the exact server-acknowledged
+      // baseline. Reloading here would restore an older dirty browser buffer.
+      editor.setValue(data.baseline);
+      window.MarkataSiteTree?.save();
+      dialog.querySelector('#publish-discard-confirmation').hidden=true;
+      dialog.close();
+    } catch(error) {
+      setNotice(error.message,'warning');
+      dialog.querySelector('#publish-discard-confirmation').hidden=true;
+    } finally {
+      state.busy=false;button.disabled=false;button.textContent='Discard reviewed changes';
+    }
   }
   async function commitReview() {
     const data=state.data;
@@ -366,31 +413,138 @@
   function updatePublishButton() {
     if (!button || !editor) return;
     const path = canOpen();
-    const fields = frontmatter(editor.getValue());
-    const published = fields.published === 'true' && fields.draft !== 'true';
-    const conflicting = fields.draft === 'true' && fields.published === 'true';
-    const label = !path ? 'Save to site' : conflicting ? 'Review changes' : published ? 'Publish updates' : 'Publish';
+    const label = !path ? 'Save to site' : 'Review changes';
     const icon=document.createElementNS('http://www.w3.org/2000/svg','svg');
     icon.setAttribute('viewBox','0 0 24 24');icon.setAttribute('aria-hidden','true');icon.setAttribute('focusable','false');
     const pathNode=document.createElementNS('http://www.w3.org/2000/svg','path');
     pathNode.setAttribute('d','M12 15V3m0 0 4 4m-4-4L8 7M4 14v6h16v-6');icon.append(pathNode);
     button.replaceChildren(icon,document.createTextNode(label));
-    button.title = 'Review changes (Ctrl/Cmd+Shift+Enter)';
+    button.title = 'Review changes (Ctrl/Cmd+S, Ctrl/Cmd+Shift+Enter)';
   }
+
+  // Git-style gutter. Compare the visible editor to Git HEAD, not autosave.
+  let gutterPath=null, gutterBase=null, gutterRequest=0, gutterTimer=null, gutterStatus=null;
+  function reportGutter(message, kind='info') {
+    if (!gutterStatus) return;
+    gutterStatus.textContent=message;
+    gutterStatus.dataset.state=kind;
+    gutterStatus.title=message;
+  }
+  function clearChangeGutter() {
+    editor?.clearGutter('markata-change-gutter');
+  }
+  function markChange(line, type) {
+    if (line<0 || line>=editor.lineCount()) return;
+    const marker=document.createElement('span');
+    marker.className='markata-change-marker '+type;
+    marker.setAttribute('aria-label',type==='add'?'Added line':type==='del'?'Deleted lines above':'Modified line');
+    marker.title=marker.getAttribute('aria-label')+' since last Git commit';
+    editor.setGutterMarker(line,'markata-change-gutter',marker);
+  }
+  // Trim unchanged leading/trailing lines before invoking the bounded LCS.
+  // Large posts with a small edit should not silently lose their markers.
+  // For a huge changed middle region, mark it conservatively as one region
+  // rather than blocking the editor with quadratic diff work.
+  function gutterChanges(before, after) {
+    const oldLines=before.split('\n'), newLines=after.split('\n');
+    let prefix=0;
+    while(prefix<oldLines.length && prefix<newLines.length &&
+          oldLines[prefix]===newLines[prefix])prefix++;
+    let suffix=0;
+    while(suffix<oldLines.length-prefix && suffix<newLines.length-prefix &&
+          oldLines[oldLines.length-1-suffix]===newLines[newLines.length-1-suffix])suffix++;
+    const oldMiddle=oldLines.slice(prefix,oldLines.length-suffix);
+    const newMiddle=newLines.slice(prefix,newLines.length-suffix);
+    if(!oldMiddle.length && !newMiddle.length)return [];
+    if(oldMiddle.length*newMiddle.length>180000) {
+      const type=oldMiddle.length?(newMiddle.length?'modify':'del'):'add';
+      return [{line:prefix,added:newMiddle.length,deleted:oldMiddle.length,type}];
+    }
+    const diff=diffLines(oldMiddle.join('\n'),newMiddle.join('\n'));
+    const changes=[];let offset=prefix;
+    // Empty middles are represented as zero lines by the diff algorithm.
+    if(!oldMiddle.length)return [{line:prefix,added:newMiddle.length,deleted:0,type:'add'}];
+    if(!newMiddle.length)return [{line:prefix,added:0,deleted:oldMiddle.length,type:'del'}];
+    for(let i=0;i<diff.length;) {
+      if(diff[i].type==='same'){offset++;i++;continue;}
+      const line=offset;let added=0,deleted=0;
+      while(i<diff.length&&diff[i].type!=='same'){
+        if(diff[i].type==='add'){added++;offset++;}
+        if(diff[i].type==='del')deleted++;
+        i++;
+      }
+      changes.push({line,added,deleted,type:deleted?(added?'modify':'del'):'add'});
+    }
+    return changes;
+  }
+  function drawChangeGutter() {
+    clearChangeGutter();
+    if(gutterPath!==canOpen() || typeof gutterBase!=='string')return;
+    const changes=gutterChanges(gutterBase,editor.getValue());
+    let marked=0;
+    editor.operation(()=>{
+      for(const change of changes) {
+        // CodeMirror only renders visible lines; cap large replaced regions.
+        // Their leading and trailing markers still identify the change.
+        const limit=Math.min(change.added,600);
+        for(let n=0;n<limit;n++){markChange(change.line+n,change.type);marked++;}
+        if(change.added>limit)markChange(change.line+change.added-1,change.type);
+        if(change.deleted&&!change.added){markChange(Math.min(change.line,editor.lineCount()-1),'del');marked++;}
+      }
+    });
+    reportGutter(changes.length?(changes.length+' Git change region'+(changes.length===1?'':'s')):'No Git changes',changes.length?'changed':'clean');
+  }
+  async function refreshChangeGutter() {
+    const path=canOpen(), request=++gutterRequest;
+    gutterPath=path;gutterBase=null;clearChangeGutter();
+    if(!path){reportGutter('Git gutter: select a site Markdown file','muted');return;}
+    reportGutter('Loading Git change gutter…','loading');
+    try {
+      const response=await fetch('/workspace/publish/review?path='+encodeURIComponent(path),{cache:'no-store'});
+      if(!response.ok) {
+        reportGutter('Git gutter unavailable: review returned HTTP '+response.status,'warning');
+        return;
+      }
+      const data=await response.json();
+      if(request!==gutterRequest||canOpen()!==path)return;
+      if(typeof data.baseline!=='string')throw new Error('missing committed baseline');
+      gutterBase=data.baseline_exists?data.baseline:'';
+      drawChangeGutter();
+    } catch(error) {
+      if(request===gutterRequest)reportGutter('Git gutter unavailable: '+error.message,'warning');
+    }
+  }
+  function scheduleChangeGutter() {
+    clearTimeout(gutterTimer);
+    const path=canOpen();
+    if(path!==gutterPath){refreshChangeGutter();return;}
+    gutterTimer=setTimeout(drawChangeGutter,160);
+  }
+
   function attach(instance) {
     editor=instance;
+    editor.setOption('gutters',['CodeMirror-linenumbers','markata-change-gutter']);
+    gutterStatus=document.createElement('span');
+    gutterStatus.id='markata-gutter-status';
+    gutterStatus.setAttribute('role','status');
+    gutterStatus.textContent='Loading Git change gutter…';
+    document.querySelector('#saved')?.insertAdjacentElement('afterend',gutterStatus);
+    editor.on('change',scheduleChangeGutter);
+    const activeLabel=document.querySelector('#active-file');
+    if(activeLabel)new MutationObserver(refreshChangeGutter).observe(activeLabel,{childList:true,characterData:true,subtree:true});
+    setTimeout(refreshChangeGutter,0);
     const startPublish=()=>{open();return true;};
     editor.addKeyMap({'Ctrl-S':startPublish,'Cmd-S':startPublish,'Ctrl-X Ctrl-S':startPublish});
     window.CodeMirror?.Vim?.defineEx('write','w',()=>open());
     button=document.createElement('button');
     button.type='button';button.id='publish-open';
-    button.textContent='Publish';button.title='Review & Publish (Ctrl/Cmd+S, Ctrl/Cmd+Shift+Enter, Vim :w)';
+    button.textContent='Review changes';button.title='Review changes (Ctrl/Cmd+S, Ctrl/Cmd+Shift+Enter, Vim :w)';
     button.setAttribute('aria-haspopup','dialog');
     const settings=document.querySelector('#settings-open');
     settings.parentElement.insertBefore(button,settings);
     const doc=document.createElement('dialog');
     doc.id='publish-review';doc.setAttribute('aria-labelledby','publish-title');
-    doc.innerHTML='<header class="publish-review-head"><div><small>REVIEW &amp; PUBLISH</small><h2 id="publish-title">Review changes</h2><p id="publish-path"></p></div><button type="button" id="publish-close" aria-label="Close publish review">✕</button></header>'+
+    doc.innerHTML='<header class="publish-review-head"><div><small>REVIEW CHANGES</small><h2 id="publish-title">Review changes</h2><p id="publish-path"></p></div><button type="button" id="publish-close" aria-label="Close publish review">✕</button></header>'+
     '<div id="publish-notice" role="status"></div><div id="publish-body" hidden><div id="publish-chips" aria-label="Change summary"></div>'+
     '<nav class="publish-mode-tabs" role="tablist" aria-label="Comparison view"><button id="publish-tab-side" type="button" role="tab" aria-controls="publish-view-side" data-publish-mode="side">Side by side</button><button id="publish-tab-rich" type="button" role="tab" aria-controls="publish-view-rich" data-publish-mode="rich">Rendered diff</button><button id="publish-tab-source" type="button" role="tab" aria-controls="publish-view-source" data-publish-mode="source">Source diff</button><button id="publish-tab-pierre" type="button" role="tab" aria-controls="publish-view-pierre" data-publish-mode="pierre">Full diff</button><button id="publish-tab-message" type="button" role="tab" aria-controls="publish-view-message" data-publish-mode="message">Commit message</button></nav>'+
     '<div id="publish-view-side" role="tabpanel" aria-labelledby="publish-tab-side" data-publish-view="side"><div class="publish-side-tabs" role="group" aria-label="Version to read"><button data-publish-side="before" type="button">Last committed</button><button data-publish-side="after" type="button">Current draft</button></div>'+
@@ -400,7 +554,9 @@
     '<div id="publish-view-pierre" role="tabpanel" aria-labelledby="publish-tab-pierre" data-publish-view="pierre" hidden><div class="publish-pierre-actions"><span>Pierre source diff</span><button type="button" data-pierre-layout="stacked" class="active">Unified</button><button type="button" data-pierre-layout="split">Split</button></div><p id="publish-pierre-error" role="status" hidden></p><div id="publish-pierre-host"></div></div>'+
     '<div id="publish-view-source" role="tabpanel" aria-labelledby="publish-tab-source" data-publish-view="source" hidden><div id="publish-source-diff" role="region" tabindex="0" aria-label="Unified Markdown source diff"></div></div>'+
     '<div id="publish-view-message" role="tabpanel" aria-labelledby="publish-tab-message" data-publish-view="message" hidden><label for="publish-commit-message">Commit message</label><textarea id="publish-commit-message" rows="4" maxlength="4000" spellcheck="true"></textarea><p class="publish-message-help"><span id="publish-message-count">0 / 4000 bytes</span> Used for the local commit. Nothing is pushed from this screen.</p></div></div>'+
-    '<footer class="publish-actions"><span>A Git commit is not a verified deployment.</span><button type="button" id="publish-back">Back to editing</button><button type="button" id="publish-mark-public" hidden>Mark as public</button><button type="button" id="publish-confirm" disabled>Commit selected page</button><button type="button" id="publish-push" hidden>Push to origin</button><button type="button" id="publish-live-check" hidden>Check live status</button></footer>';
+    '<div id="publish-discard-warning" hidden role="status">New, untracked file: safe deletion is not implemented yet. Your draft is preserved.</div>'+
+    '<div id="publish-discard-confirmation" hidden role="alertdialog" aria-label="Confirm discard"><p id="publish-discard-description">Restore this document to its last committed version? This removes your reviewed unpublished changes, without changing Git history.</p><button type="button" id="publish-discard-cancel">Cancel</button><button type="button" id="publish-discard-accept">Discard reviewed changes</button></div>'+
+    '<footer class="publish-actions"><span>A Git commit is not a verified deployment.</span><button type="button" id="publish-discard" hidden>Discard changes…</button><button type="button" id="publish-back">Back to editing</button><button type="button" id="publish-mark-public" hidden>Mark as public</button><button type="button" id="publish-confirm" disabled>Commit selected page</button><button type="button" id="publish-push" hidden>Push to origin</button><button type="button" id="publish-live-check" hidden>Check live status</button></footer>';
     document.body.append(doc);dialog=doc;notice=doc.querySelector('#publish-notice');panels=doc.querySelector('#publish-body');
     button.addEventListener('click',open);
     editor.on('change',updatePublishButton);
@@ -409,6 +565,14 @@
     updatePublishButton();
     doc.querySelector('#publish-close').addEventListener('click',()=>doc.close());
     doc.querySelector('#publish-back').addEventListener('click',()=>doc.close());
+    doc.querySelector('#publish-discard').addEventListener('click',()=>{
+      if (state.busy || !state.data?.baseline_exists) return;
+      doc.querySelector('#publish-discard-description').textContent='Restore '+state.path+' to the last committed Git version? The reviewed unpublished edits will be removed from the active workspace.';
+      doc.querySelector('#publish-discard-confirmation').hidden=false;
+      doc.querySelector('#publish-discard-cancel').focus();
+    });
+    doc.querySelector('#publish-discard-cancel').addEventListener('click',()=>{doc.querySelector('#publish-discard-confirmation').hidden=true;doc.querySelector('#publish-discard').focus();});
+    doc.querySelector('#publish-discard-accept').addEventListener('click',discardReviewed);
     doc.querySelector('#publish-mark-public').addEventListener('click',markPublicAndReviewAgain);
     doc.querySelector('#publish-confirm').addEventListener('click',commitReview);
     doc.querySelector('#publish-push').addEventListener('click',pushReview);
@@ -443,9 +607,9 @@
     },{passive:true});
     if (window.MarkataShortcuts) {
       window.MarkataShortcuts.register({
-        id:'publishing.review', label:'Publishing: Review & Publish', category:'Publishing',
+        id:'publishing.review', label:'Publishing: Review changes', category:'Publishing',
         description:'Review saved and committed changes before publishing.',
-        aliases:'publish go live deploy release review git',
+        aliases:'review changes publish go live deploy release git',
         bindings:{vscode:'Mod+Shift+Enter',writer:'Mod+Shift+Enter',vim:'Mod+Shift+Enter',emacs:'Ctrl+Shift+Enter'},
         run:open
       });
