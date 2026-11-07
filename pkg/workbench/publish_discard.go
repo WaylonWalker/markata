@@ -24,6 +24,10 @@ func (h *Handler) servePublishDiscard(w http.ResponseWriter, r *http.Request) {
 	if !readPublishInput(w, r, &req) {
 		return
 	}
+	// Protect the source/version check and write from other requests to this editor.
+	// External filesystem editors still require a separate conflict protocol.
+	h.workspaceWriteMu.Lock()
+	defer h.workspaceWriteMu.Unlock()
 	if !gitHashPattern.MatchString(req.Head) || !gitHashPattern.MatchString(req.Version) {
 		fail(w, http.StatusBadRequest, "review revision and Git HEAD required")
 		return
