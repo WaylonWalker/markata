@@ -43,7 +43,9 @@ class GoEditorPublishFlowTest(unittest.TestCase):
             + "".join(f"Line {index}: stable content\n" for index in range(600)),
             encoding="utf-8",
         )
-        cls.git(cls.site, "add", "posts/publish-flow.md", "posts/long-gutter.md")
+        discard_post = posts / "discard-flow.md"
+        discard_post.write_text("---\\ntitle: Discard fixture\\npublished: false\\n---\\n\\n# Original\\n", encoding="utf-8")
+        cls.git(cls.site, "add", "posts/publish-flow.md", "posts/long-gutter.md", "posts/discard-flow.md")
         cls.git(cls.site, "commit", "-m", "Fixture baseline")
         cls.git(cls.site, "push", "-u", "origin", "main")
 
@@ -97,6 +99,40 @@ class GoEditorPublishFlowTest(unittest.TestCase):
             ["git", *args], cwd=root, check=True, text=True,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         ).stdout.strip()
+
+    def test_discard_restores_disk_browser_and_gutter(self):
+        context = self.browser.new_context()
+        self.addCleanup(context.close)
+        page = context.new_page()
+        errors = []
+        page.on("pageerror", lambda error: errors.append(str(error)))
+        page.goto(self.url)
+        page.evaluate("window.MarkataSiteTree.openFile('posts/discard-flow.md')")
+        expect(page.locator("#active-file")).to_contain_text("posts/discard-flow.md")
+        expect(page.locator("#markata-gutter-status")).to_contain_text("No Git changes")
+        original = (self.site / "posts/discard-flow.md").read_text(encoding="utf-8")
+        page.evaluate("""() => {
+          const editor=document.querySelector('.CodeMirror').CodeMirror;
+          editor.setValue(editor.getValue().replace('# Original', '# Unpublished local edit'));
+        }""")
+        expect(page.locator("#markata-gutter-status")).to_contain_text("Git change region")
+        page.get_by_role("button", name="Review changes").click()
+        review = page.locator("#publish-review")
+        expect(review).to_be_visible()
+        expect(review.locator("#publish-discard")).to_be_enabled()
+        review.locator("#publish-discard").click()
+        expect(review.locator("#publish-discard-confirmation")).to_be_visible()
+        expect(review.locator("#publish-discard-description")).to_contain_text("posts/discard-flow.md")
+        review.locator("#publish-discard-accept").click()
+        expect(review).not_to_be_visible(timeout=10000)
+        expect(page.locator("#markata-gutter-status")).to_contain_text("No Git changes")
+        self.assertEqual((self.site / "posts/discard-flow.md").read_text(encoding="utf-8"), original)
+        self.assertEqual(page.evaluate("document.querySelector('.CodeMirror').CodeMirror.getValue()"), original)
+        page.reload()
+        expect(page.locator("#active-file")).to_contain_text("posts/discard-flow.md")
+        self.assertEqual(page.evaluate("document.querySelector('.CodeMirror').CodeMirror.getValue()"), original)
+        self.assertEqual(self.git(self.site, "diff", "--cached", "--name-only"), "")
+        self.assertEqual(errors, [])
 
     def test_frontmatter_review_commit_message_and_temporary_push(self):
         context = self.browser.new_context()
