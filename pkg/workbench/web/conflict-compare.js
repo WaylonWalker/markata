@@ -90,7 +90,7 @@
       if (currentComparison) download(currentComparison.browserSource, currentComparison.path, 'browser');
     });
     dialog.querySelector('#workspace-conflict-download-disk').addEventListener('click', () => {
-      if (currentComparison?.diskSource !== null)
+      if (currentComparison && typeof currentComparison.diskSource === 'string')
         download(currentComparison.diskSource, currentComparison.path, 'disk');
     });
     function close() { dialog.close(); }
