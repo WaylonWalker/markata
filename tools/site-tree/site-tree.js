@@ -12,13 +12,14 @@ let siteAutosave = false;
 const aliases = {}, feedAliases = {};
 const baselines = {}, versions = {}, restored = {};
 let workspaceCounts = {files:0,feeds:0,tags:0};
-const saveTimers = {}, saveQueues = {}, saveRevisions = {};
+const saveTimers = {}, saveQueues = {}, saveRevisions = {}, saveEpochs = {};
 function saveToSite(path, source) {
   const revision = saveRevisions[path] = (saveRevisions[path] || 0) + 1;
+  const epoch = saveEpochs[path] || 0;
   clearTimeout(saveTimers[path]);
   saveTimers[path] = setTimeout(() => {
     saveQueues[path] = (saveQueues[path] || Promise.resolve()).catch(() => {}).then(async () => {
-      if (revision !== saveRevisions[path]) return;
+      if (revision !== saveRevisions[path] || epoch !== (saveEpochs[path] || 0)) return;
       const expected = versions[path];
       // No known version means an older recovered draft cannot safely
       // overwrite a disk file. Keep browser recovery until user reconciles.
@@ -30,6 +31,8 @@ function saveToSite(path, source) {
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Cannot save to the site');
+      // A discarded generation may finish in flight; ignore that obsolete ack.
+      if (epoch !== (saveEpochs[path] || 0)) return;
       baselines[path] = source;
       versions[path] = data.version;
       // A successful server save updates recovery's clean version only if
@@ -41,6 +44,7 @@ function saveToSite(path, source) {
         document.querySelector('#saved').textContent = 'Saved to site';
       }
     }).catch(error => {
+      if (epoch !== (saveEpochs[path] || 0)) return;
       if (active === path) document.querySelector('#saved').textContent = `Site save failed · ${error.message} · recovery copy kept`;
     });
   },350);
@@ -149,6 +153,7 @@ window.MarkataSiteTree = {
     if (!currentEditor || active !== path || !Object.hasOwn(files, path) ||
         !/^[0-9a-f]{64}$/.test(version)) return false;
     saveRevisions[path] = (saveRevisions[path] || 0) + 1;
+    saveEpochs[path] = (saveEpochs[path] || 0) + 1;
     clearTimeout(saveTimers[path]);
     drafts[path] = source;
     baselines[path] = source;
