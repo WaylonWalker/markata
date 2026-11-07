@@ -92,10 +92,14 @@ rather than erasing history or conflict copies. A successful local-only discard
 MUST NOT claim remote synchronization. The loopback-only workbench endpoint
 MUST NOT be exposed on hosted ingress.
 
-Until a version-checked backend exists, the interface MUST NOT expose an
-enabled Discard control that gives the impression of a safe restore. The first
-implementation slice may rename and unify review entry points without claiming
-to have implemented discard or hosted publish.
+The local workbench now has an experimental, revision-checked restore for
+Git-tracked files, with explicit confirmation and a server-side lock against
+other writes made through the same handler. The editor must refresh recovery
+state and verify the saved baseline before reporting local success. This is
+not a hosted atomic discard transaction, and other filesystem writers are not
+covered by the in-process lock. New/untracked-file deletion remains disabled
+until it has its own safe workflow. Do not enable a hosted Discard action until
+the durable journal and authorization contract above are implemented.
 
 ## Next steps: publishing back end
 
