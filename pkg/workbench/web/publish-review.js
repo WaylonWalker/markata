@@ -335,8 +335,13 @@
       if (!response.ok)throw new Error(result.error||'Could not discard reviewed changes.');
       // Set the live editor and its recovery copy to the exact server-acknowledged
       // baseline. Reloading here would restore an older dirty browser buffer.
+      if (window.MarkataSiteTree?.activeFile?.()!==data.path || editor.getValue()!==data.current) {
+        setNotice('The server restored the reviewed version, but this editor changed during the request. Reload the file to reconcile before editing.','warning');
+        return;
+      }
       editor.setValue(data.baseline);
-      window.MarkataSiteTree?.save();
+      await awaitSaved(data.path,data.baseline);
+      refreshChangeGutter();
       dialog.querySelector('#publish-discard-confirmation').hidden=true;
       dialog.close();
     } catch(error) {
@@ -369,6 +374,7 @@
       const result=await response.json();
       if(!response.ok)throw new Error(result.error||'Cannot commit this revision.');
       state.commit=result;
+      refreshChangeGutter();
       btn.hidden=true;
       dialog.querySelector('#publish-mark-public').hidden=true;
       dialog.querySelector('#publish-push').hidden=false;
