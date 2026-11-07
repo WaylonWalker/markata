@@ -153,7 +153,7 @@ window.MarkataSiteTree = {
     drafts[path] = source;
     baselines[path] = source;
     versions[path] = version;
-    try { writeDraft(path, source); } catch { warning(); }
+    try { writeDraft(path, source); } catch { warning(); return false; }
     document.querySelector('#saved').textContent = 'Restored committed version · saved to site';
     return true;
   },
