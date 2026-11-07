@@ -471,6 +471,9 @@ async function render() {
   }
 }
 editor.on('change', (_instance, change) => {
+  // Discard and file-open replace the entire CodeMirror document. An old
+  // preview scroll map must not be reused for the replacement's cursor.
+  if (change.origin === 'setValue') scrollSync.reset();
   editor.save(); revision++; clearTimeout(timer);
   lastEditAt = performance.now();
   updateFrontmatterSummary(editor.getValue());
