@@ -125,7 +125,11 @@ def check_app_shortcuts(page, url):
         expect(option.first).to_contain_text('Editor keymap: ' + keymap_name.capitalize())
         page.keyboard.press('Enter')
         expect(page.locator('#keymap')).to_have_value(keymap_name)
-        assert page.evaluate("document.querySelector('.CodeMirror').CodeMirror.getOption('keyMap')") == keymap_name
+        page.wait_for_function(
+            "(key) => document.querySelector('.CodeMirror').CodeMirror.getOption('keyMap') === key",
+            arg=keymap_name,
+            timeout=5000,
+        )
         assert page.evaluate("localStorage.getItem('markata-editor-keymap')") == keymap_name
         assert page.evaluate("window.MarkataShortcuts.getPreset()") == app_preset
 
