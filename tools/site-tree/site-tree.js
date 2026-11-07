@@ -96,7 +96,7 @@ async function open(path) {
       dirty = restored[path]?.format === 'markata-draft-v3' ? restored[path].dirty !== false : previous !== disk.source;
       previousVersion = restored[path]?.version;
     }
-    diskChanged = dirty && previousVersion && disk.version && previousVersion !== disk.version;
+    // Legacy recovery without a source-version token is also unsafe to\n    // sync automatically; keep its draft until the writer reconciles.\n    diskChanged = Boolean(dirty && (!previousVersion || previousVersion !== disk.version));
     drafts[path] = dirty ? previous : disk.source;
     files[path] = disk.source;
     baselines[path] = disk.source;
