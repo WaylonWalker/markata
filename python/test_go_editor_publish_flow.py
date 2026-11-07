@@ -134,7 +134,7 @@ class GoEditorPublishFlowTest(unittest.TestCase):
 
         # Regression: a Discard followed by fresh typing must not reuse the
         # previous review iframe or the old preview cursor/scroll geometry.
-        fresh = original + "\\nFirst fresh paragraph.\\n\\nSecond fresh paragraph.\\n"
+        fresh = original + "\nFirst fresh paragraph.\n\nSecond fresh paragraph.\n"
         self.edit_source(page, fresh)
         expect(page.locator("#saved")).to_have_text("Saved to site", timeout=10000)
         expect(page.frame_locator("#preview").locator(".post-content")).to_contain_text("Second fresh paragraph.")
