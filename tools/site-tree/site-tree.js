@@ -32,6 +32,11 @@ function saveToSite(path, source) {
       if (!response.ok) throw new Error(data.error || 'Cannot save to the site');
       baselines[path] = source;
       versions[path] = data.version;
+      // A successful server save updates recovery's clean version only if
+      // there is not already a newer unsaved edit in the browser buffer.
+      if (drafts[path] === source && (active !== path || currentEditor.getValue() === source)) {
+        try { writeDraft(path, source); } catch { warning(); }
+      }
       if (active === path && currentEditor.getValue() === source) {
         document.querySelector('#saved').textContent = 'Saved to site';
       }
