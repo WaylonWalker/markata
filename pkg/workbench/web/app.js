@@ -519,3 +519,4 @@ if (!saved.textContent) saveDraft();
 
 const workspaceReady = window.MarkataSiteTree.attach(editor, storageWarning, {saveToSite:true});
 workspaceReady.then(() => window.MarkataFileFinder?.attach(editor));
+workspaceReady.then(() => window.MarkataConflictCompare?.attach(editor));
