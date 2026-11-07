@@ -20,6 +20,7 @@ import (
 	"path"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/WaylonWalker/markata/pkg/editorworkspace"
@@ -72,6 +73,7 @@ type Handler struct {
 	index          []byte
 	bridge         string
 	gate           chan struct{}
+	workspaceWriteMu sync.Mutex
 	lastSource     string
 	lastResult     *plugins.StandaloneResult
 }
@@ -564,6 +566,8 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if r.URL.Path == "/workspace/frontmatter/inspect" || r.URL.Path == "/workspace/frontmatter/edit" {
+		h.workspaceWriteMu.Lock()
+		defer h.workspaceWriteMu.Unlock()
 		h.serveFrontmatterEditor(w, r)
 		return
 	}
@@ -588,6 +592,9 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 				fail(w, http.StatusForbidden, "same-origin workspace writes are required")
 				return
 			}
+			// Serialize local editor writes with version-checked Discard restores.
+			h.workspaceWriteMu.Lock()
+			defer h.workspaceWriteMu.Unlock()
 			body, err := io.ReadAll(io.LimitReader(r.Body, maxSource+1))
 			if err != nil {
 				fail(w, 400, "cannot read source")
