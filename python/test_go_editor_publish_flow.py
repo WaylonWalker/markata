@@ -147,6 +147,13 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         expect(page.frame_locator("#preview").locator(".markata-sync-position")).to_contain_text(
             "Second fresh paragraph.", timeout=10000
         )
+        # The reverse interaction must also land on the correct fresh source
+        # line, rather than an anchor retained from before Discard.
+        page.frame_locator("#preview").locator("p").filter(has_text="Second fresh paragraph.").click()
+        page.wait_for_function("""() => {
+          const editor=document.querySelector('.CodeMirror').CodeMirror;
+          return editor.getLine(editor.getCursor().line).includes('Second fresh paragraph.');
+        }""")
         page.get_by_role("button", name="Review changes").click()
         expect(review).to_be_visible()
         expect(review.locator("#publish-source-diff")).to_contain_text("First fresh paragraph.")
