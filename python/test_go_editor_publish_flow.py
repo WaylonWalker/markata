@@ -138,7 +138,7 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         self.assertEqual(errors, [])
 
     def test_autosave_preserves_external_edit_and_browser_recovery(self):
-        context = self.browser.new_context()
+        context = self.browser.new_context(accept_downloads=True)
         self.addCleanup(context.close)
         page = context.new_page()
         errors = []
@@ -155,6 +155,22 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         self.edit_source(page, browser_draft)
         expect(page.locator("#saved")).to_contain_text("Site save failed", timeout=10000)
         expect(page.locator("#saved")).to_contain_text("browser recovery copy kept")
+        self.assertEqual(post.read_text(encoding="utf-8"), external)
+        expect(page.locator("#workspace-conflict-review")).to_be_visible()
+        page.locator("#workspace-conflict-review").click()
+        compare = page.locator("#workspace-conflict-dialog")
+        expect(compare).to_be_visible()
+        expect(compare.locator("#workspace-conflict-browser")).to_have_text(browser_draft)
+        expect(compare.locator("#workspace-conflict-disk")).to_have_text(external)
+        with page.expect_download() as browser_download:
+            compare.locator("#workspace-conflict-download-browser").click()
+        self.assertEqual(Path(browser_download.value.path()).read_text(encoding="utf-8"), browser_draft)
+        with page.expect_download() as disk_download:
+            compare.locator("#workspace-conflict-download-disk").click()
+        self.assertEqual(Path(disk_download.value.path()).read_text(encoding="utf-8"), external)
+        compare.locator("#workspace-conflict-done").click()
+        expect(compare).not_to_be_visible()
+        # Comparing and exporting must never mutate the filesystem.
         self.assertEqual(post.read_text(encoding="utf-8"), external)
 
         # The dirty recovery copy must survive a reload without replacing disk.
