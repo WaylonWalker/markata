@@ -154,11 +154,28 @@ class GoEditorPublishFlowTest(unittest.TestCase):
           const editor=document.querySelector('.CodeMirror').CodeMirror;
           return editor.getLine(editor.getCursor().line).includes('Second fresh paragraph.');
         }""")
+        # Additional edits can arrive while an earlier render is still in
+        # flight. The preview must eventually reflect the newest revision,
+        # including during rapid typing immediately after a Discard.
+        for number in range(4):
+            fresh += f"\\nLive revision {number}.\\n"
+            self.edit_source(page, fresh)
+            page.wait_for_timeout(140)
+        expect(page.frame_locator("#preview").locator(".post-content")).to_contain_text(
+            "Live revision 3.", timeout=15000
+        )
+        expect(page.frame_locator("#preview").locator(".post-content")).not_to_contain_text(
+            "Unpublished local edit"
+        )
         page.get_by_role("button", name="Review changes").click()
         expect(review).to_be_visible()
+        expect(review.locator("#publish-source-diff")).to_contain_text("Live revision 3.")
         expect(review.locator("#publish-source-diff")).to_contain_text("First fresh paragraph.")
         expect(review.locator("#publish-source-diff")).to_contain_text("Second fresh paragraph.")
         expect(review.locator("#publish-source-diff")).not_to_contain_text("Unpublished local edit")
+        expect(page.frame_locator("#publish-rich-frame").locator(".post-content")).to_contain_text(
+            "Live revision 3.", timeout=10000
+        )
         expect(page.frame_locator("#publish-rich-frame").locator(".post-content")).to_contain_text(
             "Second fresh paragraph.", timeout=10000
         )
