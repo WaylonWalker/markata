@@ -59,23 +59,23 @@ type workspaceSource interface {
 // Mount it at the root of an origin. Authored HTML is enabled for trusted local
 // editing; isolate its preview using an opaque-origin iframe sandbox.
 type Handler struct {
-	store          *editorworkspace.Store
-	root           string
-	configRevision uint64
-	renderer       *plugins.StandaloneRenderer
-	siteConfig     *models.Config
-	workspace      workspaceSource
-	language       http.Handler
-	languageConfig lsp.BrowserConfig
-	appearance     *plugins.StandaloneAppearance
-	choices        map[string][]string
-	assets         map[string][]byte
-	index          []byte
-	bridge         string
-	gate           chan struct{}
+	store            *editorworkspace.Store
+	root             string
+	configRevision   uint64
+	renderer         *plugins.StandaloneRenderer
+	siteConfig       *models.Config
+	workspace        workspaceSource
+	language         http.Handler
+	languageConfig   lsp.BrowserConfig
+	appearance       *plugins.StandaloneAppearance
+	choices          map[string][]string
+	assets           map[string][]byte
+	index            []byte
+	bridge           string
+	gate             chan struct{}
 	workspaceWriteMu sync.Mutex
-	lastSource     string
-	lastResult     *plugins.StandaloneResult
+	lastSource       string
+	lastResult       *plugins.StandaloneResult
 }
 
 // New builds immutable appearance assets once. Reuse the handler for all requests.
