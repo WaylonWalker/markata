@@ -70,6 +70,11 @@ Press **Ctrl+P** (**Cmd+P** on macOS) to find a site file by its path, title,
 slug, or tag. The finder shows the current and recently opened files when its
 search is empty.
 Select a result or press **Enter** to open it in the editor.
+The sidebar also has a collapsible **Recent files** section for the last eight
+workspace documents opened on this device. It is saved per workspace in
+browser storage, works without network access, and excludes unsaved scratch
+drafts. Select any recent entry to reopen it; the entry list quietly ignores
+files no longer in the workspace. You can collapse it when you need more room.
 Choose **Feeds** or **Tags** in the workspace selector to browse posts by feed
 or tag. Feed names are shown as roots with folders relative to the workspace.
 
