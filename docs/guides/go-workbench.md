@@ -304,7 +304,13 @@ version (SHA-256 of the exact file bytes). The browser sends this as
 The Go editor rejects a missing version with HTTP 428 and a stale version with
 HTTP 409 **without writing the file**. For a conflict, the browser retains its
 recovery copy and shows a save error; reopen the file to inspect/reconcile the
-external revision. An older recovery record without a version token also
+external revision. When a conflict is detected, **Compare copies…**
+opens a read-only comparison of the browser draft and the current file on disk.
+Both copies can be downloaded separately before choosing how to resolve the
+conflict. No button in this comparison writes, merges, replaces, or deletes
+workspace content. On a phone the two panels stack vertically. If the server
+is unavailable, the browser draft can still be downloaded.
+An older recovery record without a version token also
 fails closed. An acknowledged save updates the browser's recovery version so a
 normal reload does not invent a conflict. The current local Go handler
 serializes its own workspace writes and Discard restores, but unrelated
