@@ -366,6 +366,7 @@ keymap.addEventListener('change', () => {
 // Rejected imports must not be dismissed by an already-running preview response.
 let rejectedImportRevision = -1;
 let revision = 0, timer, busy = false, ready = false, lastEditAt = null;
+let pendingRender = false;
 let previewStarted = false, previewReady = false, pendingPreview = null, activeRender = null;
 function finishPreview(version) {
   if (!activeRender || activeRender.version !== version || version !== revision) return;
@@ -404,8 +405,17 @@ function updateFrontmatterSummary(markdown) {
   panel.hidden = false;
 }
 async function render() {
-  if (!ready || busy) return;
-  const version = revision, originalMarkdown = source.value;
+  if (!ready) return;
+  if (busy) {
+    // Keep the newest request pending rather than losing changes made while
+    // Go is still rendering an earlier revision.
+    pendingRender = true;
+    return;
+  }
+  pendingRender = false;
+  // The CodeMirror document is the source of truth. The textarea is only
+  // a form mirror and may lag a programmatic document replacement.
+  const version = revision, originalMarkdown = editor.getValue();
   const markdown = window.MarkataSiteTree?.markdown(originalMarkdown) ?? originalMarkdown;
   const frontmatter = originalMarkdown.match(/^---\r?\n[\s\S]*?\r?\n---(?:\r?\n|$)/);
   const sourceLineOffset = frontmatter && markdown !== originalMarkdown
@@ -466,8 +476,15 @@ async function render() {
     errorBox.hidden = false;
     status.textContent = 'Preview failed. Edit the Markdown to try again.';
   } finally {
-    clearTimeout(timeout); busy = false;
-    if (version !== revision) { clearTimeout(timer); timer = setTimeout(render, 0); }
+    clearTimeout(timeout);
+    busy = false;
+    // Stale or skipped renders must always yield to the latest editor text.
+    // Coalesce rapid edits into one retry instead of leaving the preview stale.
+    if (pendingRender || version !== revision) {
+      pendingRender = false;
+      clearTimeout(timer);
+      timer = setTimeout(render, 0);
+    }
   }
 }
 editor.on('change', (_instance, change) => {
