@@ -44,11 +44,11 @@ class GoEditorPublishFlowTest(unittest.TestCase):
             encoding="utf-8",
         )
         discard_post = posts / "discard-flow.md"
-        discard_post.write_text("---\\ntitle: Discard fixture\\npublished: false\\n---\\n\\n# Original\\n", encoding="utf-8")
+        discard_post.write_text("---\ntitle: Discard fixture\npublished: false\n---\n\n# Original\n", encoding="utf-8")
         external_post = posts / "external-edit.md"
-        external_post.write_text("# First external version\\n", encoding="utf-8")
+        external_post.write_text("# First external version\n", encoding="utf-8")
         clean_post = posts / "autosave-clean.md"
-        clean_post.write_text("# Initial clean draft\\n", encoding="utf-8")
+        clean_post.write_text("# Initial clean draft\n", encoding="utf-8")
         cls.git(cls.site, "add", "posts/publish-flow.md", "posts/long-gutter.md", "posts/discard-flow.md", "posts/external-edit.md", "posts/autosave-clean.md")
         cls.git(cls.site, "commit", "-m", "Fixture baseline")
         cls.git(cls.site, "push", "-u", "origin", "main")
@@ -151,9 +151,9 @@ class GoEditorPublishFlowTest(unittest.TestCase):
 
         # Another process changes the file after the browser has loaded it.
         post = self.site / "posts/external-edit.md"
-        external = "# Changed by external editor\\n"
+        external = "# Changed by external editor\n"
         post.write_text(external, encoding="utf-8")
-        browser_draft = "# Uncommitted browser edit\\n"
+        browser_draft = "# Uncommitted browser edit\n"
         page.evaluate("""(text) => document.querySelector('.CodeMirror').CodeMirror.setValue(text)""", browser_draft)
         expect(page.locator("#saved")).to_contain_text("Site save failed", timeout=10000)
         expect(page.locator("#saved")).to_contain_text("browser recovery copy kept")
@@ -179,14 +179,14 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         post = self.site / "posts/autosave-clean.md"
         page.evaluate("""() => document.querySelector('.CodeMirror').CodeMirror.setValue('# First autosave\\n')""")
         expect(page.locator("#saved")).to_have_text("Saved to site", timeout=10000)
-        self.assertEqual(post.read_text(encoding="utf-8"), "# First autosave\\n")
+        self.assertEqual(post.read_text(encoding="utf-8"), "# First autosave\n")
 
         page.reload()
         expect(page.locator("#active-file")).to_contain_text("posts/autosave-clean.md")
-        self.assertEqual(page.evaluate("document.querySelector('.CodeMirror').CodeMirror.getValue()"), "# First autosave\\n")
+        self.assertEqual(page.evaluate("document.querySelector('.CodeMirror').CodeMirror.getValue()"), "# First autosave\n")
         page.evaluate("""() => document.querySelector('.CodeMirror').CodeMirror.setValue('# Second autosave\\n')""")
         expect(page.locator("#saved")).to_have_text("Saved to site", timeout=10000)
-        self.assertEqual(post.read_text(encoding="utf-8"), "# Second autosave\\n")
+        self.assertEqual(post.read_text(encoding="utf-8"), "# Second autosave\n")
         self.assertEqual(errors, [])
 
     def test_frontmatter_review_commit_message_and_temporary_push(self):
