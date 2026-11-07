@@ -125,8 +125,14 @@ def check_app_shortcuts(page, url):
         expect(option.first).to_contain_text('Editor keymap: ' + keymap_name.capitalize())
         page.keyboard.press('Enter')
         expect(page.locator('#keymap')).to_have_value(keymap_name)
+        # Switching into Vim focuses the editor in insert mode. CodeMirror
+        # intentionally changes the active map to "vim-insert", while the
+        # persisted user preference remains "vim".
         page.wait_for_function(
-            "(key) => document.querySelector('.CodeMirror').CodeMirror.getOption('keyMap') === key",
+            """(key) => {
+              const active = document.querySelector('.CodeMirror').CodeMirror.getOption('keyMap');
+              return key === 'vim' ? (active === 'vim' || active === 'vim-insert') : active === key;
+            }""",
             arg=keymap_name,
             timeout=5000,
         )
