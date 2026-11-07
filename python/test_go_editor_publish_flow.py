@@ -111,8 +111,7 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         errors = []
         page.on("pageerror", lambda error: errors.append(str(error)))
         page.goto(self.url)
-        page.evaluate("window.MarkataSiteTree.openFile('posts/discard-flow.md')")
-        expect(page.locator("#active-file")).to_contain_text("posts/discard-flow.md")
+        self.open_site_file(page, "posts/discard-flow.md")
         expect(page.locator("#markata-gutter-status")).to_contain_text("No Git changes")
         original = (self.site / "posts/discard-flow.md").read_text(encoding="utf-8")
         page.evaluate("""() => {
@@ -145,8 +144,7 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         errors = []
         page.on("pageerror", lambda error: errors.append(str(error)))
         page.goto(self.url)
-        page.evaluate("window.MarkataSiteTree.openFile('posts/external-edit.md')")
-        expect(page.locator("#active-file")).to_contain_text("posts/external-edit.md")
+        self.open_site_file(page, "posts/external-edit.md")
         expect(page.locator("#markata-gutter-status")).to_contain_text("No Git changes")
 
         # Another process changes the file after the browser has loaded it.
@@ -174,8 +172,7 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         errors = []
         page.on("pageerror", lambda error: errors.append(str(error)))
         page.goto(self.url)
-        page.evaluate("window.MarkataSiteTree.openFile('posts/autosave-clean.md')")
-        expect(page.locator("#active-file")).to_contain_text("posts/autosave-clean.md")
+        self.open_site_file(page, "posts/autosave-clean.md")
         post = self.site / "posts/autosave-clean.md"
         page.evaluate("""() => document.querySelector('.CodeMirror').CodeMirror.setValue('# First autosave\\n')""")
         expect(page.locator("#saved")).to_have_text("Saved to site", timeout=10000)
@@ -189,6 +186,17 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         self.assertEqual(post.read_text(encoding="utf-8"), "# Second autosave\n")
         self.assertEqual(errors, [])
 
+    @staticmethod
+    def open_site_file(page, path):
+        # The initial /workspace fetch is async. Earlier tests asked openFile
+        # before the registry was populated, so the call silently did nothing.
+        page.wait_for_function(
+            "(target) => Boolean(window.MarkataSiteTree?.files?.().some(item => item.path === target))",
+            arg=path,
+        )
+        page.evaluate("(target) => window.MarkataSiteTree.openFile(target)", path)
+        expect(page.locator("#active-file")).to_have_text(path)
+
     def test_frontmatter_review_commit_message_and_temporary_push(self):
         context = self.browser.new_context()
         self.addCleanup(context.close)
@@ -196,8 +204,7 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         errors = []
         page.on("pageerror", lambda error: errors.append(str(error)))
         page.goto(self.url)
-        page.evaluate("window.MarkataSiteTree.openFile('posts/publish-flow.md')")
-        expect(page.locator("#active-file")).to_contain_text("posts/publish-flow.md")
+        self.open_site_file(page, "posts/publish-flow.md")
 
         page.get_by_role("button", name="Properties", exact=True).click()
         tags = page.locator('[data-field="tags"]')
@@ -249,10 +256,8 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         errors = []
         page.on("pageerror", lambda error: errors.append(str(error)))
         page.goto(self.url)
-        page.evaluate("window.MarkataSiteTree.openFile('posts/publish-flow.md')")
-        expect(page.locator("#active-file")).to_contain_text("posts/publish-flow.md")
-        page.evaluate("window.MarkataSiteTree.openFile('posts/long-gutter.md')")
-        expect(page.locator("#active-file")).to_contain_text("posts/long-gutter.md")
+        self.open_site_file(page, "posts/publish-flow.md")
+        self.open_site_file(page, "posts/long-gutter.md")
         expect(page.locator("#markata-gutter-status")).to_contain_text("No Git changes")
         page.evaluate("""() => {
           const editor=document.querySelector('.CodeMirror').CodeMirror;
