@@ -422,9 +422,14 @@
     button.title = 'Review changes (Ctrl/Cmd+S, Ctrl/Cmd+Shift+Enter)';
   }
 
-  // Git-style gutter. Always compare against the committed Git blob, never
-  // against the last autosaved workspace revision (which changes as we type).
-  let gutterPath=null, gutterBase=null, gutterRequest=0, gutterTimer=null;
+  // Git-style gutter. Compare the visible editor to Git HEAD, not autosave.
+  let gutterPath=null, gutterBase=null, gutterRequest=0, gutterTimer=null, gutterStatus=null;
+  function reportGutter(message, kind='info') {
+    if (!gutterStatus) return;
+    gutterStatus.textContent=message;
+    gutterStatus.dataset.state=kind;
+    gutterStatus.title=message;
+  }
   function clearChangeGutter() {
     editor?.clearGutter('markata-change-gutter');
   }
@@ -436,36 +441,78 @@
     marker.title=marker.getAttribute('aria-label')+' since last Git commit';
     editor.setGutterMarker(line,'markata-change-gutter',marker);
   }
-  function drawChangeGutter() {
-    clearChangeGutter();
-    if(gutterPath!==canOpen()||typeof gutterBase!=='string')return;
-    const changes=diffLines(gutterBase,editor.getValue());
-    if(changes.some(change=>change.type==='note'))return;
-    let oldLine=0,newLine=0;
-    for(let i=0;i<changes.length;) {
-      if(changes[i].type==='same'){oldLine++;newLine++;i++;continue;}
-      const from=newLine;let deleted=0,added=0;
-      while(i<changes.length && changes[i].type!=='same'){
-        if(changes[i].type==='del'){oldLine++;deleted++;}
-        if(changes[i].type==='add'){newLine++;added++;}
+  // Trim unchanged leading/trailing lines before invoking the bounded LCS.
+  // Large posts with a small edit should not silently lose their markers.
+  // For a huge changed middle region, mark it conservatively as one region
+  // rather than blocking the editor with quadratic diff work.
+  function gutterChanges(before, after) {
+    const oldLines=before.split('\n'), newLines=after.split('\n');
+    let prefix=0;
+    while(prefix<oldLines.length && prefix<newLines.length &&
+          oldLines[prefix]===newLines[prefix])prefix++;
+    let suffix=0;
+    while(suffix<oldLines.length-prefix && suffix<newLines.length-prefix &&
+          oldLines[oldLines.length-1-suffix]===newLines[newLines.length-1-suffix])suffix++;
+    const oldMiddle=oldLines.slice(prefix,oldLines.length-suffix);
+    const newMiddle=newLines.slice(prefix,newLines.length-suffix);
+    if(!oldMiddle.length && !newMiddle.length)return [];
+    if(oldMiddle.length*newMiddle.length>180000) {
+      const type=oldMiddle.length?(newMiddle.length?'modify':'del'):'add';
+      return [{line:prefix,added:newMiddle.length,deleted:oldMiddle.length,type}];
+    }
+    const diff=diffLines(oldMiddle.join('\n'),newMiddle.join('\n'));
+    const changes=[];let offset=prefix;
+    // Empty middles are represented as zero lines by the diff algorithm.
+    if(!oldMiddle.length)return [{line:prefix,added:newMiddle.length,deleted:0,type:'add'}];
+    if(!newMiddle.length)return [{line:prefix,added:0,deleted:oldMiddle.length,type:'del'}];
+    for(let i=0;i<diff.length;) {
+      if(diff[i].type==='same'){offset++;i++;continue;}
+      const line=offset;let added=0,deleted=0;
+      while(i<diff.length&&diff[i].type!=='same'){
+        if(diff[i].type==='add'){added++;offset++;}
+        if(diff[i].type==='del')deleted++;
         i++;
       }
-      for(let n=0;n<added;n++)markChange(from+n,deleted?'modify':'add');
-      if(deleted&&!added)markChange(Math.min(from,editor.lineCount()-1),'del');
+      changes.push({line,added,deleted,type:deleted?(added?'modify':'del'):'add'});
     }
+    return changes;
+  }
+  function drawChangeGutter() {
+    clearChangeGutter();
+    if(gutterPath!==canOpen() || typeof gutterBase!=='string')return;
+    const changes=gutterChanges(gutterBase,editor.getValue());
+    let marked=0;
+    editor.operation(()=>{
+      for(const change of changes) {
+        // CodeMirror only renders visible lines; cap large replaced regions.
+        // Their leading and trailing markers still identify the change.
+        const limit=Math.min(change.added,600);
+        for(let n=0;n<limit;n++){markChange(change.line+n,change.type);marked++;}
+        if(change.added>limit)markChange(change.line+change.added-1,change.type);
+        if(change.deleted&&!change.added){markChange(Math.min(change.line,editor.lineCount()-1),'del');marked++;}
+      }
+    });
+    reportGutter(changes.length?(changes.length+' Git change region'+(changes.length===1?'':'s')):'No Git changes',changes.length?'changed':'clean');
   }
   async function refreshChangeGutter() {
     const path=canOpen(), request=++gutterRequest;
     gutterPath=path;gutterBase=null;clearChangeGutter();
-    if(!path)return;
+    if(!path){reportGutter('Git gutter: select a site Markdown file','muted');return;}
+    reportGutter('Loading Git change gutter…','loading');
     try {
       const response=await fetch('/workspace/publish/review?path='+encodeURIComponent(path),{cache:'no-store'});
-      if(!response.ok)return;
+      if(!response.ok) {
+        reportGutter('Git gutter unavailable: review returned HTTP '+response.status,'warning');
+        return;
+      }
       const data=await response.json();
       if(request!==gutterRequest||canOpen()!==path)return;
+      if(typeof data.baseline!=='string')throw new Error('missing committed baseline');
       gutterBase=data.baseline_exists?data.baseline:'';
       drawChangeGutter();
-    } catch { /* Missing Git or offline: no fabricated change markers. */ }
+    } catch(error) {
+      if(request===gutterRequest)reportGutter('Git gutter unavailable: '+error.message,'warning');
+    }
   }
   function scheduleChangeGutter() {
     clearTimeout(gutterTimer);
@@ -477,6 +524,11 @@
   function attach(instance) {
     editor=instance;
     editor.setOption('gutters',['CodeMirror-linenumbers','markata-change-gutter']);
+    gutterStatus=document.createElement('span');
+    gutterStatus.id='markata-gutter-status';
+    gutterStatus.setAttribute('role','status');
+    gutterStatus.textContent='Loading Git change gutter…';
+    document.querySelector('#saved')?.insertAdjacentElement('afterend',gutterStatus);
     editor.on('change',scheduleChangeGutter);
     const activeLabel=document.querySelector('#active-file');
     if(activeLabel)new MutationObserver(refreshChangeGutter).observe(activeLabel,{childList:true,characterData:true,subtree:true});
