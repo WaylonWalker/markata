@@ -367,6 +367,7 @@ keymap.addEventListener('change', () => {
 let rejectedImportRevision = -1;
 let revision = 0, timer, busy = false, ready = false, lastEditAt = null;
 let pendingRender = false;
+let activeRenderController = null;
 let previewStarted = false, previewReady = false, pendingPreview = null, activeRender = null;
 function finishPreview(version) {
   if (!activeRender || activeRender.version !== version || version !== revision) return;
@@ -429,6 +430,7 @@ async function render() {
   busy = true;
   status.textContent = 'Rendering…';
   const controller = new AbortController();
+  activeRenderController = controller;
   const timeout = setTimeout(() => controller.abort(), 30000);
   const started = performance.now();
   try {
@@ -477,13 +479,16 @@ async function render() {
     status.textContent = 'Preview failed. Edit the Markdown to try again.';
   } finally {
     clearTimeout(timeout);
+    if (activeRenderController === controller) activeRenderController = null;
     busy = false;
     // Stale or skipped renders must always yield to the latest editor text.
-    // Coalesce rapid edits into one retry instead of leaving the preview stale.
+    // Keep the normal debounce even when cancelling an obsolete in-flight
+    // render, so rapid typing does not flood the Go renderer with requests.
     if (pendingRender || version !== revision) {
       pendingRender = false;
       clearTimeout(timer);
-      timer = setTimeout(render, 0);
+      const sinceEdit = lastEditAt == null ? 0 : performance.now() - lastEditAt;
+      timer = setTimeout(render, Math.max(0, 100 - sinceEdit));
     }
   }
 }
@@ -493,6 +498,10 @@ editor.on('change', (_instance, change) => {
   if (change.origin === 'setValue') scrollSync.reset();
   editor.save(); revision++; clearTimeout(timer);
   lastEditAt = performance.now();
+  if (busy && activeRenderController) {
+    pendingRender = true;
+    activeRenderController.abort();
+  }
   updateFrontmatterSummary(editor.getValue());
   if (change.origin !== 'setValue') saveDraft();
   status.textContent = 'Waiting for edits…';
