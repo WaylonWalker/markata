@@ -152,7 +152,7 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         external = "# Changed by external editor\n"
         post.write_text(external, encoding="utf-8")
         browser_draft = "# Uncommitted browser edit\n"
-        page.evaluate("""(text) => document.querySelector('.CodeMirror').CodeMirror.setValue(text)""", browser_draft)
+        self.edit_source(page, browser_draft)
         expect(page.locator("#saved")).to_contain_text("Site save failed", timeout=10000)
         expect(page.locator("#saved")).to_contain_text("browser recovery copy kept")
         self.assertEqual(post.read_text(encoding="utf-8"), external)
@@ -174,17 +174,28 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         page.goto(self.url)
         self.open_site_file(page, "posts/autosave-clean.md")
         post = self.site / "posts/autosave-clean.md"
-        page.evaluate("""() => document.querySelector('.CodeMirror').CodeMirror.setValue('# First autosave\\n')""")
+        self.edit_source(page, "# First autosave\\n")
         expect(page.locator("#saved")).to_have_text("Saved to site", timeout=10000)
         self.assertEqual(post.read_text(encoding="utf-8"), "# First autosave\n")
 
         page.reload()
         expect(page.locator("#active-file")).to_contain_text("posts/autosave-clean.md")
         self.assertEqual(page.evaluate("document.querySelector('.CodeMirror').CodeMirror.getValue()"), "# First autosave\n")
-        page.evaluate("""() => document.querySelector('.CodeMirror').CodeMirror.setValue('# Second autosave\\n')""")
+        self.edit_source(page, "# Second autosave\\n")
         expect(page.locator("#saved")).to_have_text("Saved to site", timeout=10000)
         self.assertEqual(post.read_text(encoding="utf-8"), "# Second autosave\n")
         self.assertEqual(errors, [])
+
+    @staticmethod
+    def edit_source(page, content):
+        # CodeMirror.setValue() is a load/reset operation and deliberately
+        # does not invoke browser autosave. Use a real edit origin instead.
+        page.evaluate("""source => {
+          const editor=document.querySelector('.CodeMirror').CodeMirror;
+          editor.replaceRange(
+            source, {line:0,ch:0},
+            editor.posFromIndex(editor.getValue().length), '+input');
+        }""", content)
 
     @staticmethod
     def open_site_file(page, path):
