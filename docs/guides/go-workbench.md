@@ -286,8 +286,13 @@ command palette, or press **Ctrl/Cmd+S** or **Ctrl/Cmd+Shift+Enter**. Vim mode
 also accepts `:w`; Emacs mode accepts **Ctrl-X Ctrl-S**. Each opens the same
 review dialog; none of them publishes immediately. In the current experimental
 workbench, **Commit selected page** and **Push to origin** remain explicit
-separate steps. The planned **Discard changes…** action is not available yet;
-do not confuse closing review with discarding saved edits.
+separate steps. For a Git-tracked file, **Discard changes…** requires a
+confirmation and restores exactly the last committed source in the local workbench.
+The server refuses stale source versions, changed Git HEAD, or staged edits to
+that file. New untracked posts are reviewable but cannot be discarded through
+this control yet. Discard does not create a Git commit or deploy anything.
+A different process changing the filesystem simultaneously is not covered by a
+cross-process transaction; use a disposable test post while this is experimental.
 
 The dialog first waits until the exact text in the editor has been saved to
 the workspace. It then compares that saved source with the file from the last
