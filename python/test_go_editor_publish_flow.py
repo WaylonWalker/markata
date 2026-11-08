@@ -173,6 +173,9 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         expect(review.locator("#publish-source-diff")).to_contain_text("First fresh paragraph.")
         expect(review.locator("#publish-source-diff")).to_contain_text("Second fresh paragraph.")
         expect(review.locator("#publish-source-diff")).not_to_contain_text("Unpublished local edit")
+        expect(review.locator('[data-publish-mode="source"]')).to_have_attribute("aria-selected", "true")
+        # Large rendered pages are deliberately loaded only when requested.
+        review.locator('[data-publish-mode="rich"]').click()
         expect(page.frame_locator("#publish-rich-frame").locator(".post-content")).to_contain_text(
             "Live revision 3.", timeout=10000
         )
@@ -334,7 +337,31 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         marker = page.locator(".CodeMirror-gutter-wrapper .markata-change-marker")
         expect(marker.first).to_be_visible()
         self.assertGreater(marker.count(), 0)
+        # 600-line post with a single edit: do not compare every unchanged
+        # line or incorrectly announce that the diff is too large.
+        page.get_by_role("button", name="Review changes").click()
+        review = page.locator("#publish-review")
+        expect(review.locator("#publish-source-diff")).to_contain_text("locally edited")
+        expect(review.locator("#publish-source-diff")).not_to_contain_text("Diff too large")
+        assert review.locator(".publish-diff-line").count() < 40
+        review.locator("#publish-back").click()
         self.assertEqual(errors, [])
+
+    def test_00_review_unchanged_file_is_immediate_and_clear(self):
+        context = self.browser.new_context()
+        self.addCleanup(context.close)
+        page = context.new_page()
+        page.goto(self.url)
+        self.open_site_file(page, "posts/long-gutter.md")
+        expect(page.locator("#markata-gutter-status")).to_contain_text("No Git changes")
+        page.get_by_role("button", name="Review changes").click()
+        review = page.locator("#publish-review")
+        expect(review.locator("#publish-no-changes")).to_be_visible()
+        expect(review.locator("#publish-no-changes")).to_contain_text("All caught up")
+        expect(review.locator("#publish-discard")).not_to_be_visible()
+        expect(review.locator("#publish-confirm")).to_be_disabled()
+        expect(review.locator(".publish-mode-tabs")).not_to_be_visible()
+        review.locator("#publish-back").click()
 
 
 if __name__ == "__main__":
