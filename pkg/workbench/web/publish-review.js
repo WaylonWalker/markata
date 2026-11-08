@@ -10,6 +10,7 @@
   const state = {path:null, data:null, mode:'rich', loading:false, commit:null, busy:false};
   let reviewGeneration = 0;
   let reviewRenderPromise = null;
+  let reviewRenderController = null;
   const comparisonMaps = {before:[],after:[]};
   const comparisonMax = {before:0,after:0};
 
@@ -231,14 +232,14 @@
       : (event.data.max?event.data.top/event.data.max:0)*comparisonMax[target];
     targetFrame.contentWindow?.postMessage({type:'publish-diff-scroll-to',top:targetTop},'*');
   }
-  async function renderVersion(source, frame, side) {
+  async function renderVersion(source, frame, side, signal) {
     const appearance={};
     for (const key of ['data-palette','data-theme','data-aesthetic','data-fontpack','data-text-size']) {
       const value=document.documentElement.getAttribute(key);
       if(value) appearance[key]=value;
     }
     const response=await fetch('/render',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({markdown:contentBody(source),include_document:true,appearance})});
+      body:JSON.stringify({markdown:contentBody(source),include_document:true,appearance}),signal});
     const result=await response.json();
     if(!response.ok||!result.document) throw new Error(result.error||'Could not render the comparison');
     // Do not mutate an iframe until the caller verifies this is still the
@@ -248,10 +249,12 @@
   function ensureRendered() {
     if(reviewRenderPromise || !state.data?.changed)return;
     const generation=reviewGeneration, data=state.data;
+    reviewRenderController=new AbortController();
+    const signal=reviewRenderController.signal;
     setNotice('Source diff is ready. Rendering the comparison on demand…');
     reviewRenderPromise=Promise.all([
-      renderVersion(data.baseline,dialog.querySelector('#publish-before-frame'),'before'),
-      renderVersion(data.current,dialog.querySelector('#publish-after-frame'),'after')
+      renderVersion(data.baseline,dialog.querySelector('#publish-before-frame'),'before',signal),
+      renderVersion(data.current,dialog.querySelector('#publish-after-frame'),'after',signal)
     ]).then(([before,after])=>{
       if(generation!==reviewGeneration || !dialog.open)return;
       dialog.querySelector('#publish-before-frame').srcdoc=before.document;
@@ -306,6 +309,8 @@
     dialog.dataset.unavailable='false';
     const generation=++reviewGeneration;
     state.loading=true;state.path=path;state.data=null;state.commit=null;
+    reviewRenderController?.abort();
+    reviewRenderController=null;
     reviewRenderPromise=null;
     for (const id of ['publish-before-frame','publish-after-frame','publish-rich-frame']) {
       dialog.querySelector('#'+id).srcdoc='<!doctype html><html><body><p>Preparing current comparison…</p></body></html>';
@@ -671,6 +676,8 @@
     doc.querySelector('#publish-live-check').addEventListener('click',checkLiveDeployment);
     doc.addEventListener('close',()=>{
       reviewGeneration++;
+      reviewRenderController?.abort();
+      reviewRenderController=null;
       window.MarkataPierreDiff?.release?.(doc.querySelector('#publish-pierre-host'));
       editor.focus();
     });
