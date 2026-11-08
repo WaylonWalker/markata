@@ -123,6 +123,18 @@ class GoEditorBrowserTest(unittest.TestCase):
         self.assertNotIn('<script>', risky)
         self.assertIn('&lt;script&gt;', risky)
 
+    def test_publish_rich_diff_one_edit_in_large_page(self):
+        result = self.page.evaluate("""() => {
+          const old=Array.from({length:600},(_,i)=>'<p>Paragraph '+i+'</p>');
+          const next=[...old];
+          next[300]='<p>Paragraph 300 with one small edit</p>';
+          return window.MarkataRichPublishDiff.richHTML(old.join(''),next.join(''));
+        }""")
+        self.assertIn('mk-rich-insert', result)
+        self.assertIn('one', result)
+        self.assertIn('Paragraph 599', result)
+        self.assertNotIn('too complex', result)
+
     def test_publish_rich_diff_keeps_complex_blocks_as_before_after(self):
         result = self.page.evaluate("""() => window.MarkataRichPublishDiff.richHTML(
           '<pre><code>old()</code></pre>',
