@@ -109,3 +109,10 @@
 #markata-gutter-status[data-state="clean"]{color:var(--color-success,#34a66c)}
 .CodeMirror-gutter.markata-change-gutter{width:6px!important;min-width:6px!important}
 .CodeMirror .markata-change-marker{display:block;width:5px;min-width:5px;min-height:1.5em}
+
+/* Immediate source-first review: no-change state and collapsible context. */
+#publish-review .publish-mode-tabs[hidden],#publish-review #publish-no-changes[hidden]{display:none}
+#publish-no-changes{border:1px solid var(--editor-divider,#ddd);border-radius:10px;padding:24px;min-height:140px;background:var(--color-surface,#fafafa);margin:8px 0 18px}
+#publish-no-changes h3{margin:0 0 8px;font-size:18px;font-weight:650}
+#publish-no-changes p{color:var(--color-text-muted,#777);margin:8px 0;line-height:1.5}
+#publish-review .publish-diff-line.note{color:var(--color-text-muted,#888);font-style:italic;opacity:.85;background:var(--color-surface,#fafafa)}
