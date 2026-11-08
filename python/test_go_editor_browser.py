@@ -123,6 +123,25 @@ class GoEditorBrowserTest(unittest.TestCase):
         self.assertNotIn('<script>', risky)
         self.assertIn('&lt;script&gt;', risky)
 
+    def test_preview_discards_obsolete_inflight_frame_render(self):
+        self.edit("# Latest edit")
+        expect(self.preview.locator("h1")).to_have_text("Latest edit")
+        self.page.evaluate("""() => {
+          const preview=document.querySelector('#preview').contentWindow;
+          // Simulate an older completed render arriving after the editor
+          // announced a newer source revision.
+          preview.postMessage({type:'preview-invalidate',version:900000},'*');
+          preview.postMessage({
+            type:'markdown-render',version:899999,
+            html:'<h1>Obsolete rendering</h1>',
+            source_lines:[0],source_anchors:[],source_offset:0,line_count:1,
+            feature_head_html:'',body_end_html:'',attributes:{}
+          },'*');
+        }""")
+        self.page.wait_for_timeout(150)
+        expect(self.preview.locator("h1")).to_have_text("Latest edit")
+        self.assertEqual(self.frame.evaluate("window.__persistentPreview"), "retained")
+
     def test_publish_rich_diff_one_edit_in_large_page(self):
         result = self.page.evaluate("""() => {
           const old=Array.from({length:600},(_,i)=>'<p>Paragraph '+i+'</p>');
