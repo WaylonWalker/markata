@@ -252,13 +252,20 @@
     reviewRenderController=new AbortController();
     const signal=reviewRenderController.signal;
     setNotice('Source diff is ready. Rendering the comparison on demand…');
+    const loadSide=(source,id,side)=>renderVersion(source,dialog.querySelector('#'+id),side,signal)
+      .then(version=>{
+        if(generation===reviewGeneration && dialog.open)
+          dialog.querySelector('#'+id).srcdoc=version.document;
+        return version;
+      });
+    // Let Side by side show whichever version finishes first. The richer
+    // annotations wait for both, but a slow Go render no longer blanks
+    // the entire comparison meanwhile.
     reviewRenderPromise=Promise.all([
-      renderVersion(data.baseline,dialog.querySelector('#publish-before-frame'),'before',signal),
-      renderVersion(data.current,dialog.querySelector('#publish-after-frame'),'after',signal)
+      loadSide(data.baseline,'publish-before-frame','before'),
+      loadSide(data.current,'publish-after-frame','after')
     ]).then(([before,after])=>{
       if(generation!==reviewGeneration || !dialog.open)return;
-      dialog.querySelector('#publish-before-frame').srcdoc=before.document;
-      dialog.querySelector('#publish-after-frame').srcdoc=after.document;
       try {
         window.MarkataRichPublishDiff.render(before.result,after.result,dialog.querySelector('#publish-rich-frame'));
         setNotice('Compared with the last Git commit. Rendered and source views are ready; nothing has been pushed or deployed.');
