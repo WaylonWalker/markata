@@ -9,6 +9,7 @@
   const esc = value => String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   const state = {path:null, data:null, mode:'rich', loading:false, commit:null, busy:false};
   let reviewGeneration = 0;
+  let reviewRenderPromise = null;
   const comparisonMaps = {before:[],after:[]};
   const comparisonMax = {before:0,after:0};
 
@@ -89,6 +90,7 @@
     for (const section of dialog.querySelectorAll('[data-publish-view]'))
       section.hidden = section.dataset.publishView !== mode;
     if(mode==='pierre')showPierre();
+    if((mode==='rich'||mode==='side') && state.data?.changed) ensureRendered();
   }
   function setSide(side) {
     selected = side;
@@ -243,6 +245,34 @@
     // active review. Responses from closed dialogs must not resurrect old HTML.
     return {result, document:result.document.replace('</body>',`${comparisonScrollBridge(side)}</body>`)};
   }
+  function ensureRendered() {
+    if(reviewRenderPromise || !state.data?.changed)return;
+    const generation=reviewGeneration, data=state.data;
+    setNotice('Source diff is ready. Rendering the comparison on demand…');
+    reviewRenderPromise=Promise.all([
+      renderVersion(data.baseline,dialog.querySelector('#publish-before-frame'),'before'),
+      renderVersion(data.current,dialog.querySelector('#publish-after-frame'),'after')
+    ]).then(([before,after])=>{
+      if(generation!==reviewGeneration || !dialog.open)return;
+      dialog.querySelector('#publish-before-frame').srcdoc=before.document;
+      dialog.querySelector('#publish-after-frame').srcdoc=after.document;
+      try {
+        window.MarkataRichPublishDiff.render(before.result,after.result,dialog.querySelector('#publish-rich-frame'));
+        setNotice('Compared with the last Git commit. Rendered and source views are ready; nothing has been pushed or deployed.');
+      }catch(error) {
+        const tab=dialog.querySelector('[data-publish-mode="rich"]');
+        tab.disabled=true;tab.title=error.message;
+        if(state.mode==='rich')setMode('side');
+        setNotice('Rendered annotations unavailable: '+error.message+'. Source diff and side-by-side remain available.','warning');
+      }
+    }).catch(error=>{
+      if(generation!==reviewGeneration || !dialog.open)return;
+      dialog.querySelector('[data-publish-mode="rich"]').disabled=true;
+      dialog.querySelector('[data-publish-mode="side"]').disabled=true;
+      if(state.mode==='rich'||state.mode==='side')setMode('source');
+      setNotice('Rendered preview unavailable: '+error.message+'. Source diff is still ready.','warning');
+    });
+  }
   async function awaitSaved(path, snapshot) {
     window.MarkataSiteTree.save();
     // The workbench writes edits asynchronously; never compare an older disk
@@ -262,14 +292,21 @@
     if(!path) {
       dialog.dataset.unavailable='true';
       dialog.querySelector('#publish-confirm').disabled=true;
-      dialog.showModal();setNotice('This is a browser-only or non-Markdown file. Create or open a site Markdown post before reviewing publication.','warning');
-      dialog.querySelector('#publish-title').textContent='Save to site first';
+      const selected=window.MarkataSiteTree?.activeFile?.();
+      const message=!selected
+        ? 'No site document is selected. Open a Markdown file from the sidebar before reviewing changes.'
+        : !/\.md$/i.test(selected)
+        ? 'Review changes only supports Markdown (.md) files. Open a Markdown page from the sidebar.'
+        : 'This draft is only in your browser. Use New Post to save it as a site Markdown file, then review its changes.';
+      dialog.showModal();setNotice(message,'warning');
+      dialog.querySelector('#publish-title').textContent='Choose a site Markdown file';
       dialog.querySelector('#publish-body').hidden=true;
       return;
     }
     dialog.dataset.unavailable='false';
     const generation=++reviewGeneration;
     state.loading=true;state.path=path;state.data=null;state.commit=null;
+    reviewRenderPromise=null;
     for (const id of ['publish-before-frame','publish-after-frame','publish-rich-frame']) {
       dialog.querySelector('#'+id).srcdoc='<!doctype html><html><body><p>Preparing current comparison…</p></body></html>';
     }
@@ -279,6 +316,8 @@
     dialog.querySelector('#publish-discard').hidden=true;
     dialog.querySelector('#publish-discard-warning').hidden=true;
     dialog.querySelector('#publish-discard-confirmation').hidden=true;
+    dialog.querySelector('#publish-no-changes').hidden=true;
+    dialog.querySelector('.publish-mode-tabs').hidden=false;
     dialog.querySelector('#publish-push').hidden=true;
     dialog.querySelector('#publish-live-check').hidden=true;
     dialog.querySelector('#publish-mark-public').hidden=true;
@@ -310,22 +349,17 @@
       dialog.querySelector('#publish-commit-message').value=`Publish: ${path}`;
       updateCommitMessage();
       comparisonMaps.before=[];comparisonMaps.after=[];
-      setSide('after');setMode('rich');
+      setSide('after');
+      setMode('source');
       dialog.querySelector('#publish-body').hidden=false;
-      setNotice('Comparison against last Git commit, not necessarily the deployed site. Committing does not push or deploy.','info');
-      const [before,after]=await Promise.all([
-        renderVersion(data.baseline,dialog.querySelector('#publish-before-frame'),'before'),
-        renderVersion(data.current,dialog.querySelector('#publish-after-frame'),'after')
-      ]);
-      if(generation!==reviewGeneration || !dialog.open) return;
-      dialog.querySelector('#publish-before-frame').srcdoc=before.document;
-      dialog.querySelector('#publish-after-frame').srcdoc=after.document;
-      try {
-        window.MarkataRichPublishDiff.render(before.result,after.result,dialog.querySelector('#publish-rich-frame'));
-      } catch(error) {
-        const tab=dialog.querySelector('[data-publish-mode="rich"]');
-        tab.disabled=true;tab.title=error.message;
-        setMode('side');
+      const noChanges=!data.changed;
+      dialog.querySelector('#publish-no-changes').hidden=!noChanges;
+      dialog.querySelector('.publish-mode-tabs').hidden=noChanges;
+      for(const panel of dialog.querySelectorAll('[data-publish-view]'))if(noChanges)panel.hidden=true;
+      if(noChanges){
+        setNotice('Your saved file matches the last Git commit. No changes need review or commit.','info');
+      }else{
+        setNotice('Source diff ready. Choose Rendered diff or Side by side to load the full page render. A commit alone does not deploy.','info');
       }
     }catch(error){
       if(generation!==reviewGeneration || !dialog.open) return;
@@ -603,7 +637,7 @@
     const doc=document.createElement('dialog');
     doc.id='publish-review';doc.setAttribute('aria-labelledby','publish-title');
     doc.innerHTML='<header class="publish-review-head"><div><small>REVIEW CHANGES</small><h2 id="publish-title">Review changes</h2><p id="publish-path"></p></div><button type="button" id="publish-close" aria-label="Close publish review">✕</button></header>'+
-    '<div id="publish-notice" role="status"></div><div id="publish-body" hidden><div id="publish-chips" aria-label="Change summary"></div>'+
+    '<div id="publish-notice" role="status"></div><div id="publish-body" hidden><div id="publish-chips" aria-label="Change summary"></div><section id="publish-no-changes" hidden aria-label="No changes"><h3>All caught up</h3><p>This file matches its last Git commit. You have no new content changes to review.</p><p>If the page is still unpublished, you can mark it as public to prepare a new review.</p></section>'+
     '<nav class="publish-mode-tabs" role="tablist" aria-label="Comparison view"><button id="publish-tab-side" type="button" role="tab" aria-controls="publish-view-side" data-publish-mode="side">Side by side</button><button id="publish-tab-rich" type="button" role="tab" aria-controls="publish-view-rich" data-publish-mode="rich">Rendered diff</button><button id="publish-tab-source" type="button" role="tab" aria-controls="publish-view-source" data-publish-mode="source">Source diff</button><button id="publish-tab-pierre" type="button" role="tab" aria-controls="publish-view-pierre" data-publish-mode="pierre">Full diff</button><button id="publish-tab-message" type="button" role="tab" aria-controls="publish-view-message" data-publish-mode="message">Commit message</button></nav>'+
     '<div id="publish-view-side" role="tabpanel" aria-labelledby="publish-tab-side" data-publish-view="side"><div class="publish-side-tabs" role="group" aria-label="Version to read"><button data-publish-side="before" type="button">Last committed</button><button data-publish-side="after" type="button">Current draft</button></div>'+
     '<div class="publish-comparison"><section data-publish-pane="before"><h3 id="publish-before-name">Last committed</h3><iframe id="publish-before-frame" title="Last committed rendering" sandbox="allow-scripts"></iframe></section>'+
