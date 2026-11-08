@@ -312,6 +312,11 @@ observeArticle(article);
 };
 
 addEventListener('message',e=>{if(e.source!==parent)return;
+if(e.data?.type==='preview-invalidate'){
+  // The parent now has newer source. Do not mount a queued older response.
+  latestVersion=Math.max(latestVersion,e.data.version||0);
+  return;
+}
 if(e.data?.type==='markdown-render'){
   latestVersion=Math.max(latestVersion,e.data.version||0);
   updates=updates.then(async()=>{
