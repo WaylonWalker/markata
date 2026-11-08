@@ -118,17 +118,52 @@
     chip('Compared with last Git commit','muted');
   }
   function diffLines(oldText,newText) {
-    const a=oldText.split('\n'),b=newText.split('\n');
-    if (a.length*b.length>180000) return [{type:'note',text:'Diff too large for an inline comparison; use the source files.'}];
-    const dp=Array.from({length:a.length+1},()=>new Uint16Array(b.length+1));
-    for(let i=a.length-1;i>=0;i--) for(let j=b.length-1;j>=0;j--)
-      dp[i][j]=a[i]===b[j] ? 1+dp[i+1][j+1] : Math.max(dp[i+1][j],dp[i][j+1]);
-    let i=0,j=0;const output=[];
-    while(i<a.length||j<b.length) {
-      if(i<a.length && j<b.length && a[i]===b[j]) {output.push({type:'same',text:a[i++]});j++;}
-      else if(j<b.length && (i===a.length||dp[i][j+1]>=dp[i+1][j])) output.push({type:'add',text:b[j++]});
-      else output.push({type:'del',text:a[i++]});
+    const before=oldText.split('\n'), after=newText.split('\n');
+    let start=0,oldEnd=before.length,newEnd=after.length;
+    while(start<oldEnd && start<newEnd && before[start]===after[start]) start++;
+    while(oldEnd>start && newEnd>start && before[oldEnd-1]===after[newEnd-1]){
+      oldEnd--;newEnd--;
     }
+    if(start===oldEnd && start===newEnd)return [];
+
+    const oldMiddle=before.slice(start,oldEnd),newMiddle=after.slice(start,newEnd);
+    const output=[];
+    const addContext=(from,to,lines)=>{
+      if(from>0)output.push({type:'note',text:`… ${from} unchanged lines …`});
+      for(let i=from;i<to;i++)output.push({type:'same',text:lines[i]});
+    };
+    addContext(Math.max(0,start-3),start,before);
+    // Compare only the changed middle; a one-line edit in a 2,000-line
+    // document must not hit a quadratic whole-document guard.
+    if(!oldMiddle.length) {
+      for(const line of newMiddle)output.push({type:'add',text:line});
+    }else if(!newMiddle.length){
+      for(const line of oldMiddle)output.push({type:'del',text:line});
+    }else if(oldMiddle.length*newMiddle.length<=180000){
+      const dp=Array.from({length:oldMiddle.length+1},()=>new Uint16Array(newMiddle.length+1));
+      for(let i=oldMiddle.length-1;i>=0;i--)
+        for(let j=newMiddle.length-1;j>=0;j--)
+          dp[i][j]=oldMiddle[i]===newMiddle[j]?1+dp[i+1][j+1]:Math.max(dp[i+1][j],dp[i][j+1]);
+      let i=0,j=0;
+      while(i<oldMiddle.length||j<newMiddle.length){
+        if(i<oldMiddle.length&&j<newMiddle.length&&oldMiddle[i]===newMiddle[j]){
+          output.push({type:'same',text:oldMiddle[i++]});j++;
+        }else if(j<newMiddle.length&&(i===oldMiddle.length||dp[i][j+1]>=dp[i+1][j])){
+          output.push({type:'add',text:newMiddle[j++]});
+        }else output.push({type:'del',text:oldMiddle[i++]});
+      }
+    }else{
+      // Do not block the UI or claim the entire document is too large.
+      // Show bounded source excerpts with an explicit omitted-lines count.
+      const limit=80;
+      for(const line of oldMiddle.slice(0,limit))output.push({type:'del',text:line});
+      if(oldMiddle.length>limit)output.push({type:'note',text:`… ${oldMiddle.length-limit} more removed lines not shown …`});
+      for(const line of newMiddle.slice(0,limit))output.push({type:'add',text:line});
+      if(newMiddle.length>limit)output.push({type:'note',text:`… ${newMiddle.length-limit} more added lines not shown …`});
+    }
+    const endContext=Math.min(after.length,newEnd+3);
+    for(let i=newEnd;i<endContext;i++)output.push({type:'same',text:after[i]});
+    if(endContext<after.length)output.push({type:'note',text:`… ${after.length-endContext} unchanged lines …`});
     return output;
   }
   function renderDiff(data) {
