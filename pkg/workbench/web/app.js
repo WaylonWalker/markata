@@ -497,6 +497,9 @@ editor.on('change', (_instance, change) => {
   // preview scroll map must not be reused for the replacement's cursor.
   if (change.origin === 'setValue') scrollSync.reset();
   editor.save(); revision++; clearTimeout(timer);
+  // A render already posted into the iframe may still be queued or executing
+  // async feature setup. Invalidate it the moment the source changes.
+  frame.contentWindow?.postMessage({type:'preview-invalidate',version:revision},'*');
   lastEditAt = performance.now();
   if (busy && activeRenderController) {
     pendingRender = true;
@@ -526,7 +529,16 @@ function updatePreview(data, version) {
 function attributes() { return Object.fromEntries(appearanceKeys.map(k => [k, document.documentElement.getAttribute(k)])); }
 function syncAppearance() { frame.contentWindow?.postMessage({type:'appearance',attributes:attributes()}, '*'); }
 new MutationObserver(syncAppearance).observe(document.documentElement, {attributes:true,attributeFilter:appearanceKeys});
-window.addEventListener('load', async () => { await workspaceReady; ready = true; render(); focusEditorForWriting(); }, {once:true});
+// Deferred script execution already guarantees the editor DOM exists.
+ // Do not hold the first preview behind window.load (images and other assets).
+workspaceReady.then(() => {
+  ready = true;
+  render();
+  focusEditorForWriting();
+}).catch(error => {
+  errorBox.textContent='Unable to initialize workspace: '+error.message;
+  errorBox.hidden=false;
+});
 
 document.querySelector('#open').addEventListener('click', () => document.querySelector('#import').click());
 document.querySelector('#import').addEventListener('change', async event => {
