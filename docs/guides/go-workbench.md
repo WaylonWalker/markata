@@ -23,6 +23,28 @@ The Go server calls Markata's standalone renderer directly. It starts no Python 
 It uses the same Markdown renderer as the [Python API](./python-renderer/) and [FastAPI editor](./fastapi-editor/).
 The preview does not build a site. The language service indexes Markdown and reads workspace configuration for existing mention support.
 
+### Understand startup and site index timing
+
+The server reports elapsed time for workspace discovery, LSP setup and
+appearance preparation. Browser file discovery, frontmatter and link indexing,
+feed assembly, and first preview are separate stages after the server listens.
+The expandable **Loading site index…** sidebar shows real state and counts,
+with measured frontmatter, link, feed and metadata request duration. **Copy
+diagnostics** exports only timing/count JSON; it does not upload documents.
+
+From the local editor host:
+
+```bash
+curl -s http://127.0.0.1:8766/workspace/index-status
+curl -sD - -o /dev/null 'http://127.0.0.1:8766/workspace?metadata=true'
+```
+
+The status endpoint is read-only and does not start an indexing pass.
+`Server-Timing` breaks out file indexing and feed evaluation. These
+measurements help prioritize actual startup optimizations in #1987; they
+are not a fabricated percentage complete or a remote telemetry service.
+
+
 Use the appearance picker to select a palette, color mode, style, font, or text size.
 Open **Editor settings** to choose line wrapping, keymap, and layout. Drag the
 divider between the source and preview panes to resize them. Choose **Editor
