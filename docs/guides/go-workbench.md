@@ -44,6 +44,15 @@ The status endpoint is read-only and does not start an indexing pass.
 measurements help prioritize actual startup optimizations in #1987; they
 are not a fabricated percentage complete or a remote telemetry service.
 
+**Preview-first startup:** The editor opens the selected source file before
+loading the complete site's frontmatter and feed metadata. Its first Markdown
+preview no longer synchronously waits for the full link index. While the
+index loads in the background, internal links and embeds can initially
+appear unresolved; the preview refreshes automatically when that index
+is ready without saving or modifying your source text. Metadata is normally
+requested after the first preview, with a two-second fallback if rendering
+is unusually slow or fails.
+
 
 Use the appearance picker to select a palette, color mode, style, font, or text size.
 Open **Editor settings** to choose line wrapping, keymap, and layout. Drag the
