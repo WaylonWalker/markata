@@ -42,6 +42,12 @@ func TestHandler_RenderAndAssets(t *testing.T) {
 	var firstDocument string
 	for i := 0; i < 2; i++ {
 		w := request(h, string(body))
+		timing := w.Header().Get("Server-Timing")
+		for _, name := range []string{"markata;dur=", "markata-queue;dur=", "markata-render;dur="} {
+			if !strings.Contains(timing, name) {
+				t.Fatalf("missing %s from render timings: %q", name, timing)
+			}
+		}
 		if w.Code != 200 {
 			t.Fatalf("%d: %s", w.Code, w.Body)
 		}
