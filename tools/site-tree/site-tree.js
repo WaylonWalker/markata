@@ -288,8 +288,11 @@ window.MarkataSiteTree = {
     });
     // Start with a real site post. The previous standalone draft stays in the tree.
     await open(Object.hasOwn(files, selected) || selected === scratchPath ? selected : (Object.keys(files)[0] || scratchPath));
-    // Yield to the initial preview; metadata is never part of attach's promise.
-    setTimeout(async () => {
+    // Give the first useful preview priority over expensive full-site metadata
+    // parsing. The bounded fallback still loads the index if preview fails.
+    // This does not delay source-file discovery or autosaving.
+    let metadataStarted = false;
+    const loadMetadata = async () => {
       try {
         const response = await fetch('/workspace?metadata=true');
         const data = await response.json();
@@ -310,6 +313,13 @@ window.MarkataSiteTree = {
         if (document.querySelector('#site-view').value === 'feeds') buildFeeds(feeds);
         updateWorkspaceContext(document.querySelector('#site-view').value);
       } catch { tagOption.textContent = 'Tags unavailable'; feedOption.textContent = 'Feeds unavailable'; }
-    },0);
+    };
+    const beginMetadata = () => {
+      if (metadataStarted) return;
+      metadataStarted = true;
+      void loadMetadata();
+    };
+    document.addEventListener('markata-first-preview', beginMetadata, {once:true});
+    setTimeout(beginMetadata, 2000);
   }
 };
