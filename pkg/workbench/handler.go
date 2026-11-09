@@ -332,9 +332,11 @@ func (h *Handler) render(w http.ResponseWriter, r *http.Request) {
 		fail(w, 415, "send Content-Type: application/json")
 		return
 	}
+	queueStarted := time.Now()
 	if !h.acquire(r) {
 		return
 	}
+	queueMS := float64(time.Since(queueStarted).Microseconds()) / 1000
 	if err := h.refreshPresentation(); err != nil {
 		<-h.gate
 		fail(w, 422, err.Error())
@@ -356,7 +358,7 @@ func (h *Handler) render(w http.ResponseWriter, r *http.Request) {
 	ms := float64(time.Since(started).Microseconds()) / 1000
 	response.RenderMS = ms
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Server-Timing", fmt.Sprintf("markata;dur=%.3f", ms))
+	w.Header().Set("Server-Timing", fmt.Sprintf("markata;dur=%.3f, markata-queue;dur=%.3f, markata-render;dur=%.3f", ms+queueMS, queueMS, ms))
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		return
 	}
