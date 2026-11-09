@@ -369,9 +369,14 @@ let revision = 0, timer, busy = false, ready = false, lastEditAt = null;
 let pendingRender = false;
 let activeRenderController = null;
 let previewStarted = false, previewReady = false, pendingPreview = null, activeRender = null;
+let firstPreviewAnnounced = false;
 function finishPreview(version) {
   if (!activeRender || activeRender.version !== version || version !== revision) return;
   window.MarkataStartupStatus?.previewReady();
+  if (!firstPreviewAnnounced) {
+    firstPreviewAnnounced = true;
+    document.dispatchEvent(new Event('markata-first-preview'));
+  }
   const {data} = activeRender;
   const liveTime = Math.round(performance.now() - (activeRender.editAt ?? activeRender.startedAt));
   status.textContent = `Go ${data.render_ms.toFixed(1)} ms${data.cached ? ' (cached)' : ''} · preview ${liveTime} ms · input ${(data.input_bytes/1024).toFixed(1)} KB · fragment ${((data.html_bytes)/1024).toFixed(1)} KB`;
