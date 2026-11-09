@@ -65,6 +65,17 @@ class BrowserLSPTest(unittest.TestCase):
         context = self.browser.new_context()
         try:
             page = context.new_page()
+            page.add_init_script("""(() => {
+              let previewSeen = false;
+              document.addEventListener('markata-first-preview', () => { previewSeen = true; });
+              const nativeFetch = window.fetch;
+              window.__metadataBeforeFirstPreview = false;
+              window.fetch = (...args) => {
+                if (String(args[0]).includes('/workspace?metadata=true') && !previewSeen)
+                  window.__metadataBeforeFirstPreview = true;
+                return nativeFetch.apply(window,args);
+              };
+            })();""")
             errors = []
             page.on("pageerror", lambda error: errors.append(str(error)))
             page.goto(self.go_url)
@@ -86,6 +97,11 @@ class BrowserLSPTest(unittest.TestCase):
             self.assertGreaterEqual(snapshot["metadata_request_ms"], 0)
             self.assertIsNotNone(snapshot["workspace_ready_ms"])
             self.assertIsNotNone(snapshot["first_preview_ms"])
+            # Under a fast successful render, the expensive metadata request
+            # should not race the first preview. A 2-second fallback protects
+            # slow/failing previews, so do not assert ordering on slow CI runs.
+            if snapshot["first_preview_ms"] < 1200:
+                self.assertFalse(page.evaluate("window.__metadataBeforeFirstPreview"))
             self.assertEqual(errors, [])
         finally:
             context.close()
