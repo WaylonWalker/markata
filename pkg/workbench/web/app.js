@@ -535,6 +535,21 @@ function updatePreview(data, version) {
 function attributes() { return Object.fromEntries(appearanceKeys.map(k => [k, document.documentElement.getAttribute(k)])); }
 function syncAppearance() { frame.contentWindow?.postMessage({type:'appearance',attributes:attributes()}, '*'); }
 new MutationObserver(syncAppearance).observe(document.documentElement, {attributes:true,attributeFilter:appearanceKeys});
+// When the asynchronous site link index completes, render the same Markdown
+// again using the new index revision. This never writes the editor buffer or
+// autosaves, and cannot apply an obsolete preview revision.
+document.addEventListener('markata-site-index-ready', () => {
+  if (!ready) return;
+  revision++;
+  frame.contentWindow?.postMessage({type:'preview-invalidate',version:revision},'*');
+  if (activeRenderController) {
+    pendingRender = true;
+    activeRenderController.abort();
+  }
+  clearTimeout(timer);
+  timer = setTimeout(render,0);
+});
+
 // Deferred script execution already guarantees the editor DOM exists.
  // Do not hold the first preview behind window.load (images and other assets).
 workspaceReady.then(() => {
