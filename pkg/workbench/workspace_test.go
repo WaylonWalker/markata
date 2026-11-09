@@ -71,7 +71,7 @@ func (w *noEagerIndexWorkspace) Files() ([]editorworkspace.File, error) {
 
 func TestWorkspaceFirstRenderDoesNotForceMetadataLoad(t *testing.T) {
 	root := t.TempDir()
-	if err := os.WriteFile(filepath.Join(root, "markata-go.toml"), []byte("[markata-go.glob]\\npatterns=['*.md']\\n"), 0o600); err != nil {
+	if err := os.WriteFile(filepath.Join(root, "markata-go.toml"), []byte("[markata-go.glob]\npatterns=['*.md']\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(root, "post.md"), []byte("# Preview before index"), 0o600); err != nil {
@@ -81,7 +81,11 @@ func TestWorkspaceFirstRenderDoesNotForceMetadataLoad(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer func() { if err := handler.Close(); err != nil { t.Error(err) } }()
+	defer func() {
+		if err := handler.Close(); err != nil {
+			t.Error(err)
+		}
+	}()
 	probe := &noEagerIndexWorkspace{workspaceSource: handler.workspace}
 	handler.workspace = probe
 	response := request(handler, `{"markdown":"# Immediate preview"}`)
