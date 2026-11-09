@@ -33,6 +33,30 @@ type metadataEntry struct {
 // StoreStats reports work performed by a long-lived workspace store.
 type StoreStats struct{ GlobScans, MetadataLoads, SourceReads uint64 }
 
+const (
+	indexPhaseQueued      = "queued"
+	indexPhaseFrontmatter = "frontmatter"
+	indexPhaseLinks       = "links"
+	indexPhaseReady       = "ready"
+	indexPhaseError       = "error"
+)
+
+// IndexStatus is a read-only snapshot of discovery and metadata indexing.
+// It never calls Files(), scans the disk, or blocks on the metadata load lock.
+type IndexStatus struct {
+	Phase         string `json:"phase"`
+	Files         int    `json:"files"`
+	Indexed       int    `json:"indexed"`
+	Pending       int    `json:"pending"`
+	Ready         bool   `json:indexPhaseReady`
+	ElapsedMS     int64  `json:"elapsed_ms"`
+	LastLoadMS    int64  `json:"last_load_ms"`
+	FrontmatterMS int64  `json:"frontmatter_ms"`
+	LinksMS       int64  `json:"links_ms"`
+	GlobScans     uint64 `json:"glob_scans"`
+	MetadataLoads uint64 `json:"metadata_loads"`
+}
+
 // Store retains discovery, metadata and immutable LSP snapshots for one server.
 // Close it, or cancel its parent context, when the server shuts down.
 type Store struct {
@@ -58,6 +82,14 @@ type Store struct {
 	index            *lsp.Index
 	indexRevision    uint64
 	stats            StoreStats
+	indexPhase       string
+	indexStarted     time.Time
+	indexLastLoad    time.Duration
+	indexFrontmatter time.Duration
+	indexLinks       time.Duration
+	indexLinksAt     time.Time
+	indexPending     int
+	indexParsed      int
 }
 
 // Open discovers content once and starts filesystem invalidation for a server.
@@ -78,11 +110,13 @@ func Open(ctx context.Context, root string) (*Store, error) {
 		return nil, err
 	}
 	store := &Store{indexRoot: indexRoot, workspace: workspace, ctx: child, cancel: cancel, watcher: watcher, done: make(chan struct{}), paths: make(map[string]sourceStamp), entries: make(map[string]metadataEntry), index: lsp.NewIndex(log.Default())}
+	started := time.Now()
 	if err = store.refresh(nil, false); err != nil {
 		cancel()
 		_ = watcher.Close()
 		return nil, err
 	}
+	log.Printf("editor startup: discovered %d site files and registered filesystem watchers in %s", len(store.paths), time.Since(started).Round(time.Millisecond))
 	go store.watch()
 	return store, nil
 }
@@ -118,6 +152,34 @@ func (s *Store) ConfigRevision() uint64 { s.mu.RLock(); defer s.mu.RUnlock(); re
 
 // Stats returns operation counts without changing cached state.
 func (s *Store) Stats() StoreStats { s.mu.RLock(); defer s.mu.RUnlock(); return s.stats }
+
+// IndexStatus reads phase/count telemetry without triggering any indexing work.
+func (s *Store) IndexStatus() IndexStatus {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	ready := s.metadataRevision == s.revision && s.metadataErr == nil
+	phase := s.indexPhase
+	if s.metadataRevision == s.revision {
+		if s.metadataErr != nil {
+			phase = indexPhaseError
+		} else {
+			phase = indexPhaseReady
+		}
+	} else if phase == "" || phase == indexPhaseReady {
+		phase = indexPhaseQueued
+	}
+	elapsed := s.indexLastLoad.Milliseconds()
+	if phase == indexPhaseFrontmatter || phase == indexPhaseLinks {
+		elapsed = time.Since(s.indexStarted).Milliseconds()
+	}
+	return IndexStatus{
+		Phase: phase, Files: len(s.paths), Indexed: len(s.entries),
+		Pending: s.indexPending, Ready: ready, ElapsedMS: elapsed,
+		LastLoadMS: s.indexLastLoad.Milliseconds(), FrontmatterMS: s.indexFrontmatter.Milliseconds(),
+		LinksMS: s.indexLinks.Milliseconds(), GlobScans: s.stats.GlobScans,
+		MetadataLoads: s.stats.MetadataLoads,
+	}
+}
 
 // Paths returns cached path membership without scanning or reading document bodies.
 func (s *Store) Paths() ([]File, error) {
@@ -256,6 +318,14 @@ func (s *Store) Files() ([]File, error) {
 			}
 		}
 		s.mu.RUnlock()
+		s.mu.Lock()
+		s.indexStarted = time.Now()
+		s.indexPhase = indexPhaseFrontmatter
+		s.indexPending = len(changed)
+		s.indexParsed = 0
+		s.indexFrontmatter = 0
+		s.indexLinks = 0
+		s.mu.Unlock()
 		sort.Strings(changed)
 		manager := lifecycle.NewManager()
 		manager.SetConfig(cfg)
@@ -278,6 +348,10 @@ func (s *Store) Files() ([]File, error) {
 			parsed[path] = metadataEntry{file: File{Path: path, Slug: post.Slug, Title: post.Title, Tags: append([]string(nil), post.Tags...), Image: image}, info: lsp.LoadedPostInfo(s.indexRoot, post)}
 		}
 		s.mu.Lock()
+		s.indexPhase = indexPhaseLinks
+		s.indexParsed = len(parsed)
+		s.indexFrontmatter = time.Since(s.indexStarted)
+		s.indexLinksAt = time.Now()
 		s.stats.MetadataLoads += uint64(len(changed))
 		if s.revision != revision {
 			s.mu.Unlock()
@@ -306,10 +380,28 @@ func (s *Store) Files() ([]File, error) {
 		s.indexRevision++
 		s.metadataRevision = revision
 		s.metadataErr = err
+		s.indexLastLoad = time.Since(s.indexStarted)
+		s.indexLinks = time.Since(s.indexLinksAt)
+		s.indexPhase = indexPhaseReady
+		if err != nil {
+			s.indexPhase = indexPhaseError
+		}
+		s.indexPending = 0
 		files := s.filesLocked()
+		duration := s.indexLastLoad
+		frontmatter := s.indexFrontmatter
+		links := s.indexLinks
 		s.mu.Unlock()
+		log.Printf("editor site index: %d files, %d frontmatter loads, %s total (frontmatter %s, links %s, phase=%s)", len(files), len(changed), duration.Round(time.Millisecond), frontmatter.Round(time.Millisecond), links.Round(time.Millisecond), sIndexPhase(err))
 		return files, err
 	}
+}
+
+func sIndexPhase(err error) string {
+	if err != nil {
+		return indexPhaseError
+	}
+	return indexPhaseReady
 }
 
 func (s *Store) filesLocked() []File {
@@ -378,6 +470,8 @@ func (s *Store) refresh(events map[string]bool, forceConfig bool) error {
 	if changed {
 		s.revision++
 		s.metadataErr = nil
+		s.indexPhase = indexPhaseQueued
+		s.indexPending = len(paths) - len(s.entries)
 	}
 	s.mu.Unlock()
 	return s.addWatches()
