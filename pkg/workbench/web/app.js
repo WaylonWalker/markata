@@ -370,12 +370,17 @@ let pendingRender = false;
 let activeRenderController = null;
 let previewStarted = false, previewReady = false, pendingPreview = null, activeRender = null;
 let firstPreviewAnnounced = false;
+let indexRefreshPending = false;
 function finishPreview(version) {
   if (!activeRender || activeRender.version !== version || version !== revision) return;
   window.MarkataStartupStatus?.previewReady();
   if (!firstPreviewAnnounced) {
     firstPreviewAnnounced = true;
     document.dispatchEvent(new Event('markata-first-preview'));
+    if (indexRefreshPending) {
+      indexRefreshPending = false;
+      queueMicrotask(refreshPreviewForIndex);
+    }
   }
   const {data} = activeRender;
   const liveTime = Math.round(performance.now() - (activeRender.editAt ?? activeRender.startedAt));
@@ -538,7 +543,7 @@ new MutationObserver(syncAppearance).observe(document.documentElement, {attribut
 // When the asynchronous site link index completes, render the same Markdown
 // again using the new index revision. This never writes the editor buffer or
 // autosaves, and cannot apply an obsolete preview revision.
-document.addEventListener('markata-site-index-ready', () => {
+function refreshPreviewForIndex() {
   if (!ready) return;
   revision++;
   frame.contentWindow?.postMessage({type:'preview-invalidate',version:revision},'*');
@@ -548,6 +553,15 @@ document.addEventListener('markata-site-index-ready', () => {
   }
   clearTimeout(timer);
   timer = setTimeout(render,0);
+}
+document.addEventListener('markata-site-index-ready', () => {
+  // Never cancel the first preview simply because the background index
+  // finished unusually quickly. Show usable Markdown first, then enrich it.
+  if (!firstPreviewAnnounced) {
+    indexRefreshPending = true;
+    return;
+  }
+  refreshPreviewForIndex();
 });
 
 // Deferred script execution already guarantees the editor DOM exists.
