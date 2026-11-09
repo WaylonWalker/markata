@@ -83,10 +83,13 @@ func New() (*Handler, error) { return NewWithWorkspace(context.Background(), "."
 
 // NewWithWorkspace enables LSP for a server-selected workspace. Cancel ctx on shutdown.
 func NewWithWorkspace(ctx context.Context, root string) (*Handler, error) {
+	started := time.Now()
 	workspace, err := editorworkspace.Open(ctx, root)
 	if err != nil {
 		return nil, err
 	}
+	log.Printf("editor startup: workspace discovery ready in %s", time.Since(started).Round(time.Millisecond))
+	lspStarted := time.Now()
 	config, err := lsp.BrowserWorkspace(root)
 	if err != nil {
 		_ = workspace.Close()
@@ -97,7 +100,9 @@ func NewWithWorkspace(ctx context.Context, root string) (*Handler, error) {
 		_ = workspace.Close()
 		return nil, err
 	}
+	log.Printf("editor startup: LSP handler ready in %s", time.Since(lspStarted).Round(time.Millisecond))
 	siteConfig, revision := workspace.Configuration()
+	appearanceStarted := time.Now()
 	handler, err := buildPresentation(root, workspace, config, language, siteConfig)
 	if err != nil {
 		_ = workspace.Close()
@@ -105,6 +110,7 @@ func NewWithWorkspace(ctx context.Context, root string) (*Handler, error) {
 	}
 	handler.store = workspace
 	handler.configRevision = revision
+	log.Printf("editor startup: browser assets ready in %s (total %s)", time.Since(appearanceStarted).Round(time.Millisecond), time.Since(started).Round(time.Millisecond))
 	return handler, nil
 }
 
@@ -510,7 +516,7 @@ func (h *Handler) document(result *plugins.StandaloneResult, attributes map[stri
 
 func isWorkspaceRoute(routePath, method string) bool {
 	switch {
-	case routePath == "/workspace" || routePath == "/workspace/templates" || routePath == "/workspace/image":
+	case routePath == "/workspace" || routePath == "/workspace/templates" || routePath == "/workspace/image" || routePath == "/workspace/index-status":
 		return method == http.MethodGet
 	case routePath == "/workspace/file":
 		return method == http.MethodGet || method == http.MethodPut || method == http.MethodPost
@@ -573,6 +579,14 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 	if r.URL.Path == "/workspace/publish/review" {
 		h.servePublishReview(w, r)
+		return
+	}
+	if r.URL.Path == "/workspace/index-status" {
+		if h.store == nil {
+			fail(w, http.StatusServiceUnavailable, "site index telemetry unavailable")
+			return
+		}
+		_ = json.NewEncoder(w).Encode(h.store.IndexStatus())
 		return
 	}
 	if r.URL.Path == "/workspace/templates" {
@@ -653,6 +667,7 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 	var files []editorworkspace.File
 	var err error
+	listStarted := time.Now()
 	if r.URL.Query().Get("metadata") == "true" {
 		files, err = h.workspace.Files()
 	} else {
@@ -662,9 +677,19 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 		fail(w, 422, err.Error())
 		return
 	}
+	indexMS := float64(time.Since(listStarted).Microseconds()) / 1000
 	response := map[string]any{"files": files, "rootUri": h.languageConfig.RootURI}
 	if r.URL.Query().Get("metadata") == "true" {
-		response["feeds"] = h.workspaceFeeds()
+		feedsStarted := time.Now()
+		feeds := h.workspaceFeeds()
+		feedsDuration := time.Since(feedsStarted)
+		response["feeds"] = feeds
+		w.Header().Set("Server-Timing", fmt.Sprintf("site-index;dur=%.1f, site-feeds;dur=%.1f", indexMS, float64(feedsDuration.Microseconds())/1000))
+		if feedsDuration >= 200*time.Millisecond {
+			log.Printf("editor site feeds: %d feeds assembled in %s", len(feeds), feedsDuration.Round(time.Millisecond))
+		}
+	} else {
+		w.Header().Set("Server-Timing", fmt.Sprintf("site-paths;dur=%.1f", indexMS))
 	}
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		return
