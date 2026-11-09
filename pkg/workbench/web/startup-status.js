@@ -9,6 +9,7 @@
 
   let workspaceAt = null, previewAt = null, indexStatus = null;
   let metadataRequestMS = null, feedsMS = null;
+  let indexReadySignalled = false;
   let pollID = 0;
   const seconds = milliseconds => (milliseconds/1000).toFixed(2)+'s';
   const add = (key,value) => {
@@ -61,6 +62,10 @@
       if (id!==pollID) return;
       indexStatus=data;
       renderStatus();
+      if (data.ready && !indexReadySignalled) {
+        indexReadySignalled = true;
+        document.dispatchEvent(new Event('markata-site-index-ready'));
+      }
       // Keep the sidebar compact after the long-running operation finishes;
       // the measurements remain available by expanding the summary.
       if (data.ready && metadataRequestMS!==null) document.querySelector('#startup-index')?.removeAttribute('open');
