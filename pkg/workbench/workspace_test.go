@@ -3,6 +3,7 @@ package workbench
 import (
 	"context"
 	"encoding/json"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -12,6 +13,7 @@ import (
 	"time"
 
 	"github.com/WaylonWalker/markata/pkg/editorworkspace"
+	"github.com/WaylonWalker/markata/pkg/lsp"
 )
 
 func TestWorkspaceHTTP(t *testing.T) {
@@ -48,6 +50,46 @@ func TestWorkspaceHTTP(t *testing.T) {
 				t.Fatalf("status %d body %s", response.Code, response.Body.String())
 			}
 		})
+	}
+}
+
+// An index miss must never hold the first render behind an eager full-site
+// parse. Snapshot's background load can finish after the first preview.
+type noEagerIndexWorkspace struct {
+	workspaceSource
+	filesCalled bool
+}
+
+func (w *noEagerIndexWorkspace) Snapshot() (*lsp.Index, uint64) {
+	return lsp.NewIndex(log.Default()), 0
+}
+
+func (w *noEagerIndexWorkspace) Files() ([]editorworkspace.File, error) {
+	w.filesCalled = true
+	return nil, nil
+}
+
+func TestWorkspaceFirstRenderDoesNotForceMetadataLoad(t *testing.T) {
+	root := t.TempDir()
+	if err := os.WriteFile(filepath.Join(root, "markata-go.toml"), []byte("[markata-go.glob]\\npatterns=['*.md']\\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "post.md"), []byte("# Preview before index"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	handler, err := NewWithWorkspace(context.Background(), root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { if err := handler.Close(); err != nil { t.Error(err) } }()
+	probe := &noEagerIndexWorkspace{workspaceSource: handler.workspace}
+	handler.workspace = probe
+	response := request(handler, `{"markdown":"# Immediate preview"}`)
+	if response.Code != http.StatusOK {
+		t.Fatalf("first preview status %d: %s", response.Code, response.Body.String())
+	}
+	if probe.filesCalled {
+		t.Fatal("first preview synchronously loaded all workspace metadata")
 	}
 }
 
