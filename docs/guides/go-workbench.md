@@ -29,7 +29,9 @@ The server reports elapsed time for workspace discovery, LSP setup and
 appearance preparation. Browser file discovery, frontmatter and link indexing,
 feed assembly, and first preview are separate stages after the server listens.
 The expandable **Loading site index…** sidebar shows real state and counts,
-with measured frontmatter, link, feed and metadata request duration. **Copy
+with measured frontmatter, link, feed and metadata request duration. The first
+render is also split into **Go queue wait** and **native rendering**, so we can
+distinguish renderer contention from the cost of rendering the document. **Copy
 diagnostics** exports only timing/count JSON; it does not upload documents.
 
 From the local editor host:
