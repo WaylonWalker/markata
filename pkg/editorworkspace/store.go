@@ -48,7 +48,7 @@ type IndexStatus struct {
 	Files         int    `json:"files"`
 	Indexed       int    `json:"indexed"`
 	Pending       int    `json:"pending"`
-	Ready         bool   `json:indexPhaseReady`
+	Ready         bool   `json:"ready"`
 	ElapsedMS     int64  `json:"elapsed_ms"`
 	LastLoadMS    int64  `json:"last_load_ms"`
 	FrontmatterMS int64  `json:"frontmatter_ms"`
