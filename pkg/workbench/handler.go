@@ -370,13 +370,11 @@ func (h *Handler) prepareRender(r *http.Request, req *renderRequest) (*renderRes
 	var index *lsp.Index
 	var revision uint64
 	if snapshot, ok := h.workspace.(interface{ Snapshot() (*lsp.Index, uint64) }); ok {
+		// Snapshot starts a background metadata refresh when needed.
+		// Do not synchronously parse every post behind the first render.
+		// An initial preview may lack wiki-link/mention resolution; the
+		// browser requests a fresh render when the index becomes ready.
 		index, revision = snapshot.Snapshot()
-		if index == nil || revision == 0 {
-			if _, err := h.workspace.Files(); err != nil {
-				return nil, fmt.Errorf("load workspace metadata for preview: %w", err)
-			}
-			index, revision = snapshot.Snapshot()
-		}
 	}
 	markdown := renderWorkbenchEmbeds(*req.Markdown, index, h.root)
 	markdown = renderWorkbenchWikilinks(markdown, index)
