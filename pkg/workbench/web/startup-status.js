@@ -9,6 +9,7 @@
 
   let workspaceAt = null, previewAt = null, indexStatus = null;
   let metadataRequestMS = null, feedsMS = null;
+  let firstRenderQueueMS = null, firstNativeRenderMS = null;
   let indexReadySignalled = false;
   let pollID = 0;
   const seconds = milliseconds => (milliseconds/1000).toFixed(2)+'s';
@@ -82,6 +83,12 @@
     const observer = new PerformanceObserver(list => {
       for (const entry of list.getEntries()) {
         const url = new URL(entry.name);
+        if (url.pathname==='/render' && firstRenderQueueMS===null) {
+          firstRenderQueueMS=entry.serverTiming?.find(item=>item.name==='markata-queue')?.duration ?? null;
+          firstNativeRenderMS=entry.serverTiming?.find(item=>item.name==='markata-render')?.duration ?? null;
+          add('render-queue',firstRenderQueueMS===null ? 'Not reported' : seconds(firstRenderQueueMS));
+          add('render-native',firstNativeRenderMS===null ? 'Not reported' : seconds(firstNativeRenderMS));
+        }
         if (url.pathname!=='/workspace' || url.searchParams.get('metadata')!=='true') continue;
         metadataRequestMS=entry.duration;
         feedsMS=entry.serverTiming?.find(item=>item.name==='site-feeds')?.duration ?? null;
@@ -107,6 +114,7 @@
     snapshot() {
       return {workspace_ready_ms:workspaceAt, first_preview_ms:previewAt,
         metadata_request_ms:metadataRequestMS, site_feeds_ms:feedsMS,
+        first_render_queue_ms:firstRenderQueueMS, first_native_render_ms:firstNativeRenderMS,
         site_index:indexStatus ? {...indexStatus} : null};
     }
   };
