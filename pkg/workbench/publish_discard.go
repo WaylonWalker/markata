@@ -63,7 +63,7 @@ func (h *Handler) servePublishDiscard(w http.ResponseWriter, r *http.Request) {
 	// from a failed git-show: independently verify exact untracked status.
 	baseline, err := gitOutput(ctx, root, "show", req.Head+":"+relative)
 	if err != nil {
-		h.serveUntrackedDiscard(w, ctx, req, root, relative)
+		h.serveUntrackedDiscard(ctx, w, req, root, relative)
 		return
 	}
 	if source == baseline {
@@ -94,7 +94,7 @@ func (h *Handler) servePublishDiscard(w http.ResponseWriter, r *http.Request) {
 // serveUntrackedDiscard is the local-only deletion path. It never operates on
 // files that Git considers tracked, staged, ignored, or otherwise ambiguous.
 func (h *Handler) serveUntrackedDiscard(
-	w http.ResponseWriter, ctx context.Context, req discardRequest, root, relative string,
+	ctx context.Context, w http.ResponseWriter, req discardRequest, root, relative string,
 ) {
 	status, statusErr := gitOutput(ctx, root, "status", "--porcelain=v1", "-z", "--untracked-files=all", "--", relative)
 	if statusErr != nil || status != "?? "+relative+"\x00" {
