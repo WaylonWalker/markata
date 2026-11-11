@@ -117,7 +117,7 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         errors = []
         page.on("pageerror", lambda error: errors.append(str(error)))
         page.goto(self.url)
-        self.open_site_file(page, "posts/discard-flow.md")
+        self.open_site_file(page, "posts/discard-flow.md", errors)
         expect(page.locator("#markata-gutter-status")).to_contain_text("No Git changes")
         original = (self.site / "posts/discard-flow.md").read_text(encoding="utf-8")
         page.evaluate("""() => {
@@ -207,7 +207,7 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         errors = []
         page.on("pageerror", lambda error: errors.append(str(error)))
         page.goto(self.url)
-        self.open_site_file(page, "posts/external-edit.md")
+        self.open_site_file(page, "posts/external-edit.md", errors)
         expect(page.locator("#markata-gutter-status")).to_contain_text("No Git changes")
 
         # Another process changes the file after the browser has loaded it.
@@ -235,7 +235,7 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         errors = []
         page.on("pageerror", lambda error: errors.append(str(error)))
         page.goto(self.url)
-        self.open_site_file(page, "posts/autosave-clean.md")
+        self.open_site_file(page, "posts/autosave-clean.md", errors)
         post = self.site / "posts/autosave-clean.md"
         self.edit_source(page, "# First autosave\n")
         expect(page.locator("#saved")).to_have_text("Saved to site", timeout=10000)
@@ -261,7 +261,7 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         }""", content)
 
     @staticmethod
-    def open_site_file(page, path):
+    def open_site_file(page, path, errors=None):
         # The initial /workspace fetch is async. Earlier tests asked openFile
         # before the registry was populated, so the call silently did nothing.
         try:
@@ -275,11 +275,15 @@ class GoEditorPublishFlowTest(unittest.TestCase):
               files:window.MarkataSiteTree?.files?.().map(file => file.path),
               visibleError:document.querySelector('#error')?.textContent,
               activeFile:window.MarkataSiteTree?.activeFile?.(),
+              readyState:document.readyState,
+              codeMirror:!!document.querySelector('.CodeMirror')?.CodeMirror,
+              shortcutCount:window.MarkataShortcuts?.all?.().length,
+              publishDialog:!!document.querySelector('#publish-review'),
             })""")
             server = page.request.get(page.url.rstrip("/") + "/workspace")
             raise AssertionError(
                 f"workspace file {path!r} never became available: browser={debug}, "
-                f"server={server.status} {server.text()[:1500]}"
+                f"javascript_errors={errors}, server={server.status} {server.text()[:1500]}"
             ) from error
         page.evaluate("(target) => window.MarkataSiteTree.openFile(target)", path)
         expect(page.locator("#active-file")).to_have_text(path)
@@ -291,7 +295,7 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         errors = []
         page.on("pageerror", lambda error: errors.append(str(error)))
         page.goto(self.url)
-        self.open_site_file(page, "posts/publish-flow.md")
+        self.open_site_file(page, "posts/publish-flow.md", errors)
 
         page.get_by_role("button", name="Properties", exact=True).click()
         tags = page.locator('[data-field="tags"]')
@@ -343,8 +347,8 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         errors = []
         page.on("pageerror", lambda error: errors.append(str(error)))
         page.goto(self.url)
-        self.open_site_file(page, "posts/publish-flow.md")
-        self.open_site_file(page, "posts/long-gutter.md")
+        self.open_site_file(page, "posts/publish-flow.md", errors)
+        self.open_site_file(page, "posts/long-gutter.md", errors)
         expect(page.locator("#markata-gutter-status")).to_contain_text("No Git changes")
         page.evaluate("""() => {
           const editor=document.querySelector('.CodeMirror').CodeMirror;
@@ -371,7 +375,7 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         self.addCleanup(context.close)
         page = context.new_page()
         page.goto(self.url)
-        self.open_site_file(page, "posts/long-gutter.md")
+        self.open_site_file(page, "posts/long-gutter.md", errors)
         expect(page.locator("#markata-gutter-status")).to_contain_text("No Git changes")
         page.get_by_role("button", name="Review changes").click()
         review = page.locator("#publish-review")
