@@ -329,8 +329,11 @@ workbench, **Commit selected page** and **Push to origin** remain explicit
 separate steps. For a Git-tracked file, **Discard changes…** requires a
 confirmation and restores exactly the last committed source in the local workbench.
 The server refuses stale source versions, changed Git HEAD, or staged edits to
-that file. New untracked posts are reviewable but cannot be discarded through
-this control yet. Discard does not create a Git commit or deploy anything.
+that file. New **untracked, non-ignored** Markdown posts can also be discarded. After
+explicit confirmation, the server checks Git status, HEAD, and the exact reviewed
+source version before deleting just that local file. The browser clears only
+that file's recovery draft and reloads workspace discovery. Staged, ignored,
+or tracked files cannot be deleted through this control. Discard does not create a Git commit or deploy anything.
 A different process changing the filesystem simultaneously is not covered by a
 cross-process transaction; use a disposable test post while this is experimental.
 
