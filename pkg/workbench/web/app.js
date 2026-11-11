@@ -291,6 +291,18 @@ function focusExplorer() {
 }
 const registerApp = (id,label,category,bindings,run,description='') =>
   appShortcuts.register({id,label,category,bindings,run,description});
+// Make editor motion keymaps discoverable without opening Settings. The
+// palette executes the same change event as the existing settings control.
+for (const [value, name] of [['default','Default'],['vim','Vim'],['emacs','Emacs'],['sublime','Sublime']]) {
+  registerApp('workbench.editorKeymap.'+value,'Editor keymap: '+name,'Settings',{},
+    () => {
+      if (keymap.value !== value) {
+        keymap.value = value;
+        keymap.dispatchEvent(new Event('change'));
+      } else focusEditorForWriting();
+    },
+    'Switch Markdown text editing keys to '+name+' (separate from application shortcuts).');
+}
 registerApp('workbench.toggleSidebar','Toggle File Explorer','Navigation',
   {vscode:'Mod+B',writer:'Mod+\\',vim:'Space E',emacs:'Ctrl+X Ctrl+B'},toggleSidebar);
 registerApp('workbench.focusExplorer','Focus File Explorer','Navigation',
@@ -371,6 +383,7 @@ let activeRenderController = null;
 let previewStarted = false, previewReady = false, pendingPreview = null, activeRender = null;
 function finishPreview(version) {
   if (!activeRender || activeRender.version !== version || version !== revision) return;
+  window.MarkataStartupStatus?.previewReady();
   const {data} = activeRender;
   const liveTime = Math.round(performance.now() - (activeRender.editAt ?? activeRender.startedAt));
   status.textContent = `Go ${data.render_ms.toFixed(1)} ms${data.cached ? ' (cached)' : ''} · preview ${liveTime} ms · input ${(data.input_bytes/1024).toFixed(1)} KB · fragment ${((data.html_bytes)/1024).toFixed(1)} KB`;
@@ -560,4 +573,8 @@ workspaceReady.then(() => {
 });
 
 
-workspaceReady.then(() => window.MarkataFileFinder?.attach(editor));
+workspaceReady.then(() => {
+  window.MarkataStartupStatus?.workspaceReady();
+  window.MarkataFileFinder?.attach(editor);
+  window.MarkataRecentFiles?.attach();
+});

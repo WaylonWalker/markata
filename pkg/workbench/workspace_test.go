@@ -51,6 +51,56 @@ func TestWorkspaceHTTP(t *testing.T) {
 	}
 }
 
+func TestWorkspaceIndexStatusReportsPhasesWithoutForcingLoad(t *testing.T) {
+	root := t.TempDir()
+	if err := os.WriteFile(filepath.Join(root, "markata-go.toml"), []byte("[markata-go.glob]\npatterns=['*.md']\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "post.md"), []byte("---\ntitle: Post\n---\n# Body"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	store, err := editorworkspace.Open(context.Background(), root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if err := store.Close(); err != nil {
+			t.Error(err)
+		}
+	}()
+	handler := &Handler{store: store, workspace: store}
+	get := func(path string) *httptest.ResponseRecorder {
+		t.Helper()
+		req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://127.0.0.1"+path, http.NoBody)
+		req.RemoteAddr = "127.0.0.1:1234"
+		response := httptest.NewRecorder()
+		handler.ServeHTTP(response, req)
+		return response
+	}
+	first := get("/workspace/index-status")
+	if first.Code != http.StatusOK {
+		t.Fatalf("status endpoint returned %d: %s", first.Code, first.Body.String())
+	}
+	var status editorworkspace.IndexStatus
+	if err := json.Unmarshal(first.Body.Bytes(), &status); err != nil {
+		t.Fatal(err)
+	}
+	if status.Ready || status.Phase != "queued" || status.Files != 1 {
+		t.Fatalf("initial status = %+v", status)
+	}
+	listing := get("/workspace?metadata=true")
+	if listing.Code != http.StatusOK || !strings.Contains(listing.Header().Get("Server-Timing"), "site-feeds;dur=") {
+		t.Fatalf("metadata response %d missing Server-Timing: %s", listing.Code, listing.Body.String())
+	}
+	loaded := get("/workspace/index-status")
+	if err := json.Unmarshal(loaded.Body.Bytes(), &status); err != nil {
+		t.Fatal(err)
+	}
+	if !status.Ready || status.Phase != "ready" || status.Indexed != 1 {
+		t.Fatalf("status after indexing = %+v", status)
+	}
+}
+
 func TestWorkspaceFileMutationRequiresSameOrigin(t *testing.T) {
 	tests := []struct {
 		name, method, path, origin, fetchSite string

@@ -23,6 +23,36 @@ The Go server calls Markata's standalone renderer directly. It starts no Python 
 It uses the same Markdown renderer as the [Python API](./python-renderer/) and [FastAPI editor](./fastapi-editor/).
 The preview does not build a site. The language service indexes Markdown and reads workspace configuration for existing mention support.
 
+### Understand startup and site index timing
+
+The editor startup has distinct milestones. The CLI prints elapsed time for
+workspace discovery/watcher setup, LSP preparation, and appearance/browser
+assets. Once the HTTP listener is ready, the browser still loads its source
+file list and lazily requests frontmatter plus the site link index; these are
+**not** part of the initial server-ready message.
+
+The workspace sidebar shows **Loading site index…** with real phases:
+waiting for metadata, reading frontmatter, constructing the link index, and
+ready/error. Expand **Site index ready** afterward to see file counts and
+the measured index load time (frontmatter parsing and link construction
+separately), configured feed assembly and metadata HTTP timing, browser file
+list readiness, and time to the first usable preview. **Copy diagnostics** captures a local JSON snapshot of those
+counts and durations, not document contents.
+
+For a local command-line check:
+
+```bash
+curl -s http://127.0.0.1:8766/workspace/index-status
+curl -sD - -o /dev/null 'http://127.0.0.1:8766/workspace?metadata=true'
+```
+
+The first command is lightweight and does not initiate indexing. The second
+explicitly loads metadata and returns a `Server-Timing: site-index;dur=…`
+header (and a `site-feeds;dur=…` value for configured feed assembly). This is local diagnostic telemetry, not a distributed tracing system;
+there is no automatic upload of timing data. If it exposes a slow stage on
+a large site, the next step is to profile that stage rather than guess at a
+percentage-complete bar. Related: #1987.
+
 Use the appearance picker to select a palette, color mode, style, font, or text size.
 Open **Editor settings** to choose line wrapping, keymap, and layout. Drag the
 divider between the source and preview panes to resize them. Choose **Editor
@@ -56,6 +86,11 @@ contains the caret line.
 For the Go site-backed workbench, **Editor settings → Keyboard shortcuts…** opens
 application-wide key bindings. Choose Writer, VS Code, Vim, or Emacs application
 presets independently of the editor's Default/Vim/Emacs/Sublime text keymaps.
+The command palette also exposes **Editor keymap: Default**, **Vim**, **Emacs**,
+and **Sublime**. Selecting one uses the existing editor keymap preference;
+it does not change the independent Writer/VS Code/Vim/Emacs application
+shortcut preset. This lets writers change editing motions without navigating
+to Settings.
 The command palette displays active shortcuts; the registry also supports
 multi-key chords, search, per-preset overrides, and resets. The preview pane
 includes a **Back to editor** control for keyboard navigation.
@@ -70,6 +105,11 @@ Press **Ctrl+P** (**Cmd+P** on macOS) to find a site file by its path, title,
 slug, or tag. The finder shows the current and recently opened files when its
 search is empty.
 Select a result or press **Enter** to open it in the editor.
+The sidebar also has a collapsible **Recent files** section for the last eight
+workspace documents opened on this device. It is saved per workspace in
+browser storage, works without network access, and excludes unsaved scratch
+drafts. Select any recent entry to reopen it; the entry list quietly ignores
+files no longer in the workspace. You can collapse it when you need more room.
 Choose **Feeds** or **Tags** in the workspace selector to browse posts by feed
 or tag. Feed names are shown as roots with folders relative to the workspace.
 
