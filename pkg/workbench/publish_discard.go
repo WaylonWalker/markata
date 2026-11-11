@@ -90,7 +90,7 @@ func (h *Handler) servePublishDiscard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
- 
+
 // serveUntrackedDiscard is the local-only deletion path. It never operates on
 // files that Git considers tracked, staged, ignored, or otherwise ambiguous.
 func (h *Handler) serveUntrackedDiscard(
