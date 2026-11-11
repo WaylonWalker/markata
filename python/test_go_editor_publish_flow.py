@@ -374,6 +374,8 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         context = self.browser.new_context()
         self.addCleanup(context.close)
         page = context.new_page()
+        errors = []
+        page.on("pageerror", lambda error: errors.append(str(error)))
         page.goto(self.url)
         self.open_site_file(page, "posts/long-gutter.md", errors)
         expect(page.locator("#markata-gutter-status")).to_contain_text("No Git changes")
