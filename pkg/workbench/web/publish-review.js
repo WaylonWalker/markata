@@ -341,8 +341,11 @@
       const snapshot=editor.getValue();
       if(new TextEncoder().encode(snapshot).length>sourceLimit) throw new Error('Document is too large to review.');
       await awaitSaved(path,snapshot);
+      // A closed review must not finish populating an obsolete dialog.
+      if(generation!==reviewGeneration || !dialog.open) return;
       const response=await fetch('/workspace/publish/review?path='+encodeURIComponent(path),{cache:'no-store'});
       const data=await response.json();
+      if(generation!==reviewGeneration || !dialog.open) return;
       if(!response.ok) throw new Error(data.error||'Review unavailable. This workspace may not be a Git checkout.');
       if(data.current!==snapshot || window.MarkataSiteTree?.activeFile?.()!==path || editor.getValue()!==snapshot)
         throw new Error('The document changed while preparing the review. Close and reopen to compare the latest text.');
@@ -379,7 +382,10 @@
       dialog.querySelector('#publish-body').hidden=true;
       dialog.dataset.unavailable='true';
       dialog.querySelector('#publish-title').textContent='Review unavailable';
-    }finally {state.loading=false;}
+    }finally {
+      // A previous request must not clear the loading flag of a newer review.
+      if(generation===reviewGeneration) state.loading=false;
+    }
   }
   function markPublicAndReviewAgain() {
     const source=editor.getValue();
@@ -683,6 +689,9 @@
     doc.querySelector('#publish-live-check').addEventListener('click',checkLiveDeployment);
     doc.addEventListener('close',()=>{
       reviewGeneration++;
+      // Reopening must not wait on a closed dialog's network request.
+      state.loading=false;
+      state.data=null;
       reviewRenderController?.abort();
       reviewRenderController=null;
       window.MarkataPierreDiff?.release?.(doc.querySelector('#publish-pierre-host'));
