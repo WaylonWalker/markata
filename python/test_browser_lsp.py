@@ -193,11 +193,12 @@ class BrowserLSPTest(unittest.TestCase):
                 page.locator("#create-directory").fill(".")
                 page.locator("#create-link-url").fill("javascript:alert(1)")
                 page.locator('#create-form button[type="submit"]').click()
-                # Browsers reject a non-http URL via native input[type=url]
-                # validation before the JavaScript submit handler runs.
-                self.assertFalse(page.evaluate(
-                    "document.querySelector('#create-link-url').checkValidity()"
-                ))
+                # Browsers differ in whether a type=url input accepts arbitrary
+                # absolute schemes. The app must reject non-http(s) schemes
+                # even if native HTML validation considers them syntactically valid.
+                expect(page.locator("#create-error")).to_contain_text(
+                    "http(s)", timeout=10000
+                )
                 self.assertFalse(target.exists())
                 page.locator("#create-link-url").fill("https://user:secret@example.com/")
                 page.locator('#create-form button[type="submit"]').click()
