@@ -288,6 +288,50 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         page.evaluate("(target) => window.MarkataSiteTree.openFile(target)", path)
         expect(page.locator("#active-file")).to_have_text(path)
 
+    def test_review_close_inflight_request_does_not_block_reopening(self):
+        context = self.browser.new_context()
+        self.addCleanup(context.close)
+        page = context.new_page()
+        errors = []
+        page.on("pageerror", lambda error: errors.append(str(error)))
+        page.goto(self.url)
+        self.open_site_file(page, "posts/autosave-clean.md", errors)
+
+        # Hold the first review response after the user opens the dialog.
+        # A closed review must not block a fresh one or overwrite its state.
+        page.evaluate("""() => {
+          const realFetch = window.fetch.bind(window);
+          let held = false;
+          window.fetch = (input, options) => {
+            const url = typeof input === 'string' ? input : input.url;
+            if (!held && url.startsWith('/workspace/publish/review?')) {
+              held = true;
+              return new Promise((resolve, reject) => {
+                window.__releaseHeldReview = () =>
+                  realFetch(input, options).then(resolve, reject);
+              });
+            }
+            return realFetch(input, options);
+          };
+        }""")
+        page.get_by_role("button", name="Review changes").click()
+        review = page.locator("#publish-review")
+        expect(review).to_be_visible()
+        page.wait_for_function("typeof window.__releaseHeldReview === 'function'")
+        review.locator("#publish-back").click()
+        expect(review).not_to_be_visible()
+
+        # The previous network response is deliberately still outstanding.
+        page.get_by_role("button", name="Review changes").click()
+        expect(review).to_be_visible()
+        expect(review.locator("#publish-body")).to_be_visible(timeout=10000)
+        expect(review.locator("#publish-path")).to_have_text("posts/autosave-clean.md")
+        page.evaluate("window.__releaseHeldReview()")
+        expect(review.locator("#publish-body")).to_be_visible()
+        expect(review).to_have_attribute("data-unavailable", "false")
+        self.assertEqual(errors, [])
+        review.locator("#publish-back").click()
+
     def test_frontmatter_review_commit_message_and_temporary_push(self):
         context = self.browser.new_context()
         self.addCleanup(context.close)
@@ -316,7 +360,7 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         page.get_by_role("button", name="Review changes").click()
         review = page.locator("#publish-review")
         expect(review).to_be_visible()
-        expect(review.locator('[data-publish-mode="rich"]')).to_have_attribute("aria-selected", "true")
+        expect(review.locator('[data-publish-mode="source"]')).to_have_attribute("aria-selected", "true")
         review.get_by_role("tab", name="Source diff").click()
         expect(review.locator('[data-publish-view="source"]')).to_be_visible()
         expect(review.locator('[data-publish-view="source"]')).to_contain_text("published")
