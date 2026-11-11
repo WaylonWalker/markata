@@ -29,6 +29,12 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         cls.git(cls.site, "config", "user.name", "Markata Browser Test")
         cls.git(cls.site, "config", "user.email", "browser-test@example.invalid")
         cls.git(cls.site, "remote", "add", "origin", str(cls.remote))
+        # Make discovery deterministic: the default glob must not decide
+        # whether direct posts/*.md children match a recursive glob.
+        (cls.site / "markata-go.toml").write_text(
+            '[markata-go.glob]\npatterns = ["posts/*.md"]\n',
+            encoding="utf-8",
+        )
         posts = cls.site / "posts"
         posts.mkdir()
         post = posts / "publish-flow.md"
@@ -49,7 +55,7 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         external_post.write_text("# First external version\n", encoding="utf-8")
         clean_post = posts / "autosave-clean.md"
         clean_post.write_text("# Initial clean draft\n", encoding="utf-8")
-        cls.git(cls.site, "add", "posts/publish-flow.md", "posts/long-gutter.md", "posts/discard-flow.md", "posts/external-edit.md", "posts/autosave-clean.md")
+        cls.git(cls.site, "add", "markata-go.toml", "posts/publish-flow.md", "posts/long-gutter.md", "posts/discard-flow.md", "posts/external-edit.md", "posts/autosave-clean.md")
         cls.git(cls.site, "commit", "-m", "Fixture baseline")
         cls.git(cls.site, "push", "-u", "origin", "main")
 
@@ -258,10 +264,23 @@ class GoEditorPublishFlowTest(unittest.TestCase):
     def open_site_file(page, path):
         # The initial /workspace fetch is async. Earlier tests asked openFile
         # before the registry was populated, so the call silently did nothing.
-        page.wait_for_function(
-            "(target) => Boolean(window.MarkataSiteTree?.files?.().some(item => item.path === target))",
-            arg=path,
-        )
+        try:
+            page.wait_for_function(
+                "(target) => Boolean(window.MarkataSiteTree?.files?.().some(item => item.path === target))",
+                arg=path,
+                timeout=10000,
+            )
+        except Exception as error:
+            debug = page.evaluate("""() => ({
+              files:window.MarkataSiteTree?.files?.().map(file => file.path),
+              visibleError:document.querySelector('#error')?.textContent,
+              activeFile:window.MarkataSiteTree?.activeFile?.(),
+            })""")
+            server = page.request.get(page.url.rstrip("/") + "/workspace")
+            raise AssertionError(
+                f"workspace file {path!r} never became available: browser={debug}, "
+                f"server={server.status} {server.text()[:1500]}"
+            ) from error
         page.evaluate("(target) => window.MarkataSiteTree.openFile(target)", path)
         expect(page.locator("#active-file")).to_have_text(path)
 
