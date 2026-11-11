@@ -20,6 +20,18 @@ func (f discardWorkspaceFixture) Write(path, source string) error {
 	return os.WriteFile(filepath.Join(f.root, filepath.FromSlash(path)), []byte(source), 0o600)
 }
 
+func (f discardWorkspaceFixture) Delete(path, expectedVersion string) error {
+	target := filepath.Join(f.root, filepath.FromSlash(path))
+	source, err := os.ReadFile(target)
+	if err != nil {
+		return err
+	}
+	if editorworkspace.SourceVersion(string(source)) != expectedVersion {
+		return os.ErrInvalid
+	}
+	return os.Remove(target)
+}
+
 func TestPublishDiscardTrackedFileAndStaleChecks(t *testing.T) {
 	if _, err := exec.LookPath("git"); err != nil {
 		t.Skip("git unavailable")
@@ -91,7 +103,7 @@ func TestPublishDiscardTrackedFileAndStaleChecks(t *testing.T) {
 	}
 }
 
-func TestPublishDiscardUntrackedFileIsPreserved(t *testing.T) {
+func TestPublishDiscardUntrackedFileRequiresFreshUnstagedGitStatus(t *testing.T) {
 	if _, err := exec.LookPath("git"); err != nil {
 		t.Skip("git unavailable")
 	}
@@ -104,31 +116,55 @@ func TestPublishDiscardUntrackedFileIsPreserved(t *testing.T) {
 	}
 	gitForReviewTest(t, dir, "add", "README.md")
 	gitForReviewTest(t, dir, "commit", "-qm", "initial")
-	headCommand := exec.CommandContext(context.Background(), "git", "-C", dir, "rev-parse", "HEAD")
-	out, err := headCommand.Output()
-	if err != nil {
-		t.Fatal(err)
-	}
-	head := string(bytes.TrimSpace(out))
-	content := "# New draft\n"
+	head := string(bytes.TrimSpace([]byte(gitForReviewTest(t, dir, "rev-parse", "HEAD"))))
+	content := "# New draft\\n"
 	path := filepath.Join(dir, "new.md")
 	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	reqData, err := json.Marshal(discardRequest{Path: "new.md", Head: head, Version: editorworkspace.SourceVersion(content)})
-	if err != nil {
-		t.Fatal(err)
-	}
-	req := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "http://127.0.0.1:8766/workspace/publish/discard", bytes.NewReader(reqData))
-	req.Header.Set("Origin", "http://127.0.0.1:8766")
 	h := &Handler{root: dir, workspace: discardWorkspaceFixture{publishWorkspaceFixture{root: dir}}}
-	response := httptest.NewRecorder()
-	h.servePublishDiscard(response, req)
-	if response.Code != http.StatusUnprocessableEntity {
-		t.Fatalf("expected safe rejection: %d %s", response.Code, response.Body.String())
+	send := func(version, revision string) *httptest.ResponseRecorder {
+		t.Helper()
+		body, err := json.Marshal(discardRequest{Path: "new.md", Head: revision, Version: version})
+		if err != nil {
+			t.Fatal(err)
+		}
+		req := httptest.NewRequestWithContext(context.Background(), http.MethodPost,
+			"http://127.0.0.1:8766/workspace/publish/discard", bytes.NewReader(body))
+		req.Header.Set("Origin", "http://127.0.0.1:8766")
+		req.Header.Set("Content-Type", "application/json")
+		out := httptest.NewRecorder()
+		h.servePublishDiscard(out, req)
+		return out
 	}
-	actual, err := os.ReadFile(path)
-	if err != nil || string(actual) != content {
-		t.Fatalf("untracked draft was lost: %v %s", err, actual)
+	version := editorworkspace.SourceVersion(content)
+	if got := send(editorworkspace.SourceVersion("stale"), head); got.Code != http.StatusConflict {
+		t.Fatalf("stale version got %d: %s", got.Code, got.Body.String())
+	}
+	if got := send(version, "0000000000000000000000000000000000000000"); got.Code != http.StatusConflict {
+		t.Fatalf("stale HEAD got %d: %s", got.Code, got.Body.String())
+	}
+	gitForReviewTest(t, dir, "add", "new.md")
+	if got := send(version, head); got.Code != http.StatusConflict {
+		t.Fatalf("staged new file got %d: %s", got.Code, got.Body.String())
+	}
+	gitForReviewTest(t, dir, "reset", "-q", "HEAD", "--", "new.md")
+	if got := send(version, head); got.Code != http.StatusOK {
+		t.Fatalf("new-file discard got %d: %s", got.Code, got.Body.String())
+	} else if !bytes.Contains(got.Body.Bytes(), []byte(`"removed-local"`)) {
+		t.Fatalf("expected removed-local status, got %s", got.Body.String())
+	}
+	if _, err := os.Stat(path); !os.IsNotExist(err) {
+		t.Fatalf("new draft still exists after discard: %v", err)
+	}
+	if got := send(version, head); got.Code == http.StatusOK {
+		t.Fatalf("repeated deletion unexpectedly succeeded: %s", got.Body.String())
+	}
+	unchanged, err := os.ReadFile(filepath.Join(dir, "README.md"))
+	if err != nil || string(unchanged) != "base" {
+		t.Fatalf("unrelated committed file changed: %v %q", err, unchanged)
+	}
+	if staged := gitForReviewTest(t, dir, "diff", "--cached", "--name-only"); staged != "" {
+		t.Fatalf("discard changed Git index: %q", staged)
 	}
 }
