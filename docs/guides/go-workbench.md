@@ -56,6 +56,11 @@ contains the caret line.
 For the Go site-backed workbench, **Editor settings → Keyboard shortcuts…** opens
 application-wide key bindings. Choose Writer, VS Code, Vim, or Emacs application
 presets independently of the editor's Default/Vim/Emacs/Sublime text keymaps.
+The command palette also exposes **Editor keymap: Default**, **Vim**, **Emacs**,
+and **Sublime**. Selecting one uses the existing editor keymap preference;
+it does not change the independent Writer/VS Code/Vim/Emacs application
+shortcut preset. This lets writers change editing motions without navigating
+to Settings.
 The command palette displays active shortcuts; the registry also supports
 multi-key chords, search, per-preset overrides, and resets. The preview pane
 includes a **Back to editor** control for keyboard navigation.

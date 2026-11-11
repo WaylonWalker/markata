@@ -291,6 +291,18 @@ function focusExplorer() {
 }
 const registerApp = (id,label,category,bindings,run,description='') =>
   appShortcuts.register({id,label,category,bindings,run,description});
+// Make editor motion keymaps discoverable without opening Settings. The
+// palette executes the same change event as the existing settings control.
+for (const [value, name] of [['default','Default'],['vim','Vim'],['emacs','Emacs'],['sublime','Sublime']]) {
+  registerApp('workbench.editorKeymap.'+value,'Editor keymap: '+name,'Settings',{},
+    () => {
+      if (keymap.value !== value) {
+        keymap.value = value;
+        keymap.dispatchEvent(new Event('change'));
+      } else focusEditorForWriting();
+    },
+    'Switch Markdown text editing keys to '+name+' (separate from application shortcuts).');
+}
 registerApp('workbench.toggleSidebar','Toggle File Explorer','Navigation',
   {vscode:'Mod+B',writer:'Mod+\\',vim:'Space E',emacs:'Ctrl+X Ctrl+B'},toggleSidebar);
 registerApp('workbench.focusExplorer','Focus File Explorer','Navigation',
