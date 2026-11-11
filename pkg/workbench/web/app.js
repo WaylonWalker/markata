@@ -564,17 +564,6 @@ document.addEventListener('markata-site-index-ready', () => {
   refreshPreviewForIndex();
 });
 
-// Deferred script execution already guarantees the editor DOM exists.
- // Do not hold the first preview behind window.load (images and other assets).
-workspaceReady.then(() => {
-  ready = true;
-  render();
-  focusEditorForWriting();
-}).catch(error => {
-  errorBox.textContent='Unable to initialize workspace: '+error.message;
-  errorBox.hidden=false;
-});
-
 document.querySelector('#open').addEventListener('click', () => document.querySelector('#import').click());
 document.querySelector('#import').addEventListener('change', async event => {
   const file = event.target.files[0];
@@ -594,6 +583,18 @@ document.querySelector('#import').addEventListener('change', async event => {
 if (!saved.textContent) saveDraft();
 
 const workspaceReady = window.MarkataSiteTree.attach(editor, storageWarning, {saveToSite:true});
+// Deferred script execution already guarantees the editor DOM exists.
+ // Do not hold the first preview behind window.load (images and other assets).
+workspaceReady.then(() => {
+  ready = true;
+  render();
+  focusEditorForWriting();
+}).catch(error => {
+  errorBox.textContent='Unable to initialize workspace: '+error.message;
+  errorBox.hidden=false;
+});
+
+
 workspaceReady.then(() => {
   window.MarkataStartupStatus?.workspaceReady();
   window.MarkataFileFinder?.attach(editor);
