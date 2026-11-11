@@ -58,11 +58,35 @@ func (h *Handler) servePublishDiscard(w http.ResponseWriter, r *http.Request) {
 		fail(w, http.StatusConflict, "this file has staged changes; discard refused")
 		return
 	}
-	// Resolve only a blob in the reviewed HEAD. Untracked files need a separate
-	// guarded deletion path rather than an unchecked filesystem removal.
+	// Resolve only a blob in the reviewed HEAD. A missing baseline may
+	// represent a new draft, but never infer that it is safe to delete merely
+	// from a failed git-show: independently verify exact untracked status.
 	baseline, err := gitOutput(ctx, root, "show", req.Head+":"+relative)
 	if err != nil {
-		fail(w, http.StatusUnprocessableEntity, "new file: discard deletion is not supported yet")
+		status, statusErr := gitOutput(ctx, root, "status", "--porcelain=v1", "-z", "--untracked-files=all", "--", relative)
+		if statusErr != nil || status != "?? "+relative+"\x00" {
+			fail(w, http.StatusConflict, "cannot discard: file is tracked, staged, ignored, or Git status is uncertain")
+			return
+		}
+		// A local workbench may be backed by a test fixture that does not
+		// implement safe source deletion. Never fall back to raw os.Remove.
+		remover, ok := h.workspace.(interface{ Delete(string, string) error })
+		if !ok {
+			fail(w, http.StatusUnprocessableEntity, "guarded deletion is not available in this workspace")
+			return
+		}
+		again, readErr := h.workspace.Read(req.Path)
+		if readErr != nil || editorworkspace.SourceVersion(again) != req.Version {
+			fail(w, http.StatusConflict, "draft changed during discard")
+			return
+		}
+		if err := remover.Delete(req.Path, req.Version); err != nil {
+			fail(w, http.StatusConflict, "could not remove new draft safely: "+err.Error())
+			return
+		}
+		w.Header().Set("Cache-Control", "no-store")
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]string{"status": "removed-local"})
 		return
 	}
 	if source == baseline {
