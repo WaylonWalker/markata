@@ -1,0 +1,9 @@
+/* Local editor startup feedback. It stays usable while indexing is pending. */
+#startup-index{flex:none;margin:4px 8px 8px;border:1px solid var(--editor-divider);border-radius:7px;overflow:hidden}
+#startup-index summary{padding:8px 10px;cursor:pointer;font-size:12px;font-weight:650;color:var(--color-text,var(--ink));background:var(--color-surface,var(--paper))}
+#startup-index .startup-details{padding:7px 10px 10px}
+#startup-index .startup-details p{padding:0;margin:0 0 6px;border:0;font-size:12px;color:var(--color-text-muted,var(--muted))}
+#startup-index dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:3px 10px;margin:8px 0 10px;font-size:11px}
+#startup-index dt{color:var(--color-text-muted,var(--muted))}
+#startup-index dd{margin:0;text-align:right;font-variant-numeric:tabular-nums}
+#startup-copy{border:1px solid var(--editor-divider);padding:4px 8px;border-radius:5px;background:var(--color-surface,var(--paper));font:inherit;font-size:11px;color:inherit;cursor:pointer}

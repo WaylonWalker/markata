@@ -61,6 +61,35 @@ class BrowserLSPTest(unittest.TestCase):
         cls.browser = cls.driver.chromium.launch(**options)
         cls.addClassCleanup(cls.browser.close)
 
+    def test_go_startup_index_phases_and_timings_are_visible(self):
+        context = self.browser.new_context()
+        try:
+            page = context.new_page()
+            errors = []
+            page.on("pageerror", lambda error: errors.append(str(error)))
+            page.goto(self.go_url)
+            expect(page.locator("#startup-index-summary")).to_contain_text("Site index")
+            page.wait_for_function(
+                """() => {
+                  const report=window.MarkataStartupStatus?.snapshot();
+                  return report?.site_index?.ready === true && report?.metadata_request_ms !== null;
+                }""",
+                timeout=20000,
+            )
+            expect(page.locator("#startup-index-summary")).to_have_text("Site index ready")
+            expect(page.frame_locator("#preview").locator("h1")).to_have_text("Real workspace draft")
+            snapshot = page.evaluate("window.MarkataStartupStatus.snapshot()")
+            self.assertGreater(snapshot["site_index"]["files"], 0)
+            self.assertGreaterEqual(snapshot["site_index"]["last_load_ms"], 0)
+            self.assertGreaterEqual(snapshot["site_index"]["frontmatter_ms"], 0)
+            self.assertGreaterEqual(snapshot["site_index"]["links_ms"], 0)
+            self.assertGreaterEqual(snapshot["metadata_request_ms"], 0)
+            self.assertIsNotNone(snapshot["workspace_ready_ms"])
+            self.assertIsNotNone(snapshot["first_preview_ms"])
+            self.assertEqual(errors, [])
+        finally:
+            context.close()
+
     def test_real_draft_file_and_scratch_are_independent(self):
         for name, url in [("Python", self.python_url), ("Go", self.go_url)]:
             with self.subTest(server=name), self.browser.new_context() as context:

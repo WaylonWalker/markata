@@ -381,6 +381,7 @@ let revision = 0, timer, busy = false, ready = false, lastEditAt = null;
 let previewStarted = false, previewReady = false, pendingPreview = null, activeRender = null;
 function finishPreview(version) {
   if (!activeRender || activeRender.version !== version || version !== revision) return;
+  window.MarkataStartupStatus?.previewReady();
   const {data} = activeRender;
   const liveTime = Math.round(performance.now() - (activeRender.editAt ?? activeRender.startedAt));
   status.textContent = `Go ${data.render_ms.toFixed(1)} ms${data.cached ? ' (cached)' : ''} · preview ${liveTime} ms · input ${(data.input_bytes/1024).toFixed(1)} KB · fragment ${((data.html_bytes)/1024).toFixed(1)} KB`;
@@ -531,6 +532,7 @@ if (!saved.textContent) saveDraft();
 
 const workspaceReady = window.MarkataSiteTree.attach(editor, storageWarning, {saveToSite:true});
 workspaceReady.then(() => {
+  window.MarkataStartupStatus?.workspaceReady();
   window.MarkataFileFinder?.attach(editor);
   window.MarkataRecentFiles?.attach();
 });
