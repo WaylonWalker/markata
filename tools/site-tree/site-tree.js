@@ -169,6 +169,26 @@ window.MarkataSiteTree = {
     document.querySelector('#saved').textContent = 'Restored committed version · saved to site';
     return true;
   },
+  // Called only after the guarded local Discard endpoint has deleted a
+  // reviewed untracked source. Clear this file's recovery copy, leaving every
+  // other local draft untouched; the caller then reloads workspace discovery.
+  forgetDeleted(path) {
+    if (!currentEditor || active !== path || !Object.hasOwn(files, path)) return false;
+    saveRevisions[path] = (saveRevisions[path] || 0) + 1;
+    saveEpochs[path] = (saveEpochs[path] || 0) + 1;
+    clearTimeout(saveTimers[path]);
+    try {
+      localStorage.removeItem(storageKey(path));
+      localStorage.removeItem(legacyStorageKey(path));
+      localStorage.removeItem('markata-workspace-active-v1:' + workspaceKey);
+    } catch { warning(); return false; }
+    delete drafts[path];
+    delete baselines[path];
+    delete versions[path];
+    delete restored[path];
+    delete files[path];
+    return true;
+  },
   save() {
     if (!currentEditor) return false;
     if (!editable(active)) return true;
