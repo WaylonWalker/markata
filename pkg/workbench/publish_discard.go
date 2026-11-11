@@ -63,30 +63,7 @@ func (h *Handler) servePublishDiscard(w http.ResponseWriter, r *http.Request) {
 	// from a failed git-show: independently verify exact untracked status.
 	baseline, err := gitOutput(ctx, root, "show", req.Head+":"+relative)
 	if err != nil {
-		status, statusErr := gitOutput(ctx, root, "status", "--porcelain=v1", "-z", "--untracked-files=all", "--", relative)
-		if statusErr != nil || status != "?? "+relative+"\x00" {
-			fail(w, http.StatusConflict, "cannot discard: file is tracked, staged, ignored, or Git status is uncertain")
-			return
-		}
-		// A local workbench may be backed by a test fixture that does not
-		// implement safe source deletion. Never fall back to raw os.Remove.
-		remover, ok := h.workspace.(interface{ Delete(string, string) error })
-		if !ok {
-			fail(w, http.StatusUnprocessableEntity, "guarded deletion is not available in this workspace")
-			return
-		}
-		again, readErr := h.workspace.Read(req.Path)
-		if readErr != nil || editorworkspace.SourceVersion(again) != req.Version {
-			fail(w, http.StatusConflict, "draft changed during discard")
-			return
-		}
-		if err := remover.Delete(req.Path, req.Version); err != nil {
-			fail(w, http.StatusConflict, "could not remove new draft safely: "+err.Error())
-			return
-		}
-		w.Header().Set("Cache-Control", "no-store")
-		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]string{"status": "removed-local"})
+		h.serveUntrackedDiscard(w, ctx, req, root, relative)
 		return
 	}
 	if source == baseline {
@@ -110,6 +87,38 @@ func (h *Handler) servePublishDiscard(w http.ResponseWriter, r *http.Request) {
 		"status":          "restored-local",
 		discardVersionKey: editorworkspace.SourceVersion(baseline),
 	}); err != nil {
+		return
+	}
+}
+ 
+// serveUntrackedDiscard is the local-only deletion path. It never operates on
+// files that Git considers tracked, staged, ignored, or otherwise ambiguous.
+func (h *Handler) serveUntrackedDiscard(
+	w http.ResponseWriter, ctx context.Context, req discardRequest, root, relative string,
+) {
+	status, statusErr := gitOutput(ctx, root, "status", "--porcelain=v1", "-z", "--untracked-files=all", "--", relative)
+	if statusErr != nil || status != "?? "+relative+"\x00" {
+		fail(w, http.StatusConflict, "cannot discard: file is tracked, staged, ignored, or Git status is uncertain")
+		return
+	}
+	// Never fall back to raw os.Remove for an unsupported workspace source.
+	remover, ok := h.workspace.(interface{ Delete(string, string) error })
+	if !ok {
+		fail(w, http.StatusUnprocessableEntity, "guarded deletion is not available in this workspace")
+		return
+	}
+	again, readErr := h.workspace.Read(req.Path)
+	if readErr != nil || editorworkspace.SourceVersion(again) != req.Version {
+		fail(w, http.StatusConflict, "draft changed during discard")
+		return
+	}
+	if err := remover.Delete(req.Path, req.Version); err != nil {
+		fail(w, http.StatusConflict, "could not remove new draft safely: "+err.Error())
+		return
+	}
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(map[string]string{"status": "removed-local"}); err != nil {
 		return
 	}
 }
