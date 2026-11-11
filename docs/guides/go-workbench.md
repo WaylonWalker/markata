@@ -306,6 +306,13 @@ template defaults. The slug field stays empty when using the suggestion; its
 ghost text and the destination path update as the title changes. Enter a custom
 slug only when you want to override the title-derived filename. Creating the
 post opens the new file in the editor, where later edits autosave to the site.
+The built-in **Link** starter accepts a source URL alongside a title and filename.
+It stores a quoted `link:` frontmatter field and keeps `published: false`,
+so it is a draft until explicitly reviewed and published. The link must use
+`http://` or `https://` and cannot embed credentials. The flow does **not**
+fetch the destination page or import its title, description, or image yet;
+those metadata features require a separate secure, opt-in retrieval design.
+
 The footer reports whether the draft was saved. Storage failures leave editing and downloads available.
 See [shared editor features and runtime differences](/docs/guides/renderer-integration-benchmarks/#shared-editor-features-and-runtime-differences) for the comparison.
 

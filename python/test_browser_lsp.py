@@ -166,6 +166,57 @@ class BrowserLSPTest(unittest.TestCase):
         finally:
             source_path.write_text(original, encoding="utf-8")
 
+    def test_go_link_post_starter_validates_url_and_creates_unpublished_file(self):
+        target = self.root / "link-post-from-url.md"
+        self.assertFalse(target.exists())
+        try:
+            with self.browser.new_context() as context:
+                page = context.new_page()
+                errors = []
+                page.on("pageerror", lambda error: errors.append(str(error)))
+                page.goto(self.go_url)
+                # This tests the Link starter, not palette search ranking.
+                # Invoke the registered New Post command deterministically.
+                page.wait_for_function(
+                    "() => Boolean(window.MarkataShortcuts?.all?.().some(c => c.id === 'workbench.newPost'))"
+                )
+                self.assertTrue(page.evaluate(
+                    "window.MarkataShortcuts.execute('workbench.newPost')"
+                ))
+                expect(page.locator("#template-picker")).to_be_visible(timeout=10000)
+                page.locator("#template-picker-query").fill("Link")
+                page.locator(".template-choice").filter(has_text="Save a web link").click()
+                expect(page.locator("#create-dialog")).to_be_visible()
+                expect(page.locator("#create-link-field")).to_be_visible()
+                page.locator("#create-title").fill("An interesting article")
+                page.locator("#create-slug").fill("link-post-from-url")
+                page.locator("#create-directory").fill(".")
+                page.locator("#create-link-url").fill("javascript:alert(1)")
+                page.locator('#create-form button[type="submit"]').click()
+                # Browsers reject a non-http URL via native input[type=url]
+                # validation before the JavaScript submit handler runs.
+                self.assertFalse(page.evaluate(
+                    "document.querySelector('#create-link-url').checkValidity()"
+                ))
+                self.assertFalse(target.exists())
+                page.locator("#create-link-url").fill("https://user:secret@example.com/")
+                page.locator('#create-form button[type="submit"]').click()
+                expect(page.locator("#create-error")).to_contain_text("without embedded credentials")
+                self.assertFalse(target.exists())
+
+                page.locator("#create-link-url").fill("https://example.com/article?q=one&lang=en#part")
+                page.locator('#create-form button[type="submit"]').click()
+                expect(page.locator("#create-dialog")).not_to_be_visible()
+                expect(page.locator("#active-file")).to_have_text("link-post-from-url.md", timeout=10000)
+                source = target.read_text(encoding="utf-8")
+                self.assertIn('title: "An interesting article"', source)
+                self.assertIn('link: "https://example.com/article?q=one&lang=en#part"', source)
+                self.assertIn("published: false", source)
+                self.assertIn("template: link", source)
+                self.assertEqual(errors, [])
+        finally:
+            target.unlink(missing_ok=True)
+
     def test_link_completion_and_diagnostics(self):
         for name, url in [("Python", self.python_url), ("Go", self.go_url)]:
             with self.subTest(server=name):
