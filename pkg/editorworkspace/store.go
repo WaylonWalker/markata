@@ -230,6 +230,24 @@ func (s *Store) Write(path, source string) error {
 	return s.workspace.writeSource(path, source)
 }
 
+// Delete removes one previously discovered source after its exact version is
+// verified. Git's untracked/staged checks belong to the calling workbench.
+func (s *Store) Delete(path, expectedVersion string) error {
+	if err := s.ctx.Err(); err != nil {
+		return err
+	}
+	s.mu.RLock()
+	_, found := s.paths[path]
+	s.mu.RUnlock()
+	if !found {
+		return fmt.Errorf("source file is not in the workspace content globs")
+	}
+	if err := s.workspace.Delete(path, expectedVersion); err != nil {
+		return err
+	}
+	return s.refresh(nil, false)
+}
+
 // Create adds a Markdown file in a directory that already contains discovered content.
 func (s *Store) Create(path, source string) error {
 	if err := s.ctx.Err(); err != nil {
