@@ -529,17 +529,6 @@ function updatePreview(data, version) {
 function attributes() { return Object.fromEntries(appearanceKeys.map(k => [k, document.documentElement.getAttribute(k)])); }
 function syncAppearance() { frame.contentWindow?.postMessage({type:'appearance',attributes:attributes()}, '*'); }
 new MutationObserver(syncAppearance).observe(document.documentElement, {attributes:true,attributeFilter:appearanceKeys});
-// Deferred script execution already guarantees the editor DOM exists.
- // Do not hold the first preview behind window.load (images and other assets).
-workspaceReady.then(() => {
-  ready = true;
-  render();
-  focusEditorForWriting();
-}).catch(error => {
-  errorBox.textContent='Unable to initialize workspace: '+error.message;
-  errorBox.hidden=false;
-});
-
 document.querySelector('#open').addEventListener('click', () => document.querySelector('#import').click());
 document.querySelector('#import').addEventListener('change', async event => {
   const file = event.target.files[0];
@@ -559,4 +548,16 @@ document.querySelector('#import').addEventListener('change', async event => {
 if (!saved.textContent) saveDraft();
 
 const workspaceReady = window.MarkataSiteTree.attach(editor, storageWarning, {saveToSite:true});
+// Deferred script execution already guarantees the editor DOM exists.
+ // Do not hold the first preview behind window.load (images and other assets).
+workspaceReady.then(() => {
+  ready = true;
+  render();
+  focusEditorForWriting();
+}).catch(error => {
+  errorBox.textContent='Unable to initialize workspace: '+error.message;
+  errorBox.hidden=false;
+});
+
+
 workspaceReady.then(() => window.MarkataFileFinder?.attach(editor));
