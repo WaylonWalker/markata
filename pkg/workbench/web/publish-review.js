@@ -351,8 +351,8 @@
         throw new Error('The document changed while preparing the review. Close and reopen to compare the latest text.');
       state.data=data;
       dialog.querySelector('#publish-discard').hidden=!data.changed;
-      dialog.querySelector('#publish-discard').disabled=!data.baseline_exists;
-      dialog.querySelector('#publish-discard-warning').hidden=data.baseline_exists;
+      dialog.querySelector('#publish-discard').disabled=false;
+      dialog.querySelector('#publish-discard-warning').hidden=true;
       dialog.querySelector('#publish-title').textContent=titleFromSource(data.current)||path.split('/').pop();
       dialog.querySelector('#publish-path').textContent=path;
       dialog.querySelector('#publish-before-name').textContent=data.baseline_exists?'Last committed':'New page';
@@ -413,7 +413,7 @@
   }
   async function discardReviewed() {
     const data=state.data;
-    if (!data || state.busy || !data.baseline_exists) return;
+    if (!data || state.busy) return;
     if (state.path!==window.MarkataSiteTree?.activeFile?.() || editor.getValue()!==data.current) {
       setNotice('Draft changed since review. Reopen Review changes before discarding.','warning');return;
     }
@@ -430,6 +430,16 @@
       });
       const result=await response.json();
       if (!response.ok)throw new Error(result.error||'Could not discard reviewed changes.');
+      if (result.status === 'removed-local') {
+        // The server verified Git's untracked status and exact source version.
+        // The browser must not re-create the deleted draft via recovery or autosave.
+        if (!window.MarkataSiteTree?.forgetDeleted?.(data.path))
+          throw new Error('New file deleted on disk, but browser recovery could not be cleared. Reload to reconcile.');
+        location.reload();
+        return;
+      }
+      if (result.status !== 'restored-local')
+        throw new Error('Unexpected discard response. Reload to reconcile.');
       // Set the live editor and its recovery copy to the exact server-acknowledged
       // baseline. Reloading here would restore an older dirty browser buffer.
       if (window.MarkataSiteTree?.activeFile?.()!==data.path || editor.getValue()!==data.current) {
@@ -664,7 +674,7 @@
     '<div id="publish-view-pierre" role="tabpanel" aria-labelledby="publish-tab-pierre" data-publish-view="pierre" hidden><div class="publish-pierre-actions"><span>Pierre source diff</span><button type="button" data-pierre-layout="stacked" class="active">Unified</button><button type="button" data-pierre-layout="split">Split</button></div><p id="publish-pierre-error" role="status" hidden></p><div id="publish-pierre-host"></div></div>'+
     '<div id="publish-view-source" role="tabpanel" aria-labelledby="publish-tab-source" data-publish-view="source" hidden><div id="publish-source-diff" role="region" tabindex="0" aria-label="Unified Markdown source diff"></div></div>'+
     '<div id="publish-view-message" role="tabpanel" aria-labelledby="publish-tab-message" data-publish-view="message" hidden><label for="publish-commit-message">Commit message</label><textarea id="publish-commit-message" rows="4" maxlength="4000" spellcheck="true"></textarea><p class="publish-message-help"><span id="publish-message-count">0 / 4000 bytes</span> Used for the local commit. Nothing is pushed from this screen.</p></div></div>'+
-    '<div id="publish-discard-warning" hidden role="status">New, untracked file: safe deletion is not implemented yet. Your draft is preserved.</div>'+
+    '<div id="publish-discard-warning" hidden role="status"></div>'+
     '<div id="publish-discard-confirmation" hidden role="alertdialog" aria-label="Confirm discard"><p id="publish-discard-description">Restore this document to its last committed version? This removes your reviewed unpublished changes, without changing Git history.</p><button type="button" id="publish-discard-cancel">Cancel</button><button type="button" id="publish-discard-accept">Discard reviewed changes</button></div>'+
     '<footer class="publish-actions"><span>A Git commit is not a verified deployment.</span><button type="button" id="publish-discard" hidden>Discard changes…</button><button type="button" id="publish-back">Back to editing</button><button type="button" id="publish-mark-public" hidden>Mark as public</button><button type="button" id="publish-confirm" disabled>Commit selected page</button><button type="button" id="publish-push" hidden>Push to origin</button><button type="button" id="publish-live-check" hidden>Check live status</button></footer>';
     document.body.append(doc);dialog=doc;notice=doc.querySelector('#publish-notice');panels=doc.querySelector('#publish-body');
@@ -676,8 +686,10 @@
     doc.querySelector('#publish-close').addEventListener('click',()=>doc.close());
     doc.querySelector('#publish-back').addEventListener('click',()=>doc.close());
     doc.querySelector('#publish-discard').addEventListener('click',()=>{
-      if (state.busy || !state.data?.baseline_exists) return;
-      doc.querySelector('#publish-discard-description').textContent='Restore '+state.path+' to the last committed Git version? The reviewed unpublished edits will be removed from the active workspace.';
+      if (state.busy || !state.data) return;
+      doc.querySelector('#publish-discard-description').textContent=state.data.baseline_exists
+        ? 'Restore '+state.path+' to the last committed Git version? The reviewed unpublished edits will be removed from the active workspace.'
+        : 'Permanently delete the new untracked file '+state.path+' and its browser recovery copy? This cannot be undone; other files and Git history will not be changed.';
       doc.querySelector('#publish-discard-confirmation').hidden=false;
       doc.querySelector('#publish-discard-cancel').focus();
     });
