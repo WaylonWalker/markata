@@ -240,6 +240,41 @@ func (w *Workspace) Write(path, source string) error {
 	return fmt.Errorf("source file is not in the workspace content globs")
 }
 
+// Delete removes only an existing regular Markdown source whose bytes still
+// match the reviewed version. Symlinked paths are refused, including symlinked
+// parent directories. Callers must separately verify Git's untracked status.
+func (w *Workspace) Delete(path, expectedVersion string) error {
+	local := filepath.FromSlash(path)
+	if !filepath.IsLocal(local) || !isMarkdownSource(local) {
+		return fmt.Errorf("invalid workspace Markdown path")
+	}
+	target := filepath.Join(w.root, local)
+	resolved, err := w.resolve(path)
+	if err != nil {
+		return err
+	}
+	if resolved != target {
+		return fmt.Errorf("cannot delete source through symlinked path")
+	}
+	info, err := os.Lstat(target)
+	if err != nil {
+		return err
+	}
+	if !info.Mode().IsRegular() {
+		return fmt.Errorf("cannot delete non-regular workspace source")
+	}
+	source, err := w.readSource(path)
+	if err != nil {
+		return err
+	}
+	if SourceVersion(source) != expectedVersion {
+		return fmt.Errorf("workspace source changed since review")
+	}
+	// Local workbench CAS protects its own requests; external filesystem
+	// processes are not covered by an atomic cross-process transaction.
+	return os.Remove(target)
+}
+
 // Create atomically adds a Markdown file inside an existing workspace directory.
 func (w *Workspace) Create(path, source string) error {
 	if len(source) > 200000 {
