@@ -288,6 +288,49 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         page.evaluate("(target) => window.MarkataSiteTree.openFile(target)", path)
         expect(page.locator("#active-file")).to_have_text(path)
 
+    def test_discard_new_untracked_post_removes_source_and_only_its_recovery(self):
+        context = self.browser.new_context()
+        self.addCleanup(context.close)
+        page = context.new_page()
+        errors = []
+        page.on("pageerror", lambda error: errors.append(str(error)))
+        page.goto(self.url)
+
+        path = "posts/untracked-discard.md"
+        original = "# New untracked draft\\n"
+        created = page.request.post(
+            self.url.rstrip("/") + "/workspace/file?path=" + path,
+            data=original,
+            headers={"Origin": self.url.rstrip("/"), "Content-Type": "text/plain"},
+        )
+        self.assertEqual(created.status, 201, created.text())
+        page.reload()
+        self.open_site_file(page, path, errors)
+        self.assertEqual(page.evaluate("document.querySelector('.CodeMirror').CodeMirror.getValue()"), original)
+        # Keep a separate browser recovery copy untouched.
+        page.evaluate("""() => {
+          localStorage.setItem('markata-unrelated-draft-test', 'keep');
+          window.MarkataSiteTree.save();
+        }""")
+        page.get_by_role("button", name="Review changes").click()
+        review = page.locator("#publish-review")
+        expect(review).to_be_visible()
+        expect(review.locator("#publish-before-name")).to_have_text("New page")
+        expect(review.locator("#publish-discard")).to_be_enabled()
+        review.locator("#publish-discard").click()
+        expect(review.locator("#publish-discard-description")).to_contain_text("Permanently delete")
+        expect(review.locator("#publish-discard-description")).to_contain_text(path)
+        review.locator("#publish-discard-accept").click()
+        page.wait_for_function("""() => window.MarkataSiteTree?.activeFile?.() !== 'posts/untracked-discard.md'""", timeout=15000)
+        self.assertFalse((self.site / path).exists())
+        self.assertEqual(self.git(self.site, "diff", "--cached", "--name-only"), "")
+        self.assertIsNone(page.evaluate("""() => {
+          const id = window.MarkataSiteTree.workspaceId();
+          return localStorage.getItem('markata-workspace-v1:' + id + ':buffer:file:posts/untracked-discard.md');
+        }"""))
+        self.assertEqual(page.evaluate("localStorage.getItem('markata-unrelated-draft-test')"), "keep")
+        self.assertEqual(errors, [])
+
     def test_review_close_inflight_request_does_not_block_reopening(self):
         context = self.browser.new_context()
         self.addCleanup(context.close)
