@@ -116,7 +116,11 @@ func TestPublishDiscardUntrackedFileRequiresFreshUnstagedGitStatus(t *testing.T)
 	}
 	gitForReviewTest(t, dir, "add", "README.md")
 	gitForReviewTest(t, dir, "commit", "-qm", "initial")
-	head := string(bytes.TrimSpace([]byte(gitForReviewTest(t, dir, "rev-parse", "HEAD"))))
+	headOutput, err := gitOutput(context.Background(), dir, "rev-parse", "HEAD")
+	if err != nil {
+		t.Fatal(err)
+	}
+	head := string(bytes.TrimSpace([]byte(headOutput)))
 	content := "# New draft\\n"
 	path := filepath.Join(dir, "new.md")
 	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
@@ -164,7 +168,8 @@ func TestPublishDiscardUntrackedFileRequiresFreshUnstagedGitStatus(t *testing.T)
 	if err != nil || string(unchanged) != "base" {
 		t.Fatalf("unrelated committed file changed: %v %q", err, unchanged)
 	}
-	if staged := gitForReviewTest(t, dir, "diff", "--cached", "--name-only"); staged != "" {
-		t.Fatalf("discard changed Git index: %q", staged)
+	staged, err := gitOutput(context.Background(), dir, "diff", "--cached", "--name-only")
+	if err != nil || staged != "" {
+		t.Fatalf("discard changed Git index: %q (%v)", staged, err)
 	}
 }
