@@ -39,6 +39,22 @@ The review MUST provide a Commit message tab showing the exact message used for
 the local Git commit. The user MUST be able to edit it, and the server MUST use
 the supplied message for that commit.
 
+## Workspace-wide Changes inventory (incremental implementation)
+
+The workbench MUST enumerate all Git worktree changes independently of which
+files have ever been opened in the editor. A read-only, loopback-only
+`GET /workspace/changes` endpoint returns staged, unstaged, and untracked
+files; it preserves rename/copy source paths and reports changes outside the
+current site rather than silently filtering them away. On failure the UI
+shows an error, never an empty success state. The desktop Changes panel
+remains available while writing; mobile uses a dismissible bottom sheet.
+
+This first slice is **inventory and navigation only**. Showing a Git change
+does not make a file eligible for editor writes, publish, or discard. The
+single-file publish flow and deliberate selected-files commit/push remain
+separate tasks. Never equate an empty worktree with a fully pushed or live
+site; local commits may be ahead of the remote.
+
 ## Revision identity
 
 At least three independently identified states exist:
