@@ -16,6 +16,7 @@ import (
 type workspaceChange struct {
 	Path            string `json:"path"`
 	PreviousPath    string `json:"previous_path,omitempty"`
+	EditorPath      string `json:"editor_path,omitempty"`
 	Status          string `json:"status"`
 	Kind            string `json:"kind"`
 	Staged          bool   `json:"staged"`
@@ -82,6 +83,12 @@ func parseWorkspaceChanges(status string, workspacePrefix string) ([]workspaceCh
 		// outside the selected site; flag their scope for the UI instead.
 		prefix := filepath.ToSlash(workspacePrefix)
 		entry.Workspace = prefix == "." || name == prefix || strings.HasPrefix(name, prefix+"/")
+		if entry.Workspace {
+			entry.EditorPath = name
+			if prefix != "." {
+				entry.EditorPath = strings.TrimPrefix(name, prefix+"/")
+			}
+		}
 		entry.Markdown = strings.HasSuffix(strings.ToLower(name), ".md")
 		entries = append(entries, entry)
 	}
