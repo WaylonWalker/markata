@@ -46,6 +46,43 @@ Here's **bold text**, a [link](https://example.com), and a list:
 
 Keep the frontmatter simple: `title`, `date`, `published`, `draft`, and optional `tags` are enough to begin. Markata can infer a slug, and additional frontmatter fields are available to templates.
 
+### Create a link post from a URL
+
+```bash title="Terminal"
+markata new --template link 'https://example.com/my-article'
+```
+
+Markata fetches the page title, description, and preview image for the link post.
+Only a usable Open Graph title (`og:title`) becomes the title automatically.
+Empty, URL-only, and hostname-only titles do not qualify.
+Other suggestions require your confirmation: Twitter metadata, the HTML title, the main heading, the decoded URL slug, then the hostname.
+
+The post keeps the URL you entered, even after redirects.
+Relative preview images resolve against the fetched page URL.
+A missing description or image does not prevent creation.
+Markata does not invent these optional fields.
+
+In the wizard, select the link template, then enter the URL first.
+After metadata lookup and any required title confirmation, **Create** is the default action.
+Choose **Edit details** to change the title, description, image, directory, tags, privacy, or authors.
+Explicit flags take priority over fetched metadata and wizard values.
+
+If the fetch fails, Markata warns and lets you enter details manually.
+For unattended use, supply `--title` and `--no-input`:
+
+```bash title="Terminal"
+markata new --template link 'https://example.com/my-article' --title 'My article' --draft --no-input
+```
+
+The explicit title always wins.
+Without a trusted title or `--title`, unattended creation stops with an error and writes no file.
+The error includes a copy-pastable command that adds `--title` and preserves your URL and explicit flags.
+
+Link aliases (`bookmark`, `til`, and `stars`) support the same workflow.
+Existing title arguments, such as `markata new "My bookmark" --template link`, still work.
+Other templates keep their existing creation behavior.
+See the [CLI reference](/docs/reference/cli/#new) for more options.
+
 ## Preview your words
 
 ```bash title="Terminal"

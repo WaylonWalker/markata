@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"sort"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/charmbracelet/huh"
+	"github.com/spf13/cobra"
 
 	"github.com/WaylonWalker/markata/pkg/config"
 	"github.com/WaylonWalker/markata/pkg/models"
@@ -46,17 +48,18 @@ type newWizardState struct {
 	UseDefaultAuthor bool
 
 	// Template-specific fields
-	ImageURL string // photo, video (thumbnail), link (preview)
-	VideoURL string // video
-	Duration string // video
-	LinkURL  string // link
-	Quote    string // quote
-	Source   string // quote
-	Handle   string // contact
-	Name     string // author
-	Bio      string // author
-	Email    string // author
-	Role     string // author
+	ImageURL    string // photo, video (thumbnail), link (preview)
+	Description string // link preview
+	VideoURL    string // video
+	Duration    string // video
+	LinkURL     string // link
+	Quote       string // quote
+	Source      string // quote
+	Handle      string // contact
+	Name        string // author
+	Bio         string // author
+	Email       string // author
+	Role        string // author
 }
 
 // siteContext holds discovered site metadata used to populate wizard options.
@@ -204,8 +207,8 @@ func discoverExistingDirs(cfg *models.Config) []string {
 }
 
 // runHuhNewWizard runs the huh-based interactive wizard for creating new content.
-// All groups are in a single form so Shift+Tab navigates backwards.
-func runHuhNewWizard(templates map[string]ContentTemplate) (*newWizardState, error) {
+// Detail groups share a form so Shift+Tab navigates backwards.
+func runHuhNewWizard(cmd *cobra.Command, templates map[string]ContentTemplate) (*newWizardState, error) {
 	ctx := loadSiteContext(templates)
 
 	// Use the palette resolved for the active command configuration.
@@ -219,11 +222,9 @@ func runHuhNewWizard(templates map[string]ContentTemplate) (*newWizardState, err
 		state.Template = resolvedName
 	}
 
-	// Build all groups for a single form with back navigation.
-
-	// --- Group 1: Template and Title ---
+	// Select the template before asking for template-specific input.
 	templateOptions := buildTemplateOptions(ctx.Templates)
-	titleGroup := huh.NewGroup(
+	templateGroup := huh.NewGroup(
 		huh.NewNote().
 			Title("Create New Content").
 			Description("Let's set up your new content file.\nUse Shift+Tab to go back to a previous step."),
@@ -232,6 +233,23 @@ func runHuhNewWizard(templates map[string]ContentTemplate) (*newWizardState, err
 			Description("Choose the content type (/ to filter)").
 			Options(templateOptions...).
 			Value(&state.Template),
+	)
+	if !cmd.Flags().Changed("template") {
+		if err := huh.NewForm(templateGroup).WithTheme(theme).Run(); err != nil {
+			return nil, fmt.Errorf("wizard canceled: %w", err)
+		}
+	}
+	if state.Template == tmplLink {
+		create, err := runHuhNewLinkDefaults(cmd, state, ctx, theme)
+		if err != nil {
+			return nil, err
+		}
+		if create {
+			return state, nil
+		}
+	}
+
+	titleGroup := huh.NewGroup(
 		huh.NewInput().
 			Title("Title").
 			Description("The title of your new content").
@@ -243,7 +261,9 @@ func runHuhNewWizard(templates map[string]ContentTemplate) (*newWizardState, err
 				}
 				return nil
 			}),
-	)
+	).WithHideFunc(func() bool {
+		return state.Template == tmplLink && cmd.Flags().Changed(newTitleKey)
+	})
 
 	// --- Group 2: Directory selection (dynamic based on template) ---
 	dirGroup := huh.NewGroup(
@@ -255,7 +275,9 @@ func runHuhNewWizard(templates map[string]ContentTemplate) (*newWizardState, err
 				return buildDirectoryOptions(selectedTemplate, ctx.ExistingDirs)
 			}, &state.Template).
 			Value(&state.DirChoice),
-	)
+	).WithHideFunc(func() bool {
+		return state.Template == tmplLink && cmd.Flags().Changed("dir")
+	})
 
 	// --- Group 2b: Custom directory (shown only if __custom__ selected) ---
 	customDirGroup := huh.NewGroup(
@@ -302,13 +324,12 @@ func runHuhNewWizard(templates map[string]ContentTemplate) (*newWizardState, err
 		return state.Template != tmplVideo
 	})
 
-	// Link: URL and preview image
+	// Link: the destination was collected before metadata lookup.
 	linkGroup := huh.NewGroup(
 		huh.NewInput().
-			Title("Link URL").
-			Description("The URL you are sharing").
-			Value(&state.LinkURL).
-			Placeholder("https://example.com/article"),
+			Title("Description").
+			Description("Link description (optional)").
+			Value(&state.Description),
 		huh.NewInput().
 			Title("Preview Image").
 			Description("Image for the link preview (optional)").
@@ -398,7 +419,9 @@ func runHuhNewWizard(templates map[string]ContentTemplate) (*newWizardState, err
 			Placeholder("new-tag, another-tag"),
 	)
 
-	tagsGroup := huh.NewGroup(tagFields...)
+	tagsGroup := huh.NewGroup(tagFields...).WithHideFunc(func() bool {
+		return state.Template == tmplLink && cmd.Flags().Changed("tags")
+	})
 
 	// --- Group 4: Privacy ---
 	// Inheriting is distinct from explicitly selecting public (false).
@@ -489,6 +512,11 @@ func runHuhNewWizard(templates map[string]ContentTemplate) (*newWizardState, err
 		return nil, fmt.Errorf("canceled by user")
 	}
 
+	resolveNewWizardDetails(state, ctx)
+	return state, nil
+}
+
+func resolveNewWizardDetails(state *newWizardState, ctx *siteContext) {
 	// Resolve directory
 	if state.DirChoice == dirCustomSentinel {
 		if state.CustomDir != "" {
@@ -514,12 +542,14 @@ func runHuhNewWizard(templates map[string]ContentTemplate) (*newWizardState, err
 		state.Authors = []string{ctx.DefaultAuthorID}
 	}
 
-	return state, nil
 }
 
 // buildSummary generates the summary text for the confirmation step.
 func buildSummary(state *newWizardState, ctx *siteContext) string {
 	slug := generateSlug(state.Title)
+	if state.Template == tmplLink {
+		slug = newLinkSlug(state.Title, state.LinkURL)
+	}
 	filename := slug + ".md"
 
 	dir := state.DirChoice
@@ -536,6 +566,9 @@ func buildSummary(state *newWizardState, ctx *siteContext) string {
 	sb.WriteString(fmt.Sprintf("File:      %s\n", fullPath))
 	selectedTemplate := ctx.Templates[state.Template]
 	effectiveDraft := starterDraftDefault(selectedTemplate)
+	if state.Template == tmplLink && currentCmd != nil && currentCmd.Flags().Changed("draft") {
+		effectiveDraft = newDraft
+	}
 	sb.WriteString(fmt.Sprintf("Draft:     %t (effective)\n", effectiveDraft))
 	sb.WriteString(fmt.Sprintf("Published: %t (effective)\n", !effectiveDraft))
 	effectivePrivate := false
@@ -655,6 +688,12 @@ func buildTemplateSummary(state *newWizardState) string {
 		if state.LinkURL != "" {
 			sb.WriteString(fmt.Sprintf("URL:       %s\n", state.LinkURL))
 		}
+		if state.Description != "" {
+			sb.WriteString(fmt.Sprintf("Description: %s\n", state.Description))
+		}
+		if state.ImageURL != "" {
+			sb.WriteString(fmt.Sprintf("Image:     %s\n", state.ImageURL))
+		}
 	case tmplQuote:
 		if state.Quote != "" {
 			sb.WriteString(fmt.Sprintf("Quote:     %s\n", state.Quote))
@@ -696,12 +735,12 @@ func applyTemplateFields(state *newWizardState, fm map[string]interface{}) {
 			fm["duration"] = state.Duration
 		}
 	case tmplLink:
+		fm[newTitleKey] = state.Title
 		if state.LinkURL != "" {
 			fm["url"] = state.LinkURL
 		}
-		if state.ImageURL != "" {
-			fm["image"] = state.ImageURL
-		}
+		fm["description"] = state.Description
+		fm["image"] = state.ImageURL
 	case tmplQuote:
 		if state.Quote != "" {
 			fm["quote"] = state.Quote
@@ -741,7 +780,12 @@ func containsString(slice []string, val string) bool {
 
 // applyNewWizardState generates and writes the content file from wizard state.
 func applyNewWizardState(state *newWizardState, templates map[string]ContentTemplate) error {
-	template, _, ok := resolveTemplateSelection(state.Template, templates)
+	selection := state.Template
+	linkFlags := state.Template == tmplLink && currentCmd != nil
+	if linkFlags && currentCmd.Flags().Changed("template") {
+		selection = newTemplate
+	}
+	template, _, ok := resolveTemplateSelection(selection, templates)
 	if !ok {
 		return fmt.Errorf("unknown template %q", state.Template)
 	}
@@ -754,14 +798,22 @@ func applyNewWizardState(state *newWizardState, templates map[string]ContentTemp
 	if outputDir == "" {
 		outputDir = template.Directory
 	}
-	if !safeStarterDirectory(outputDir) {
+	explicitDir := linkFlags && currentCmd.Flags().Changed("dir")
+	if !explicitDir && !safeStarterDirectory(outputDir) {
 		return fmt.Errorf("unsafe output directory %q", outputDir)
+	}
+	if siteDirSelected && !filepath.IsAbs(outputDir) {
+		outputDir = filepath.Join(activeSiteDir, outputDir)
 	}
 
 	slug := generateSlug(state.Title)
+	if state.Template == tmplLink {
+		slug = newLinkSlug(state.Title, state.LinkURL)
+	}
 
 	// Build enhanced template that includes wizard-gathered fields
 	enhancedTemplate := template
+	enhancedTemplate.Frontmatter = maps.Clone(template.Frontmatter)
 	if enhancedTemplate.Frontmatter == nil {
 		enhancedTemplate.Frontmatter = make(map[string]interface{})
 	}
@@ -789,6 +841,21 @@ func applyNewWizardState(state *newWizardState, templates map[string]ContentTemp
 		tags = nil
 	}
 
-	// The wizard has no publication control. Preserve starter/site defaults.
-	return writeContentFile(state.Title, slug, outputDir, false, false, tags, enhancedTemplate)
+	draftSet := false
+	if linkFlags {
+		if currentCmd.Flags().Changed("dir") && newDir != "" {
+			outputDir = newDir
+			if siteDirSelected && !filepath.IsAbs(outputDir) {
+				outputDir = filepath.Join(activeSiteDir, outputDir)
+			}
+		}
+		if currentCmd.Flags().Changed("tags") {
+			tags = parseTags(newTags)
+			if tags == nil {
+				tags = []string{}
+			}
+		}
+		draftSet = currentCmd.Flags().Changed("draft")
+	}
+	return writeContentFile(state.Title, slug, outputDir, newDraft, draftSet, tags, enhancedTemplate)
 }

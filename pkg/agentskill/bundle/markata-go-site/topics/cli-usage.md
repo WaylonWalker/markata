@@ -96,6 +96,39 @@ Bare `markata-go config` behaves like `markata-go config show`.
 - `markata-go init` (initialize a new project with TUI wizard)
 - `markata-go init --plain` (plain text prompts for non-TTY environments)
 
+#### URL-first Link Posts
+
+Use an HTTP(S) destination URL with `link` or its aliases (`bookmark`, `til`, `stars`):
+
+```bash
+markata new --template link 'https://example.com/my-article'
+markata new --template link 'https://example.com/my-article' --title 'My article' --draft --no-input
+```
+
+The command fetches a title, description, and preview image.
+Only a usable `og:title` supplies a trusted automatic title.
+Empty, URL-only, and hostname-only titles are not trusted.
+Other suggestions require user confirmation, in this order: Twitter metadata, HTML title, main heading, decoded URL slug, then hostname.
+For unattended creation without a trusted title, pass a user-approved `--title` with `--no-input`.
+An explicit `--title` always wins.
+
+Without a terminal, or with `--no-input`, low-confidence creation returns an error and writes no file.
+The error supplies a copy-pastable command with `--title` that preserves the destination URL and explicit flags.
+Use that command after the user confirms the title.
+If metadata lookup fails, interactive creation warns and supports manual fields.
+A description and image are optional.
+Preserve starter defaults rather than invent missing metadata.
+
+The post preserves the entered destination across redirects.
+Relative images resolve against the fetched page URL.
+
+The wizard selects the template first and asks for a link URL before the title.
+After lookup and any required title confirmation, **Create** is the default action.
+**Edit details** exposes title, description, image, directory, tags, privacy, and authors.
+Explicit flags take priority, and starter defaults remain unless metadata or explicit input replaces them.
+Plain prompts use the same title-confidence rules.
+Existing non-URL title arguments and other templates keep their behavior.
+
 ### Content Workflow For Agents
 
 Use `markata-go explain content` for the complete inspect, find, edit, create,

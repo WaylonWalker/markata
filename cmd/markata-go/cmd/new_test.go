@@ -93,7 +93,7 @@ func TestRunInteractiveMode_TemplateAlias(t *testing.T) {
 	newTemplate = "ping"
 
 	cmd := &cobra.Command{}
-	cmd.SetIn(strings.NewReader("My Ping\nnotes\n\nn\n"))
+	cmd.SetIn(strings.NewReader("ping\nMy Ping\n\n\nn\n"))
 	cmd.SetOut(bytes.NewBuffer(nil))
 	cmd.SetErr(bytes.NewBuffer(nil))
 	currentCmd = cmd
