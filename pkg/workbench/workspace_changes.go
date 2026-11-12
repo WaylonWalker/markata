@@ -14,16 +14,16 @@ import (
 // workspaceChange is intentionally a read-only Git observation. A candidate
 // Markdown path is not authorization to publish or discard that path.
 type workspaceChange struct {
-	Path            string `json:"path"`
-	PreviousPath    string `json:"previous_path,omitempty"`
-	EditorPath      string `json:"editor_path,omitempty"`
-	Status          string `json:"status"`
-	Kind            string `json:"kind"`
-	Staged          bool   `json:"staged"`
-	Unstaged        bool   `json:"unstaged"`
-	Untracked       bool   `json:"untracked"`
-	Workspace       bool   `json:"workspace"`
-	Markdown        bool   `json:"markdown"`
+	Path         string `json:"path"`
+	PreviousPath string `json:"previous_path,omitempty"`
+	EditorPath   string `json:"editor_path,omitempty"`
+	Status       string `json:"status"`
+	Kind         string `json:"kind"`
+	Staged       bool   `json:"staged"`
+	Unstaged     bool   `json:"unstaged"`
+	Untracked    bool   `json:"untracked"`
+	Workspace    bool   `json:"workspace"`
+	Markdown     bool   `json:"markdown"`
 }
 
 type workspaceChanges struct {
@@ -52,8 +52,8 @@ func parseWorkspaceChanges(status string, workspacePrefix string) ([]workspaceCh
 		status = remainder
 		entry := workspaceChange{
 			Path: name, Status: code,
-			Staged: code[0] != ' ' && code[0] != '?',
-			Unstaged: code[1] != ' ' && code[1] != '?',
+			Staged:    code[0] != ' ' && code[0] != '?',
+			Unstaged:  code[1] != ' ' && code[1] != '?',
 			Untracked: code == "??",
 		}
 		if strings.ContainsAny(code, "RC") {
