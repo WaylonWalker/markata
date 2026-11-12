@@ -427,6 +427,40 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         self.assertEqual(errors, [])
 
 
+    def test_changes_panel_lists_all_unopened_files(self):
+        # The workspace-wide inventory must include files never opened in
+        # CodeMirror, staged content and changes outside the content glob.
+        staged = self.site / "posts" / "changes-staged.md"
+        untracked = self.site / "posts" / "changes-untracked.md"
+        outside = self.site / "changes-outside.txt"
+        staged.write_text("# Staged but not opened\n", encoding="utf-8")
+        untracked.write_text("# New but not opened\n", encoding="utf-8")
+        outside.write_text("Non-Markdown worktree change\n", encoding="utf-8")
+        self.git(self.site, "add", "--", "posts/changes-staged.md")
+        try:
+            context = self.browser.new_context(viewport={"width": 390, "height": 844})
+            self.addCleanup(context.close)
+            page = context.new_page()
+            page.goto(self.url)
+            page.locator("#workspace-changes-toggle").click()
+            panel = page.locator("#workspace-changes-panel")
+            expect(panel).to_be_visible()
+            expect(panel.locator("#workspace-changes-list")).to_contain_text("posts/changes-staged.md")
+            expect(panel.locator("#workspace-changes-list")).to_contain_text("posts/changes-untracked.md")
+            expect(panel.locator("#workspace-changes-list")).to_contain_text("changes-outside.txt")
+            expect(panel.locator("#workspace-changes-list")).to_contain_text("staged")
+            expect(panel.locator("#workspace-changes-list")).to_contain_text("New / untracked")
+            expect(panel.locator("#workspace-changes-summary")).to_contain_text("changed files")
+            # A mobile bottom sheet should never exceed the device viewport.
+            assert panel.bounding_box()["width"] <= 391
+            panel.locator("#workspace-changes-close").click()
+            expect(panel).not_to_be_visible()
+        finally:
+            self.git(self.site, "reset", "-q", "HEAD", "--", "posts/changes-staged.md")
+            staged.unlink(missing_ok=True)
+            untracked.unlink(missing_ok=True)
+            outside.unlink(missing_ok=True)
+
     def test_git_gutter_large_document(self):
         context = self.browser.new_context()
         self.addCleanup(context.close)
