@@ -641,6 +641,128 @@
     gutterTimer=setTimeout(drawChangeGutter,160);
   }
 
+
+  // The Changes panel is intentionally separate from per-page Review. Git
+  // status must be the inventory source, never just the set of opened files.
+  let changesPanel = null, changesButton = null, changesList = null;
+  let changesGeneration = 0, changesTimer = null;
+  function changesVisible(open) {
+    if (!changesPanel) return;
+    changesPanel.hidden = !open;
+    changesButton.setAttribute('aria-expanded', String(open));
+    clearInterval(changesTimer);
+    changesTimer = null;
+    try { localStorage.setItem('markata-workspace-changes-open', open ? 'true' : 'false'); }
+    catch { /* Keep the panel usable without storage. */ }
+    if (open) {
+      refreshWorkspaceChanges();
+      changesTimer = setInterval(() => {
+        if (document.visibilityState === 'visible') refreshWorkspaceChanges();
+      }, 15000);
+    } else {
+      changesGeneration++;
+    }
+  }
+  function changeLabel(entry) {
+    if (entry.untracked) return 'New / untracked';
+    if (entry.kind === 'conflict') return 'Git conflict';
+    if (entry.kind === 'deleted') return 'Deleted';
+    if (entry.kind === 'renamed') return 'Renamed';
+    if (entry.kind === 'copied') return 'Copied';
+    if (entry.kind === 'added') return 'Added';
+    return 'Modified';
+  }
+  function showWorkspaceChanges(data) {
+    changesList.replaceChildren();
+    changesButton.textContent = 'Changes (' + data.total + ')';
+    const heading = changesPanel.querySelector('#workspace-changes-summary');
+    heading.textContent = data.total
+      ? data.total + ' changed files · ' + data.staged + ' staged · ' + data.unstaged +
+        ' unstaged · ' + data.untracked + ' untracked'
+      : 'All caught up — no working-tree changes. Unpushed commits may still exist.';
+    for (const change of data.entries) {
+      const row = document.createElement('div');
+      row.className = 'workspace-change';
+      row.setAttribute('role', 'listitem');
+      const description = document.createElement('div');
+      description.className = 'workspace-change-description';
+      const name = document.createElement('strong');
+      name.textContent = change.path;
+      name.title = change.path;
+      const detail = document.createElement('small');
+      detail.textContent = changeLabel(change) +
+        (change.staged ? ' · staged' : '') +
+        (change.unstaged ? ' · unstaged' : '') +
+        (change.previous_path ? ' · from ' + change.previous_path : '') +
+        (!change.workspace ? ' · outside this site' : !change.markdown ? ' · not Markdown' : '');
+      description.append(name, detail);
+      row.append(description);
+      // Only known content-glob members can be opened in the editor. This
+      // inventory also lists files that are not publishable site sources.
+      if (change.workspace && change.markdown && change.editor_path &&
+          window.MarkataSiteTree?.files?.()?.some(file => file.path === change.editor_path)) {
+        const action = document.createElement('button');
+        action.type = 'button';
+        action.textContent = 'Open';
+        action.setAttribute('aria-label', 'Open ' + change.path);
+        action.addEventListener('click', () => window.MarkataSiteTree.openFile(change.editor_path));
+        row.append(action);
+      }
+      changesList.append(row);
+    }
+  }
+  async function refreshWorkspaceChanges() {
+    if (!changesPanel || changesPanel.hidden) return;
+    const generation = ++changesGeneration;
+    const summary = changesPanel.querySelector('#workspace-changes-summary');
+    summary.textContent = 'Checking all Git changes…';
+    try {
+      const response = await fetch('/workspace/changes', {cache:'no-store'});
+      const data = await response.json();
+      if (generation !== changesGeneration || changesPanel.hidden) return;
+      if (!response.ok || !Array.isArray(data.entries)) throw new Error(data.error || 'Change inventory unavailable');
+      showWorkspaceChanges(data);
+    } catch (error) {
+      if (generation !== changesGeneration || changesPanel.hidden) return;
+      summary.textContent = 'Cannot list all changes: ' + error.message;
+      changesButton.textContent = 'Changes (?)';
+      changesList.replaceChildren();
+    }
+  }
+  function attachWorkspaceChanges() {
+    const settings = document.querySelector('#settings-open');
+    changesButton = document.createElement('button');
+    changesButton.type = 'button';
+    changesButton.id = 'workspace-changes-toggle';
+    changesButton.textContent = 'Changes';
+    changesButton.setAttribute('aria-controls', 'workspace-changes-panel');
+    changesButton.setAttribute('aria-expanded', 'false');
+    settings.parentElement.insertBefore(changesButton, settings);
+    changesPanel = document.createElement('section');
+    changesPanel.id = 'workspace-changes-panel';
+    changesPanel.hidden = true;
+    changesPanel.setAttribute('aria-label', 'Workspace changes');
+    changesPanel.innerHTML =
+      '<header><h2>Changes</h2><button type="button" id="workspace-changes-refresh">Refresh</button>' +
+      '<button type="button" id="workspace-changes-close" aria-label="Close changes panel">Close</button></header>' +
+      '<p id="workspace-changes-summary" role="status">Checking all Git changes…</p>' +
+      '<p class="workspace-changes-help">All Git working-tree changes are listed, not just open posts. ' +
+      'Opening a file does not commit or publish it.</p>' +
+      '<div id="workspace-changes-list" role="list"></div>';
+    document.body.append(changesPanel);
+    changesList = changesPanel.querySelector('#workspace-changes-list');
+    changesButton.addEventListener('click', () => changesVisible(changesPanel.hidden));
+    changesPanel.querySelector('#workspace-changes-refresh')
+      .addEventListener('click', refreshWorkspaceChanges);
+    changesPanel.querySelector('#workspace-changes-close')
+      .addEventListener('click', () => changesVisible(false));
+    window.addEventListener('focus', () => { if (!changesPanel.hidden) refreshWorkspaceChanges(); });
+    let persisted = false;
+    try { persisted = localStorage.getItem('markata-workspace-changes-open') === 'true'; }
+    catch { /* Default closed when storage is blocked. */ }
+    if (persisted) changesVisible(true);
+  }
+
   function attach(instance) {
     editor=instance;
     editor.setOption('gutters',['CodeMirror-linenumbers','markata-change-gutter']);
@@ -679,6 +801,7 @@
     '<footer class="publish-actions"><span>A Git commit is not a verified deployment.</span><button type="button" id="publish-discard" hidden>Discard changes…</button><button type="button" id="publish-back">Back to editing</button><button type="button" id="publish-mark-public" hidden>Mark as public</button><button type="button" id="publish-confirm" disabled>Commit selected page</button><button type="button" id="publish-push" hidden>Push to origin</button><button type="button" id="publish-live-check" hidden>Check live status</button></footer>';
     document.body.append(doc);dialog=doc;notice=doc.querySelector('#publish-notice');panels=doc.querySelector('#publish-body');
     button.addEventListener('click',open);
+    attachWorkspaceChanges();
     editor.on('change',updatePublishButton);
     const fileLabel = document.querySelector('#active-file');
     if (fileLabel) new MutationObserver(updatePublishButton).observe(fileLabel,{subtree:true,characterData:true,childList:true});
