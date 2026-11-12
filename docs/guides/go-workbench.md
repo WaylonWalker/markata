@@ -320,6 +320,17 @@ To open the command palette with a complete example loaded, visit `/?example`.
 
 ## Review changes before publishing (experimental)
 
+The header also offers **Changes**, a persistent, nonmodal Git inventory panel.
+It lists the entire working tree, not only open Markdown posts: unstaged edits,
+staged files, untracked files, renames, deletions, and non-Markdown changes.
+Files outside the selected site are clearly labeled; only Markdown posts
+already known to the editor offer **Open**. On a phone, Changes opens as a
+bottom sheet. Use **Refresh** to update immediately; the open panel also
+refreshes periodically. Listing changes is read-only and does not stage,
+commit, push, or deploy anything. If Git status cannot be read, the panel
+reports the error instead of showing a misleading empty list.
+
+
 When editing a Markdown file inside a Git-backed workspace, select **Review changes**
 in the upper-right header, search for **Publishing: Review changes** in the
 command palette, or press **Ctrl/Cmd+S** or **Ctrl/Cmd+Shift+Enter**. Vim mode
