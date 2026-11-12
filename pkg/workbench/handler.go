@@ -516,7 +516,7 @@ func (h *Handler) document(result *plugins.StandaloneResult, attributes map[stri
 
 func isWorkspaceRoute(routePath, method string) bool {
 	switch {
-	case routePath == "/workspace" || routePath == "/workspace/templates" || routePath == "/workspace/image" || routePath == "/workspace/index-status":
+	case routePath == "/workspace" || routePath == "/workspace/templates" || routePath == "/workspace/image" || routePath == "/workspace/index-status" || routePath == "/workspace/changes":
 		return method == http.MethodGet
 	case routePath == "/workspace/file":
 		return method == http.MethodGet || method == http.MethodPut || method == http.MethodPost
@@ -579,6 +579,10 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 	if r.URL.Path == "/workspace/publish/review" {
 		h.servePublishReview(w, r)
+		return
+	}
+	if r.URL.Path == "/workspace/changes" {
+		h.serveWorkspaceChanges(w, r)
 		return
 	}
 	if r.URL.Path == "/workspace/index-status" {
