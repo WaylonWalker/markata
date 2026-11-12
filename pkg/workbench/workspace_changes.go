@@ -77,11 +77,11 @@ func parseWorkspaceChanges(status string, workspacePrefix string) ([]workspaceCh
 		default:
 			entry.Kind = "modified"
 		}
-		path := filepath.FromSlash(name)
-		rel := filepath.Clean(filepath.Join(workspacePrefix, path))
-		// workspacePrefix is the relative path from the workspace to the Git
-		// root, e.g. "." for the repository root or ".." for a subdirectory.
-		entry.Workspace = filepath.IsLocal(rel)
+		// Git status paths are repository-relative, even when the editor
+		// workspace is nested inside that repository. Do not omit changes
+		// outside the selected site; flag their scope for the UI instead.
+		prefix := filepath.ToSlash(workspacePrefix)
+		entry.Workspace = prefix == "." || name == prefix || strings.HasPrefix(name, prefix+"/")
 		entry.Markdown = strings.HasSuffix(strings.ToLower(name), ".md")
 		entries = append(entries, entry)
 	}
@@ -109,7 +109,7 @@ func (h *Handler) serveWorkspaceChanges(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	root = strings.TrimSpace(root)
-	prefix, err := filepath.Rel(workspace, root)
+	prefix, err := filepath.Rel(root, workspace)
 	if err != nil {
 		fail(w, http.StatusUnprocessableEntity, "cannot locate Git workspace")
 		return
@@ -133,9 +133,15 @@ func (h *Handler) serveWorkspaceChanges(w http.ResponseWriter, r *http.Request) 
 		Head: strings.TrimSpace(head), Entries: entries, Total: len(entries),
 	}
 	for _, entry := range entries {
-		if entry.Staged { result.Staged++ }
-		if entry.Unstaged { result.Unstaged++ }
-		if entry.Untracked { result.Untracked++ }
+		if entry.Staged {
+			result.Staged++
+		}
+		if entry.Unstaged {
+			result.Unstaged++
+		}
+		if entry.Untracked {
+			result.Untracked++
+		}
 	}
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("Content-Type", "application/json")
