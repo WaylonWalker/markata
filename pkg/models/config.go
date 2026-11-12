@@ -1667,8 +1667,8 @@ type MDVideoConfig struct {
 	// Controls shows video controls (default: true)
 	Controls bool `json:"controls" yaml:"controls" toml:"controls"`
 
-	// Autoplay records authored playback intent; the client loading policy decides
-	// whether unrequested video may start automatically (default: false).
+	// Autoplay records Markdown video playback intent (default: true).
+	// The client plays marked videos only when visible and allowed by data/motion settings.
 	Autoplay bool `json:"autoplay" yaml:"autoplay" toml:"autoplay"`
 
 	// Loop repeats the video (default: true for GIF-like behavior)
@@ -1685,14 +1685,15 @@ type MDVideoConfig struct {
 }
 
 // NewMDVideoConfig creates a new MDVideoConfig with sensible defaults.
-// Videos show their poster and begin loading only after playback is requested.
+// Markdown video starts when visible unless data or motion preferences suppress autoplay.
+// Preview cards remain poster-only until a reader interacts with them.
 func NewMDVideoConfig() MDVideoConfig {
 	return MDVideoConfig{
 		Enabled:         true,
 		VideoExtensions: []string{".mp4", ".webm", ".ogg", ".ogv", ".mov", ".m4v", ".avi", ".mkv"},
 		VideoClass:      "md-video",
 		Controls:        true,
-		Autoplay:        false,
+		Autoplay:        true,
 		Loop:            true,
 		Muted:           true,
 		Playsinline:     true,

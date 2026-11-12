@@ -34,8 +34,10 @@ function serve() {
     }
     res.setHeader('Content-Type','text/html');
     res.end('<!doctype html><html><body>' + control + '<div id="view-transition-page"><main><p>Useful content</p>' +
-      '<video width="160" height="90" muted controls preload="none" data-authored-autoplay="true"><source src="/clip.webm" type="video/webm"></video>' +
+      (req.url.includes('below-fold') ? '<div style="height:1200px"></div>' : '') +
+       '<video width="160" height="90" muted controls preload="none" data-authored-autoplay="true"><source src="/clip.webm" type="video/webm"></video>' +
       '<video width="160" height="90" muted controls preload="none" id="no-intent"><source src="/clip.webm" type="video/webm"></video>' +
+       '<video width="160" height="90" muted loop playsinline preload="none" data-adaptive-preview id="preview"><source src="/clip.webm" type="video/webm"></video>' +
       [0,1,2,3].map(i => '<img width="160" height="90" src="/sample/' + (req.url.includes('good') ? 'good' : 'poor') + i + '">').join('') +
       '<a id="next-route" href="/good-native-next">Next route</a></main></div><script src="/startup.js" defer></script><script src="/adaptive.js" defer></script><script src="/view.js" defer></script></body></html>');
   });
@@ -142,6 +144,23 @@ for (const engine of (process.env.ADAPTIVE_BROWSERS || 'chromium,firefox,brave')
       assert.equal(await intentPage.getAttribute('html','data-loading-recommendation'),'constrained');
       assert.ok(await intentPage.locator('[data-loading-actions]').isHidden());
       await intent.close();
+
+      // Authored videos stay poster-only below the fold, start in view, pause
+      // offscreen, and resume on return. Feed previews never gain autoplay.
+      const viewportCtx = await browser.newContext({viewport:{width:390,height:844}});
+      await viewportCtx.addInitScript(() => Object.defineProperty(navigator, 'connection', {value:undefined}));
+      const viewportPage = await viewportCtx.newPage();
+      await viewportPage.goto(origin + '/below-fold-good');
+      assert.equal(await viewportPage.locator('video').first().getAttribute('data-autoplay-started'), null);
+      assert.equal(await viewportPage.locator('#preview').getAttribute('data-autoplay-started'), null);
+      await viewportPage.locator('video').first().scrollIntoViewIfNeeded();
+      await viewportPage.waitForFunction(() => !document.querySelector('video').paused);
+      await viewportPage.evaluate(() => window.scrollTo(0, 0));
+      await viewportPage.waitForFunction(() => document.querySelector('video').paused);
+      await viewportPage.locator('video').first().scrollIntoViewIfNeeded();
+      await viewportPage.waitForFunction(() => !document.querySelector('video').paused);
+      assert.equal(await viewportPage.locator('#preview').getAttribute('data-autoplay-started'), null);
+      await viewportCtx.close();
 
       if (engine === 'chromium') {
         for (const mode of ['auto','save-data','full-quality']) {
