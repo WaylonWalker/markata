@@ -62,22 +62,7 @@ func parseWorkspaceChanges(status string, workspacePrefix string) ([]workspaceCh
 				return nil, fmt.Errorf("malformed Git rename/copy source")
 			}
 		}
-		switch {
-		case entry.Untracked:
-			entry.Kind = "untracked"
-		case strings.Contains(code, "U") || code == "AA" || code == "DD":
-			entry.Kind = "conflict"
-		case strings.Contains(code, "R"):
-			entry.Kind = "renamed"
-		case strings.Contains(code, "C"):
-			entry.Kind = "copied"
-		case strings.Contains(code, "D"):
-			entry.Kind = "deleted"
-		case strings.Contains(code, "A"):
-			entry.Kind = "added"
-		default:
-			entry.Kind = "modified"
-		}
+		entry.Kind = workspaceChangeKind(code)
 		// Git status paths are repository-relative, even when the editor
 		// workspace is nested inside that repository. Do not omit changes
 		// outside the selected site; flag their scope for the UI instead.
@@ -94,6 +79,27 @@ func parseWorkspaceChanges(status string, workspacePrefix string) ([]workspaceCh
 	}
 	sort.Slice(entries, func(i, j int) bool { return entries[i].Path < entries[j].Path })
 	return entries, nil
+}
+
+// workspaceChangeKind preserves the original Git porcelain status precedence
+// while keeping path decoding and workspace scoping easy to audit.
+func workspaceChangeKind(code string) string {
+	switch {
+	case code == "??":
+		return "untracked"
+	case strings.Contains(code, "U") || code == "AA" || code == "DD":
+		return "conflict"
+	case strings.Contains(code, "R"):
+		return "renamed"
+	case strings.Contains(code, "C"):
+		return "copied"
+	case strings.Contains(code, "D"):
+		return "deleted"
+	case strings.Contains(code, "A"):
+		return "added"
+	default:
+		return "modified"
+	}
 }
 
 func (h *Handler) serveWorkspaceChanges(w http.ResponseWriter, r *http.Request) {
