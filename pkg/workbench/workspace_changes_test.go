@@ -45,7 +45,7 @@ func TestParseWorkspaceChangesIncludesRenamesAndWhitespace(t *testing.T) {
 }
 
 func TestParseWorkspaceChangesFlagsOutsideSitePaths(t *testing.T) {
-	entries, err := parseWorkspaceChanges(" M blog/posts/inside.md\x00 M elsewhere/outside.md\x00", "..")
+	entries, err := parseWorkspaceChanges(" M blog/posts/inside.md\x00 M elsewhere/outside.md\x00", "blog")
 	if err != nil {
 		t.Fatal(err)
 	}
