@@ -7,7 +7,7 @@
   const timings = document.querySelector('#startup-timings');
   if (!summary || !state || !timings) return;
 
-  let workspaceAt = null, previewAt = null, indexStatus = null;
+  let editorAt = null, workspaceAt = null, previewAt = null, indexStatus = null;
   let metadataRequestMS = null, feedsMS = null;
   let pollID = 0;
   const seconds = milliseconds => (milliseconds/1000).toFixed(2)+'s';
@@ -89,6 +89,11 @@
   } catch { /* Older browsers still show local index phases and counts. */ }
 
   const api = {
+    editorReady() {
+      if (editorAt !== null) return;
+      editorAt = performance.now() - startedAt;
+      add('editor', seconds(editorAt));
+    },
     workspaceReady() {
       if (workspaceAt!==null) return;
       workspaceAt=performance.now()-startedAt;
@@ -100,7 +105,7 @@
       add('preview',seconds(previewAt));
     },
     snapshot() {
-      return {workspace_ready_ms:workspaceAt, first_preview_ms:previewAt,
+      return {editor_ready_ms:editorAt, workspace_ready_ms:workspaceAt, first_preview_ms:previewAt,
         metadata_request_ms:metadataRequestMS, site_feeds_ms:feedsMS,
         site_index:indexStatus ? {...indexStatus} : null};
     }
