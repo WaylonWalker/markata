@@ -95,12 +95,9 @@ func NewWithWorkspace(ctx context.Context, root string) (*Handler, error) {
 		_ = workspace.Close()
 		return nil, err
 	}
-	language, err := lsp.NewWebSocketHandlerWithIndex(ctx, root, log.Default(), workspace.Snapshot)
-	if err != nil {
-		_ = workspace.Close()
-		return nil, err
-	}
-	log.Printf("editor startup: LSP configuration and handler ready in %s", time.Since(lspStarted).Round(time.Millisecond))
+	// LSP setup can initialize a large site index; this is optional for
+	// writing. Bring the HTTP editor online first and warm LSP asynchronously.
+	language := &deferredLanguage{}
 	siteConfig, revision := workspace.Configuration()
 	appearanceStarted := time.Now()
 	handler, err := buildPresentation(root, workspace, config, language, siteConfig)
@@ -110,6 +107,17 @@ func NewWithWorkspace(ctx context.Context, root string) (*Handler, error) {
 	}
 	handler.store = workspace
 	handler.configRevision = revision
+	go func() {
+		service, err := lsp.NewWebSocketHandlerWithIndex(ctx, root, log.Default(), workspace.Snapshot)
+		if err != nil {
+			if ctx.Err() == nil {
+				log.Printf("editor startup: language service unavailable: %v", err)
+			}
+			return
+		}
+		language.ready(service)
+		log.Printf("editor startup: LSP ready asynchronously in %s", time.Since(lspStarted).Round(time.Millisecond))
+	}()
 	log.Printf("editor startup: appearance and browser assets ready in %s (total %s)", time.Since(appearanceStarted).Round(time.Millisecond), time.Since(started).Round(time.Millisecond))
 	return handler, nil
 }
