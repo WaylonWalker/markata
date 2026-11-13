@@ -562,15 +562,14 @@ if (!saved.textContent) saveDraft();
 
 // Typing and restoring a local draft must not await workspace discovery,
 // metadata indexing, LSP, or Go rendering.
-ready = true;
 requestAnimationFrame(() => {
   focusEditorForWriting();
   window.MarkataStartupStatus?.editorReady?.();
-  render();
 });
 const workspaceReady = window.MarkataSiteTree.attach(editor, storageWarning, {saveToSite:true});
 // Once the selected site file is attached, display *its* latest preview.
 workspaceReady.then(() => {
+  ready = true;
   window.MarkataStartupStatus?.workspaceReady();
   clearTimeout(timer);
   timer = setTimeout(render, 0);
