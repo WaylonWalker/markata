@@ -148,3 +148,9 @@
 .workspace-change-diff{max-height:360px;overflow:auto;border:1px solid var(--editor-divider,#ddd);border-radius:8px;margin-bottom:10px;font:12px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere}
 .workspace-change-diff .publish-diff-line{padding:1px 8px}
 .workspace-change-unavailable{font:11px system-ui,sans-serif;opacity:.6;text-align:right}
+
+#markata-publish-status{display:inline-flex;align-items:center;font:12px/1.4 system-ui,sans-serif;color:var(--color-text-muted,#777);max-width:30ch;overflow-wrap:anywhere}
+#markata-publish-status[data-state="warning"]{color:var(--color-warning,#d07b31)}
+#markata-publish-status[data-state="loading"]{opacity:.75}
+#publish-review-open{font:600 12px system-ui,sans-serif;border:1px solid var(--editor-divider,#aaa);border-radius:7px;padding:9px 11px;background:transparent;color:inherit;cursor:pointer}
+@media(max-width:700px){#markata-publish-status{max-width:18ch;font-size:11px}#publish-review-open{padding:8px}}
