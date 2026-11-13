@@ -313,11 +313,13 @@
     current = vote(current, 'offline');
     writeStorage(sessionStore, SESSION_KEY, savedState(current, Date.now()));
     update();
+    syncAutoplay();
   });
   window.addEventListener('online', function() {
     current = vote(current, 'online');
     writeStorage(sessionStore, SESSION_KEY, savedState(current, Date.now()));
     update();
+    syncAutoplay();
   });
 
   connectionHint();
