@@ -522,7 +522,7 @@ func isWorkspaceRoute(routePath, method string) bool {
 		return method == http.MethodGet || method == http.MethodPut || method == http.MethodPost
 	case routePath == "/workspace/publish/commit" || routePath == "/workspace/publish/push" || routePath == "/workspace/publish/discard":
 		return method == http.MethodPost
-	case routePath == "/workspace/publish/deployment" || routePath == "/workspace/publish/review":
+	case routePath == "/workspace/publish/deployment" || routePath == "/workspace/publish/review" || routePath == "/workspace/publish/readiness":
 		return method == http.MethodGet
 	case routePath == frontmatterInspectPath || routePath == frontmatterEditPath:
 		return method == http.MethodPost
@@ -579,6 +579,10 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 	if r.URL.Path == "/workspace/publish/review" {
 		h.servePublishReview(w, r)
+		return
+	}
+	if r.URL.Path == "/workspace/publish/readiness" {
+		h.servePublishReadiness(w, r)
 		return
 	}
 	if r.URL.Path == "/workspace/changes" {
