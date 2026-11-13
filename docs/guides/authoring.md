@@ -53,9 +53,16 @@ markata new --template link 'https://example.com/my-article'
 ```
 
 Markata fetches the page title, description, and preview image for the link post.
-Only a usable Open Graph title (`og:title`) becomes the title automatically.
+A usable Open Graph title (`og:title`) becomes the title automatically.
 Empty, URL-only, and hostname-only titles do not qualify.
 Other suggestions require your confirmation: Twitter metadata, the HTML title, the main heading, the decoded URL slug, then the hostname.
+
+For YouTube videos, Markata first fetches the title and thumbnail from YouTube's official oEmbed endpoint.
+This avoids a large watch-page download.
+A usable oEmbed title also becomes the title automatically.
+Watch, `youtu.be`, mobile, and Shorts URLs support this lookup.
+YouTube does not supply a description through oEmbed, so the description remains optional.
+If oEmbed fails, Markata warns and tries HTML metadata before manual entry.
 
 The post keeps the URL you entered, even after redirects.
 Relative preview images resolve against the fetched page URL.

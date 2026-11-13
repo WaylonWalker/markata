@@ -106,11 +106,19 @@ markata new --template link 'https://example.com/my-article' --title 'My article
 ```
 
 The command fetches a title, description, and preview image.
-Only a usable `og:title` supplies a trusted automatic title.
+A usable `og:title` supplies a trusted automatic title.
 Empty, URL-only, and hostname-only titles are not trusted.
 Other suggestions require user confirmation, in this order: Twitter metadata, HTML title, main heading, decoded URL slug, then hostname.
 For unattended creation without a trusted title, pass a user-approved `--title` with `--no-input`.
 An explicit `--title` always wins.
+
+For YouTube video links, use the same URL-first command.
+Markata fetches the title and thumbnail from YouTube's official oEmbed endpoint before HTML metadata.
+A usable oEmbed title is also trusted.
+Watch, `youtu.be`, mobile, and Shorts URLs support this lookup.
+Keep the description optional because YouTube oEmbed does not supply one.
+If oEmbed fails, Markata reports the error and tries HTML metadata.
+If both lookups fail, confirm or replace the suggestion that includes the video ID.
 
 Without a terminal, or with `--no-input`, low-confidence creation returns an error and writes no file.
 The error supplies a copy-pastable command with `--title` that preserves the destination URL and explicit flags.

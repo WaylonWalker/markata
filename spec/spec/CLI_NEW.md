@@ -52,7 +52,16 @@ The command preserves the entered destination, even after redirects or canonical
 
 The command fetches the page with a bounded timeout and response size.
 It extracts the title, description, and preview image.
-Only a usable `og:title` supplies a trusted automatic title.
+A usable `og:title` supplies a trusted automatic title.
+For recognized YouTube video URLs, the command first uses YouTube's official oEmbed endpoint.
+A usable title from that endpoint is also trusted.
+The response supplies the video title and thumbnail without a watch-page download.
+This lookup supports watch URLs, `youtu.be` URLs, and Shorts URLs.
+The command preserves the entered URL and explicit title overrides.
+YouTube oEmbed does not supply a description, so a missing description remains optional.
+If oEmbed fails, the command reports the error and tries the existing HTML metadata path.
+Both paths share a bounded timeout and retain the response-size limit.
+If both paths fail, the suggested title includes the video ID instead of the generic word `watch`.
 Empty titles, URL-only titles, and hostname-only titles are not trusted.
 Other title suggestions come from Twitter metadata, the HTML title, the main heading,
 the decoded URL slug, and finally the hostname, in that order.

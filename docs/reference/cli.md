@@ -1415,9 +1415,17 @@ The post preserves the entered URL, even after redirects or canonical metadata.
 Invalid URLs produce an actionable error.
 
 Metadata lookup has a bounded timeout and response size.
-Only a usable `og:title` becomes the title automatically.
+A usable `og:title` becomes the title automatically.
 Empty, URL-only, and hostname-only titles are not trusted.
 An explicit `--title` always wins.
+
+YouTube video links use YouTube's official oEmbed endpoint before HTML metadata.
+Watch, `youtu.be`, mobile, and Shorts URLs support this lookup.
+A usable oEmbed title is trusted, and its thumbnail supplies the preview image.
+The description remains optional because YouTube oEmbed does not supply one.
+If oEmbed fails, the command warns and tries HTML metadata.
+If both lookups fail, the suggested title includes the video ID instead of `watch`.
+Both lookups share the timeout and keep the response-size limit.
 
 Without a trusted title or `--title`, interactive creation asks you to confirm or replace a suggestion.
 Suggestions use this order:

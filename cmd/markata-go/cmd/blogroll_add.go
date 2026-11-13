@@ -161,7 +161,9 @@ func runBlogrollAdd(_ *cobra.Command, args []string) error {
 }
 
 type youtubeOEmbedResponse struct {
-	AuthorURL string `json:"author_url"`
+	AuthorURL    string `json:"author_url"`
+	Title        string `json:"title"`
+	ThumbnailURL string `json:"thumbnail_url"`
 }
 
 // feedValues holds the values for building a feed config.

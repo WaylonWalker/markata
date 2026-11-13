@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"io"
 	"maps"
@@ -50,6 +51,13 @@ func newLinkFallbackTitle(rawURL string) string {
 	if err != nil {
 		return ""
 	}
+	if isYouTubeURL(u) && isYouTubeVideoURL(u) {
+		videoID := u.Query().Get("v")
+		if videoID == "" {
+			videoID = path.Base(strings.TrimRight(u.Path, "/"))
+		}
+		return "YouTube video " + videoID
+	}
 	slug := path.Base(strings.TrimRight(u.Path, "/"))
 	if slug != "." && slug != "/" && slug != "" {
 		for _, suffix := range []string{newLinkHTMLSuffix, ".htm", ".php", ".aspx"} {
@@ -72,29 +80,56 @@ func usableNewLinkTitle(title, rawURL string) bool {
 }
 
 func fetchNewLinkMetadata(ctx context.Context, rawURL string) (newLinkMetadata, error) {
-	metadata := newLinkMetadata{Title: newLinkFallbackTitle(rawURL)}
+	ctx, cancel := context.WithTimeout(ctx, 8*time.Second)
+	defer cancel()
+	client := &http.Client{Timeout: 8 * time.Second}
+	parsedURL, err := url.Parse(rawURL)
+	if err != nil {
+		return newLinkMetadata{}, fmt.Errorf("parse link URL: %w", err)
+	}
+	if isYouTubeURL(parsedURL) && isYouTubeVideoURL(parsedURL) {
+		metadata, providerErr := fetchNewLinkYouTubeMetadata(ctx, client, rawURL)
+		if metadata.TrustedTitle {
+			return metadata, providerErr
+		}
+		fallback, pageErr := fetchNewLinkPageMetadata(ctx, client, rawURL)
+		fallback.Image = firstNewLinkValue(fallback.Image, metadata.Image)
+		return fallback, errors.Join(providerErr, pageErr)
+	}
+	return fetchNewLinkPageMetadata(ctx, client, rawURL)
+}
+
+func fetchNewLinkData(ctx context.Context, client *http.Client, rawURL, accept string) ([]byte, *url.URL, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rawURL, http.NoBody)
 	if err != nil {
-		return metadata, fmt.Errorf("create metadata request: %w", err)
+		return nil, nil, fmt.Errorf("create metadata request: %w", err)
 	}
-	req.Header.Set("Accept", "text/html,application/xhtml+xml")
+	req.Header.Set("Accept", accept)
 	req.Header.Set("User-Agent", "markata (link post metadata)")
-	client := &http.Client{Timeout: 8 * time.Second}
 	response, err := client.Do(req)
 	if err != nil {
-		return metadata, fmt.Errorf("fetch link metadata: %w", err)
+		return nil, nil, fmt.Errorf("fetch link metadata: %w", err)
 	}
 	defer response.Body.Close()
 	if response.StatusCode != http.StatusOK {
-		return metadata, fmt.Errorf("fetch link metadata: HTTP %d", response.StatusCode)
+		return nil, nil, fmt.Errorf("fetch link metadata: HTTP %d", response.StatusCode)
 	}
 	const maxPageSize = 1024 * 1024
 	body, err := io.ReadAll(io.LimitReader(response.Body, maxPageSize+1))
 	if err != nil {
-		return metadata, fmt.Errorf("read link metadata: %w", err)
+		return nil, nil, fmt.Errorf("read link metadata: %w", err)
 	}
 	if len(body) > maxPageSize {
-		return metadata, fmt.Errorf("link metadata response exceeds 1 MiB")
+		return nil, nil, fmt.Errorf("link metadata response exceeds 1 MiB")
+	}
+	return body, response.Request.URL, nil
+}
+
+func fetchNewLinkPageMetadata(ctx context.Context, client *http.Client, rawURL string) (newLinkMetadata, error) {
+	metadata := newLinkMetadata{Title: newLinkFallbackTitle(rawURL)}
+	body, pageURL, err := fetchNewLinkData(ctx, client, rawURL, "text/html,application/xhtml+xml")
+	if err != nil {
+		return metadata, err
 	}
 	document, err := goquery.NewDocumentFromReader(strings.NewReader(string(body)))
 	if err != nil {
@@ -113,7 +148,7 @@ func fetchNewLinkMetadata(ctx context.Context, rawURL string) (newLinkMetadata, 
 		}
 	})
 	ogTitle := values["og:title"]
-	metadata.TrustedTitle = usableNewLinkTitle(ogTitle, rawURL) && usableNewLinkTitle(ogTitle, response.Request.URL.String())
+	metadata.TrustedTitle = usableNewLinkTitle(ogTitle, rawURL) && usableNewLinkTitle(ogTitle, pageURL.String())
 	if metadata.TrustedTitle {
 		metadata.Title = ogTitle
 	} else {
@@ -132,7 +167,7 @@ func fetchNewLinkMetadata(ctx context.Context, rawURL string) (newLinkMetadata, 
 		if parseErr != nil {
 			return metadata, fmt.Errorf("invalid preview image URL: %w", parseErr)
 		}
-		resolved := response.Request.URL.ResolveReference(imageURL)
+		resolved := pageURL.ResolveReference(imageURL)
 		if resolved.Scheme == subscriptionHTTP || resolved.Scheme == subscriptionHTTPS {
 			metadata.Image = resolved.String()
 		} else {
