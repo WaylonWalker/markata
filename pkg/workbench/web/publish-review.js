@@ -579,7 +579,6 @@
       return;
     }
     quickBusy = true;
-    const originalLabel = button.textContent;
     button.disabled = true;
     try {
       const snapshot = editor.getValue();
@@ -965,6 +964,14 @@
     '<footer class="publish-actions"><span>A Git commit is not a verified deployment.</span><button type="button" id="publish-discard" hidden>Discard changes…</button><button type="button" id="publish-back">Back to editing</button><button type="button" id="publish-mark-public" hidden>Mark as public</button><button type="button" id="publish-confirm" disabled>Commit selected page</button><button type="button" id="publish-push" hidden>Push to origin</button><button type="button" id="publish-live-check" hidden>Check live status</button></footer>';
     document.body.append(doc);dialog=doc;notice=doc.querySelector('#publish-notice');panels=doc.querySelector('#publish-body');
     button.addEventListener('click',quickPublish);
+    // Keep detailed review discoverable without making it a publish prerequisite.
+    const reviewButton=document.createElement('button');
+    reviewButton.type='button';
+    reviewButton.id='publish-review-open';
+    reviewButton.textContent='Review changes';
+    reviewButton.title='Advanced review for the active post (Ctrl/Cmd+Shift+Enter)';
+    button.insertAdjacentElement('afterend',reviewButton);
+    reviewButton.addEventListener('click',open);
     publishStatus=document.createElement('span');
     publishStatus.id='markata-publish-status';
     publishStatus.setAttribute('role','status');
