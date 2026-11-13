@@ -329,20 +329,27 @@ site, deleted files, conflicts, and non-Markdown files remain visible and
 clearly labeled, but are not exposed as editable source.
 
 The panel refreshes after a successful commit, push or discard as well as
-periodically while open. It remains a read-only inventory: it does not
-commit or publish selected files. The existing modal still uses separate
-commit and push actions pending a safer one-step Publish workflow. A local
-commit is not a remote publication, and a push is not proof the site is live.
-If Git status cannot be read, the panel reports an error rather than
-pretending there are no changes.
+periodically while open. It is a read-only inventory: multi-file selection and
+**Publish selected** are not implemented yet. A local commit is not a remote
+publication, and a push does not prove the site is live. If Git status fails,
+the panel reports an error rather than pretending there are no changes.
 
-When editing a Markdown file inside a Git-backed workspace, select **Review changes**
-in the upper-right header, search for **Publishing: Review changes** in the
-command palette, or press **Ctrl/Cmd+S** or **Ctrl/Cmd+Shift+Enter**. Vim mode
-also accepts `:w`; Emacs mode accepts **Ctrl-X Ctrl-S**. Each opens the same
-review dialog; none of them publishes immediately. In the current experimental
-workbench, **Commit selected page** and **Push to origin** remain explicit
-separate steps. For a Git-tracked file, **Discard changes…** requires a
+Use **Publish post** in the header or **Ctrl/Cmd+S** (Emacs **Ctrl-X Ctrl-S**,
+Vim `:w`) to publish *only the active site Markdown post*. This explicitly
+marks the post as public, saves it to disk, verifies the remote branch equals
+the local pre-publish commit, then creates an isolated one-file commit and
+pushes it. Any unrelated local commits block the quick path rather than
+being pushed unexpectedly. The status says **Published to Git**, not Live;
+deployment verification is separate. If the network push fails, the in-memory
+session can retry the pending commit without creating a duplicate. If the
+editor is reloaded in that state, inspect Git and remote status before
+retrying; automatic recovery across browser restarts is not yet implemented.
+
+Use the separate **Review changes** control or **Ctrl/Cmd+Shift+Enter** when
+you want a detailed comparison of the active post. The optional advanced
+review dialog still offers separate **Commit selected page** and
+**Push to origin** controls; these are not required for the primary quick
+publish path. For a Git-tracked file, **Discard changes…** requires a
 confirmation and restores exactly the last committed source in the local workbench.
 The server refuses stale source versions, changed Git HEAD, or staged edits to
 that file. New **untracked, non-ignored** Markdown posts can also be discarded. After
