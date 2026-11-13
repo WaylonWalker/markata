@@ -50,8 +50,16 @@ def go_smoke():
         env["MARKATA_GO_TEST_BINARY"] = binary
         env["MARKATA_GO_TEST_BINARY_REVISION"] = run(
             ["git", "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
-        run(["go", "test", "-short", "-timeout=15m", "-skip",
-             "^TestBuildLab_LinkedAndFixtureMutationsCharacterizeProduct$", "./..."], env=env)
+        test_args = ["-short", "-timeout=15m", "-skip",
+                     "^TestBuildLab_LinkedAndFixtureMutationsCharacterizeProduct$", "./..."]
+        if timing_dir := os.environ.get("MARKATA_CI_TIMINGS_DIR"):
+            # Capture package timings in CI without an extra run of the suite.
+            run([sys.executable, "scripts/ci/go_test_timing.py",
+                 "--label", "Fast PR short Go suite",
+                 "--output", str(Path(timing_dir) / "pr-go.json"),
+                 "--", "go", "test", "-json", *test_args], env=env)
+        else:
+            run(["go", "test", *test_args], env=env)
 
 
 def main():
