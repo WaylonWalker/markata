@@ -360,6 +360,29 @@ or tracked files cannot be deleted through this control. Discard does not create
 A different process changing the filesystem simultaneously is not covered by a
 cross-process transaction; use a disposable test post while this is experimental.
 
+### Local-first responsiveness (experimental)
+
+The editor now focuses and accepts locally recoverable draft text without
+waiting for the initial site-file list or index. The first Go preview is
+deferred until the selected site file has finished attaching; a slow preview
+is not a prerequisite for writing. Language assistance starts asynchronously
+after the server's editor handler is ready, and the browser retries its
+WebSocket when the service is still warming up or temporarily unavailable.
+The LSP's connection state never determines whether a document is editable.
+
+The startup diagnostics show **Editor interactive** separately from
+**Browser file list**, **Metadata index**, and **First preview**. Use
+**Copy diagnostics** alongside server startup logs to distinguish delays
+from site discovery, language assistance, rendering, and browser updates.
+A large workspace's initial path discovery and appearance construction
+still run before the HTTP listener becomes available; these are remaining
+cold-start profiling targets, not claimed fixed by this pass.
+
+Pierre Full diff uses compact hunk separators with virtual spacer buffers
+disabled inside its nested review dialog. The supplied browser bundle is
+updated along with its vendored build input. Run the browser regression
+against a long document containing a tiny edit to verify the visual result.
+
 ### Autosave and external edits
 
 The browser keeps a local recovery draft and autosaves to the loopback Go editor
