@@ -93,6 +93,8 @@ jobs:
 
       - name: Build CLI and run short Go suite
         if: steps.scope.outputs.docs_only != 'true'
+        env:
+          MARKATA_CI_TIMINGS_DIR: ${{ runner.temp }}/markata-ci-timings
         run: python3 scripts/ci/pr_check.py --base HEAD^ --only-go
 
       - name: Check CI helper contracts
@@ -145,3 +147,12 @@ jobs:
             echo "- PR-only docs exemption: $DOCS_ONLY"
             echo "- Workflow: $GITHUB_WORKFLOW; SHA: $GITHUB_SHA"
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload Go package timings
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: pr-go-timings
+          path: ${{ runner.temp }}/markata-ci-timings/
+          if-no-files-found: ignore
+          retention-days: 14
