@@ -45,7 +45,7 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         )
         quick_post = posts / "quick-publish.md"
         quick_post.write_text(
-            "---\npublished: true\ndraft: false\n---\n\n# Quick before\n",
+            "---\npublished: false\ndraft: false\n---\n\n# Quick before\n",
             encoding="utf-8",
         )
         long_post = posts / "long-gutter.md"
@@ -515,6 +515,7 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         expect(page.locator("#markata-publish-status")).to_contain_text("Published to Git", timeout=30000)
         expect(panel.locator("#workspace-changes-list")).not_to_contain_text("posts/quick-publish.md")
         self.assertIn("# Quick after", self.git(self.site, "show", "HEAD:posts/quick-publish.md"))
+        self.assertIn("published: true", self.git(self.site, "show", "HEAD:posts/quick-publish.md"))
         self.assertEqual(self.git(self.site, "rev-parse", "HEAD"),
                          self.git(self.remote, "rev-parse", "refs/heads/main"))
         self.assertEqual(errors, [])
