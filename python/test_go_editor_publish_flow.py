@@ -43,6 +43,11 @@ class GoEditorPublishFlowTest(unittest.TestCase):
             "tags:\n  - initial\n---\n\n# Before\n\nInitial copy.\n",
             encoding="utf-8",
         )
+        quick_post = posts / "quick-publish.md"
+        quick_post.write_text(
+            "---\\npublished: true\\ndraft: false\\n---\\n\\n# Quick before\\n",
+            encoding="utf-8",
+        )
         long_post = posts / "long-gutter.md"
         long_post.write_text(
             "---\ntitle: Long gutter fixture\npublished: false\n---\n\n"
@@ -55,7 +60,7 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         external_post.write_text("# First external version\n", encoding="utf-8")
         clean_post = posts / "autosave-clean.md"
         clean_post.write_text("# Initial clean draft\n", encoding="utf-8")
-        cls.git(cls.site, "add", "markata-go.toml", "posts/publish-flow.md", "posts/long-gutter.md", "posts/discard-flow.md", "posts/external-edit.md", "posts/autosave-clean.md")
+        cls.git(cls.site, "add", "markata-go.toml", "posts/publish-flow.md", "posts/long-gutter.md", "posts/discard-flow.md", "posts/external-edit.md", "posts/autosave-clean.md", "posts/quick-publish.md")
         cls.git(cls.site, "commit", "-m", "Fixture baseline")
         cls.git(cls.site, "push", "-u", "origin", "main")
 
@@ -490,6 +495,29 @@ class GoEditorPublishFlowTest(unittest.TestCase):
             expect(page.locator("#publish-review")).not_to_be_visible()
         finally:
             post.write_text(original, encoding="utf-8")
+
+    def test_quick_publish_only_active_post(self):
+        context = self.browser.new_context()
+        self.addCleanup(context.close)
+        page = context.new_page()
+        errors = []
+        page.on("pageerror", lambda error: errors.append(str(error)))
+        page.goto(self.url)
+        self.open_site_file(page, "posts/quick-publish.md", errors)
+        page.evaluate("""() => {
+          const editor = document.querySelector('.CodeMirror').CodeMirror;
+          editor.setValue(editor.getValue().replace('# Quick before', '# Quick after'));
+        }""")
+        page.locator("#workspace-changes-toggle").click()
+        panel = page.locator("#workspace-changes-panel")
+        expect(panel).to_contain_text("posts/quick-publish.md")
+        page.locator("#publish-open").click()
+        expect(page.locator("#markata-publish-status")).to_contain_text("Published to Git", timeout=30000)
+        expect(panel.locator("#workspace-changes-list")).not_to_contain_text("posts/quick-publish.md")
+        self.assertIn("# Quick after", self.git(self.site, "show", "HEAD:posts/quick-publish.md"))
+        self.assertEqual(self.git(self.site, "rev-parse", "HEAD"),
+                         self.git(self.remote, "rev-parse", "refs/heads/main"))
+        self.assertEqual(errors, [])
 
     def test_git_gutter_large_document(self):
         context = self.browser.new_context()
