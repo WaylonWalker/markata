@@ -435,6 +435,7 @@
         // The browser must not re-create the deleted draft via recovery or autosave.
         if (!window.MarkataSiteTree?.forgetDeleted?.(data.path))
           throw new Error('New file deleted on disk, but browser recovery could not be cleared. Reload to reconcile.');
+        refreshWorkspaceChanges();
         location.reload();
         return;
       }
@@ -456,6 +457,7 @@
       if (!check.ok || saved.source!==data.baseline || saved.version!==result.version)
         throw new Error('Disk changed again after discard. Reopen the file and resolve the new version.');
       refreshChangeGutter();
+      refreshWorkspaceChanges();
       dialog.querySelector('#publish-discard-confirmation').hidden=true;
       dialog.close();
     } catch(error) {
@@ -489,6 +491,7 @@
       if(!response.ok)throw new Error(result.error||'Cannot commit this revision.');
       state.commit=result;
       refreshChangeGutter();
+      refreshWorkspaceChanges();
       btn.hidden=true;
       dialog.querySelector('#publish-mark-public').hidden=true;
       dialog.querySelector('#publish-push').hidden=false;
@@ -525,6 +528,7 @@
       const result=await response.json();
       if(!response.ok)throw new Error(result.error||'Push failed. The local commit is retained.');
       btn.hidden=true;
+      refreshWorkspaceChanges();
       dialog.querySelector('#publish-live-check').hidden=false;
       setNotice('Pushed to origin. Click Check live status to verify the current builder release, if configured.','info');
     }catch(err){setNotice(err.message,'warning');btn.disabled=false;}
@@ -646,6 +650,7 @@
   // status must be the inventory source, never just the set of opened files.
   let changesPanel = null, changesButton = null, changesList = null;
   let changesGeneration = 0, changesTimer = null;
+  const changesExpanded = new Set();
   function changesVisible(open) {
     if (!changesPanel) return;
     changesPanel.hidden = !open;
@@ -677,8 +682,7 @@
     changesButton.textContent = 'Changes (' + data.total + ')';
     const heading = changesPanel.querySelector('#workspace-changes-summary');
     heading.textContent = data.total
-      ? data.total + ' changed files · ' + data.staged + ' staged · ' + data.unstaged +
-        ' unstaged · ' + data.untracked + ' untracked'
+      ? data.total + ' files with changes'
       : 'All caught up — no working-tree changes. Unpushed commits may still exist.';
     for (const change of data.entries) {
       const row = document.createElement('div');
@@ -697,25 +701,79 @@
         (!change.workspace ? ' · outside this site' : !change.markdown ? ' · not Markdown' : '');
       description.append(name, detail);
       row.append(description);
-      // Only known content-glob members can be opened in the editor. This
-      // inventory also lists files that are not publishable site sources.
-      if (change.workspace && change.markdown && change.editor_path &&
-          window.MarkataSiteTree?.files?.()?.some(file => file.path === change.editor_path)) {
-        const action = document.createElement('button');
-        action.type = 'button';
-        action.textContent = 'Open';
-        action.setAttribute('aria-label', 'Open ' + change.path);
-        action.addEventListener('click', () => window.MarkataSiteTree.openFile(change.editor_path));
-        row.append(action);
+      const canInspect = change.workspace && change.markdown && change.editor_path &&
+        change.kind !== 'deleted' && change.kind !== 'conflict' &&
+        window.MarkataSiteTree?.files?.()?.some(file => file.path === change.editor_path);
+      if (canInspect) {
+        const disclosure = document.createElement('button');
+        disclosure.type = 'button';
+        disclosure.textContent = 'View diff';
+        const inline = document.createElement('div');
+        inline.className = 'workspace-change-inline';
+        inline.hidden = true;
+        disclosure.setAttribute('aria-expanded', 'false');
+        disclosure.addEventListener('click', async () => {
+          const show = inline.hidden;
+          inline.hidden = !show;
+          disclosure.setAttribute('aria-expanded', String(show));
+          disclosure.textContent = show ? 'Hide diff' : 'View diff';
+          if (!show) return;
+          inline.textContent = 'Loading comparison…';
+          disclosure.disabled = true;
+          try {
+            const response = await fetch('/workspace/publish/review?path=' +
+              encodeURIComponent(change.editor_path), {cache:'no-store'});
+            const comparison = await response.json();
+            if (!response.ok || typeof comparison.current !== 'string' ||
+                typeof comparison.baseline !== 'string')
+              throw new Error(comparison.error || 'Comparison unavailable.');
+            inline.replaceChildren();
+            const diff = document.createElement('div');
+            diff.className = 'workspace-change-diff';
+            diff.setAttribute('role', 'region');
+            diff.setAttribute('aria-label', 'Diff for ' + change.path);
+            const lines = diffLines(comparison.baseline, comparison.current);
+            for (const line of lines.slice(0,160)) {
+              const item = document.createElement('div');
+              item.className = 'publish-diff-line ' + line.type;
+              item.textContent = (line.type === 'add' ? '+' : line.type === 'del' ? '-' : ' ') + ' ' + line.text;
+              diff.append(item);
+            }
+            if (!lines.length) diff.textContent = 'No source differences from the last commit.';
+            if (lines.length > 160) {
+              const more = document.createElement('p');
+              more.textContent = 'Showing 160 of ' + lines.length + ' changed and context lines.';
+              diff.append(more);
+            }
+            inline.append(diff);
+            const edit = document.createElement('button');
+            edit.type = 'button';
+            edit.textContent = 'Edit post';
+            edit.addEventListener('click', () => window.MarkataSiteTree.openFile(change.editor_path));
+            inline.append(edit);
+          } catch (error) {
+            inline.textContent = 'Could not load diff: ' + error.message;
+          } finally {
+            disclosure.disabled = false;
+          }
+        });
+        row.append(disclosure);
+        changesList.append(row, inline);
+      } else {
+        const hint = document.createElement('small');
+        hint.className = 'workspace-change-unavailable';
+        hint.textContent = change.kind === 'deleted' ? 'Deleted' :
+          change.kind === 'conflict' ? 'Resolve conflict' : 'Outside editor';
+        row.append(hint);
+        changesList.append(row);
       }
-      changesList.append(row);
     }
   }
   async function refreshWorkspaceChanges() {
     if (!changesPanel || changesPanel.hidden) return;
     const generation = ++changesGeneration;
     const summary = changesPanel.querySelector('#workspace-changes-summary');
-    summary.textContent = 'Checking all Git changes…';
+    if (!changesList.children.length) summary.textContent = 'Checking for changes…';
     try {
       const response = await fetch('/workspace/changes', {cache:'no-store'});
       const data = await response.json();
@@ -746,8 +804,8 @@
       '<header><h2>Changes</h2><button type="button" id="workspace-changes-refresh">Refresh</button>' +
       '<button type="button" id="workspace-changes-close" aria-label="Close changes panel">Close</button></header>' +
       '<p id="workspace-changes-summary" role="status">Checking all Git changes…</p>' +
-      '<p class="workspace-changes-help">All Git working-tree changes are listed, not just open posts. ' +
-      'Opening a file does not commit or publish it.</p>' +
+      '<p class="workspace-changes-help">See what changed without leaving your post. ' +
+      'Saving a draft does not publish it.</p>' +
       '<div id="workspace-changes-list" role="list"></div>';
     document.body.append(changesPanel);
     changesList = changesPanel.querySelector('#workspace-changes-list');
