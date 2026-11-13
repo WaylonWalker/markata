@@ -410,6 +410,11 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         review.get_by_role("tab", name="Source diff").click()
         expect(review.locator('[data-publish-view="source"]')).to_be_visible()
         expect(review.locator('[data-publish-view="source"]')).to_contain_text("published")
+        # Optional Pierre must actually initialize and render. A missing module,
+        # failed chunk, or asynchronously rejected render is a regression.
+        review.get_by_role("tab", name="Full diff").click()
+        expect(review.locator("#publish-pierre-host")).to_have_attribute("data-state", "ready", timeout=20000)
+        expect(review.locator("#publish-pierre-error")).to_be_hidden()
         review.get_by_role("tab", name="Commit message").click()
         message = "Publish browser fixture: revised post"
         review.locator("#publish-commit-message").fill(message)
