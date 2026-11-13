@@ -125,6 +125,9 @@ class GoEditorPublishFlowTest(unittest.TestCase):
           editor.setValue(editor.getValue().replace('# Original', '# Unpublished local edit'));
         }""")
         expect(page.locator("#markata-gutter-status")).to_contain_text("Git change region")
+        page.locator("#workspace-changes-toggle").click()
+        panel = page.locator("#workspace-changes-panel")
+        expect(panel.locator("#workspace-changes-list")).to_contain_text("posts/publish-flow.md")
         page.get_by_role("button", name="Review changes").click()
         review = page.locator("#publish-review")
         expect(review).to_be_visible()
@@ -413,6 +416,9 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         review.get_by_role("tab", name="Rendered diff").click()
         review.get_by_role("button", name="Commit selected page").click()
         expect(review.get_by_role("button", name="Push to origin")).to_be_visible()
+        # Immediately update the still-open Changes panel when publication
+        # creates a commit; don't wait for the 15-second polling interval.
+        expect(panel.locator("#workspace-changes-list")).not_to_contain_text("posts/publish-flow.md", timeout=3000)
         self.assertEqual(self.git(self.site, "log", "-1", "--format=%B"), message)
         committed_post = self.git(self.site, "show", "HEAD:posts/publish-flow.md")
         self.assertIn("published: true", committed_post)
@@ -464,7 +470,7 @@ class GoEditorPublishFlowTest(unittest.TestCase):
     def test_changes_panel_inspects_diff_without_review_dialog(self):
         post = self.site / "posts" / "external-edit.md"
         original = post.read_text(encoding="utf-8")
-        post.write_text("# Changed without opening in editor\\n", encoding="utf-8")
+        post.write_text("# Changed without opening in editor\n", encoding="utf-8")
         try:
             context = self.browser.new_context()
             self.addCleanup(context.close)
