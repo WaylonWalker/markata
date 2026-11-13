@@ -545,16 +545,111 @@
     }catch(err){setNotice(err.message,'warning');btn.disabled=false;}
     finally{state.busy=false;btn.textContent='Push to origin';}
   }
+
+  // Writer-first publication keeps the Git transaction behind one explicit
+  // action, while preserving the guarded review/commit/push endpoints.
+  let quickBusy = false;
+  let pendingQuick = null;
+  let publishStatus = null;
+  function reportQuick(message, type='info') {
+    if (!publishStatus) return;
+    publishStatus.textContent = message;
+    publishStatus.dataset.state = type;
+    publishStatus.title = message;
+  }
+  async function finishQuickPush(pending) {
+    reportQuick('Publishing to your site…', 'loading');
+    const response = await fetch('/workspace/publish/push?path=' +
+      encodeURIComponent(pending.path), {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({commit:pending.commit,branch:pending.branch})
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || 'Could not push. Your local commit is retained.');
+    pendingQuick = null;
+    reportQuick('Published to Git · site build not yet verified', 'info');
+    refreshWorkspaceChanges();
+    refreshChangeGutter();
+  }
+  async function quickPublish() {
+    if (quickBusy || state.busy) return;
+    const path = canOpen();
+    if (!path) {
+      reportQuick('Choose a site Markdown post before publishing.', 'warning');
+      return;
+    }
+    quickBusy = true;
+    const originalLabel = button.textContent;
+    button.disabled = true;
+    try {
+      const snapshot = editor.getValue();
+      if (new TextEncoder().encode(snapshot).length > sourceLimit)
+        throw new Error('Post is too large to publish.');
+      if (pendingQuick) {
+        if (pendingQuick.path !== path || pendingQuick.source !== snapshot)
+          throw new Error('An earlier publish is pending. Return to that post without changing it and retry before publishing new edits.');
+        await finishQuickPush(pendingQuick);
+        return;
+      }
+      const meta = frontmatter(snapshot);
+      if (meta.published !== 'true' || meta.draft === 'true')
+        throw new Error('This post is still a draft. Set published: true and draft: false in Properties to publish.');
+      reportQuick('Saving current post…', 'loading');
+      await awaitSaved(path, snapshot);
+      if (window.MarkataSiteTree?.activeFile?.() !== path || editor.getValue() !== snapshot)
+        throw new Error('Post changed during save. Try Publish again.');
+      const reviewResponse = await fetch('/workspace/publish/review?path=' + encodeURIComponent(path),
+        {cache:'no-store'});
+      const reviewData = await reviewResponse.json();
+      if (!reviewResponse.ok)
+        throw new Error(reviewData.error || 'Could not check current post.');
+      if (!reviewData.changed) {
+        reportQuick('No unpublished content changes. Git does not confirm your site is live.');
+        refreshWorkspaceChanges();
+        return;
+      }
+      if (reviewData.current !== snapshot)
+        throw new Error('Saved post changed during publication. Retry after reviewing the latest version.');
+      reportQuick('Checking publishing safety…', 'loading');
+      const readyResponse = await fetch('/workspace/publish/readiness?path=' +
+        encodeURIComponent(path), {cache:'no-store'});
+      const ready = await readyResponse.json();
+      if (!readyResponse.ok || !ready.ready)
+        throw new Error(ready.error || 'Publishing safety check failed.');
+      if (ready.head !== reviewData.head)
+        throw new Error('Git changed during publishing. Please retry after syncing your branch.');
+      reportQuick('Publishing this post…', 'loading');
+      const commitResponse = await fetch('/workspace/publish/commit', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          path,head:reviewData.head,version:reviewData.version,message:'Publish: '+path
+        })
+      });
+      const commit = await commitResponse.json();
+      if (!commitResponse.ok)
+        throw new Error(commit.error || 'Could not prepare publication.');
+      pendingQuick = {path,source:snapshot,commit:commit.commit,branch:commit.branch};
+      refreshWorkspaceChanges();
+      await finishQuickPush(pendingQuick);
+    } catch (error) {
+      reportQuick('Not published: ' + error.message, 'warning');
+    } finally {
+      quickBusy = false;
+      button.disabled = false;
+      updatePublishButton();
+    }
+  }
+
   function updatePublishButton() {
     if (!button || !editor) return;
     const path = canOpen();
-    const label = !path ? 'Save to site' : 'Review changes';
+    const label = pendingQuick ? 'Retry publish' : (!path ? 'Choose post' : 'Publish post');
     const icon=document.createElementNS('http://www.w3.org/2000/svg','svg');
     icon.setAttribute('viewBox','0 0 24 24');icon.setAttribute('aria-hidden','true');icon.setAttribute('focusable','false');
     const pathNode=document.createElementNS('http://www.w3.org/2000/svg','path');
     pathNode.setAttribute('d','M12 15V3m0 0 4 4m-4-4L8 7M4 14v6h16v-6');icon.append(pathNode);
     button.replaceChildren(icon,document.createTextNode(label));
-    button.title = 'Review changes (Ctrl/Cmd+S, Ctrl/Cmd+Shift+Enter)';
+    button.title = 'Publish this post only (Ctrl/Cmd+S). Review changes with Ctrl/Cmd+Shift+Enter.';
   }
 
   // Git-style gutter. Compare the visible editor to Git HEAD, not autosave.
@@ -844,13 +939,13 @@
     const activeLabel=document.querySelector('#active-file');
     if(activeLabel)new MutationObserver(refreshChangeGutter).observe(activeLabel,{childList:true,characterData:true,subtree:true});
     setTimeout(refreshChangeGutter,0);
-    const startPublish=()=>{open();return true;};
+    const startPublish=()=>{quickPublish();return true;};
     editor.addKeyMap({'Ctrl-S':startPublish,'Cmd-S':startPublish,'Ctrl-X Ctrl-S':startPublish});
-    window.CodeMirror?.Vim?.defineEx('write','w',()=>open());
+    window.CodeMirror?.Vim?.defineEx('write','w',()=>quickPublish());
     button=document.createElement('button');
     button.type='button';button.id='publish-open';
-    button.textContent='Review changes';button.title='Review changes (Ctrl/Cmd+S, Ctrl/Cmd+Shift+Enter, Vim :w)';
-    button.setAttribute('aria-haspopup','dialog');
+    button.textContent='Publish post';button.title='Publish this post only (Ctrl/Cmd+S, Vim :w)';
+    button.setAttribute('aria-label','Publish current post');
     const settings=document.querySelector('#settings-open');
     settings.parentElement.insertBefore(button,settings);
     const doc=document.createElement('dialog');
@@ -869,7 +964,13 @@
     '<div id="publish-discard-confirmation" hidden role="alertdialog" aria-label="Confirm discard"><p id="publish-discard-description">Restore this document to its last committed version? This removes your reviewed unpublished changes, without changing Git history.</p><button type="button" id="publish-discard-cancel">Cancel</button><button type="button" id="publish-discard-accept">Discard reviewed changes</button></div>'+
     '<footer class="publish-actions"><span>A Git commit is not a verified deployment.</span><button type="button" id="publish-discard" hidden>Discard changes…</button><button type="button" id="publish-back">Back to editing</button><button type="button" id="publish-mark-public" hidden>Mark as public</button><button type="button" id="publish-confirm" disabled>Commit selected page</button><button type="button" id="publish-push" hidden>Push to origin</button><button type="button" id="publish-live-check" hidden>Check live status</button></footer>';
     document.body.append(doc);dialog=doc;notice=doc.querySelector('#publish-notice');panels=doc.querySelector('#publish-body');
-    button.addEventListener('click',open);
+    button.addEventListener('click',quickPublish);
+    publishStatus=document.createElement('span');
+    publishStatus.id='markata-publish-status';
+    publishStatus.setAttribute('role','status');
+    publishStatus.setAttribute('aria-live','polite');
+    publishStatus.textContent='Draft saved locally; publish when ready';
+    document.querySelector('#saved')?.insertAdjacentElement('afterend',publishStatus);
     attachWorkspaceChanges();
     editor.on('change',updatePublishButton);
     const fileLabel = document.querySelector('#active-file');
