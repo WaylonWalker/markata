@@ -323,6 +323,7 @@ func fail(w http.ResponseWriter, status int, message string) {
 }
 
 func (h *Handler) render(w http.ResponseWriter, r *http.Request) {
+	requestStarted := time.Now()
 	w.Header().Set("Cache-Control", "no-store")
 	if origin := r.Header.Get("Origin"); origin != "" {
 		u, err := url.Parse(origin)
@@ -354,6 +355,7 @@ func (h *Handler) render(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	started := time.Now()
+	queueMS := float64(started.Sub(requestStarted).Microseconds()) / 1000
 	response, err := h.prepareRender(r, req)
 	if err != nil {
 		if r.Context().Err() == nil {
@@ -363,6 +365,7 @@ func (h *Handler) render(w http.ResponseWriter, r *http.Request) {
 	}
 	ms := float64(time.Since(started).Microseconds()) / 1000
 	response.RenderMS = ms
+	response.QueueMS = queueMS
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Server-Timing", fmt.Sprintf("markata;dur=%.3f", ms))
 	if err := json.NewEncoder(w).Encode(response); err != nil {
@@ -428,6 +431,7 @@ type renderResponse struct {
 	FeatureHeadHTML string  `json:"feature_head_html"`
 	BodyEndHTML     string  `json:"body_end_html"`
 	RenderMS        float64 `json:"render_ms"`
+	QueueMS         float64 `json:"queue_ms"`
 	InputBytes      int     `json:"input_bytes"`
 	HTMLBytes       int     `json:"html_bytes"`
 	DocumentBytes   int     `json:"document_bytes"`
