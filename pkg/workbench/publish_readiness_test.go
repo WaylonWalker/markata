@@ -30,7 +30,10 @@ func TestPublishReadinessRequiresRemoteBranchParity(t *testing.T) {
 	remote := filepath.Join(t.TempDir(), "origin.git")
 	gitForReviewTest(t, root, "init", "--bare", remote)
 	gitForReviewTest(t, root, "remote", "add", "origin", remote)
-	branch := gitForReviewTest(t, root, "symbolic-ref", "-q", "HEAD")
+	branch, err := gitOutputForTest(root, "symbolic-ref", "-q", "HEAD")
+	if err != nil {
+		t.Fatal(err)
+	}
 	branch = strings.TrimSpace(branch)
 	if branch == "" {
 		t.Fatal("missing test branch")
