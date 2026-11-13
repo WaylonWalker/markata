@@ -471,7 +471,7 @@ var settingDocs = map[string]string{
 	"Link.TargetPost":                              "TargetPost is a reference to the target post (nil if external)",
 	"Link.TargetText":                              "TargetText is the cleaned link text from the target (if available)",
 	"Link.TargetURL":                               "TargetURL is the resolved absolute URL",
-	"MDVideoConfig.Autoplay":                       "Autoplay records authored playback intent; the client loading policy decides whether unrequested video may start automatically (default: false).",
+	"MDVideoConfig.Autoplay":                       "Autoplay records Markdown video playback intent (default: true). The client plays marked videos only when visible and allowed by data/motion settings.",
 	"MDVideoConfig.Controls":                       "Controls shows video controls (default: true)",
 	"MDVideoConfig.Enabled":                        "Enabled controls whether video conversion is active (default: true)",
 	"MDVideoConfig.Loop":                           "Loop repeats the video (default: true for GIF-like behavior)",
