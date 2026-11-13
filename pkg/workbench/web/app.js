@@ -321,10 +321,10 @@ registerApp('workbench.lineWrap','Toggle Line Wrapping','Writing',
   () => {wrapSetting.checked=!wrapSetting.checked;wrapSetting.dispatchEvent(new Event('change'));});
 registerApp('workbench.problems','Toggle Problems','Diagnostics',
   {vscode:'Mod+Shift+M',writer:'Mod+Shift+M',vim:'Space X',emacs:''},toggleProblems);
-registerApp('workbench.save','Save Now','Writing',
+registerApp('workbench.save','Publish Current Post','Writing',
   {vscode:'Mod+S',writer:'Mod+S',vim:'Mod+S',emacs:'Ctrl+X Ctrl+S'},
-  () => {editor.save();saveDraft();},
-  'Flush the current draft or selected workspace post to storage.');
+  () => window.MarkataPublishReview?.quickPublish(),
+  'Publish only the active site post. Other changes remain untouched.');
 registerApp('workbench.newPost','New Post','Files',
   {vscode:'Mod+Alt+N',writer:'Mod+Alt+N',vim:'Space F N',emacs:''},
   showCreateDialog,'Create a workspace post from a template.');
