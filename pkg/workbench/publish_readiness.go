@@ -60,7 +60,7 @@ func (h *Handler) servePublishReadiness(w http.ResponseWriter, r *http.Request) 
 	}
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(publishReadiness{Ready:true,Head:head,Branch:branch}); err != nil {
+	if err := json.NewEncoder(w).Encode(publishReadiness{Ready: true, Head: head, Branch: branch}); err != nil {
 		return
 	}
 }
