@@ -45,7 +45,7 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         )
         quick_post = posts / "quick-publish.md"
         quick_post.write_text(
-            "---\\npublished: true\\ndraft: false\\n---\\n\\n# Quick before\\n",
+            "---\npublished: true\ndraft: false\n---\n\n# Quick before\n",
             encoding="utf-8",
         )
         long_post = posts / "long-gutter.md"
