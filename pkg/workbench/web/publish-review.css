@@ -141,3 +141,10 @@
   #workspace-changes-panel header{padding:14px}
   .workspace-change{padding:12px 14px}
 }
+
+/* Read changes where they are listed; don't force writers through a modal. */
+.workspace-change-inline{padding:0 12px 14px;border-bottom:1px solid var(--editor-divider,#ddd);min-width:0}
+.workspace-change-inline[hidden]{display:none}
+.workspace-change-diff{max-height:360px;overflow:auto;border:1px solid var(--editor-divider,#ddd);border-radius:8px;margin-bottom:10px;font:12px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere}
+.workspace-change-diff .publish-diff-line{padding:1px 8px}
+.workspace-change-unavailable{font:11px system-ui,sans-serif;opacity:.6;text-align:right}
