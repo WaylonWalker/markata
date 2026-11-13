@@ -1079,5 +1079,5 @@
       },true);
     }
   }
-  window.MarkataPublishReview={attach,open};
+  window.MarkataPublishReview={attach,open,quickPublish};
 })();
