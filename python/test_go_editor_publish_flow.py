@@ -444,6 +444,26 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         self.assertEqual(errors, [])
 
 
+    def test_editor_is_typable_while_workspace_metadata_is_slow(self):
+        context = self.browser.new_context()
+        self.addCleanup(context.close)
+        page = context.new_page()
+        # Force the initial workspace discovery request to stay pending. The
+        # editor surface should still accept input; do not block CodeMirror
+        # initialization or first focus on the site index.
+        def delay_workspace(route):
+            time.sleep(3)
+            route.continue_()
+        page.route(re.compile(r"/workspace(?:\\?|$)"), delay_workspace)
+        started = time.monotonic()
+        page.goto(self.url, wait_until="domcontentloaded")
+        page.wait_for_selector(".CodeMirror")
+        page.locator(".CodeMirror").click()
+        page.keyboard.type("Local-first editor probe")
+        expect(page.locator("#source")).to_contain_text("Local-first editor probe")
+        self.assertLess(time.monotonic() - started, 2.0,
+                        "Typing should not wait for slow workspace discovery")
+
     def test_changes_panel_lists_all_unopened_files(self):
         # The workspace-wide inventory must include files never opened in
         # CodeMirror, staged content and changes outside the content glob.
