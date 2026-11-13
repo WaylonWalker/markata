@@ -562,6 +562,13 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         expect(review.locator("#publish-source-diff")).to_contain_text("locally edited")
         expect(review.locator("#publish-source-diff")).not_to_contain_text("Diff too large")
         assert review.locator(".publish-diff-line").count() < 40
+        review.get_by_role("tab", name="Full diff").click()
+        host = review.locator("#publish-pierre-host")
+        expect(host).to_have_attribute("data-state", "ready", timeout=20000)
+        # A one-line edit in a 600-line post must not reserve thousands of
+        # pixels for unchanged lines and leave the real edit offscreen.
+        size = host.evaluate("(element) => element.scrollHeight")
+        self.assertLess(size, 1800, f"Pierre compact hunk layout too tall: {size}px")
         review.locator("#publish-back").click()
         self.assertEqual(errors, [])
 
