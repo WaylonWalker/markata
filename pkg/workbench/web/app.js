@@ -560,13 +560,20 @@ document.querySelector('#import').addEventListener('change', async event => {
 });
 if (!saved.textContent) saveDraft();
 
-const workspaceReady = window.MarkataSiteTree.attach(editor, storageWarning, {saveToSite:true});
-// Deferred script execution already guarantees the editor DOM exists.
- // Do not hold the first preview behind window.load (images and other assets).
-workspaceReady.then(() => {
-  ready = true;
-  render();
+// Typing and restoring a local draft must not await workspace discovery,
+// metadata indexing, LSP, or Go rendering.
+ready = true;
+requestAnimationFrame(() => {
   focusEditorForWriting();
+  window.MarkataStartupStatus?.editorReady?.();
+  render();
+});
+const workspaceReady = window.MarkataSiteTree.attach(editor, storageWarning, {saveToSite:true});
+// Once the selected site file is attached, display *its* latest preview.
+workspaceReady.then(() => {
+  window.MarkataStartupStatus?.workspaceReady();
+  clearTimeout(timer);
+  timer = setTimeout(render, 0);
 }).catch(error => {
   errorBox.textContent='Unable to initialize workspace: '+error.message;
   errorBox.hidden=false;
@@ -574,7 +581,6 @@ workspaceReady.then(() => {
 
 
 workspaceReady.then(() => {
-  window.MarkataStartupStatus?.workspaceReady();
   window.MarkataFileFinder?.attach(editor);
   window.MarkataRecentFiles?.attach();
 });
