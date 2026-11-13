@@ -320,16 +320,21 @@ To open the command palette with a complete example loaded, visit `/?example`.
 
 ## Review changes before publishing (experimental)
 
-The header also offers **Changes**, a persistent, nonmodal Git inventory panel.
-It lists the entire working tree, not only open Markdown posts: unstaged edits,
-staged files, untracked files, renames, deletions, and non-Markdown changes.
-Files outside the selected site are clearly labeled; only Markdown posts
-already known to the editor offer **Open**. On a phone, Changes opens as a
-bottom sheet. Use **Refresh** to update immediately; the open panel also
-refreshes periodically. Listing changes is read-only and does not stage,
-commit, push, or deploy anything. If Git status cannot be read, the panel
-reports the error instead of showing a misleading empty list.
+The header also offers **Changes**, a persistent panel on desktop and a bottom
+sheet on phones. It enumerates the entire Git working tree, not only posts
+opened in the editor. Eligible Markdown posts offer **View diff** inline, with
+an **Edit post** link inside the expanded comparison, so you do not need to
+open the Review modal just to see what changed. Files outside the selected
+site, deleted files, conflicts, and non-Markdown files remain visible and
+clearly labeled, but are not exposed as editable source.
 
+The panel refreshes after a successful commit, push or discard as well as
+periodically while open. It remains a read-only inventory: it does not
+commit or publish selected files. The existing modal still uses separate
+commit and push actions pending a safer one-step Publish workflow. A local
+commit is not a remote publication, and a push is not proof the site is live.
+If Git status cannot be read, the panel reports an error rather than
+pretending there are no changes.
 
 When editing a Markdown file inside a Git-backed workspace, select **Review changes**
 in the upper-right header, search for **Publishing: Review changes** in the
