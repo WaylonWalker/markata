@@ -189,6 +189,12 @@ for (const engine of (process.env.ADAPTIVE_BROWSERS || 'chromium').split(',')) {
       assert.equal(await viewportPage.locator('#preview').evaluate(v => v.readyState), 0);
       await viewportPage.locator('video').first().scrollIntoViewIfNeeded();
       await viewportPage.waitForFunction(() => !document.querySelector('video').paused);
+      await viewportPage.waitForFunction(() => Number.isFinite(document.querySelector('video').duration));
+      await viewportPage.locator('video').first().evaluate(v => {v.currentTime = v.duration - 0.1;});
+      await viewportPage.waitForFunction(() => {
+        const video = document.querySelector('video');
+        return video.currentTime < 0.25 && !video.paused;
+      });
       await viewportPage.evaluate(() => window.scrollTo(0, 0));
       await viewportPage.waitForFunction(() => document.querySelector('video').paused);
       await viewportPage.locator('video').first().scrollIntoViewIfNeeded();
