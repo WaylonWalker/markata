@@ -1,0 +1,37 @@
+#settings-dialog{width:min(1080px,calc(100vw - 48px));height:min(780px,calc(100dvh - 48px));max-width:none;max-height:none;font:14px/1.5 system-ui,sans-serif;overflow:hidden;border-radius:16px}
+#settings-dialog[open]{display:flex;flex-direction:column}
+#settings-dialog>header{padding:24px 28px;flex:none;justify-content:space-between;border-bottom:1px solid var(--editor-divider)}
+#settings-dialog h2{font-size:24px;letter-spacing:-.03em}
+#settings-dialog .settings-options{display:flex;flex-direction:column;align-items:stretch;padding:0;gap:0;min-height:0;flex:1}
+#settings-search{margin:16px 24px;padding:12px 16px;background:var(--color-surface);border:1px solid var(--editor-divider);border-radius:8px;color:inherit;font:inherit}
+.settings-body{display:grid;grid-template-columns:220px minmax(0,1fr);min-height:0;flex:1;border-top:1px solid var(--editor-divider)}
+.settings-body nav{padding:16px 12px;background:var(--color-surface);border-right:1px solid var(--editor-divider)}
+#settings-dialog .settings-body nav button{display:block;text-align:left;width:100%;padding:12px 16px;border:0;border-radius:8px;background:transparent;color:inherit;font:inherit;margin:3px 0;cursor:pointer}
+#settings-dialog .settings-body nav button[aria-current="page"]{color:var(--color-primary);background:color-mix(in srgb,var(--color-primary) 12%,transparent);font-weight:650}
+.settings-content{padding:24px 32px;overflow:auto;min-width:0}
+#settings-dialog section{height:auto;display:block;margin-bottom:24px}
+#settings-dialog [hidden]{display:none!important}
+#settings-dialog h3{font-size:20px;margin:0 0 4px}
+#settings-dialog .setting-row{display:flex;gap:24px;align-items:center;justify-content:space-between;padding:22px 0;border-bottom:1px solid var(--editor-divider);flex-wrap:wrap}
+#settings-dialog .setting-row>div:first-child{flex:1;min-width:180px}
+#settings-dialog .setting-row label{font-weight:600;display:block}
+#settings-dialog .setting-row p{font-size:13px;line-height:1.5;margin-top:5px}
+#settings-dialog .setting-row select,#settings-dialog .setting-row button{max-width:100%;padding:9px 12px;border:1px solid var(--editor-divider);border-radius:7px;background:var(--color-surface);color:inherit;font:inherit}
+#settings-dialog input[type="checkbox"]{width:20px;height:20px;flex:none}
+#settings-dialog input[type="range"]{width:150px}
+#settings-dialog :focus-visible,#diagnostics-panel :focus-visible{outline:2px solid var(--color-primary);outline-offset:3px}
+#settings-shortcuts .shortcuts-header{display:none}
+#settings-shortcuts #shortcuts-list{max-height:none}
+#settings-shortcuts .shortcuts-controls,#settings-shortcuts .shortcut-row,#settings-shortcuts .shortcuts-meta{padding-left:0;padding-right:0}
+#diagnostics-panel{position:fixed;z-index:30;bottom:38px;right:12px;width:min(620px,calc(100vw - 24px));max-height:65dvh;overflow:auto;border:1px solid var(--editor-divider);border-radius:12px;background:var(--color-background);color:var(--color-text);box-shadow:0 12px 40px #0005;padding:20px}
+#diagnostics-panel[hidden]{display:none}
+#diagnostics-panel .diagnostics-heading{display:flex;justify-content:space-between;align-items:center}
+#diagnostics-panel h2{font-size:18px;margin:0}
+#diagnostics-panel button,#diagnostics-toggle{font:inherit;color:inherit;background:var(--color-surface);border:1px solid var(--editor-divider);border-radius:6px;padding:6px 10px;cursor:pointer}
+#diagnostics-toggle{margin-inline-start:8px;padding:2px 8px}
+#diagnostics-panel #startup-index{margin:16px 0}
+#diagnostics-live{white-space:pre-wrap;font-size:12px}
+#site-sidebar .pane-label{display:flex;align-items:center;justify-content:space-between;gap:8px}
+#site-sidebar button.files-open{margin:10px 12px;padding:10px 12px;border:1px solid var(--editor-divider);border-radius:8px;background:var(--color-surface);color:var(--color-text);cursor:pointer}
+.editor-toolbar button,header>button{border-radius:7px;padding:7px 10px;cursor:pointer}
+@media(max-width:700px){#settings-dialog{width:100vw;height:100dvh;border:0;border-radius:0;margin:0}#settings-dialog>header{padding:16px}.settings-body{grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr)}.settings-body nav{display:flex;overflow:auto;padding:6px;border-right:0;border-bottom:1px solid var(--editor-divider)}#settings-dialog .settings-body nav button{white-space:nowrap;width:auto;font-size:12px;padding:9px}.settings-content{padding:20px}#settings-search{margin:12px 16px}}

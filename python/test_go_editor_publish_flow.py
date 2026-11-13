@@ -125,14 +125,13 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         self.open_site_file(page, "posts/discard-flow.md", errors)
         expect(page.locator("#markata-gutter-status")).to_contain_text("No Git changes")
         original = (self.site / "posts/discard-flow.md").read_text(encoding="utf-8")
-        page.evaluate("""() => {
-          const editor=document.querySelector('.CodeMirror').CodeMirror;
-          editor.setValue(editor.getValue().replace('# Original', '# Unpublished local edit'));
-        }""")
+        source = page.evaluate("document.querySelector('.CodeMirror').CodeMirror.getValue()")
+        self.edit_source(page, source.replace("# Original", "# Unpublished local edit"))
+        expect(page.locator("#saved")).to_have_text("Saved to site", timeout=10000)
         expect(page.locator("#markata-gutter-status")).to_contain_text("Git change region")
         page.locator("#workspace-changes-toggle").click()
         panel = page.locator("#workspace-changes-panel")
-        expect(panel.locator("#workspace-changes-list")).to_contain_text("posts/publish-flow.md")
+        expect(panel.locator("#workspace-changes-list")).to_contain_text("posts/discard-flow.md")
         page.get_by_role("button", name="Review changes").click()
         review = page.locator("#publish-review")
         expect(review).to_be_visible()
@@ -209,7 +208,7 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         self.assertEqual(errors, [])
 
     def test_autosave_preserves_external_edit_and_browser_recovery(self):
-        context = self.browser.new_context()
+        context = self.browser.new_context(accept_downloads=True)
         self.addCleanup(context.close)
         page = context.new_page()
         errors = []
@@ -226,6 +225,22 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         self.edit_source(page, browser_draft)
         expect(page.locator("#saved")).to_contain_text("Site save failed", timeout=10000)
         expect(page.locator("#saved")).to_contain_text("browser recovery copy kept")
+        self.assertEqual(post.read_text(encoding="utf-8"), external)
+        expect(page.locator("#workspace-conflict-review")).to_be_visible()
+        page.locator("#workspace-conflict-review").click()
+        compare = page.locator("#workspace-conflict-dialog")
+        expect(compare).to_be_visible()
+        expect(compare.locator("#workspace-conflict-browser")).to_have_text(browser_draft)
+        expect(compare.locator("#workspace-conflict-disk")).to_have_text(external)
+        with page.expect_download() as browser_download:
+            compare.locator("#workspace-conflict-download-browser").click()
+        self.assertEqual(Path(browser_download.value.path()).read_text(encoding="utf-8"), browser_draft)
+        with page.expect_download() as disk_download:
+            compare.locator("#workspace-conflict-download-disk").click()
+        self.assertEqual(Path(disk_download.value.path()).read_text(encoding="utf-8"), external)
+        compare.locator("#workspace-conflict-done").click()
+        expect(compare).not_to_be_visible()
+        # Comparing and exporting must never mutate the filesystem.
         self.assertEqual(post.read_text(encoding="utf-8"), external)
 
         # The dirty recovery copy must survive a reload without replacing disk.
@@ -404,10 +419,14 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         expect(page.locator("#source")).to_have_value(re.compile(r"browser-test"))
 
         page.get_by_role("button", name="Back to Markdown").click()
-        page.evaluate("""() => {
-          const editor=document.querySelector('.CodeMirror').CodeMirror;
-          editor.setValue(editor.getValue().replace('# Before\\n\\nInitial copy.', '# After\\n\\nRevised copy for browser verification.'));
-        }""")
+        source = page.evaluate("document.querySelector('.CodeMirror').CodeMirror.getValue()")
+        self.edit_source(page, source.replace(
+            "# Before\n\nInitial copy.", "# After\n\nRevised copy for browser verification."
+        ))
+        expect(page.locator("#saved")).to_have_text("Saved to site", timeout=10000)
+        page.locator("#workspace-changes-toggle").click()
+        panel = page.locator("#workspace-changes-panel")
+        expect(panel.locator("#workspace-changes-list")).to_contain_text("posts/publish-flow.md")
         page.get_by_role("button", name="Review changes").click()
         review = page.locator("#publish-review")
         expect(review).to_be_visible()
@@ -419,7 +438,7 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         # failed chunk, or asynchronously rejected render is a regression.
         review.get_by_role("tab", name="Full diff").click()
         expect(review.locator("#publish-pierre-host")).to_have_attribute("data-state", "ready", timeout=20000)
-        expect(review.locator("#publish-pierre-host")).not_to_be_empty(timeout=20000)
+        expect(review.locator("#publish-pierre-host diffs-container [data-line-type]").first).to_be_visible(timeout=20000)
         expect(review.locator("#publish-pierre-error")).to_be_hidden()
         review.get_by_role("tab", name="Commit message").click()
         message = "Publish browser fixture: revised post"
@@ -455,7 +474,8 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         page.wait_for_selector(".CodeMirror")
         page.locator(".CodeMirror").click()
         page.keyboard.type("Local-first editor probe")
-        expect(page.locator("#source")).to_contain_text("Local-first editor probe")
+        page.wait_for_function("""() => document.querySelector('.CodeMirror').CodeMirror
+            .getValue().includes('Local-first editor probe')""")
 
     def test_changes_panel_lists_all_unopened_files(self):
         # The workspace-wide inventory must include files never opened in
@@ -518,13 +538,12 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         page.on("pageerror", lambda error: errors.append(str(error)))
         page.goto(self.url)
         self.open_site_file(page, "posts/quick-publish.md", errors)
-        page.evaluate("""() => {
-          const editor = document.querySelector('.CodeMirror').CodeMirror;
-          editor.setValue(editor.getValue().replace('# Quick before', '# Quick after'));
-        }""")
+        source = page.evaluate("document.querySelector('.CodeMirror').CodeMirror.getValue()")
+        self.edit_source(page, source.replace("# Quick before", "# Quick after"))
+        expect(page.locator("#saved")).to_have_text("Saved to site", timeout=10000)
         page.locator("#workspace-changes-toggle").click()
         panel = page.locator("#workspace-changes-panel")
-        expect(panel).to_contain_text("posts/quick-publish.md")
+        expect(panel.locator("#workspace-changes-list")).to_contain_text("posts/quick-publish.md")
         page.locator(".CodeMirror").click()
         page.keyboard.press("Control+S")
         expect(page.locator("#markata-publish-status")).to_contain_text("Published to Git", timeout=30000)

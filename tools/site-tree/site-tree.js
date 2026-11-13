@@ -1,3 +1,4 @@
+import {remember as rememberPick, fileScope} from './search-history.js';
 import {attachFilePicker} from './file-picker.js';
 import {FileTree} from '@pierre/trees';
 
@@ -25,6 +26,7 @@ function saveToSite(path, source) {
       // overwrite a disk file. Keep browser recovery until user reconciles.
       if (typeof expected !== 'string' || !/^[0-9a-f]{64}$/.test(expected))
         throw new Error('Cannot safely sync without a known disk version; browser draft kept');
+      const saveStarted = performance.now();
       const response = await fetch('/workspace/file?path=' + encodeURIComponent(path), {
         method:'PUT', headers:{'Content-Type':'text/plain;charset=utf-8',
           'X-Markata-Expected-Version':expected}, body:source
@@ -33,6 +35,7 @@ function saveToSite(path, source) {
       if (!response.ok) throw new Error(data.error || 'Cannot save to the site');
       // A discarded generation may finish in flight; ignore that obsolete ack.
       if (epoch !== (saveEpochs[path] || 0)) return;
+      window.MarkataDiagnostics?.record('save_acknowledgement',performance.now()-saveStarted);
       baselines[path] = source;
       versions[path] = data.version;
       // A successful server save updates recovery's clean version only if
@@ -80,6 +83,7 @@ function remember() {
 async function open(path) {
   if (syncing) return;
   if (!Object.hasOwn(files,path) && path !== scratchPath) return;
+  const openedAt = performance.now();
   const request = ++selection;
   let disk = null;
   if (Object.hasOwn(files,path)) {
@@ -148,6 +152,8 @@ async function open(path) {
   label.title = metadataByPath.get(path)?.title || path;
   currentEditor.setValue(drafts[path]);
   currentEditor.clearHistory();
+  if (Object.hasOwn(files,path)) rememberPick(fileScope(),path);
+  window.MarkataDiagnostics?.record('file_open',performance.now()-openedAt);
   document.querySelector('#download').textContent = editable(path) ? 'Download .md' : 'Download .toml';
   if (diskChanged) document.querySelector('#saved').textContent = 'File changed on disk · keeping your browser draft';
 }
@@ -213,6 +219,7 @@ window.MarkataSiteTree = {
     const post = metadata.find(file => file.slug?.toLowerCase() === slug.toLowerCase());
     if (post) open(post.path);
   },
+  isReady: () => Boolean(fileTree),
   files: () => metadata.map(file => ({...file})),
   openFile(path) { if (Object.hasOwn(files, path)) open(path); },
   activeFile: () => active,
@@ -232,13 +239,13 @@ window.MarkataSiteTree = {
       const box = document.querySelector('#error'); box.textContent = error.message; box.hidden = false;
       files = {};
     }
-    picker = attachFilePicker(editor, open);
-    picker.update([{path:'draft.md'}, ...metadata]);
     editor.on('beforeChange', (instance, change) => {
       if (!editable(active) && change.origin !== 'setValue') change.cancel();
     });
     scratchPath = 'draft.md';
     for (let suffix = 1; Object.hasOwn(files, scratchPath); suffix++) scratchPath = suffix === 1 ? 'Unsaved draft.md' : `Unsaved draft ${suffix}.md`;
+    picker = attachFilePicker(editor, open);
+    picker.update([{path:scratchPath}, ...metadata]);
     active = scratchPath;
     let selected = Object.keys(files)[0] || scratchPath;
     try {
@@ -315,7 +322,7 @@ window.MarkataSiteTree = {
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || data.detail || 'Metadata unavailable');
         metadata = data.files;
-        picker.update([{path:'draft.md'}, ...metadata]);
+        picker.update([{path:scratchPath}, ...metadata]);
         metadataByPath = new Map(metadata.map(file => [file.path,file]));
         label.title = metadataByPath.get(active)?.title || active;
         const tags = new Set(metadata.flatMap(file => file.tags || []));

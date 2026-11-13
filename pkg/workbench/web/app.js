@@ -64,7 +64,7 @@ const editor = CodeMirror.fromTextArea(source, {
   indentUnit:2, tabSize:4, viewportMargin:10, cursorScrollMargin:110, screenReaderLabel:'Markdown source'
 });
 const settingsDialog = document.querySelector('#settings-dialog');
-document.querySelector('#settings-open').addEventListener('click',() => settingsDialog.showModal());
+document.querySelector('#settings-open').addEventListener('click',() => window.MarkataSettings.open());
 document.querySelector('#settings-close').addEventListener('click',() => settingsDialog.close());
 const wrapSetting = document.querySelector('#setting-wrap');
 try { wrapSetting.checked = localStorage.getItem('markata-editor-wrap') !== 'false'; } catch { storageWarning(); }
@@ -140,6 +140,8 @@ const templateQuery = document.querySelector('#template-picker-query');
 const templateResults = document.querySelector('#template-picker-results');
 const templateCount = document.querySelector('#template-picker-count');
 const createTitle = document.querySelector('#create-title');
+const createLinkField = document.querySelector('#create-link-field');
+const createLinkURL = document.querySelector('#create-link-url');
 const createSlug = document.querySelector('#create-slug');
 const createDirectory = document.querySelector('#create-directory');
 const createPathPreview = document.querySelector('#create-path-preview');
@@ -182,7 +184,12 @@ function chooseTemplate(template) {
   const titleMatch = template.source.match(/^title:\s*(.*)$/m);
   const parsedTitle = titleMatch?.[1]?.trim().replace(/^(?:"([\s\S]*)"|'([\s\S]*)')$/, '$1$2');
   const title = !parsedTitle || parsedTitle.includes('{{') ? template.name : parsedTitle;
-  createTitle.value = title;
+  const isLinkPost = template.id === 'builtin:link';
+  createLinkField.hidden = !isLinkPost;
+  createLinkURL.required = isLinkPost;
+  createLinkURL.value = '';
+  createTitle.value = isLinkPost ? '' : title;
+  createTitle.placeholder = isLinkPost ? 'A title for the link' : '';
   createSlug.value = '';
   createSlug.placeholder = slugify(title) || 'post-title';
   createDirectory.value = defaultContentDirectory(template);
@@ -258,10 +265,22 @@ document.querySelector('#create-form').addEventListener('submit',async event => 
   const title = createTitle.value.trim();
   const slug = createSlug.value.trim() || slugify(title);
   const directory = createDirectory.value.trim().replace(/\\/g,'/').replace(/^\/+|\/+$/g,'');
-  const path = `${directory ? `${directory}/` : ''}${slug}.md`;
+  const path = `${directory && directory !== '.' ? `${directory}/` : ''}${slug}.md`;
   if (!template || !title || !slug || !path) return;
-  const source = window.MarkataContentStarters.render(template.source,title,slug);
+  let source = window.MarkataContentStarters.render(template.source,title,slug);
   try {
+    if (template.id === 'builtin:link') {
+      let sourceURL;
+      try { sourceURL = new URL(createLinkURL.value.trim()); }
+      catch { throw new Error('Enter a valid source URL beginning with https:// or http://.'); }
+      if (!['https:','http:'].includes(sourceURL.protocol) ||
+          !sourceURL.hostname || sourceURL.username || sourceURL.password) {
+        throw new Error('Use a public-style http(s) URL without embedded credentials.');
+      }
+      // Preserve site-owned frontmatter and quote the URL as YAML string.
+      // Never fetch remote metadata from the editor client or Go server.
+      source = source.replace(/^link:\s*.*$/m, () => 'link: ' + JSON.stringify(sourceURL.href));
+    }
     const response = await fetch('/workspace/file?path=' + encodeURIComponent(path),{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:source});
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Cannot create this file.');
@@ -337,6 +356,8 @@ registerApp('workbench.downloadMarkdown','Download Markdown File','Files',
 registerApp('workbench.shortcutSettings','Keyboard Shortcuts','Settings',
   {vscode:'Mod+K Mod+S',writer:'Mod+Alt+K',vim:'Space ?',emacs:'Alt+Shift+K'},
   () => appShortcuts.openSettings(),'View, change, or reset application keybindings.');
+window.MarkataSettings.attach(editor);
+window.MarkataDiagnostics.attach();
 window.MarkataPublishReview.attach(editor);
 window.MarkataCommandPalette.attach(editor,{actions:[
   {id:'edit-properties',label:'Page: Edit Properties',description:'Open the visual frontmatter object editor.',aliases:'frontmatter metadata tags date title publish fields',run:()=>window.MarkataFrontmatter.open()},
@@ -386,6 +407,7 @@ function finishPreview(version) {
   window.MarkataStartupStatus?.previewReady();
   const {data} = activeRender;
   const liveTime = Math.round(performance.now() - (activeRender.editAt ?? activeRender.startedAt));
+  window.MarkataDiagnostics?.record('edit_to_preview',liveTime);
   status.textContent = `Go ${data.render_ms.toFixed(1)} ms${data.cached ? ' (cached)' : ''} · queue ${(data.queue_ms ?? 0).toFixed(1)} ms · preview ${liveTime} ms · input ${(data.input_bytes/1024).toFixed(1)} KB · fragment ${((data.html_bytes)/1024).toFixed(1)} KB`;
 }
 function storageWarning() { saved.textContent = 'Draft not saved · storage unavailable or full · download a copy'; }
@@ -582,4 +604,5 @@ workspaceReady.then(() => {
 workspaceReady.then(() => {
   window.MarkataFileFinder?.attach(editor);
   window.MarkataRecentFiles?.attach();
+  window.MarkataConflictCompare?.attach(editor);
 });

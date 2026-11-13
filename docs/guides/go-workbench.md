@@ -31,7 +31,7 @@ assets. Once the HTTP listener is ready, the browser still loads its source
 file list and lazily requests frontmatter plus the site link index; these are
 **not** part of the initial server-ready message.
 
-The workspace sidebar shows **Loading site index…** with real phases:
+Open **Diagnostics** in the footer to see **Loading site index…** and its phases:
 waiting for metadata, reading frontmatter, constructing the link index, and
 ready/error. Expand **Site index ready** afterward to see file counts and
 the measured index load time (frontmatter parsing and link construction
@@ -54,7 +54,7 @@ a large site, the next step is to profile that stage rather than guess at a
 percentage-complete bar. Related: #1987.
 
 Use the appearance picker to select a palette, color mode, style, font, or text size.
-Open **Editor settings** to choose line wrapping, keymap, and layout. Drag the
+Open [Editor settings](./editor-workspace/) to choose line wrapping, keymap, and layout. Drag the
 divider between the source and preview panes to resize them. Choose **Editor
 only** or **Preview only** to focus on one pane; **Editor and preview** restores
 the split.
@@ -83,7 +83,7 @@ container boundaries add source anchors to improve scroll alignment in long
 sections; these markers exist only in the preview render and do not change your
 source. Within nested content, the marker follows the narrowest container that
 contains the caret line.
-For the Go site-backed workbench, **Editor settings → Keyboard shortcuts…** opens
+For the Go site-backed workbench, **Editor settings → Keyboard Shortcuts** opens
 application-wide key bindings. Choose Writer, VS Code, Vim, or Emacs application
 presets independently of the editor's Default/Vim/Emacs/Sublime text keymaps.
 The command palette also exposes **Editor keymap: Default**, **Vim**, **Emacs**,
@@ -306,6 +306,13 @@ template defaults. The slug field stays empty when using the suggestion; its
 ghost text and the destination path update as the title changes. Enter a custom
 slug only when you want to override the title-derived filename. Creating the
 post opens the new file in the editor, where later edits autosave to the site.
+The built-in **Link** starter accepts a source URL alongside a title and filename.
+It stores a quoted `link:` frontmatter field and keeps `published: false`,
+so it is a draft until explicitly reviewed and published. The link must use
+`http://` or `https://` and cannot embed credentials. The flow does **not**
+fetch the destination page or import its title, description, or image yet;
+those metadata features require a separate secure, opt-in retrieval design.
+
 The footer reports whether the draft was saved. Storage failures leave editing and downloads available.
 See [shared editor features and runtime differences](/docs/guides/renderer-integration-benchmarks/#shared-editor-features-and-runtime-differences) for the comparison.
 
@@ -397,7 +404,13 @@ version (SHA-256 of the exact file bytes). The browser sends this as
 The Go editor rejects a missing version with HTTP 428 and a stale version with
 HTTP 409 **without writing the file**. For a conflict, the browser retains its
 recovery copy and shows a save error; reopen the file to inspect/reconcile the
-external revision. An older recovery record without a version token also
+external revision. When a conflict is detected, **Compare copies…**
+opens a read-only comparison of the browser draft and the current file on disk.
+Both copies can be downloaded separately before choosing how to resolve the
+conflict. No button in this comparison writes, merges, replaces, or deletes
+workspace content. On a phone the two panels stack vertically. If the server
+is unavailable, the browser draft can still be downloaded.
+An older recovery record without a version token also
 fails closed. An acknowledged save updates the browser's recovery version so a
 normal reload does not invent a conflict. The current local Go handler
 serializes its own workspace writes and Discard restores, but unrelated

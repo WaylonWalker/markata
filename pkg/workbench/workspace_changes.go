@@ -38,7 +38,7 @@ type workspaceChanges struct {
 // parseWorkspaceChanges decodes -z porcelain v1, including the reversed
 // destination/source fields used for rename and copy records. It does not
 // split on whitespace: filenames may include spaces, tabs and newlines.
-func parseWorkspaceChanges(status string, workspacePrefix string) ([]workspaceChange, error) {
+func parseWorkspaceChanges(status, workspacePrefix string) ([]workspaceChange, error) {
 	entries := make([]workspaceChange, 0)
 	for status != "" {
 		record, remainder, ok := strings.Cut(status, "\x00")
