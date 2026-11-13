@@ -374,6 +374,10 @@ The startup diagnostics show **Editor interactive** separately from
 **Browser file list**, **Metadata index**, and **First preview**. Use
 **Copy diagnostics** alongside server startup logs to distinguish delays
 from site discovery, language assistance, rendering, and browser updates.
+The live preview status now reports Go render time separately from
+**queue time**, which includes waiting for the render gate and preparing the
+request before the renderer starts. Large queue times suggest contention;
+large render times suggest a slow Markdown/feature renderer.
 A large workspace's initial path discovery and appearance construction
 still run before the HTTP listener becomes available; these are remaining
 cold-start profiling targets, not claimed fixed by this pass.
