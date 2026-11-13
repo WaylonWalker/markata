@@ -450,7 +450,7 @@ class GoEditorPublishFlowTest(unittest.TestCase):
             expect(panel.locator("#workspace-changes-list")).to_contain_text("changes-outside.txt")
             expect(panel.locator("#workspace-changes-list")).to_contain_text("staged")
             expect(panel.locator("#workspace-changes-list")).to_contain_text("New / untracked")
-            expect(panel.locator("#workspace-changes-summary")).to_contain_text("changed files")
+            expect(panel.locator("#workspace-changes-summary")).to_contain_text("files with changes")
             # A mobile bottom sheet should never exceed the device viewport.
             assert panel.bounding_box()["width"] <= 391
             panel.locator("#workspace-changes-close").click()
@@ -460,6 +460,25 @@ class GoEditorPublishFlowTest(unittest.TestCase):
             staged.unlink(missing_ok=True)
             untracked.unlink(missing_ok=True)
             outside.unlink(missing_ok=True)
+
+    def test_changes_panel_inspects_diff_without_review_dialog(self):
+        post = self.site / "posts" / "external-edit.md"
+        original = post.read_text(encoding="utf-8")
+        post.write_text("# Changed without opening in editor\\n", encoding="utf-8")
+        try:
+            context = self.browser.new_context()
+            self.addCleanup(context.close)
+            page = context.new_page()
+            page.goto(self.url)
+            page.locator("#workspace-changes-toggle").click()
+            panel = page.locator("#workspace-changes-panel")
+            row = panel.locator(".workspace-change").filter(has_text="posts/external-edit.md")
+            expect(row).to_be_visible()
+            row.get_by_role("button", name="View diff").click()
+            expect(panel.locator(".workspace-change-diff")).to_contain_text("Changed without opening")
+            expect(page.locator("#publish-review")).not_to_be_visible()
+        finally:
+            post.write_text(original, encoding="utf-8")
 
     def test_git_gutter_large_document(self):
         context = self.browser.new_context()
