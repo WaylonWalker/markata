@@ -49,7 +49,8 @@ def run():
         expect(page.locator('#active-file')).to_have_text('posts/alpha.md')
         page.locator('#settings-open').click()
         expect(page.locator('#settings-dialog')).to_be_visible()
-        assert page.locator('#settings-dialog').bounding_box()['width']>900
+        assert page.locator('#settings-dialog').bounding_box()['width'] > 900
+        assert page.locator('#settings-search').bounding_box()['width'] > 800
         page.locator('#settings-search').fill('scroll')
         expect(page.locator('#setting-scroll-sync')).to_be_visible()
         expect(page.locator('#setting-wrap')).to_be_hidden()
