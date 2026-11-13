@@ -58,9 +58,14 @@
       script.src='/editor/pierre-diffs.bundle.js';
       script.type='module';
       script.async=true;
-      script.onload=()=>window.MarkataPierreDiff?resolve():reject(new Error('Pierre diff bundle did not initialize'));
-      script.onerror=()=>reject(new Error('Optional Pierre bundle is not installed. Run the tools/publish-diffs build to enable Full diff.'));
+      script.onload=()=>window.MarkataPierreDiff?resolve():reject(new Error('The full diff renderer did not initialize.'));
+      script.onerror=()=>reject(new Error('Full diff assets could not load. Use Source diff, or rebuild tools/publish-diffs assets.'));
       document.head.append(script);
+    }).catch(error => {
+      // A single interrupted connection must not permanently poison the
+      // optional renderer until the user reloads the entire editor.
+      pierreRequest=null;
+      throw error;
     });
     return pierreRequest;
   }
@@ -73,12 +78,18 @@
     try{
       await loadPierre();
       if(state.mode!=='pierre' || !state.data)return;
-      window.MarkataPierreDiff.render(host,state.data.baseline,state.data.current,{
+      await window.MarkataPierreDiff.render(host,state.data.baseline,state.data.current,{
         filename:state.path,newFile:!state.data.baseline_exists,
         layout:dialog.querySelector('[data-pierre-layout].active')?.dataset.pierreLayout||'stacked'
       });
+      if(state.mode!=='pierre'||!dialog.open)return;
       host.dataset.state='ready';
-    }catch(e){host.replaceChildren();host.dataset.state='error';error.textContent=e.message;error.hidden=false;}
+    }catch(e){
+      host.replaceChildren();
+      host.dataset.state='error';
+      error.textContent='Full diff is unavailable: '+e.message+'. Source diff still works.';
+      error.hidden=false;
+    }
   }
   function setMode(mode) {
     state.mode = mode;
