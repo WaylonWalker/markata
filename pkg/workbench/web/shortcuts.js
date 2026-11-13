@@ -202,6 +202,9 @@
     });
   }
   function openSettings() {
+    if (document.querySelector('#settings-shortcuts')) {
+      window.MarkataSettings.open('shortcuts'); search.value=''; feedback.textContent=''; render(); search.focus(); return;
+    }
     if (!dialog) buildSettings();
     const current = document.querySelector('dialog[open]');
     returnFocus = document.activeElement;
@@ -210,21 +213,23 @@
     render(); search.focus();
   }
   function buildSettings() {
-    dialog = document.createElement('dialog'); dialog.id = 'shortcuts-dialog';
-    dialog.setAttribute('aria-labelledby', 'shortcuts-heading');
-    dialog.innerHTML = '<div class="shortcuts-header"><div><h2 id="shortcuts-heading">Keyboard shortcuts</h2><p>Application keybindings are separate from your editor text keymap.</p></div><button id="shortcuts-close" type="button" aria-label="Close keyboard shortcuts">×</button></div>' +
+    const host = document.querySelector('#settings-shortcuts');
+    dialog = host ? document.querySelector('#settings-dialog') : document.createElement('dialog');
+    if (!host) dialog.id = 'shortcuts-dialog';
+    if (!host) dialog.setAttribute('aria-labelledby', 'shortcuts-heading');
+    const markup = '<div class="shortcuts-header"><div><h2 id="shortcuts-heading">Keyboard shortcuts</h2><p>Application keybindings are separate from your editor text keymap.</p></div><button id="shortcuts-close" type="button" aria-label="Close keyboard shortcuts">×</button></div>' +
       '<div class="shortcuts-controls"><label for="shortcuts-preset">Application keymap</label><select id="shortcuts-preset"><option value="writer">Writer</option><option value="vscode">VS Code</option><option value="vim">Vim</option><option value="emacs">Emacs</option></select>' +
       '<label for="shortcuts-search">Find a command</label><input id="shortcuts-search" type="search" placeholder="Search commands and categories"></div>' +
       '<div class="shortcuts-meta"><span id="shortcuts-count"></span><button id="shortcuts-reset" type="button">Reset overrides</button></div>' +
       '<div id="shortcuts-list"></div><p id="shortcuts-feedback" role="status" aria-live="polite"></p>';
-    document.body.append(dialog);
+    if (host) host.innerHTML=markup; else {dialog.innerHTML=markup;document.body.append(dialog);}
     search = dialog.querySelector('#shortcuts-search'); list = dialog.querySelector('#shortcuts-list');
     feedback = dialog.querySelector('#shortcuts-feedback');
     search.addEventListener('input', render);
     dialog.querySelector('#shortcuts-preset').addEventListener('change', event => setPreset(event.target.value));
     dialog.querySelector('#shortcuts-reset').addEventListener('click', reset);
     dialog.querySelector('#shortcuts-close').addEventListener('click', () => dialog.close());
-    dialog.addEventListener('close', () => {
+    if (!host) dialog.addEventListener('close', () => {
       const closedParent = returnFocus?.closest?.('dialog');
       if (closedParent && !closedParent.open) document.querySelector('#settings-open')?.focus();
       else if (returnFocus?.isConnected) returnFocus.focus();
@@ -242,5 +247,5 @@
     }
   }
   window.MarkataShortcuts = {register, execute, bindingFor, setBinding, setPreset,
-    getPreset:() => preset, reset, all:() => [...commands.values()], init, dispatch, openSettings};
+    getPreset:() => preset, reset, all:() => [...commands.values()], init, dispatch, openSettings, mountSettings:buildSettings, renderSettings:render};
 })();

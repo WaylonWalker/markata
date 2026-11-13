@@ -12,7 +12,7 @@
           action:() => window.MarkataSiteTree.openPicker()}] : [];
       const registered = (window.MarkataShortcuts?.all() || []).map(action => ({
         id: action.id, label: action.label, description: action.description || '',
-        aliases: action.aliases || '', shortcut: window.MarkataShortcuts.bindingFor(action.id),
+        when: action.when, aliases: action.aliases || '', shortcut: window.MarkataShortcuts.bindingFor(action.id),
         run: () => setTimeout(() => window.MarkataShortcuts.execute(action.id), 0)
       }));
       return [...new Map([...openFileActions, ...commands, ...(options.actions || []), ...registered].map(item => [item.id,item])).values()];
@@ -29,7 +29,7 @@
     const query = dialog.querySelector('input');
     const results = dialog.querySelector('[role=listbox]');
     const count = dialog.querySelector('[role=status]');
-    let matches = entries(), active = 0, selection;
+    let matches = entries(), active = 0, selection, commandSearch;
     function select(index) {
       active = index;
       [...results.children].forEach((row, i) => row.setAttribute('aria-selected', String(i === active)));
@@ -40,11 +40,10 @@
       } else query.removeAttribute('aria-activedescendant');
     }
     function refresh() {
-      const words = query.value.toLowerCase().trim().split(/\s+/).filter(Boolean);
-      const filtered = entries().filter(c => words.every(word => `${c.label} ${c.description} ${c.syntax || ''} ${c.aliases || ''}`.toLowerCase().includes(word)));
-      matches = filtered.slice(0, 60);
+      const ranked = commandSearch(query.value);
+      matches = ranked.map(result => result.obj);
       results.replaceChildren();
-      count.textContent = filtered.length > 60 ? `Showing 60 of ${filtered.length} commands. Refine your search to see more.` : filtered.length ? `${filtered.length} commands` : 'No matching commands. Try another word or clear the search.';
+      count.textContent = ranked.total > matches.length ? `Showing ${matches.length} of ${ranked.total} commands. Refine your search to see more.` : matches.length ? `${matches.length} commands` : 'No matching commands. Try another word or clear the search.';
       matches.forEach((command, index) => {
         const row = document.createElement('div');
         row.id = `markdown-command-${command.id}`; row.setAttribute('role','option');
@@ -67,12 +66,16 @@
     function open() {
       if (dialog.open) return;
       selection = {from:editor.getCursor('from'), to:editor.getCursor('to'), text:editor.getSelection()};
+      const available = entries().filter(command => !command.when || command.when());
+      commandSearch = window.MarkataSearch.createSearch(
+        available, ['label', 'aliases', 'description', 'syntax', 'shortcut'], [1, .8, .6, .7, .7], 'commands', command => command.id
+      );
       query.value = ''; dialog.showModal(); refresh(); query.focus();
     }
     function close() { dialog.close(); }
     function insert(command) {
-      if (typeof command.run === 'function') {command.run(); close(); return;}
-      if (typeof command.action === 'function') {close(); command.action(); return;}
+      if (typeof command.run === 'function') {close(); command.run(); window.MarkataSearch?.remember('commands',command.id); return;}
+      if (typeof command.action === 'function') {close(); command.action(); window.MarkataSearch?.remember('commands',command.id); return;}
       if (editor.getOption('readOnly')) return;
       const text = command.useSelection === false ? command.placeholder : selection.text || command.placeholder;
       // Keep all lines of a selected passage inside an indented block.
@@ -96,6 +99,7 @@
         editor.setSelection(editor.posFromIndex(from + prefix.length + marker), editor.posFromIndex(from + prefix.length + marker + content.length));
         editor.changeGeneration(true);
       });
+      window.MarkataSearch?.remember('commands',command.id);
       close();
     }
     button.addEventListener('click', open);

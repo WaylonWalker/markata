@@ -64,7 +64,7 @@ const editor = CodeMirror.fromTextArea(source, {
   indentUnit:2, tabSize:4, viewportMargin:10, cursorScrollMargin:110, screenReaderLabel:'Markdown source'
 });
 const settingsDialog = document.querySelector('#settings-dialog');
-document.querySelector('#settings-open').addEventListener('click',() => settingsDialog.showModal());
+document.querySelector('#settings-open').addEventListener('click',() => window.MarkataSettings.open());
 document.querySelector('#settings-close').addEventListener('click',() => settingsDialog.close());
 const wrapSetting = document.querySelector('#setting-wrap');
 try { wrapSetting.checked = localStorage.getItem('markata-editor-wrap') !== 'false'; } catch { storageWarning(); }
@@ -337,6 +337,8 @@ registerApp('workbench.downloadMarkdown','Download Markdown File','Files',
 registerApp('workbench.shortcutSettings','Keyboard Shortcuts','Settings',
   {vscode:'Mod+K Mod+S',writer:'Mod+Alt+K',vim:'Space ?',emacs:'Alt+Shift+K'},
   () => appShortcuts.openSettings(),'View, change, or reset application keybindings.');
+window.MarkataSettings.attach(editor);
+window.MarkataDiagnostics.attach();
 window.MarkataPublishReview.attach(editor);
 window.MarkataCommandPalette.attach(editor,{actions:[
   {id:'edit-properties',label:'Page: Edit Properties',description:'Open the visual frontmatter object editor.',aliases:'frontmatter metadata tags date title publish fields',run:()=>window.MarkataFrontmatter.open()},
@@ -384,6 +386,7 @@ function finishPreview(version) {
   window.MarkataStartupStatus?.previewReady();
   const {data} = activeRender;
   const liveTime = Math.round(performance.now() - (activeRender.editAt ?? activeRender.startedAt));
+  window.MarkataDiagnostics?.record('edit_to_preview',liveTime);
   status.textContent = `Go ${data.render_ms.toFixed(1)} ms${data.cached ? ' (cached)' : ''} · preview ${liveTime} ms · input ${(data.input_bytes/1024).toFixed(1)} KB · fragment ${((data.html_bytes)/1024).toFixed(1)} KB`;
 }
 function storageWarning() { saved.textContent = 'Draft not saved · storage unavailable or full · download a copy'; }

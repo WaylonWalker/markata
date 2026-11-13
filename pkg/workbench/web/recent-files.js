@@ -60,11 +60,15 @@
         render();
         return; // Never persist the scratch buffer as a site document.
       }
+      if (window.MarkataSearch?.enabled() === false) return;
       recent = [path, ...recent.filter(previous => previous !== path)].slice(0, 8);
       try { localStorage.setItem(storageKey, JSON.stringify(recent)); }
       catch { /* Still usable in the current tab when storage is unavailable. */ }
       render();
     }
+    window.addEventListener('markata-history-cleared', () => {
+      recent=[]; try {localStorage.removeItem(storageKey);} catch {} render();
+    });
     const observer = new MutationObserver(observeActive);
     observer.observe(label, {childList:true, characterData:true, subtree:true});
     observeActive();
