@@ -878,11 +878,20 @@ func listTemplates() error {
 
 // generateTemplatedContent creates the markdown content with template-specific frontmatter.
 func generateTemplatedContent(title, slug string, date time.Time, draft, draftSet bool, tags []string, template ContentTemplate) string {
-	// Only the selected starter's frontmatter and explicit user overrides are
-	// serialized. A value inferred from site/built-in defaults is not a field.
 	fm := make(map[string]interface{}, len(template.Frontmatter))
 	for key, value := range template.Frontmatter {
 		fm[key] = expandStarterValue(value, title, slug, date)
+	}
+	switch value := fm["date"].(type) {
+	case nil:
+		fm["date"] = date.Format("2006-01-02")
+	case string:
+		if strings.TrimSpace(value) == "" {
+			fm["date"] = date.Format("2006-01-02")
+		}
+	}
+	if fm["published"] == nil {
+		fm["published"] = !starterDraftDefault(template)
 	}
 	if _, exists := fm["title"]; exists {
 		fm["title"] = title
@@ -898,9 +907,6 @@ func generateTemplatedContent(title, slug string, date time.Time, draft, draftSe
 	body := expandStarterText(template.Body, title, slug, date)
 	if body == "" {
 		body = "Write your content here..."
-	}
-	if len(fm) == 0 {
-		return body + "\n"
 	}
 	fmBytes, err := yaml.Marshal(fm)
 	if err != nil {

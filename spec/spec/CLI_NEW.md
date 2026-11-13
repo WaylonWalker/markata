@@ -35,8 +35,15 @@ markata-go new [title-or-url] [flags]
 | `--no-input` | | Disable prompts and interactive UI | `false` |
 | `--title` | | Explicit title override, including URL-first link posts | `""` |
 
-**Note:** `--draft` defaults to `false`. New posts are created as published by
-default (`published: true`, `draft: false`).
+Every file created by `new` includes a `date` and an explicit `published` value.
+This applies to all templates, aliases, URL-first links, plain prompts, and the TUI.
+An absent, null, or blank date defaults to the current local date as `YYYY-MM-DD`.
+An explicit starter date remains unchanged.
+Without an explicit publication setting, `published` defaults to `true`.
+A starter's `published: false` remains unpublished.
+A starter's `draft: true` supplies `published: false` when `published` is absent.
+The `--draft` flag overrides starter publication settings.
+The command does not add a `draft` field unless the starter or an explicit override supplies it.
 
 ## URL-First Link Posts
 

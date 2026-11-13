@@ -19,6 +19,10 @@ markata new "Hello, internet"
 
 This normally creates `pages/post/hello-internet.md`. Open it in your editor.
 
+Every `new` file includes the current date and `published: true` by default, including link posts and custom starters.
+An explicit starter date or unpublished setting remains unchanged.
+Use `--draft` to create an unpublished draft instead.
+
 You'll see YAML frontmatter between two `---` lines. The body is ordinary Markdown.
 
 ```markdown title="pages/post/hello-internet.md"

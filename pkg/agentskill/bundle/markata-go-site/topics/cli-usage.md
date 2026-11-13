@@ -96,6 +96,12 @@ Bare `markata-go config` behaves like `markata-go config show`.
 - `markata-go init` (initialize a new project with TUI wizard)
 - `markata-go init --plain` (plain text prompts for non-TTY environments)
 
+Every `new` file includes a date and an explicit publication value, for all templates and interaction modes.
+An absent, null, or blank date becomes the current local date.
+Publication defaults to `true`.
+Preserve explicit starter dates and publication settings, including drafts.
+Use `--draft` for an explicit unpublished override.
+
 #### URL-first Link Posts
 
 Use an HTTP(S) destination URL with `link` or its aliases (`bookmark`, `til`, `stars`):

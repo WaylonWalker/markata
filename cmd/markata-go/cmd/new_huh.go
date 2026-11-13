@@ -841,7 +841,7 @@ func applyNewWizardState(state *newWizardState, templates map[string]ContentTemp
 		tags = nil
 	}
 
-	draftSet := false
+	draftSet := currentCmd != nil && currentCmd.Flags().Changed("draft")
 	if linkFlags {
 		if currentCmd.Flags().Changed("dir") && newDir != "" {
 			outputDir = newDir
@@ -855,7 +855,6 @@ func applyNewWizardState(state *newWizardState, templates map[string]ContentTemp
 				tags = []string{}
 			}
 		}
-		draftSet = currentCmd.Flags().Changed("draft")
 	}
 	return writeContentFile(state.Title, slug, outputDir, newDraft, draftSet, tags, enhancedTemplate)
 }

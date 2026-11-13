@@ -1337,6 +1337,12 @@ markata-go new [title] [flags]
 The global `--no-input` flag disables prompts and the TUI.
 Explicit flags take priority over metadata, inferred values, and wizard values.
 
+Every template and creation mode writes a `date` and an explicit `published` value.
+An absent, null, or blank date becomes the current local date as `YYYY-MM-DD`.
+An explicit starter date remains unchanged.
+Publication defaults to `true`, but starter drafts and unpublished settings remain in effect.
+The `--draft` flag overrides those publication settings.
+
 #### Built-in Templates
 
 | Template | Directory | Description |
