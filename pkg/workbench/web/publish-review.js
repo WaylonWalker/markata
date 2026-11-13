@@ -546,6 +546,25 @@
     finally{state.busy=false;btn.textContent='Push to origin';}
   }
 
+  // Only an explicit Publish request changes public metadata; ordinary
+  // autosave and draft editing never change a post's publication state.
+  function publicPostSource(source) {
+    const newline = source.includes('\r\n') ? '\r\n' : '\n';
+    if (!source.startsWith('---' + newline))
+      return '---' + newline + 'published: true' + newline + 'draft: false' +
+        newline + '---' + newline + newline + source;
+    const end = source.indexOf(newline + '---', 3 + newline.length);
+    if (end < 0) throw new Error('Fix malformed YAML frontmatter before publishing.');
+    let head = source.slice(0,end);
+    const tail = source.slice(end);
+    if (/^published:\s*(true|false)\s*$/im.test(head))
+      head = head.replace(/^published:\s*(true|false)\s*$/im, 'published: true');
+    else head += newline + 'published: true';
+    if (/^draft:\s*(true|false)\s*$/im.test(head))
+      head = head.replace(/^draft:\s*(true|false)\s*$/im, 'draft: false');
+    return head + tail;
+  }
+
   // Writer-first publication keeps the Git transaction behind one explicit
   // action, while preserving the guarded review/commit/push endpoints.
   let quickBusy = false;
@@ -581,7 +600,7 @@
     quickBusy = true;
     button.disabled = true;
     try {
-      const snapshot = editor.getValue();
+      let snapshot = editor.getValue();
       if (new TextEncoder().encode(snapshot).length > sourceLimit)
         throw new Error('Post is too large to publish.');
       if (pendingQuick) {
@@ -591,8 +610,16 @@
         return;
       }
       const meta = frontmatter(snapshot);
-      if (meta.published !== 'true' || meta.draft === 'true')
-        throw new Error('This post is still a draft. Set published: true and draft: false in Properties to publish.');
+      if (meta.published !== 'true' || meta.draft === 'true') {
+        // Publishing is the writer's explicit request to mark this post public.
+        // The commit endpoint will still reject invalid or duplicate YAML.
+        const next = publicPostSource(snapshot);
+        if (new TextEncoder().encode(next).length > sourceLimit)
+          throw new Error('Post is too large to publish.');
+        editor.operation(() => editor.replaceRange(next, {line:0,ch:0},
+          {line:editor.lastLine(),ch:editor.getLine(editor.lastLine()).length}, '+publish-meta'));
+        snapshot = editor.getValue();
+      }
       reportQuick('Saving current post…', 'loading');
       await awaitSaved(path, snapshot);
       if (window.MarkataSiteTree?.activeFile?.() !== path || editor.getValue() !== snapshot)
