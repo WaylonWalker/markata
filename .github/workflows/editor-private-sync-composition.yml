@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'pkg/editorhub/private_sync_http*.go'
+      - 'pkg/editorhub/private_session_http*.go'
       - '.github/workflows/editor-private-sync-composition.yml'
   workflow_dispatch:
 
@@ -21,8 +22,8 @@ jobs:
           cache: true
       - name: Check formatting
         run: |
-          if [ -n "$(gofmt -l pkg/editorhub/private_sync_http*.go)" ]; then
-            gofmt -d pkg/editorhub/private_sync_http*.go
+          if [ -n "$(gofmt -l pkg/editorhub/private_sync_http*.go pkg/editorhub/private_session_http*.go)" ]; then
+            gofmt -d pkg/editorhub/private_sync_http*.go pkg/editorhub/private_session_http*.go
             exit 1
           fi
       - name: Vet private sync
