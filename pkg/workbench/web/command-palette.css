@@ -1,5 +1,5 @@
 /* The syntax column is the visual anchor; colors follow the active site palette. */
-#commands{margin-left:auto;min-height:36px;padding:5px 12px;border:1px solid var(--editor-divider);border-radius:6px;background:var(--color-surface,#fff);color:var(--color-text,#203348);font:inherit;cursor:pointer;text-transform:none;letter-spacing:normal}
+#commands{margin-left:auto}
 .markdown-commands{box-sizing:border-box;width:min(640px,calc(100vw - 24px));max-height:80dvh;margin:10dvh auto auto;padding:20px;border:1px solid var(--editor-divider,#c8d5e2);border-radius:12px;background:var(--color-background,#f4f7fb);color:var(--color-text,#203348);box-shadow:0 20px 80px #0005;font:14px/1.5 system-ui,sans-serif}
 .markdown-commands::backdrop{background:#0007}
 .commands-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
@@ -47,3 +47,47 @@
 .file-result-title{font-size:12px;line-height:1.4;color:var(--color-text-muted,#52697f)}
 #files-results mark{border-radius:2px;padding:0 1px;background:color-mix(in srgb,var(--color-primary,#245fc5) 35%,transparent);color:inherit;font-weight:700}
 @media(max-width:480px){.file-picker{margin:4dvh auto auto;max-height:92dvh}#files-results{max-height:64dvh}#files-results [role=option]{min-height:56px}.files-open{min-height:44px}}
+
+/* Open file dialog: quiet surface, inset focus, and a selected-row accent bar. */
+.file-finder{padding:20px 20px 16px;border-radius:12px;border-color:color-mix(in srgb,var(--color-text,#203348) 14%,transparent)}
+.file-finder-heading h2{font-size:17px}
+.file-finder-close{border:0;background:transparent;padding:6px 8px;border-radius:6px;color:var(--color-text-muted,#52697f);font:500 13px/1 system-ui,sans-serif}
+.file-finder-close:hover{background:color-mix(in srgb,var(--color-text,#203348) 8%,transparent);color:var(--color-text,#203348)}
+.file-finder label{font-size:12px;font-weight:600;letter-spacing:.04em;color:var(--color-text-muted,#52697f)}
+#file-finder-query{border-color:color-mix(in srgb,var(--color-text,#203348) 16%,transparent);padding:11px 13px;font-size:14px}
+#file-finder-query:focus{outline:none;border-color:transparent;box-shadow:inset 0 0 0 1px var(--color-primary,#245fc5)}
+#file-finder-results{margin:0 -6px}
+#file-finder-results [role=option]{padding:9px 12px;border-radius:6px}
+#file-finder-results [role=option] strong{font-size:13.5px}
+#file-finder-results [aria-selected=true]{border-color:transparent;background:color-mix(in srgb,var(--color-primary,#245fc5) 10%,transparent);box-shadow:inset 2px 0 0 var(--color-primary,#245fc5)}
+.file-finder :focus-visible{outline:none}
+#file-finder-results [role=option]:focus-visible{outline:none;box-shadow:inset 2px 0 0 var(--color-primary,#245fc5)}
+.file-finder kbd{display:inline-block;min-width:1.4em;padding:0 5px;margin:0 1px;border:1px solid color-mix(in srgb,var(--color-text,#203348) 22%,transparent);border-radius:4px;font:500 11px/16px ui-monospace,monospace;text-align:center;color:var(--color-text-muted,#52697f)}
+.file-finder-help{margin-top:12px;padding-top:10px;border-top:1px solid color-mix(in srgb,var(--color-text,#203348) 10%,transparent)}
+.file-finder :is(input,[role=option],button):focus,.file-finder :is(input,[role=option],button):focus-visible{outline:none!important}
+#file-finder-query:focus{box-shadow:inset 0 0 0 1px var(--color-primary,#245fc5)!important}
+
+/* Open file picker (the file-tree's dialog): quiet input, inset focus, accent-bar selection. */
+.markdown-commands.file-picker{border-radius:12px;padding:20px 20px 16px;border-color:color-mix(in srgb,var(--color-text,#203348) 14%,transparent)}
+#files-query{border-color:color-mix(in srgb,var(--color-text,#203348) 16%,transparent);padding:11px 13px;font-size:14px}
+#files-query:focus,#files-query:focus-visible{outline:none!important;border-color:transparent;box-shadow:inset 0 0 0 1px var(--color-primary,#245fc5)}
+#files-results{margin:0 -6px;padding:0 6px}
+#files-results [role=option]{padding:9px 12px;border-radius:6px;border-color:transparent}
+#files-results [role=option]:focus,#files-results [role=option]:focus-visible{outline:none!important}
+#files-results [aria-selected=true]{background:color-mix(in srgb,var(--color-primary,#245fc5) 10%,transparent);border-color:transparent;box-shadow:inset 2px 0 0 var(--color-primary,#245fc5)}
+#files-results [role=option]:hover{background:color-mix(in srgb,var(--color-primary,#245fc5) 6%,transparent)}
+.file-result-name{font-size:13.5px;font-weight:600}
+.file-picker kbd{display:inline-block;min-width:1.4em;padding:0 5px;margin:0 1px;border:1px solid color-mix(in srgb,var(--color-text,#203348) 22%,transparent);border-radius:4px;font:500 11px/16px ui-monospace,monospace;text-align:center;color:var(--color-text-muted,#52697f)}
+.file-group-heading{padding:14px 12px 6px;font-size:11px;font-weight:650;letter-spacing:.12em;text-transform:uppercase;color:var(--color-text-muted,#52697f)}
+.file-result-meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:3px;font-size:11px;color:var(--color-text-muted,#52697f)}
+.file-status{padding:1px 6px;border-radius:999px;font-weight:600;letter-spacing:.02em;border:1px solid color-mix(in srgb,currentColor 35%,transparent)}
+.file-status[data-status=draft]{color:var(--color-warning,#b17c27)}
+.file-status[data-status=published]{color:var(--color-success,#2f8f5b)}
+.file-date{font-family:var(--font-code,ui-monospace,monospace)}
+.file-tag{padding:0 6px;border-radius:4px;background:color-mix(in srgb,var(--color-primary,#245fc5) 10%,transparent);color:var(--color-primary,#245fc5)}
+.file-picker .files-hint{margin:7px 2px 0;font-size:12px;line-height:1.5;color:var(--color-text-muted,#52697f)}
+.file-picker .files-hint kbd{display:inline-block;min-width:1.4em;padding:0 4px;margin:0 1px;border:1px solid color-mix(in srgb,var(--color-text,#203348) 22%,transparent);border-radius:4px;font:500 11px/15px ui-monospace,monospace;text-align:center;color:inherit}
+.files-suggest{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 0}
+.files-suggest[hidden]{display:none}
+.files-suggest button{padding:3px 10px;border:1px solid color-mix(in srgb,var(--color-primary,#245fc5) 40%,transparent);border-radius:999px;background:color-mix(in srgb,var(--color-primary,#245fc5) 8%,transparent);color:var(--color-primary,#245fc5);font:500 12px/1.4 ui-monospace,monospace;cursor:pointer}
+.files-suggest button:hover,.files-suggest button:focus-visible{background:color-mix(in srgb,var(--color-primary,#245fc5) 18%,transparent);outline:none}

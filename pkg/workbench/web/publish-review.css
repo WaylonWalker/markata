@@ -1,5 +1,5 @@
 /* Shared theme tokens; publishing is a dialog, not a second editor. */
-#publish-open{font:600 13px system-ui,sans-serif;padding:10px 17px;border-radius:7px;border:1px solid var(--color-primary,#6851ab);background:var(--color-primary,#6851ab);color:var(--color-on-primary,#fff);cursor:pointer;margin-left:auto}
+#publish-open{margin-left:auto}
 #publish-open:hover{filter:brightness(1.08)}
 #publish-review{padding:0;border:1px solid var(--editor-divider,#bbb);border-radius:14px;background:var(--color-background,#fff);color:var(--color-text,#20232a);box-shadow:0 28px 90px #0005;width:min(1180px,calc(100vw - 28px));max-width:1180px;height:min(92dvh,980px);max-height:calc(100dvh - 28px);overflow:hidden;font:14px system-ui,sans-serif}
 #publish-review::backdrop{background:#0d1222ad;backdrop-filter:blur(4px)}
@@ -36,12 +36,9 @@
 .publish-diff-prefix{user-select:none;display:inline-block;width:22px;color:var(--color-text-muted,#777)}
 #publish-review .publish-actions{display:flex;flex:0 0 auto;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:9px;padding:14px 20px;border-top:1px solid var(--editor-divider,#ddd);background:var(--color-background,#fff);height:auto}
 #publish-review .publish-actions span{font-size:11px;color:var(--color-text-muted,#777);margin-right:auto}
-#publish-review .publish-actions button{padding:10px 14px;border:1px solid var(--editor-divider,#ddd);border-radius:7px;font-weight:650;font-size:12px;cursor:pointer;background:var(--color-surface,#fafafa);color:inherit}
-#publish-review #publish-confirm{background:var(--color-primary,#6851ab);color:var(--color-on-primary,#fff);border-color:var(--color-primary,#6851ab)}
 #publish-review #publish-confirm:disabled{opacity:.55;cursor:not-allowed}
 #publish-review :focus-visible{outline:3px solid var(--color-primary,#6851ab);outline-offset:2px}
 @media(max-width:700px){
- #publish-open{padding:9px 12px}
  #publish-review{width:100vw;max-width:none;height:100dvh;max-height:100dvh;border-radius:0}
  #publish-review .publish-review-head{padding:14px 16px}
  #publish-review h2{font-size:20px}
@@ -81,3 +78,70 @@
 #publish-review .publish-message-help{display:flex;justify-content:space-between;gap:16px;color:var(--color-text-muted,#777);font-size:11px;line-height:1.5;margin:8px 2px}
 #publish-review #publish-message-count{font:11px ui-monospace,monospace;white-space:nowrap}
 #publish-open svg{width:16px;height:16px;margin-right:7px;vertical-align:-3px;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.8}
+
+/* Git-style change gutter: blue=modified, green=added, red=deleted. */
+.CodeMirror-gutter.markata-change-gutter{width:5px}
+.markata-change-marker{display:block;width:4px;min-height:1.35em;border-radius:2px}
+.markata-change-marker.add{background:var(--color-success,#34a66c)}
+.markata-change-marker.modify{background:var(--color-primary,#548ee5)}
+.markata-change-marker.del{background:var(--color-error,#db6464);height:4px;min-height:4px}
+
+/* A blocked review is a compact explanation, not an empty fullscreen modal. */
+#publish-review[data-unavailable="true"]{height:auto;min-height:0}
+#publish-review[data-unavailable="true"] .publish-actions{flex:0 0 auto}
+
+#publish-review #publish-discard{margin-right:auto;color:var(--color-error,#d45c5c);border-color:color-mix(in srgb,var(--color-error,#d45c5c) 55%,transparent);background:transparent}
+#publish-review #publish-discard:disabled{opacity:.45;cursor:not-allowed}
+#publish-review #publish-discard-warning{margin:8px 20px;padding:9px 12px;font-size:12px;border-radius:6px;color:var(--color-text-muted,#777);background:var(--color-surface,#eee)}
+#publish-review #publish-discard-warning[hidden],#publish-review #publish-discard-confirmation[hidden]{display:none}
+#publish-review #publish-discard-confirmation{flex:0 0 auto;margin:8px 20px 0;padding:12px;border:1px solid var(--color-error,#d45c5c);border-radius:8px;background:var(--color-surface,#eee)}
+#publish-review #publish-discard-confirmation p{margin:0 0 10px;font-size:13px;line-height:1.5}
+
+/* Compact, observable Git gutter state beside the autosave status. */
+#markata-gutter-status{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--color-text-muted,#777);padding:0;border:0;border-radius:0;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#markata-gutter-status[data-state="changed"]{color:var(--color-primary,#548ee5)}
+#markata-gutter-status[data-state="warning"]{color:var(--color-warning,#ba8635)}
+#markata-gutter-status[data-state="clean"]{color:var(--color-success,#34a66c)}
+.CodeMirror-gutter.markata-change-gutter{width:6px!important;min-width:6px!important}
+.CodeMirror .markata-change-marker{display:block;width:5px;min-width:5px;min-height:1.5em}
+
+/* Immediate source-first review: no-change state and collapsible context. */
+#publish-review .publish-mode-tabs[hidden],#publish-review #publish-no-changes[hidden]{display:none}
+#publish-no-changes{border:1px solid var(--editor-divider,#ddd);border-radius:10px;padding:24px;min-height:140px;background:var(--color-surface,#fafafa);margin:8px 0 18px}
+#publish-no-changes h3{margin:0 0 8px;font-size:18px;font-weight:650}
+#publish-no-changes p{color:var(--color-text-muted,#777);margin:8px 0;line-height:1.5}
+#publish-review .publish-diff-line.note{color:var(--color-text-muted,#888);font-style:italic;opacity:.85;background:var(--color-surface,#fafafa)}
+
+
+/* Complete Git Changes inventory: persistent on desktop, bottom sheet on phones. */
+#workspace-changes-toggle[aria-expanded="true"]{border-color:var(--color-primary,#6851ab)}
+#workspace-changes-panel{position:fixed;z-index:1050;right:16px;top:74px;bottom:16px;width:min(415px,calc(100vw - 32px));display:flex;flex-direction:column;border:1px solid var(--editor-divider,#bbb);border-radius:12px;background:var(--color-background,#fff);color:var(--color-text,#222);box-shadow:0 12px 42px #0003;font:13px system-ui,sans-serif;overflow:hidden}
+#workspace-changes-panel[hidden]{display:none}
+#workspace-changes-panel header{display:flex;align-items:center;gap:9px;padding:12px;border-bottom:1px solid var(--editor-divider,#ddd)}
+#workspace-changes-panel h2{font-size:16px;margin:0;flex:1}
+#workspace-changes-panel button:focus-visible,#workspace-changes-toggle:focus-visible{outline:3px solid var(--color-primary,#6851ab);outline-offset:2px}
+#workspace-changes-summary{font-size:12px;font-weight:600;margin:0;padding:12px 14px 4px}
+#workspace-changes-panel .workspace-changes-help{font-size:11px;line-height:1.5;color:var(--color-text-muted,#777);padding:0 14px 12px;margin:0}
+#workspace-changes-list{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain}
+.workspace-change{display:flex;gap:8px;align-items:center;padding:10px 12px;border-top:1px solid var(--editor-divider,#ddd)}
+.workspace-change-description{display:flex;flex:1;min-width:0;flex-direction:column;gap:4px}
+.workspace-change strong{font:600 12px ui-monospace,SFMono-Regular,Consolas,monospace;overflow-wrap:anywhere}
+.workspace-change small{font-size:11px;line-height:1.4;color:var(--color-text-muted,#777);overflow-wrap:anywhere}
+@media(max-width:700px){
+  #workspace-changes-toggle{padding:8px}
+  #workspace-changes-panel{right:0;top:auto;bottom:0;width:100vw;height:min(74dvh,640px);border-radius:14px 14px 0 0;padding-bottom:env(safe-area-inset-bottom,0)}
+  #workspace-changes-panel header{padding:14px}
+  .workspace-change{padding:12px 14px}
+}
+
+/* Read changes where they are listed; don't force writers through a modal. */
+.workspace-change-inline{padding:0 12px 14px;border-bottom:1px solid var(--editor-divider,#ddd);min-width:0}
+.workspace-change-inline[hidden]{display:none}
+.workspace-change-diff{max-height:360px;overflow:auto;border:1px solid var(--editor-divider,#ddd);border-radius:8px;margin-bottom:10px;font:12px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere}
+.workspace-change-diff .publish-diff-line{padding:1px 8px}
+.workspace-change-unavailable{font:11px system-ui,sans-serif;opacity:.6;text-align:right}
+
+#markata-publish-status{display:inline-flex;align-items:center;font:12px/1.4 system-ui,sans-serif;color:var(--color-text-muted,#777);max-width:30ch;overflow-wrap:anywhere}
+#markata-publish-status[data-state="warning"]{color:var(--color-warning,#d07b31)}
+#markata-publish-status[data-state="loading"]{opacity:.75}
+@media(max-width:700px){#markata-publish-status{max-width:18ch;font-size:11px}#publish-review-open{padding:8px}}

@@ -20,6 +20,7 @@ import (
 	"path"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/WaylonWalker/markata/pkg/editorworkspace"
@@ -58,22 +59,23 @@ type workspaceSource interface {
 // Mount it at the root of an origin. Authored HTML is enabled for trusted local
 // editing; isolate its preview using an opaque-origin iframe sandbox.
 type Handler struct {
-	store          *editorworkspace.Store
-	root           string
-	configRevision uint64
-	renderer       *plugins.StandaloneRenderer
-	siteConfig     *models.Config
-	workspace      workspaceSource
-	language       http.Handler
-	languageConfig lsp.BrowserConfig
-	appearance     *plugins.StandaloneAppearance
-	choices        map[string][]string
-	assets         map[string][]byte
-	index          []byte
-	bridge         string
-	gate           chan struct{}
-	lastSource     string
-	lastResult     *plugins.StandaloneResult
+	store            *editorworkspace.Store
+	root             string
+	configRevision   uint64
+	renderer         *plugins.StandaloneRenderer
+	siteConfig       *models.Config
+	workspace        workspaceSource
+	language         http.Handler
+	languageConfig   lsp.BrowserConfig
+	appearance       *plugins.StandaloneAppearance
+	choices          map[string][]string
+	assets           map[string][]byte
+	index            []byte
+	bridge           string
+	gate             chan struct{}
+	workspaceWriteMu sync.Mutex
+	lastSource       string
+	lastResult       *plugins.StandaloneResult
 }
 
 // New builds immutable appearance assets once. Reuse the handler for all requests.
@@ -93,12 +95,9 @@ func NewWithWorkspace(ctx context.Context, root string) (*Handler, error) {
 		_ = workspace.Close()
 		return nil, err
 	}
-	language, err := lsp.NewWebSocketHandlerWithIndex(ctx, root, log.Default(), workspace.Snapshot)
-	if err != nil {
-		_ = workspace.Close()
-		return nil, err
-	}
-	log.Printf("editor startup: LSP configuration and handler ready in %s", time.Since(lspStarted).Round(time.Millisecond))
+	// LSP setup can initialize a large site index; this is optional for
+	// writing. Bring the HTTP editor online first and warm LSP asynchronously.
+	language := &deferredLanguage{}
 	siteConfig, revision := workspace.Configuration()
 	appearanceStarted := time.Now()
 	handler, err := buildPresentation(root, workspace, config, language, siteConfig)
@@ -108,6 +107,17 @@ func NewWithWorkspace(ctx context.Context, root string) (*Handler, error) {
 	}
 	handler.store = workspace
 	handler.configRevision = revision
+	go func() {
+		service, err := lsp.NewWebSocketHandlerWithIndex(ctx, root, log.Default(), workspace.Snapshot)
+		if err != nil {
+			if ctx.Err() == nil {
+				log.Printf("editor startup: language service unavailable: %v", err)
+			}
+			return
+		}
+		language.ready(service)
+		log.Printf("editor startup: LSP ready asynchronously in %s", time.Since(lspStarted).Round(time.Millisecond))
+	}()
 	log.Printf("editor startup: appearance and browser assets ready in %s (total %s)", time.Since(appearanceStarted).Round(time.Millisecond), time.Since(started).Round(time.Millisecond))
 	return handler, nil
 }
@@ -313,6 +323,7 @@ func fail(w http.ResponseWriter, status int, message string) {
 }
 
 func (h *Handler) render(w http.ResponseWriter, r *http.Request) {
+	requestStarted := time.Now()
 	w.Header().Set("Cache-Control", "no-store")
 	if origin := r.Header.Get("Origin"); origin != "" {
 		u, err := url.Parse(origin)
@@ -344,6 +355,7 @@ func (h *Handler) render(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	started := time.Now()
+	queueMS := float64(started.Sub(requestStarted).Microseconds()) / 1000
 	response, err := h.prepareRender(r, req)
 	if err != nil {
 		if r.Context().Err() == nil {
@@ -353,6 +365,7 @@ func (h *Handler) render(w http.ResponseWriter, r *http.Request) {
 	}
 	ms := float64(time.Since(started).Microseconds()) / 1000
 	response.RenderMS = ms
+	response.QueueMS = queueMS
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Server-Timing", fmt.Sprintf("markata;dur=%.3f", ms))
 	if err := json.NewEncoder(w).Encode(response); err != nil {
@@ -369,16 +382,15 @@ func (h *Handler) prepareRender(r *http.Request, req *renderRequest) (*renderRes
 	var revision uint64
 	if snapshot, ok := h.workspace.(interface{ Snapshot() (*lsp.Index, uint64) }); ok {
 		index, revision = snapshot.Snapshot()
-		if index == nil || revision == 0 {
-			if _, err := h.workspace.Files(); err != nil {
-				return nil, fmt.Errorf("load workspace metadata for preview: %w", err)
-			}
-			index, revision = snapshot.Snapshot()
-		}
 	}
 	markdown := renderWorkbenchEmbeds(*req.Markdown, index, h.root)
 	markdown = renderWorkbenchWikilinks(markdown, index)
 	markdown, sourceAnchors := markSourceContainers(markdown)
+	// Index revisions change while the first preview is open. Plain Markdown
+	// has no workspace references, so an index update does not invalidate it.
+	if !strings.Contains(*req.Markdown, "[[") && !strings.Contains(*req.Markdown, "![embed](") {
+		revision = 0
+	}
 	cacheKey := fmt.Sprintf("%d\x00%s", revision, markdown)
 	result := h.lastResult
 	cached := result != nil && h.lastSource == cacheKey
@@ -418,6 +430,7 @@ type renderResponse struct {
 	FeatureHeadHTML string  `json:"feature_head_html"`
 	BodyEndHTML     string  `json:"body_end_html"`
 	RenderMS        float64 `json:"render_ms"`
+	QueueMS         float64 `json:"queue_ms"`
 	InputBytes      int     `json:"input_bytes"`
 	HTMLBytes       int     `json:"html_bytes"`
 	DocumentBytes   int     `json:"document_bytes"`
@@ -509,18 +522,18 @@ func (h *Handler) document(result *plugins.StandaloneResult, attributes map[stri
 		bg, fg = "#fff", "#1f2937"
 	}
 	initial := `<style>html{color-scheme:` + defaults[workbenchThemeAttribute] + `;background:` + bg + `}body{background:var(--color-background,` + bg + `);color:var(--color-text,` + fg + `)}</style>`
-	return `<!doctype html><html lang="en"` + attrs + `><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Markdown preview</title>` + initial + styles + h.featureHead(result) + `</head><body><main class="main-content"><div class="content-wrapper"><div class="post-shell"><article class="post h-entry"><div class="post-content e-content">` + result.HTML + `</div></article></div></div></main>` + strings.ReplaceAll(result.BodyEndHTML, "<script", `<script data-markata-generated="true"`) + h.bridge + `</body></html>`
+	return `<!doctype html><html lang="en"` + attrs + `><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Markdown preview</title>` + initial + styles + h.featureHead(result) + `</head><body><main class="main-content"><div class="content-wrapper"><div class="post-shell"><article class="post h-entry"><div class="post-content e-content">` + result.HTML + `</div></article></div></div></main><script>window.markataEditorPreview=true</script>` + strings.ReplaceAll(result.BodyEndHTML, "<script", `<script data-markata-generated="true"`) + h.bridge + `</body></html>`
 }
 
 func isWorkspaceRoute(routePath, method string) bool {
 	switch {
-	case routePath == "/workspace" || routePath == "/workspace/templates" || routePath == "/workspace/image" || routePath == "/workspace/index-status":
+	case routePath == "/workspace" || routePath == "/workspace/templates" || routePath == "/workspace/image" || routePath == "/workspace/index-status" || routePath == "/workspace/changes":
 		return method == http.MethodGet
 	case routePath == "/workspace/file":
 		return method == http.MethodGet || method == http.MethodPut || method == http.MethodPost
-	case routePath == "/workspace/publish/commit" || routePath == "/workspace/publish/push":
+	case routePath == "/workspace/publish/commit" || routePath == "/workspace/publish/push" || routePath == "/workspace/publish/discard":
 		return method == http.MethodPost
-	case routePath == "/workspace/publish/deployment" || routePath == "/workspace/publish/review":
+	case routePath == "/workspace/publish/deployment" || routePath == "/workspace/publish/review" || routePath == "/workspace/publish/readiness":
 		return method == http.MethodGet
 	case routePath == frontmatterInspectPath || routePath == frontmatterEditPath:
 		return method == http.MethodPost
@@ -557,6 +570,10 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 		h.servePublishCommit(w, r)
 		return
 	}
+	if r.URL.Path == "/workspace/publish/discard" {
+		h.servePublishDiscard(w, r)
+		return
+	}
 	if r.URL.Path == "/workspace/publish/push" {
 		h.servePublishPush(w, r)
 		return
@@ -566,11 +583,21 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if r.URL.Path == "/workspace/frontmatter/inspect" || r.URL.Path == "/workspace/frontmatter/edit" {
+		h.workspaceWriteMu.Lock()
+		defer h.workspaceWriteMu.Unlock()
 		h.serveFrontmatterEditor(w, r)
 		return
 	}
 	if r.URL.Path == "/workspace/publish/review" {
 		h.servePublishReview(w, r)
+		return
+	}
+	if r.URL.Path == "/workspace/publish/readiness" {
+		h.servePublishReadiness(w, r)
+		return
+	}
+	if r.URL.Path == "/workspace/changes" {
+		h.serveWorkspaceChanges(w, r)
 		return
 	}
 	if r.URL.Path == "/workspace/index-status" {
@@ -600,6 +627,9 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 				fail(w, http.StatusForbidden, "same-origin workspace writes are required")
 				return
 			}
+			// Serialize local editor writes with version-checked Discard restores.
+			h.workspaceWriteMu.Lock()
+			defer h.workspaceWriteMu.Unlock()
 			body, err := io.ReadAll(io.LimitReader(r.Body, maxSource+1))
 			if err != nil {
 				fail(w, 400, "cannot read source")
@@ -610,6 +640,25 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			sourcePath := r.URL.Query().Get("path")
+			if r.Method == http.MethodPut {
+				// Browser autosave is compare-and-swap against the exact source bytes
+				// it last loaded or successfully wrote. Reject stale saves rather
+				// than overwriting a newer file from another editor process.
+				expected := r.Header.Get("X-Markata-Expected-Version")
+				if !gitHashPattern.MatchString(expected) || len(expected) != 64 {
+					fail(w, http.StatusPreconditionRequired, "expected source version required; reload before saving")
+					return
+				}
+				current, readErr := h.workspace.Read(sourcePath)
+				if readErr != nil {
+					fail(w, http.StatusUnprocessableEntity, "cannot read workspace source before saving")
+					return
+				}
+				if editorworkspace.SourceVersion(current) != expected {
+					fail(w, http.StatusConflict, "file changed on disk; browser recovery copy kept; reopen and resolve conflict")
+					return
+				}
+			}
 			if r.Method == http.MethodPost {
 				err = h.workspace.Create(sourcePath, string(body))
 			} else {

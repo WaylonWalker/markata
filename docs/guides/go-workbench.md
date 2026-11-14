@@ -31,7 +31,7 @@ assets. Once the HTTP listener is ready, the browser still loads its source
 file list and lazily requests frontmatter plus the site link index; these are
 **not** part of the initial server-ready message.
 
-The workspace sidebar shows **Loading site index…** with real phases:
+Open **Diagnostics** in the footer to see **Loading site index…** and its phases:
 waiting for metadata, reading frontmatter, constructing the link index, and
 ready/error. Expand **Site index ready** afterward to see file counts and
 the measured index load time (frontmatter parsing and link construction
@@ -54,7 +54,7 @@ a large site, the next step is to profile that stage rather than guess at a
 percentage-complete bar. Related: #1987.
 
 Use the appearance picker to select a palette, color mode, style, font, or text size.
-Open **Editor settings** to choose line wrapping, keymap, and layout. Drag the
+Open [Editor settings](./editor-workspace/) to choose line wrapping, keymap, and layout. Drag the
 divider between the source and preview panes to resize them. Choose **Editor
 only** or **Preview only** to focus on one pane; **Editor and preview** restores
 the split.
@@ -83,7 +83,7 @@ container boundaries add source anchors to improve scroll alignment in long
 sections; these markers exist only in the preview render and do not change your
 source. Within nested content, the marker follows the narrowest container that
 contains the caret line.
-For the Go site-backed workbench, **Editor settings → Keyboard shortcuts…** opens
+For the Go site-backed workbench, **Editor settings → Keyboard Shortcuts** opens
 application-wide key bindings. Choose Writer, VS Code, Vim, or Emacs application
 presets independently of the editor's Default/Vim/Emacs/Sublime text keymaps.
 The command palette also exposes **Editor keymap: Default**, **Vim**, **Emacs**,
@@ -125,7 +125,18 @@ Workspace saves and new-post creation require a same-origin browser request.
 The server rejects missing or foreign origins before it changes a site file.
 
 The preview updates after a 100 ms pause. One request runs at a time, and newer edits replace pending edits.
+During continuous typing, the editor also starts a preview update at least every 500 ms when
+the renderer is available.
+The first preview can appear while the site index is still loading. Workspace links and embeds
+resolve when indexing finishes, using the current editor text.
+New edits can update the first preview as soon as its page script is ready, even if an image or
+font in that page is still loading.
+Edits made during indexing update the changed post without restarting metadata loading for
+every other post.
 Old responses cannot replace a newer draft. Errors preserve the last successful preview.
+Rendered Mermaid diagrams stay in place when you edit other text, so a large post does not redraw
+every diagram after each keystroke. Diagrams below the visible page render as you scroll near them.
+Changing a diagram's source redraws that diagram when it is near view.
 The footer shows Go render time, total edit-to-preview time, source size, and preview size.
 Repeated source uses a one-entry memory cache. Appearance changes update the preview without a render request.
 Workspace post embeds in `![[post-slug]]` or `![embed](path/to/post.md)` format
@@ -306,6 +317,13 @@ template defaults. The slug field stays empty when using the suggestion; its
 ghost text and the destination path update as the title changes. Enter a custom
 slug only when you want to override the title-derived filename. Creating the
 post opens the new file in the editor, where later edits autosave to the site.
+The built-in **Link** starter accepts a source URL alongside a title and filename.
+It stores a quoted `link:` frontmatter field and keeps `published: false`,
+so it is a draft until explicitly reviewed and published. The link must use
+`http://` or `https://` and cannot embed credentials. The flow does **not**
+fetch the destination page or import its title, description, or image yet;
+those metadata features require a separate secure, opt-in retrieval design.
+
 The footer reports whether the draft was saved. Storage failures leave editing and downloads available.
 See [shared editor features and runtime differences](/docs/guides/renderer-integration-benchmarks/#shared-editor-features-and-runtime-differences) for the comparison.
 
@@ -320,11 +338,95 @@ To open the command palette with a complete example loaded, visit `/?example`.
 
 ## Review changes before publishing (experimental)
 
-When editing a Markdown file inside a Git-backed workspace, select **Publish**
-in the upper-right header, search for **Publishing: Review & Publish** in the
-command palette, or press **Ctrl/Cmd+S** or **Ctrl/Cmd+Shift+Enter**. Vim mode
-also accepts `:w`; Emacs mode accepts **Ctrl-X Ctrl-S**. Each opens the same
-review dialog; none of them publishes immediately.
+The header also offers **Changes**, a persistent panel on desktop and a bottom
+sheet on phones. It enumerates the entire Git working tree, not only posts
+opened in the editor. Eligible Markdown posts offer **View diff** inline, with
+an **Edit post** link inside the expanded comparison, so you do not need to
+open the Review modal just to see what changed. Files outside the selected
+site, deleted files, conflicts, and non-Markdown files remain visible and
+clearly labeled, but are not exposed as editable source.
+
+The panel refreshes after a successful commit, push or discard as well as
+periodically while open. It is a read-only inventory: multi-file selection and
+**Publish selected** are not implemented yet. A local commit is not a remote
+publication, and a push does not prove the site is live. If Git status fails,
+the panel reports an error rather than pretending there are no changes.
+
+Use **Publish post** in the header or **Ctrl/Cmd+S** (Emacs **Ctrl-X Ctrl-S**,
+Vim `:w`) to publish *only the active site Markdown post*. This explicitly
+marks the post as public, saves it to disk, verifies the remote branch equals
+the local pre-publish commit, then creates an isolated one-file commit and
+pushes it. Any unrelated local commits block the quick path rather than
+being pushed unexpectedly. The status says **Published to Git**, not Live;
+deployment verification is separate. If the network push fails, the in-memory
+session can retry the pending commit without creating a duplicate. If the
+editor is reloaded in that state, inspect Git and remote status before
+retrying; automatic recovery across browser restarts is not yet implemented.
+
+Use the separate **Review changes** control or **Ctrl/Cmd+Shift+Enter** when
+you want a detailed comparison of the active post. The optional advanced
+review dialog still offers separate **Commit selected page** and
+**Push to origin** controls; these are not required for the primary quick
+publish path. For a Git-tracked file, **Discard changes…** requires a
+confirmation and restores exactly the last committed source in the local workbench.
+The server refuses stale source versions, changed Git HEAD, or staged edits to
+that file. New **untracked, non-ignored** Markdown posts can also be discarded. After
+explicit confirmation, the server checks Git status, HEAD, and the exact reviewed
+source version before deleting just that local file. The browser clears only
+that file's recovery draft and reloads workspace discovery. Staged, ignored,
+or tracked files cannot be deleted through this control. Discard does not create a Git commit or deploy anything.
+A different process changing the filesystem simultaneously is not covered by a
+cross-process transaction; use a disposable test post while this is experimental.
+
+### Local-first responsiveness (experimental)
+
+The editor now focuses and accepts locally recoverable draft text without
+waiting for the initial site-file list or index. The first Go preview is
+deferred until the selected site file has finished attaching; a slow preview
+is not a prerequisite for writing. Language assistance starts asynchronously
+after the server's editor handler is ready, and the browser retries its
+WebSocket when the service is still warming up or temporarily unavailable.
+The LSP's connection state never determines whether a document is editable.
+
+The startup diagnostics show **Editor interactive** separately from
+**Browser file list**, **Metadata index**, and **First preview**. Use
+**Copy diagnostics** alongside server startup logs to distinguish delays
+from site discovery, language assistance, rendering, and browser updates.
+The live preview status now reports Go render time separately from
+**queue time**, which includes waiting for the render gate and preparing the
+request before the renderer starts. Large queue times suggest contention;
+large render times suggest a slow Markdown/feature renderer.
+A large workspace's initial path discovery and appearance construction
+still run before the HTTP listener becomes available; these are remaining
+cold-start profiling targets, not claimed fixed by this pass.
+
+Pierre Full diff uses compact hunk separators with virtual spacer buffers
+disabled inside its nested review dialog. The supplied browser bundle is
+updated along with its vendored build input. Run the browser regression
+against a long document containing a tiny edit to verify the visual result.
+
+### Autosave and external edits
+
+The browser keeps a local recovery draft and autosaves to the loopback Go editor
+workspace. Each successful `GET /workspace/file` returns a 64-character source
+version (SHA-256 of the exact file bytes). The browser sends this as
+`X-Markata-Expected-Version` with each `PUT /workspace/file`.
+
+The Go editor rejects a missing version with HTTP 428 and a stale version with
+HTTP 409 **without writing the file**. For a conflict, the browser retains its
+recovery copy and shows a save error; reopen the file to inspect/reconcile the
+external revision. When a conflict is detected, **Compare copies…**
+opens a read-only comparison of the browser draft and the current file on disk.
+Both copies can be downloaded separately before choosing how to resolve the
+conflict. No button in this comparison writes, merges, replaces, or deletes
+workspace content. On a phone the two panels stack vertically. If the server
+is unavailable, the browser draft can still be downloaded.
+An older recovery record without a version token also
+fails closed. An acknowledged save updates the browser's recovery version so a
+normal reload does not invent a conflict. The current local Go handler
+serializes its own workspace writes and Discard restores, but unrelated
+filesystem writers can still race with the final write. This is not a
+cross-process or hosted synchronization transaction.
 
 The dialog first waits until the exact text in the editor has been saved to
 the workspace. It then compares that saved source with the file from the last

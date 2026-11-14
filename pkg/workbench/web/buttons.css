@@ -1,0 +1,69 @@
+/* One button system for the workbench. Loaded last so it owns button visuals.
+   buttons.js adds these classes to every workbench button. Layout (margins,
+   width, flex) stays in component CSS; colors, borders, radius, and type live here.
+
+   Tiers, from strongest to quietest:
+   - btn-primary  the one filled action per surface (Publish)
+   - btn          bordered secondary, for dialog actions
+   - btn-subtle   translucent fill, no border, for toolbar verbs
+   - btn-ghost    text only, for header verbs, icons, and footer status */
+:root{
+  --btn-h:32px;
+  --btn-h-sm:28px;
+  --btn-radius:6px;
+  --btn-font:500 13px/1 system-ui,sans-serif;
+  --btn-small-font:500 12px/1 system-ui,sans-serif;
+  --btn-border:var(--editor-divider,#c8d5e2);
+  --btn-bg:var(--color-surface,#fff);
+  --btn-fg:var(--color-text,#203348);
+  --btn-muted:color-mix(in srgb,var(--btn-fg) 74%,transparent);
+  --btn-hover:color-mix(in srgb,var(--btn-fg) 8%,transparent);
+  --btn-accent:var(--color-primary,#245fc5);
+  --btn-on-accent:var(--color-on-primary,#fff);
+}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  min-height:var(--btn-h);padding:0 12px;
+  border:1px solid var(--btn-border);border-radius:var(--btn-radius);
+  background:var(--btn-bg);color:var(--btn-fg);
+  font:var(--btn-font);white-space:nowrap;text-decoration:none;cursor:pointer;
+  transition:background-color .14s ease,border-color .14s ease,color .14s ease,box-shadow .14s ease;
+}
+.btn[hidden]{display:none}
+.btn:hover{border-color:color-mix(in srgb,var(--btn-fg) 30%,var(--btn-border))}
+.btn:focus-visible{outline:1px solid var(--btn-accent);outline-offset:-1px;box-shadow:none}
+.btn:disabled{opacity:.5;cursor:not-allowed;border-color:var(--btn-border);box-shadow:none}
+
+.btn-primary{background:var(--btn-accent);border-color:var(--btn-accent);color:var(--btn-on-accent)}
+.btn-primary:hover{border-color:var(--btn-accent);filter:brightness(1.08)}
+.btn-primary:disabled{filter:none}
+.btn-danger{background:var(--color-error,#d45c5c);border-color:var(--color-error,#d45c5c);color:#fff}
+.btn-danger:hover{border-color:var(--color-error,#d45c5c);filter:brightness(1.08)}
+
+.btn-subtle{
+  min-height:var(--btn-h-sm);padding:0 10px;border-radius:5px;
+  background:color-mix(in srgb,var(--btn-fg) 6%,transparent);border-color:transparent;
+  color:var(--btn-muted);font:var(--btn-small-font);
+}
+.btn-subtle:hover{background:color-mix(in srgb,var(--btn-fg) 12%,transparent);border-color:transparent;color:var(--btn-fg)}
+.btn-subtle[aria-expanded="true"],.btn-subtle[aria-pressed="true"]{color:var(--btn-fg);box-shadow:inset 0 -2px 0 var(--btn-accent)}
+
+.btn-ghost{background:transparent;border-color:transparent;color:var(--btn-muted)}
+.btn-ghost:hover{border-color:transparent;background:var(--btn-hover);color:var(--btn-fg)}
+.btn-ghost:disabled{border-color:transparent}
+.btn-ghost[aria-expanded="true"],.btn-ghost[aria-pressed="true"]{color:var(--btn-fg);box-shadow:inset 0 -2px 0 var(--btn-accent)}
+
+.btn-icon{width:var(--btn-h);min-width:var(--btn-h);padding:0;font-size:18px;line-height:1}
+.btn-sm{min-height:var(--btn-h-sm);padding:0 10px;font:var(--btn-small-font)}
+.btn-sm.btn-icon{width:var(--btn-h-sm);min-width:var(--btn-h-sm)}
+.btn svg{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+/* Keycap hint, set from data-kbd. Hidden where the header is too narrow for it. */
+.btn[data-kbd]::after{
+  content:attr(data-kbd);margin-left:4px;padding:0 4px;border-radius:4px;
+  font:500 10px/15px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.02em;
+  color:currentColor;opacity:.6;border:1px solid color-mix(in srgb,currentColor 25%,transparent);
+}
+@media(max-width:1100px){.btn[data-kbd]::after{display:none}}
+
+@media(prefers-reduced-motion:reduce){.btn{transition:none}}

@@ -1,6 +1,7 @@
 #site-sidebar{display:flex;flex-direction:column;min-height:0;min-width:0;border-right:1px solid var(--editor-divider);background:var(--color-background,var(--paper))}
 #site-sidebar .pane-label{padding:12px;display:flex;align-items:center;gap:8px;justify-content:space-between}
-#site-view{font:inherit;letter-spacing:normal;text-transform:none;background:var(--color-surface,white);color:inherit;border:1px solid var(--editor-divider);padding:3px}
+#site-view{font:inherit;font-size:11px;font-weight:650;letter-spacing:.12em;text-transform:uppercase;background:transparent;color:var(--color-text-muted,#52697f);border:0;border-radius:0;padding:2px 0;cursor:pointer}
+#site-view:focus-visible{outline:1px solid var(--color-primary,#245fc5);outline-offset:2px}
 .site-tree{flex:1;min-height:0;height:100%;color:var(--color-text,var(--ink));--trees-theme-sidebar-bg:var(--color-background,var(--paper));--trees-theme-sidebar-fg:var(--color-text,var(--ink));--trees-theme-list-active-selection-bg:color-mix(in srgb,var(--color-primary,var(--accent)) 20%,transparent);--trees-theme-list-hover-bg:color-mix(in srgb,var(--color-primary,var(--accent)) 10%,transparent);--trees-theme-input-bg:var(--color-surface,var(--paper));--trees-theme-input-fg:var(--color-text,var(--ink));--trees-theme-list-active-selection-fg:var(--color-text,var(--ink));--trees-theme-focus-ring:var(--color-primary,var(--accent))}
 .site-tree[hidden]{display:none}
 #site-sidebar p{font-size:12px;line-height:1.5;padding:12px;margin:0;color:var(--color-text-muted,var(--muted));border-top:1px solid var(--editor-divider)}
@@ -11,3 +12,7 @@
 
 .editor-toolbar{flex-wrap:wrap}
 #commands:disabled{opacity:.5;cursor:default}
+.site-tree{--trees-border-color:var(--editor-divider,#c8d5e2);--trees-border-radius:6px;--trees-focus-ring-color:var(--color-primary,#245fc5);--trees-focus-ring-width:2px}
+#site-view{color-scheme:light dark;appearance:auto}
+#site-view option{background-color:var(--color-background,#11151d);color:var(--color-text,#e6e6e6);text-transform:none;letter-spacing:normal;font-size:13px;font-weight:500}
+#site-view option:checked,#site-view option:hover{background-color:color-mix(in srgb,var(--color-primary,#245fc5) 22%,var(--color-background,#11151d))}

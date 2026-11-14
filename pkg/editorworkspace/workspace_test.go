@@ -158,3 +158,39 @@ func TestWorkspace_PathsDoesNotParseBodies(t *testing.T) {
 		t.Fatal("fixture must fail metadata parsing")
 	}
 }
+
+func TestWorkspace_DeleteRejectsSymlinksAndStaleVersions(t *testing.T) {
+	root := t.TempDir()
+	target := filepath.Join(root, "new.md")
+	source := "# First"
+	if err := os.WriteFile(target, []byte(source), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	workspace, err := New(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := workspace.Delete("new.md", SourceVersion("# Old")); err == nil {
+		t.Fatal("deleted a newer version")
+	}
+	if _, err := os.Stat(target); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(target, filepath.Join(root, "linked.md")); err == nil {
+		if err := workspace.Delete("linked.md", SourceVersion(source)); err == nil {
+			t.Fatal("deleted through a symlink")
+		}
+		if _, err := os.Stat(target); err != nil {
+			t.Fatalf("symlink deletion touched target: %v", err)
+		}
+	}
+	if err := workspace.Delete("../new.md", SourceVersion(source)); err == nil {
+		t.Fatal("accepted escaping path")
+	}
+	if err := workspace.Delete("new.md", SourceVersion(source)); err != nil {
+		t.Fatalf("safe deletion failed: %v", err)
+	}
+	if _, err := os.Stat(target); !os.IsNotExist(err) {
+		t.Fatalf("file still exists: %v", err)
+	}
+}

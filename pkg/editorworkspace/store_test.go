@@ -196,3 +196,34 @@ func TestStore_WatchesNestedAppearanceAndConfig(t *testing.T) {
 		return err == nil && store.ConfigRevision() > revision && cfg != nil && cfg.Theme.TextSize == "large"
 	})
 }
+
+func TestStore_DeleteRefreshesPathsImmediately(t *testing.T) {
+	store, root := storeFixture(t)
+	source := "# New source"
+	if err := store.Create("new.md", source); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.Delete("new.md", SourceVersion("stale")); err == nil {
+		t.Fatal("accepted a stale source version")
+	}
+	if err := store.Delete("new.md", SourceVersion(source)); err != nil {
+		t.Fatal(err)
+	}
+	for _, file := range func() []File {
+		paths, err := store.Paths()
+		if err != nil {
+			t.Fatal(err)
+		}
+		return paths
+	}() {
+		if file.Path == "new.md" {
+			t.Fatal("deleted file remained in cached paths")
+		}
+	}
+	if _, err := os.Stat(filepath.Join(root, "new.md")); !os.IsNotExist(err) {
+		t.Fatalf("deleted file still on disk: %v", err)
+	}
+	if _, err := store.Read("new.md"); err == nil {
+		t.Fatal("deleted file remains readable")
+	}
+}

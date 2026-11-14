@@ -57,9 +57,14 @@
   }
   function richHTML(oldHTML,newHTML) {
     const old=parseBlocks(oldHTML),fresh=parseBlocks(newHTML);
-    const ops=lcsOps(old.map(x=>x.key),fresh.map(x=>x.key),50000);
-    if(!ops)throw new Error('Too many blocks for a rich comparison. Use side-by-side or source diff.');
-    let i=0,j=0,result='',removed=[],added=[];
+    // LCS over the *changed* block range only. A 500-paragraph document
+    // with a one-word edit should not hit a whole-document quadratic limit.
+    let prefix=0,oldEnd=old.length,newEnd=fresh.length;
+    while(prefix<oldEnd&&prefix<newEnd&&old[prefix].key===fresh[prefix].key)prefix++;
+    while(oldEnd>prefix&&newEnd>prefix&&old[oldEnd-1].key===fresh[newEnd-1].key){oldEnd--;newEnd--;}
+    const ops=lcsOps(old.slice(prefix,oldEnd).map(x=>x.key),fresh.slice(prefix,newEnd).map(x=>x.key),50000);
+    if(!ops)throw new Error('This rendered change is too complex to annotate. Source diff and side-by-side remain available.');
+    let i=prefix,j=prefix,result=fresh.slice(0,prefix).map(x=>x.markup).join(''),removed=[],added=[];
     function flush(){
       const paired=Math.min(removed.length,added.length);
       for(let k=0;k<paired;k++)result+=changed(removed[k],added[k]);
@@ -73,6 +78,7 @@
       else added.push(fresh[j++]);
     }
     flush();
+    result+=fresh.slice(newEnd).map(x=>x.markup).join('');
     const legend='<div class="mk-rich-legend"><del class="mk-rich-delete">Removed</del> &nbsp; <ins class="mk-rich-insert">Added</ins> &nbsp; Unchanged content is unmarked.</div>';
     return legend+(result||'<p>No visible body changes. Check the frontmatter changes above.</p>');
   }

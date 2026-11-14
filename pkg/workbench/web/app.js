@@ -44,6 +44,7 @@ const placeEditorCursor = position => {
 };
 window.addEventListener('message',event=>{
   if (event.source !== frame.contentWindow) return;
+  if (event.data?.type === 'preview-ready') markPreviewReady();
   if (event.data?.type === 'open-post') window.MarkataSiteTree?.openPost(event.data.slug);
   if (event.data?.type === 'place-editor-cursor') placeEditorCursor(event.data);
   if (event.data?.type === 'workbench-preview-focus-editor')
@@ -64,7 +65,7 @@ const editor = CodeMirror.fromTextArea(source, {
   indentUnit:2, tabSize:4, viewportMargin:10, cursorScrollMargin:110, screenReaderLabel:'Markdown source'
 });
 const settingsDialog = document.querySelector('#settings-dialog');
-document.querySelector('#settings-open').addEventListener('click',() => settingsDialog.showModal());
+document.querySelector('#settings-open').addEventListener('click',() => window.MarkataSettings.open());
 document.querySelector('#settings-close').addEventListener('click',() => settingsDialog.close());
 const wrapSetting = document.querySelector('#setting-wrap');
 try { wrapSetting.checked = localStorage.getItem('markata-editor-wrap') !== 'false'; } catch { storageWarning(); }
@@ -140,6 +141,8 @@ const templateQuery = document.querySelector('#template-picker-query');
 const templateResults = document.querySelector('#template-picker-results');
 const templateCount = document.querySelector('#template-picker-count');
 const createTitle = document.querySelector('#create-title');
+const createLinkField = document.querySelector('#create-link-field');
+const createLinkURL = document.querySelector('#create-link-url');
 const createSlug = document.querySelector('#create-slug');
 const createDirectory = document.querySelector('#create-directory');
 const createPathPreview = document.querySelector('#create-path-preview');
@@ -182,7 +185,12 @@ function chooseTemplate(template) {
   const titleMatch = template.source.match(/^title:\s*(.*)$/m);
   const parsedTitle = titleMatch?.[1]?.trim().replace(/^(?:"([\s\S]*)"|'([\s\S]*)')$/, '$1$2');
   const title = !parsedTitle || parsedTitle.includes('{{') ? template.name : parsedTitle;
-  createTitle.value = title;
+  const isLinkPost = template.id === 'builtin:link';
+  createLinkField.hidden = !isLinkPost;
+  createLinkURL.required = isLinkPost;
+  createLinkURL.value = '';
+  createTitle.value = isLinkPost ? '' : title;
+  createTitle.placeholder = isLinkPost ? 'A title for the link' : '';
   createSlug.value = '';
   createSlug.placeholder = slugify(title) || 'post-title';
   createDirectory.value = defaultContentDirectory(template);
@@ -258,10 +266,22 @@ document.querySelector('#create-form').addEventListener('submit',async event => 
   const title = createTitle.value.trim();
   const slug = createSlug.value.trim() || slugify(title);
   const directory = createDirectory.value.trim().replace(/\\/g,'/').replace(/^\/+|\/+$/g,'');
-  const path = `${directory ? `${directory}/` : ''}${slug}.md`;
+  const path = `${directory && directory !== '.' ? `${directory}/` : ''}${slug}.md`;
   if (!template || !title || !slug || !path) return;
-  const source = window.MarkataContentStarters.render(template.source,title,slug);
+  let source = window.MarkataContentStarters.render(template.source,title,slug);
   try {
+    if (template.id === 'builtin:link') {
+      let sourceURL;
+      try { sourceURL = new URL(createLinkURL.value.trim()); }
+      catch { throw new Error('Enter a valid source URL beginning with https:// or http://.'); }
+      if (!['https:','http:'].includes(sourceURL.protocol) ||
+          !sourceURL.hostname || sourceURL.username || sourceURL.password) {
+        throw new Error('Use a public-style http(s) URL without embedded credentials.');
+      }
+      // Preserve site-owned frontmatter and quote the URL as YAML string.
+      // Never fetch remote metadata from the editor client or Go server.
+      source = source.replace(/^link:\s*.*$/m, () => 'link: ' + JSON.stringify(sourceURL.href));
+    }
     const response = await fetch('/workspace/file?path=' + encodeURIComponent(path),{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:source});
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Cannot create this file.');
@@ -321,10 +341,10 @@ registerApp('workbench.lineWrap','Toggle Line Wrapping','Writing',
   () => {wrapSetting.checked=!wrapSetting.checked;wrapSetting.dispatchEvent(new Event('change'));});
 registerApp('workbench.problems','Toggle Problems','Diagnostics',
   {vscode:'Mod+Shift+M',writer:'Mod+Shift+M',vim:'Space X',emacs:''},toggleProblems);
-registerApp('workbench.save','Save Now','Writing',
+registerApp('workbench.save','Publish Current Post','Writing',
   {vscode:'Mod+S',writer:'Mod+S',vim:'Mod+S',emacs:'Ctrl+X Ctrl+S'},
-  () => {editor.save();saveDraft();},
-  'Flush the current draft or selected workspace post to storage.');
+  () => window.MarkataPublishReview?.quickPublish(),
+  'Publish only the active site post. Other changes remain untouched.');
 registerApp('workbench.newPost','New Post','Files',
   {vscode:'Mod+Alt+N',writer:'Mod+Alt+N',vim:'Space F N',emacs:''},
   showCreateDialog,'Create a workspace post from a template.');
@@ -337,6 +357,8 @@ registerApp('workbench.downloadMarkdown','Download Markdown File','Files',
 registerApp('workbench.shortcutSettings','Keyboard Shortcuts','Settings',
   {vscode:'Mod+K Mod+S',writer:'Mod+Alt+K',vim:'Space ?',emacs:'Alt+Shift+K'},
   () => appShortcuts.openSettings(),'View, change, or reset application keybindings.');
+window.MarkataSettings.attach(editor);
+window.MarkataDiagnostics.attach();
 window.MarkataPublishReview.attach(editor);
 window.MarkataCommandPalette.attach(editor,{actions:[
   {id:'edit-properties',label:'Page: Edit Properties',description:'Open the visual frontmatter object editor.',aliases:'frontmatter metadata tags date title publish fields',run:()=>window.MarkataFrontmatter.open()},
@@ -377,14 +399,32 @@ keymap.addEventListener('change', () => {
 });
 // Rejected imports must not be dismissed by an already-running preview response.
 let rejectedImportRevision = -1;
-let revision = 0, timer, busy = false, ready = false, lastEditAt = null;
+let revision = 0, timer, busy = false, ready = false, lastEditAt = null, pendingSince = null;
+let pendingRender = false;
+let activeRenderController = null;
 let previewStarted = false, previewReady = false, pendingPreview = null, activeRender = null;
+function markPreviewReady() {
+  if (!previewStarted || previewReady) return;
+  previewReady = true;
+  syncAppearance();
+  scrollSync.ready();
+  if (pendingPreview) {
+    const latest = pendingPreview;
+    pendingPreview = null;
+    if (latest.version === revision) updatePreview(latest.data, latest.version);
+  } else {
+    scrollSync.previewUpdated();
+    finishPreview(activeRender?.version);
+  }
+}
 function finishPreview(version) {
   if (!activeRender || activeRender.version !== version || version !== revision) return;
   window.MarkataStartupStatus?.previewReady();
   const {data} = activeRender;
   const liveTime = Math.round(performance.now() - (activeRender.editAt ?? activeRender.startedAt));
-  status.textContent = `Go ${data.render_ms.toFixed(1)} ms${data.cached ? ' (cached)' : ''} · preview ${liveTime} ms · input ${(data.input_bytes/1024).toFixed(1)} KB · fragment ${((data.html_bytes)/1024).toFixed(1)} KB`;
+  window.MarkataDiagnostics?.record('edit_to_preview',liveTime);
+  status.textContent = `Preview ${liveTime} ms`;
+  status.title = `Go ${data.render_ms.toFixed(1)} ms${data.cached ? ' (cached)' : ''} · queue ${(data.queue_ms ?? 0).toFixed(1)} ms · input ${(data.input_bytes/1024).toFixed(1)} KB · fragment ${((data.html_bytes)/1024).toFixed(1)} KB`;
 }
 function storageWarning() { saved.textContent = 'Draft not saved · storage unavailable or full · download a copy'; }
 function saveDraft() {
@@ -416,9 +456,24 @@ function updateFrontmatterSummary(markdown) {
   document.querySelector('#preview-details').textContent = details.join(' · ');
   panel.hidden = false;
 }
+function previewDelay() {
+  const now = performance.now();
+  const idle = lastEditAt === null ? 0 : Math.max(0, 100 - (now - lastEditAt));
+  return pendingSince === null ? idle : Math.min(idle, Math.max(0, 500 - (now - pendingSince)));
+}
 async function render() {
-  if (!ready || busy) return;
-  const version = revision, originalMarkdown = source.value;
+  if (!ready) return;
+  if (busy) {
+    // Keep the newest request pending rather than losing changes made while
+    // Go is still rendering an earlier revision.
+    pendingRender = true;
+    return;
+  }
+  pendingRender = false;
+  pendingSince = null;
+  // The CodeMirror document is the source of truth. The textarea is only
+  // a form mirror and may lag a programmatic document replacement.
+  const version = revision, originalMarkdown = editor.getValue();
   const markdown = window.MarkataSiteTree?.markdown(originalMarkdown) ?? originalMarkdown;
   const frontmatter = originalMarkdown.match(/^---\r?\n[\s\S]*?\r?\n---(?:\r?\n|$)/);
   const sourceLineOffset = frontmatter && markdown !== originalMarkdown
@@ -432,6 +487,7 @@ async function render() {
   busy = true;
   status.textContent = 'Rendering…';
   const controller = new AbortController();
+  activeRenderController = controller;
   const timeout = setTimeout(() => controller.abort(), 30000);
   const started = performance.now();
   try {
@@ -452,19 +508,7 @@ async function render() {
     activeRender = {data, version, editAt:lastEditAt, startedAt:started};
     if (!previewStarted) {
       previewStarted = true;
-      frame.onload = () => {
-        previewReady = true;
-        syncAppearance();
-        scrollSync.ready();
-        if (pendingPreview) {
-          const latest = pendingPreview;
-          pendingPreview = null;
-          if (latest.version === revision) updatePreview(latest.data, latest.version);
-        } else {
-          scrollSync.previewUpdated();
-          finishPreview(activeRender?.version);
-        }
-      };
+      frame.onload = markPreviewReady;
       frame.srcdoc = data.document;
     } else if (!previewReady) {
       pendingPreview = {data, version};
@@ -479,17 +523,37 @@ async function render() {
     errorBox.hidden = false;
     status.textContent = 'Preview failed. Edit the Markdown to try again.';
   } finally {
-    clearTimeout(timeout); busy = false;
-    if (version !== revision) { clearTimeout(timer); timer = setTimeout(render, 0); }
+    clearTimeout(timeout);
+    if (activeRenderController === controller) activeRenderController = null;
+    busy = false;
+    // Stale or skipped renders must always yield to the latest editor text.
+    // Keep the normal debounce even when cancelling an obsolete in-flight
+    // render, so rapid typing does not flood the Go renderer with requests.
+    if (pendingRender || version !== revision) {
+      pendingRender = false;
+      clearTimeout(timer);
+      timer = setTimeout(render, previewDelay());
+    }
   }
 }
 editor.on('change', (_instance, change) => {
+  // Discard and file-open replace the entire CodeMirror document. An old
+  // preview scroll map must not be reused for the replacement's cursor.
+  if (change.origin === 'setValue') scrollSync.reset();
   editor.save(); revision++; clearTimeout(timer);
+  // A render already posted into the iframe may still be queued or executing
+  // async feature setup. Invalidate it the moment the source changes.
+  frame.contentWindow?.postMessage({type:'preview-invalidate',version:revision},'*');
   lastEditAt = performance.now();
+  if (pendingSince === null) pendingSince = lastEditAt;
+  if (busy && activeRenderController) {
+    pendingRender = true;
+    activeRenderController.abort();
+  }
   updateFrontmatterSummary(editor.getValue());
   if (change.origin !== 'setValue') saveDraft();
   status.textContent = 'Waiting for edits…';
-  timer = setTimeout(render, 100);
+  timer = setTimeout(render, previewDelay());
 });
 document.querySelector('#download').addEventListener('click', () => {
   const url = URL.createObjectURL(new Blob([source.value], {type:'text/markdown;charset=utf-8'}));
@@ -510,8 +574,6 @@ function updatePreview(data, version) {
 function attributes() { return Object.fromEntries(appearanceKeys.map(k => [k, document.documentElement.getAttribute(k)])); }
 function syncAppearance() { frame.contentWindow?.postMessage({type:'appearance',attributes:attributes()}, '*'); }
 new MutationObserver(syncAppearance).observe(document.documentElement, {attributes:true,attributeFilter:appearanceKeys});
-window.addEventListener('load', async () => { await workspaceReady; ready = true; render(); focusEditorForWriting(); }, {once:true});
-
 document.querySelector('#open').addEventListener('click', () => document.querySelector('#import').click());
 document.querySelector('#import').addEventListener('change', async event => {
   const file = event.target.files[0];
@@ -530,9 +592,36 @@ document.querySelector('#import').addEventListener('change', async event => {
 });
 if (!saved.textContent) saveDraft();
 
+// Typing and restoring a local draft must not await workspace discovery,
+// metadata indexing, LSP, or Go rendering.
+requestAnimationFrame(() => {
+  focusEditorForWriting();
+  window.MarkataStartupStatus?.editorReady?.();
+});
 const workspaceReady = window.MarkataSiteTree.attach(editor, storageWarning, {saveToSite:true});
+window.addEventListener('markata-site-index-ready', () => {
+  if (!ready) return;
+  revision++;
+  frame.contentWindow?.postMessage({type:'preview-invalidate',version:revision},'*');
+  activeRenderController?.abort();
+  pendingRender = busy;
+  clearTimeout(timer);
+  timer = setTimeout(render, 0);
+});
+// Once the selected site file is attached, display *its* latest preview.
 workspaceReady.then(() => {
+  ready = true;
   window.MarkataStartupStatus?.workspaceReady();
+  clearTimeout(timer);
+  timer = setTimeout(render, 0);
+}).catch(error => {
+  errorBox.textContent='Unable to initialize workspace: '+error.message;
+  errorBox.hidden=false;
+});
+
+
+workspaceReady.then(() => {
   window.MarkataFileFinder?.attach(editor);
   window.MarkataRecentFiles?.attach();
+  window.MarkataConflictCompare?.attach(editor);
 });

@@ -20,15 +20,16 @@ let sourceLines=[], sourceLineCount=0, sourceLineOffset=0, sourcePositionAnchors
 let articleObserver;
 const executedInlineScripts=new Set();
 let appearanceSignature=JSON.stringify(Object.fromEntries(Object.keys(allowed).map(key=>[key,document.documentElement.getAttribute(key)])));
-const markerStyle=document.createElement('style');markerStyle.textContent='.markata-sync-position{outline:1px solid color-mix(in srgb,var(--color-primary,#d39b32) 18%,transparent);outline-offset:2px;border-radius:3px}.markata-presence-layer{position:fixed;inset:0;z-index:2147483646;overflow:hidden;pointer-events:none}.markata-presence-cursor{--presence-color:var(--color-primary,#d39b32);position:fixed;width:1px;height:28px;background:var(--presence-color);opacity:.85;filter:drop-shadow(0 0 2px color-mix(in srgb,var(--presence-color) 35%,transparent))}.markata-presence-cursor[data-vim-mode="normal"],.markata-presence-cursor[data-vim-mode="visual"]{width:var(--presence-glyph-width,8px);height:var(--presence-line-height,20px);opacity:.48;filter:none;border-radius:2px}.markata-presence-cursor[data-vim-mode="visual"]{outline:1px solid color-mix(in srgb,var(--presence-color) 70%,transparent)}.markata-presence-cursor[data-vim-mode="replace"]{height:2px!important;opacity:.95;filter:none}.markata-presence-cursor[hidden]{display:none}.markata-presence-flag{position:absolute;bottom:calc(100% + 3px);left:-1px;padding:2px 6px;border-radius:3px 3px 3px 0;background:var(--presence-color);color:var(--color-on-primary,#11151d);font:600 10px/1.4 system-ui,sans-serif;white-space:nowrap;letter-spacing:.01em}';document.head.append(markerStyle);
+const markerStyle=document.createElement('style');markerStyle.textContent='.markata-sync-position{box-shadow:inset 2px 0 0 color-mix(in srgb,var(--color-primary,#d39b32) 55%,transparent);background:color-mix(in srgb,var(--color-primary,#d39b32) 4%,transparent);border-radius:3px}.markata-presence-flag{display:none}.markata-presence-layer{position:fixed;inset:0;z-index:2147483646;overflow:hidden;pointer-events:none}.markata-presence-cursor{--presence-color:var(--color-primary,#d39b32);position:fixed;width:1px;height:28px;background:var(--presence-color);opacity:.85;filter:drop-shadow(0 0 2px color-mix(in srgb,var(--presence-color) 35%,transparent))}.markata-presence-cursor[data-vim-mode="normal"],.markata-presence-cursor[data-vim-mode="visual"]{width:var(--presence-glyph-width,8px);height:var(--presence-line-height,20px);opacity:.48;filter:none;border-radius:2px}.markata-presence-cursor[data-vim-mode="visual"]{outline:1px solid color-mix(in srgb,var(--presence-color) 70%,transparent)}.markata-presence-cursor[data-vim-mode="replace"]{height:2px!important;opacity:.95;filter:none}.markata-presence-cursor[hidden]{display:none}.markata-presence-flag{position:absolute;bottom:calc(100% + 3px);left:-1px;padding:2px 6px;border-radius:3px 3px 3px 0;background:var(--presence-color);color:var(--color-on-primary,#11151d);font:600 10px/1.4 system-ui,sans-serif;white-space:nowrap;letter-spacing:.01em}';document.head.append(markerStyle);
 const presenceLayer=document.createElement('div');presenceLayer.className='markata-presence-layer';presenceLayer.setAttribute('aria-hidden','true');document.body.append(presenceLayer);
 const presenceParticipants=[{id:'local',label:'You',color:'var(--color-primary,#d39b32)'}];
 const presenceCursors=new Map();
 const blockSignature=node=>{
   if(node.matches('pre.mermaid'))return `mermaid:${node.dataset.markataMermaidSource??node.textContent}`;
-  const generated=node.matches('.markata-sync-position,[data-markata-code-enhanced],.chartjs-container,[data-markata-source-line],[data-markata-source-end-line]')||node.getAttribute('class')===''||node.querySelector('[data-markata-ui],[data-markata-code-enhanced],.chartjs-container canvas,[data-markata-source-line],[data-markata-source-end-line]');
+  const generated=node.matches('.markata-sync-position,[data-markata-code-enhanced],.chartjs-container,[data-markata-source-line],[data-markata-source-end-line]')||node.getAttribute('class')===''||node.querySelector('[data-markata-ui],[data-markata-code-enhanced],.chartjs-container canvas,[data-markata-source-line],[data-markata-source-end-line],pre.mermaid');
   if(!generated)return node.outerHTML;
   const clone=node.cloneNode(true);
+  clone.removeAttribute('data-markata-source-line');
   if(clone.hasAttribute('data-markata-source-line'))clone.removeAttribute('data-markata-source-line');
   clone.querySelectorAll('[data-markata-source-line],[data-markata-source-end-line]').forEach(child=>{
     child.removeAttribute('data-markata-source-line');child.removeAttribute('data-markata-source-end-line');
@@ -50,6 +51,11 @@ const blockSignature=node=>{
   clone.querySelectorAll('.chartjs-container canvas').forEach(canvas=>canvas.remove());
   clone.querySelectorAll('.chartjs-container [id]').forEach(element=>element.removeAttribute('id'));
   clone.querySelectorAll('.chartjs-container details').forEach(details=>details.removeAttribute('open'));
+  clone.querySelectorAll('pre.mermaid').forEach(block=>{
+    if(block.dataset.markataMermaidSource!=null)block.textContent=block.dataset.markataMermaidSource;
+    block.removeAttribute('data-markata-mermaid-source');
+    block.removeAttribute('data-processed');
+  });
   return clone.outerHTML;
 };
 const patchArticle=(article,html)=>{
@@ -250,6 +256,29 @@ const observeArticle=article=>{
 if(document.fonts?.ready)document.fonts.ready.then(()=>scrollState(false));
 const originalScripts=new WeakMap();
 const scriptSource=s=>originalScripts.get(s) ?? s.textContent;
+const queuedMermaid=new WeakSet();
+const mermaidObserver=window.IntersectionObserver?new IntersectionObserver(entries=>{
+  const visible=[];
+  for(const entry of entries){
+    if(!entry.isIntersecting||!entry.target.isConnected)continue;
+    mermaidObserver.unobserve(entry.target);
+    visible.push(entry.target);
+  }
+  if(visible.length)window.initMermaid?.(visible);
+},{rootMargin:'400px 0px'}):null;
+const observeMermaid=roots=>{
+  for(const root of roots){
+    const blocks=root.matches?.('pre.mermaid')?[root]:[...(root.querySelectorAll?.('pre.mermaid')||[])];
+    for(const block of blocks){
+      if(block.dataset.processed==='true'||queuedMermaid.has(block))continue;
+      queuedMermaid.add(block);
+      if(mermaidObserver)mermaidObserver.observe(block);
+      else window.initMermaid?.([block]);
+    }
+  }
+};
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>observeMermaid([document]));
+else observeMermaid([document]);
 
 const renderMarkdown=async(data,changedNodes)=>{const article=document.querySelector('.post-content');
 if(!article)return;
@@ -305,13 +334,18 @@ document.body.append(script);
 }else{document.body.append(script);script.remove();}
 }
 window.markataInitCodeChrome?.(changedNodes);
-if(changedDiagrams.length)window.initMermaid?.(changedDiagrams);
+if(changedDiagrams.length)observeMermaid(changedDiagrams);
 const nextAppearance=JSON.stringify(data.attributes||{});
 if(nextAppearance!==appearanceSignature){setAppearance(data.attributes);dispatchEvent(new Event('theme-change'));appearanceSignature=nextAppearance;}
 observeArticle(article);
 };
 
 addEventListener('message',e=>{if(e.source!==parent)return;
+if(e.data?.type==='preview-invalidate'){
+  // The parent now has newer source. Do not mount a queued older response.
+  latestVersion=Math.max(latestVersion,e.data.version||0);
+  return;
+}
 if(e.data?.type==='markdown-render'){
   latestVersion=Math.max(latestVersion,e.data.version||0);
   updates=updates.then(async()=>{
@@ -334,9 +368,12 @@ return;
 }if(e.data?.type==='sync-scroll'){programmedTarget={id:e.data.id,y:Math.max(0,Math.min(e.data.y,document.documentElement.scrollHeight-innerHeight))};document.scrollingElement.scrollTop=programmedTarget.y;const id=e.data.id;setTimeout(()=>{if(programmedTarget?.id===id)programmedTarget=null;},300);return;
 }if(e.data?.type==='sync-position'){positionLine=e.data.line;positionColumn=Number.isFinite(e.data.ch)?e.data.ch:null;positionSourceText=typeof e.data.text==='string'?e.data.text:null;positionPending=e.data.pending===true;positionVimMode=['normal','insert','replace','visual'].includes(e.data.vimMode)?e.data.vimMode:null;if(positionColumn==null)lastExactPosition=null;syncPositionMarker();return;
 }if(e.data?.type==='appearance'){updates=updates.then(()=>{setAppearance(e.data.attributes);
-dispatchEvent(new Event('theme-change'));appearanceSignature=JSON.stringify(e.data.attributes||{});
+const nextAppearance=JSON.stringify(e.data.attributes||{});
+if(nextAppearance!==appearanceSignature){dispatchEvent(new Event('theme-change'));appearanceSignature=nextAppearance;}
 }).catch(console.error);
 }});
+// The article and message listener are ready. Images may keep iframe.onload pending.
+parent.postMessage({type:'preview-ready'},'*');
 document.addEventListener('click',event=>{
 const link=event.target.closest?.('a');
 if(!link)return;

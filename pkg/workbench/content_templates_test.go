@@ -130,3 +130,22 @@ func TestSiteContentTemplate_PreservesBodyWithoutFrontmatter(t *testing.T) {
 		t.Fatalf("plain starter must remain sparse: %#v %v", template, err)
 	}
 }
+
+func TestBuiltinLinkStarterIsUnpublishedWithSourceField(t *testing.T) {
+	templates := builtinContentTemplates("2026-11-07")
+	for _, template := range templates {
+		if template.ID != "builtin:link" {
+			continue
+		}
+		if template.Name != "Link" || template.Directory != "pages/blog" {
+			t.Fatalf("unexpected link starter: %#v", template)
+		}
+		for _, fragment := range []string{"template: link", "title: \"{{title}}\"", "published: false", "link: \"\""} {
+			if !strings.Contains(template.Source, fragment) {
+				t.Fatalf("link starter missing %q: %s", fragment, template.Source)
+			}
+		}
+		return
+	}
+	t.Fatal("missing builtin link starter")
+}

@@ -2,7 +2,9 @@ package workbench
 
 import (
 	"encoding/json"
+	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/WaylonWalker/markata/pkg/filter"
 	"github.com/WaylonWalker/markata/pkg/lsp"
@@ -61,7 +63,7 @@ func (h *Handler) workspaceFeeds() []feedEntry {
 		}
 		for _, post := range matches {
 			if post.Published && !post.Private && !post.Draft {
-				entry.Paths = append(entry.Paths, post.Path)
+				entry.Paths = append(entry.Paths, workspaceRelativePath(h.root, post.Path))
 			}
 		}
 		sort.Strings(entry.Paths)
@@ -86,4 +88,15 @@ func getMetadataStrings(value any) []string {
 	default:
 		return nil
 	}
+}
+
+// workspaceRelativePath returns the slash-separated path used by the file list, so
+// feed membership can be compared with discovered files.
+func workspaceRelativePath(root, path string) string {
+	if root != "" {
+		if relative, err := filepath.Rel(root, path); err == nil && !strings.HasPrefix(relative, "..") {
+			return filepath.ToSlash(relative)
+		}
+	}
+	return filepath.ToSlash(path)
 }

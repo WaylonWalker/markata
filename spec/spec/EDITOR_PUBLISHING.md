@@ -4,9 +4,9 @@ Status: incrementally implementing on the Go workbench, stacked on #1905.
 
 ## User-facing contract
 
-The writing interface MUST show a persistent Publish action in the top bar
+The writing interface MUST show a persistent **Review changes** action in the top bar
 regardless of split/editor-only/preview-only layout. The command palette MUST
-offer "Publishing: Review & Publish" with publish, go live, deploy, release,
+offer "Publishing: Review changes" with publish, go live, deploy, release,
 and review aliases. Ctrl/Cmd+Shift+Enter and Ctrl/Cmd+S MUST invoke the same
 review flow from all editor keymaps. In Vim mode, `:w` MUST invoke that flow;
 Emacs mode's Ctrl-X Ctrl-S MUST do the same. Ctrl/Cmd+P and Ctrl/Cmd+Shift+P
@@ -39,6 +39,22 @@ The review MUST provide a Commit message tab showing the exact message used for
 the local Git commit. The user MUST be able to edit it, and the server MUST use
 the supplied message for that commit.
 
+## Workspace-wide Changes inventory (incremental implementation)
+
+The workbench MUST enumerate all Git worktree changes independently of which
+files have ever been opened in the editor. A read-only, loopback-only
+`GET /workspace/changes` endpoint returns staged, unstaged, and untracked
+files; it preserves rename/copy source paths and reports changes outside the
+current site rather than silently filtering them away. On failure the UI
+shows an error, never an empty success state. The desktop Changes panel
+remains available while writing; mobile uses a dismissible bottom sheet.
+
+This first slice is **inventory and navigation only**. Showing a Git change
+does not make a file eligible for editor writes, publish, or discard. The
+single-file publish flow and deliberate selected-files commit/push remain
+separate tasks. Never equate an empty worktree with a fully pushed or live
+site; local commits may be ahead of the remote.
+
 ## Revision identity
 
 At least three independently identified states exist:
@@ -65,6 +81,41 @@ means a useful "review unavailable" state, never a fabricated baseline. A new
 untracked post MUST be identified as having no previous committed revision.
 Markup renders in isolated iframe previews; source diff is shown via text nodes
 and cannot execute user HTML.
+
+## Review action and discard contract
+
+**Review changes** is the only primary editor entry point. Review shows a frozen,
+exact saved draft against its clearly labeled committed baseline. The review
+must offer **Publish**, **Discard changes…**, and **Keep editing**. Keep editing
+must never mutate any draft. Publish may guide the writer through explicit
+commit, push, and verified deployment stages; it must not declare the page live
+until deployment verification succeeds.
+
+Discard is a separate destructive action, not a synonym for closing Review or
+undoing a single edit. It MUST require confirmation naming the document and the
+baseline being restored. An existing tracked document reverts its workspace
+draft to the exact committed blob; a never-committed document removes only that
+new draft from the active workspace. Discard MUST NOT mutate unrelated files,
+the Git index, HEAD, staged work, external drafts, or builder deployments.
+
+The backend MUST validate the authorized site and document, exact reviewed
+source identity, expected committed baseline, and any newer editor/outbox edits
+before applying a discard. Stale or concurrent changes MUST fail closed and
+require re-review; an offline client MUST retain pending edits instead of
+silently discarding them. The hosted sync backend MUST record a new durable
+revision or tombstone, with idempotent retry semantics and change-feed updates,
+rather than erasing history or conflict copies. A successful local-only discard
+MUST NOT claim remote synchronization. The loopback-only workbench endpoint
+MUST NOT be exposed on hosted ingress.
+
+The local workbench now has an experimental, revision-checked restore for
+Git-tracked files, with explicit confirmation and a server-side lock against
+other writes made through the same handler. The editor must refresh recovery
+state and verify the saved baseline before reporting local success. This is
+not a hosted atomic discard transaction, and other filesystem writers are not
+covered by the in-process lock. New/untracked-file deletion remains disabled
+until it has its own safe workflow. Do not enable a hosted Discard action until
+the durable journal and authorization contract above are implemented.
 
 ## Next steps: publishing back end
 

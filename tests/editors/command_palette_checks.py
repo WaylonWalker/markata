@@ -56,7 +56,7 @@ def check_commands(page, preview):
     select_text('Important')
     page.locator('#commands').click()
     query.fill('HIGHLIGHT text')
-    expect(dialog.get_by_role('option')).to_have_count(1)
+    expect(dialog.get_by_role('option').first).to_have_attribute('id', 'markdown-command-highlight')
     page.keyboard.press('Enter')
     assert value() == '==Important=='
     expect(preview.locator('mark')).to_have_text('Important')
@@ -115,7 +115,7 @@ def check_commands(page, preview):
     expect(dialog.get_by_role('status')).to_contain_text('Showing 60 of')
     expect(dialog.get_by_role('option')).to_have_count(60)
     query.fill('Web Awesome:')
-    expect(dialog.get_by_role('option')).to_have_count(11)
+    expect(dialog.locator('[role=option][id^=markdown-command-wa-]')).to_have_count(11)
     expect(dialog.locator('#markdown-command-wa-details')).to_contain_text('Requires the webawesome plugin and runtime')
     dialog.locator('#markdown-command-wa-details').click()
     assert value().startswith('::: wa-details {summary="Read more"}')

@@ -22,7 +22,11 @@ function render(host, before, after, options = {}) {
     diffStyle: options.layout === 'split' ? 'split' : 'stacked',
     theme: palettes,
     diffIndicators: 'bars',
-        preferredHighlighter: 'shiki-js'
+    preferredHighlighter: 'shiki-js',
+    // One standalone file in a nested dialog scroll container should not
+    // allocate off-screen virtualization spacers for collapsed hunks.
+    disableVirtualizationBuffers: true,
+    hunkSeparators: 'line-info-basic'
   });
   view.render({
     fileContainer: host,
