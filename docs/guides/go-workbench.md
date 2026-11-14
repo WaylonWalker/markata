@@ -129,6 +129,8 @@ During continuous typing, the editor also starts a preview update at least every
 the renderer is available.
 The first preview can appear while the site index is still loading. Workspace links and embeds
 resolve when indexing finishes, using the current editor text.
+New edits can update the first preview as soon as its page script is ready, even if an image or
+font in that page is still loading.
 Edits made during indexing update the changed post without restarting metadata loading for
 every other post.
 Old responses cannot replace a newer draft. Errors preserve the last successful preview.

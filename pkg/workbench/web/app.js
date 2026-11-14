@@ -44,6 +44,7 @@ const placeEditorCursor = position => {
 };
 window.addEventListener('message',event=>{
   if (event.source !== frame.contentWindow) return;
+  if (event.data?.type === 'preview-ready') markPreviewReady();
   if (event.data?.type === 'open-post') window.MarkataSiteTree?.openPost(event.data.slug);
   if (event.data?.type === 'place-editor-cursor') placeEditorCursor(event.data);
   if (event.data?.type === 'workbench-preview-focus-editor')
@@ -402,6 +403,20 @@ let revision = 0, timer, busy = false, ready = false, lastEditAt = null, pending
 let pendingRender = false;
 let activeRenderController = null;
 let previewStarted = false, previewReady = false, pendingPreview = null, activeRender = null;
+function markPreviewReady() {
+  if (!previewStarted || previewReady) return;
+  previewReady = true;
+  syncAppearance();
+  scrollSync.ready();
+  if (pendingPreview) {
+    const latest = pendingPreview;
+    pendingPreview = null;
+    if (latest.version === revision) updatePreview(latest.data, latest.version);
+  } else {
+    scrollSync.previewUpdated();
+    finishPreview(activeRender?.version);
+  }
+}
 function finishPreview(version) {
   if (!activeRender || activeRender.version !== version || version !== revision) return;
   window.MarkataStartupStatus?.previewReady();
@@ -492,19 +507,7 @@ async function render() {
     activeRender = {data, version, editAt:lastEditAt, startedAt:started};
     if (!previewStarted) {
       previewStarted = true;
-      frame.onload = () => {
-        previewReady = true;
-        syncAppearance();
-        scrollSync.ready();
-        if (pendingPreview) {
-          const latest = pendingPreview;
-          pendingPreview = null;
-          if (latest.version === revision) updatePreview(latest.data, latest.version);
-        } else {
-          scrollSync.previewUpdated();
-          finishPreview(activeRender?.version);
-        }
-      };
+      frame.onload = markPreviewReady;
       frame.srcdoc = data.document;
     } else if (!previewReady) {
       pendingPreview = {data, version};

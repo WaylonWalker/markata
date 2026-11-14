@@ -25,6 +25,9 @@ Refs #1977 and #1903. The workspace includes the publishing and Changes flow in 
   workspace links and embeds while the index loads, then MUST refresh from the current source
   when indexing completes. A metadata refresh or older render response MUST NOT replace a
   newer editor revision.
+- The preview frame MUST accept the newest pending fragment once its message handler is ready.
+  It MUST NOT wait for images, fonts, or other unrelated resource loads before applying an edit.
+  A late frame load event MUST NOT replay an older fragment or finish the same preview twice.
 - An edit during site metadata loading MUST preserve already parsed metadata for files whose
   source and configuration have not changed. The edited file MUST be parsed again before the
   completed index is published.

@@ -1,6 +1,9 @@
 """Run against a Go workbench with MARKATA_GO_WORKBENCH_URL set."""
 import os
+import json
+import threading
 import unittest
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from playwright.sync_api import expect, sync_playwright
 
@@ -56,6 +59,54 @@ class GoEditorBrowserTest(unittest.TestCase):
           const links=[...document.querySelectorAll('link[rel=stylesheet]')].map(n=>n.href);
           return links.length===new Set(links).size;
         }"""), True)
+
+    def test_new_edits_do_not_wait_for_initial_image_load(self):
+        requested = threading.Event()
+        release = threading.Event()
+
+        class SlowImage(BaseHTTPRequestHandler):
+            def do_GET(self):
+                requested.set()
+                release.wait(10)
+                self.send_response(200)
+                self.send_header("Content-Type", "image/svg+xml")
+                self.end_headers()
+                self.wfile.write(b'<svg xmlns="http://www.w3.org/2000/svg"/>')
+
+            def log_message(self, *_args):
+                pass
+
+        server = ThreadingHTTPServer(("127.0.0.1", 0), SlowImage)
+        worker = threading.Thread(target=server.serve_forever, daemon=True)
+        worker.start()
+        try:
+            context = self.browser.new_context()
+            self.addCleanup(context.close)
+            page = context.new_page()
+
+            def slow_initial_document(route):
+                response = route.fetch()
+                data = response.json()
+                if data.get("document"):
+                    image = f'<img src="http://127.0.0.1:{server.server_port}/slow.svg">'
+                    data["document"] = data["document"].replace("</body>", image + "</body>")
+                route.fulfill(response=response, body=json.dumps(data))
+
+            page.route("**/render", slow_initial_document)
+            page.goto(os.environ["MARKATA_GO_WORKBENCH_URL"])
+            for _ in range(50):
+                if requested.is_set():
+                    break
+                page.wait_for_timeout(100)
+            self.assertTrue(requested.is_set(), "initial preview did not request the slow image")
+            page.evaluate("document.querySelector('.CodeMirror').CodeMirror.setValue('# Fresh before image')")
+            expect(page.frame_locator("#preview").locator("h1")).to_have_text(
+                "Fresh before image", timeout=3000)
+            self.assertFalse(release.is_set())
+        finally:
+            release.set()
+            server.shutdown()
+            worker.join(timeout=2)
 
     def test_conditional_styles_are_added_reused_and_removed(self):
         self.edit("# Code\n\n```go\nfmt.Println(1)\n```")

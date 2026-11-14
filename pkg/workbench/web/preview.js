@@ -342,6 +342,8 @@ return;
 dispatchEvent(new Event('theme-change'));appearanceSignature=JSON.stringify(e.data.attributes||{});
 }).catch(console.error);
 }});
+// The article and message listener are ready. Images may keep iframe.onload pending.
+parent.postMessage({type:'preview-ready'},'*');
 document.addEventListener('click',event=>{
 const link=event.target.closest?.('a');
 if(!link)return;
