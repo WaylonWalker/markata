@@ -947,6 +947,9 @@
     changesPanel.querySelector('#workspace-changes-close')
       .addEventListener('click', () => changesVisible(false));
     window.addEventListener('focus', () => { if (!changesPanel.hidden) refreshWorkspaceChanges(); });
+    window.addEventListener('markata-workspace-file-saved', () => {
+      if (!changesPanel.hidden) refreshWorkspaceChanges();
+    });
     let persisted = false;
     try { persisted = localStorage.getItem('markata-workspace-changes-open') === 'true'; }
     catch { /* Default closed when storage is blocked. */ }
