@@ -64,6 +64,9 @@ All editors MUST:
    `markata-go new`: `post`, `page`, `docs`, `article`, `note`, `photo`,
    `video`, `link`, `quote`, `guide`, `inline`, `contact`, and `author`.
    Existing editor-specific starters MAY remain available in addition to these.
+   The web workbench MUST also offer `ping` as a selectable variant of `note`.
+   It writes `template: ping` and `templateKey: ping` so sites can filter it
+   separately while rendering it with the note card.
 2. Resolve CLI/TUI selections by canonical name or alias. In the web workbench,
    show aliases as searchable terms and select by the visible canonical starter.
 3. Ask for or accept a title when the starter requires one.

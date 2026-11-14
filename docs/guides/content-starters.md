@@ -61,7 +61,8 @@ The editor also includes the thirteen built-in types from `markata-go new`:
 | `page` | `pages` | — |
 | `docs` | `docs` | — |
 | `article` | `pages/article` | `blog-post`, `essay`, `tutorial` |
-| `note` | `pages/note` | `ping`, `thought`, `status`, `tweet` |
+| `note` | `pages/note` | `thought`, `status`, `tweet` |
+| `ping` | `pages/note` | — |
 | `photo` | `pages/photo` | `shot`, `shots`, `image`, `gallery` |
 | `video` | `pages/video` | `clip`, `cast`, `stream` |
 | `link` | `pages/link` | `bookmark`, `til`, `stars` |
@@ -72,7 +73,9 @@ The editor also includes the thirteen built-in types from `markata-go new`:
 | `author` | `pages/author` | — |
 
 The editor's Blog post and Thought starters remain available alongside these
-types. Site-authored and configured starters can add or override starters.
+types. Ping is listed separately from Note so the generated frontmatter keeps
+`template: ping` for sites with a dedicated Ping feed. Both use the same note
+card layout. Site-authored and configured starters can add or override starters.
 
 Run `markata-go new --list` to see starters, then create content with:
 
