@@ -105,16 +105,22 @@ private, and authors. The precedence order is:
 3. Site-configured template and site-level defaults.
 4. Markata built-in defaults.
 
-An editor MAY show inherited or computed defaults in its controls, but MUST NOT
-serialize them into new content unless the user explicitly selects an override.
-Unselected fields preserve the starter's values or remain absent. For example,
-when a starter specifies only `title: "{{title}}"`, creating a page should
-write that title but MUST NOT insert `slug`, `date`, `published`, `draft`,
-`tags`, or `description` keys. The title supplied for a file path does not
-require an absent `title` frontmatter field to be created. A missing date
-resolves to the current local date at runtime; missing publication fields use
-the site's effective defaults without being written into the new file.
-Explicit CLI flags and TUI/web changes override starter values.
+Except for the creation defaults below, an editor MUST NOT serialize inherited
+defaults unless the user explicitly selects an override. An editor MAY show
+those defaults in its controls.
+
+The CLI and web workbench MUST apply the same two creation defaults to every
+starter and interaction mode. They write the current local `date` when the
+starter date is absent, null, or blank, and preserve an explicit starter date.
+They write `published: true` when no publication setting exists. They preserve
+an explicit publication value and supply `published: false` for an explicit
+`draft: true` when `published` is absent. Other absent fields remain absent.
+
+For example, when a starter specifies only `title: "{{title}}"`, creating a
+page writes the title, current local date, and `published: true`. It MUST NOT
+insert `slug`, `draft`, `tags`, or `description` keys. The title supplied for a
+file path does not require an absent `title` frontmatter field to be created.
+Explicit CLI flags and user-selected editor values override starter values.
 
 ## Editor extensions
 

@@ -4,7 +4,7 @@
     const values = { title: String(title), slug: String(slug), date, datetime: now.toISOString() };
     const expand = text => text.replace(/\{\{(title|slug|date|datetime)\}\}/g, (_, key) => values[key]);
     const frontmatter = String(source).match(/^(---\r?\n)([\s\S]*?)(\r?\n---(?:\r?\n|$))/);
-    if (!frontmatter) return expand(String(source));
+    if (!frontmatter) return `---\ndate: ${date}\npublished: true\n---\n\n${expand(String(source))}`;
     const lines = frontmatter[2].split(/\r?\n/).map(line => {
       const titleField = line.match(/^(\s*title:\s*).*/);
       if (titleField) return `${titleField[1]}${JSON.stringify(values.title)}`;
@@ -29,6 +29,25 @@
       });
       return `${prefix}${expanded}`;
     });
+    let hasDate = false;
+    let hasPublished = false;
+    const hasDraft = lines.some(line => /^draft:\s*true\s*(?:#.*)?$/i.test(line));
+    for (let index = 0; index < lines.length; index += 1) {
+      const dateField = lines[index].match(/^(date:\s*)(.*)$/i);
+      if (dateField) {
+        hasDate = true;
+        const value = dateField[2].replace(/\s+#.*$/, "").trim();
+        if (!value || /^(?:null|~)$/i.test(value)) lines[index] = `${dateField[1]}${date}`;
+      }
+      const publishedField = lines[index].match(/^(published:\s*)(.*)$/i);
+      if (publishedField) {
+        hasPublished = true;
+        const value = publishedField[2].replace(/\s+#.*$/, "").trim();
+        if (!value || /^(?:null|~)$/i.test(value)) lines[index] = `${publishedField[1]}${hasDraft ? "false" : "true"}`;
+      }
+    }
+    if (!hasDate) lines.push(`date: ${date}`);
+    if (!hasPublished) lines.push(`published: ${hasDraft ? "false" : "true"}`);
     return `${frontmatter[1]}${lines.join("\n")}${frontmatter[3]}${expand(String(source).slice(frontmatter[0].length))}`;
   }
 

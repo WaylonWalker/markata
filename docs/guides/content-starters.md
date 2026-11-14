@@ -44,6 +44,14 @@ The shared variables are `{{title}}`, `{{slug}}`, `{{date}}`, and
 `{{datetime}}`. They work in frontmatter and body text. Unknown variables stay
 as written, which lets another renderer use its own syntax.
 
+Both `markata-go new` and the web workbench write a `date` and an explicit
+`published` value on every new post. A missing, null, or blank date uses the
+current local date. An explicit starter date is preserved. When the starter
+does not set publication, new posts use `published: true`, except a starter
+with `draft: true` uses `published: false`. Explicit starter publication values
+are preserved.
+
+These creation defaults also apply to CLI plain prompts and the TUI.
 Run `markata-go new --list` to see starters, then create content with:
 
 ```sh
