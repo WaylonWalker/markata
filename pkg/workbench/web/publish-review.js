@@ -1003,7 +1003,7 @@
     publishStatus.id='markata-publish-status';
     publishStatus.setAttribute('role','status');
     publishStatus.setAttribute('aria-live','polite');
-    publishStatus.textContent='Draft saved locally; publish when ready';
+    publishStatus.textContent='Not published';
     document.querySelector('#saved')?.insertAdjacentElement('afterend',publishStatus);
     attachWorkspaceChanges();
     editor.on('change',updatePublishButton);

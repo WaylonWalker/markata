@@ -1,4 +1,4 @@
-#workspace-conflict-review{display:inline-flex;align-items:center;border:1px solid var(--color-warning,#b17c27);background:transparent;color:var(--color-text,#222);font:inherit;font-size:11px;cursor:pointer;padding:3px 7px;border-radius:6px}
+#workspace-conflict-review{display:inline-flex;align-items:center;border:0;border-radius:5px;background:color-mix(in srgb,var(--color-warning,#b17c27) 14%,transparent);color:var(--color-warning,#b17c27);font:600 11px/1 system-ui,sans-serif;padding:5px 9px;cursor:pointer;white-space:nowrap}
 #workspace-conflict-review[hidden]{display:none}
 #workspace-conflict-dialog{width:min(1100px,calc(100vw - 24px));max-height:92dvh;overflow:auto;padding:16px;background:var(--color-background,var(--paper));color:var(--color-text,var(--ink));border:1px solid var(--editor-divider);border-radius:10px}
 #workspace-conflict-dialog::backdrop{background:#0009}
@@ -10,6 +10,4 @@
 .workspace-conflict-columns h3{margin:0;padding:9px 12px;font-size:13px;border-bottom:1px solid var(--editor-divider)}
 .workspace-conflict-columns pre{overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;max-height:53dvh;min-height:140px;margin:0;padding:12px;font:12px/1.5 ui-monospace,SFMono-Regular,monospace}
 #workspace-conflict-dialog footer{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;align-items:center;justify-content:flex-end}
-#workspace-conflict-dialog button{font:inherit;font-size:12px;cursor:pointer;border:1px solid var(--editor-divider);background:var(--color-surface,#fff);color:inherit;border-radius:6px;padding:8px 10px}
-#workspace-conflict-dialog button:disabled{opacity:.5;cursor:not-allowed}
 @media(max-width:600px){.workspace-conflict-columns{grid-template-columns:1fr}.workspace-conflict-columns pre{max-height:28dvh;min-height:100px}}

@@ -1,9 +1,10 @@
 /* Compact and keyboard-accessible recent-file navigation. */
-#recent-files{flex:none;min-height:0;margin:4px 8px 8px;padding:0;border:1px solid var(--editor-divider);border-radius:7px;background:var(--color-surface,transparent)}
+#recent-files{flex:none;min-height:0;margin:4px 0 6px;padding:0;border:0;background:transparent}
 #recent-files[hidden]{display:none}
-#recent-files summary{padding:7px 9px;cursor:pointer;font-size:12px;font-weight:650;color:var(--color-text-muted,var(--muted));user-select:none}
-#recent-files-list{max-height:160px;overflow-y:auto;padding:0 3px 4px}
-.recent-files-item{display:grid;gap:1px;width:100%;padding:6px 8px;border:0;border-radius:5px;background:transparent;color:inherit;text-align:left;cursor:pointer}
-.recent-files-item:hover,.recent-files-item:focus-visible,.recent-files-item[aria-current="page"]{background:var(--color-background,var(--paper))}
+#recent-files summary{padding:8px 12px 4px;cursor:pointer;font-size:11px;font-weight:650;letter-spacing:.12em;text-transform:uppercase;color:var(--color-text-muted,var(--muted));user-select:none}
+#recent-files-list{max-height:160px;overflow-y:auto;padding:0 6px 2px}
+.recent-files-item{display:grid;gap:1px;width:100%;padding:6px 8px;border:0;border-left:2px solid transparent;border-radius:0 5px 5px 0;background:transparent;color:inherit;text-align:left;cursor:pointer}
+.recent-files-item:hover,.recent-files-item:focus-visible{background:color-mix(in srgb,var(--color-text,#203348) 6%,transparent)}
+.recent-files-item[aria-current="page"]{border-left-color:var(--color-primary,#245fc5);background:color-mix(in srgb,var(--color-primary,#245fc5) 8%,transparent)}
 .recent-files-item strong{font-size:12px;white-space:nowrap;text-overflow:ellipsis;overflow:hidden}
 .recent-files-item span{font-size:10px;color:var(--color-text-muted,var(--muted));white-space:nowrap;text-overflow:ellipsis;overflow:hidden}

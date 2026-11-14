@@ -13,7 +13,7 @@
 .shortcuts-controls{display:grid;grid-template-columns:1fr 2fr;gap:10px;align-items:center;padding:16px 20px}
 .shortcuts-controls select,.shortcuts-controls input{width:100%;min-width:0;padding:9px;border:1px solid var(--editor-divider);border-radius:6px;background:var(--color-surface);color:inherit;font:inherit}
 .shortcuts-meta{padding:8px 20px;display:flex;justify-content:space-between;gap:8px;border-block:1px solid var(--editor-divider);color:var(--color-text-muted);font-size:12px}
-.shortcuts-meta button,.shortcuts-settings-link{padding:8px 10px;border:1px solid var(--editor-divider);border-radius:6px;color:inherit;background:var(--color-surface);cursor:pointer}
+.shortcuts-settings-link{padding:8px 10px;border:1px solid var(--editor-divider);border-radius:6px;color:inherit;background:var(--color-surface);cursor:pointer}
 #shortcuts-list{max-height:48dvh;overflow:auto}
 .shortcut-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 20px;border-bottom:1px solid var(--editor-divider)}
 .shortcut-row div{display:grid;gap:2px}

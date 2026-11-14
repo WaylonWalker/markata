@@ -24,7 +24,7 @@
     const dialog = document.createElement('dialog');
     dialog.className = 'file-finder';
     dialog.setAttribute('aria-labelledby', 'file-finder-title');
-    dialog.innerHTML = '<div class="file-finder-heading"><h2 id="file-finder-title">Go to File</h2><button type="button" class="file-finder-close" aria-label="Close file finder">Close</button></div><label for="file-finder-query">Search site files</label><input id="file-finder-query" type="search" placeholder="Type a path, title, slug, or tag" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="true" aria-controls="file-finder-results"><p id="file-finder-count" role="status"></p><div id="file-finder-results" role="listbox" aria-label="Workspace files"></div><p class="file-finder-help">↑ ↓ Choose · Enter Open · Esc Close</p>';
+    dialog.innerHTML = '<div class="file-finder-heading"><h2 id="file-finder-title">Go to File</h2><button type="button" class="file-finder-close" aria-label="Close file finder">Close</button></div><label for="file-finder-query">Search site files</label><input id="file-finder-query" type="search" placeholder="Type a path, title, slug, or tag" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="true" aria-controls="file-finder-results"><p id="file-finder-count" role="status"></p><div id="file-finder-results" role="listbox" aria-label="Workspace files"></div><p class="file-finder-help"><kbd>↑</kbd> <kbd>↓</kbd> choose · <kbd>Enter</kbd> open · <kbd>Esc</kbd> close</p>';
     document.body.append(dialog);
 
     const query = dialog.querySelector('#file-finder-query');

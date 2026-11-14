@@ -369,7 +369,7 @@ func (s *Store) Files() ([]File, error) {
 			if value, ok := post.Extra["image"].(string); ok {
 				image = value
 			}
-			parsed[path] = metadataEntry{file: File{Path: path, Slug: post.Slug, Title: post.Title, Tags: append([]string(nil), post.Tags...), Image: image}, info: lsp.LoadedPostInfo(s.indexRoot, post)}
+			parsed[path] = metadataEntry{file: File{Path: path, Slug: post.Slug, Title: post.Title, Tags: append([]string(nil), post.Tags...), Image: image, Date: fileDate(post), Status: fileStatus(post)}, info: lsp.LoadedPostInfo(s.indexRoot, post)}
 		}
 		s.mu.Lock()
 		s.indexPhase = indexPhaseLinks

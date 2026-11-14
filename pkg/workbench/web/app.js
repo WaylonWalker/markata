@@ -423,7 +423,8 @@ function finishPreview(version) {
   const {data} = activeRender;
   const liveTime = Math.round(performance.now() - (activeRender.editAt ?? activeRender.startedAt));
   window.MarkataDiagnostics?.record('edit_to_preview',liveTime);
-  status.textContent = `Go ${data.render_ms.toFixed(1)} ms${data.cached ? ' (cached)' : ''} · queue ${(data.queue_ms ?? 0).toFixed(1)} ms · preview ${liveTime} ms · input ${(data.input_bytes/1024).toFixed(1)} KB · fragment ${((data.html_bytes)/1024).toFixed(1)} KB`;
+  status.textContent = `Preview ${liveTime} ms`;
+  status.title = `Go ${data.render_ms.toFixed(1)} ms${data.cached ? ' (cached)' : ''} · queue ${(data.queue_ms ?? 0).toFixed(1)} ms · input ${(data.input_bytes/1024).toFixed(1)} KB · fragment ${((data.html_bytes)/1024).toFixed(1)} KB`;
 }
 function storageWarning() { saved.textContent = 'Draft not saved · storage unavailable or full · download a copy'; }
 function saveDraft() {

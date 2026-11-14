@@ -52,23 +52,15 @@
     font.addEventListener('input',() => {applyFont();try {localStorage.setItem('markata-editor-font-size',font.value);} catch {}});
     applyFont(); row('appearance','Source text size','Adjust the source text size from 12 to 24 pixels.',font);
     const appearance=window.markata?.paletteSwitcher;
-    const appearanceControls=[];
-    if(appearance) {
-      const mode=document.createElement('select');mode.id='setting-color-mode';
-      for(const value of ['light','dark']) {const option=document.createElement('option');option.value=value;option.textContent=value==='light'?'Light':'Dark';mode.append(option);}
-      mode.value=appearance.getColorMode();mode.addEventListener('change',()=>appearance.setColorMode(mode.value));
-      row('appearance','Color mode','Use the existing theme preferences for the editor and preview.',mode);
-      const palette=document.createElement('select');palette.id='setting-palette';
-      function updatePalette(){
-        palette.replaceChildren();
-        for(const entry of appearance.getManifest()) {const option=document.createElement('option');option.value=entry.name;option.textContent=entry.label||entry.name;palette.append(option);}
-        palette.value=document.documentElement.dataset.palette||'';
-        palette.disabled=!palette.options.length;
-        mode.value=appearance.getColorMode();
-      }
-      updatePalette();appearanceControls.push(updatePalette);
-      palette.addEventListener('change',()=>{appearance.selectTheme(palette.value);mode.value=appearance.getColorMode();});
-      row('appearance','Color palette','Choose a palette provided by your site.',palette);
+    const pickerHost=document.createElement('div'); pickerHost.id='settings-theme-picker';
+    const pickerNode=document.querySelector('.theme-picker');
+    if(appearance && pickerNode) pickerHost.append(pickerNode);
+    categories.get('appearance').section.append(pickerHost);
+    // The picker closes on any document click outside its root. Keep clicks inside this dialog from reaching it.
+    dialog.addEventListener('click',(event) => {if(pickerNode && !pickerNode.contains(event.target)) event.stopPropagation();});
+    function openPicker() {
+      if(!appearance || !pickerNode) return;
+      if(pickerNode.querySelector('.theme-picker-panel')?.hidden) appearance.open('colors');
     }
     row('preview','Layout','Write beside the preview, or focus on one pane.',controls['setting-layout']);
     row('preview','Synchronize scrolling','Keep the preview aligned with the paragraph you are editing.',controls['setting-scroll-sync']);
@@ -104,6 +96,7 @@
       }
       empty.hidden=count>0;
       if (!categories.get('shortcuts').section.hidden) window.MarkataShortcuts?.renderSettings?.();
+      if (!categories.get('appearance').section.hidden) openPicker();
     }
     search.addEventListener('input',filter);
     dialog.addEventListener('close',() => {if(returnFocus?.isConnected)returnFocus.focus();else editor.focus();});
@@ -113,7 +106,6 @@
       if (!dialog.open) returnFocus = document.activeElement;
       current=categories.has(category)?category:'writing'; search.value='';
       history.checked=window.MarkataSearch?.enabled() !== false;
-      appearanceControls.forEach(update=>update());
       if(!dialog.open)dialog.showModal(); filter(); search.focus();
     }
     window.MarkataSettings={open};

@@ -21,7 +21,7 @@
     button.type = 'button'; button.id = 'commands';
     button.textContent = 'Commands'; button.title = 'Command Palette (Ctrl/Cmd+Shift+P)';
     button.setAttribute('aria-haspopup', 'dialog');
-    document.querySelector('.editor-toolbar').append(button);
+    (document.querySelector('#site-sidebar .files-open') || document.querySelector('#site-sidebar .pane-label'))?.after(button);
     const dialog = document.createElement('dialog');
     dialog.className = 'markdown-commands'; dialog.setAttribute('aria-labelledby', 'commands-title');
     dialog.innerHTML = '<div class="commands-heading"><h2 id="commands-title">Command Palette</h2><button type="button" class="commands-close" aria-label="Close commands">Close</button></div><label for="commands-query">Find a command or action</label><input id="commands-query" type="search" placeholder="Try callout, diagram, create, or download" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="true" aria-controls="commands-results"><p id="commands-count" role="status"></p><div id="commands-results" role="listbox" aria-label="Commands and actions"></div><p class="commands-help">↑ ↓ Choose · Enter Run · Esc Close</p>';

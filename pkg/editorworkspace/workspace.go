@@ -17,11 +17,33 @@ import (
 
 // File describes a discovered source document.
 type File struct {
-	Path  string   `json:"path"`
-	Slug  string   `json:"slug,omitempty"`
-	Title *string  `json:"title,omitempty"`
-	Tags  []string `json:"tags,omitempty"`
-	Image string   `json:"image,omitempty"`
+	Path   string   `json:"path"`
+	Slug   string   `json:"slug,omitempty"`
+	Title  *string  `json:"title,omitempty"`
+	Tags   []string `json:"tags,omitempty"`
+	Image  string   `json:"image,omitempty"`
+	Date   string   `json:"date,omitempty"`
+	Status string   `json:"status,omitempty"`
+}
+
+// fileDate formats a post's publication date as YYYY-MM-DD.
+func fileDate(post *models.Post) string {
+	if post.Date == nil {
+		return ""
+	}
+	return post.Date.Format("2006-01-02")
+}
+
+// fileStatus reports whether a post is a draft or published, or empty when neither.
+func fileStatus(post *models.Post) string {
+	switch {
+	case post.Draft:
+		return "draft"
+	case post.Published:
+		return "published"
+	default:
+		return ""
+	}
 }
 
 // Workspace confines discovery and reads to one directory.
@@ -199,7 +221,7 @@ func (w *Workspace) Files() ([]File, error) {
 		if value, ok := post.Extra["image"].(string); ok {
 			image = value
 		}
-		files = append(files, File{Path: filepath.ToSlash(post.Path), Slug: post.Slug, Title: post.Title, Tags: post.Tags, Image: image})
+		files = append(files, File{Path: filepath.ToSlash(post.Path), Slug: post.Slug, Title: post.Title, Tags: post.Tags, Image: image, Date: fileDate(post), Status: fileStatus(post)})
 	}
 	return files, nil
 }
