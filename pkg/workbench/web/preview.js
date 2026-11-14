@@ -73,7 +73,10 @@ const patchArticle=(article,html)=>{
     if(existing){syncSourceLines(existing,fresh);next.push(existing);retained.add(existing);}
     else{next.push(fresh);changedNodes.push(fresh);}
   }
-  for(const node of previous)if(!retained.has(node))node.remove();
+  for(const node of previous)if(!retained.has(node)){
+    for(const canvas of node.querySelectorAll('.chartjs-container canvas'))window.Chart?.getChart?.(canvas)?.destroy();
+    node.remove();
+  }
   let cursor=article.firstElementChild;
   for(const node of next){if(node===cursor)cursor=cursor.nextElementSibling;else article.insertBefore(node,cursor);}
   return {changedNodes,total:next.length,retained:retained.size,removed:previous.length-retained.size,parseMs,reconcileMs:performance.now()-reconcileStarted};
@@ -282,8 +285,6 @@ else observeMermaid([document]);
 
 const renderMarkdown=async(data,changedNodes)=>{const article=document.querySelector('.post-content');
 if(!article)return;
-if(window.Chart)changedNodes.forEach(node=>[...(node.matches('canvas')?[node]:[]),...node.querySelectorAll('canvas')].forEach(canvas=>window.Chart.getChart?.(canvas)?.destroy()));
-
 const head=document.createElement('template');
 head.innerHTML=data.feature_head_html;
 const styles=[...head.content.querySelectorAll('style,link[rel=stylesheet]')];
@@ -334,6 +335,7 @@ document.body.append(script);
 }else{document.body.append(script);script.remove();}
 }
 window.markataInitCodeChrome?.(changedNodes);
+window.markataInitSortableTables?.(document);
 if(changedDiagrams.length)observeMermaid(changedDiagrams);
 const nextAppearance=JSON.stringify(data.attributes||{});
 if(nextAppearance!==appearanceSignature){setAppearance(data.attributes);dispatchEvent(new Event('theme-change'));appearanceSignature=nextAppearance;}

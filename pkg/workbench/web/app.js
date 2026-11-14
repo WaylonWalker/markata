@@ -630,8 +630,8 @@ function updateFrontmatterSummary(markdown) {
 }
 function previewDelay() {
   const now = performance.now();
-  const idle = lastEditAt === null ? 0 : Math.max(0, 100 - (now - lastEditAt));
-  return pendingSince === null ? idle : Math.min(idle, Math.max(0, 500 - (now - pendingSince)));
+  const idle = lastEditAt === null ? 0 : Math.max(0, 50 - (now - lastEditAt));
+  return pendingSince === null ? idle : Math.min(idle, Math.max(0, 250 - (now - pendingSince)));
 }
 async function render() {
   if (!ready) return;

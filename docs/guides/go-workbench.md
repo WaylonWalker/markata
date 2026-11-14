@@ -124,8 +124,8 @@ the browser origin, so drafts on one port remain separate from drafts on another
 Workspace saves and new-post creation require a same-origin browser request.
 The server rejects missing or foreign origins before it changes a site file.
 
-The preview updates after a 100 ms pause. One request runs at a time, and newer edits replace pending edits.
-During continuous typing, the editor also starts a preview update at least every 500 ms when
+The preview updates after a 50 ms pause. One request runs at a time, and newer edits replace pending edits.
+During continuous typing, the editor also starts a preview update at least every 250 ms when
 the renderer is available.
 The first preview can appear while the site index is still loading. Workspace links and embeds
 resolve when indexing finishes, using the current editor text.
@@ -137,6 +137,8 @@ Old responses cannot replace a newer draft. Errors preserve the last successful 
 Rendered Mermaid diagrams stay in place when you edit other text, so a large post does not redraw
 every diagram after each keystroke. Diagrams below the visible page render as you scroll near them.
 Changing a diagram's source redraws that diagram when it is near view.
+Mermaid and Chart.js fences skip generic code syntax detection before their own renderers process
+them, which keeps long posts with many diagrams responsive while typing.
 The footer shows Go render time, total edit-to-preview time, source size, and preview size.
 Repeated source uses a one-entry memory cache. Appearance changes update the preview without a render request.
 Workspace post embeds in `![[post-slug]]` or `![embed](path/to/post.md)` format

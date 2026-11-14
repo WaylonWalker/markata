@@ -32,8 +32,12 @@ Refs #1977 and #1903. The workspace includes the publishing and Changes flow in 
   queue another Mermaid render. Editing the diagram source MUST replace and render that diagram.
 - The editor preview SHOULD render Mermaid diagrams near the viewport first. Offscreen diagrams
   MAY remain as source placeholders until scrolled near view. This MUST NOT change normal site output.
+- Mermaid and Chart.js fences MUST retain their plain source markup before their feature plugins
+  transform them. Repeated previews MUST avoid full syntax-lexer searches for these feature fences.
+- Replacing a Chart.js block MUST dispose of the old chart instance before mounting the new canvas.
+- Replacing a table MUST restore its sorting controls without reloading the preview frame.
 - An edit during site metadata loading MUST preserve already parsed metadata for files whose
   source and configuration have not changed. The edited file MUST be parsed again before the
   completed index is published.
 - Continuous typing MUST NOT indefinitely postpone live preview. When the renderer is idle,
-  an unrendered edit burst MUST start a render within 500 ms, using the current source.
+  an unrendered edit burst MUST start a render within 250 ms, using the current source.
