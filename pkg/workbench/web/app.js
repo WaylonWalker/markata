@@ -213,6 +213,12 @@ function renderTemplateChoices() {
     const name = document.createElement('strong'); name.textContent = template.name;
     const description = document.createElement('span'); description.textContent = template.description || template.id;
     button.append(name,description);
+    if (template.aliases?.length) {
+      const aliases = document.createElement('span');
+      aliases.className = 'template-aliases';
+      aliases.textContent = `Also known as: ${template.aliases.join(', ')}`;
+      button.append(aliases);
+    }
     button.addEventListener('pointermove',() => selectTemplateChoice(index));
     button.addEventListener('click',() => chooseTemplate(template));
     return button;
