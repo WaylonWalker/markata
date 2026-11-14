@@ -60,6 +60,10 @@ description. `starter.aliases` MUST be a list of strings.
 All editors MUST:
 
 1. Discover configured Markdown starters and merge them with built-in starters.
+   The web workbench MUST include every canonical built-in type exposed by
+   `markata-go new`: `post`, `page`, `docs`, `article`, `note`, `photo`,
+   `video`, `link`, `quote`, `guide`, `inline`, `contact`, and `author`.
+   Existing editor-specific starters MAY remain available in addition to these.
 2. Resolve CLI/TUI selections by canonical name or alias. In the web workbench,
    show aliases as searchable terms and select by the visible canonical starter.
 3. Ask for or accept a title when the starter requires one.

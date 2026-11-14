@@ -52,6 +52,28 @@ with `draft: true` uses `published: false`. Explicit starter publication values
 are preserved.
 
 These creation defaults also apply to CLI plain prompts and the TUI.
+
+The editor also includes the thirteen built-in types from `markata-go new`:
+
+| Type | Default folder | Aliases |
+|---|---|---|
+| `post` | `pages/post` | — |
+| `page` | `pages` | — |
+| `docs` | `docs` | — |
+| `article` | `pages/article` | `blog-post`, `essay`, `tutorial` |
+| `note` | `pages/note` | `ping`, `thought`, `status`, `tweet` |
+| `photo` | `pages/photo` | `shot`, `shots`, `image`, `gallery` |
+| `video` | `pages/video` | `clip`, `cast`, `stream` |
+| `link` | `pages/link` | `bookmark`, `til`, `stars` |
+| `quote` | `pages/quote` | `quotation` |
+| `guide` | `pages/guide` | `series`, `step`, `chapter` |
+| `inline` | `pages/inline` | `gratitude`, `micro` |
+| `contact` | `pages/contact` | `character`, `person` |
+| `author` | `pages/author` | — |
+
+The editor's Blog post and Thought starters remain available alongside these
+types. Site-authored and configured starters can add or override starters.
+
 Run `markata-go new --list` to see starters, then create content with:
 
 ```sh

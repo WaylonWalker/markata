@@ -139,11 +139,21 @@ func validateContentTemplateNames(templates []contentTemplate) error {
 
 func builtinContentTemplates(today string) []contentTemplate {
 	return []contentTemplate{
+		{ID: "builtin:post", Name: "Post", Description: "A standard blog post.", Directory: "pages/post", Source: "---\ntemplate: post\n---\n\nWrite your content here...\n"},
+		{ID: "builtin:page", Name: "Page", Description: "A static site page.", Directory: "pages", Source: "---\ntemplate: page\n---\n\nWrite your page content here...\n"},
+		{ID: "builtin:docs", Name: "Docs", Description: "A documentation page.", Directory: "docs", Source: "---\ntemplate: docs\n---\n\nWrite your documentation here...\n"},
+		{ID: "builtin:article", Name: "Article", Description: "A long-form article.", Directory: "pages/article", Aliases: []string{"blog-post", "essay", "tutorial"}, Source: "---\ntemplate: article\n---\n\nWrite your article here...\n"},
 		{ID: "builtin:blog-post", Name: "Blog post", Description: "A long-form article with title, date, and tags.", Directory: "pages/blog", Source: fmt.Sprintf("---\ntemplateKey: blog-post\ntitle: \"{{title}}\"\ndate: %s\npublished: false\ntags: []\n---\n\n# {{title}}\n\nStart writing here.\n", today)},
+		{ID: "builtin:note", Name: "Note", Description: "A quick note.", Directory: "pages/note", Aliases: []string{"ping", "thought", "status", "tweet"}, Source: "---\ntemplate: note\n---\n\nA quick note...\n"},
 		{ID: "builtin:thought", Name: "Thought", Description: "A short link or idea with a little context.", Directory: "pages/thoughts", Source: fmt.Sprintf("---\ntemplateKey: thought\ntitle: \"{{title}}\"\ndate: %s\npublished: false\ntags:\n  - thought\n---\n\nAdd a link or thought here.\n", today)},
-		{ID: "builtin:link", Name: "Link", Description: "Save a web link as an unpublished post. Give it a title and URL.", Directory: "pages/blog", Source: fmt.Sprintf("---\ntemplateKey: link\ntemplate: link\ntitle: \"{{title}}\"\ndate: %s\npublished: false\nlink: \"\"\ntags:\n  - link\n---\n\nWhy is this link worth sharing?\n", today)},
-		{ID: "builtin:note", Name: "Note", Description: "A compact note for the site.", Directory: "pages/notes", Source: fmt.Sprintf("---\ntemplateKey: note\ntitle: \"{{title}}\"\ndate: %s\npublished: false\ntags:\n  - note\n---\n\nWrite a note here.\n", today)},
-		{ID: "builtin:photo", Name: "Photo", Description: "A photo post with an image path and caption.", Directory: "pages/photos", Source: fmt.Sprintf("---\ntemplateKey: photo\ntitle: \"{{title}}\"\ndate: %s\npublished: false\ntags:\n  - photo\nimage: /images/\n---\n\n![Describe the image](/images/)\n\nAdd a caption.\n", today)},
+		{ID: "builtin:photo", Name: "Photo", Description: "A photo post with an image path and caption.", Directory: "pages/photo", Aliases: []string{"shot", "shots", "image", "gallery"}, Source: "---\ntemplate: photo\nimage: \"\"\n---\n\nPhoto caption...\n"},
+		{ID: "builtin:video", Name: "Video", Description: "A video post.", Directory: "pages/video", Aliases: []string{"clip", "cast", "stream"}, Source: "---\ntemplate: video\nvideo: \"\"\nimage: \"\"\nduration: \"\"\n---\n\nVideo description...\n"},
+		{ID: "builtin:link", Name: "Link", Description: "Save a web link with a title and source URL.", Directory: "pages/link", Aliases: []string{"bookmark", "til", "stars"}, Source: "---\ntemplate: link\nurl: \"\"\nimage: \"\"\n---\n\nWhy I'm sharing this link...\n"},
+		{ID: "builtin:quote", Name: "Quote", Description: "A quote with attribution.", Directory: "pages/quote", Aliases: []string{"quotation"}, Source: "---\ntemplate: quote\nquote: \"\"\nsource: \"\"\n---\n\nAdditional commentary on this quote...\n"},
+		{ID: "builtin:guide", Name: "Guide", Description: "A step-by-step guide.", Directory: "pages/guide", Aliases: []string{"series", "step", "chapter"}, Source: "---\ntemplate: guide\n---\n\n## Introduction\n\nWrite your guide here...\n"},
+		{ID: "builtin:inline", Name: "Inline", Description: "A short, feed-first post.", Directory: "pages/inline", Aliases: []string{"gratitude", "micro"}, Source: "---\ntemplate: inline\n---\n\nInline content...\n"},
+		{ID: "builtin:contact", Name: "Contact", Description: "A contact or profile page.", Directory: "pages/contact", Aliases: []string{"character", "person"}, Source: "---\ntemplate: contact\nhandle: \"\"\naliases: []\navatar: \"\"\nurl: \"\"\n---\n\nBio or contact details...\n"},
+		{ID: "builtin:author", Name: "Author", Description: "An author profile.", Directory: "pages/author", Source: "---\ntemplate: author\nname: \"\"\nbio: \"\"\nrole: \"\"\navatar: \"\"\nurl: \"\"\nemail: \"\"\nsocial: {}\nactive: true\nguest: false\n---\n\nExtended author bio...\n"},
 	}
 }
 

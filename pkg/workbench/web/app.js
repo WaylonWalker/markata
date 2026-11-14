@@ -278,9 +278,9 @@ document.querySelector('#create-form').addEventListener('submit',async event => 
           !sourceURL.hostname || sourceURL.username || sourceURL.password) {
         throw new Error('Use a public-style http(s) URL without embedded credentials.');
       }
-      // Preserve site-owned frontmatter and quote the URL as YAML string.
+      // Preserve the starter fields and quote the URL as a YAML string.
       // Never fetch remote metadata from the editor client or Go server.
-      source = source.replace(/^link:\s*.*$/m, () => 'link: ' + JSON.stringify(sourceURL.href));
+      source = source.replace(/^url:\s*.*$/m, () => 'url: ' + JSON.stringify(sourceURL.href));
     }
     const response = await fetch('/workspace/file?path=' + encodeURIComponent(path),{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:source});
     const data = await response.json();
