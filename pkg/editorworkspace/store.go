@@ -300,6 +300,17 @@ func (s *Store) CreateWithImage(path, source, imageName, contentType string, ima
 	return imageURL, nil
 }
 
+// SetContentTemplateDefaults updates site-wide starter placement and naming.
+func (s *Store) SetContentTemplateDefaults(name, directory, filenameMode string) error {
+	if err := s.ctx.Err(); err != nil {
+		return err
+	}
+	if err := s.workspace.SetContentTemplateDefaults(name, directory, filenameMode); err != nil {
+		return err
+	}
+	return s.refresh(nil, true)
+}
+
 // ReadImage serves a contained static image for the editor preview.
 func (s *Store) ReadImage(name string) ([]byte, error) {
 	if err := s.ctx.Err(); err != nil {

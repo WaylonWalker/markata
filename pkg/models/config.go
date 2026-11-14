@@ -2875,6 +2875,9 @@ type ContentTemplatesConfig struct {
 	// Placement maps template names to output directories
 	Placement map[string]string `json:"placement" yaml:"placement" toml:"placement"`
 
+	// FilenameMode maps template names to "title" or "numbered" filenames.
+	FilenameMode map[string]string `json:"filename_mode" yaml:"filename_mode" toml:"filename_mode"`
+
 	// Templates is a list of custom template configurations
 	Templates []ContentTemplateConfig `json:"templates,omitempty" yaml:"templates,omitempty" toml:"templates,omitempty"`
 }
@@ -2888,7 +2891,8 @@ func NewContentTemplatesConfig() ContentTemplatesConfig {
 			"page": "pages",
 			"docs": "docs",
 		},
-		Templates: []ContentTemplateConfig{},
+		FilenameMode: map[string]string{},
+		Templates:    []ContentTemplateConfig{},
 	}
 }
 

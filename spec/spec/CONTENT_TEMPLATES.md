@@ -97,6 +97,13 @@ user enables numbering, the editor uses the next available
 be able to disable numbering for that post. Numbering MUST NOT replace an
 existing file.
 
+Sites MAY configure per-template defaults with
+`content_templates.placement` and `content_templates.filename_mode`. Filename
+mode MUST be `title` or `numbered`. The editor MUST present the selected
+folder and filename mode as editable defaults and allow a one-post override.
+When the user chooses to remember changed defaults, the editor MUST persist
+them in site configuration. `markata-go new` MUST honor those saved defaults.
+
 Site-authored starters override a config starter or built-in starter with
 the same canonical name. Canonical names MUST remain selectable even when a
 different starter uses that name as an alias. CLI/TUI MUST report an ambiguous

@@ -87,9 +87,26 @@ the starter or use today's local date. Photo and Shot posts accept an image URL
 or a pasted/dropped PNG, JPEG, GIF, or WebP file. URLs stay remote; pasted files
 are copied to `static/images/` using the post's filename.
 
-Ping and Gratitude have **Use next number** enabled by default. You can turn it
-off for an individual post. To configure numbering for a site-authored starter,
-add numbering metadata:
+Ping and Gratitude use numbered filenames by default. Choose **Title slug** to
+override this for one post. The new-post form can remember changed folder and
+filename defaults for the selected type; those values are shared with
+`markata-go new`.
+
+To configure folder and filename defaults directly in TOML:
+
+```toml
+[content_templates.placement]
+ping = "pages/ping"
+note = "pages/note"
+
+[content_templates.filename_mode]
+ping = "numbered"
+gratitude = "numbered"
+note = "title"
+```
+
+Site-authored starters can also set their numbering prefix and initial mode in
+starter metadata. The editor honors these fields:
 
 ```yaml
 starter:
@@ -98,8 +115,10 @@ starter:
   numbered_by_default: true
 ```
 
-The editor scans the starter's output folder and uses the next available
-`ping-N` filename. It does not replace an existing Markdown file or image.
+The editor and CLI scan the selected output folder and use the next available
+`<type>-N` filename when numbering is enabled. The editor uses the optional
+`number_prefix` for site-authored starters. Creation never replaces an existing
+Markdown file or image.
 
 Run `markata-go new --list` to see starters, then create content with:
 

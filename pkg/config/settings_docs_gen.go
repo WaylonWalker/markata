@@ -189,6 +189,7 @@ var settingDocs = map[string]string{
 	"ContentTemplateConfig.Name":                   "Name is the template identifier (e.g., \"post\", \"page\", \"docs\")",
 	"ContentTemplatesConfig.Directory":             "Directory is where user-defined templates are stored (default: \"content-templates\")",
 	"ContentTemplatesConfig.Placement":             "Placement maps template names to output directories",
+	"ContentTemplatesConfig.FilenameMode":          "FilenameMode maps template names to title or numbered filenames",
 	"ContentTemplatesConfig.Templates":             "Templates is a list of custom template configurations",
 	"ContributionGraphConfig.CDNURL":               "CDNURL is the URL for the Cal-Heatmap library",
 	"ContributionGraphConfig.ContainerClass":       "ContainerClass is the CSS class for the graph container div (default: \"contribution-graph-container\")",

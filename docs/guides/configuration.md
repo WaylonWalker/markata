@@ -1985,6 +1985,7 @@ Content templates configure the `markata-go new` command, controlling default fr
 |-------|------|---------|-------------|
 | `directory` | string | `"content-templates"` | Directory for user-defined template files |
 | `placement` | object | `{post:"pages/post",page:"pages",docs:"docs"}` | Map of template names to output directories |
+| `filename_mode` | object | Title slug, except Ping and Gratitude use numbered names | Map of template names to `"title"` or `"numbered"` filenames |
 | `templates` | array | `[]` | Custom template definitions |
 
 ```toml
@@ -1996,6 +1997,12 @@ directory = "content-templates"
 post = "blog"          # markata-go new -t post creates in blog/
 page = "pages"
 docs = "documentation"
+ping = "pages/ping"
+
+[content_templates.filename_mode]
+ping = "numbered"
+gratitude = "numbered"
+note = "title"
 
 # Define custom templates
 [[content_templates.templates]]
@@ -2018,6 +2025,12 @@ prep_time = ""
 cook_time = ""
 servings = 4
 ```
+
+The workbench's new-post form lets you override the folder and filename mode
+for one post. Keep **Remember folder and file name style for this post type**
+selected to save changed defaults in this section of the site's config. The
+CLI uses those saved folder and filename defaults too. Numbered filenames use
+`<type>-N` and continue after the largest matching Markdown filename.
 
 **File-based Templates:**
 

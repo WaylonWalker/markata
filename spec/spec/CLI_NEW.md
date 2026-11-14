@@ -94,6 +94,9 @@ the title argument.
   3. A "Custom..." option that reveals a text input
 - Default directories per template type are configurable in config under
   `[content_templates.placement]`
+- Filename defaults are configurable in `[content_templates.filename_mode]` as
+  `"title"` or `"numbered"`. Numbered files use the next available
+  `<template>-N` name in the selected directory.
 - Default directory pattern: `pages/<template>` for non-standard templates
 
 #### 4. Tag Selection

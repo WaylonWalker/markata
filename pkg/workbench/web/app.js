@@ -150,16 +150,18 @@ const createImagePaste = document.querySelector('#create-image-paste');
 const createImagePreview = document.querySelector('#create-image-preview');
 const createImageName = document.querySelector('#create-image-name');
 const createNumbering = document.querySelector('#create-numbering');
-const createNumbered = document.querySelector('#create-numbered');
-const createNumberedLabel = document.querySelector('label[for="create-numbered"]');
+const createFilenameMode = document.querySelector('#create-filename-mode');
+const createRememberDefaults = document.querySelector('#create-remember-defaults');
 const createDate = document.querySelector('#create-date');
 const createSlug = document.querySelector('#create-slug');
 const createDirectory = document.querySelector('#create-directory');
+const createDirectoryHelp = document.querySelector('#create-directory-help');
 const createPathPreview = document.querySelector('#create-path-preview');
 let contentTemplates = [];
 let selectedContentTemplate = null;
 let selectedImageFile = null;
 let imagePreviewURL = '';
+let numberLookupRevision = 0;
 async function showCreateDialog() {
   try {
     const response = await fetch('/workspace/templates',{cache:'no-store'});
@@ -191,6 +193,7 @@ function templateScore(template, query) {
 }
 function chooseTemplate(template) {
   if (!template) return;
+  numberLookupRevision++;
   selectedContentTemplate = template;
   templatePicker.dataset.selectedTemplate = template.id;
   templatePicker.close();
@@ -214,10 +217,11 @@ function chooseTemplate(template) {
   createSlug.readOnly = false;
   createSlug.placeholder = slugify(title) || 'post-title';
   createDirectory.value = defaultContentDirectory(template);
+  createDirectoryHelp.textContent = `Current site default for ${template.name}: ${template.directory || createDirectory.value}.`;
   createDate.value = '';
-  createNumbering.hidden = !template.number_prefix;
-  createNumbered.checked = Boolean(template.numbered_by_default);
-  createNumberedLabel.textContent = template.number_prefix ? `Use next ${template.number_prefix} number (${template.number_prefix}-${template.next_number || 1})` : 'Use next number';
+  createNumbering.hidden = false;
+  createFilenameMode.value = template.filename_mode || (template.numbered_by_default ? 'numbered' : 'title');
+  createRememberDefaults.checked = true;
   updateCreatePathPreview();
   createDialog.showModal();
   createTitle.focus();
@@ -298,9 +302,10 @@ function defaultContentDirectory(template) {
 }
 function updateCreatePathPreview() {
   const template = selectedContentTemplate;
-  if (template?.number_prefix && createNumbered.checked) {
+  if (createFilenameMode.value === 'numbered') {
     const number = template.next_number || 1;
-    createSlug.value = `${template.number_prefix}-${number}`;
+    const prefix = template.number_prefix || slugify(template.name);
+    createSlug.value = `${prefix}-${number}`;
     createSlug.readOnly = true;
   } else {
     if (createSlug.readOnly) createSlug.value = '';
@@ -310,6 +315,21 @@ function updateCreatePathPreview() {
   const directory = createDirectory.value.trim().replace(/\\/g,'/').replace(/^\/+|\/+$/g,'');
   createSlug.placeholder = slugify(createTitle.value) || 'post-title';
   createPathPreview.textContent = `${directory ? `${directory}/` : ''}${slug}.md`;
+}
+async function refreshNextContentNumber() {
+  if (!selectedContentTemplate || createFilenameMode.value !== 'numbered') return;
+  const revision = ++numberLookupRevision;
+  const directory = createDirectory.value.trim().replace(/\\/g,'/').replace(/^\/+|\/+$/g,'');
+  const prefix = selectedContentTemplate.number_prefix || slugify(selectedContentTemplate.name);
+  try {
+    const query = new URLSearchParams({directory,prefix});
+    const response = await fetch('/workspace/content-number?'+query.toString(),{cache:'no-store'});
+    const data = await response.json();
+    if (response.ok && revision === numberLookupRevision && Number.isInteger(data.next_number)) {
+      selectedContentTemplate.next_number = data.next_number;
+      updateCreatePathPreview();
+    }
+  } catch {}
 }
 templateQuery.addEventListener('input',() => {activeTemplate=0;renderTemplateChoices();});
 templatePicker.querySelector('#template-picker-close').addEventListener('click',() => templatePicker.close());
@@ -329,7 +349,8 @@ document.querySelector('#create-cancel').addEventListener('click',() => createDi
 createTitle.addEventListener('input',updateCreatePathPreview);
 createSlug.addEventListener('input',updateCreatePathPreview);
 createDirectory.addEventListener('input',updateCreatePathPreview);
-createNumbered.addEventListener('change',updateCreatePathPreview);
+createDirectory.addEventListener('change',refreshNextContentNumber);
+createFilenameMode.addEventListener('change',() => {updateCreatePathPreview();refreshNextContentNumber();});
 createImageURL.addEventListener('input',() => {if(createImageURL.value.trim())clearSelectedImage();});
 createImageFile.addEventListener('change',() => selectImageFile(createImageFile.files?.[0]));
 createImagePaste.addEventListener('click',() => createImageFile.click());
@@ -364,9 +385,11 @@ document.querySelector('#create-form').addEventListener('submit',async event => 
   event.preventDefault(); createError.hidden = true;
   const submitButton=document.querySelector('#create-submit');
   submitButton.disabled=true;
+  if (createFilenameMode.value === 'numbered') await refreshNextContentNumber();
   const template = contentTemplates.find(item => item.id === templatePicker.dataset.selectedTemplate);
   const title = createTitle.value.trim();
   const slug = createSlug.value.trim() || slugify(title);
+  const filenameMode = createFilenameMode.value;
   const directory = createDirectory.value.trim().replace(/\\/g,'/').replace(/^\/+|\/+$/g,'');
   const path = `${directory && directory !== '.' ? `${directory}/` : ''}${slug}.md`;
   if (!template || !title || !slug || !path) {submitButton.disabled=false;return;}
@@ -391,6 +414,15 @@ document.querySelector('#create-form').addEventListener('submit',async event => 
       if(!['https:','http:'].includes(parsedImageURL.protocol)||!parsedImageURL.hostname||parsedImageURL.username||parsedImageURL.password)
         throw new Error('Use a public-style http(s) image URL without embedded credentials.');
       source=setFrontmatterImage(source,parsedImageURL.href);
+    }
+    const changedDefaults = directory !== template.directory || filenameMode !== (template.filename_mode || 'title');
+    if (createRememberDefaults.checked && changedDefaults) {
+      const settingsResponse = await fetch('/workspace/template-settings', {
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({id:template.id,directory,filename_mode:filenameMode})
+      });
+      const settingsData = await settingsResponse.json();
+      if (!settingsResponse.ok) throw new Error(settingsData.error || 'Cannot save these site defaults.');
     }
     let response;
     if(selectedImageFile){

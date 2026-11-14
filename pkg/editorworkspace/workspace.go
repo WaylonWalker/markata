@@ -389,6 +389,81 @@ func (w *Workspace) CreateWithImage(path, source, imageName, contentType string,
 	return imageURL, nil
 }
 
+// SetContentTemplateDefaults saves a starter's site-wide folder and filename mode.
+func (w *Workspace) SetContentTemplateDefaults(name, directory, filenameMode string) error {
+	if !validUploadName(name) || !filepath.IsLocal(filepath.FromSlash(directory)) || filenameMode != "title" && filenameMode != "numbered" {
+		return fmt.Errorf("invalid content template defaults")
+	}
+	cleanDirectory := filepath.Clean(filepath.FromSlash(directory))
+	if cleanDirectory == ".." || strings.HasPrefix(cleanDirectory, ".."+string(filepath.Separator)) {
+		return fmt.Errorf("content template directory must stay inside the workspace")
+	}
+	configName := "markata-go.toml"
+	for _, candidate := range []string{"markata-go.toml", "markata-go.yaml", "markata-go.yml", "markata-go.json"} {
+		if _, err := os.Lstat(filepath.Join(w.root, candidate)); err == nil {
+			configName = candidate
+			break
+		} else if !os.IsNotExist(err) {
+			return fmt.Errorf("inspect site configuration: %w", err)
+		}
+	}
+	target := filepath.Join(w.root, configName)
+	existing, err := os.Lstat(target)
+	if err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("inspect site configuration: %w", err)
+	}
+	exists := err == nil
+	mode := os.FileMode(0o644)
+	var source []byte
+	if exists {
+		if existing.Mode()&os.ModeSymlink != 0 || !existing.Mode().IsRegular() {
+			return fmt.Errorf("site configuration must be a regular file")
+		}
+		mode = existing.Mode().Perm()
+		source, err = os.ReadFile(target)
+		if err != nil {
+			return fmt.Errorf("read site configuration: %w", err)
+		}
+	}
+	temporary, err := os.CreateTemp(w.root, ".markata-settings-*"+filepath.Ext(configName))
+	if err != nil {
+		return fmt.Errorf("create site settings temporary file: %w", err)
+	}
+	temporaryPath := temporary.Name()
+	defer os.Remove(temporaryPath)
+	err = temporary.Chmod(mode)
+	if err == nil {
+		_, err = temporary.Write(source)
+	}
+	if err == nil {
+		err = temporary.Sync()
+	}
+	if closeErr := temporary.Close(); err == nil {
+		err = closeErr
+	}
+	if err != nil {
+		return fmt.Errorf("write site settings temporary file: %w", err)
+	}
+	placementKey := "content_templates.placement." + name
+	modeKey := "content_templates.filename_mode." + name
+	if err := config.SetValueInFileDirect(temporaryPath, placementKey, filepath.ToSlash(cleanDirectory)); err != nil {
+		return fmt.Errorf("update content template placement: %w", err)
+	}
+	if err := config.SetValueInFileDirect(temporaryPath, modeKey, filenameMode); err != nil {
+		return fmt.Errorf("update content template filename mode: %w", err)
+	}
+	if exists {
+		if err := os.Rename(temporaryPath, target); err != nil {
+			return fmt.Errorf("save site settings: %w", err)
+		}
+		return nil
+	}
+	if err := os.Link(temporaryPath, target); err != nil {
+		return fmt.Errorf("create site settings: %w", err)
+	}
+	return nil
+}
+
 func (w *Workspace) ensureDirectory(relative string) (string, error) {
 	local := filepath.Clean(filepath.FromSlash(relative))
 	if local == "." {

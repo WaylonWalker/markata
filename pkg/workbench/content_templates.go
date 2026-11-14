@@ -24,6 +24,7 @@ type contentTemplate struct {
 	Aliases           []string `json:"aliases,omitempty"`
 	NumberPrefix      string   `json:"number_prefix,omitempty"`
 	NumberedByDefault bool     `json:"numbered_by_default,omitempty"`
+	FilenameMode      string   `json:"filename_mode"`
 	NextNumber        int      `json:"next_number,omitempty"`
 	Source            string   `json:"source"`
 }
@@ -47,14 +48,6 @@ func (h *Handler) contentTemplates() ([]contentTemplate, error) {
 		configured := h.siteConfig.ContentTemplates
 		if configured.Directory != "" {
 			directory = configured.Directory
-		}
-		for i := range templates {
-			if placement, ok := configured.Placement[contentTemplateKey(templates[i])]; ok {
-				if !safeStarterOutputDirectory(placement) {
-					return nil, fmt.Errorf("unsafe content starter placement %q", placement)
-				}
-				templates[i].Directory = placement
-			}
 		}
 		for _, configTemplate := range configured.Templates {
 			if strings.TrimSpace(configTemplate.Name) == "" {
@@ -103,8 +96,33 @@ func (h *Handler) contentTemplates() ([]contentTemplate, error) {
 		return nil, err
 	}
 	for i := range templates {
+		key := contentTemplateKey(templates[i])
+		if h.siteConfig != nil {
+			if placement, ok := h.siteConfig.ContentTemplates.Placement[key]; ok {
+				if !safeStarterOutputDirectory(placement) {
+					return nil, fmt.Errorf("unsafe content starter placement %q", placement)
+				}
+				templates[i].Directory = placement
+			}
+		}
+		mode := "title"
+		if templates[i].NumberedByDefault {
+			mode = "numbered"
+		}
+		if h.siteConfig != nil {
+			if configuredMode, ok := h.siteConfig.ContentTemplates.FilenameMode[key]; ok {
+				mode = configuredMode
+			}
+		}
+		if mode != "title" && mode != "numbered" {
+			return nil, fmt.Errorf("starter %q has unsupported filename mode %q", templates[i].Name, mode)
+		}
+		templates[i].FilenameMode = mode
 		if templates[i].NumberPrefix == "" {
-			continue
+			templates[i].NumberPrefix = contentNumberPrefix(key)
+			if templates[i].NumberPrefix == "" {
+				templates[i].NumberPrefix = "post"
+			}
 		}
 		next, err := nextContentNumber(h.root, templates[i].Directory, templates[i].NumberPrefix)
 		if err != nil {
@@ -119,6 +137,24 @@ func (h *Handler) contentTemplates() ([]contentTemplate, error) {
 		})
 	}
 	return templates, nil
+}
+
+func contentNumberPrefix(name string) string {
+	var prefix strings.Builder
+	separator := false
+	for _, r := range strings.ToLower(name) {
+		switch {
+		case r >= 'a' && r <= 'z', r >= '0' && r <= '9':
+			if separator && prefix.Len() > 0 {
+				prefix.WriteByte('-')
+			}
+			prefix.WriteRune(r)
+			separator = false
+		default:
+			separator = true
+		}
+	}
+	return strings.Trim(prefix.String(), "-")
 }
 
 func contentTemplateKey(template contentTemplate) string {

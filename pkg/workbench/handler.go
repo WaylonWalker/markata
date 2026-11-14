@@ -56,6 +56,10 @@ type workspaceSource interface {
 	ReadImage(string) ([]byte, error)
 }
 
+type contentTemplateDefaultsWriter interface {
+	SetContentTemplateDefaults(string, string, string) error
+}
+
 // Handler serves the editor, render API and bundled appearance assets.
 // Mount it at the root of an origin. Authored HTML is enabled for trusted local
 // editing; isolate its preview using an opaque-origin iframe sandbox.
@@ -528,9 +532,11 @@ func (h *Handler) document(result *plugins.StandaloneResult, attributes map[stri
 
 func isWorkspaceRoute(routePath, method string) bool {
 	switch {
-	case routePath == "/workspace" || routePath == "/workspace/templates" || routePath == "/workspace/image" || routePath == "/workspace/index-status" || routePath == "/workspace/changes":
+	case routePath == "/workspace" || routePath == "/workspace/templates" || routePath == "/workspace/content-number" || routePath == "/workspace/image" || routePath == "/workspace/index-status" || routePath == "/workspace/changes":
 		return method == http.MethodGet
 	case routePath == "/workspace/new-post":
+		return method == http.MethodPost
+	case routePath == "/workspace/template-settings":
 		return method == http.MethodPost
 	case routePath == "/workspace/file":
 		return method == http.MethodGet || method == http.MethodPut || method == http.MethodPost
@@ -619,6 +625,72 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
+	if r.URL.Path == "/workspace/template-settings" {
+		if !sameOriginWorkspaceMutation(r) {
+			fail(w, http.StatusForbidden, "same-origin workspace writes are required")
+			return
+		}
+		writer, ok := h.workspace.(contentTemplateDefaultsWriter)
+		if !ok {
+			fail(w, http.StatusNotImplemented, "site content defaults cannot be saved by this workspace")
+			return
+		}
+		var request struct {
+			ID           string `json:"id"`
+			Directory    string `json:"directory"`
+			FilenameMode string `json:"filename_mode"`
+		}
+		decoder := json.NewDecoder(io.LimitReader(r.Body, 32<<10))
+		decoder.DisallowUnknownFields()
+		if err := decoder.Decode(&request); err != nil {
+			fail(w, http.StatusBadRequest, "invalid site content defaults")
+			return
+		}
+		if !h.acquire(r) {
+			return
+		}
+		refreshErr := h.refreshPresentation()
+		templates, err := h.contentTemplates()
+		<-h.gate
+		if refreshErr != nil {
+			fail(w, http.StatusUnprocessableEntity, "cannot refresh site configuration: "+refreshErr.Error())
+			return
+		}
+		if err != nil {
+			fail(w, http.StatusUnprocessableEntity, "cannot load content templates: "+err.Error())
+			return
+		}
+		var key string
+		for _, template := range templates {
+			if template.ID == request.ID {
+				key = contentTemplateKey(template)
+				break
+			}
+		}
+		if key == "" || !validNumberPrefix(key) || !safeStarterOutputDirectory(request.Directory) || request.FilenameMode != "title" && request.FilenameMode != "numbered" {
+			fail(w, http.StatusBadRequest, "invalid content type, folder, or filename mode")
+			return
+		}
+		h.workspaceWriteMu.Lock()
+		err = writer.SetContentTemplateDefaults(key, request.Directory, request.FilenameMode)
+		h.workspaceWriteMu.Unlock()
+		if err != nil {
+			fail(w, http.StatusUnprocessableEntity, "cannot save site content defaults: "+err.Error())
+			return
+		}
+		if !h.acquire(r) {
+			return
+		}
+		err = h.refreshPresentation()
+		<-h.gate
+		if err != nil {
+			fail(w, http.StatusUnprocessableEntity, "cannot reload site content defaults: "+err.Error())
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]bool{"saved": true})
+		return
+	}
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("Content-Type", "application/json")
 	if r.URL.Path == "/workspace/publish/commit" {
@@ -666,7 +738,16 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if r.URL.Path == "/workspace/templates" {
+		if !h.acquire(r) {
+			return
+		}
+		refreshErr := h.refreshPresentation()
 		templates, err := h.contentTemplates()
+		<-h.gate
+		if refreshErr != nil {
+			fail(w, http.StatusUnprocessableEntity, "cannot refresh site configuration: "+refreshErr.Error())
+			return
+		}
 		if err != nil {
 			fail(w, 422, "cannot load content templates: "+err.Error())
 			return
@@ -674,6 +755,23 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 		if err := json.NewEncoder(w).Encode(map[string]any{"templates": templates}); err != nil {
 			return
 		}
+		return
+	}
+	if r.URL.Path == "/workspace/content-number" {
+		directory := r.URL.Query().Get("directory")
+		prefix := r.URL.Query().Get("prefix")
+		if !safeStarterOutputDirectory(directory) || !validNumberPrefix(prefix) {
+			fail(w, http.StatusBadRequest, "invalid content directory or number prefix")
+			return
+		}
+		next, err := nextContentNumber(h.root, directory, prefix)
+		if err != nil {
+			fail(w, http.StatusUnprocessableEntity, "cannot find next content number: "+err.Error())
+			return
+		}
+		w.Header().Set("Cache-Control", "no-store")
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]int{"next_number": next})
 		return
 	}
 	if r.URL.Path == "/workspace/file" {
