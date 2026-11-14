@@ -26,9 +26,10 @@ const presenceParticipants=[{id:'local',label:'You',color:'var(--color-primary,#
 const presenceCursors=new Map();
 const blockSignature=node=>{
   if(node.matches('pre.mermaid'))return `mermaid:${node.dataset.markataMermaidSource??node.textContent}`;
-  const generated=node.matches('.markata-sync-position,[data-markata-code-enhanced],.chartjs-container,[data-markata-source-line],[data-markata-source-end-line]')||node.getAttribute('class')===''||node.querySelector('[data-markata-ui],[data-markata-code-enhanced],.chartjs-container canvas,[data-markata-source-line],[data-markata-source-end-line]');
+  const generated=node.matches('.markata-sync-position,[data-markata-code-enhanced],.chartjs-container,[data-markata-source-line],[data-markata-source-end-line]')||node.getAttribute('class')===''||node.querySelector('[data-markata-ui],[data-markata-code-enhanced],.chartjs-container canvas,[data-markata-source-line],[data-markata-source-end-line],pre.mermaid');
   if(!generated)return node.outerHTML;
   const clone=node.cloneNode(true);
+  clone.removeAttribute('data-markata-source-line');
   if(clone.hasAttribute('data-markata-source-line'))clone.removeAttribute('data-markata-source-line');
   clone.querySelectorAll('[data-markata-source-line],[data-markata-source-end-line]').forEach(child=>{
     child.removeAttribute('data-markata-source-line');child.removeAttribute('data-markata-source-end-line');
@@ -50,6 +51,11 @@ const blockSignature=node=>{
   clone.querySelectorAll('.chartjs-container canvas').forEach(canvas=>canvas.remove());
   clone.querySelectorAll('.chartjs-container [id]').forEach(element=>element.removeAttribute('id'));
   clone.querySelectorAll('.chartjs-container details').forEach(details=>details.removeAttribute('open'));
+  clone.querySelectorAll('pre.mermaid').forEach(block=>{
+    if(block.dataset.markataMermaidSource!=null)block.textContent=block.dataset.markataMermaidSource;
+    block.removeAttribute('data-markata-mermaid-source');
+    block.removeAttribute('data-processed');
+  });
   return clone.outerHTML;
 };
 const patchArticle=(article,html)=>{
@@ -250,6 +256,29 @@ const observeArticle=article=>{
 if(document.fonts?.ready)document.fonts.ready.then(()=>scrollState(false));
 const originalScripts=new WeakMap();
 const scriptSource=s=>originalScripts.get(s) ?? s.textContent;
+const queuedMermaid=new WeakSet();
+const mermaidObserver=window.IntersectionObserver?new IntersectionObserver(entries=>{
+  const visible=[];
+  for(const entry of entries){
+    if(!entry.isIntersecting||!entry.target.isConnected)continue;
+    mermaidObserver.unobserve(entry.target);
+    visible.push(entry.target);
+  }
+  if(visible.length)window.initMermaid?.(visible);
+},{rootMargin:'400px 0px'}):null;
+const observeMermaid=roots=>{
+  for(const root of roots){
+    const blocks=root.matches?.('pre.mermaid')?[root]:[...(root.querySelectorAll?.('pre.mermaid')||[])];
+    for(const block of blocks){
+      if(block.dataset.processed==='true'||queuedMermaid.has(block))continue;
+      queuedMermaid.add(block);
+      if(mermaidObserver)mermaidObserver.observe(block);
+      else window.initMermaid?.([block]);
+    }
+  }
+};
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>observeMermaid([document]));
+else observeMermaid([document]);
 
 const renderMarkdown=async(data,changedNodes)=>{const article=document.querySelector('.post-content');
 if(!article)return;
@@ -305,7 +334,7 @@ document.body.append(script);
 }else{document.body.append(script);script.remove();}
 }
 window.markataInitCodeChrome?.(changedNodes);
-if(changedDiagrams.length)window.initMermaid?.(changedDiagrams);
+if(changedDiagrams.length)observeMermaid(changedDiagrams);
 const nextAppearance=JSON.stringify(data.attributes||{});
 if(nextAppearance!==appearanceSignature){setAppearance(data.attributes);dispatchEvent(new Event('theme-change'));appearanceSignature=nextAppearance;}
 observeArticle(article);
@@ -339,7 +368,8 @@ return;
 }if(e.data?.type==='sync-scroll'){programmedTarget={id:e.data.id,y:Math.max(0,Math.min(e.data.y,document.documentElement.scrollHeight-innerHeight))};document.scrollingElement.scrollTop=programmedTarget.y;const id=e.data.id;setTimeout(()=>{if(programmedTarget?.id===id)programmedTarget=null;},300);return;
 }if(e.data?.type==='sync-position'){positionLine=e.data.line;positionColumn=Number.isFinite(e.data.ch)?e.data.ch:null;positionSourceText=typeof e.data.text==='string'?e.data.text:null;positionPending=e.data.pending===true;positionVimMode=['normal','insert','replace','visual'].includes(e.data.vimMode)?e.data.vimMode:null;if(positionColumn==null)lastExactPosition=null;syncPositionMarker();return;
 }if(e.data?.type==='appearance'){updates=updates.then(()=>{setAppearance(e.data.attributes);
-dispatchEvent(new Event('theme-change'));appearanceSignature=JSON.stringify(e.data.attributes||{});
+const nextAppearance=JSON.stringify(e.data.attributes||{});
+if(nextAppearance!==appearanceSignature){dispatchEvent(new Event('theme-change'));appearanceSignature=nextAppearance;}
 }).catch(console.error);
 }});
 // The article and message listener are ready. Images may keep iframe.onload pending.

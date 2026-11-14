@@ -158,6 +158,34 @@ class GoEditorBrowserTest(unittest.TestCase):
             expect(self.preview.locator(".mermaid svg")).to_contain_text(label)
         self.assertEqual(self.frame.evaluate("window.__persistentPreview"), "retained")
 
+    def test_unrelated_edit_preserves_rendered_mermaid(self):
+        diagram = "```mermaid\ngraph LR\nStart-->End\n```"
+        self.edit(f"# Mermaid\n\n{diagram}\n\nBefore")
+        expect(self.preview.locator("pre.mermaid svg")).to_be_visible()
+        self.frame.evaluate("window.__mermaidSvg = document.querySelector('pre.mermaid svg')")
+
+        self.edit(f"# Mermaid\n\n{diagram}\n\nAfter")
+        expect(self.preview.locator(".post-content p").last).to_have_text("After")
+        self.assertTrue(self.frame.evaluate(
+            "window.__mermaidSvg === document.querySelector('pre.mermaid svg')"))
+
+        self.edit("# Mermaid\n\n```mermaid\ngraph LR\nChanged-->End\n```\n\nAfter")
+        expect(self.preview.locator("pre.mermaid svg")).to_contain_text("Changed")
+        self.assertFalse(self.frame.evaluate(
+            "window.__mermaidSvg === document.querySelector('pre.mermaid svg')"))
+
+    def test_offscreen_mermaid_renders_when_scrolled_into_view(self):
+        paragraphs = "\n\n".join(f"Paragraph {number}. " + "Read this text. " * 20
+                                  for number in range(30))
+        self.edit("# Long page\n\n" + paragraphs +
+                  "\n\n```mermaid\ngraph LR\nLazy-->Visible\n```")
+        expect(self.preview.locator("pre.mermaid")).to_have_count(1)
+        self.page.wait_for_timeout(500)
+        expect(self.preview.locator("pre.mermaid svg")).to_have_count(0)
+
+        self.frame.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+        expect(self.preview.locator("pre.mermaid svg")).to_contain_text("Lazy")
+
 
     def test_publish_rich_diff_marks_prose_and_safely_escapes_text(self):
         result = self.page.evaluate("""() => window.MarkataRichPublishDiff.richHTML(

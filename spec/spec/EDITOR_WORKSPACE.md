@@ -28,6 +28,10 @@ Refs #1977 and #1903. The workspace includes the publishing and Changes flow in 
 - The preview frame MUST accept the newest pending fragment once its message handler is ready.
   It MUST NOT wait for images, fonts, or other unrelated resource loads before applying an edit.
   A late frame load event MUST NOT replay an older fragment or finish the same preview twice.
+- Editing text outside a Mermaid diagram MUST preserve that diagram's rendered DOM and MUST NOT
+  queue another Mermaid render. Editing the diagram source MUST replace and render that diagram.
+- The editor preview SHOULD render Mermaid diagrams near the viewport first. Offscreen diagrams
+  MAY remain as source placeholders until scrolled near view. This MUST NOT change normal site output.
 - An edit during site metadata loading MUST preserve already parsed metadata for files whose
   source and configuration have not changed. The edited file MUST be parsed again before the
   completed index is published.

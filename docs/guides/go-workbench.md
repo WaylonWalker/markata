@@ -134,6 +134,9 @@ font in that page is still loading.
 Edits made during indexing update the changed post without restarting metadata loading for
 every other post.
 Old responses cannot replace a newer draft. Errors preserve the last successful preview.
+Rendered Mermaid diagrams stay in place when you edit other text, so a large post does not redraw
+every diagram after each keystroke. Diagrams below the visible page render as you scroll near them.
+Changing a diagram's source redraws that diagram when it is near view.
 The footer shows Go render time, total edit-to-preview time, source size, and preview size.
 Repeated source uses a one-entry memory cache. Appearance changes update the preview without a render request.
 Workspace post embeds in `![[post-slug]]` or `![embed](path/to/post.md)` format

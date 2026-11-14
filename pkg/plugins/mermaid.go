@@ -608,18 +608,23 @@ func (p *MermaidPlugin) injectMermaidScript(htmlContent string) string {
 <script type="module">
 ` + p.mermaidImportJS() + p.mermaidLightboxJS() + `
   mermaid.initialize({ startOnLoad: false, theme: '` + p.config.Theme + `' });
-  window.initMermaid = async () => {
+  window.initMermaid = async (root = document) => {
+    const roots = Array.isArray(root) ? root : [root];
+    const blocks = roots.flatMap(node => node.matches?.('pre.mermaid') ? [node] : [...(node.querySelectorAll?.('pre.mermaid') || [])]);
+    if (!blocks.length) return;
     try {
-      await mermaid.run();
+      await mermaid.run({ nodes: blocks });
     } catch (e) {
       console.error('mermaid.run failed:', e);
     }
     ensureMermaidLightbox();
   };
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => window.initMermaid());
-  } else {
-    window.initMermaid();
+  if (!window.markataEditorPreview) {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => window.initMermaid());
+    } else {
+      window.initMermaid();
+    }
   }
 </script>`
 	}
@@ -715,16 +720,19 @@ func (p *MermaidPlugin) cssVariablesScript() string {
     });
     return renderQueue;
   };
-  const rerenderMermaid = () => window.initMermaid();
+  const rerenderMermaid = () => window.initMermaid(window.markataEditorPreview
+    ? [...document.querySelectorAll('pre.mermaid[data-processed]')] : document);
   window.addEventListener('theme-change', rerenderMermaid);
   window.addEventListener('palette-change', rerenderMermaid);
   window.addEventListener('color-mode-change', rerenderMermaid);
   window.addEventListener('view-transition-complete', rerenderMermaid);
 ` + p.mermaidLightboxJS() + `
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => window.initMermaid());
-  } else {
-    window.initMermaid();
+  if (!window.markataEditorPreview) {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => window.initMermaid());
+    } else {
+      window.initMermaid();
+    }
   }
 </script>`
 }
