@@ -14,9 +14,12 @@ import (
 	"io"
 	"log"
 	"mime"
+	"mime/multipart"
 	"net"
 	"net/http"
+	"net/textproto"
 	"net/url"
+	"os"
 	"path"
 	"regexp"
 	"strings"
@@ -58,6 +61,10 @@ type workspaceSource interface {
 
 type contentTemplateDefaultsWriter interface {
 	SetContentTemplateDefaults(string, string, string) error
+}
+
+type workspaceCreateChecker interface {
+	CheckCreate(string) error
 }
 
 // Handler serves the editor, render API and bundled appearance assets.
@@ -551,6 +558,122 @@ func isWorkspaceRoute(routePath, method string) bool {
 	}
 }
 
+func (h *Handler) imageUploadProvider() string {
+	mode := "auto"
+	if config := h.currentSiteConfig(); config != nil && config.ContentTemplates.ImageUpload != "" {
+		mode = config.ContentTemplates.ImageUpload
+	}
+	switch mode {
+	case "local":
+		return "local"
+	case "dropper":
+		return "dropper"
+	case "auto":
+		if strings.TrimSpace(os.Getenv("DROPPER_TOKEN")) != "" {
+			return "dropper"
+		}
+		return "local"
+	default:
+		return "invalid"
+	}
+}
+
+func (h *Handler) dropperUploadEndpoint() string {
+	if configured := strings.TrimSpace(os.Getenv("DROPPER_API_URL")); configured != "" {
+		return configured
+	}
+	if config := h.currentSiteConfig(); config != nil && strings.TrimSpace(config.ContentTemplates.DropperUploadURL) != "" {
+		return strings.TrimSpace(config.ContentTemplates.DropperUploadURL)
+	}
+	return "https://dropper.waylonwalker.com/api/upload?format=json"
+}
+
+func (h *Handler) currentSiteConfig() *models.Config {
+	if h.store != nil {
+		if config, _ := h.store.Configuration(); config != nil {
+			return config
+		}
+	}
+	return h.siteConfig
+}
+
+func (h *Handler) uploadImageToDropper(ctx context.Context, filename, contentType string, data []byte) (string, error) {
+	token := strings.TrimSpace(os.Getenv("DROPPER_TOKEN"))
+	if token == "" {
+		return "", fmt.Errorf("Dropper uploads require the server-side DROPPER_TOKEN")
+	}
+	endpoint := h.dropperUploadEndpoint()
+	parsedEndpoint, err := url.ParseRequestURI(endpoint)
+	if err != nil || parsedEndpoint.Host == "" || parsedEndpoint.User != nil || parsedEndpoint.Scheme != "https" && !(parsedEndpoint.Scheme == "http" && isLoopbackHost(parsedEndpoint.Hostname())) {
+		return "", fmt.Errorf("Dropper upload URL must use HTTPS or a loopback HTTP URL")
+	}
+	var payload bytes.Buffer
+	form := multipart.NewWriter(&payload)
+	partHeader := make(textproto.MIMEHeader)
+	partHeader.Set("Content-Disposition", fmt.Sprintf(`form-data; name="file"; filename="%s"`, filename))
+	partHeader.Set("Content-Type", contentType)
+	part, err := form.CreatePart(partHeader)
+	if err != nil {
+		return "", fmt.Errorf("prepare Dropper upload: %w", err)
+	}
+	if _, err := part.Write(data); err != nil {
+		return "", fmt.Errorf("prepare Dropper image: %w", err)
+	}
+	if err := form.Close(); err != nil {
+		return "", fmt.Errorf("finish Dropper upload: %w", err)
+	}
+	request, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, &payload)
+	if err != nil {
+		return "", fmt.Errorf("create Dropper request: %w", err)
+	}
+	request.Header.Set("Authorization", "Bearer "+token)
+	request.Header.Set("Content-Type", form.FormDataContentType())
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+		CheckRedirect: func(request *http.Request, via []*http.Request) error {
+			if len(via) > 0 && !strings.EqualFold(request.URL.Host, via[0].URL.Host) {
+				return http.ErrUseLastResponse
+			}
+			return nil
+		},
+	}
+	response, err := client.Do(request)
+	if err != nil {
+		return "", fmt.Errorf("Dropper upload request failed: %w", err)
+	}
+	defer response.Body.Close()
+	responseBody, err := io.ReadAll(io.LimitReader(response.Body, 1<<20))
+	if err != nil {
+		return "", fmt.Errorf("read Dropper response: %w", err)
+	}
+	if response.StatusCode < 200 || response.StatusCode >= 300 {
+		message := strings.TrimSpace(string(responseBody))
+		if len(message) > 500 {
+			message = message[:500]
+		}
+		return "", fmt.Errorf("Dropper upload failed (%s): %s", response.Status, message)
+	}
+	var result struct {
+		URL string `json:"url"`
+	}
+	if err := json.Unmarshal(responseBody, &result); err != nil {
+		return "", fmt.Errorf("Dropper returned invalid JSON: %w", err)
+	}
+	imageURL, err := url.ParseRequestURI(result.URL)
+	if err != nil || imageURL.Host == "" || imageURL.User != nil || imageURL.Scheme != "https" && !(imageURL.Scheme == "http" && isLoopbackHost(imageURL.Hostname())) {
+		return "", fmt.Errorf("Dropper returned an invalid image URL")
+	}
+	return imageURL.String(), nil
+}
+
+func isLoopbackHost(host string) bool {
+	if strings.EqualFold(host, "localhost") {
+		return true
+	}
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsLoopback()
+}
+
 func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 	peer, _, peerErr := net.SplitHostPort(r.RemoteAddr)
 	if peerErr != nil || net.ParseIP(peer) == nil || !net.ParseIP(peer).IsLoopback() {
@@ -607,19 +730,55 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 			fail(w, http.StatusRequestEntityTooLarge, "image exceeds 15 MiB")
 			return
 		}
+		if _, err := editorworkspace.ImageExtension(header.Header.Get("Content-Type"), data); err != nil {
+			fail(w, http.StatusUnprocessableEntity, err.Error())
+			return
+		}
 		h.workspaceWriteMu.Lock()
 		defer h.workspaceWriteMu.Unlock()
-		imageURL, err := h.workspace.CreateWithImage(
-			r.FormValue("path"), source, r.FormValue("image_name"), header.Header.Get("Content-Type"), data,
-		)
+		path := r.FormValue("path")
+		imageName := r.FormValue("image_name")
+		provider := h.imageUploadProvider()
+		var imageURL string
+		switch provider {
+		case "dropper":
+			checker, ok := h.workspace.(workspaceCreateChecker)
+			if !ok {
+				fail(w, http.StatusNotImplemented, "workspace cannot validate a new post path")
+				return
+			}
+			if !validNumberPrefix(imageName) || len(imageName) > 100 {
+				fail(w, http.StatusBadRequest, "image name must be a lowercase slug")
+				return
+			}
+			extension, err := editorworkspace.ImageExtension(header.Header.Get("Content-Type"), data)
+			if err != nil {
+				fail(w, http.StatusUnprocessableEntity, err.Error())
+				return
+			}
+			if err := checker.CheckCreate(path); err != nil {
+				fail(w, http.StatusUnprocessableEntity, err.Error())
+				return
+			}
+			imageURL, err = h.uploadImageToDropper(r.Context(), imageName+"."+extension, header.Header.Get("Content-Type"), data)
+			if err == nil {
+				source = sourceWithImage(source, imageURL)
+				err = h.workspace.Create(path, source)
+			}
+		case "local":
+			imageURL, err = h.workspace.CreateWithImage(path, source, imageName, header.Header.Get("Content-Type"), data)
+		default:
+			err = fmt.Errorf("unsupported image upload provider %q", provider)
+		}
 		if err != nil {
 			fail(w, http.StatusUnprocessableEntity, err.Error())
 			return
 		}
 		w.WriteHeader(http.StatusCreated)
 		if err := json.NewEncoder(w).Encode(map[string]string{
-			"version": editorworkspace.SourceVersion(sourceWithImage(source, imageURL)),
-			"image":   imageURL,
+			"version":  editorworkspace.SourceVersion(sourceWithImage(source, imageURL)),
+			"image":    imageURL,
+			"provider": provider,
 		}); err != nil {
 			return
 		}
@@ -752,7 +911,7 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 			fail(w, 422, "cannot load content templates: "+err.Error())
 			return
 		}
-		if err := json.NewEncoder(w).Encode(map[string]any{"templates": templates}); err != nil {
+		if err := json.NewEncoder(w).Encode(map[string]any{"templates": templates, "image_upload": h.imageUploadProvider()}); err != nil {
 			return
 		}
 		return

@@ -2878,6 +2878,12 @@ type ContentTemplatesConfig struct {
 	// FilenameMode maps template names to "title" or "numbered" filenames.
 	FilenameMode map[string]string `json:"filename_mode" yaml:"filename_mode" toml:"filename_mode"`
 
+	// ImageUpload selects "auto", "local", or "dropper" for uploaded images.
+	ImageUpload string `json:"image_upload" yaml:"image_upload" toml:"image_upload"`
+
+	// DropperUploadURL overrides the default Dropper JSON upload endpoint.
+	DropperUploadURL string `json:"dropper_upload_url" yaml:"dropper_upload_url" toml:"dropper_upload_url"`
+
 	// Templates is a list of custom template configurations
 	Templates []ContentTemplateConfig `json:"templates,omitempty" yaml:"templates,omitempty" toml:"templates,omitempty"`
 }
@@ -2892,6 +2898,7 @@ func NewContentTemplatesConfig() ContentTemplatesConfig {
 			"docs": "docs",
 		},
 		FilenameMode: map[string]string{},
+		ImageUpload:  "auto",
 		Templates:    []ContentTemplateConfig{},
 	}
 }

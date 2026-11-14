@@ -86,9 +86,16 @@ When set, the selected date overrides the starter date.
 
 Photo and shot starters MUST accept an image URL or a pasted/dropped PNG, JPEG,
 GIF, or WebP image. Image URLs MUST be stored as authored; the workbench MUST
-NOT fetch them. Uploaded images MUST be saved under `static/images/` with the
-post filename as their basename. Creating the post and its image MUST fail
-without replacing an existing source or image file.
+NOT fetch them on the server. When image upload uses local storage, uploaded
+images MUST be saved under `static/images/` with the post filename as their
+basename. Creating the post and its image MUST fail without replacing an
+existing source or image file.
+
+Sites MAY set `content_templates.image_upload` to `local`, `dropper`, or
+`auto`. In `auto`, the workbench MUST use Dropper when `DROPPER_TOKEN` is
+available to the server and local storage otherwise. Dropper credentials MUST
+remain server-side. The workbench MUST preview valid remote image URLs without
+uploading them.
 
 A starter MAY define `starter.number_prefix` and
 `starter.numbered_by_default`. The prefix MUST be a lowercase slug. When the

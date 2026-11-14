@@ -149,6 +149,7 @@ const createImageFile = document.querySelector('#create-image-file');
 const createImagePaste = document.querySelector('#create-image-paste');
 const createImagePreview = document.querySelector('#create-image-preview');
 const createImageName = document.querySelector('#create-image-name');
+const createImageStorage = document.querySelector('#create-image-storage');
 const createNumbering = document.querySelector('#create-numbering');
 const createFilenameMode = document.querySelector('#create-filename-mode');
 const createRememberDefaults = document.querySelector('#create-remember-defaults');
@@ -158,6 +159,7 @@ const createDirectory = document.querySelector('#create-directory');
 const createDirectoryHelp = document.querySelector('#create-directory-help');
 const createPathPreview = document.querySelector('#create-path-preview');
 let contentTemplates = [];
+let imageUploadProvider = 'local';
 let selectedContentTemplate = null;
 let selectedImageFile = null;
 let imagePreviewURL = '';
@@ -168,6 +170,7 @@ async function showCreateDialog() {
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Templates are unavailable.');
     contentTemplates = data.templates || [];
+    imageUploadProvider = data.image_upload || 'local';
     templateQuery.value = '';
     renderTemplateChoices();
     templatePicker.showModal();
@@ -208,6 +211,9 @@ function chooseTemplate(template) {
   createLinkURL.required = isLinkPost;
   createLinkURL.value = '';
   createImageField.hidden = !isImagePost;
+  createImageStorage.textContent = imageUploadProvider === 'dropper'
+    ? 'Uploaded images go to Dropper.'
+    : 'Uploaded images are copied to static/images/.';
   createImageURL.value = '';
   createImageFile.value = '';
   clearSelectedImage();
@@ -295,6 +301,17 @@ function selectImageFile(file) {
   createImageName.textContent = `${file.name || 'Pasted image'} · ${(file.size / 1024 / 1024).toFixed(1)} MiB`;
   createImageName.hidden = false;
 }
+function previewRemoteImage(value) {
+  const raw = value.trim();
+  if (!raw) return;
+  let parsed;
+  try { parsed = new URL(raw); } catch { return; }
+  if (!['http:','https:'].includes(parsed.protocol) || !parsed.hostname || parsed.username || parsed.password) return;
+  createImagePreview.src = parsed.href;
+  createImagePreview.hidden = false;
+  createImageName.textContent = 'Previewing remote image';
+  createImageName.hidden = false;
+}
 function defaultContentDirectory(template) {
   if (template.directory) return template.directory;
   const key = template.id.replace(/^builtin:/,'');
@@ -351,7 +368,13 @@ createSlug.addEventListener('input',updateCreatePathPreview);
 createDirectory.addEventListener('input',updateCreatePathPreview);
 createDirectory.addEventListener('change',refreshNextContentNumber);
 createFilenameMode.addEventListener('change',() => {updateCreatePathPreview();refreshNextContentNumber();});
-createImageURL.addEventListener('input',() => {if(createImageURL.value.trim())clearSelectedImage();});
+createImageURL.addEventListener('input',() => {
+  if(createImageURL.value.trim()){
+    createImageFile.value='';
+    clearSelectedImage();
+    previewRemoteImage(createImageURL.value);
+  }else clearSelectedImage();
+});
 createImageFile.addEventListener('change',() => selectImageFile(createImageFile.files?.[0]));
 createImagePaste.addEventListener('click',() => createImageFile.click());
 createImagePaste.addEventListener('keydown',event => {

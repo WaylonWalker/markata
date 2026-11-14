@@ -190,6 +190,8 @@ var settingDocs = map[string]string{
 	"ContentTemplatesConfig.Directory":             "Directory is where user-defined templates are stored (default: \"content-templates\")",
 	"ContentTemplatesConfig.Placement":             "Placement maps template names to output directories",
 	"ContentTemplatesConfig.FilenameMode":          "FilenameMode maps template names to title or numbered filenames",
+	"ContentTemplatesConfig.ImageUpload":           "ImageUpload selects auto, local, or Dropper for uploaded images",
+	"ContentTemplatesConfig.DropperUploadURL":      "DropperUploadURL overrides the default Dropper JSON upload endpoint",
 	"ContentTemplatesConfig.Templates":             "Templates is a list of custom template configurations",
 	"ContributionGraphConfig.CDNURL":               "CDNURL is the URL for the Cal-Heatmap library",
 	"ContributionGraphConfig.ContainerClass":       "ContainerClass is the CSS class for the graph container div (default: \"contribution-graph-container\")",

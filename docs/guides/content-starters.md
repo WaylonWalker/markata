@@ -85,7 +85,7 @@ card layout. Site-authored and configured starters can add or override starters.
 The new-post form lets you set a post date. Leave it blank to keep a date from
 the starter or use today's local date. Photo and Shot posts accept an image URL
 or a pasted/dropped PNG, JPEG, GIF, or WebP file. URLs stay remote; pasted files
-are copied to `static/images/` using the post's filename.
+are uploaded according to `content_templates.image_upload`.
 
 Ping and Gratitude use numbered filenames by default. Choose **Title slug** to
 override this for one post. The new-post form can remember changed folder and
@@ -104,6 +104,16 @@ ping = "numbered"
 gratitude = "numbered"
 note = "title"
 ```
+
+```toml
+[content_templates]
+image_upload = "auto"
+```
+
+In `auto` mode, uploaded files go to Dropper when the editor server has
+`DROPPER_TOKEN`; otherwise they are copied to `static/images/`. Choose `local`
+or `dropper` to set the destination explicitly. URL images stay remote and are
+only previewed in the form.
 
 Site-authored starters can also set their numbering prefix and initial mode in
 starter metadata. The editor honors these fields:

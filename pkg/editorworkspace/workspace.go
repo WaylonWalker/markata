@@ -323,6 +323,20 @@ func (w *Workspace) Create(path, source string) error {
 	return writeNewSource(parent, target, source)
 }
 
+// CheckCreate verifies a new Markdown path is available without writing its source.
+func (w *Workspace) CheckCreate(path string) error {
+	local := filepath.FromSlash(path)
+	if !filepath.IsLocal(local) || !isMarkdownSource(local) {
+		return fmt.Errorf("new workspace path must be a local Markdown file")
+	}
+	local = filepath.Clean(local)
+	parent, err := w.ensureDirectory(filepath.Dir(local))
+	if err != nil {
+		return err
+	}
+	return requireNewFile(filepath.Join(parent, filepath.Base(local)))
+}
+
 // CreateWithImage atomically creates a Markdown file and a local static image.
 // Existing source or image paths are never replaced.
 func (w *Workspace) CreateWithImage(path, source, imageName, contentType string, image []byte) (string, error) {
@@ -340,7 +354,7 @@ func (w *Workspace) CreateWithImage(path, source, imageName, contentType string,
 	if !validUploadName(imageName) {
 		return "", fmt.Errorf("image name must be a lowercase slug")
 	}
-	extension, err := imageExtension(contentType, image)
+	extension, err := ImageExtension(contentType, image)
 	if err != nil {
 		return "", err
 	}
@@ -524,7 +538,8 @@ func validUploadName(name string) bool {
 	return name[0] != '-' && name[len(name)-1] != '-'
 }
 
-func imageExtension(contentType string, data []byte) (string, error) {
+// ImageExtension validates an uploaded image's declared type and returns its safe extension.
+func ImageExtension(contentType string, data []byte) (string, error) {
 	detected := http.DetectContentType(data[:min(len(data), 512)])
 	declared := strings.ToLower(strings.TrimSpace(strings.Split(contentType, ";")[0]))
 	if declared != detected {

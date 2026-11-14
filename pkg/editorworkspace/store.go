@@ -274,6 +274,25 @@ func (s *Store) Create(path, source string) error {
 	return s.refresh(nil, false)
 }
 
+// CheckCreate verifies a new source path before a remote image upload begins.
+func (s *Store) CheckCreate(path string) error {
+	if err := s.ctx.Err(); err != nil {
+		return err
+	}
+	local := filepath.Clean(filepath.FromSlash(path))
+	if !filepath.IsLocal(local) || !isMarkdownSource(local) {
+		return fmt.Errorf("new workspace path must be a local Markdown file")
+	}
+	path = filepath.ToSlash(local)
+	s.mu.RLock()
+	_, exists := s.paths[path]
+	s.mu.RUnlock()
+	if exists {
+		return fmt.Errorf("workspace file already exists")
+	}
+	return s.workspace.CheckCreate(path)
+}
+
 // CreateWithImage creates a Markdown file and its local static image.
 func (s *Store) CreateWithImage(path, source, imageName, contentType string, image []byte) (string, error) {
 	if err := s.ctx.Err(); err != nil {
