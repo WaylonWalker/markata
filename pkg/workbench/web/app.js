@@ -398,7 +398,7 @@ keymap.addEventListener('change', () => {
 });
 // Rejected imports must not be dismissed by an already-running preview response.
 let rejectedImportRevision = -1;
-let revision = 0, timer, busy = false, ready = false, lastEditAt = null;
+let revision = 0, timer, busy = false, ready = false, lastEditAt = null, pendingSince = null;
 let pendingRender = false;
 let activeRenderController = null;
 let previewStarted = false, previewReady = false, pendingPreview = null, activeRender = null;
@@ -440,6 +440,11 @@ function updateFrontmatterSummary(markdown) {
   document.querySelector('#preview-details').textContent = details.join(' · ');
   panel.hidden = false;
 }
+function previewDelay() {
+  const now = performance.now();
+  const idle = lastEditAt === null ? 0 : Math.max(0, 100 - (now - lastEditAt));
+  return pendingSince === null ? idle : Math.min(idle, Math.max(0, 500 - (now - pendingSince)));
+}
 async function render() {
   if (!ready) return;
   if (busy) {
@@ -449,6 +454,7 @@ async function render() {
     return;
   }
   pendingRender = false;
+  pendingSince = null;
   // The CodeMirror document is the source of truth. The textarea is only
   // a form mirror and may lag a programmatic document replacement.
   const version = revision, originalMarkdown = editor.getValue();
@@ -522,8 +528,7 @@ async function render() {
     if (pendingRender || version !== revision) {
       pendingRender = false;
       clearTimeout(timer);
-      const sinceEdit = lastEditAt == null ? 0 : performance.now() - lastEditAt;
-      timer = setTimeout(render, Math.max(0, 100 - sinceEdit));
+      timer = setTimeout(render, previewDelay());
     }
   }
 }
@@ -536,6 +541,7 @@ editor.on('change', (_instance, change) => {
   // async feature setup. Invalidate it the moment the source changes.
   frame.contentWindow?.postMessage({type:'preview-invalidate',version:revision},'*');
   lastEditAt = performance.now();
+  if (pendingSince === null) pendingSince = lastEditAt;
   if (busy && activeRenderController) {
     pendingRender = true;
     activeRenderController.abort();
@@ -543,7 +549,7 @@ editor.on('change', (_instance, change) => {
   updateFrontmatterSummary(editor.getValue());
   if (change.origin !== 'setValue') saveDraft();
   status.textContent = 'Waiting for edits…';
-  timer = setTimeout(render, 100);
+  timer = setTimeout(render, previewDelay());
 });
 document.querySelector('#download').addEventListener('click', () => {
   const url = URL.createObjectURL(new Blob([source.value], {type:'text/markdown;charset=utf-8'}));

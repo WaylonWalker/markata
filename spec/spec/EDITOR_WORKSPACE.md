@@ -25,3 +25,8 @@ Refs #1977 and #1903. The workspace includes the publishing and Changes flow in 
   workspace links and embeds while the index loads, then MUST refresh from the current source
   when indexing completes. A metadata refresh or older render response MUST NOT replace a
   newer editor revision.
+- An edit during site metadata loading MUST preserve already parsed metadata for files whose
+  source and configuration have not changed. The edited file MUST be parsed again before the
+  completed index is published.
+- Continuous typing MUST NOT indefinitely postpone live preview. When the renderer is idle,
+  an unrendered edit burst MUST start a render within 500 ms, using the current source.

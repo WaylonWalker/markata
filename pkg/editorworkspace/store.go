@@ -78,6 +78,7 @@ type Store struct {
 	metadataRunning  bool
 	jobs             sync.WaitGroup
 	paths            map[string]sourceStamp
+	sourceVersions   map[string]uint64
 	entries          map[string]metadataEntry
 	index            *lsp.Index
 	indexRevision    uint64
@@ -109,7 +110,7 @@ func Open(ctx context.Context, root string) (*Store, error) {
 		_ = watcher.Close()
 		return nil, err
 	}
-	store := &Store{indexRoot: indexRoot, workspace: workspace, ctx: child, cancel: cancel, watcher: watcher, done: make(chan struct{}), paths: make(map[string]sourceStamp), entries: make(map[string]metadataEntry), index: lsp.NewIndex(log.Default())}
+	store := &Store{indexRoot: indexRoot, workspace: workspace, ctx: child, cancel: cancel, watcher: watcher, done: make(chan struct{}), paths: make(map[string]sourceStamp), sourceVersions: make(map[string]uint64), entries: make(map[string]metadataEntry), index: lsp.NewIndex(log.Default())}
 	started := time.Now()
 	if err = store.refresh(nil, false); err != nil {
 		cancel()
@@ -329,10 +330,15 @@ func (s *Store) Files() ([]File, error) {
 			return files, err
 		}
 		cfg := s.lifecycleConfig
+		configRevision := s.configRevision
 		changed := make([]string, 0)
-		for path := range s.paths {
+		stamps := make(map[string]sourceStamp)
+		versions := make(map[string]uint64)
+		for path, stamp := range s.paths {
 			if _, ok := s.entries[path]; !ok {
 				changed = append(changed, filepath.FromSlash(path))
+				stamps[path] = stamp
+				versions[path] = s.sourceVersions[path]
 			}
 		}
 		s.mu.RUnlock()
@@ -371,12 +377,16 @@ func (s *Store) Files() ([]File, error) {
 		s.indexFrontmatter = time.Since(s.indexStarted)
 		s.indexLinksAt = time.Now()
 		s.stats.MetadataLoads += uint64(len(changed))
+		if s.configRevision == configRevision {
+			for path, entry := range parsed {
+				if stamp, ok := stamps[path]; ok && s.paths[path] == stamp && s.sourceVersions[path] == versions[path] {
+					s.entries[path] = entry
+				}
+			}
+		}
 		if s.revision != revision {
 			s.mu.Unlock()
 			continue
-		}
-		for path, entry := range parsed {
-			s.entries[path] = entry
 		}
 		infos := make([]*lsp.PostInfo, 0, len(s.entries))
 		for _, entry := range s.entries {
@@ -470,12 +480,14 @@ func (s *Store) refresh(events map[string]bool, forceConfig bool) error {
 	for path := range events {
 		if _, ok := paths[path]; ok {
 			delete(s.entries, path)
+			s.sourceVersions[path]++
 			changed = true
 		}
 	}
 	for path, previous := range s.paths {
 		if next, ok := paths[path]; !ok || next != previous {
 			delete(s.entries, path)
+			s.sourceVersions[path]++
 		}
 	}
 	if configChanged {

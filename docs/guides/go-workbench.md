@@ -125,8 +125,12 @@ Workspace saves and new-post creation require a same-origin browser request.
 The server rejects missing or foreign origins before it changes a site file.
 
 The preview updates after a 100 ms pause. One request runs at a time, and newer edits replace pending edits.
+During continuous typing, the editor also starts a preview update at least every 500 ms when
+the renderer is available.
 The first preview can appear while the site index is still loading. Workspace links and embeds
 resolve when indexing finishes, using the current editor text.
+Edits made during indexing update the changed post without restarting metadata loading for
+every other post.
 Old responses cannot replace a newer draft. Errors preserve the last successful preview.
 The footer shows Go render time, total edit-to-preview time, source size, and preview size.
 Repeated source uses a one-entry memory cache. Appearance changes update the preview without a render request.

@@ -123,6 +123,25 @@ class GoEditorBrowserTest(unittest.TestCase):
         self.assertNotIn('<script>', risky)
         self.assertIn('&lt;script&gt;', risky)
 
+    def test_continuous_typing_still_updates_preview(self):
+        self.page.evaluate("""() => {
+          window.__typingProbe={done:false,updates:0};
+          window.addEventListener('message', event => {
+            if(event.data?.type==='preview-updated' && !window.__typingProbe.done)
+              window.__typingProbe.updates++;
+          });
+          const editor=document.querySelector('.CodeMirror').CodeMirror;
+          let count=0;
+          const interval=setInterval(() => {
+            editor.replaceRange(`\\nLive typing ${count}`, {line:editor.lastLine(),ch:editor.getLine(editor.lastLine()).length}, null, '+input');
+            count++;
+            if(count===40) {clearInterval(interval);window.__typingProbe.done=true;}
+          },40);
+        }""")
+        self.page.wait_for_function('window.__typingProbe.done', timeout=10000)
+        self.assertGreater(self.page.evaluate('window.__typingProbe.updates'), 0)
+        expect(self.preview.locator('.post-content')).to_contain_text('Live typing 39', timeout=10000)
+
     def test_preview_discards_obsolete_inflight_frame_render(self):
         self.edit("# Latest edit")
         expect(self.preview.locator("h1")).to_have_text("Latest edit")
