@@ -37,7 +37,9 @@ export function createSearch(entries, keys, weights, scope, identify) {
     const results = fuzzysort.go(text, snapshot, {threshold:0, limit:Infinity,
       scoreFn: r => Math.max(...weights.map((weight,i) => r[i].score * weight))});
     const rank = result => {
-      const exact = String(result.obj[keys[0]] || '').toLowerCase().replace(keys[0] === 'name' ? /\.(md|markdown|mdown|mkd)$/ : /$^/, '') === text.toLowerCase();
+      const normalize = value => String(value).toLowerCase().replace(/[^\p{L}\p{N}]+/gu,' ').trim();
+      const label = String(result.obj[keys[0]] || '').replace(keys[0] === 'name' ? /\.(md|markdown|mdown|mkd)$/ : /$^/, '');
+      const exact = normalize(label) === normalize(text);
       const use = history.get(identify(result.obj));
       // History breaks close match ties; it cannot promote a weak match over a strong one.
       const quality = text ? (exact ? 100 : Math.floor(result.score * 20)) : (use ? 100 - use.index : 0);

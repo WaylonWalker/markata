@@ -31,3 +31,10 @@ test('blocked storage retains bounded session history',()=>{
   setEnabled(false);assert.notEqual(make('blocked')('')[0].obj.id,'c');setEnabled(true);
   clearHistory('blocked');assert.notEqual(make('blocked')('')[0].obj.id,'c');
 });
+test('punctuation in a command label does not let history beat an exact query',()=>{
+  const commands=[{id:'vim',label:'Editor keymap: Vim'},{id:'emacs',label:'Editor keymap: Emacs'}];
+  const search=createSearch(commands,['label'],[1],'keymaps',x=>x.id);
+  clearHistory('keymaps');setEnabled(true);
+  remember('keymaps','vim');
+  assert.equal(search('editor keymap emacs')[0].obj.id,'emacs');
+});

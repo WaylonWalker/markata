@@ -6,7 +6,8 @@ Refs #1977 and #1903. The workspace includes the publishing and Changes flow in 
   Keyboard Shortcuts and Advanced categories. Existing preferences and shortcut
   overrides MUST retain their storage keys. Settings affect this browser, not site configuration.
 - Commands and files MUST use fuzzy matching with deterministic ties. Exact label
-  matches outrank history. History may reorder only similarly scored matches.
+  matching MUST ignore punctuation and case in human-readable labels and MUST
+  outrank history. History may reorder only similarly scored matches.
 - Empty queries SHOULD show recently chosen items first. Command history is local
   to this browser; file history is scoped to the workspace. Store identifiers,
   last-use time and bounded counts, never draft contents or search queries.
