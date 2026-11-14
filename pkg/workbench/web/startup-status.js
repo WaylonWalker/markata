@@ -59,8 +59,10 @@
       if (!response.ok) throw new Error('status unavailable');
       const data=await response.json();
       if (id!==pollID) return;
+      const wasReady=indexStatus?.ready === true;
       indexStatus=data;
       renderStatus();
+      if (data.ready && !wasReady) window.dispatchEvent(new Event('markata-site-index-ready'));
       // Keep the sidebar compact after the long-running operation finishes;
       // the measurements remain available by expanding the summary.
       if (data.ready && metadataRequestMS!==null) document.querySelector('#startup-index')?.removeAttribute('open');

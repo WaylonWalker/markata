@@ -382,16 +382,15 @@ func (h *Handler) prepareRender(r *http.Request, req *renderRequest) (*renderRes
 	var revision uint64
 	if snapshot, ok := h.workspace.(interface{ Snapshot() (*lsp.Index, uint64) }); ok {
 		index, revision = snapshot.Snapshot()
-		if index == nil || revision == 0 {
-			if _, err := h.workspace.Files(); err != nil {
-				return nil, fmt.Errorf("load workspace metadata for preview: %w", err)
-			}
-			index, revision = snapshot.Snapshot()
-		}
 	}
 	markdown := renderWorkbenchEmbeds(*req.Markdown, index, h.root)
 	markdown = renderWorkbenchWikilinks(markdown, index)
 	markdown, sourceAnchors := markSourceContainers(markdown)
+	// Index revisions change while the first preview is open. Plain Markdown
+	// has no workspace references, so an index update does not invalidate it.
+	if !strings.Contains(*req.Markdown, "[[") && !strings.Contains(*req.Markdown, "![embed](") {
+		revision = 0
+	}
 	cacheKey := fmt.Sprintf("%d\x00%s", revision, markdown)
 	result := h.lastResult
 	cached := result != nil && h.lastSource == cacheKey

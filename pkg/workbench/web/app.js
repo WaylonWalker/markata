@@ -589,6 +589,15 @@ requestAnimationFrame(() => {
   window.MarkataStartupStatus?.editorReady?.();
 });
 const workspaceReady = window.MarkataSiteTree.attach(editor, storageWarning, {saveToSite:true});
+window.addEventListener('markata-site-index-ready', () => {
+  if (!ready) return;
+  revision++;
+  frame.contentWindow?.postMessage({type:'preview-invalidate',version:revision},'*');
+  activeRenderController?.abort();
+  pendingRender = busy;
+  clearTimeout(timer);
+  timer = setTimeout(render, 0);
+});
 // Once the selected site file is attached, display *its* latest preview.
 workspaceReady.then(() => {
   ready = true;

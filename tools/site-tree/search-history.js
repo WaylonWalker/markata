@@ -40,7 +40,7 @@ export function createSearch(entries, keys, weights, scope, identify) {
       const exact = String(result.obj[keys[0]] || '').toLowerCase().replace(keys[0] === 'name' ? /\.(md|markdown|mdown|mkd)$/ : /$^/, '') === text.toLowerCase();
       const use = history.get(identify(result.obj));
       // History breaks close match ties; it cannot promote a weak match over a strong one.
-      const quality = text ? (exact ? 100 : Math.floor(result.score * 20)) : 0;
+      const quality = text ? (exact ? 100 : Math.floor(result.score * 20)) : (use ? 100 - use.index : 0);
       const bonus = use ? 1 / (1 + (Math.max(0,Date.now() - use.at)) / 604800000) + Math.log1p(use.count) * .1 : 0;
       return {quality, bonus};
     };

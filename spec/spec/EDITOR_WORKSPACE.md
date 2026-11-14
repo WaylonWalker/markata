@@ -20,3 +20,7 @@ Refs #1977 and #1903. The workspace includes the publishing and Changes flow in 
 - Focus MUST return sensibly after closing settings/pickers. Mobile settings MUST
   fit the viewport. Shortcut recording MUST work within the unified window.
 - Workspace controls MUST preserve guarded publishing, read-only conflict comparison, and Changes review.
+- The first local preview MUST NOT wait for workspace metadata indexing. It MAY show unresolved
+  workspace links and embeds while the index loads, then MUST refresh from the current source
+  when indexing completes. A metadata refresh or older render response MUST NOT replace a
+  newer editor revision.

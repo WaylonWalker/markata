@@ -8,7 +8,7 @@ import (
 
 func TestDeferredLanguageBecomesAvailableWithoutBlockingEditor(t *testing.T) {
 	service := &deferredLanguage{}
-	req := httptest.NewRequest(http.MethodGet, "/lsp", http.NoBody)
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/lsp", http.NoBody)
 	first := httptest.NewRecorder()
 	service.ServeHTTP(first, req)
 	if first.Code != http.StatusServiceUnavailable || first.Header().Get("Retry-After") == "" {

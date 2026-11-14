@@ -10,8 +10,10 @@ test('fuzzy matching, case, exact precedence and empty-query history',()=>{
   const search=make('commands');
   assert.equal(search('pblsh')[0].obj.id,'c');
   remember('commands','b');assert.equal(search('')[0].obj.id,'b');
+  remember('commands','b');remember('commands','b');remember('commands','a');
+  assert.equal(search('')[0].obj.id,'a');
   assert.equal(search('OPEN SETTINGS')[0].obj.id,'a');
-  assert.equal(make('commands')('')[0].obj.id,'b');
+  assert.equal(make('commands')('')[0].obj.id,'a');
   assert.equal(search('zzzzzz').length,0);
 });
 test('history scoped, clearable, disabled and malformed-safe',()=>{

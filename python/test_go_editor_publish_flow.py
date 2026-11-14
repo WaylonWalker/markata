@@ -144,6 +144,7 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         expect(page.locator("#markata-gutter-status")).to_contain_text("No Git changes")
         self.assertEqual((self.site / "posts/discard-flow.md").read_text(encoding="utf-8"), original)
         self.assertEqual(page.evaluate("document.querySelector('.CodeMirror').CodeMirror.getValue()"), original)
+        page.get_by_role("button", name="Close changes panel").click()
 
         # Regression: a Discard followed by fresh typing must not reuse the
         # previous review iframe or the old preview cursor/scroll geometry.
@@ -438,7 +439,9 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         # failed chunk, or asynchronously rejected render is a regression.
         review.get_by_role("tab", name="Full diff").click()
         expect(review.locator("#publish-pierre-host")).to_have_attribute("data-state", "ready", timeout=20000)
-        expect(review.locator("#publish-pierre-host diffs-container [data-line-type]").first).to_be_visible(timeout=20000)
+        expect(review.locator("#publish-pierre-host code").last).to_contain_text(
+            "Revised copy for browser verification.", timeout=20000
+        )
         expect(review.locator("#publish-pierre-error")).to_be_hidden()
         review.get_by_role("tab", name="Commit message").click()
         message = "Publish browser fixture: revised post"

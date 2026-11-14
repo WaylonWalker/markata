@@ -12,8 +12,37 @@ import (
 	"testing"
 	"time"
 
+	"github.com/WaylonWalker/markata/pkg/editorworkspace"
+	"github.com/WaylonWalker/markata/pkg/lsp"
+
 	"golang.org/x/net/html"
 )
+
+type previewWithoutIndexWorkspace struct {
+	workspaceSource
+	filesCalled bool
+}
+
+func (w *previewWithoutIndexWorkspace) Snapshot() (index *lsp.Index, revision uint64) {
+	return nil, 0
+}
+func (w *previewWithoutIndexWorkspace) Files() ([]editorworkspace.File, error) {
+	w.filesCalled = true
+	return nil, nil
+}
+
+func TestHandler_FirstPreviewDoesNotWaitForSiteIndex(t *testing.T) {
+	h := newHandler(t)
+	workspace := &previewWithoutIndexWorkspace{workspaceSource: h.workspace}
+	h.workspace = workspace
+	response := request(h, `{"markdown":"# Write now","include_document":true}`)
+	if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), "Write now") {
+		t.Fatalf("preview before index: %d %s", response.Code, response.Body.String())
+	}
+	if workspace.filesCalled {
+		t.Fatal("preview synchronously loaded site metadata")
+	}
+}
 
 func newHandler(t testing.TB) *Handler {
 	t.Helper()
