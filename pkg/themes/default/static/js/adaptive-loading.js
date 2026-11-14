@@ -50,6 +50,12 @@
     return automatic || 'unknown';
   }
 
+  // Article videos are allowed to start when on screen, even before Auto has
+  // collected enough evidence to classify the connection as Full Quality.
+  function canAutoplayInViewport(effective, reducedMotion, saveData) {
+    return effective !== 'constrained' && !reducedMotion && !saveData;
+  }
+
   function readMode(storage, key) {
     try {
       var mode = storage && storage.getItem(key);
@@ -104,7 +110,7 @@
     return JSON.stringify({ poor: current.poor, good: current.good, samples: current.samples, offline: current.offline, recommendation: current.recommendation, at: now });
   }
 
-  var api = { state: state, vote: vote, networkHint: networkHint, effectiveMode: effectiveMode, readMode: readMode, persistMode: persistMode, mismatch: mismatch, restore: restore, savedState: savedState };
+  var api = { state: state, vote: vote, networkHint: networkHint, effectiveMode: effectiveMode, readMode: readMode, persistMode: persistMode, mismatch: mismatch, restore: restore, savedState: savedState, canAutoplayInViewport: canAutoplayInViewport };
   if (typeof document === 'undefined') return api;
 
   var rootElement = document.documentElement;
@@ -128,7 +134,6 @@
   var seen = new Set();
   var observer;
   var stopTimer;
-  var initialized = false;
   if (navigator.onLine && current.offline) current = vote(current, 'online');
 
   function readStorage(storage, key) {
@@ -147,6 +152,7 @@
     userMode = mode;
     persistMode(localStore, KEY, mode);
     update();
+    syncAutoplay();
   }
 
   function update() {
@@ -159,16 +165,8 @@
     rootElement.dataset.loadingEffective = effective;
     rootElement.dataset.loadingRecommendation = automatic;
     rootElement.dataset.adaptiveReady = 'true';
-    if (effective === 'full-quality' && (!initialized || userMode === 'full-quality') && !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)) {
-      document.querySelectorAll('video[data-authored-autoplay="true"]').forEach(function(video) {
-        if (video.dataset.autoplayStarted || video.networkState === 2 || video.readyState || video.currentTime || !video.paused) return;
-        video.dataset.autoplayStarted = 'true';
-        video.autoplay = true;
-        var playing = video.play();
-        if (playing && playing.catch) playing.catch(function() {});
-      });
-    }
-    initialized = true;
+    // Autoplay of authored article media is handled by a viewport observer.
+    // Preview-card videos have no authored intent and remain click/hover-only.
     for (var i = 0; i < radios.length; i++) radios[i].checked = radios[i].value === userMode;
     var labels = { auto: 'Auto', 'save-data': 'Save Data', 'full-quality': 'Full Quality' };
     var summary = control.querySelector('[data-loading-label]');
@@ -189,6 +187,86 @@
       if (status) status.hidden = true;
       if (message) message.hidden = true;
     }
+  }
+
+  var autoplayObserver = null;
+  var autoplayStates = new WeakMap();
+
+  function playbackAllowed() {
+    var connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    return navigator.onLine && !document.hidden &&
+      canAutoplayInViewport(rootElement.dataset.loadingPolicy, reduced, !!(connection && connection.saveData));
+  }
+
+  // Pauses only playback started by this controller; manual playback is left alone.
+  function pauseManaged(video, state) {
+    if (!state || !state.started || video.paused) return;
+    state.pausing = true;
+    video.pause();
+    window.setTimeout(function() { state.pausing = false; }, 0);
+  }
+
+  function playVisible(video, state) {
+    if (!state || !state.visible || !video.isConnected || state.userPaused || !playbackAllowed()) return;
+    // Never hijack a video the reader already started or scrubbed manually.
+    if (!state.started && (video.currentTime || !video.paused)) return;
+    if (!state.started) {
+      state.started = true;
+      video.dataset.autoplayStarted = 'true';
+    }
+    // Deliberately do not add a native autoplay attribute: preload remains none
+    // until the video is visible and the browser accepts the play() request.
+    var playing = video.play();
+    if (playing && playing.catch) playing.catch(function() {
+      // Browser policy can reject autoplay; native controls remain available.
+    });
+  }
+
+  function watchAutoplay() {
+    if (!window.IntersectionObserver) return; // No-JS/old browsers use controls.
+    if (!autoplayObserver) {
+      autoplayObserver = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+          var video = entry.target;
+          var state = autoplayStates.get(video);
+          if (!state) return;
+          state.visible = entry.isIntersecting && entry.intersectionRatio >= 0.25;
+          if (state.visible) playVisible(video, state);
+          else pauseManaged(video, state);
+        });
+      }, { threshold: [0, 0.25] });
+    }
+    document.querySelectorAll('video[data-authored-autoplay="true"]:not([data-adaptive-preview])').forEach(function(video) {
+      if (autoplayStates.has(video)) return;
+      var state = { visible: false, started: false, userPaused: false, pausing: false };
+      autoplayStates.set(video, state);
+      video.addEventListener('pause', function() {
+        if (state.started && state.visible && !state.pausing) state.userPaused = true;
+      });
+      autoplayObserver.observe(video);
+    });
+  }
+
+  function syncAutoplay() {
+    document.querySelectorAll('video[data-authored-autoplay="true"]').forEach(function(video) {
+      var state = autoplayStates.get(video);
+      if (!state) return;
+      if (!playbackAllowed()) pauseManaged(video, state);
+      else if (state.visible) playVisible(video, state);
+    });
+  }
+
+  function resetAutoplay() {
+    if (autoplayObserver) autoplayObserver.disconnect();
+    autoplayStates = new WeakMap();
+    watchAutoplay();
+  }
+
+  document.addEventListener('visibilitychange', syncAutoplay);
+  if (window.matchMedia) {
+    var reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    if (reducedMotion.addEventListener) reducedMotion.addEventListener('change', syncAutoplay);
   }
 
   function record(kind) {
@@ -235,11 +313,13 @@
     current = vote(current, 'offline');
     writeStorage(sessionStore, SESSION_KEY, savedState(current, Date.now()));
     update();
+    syncAutoplay();
   });
   window.addEventListener('online', function() {
     current = vote(current, 'online');
     writeStorage(sessionStore, SESSION_KEY, savedState(current, Date.now()));
     update();
+    syncAutoplay();
   });
 
   connectionHint();
@@ -265,12 +345,18 @@
     if (saved) current = restore(saved, Date.now());
     samples = 0;
     seen = new Set();
-    initialized = false;
     update();
+    resetAutoplay();
     observeTimings(false);
   });
   observeTimings(true);
-  if (document.readyState === 'complete') collectTimings();
-  else window.addEventListener('load', collectTimings, { once: true });
+  // Wait for page resources to finish before starting initial autoplay, so
+  // measured poor-network evidence can suppress unnecessary video downloads.
+  function loaded() {
+    collectTimings();
+    watchAutoplay();
+  }
+  if (document.readyState === 'complete') loaded();
+  else window.addEventListener('load', loaded, { once: true });
   return api;
 });

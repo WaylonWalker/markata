@@ -1287,7 +1287,7 @@ h4:hover .heading-anchor {
 
 **Name:** `md_video`  
 **Stage:** Render (post_render)  
-**Purpose:** Converts markdown image syntax for video files into HTML video elements with native controls and on-demand loading.
+**Purpose:** Converts markdown image syntax for video files into HTML video elements with native controls and viewport-triggered muted autoplay.
 
 **Configuration (TOML):**
 ```toml
@@ -1296,7 +1296,7 @@ enabled = true                    # Enable the plugin (default: true)
 video_extensions = [".mp4", ".webm", ".ogg", ".ogv", ".mov", ".m4v", ".avi", ".mkv"]  # Extensions to treat as video
 video_class = "md-video"          # CSS class for video elements (default)
 controls = true                   # Show video controls (default: true)
-autoplay = false                  # Authored autoplay intent (default: false)
+autoplay = true                   # Viewport autoplay intent for Markdown (default: true)
 loop = true                       # Loop video continuously (default: true)
 muted = true                      # Mute audio (default: true, required for autoplay)
 playsinline = true                # Play inline on mobile (default: true)
@@ -1305,12 +1305,15 @@ preload = "none"                  # Preload hint: "none", "metadata", "auto" (de
 
 **Autoplay intent and loading policy**
 
-Set `autoplay = true` to author GIF-like Markdown playback. Generated HTML stores
-that intent in `data-authored-autoplay="true"` and keeps `preload="none"`.
-Full Quality or already-confident fast Auto at page entry may start unrequested authored videos.
-Save Data, constrained Auto, reduced motion, and the no-JS baseline keep native
-interaction. Raw HTML preserves its own autoplay intent; the Markdown setting
-never adds autoplay to a raw video that omitted it. See
+Markdown video enables GIF-like autoplay by default once visible. Generated
+HTML stores this intent in `data-authored-autoplay="true"` and keeps
+`preload="none"` before viewport playback. Set `autoplay = false` to opt
+out for all Markdown videos. Auto suppresses starts on measured constrained
+connections; Save Data and reduced motion always suppress them. A browser
+without JavaScript/IntersectionObserver uses native controls. Only
+controller-started video pauses offscreen, not manually started video.
+Raw HTML retains its own explicit autoplay intent, and Markdown configuration
+never adds autoplay to raw video that omitted it. See
 [Adaptive loading](../adaptive-loading/) for policy and recovery behavior.
 
 To use traditional video behavior (click to play with sound):
@@ -1341,7 +1344,7 @@ controls = true
 
 **HTML output:**
 ```html
-<video loop muted playsinline controls preload="none" class="md-video" style="margin-inline:auto">
+<video data-authored-autoplay="true" loop muted playsinline controls preload="none" class="md-video" style="margin-inline:auto">
   <source src="https://example.com/video.mp4" type="video/mp4">
   kickflip down the 3 stair - fingerboarding
 </video>
