@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -93,7 +94,7 @@ func TestRunInteractiveMode_TemplateAlias(t *testing.T) {
 	newTemplate = "ping"
 
 	cmd := &cobra.Command{}
-	cmd.SetIn(strings.NewReader("My Ping\nnotes\n\nn\n"))
+	cmd.SetIn(strings.NewReader("ping\nMy Ping\n\n\nn\n"))
 	cmd.SetOut(bytes.NewBuffer(nil))
 	cmd.SetErr(bytes.NewBuffer(nil))
 	currentCmd = cmd
@@ -658,7 +659,7 @@ func TestGenerateTemplatedContent_ExpandsStarterVariables(t *testing.T) {
 	}
 }
 
-func TestGenerateTemplatedContent_OmitsInheritedDefaults(t *testing.T) {
+func TestGenerateTemplatedContent_AddsCreationDefaultsOnly(t *testing.T) {
 	template := ContentTemplate{
 		Frontmatter: map[string]interface{}{"title": "{{title}}"},
 		Body:        "## {{title}}",
@@ -668,7 +669,12 @@ func TestGenerateTemplatedContent_OmitsInheritedDefaults(t *testing.T) {
 	if !strings.Contains(content, "title: My Page") || !strings.Contains(content, "## My Page") {
 		t.Fatalf("starter title was not expanded: %s", content)
 	}
-	for _, field := range []string{"slug:", "date:", "published:", "draft:", "tags:", "description:"} {
+	for _, field := range []string{"date: \"2024-01-15\"", "published: true"} {
+		if !strings.Contains(content, field) {
+			t.Errorf("creation default %q missing: %s", field, content)
+		}
+	}
+	for _, field := range []string{"slug:", "draft:", "tags:", "description:"} {
 		if strings.Contains(content, field) {
 			t.Errorf("inherited default %q should not be written: %s", field, content)
 		}
@@ -688,12 +694,42 @@ func TestGenerateTemplatedContent_ExplicitOverrides(t *testing.T) {
 	}
 }
 
-func TestGenerateTemplatedContent_NoFrontmatterProducesPlainBody(t *testing.T) {
+func TestGenerateTemplatedContent_NoFrontmatterAddsCreationDefaults(t *testing.T) {
 	template := ContentTemplate{Body: "Hello {{title}}"}
 	date := time.Date(2024, 1, 15, 0, 0, 0, 0, time.UTC)
 	content := generateTemplatedContent("World", "world", date, false, false, nil, template)
-	if content != "Hello World\n" {
+	if content != "---\ndate: \"2024-01-15\"\npublished: true\n---\n\nHello World\n" {
 		t.Fatalf("unexpected generated body: %q", content)
+	}
+}
+
+func TestGenerateTemplatedContent_CreationDefaultPrecedence(t *testing.T) {
+	for _, tt := range []struct {
+		name        string
+		frontmatter map[string]interface{}
+		wantDate    string
+		wantPublish bool
+	}{
+		{"missing values", nil, "2024-01-15", true},
+		{"blank date", map[string]interface{}{"date": "   "}, "2024-01-15", true},
+		{"null date", map[string]interface{}{"date": nil}, "2024-01-15", true},
+		{"null publication", map[string]interface{}{"published": nil}, "2024-01-15", true},
+		{"explicit date", map[string]interface{}{"date": "2023-12-01"}, "2023-12-01", true},
+		{"starter unpublished", map[string]interface{}{"published": false}, "2024-01-15", false},
+		{"starter draft", map[string]interface{}{"draft": true}, "2024-01-15", false},
+		{"starter not draft", map[string]interface{}{"draft": false}, "2024-01-15", true},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			date := time.Date(2024, 1, 15, 23, 30, 0, 0, time.FixedZone("local", -7*60*60))
+			content := generateTemplatedContent("Post", "post", date, false, false, nil, ContentTemplate{
+				Frontmatter: tt.frontmatter, Body: "Post body",
+			})
+			for _, want := range []string{fmt.Sprintf("date: %q", tt.wantDate), fmt.Sprintf("published: %t", tt.wantPublish)} {
+				if !strings.Contains(content, want) {
+					t.Errorf("missing %q:\n%s", want, content)
+				}
+			}
+		})
 	}
 }
 
@@ -710,5 +746,26 @@ func TestGenerateTemplatedContent_PreservesUnselectedStarterDefaults(t *testing.
 		if !strings.Contains(content, expected) {
 			t.Errorf("content missing preserved value %q:\n%s", expected, content)
 		}
+	}
+}
+
+func TestApplyNewWizardState_DraftFlagOverridesPublicationDefault(t *testing.T) {
+	cmd, _ := linkTestCommand(t)
+	if err := cmd.ParseFlags([]string{"--draft"}); err != nil {
+		t.Fatal(err)
+	}
+	currentCmd = cmd
+	state := &newWizardState{
+		Template: "post", Title: "Wizard draft", PrivateChoice: "inherit",
+	}
+	if err := applyNewWizardState(state, builtinTemplates()); err != nil {
+		t.Fatal(err)
+	}
+	fm := readLinkFrontmatter(t, filepath.Join("pages", "post", "wizard-draft.md"))
+	if fm["published"] != false || fm["draft"] != true {
+		t.Fatalf("wizard ignored explicit draft flag: %#v", fm)
+	}
+	if _, ok := fm["date"].(string); !ok {
+		t.Fatalf("wizard draft has no date: %#v", fm)
 	}
 }

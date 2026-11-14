@@ -43,7 +43,9 @@ Keep visible headings alongside icons for accessibility.
 
 - files without frontmatter are still valid
 - `published` defaults to `false` if omitted in raw content
-- the `new` command creates content with `published: true` and `draft: false`
+- every `new` file includes a date and defaults to `published: true`, including links and custom starters
+- `new` preserves explicit starter dates, drafts, and unpublished settings
+- `--draft` overrides publication settings without a separate editing step
 - new starter content does not add a default H1 in the body because templates usually render the title as the page H1
 
 ## Behavior Rules Agents Should Remember

@@ -238,7 +238,7 @@ func builtinTemplates() map[string]ContentTemplate {
 
 // newCmd represents the new command.
 var newCmd = &cobra.Command{
-	Use:   "new [title]",
+	Use:   "new [title-or-url]",
 	Short: "Create a new content file",
 	Long: `Create a new markdown content file with frontmatter template.
 
@@ -263,6 +263,7 @@ Example usage:
   markata-go new "About" --template page            # Create pages/about.md
   markata-go new "Getting Started" --template docs  # Create docs/getting-started.md
   markata-go new "Hello World" --dir blog           # Override directory: blog/hello-world.md
+  markata new --template link "https://example.com/article" # Create from link metadata
   markata-go new --list                             # List available templates
   markata-go new                                    # Interactive mode`,
 	Args: cobra.MaximumNArgs(1),
@@ -278,6 +279,7 @@ func init() {
 	newCmd.Flags().StringVarP(&newTemplate, "template", "t", "post", "content template to use")
 	newCmd.Flags().BoolVarP(&newList, "list", "l", false, "list available templates")
 	newCmd.Flags().BoolVar(&newPlain, "plain", false, "use plain text prompts (for non-TTY environments)")
+	newCmd.Flags().String(newTitleKey, "", "explicit title override (including URL-first link posts)")
 }
 
 // loadTemplates discovers and loads all available content templates.
@@ -602,13 +604,7 @@ func runInteractiveMode(cmd *cobra.Command, templates map[string]ContentTemplate
 
 	errln()
 
-	// Get title
-	title := promptNew(reader, "Title", "")
-	if title == "" {
-		return nil, fmt.Errorf("title is required")
-	}
-
-	template, _, ok := resolveTemplateSelection(newTemplate, templates)
+	template, canonical, ok := resolveTemplateSelection(newTemplate, templates)
 	if !ok {
 		return nil, fmt.Errorf("unknown template %q", newTemplate)
 	}
@@ -625,10 +621,22 @@ func runInteractiveMode(cmd *cobra.Command, templates map[string]ContentTemplate
 			errlnf("  %s", formatTemplateEntry(name, templates[name]))
 		}
 		templateInput := promptNew(reader, "Template", "post")
-		if t, _, ok := resolveTemplateSelection(templateInput, templates); ok {
+		if t, name, ok := resolveTemplateSelection(templateInput, templates); ok {
 			newTemplate = templateInput
 			template = t
+			canonical = name
 		}
+	}
+
+	if canonical == tmplLink {
+		return runPlainNewLink(cmd, template, reader)
+	}
+	title := promptNew(reader, "Title", "")
+	if title == "" {
+		return nil, fmt.Errorf("title is required")
+	}
+	if flag := cmd.Flags().Lookup(newTitleKey); flag != nil && flag.Changed {
+		title = flag.Value.String()
 	}
 
 	// Get directory (only prompt if not explicitly set via flag)
@@ -715,7 +723,7 @@ func runNewCommand(cmd *cobra.Command, args []string) error {
 	templates := loadTemplates()
 
 	// Validate template exists
-	template, _, exists := resolveTemplateSelection(newTemplate, templates)
+	template, canonical, exists := resolveTemplateSelection(newTemplate, templates)
 	if !exists {
 		availableNames := make([]string, 0, len(templates))
 		for name := range templates {
@@ -726,6 +734,16 @@ func runNewCommand(cmd *cobra.Command, args []string) error {
 	}
 	var title string
 	var tags []string
+	var titleOverride string
+	if flag := cmd.Flags().Lookup(newTitleKey); flag != nil {
+		titleOverride = flag.Value.String()
+	}
+	if cmd.Flags().Changed(newTitleKey) && strings.TrimSpace(titleOverride) == "" {
+		return fmt.Errorf("--title must not be empty")
+	}
+	if len(args) == 0 && canonical != tmplLink && titleOverride != "" {
+		args = []string{titleOverride}
+	}
 
 	// If no title provided, run interactive mode
 	if len(args) == 0 {
@@ -744,9 +762,10 @@ func runNewCommand(cmd *cobra.Command, args []string) error {
 			title = input.title
 			template = input.template
 			tags = input.tags
+			_, canonical, _ = resolveTemplateSelection(newTemplate, templates)
 		} else {
 			// Use huh TUI wizard
-			state, err := runHuhNewWizard(templates)
+			state, err := runHuhNewWizard(cmd, templates)
 			if err != nil {
 				return err
 			}
@@ -754,6 +773,26 @@ func runNewCommand(cmd *cobra.Command, args []string) error {
 		}
 	} else {
 		title = args[0]
+		if canonical == tmplLink && isNewLinkURL(title) {
+			rawURL := title
+			metadata, err := resolveNewLinkMetadata(cmd, rawURL)
+			if err != nil {
+				return err
+			}
+			if !metadata.TrustedTitle {
+				if noInput || !inputIsTerminal() {
+					return newLinkTitleError(cmd, rawURL, metadata.Title)
+				}
+				metadata.Title, err = promptNewLinkTitle(bufio.NewReader(inReader()), metadata.Title)
+				if err != nil {
+					return err
+				}
+			}
+			title = metadata.Title
+			template = applyNewLinkMetadata(template, rawURL, metadata)
+		} else if titleOverride != "" {
+			title = titleOverride
+		}
 		if newTags != "" {
 			tags = parseTags(newTags)
 		} else if cmd.Flags().Changed("tags") {
@@ -778,6 +817,11 @@ func runNewCommand(cmd *cobra.Command, args []string) error {
 
 	// Generate slug from title
 	slug := generateSlug(title)
+	if canonical == tmplLink {
+		if rawURL, ok := template.Frontmatter["url"].(string); ok && rawURL != "" {
+			slug = newLinkSlug(title, rawURL)
+		}
+	}
 
 	draftSet := cmd.Flags().Changed("draft")
 	if len(args) == 0 && !draftSet {
@@ -834,11 +878,20 @@ func listTemplates() error {
 
 // generateTemplatedContent creates the markdown content with template-specific frontmatter.
 func generateTemplatedContent(title, slug string, date time.Time, draft, draftSet bool, tags []string, template ContentTemplate) string {
-	// Only the selected starter's frontmatter and explicit user overrides are
-	// serialized. A value inferred from site/built-in defaults is not a field.
 	fm := make(map[string]interface{}, len(template.Frontmatter))
 	for key, value := range template.Frontmatter {
 		fm[key] = expandStarterValue(value, title, slug, date)
+	}
+	switch value := fm["date"].(type) {
+	case nil:
+		fm["date"] = date.Format("2006-01-02")
+	case string:
+		if strings.TrimSpace(value) == "" {
+			fm["date"] = date.Format("2006-01-02")
+		}
+	}
+	if fm["published"] == nil {
+		fm["published"] = !starterDraftDefault(template)
 	}
 	if _, exists := fm["title"]; exists {
 		fm["title"] = title
@@ -854,9 +907,6 @@ func generateTemplatedContent(title, slug string, date time.Time, draft, draftSe
 	body := expandStarterText(template.Body, title, slug, date)
 	if body == "" {
 		body = "Write your content here..."
-	}
-	if len(fm) == 0 {
-		return body + "\n"
 	}
 	fmBytes, err := yaml.Marshal(fm)
 	if err != nil {

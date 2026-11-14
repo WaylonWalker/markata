@@ -19,7 +19,7 @@ operates in two modes:
 ## Command Signature
 
 ```
-markata-go new [title] [flags]
+markata-go new [title-or-url] [flags]
 ```
 
 ### Flags
@@ -33,9 +33,66 @@ markata-go new [title] [flags]
 | `--tags` | | Comma-separated list of tags | `""` |
 | `--plain` | | Use plain text prompts instead of TUI | Auto-detected |
 | `--no-input` | | Disable prompts and interactive UI | `false` |
+| `--title` | | Explicit title override, including URL-first link posts | `""` |
 
-**Note:** `--draft` defaults to `false`. New posts are created as published by
-default (`published: true`, `draft: false`).
+Every file created by `new` includes a `date` and an explicit `published` value.
+This applies to all templates, aliases, URL-first links, plain prompts, and the TUI.
+An absent, null, or blank date defaults to the current local date as `YYYY-MM-DD`.
+An explicit starter date remains unchanged.
+Without an explicit publication setting, `published` defaults to `true`.
+A starter's `published: false` remains unpublished.
+A starter's `draft: true` supplies `published: false` when `published` is absent.
+The `--draft` flag overrides starter publication settings.
+The command does not add a `draft` field unless the starter or an explicit override supplies it.
+
+## URL-First Link Posts
+
+```bash
+markata new --template link 'https://example.com/my-article'
+markata new --template link 'https://example.com/my-article' --title 'My title' --no-input
+```
+
+For `link` and its aliases, an HTTP(S) argument identifies the destination URL.
+Existing non-URL title arguments retain their behavior.
+Explicit user values take priority over metadata and inferred values.
+The command preserves the entered destination, even after redirects or canonical metadata.
+
+The command fetches the page with a bounded timeout and response size.
+It extracts the title, description, and preview image.
+A usable `og:title` supplies a trusted automatic title.
+For recognized YouTube video URLs, the command first uses YouTube's official oEmbed endpoint.
+A usable title from that endpoint is also trusted.
+The response supplies the video title and thumbnail without a watch-page download.
+This lookup supports watch URLs, `youtu.be` URLs, and Shorts URLs.
+The command preserves the entered URL and explicit title overrides.
+YouTube oEmbed does not supply a description, so a missing description remains optional.
+If oEmbed fails, the command reports the error and tries the existing HTML metadata path.
+Both paths share a bounded timeout and retain the response-size limit.
+If both paths fail, the suggested title includes the video ID instead of the generic word `watch`.
+Empty titles, URL-only titles, and hostname-only titles are not trusted.
+Other title suggestions come from Twitter metadata, the HTML title, the main heading,
+the decoded URL slug, and finally the hostname, in that order.
+The command resolves relative preview images against the fetched page URL.
+Missing optional metadata does not prevent creation.
+The command does not invent a description or image.
+
+Without a trusted title or an explicit title override, interactive creation asks for a title.
+The prompt includes the best available suggestion.
+If the fetch fails, the command explains the failure and continues with manual fields.
+Without a terminal, or with `--no-input`, low-confidence creation fails before it writes a file.
+The error includes a copy-pastable command with the suggested `--title` override.
+The recovery command preserves explicit flags and the destination URL.
+Invalid URLs produce an actionable error.
+
+The interactive wizard selects the template before it asks for content.
+For links, it asks for the URL before the title.
+After metadata lookup and any required title prompt, **Create** is the default action.
+An optional **Edit details** action exposes the title, description, image, directory,
+tags, privacy, and authors.
+Existing starter defaults remain intact unless metadata or explicit input replaces a field.
+Explicit flags also take priority in the wizard.
+Other content types retain their existing fields and creation behavior.
+Plain prompts support URL-first links and the same title-confidence rules.
 
 ## Interactive TUI Wizard
 
@@ -46,16 +103,16 @@ charmbracelet/huh forms. The wizard falls back to plain text prompts when:
 - stdin is not a TTY
 
 If `--no-input` is set, the command MUST NOT prompt or launch the TUI wizard.
-When required input is missing, it MUST return an error telling the user to pass
-the title argument.
+When required input is missing, it MUST return an actionable error.
+URL-first link errors include the title suggestion and a recovery command.
 
 ### Wizard Flow
 
 ```
 ┌─────────────────────────────┐
-│  1. Title (text input)      │
+│  1. Template (select)       │  ← Pick from available post types
 ├─────────────────────────────┤
-│  2. Template (select)       │  ← Pick from available post types
+│  2. Title (text input)      │  ← Links use the URL-first flow instead
 ├─────────────────────────────┤
 │  3. Directory (select)      │  ← Pick from existing dirs or use default
 ├─────────────────────────────┤
@@ -71,13 +128,13 @@ the title argument.
 
 ### Step Details
 
-#### 1. Title (Required)
+#### Title (Required for Non-Link Content)
 
 - `huh.Input` with placeholder text
 - Cannot be empty (validated)
 - Generates slug automatically
 
-#### 2. Template Selection
+#### Template Selection (First)
 
 - `huh.Select` showing all available templates
 - Default: `post` (or value from `--template` flag)
