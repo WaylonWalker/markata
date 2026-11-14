@@ -52,6 +52,7 @@ type workspaceSource interface {
 	Read(string) (string, error)
 	Write(string, string) error
 	Create(string, string) error
+	CreateWithImage(string, string, string, string, []byte) (string, error)
 	ReadImage(string) ([]byte, error)
 }
 
@@ -529,6 +530,8 @@ func isWorkspaceRoute(routePath, method string) bool {
 	switch {
 	case routePath == "/workspace" || routePath == "/workspace/templates" || routePath == "/workspace/image" || routePath == "/workspace/index-status" || routePath == "/workspace/changes":
 		return method == http.MethodGet
+	case routePath == "/workspace/new-post":
+		return method == http.MethodPost
 	case routePath == "/workspace/file":
 		return method == http.MethodGet || method == http.MethodPut || method == http.MethodPost
 	case routePath == "/workspace/publish/commit" || routePath == "/workspace/publish/push" || routePath == "/workspace/publish/discard":
@@ -562,6 +565,58 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 		}
 		w.Header().Set("Cache-Control", "no-store")
 		serve(w, r, name, data)
+		return
+	}
+	if r.URL.Path == "/workspace/new-post" {
+		if !sameOriginWorkspaceMutation(r) {
+			fail(w, http.StatusForbidden, "same-origin workspace writes are required")
+			return
+		}
+		const maxImageBytes = 15 << 20
+		r.Body = http.MaxBytesReader(w, r.Body, maxSource+maxImageBytes+(1<<20))
+		if err := r.ParseMultipartForm(1 << 20); err != nil {
+			fail(w, http.StatusBadRequest, "cannot read new post upload")
+			return
+		}
+		if r.MultipartForm != nil {
+			defer r.MultipartForm.RemoveAll()
+		}
+		source := r.FormValue("source")
+		if len(source) > maxSource {
+			fail(w, http.StatusRequestEntityTooLarge, "document exceeds 200,000 bytes")
+			return
+		}
+		image, header, err := r.FormFile("image")
+		if err != nil {
+			fail(w, http.StatusBadRequest, "image upload is missing")
+			return
+		}
+		defer image.Close()
+		data, err := io.ReadAll(io.LimitReader(image, maxImageBytes+1))
+		if err != nil {
+			fail(w, http.StatusBadRequest, "cannot read image upload")
+			return
+		}
+		if len(data) > maxImageBytes {
+			fail(w, http.StatusRequestEntityTooLarge, "image exceeds 15 MiB")
+			return
+		}
+		h.workspaceWriteMu.Lock()
+		defer h.workspaceWriteMu.Unlock()
+		imageURL, err := h.workspace.CreateWithImage(
+			r.FormValue("path"), source, r.FormValue("image_name"), header.Header.Get("Content-Type"), data,
+		)
+		if err != nil {
+			fail(w, http.StatusUnprocessableEntity, err.Error())
+			return
+		}
+		w.WriteHeader(http.StatusCreated)
+		if err := json.NewEncoder(w).Encode(map[string]string{
+			"version": editorworkspace.SourceVersion(sourceWithImage(source, imageURL)),
+			"image":   imageURL,
+		}); err != nil {
+			return
+		}
 		return
 	}
 	w.Header().Set("Cache-Control", "no-store")

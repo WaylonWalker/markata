@@ -249,7 +249,7 @@ func (s *Store) Delete(path, expectedVersion string) error {
 	return s.refresh(nil, false)
 }
 
-// Create adds a Markdown file in a directory that already contains discovered content.
+// Create adds a Markdown file to the workspace.
 func (s *Store) Create(path, source string) error {
 	if err := s.ctx.Err(); err != nil {
 		return err
@@ -262,27 +262,42 @@ func (s *Store) Create(path, source string) error {
 		return fmt.Errorf("new workspace path must be a local Markdown file")
 	}
 	path = filepath.ToSlash(local)
-	directory := filepath.ToSlash(filepath.Dir(local))
 	s.mu.RLock()
 	_, exists := s.paths[path]
-	allowedDirectory := false
-	for existing := range s.paths {
-		if filepath.ToSlash(filepath.Dir(filepath.FromSlash(existing))) == directory {
-			allowedDirectory = true
-			break
-		}
-	}
 	s.mu.RUnlock()
 	if exists {
 		return fmt.Errorf("workspace file already exists")
-	}
-	if !allowedDirectory {
-		return fmt.Errorf("new files must use a directory with discovered workspace content")
 	}
 	if err := s.workspace.Create(path, source); err != nil {
 		return err
 	}
 	return s.refresh(nil, false)
+}
+
+// CreateWithImage creates a Markdown file and its local static image.
+func (s *Store) CreateWithImage(path, source, imageName, contentType string, image []byte) (string, error) {
+	if err := s.ctx.Err(); err != nil {
+		return "", err
+	}
+	local := filepath.Clean(filepath.FromSlash(path))
+	if !filepath.IsLocal(local) || !isMarkdownSource(local) {
+		return "", fmt.Errorf("new workspace path must be a local Markdown file")
+	}
+	path = filepath.ToSlash(local)
+	s.mu.RLock()
+	_, exists := s.paths[path]
+	s.mu.RUnlock()
+	if exists {
+		return "", fmt.Errorf("workspace file already exists")
+	}
+	imageURL, err := s.workspace.CreateWithImage(path, source, imageName, contentType, image)
+	if err != nil {
+		return "", err
+	}
+	if err := s.refresh(nil, false); err != nil {
+		return "", err
+	}
+	return imageURL, nil
 }
 
 // ReadImage serves a contained static image for the editor preview.

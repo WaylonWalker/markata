@@ -2,10 +2,13 @@
 package editorworkspace
 
 import (
+	"bytes"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/WaylonWalker/markata/pkg/config"
@@ -307,26 +310,209 @@ func (w *Workspace) Create(path, source string) error {
 		return fmt.Errorf("new workspace path must be a local Markdown file")
 	}
 	local = filepath.Clean(local)
-	target := filepath.Join(w.root, local)
-	parent, err := filepath.EvalSymlinks(filepath.Dir(target))
+	parent, err := w.ensureDirectory(filepath.Dir(local))
 	if err != nil {
-		return fmt.Errorf("resolve workspace directory: %w", err)
+		return err
 	}
-	relative, err := filepath.Rel(w.root, parent)
-	if err != nil || relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
-		return fmt.Errorf("new workspace path escapes the workspace")
-	}
-	info, err := os.Stat(parent)
-	if err != nil || !info.IsDir() {
-		return fmt.Errorf("new workspace directory does not exist")
-	}
-	target = filepath.Join(parent, filepath.Base(local))
+	target := filepath.Join(parent, filepath.Base(local))
 	if _, err := os.Lstat(target); err == nil {
 		return fmt.Errorf("workspace file already exists")
 	} else if !os.IsNotExist(err) {
 		return err
 	}
 	return writeNewSource(parent, target, source)
+}
+
+// CreateWithImage atomically creates a Markdown file and a local static image.
+// Existing source or image paths are never replaced.
+func (w *Workspace) CreateWithImage(path, source, imageName, contentType string, image []byte) (string, error) {
+	if len(source) > 200000 {
+		return "", fmt.Errorf("source exceeds 200,000 bytes")
+	}
+	if len(image) == 0 || len(image) > 15<<20 {
+		return "", fmt.Errorf("image must be between 1 byte and 15 MiB")
+	}
+	local := filepath.FromSlash(path)
+	if !filepath.IsLocal(local) || !isMarkdownSource(local) {
+		return "", fmt.Errorf("new workspace path must be a local Markdown file")
+	}
+	local = filepath.Clean(local)
+	if !validUploadName(imageName) {
+		return "", fmt.Errorf("image name must be a lowercase slug")
+	}
+	extension, err := imageExtension(contentType, image)
+	if err != nil {
+		return "", err
+	}
+	sourceParent, err := w.ensureDirectory(filepath.Dir(local))
+	if err != nil {
+		return "", err
+	}
+	imageParent, err := w.ensureDirectory(filepath.Join("static", "images"))
+	if err != nil {
+		return "", err
+	}
+	sourceTarget := filepath.Join(sourceParent, filepath.Base(local))
+	imageFilename := imageName + "." + extension
+	imageTarget := filepath.Join(imageParent, imageFilename)
+	if err := requireNewFile(sourceTarget); err != nil {
+		return "", err
+	}
+	if err := requireNewFile(imageTarget); err != nil {
+		return "", fmt.Errorf("image file already exists: %s", imageFilename)
+	}
+	imageURL := "/images/" + imageFilename
+	source = sourceWithImage(source, imageURL)
+	if len(source) > 200000 {
+		return "", fmt.Errorf("source exceeds 200,000 bytes")
+	}
+	imageTemp, err := writeTempBytes(imageParent, ".markata-image-*", image)
+	if err != nil {
+		return "", err
+	}
+	defer os.Remove(imageTemp)
+	sourceTemp, err := writeTempBytes(sourceParent, ".markata-editor-*", []byte(source))
+	if err != nil {
+		return "", err
+	}
+	defer os.Remove(sourceTemp)
+	if err := os.Link(imageTemp, imageTarget); err != nil {
+		return "", fmt.Errorf("create workspace image: %w", err)
+	}
+	if err := os.Link(sourceTemp, sourceTarget); err != nil {
+		removeErr := os.Remove(imageTarget)
+		if removeErr != nil {
+			return "", fmt.Errorf("create workspace source: %w (also failed to remove new image: %v)", err, removeErr)
+		}
+		return "", fmt.Errorf("create workspace source: %w", err)
+	}
+	return imageURL, nil
+}
+
+func (w *Workspace) ensureDirectory(relative string) (string, error) {
+	local := filepath.Clean(filepath.FromSlash(relative))
+	if local == "." {
+		return w.root, nil
+	}
+	if !filepath.IsLocal(local) {
+		return "", fmt.Errorf("workspace directory must be local")
+	}
+	current := w.root
+	for _, segment := range strings.Split(local, string(filepath.Separator)) {
+		if segment == "" || segment == "." {
+			continue
+		}
+		current = filepath.Join(current, segment)
+		info, err := os.Lstat(current)
+		if os.IsNotExist(err) {
+			if err := os.Mkdir(current, 0o755); err != nil && !os.IsExist(err) {
+				return "", fmt.Errorf("create workspace directory: %w", err)
+			}
+			info, err = os.Lstat(current)
+		}
+		if err != nil {
+			return "", fmt.Errorf("inspect workspace directory: %w", err)
+		}
+		if info.Mode()&os.ModeSymlink != 0 || !info.IsDir() {
+			return "", fmt.Errorf("workspace directory contains a symlink or non-directory")
+		}
+	}
+	resolved, err := filepath.EvalSymlinks(current)
+	if err != nil {
+		return "", err
+	}
+	relativeToRoot, err := filepath.Rel(w.root, resolved)
+	if err != nil || relativeToRoot == ".." || strings.HasPrefix(relativeToRoot, ".."+string(filepath.Separator)) {
+		return "", fmt.Errorf("workspace directory escapes the workspace")
+	}
+	return resolved, nil
+}
+
+func requireNewFile(path string) error {
+	if _, err := os.Lstat(path); err == nil {
+		return fmt.Errorf("workspace file already exists")
+	} else if !os.IsNotExist(err) {
+		return err
+	}
+	return nil
+}
+
+func validUploadName(name string) bool {
+	if name == "" || len(name) > 100 {
+		return false
+	}
+	for _, r := range name {
+		if !(r >= 'a' && r <= 'z' || r >= '0' && r <= '9' || r == '-') {
+			return false
+		}
+	}
+	return name[0] != '-' && name[len(name)-1] != '-'
+}
+
+func imageExtension(contentType string, data []byte) (string, error) {
+	detected := http.DetectContentType(data[:min(len(data), 512)])
+	declared := strings.ToLower(strings.TrimSpace(strings.Split(contentType, ";")[0]))
+	if declared != detected {
+		return "", fmt.Errorf("image content type does not match its data")
+	}
+	switch {
+	case detected == "image/png" && bytes.HasPrefix(data, []byte("\x89PNG\r\n\x1a\n")):
+		return "png", nil
+	case detected == "image/jpeg" && bytes.HasPrefix(data, []byte{0xff, 0xd8, 0xff}):
+		return "jpg", nil
+	case detected == "image/gif" && (bytes.HasPrefix(data, []byte("GIF87a")) || bytes.HasPrefix(data, []byte("GIF89a"))):
+		return "gif", nil
+	case detected == "image/webp" && len(data) >= 12 && string(data[8:12]) == "WEBP":
+		return "webp", nil
+	default:
+		return "", fmt.Errorf("unsupported image format; use PNG, JPEG, GIF, or WebP")
+	}
+}
+
+func sourceWithImage(source, imageURL string) string {
+	quoted := fmt.Sprintf("image: %q", imageURL)
+	match := sourceFrontmatterPattern.FindStringSubmatchIndex(source)
+	if match == nil {
+		return "---\n" + quoted + "\n---\n\n" + source
+	}
+	header := source[match[2]:match[3]]
+	lines := strings.Split(header, "\n")
+	found := false
+	for i, line := range lines {
+		if strings.HasPrefix(line, "image:") {
+			lines[i] = quoted
+			found = true
+			break
+		}
+	}
+	if !found {
+		lines = append(lines, quoted)
+	}
+	return source[:match[2]] + strings.Join(lines, "\n") + source[match[3]:]
+}
+
+var sourceFrontmatterPattern = regexp.MustCompile(`(?s)^(---\r?\n)(.*?)(\r?\n---(?:\r?\n|$))`)
+
+func writeTempBytes(directory, pattern string, data []byte) (string, error) {
+	tmp, err := os.CreateTemp(directory, pattern)
+	if err != nil {
+		return "", fmt.Errorf("create workspace temporary file: %w", err)
+	}
+	tmpPath := tmp.Name()
+	if err := tmp.Chmod(0o644); err == nil {
+		_, err = tmp.Write(data)
+	}
+	if err == nil {
+		err = tmp.Sync()
+	}
+	if closeErr := tmp.Close(); err == nil {
+		err = closeErr
+	}
+	if err != nil {
+		_ = os.Remove(tmpPath)
+		return "", fmt.Errorf("write workspace temporary file: %w", err)
+	}
+	return tmpPath, nil
 }
 
 func isMarkdownSource(path string) bool {

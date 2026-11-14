@@ -53,7 +53,8 @@ are preserved.
 
 These creation defaults also apply to CLI plain prompts and the TUI.
 
-The editor also includes the thirteen built-in types from `markata-go new`:
+The editor includes the built-in types from `markata-go new` and the Shot and
+Gratitude variants:
 
 | Type | Default folder | Aliases |
 |---|---|---|
@@ -63,19 +64,41 @@ The editor also includes the thirteen built-in types from `markata-go new`:
 | `article` | `pages/article` | `blog-post`, `essay`, `tutorial` |
 | `note` | `pages/note` | `thought`, `status`, `tweet` |
 | `ping` | `pages/note` | — |
-| `photo` | `pages/photo` | `shot`, `shots`, `image`, `gallery` |
+| `photo` | `pages/photo` | `shots`, `image`, `gallery` |
+| `shot` | `pages/photo` | — |
 | `video` | `pages/video` | `clip`, `cast`, `stream` |
 | `link` | `pages/link` | `bookmark`, `til`, `stars` |
 | `quote` | `pages/quote` | `quotation` |
 | `guide` | `pages/guide` | `series`, `step`, `chapter` |
-| `inline` | `pages/inline` | `gratitude`, `micro` |
+| `inline` | `pages/inline` | `micro` |
+| `gratitude` | `pages/inline` | — |
 | `contact` | `pages/contact` | `character`, `person` |
 | `author` | `pages/author` | — |
 
 The editor's Blog post and Thought starters remain available alongside these
 types. Ping is listed separately from Note so the generated frontmatter keeps
 `template: ping` for sites with a dedicated Ping feed. Both use the same note
+card layout. Shot and Photo share a card layout; Gratitude and Inline share a
 card layout. Site-authored and configured starters can add or override starters.
+
+The new-post form lets you set a post date. Leave it blank to keep a date from
+the starter or use today's local date. Photo and Shot posts accept an image URL
+or a pasted/dropped PNG, JPEG, GIF, or WebP file. URLs stay remote; pasted files
+are copied to `static/images/` using the post's filename.
+
+Ping and Gratitude have **Use next number** enabled by default. You can turn it
+off for an individual post. To configure numbering for a site-authored starter,
+add numbering metadata:
+
+```yaml
+starter:
+  name: ping
+  number_prefix: ping
+  numbered_by_default: true
+```
+
+The editor scans the starter's output folder and uses the next available
+`ping-N` filename. It does not replace an existing Markdown file or image.
 
 Run `markata-go new --list` to see starters, then create content with:
 

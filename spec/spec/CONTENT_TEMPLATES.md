@@ -64,9 +64,10 @@ All editors MUST:
    `markata-go new`: `post`, `page`, `docs`, `article`, `note`, `photo`,
    `video`, `link`, `quote`, `guide`, `inline`, `contact`, and `author`.
    Existing editor-specific starters MAY remain available in addition to these.
-   The web workbench MUST also offer `ping` as a selectable variant of `note`.
-   It writes `template: ping` and `templateKey: ping` so sites can filter it
-   separately while rendering it with the note card.
+   The web workbench MUST also offer `ping`, `shot`, and `gratitude` as
+   selectable variants. Each variant MUST preserve its own `template` and
+   `templateKey` values so a site can filter it separately from `note`,
+   `photo`, or `inline` while using the corresponding card layout.
 2. Resolve CLI/TUI selections by canonical name or alias. In the web workbench,
    show aliases as searchable terms and select by the visible canonical starter.
 3. Ask for or accept a title when the starter requires one.
@@ -77,6 +78,23 @@ All editors MUST:
 8. Serialize only fields already present in the selected starter or values
    explicitly overridden during creation; do not inject implicit defaults.
 9. Reject paths that escape the site root and report invalid starter metadata.
+
+The web workbench MUST support an optional date override when creating a post.
+When empty, it preserves a starter date or applies the current local date.
+When set, the selected date overrides the starter date.
+
+Photo and shot starters MUST accept an image URL or a pasted/dropped PNG, JPEG,
+GIF, or WebP image. Image URLs MUST be stored as authored; the workbench MUST
+NOT fetch them. Uploaded images MUST be saved under `static/images/` with the
+post filename as their basename. Creating the post and its image MUST fail
+without replacing an existing source or image file.
+
+A starter MAY define `starter.number_prefix` and
+`starter.numbered_by_default`. The prefix MUST be a lowercase slug. When the
+user enables numbering, the editor uses the next available
+`{prefix}-{number}` filename in the starter's output directory. The user MUST
+be able to disable numbering for that post. Numbering MUST NOT replace an
+existing file.
 
 Site-authored starters override a config starter or built-in starter with
 the same canonical name. Canonical names MUST remain selectable even when a

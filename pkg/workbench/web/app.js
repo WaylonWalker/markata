@@ -143,10 +143,23 @@ const templateCount = document.querySelector('#template-picker-count');
 const createTitle = document.querySelector('#create-title');
 const createLinkField = document.querySelector('#create-link-field');
 const createLinkURL = document.querySelector('#create-link-url');
+const createImageField = document.querySelector('#create-image-field');
+const createImageURL = document.querySelector('#create-image-url');
+const createImageFile = document.querySelector('#create-image-file');
+const createImagePaste = document.querySelector('#create-image-paste');
+const createImagePreview = document.querySelector('#create-image-preview');
+const createImageName = document.querySelector('#create-image-name');
+const createNumbering = document.querySelector('#create-numbering');
+const createNumbered = document.querySelector('#create-numbered');
+const createNumberedLabel = document.querySelector('label[for="create-numbered"]');
+const createDate = document.querySelector('#create-date');
 const createSlug = document.querySelector('#create-slug');
 const createDirectory = document.querySelector('#create-directory');
 const createPathPreview = document.querySelector('#create-path-preview');
 let contentTemplates = [];
+let selectedContentTemplate = null;
+let selectedImageFile = null;
+let imagePreviewURL = '';
 async function showCreateDialog() {
   try {
     const response = await fetch('/workspace/templates',{cache:'no-store'});
@@ -178,6 +191,7 @@ function templateScore(template, query) {
 }
 function chooseTemplate(template) {
   if (!template) return;
+  selectedContentTemplate = template;
   templatePicker.dataset.selectedTemplate = template.id;
   templatePicker.close();
   createError.hidden = true;
@@ -186,14 +200,24 @@ function chooseTemplate(template) {
   const parsedTitle = titleMatch?.[1]?.trim().replace(/^(?:"([\s\S]*)"|'([\s\S]*)')$/, '$1$2');
   const title = !parsedTitle || parsedTitle.includes('{{') ? template.name : parsedTitle;
   const isLinkPost = template.id === 'builtin:link';
+  const isImagePost = ['builtin:photo','builtin:shot'].includes(template.id) || /^image:\s*/m.test(template.source);
   createLinkField.hidden = !isLinkPost;
   createLinkURL.required = isLinkPost;
   createLinkURL.value = '';
+  createImageField.hidden = !isImagePost;
+  createImageURL.value = '';
+  createImageFile.value = '';
+  clearSelectedImage();
   createTitle.value = isLinkPost ? '' : title;
   createTitle.placeholder = isLinkPost ? 'A title for the link' : '';
   createSlug.value = '';
+  createSlug.readOnly = false;
   createSlug.placeholder = slugify(title) || 'post-title';
   createDirectory.value = defaultContentDirectory(template);
+  createDate.value = '';
+  createNumbering.hidden = !template.number_prefix;
+  createNumbered.checked = Boolean(template.numbered_by_default);
+  createNumberedLabel.textContent = template.number_prefix ? `Use next ${template.number_prefix} number (${template.number_prefix}-${template.next_number || 1})` : 'Use next number';
   updateCreatePathPreview();
   createDialog.showModal();
   createTitle.focus();
@@ -237,12 +261,51 @@ function slugify(value) {
   return value.normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase()
     .replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
 }
+function clearSelectedImage() {
+  selectedImageFile = null;
+  if (imagePreviewURL) URL.revokeObjectURL(imagePreviewURL);
+  imagePreviewURL = '';
+  createImagePreview.removeAttribute('src');
+  createImagePreview.hidden = true;
+  createImageName.hidden = true;
+  createImageName.textContent = '';
+}
+function selectImageFile(file) {
+  if (!file || !/^image\/(?:png|jpeg|gif|webp)$/.test(file.type)) {
+    createError.textContent = 'Choose a PNG, JPEG, GIF, or WebP image.';
+    createError.hidden = false;
+    return;
+  }
+  if (file.size > 15 * 1024 * 1024) {
+    createError.textContent = 'Image must be 15 MiB or smaller.';
+    createError.hidden = false;
+    return;
+  }
+  createError.hidden = true;
+  createImageURL.value = '';
+  clearSelectedImage();
+  selectedImageFile = file;
+  imagePreviewURL = URL.createObjectURL(file);
+  createImagePreview.src = imagePreviewURL;
+  createImagePreview.hidden = false;
+  createImageName.textContent = `${file.name || 'Pasted image'} · ${(file.size / 1024 / 1024).toFixed(1)} MiB`;
+  createImageName.hidden = false;
+}
 function defaultContentDirectory(template) {
   if (template.directory) return template.directory;
   const key = template.id.replace(/^builtin:/,'');
   return ({thought:'pages/thoughts',note:'pages/notes',photo:'pages/photos'})[key] || 'pages/blog';
 }
 function updateCreatePathPreview() {
+  const template = selectedContentTemplate;
+  if (template?.number_prefix && createNumbered.checked) {
+    const number = template.next_number || 1;
+    createSlug.value = `${template.number_prefix}-${number}`;
+    createSlug.readOnly = true;
+  } else {
+    if (createSlug.readOnly) createSlug.value = '';
+    createSlug.readOnly = false;
+  }
   const slug = createSlug.value.trim() || slugify(createTitle.value) || 'new-post';
   const directory = createDirectory.value.trim().replace(/\\/g,'/').replace(/^\/+|\/+$/g,'');
   createSlug.placeholder = slugify(createTitle.value) || 'post-title';
@@ -266,15 +329,48 @@ document.querySelector('#create-cancel').addEventListener('click',() => createDi
 createTitle.addEventListener('input',updateCreatePathPreview);
 createSlug.addEventListener('input',updateCreatePathPreview);
 createDirectory.addEventListener('input',updateCreatePathPreview);
+createNumbered.addEventListener('change',updateCreatePathPreview);
+createImageURL.addEventListener('input',() => {if(createImageURL.value.trim())clearSelectedImage();});
+createImageFile.addEventListener('change',() => selectImageFile(createImageFile.files?.[0]));
+createImagePaste.addEventListener('click',() => createImageFile.click());
+createImagePaste.addEventListener('keydown',event => {
+  if(event.key==='Enter'||event.key===' '){event.preventDefault();createImageFile.click();}
+});
+createImagePaste.addEventListener('dragover',event => {event.preventDefault();createImagePaste.dataset.dragging='true';});
+createImagePaste.addEventListener('dragleave',() => delete createImagePaste.dataset.dragging);
+createImagePaste.addEventListener('drop',event => {
+  event.preventDefault();delete createImagePaste.dataset.dragging;
+  selectImageFile([...event.dataTransfer.files].find(file=>file.type.startsWith('image/')));
+});
+createDialog.addEventListener('paste',event => {
+  if(!createDialog.open)return;
+  const item=[...(event.clipboardData?.items||[])].find(candidate=>candidate.type.startsWith('image/'));
+  const file=item?.getAsFile();
+  if(file){event.preventDefault();selectImageFile(file);}
+});
+createDialog.addEventListener('close',clearSelectedImage);
+function setFrontmatterImage(source, imageURL) {
+  const match=String(source).match(/^(---\r?\n)([\s\S]*?)(\r?\n---(?:\r?\n|$))/);
+  if(!match)return `---\nimage: ${JSON.stringify(imageURL)}\n---\n\n${source}`;
+  const lines=match[2].split(/\r?\n/);
+  let found=false;
+  for(let i=0;i<lines.length;i++){
+    if(/^image:\s*/.test(lines[i])){lines[i]=`image: ${JSON.stringify(imageURL)}`;found=true;break;}
+  }
+  if(!found)lines.push(`image: ${JSON.stringify(imageURL)}`);
+  return `${match[1]}${lines.join('\n')}${match[3]}${String(source).slice(match[0].length)}`;
+}
 document.querySelector('#create-form').addEventListener('submit',async event => {
   event.preventDefault(); createError.hidden = true;
+  const submitButton=document.querySelector('#create-submit');
+  submitButton.disabled=true;
   const template = contentTemplates.find(item => item.id === templatePicker.dataset.selectedTemplate);
   const title = createTitle.value.trim();
   const slug = createSlug.value.trim() || slugify(title);
   const directory = createDirectory.value.trim().replace(/\\/g,'/').replace(/^\/+|\/+$/g,'');
   const path = `${directory && directory !== '.' ? `${directory}/` : ''}${slug}.md`;
-  if (!template || !title || !slug || !path) return;
-  let source = window.MarkataContentStarters.render(template.source,title,slug);
+  if (!template || !title || !slug || !path) {submitButton.disabled=false;return;}
+  let source = window.MarkataContentStarters.render(template.source,title,slug,new Date(),createDate.value);
   try {
     if (template.id === 'builtin:link') {
       let sourceURL;
@@ -288,12 +384,27 @@ document.querySelector('#create-form').addEventListener('submit',async event => 
       // Never fetch remote metadata from the editor client or Go server.
       source = source.replace(/^url:\s*.*$/m, () => 'url: ' + JSON.stringify(sourceURL.href));
     }
-    const response = await fetch('/workspace/file?path=' + encodeURIComponent(path),{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:source});
+    const imageURL=createImageURL.value.trim();
+    if(imageURL){
+      let parsedImageURL;
+      try{parsedImageURL=new URL(imageURL);}catch{throw new Error('Enter a valid image URL beginning with https:// or http://.');}
+      if(!['https:','http:'].includes(parsedImageURL.protocol)||!parsedImageURL.hostname||parsedImageURL.username||parsedImageURL.password)
+        throw new Error('Use a public-style http(s) image URL without embedded credentials.');
+      source=setFrontmatterImage(source,parsedImageURL.href);
+    }
+    let response;
+    if(selectedImageFile){
+      const form=new FormData();form.set('path',path);form.set('source',source);form.set('image_name',slug);form.set('image',selectedImageFile,selectedImageFile.name||'clipboard-image');
+      response=await fetch('/workspace/new-post',{method:'POST',body:form});
+    }else{
+      response=await fetch('/workspace/file?path='+encodeURIComponent(path),{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:source});
+    }
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Cannot create this file.');
     window.MarkataSiteTree?.activate(path);
     createDialog.close(); location.reload();
   } catch (error) { createError.textContent = error.message; createError.hidden = false; }
+  finally {submitButton.disabled=false;}
 });
 window.MarkataFrontmatter.attach(editor);
 const appShortcuts = window.MarkataShortcuts;

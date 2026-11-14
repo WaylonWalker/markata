@@ -25,7 +25,10 @@ func (f publishWorkspaceFixture) Files() ([]editorworkspace.File, error) {
 	return nil, nil
 }
 func (f publishWorkspaceFixture) Create(string, string) error { return nil }
-func (f publishWorkspaceFixture) Write(string, string) error  { return nil }
+func (f publishWorkspaceFixture) CreateWithImage(string, string, string, string, []byte) (string, error) {
+	return "", nil
+}
+func (f publishWorkspaceFixture) Write(string, string) error { return nil }
 func (f publishWorkspaceFixture) Read(path string) (string, error) {
 	body, err := os.ReadFile(filepath.Join(f.root, filepath.FromSlash(path)))
 	return string(body), err

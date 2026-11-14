@@ -1,6 +1,7 @@
 (function (root) {
-  function render(source, title, slug, now = new Date()) {
-    const date = [now.getFullYear(), String(now.getMonth() + 1).padStart(2, "0"), String(now.getDate()).padStart(2, "0")].join("-");
+  function render(source, title, slug, now = new Date(), dateOverride = "") {
+    const today = [now.getFullYear(), String(now.getMonth() + 1).padStart(2, "0"), String(now.getDate()).padStart(2, "0")].join("-");
+    const date = /^\d{4}-\d{2}-\d{2}$/.test(dateOverride) ? dateOverride : today;
     const values = { title: String(title), slug: String(slug), date, datetime: now.toISOString() };
     const expand = text => text.replace(/\{\{(title|slug|date|datetime)\}\}/g, (_, key) => values[key]);
     const frontmatter = String(source).match(/^(---\r?\n)([\s\S]*?)(\r?\n---(?:\r?\n|$))/);
@@ -37,7 +38,7 @@
       if (dateField) {
         hasDate = true;
         const value = dateField[2].replace(/\s+#.*$/, "").trim();
-        if (!value || /^(?:null|~)$/i.test(value)) lines[index] = `${dateField[1]}${date}`;
+        if (dateOverride || !value || /^(?:null|~)$/i.test(value)) lines[index] = `${dateField[1]}${date}`;
       }
       const publishedField = lines[index].match(/^(published:\s*)(.*)$/i);
       if (publishedField) {
