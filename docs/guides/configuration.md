@@ -2064,7 +2064,7 @@ markata-go new "Tutorial" -t tutorial     # Use custom template
 markata-go new "Recipe" -t recipe --dir custom  # Override directory
 ```
 
-Built-in content templates are listed with aliases in `markata-go new --list`, such as `note (aka: ping, thought, status, tweet)`. Built-in aliases are also accepted directly with `--template`.
+Built-in content templates are listed with aliases in `markata-go new --list`, such as `note (aka: thought, status, tweet)`. Ping is a separate type. Built-in aliases are also accepted directly with `--template`.
 
 Generated files include frontmatter plus the configured body template, but they do not include a starter `# H1` heading. markata-go already renders the page title from frontmatter, so starter content should begin with body text or `##` sections.
 

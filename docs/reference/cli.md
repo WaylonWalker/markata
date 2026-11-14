@@ -1341,7 +1341,8 @@ markata-go new [title] [flags]
 | `page` | `pages/` | Static pages |
 | `docs` | `docs/` | Documentation pages |
 | `article` (`blog-post`, `essay`, `tutorial`) | `pages/article/` | Long-form article content |
-| `note` (`ping`, `thought`, `status`, `tweet`) | `pages/note/` | Short note and micro-post content |
+| `note` (`thought`, `status`, `tweet`) | `pages/note/` | Short note and micro-post content |
+| `ping` | `pages/ping/` | Short ping posts |
 | `photo` (`shot`, `shots`, `image`, `gallery`) | `pages/photo/` | Image-focused posts |
 | `video` (`clip`, `cast`, `stream`) | `pages/video/` | Video posts |
 | `link` (`bookmark`, `til`, `stars`) | `pages/link/` | Link and bookmark posts |
@@ -1404,7 +1405,7 @@ Templates control the default frontmatter and output directory for new content.
 2. **Config templates** - Defined in `markata-go.toml` under `[content_templates]`
 3. **File templates** - Markdown files in `content-templates/` directory
 
-Built-in content types with aliases are shown in `markata-go new --list` as `type (aka: alias1, alias2)`. You can also pass those aliases directly to `--template`; for example, `--template ping` resolves to the built-in `note` template while preserving `template: ping` in frontmatter.
+Built-in content types with aliases are shown in `markata-go new --list` as `type (aka: alias1, alias2)`. You can also pass those aliases directly to `--template`. Ping is a separate content type and defaults to `pages/ping/`; Note defaults to `pages/note/`.
 
 **Configuration Example:**
 

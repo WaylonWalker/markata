@@ -18,7 +18,7 @@ import (
 
 var contentTemplateAliases = map[string][]string{
 	"article": {"blog-post", "essay", "tutorial"},
-	"note":    {"ping", "thought", "status", "tweet"},
+	"note":    {"thought", "status", "tweet"},
 	"photo":   {"shot", "shots", "image", "gallery"},
 	"video":   {"clip", "cast", "stream"},
 	"link":    {"bookmark", "til", "stars"},
@@ -138,6 +138,16 @@ func builtinTemplates() map[string]ContentTemplate {
 				"template": "note",
 			},
 			Body:   "A quick note...",
+			Source: "builtin",
+		},
+		"ping": {
+			Name:      "ping",
+			Directory: "pages/ping",
+			Frontmatter: map[string]interface{}{
+				"template":    "ping",
+				"templateKey": "ping",
+			},
+			Body:   "A quick ping...",
 			Source: "builtin",
 		},
 		"photo": {

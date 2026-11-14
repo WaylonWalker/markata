@@ -63,7 +63,7 @@ Gratitude variants:
 | `docs` | `docs` | — |
 | `article` | `pages/article` | `blog-post`, `essay`, `tutorial` |
 | `note` | `pages/note` | `thought`, `status`, `tweet` |
-| `ping` | `pages/note` | — |
+| `ping` | `pages/ping` | — |
 | `photo` | `pages/photo` | `shots`, `image`, `gallery` |
 | `shot` | `pages/photo` | — |
 | `video` | `pages/video` | `clip`, `cast`, `stream` |
@@ -77,8 +77,9 @@ Gratitude variants:
 
 The editor's Blog post and Thought starters remain available alongside these
 types. Ping is listed separately from Note so the generated frontmatter keeps
-`template: ping` for sites with a dedicated Ping feed. Both use the same note
-card layout. Shot and Photo share a card layout; Gratitude and Inline share a
+`template: ping` for sites with a dedicated Ping feed. Ping and Note use
+separate folders and share the same note card layout. Shot and Photo share a
+card layout; Gratitude and Inline share a
 card layout. Site-authored and configured starters can add or override starters.
 
 The new-post form lets you set a post date. Leave it blank to keep a date from
