@@ -805,7 +805,6 @@
     const open = changesOpen();
     changesHost.hidden = !open;
     changesPanel.hidden = !open;
-    changesButton.setAttribute('aria-expanded', String(open));
     clearInterval(changesTimer);
     changesTimer = null;
     try { localStorage.setItem('markata-workspace-changes-open', open ? 'true' : 'false'); }
@@ -845,10 +844,8 @@
     const badge = changesButton.querySelector('.workspace-changes-count');
     badge.textContent = label;
     badge.hidden = !label;
-    changesButton.setAttribute('aria-label', 'Git changes' + (description ? ': ' + description : ''));
-    changesButton.title = description ? 'Git changes · ' + description : 'Git changes';
-    const option = document.querySelector('#site-view option[value="changes"]');
-    if (option) option.textContent = label ? 'Changes (' + label + ')' : 'Changes';
+    changesButton.setAttribute('aria-label', 'Changes' + (description ? ': ' + description : ''));
+    changesButton.title = description ? 'Changes · ' + description : 'Changes';
   }
   function showWorkspaceChanges(data) {
     changesSnapshot = data;
@@ -1028,21 +1025,8 @@
   function attachWorkspaceChanges() {
     changesHost = document.querySelector('#site-changes');
     if (!changesHost) return;
-    const settings = document.querySelector('#settings-open');
-    changesButton = document.createElement('button');
-    changesButton.type = 'button';
-    changesButton.id = 'workspace-changes-toggle';
-    changesButton.innerHTML =
-      '<svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="6" cy="5.5" r="2.2"/><circle cx="6" cy="18.5" r="2.2"/>' +
-      '<circle cx="18" cy="8.5" r="2.2"/><path d="M6 7.7v8.6M18 10.7c0 4-3 5.3-7 5.3H8.2"/></svg>' +
-      '<span class="workspace-changes-count" hidden></span>';
-    changesButton.title = 'Git changes';
-    changesButton.setAttribute('aria-label', 'Git changes');
-    changesButton.setAttribute('aria-controls', 'workspace-changes-panel');
-    changesButton.setAttribute('aria-expanded', 'false');
-    const workspaceToolbar = document.querySelector('#site-sidebar .pane-label');
-    if (workspaceToolbar) workspaceToolbar.append(changesButton);
-    else settings.parentElement.insertBefore(changesButton, settings);
+    changesButton = document.querySelector('#workspace-tab-changes');
+    if (!changesButton) return;
     changesPanel = document.createElement('section');
     changesPanel.id = 'workspace-changes-panel';
     changesPanel.hidden = true;
@@ -1057,7 +1041,6 @@
       '<div id="workspace-changes-list" role="list"></div>';
     changesHost.append(changesPanel);
     changesList = changesPanel.querySelector('#workspace-changes-list');
-    changesButton.addEventListener('click', () => changesVisible(!changesOpen()));
     document.querySelector('#site-view').addEventListener('change', syncChangesView);
     changesPanel.querySelector('#workspace-changes-refresh')
       .addEventListener('click', refreshWorkspaceChanges);

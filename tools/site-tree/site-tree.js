@@ -325,19 +325,22 @@ window.MarkataSiteTree = {
     const updateWorkspaceContext = view => {
       const context = document.querySelector('#site-context');
       const count = workspaceCounts[view] || 0;
-      context.textContent = view === 'files' ? `${count} source files in this site.`
+      context.textContent = view === 'recent' ? 'Recently opened workspace files.'
+        : view === 'files' ? `${count} source files in this site.`
         : view === 'feeds' ? `${count} configured feeds · select a post to open it.`
-        : view === 'changes' ? 'Git changes in this workspace, compared with the last commit.'
+        : view === 'changes' ? 'Working tree changes since the last commit.'
         : `${count} tags from loaded frontmatter.`;
     };
     document.querySelector('#site-view').addEventListener('change', event => {
       if (event.target.value === 'feeds') buildFeeds(window.MarkataSiteTree.feeds || []);
       if (event.target.value === 'tags') buildTags();
+      document.querySelector('#site-recent').hidden = event.target.value !== 'recent';
       document.querySelector('#site-files').hidden = event.target.value !== 'files';
       document.querySelector('#site-feeds').hidden = event.target.value !== 'feeds';
       document.querySelector('#site-tags').hidden = event.target.value !== 'tags';
       updateWorkspaceContext(event.target.value);
     });
+    document.querySelector('#site-view').dispatchEvent(new Event('change'));
     // Start with a real site post. The previous standalone draft stays in the tree.
     await open(Object.hasOwn(files, selected) || selected === scratchPath ? selected : (Object.keys(files)[0] || scratchPath));
     // Yield to the initial preview; metadata is never part of attach's promise.
@@ -354,11 +357,11 @@ window.MarkataSiteTree = {
         workspaceCounts.files = metadata.length;
         workspaceCounts.tags = tags.size;
         document.querySelector('#site-view option[value="files"]').textContent = `Files (${metadata.length})`;
-        tagOption.textContent = `Tags (${tags.size})`; tagOption.disabled = false;
+        tagOption.textContent = `Tags (${tags.size})`; tagOption.disabled = tags.size === 0;
         const feeds = data.feeds || [];
         workspaceCounts.feeds = feeds.length;
         window.MarkataSiteTree.feeds = feeds;
-      feedOption.textContent = `Feeds (${feeds.length})`; feedOption.disabled = feeds.length === 0;
+        feedOption.textContent = `Feeds (${feeds.length})`; feedOption.disabled = feeds.length === 0;
         if (document.querySelector('#site-view').value === 'feeds') buildFeeds(feeds);
         updateWorkspaceContext(document.querySelector('#site-view').value);
       } catch { tagOption.textContent = 'Tags unavailable'; feedOption.textContent = 'Feeds unavailable'; }

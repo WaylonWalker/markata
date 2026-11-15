@@ -63,6 +63,12 @@ serving a long-lived cached snapshot. The active-post Review action MUST be
 located in the Changes panel header. Change rows MUST have enough
 vertical spacing to distinguish filenames, status, and actions in the narrow
 sidebar.
+Workspace navigation MUST use stable tabs for Recent, Files, Feeds, Tags, and
+Changes. Recent files MUST occupy their own panel rather than appearing inside
+Files. The tablist MUST support arrow-key navigation and expose the selected tab
+and panel accessibly. Switching tabs MUST NOT resize or move the sidebar shell.
+Unavailable Feeds and Tags tabs MUST remain disabled until their data is ready,
+or when the site has no matching entries.
 
 The Preview speed setting MUST support Auto, Fast, Normal, and Slow, and MUST
 persist in browser storage. Normal is the default and waits 50 ms after the

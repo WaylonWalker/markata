@@ -480,7 +480,8 @@ function toggleSidebar(visible = workbench.classList.contains('sidebar-hidden'))
 function focusExplorer() {
   toggleSidebar(true);
   const tree = document.querySelector('.site-tree:not([hidden])');
-  (tree?.querySelector('[tabindex="0"], button, [role="treeitem"]') || document.querySelector('#site-view'))?.focus();
+  (tree?.querySelector('[tabindex="0"], button, [role="treeitem"]') ||
+    document.querySelector('#workspace-view-tabs [aria-selected="true"]'))?.focus();
 }
 const registerApp = (id,label,category,bindings,run,description='') =>
   appShortcuts.register({id,label,category,bindings,run,description});

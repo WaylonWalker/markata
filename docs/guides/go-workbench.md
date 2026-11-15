@@ -117,13 +117,13 @@ Press **Ctrl+P** (**Cmd+P** on macOS) to find a site file by its path, title,
 slug, or tag. The finder shows the current and recently opened files when its
 search is empty.
 Select a result or press **Enter** to open it in the editor.
-The sidebar also has a collapsible **Recent files** section for the last eight
-workspace documents opened on this device. It is saved per workspace in
-browser storage, works without network access, and excludes unsaved scratch
-drafts. Select any recent entry to reopen it; the entry list quietly ignores
-files no longer in the workspace. You can collapse it when you need more room.
-Choose **Feeds** or **Tags** in the workspace selector to browse posts by feed
-or tag. Feed names are shown as roots with folders relative to the workspace.
+The sidebar has tabs for **Recent**, **Files**, **Feeds**, **Tags**, and
+**Changes**. **Recent** lists the last eight workspace documents opened on this
+device. It is saved per workspace in browser storage, works without network
+access, and excludes unsaved scratch drafts. Select a recent entry to reopen it;
+files no longer in the workspace are omitted. **Feeds** and **Tags** browse
+posts by feed or tag. Feed names are shown as roots with folders relative to the
+workspace.
 
 Edits to selected site files save back to the workspace after a short pause.
 Unsaved scratch documents stay in browser storage. The browser also keeps a
@@ -372,8 +372,8 @@ To open the command palette with a complete example loaded, visit `/?example`.
 
 ## Review changes before publishing (experimental)
 
-The header also offers **Changes**, which opens a Changes view in the Workspace
-sidebar. You can also pick **Changes** from the Workspace view menu. It enumerates the entire Git working tree, not only posts
+Select the **Changes** tab in the workspace sidebar to view the Git inventory.
+It enumerates the entire Git working tree, not only posts
 opened in the editor. Editable posts are listed first, followed by other files.
 Every changed file that still exists has **View diff**, which shows the change
 inline against the last commit, including config and other non-Markdown files.
