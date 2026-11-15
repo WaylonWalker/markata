@@ -372,19 +372,26 @@ To open the command palette with a complete example loaded, visit `/?example`.
 
 ## Review changes before publishing (experimental)
 
-The header also offers **Changes**, a persistent panel on desktop and a bottom
-sheet on phones. It enumerates the entire Git working tree, not only posts
-opened in the editor. Eligible Markdown posts offer **View diff** inline, with
-an **Edit post** link inside the expanded comparison, so you do not need to
-open the Review modal just to see what changed. Files outside the selected
-site, deleted files, conflicts, and non-Markdown files remain visible and
-clearly labeled, but are not exposed as editable source.
+The header also offers **Changes**, which opens a Changes view in the Workspace
+sidebar. You can also pick **Changes** from the Workspace view menu. It enumerates the entire Git working tree, not only posts
+opened in the editor. Editable posts are listed first, followed by other files.
+Every changed file that still exists has **View diff**, which shows the change
+inline against the last commit, including config and other non-Markdown files.
+Each post also has **Open**, which loads it in the editor, and **Review**, which
+opens the Review dialog for that post. Commit, push, and discard for posts are
+available only from that dialog, where the existing checks apply. Other files
+are read-only in the panel. Deleted files and conflicts are labeled but have no
+action, and files outside the selected site are listed as well.
 
 The panel refreshes after a successful commit, push or discard as well as
 periodically while open. It is a read-only inventory: multi-file selection and
 **Publish selected** are not implemented yet. A local commit is not a remote
 publication, and a push does not prove the site is live. If Git status fails,
 the panel reports an error rather than pretending there are no changes.
+The change count is loaded in the background when the editor starts and refreshed
+when a site file saves or the editor regains focus. Opening the view shows its
+last inventory immediately while a fresh Git status check runs. **Review** for
+the active post is in the Changes panel header.
 
 Use **Publish post** in the header or **Ctrl/Cmd+S** (Emacs **Ctrl-X Ctrl-S**,
 Vim `:w`) to publish *only the active site Markdown post*. This explicitly

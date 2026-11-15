@@ -22,7 +22,7 @@
   const isClose = (button) => /(^|-)close$/.test(button.id)
     || /(^|\s)[\w-]*-close(\s|$)/.test(button.className.toString())
     || /^close\b/i.test(button.getAttribute('aria-label') || '');
-  const isIcon = (button) => isClose(button) || button.id === 'settings-open';
+  const isIcon = (button) => isClose(button) || button.id === 'settings-open' || button.id === 'workspace-changes-toggle';
 
   function style(button) {
     if (button.matches(SKIP) || button.closest(SKIP)) return;

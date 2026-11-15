@@ -175,6 +175,30 @@ window.MarkataSiteTree = {
     document.querySelector('#saved').textContent = 'Restored committed version · saved to site';
     return true;
   },
+  // Conflict resolution from the compare dialog. The disk version the user
+  // reviewed becomes the save base; the chosen copy becomes the buffer.
+  keepBrowserDraft(path, version) {
+    if (!currentEditor || active !== path || !Object.hasOwn(files, path) ||
+        !/^[0-9a-f]{64}$/.test(version)) return false;
+    versions[path] = version;
+    saveToSite(path, currentEditor.getValue());
+    return true;
+  },
+  useDiskCopy(path, source, version) {
+    if (!currentEditor || active !== path || !Object.hasOwn(files, path) ||
+        !/^[0-9a-f]{64}$/.test(version)) return false;
+    saveRevisions[path] = (saveRevisions[path] || 0) + 1;
+    saveEpochs[path] = (saveEpochs[path] || 0) + 1;
+    clearTimeout(saveTimers[path]);
+    drafts[path] = source;
+    baselines[path] = source;
+    versions[path] = version;
+    files[path] = source;
+    try { writeDraft(path, source); } catch { warning(); return false; }
+    currentEditor.setValue(source);
+    document.querySelector('#saved').textContent = 'Using disk copy · saved to site';
+    return true;
+  },
   // Called only after the guarded local Discard endpoint has deleted a
   // reviewed untracked source. Clear this file's recovery copy, leaving every
   // other local draft untouched; the caller then reloads workspace discovery.
@@ -221,7 +245,7 @@ window.MarkataSiteTree = {
   },
   isReady: () => Boolean(fileTree),
   files: () => metadata.map(file => ({...file})),
-  openFile(path) { if (Object.hasOwn(files, path)) open(path); },
+  openFile(path) { if (Object.hasOwn(files, path)) return open(path); },
   activeFile: () => active,
   isSiteFile: path => Object.hasOwn(files, path),
   workspaceId: () => workspaceKey,
@@ -303,6 +327,7 @@ window.MarkataSiteTree = {
       const count = workspaceCounts[view] || 0;
       context.textContent = view === 'files' ? `${count} source files in this site.`
         : view === 'feeds' ? `${count} configured feeds · select a post to open it.`
+        : view === 'changes' ? 'Git changes in this workspace, compared with the last commit.'
         : `${count} tags from loaded frontmatter.`;
     };
     document.querySelector('#site-view').addEventListener('change', event => {

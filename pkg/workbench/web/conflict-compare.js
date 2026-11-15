@@ -1,4 +1,4 @@
-/* Read-only comparison of a conflicting browser draft with the latest file. */
+/* Compare a conflicting browser draft with the latest file and pick one copy. */
 (() => {
   'use strict';
 
@@ -18,19 +18,21 @@
     dialog.id = 'workspace-conflict-dialog';
     dialog.setAttribute('aria-labelledby', 'workspace-conflict-title');
     dialog.innerHTML = [
-      '<div class="workspace-conflict-heading"><div><h2 id="workspace-conflict-title">Compare unsynced copies</h2>',
-      '<p>No changes will be saved, restored or discarded here.</p></div>',
+      '<div class="workspace-conflict-heading"><div><h2 id="workspace-conflict-title">Resolve conflicting copies</h2>',
+      '<p>Pick one copy. The other copy is replaced.</p></div>',
       '<button type="button" id="workspace-conflict-close" aria-label="Close comparison">Close</button></div>',
       '<p id="workspace-conflict-path"></p><p id="workspace-conflict-state" role="status"></p>',
       '<div class="workspace-conflict-columns">',
       '<section><h3>Browser draft</h3><pre id="workspace-conflict-browser"></pre></section>',
       '<section><h3>Current file on disk</h3><pre id="workspace-conflict-disk"></pre></section>',
-      '</div><footer><button type="button" id="workspace-conflict-download-browser">Download browser copy</button>',
-      '<button type="button" id="workspace-conflict-download-disk" disabled>Download disk copy</button>',
+      '</div><footer><button type="button" id="workspace-conflict-keep-browser" disabled>Keep browser draft</button>',
+      '<button type="button" id="workspace-conflict-use-disk" disabled>Use disk copy</button>',
       '<button type="button" id="workspace-conflict-done">Keep editing</button></footer>'
     ].join('');
     document.body.append(dialog);
 
+    const keepBrowserButton = dialog.querySelector('#workspace-conflict-keep-browser');
+    const useDiskButton = dialog.querySelector('#workspace-conflict-use-disk');
     let currentComparison = null;
     let requestNumber = 0;
     let conflictPath = null;
@@ -51,18 +53,9 @@
     if (activeLabel) activeObserver.observe(activeLabel, {childList:true, characterData:true, subtree:true});
     update();
 
-    function download(source, path, suffix) {
-      if (typeof source !== 'string' || typeof path !== 'string') return;
-      const basename = path.split('/').pop().replace(/\.(?:md|markdown|mdown|mkd)$/i, '');
-      const blob = new Blob([source], {type:'text/markdown;charset=utf-8'});
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = basename + '.' + suffix + '.md';
-      document.body.append(link);
-      link.click();
-      link.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    function setChoicesEnabled(enabled) {
+      keepBrowserButton.disabled = !enabled;
+      useDiskButton.disabled = !enabled;
     }
 
     button.addEventListener('click', async () => {
@@ -70,24 +63,25 @@
       if (!pathIsMarkdown(path) || !hasConflict()) return;
       const browserSource = editor.getValue();
       const request = ++requestNumber;
-      currentComparison = {path, browserSource, diskSource:null};
+      currentComparison = {path, browserSource, diskSource:null, diskVersion:null};
       dialog.querySelector('#workspace-conflict-path').textContent = path;
       dialog.querySelector('#workspace-conflict-browser').textContent = browserSource;
       dialog.querySelector('#workspace-conflict-disk').textContent = 'Loading current file…';
       dialog.querySelector('#workspace-conflict-state').textContent = 'Reading latest file from the workspace server…';
-      dialog.querySelector('#workspace-conflict-download-disk').disabled = true;
+      setChoicesEnabled(false);
       dialog.showModal();
       try {
         const response = await fetch('/workspace/file?path=' + encodeURIComponent(path), {cache:'no-store'});
         const data = await response.json();
-        if (!response.ok || typeof data.source !== 'string')
+        if (!response.ok || typeof data.source !== 'string' || typeof data.version !== 'string')
           throw new Error(data.error || 'Unable to read the disk copy.');
         if (request !== requestNumber || !currentComparison || currentComparison.path !== path || !dialog.open) return;
         currentComparison.diskSource = data.source;
+        currentComparison.diskVersion = data.version;
         dialog.querySelector('#workspace-conflict-disk').textContent = data.source;
         dialog.querySelector('#workspace-conflict-state').textContent =
-          'Read-only comparison. Download either copy before resolving the conflict manually.';
-        dialog.querySelector('#workspace-conflict-download-disk').disabled = false;
+          'Pick the copy to keep. The other copy is replaced.';
+        setChoicesEnabled(true);
       } catch (error) {
         if (request !== requestNumber || !dialog.open) return;
         dialog.querySelector('#workspace-conflict-disk').textContent = '';
@@ -96,12 +90,16 @@
       }
     });
 
-    dialog.querySelector('#workspace-conflict-download-browser').addEventListener('click', () => {
-      if (currentComparison) download(currentComparison.browserSource, currentComparison.path, 'browser');
+    keepBrowserButton.addEventListener('click', () => {
+      const comparison = currentComparison;
+      if (!comparison || typeof comparison.diskVersion !== 'string') return;
+      if (!window.confirm('Replace the file on disk with your browser draft?')) return;
+      if (workspace.keepBrowserDraft(comparison.path, comparison.diskVersion)) dialog.close();
     });
-    dialog.querySelector('#workspace-conflict-download-disk').addEventListener('click', () => {
-      if (currentComparison && typeof currentComparison.diskSource === 'string')
-        download(currentComparison.diskSource, currentComparison.path, 'disk');
+    useDiskButton.addEventListener('click', () => {
+      const comparison = currentComparison;
+      if (!comparison || typeof comparison.diskSource !== 'string') return;
+      if (workspace.useDiskCopy(comparison.path, comparison.diskSource, comparison.diskVersion)) dialog.close();
     });
     function close() { dialog.close(); }
     dialog.querySelector('#workspace-conflict-close').addEventListener('click', close);

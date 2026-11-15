@@ -113,25 +113,57 @@
 #publish-review .publish-diff-line.note{color:var(--color-text-muted,#888);font-style:italic;opacity:.85;background:var(--color-surface,#fafafa)}
 
 
-/* Complete Git Changes inventory: persistent on desktop, bottom sheet on phones. */
-#workspace-changes-toggle[aria-expanded="true"]{border-color:var(--color-primary,#6851ab)}
-#workspace-changes-panel{position:fixed;z-index:1050;right:16px;top:74px;bottom:16px;width:min(415px,calc(100vw - 32px));display:flex;flex-direction:column;border:1px solid var(--editor-divider,#bbb);border-radius:12px;background:var(--color-background,#fff);color:var(--color-text,#222);box-shadow:0 12px 42px #0003;font:13px system-ui,sans-serif;overflow:hidden}
+/* Complete Git Changes inventory: a view inside the Workspace sidebar. */
+#site-changes{display:flex;flex-direction:column;flex:1;min-height:0}
+#site-changes[hidden]{display:none}
+#workspace-changes-panel{display:flex;flex-direction:column;flex:1;min-height:0;background:transparent;color:var(--color-text,#222);font:13px system-ui,sans-serif;box-sizing:border-box}
 #workspace-changes-panel[hidden]{display:none}
-#workspace-changes-panel header{display:flex;align-items:center;gap:9px;padding:12px;border-bottom:1px solid var(--editor-divider,#ddd)}
-#workspace-changes-panel h2{font-size:16px;margin:0;flex:1}
 #workspace-changes-panel button:focus-visible,#workspace-changes-toggle:focus-visible{outline:3px solid var(--color-primary,#6851ab);outline-offset:2px}
-#workspace-changes-summary{font-size:12px;font-weight:600;margin:0;padding:12px 14px 4px}
-#workspace-changes-panel .workspace-changes-help{font-size:11px;line-height:1.5;color:var(--color-text-muted,#777);padding:0 14px 12px;margin:0}
+#workspace-changes-panel header{display:flex;align-items:center;gap:8px;min-width:0;padding:12px 12px 12px 16px;border-bottom:1px solid var(--editor-divider,#ddd)}
+#workspace-changes-panel h2{font-size:15px;font-weight:600;margin:0;flex:1;min-width:0}
+#workspace-changes-panel header button{flex:none;font:inherit;font-size:12px;border:1px solid var(--editor-divider,#ddd);border-radius:6px;background:transparent;color:inherit;padding:5px 10px;cursor:pointer}
+#workspace-changes-panel header button:hover{background:color-mix(in srgb,currentColor 8%,transparent)}
+#workspace-changes-close{width:28px;padding:0 !important;font-size:17px !important;line-height:1}
+.workspace-changes-intro{padding:12px 16px;border-bottom:1px solid var(--editor-divider,#ddd)}
+#workspace-changes-summary{font-size:13px;font-weight:600;margin:0}
+#workspace-changes-panel .workspace-changes-help{font-size:12px;line-height:1.5;color:var(--color-text-muted,#777);margin:4px 0 0}
 #workspace-changes-list{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain}
-.workspace-change{display:flex;gap:8px;align-items:center;padding:10px 12px;border-top:1px solid var(--editor-divider,#ddd)}
-.workspace-change-description{display:flex;flex:1;min-width:0;flex-direction:column;gap:4px}
-.workspace-change strong{font:600 12px ui-monospace,SFMono-Regular,Consolas,monospace;overflow-wrap:anywhere}
-.workspace-change small{font-size:11px;line-height:1.4;color:var(--color-text-muted,#777);overflow-wrap:anywhere}
+.workspace-change-group{padding:10px 16px 6px;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--color-text-muted,#777)}
+.workspace-change{display:flex;gap:10px;align-items:flex-start;padding:10px 16px;border-top:1px solid var(--editor-divider,#ddd)}
+.workspace-change-code{flex:none;display:inline-grid;place-items:center;width:20px;height:20px;margin-top:1px;border-radius:5px;font:700 11px/1 ui-monospace,SFMono-Regular,Consolas,monospace;background:color-mix(in srgb,var(--change-tint,#888) 16%,transparent);color:var(--change-tint,#888)}
+.workspace-change[data-kind="added"],.workspace-change[data-kind="untracked"]{--change-tint:#2e8b57}
+.workspace-change[data-kind="modified"]{--change-tint:#b7791f}
+.workspace-change[data-kind="deleted"]{--change-tint:#c53030}
+.workspace-change[data-kind="conflict"]{--change-tint:#c53030}
+.workspace-change[data-kind="renamed"],.workspace-change[data-kind="copied"]{--change-tint:#3b6fd4}
+.workspace-change-description{display:flex;flex:1;min-width:0;flex-direction:column;gap:5px}
+.workspace-change strong{font:600 12px/1.4 ui-monospace,SFMono-Regular,Consolas,monospace;overflow-wrap:anywhere}
+.workspace-change-dir{font-weight:400;color:var(--color-text-muted,#777)}
+.workspace-change-tags{display:flex;flex-wrap:wrap;gap:4px}
+.workspace-change-tags span{font-size:10.5px;line-height:1.3;padding:1px 6px;border-radius:999px;border:1px solid var(--editor-divider,#ddd);color:var(--color-text-muted,#777)}
+.workspace-change-tags span.is-warning{border-color:transparent;background:color-mix(in srgb,#c53030 14%,transparent);color:#c53030}
+.workspace-change-action{flex:none;display:flex;align-items:center;gap:6px;min-height:24px}
+.workspace-change-action button{font:inherit;font-size:12px;border:1px solid var(--editor-divider,#ddd);border-radius:6px;background:transparent;color:inherit;padding:4px 9px;cursor:pointer;white-space:nowrap}
+.workspace-change-action button:hover:not(:disabled){background:color-mix(in srgb,currentColor 8%,transparent)}
+.workspace-change-unavailable{font-size:11px;color:var(--color-text-muted,#777);white-space:nowrap}
+.workspace-changes-empty{padding:28px 16px;text-align:center;color:var(--color-text-muted,#777);font-size:12px;line-height:1.5}
+#site-changes header{gap:6px;padding:10px 10px 10px 12px}
+#site-changes #publish-review-open{flex:none;min-height:28px;padding:0 8px;font-size:11px;white-space:nowrap}
+#site-changes #publish-review-open::after{display:none}
+#site-changes header h2{font-size:14px}
+#site-changes .workspace-changes-intro{padding:10px 12px}
+#site-changes .workspace-changes-intro p{border-top:0;padding:0}
+#site-changes .workspace-change-group{padding:16px 14px 9px}
+#site-changes .workspace-change{gap:12px;padding:14px 14px 16px;flex-wrap:wrap}
+#site-changes .workspace-change-description{min-width:0}
+#site-changes .workspace-change-description{gap:8px}
+#site-changes .workspace-change-tags{gap:6px}
+#site-changes .workspace-change-tags span{padding:3px 8px}
+#site-changes .workspace-change-action{width:100%;gap:8px;margin-top:3px;padding-left:32px;box-sizing:border-box}
+#site-changes .workspace-change-action button{padding:6px 11px}
+#site-changes .workspace-changes-empty{padding:20px 12px}
 @media(max-width:700px){
-  #workspace-changes-toggle{padding:8px}
-  #workspace-changes-panel{right:0;top:auto;bottom:0;width:100vw;height:min(74dvh,640px);border-radius:14px 14px 0 0;padding-bottom:env(safe-area-inset-bottom,0)}
-  #workspace-changes-panel header{padding:14px}
-  .workspace-change{padding:12px 14px}
+  .workspace-change{padding:12px 16px}
 }
 
 /* Read changes where they are listed; don't force writers through a modal. */

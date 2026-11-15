@@ -53,6 +53,17 @@ worker overhead. Index construction remains asynchronous to editor startup,
 and one workspace store MUST reuse parsed entries for unchanged files for the
 life of its server process.
 
+The Git Changes view MUST request a fresh working-tree inventory from
+`GET /workspace/changes` when the editor attaches, so its badge is ready before
+the view opens. The browser MUST retain the last inventory in memory, render it
+immediately when opening the view, and refresh it in the background. Successful
+workspace saves, window focus, manual refresh, and the open-view polling interval
+MUST trigger revalidation. The server MUST report current Git status rather than
+serving a long-lived cached snapshot. The active-post Review action MUST be
+located in the Changes panel header. Change rows MUST have enough
+vertical spacing to distinguish filenames, status, and actions in the narrow
+sidebar.
+
 The Preview speed setting MUST support Auto, Fast, Normal, and Slow, and MUST
 persist in browser storage. Normal is the default and waits 50 ms after the
 latest edit, with a 250 ms maximum delay during continuous typing. Slow waits
