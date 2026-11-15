@@ -78,10 +78,10 @@ In split view, a subtle marker shows the corresponding preview block, with a
 thin caret and **You** flag at the active location. When rendered text matches
 the source line, the preview caret follows the character cursor. For content
 that a renderer transforms or replaces, it falls back to the nearest mapped
-source position. If the cursor follows trailing spaces that Markdown hides, a
-small centered dot marks that whitespace at the preview caret. Click rendered
-text to move the source caret to the matching text when possible; links keep
-their normal navigation behavior. The source
+source position. If the cursor follows trailing spaces that Markdown hides,
+small dots show the spaces and the preview caret advances past them. Click
+rendered text to move the source caret to the matching text when possible;
+links keep their normal navigation behavior. The source
 pane keeps its normal caret on the actual text
 cursor. With the Vim keymap, the preview caret changes shape for normal,
 insert, replace, and visual modes. Preview updates preserve

@@ -110,8 +110,9 @@ without changing the marker rendering model. Clicking rendered text in the
 preview MUST move the source cursor to the matching source position when a
 source match exists; links MUST retain their normal navigation behavior.
 When the local cursor follows trailing spaces that Markdown collapses, the
-preview SHOULD show a subtle whitespace glyph at the mapped cursor position.
-This cue MUST NOT change rendered Markdown or apply to non-trailing spaces.
+preview SHOULD show subtle whitespace markers across the collapsed spaces and
+place the caret after the spaces before the source cursor. This cue MUST NOT
+change rendered Markdown or apply to non-trailing spaces.
 
 
 ## Integration benchmark
