@@ -21,6 +21,7 @@ let articleObserver;
 const executedInlineScripts=new Set();
 let appearanceSignature=JSON.stringify(Object.fromEntries(Object.keys(allowed).map(key=>[key,document.documentElement.getAttribute(key)])));
 const markerStyle=document.createElement('style');markerStyle.textContent='.markata-sync-position{box-shadow:inset 2px 0 0 color-mix(in srgb,var(--color-primary,#d39b32) 55%,transparent);background:color-mix(in srgb,var(--color-primary,#d39b32) 4%,transparent);border-radius:3px}.markata-presence-flag{display:none}.markata-presence-layer{position:fixed;inset:0;z-index:2147483646;overflow:hidden;pointer-events:none}.markata-presence-cursor{--presence-color:var(--color-primary,#d39b32);position:fixed;width:1px;height:28px;background:var(--presence-color);opacity:.85;filter:drop-shadow(0 0 2px color-mix(in srgb,var(--presence-color) 35%,transparent))}.markata-presence-cursor[data-vim-mode="normal"],.markata-presence-cursor[data-vim-mode="visual"]{width:var(--presence-glyph-width,8px);height:var(--presence-line-height,20px);opacity:.48;filter:none;border-radius:2px}.markata-presence-cursor[data-vim-mode="visual"]{outline:1px solid color-mix(in srgb,var(--presence-color) 70%,transparent)}.markata-presence-cursor[data-vim-mode="replace"]{height:2px!important;opacity:.95;filter:none}.markata-presence-cursor[hidden]{display:none}.markata-presence-flag{position:absolute;bottom:calc(100% + 3px);left:-1px;padding:2px 6px;border-radius:3px 3px 3px 0;background:var(--presence-color);color:var(--color-on-primary,#11151d);font:600 10px/1.4 system-ui,sans-serif;white-space:nowrap;letter-spacing:.01em}';document.head.append(markerStyle);
+markerStyle.textContent+='.markata-presence-cursor[data-trailing-space]::after{content:"·";position:absolute;left:0;top:0;width:8px;height:var(--presence-line-height,20px);display:grid;place-items:center;color:var(--presence-color);font:700 12px/1 system-ui,sans-serif;opacity:.8;text-shadow:0 0 2px var(--color-background,#fff)}';
 const presenceLayer=document.createElement('div');presenceLayer.className='markata-presence-layer';presenceLayer.setAttribute('aria-hidden','true');document.body.append(presenceLayer);
 const presenceParticipants=[{id:'local',label:'You',color:'var(--color-primary,#d39b32)'}];
 const presenceCursors=new Map();
@@ -144,6 +145,9 @@ const textPosition=(root,source,ch)=>{
 const syncPositionMarker=(timing=null)=>{
   const article=document.querySelector('.post-content');
   if(!article)return;
+  const beforeCursor=positionSourceText?.slice(0,positionColumn??0)??'';
+  const afterCursor=positionSourceText?.slice(positionColumn??0)??'';
+  const trailingSpace=positionColumn!==null&&Boolean(visibleSourceText(positionSourceText))&&beforeCursor.endsWith(' ')&&/^ *$/.test(afterCursor);
   const scrollOff=140;
   if(article.style.paddingBottom!==`${scrollOff}px`)article.style.paddingBottom=`${scrollOff}px`;
   const selectionStarted=performance.now();
@@ -166,6 +170,7 @@ const syncPositionMarker=(timing=null)=>{
   for(const participant of presenceParticipants){
     let cursor=presenceCursors.get(participant.id);
     if(!cursor){cursor=document.createElement('div');cursor.className='markata-presence-cursor';cursor.hidden=true;cursor.dataset.presenceId=participant.id;const flag=document.createElement('span');flag.className='markata-presence-flag';cursor.append(flag);presenceLayer.append(cursor);presenceCursors.set(participant.id,cursor);}
+    if(participant.id==='local'&&trailingSpace)cursor.dataset.trailingSpace='true';else delete cursor.dataset.trailingSpace;
     cursor.querySelector('.markata-presence-flag').textContent=participant.label;
     cursor.style.setProperty('--presence-color',participant.color);
     if(!next){updatePositionNode();cursor.hidden=true;if(timing)Object.assign(timing,{anchor_select_ms:selected-selectionStarted,caret_rect_ms:0,line_height_ms:0,caret_style_ms:0});continue;}
