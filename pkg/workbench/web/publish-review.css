@@ -144,6 +144,9 @@
 .workspace-change-tags span.is-warning{border-color:transparent;background:color-mix(in srgb,#c53030 14%,transparent);color:#c53030}
 .workspace-change-action{flex:none;display:flex;align-items:center;gap:6px;min-height:24px}
 .workspace-change-action button{font:inherit;font-size:12px;border:1px solid var(--editor-divider,#ddd);border-radius:6px;background:transparent;color:inherit;padding:4px 9px;cursor:pointer;white-space:nowrap}
+.workspace-change-action button.workspace-change-icon-action{display:grid;place-items:center;width:30px;height:30px;padding:0;color:var(--color-text-muted,#777)}
+.workspace-change-action button.workspace-change-icon-action svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.workspace-change-action button.workspace-change-icon-action:hover:not(:disabled){color:var(--color-text,#203348);border-color:color-mix(in srgb,var(--color-primary,#245fc5) 45%,var(--editor-divider,#ddd));background:color-mix(in srgb,var(--color-primary,#245fc5) 8%,transparent)}
 .workspace-change-action button:hover:not(:disabled){background:color-mix(in srgb,currentColor 8%,transparent)}
 .workspace-change-unavailable{font-size:11px;color:var(--color-text-muted,#777);white-space:nowrap}
 .workspace-changes-empty{padding:28px 16px;text-align:center;color:var(--color-text-muted,#777);font-size:12px;line-height:1.5}
@@ -161,6 +164,7 @@
 #site-changes .workspace-change-tags span{padding:3px 8px}
 #site-changes .workspace-change-action{width:100%;gap:8px;margin-top:3px;padding-left:32px;box-sizing:border-box}
 #site-changes .workspace-change-action button{padding:6px 11px}
+#site-changes .workspace-change-action button.workspace-change-icon-action{width:30px;height:30px;padding:0}
 #site-changes .workspace-changes-empty{padding:20px 12px}
 @media(max-width:700px){
   .workspace-change{padding:12px 16px}

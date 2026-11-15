@@ -923,7 +923,10 @@
       if (diffable) {
         const disclosure = document.createElement('button');
         disclosure.type = 'button';
-        disclosure.textContent = 'View diff';
+        disclosure.className = 'workspace-change-icon-action';
+        disclosure.setAttribute('aria-label', 'View diff');
+        disclosure.title = 'View diff';
+        disclosure.innerHTML = '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 5h6v14H4zM14 5h6v14h-6zM10 9h4M10 15h4"/></svg>';
         const inline = document.createElement('div');
         inline.className = 'workspace-change-inline';
         inline.hidden = true;
@@ -932,7 +935,8 @@
           const show = inline.hidden;
           inline.hidden = !show;
           disclosure.setAttribute('aria-expanded', String(show));
-          disclosure.textContent = show ? 'Hide diff' : 'View diff';
+          disclosure.setAttribute('aria-label', show ? 'Hide diff' : 'View diff');
+          disclosure.title = show ? 'Hide diff' : 'View diff';
           if (!show) return;
           inline.textContent = 'Loading comparison…';
           disclosure.disabled = true;
@@ -971,16 +975,20 @@
         if (openable) {
           const open = document.createElement('button');
           open.type = 'button';
-          open.textContent = 'Open';
+          open.className = 'workspace-change-icon-action';
+          open.setAttribute('aria-label', 'Open this post in the editor');
           open.title = 'Open this post in the editor';
+          open.innerHTML = '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M13 5h6v6M19 5l-9 9"/><path d="M17 13v5a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h5"/></svg>';
           open.addEventListener('click', () => {
             window.MarkataSiteTree.openFile(change.editor_path);
             changesVisible(false);
           });
           const review = document.createElement('button');
           review.type = 'button';
-          review.textContent = 'Review';
+          review.className = 'workspace-change-icon-action';
+          review.setAttribute('aria-label', 'Review, commit, push or discard this post');
           review.title = 'Review, commit, push or discard this post';
+          review.innerHTML = '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M8 5H5v15h14V5h-3M9 3h6v4H9z"/><path d="m8 13 2 2 5-5"/></svg>';
           review.addEventListener('click', async () => {
             changesVisible(false);
             await window.MarkataSiteTree.openFile(change.editor_path);
