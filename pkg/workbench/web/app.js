@@ -44,13 +44,14 @@ const placeEditorCursor = position => {
 };
 window.addEventListener('message',event=>{
   if (event.source !== frame.contentWindow) return;
-  if (event.data?.type === 'preview-ready') markPreviewReady();
+  if (event.data?.type === 'preview-content-ready') markPreviewContentReady();
+  if (event.data?.type === 'preview-features-ready') markPreviewReady();
   if (event.data?.type === 'open-post') window.MarkataSiteTree?.openPost(event.data.slug);
   if (event.data?.type === 'place-editor-cursor') placeEditorCursor(event.data);
   if (event.data?.type === 'workbench-preview-focus-editor')
     window.MarkataShortcuts?.execute('workbench.focusEditor');
   if (event.data?.type === 'preview-updated' && event.data.version === revision) {
-    finishPreview(event.data.version);
+    finishPreview(event.data.version,event.data.patch?.timing);
     scrollSync.previewUpdated();
   }
 });
@@ -574,12 +575,28 @@ let rejectedImportRevision = -1;
 let revision = 0, timer, busy = false, ready = false, lastEditAt = null, pendingSince = null;
 let pendingRender = false;
 let activeRenderController = null;
-let previewStarted = false, previewReady = false, pendingPreview = null, activeRender = null;
+let previewStarted = false, previewContentReady = false, previewReady = false, pendingPreview = null, activeRender = null;
+let previewFrameStartedAt = null, previewFrameContentReadyMS = null;
+function markPreviewContentReady() {
+  if (!previewStarted || previewContentReady) return;
+  previewContentReady = true;
+  if (previewFrameStartedAt !== null) {
+    previewFrameContentReadyMS = performance.now() - previewFrameStartedAt;
+    window.MarkataDiagnostics?.record('preview_frame_content_ready', previewFrameContentReadyMS);
+  }
+  scrollSync.ready();
+  scrollSync.previewUpdated();
+  if (activeRender?.initialDocument) activeRender.frameContentReadyMS = previewFrameContentReadyMS;
+  finishPreview(activeRender?.version);
+}
 function markPreviewReady() {
   if (!previewStarted || previewReady) return;
   previewReady = true;
   syncAppearance();
   scrollSync.ready();
+  if (previewFrameStartedAt !== null) {
+    window.MarkataDiagnostics?.record('preview_feature_startup', performance.now() - previewFrameStartedAt);
+  }
   if (pendingPreview) {
     const latest = pendingPreview;
     pendingPreview = null;
@@ -589,14 +606,42 @@ function markPreviewReady() {
     finishPreview(activeRender?.version);
   }
 }
-function finishPreview(version) {
-  if (!activeRender || activeRender.version !== version || version !== revision) return;
+function markPreviewLoadComplete() {
+  if (previewFrameStartedAt !== null) {
+    window.MarkataDiagnostics?.record('preview_iframe_load', performance.now() - previewFrameStartedAt);
+  }
+  markPreviewReady();
+}
+function finishPreview(version, patchTiming) {
+  if (!activeRender || activeRender.pipelineRecorded || activeRender.version !== version || version !== revision) return;
   window.MarkataStartupStatus?.previewReady();
   const {data} = activeRender;
-  const liveTime = Math.round(performance.now() - (activeRender.editAt ?? activeRender.startedAt));
+  const finishedAt = performance.now();
+  const editAt = activeRender.editAt ?? activeRender.startedAt;
+  const responseAt = activeRender.responseAt ?? activeRender.startedAt;
+  const requestMS = Math.max(0,responseAt-activeRender.startedAt);
+  const queueMS = Math.max(0,data.queue_ms ?? 0);
+  const renderMS = Math.max(0,data.render_ms ?? 0);
+  const stages = {
+    waiting_ms:Math.max(0,activeRender.startedAt-editAt),
+    rendering_ms:queueMS+renderMS,
+    network_ms:Math.max(0,requestMS-queueMS-renderMS),
+    display_ms:Math.max(0,finishedAt-responseAt),
+  };
+  const liveTime = Math.round(finishedAt-editAt);
   window.MarkataDiagnostics?.record('edit_to_preview',liveTime);
   status.textContent = `Preview ${liveTime} ms`;
-  status.title = `Go ${data.render_ms.toFixed(1)} ms${data.cached ? ' (cached)' : ''} · queue ${(data.queue_ms ?? 0).toFixed(1)} ms · input ${(data.input_bytes/1024).toFixed(1)} KB · fragment ${((data.html_bytes)/1024).toFixed(1)} KB`;
+  status.title = `${activeRender.mode} mode · Go ${data.render_ms.toFixed(1)} ms${data.cached ? ' (cached)' : ''} · queue ${(data.queue_ms ?? 0).toFixed(1)} ms · input ${(data.input_bytes/1024).toFixed(1)} KB · fragment ${((data.html_bytes)/1024).toFixed(1)} KB`;
+  if (!activeRender.pipelineRecorded) {
+    activeRender.pipelineRecorded = true;
+    try {
+      window.MarkataDiagnostics?.recordPreviewPipeline(stages,{
+        request_ms:requestMS,queue_ms:queueMS,go_render_ms:renderMS,cached:data.cached,
+        input_bytes:data.input_bytes,html_bytes:data.html_bytes,mode:activeRender.mode,iframe:patchTiming||null,
+        frame_content_ready_ms:activeRender.frameContentReadyMS ?? previewFrameContentReadyMS,
+      });
+    } catch(error) { console.error('Could not record preview timings',error); }
+  }
 }
 function storageWarning() { saved.textContent = 'Draft not saved · storage unavailable or full · download a copy'; }
 function saveDraft() {
@@ -630,9 +675,55 @@ function updateFrontmatterSummary(markdown) {
 }
 function previewDelay() {
   const now = performance.now();
-  const idle = lastEditAt === null ? 0 : Math.max(0, 50 - (now - lastEditAt));
-  return pendingSince === null ? idle : Math.min(idle, Math.max(0, 250 - (now - pendingSince)));
+  const mode = activePreviewMode();
+  const cadence = mode === 'fast' ? {idle:0,burst:0} : mode === 'slow' ? {idle:300,burst:1000} : {idle:50,burst:250};
+  const idle = lastEditAt === null ? 0 : Math.max(0, cadence.idle - (now - lastEditAt));
+  return pendingSince === null ? idle : Math.min(idle, Math.max(0, cadence.burst - (now - pendingSince)));
 }
+let fastRenderQueued=false;
+function schedulePreviewRender() {
+  clearTimeout(timer);
+  if(activePreviewMode()==='fast') {
+    if(fastRenderQueued)return;
+    fastRenderQueued=true;
+    queueMicrotask(()=>{fastRenderQueued=false;void render();});
+    return;
+  }
+  timer=setTimeout(render,previewDelay());
+}
+const previewModeStorageKey='markata-preview-mode';
+let previewModePreference='normal', batterySaverActive=false;
+try {
+  const stored=localStorage.getItem(previewModeStorageKey);
+  if(['auto','fast','normal','slow'].includes(stored))previewModePreference=stored;
+} catch {}
+function autoPreviewShouldSlow() {
+  const connection=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
+  const effectiveType=connection?.effectiveType;
+  return batterySaverActive||connection?.saveData===true||effectiveType==='slow-2g'||effectiveType==='2g'||
+    (Number.isFinite(navigator.deviceMemory)&&navigator.deviceMemory<=4)||
+    (Number.isFinite(navigator.hardwareConcurrency)&&navigator.hardwareConcurrency<=4);
+}
+function activePreviewMode() {
+  return previewModePreference==='auto'?(autoPreviewShouldSlow()?'slow':'normal'):previewModePreference;
+}
+function previewModeChanged(mode) {
+  if(['auto','fast','normal','slow'].includes(mode))previewModePreference=mode;
+  if(pendingSince!==null)schedulePreviewRender();
+}
+window.addEventListener('markata-preview-mode-change',event=>previewModeChanged(event.detail?.mode));
+const connectionStatus=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
+connectionStatus?.addEventListener?.('change',()=>previewModeChanged(previewModePreference));
+try {
+  if(typeof navigator.getBattery==='function')navigator.getBattery().then(battery=>{
+    const update=()=>{
+      const next=!battery.charging&&battery.level<=0.2;
+      if(next===batterySaverActive)return;
+      batterySaverActive=next;previewModeChanged(previewModePreference);
+    };
+    update();battery.addEventListener('chargingchange',update);battery.addEventListener('levelchange',update);
+  }).catch(()=>{});
+} catch {}
 async function render() {
   if (!ready) return;
   if (busy) {
@@ -646,6 +737,7 @@ async function render() {
   // The CodeMirror document is the source of truth. The textarea is only
   // a form mirror and may lag a programmatic document replacement.
   const version = revision, originalMarkdown = editor.getValue();
+  const initialDocument = !previewStarted;
   const markdown = window.MarkataSiteTree?.markdown(originalMarkdown) ?? originalMarkdown;
   const frontmatter = originalMarkdown.match(/^---\r?\n[\s\S]*?\r?\n---(?:\r?\n|$)/);
   const sourceLineOffset = frontmatter && markdown !== originalMarkdown
@@ -662,6 +754,8 @@ async function render() {
   activeRenderController = controller;
   const timeout = setTimeout(() => controller.abort(), 30000);
   const started = performance.now();
+  const editAt = lastEditAt;
+  const renderMode = activePreviewMode();
   try {
     const response = await fetch('/render', {
       method:'POST', headers:{'Content-Type':'application/json'},
@@ -669,6 +763,7 @@ async function render() {
       signal:controller.signal
     });
     const data = await response.json();
+    const responseAt = performance.now();
     if (version !== revision) return;
     if (!response.ok) throw new Error(data.error || 'Rendering failed.');
     if (sourceLineOffset) {
@@ -677,10 +772,11 @@ async function render() {
     }
     data.source_offset = sourceLineOffset;
     scrollSync.update(data.source_lines, false, sourceLineOffset, data.source_anchors);
-    activeRender = {data, version, editAt:lastEditAt, startedAt:started};
+    activeRender = {data, version, editAt, startedAt:started, responseAt, mode:renderMode, initialDocument};
     if (!previewStarted) {
       previewStarted = true;
-      frame.onload = markPreviewReady;
+      frame.onload = markPreviewLoadComplete;
+      previewFrameStartedAt = performance.now();
       frame.srcdoc = data.document;
     } else if (!previewReady) {
       pendingPreview = {data, version};
@@ -699,12 +795,10 @@ async function render() {
     if (activeRenderController === controller) activeRenderController = null;
     busy = false;
     // Stale or skipped renders must always yield to the latest editor text.
-    // Keep the normal debounce even when cancelling an obsolete in-flight
-    // render, so rapid typing does not flood the Go renderer with requests.
+    // Keep one pending revision; its selected preview mode controls when it runs.
     if (pendingRender || version !== revision) {
       pendingRender = false;
-      clearTimeout(timer);
-      timer = setTimeout(render, previewDelay());
+      schedulePreviewRender();
     }
   }
 }
@@ -725,7 +819,7 @@ editor.on('change', (_instance, change) => {
   updateFrontmatterSummary(editor.getValue());
   if (change.origin !== 'setValue') saveDraft();
   status.textContent = 'Waiting for edits…';
-  timer = setTimeout(render, previewDelay());
+  schedulePreviewRender();
 });
 document.querySelector('#download').addEventListener('click', () => {
   const url = URL.createObjectURL(new Blob([source.value], {type:'text/markdown;charset=utf-8'}));

@@ -15,7 +15,7 @@ document.addEventListener('keydown', event => {
   event.preventDefault();
   parent.postMessage({type:'workbench-preview-focus-editor'}, '*');
 }, true);
-let updates=Promise.resolve(), scriptSequence=0, latestVersion=0;
+let updates=Promise.resolve(), scriptSequence=0, latestVersion=0, pendingMarkdownUpdate=null, markdownUpdateRunning=false;
 let sourceLines=[], sourceLineCount=0, sourceLineOffset=0, sourcePositionAnchors=[], programmedTarget=null, scrollFrame=0, positionLine=-1, positionColumn=null, positionSourceText=null, positionPending=false, positionVimMode=null, positionNode=null, lastExactPosition=null, scrollIntentUntil=0;
 let articleObserver;
 const executedInlineScripts=new Set();
@@ -101,40 +101,52 @@ const visibleSourcePrefix=source=>{
   decoded.innerHTML=String(source||'').replace(/^\s{0,3}(?:#{1,6}\s+|>\s?|[-*+]\s+|\d+\.\s+)/,'').replace(/!\[([^\]]*)\]\([^)]+\)/g,'$1').replace(/\[([^\]]+)\]\([^)]+\)/g,'$1').replace(/\[([^\]]+)\]\[[^\]]*\]/g,'$1').replace(/<[^>]*>/g,'').replace(/[`*_~]/g,'');
   return decoded.value.replace(/[‘’]/g,"'").replace(/[“”]/g,'"').replace(/[–—]/g,'-').replace(/\s+/g,' ').replace(/^\s+/,'');
 };
+const normalizePositionText=value=>value.replace(/[‘’]/g,"'").replace(/[“”]/g,'"').replace(/[–—]/g,'-');
 const textPosition=(root,source,ch)=>{
   const wanted=visibleSourceText(source);
   if(!wanted)return null;
-  const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
-  const chars=[];let node,lastWasSpace=true;
-  while((node=walker.nextNode()))for(let offset=0;offset<node.nodeValue.length;offset++){
-    const value=node.nodeValue[offset].replace(/[‘’]/g,"'").replace(/[“”]/g,'"').replace(/[–—]/g,'-');
-    if(/\s/.test(value)){if(!lastWasSpace&&chars.length){chars.push({value:' ',node,offset});lastWasSpace=true;}continue;}
-    chars.push({value,node,offset});lastWasSpace=false;
-  }
-  while(chars.at(-1)?.value===' ')chars.pop();
-  const rendered=chars.map(char=>char.value).join('');
+  const rendered=normalizePositionText(root.textContent).replace(/\s+/g,' ').trim();
   const start=rendered.indexOf(wanted);
   if(start<0)return null;
   const prefix=visibleSourcePrefix(String(source).slice(0,Math.max(0,ch??0)));
   const index=start+Math.min(prefix.length,wanted.length);
-  const target=chars[index];
+  const atEnd=index>=rendered.length;
+  const lookupIndex=atEnd?Math.max(0,rendered.length-1):index;
+  const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
+  let node,lastWasSpace=true,target=null,position=0;
+  while((node=walker.nextNode())){
+    const text=normalizePositionText(node.nodeValue);
+    for(let offset=0;offset<text.length;offset++){
+      const value=text[offset];
+      if(/\s/.test(value)){
+        if(!lastWasSpace){
+          if(position===lookupIndex){target={node,offset};break;}
+          position++;lastWasSpace=true;
+        }
+        continue;
+      }
+      if(position===lookupIndex){target={node,offset};break;}
+      position++;lastWasSpace=false;
+    }
+    if(target)break;
+  }
+  if(!target)return null;
   const range=document.createRange();
-  if(target)range.setStart(target.node,target.offset);
-  else{const last=chars.at(-1);if(!last)return null;range.setStart(last.node,last.offset+1);}
+  range.setStart(target.node,target.offset+(atEnd?1:0));
   range.collapse(true);
   const rect=range.getBoundingClientRect();
-  const glyph=target||chars.at(-1);
+  const glyph=target;
   const glyphRange=document.createRange();
-  if(target){glyphRange.setStart(glyph.node,glyph.offset);glyphRange.setEnd(glyph.node,Math.min(glyph.offset+1,glyph.node.nodeValue.length));}
-  else{glyphRange.setStart(glyph.node,Math.max(0,glyph.offset));glyphRange.setEnd(glyph.node,glyph.offset+1);}
+  glyphRange.setStart(glyph.node,glyph.offset);glyphRange.setEnd(glyph.node,Math.min(glyph.offset+1,glyph.node.nodeValue.length));
   const glyphRect=glyphRange.getBoundingClientRect();
   return rect.width||rect.height?{left:rect.left,top:rect.top,height:rect.height,width:glyphRect.width}:null;
 };
-const syncPositionMarker=()=>{
+const syncPositionMarker=(timing=null)=>{
   const article=document.querySelector('.post-content');
   if(!article)return;
   const scrollOff=140;
-  article.style.paddingBottom=`${scrollOff}px`;
+  if(article.style.paddingBottom!==`${scrollOff}px`)article.style.paddingBottom=`${scrollOff}px`;
+  const selectionStarted=performance.now();
   let block=null,container=null;
   for(const anchor of sourcePositionAnchors){
     if(!anchor.nested){if(anchor.line<=positionLine)block=anchor;continue;}
@@ -144,27 +156,42 @@ const syncPositionMarker=()=>{
   }
   const point=container||block||sourcePositionAnchors[0];
   const next=point?.node||(point&&point.index>=0&&point.index<article.children.length?article.children[point.index]:null);
-  if(positionNode!==next){
+  const selected=performance.now();
+  const updatePositionNode=()=>{
+    if(positionNode===next)return;
     positionNode?.classList.remove('markata-sync-position');
     if(positionNode&&!positionNode.classList.length)positionNode.removeAttribute('class');
     positionNode=next;positionNode?.classList.add('markata-sync-position');
-  }
+  };
   for(const participant of presenceParticipants){
     let cursor=presenceCursors.get(participant.id);
     if(!cursor){cursor=document.createElement('div');cursor.className='markata-presence-cursor';cursor.hidden=true;cursor.dataset.presenceId=participant.id;const flag=document.createElement('span');flag.className='markata-presence-flag';cursor.append(flag);presenceLayer.append(cursor);presenceCursors.set(participant.id,cursor);}
     cursor.querySelector('.markata-presence-flag').textContent=participant.label;
     cursor.style.setProperty('--presence-color',participant.color);
-    if(!next){cursor.hidden=true;continue;}
+    if(!next){updatePositionNode();cursor.hidden=true;if(timing)Object.assign(timing,{anchor_select_ms:selected-selectionStarted,caret_rect_ms:0,line_height_ms:0,caret_style_ms:0});continue;}
+    const rectStarted=performance.now();
     const rect=next.getBoundingClientRect();
     const visible=rect.bottom>0&&rect.top<innerHeight&&rect.right>0&&rect.left<innerWidth;
-    cursor.hidden=!visible;
+    const rectFinished=performance.now();
+    let lineHeight=18,character=null,top=rect.top;
+    let lineHeightFinished=rectFinished;
     if(visible){
       const span=point?.nested?point.endLine-point.line:0;
       const progress=span>0?Math.max(0,Math.min(1,(positionLine-point.line)/span)):0;
-      const lineHeight=Math.max(16,Math.min(20,parseFloat(getComputedStyle(next).lineHeight)||18));
-      const top=rect.top+Math.max(0,rect.height-lineHeight)*progress;
-      const character=textPosition(next,positionSourceText,positionColumn);
+      lineHeight=Math.max(16,Math.min(20,parseFloat(getComputedStyle(next).lineHeight)||18));
+      lineHeightFinished=performance.now();
+      top=rect.top+Math.max(0,rect.height-lineHeight)*progress;
+      const textPositionStarted=performance.now();
+      character=textPosition(next,positionSourceText,positionColumn);
+      if(timing)timing.text_position_ms=performance.now()-textPositionStarted;
       if(character){lastExactPosition={node:next,line:positionLine,left:character.left,top:character.top,height:lineHeight};}
+    }
+    // Apply the highlight after geometry reads. Its style change would otherwise
+    // force the browser to recalculate the edited document before measuring the caret.
+    updatePositionNode();
+    cursor.hidden=!visible;
+    const styleStarted=performance.now();
+    if(visible){
       const keepExact=positionPending&&lastExactPosition?.node===next&&lastExactPosition.line===positionLine;
       const left=character?.left??(keepExact?lastExactPosition.left:null);
       const markerTop=character?.top??(keepExact?lastExactPosition.top:top);
@@ -177,32 +204,45 @@ const syncPositionMarker=()=>{
       if(positionVimMode==='replace')cursor.style.top=`${Math.max(0,Math.min(innerHeight-2,markerTop+lineHeight-2))}px`;
       if(!positionPending&&!character)lastExactPosition=null;
     }
+    if(timing)Object.assign(timing,{anchor_select_ms:selected-selectionStarted,caret_rect_ms:rectFinished-rectStarted,line_height_ms:lineHeightFinished-rectFinished,caret_style_ms:performance.now()-styleStarted});
   }
 };
-const scrollState=(user,syncID=null)=>{
+const positionedRect=element=>{
+  const rect=element.getBoundingClientRect();
+  if(rect.width===0&&rect.height===0&&element.getClientRects().length===0)return null;
+  return rect;
+};
+const scrollState=(user,syncID=null,timing=null)=>{
+  const started=performance.now();
   const article=document.querySelector('.post-content');
   if(!article)return;
   const elements=[...article.children];
+  const elementIndices=new Map(elements.map((element,index)=>[element,index]));
+  const layoutStarted=performance.now();
   const rect=article.getBoundingClientRect();
+  const layoutFlushed=performance.now();
   const firstLine=Number.isFinite(sourceLines[0])?sourceLines[0]:0;
   const points=[{line:firstLine,y:rect.top+scrollY,index:0}];
   const positionAnchors=[];
+  const blocksStarted=performance.now();
   for(let i=0;i<Math.min(elements.length,sourceLines.length);i++){
-    if(elements[i].getClientRects().length===0)continue;
+    const elementRect=positionedRect(elements[i]);
+    if(!elementRect)continue;
     const line=sourceLines[i];
-    const y=elements[i].getBoundingClientRect().top+scrollY;
+    const y=elementRect.top+scrollY;
     if(Number.isFinite(line)&&Number.isFinite(y))positionAnchors.push({line,index:i,node:elements[i],nested:false});
     if(!Number.isFinite(line)||!Number.isFinite(y))continue;
     points.push({line,y,index:i});
   }
+  const blocksFinished=performance.now();
   const selector='[data-markata-source-line],[data-markata-source-end-line]';
   for(const element of article.querySelectorAll(selector)){
-    if(element.getClientRects().length===0)continue;
-    const rect=element.getBoundingClientRect();
+    const elementRect=positionedRect(element);
+    if(!elementRect)continue;
     let root=element,depth=0;
     while(root.parentElement&&root.parentElement!==article){root=root.parentElement;depth++;}
-    const index=elements.indexOf(root);
-    if(index<0)continue;
+    const index=elementIndices.get(root);
+    if(index===undefined)continue;
     const startValue=element.getAttribute('data-markata-source-line');
     const endValue=element.getAttribute('data-markata-source-end-line');
     const start=startValue==null?NaN:Number(startValue);
@@ -211,15 +251,16 @@ const scrollState=(user,syncID=null)=>{
     if(Number.isFinite(start)){
       startLine=start+sourceLineOffset;
       endLine=Number.isFinite(end)?end+sourceLineOffset:Math.max(startLine,sourceLineCount);
-      const y=rect.top+scrollY;
+      const y=elementRect.top+scrollY;
       points.push({line:startLine,y,index});
       positionAnchors.push({line:startLine,endLine,index,node:element,nested:true,depth});
     }
     if(Number.isFinite(end)&&startLine!=null){
-      const line=end+sourceLineOffset,y=rect.bottom+scrollY;
+      const line=end+sourceLineOffset,y=elementRect.bottom+scrollY;
       points.push({line,y,index});
     }
   }
+  const collected=performance.now();
   sourcePositionAnchors=positionAnchors.sort((a,b)=>a.line-b.line);
   points.sort((a,b)=>a.line-b.line);
   const ordered=[];
@@ -232,8 +273,12 @@ const scrollState=(user,syncID=null)=>{
   const bottom=rect.bottom+scrollY;
   if(endLine>ordered.at(-1).line&&bottom>=ordered.at(-1).y)ordered.push({line:endLine,y:bottom,index:elements.length});
   const visualPoints=[...ordered].sort((a,b)=>a.y-b.y||a.line-b.line);
-  syncPositionMarker();
+  const mapped=performance.now();
+  if(timing)timing.text_position_ms=0;
+  syncPositionMarker(timing);
+  const marked=performance.now();
   parent.postMessage({type:'sync-scroll-state',user,top:scrollY,height:document.documentElement.scrollHeight,clientHeight:innerHeight,points:ordered,visual_points:visualPoints,sync_id:syncID},'*');
+  if(timing)Object.assign(timing,{collect_ms:collected-started,layout_flush_ms:layoutFlushed-layoutStarted,block_geometry_ms:blocksFinished-blocksStarted,nested_anchor_ms:collected-blocksFinished,mapping_ms:mapped-collected,marker_ms:marked-mapped,total_ms:performance.now()-started});
 };
 const noteScrollIntent=duration=>{scrollIntentUntil=performance.now()+duration;};
 document.addEventListener('wheel',()=>noteScrollIntent(250),{passive:true,capture:true});
@@ -342,29 +387,47 @@ if(nextAppearance!==appearanceSignature){setAppearance(data.attributes);dispatch
 observeArticle(article);
 };
 
+const applyMarkdownUpdate=async(data)=>{
+  if(data.version<latestVersion)return;
+  const article=document.querySelector('.post-content');if(!article)return;
+  const updateStarted=performance.now();
+  sourceLines=data.source_lines||[];sourceLineCount=data.line_count||sourceLineCount;sourceLineOffset=data.source_offset||0;
+  const patch=patchArticle(article,data.html);
+  const patchFinished=performance.now();
+  await renderMarkdown(data,patch.changedNodes);
+  const featuresFinished=performance.now();
+  if(data.version!==latestVersion)return;
+  const scrollTiming={};
+  scrollState(false,null,scrollTiming);
+  const updateFinished=performance.now();
+  const diagrams=patch.changedNodes.reduce((count,node)=>count+(node.matches('pre.mermaid')?1:0)+node.querySelectorAll('pre.mermaid').length,0);
+  parent.postMessage({type:'preview-updated',version:data.version,patch:{blocks:patch.total,changed:patch.changedNodes.length,reused:patch.retained,removed:patch.removed,diagrams,kinds:patch.changedNodes.map(node=>node.tagName.toLowerCase()+(node.classList.length?'.'+[...node.classList].join('.'):'')),timing:{html_parse_ms:patch.parseMs,dom_patch_ms:patch.reconcileMs,features_ms:featuresFinished-patchFinished,scroll_state:scrollTiming,total_ms:updateFinished-updateStarted}}},'*');
+};
+const drainMarkdownUpdates=async()=>{
+  if(markdownUpdateRunning)return;
+  markdownUpdateRunning=true;
+  try{
+    while(pendingMarkdownUpdate){
+      const latest=pendingMarkdownUpdate;
+      pendingMarkdownUpdate=null;
+      try{await applyMarkdownUpdate(latest);}catch(error){console.error(error);}
+    }
+  }finally{
+    markdownUpdateRunning=false;
+    if(pendingMarkdownUpdate)void drainMarkdownUpdates();
+  }
+};
 addEventListener('message',e=>{if(e.source!==parent)return;
 if(e.data?.type==='preview-invalidate'){
   // The parent now has newer source. Do not mount a queued older response.
   latestVersion=Math.max(latestVersion,e.data.version||0);
+  if(pendingMarkdownUpdate?.version<latestVersion)pendingMarkdownUpdate=null;
   return;
 }
 if(e.data?.type==='markdown-render'){
   latestVersion=Math.max(latestVersion,e.data.version||0);
-  updates=updates.then(async()=>{
-    if(e.data.version<latestVersion)return;
-    const article=document.querySelector('.post-content');if(!article)return;
-    const updateStarted=performance.now();
-    sourceLines=e.data.source_lines||[];sourceLineCount=e.data.line_count||sourceLineCount;sourceLineOffset=e.data.source_offset||0;
-    const patch=patchArticle(article,e.data.html);
-    const patchFinished=performance.now();
-    await renderMarkdown(e.data,patch.changedNodes);
-    const featuresFinished=performance.now();
-    if(e.data.version!==latestVersion)return;
-    scrollState(false);
-    const updateFinished=performance.now();
-    const diagrams=patch.changedNodes.reduce((count,node)=>count+(node.matches('pre.mermaid')?1:0)+node.querySelectorAll('pre.mermaid').length,0);
-    parent.postMessage({type:'preview-updated',version:e.data.version,patch:{blocks:patch.total,changed:patch.changedNodes.length,reused:patch.retained,removed:patch.removed,diagrams,kinds:patch.changedNodes.map(node=>node.tagName.toLowerCase()+(node.classList.length?'.'+[...node.classList].join('.'):'')),timing:{html_parse_ms:patch.parseMs,dom_patch_ms:patch.reconcileMs,features_ms:featuresFinished-patchFinished,total_ms:updateFinished-updateStarted}}},'*');
-  }).catch(console.error);
+  pendingMarkdownUpdate=e.data;
+  void drainMarkdownUpdates();
 return;
 }if(e.data?.type==='sync-scroll-lines'){sourceLines=e.data.lines||[];sourceLineCount=e.data.lineCount||0;sourceLineOffset=e.data.sourceOffset||0;requestAnimationFrame(()=>scrollState(false));return;
 }if(e.data?.type==='sync-scroll'){programmedTarget={id:e.data.id,y:Math.max(0,Math.min(e.data.y,document.documentElement.scrollHeight-innerHeight))};document.scrollingElement.scrollTop=programmedTarget.y;const id=e.data.id;setTimeout(()=>{if(programmedTarget?.id===id)programmedTarget=null;},300);return;
@@ -375,7 +438,7 @@ if(nextAppearance!==appearanceSignature){dispatchEvent(new Event('theme-change')
 }).catch(console.error);
 }});
 // The article and message listener are ready. Images may keep iframe.onload pending.
-parent.postMessage({type:'preview-ready'},'*');
+parent.postMessage({type:'preview-content-ready'},'*');
 document.addEventListener('click',event=>{
 const link=event.target.closest?.('a');
 if(!link)return;

@@ -23,6 +23,11 @@ The Go server calls Markata's standalone renderer directly. It starts no Python 
 It uses the same Markdown renderer as the [Python API](./python-renderer/) and [FastAPI editor](./fastapi-editor/).
 The preview does not build a site. The language service indexes Markdown and reads workspace configuration for existing mention support.
 
+The preview shows its rendered article and accepts updates before deferred
+feature initialization finishes. Mermaid and other preview features can finish
+initializing afterward. Diagnostics report script readiness and full iframe
+load separately from later preview patch timings.
+
 ### Understand startup and site index timing
 
 The editor startup has distinct milestones. The CLI prints elapsed time for
@@ -30,6 +35,11 @@ workspace discovery/watcher setup, LSP preparation, and appearance/browser
 assets. Once the HTTP listener is ready, the browser still loads its source
 file list and lazily requests frontmatter plus the site link index; these are
 **not** part of the initial server-ready message.
+
+Large uncached metadata loads use a bounded worker pool. The store then reuses
+unchanged metadata while that server process stays open. A new server process
+builds its own index, so large sites still incur a one-time indexing cost per
+process; this work runs in the background and does not block writing or preview.
 
 Open **Diagnostics** in the footer to see **Loading site index…** and its phases:
 waiting for metadata, reading frontmatter, constructing the link index, and
@@ -124,9 +134,20 @@ the browser origin, so drafts on one port remain separate from drafts on another
 Workspace saves and new-post creation require a same-origin browser request.
 The server rejects missing or foreign origins before it changes a site file.
 
-The preview updates after a 50 ms pause. One request runs at a time, and newer edits replace pending edits.
-During continuous typing, the editor also starts a preview update at least every 250 ms when
-the renderer is available.
+Choose **Preview speed** in **Editor settings → Preview**:
+
+- **Auto** uses Normal by default. It selects Slow when the browser reports data saver,
+  a 2G connection, four or fewer logical CPU cores, 4 GiB or less device memory, or a
+  discharging battery at or below 20%, when those signals are available.
+- **Fast** requests a preview on every editor change. If a render is in progress,
+  newer edits replace pending work and stale revisions are skipped.
+- **Normal** waits 50 ms after the latest edit and starts an update within 250 ms
+  during continuous typing. This is the default.
+- **Slow** waits 300 ms after the latest edit and starts an update within 1,000 ms
+  during continuous typing.
+
+The setting stays in this browser. Auto never selects Fast. Slow reduces how often
+the editor sends work; it does not change the size of each render request.
 The first preview can appear while the site index is still loading. Workspace links and embeds
 resolve when indexing finishes, using the current editor text.
 New edits can update the first preview as soon as its page script is ready, even if an image or
@@ -140,6 +161,15 @@ Changing a diagram's source redraws that diagram when it is near view.
 Mermaid and Chart.js fences skip generic code syntax detection before their own renderers process
 them, which keeps long posts with many diagrams responsive while typing.
 The footer shows Go render time, total edit-to-preview time, source size, and preview size.
+Open **Diagnostics** to see a visual breakdown of the latest preview: waiting
+(including the edit debounce), server queue and Go rendering, HTTP/response
+overhead, and display in the preview frame. The display details include HTML
+parsing, DOM updates, and feature setup when available. The HTTP/response stage
+is the full request time after measured server queue and rendering, so it also
+includes response encoding and browser JSON decoding. The display detail also
+shows scroll-map collection and ordering plus caret-marker synchronization.
+**Copy full report** adds these stage timings to the local diagnostics snapshot
+without including Markdown content or file paths.
 Repeated source uses a one-entry memory cache. Appearance changes update the preview without a render request.
 Workspace post embeds in `![[post-slug]]` or `![embed](path/to/post.md)` format
 render as cards linked to the matching site post. Fenced code examples remain

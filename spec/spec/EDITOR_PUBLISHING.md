@@ -170,8 +170,10 @@ message and revision, and MUST NOT use a developer site or production remote.
   whole-block comparisons. The side-by-side rendering remains authoritative.
 - Full source review uses Pierre's vanilla FileDiff, compiled to a local,
   lazy-loaded optional asset. Never fetch third-party code at publish time.
-  Build the asset with tools/publish-diffs. The lightweight source diff must
-  continue working without that asset.
+  Initialize it only after the Full diff panel is visible so it can measure
+  its container. The UI must report an initialization failure instead of
+  leaving an empty viewer. Build the asset with tools/publish-diffs. The
+  lightweight source diff must continue working without that asset.
 
 The code is intentionally marked experimental until the exact Git workflow,
 bundled asset, Playwright and deployment recovery paths are verified.

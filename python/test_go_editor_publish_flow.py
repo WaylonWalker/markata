@@ -438,8 +438,10 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         # Optional Pierre must actually initialize and render. A missing module,
         # failed chunk, or asynchronously rejected render is a regression.
         review.get_by_role("tab", name="Full diff").click()
-        expect(review.locator("#publish-pierre-host")).to_have_attribute("data-state", "ready", timeout=20000)
-        expect(review.locator("#publish-pierre-host code").last).to_contain_text(
+        pierre = review.locator("#publish-pierre-host")
+        expect(pierre).to_have_attribute("data-state", "ready", timeout=20000)
+        expect(pierre.locator("pre[data-diff]").first).to_have_attribute("data-diff-type", "single")
+        expect(pierre.locator("code").last).to_contain_text(
             "Revised copy for browser verification.", timeout=20000
         )
         expect(review.locator("#publish-pierre-error")).to_be_hidden()

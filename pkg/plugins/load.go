@@ -291,7 +291,10 @@ func (p *LoadPlugin) loadCachedPost(
 }
 
 func (p *LoadPlugin) loadAllFiles(m *lifecycle.Manager, files []string, baseDir string, cache *buildcache.Cache, useCache bool) error {
-	if cache == nil {
+	// Small uncached workspaces avoid worker-pool setup. Large metadata-only
+	// loads (such as the editor's site index) still benefit from bounded parse
+	// concurrency even though they do not have a build cache.
+	if cache == nil && len(files) <= 32 {
 		return p.loadSequential(m, files, baseDir, cache)
 	}
 	if !useCache {

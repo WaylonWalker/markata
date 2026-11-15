@@ -3,7 +3,7 @@
   function attach(editor) {
     const dialog = document.querySelector('#settings-dialog');
     const options = dialog.querySelector('.settings-options');
-    const controls = Object.fromEntries(['setting-wrap','setting-scroll-sync','setting-layout','keymap']
+    const controls = Object.fromEntries(['setting-wrap','setting-scroll-sync','setting-layout','setting-preview-mode','keymap']
       .map(id => [id, document.getElementById(id)]));
     dialog.setAttribute('aria-labelledby','editor-settings-title');
     dialog.querySelector('h2').id = 'editor-settings-title';
@@ -64,6 +64,16 @@
     }
     row('preview','Layout','Write beside the preview, or focus on one pane.',controls['setting-layout']);
     row('preview','Synchronize scrolling','Keep the preview aligned with the paragraph you are editing.',controls['setting-scroll-sync']);
+    const previewMode=controls['setting-preview-mode'];
+    try {
+      const savedMode=localStorage.getItem('markata-preview-mode');
+      previewMode.value=['auto','fast','normal','slow'].includes(savedMode)?savedMode:'normal';
+    } catch {previewMode.value='normal';}
+    previewMode.addEventListener('change',()=>{
+      try {localStorage.setItem('markata-preview-mode',previewMode.value);} catch {}
+      window.dispatchEvent(new CustomEvent('markata-preview-mode-change',{detail:{mode:previewMode.value}}));
+    });
+    row('preview','Preview speed','Fast renders on each edit. Normal waits 50 ms; Slow waits 300 ms. Auto uses Slow for data saver, slow connections, limited device resources, or low battery when available.',previewMode);
     const shortcuts = document.createElement('div'); shortcuts.id='settings-shortcuts'; categories.get('shortcuts').section.append(shortcuts);
     const history = document.createElement('input'); history.type='checkbox'; history.id='setting-pick-history'; history.checked=window.MarkataSearch?.enabled() !== false;
     history.addEventListener('change',() => window.MarkataSearch?.setEnabled(history.checked));
