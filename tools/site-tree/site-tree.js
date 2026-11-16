@@ -334,10 +334,10 @@ window.MarkataSiteTree = {
     document.querySelector('#site-view').addEventListener('change', event => {
       if (event.target.value === 'feeds') buildFeeds(window.MarkataSiteTree.feeds || []);
       if (event.target.value === 'tags') buildTags();
-      document.querySelector('#site-recent').hidden = event.target.value !== 'recent';
-      document.querySelector('#site-files').hidden = event.target.value !== 'files';
-      document.querySelector('#site-feeds').hidden = event.target.value !== 'feeds';
-      document.querySelector('#site-tags').hidden = event.target.value !== 'tags';
+      for (const view of ['recent', 'files', 'feeds', 'tags']) {
+        const panel = document.querySelector('#site-' + view);
+        if (panel) panel.hidden = event.target.value !== view;
+      }
       updateWorkspaceContext(event.target.value);
     });
     document.querySelector('#site-view').dispatchEvent(new Event('change'));
