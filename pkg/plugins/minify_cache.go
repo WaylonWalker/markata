@@ -21,7 +21,7 @@ import (
 
 const (
 	assetMinifyRevision = "3"
-	assetMinifyVersion  = "v2.24.23"
+	assetMinifyVersion  = "v2.24.24"
 	assetParseVersion   = "v2.8.20"
 )
 
