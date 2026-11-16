@@ -24,6 +24,14 @@ def check_site_tree(page, url):
         page.goto(url)
     assert metadata_checked
     page.unroute('**/workspace?metadata=true', hold_metadata)
+
+    def select_view(view):
+        tab = page.locator(f'#workspace-tab-{view}')
+        if tab.count():
+            tab.click()
+            return
+        page.locator('#site-view').select_option(view)
+
     # Simulate an empty placeholder persisted by the first workspace build.
     workspace = page.request.get(url.rstrip('/') + '/workspace').json()
     key = workspace.get('rootUri') or workspace.get('root')
@@ -48,19 +56,19 @@ def check_site_tree(page, url):
     feeds_available = bool(page.request.get(url.rstrip('/') + '/workspace?metadata=true').json().get('feeds'))
     if feeds_available:
         expect(page.locator('#site-view option[value=feeds]')).to_be_enabled(timeout=30000)
-        page.locator('#site-view').select_option('feeds')
+        select_view('feeds')
         open_feed_post('welcome')
         expect(preview.locator('h1')).to_have_text('Saved welcome')
         open_feed_post('growing')
         expect(preview.locator('h1')).to_have_text('A growing garden')
     else:
         expect(page.locator('#site-view option[value=feeds]')).to_be_disabled()
-    page.locator('#site-view').select_option('files')
+    select_view('files')
     page.locator('#site-files').get_by_role('treeitem', name='welcome.md', exact=True).first.click()
     expect(preview.locator('h1')).to_have_text('Saved welcome')
     if feeds_available:
         expect(page.locator('#site-view option[value=feeds]')).to_be_enabled(timeout=30000)
-        page.locator('#site-view').select_option('feeds')
+        select_view('feeds')
         open_feed_post('growing')
         expect(preview.locator('h1')).to_have_text('A growing garden')
     else:
@@ -84,9 +92,14 @@ def check_site_tree(page, url):
     expect(preview.locator('h1')).to_have_text('Unsaved edit')
     for width in [390, 850, 1280]:
         page.set_viewport_size({'width':width,'height':850})
-        assert page.evaluate('document.documentElement.scrollWidth <= innerWidth'), width
+        overflow = page.evaluate('''() => ({scrollWidth: document.documentElement.scrollWidth,
+          offenders: [...document.querySelectorAll('body *')].map(el => ({
+            tag: el.tagName, id: el.id, className: typeof el.className === 'string' ? el.className : '',
+            right: Math.round(el.getBoundingClientRect().right), width: Math.round(el.getBoundingClientRect().width)
+          })).filter(el => el.right > innerWidth + 1).slice(0, 12)})''')
+        assert overflow['scrollWidth'] <= width, (width, overflow)
     # Rapid file changes must leave both panes on the last selection.
-    page.locator('#site-view').select_option('files')
+    select_view('files')
     for name in ['growing.md', 'about.md', 'welcome.md'] * 5:
         page.locator('#site-files').get_by_role('treeitem', name=name, exact=True).click()
         page.wait_for_timeout(300)
