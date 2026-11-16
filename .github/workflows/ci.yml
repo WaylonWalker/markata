@@ -217,6 +217,16 @@ jobs:
               - 'pkg/serveopen/**'
               - 'pkg/builderadmin/*windows*.go'
               - 'cmd/markata-go/cmd/update.go'
+      - name: Require classified Windows PR scope
+        if: github.event_name == 'pull_request' && matrix.os == 'windows-latest'
+        shell: pwsh
+        env:
+          WINDOWS_SCOPE: ${{ steps.windows_scope.outputs.windows }}
+        run: |
+          if ($env:WINDOWS_SCOPE -ne 'true' -and $env:WINDOWS_SCOPE -ne 'false') {
+            Write-Error "Cannot classify Windows PR changes; refusing to pass the required check"
+            exit 1
+          }
       - name: Run Windows PR CLI smoke and focused tests
         if: github.event_name == 'pull_request' && matrix.os == 'windows-latest' && steps.windows_scope.outputs.windows == 'false'
         shell: pwsh
