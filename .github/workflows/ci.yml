@@ -371,8 +371,14 @@ jobs:
           retention-days: 14
 
   test-linux-site:
-    name: Linux tests (site integration)
+    name: Linux tests (site integration shard ${{ matrix.shard }})
     runs-on: ubuntu-latest
+    # These tests call os.Chdir, so t.Parallel inside ./tests would be unsafe.
+    # Distinct test processes on separate runners keep CWD and output isolated.
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2]
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-go@v7
@@ -388,20 +394,36 @@ jobs:
           printf 'MARKATA_GO_TEST_BINARY=%s\n' "$RUNNER_TEMP/markata-go" >> "$GITHUB_ENV"
           printf 'MARKATA_GO_TEST_BINARY_REVISION=%s\n' "$(git rev-parse HEAD)" >> "$GITHUB_ENV"
           echo "CLI build: $((SECONDS-start))s" >> "$GITHUB_STEP_SUMMARY"
-      - name: Run site integration tests (race + coverage)
+      - name: Select complete deterministic site test shard
+        shell: bash
         run: |
+          set -euo pipefail
+          python3 scripts/ci/site_test_shards.py \
+            --index ${{ matrix.shard }} --count 3 \
+            --output "$RUNNER_TEMP/site-test-regex.txt"
+      - name: Run site integration shard (race + coverage)
+        shell: bash
+        run: |
+          set -euo pipefail
           start=$SECONDS
-          python3 scripts/ci/go_test_timing.py --label "Linux site race/coverage" --output "$RUNNER_TEMP/ci-timings/site.json" -- go test -json -v -race -timeout=30m -coverprofile=coverage-site.out -covermode=atomic ./tests
-          echo "Site integration race + coverage: $((SECONDS-start))s" >> "$GITHUB_STEP_SUMMARY"
+          test_regex="$(cat "$RUNNER_TEMP/site-test-regex.txt")"
+          python3 scripts/ci/go_test_timing.py \
+            --label "Linux site race/coverage shard ${{ matrix.shard }}/3" \
+            --output "$RUNNER_TEMP/ci-timings/site-${{ matrix.shard }}.json" -- \
+            go test -json -v -race -timeout=30m \
+              -coverprofile=coverage-site-${{ matrix.shard }}.out -covermode=atomic \
+              -run "$test_regex" ./tests
+          echo "Site shard ${{ matrix.shard }} race + coverage: $((SECONDS-start))s" >> "$GITHUB_STEP_SUMMARY"
       - uses: codecov/codecov-action@v7
         with:
-          files: ./coverage-site.out
+          files: ./coverage-site-${{ matrix.shard }}.out
+          flags: site-shard-${{ matrix.shard }}
           fail_ci_if_error: false
       - name: Upload site Go timing report
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: ci-go-timings-linux-site
+          name: ci-go-timings-linux-site-${{ matrix.shard }}
           path: ${{ runner.temp }}/ci-timings/
           if-no-files-found: ignore
           retention-days: 14
