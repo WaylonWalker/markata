@@ -290,6 +290,47 @@ func (s *cacheSite) removePost(path string) {
 // Directory Comparison Helpers
 // =============================================================================
 
+// firstOutputDifference identifies where two generated files diverge without
+// dumping full HTML output into CI logs. Escaped windows reveal whether an
+// intermittent failure involves a timestamp, ordering, or formatting change.
+func firstOutputDifference(before, after []byte) string {
+	index := 0
+	for index < len(before) && index < len(after) && before[index] == after[index] {
+		index++
+	}
+	const context = 64
+	start := index - context
+	if start < 0 {
+		start = 0
+	}
+	beforeEnd := index + context
+	if beforeEnd > len(before) {
+		beforeEnd = len(before)
+	}
+	afterEnd := index + context
+	if afterEnd > len(after) {
+		afterEnd = len(after)
+	}
+	return fmt.Sprintf("first differing byte=%d, before=%q, after=%q",
+		index, before[start:beforeEnd], after[start:afterEnd])
+}
+
+func TestFirstOutputDifference(t *testing.T) {
+	for _, tc := range []struct {
+		name, before, after, position string
+	}{
+		{"character", "abcXdef", "abcYdef", "byte=3"},
+		{"length", "abc", "abcd", "byte=3"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got := firstOutputDifference([]byte(tc.before), []byte(tc.after))
+			if !strings.Contains(got, tc.position) {
+				t.Fatalf("expected %q in %q", tc.position, got)
+			}
+		})
+	}
+}
+
 // compareOutputDirs recursively compares two directories.
 // Returns a list of differences (empty if identical).
 // It ignores known non-deterministic files (e.g., build-cache.json).
@@ -319,8 +360,8 @@ func compareOutputDirs(t *testing.T, dir1, dir2 string) []string {
 	for relPath, content1 := range files1 {
 		if content2, ok := files2[relPath]; ok {
 			if !bytes.Equal(content1, content2) {
-				diffs = append(diffs, fmt.Sprintf("content differs: %s (dir1=%d bytes, dir2=%d bytes)",
-					relPath, len(content1), len(content2)))
+				diffs = append(diffs, fmt.Sprintf("content differs: %s (dir1=%d bytes, dir2=%d bytes): %s",
+					relPath, len(content1), len(content2), firstOutputDifference(content1, content2)))
 			}
 		}
 	}
@@ -1504,7 +1545,7 @@ Content that should be stable.`)
 
 	// Output should be identical regardless of build time
 	if content1 != content2 {
-		t.Error("post output should not contain build-time timestamps that change between runs")
+		t.Errorf("post output should not contain build-time timestamps that change between runs: %s", firstOutputDifference([]byte(content1), []byte(content2)))
 	}
 }
 
