@@ -357,6 +357,7 @@ func buildTestBinary(t *testing.T) string {
 	}
 	return binary
 }
+
 // Build Lab scenarios run separate CLIs inside isolated workspaces. Running
 // them two at a time shortens the long serial CLI package without saturating
 // small CI runners with concurrent site builds. These tests still execute on
