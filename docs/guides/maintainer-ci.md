@@ -111,6 +111,37 @@ publish to GHCR with branch and `sha-` tags; feature previews do not receive
 dispatch on `main` follows the existing default-branch tagging policy, and
 dispatch on a version tag follows the existing semver/multiarch policy.
 
+## CI timing baselines and optimization results
+
+The Go test timing wrapper introduced in [PR #1995](https://github.com/WaylonWalker/markata/pull/1995)
+records per-package and test timing in job summaries and downloadable JSON
+artifacts. Use these measurements to prioritize bottlenecks before removing
+test coverage or modifying required checks.
+
+The first bounded-parallel Build Lab test change
+([PR #2007](https://github.com/WaylonWalker/markata/pull/2007)) produced these
+**single-run** measurements on GitHub Actions:
+
+| Measurement | Before (#1995) | After (#2007) | Change |
+| --- | ---: | ---: | ---: |
+| Fast PR Go short test command | 212.91 s | 122.25 s | 42.6% lower |
+| CLI Go test package | 188.92 s | 106.28 s | 43.7% lower |
+| Entire Fast PR Gate job (log timestamps) | ~245 s | ~180 s | ~27% lower |
+
+The first two values are emitted by the timing wrapper. Job duration includes
+checkout, Go setup, dependency restore, reporting and artifact upload. **These
+are not p50/p90 or an end-to-end cross-workflow PR latency claim.** Cache state,
+runner load, and concurrent changes can affect single samples.
+
+For follow-up PRs, compare multiple successful, non-cancelled runs of the
+**same job/check and trigger**. Record p50/p90 of job wall time separately from
+individual Go package and test durations; record failures/cancellations instead
+of discarding them as slow successful samples. For the Windows policy
+([PR #2008](https://github.com/WaylonWalker/markata/pull/2008)), confirm
+ordinary PRs run the version/help and focused-test smoke step rather than the
+full Windows short suite. Track main/nightly/release Windows full-suite results
+independently so faster PRs do not hide cross-platform regressions.
+
 ## Performance comparisons
 
 The initial benchmark sample selects only `BenchmarkBuild_EndToEnd` and
