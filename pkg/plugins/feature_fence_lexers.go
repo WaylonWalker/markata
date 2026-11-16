@@ -1,7 +1,6 @@
 package plugins
 
 import (
-	"errors"
 	"sync"
 
 	"github.com/alecthomas/chroma/v2"
@@ -11,9 +10,6 @@ import (
 // Chroma searches every filename pattern when Get does not recognize a fence
 // language. Mermaid and Chart.js use the plain-code fallback before their
 // plugins transform the HTML, so give those names a constant-time lookup.
-// Tokenise returns an error to retain goldmark-highlighting's plain-code path.
-var errPlainFeatureFence = errors.New("feature fence uses plain code")
-
 const (
 	featureFenceMermaid = "mermaid"
 	featureFenceChartJS = "chartjs"
@@ -27,8 +23,8 @@ type plainFeatureFenceLexer struct {
 
 func (l *plainFeatureFenceLexer) Config() *chroma.Config { return &l.config }
 
-func (l *plainFeatureFenceLexer) Tokenise(*chroma.TokeniseOptions, string) (chroma.Iterator, error) {
-	return nil, errPlainFeatureFence
+func (l *plainFeatureFenceLexer) Tokenise(_ *chroma.TokeniseOptions, source string) (chroma.Iterator, error) {
+	return chroma.Literator(chroma.Token{Type: chroma.Text, Value: source}), nil
 }
 
 func (l *plainFeatureFenceLexer) SetRegistry(*chroma.LexerRegistry) chroma.Lexer { return l }
