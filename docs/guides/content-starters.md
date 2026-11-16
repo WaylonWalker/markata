@@ -82,6 +82,10 @@ separate folders and share the same note card layout. Shot and Photo share a
 card layout; Gratitude and Inline share a
 card layout. Site-authored and configured starters can add or override starters.
 
+The Link starter includes a title, date, unpublished status, source URL, and
+image field. Enter an HTTP(S) source URL in the new-post form. The editor saves
+it as `url` in frontmatter and does not fetch remote metadata.
+
 The new-post form lets you set a post date. Leave it blank to keep a date from
 the starter or use today's local date. Photo and Shot posts accept an image URL
 or a pasted/dropped PNG, JPEG, GIF, or WebP file. URLs stay remote; pasted files

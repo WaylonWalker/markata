@@ -80,6 +80,10 @@ All editors MUST:
    explicitly overridden during creation, except for the CLI creation defaults below.
 9. Reject paths that escape the site root and report invalid starter metadata.
 
+The built-in Link starter MUST include a title variable, the current date,
+`published: false`, `url`, and `image` fields. The web workbench MUST require a
+valid HTTP(S) URL and store it in `url` without fetching remote metadata.
+
 The web workbench MUST support an optional date override when creating a post.
 When empty, it preserves a starter date or applies the current local date.
 When set, the selected date overrides the starter date.

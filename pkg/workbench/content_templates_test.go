@@ -140,7 +140,7 @@ func TestBuiltinLinkStarterUsesCanonicalSourceFields(t *testing.T) {
 		if template.Name != "Link" || template.Directory != "pages/link" {
 			t.Fatalf("unexpected link starter: %#v", template)
 		}
-		for _, fragment := range []string{"template: link", "url: \"\"", "image: \"\""} {
+		for _, fragment := range []string{"template: link", "title: \"{{title}}\"", "published: false", "url: \"\"", "image: \"\""} {
 			if !strings.Contains(template.Source, fragment) {
 				t.Fatalf("link starter missing %q: %s", fragment, template.Source)
 			}

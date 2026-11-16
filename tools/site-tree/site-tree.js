@@ -41,7 +41,7 @@ function saveToSite(path, source) {
       // A successful server save updates recovery's clean version only if
       // there is not already a newer unsaved edit in the browser buffer.
       if (drafts[path] === source && (active !== path || currentEditor.getValue() === source)) {
-        try { writeDraft(path, source); } catch { warning(); }
+        try { writeDraft(path, source, true); } catch { warning(); }
       }
       if (active === path && currentEditor.getValue() === source) {
         document.querySelector('#saved').textContent = 'Saved to site';
@@ -71,13 +71,18 @@ function readDraft(path, fallback) {
   // Preserve all nonempty legacy drafts; new records also preserve intentional blanks.
   return cached === '' && path !== scratchPath ? fallback : cached;
 }
-function writeDraft(path, source) {
-  localStorage.setItem(storageKey(path), JSON.stringify({format:'markata-draft-v3', source, dirty:path === scratchPath || source !== baselines[path], version:versions[path]}));
+function writeDraft(path, source, savedToSite = false) {
+  const record = {format:'markata-draft-v3', source, dirty:path === scratchPath || source !== baselines[path], version:versions[path], savedToSite};
+  localStorage.setItem(storageKey(path), JSON.stringify(record));
+  restored[path] = record;
 }
 function remember() {
   if (!currentEditor || !editable(active)) return;
   drafts[active] = currentEditor.getValue();
-  try { writeDraft(active, drafts[active]); }
+  try {
+    const savedToSite = restored[active]?.savedToSite === true && drafts[active] === baselines[active];
+    writeDraft(active, drafts[active], savedToSite);
+  }
   catch { warning(); }
 }
 async function open(path) {
@@ -111,7 +116,7 @@ async function open(path) {
       // A previous successful autosave was clean when acknowledged, but if
       // another process later changes the file it is now a competing revision.
       // Preserve that exact browser copy instead of trusting the old dirty flag.
-      if (restored[path] && previous !== disk.source &&
+      if ((restored[path]?.dirty !== false || restored[path]?.savedToSite === true) && previous !== disk.source &&
           (!previousVersion || previousVersion !== disk.version)) dirty = true;
     }
     // A dirty recovery without a version is unsafe too: keep it, but fail
