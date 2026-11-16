@@ -129,10 +129,10 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         self.edit_source(page, source.replace("# Original", "# Unpublished local edit"))
         expect(page.locator("#saved")).to_have_text("Saved to site", timeout=10000)
         expect(page.locator("#markata-gutter-status")).to_contain_text("Git change region")
-        page.locator("#workspace-changes-toggle").click()
+        self.open_changes(page)
         panel = page.locator("#workspace-changes-panel")
         expect(panel.locator("#workspace-changes-list")).to_contain_text("posts/discard-flow.md")
-        page.get_by_role("button", name="Review changes").click()
+        self.open_review(page)
         review = page.locator("#publish-review")
         expect(review).to_be_visible()
         expect(review.locator("#publish-discard")).to_be_enabled()
@@ -181,7 +181,7 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         expect(page.frame_locator("#preview").locator(".post-content")).not_to_contain_text(
             "Unpublished local edit"
         )
-        page.get_by_role("button", name="Review changes").click()
+        self.open_review(page)
         expect(review).to_be_visible()
         expect(review.locator("#publish-source-diff")).to_contain_text("Live revision 3.")
         expect(review.locator("#publish-source-diff")).to_contain_text("First fresh paragraph.")
@@ -233,15 +233,11 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         expect(compare).to_be_visible()
         expect(compare.locator("#workspace-conflict-browser")).to_have_text(browser_draft)
         expect(compare.locator("#workspace-conflict-disk")).to_have_text(external)
-        with page.expect_download() as browser_download:
-            compare.locator("#workspace-conflict-download-browser").click()
-        self.assertEqual(Path(browser_download.value.path()).read_text(encoding="utf-8"), browser_draft)
-        with page.expect_download() as disk_download:
-            compare.locator("#workspace-conflict-download-disk").click()
-        self.assertEqual(Path(disk_download.value.path()).read_text(encoding="utf-8"), external)
+        expect(compare.locator("#workspace-conflict-keep-browser")).to_be_enabled()
+        expect(compare.locator("#workspace-conflict-use-disk")).to_be_enabled()
         compare.locator("#workspace-conflict-done").click()
         expect(compare).not_to_be_visible()
-        # Comparing and exporting must never mutate the filesystem.
+        # Comparing the two copies must never mutate the filesystem.
         self.assertEqual(post.read_text(encoding="utf-8"), external)
 
         # The dirty recovery copy must survive a reload without replacing disk.
@@ -312,6 +308,15 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         page.evaluate("(target) => window.MarkataSiteTree.openFile(target)", path)
         expect(page.locator("#active-file")).to_have_text(path)
 
+    @staticmethod
+    def open_changes(page):
+        page.locator("#workspace-tab-changes").click()
+
+    @classmethod
+    def open_review(cls, page):
+        cls.open_changes(page)
+        page.locator("#publish-review-open").click()
+
     def test_discard_new_untracked_post_removes_source_and_only_its_recovery(self):
         context = self.browser.new_context()
         self.addCleanup(context.close)
@@ -336,7 +341,7 @@ class GoEditorPublishFlowTest(unittest.TestCase):
           localStorage.setItem('markata-unrelated-draft-test', 'keep');
           window.MarkataSiteTree.save();
         }""")
-        page.get_by_role("button", name="Review changes").click()
+        self.open_review(page)
         review = page.locator("#publish-review")
         expect(review).to_be_visible()
         expect(review.locator("#publish-before-name")).to_have_text("New page")
@@ -381,7 +386,7 @@ class GoEditorPublishFlowTest(unittest.TestCase):
             return realFetch(input, options);
           };
         }""")
-        page.get_by_role("button", name="Review changes").click()
+        self.open_review(page)
         review = page.locator("#publish-review")
         expect(review).to_be_visible()
         page.wait_for_function("typeof window.__releaseHeldReview === 'function'")
@@ -389,7 +394,7 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         expect(review).not_to_be_visible()
 
         # The previous network response is deliberately still outstanding.
-        page.get_by_role("button", name="Review changes").click()
+        self.open_review(page)
         expect(review).to_be_visible()
         expect(review.locator("#publish-body")).to_be_visible(timeout=10000)
         expect(review.locator("#publish-path")).to_have_text("posts/autosave-clean.md")
@@ -425,10 +430,10 @@ class GoEditorPublishFlowTest(unittest.TestCase):
             "# Before\n\nInitial copy.", "# After\n\nRevised copy for browser verification."
         ))
         expect(page.locator("#saved")).to_have_text("Saved to site", timeout=10000)
-        page.locator("#workspace-changes-toggle").click()
+        self.open_changes(page)
         panel = page.locator("#workspace-changes-panel")
         expect(panel.locator("#workspace-changes-list")).to_contain_text("posts/publish-flow.md")
-        page.get_by_role("button", name="Review changes").click()
+        self.open_review(page)
         review = page.locator("#publish-review")
         expect(review).to_be_visible()
         expect(review.locator('[data-publish-mode="source"]')).to_have_attribute("aria-selected", "true")
@@ -497,7 +502,7 @@ class GoEditorPublishFlowTest(unittest.TestCase):
             self.addCleanup(context.close)
             page = context.new_page()
             page.goto(self.url)
-            page.locator("#workspace-changes-toggle").click()
+            self.open_changes(page)
             panel = page.locator("#workspace-changes-panel")
             expect(panel).to_be_visible()
             expect(panel.locator("#workspace-changes-list")).to_contain_text("posts/changes-staged.md")
@@ -525,7 +530,7 @@ class GoEditorPublishFlowTest(unittest.TestCase):
             self.addCleanup(context.close)
             page = context.new_page()
             page.goto(self.url)
-            page.locator("#workspace-changes-toggle").click()
+            self.open_changes(page)
             panel = page.locator("#workspace-changes-panel")
             row = panel.locator(".workspace-change").filter(has_text="posts/external-edit.md")
             expect(row).to_be_visible()
@@ -546,7 +551,7 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         source = page.evaluate("document.querySelector('.CodeMirror').CodeMirror.getValue()")
         self.edit_source(page, source.replace("# Quick before", "# Quick after"))
         expect(page.locator("#saved")).to_have_text("Saved to site", timeout=10000)
-        page.locator("#workspace-changes-toggle").click()
+        self.open_changes(page)
         panel = page.locator("#workspace-changes-panel")
         expect(panel.locator("#workspace-changes-list")).to_contain_text("posts/quick-publish.md")
         page.locator(".CodeMirror").click()
@@ -581,7 +586,7 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         self.assertGreater(marker.count(), 0)
         # 600-line post with a single edit: do not compare every unchanged
         # line or incorrectly announce that the diff is too large.
-        page.get_by_role("button", name="Review changes").click()
+        self.open_review(page)
         review = page.locator("#publish-review")
         expect(review.locator("#publish-source-diff")).to_contain_text("locally edited")
         expect(review.locator("#publish-source-diff")).not_to_contain_text("Diff too large")
@@ -605,7 +610,7 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         page.goto(self.url)
         self.open_site_file(page, "posts/long-gutter.md", errors)
         expect(page.locator("#markata-gutter-status")).to_contain_text("No Git changes")
-        page.get_by_role("button", name="Review changes").click()
+        self.open_review(page)
         review = page.locator("#publish-review")
         expect(review.locator("#publish-no-changes")).to_be_visible()
         expect(review.locator("#publish-no-changes")).to_contain_text("All caught up")
