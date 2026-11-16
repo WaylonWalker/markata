@@ -114,6 +114,31 @@ def check_app_shortcuts(page, url):
     page.locator('#shortcuts-preset').select_option('vscode')
     page.locator('#shortcuts-close').click()
 
+    # Editor text keymaps are separate from the application-shortcut preset
+    # and can be selected directly from the shared command palette.
+    app_preset = page.evaluate("window.MarkataShortcuts.getPreset()")
+    for keymap_name in ('vim', 'emacs', 'sublime', 'default'):
+        page.locator('#commands').click()
+        page.locator('#commands-query').fill('editor keymap ' + keymap_name)
+        option = page.locator('#commands-results [role="option"]')
+        expect(option).to_have_count(1)
+        expect(option.first).to_contain_text('Editor keymap: ' + keymap_name.capitalize())
+        page.keyboard.press('Enter')
+        expect(page.locator('#keymap')).to_have_value(keymap_name)
+        # Switching into Vim focuses the editor in insert mode. CodeMirror
+        # intentionally changes the active map to "vim-insert", while the
+        # persisted user preference remains "vim".
+        page.wait_for_function(
+            """(key) => {
+              const active = document.querySelector('.CodeMirror').CodeMirror.getOption('keyMap');
+              return key === 'vim' ? (active === 'vim' || active === 'vim-insert') : active === key;
+            }""",
+            arg=keymap_name,
+            timeout=5000,
+        )
+        assert page.evaluate("localStorage.getItem('markata-editor-keymap')") == keymap_name
+        assert page.evaluate("window.MarkataShortcuts.getPreset()") == app_preset
+
     page.keyboard.press('Control+Shift+Enter')
     expect(page.locator('#publish-review[open]')).to_be_visible()
     expect(page.locator('#publish-confirm')).to_be_disabled()

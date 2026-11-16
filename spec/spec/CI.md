@@ -84,3 +84,10 @@ See [Maintainer CI](../../docs/guides/maintainer-ci.md) for operational guidance
 ## Pinned lint installation
 
 Use Go 1.27 and golangci-lint v2.15.0. New findings are gated using `--new-from-rev` on PRs/pushes. A scheduled nonblocking full-tree lint audit tracks legacy debt (issue #1902), with configured linters retained.
+
+## Wheel packaging and editor parity
+
+- PR and release wheel builds MUST verify the generated wheel artifact before editor parity consumes it.
+- Editor browser/parity validation MUST report under a distinct job from wheel packaging, using the same verified wheel artifact without rebuilding the matrix.
+- Publishing MUST require successful wheel, supported-platform installation and editor parity checks.
+- Browser parity SHOULD preserve screenshots/traces on failure without suppressing test errors.

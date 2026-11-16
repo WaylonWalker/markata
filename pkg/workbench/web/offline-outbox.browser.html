@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Offline outbox browser smoke</title></head>
+<body>
+<output id="result" data-result="pending">Running native IndexedDB smoke checks</output>
+<script type="module">
+import {openBrowserDraftStore} from './offline-outbox.mjs';
+import {mutationDigest, OfflineMutationSync} from './offline-sync.mjs';
+
+const result = document.querySelector('#result');
+const scope = {siteId: 'test-blog', subjectId: 'owner-alpha', documentId: 'page-one'};
+const id = 'acb1446b-2e8b-4e9e-8d7c-7347ef16f234';
+function check(value, message) {
+  if (!value) throw new Error(message);
+}
+try {
+  const store = await openBrowserDraftStore();
+  const local = await store.saveDraft({...scope, source: '# Written while offline', expectedLocalRevision: 0});
+  check(local.localRevision >= 1, 'initial save revision missing');
+  const reopened = await openBrowserDraftStore();
+  const saved = await reopened.getDraft(scope.siteId, scope.subjectId, scope.documentId);
+  check(saved.source === '# Written while offline', 'committed source absent after reopening database');
+
+  const mutation = await reopened.enqueue({...scope, mutationId: id, baseRevision: 0});
+  check(mutation.source === saved.source && mutation.state === 'queued', 'mutation intent not frozen');
+  await store.saveDraft({...scope, source: '# More edits after outbound snapshot', expectedLocalRevision: 1});
+  const replay = await reopened.enqueue({...scope, mutationId: id, baseRevision: 0});
+  check(replay.source === mutation.source, 'retry changed original payload');
+  const ack = await reopened.acknowledge({siteId: scope.siteId, subjectId: scope.subjectId,
+    mutationId: id, acceptedRevision: 1});
+  check(ack.state === 'accepted', 'committed receipt not applied');
+  let blockedStaleTab = false;
+  try {
+    await reopened.saveDraft({...scope, source: '# Old tab overwrite', expectedLocalRevision: 1});
+  } catch (error) {
+    blockedStaleTab = /another tab/.test(error.message);
+  }
+  check(blockedStaleTab, 'stale tab overwrote newer local edits');
+  const newer = await store.getDraft(scope.siteId, scope.subjectId, scope.documentId);
+  check(newer.source === '# More edits after outbound snapshot' &&
+    newer.syncedLocalRevision < newer.localRevision && newer.serverRevision === 1,
+    'acknowledgment overwrote newer device-local edits');
+
+  check(await reopened.getDraft(scope.siteId, 'another-account', scope.documentId) === undefined,
+    'other logical account saw cached draft via scoped API');
+
+  // A native browser Web Lock must block a competing sync attempt, while the
+  // accepted receipt still acknowledges exactly one queued IndexedDB mutation.
+  check(typeof navigator.locks?.request === 'function', 'browser has no Web Locks');
+  const secondDoc = {...scope, documentId: 'page-two'};
+  await reopened.saveDraft({...secondDoc, source: '# Two tabs', expectedLocalRevision: 0});
+  const secondID = 'acb1446b-2e8b-4e9e-8d7c-7347ef16f235';
+  const queued = await reopened.enqueue({...secondDoc, mutationId: secondID, baseRevision: 0});
+  let uploads = 0;
+  const sync = new OfflineMutationSync({
+    store: reopened, siteId: scope.siteId, subjectId: scope.subjectId,
+    locks: navigator.locks, cryptoAPI: crypto,
+    verifiedIdentity: async () => ({siteId: scope.siteId, subjectId: scope.subjectId, verified: true}),
+    fetchFn: async (endpoint, options) => {
+      uploads++;
+      check(endpoint === '/api/v1/sites/test-blog/mutations', 'wrong private sync path');
+      check(options.credentials === 'same-origin' && options.redirect === 'error', 'unsafe fetch settings');
+      const posted = JSON.parse(options.body);
+      check(posted.mutation_id === queued.mutationId && posted.source === '# Two tabs', 'outbox intent mutated');
+      return {status: 200, json: async () => ({
+        mutation_id: queued.mutationId, revision: 1, digest: await mutationDigest(queued),
+      })};
+    },
+  });
+  let releaseLock;
+  let signalLock;
+  const lockAcquired = new Promise(resolve => { signalLock = resolve; });
+  const lockName = 'markata-sync-v1:' + scope.siteId + ':' + scope.subjectId;
+  const held = navigator.locks.request(lockName, {mode: 'exclusive'}, async () => {
+    signalLock();
+    await new Promise(resolve => { releaseLock = resolve; });
+  });
+  await lockAcquired;
+  const busy = await sync.syncOnce();
+  check(busy.status === 'busy_other_tab' && uploads === 0, 'competing tab bypassed Web Locks');
+  releaseLock();
+  await held;
+  const complete = await sync.syncOnce();
+  check(complete.status === 'synced_drafts' && complete.synced === 1 && uploads === 1,
+    'native browser did not safely sync the queued draft');
+  const accepted = await reopened.getMutation(scope.siteId, scope.subjectId, secondID);
+  check(accepted.state === 'accepted', 'native IndexedDB receipt was not committed');
+
+  result.dataset.result = 'pass';
+  result.textContent = 'Offline outbox native IndexedDB smoke: PASS';
+} catch (error) {
+  result.dataset.result = 'fail';
+  result.textContent = 'Offline outbox native IndexedDB smoke: FAIL ' + error.message;
+}
+</script>
+</body></html>

@@ -223,6 +223,7 @@ func wrapCLIText(value string, width int) []string {
 }
 
 func renderHelpDescription(writer io.Writer, description string, theme logging.Theme) {
+	description = displayCLICommands(description, activeCLIName)
 	width := min(cliTerminalWidth(writer), cliPreferredRuleWidth)
 	for _, line := range strings.Split(description, "\n") {
 		if isHelpSectionHeading(line) {

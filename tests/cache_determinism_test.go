@@ -1704,7 +1704,13 @@ date: 2024-01-01
 ---
 `+"```mermaid\ngraph TD\nA-->B\n```\n")
 
-	site.buildWithCache()
+	// This explicitly exercises the legacy client mode because native SVG does not
+	// need to import the browser Mermaid.js bundle.
+	// This helper passes plugin settings through lifecycle.Config.Extra; writing
+	// the TOML alone does not configure the direct lifecycle test runner.
+	site.buildWithCacheConfigAndExtra("", map[string]interface{}{
+		"mermaid": map[string]interface{}{"mode": "client"},
+	})
 
 	for _, rel := range []string{
 		"assets/vendor/mermaid/mermaid.min.js",

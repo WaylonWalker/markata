@@ -9,6 +9,12 @@ import (
 	"github.com/flosch/pongo2/v6"
 )
 
+const (
+	layoutKeyContentMaxWidth = "content_max_width"
+	layoutKeyHeaderStyle     = "header_style"
+	layoutKeyFooterStyle     = "footer_style"
+)
+
 // Context holds data available to templates during rendering.
 type Context struct {
 	// Post is the current post being rendered
@@ -866,34 +872,26 @@ func layoutToMap(l *models.LayoutConfig) map[string]interface{} {
 
 	// Convert docs layout config
 	docsMap := map[string]interface{}{
-		"sidebar_position":  l.Docs.SidebarPosition,
-		"sidebar_width":     l.Docs.SidebarWidth,
-		"toc_position":      l.Docs.TocPosition,
-		"toc_width":         l.Docs.TocWidth,
-		"content_max_width": l.Docs.ContentMaxWidth,
-		"header_style":      l.Docs.HeaderStyle,
-		"footer_style":      l.Docs.FooterStyle,
-	}
-	if l.Docs.SidebarCollapsible != nil {
-		docsMap["sidebar_collapsible"] = *l.Docs.SidebarCollapsible
-	}
-	if l.Docs.SidebarDefaultOpen != nil {
-		docsMap["sidebar_default_open"] = *l.Docs.SidebarDefaultOpen
-	}
-	if l.Docs.TocCollapsible != nil {
-		docsMap["toc_collapsible"] = *l.Docs.TocCollapsible
-	}
-	if l.Docs.TocDefaultOpen != nil {
-		docsMap["toc_default_open"] = *l.Docs.TocDefaultOpen
+		"sidebar_position":       l.Docs.SidebarPosition,
+		"sidebar_width":          l.Docs.SidebarWidth,
+		"sidebar_collapsible":    l.Docs.IsSidebarCollapsible(),
+		"sidebar_default_open":   l.Docs.IsSidebarDefaultOpen(),
+		"toc_position":           l.Docs.TocPosition,
+		"toc_width":              l.Docs.TocWidth,
+		"toc_collapsible":        l.Docs.IsTocCollapsible(),
+		"toc_default_open":       l.Docs.IsTocDefaultOpen(),
+		layoutKeyContentMaxWidth: l.Docs.ContentMaxWidth,
+		layoutKeyHeaderStyle:     l.Docs.HeaderStyle,
+		layoutKeyFooterStyle:     l.Docs.FooterStyle,
 	}
 
 	// Convert blog layout config
 	blogMap := map[string]interface{}{
-		"content_max_width": l.Blog.ContentMaxWidth,
-		"toc_position":      l.Blog.TocPosition,
-		"toc_width":         l.Blog.TocWidth,
-		"header_style":      l.Blog.HeaderStyle,
-		"footer_style":      l.Blog.FooterStyle,
+		layoutKeyContentMaxWidth: l.Blog.ContentMaxWidth,
+		"toc_position":           l.Blog.TocPosition,
+		"toc_width":              l.Blog.TocWidth,
+		layoutKeyHeaderStyle:     l.Blog.HeaderStyle,
+		layoutKeyFooterStyle:     l.Blog.FooterStyle,
 	}
 	if l.Blog.ShowToc != nil {
 		blogMap["show_toc"] = *l.Blog.ShowToc
@@ -916,9 +914,9 @@ func layoutToMap(l *models.LayoutConfig) map[string]interface{} {
 
 	// Convert landing layout config
 	landingMap := map[string]interface{}{
-		"content_max_width": l.Landing.ContentMaxWidth,
-		"header_style":      l.Landing.HeaderStyle,
-		"footer_style":      l.Landing.FooterStyle,
+		layoutKeyContentMaxWidth: l.Landing.ContentMaxWidth,
+		layoutKeyHeaderStyle:     l.Landing.HeaderStyle,
+		layoutKeyFooterStyle:     l.Landing.FooterStyle,
 	}
 	if l.Landing.HeaderSticky != nil {
 		landingMap["header_sticky"] = *l.Landing.HeaderSticky
@@ -929,12 +927,12 @@ func layoutToMap(l *models.LayoutConfig) map[string]interface{} {
 
 	// Convert bare layout config
 	bareMap := map[string]interface{}{
-		"content_max_width": l.Bare.ContentMaxWidth,
+		layoutKeyContentMaxWidth: l.Bare.ContentMaxWidth,
 	}
 
 	// Convert defaults
 	defaultsMap := map[string]interface{}{
-		"content_max_width": l.Defaults.ContentMaxWidth,
+		layoutKeyContentMaxWidth: l.Defaults.ContentMaxWidth,
 	}
 	if l.Defaults.HeaderSticky != nil {
 		defaultsMap["header_sticky"] = *l.Defaults.HeaderSticky
@@ -1365,6 +1363,36 @@ func sidebarItemsToMaps(items []models.SidebarNavItem) []map[string]interface{} 
 	return result
 }
 
+func sidebarItemsToMapsForPage(items []models.SidebarNavItem, currentHref string) []map[string]interface{} {
+	if items == nil {
+		return nil
+	}
+	result := make([]map[string]interface{}, len(items))
+	for i, item := range items {
+		children := sidebarItemsToMapsForPage(item.Children, currentHref)
+		isCurrent := currentHref != "" && item.Href == currentHref
+		containsCurrent := isCurrent
+		for _, child := range children {
+			if child["contains_current"] == true {
+				containsCurrent = true
+				break
+			}
+		}
+		itemMap := map[string]interface{}{
+			"title":            item.Title,
+			"href":             item.Href,
+			"has_children":     len(children) > 0,
+			"is_current":       isCurrent,
+			"contains_current": containsCurrent,
+		}
+		if len(children) > 0 {
+			itemMap["children"] = children
+		}
+		result[i] = itemMap
+	}
+	return result
+}
+
 // ToPongo2 converts the Context to a pongo2.Context for template execution.
 func (c Context) ToPongo2() pongo2.Context {
 	postMap := postToMap(c.Post)
@@ -1376,6 +1404,10 @@ func (c Context) ToPongo2() pongo2.Context {
 	}
 
 	resolvedContentSidebar := resolveContentSidebar(configMap, c.Post)
+	currentHref := ""
+	if href, ok := postMap["href"].(string); ok {
+		currentHref = href
+	}
 	ctx := pongo2.Context{
 		"post":                     postMap,
 		"body":                     c.Body,
@@ -1384,7 +1416,7 @@ func (c Context) ToPongo2() pongo2.Context {
 		"page":                     feedPageToMap(c.FeedPage),
 		"posts":                    PostsToMaps(c.Posts),
 		"core":                     c.Core,
-		"sidebar_items":            sidebarItemsToMaps(c.SidebarItems),
+		"sidebar_items":            sidebarItemsToMapsForPage(c.SidebarItems, currentHref),
 		"sidebar_title":            c.SidebarTitle,
 		"resolved_content_sidebar": resolvedContentSidebar,
 		"resolved_doc_sidebar":     ResolveDocSidebar(c.Config, c.BlogLayout),

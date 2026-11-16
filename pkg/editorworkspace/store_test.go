@@ -44,6 +44,28 @@ func waitStore(t *testing.T, condition func() bool) {
 	}
 }
 
+func TestStore_IndexStatusDoesNotTriggerMetadataLoad(t *testing.T) {
+	store, _ := storeFixture(t)
+	before := store.Stats()
+	status := store.IndexStatus()
+	if status.Ready || status.Phase != "queued" || status.Files != 2 {
+		t.Fatalf("unloaded workspace status = %+v", status)
+	}
+	if after := store.Stats(); after.MetadataLoads != before.MetadataLoads {
+		t.Fatalf("read-only status unexpectedly loaded metadata: %+v -> %+v", before, after)
+	}
+	if _, err := store.Files(); err != nil {
+		t.Fatal(err)
+	}
+	ready := store.IndexStatus()
+	if !ready.Ready || ready.Phase != "ready" || ready.Files != 2 || ready.Indexed != 2 || ready.Pending != 0 {
+		t.Fatalf("loaded workspace status = %+v", ready)
+	}
+	if ready.GlobScans == 0 || ready.MetadataLoads != 2 || ready.ElapsedMS < 0 || ready.LastLoadMS < 0 {
+		t.Fatalf("missing measured index telemetry: %+v", ready)
+	}
+}
+
 func TestStore_ReusesDiscoveryAndMetadata(t *testing.T) {
 	store, _ := storeFixture(t)
 	if _, err := store.Files(); err != nil {

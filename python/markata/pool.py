@@ -127,7 +127,7 @@ class RendererPool:
 
     async def render(self, markdown: str, *, inline_assets: bool = False,
                      asset_base: str = "/markata-assets", unsafe: bool = False,
-                     mermaid_mode: str = "client", timeout: float = 30) -> RenderResult:
+                     mermaid_mode: str = "go", timeout: float = 30) -> RenderResult:
         """Render on a warm worker; cancellation/timeout replaces that worker."""
         if not self._started or self._closed:
             raise RenderError("RendererPool must be started inside an async lifespan")

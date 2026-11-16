@@ -99,7 +99,7 @@ func normalizeAgentInstallTarget(name string) (agentInstallTarget, error) {
 		for _, suggestion := range suggestAgentNames(canonical) {
 			message += fmt.Sprintf("\nDid you mean --agent %s?", suggestion)
 		}
-		return agentInstallTarget{}, fmt.Errorf("%s\nRun 'markata-go agent list-agents' for supported values", message)
+		return agentInstallTarget{}, fmt.Errorf("%s\nRun '%s' for supported values", message, cliCommand("agent list-agents"))
 	}
 	return target, nil
 }
@@ -131,13 +131,46 @@ func suggestAgentNames(name string) []string {
 	return suggestions
 }
 
+// resolveAgentWriteTargets validates every explicit target before a write begins.
+// Legacy --target may accompany --agent only when it names one of the targets.
+func resolveAgentWriteTargets(agentFlags []string, legacyTarget string) ([]agentInstallTarget, bool, error) {
+	targets := make([]agentInstallTarget, 0, len(agentFlags)+1)
+	seen := make(map[string]bool, len(agentFlags)+1)
+	for _, name := range agentFlags {
+		if strings.TrimSpace(name) == "" {
+			return nil, false, fmt.Errorf("--agent requires a non-empty agent name")
+		}
+		target, err := normalizeAgentInstallTarget(name)
+		if err != nil {
+			return nil, false, err
+		}
+		if !seen[target.Name] {
+			targets = append(targets, target)
+			seen[target.Name] = true
+		}
+	}
+	if strings.TrimSpace(legacyTarget) != "" {
+		legacy, err := normalizeAgentInstallTarget(legacyTarget)
+		if err != nil {
+			return nil, false, err
+		}
+		if len(agentFlags) != 0 && !seen[legacy.Name] {
+			return nil, false, fmt.Errorf("--agent %q conflicts with legacy --target %q", strings.Join(agentFlags, ", "), legacyTarget)
+		}
+		if !seen[legacy.Name] {
+			targets = append(targets, legacy)
+		}
+	}
+	return targets, len(targets) != 0, nil
+}
+
 func resolveAgentInstallTarget(agentFlag, legacyTarget string, global bool) (agentInstallTarget, error) {
 	explicit, explicitSet, err := selectedAgentFlagValue(agentFlag, legacyTarget)
 	if err != nil {
 		return agentInstallTarget{}, err
 	}
 	if global && !explicitSet {
-		return agentInstallTarget{}, fmt.Errorf("--global requires --agent without an interactive picker; use '--agent github-copilot' or run 'markata-go agent list-agents' for supported values")
+		return agentInstallTarget{}, fmt.Errorf("--global requires --agent without an interactive picker; use '--agent github-copilot' or run '%s' for supported values", cliCommand("agent list-agents"))
 	}
 	if explicitSet {
 		return normalizeAgentInstallTarget(explicit)

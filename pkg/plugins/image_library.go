@@ -1439,11 +1439,11 @@ func newImageLibraryPage(index imageindex.Index) ImageLibraryPage {
 			card.LastUsedAtUnix = image.LastUsedAt.Unix()
 		}
 		if len(image.Uses) > 3 {
-			card.Uses = append([]imageindex.Use(nil), image.Uses[:3]...)
-			card.MoreUses = append([]imageindex.Use(nil), image.Uses[3:]...)
+			card.Uses = imageLibraryUses(image.Uses[:3])
+			card.MoreUses = imageLibraryUses(image.Uses[3:])
 			card.MoreCount = len(card.MoreUses)
 		} else {
-			card.Uses = append([]imageindex.Use(nil), image.Uses...)
+			card.Uses = imageLibraryUses(image.Uses)
 		}
 		page.Images = append(page.Images, card)
 		if card.Used {
@@ -1533,9 +1533,30 @@ func imageSearchText(image imageindex.Image) string {
 		values = append(values, "embed")
 	}
 	for _, use := range image.Uses {
-		values = append(values, use.Href, use.Title, use.Caption)
+		values = append(values, use.Href, use.Title, imageLibraryCaption(use.Caption))
 	}
 	return strings.ToLower(strings.Join(values, " "))
+}
+
+const imageLibraryCaptionMaxRunes = 240
+
+// Image library cards show a short excerpt instead of duplicating an entire
+// document when a media parser cannot distinguish a caption from nearby text.
+func imageLibraryCaption(caption string) string {
+	caption = strings.Join(strings.Fields(caption), " ")
+	runes := []rune(caption)
+	if len(runes) <= imageLibraryCaptionMaxRunes {
+		return caption
+	}
+	return strings.TrimSpace(string(runes[:imageLibraryCaptionMaxRunes])) + "…"
+}
+
+func imageLibraryUses(uses []imageindex.Use) []imageindex.Use {
+	result := append([]imageindex.Use(nil), uses...)
+	for i := range result {
+		result[i].Caption = imageLibraryCaption(result[i].Caption)
+	}
+	return result
 }
 
 var imageLibraryTempCounter uint64

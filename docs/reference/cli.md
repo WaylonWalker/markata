@@ -1320,7 +1320,7 @@ markata-go new [title] [flags]
 
 | Argument | Description | Required |
 |----------|-------------|----------|
-| `title` | The title of the new content | No (prompted if not provided) |
+| `title` | Content title, or an HTTP(S) destination URL for `link` and its aliases | No (prompted if not provided) |
 
 #### Flags
 
@@ -1332,6 +1332,16 @@ markata-go new [title] [flags]
 | `--draft` | | Create as a draft | `false` |
 | `--tags` | | Comma-separated list of tags | `""` |
 | `--plain` | | Use plain text prompts instead of TUI wizard | `false` |
+| `--title` | | Explicit title override, including URL-first link posts | `""` |
+
+The global `--no-input` flag disables prompts and the TUI.
+Explicit flags take priority over metadata, inferred values, and wizard values.
+
+Every template and creation mode writes a `date` and an explicit `published` value.
+An absent, null, or blank date becomes the current local date as `YYYY-MM-DD`.
+An explicit starter date remains unchanged.
+Publication defaults to `true`, but starter drafts and unpublished settings remain in effect.
+The `--draft` flag overrides those publication settings.
 
 #### Built-in Templates
 
@@ -1393,6 +1403,54 @@ markata-go new
 # Interactive mode with plain text prompts (no TUI)
 markata-go new --plain
 ```
+
+#### URL-first Link Posts
+
+```bash
+# Fetch the title, description, and preview image
+markata new --template link 'https://example.com/my-article'
+
+# Supply an explicit title for noninteractive creation
+markata new --template link 'https://example.com/my-article' --title 'My article' --tags 'reading' --draft --no-input
+```
+
+For `link` and its aliases (`bookmark`, `til`, `stars`), an HTTP(S) argument identifies the destination URL.
+Existing non-URL title arguments still work.
+Other templates keep their existing behavior.
+The post preserves the entered URL, even after redirects or canonical metadata.
+Invalid URLs produce an actionable error.
+
+Metadata lookup has a bounded timeout and response size.
+A usable `og:title` becomes the title automatically.
+Empty, URL-only, and hostname-only titles are not trusted.
+An explicit `--title` always wins.
+
+YouTube video links use YouTube's official oEmbed endpoint before HTML metadata.
+Watch, `youtu.be`, mobile, and Shorts URLs support this lookup.
+A usable oEmbed title is trusted, and its thumbnail supplies the preview image.
+The description remains optional because YouTube oEmbed does not supply one.
+If oEmbed fails, the command warns and tries HTML metadata.
+If both lookups fail, the suggested title includes the video ID instead of `watch`.
+Both lookups share the timeout and keep the response-size limit.
+
+Without a trusted title or `--title`, interactive creation asks you to confirm or replace a suggestion.
+Suggestions use this order:
+
+1. Twitter metadata
+2. HTML title
+3. Main heading
+4. Decoded URL slug
+5. Hostname
+
+Every suggestion from these sources requires confirmation.
+Relative preview images resolve against the fetched page URL.
+A missing description or image does not prevent creation, and Markata does not invent either field.
+Starter defaults remain intact unless metadata or explicit input replaces a field.
+
+If metadata lookup fails, the command warns and continues with manual fields.
+Without a terminal, or with `--no-input`, a missing trusted or explicit title causes an error before any file is written.
+The error includes a copy-pastable command with a suggested `--title` override.
+That command preserves the destination URL and your explicit flags.
 
 #### Template System
 
@@ -1465,7 +1523,14 @@ for compatibility and precedence rules.
 When called without a title argument (or no arguments at all), the command launches an
 interactive TUI wizard powered by [charmbracelet/huh](https://github.com/charmbracelet/huh).
 
-The wizard guides you through:
+The wizard selects the template first.
+For links, it asks for the URL before the title, then fetches metadata.
+Without a trusted title or `--title`, the wizard asks you to confirm or enter a title.
+**Create** is the default action after lookup and any required title confirmation.
+The optional **Edit details** action exposes the title, description, image, directory, tags, privacy, and authors.
+Explicit flags take priority in the wizard.
+
+For other templates, the wizard keeps the existing fields:
 
 1. **Template selection** - Pick from built-in, config, and file-based templates
 2. **Title** - Enter the post title
@@ -1494,6 +1559,8 @@ Created: pages/post/my-new-post.md
 
 **Plain text mode:** Use `--plain` or pipe input to get simple text prompts instead of the TUI.
 Falls back automatically when stdin is not a TTY.
+URL-first links use the same title-confidence rules in plain text mode.
+Without a terminal, supply `--title` if no trusted title is available.
 
 #### Generated File
 

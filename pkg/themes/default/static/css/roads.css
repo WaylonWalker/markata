@@ -59,9 +59,11 @@
 
 /* Styles whose cards stay readable before they are reached. */
 .road[data-road="timeline"] .road-card,
-.road[data-road="steps"] .road-card,
 .road[data-road="cycle"] .road-card,
 .road[data-road="git"] .road-card { opacity: .6; }
+
+.road[data-road="steps"] .road-card { opacity: 1; }
+.road[data-road="steps"] .road-title { color: var(--color-text, #fff); }
 
 /* Timeline: one straight rail. */
 .road[data-road="timeline"] .road-path { stroke-dasharray: none; opacity: .5; }

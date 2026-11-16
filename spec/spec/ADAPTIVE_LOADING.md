@@ -63,13 +63,16 @@ Save Data on a newly fast connection.
 Images SHOULD use native responsive sources, lazy loading below the fold,
 asynchronous decoding, and intrinsic dimensions. Video MUST retain a poster and
 native source/control path. Video previews MUST NOT autoplay or preload media
-bytes unless a site author explicitly configures autoplay. Explicit raw HTML autoplay and Markdown site-configured autoplay MUST survive
-as `data-authored-autoplay="true"`, without a native autoplay attribute. Static
-output MUST use preload none for those videos. Full Quality or already-confident fast
-Auto at page entry MAY start authored autoplay only for unstarted videos. Save Data, unknown,
-normal, reduced motion, and constrained Auto MUST NOT start it. Policy changes
-MUST NOT pause or restart already requested/playing media. Raw HTML without
-autoplay MUST NOT gain autoplay from site-wide configuration. With no JavaScript,
+bytes unless a site author explicitly configures autoplay. Explicit raw HTML
+autoplay and default Markdown authored autoplay MUST survive as
+`data-authored-autoplay="true"` without a native autoplay attribute. Static
+output MUST use preload none for those videos. The client MAY autoplay authored
+article videos only after they enter the viewport and the page's initial load
+has collected network evidence. Constrained Auto, Save Data, offline state, and
+reduced motion MUST NOT start them. The client MUST pause only videos it started
+when they leave the viewport or the document becomes hidden, and MUST respect
+manual pauses. Raw HTML without authored autoplay MUST NOT gain autoplay from
+site-wide configuration. With no JavaScript,
 authored autoplay becomes native user-initiated playback; this conservative
 baseline is an intentional tradeoff. Derived 1200×675 posters MUST reserve a 16:9 aspect ratio when raw HTML has
 no authored height/style; explicit author geometry MUST be retained. Markdown
@@ -97,11 +100,11 @@ mobile viewport, constrained networking, no premature media requests, no
 visible-content mutation, and layout stability.
 
 
-Auto honors authored autoplay when measured confidence is already fast at page
-entry. Learning that the network is fast during a page view affects subsequent
-pages; it does not suddenly animate an existing poster. An explicit Full Quality
-choice may start unrequested authored video on the current page. Active media
-remains untouched in either case.
+Auto MAY start authored article autoplay when the video is on screen and
+network evidence is not constrained. The initial load event precedes the first
+attempt. Full Quality can start visible authored media sooner but MUST respect
+Save Data and reduced motion. Offscreen authored media remains unloaded, and
+preview-card videos remain poster-only by default.
 
 
 The existing full-document View Transition navigator preserves loading-mode

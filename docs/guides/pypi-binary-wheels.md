@@ -55,44 +55,44 @@ The [wheel CI workflow](../../.github/workflows/pypi-go-wheels.yml)
 automatically repeats the build and verifies tags, embedded OS executables,
 metadata, installation in a clean venv, and `python -m markata`.
 
-## Publishing the name handoff
+## Automated PyPI publication
 
-As of this documentation change, **the public PyPI project is still Python
-Markata until a Go wheel upload succeeds and is confirmed on PyPI**.
-The existing Python release `markata==0.10.0` remains available as a pin.
-The newest prior Python prerelease is `0.11.0.dev11`. PyPI does not permit
-replacing those immutable files with Go binaries.
+The Python-to-Go handoff of the existing `markata` PyPI project was
+completed with Go v0.14.0. The one-time migration confirmation is **retired**.
+The historical Python releases remain immutable and available by version pin.
 
-To publish Go Markata (first proposed PyPI Go version: **`0.14.0`**), the
-owner must do the following once:
+For new stable 0.x releases:
 
-1. Sign into the existing [PyPI `markata` project](https://pypi.org/manage/project/markata/),
-   open **Publishing**, and add a **GitHub Actions Trusted Publisher**:
-   - owner: `WaylonWalker`
-   - repository: `markata`
-   - workflow filename: `pypi-go-wheels.yml`
-   - environment: `pypi`
-2. In GitHub `WaylonWalker/markata`, create or verify a **pypi** environment
-   with protection (reviewers and restrictions to `main`) so an unreviewed
-   workflow cannot publish packages.
-3. Once CI passes and the trusted publisher is configured, open **Actions →
-   Go Markata PyPI wheels → Run workflow**, on branch `main`, set:
-   - `version`: `0.14.0` (or another approved, *unpublished* 0.x version)
-   - `publish`: true
-   - `confirm`: `REPLACE_PYTHON_MARKATA_WITH_GO`
-   - Approve the `pypi` environment gate.
-4. Check the resulting PyPI release and **test a new** `python -m venv` with
-   `python -m pip install markata` and `markata version`.
+1. A maintainer/agent publishes a tested `v0.x.y` tag using the
+   [Release workflow](../../.github/workflows/release.yml).
+2. Once that workflow **succeeds**, the
+   [wheel workflow](../../.github/workflows/pypi-go-wheels.yml) starts via
+   `workflow_run`. This also works for GitHub releases generated using
+   `GITHUB_TOKEN`, which do not reliably trigger other release events.
+3. The wheel workflow validates the completed run, published GitHub release,
+   immutable tag commit and existing PyPI state. It then builds eight wheels,
+   runs clean-install and platform smoke checks, and requires editor parity
+   for newly tagged versions.
+4. PyPA Trusted Publishing uses short-lived OIDC credentials in the protected
+   `pypi` environment. A final job verifies all eight wheel filenames
+   appear on PyPI. **There is no second manual confirmation.**
 
-The publish job is a separate, minimal-permission job using PyPA
-`pypa/gh-action-pypi-publish` and short-lived OIDC tokens. Pull requests,
-manual dry-runs, and non-main branches never publish. An explicit confirmation
-string and GitHub environment gate prevent accidental uploads.
+To recover a missed upload, choose **Actions → Go Markata PyPI wheels →
+Run workflow**, select branch `main`, and supply the *existing GitHub
+release* version, e.g. `0.15.0`. The workflow refuses mismatched/unpublished
+tags and does not republish a complete version already present on PyPI.
+A partial existing PyPI release is treated as an error rather than overwritten.
+Pull requests only perform the build and tests, never the upload.
 
-**Freeze the Python repo's old manual PyPI release workflow** as part of the
-handoff so a future Python release does not retake the latest PyPI version.
-It currently needs owner attention because GitHub rejects branch creation in
-`WaylonWalker/markata-py`. Do not reuse its existing `pypi_password` secret.
+The original `v0.15.0` tag predates the newer editor browser-parity gate
+and `pkg/renderprotocol` package. Its historical release verification
+is preserved for a safe backfill without changing or moving that tag.
+All later releases must satisfy their full modern checks.
+
+The registered publisher remains `WaylonWalker/markata`,
+`pypi-go-wheels.yml`, environment `pypi`. Keep the historical
+`markata-py` repository's publishing disabled; it must not race the Go
+package on the `markata` project name.
 
 ## Compatibility consequences
 
@@ -108,9 +108,8 @@ It currently needs owner attention because GitHub rejects branch creation in
   be checked before making blanket cross-platform promises.
 - No stable Go **1.0** release or repository version tag is required.
 
-This release is an explicitly authorized new PyPI packaging path, distinct from
-the earlier GitHub repository rename. The version is chosen on dispatch.
+The initial name handoff was separately authorized; subsequent versions are published automatically from verified GitHub releases.
 
 ## Current installation status
 
-The PyPI handoff has occurred: current `markata` releases install the Go CLI after a version break from the Python implementation. Historical Python wheels remain immutable and can be pinned. This handoff does not imply Python API compatibility. The release preparation steps above document the transition process, not the present installer identity.
+The PyPI handoff has occurred: current `markata` releases install the Go CLI after a version break from the Python implementation. Historical Python wheels remain immutable and can be pinned. This handoff does not imply Python API compatibility. Version pins preserve historical installers; the automated process above documents the current release path.

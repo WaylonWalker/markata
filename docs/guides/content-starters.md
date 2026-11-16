@@ -44,6 +44,10 @@ The shared variables are `{{title}}`, `{{slug}}`, `{{date}}`, and
 `{{datetime}}`. They work in frontmatter and body text. Unknown variables stay
 as written, which lets another renderer use its own syntax.
 
+The `new` CLI adds the current local date and `published: true` when the starter has no values for them.
+It preserves explicit dates, drafts, and unpublished settings.
+These CLI defaults also apply to plain prompts and the TUI.
+
 Run `markata-go new --list` to see starters, then create content with:
 
 ```sh

@@ -181,7 +181,7 @@ The plugin MUST implement:
 ```toml
 [markata-go.mermaid]
 enabled = true
-mode = "client"                         # "client", "cli", or "chromium"
+mode = "go"                             # default native SVG; alternatives: "client", "cli", "chromium"
 cdn_url = "/assets/vendor/mermaid/mermaid.min.js"  # vendored UMD bundle; .mjs URLs are ES-module imported
 theme = "default"                       # default, dark, forest, neutral
 use_css_variables = true                # Use site palette CSS variables for diagram theming

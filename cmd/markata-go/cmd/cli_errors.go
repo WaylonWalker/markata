@@ -98,6 +98,29 @@ func clarifyFlagError(cmd *cobra.Command, err error) error {
 // FormatError renders a single fatal diagnostic for the command entry point.
 // It preserves plain text when stderr is redirected or coloring is disabled.
 func FormatError(err error) string {
+	return formatErrorAs(err, activeCLIName)
+}
+
+// FormatErrorAs formats diagnostics for a specific CLI entry point. The
+// canonical binary uses this after ExecuteAs has restored its command state.
+func FormatErrorAs(err error, name string) string {
+	return formatErrorAs(err, name)
+}
+
+// displayCLICommands rewrites executable examples without changing internal
+// names such as markata-go.toml or markata-go-site.
+func displayCLICommands(message, name string) string {
+	if name == canonicalCLIName {
+		return strings.ReplaceAll(message, "markata-go ", "markata ")
+	}
+	return message
+}
+
+func cliCommand(args string) string {
+	return activeCLIName + " " + args
+}
+
+func formatErrorAs(err error, name string) string {
 	if err == nil {
 		return ""
 	}
@@ -107,7 +130,7 @@ func FormatError(err error) string {
 	}
 	var input *inputError
 	if errors.As(err, &input) {
-		return styleErrorLines(message)
+		return styleErrorLines(displayCLICommands(message, name))
 	}
 	var diagnostic *Diagnostic
 	if errors.As(err, &diagnostic) {
@@ -128,7 +151,7 @@ func FormatError(err error) string {
 			message += "\n" + detail
 		}
 	}
-	return styleErrorLines(message)
+	return styleErrorLines(displayCLICommands(message, name))
 }
 
 func styleErrorLines(message string) string {
@@ -141,7 +164,7 @@ func styleErrorLines(message string) string {
 		switch {
 		case line == "Did you mean:":
 			parts[i] = colorize(line, theme.Component, enabled)
-		case strings.HasPrefix(line, "  --") || strings.HasPrefix(line, "  markata-go "):
+		case strings.HasPrefix(line, "  --") || strings.HasPrefix(line, "  markata-go ") || strings.HasPrefix(line, "  markata "):
 			parts[i] = colorize(line, theme.Success, enabled)
 		case strings.HasPrefix(line, "Next:"):
 			parts[i] = colorize("Next", theme.Component, enabled) + strings.TrimPrefix(line, "Next")

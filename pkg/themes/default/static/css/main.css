@@ -396,6 +396,18 @@ h6:hover .heading-anchor,
   text-decoration: none;
 }
 
+@media (max-width: 640px) {
+  .post-content :is(h1, h2, h3, h4, h5, h6) {
+    padding-inline-end: 1.25rem;
+  }
+
+  .post-content :is(h1, h2, h3, h4, h5, h6) .heading-anchor {
+    left: auto;
+    right: 0;
+    margin-inline-start: 0;
+  }
+}
+
 p {
   margin-bottom: var(--space-4);
 }
@@ -2102,12 +2114,6 @@ a.wikilink.wikilink-missing:focus-visible {
 
 /* Responsive */
 @media (max-width: 768px) {
-  /* Prevent horizontal overflow - WCAG 2.1 SC 1.4.10 Reflow */
-  body {
-    overflow-x: hidden;
-    max-width: 100vw;
-  }
-
   /* Container - reduce padding on mobile */
   .container {
     padding: 0 var(--space-3);
@@ -2128,7 +2134,6 @@ a.wikilink.wikilink-missing:focus-visible {
      placed independently on the grid. */
   .site-header {
     padding: var(--space-3) var(--space-3) var(--space-2);
-    overflow-x: hidden;
   }
 
   .site-header .container {

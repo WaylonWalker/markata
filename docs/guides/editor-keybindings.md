@@ -10,6 +10,9 @@ tags: [documentation, editor, keyboard]
 
 In the Go workbench, open **Editor settings → Keyboard shortcuts…** or press **Ctrl/Cmd+K**, then **Ctrl/Cmd+S** with the VS Code preset. Search for commands, select a shortcut to record a new one, or reset your overrides. Markata rejects conflicting bindings.
 
+The command palette has **Editor keymap: Default/Vim/Emacs/Sublime** actions,
+which persist the existing Markdown editor keymap independently of the app preset.
+
 **Application keymaps** are separate from the CodeMirror **editor keymap** (Default, Vim, Emacs, Sublime). Select Writer, VS Code, Vim, or Emacs for application actions without replacing your Markdown text-editing motions. App presets default to VS Code.
 
 | Action | VS Code app preset | Writer app preset |

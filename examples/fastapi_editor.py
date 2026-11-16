@@ -99,7 +99,12 @@ async def preview(request: RenderRequest):
         return JSONResponse({"error": str(error)}, status_code=422)
     started = perf_counter()
     try:
-        result = await app.state.renderer_pool.render(request.markdown, inline_assets=True, unsafe=True, timeout=15)
+        # The live preview is interactive: retain Mermaid.js redraw behavior while
+        # published sites default to the native Go SVG backend.
+        result = await app.state.renderer_pool.render(
+            request.markdown, inline_assets=True, unsafe=True,
+            mermaid_mode="client", timeout=15,
+        )
     except RenderError as error:
         return JSONResponse({"error": str(error)}, status_code=422)
     render_ms = (perf_counter() - started) * 1000
@@ -279,6 +284,8 @@ keymap.addEventListener('change', () => {
   try { localStorage.setItem('markata-editor-keymap', keymap.value); } catch { storageWarning(); }
   editor.focus();
 });
+// Do not hide rejected imports when an earlier preview request finishes.
+let rejectedImportRevision = -1;
 let revision = 0, timer, busy = false, ready = false;
 let previewStarted = false, previewReady = false, pendingPreview = null;
 function storageWarning() { saved.textContent = 'Draft not saved · storage unavailable or full · download a copy'; }
@@ -325,7 +332,7 @@ async function render() {
     } else {
       updatePreview(data);
     }
-    errorBox.hidden = true;
+    if (rejectedImportRevision !== version) errorBox.hidden = true;
     status.textContent = `Python ${data.render_ms.toFixed(1)} ms${data.cached ? ' (cached)' : ''} · round trip ${Math.round(performance.now()-started)} ms · input ${(data.input_bytes/1024).toFixed(1)} KB · ${data.document_bytes ? 'document' : 'fragment'} ${((data.document_bytes || data.html_bytes)/1024).toFixed(1)} KB`;
   } catch (error) {
     if (version !== revision) return;
@@ -366,6 +373,7 @@ document.querySelector('#import').addEventListener('change', async event => {
   event.target.value = '';
   if (!file) return;
   if (file.size > 200000) {
+    rejectedImportRevision = revision;
     errorBox.textContent = 'Document exceeds 200,000 UTF-8 bytes. Your current draft has been kept.';
     errorBox.hidden = false; return;
   }
@@ -373,7 +381,7 @@ document.querySelector('#import').addEventListener('change', async event => {
     const text = await file.text();
     if (new TextEncoder().encode(text).length > 200000) throw new Error('Document exceeds 200,000 UTF-8 bytes.');
     window.MarkataSiteTree.import(text);
-  } catch (error) { errorBox.textContent = 'Cannot open file: ' + error.message; errorBox.hidden = false; }
+  } catch (error) { rejectedImportRevision = revision; errorBox.textContent = 'Cannot open file: ' + error.message; errorBox.hidden = false; }
 });
 if (!saved.textContent) saveDraft();
 const workspaceReady = window.MarkataSiteTree.attach(editor, storageWarning, {saveToSite:false});

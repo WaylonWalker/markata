@@ -28,6 +28,15 @@ import (
 	"github.com/WaylonWalker/markata/pkg/plugins"
 )
 
+const (
+	workbenchTextSizeAttribute  = "data-text-size"
+	workbenchThemeAttribute     = "data-theme"
+	workbenchAestheticAttribute = "data-aesthetic"
+	workbenchPaletteAttribute   = "data-palette"
+	workbenchFontpackAttribute  = "data-fontpack"
+	workbenchLightMode          = "light"
+)
+
 //go:embed web
 var web embed.FS
 
@@ -72,10 +81,13 @@ func New() (*Handler, error) { return NewWithWorkspace(context.Background(), "."
 
 // NewWithWorkspace enables LSP for a server-selected workspace. Cancel ctx on shutdown.
 func NewWithWorkspace(ctx context.Context, root string) (*Handler, error) {
+	started := time.Now()
 	workspace, err := editorworkspace.Open(ctx, root)
 	if err != nil {
 		return nil, err
 	}
+	log.Printf("editor startup: workspace discovery ready in %s", time.Since(started).Round(time.Millisecond))
+	lspStarted := time.Now()
 	config, err := lsp.BrowserWorkspace(root)
 	if err != nil {
 		_ = workspace.Close()
@@ -86,7 +98,9 @@ func NewWithWorkspace(ctx context.Context, root string) (*Handler, error) {
 		_ = workspace.Close()
 		return nil, err
 	}
+	log.Printf("editor startup: LSP configuration and handler ready in %s", time.Since(lspStarted).Round(time.Millisecond))
 	siteConfig, revision := workspace.Configuration()
+	appearanceStarted := time.Now()
 	handler, err := buildPresentation(root, workspace, config, language, siteConfig)
 	if err != nil {
 		_ = workspace.Close()
@@ -94,6 +108,7 @@ func NewWithWorkspace(ctx context.Context, root string) (*Handler, error) {
 	}
 	handler.store = workspace
 	handler.configRevision = revision
+	log.Printf("editor startup: appearance and browser assets ready in %s (total %s)", time.Since(appearanceStarted).Round(time.Millisecond), time.Since(started).Round(time.Millisecond))
 	return handler, nil
 }
 
@@ -110,7 +125,7 @@ func buildPresentation(root string, workspace workspaceSource, config lsp.Browse
 	if err != nil {
 		return nil, err
 	}
-	h := &Handler{root: root, renderer: plugins.NewStandaloneRenderer(plugins.StandaloneOptions{Config: siteConfig, Unsafe: true, AssetBase: "/appearance"}), siteConfig: siteConfig, workspace: workspace, language: language, languageConfig: config, appearance: a, assets: a.Assets, gate: make(chan struct{}, 1), choices: map[string][]string{"data-theme": {"light", "dark"}, "data-text-size": {"small", "medium", "large", "x-large"}}}
+	h := &Handler{root: root, renderer: plugins.NewStandaloneRenderer(plugins.StandaloneOptions{Config: siteConfig, Unsafe: true, AssetBase: "/appearance", MermaidMode: "client"}), siteConfig: siteConfig, workspace: workspace, language: language, languageConfig: config, appearance: a, assets: a.Assets, gate: make(chan struct{}, 1), choices: map[string][]string{workbenchThemeAttribute: {workbenchLightMode, "dark"}, workbenchTextSizeAttribute: {"small", "medium", "large", "x-large"}}}
 	h.assets["css/fonts.css"] = bytes.ReplaceAll(h.assets["css/fonts.css"], []byte("/assets/fonts/"), []byte("/appearance/assets/fonts/"))
 	for _, name := range []string{"palette", "aesthetic", "fonts"} {
 		match := manifestPattern.FindSubmatch(h.assets["css/"+name+".css"])
@@ -159,7 +174,7 @@ func buildPresentation(root string, workspace workspaceSource, config lsp.Browse
 	h.index = []byte(strings.NewReplacer("<!--EDITOR_HEAD-->", editorHead, "<!--APPEARANCE_HEAD-->", controls, "<!--PICKER-->", a.PickerHTML, "<!--APPEARANCE_SCRIPTS-->", scripts).Replace(string(page)))
 	if siteConfig != nil {
 		attrs := `<html lang="en"`
-		for _, key := range []string{"data-theme", "data-palette", "data-aesthetic", "data-fontpack", "data-text-size"} {
+		for _, key := range []string{workbenchThemeAttribute, workbenchPaletteAttribute, workbenchAestheticAttribute, workbenchFontpackAttribute, workbenchTextSizeAttribute} {
 			attrs += " " + key + `="` + html.EscapeString(a.Defaults[key]) + `"`
 		}
 		h.index = regexp.MustCompile(`<html[^>]*>`).ReplaceAll(h.index, []byte(attrs+">"))
@@ -469,20 +484,20 @@ func (h *Handler) decodeRequest(w http.ResponseWriter, r *http.Request) *renderR
 }
 
 func (h *Handler) document(result *plugins.StandaloneResult, attributes map[string]string) string {
-	defaults := map[string]string{"data-theme": "dark", "data-palette": "default-dark", "data-aesthetic": "minimal", "data-fontpack": "system", "data-text-size": "large"}
+	defaults := map[string]string{workbenchThemeAttribute: "dark", workbenchPaletteAttribute: "default-dark", workbenchAestheticAttribute: "minimal", workbenchFontpackAttribute: "system", workbenchTextSizeAttribute: "large"}
 	for key, value := range h.appearance.Defaults {
 		defaults[key] = value
 	}
 	for key, value := range attributes {
 		defaults[key] = value
 	}
-	if _, ok := attributes["data-palette"]; !ok && defaults["data-theme"] == "light" {
+	if _, ok := attributes[workbenchPaletteAttribute]; !ok && defaults[workbenchThemeAttribute] == workbenchLightMode {
 		if h.siteConfig == nil {
-			defaults["data-palette"] = "default-light"
+			defaults[workbenchPaletteAttribute] = "default-light"
 		}
 	}
 	attrs := ""
-	for _, key := range []string{"data-theme", "data-palette", "data-aesthetic", "data-fontpack", "data-text-size"} {
+	for _, key := range []string{workbenchThemeAttribute, workbenchPaletteAttribute, workbenchAestheticAttribute, workbenchFontpackAttribute, workbenchTextSizeAttribute} {
 		attrs += " " + key + `="` + html.EscapeString(defaults[key]) + `"`
 	}
 	styles := ""
@@ -490,16 +505,16 @@ func (h *Handler) document(result *plugins.StandaloneResult, attributes map[stri
 		styles += h.versionedStyleLink(name)
 	}
 	bg, fg := "#131721", "#e5e7eb"
-	if defaults["data-theme"] == "light" {
+	if defaults[workbenchThemeAttribute] == workbenchLightMode {
 		bg, fg = "#fff", "#1f2937"
 	}
-	initial := `<style>html{color-scheme:` + defaults["data-theme"] + `;background:` + bg + `}body{background:var(--color-background,` + bg + `);color:var(--color-text,` + fg + `)}</style>`
+	initial := `<style>html{color-scheme:` + defaults[workbenchThemeAttribute] + `;background:` + bg + `}body{background:var(--color-background,` + bg + `);color:var(--color-text,` + fg + `)}</style>`
 	return `<!doctype html><html lang="en"` + attrs + `><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Markdown preview</title>` + initial + styles + h.featureHead(result) + `</head><body><main class="main-content"><div class="content-wrapper"><div class="post-shell"><article class="post h-entry"><div class="post-content e-content">` + result.HTML + `</div></article></div></div></main>` + strings.ReplaceAll(result.BodyEndHTML, "<script", `<script data-markata-generated="true"`) + h.bridge + `</body></html>`
 }
 
 func isWorkspaceRoute(routePath, method string) bool {
 	switch {
-	case routePath == "/workspace" || routePath == "/workspace/templates" || routePath == "/workspace/image":
+	case routePath == "/workspace" || routePath == "/workspace/templates" || routePath == "/workspace/image" || routePath == "/workspace/index-status":
 		return method == http.MethodGet
 	case routePath == "/workspace/file":
 		return method == http.MethodGet || method == http.MethodPut || method == http.MethodPost
@@ -558,6 +573,16 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 		h.servePublishReview(w, r)
 		return
 	}
+	if r.URL.Path == "/workspace/index-status" {
+		if h.store == nil {
+			fail(w, http.StatusServiceUnavailable, "site index telemetry is unavailable")
+			return
+		}
+		if err := json.NewEncoder(w).Encode(h.store.IndexStatus()); err != nil {
+			return
+		}
+		return
+	}
 	if r.URL.Path == "/workspace/templates" {
 		templates, err := h.contentTemplates()
 		if err != nil {
@@ -614,6 +639,7 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 	var files []editorworkspace.File
 	var err error
+	listStarted := time.Now()
 	if r.URL.Query().Get("metadata") == "true" {
 		files, err = h.workspace.Files()
 	} else {
@@ -623,9 +649,21 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 		fail(w, 422, err.Error())
 		return
 	}
+	// A path/metadata request may spend additional time assembling configured
+	// feeds after reading the cached site index. Report both costs separately.
+	indexMS := float64(time.Since(listStarted).Microseconds()) / 1000
 	response := map[string]any{"files": files, "rootUri": h.languageConfig.RootURI}
 	if r.URL.Query().Get("metadata") == "true" {
-		response["feeds"] = h.workspaceFeeds()
+		feedsStarted := time.Now()
+		feeds := h.workspaceFeeds()
+		feedsDuration := time.Since(feedsStarted)
+		response["feeds"] = feeds
+		w.Header().Set("Server-Timing", fmt.Sprintf("site-index;dur=%.1f, site-feeds;dur=%.1f", indexMS, float64(feedsDuration.Microseconds())/1000))
+		if feedsDuration >= 200*time.Millisecond {
+			log.Printf("editor site feeds: %d feeds assembled in %s", len(feeds), feedsDuration.Round(time.Millisecond))
+		}
+	} else {
+		w.Header().Set("Server-Timing", fmt.Sprintf("site-paths;dur=%.1f", indexMS))
 	}
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		return

@@ -310,49 +310,118 @@ pre.line-numbers .line-numbers-rows > span::before {
 }
 
 @layer components {
-/* Compact, optional copy control. Positioned inside the existing <pre>
-   without adding another document-flow row or compromising no-JS reading. */
-.post-content pre.md-code-enhanced {
-  position: relative;
-  padding-inline-end: max(var(--space-4), 4.75rem);
+/* Fenced-code chrome stays useful when JavaScript is disabled. */
+.post-content .code-block {
+  margin: var(--space-5, 1.5rem) 0;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg, .75rem);
+  background: var(--color-surface);
 }
 
-.post-content pre.md-code-enhanced .md-code-copy {
+.post-content .code-block__header {
+  position: relative;
+  display: flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3, .75rem);
+  padding: .35rem .55rem .35rem 4rem;
+  border-bottom: 1px solid var(--color-border);
+  background: color-mix(in srgb, var(--color-surface) 72%, var(--color-background));
+}
+
+.post-content .code-block__header::before {
   position: absolute;
-  inset-block-start: .4rem;
-  inset-inline-end: .45rem;
-  z-index: 1;
-  padding: .25rem .45rem;
+  left: 1rem;
+  top: 50%;
+  width: .55rem;
+  height: .55rem;
+  border-radius: 50%;
+  background: var(--color-danger, #e78284);
+  box-shadow: 1rem 0 var(--color-warning, #e5c890), 2rem 0 var(--color-success, #a6c98b);
+  content: "";
+  transform: translateY(-50%);
+}
+
+.post-content .code-block__meta {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: .65rem;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs, .75rem);
+}
+
+.post-content .code-block__title {
+  overflow: hidden;
+  color: var(--color-text);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.post-content .code-block__lang {
+  flex: 0 0 auto;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.post-content .code-block > pre {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: var(--color-surface);
+}
+
+.post-content .code-block__copy {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: .4rem;
+  padding: .35rem .55rem;
   border: 1px solid var(--color-border);
   border-radius: var(--radius, .35rem);
-  background: var(--color-surface);
-  color: var(--color-text);
-  font: 500 .75rem/1.25 var(--font-sans, system-ui);
+  background: transparent;
+  color: var(--color-text-muted);
+  font: 500 var(--text-xs, .75rem)/1.25 var(--font-sans, system-ui);
   cursor: pointer;
   user-select: none;
 }
 
-.post-content pre.md-code-enhanced .md-code-copy:hover {
-  background: var(--color-background);
-  border-color: var(--color-text-muted);
+.post-content .code-block__copy svg {
+  width: .95rem;
+  height: .95rem;
 }
 
-.post-content pre.md-code-enhanced .md-code-copy:focus-visible {
+.post-content .code-block__copy:hover,
+.post-content .code-block__copy:focus-visible {
+  border-color: var(--color-primary);
+  background: var(--color-background);
+  color: var(--color-text);
+}
+
+.post-content .code-block__copy:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
 
-@media print {
-  .post-content pre .md-code-copy { display: none !important; }
+.post-content .code-block__copy--done {
+  color: var(--color-success, var(--color-primary));
 }
-/* Reserve the top-right corner for Copy without overlapping the language
-   marker already provided by the base theme. */
-.post-content pre.md-code-enhanced[data-language]::before {
-  inset-inline-end: 5.4rem;
-  right: auto;
-  max-width: calc(100% - 8rem);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+
+@media (max-width: 480px) {
+  .post-content .code-block__header {
+    padding-inline-start: 3.5rem;
+  }
+
+  .post-content .code-block__copy span {
+    display: none;
+  }
+}
+
+@media print {
+  .post-content .code-block__copy { display: none !important; }
 }
 }

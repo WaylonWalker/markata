@@ -68,7 +68,7 @@ All editors MUST:
 6. Omit starter metadata from generated frontmatter.
 7. Preserve all other starter frontmatter values and body content.
 8. Serialize only fields already present in the selected starter or values
-   explicitly overridden during creation; do not inject implicit defaults.
+   explicitly overridden during creation, except for the CLI creation defaults below.
 9. Reject paths that escape the site root and report invalid starter metadata.
 
 Site-authored starters override a config starter or built-in starter with
@@ -105,10 +105,19 @@ private, and authors. The precedence order is:
 3. Site-configured template and site-level defaults.
 4. Markata built-in defaults.
 
-An editor MAY show inherited or computed defaults in its controls, but MUST NOT
-serialize them into new content unless the user explicitly selects an override.
-Unselected fields preserve the starter's values or remain absent. For example,
-when a starter specifies only `title: "{{title}}"`, creating a page should
+Except for the CLI creation defaults below, an editor MUST NOT serialize inherited
+defaults unless the user explicitly selects an override.
+An editor MAY show those defaults in its controls.
+The `new` CLI has two creation defaults for every template and interaction mode.
+It writes the current local `date` when the starter date is absent, null, or blank.
+It preserves an explicit starter date.
+It writes `published: true` when no publication setting exists.
+It preserves `published: false` and supplies `published: false` for an explicit `draft: true`.
+Explicit publication flags retain priority.
+Other absent fields remain absent.
+
+Other unselected fields preserve the starter's values or remain absent.
+In the web workbench, when a starter specifies only `title: "{{title}}"`, creating a page must
 write that title but MUST NOT insert `slug`, `date`, `published`, `draft`,
 `tags`, or `description` keys. The title supplied for a file path does not
 require an absent `title` frontmatter field to be created. A missing date

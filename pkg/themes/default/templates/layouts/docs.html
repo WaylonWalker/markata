@@ -36,7 +36,7 @@
 {% set has_toc = config.toc.enabled and resolved_doc_sidebar.enabled and post.Extra.toc %}
 <div class="layout-container{% if has_toc %} layout-container--with-toc{% endif %}{% if has_toc and not config.sidebar.enabled %} layout-container--toc-only{% endif %}{% if not config.sidebar.enabled %} layout-container--content-only{% endif %}{% if config.layout.docs.sidebar_position == 'right' %} layout-container--sidebar-right{% endif %}" style="--layout-sidebar-width: {{ config.layout.docs.sidebar_width | default:'280px' }}; --layout-content-max-width: {{ config.layout.docs.content_max_width | default:'800px' }}; --layout-toc-width: {{ config.layout.docs.toc_width | default:'220px' }}">
   {% if config.sidebar.enabled %}
-  <aside class="layout-sidebar layout-sidebar--{{ config.layout.docs.sidebar_position | default:'left' }}" id="docs-sidebar" data-collapsible="{{ config.layout.docs.sidebar_collapsible | default:true | yesno:'true,false' }}" data-open="{{ config.layout.docs.sidebar_default_open | default:true | yesno:'true,false' }}" style="--sidebar-width: {{ config.layout.docs.sidebar_width | default:'280px' }}">
+  <aside class="layout-sidebar layout-sidebar--{{ config.layout.docs.sidebar_position | default:'left' }}" id="docs-sidebar" data-collapsible="{{ config.layout.docs.sidebar_collapsible | yesno:'true,false' }}" data-open="{{ config.layout.docs.sidebar_default_open | yesno:'true,false' }}" style="--sidebar-width: {{ config.layout.docs.sidebar_width | default:'280px' }}">
     <div class="sidebar-content">
       {% include "components/sidebar_nav.html" %}
     </div>
