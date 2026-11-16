@@ -30,6 +30,12 @@ not to site-author build or deployment workflows.
 - macOS PRs MUST retain the short suite. Main-branch pushes, scheduled and
   manually dispatched CI MUST run the full Windows suite; scheduled/manual
   CI MUST continue to run the full macOS suite.
+- The Linux site integration shard MAY use multiple independent Go test
+  processes. Test selection MUST cover each runnable top-level test, example,
+  and fuzz seed exactly once across all shards; no empty or silently skipped
+  shards are permitted. Each shard MUST retain race detection, coverage
+  generation, failure reporting, and timing artifacts. The `test-linux`
+  aggregate MUST fail when any site shard fails or is cancelled.
 - Tag-driven releases MUST gate publication on full Linux race tests AND full
   native macOS and Windows test suites from the exact tagged source revision,
   not merely the previous main-branch CI run.
