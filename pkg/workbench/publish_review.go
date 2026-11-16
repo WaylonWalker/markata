@@ -139,6 +139,8 @@ func readChangedWorkspaceFile(ctx context.Context, root, resolvedPath, relative 
 	if err != nil || strings.TrimSpace(status) == "" {
 		return "", errors.New("file has no Git changes to compare")
 	}
+	// resolvedPath comes from publishPath, which verifies workspace containment.
+	// #nosec G703 -- publishPath has validated the resolved path against the workspace root.
 	file, err := os.Open(resolvedPath)
 	if err != nil {
 		return "", errors.New("cannot read current file")

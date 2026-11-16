@@ -17,16 +17,25 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const (
+	contentTemplateNoteName    = "note"
+	contentTemplatePingName    = "ping"
+	contentTemplateArticleName = "article"
+	contentTemplateImageName   = "image"
+	contentTemplateGuideName   = "guide"
+	contentTemplateInlineName  = "inline"
+)
+
 var contentTemplateAliases = map[string][]string{
-	"article": {"blog-post", "essay", "tutorial"},
-	"note":    {"thought", "status", "tweet"},
-	"photo":   {"shot", "shots", "image", "gallery"},
-	"video":   {"clip", "cast", "stream"},
-	"link":    {"bookmark", "til", "stars"},
-	"quote":   {"quotation"},
-	"guide":   {"series", "step", "chapter"},
-	"inline":  {"gratitude", "micro"},
-	"contact": {"character", "person"},
+	contentTemplateArticleName: {"blog-post", "essay", "tutorial"},
+	contentTemplateNoteName:    {"thought", "status", "tweet"},
+	tmplPhoto:                  {"shot", "shots", contentTemplateImageName, "gallery"},
+	tmplVideo:                  {"clip", "cast", "stream"},
+	tmplLink:                   {"bookmark", "til", "stars"},
+	tmplQuote:                  {"quotation"},
+	contentTemplateGuideName:   {"series", "step", "chapter"},
+	contentTemplateInlineName:  {"gratitude", "micro"},
+	tmplContact:                {"character", "person"},
 }
 
 var (
@@ -133,21 +142,21 @@ func builtinTemplates() map[string]ContentTemplate {
 			Body:   "Write your article here...",
 			Source: "builtin",
 		},
-		"note": {
-			Name:      "note",
+		contentTemplateNoteName: {
+			Name:      contentTemplateNoteName,
 			Directory: "pages/note",
 			Frontmatter: map[string]interface{}{
-				"template": "note",
+				"template": contentTemplateNoteName,
 			},
 			Body:   "A quick note...",
 			Source: "builtin",
 		},
-		"ping": {
-			Name:      "ping",
+		contentTemplatePingName: {
+			Name:      contentTemplatePingName,
 			Directory: "pages/ping",
 			Frontmatter: map[string]interface{}{
-				"template":    "ping",
-				"templateKey": "ping",
+				"template":    contentTemplatePingName,
+				"templateKey": contentTemplatePingName,
 			},
 			Body:   "A quick ping...",
 			Source: "builtin",
@@ -341,7 +350,7 @@ func loadTemplates() map[string]ContentTemplate {
 			}
 		}
 		for name, mode := range cfg.ContentTemplates.FilenameMode {
-			if mode != "title" && mode != "numbered" {
+			if mode != listSortTitle && mode != "numbered" {
 				continue
 			}
 			if template, exists := templates[name]; exists {

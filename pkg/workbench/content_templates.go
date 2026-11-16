@@ -16,6 +16,12 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const (
+	contentFilenameModeTitle    = "title"
+	contentFilenameModeNumbered = "numbered"
+	contentTemplateStatusAlias  = "status"
+)
+
 type contentTemplate struct {
 	ID                string   `json:"id"`
 	Name              string   `json:"name"`
@@ -48,6 +54,16 @@ func (h *Handler) contentTemplates() ([]contentTemplate, error) {
 		configured := h.siteConfig.ContentTemplates
 		if configured.Directory != "" {
 			directory = configured.Directory
+		}
+		// Placement config supplies defaults for built-ins. More specific
+		// config and Markdown starter directories take precedence.
+		for i := range templates {
+			if placement, ok := configured.Placement[contentTemplateKey(templates[i])]; ok {
+				if !safeStarterOutputDirectory(placement) {
+					return nil, fmt.Errorf("unsafe content starter placement %q", placement)
+				}
+				templates[i].Directory = placement
+			}
 		}
 		for _, configTemplate := range configured.Templates {
 			if strings.TrimSpace(configTemplate.Name) == "" {
@@ -97,24 +113,16 @@ func (h *Handler) contentTemplates() ([]contentTemplate, error) {
 	}
 	for i := range templates {
 		key := contentTemplateKey(templates[i])
-		if h.siteConfig != nil {
-			if placement, ok := h.siteConfig.ContentTemplates.Placement[key]; ok {
-				if !safeStarterOutputDirectory(placement) {
-					return nil, fmt.Errorf("unsafe content starter placement %q", placement)
-				}
-				templates[i].Directory = placement
-			}
-		}
-		mode := "title"
+		mode := contentFilenameModeTitle
 		if templates[i].NumberedByDefault {
-			mode = "numbered"
+			mode = contentFilenameModeNumbered
 		}
 		if h.siteConfig != nil {
 			if configuredMode, ok := h.siteConfig.ContentTemplates.FilenameMode[key]; ok {
 				mode = configuredMode
 			}
 		}
-		if mode != "title" && mode != "numbered" {
+		if mode != contentFilenameModeTitle && mode != contentFilenameModeNumbered {
 			return nil, fmt.Errorf("starter %q has unsupported filename mode %q", templates[i].Name, mode)
 		}
 		templates[i].FilenameMode = mode
@@ -197,7 +205,7 @@ func builtinContentTemplates(today string) []contentTemplate {
 		{ID: "builtin:docs", Name: "Docs", Description: "A documentation page.", Directory: "docs", Source: "---\ntemplate: docs\n---\n\nWrite your documentation here...\n"},
 		{ID: "builtin:article", Name: "Article", Description: "A long-form article.", Directory: "pages/article", Aliases: []string{"blog-post", "essay", "tutorial"}, Source: "---\ntemplate: article\n---\n\nWrite your article here...\n"},
 		{ID: "builtin:blog-post", Name: "Blog post", Description: "A long-form article with title, date, and tags.", Directory: "pages/blog", Source: fmt.Sprintf("---\ntemplateKey: blog-post\ntitle: \"{{title}}\"\ndate: %s\npublished: false\ntags: []\n---\n\n# {{title}}\n\nStart writing here.\n", today)},
-		{ID: "builtin:note", Name: "Note", Description: "A quick note.", Directory: "pages/note", Aliases: []string{"thought", "status", "tweet"}, Source: "---\ntemplate: note\n---\n\nA quick note...\n"},
+		{ID: "builtin:note", Name: "Note", Description: "A quick note.", Directory: "pages/note", Aliases: []string{"thought", contentTemplateStatusAlias, "tweet"}, Source: "---\ntemplate: note\n---\n\nA quick note...\n"},
 		{ID: "builtin:ping", Name: "Ping", Description: "A short ping post.", Directory: "pages/ping", NumberPrefix: "ping", NumberedByDefault: true, Source: "---\ntemplate: ping\ntemplateKey: ping\n---\n\nA quick ping...\n"},
 		{ID: "builtin:thought", Name: "Thought", Description: "A short link or idea with a little context.", Directory: "pages/thoughts", Source: fmt.Sprintf("---\ntemplateKey: thought\ntitle: \"{{title}}\"\ndate: %s\npublished: false\ntags:\n  - thought\n---\n\nAdd a link or thought here.\n", today)},
 		{ID: "builtin:photo", Name: "Photo", Description: "A photo post with an image path and caption.", Directory: "pages/photo", Aliases: []string{"shots", "image", "gallery"}, Source: "---\ntemplate: photo\nimage: \"\"\n---\n\nPhoto caption...\n"},
@@ -369,8 +377,7 @@ func parseSiteStarterMetadata(relative, name string, frontmatter []byte) (siteSt
 	}, nil
 }
 
-func siteStarterNumbering(relative string, starter map[string]any) (string, bool, error) {
-	prefix := ""
+func siteStarterNumbering(relative string, starter map[string]any) (prefix string, numberedByDefault bool, err error) {
 	if raw, exists := starter["number_prefix"]; exists {
 		value, ok := raw.(string)
 		if !ok || !validNumberPrefix(value) {
@@ -378,7 +385,7 @@ func siteStarterNumbering(relative string, starter map[string]any) (string, bool
 		}
 		prefix = value
 	}
-	numberedByDefault := false
+	numberedByDefault = false
 	if raw, exists := starter["numbered_by_default"]; exists {
 		value, ok := raw.(bool)
 		if !ok {

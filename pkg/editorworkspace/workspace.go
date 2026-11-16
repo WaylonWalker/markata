@@ -3,6 +3,7 @@ package editorworkspace
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -396,7 +397,10 @@ func (w *Workspace) CreateWithImage(path, source, imageName, contentType string,
 	if err := os.Link(sourceTemp, sourceTarget); err != nil {
 		removeErr := os.Remove(imageTarget)
 		if removeErr != nil {
-			return "", fmt.Errorf("create workspace source: %w (also failed to remove new image: %v)", err, removeErr)
+			return "", errors.Join(
+				fmt.Errorf("create workspace source: %w", err),
+				fmt.Errorf("remove new image: %w", removeErr),
+			)
 		}
 		return "", fmt.Errorf("create workspace source: %w", err)
 	}
@@ -412,15 +416,25 @@ func (w *Workspace) SetContentTemplateDefaults(name, directory, filenameMode str
 	if cleanDirectory == ".." || strings.HasPrefix(cleanDirectory, ".."+string(filepath.Separator)) {
 		return fmt.Errorf("content template directory must stay inside the workspace")
 	}
-	configName := "markata-go.toml"
+	configName, err := w.contentTemplateConfigName()
+	if err != nil {
+		return err
+	}
+	return w.writeContentTemplateDefaults(configName, name, filepath.ToSlash(cleanDirectory), filenameMode)
+}
+
+func (w *Workspace) contentTemplateConfigName() (string, error) {
 	for _, candidate := range []string{"markata-go.toml", "markata-go.yaml", "markata-go.yml", "markata-go.json"} {
 		if _, err := os.Lstat(filepath.Join(w.root, candidate)); err == nil {
-			configName = candidate
-			break
+			return candidate, nil
 		} else if !os.IsNotExist(err) {
-			return fmt.Errorf("inspect site configuration: %w", err)
+			return "", fmt.Errorf("inspect site configuration: %w", err)
 		}
 	}
+	return "markata-go.toml", nil
+}
+
+func (w *Workspace) writeContentTemplateDefaults(configName, name, directory, filenameMode string) error {
 	target := filepath.Join(w.root, configName)
 	existing, err := os.Lstat(target)
 	if err != nil && !os.IsNotExist(err) {
@@ -439,7 +453,11 @@ func (w *Workspace) SetContentTemplateDefaults(name, directory, filenameMode str
 			return fmt.Errorf("read site configuration: %w", err)
 		}
 	}
-	temporary, err := os.CreateTemp(w.root, ".markata-settings-*"+filepath.Ext(configName))
+	return writeContentTemplateConfig(w.root, configName, target, name, directory, filenameMode, source, mode, exists)
+}
+
+func writeContentTemplateConfig(root, configName, target, name, directory, filenameMode string, source []byte, mode os.FileMode, exists bool) error {
+	temporary, err := os.CreateTemp(root, ".markata-settings-*"+filepath.Ext(configName))
 	if err != nil {
 		return fmt.Errorf("create site settings temporary file: %w", err)
 	}
@@ -460,7 +478,7 @@ func (w *Workspace) SetContentTemplateDefaults(name, directory, filenameMode str
 	}
 	placementKey := "content_templates.placement." + name
 	modeKey := "content_templates.filename_mode." + name
-	if err := config.SetValueInFileDirect(temporaryPath, placementKey, filepath.ToSlash(cleanDirectory)); err != nil {
+	if err := config.SetValueInFileDirect(temporaryPath, placementKey, directory); err != nil {
 		return fmt.Errorf("update content template placement: %w", err)
 	}
 	if err := config.SetValueInFileDirect(temporaryPath, modeKey, filenameMode); err != nil {
@@ -589,8 +607,10 @@ func writeTempBytes(directory, pattern string, data []byte) (string, error) {
 		return "", fmt.Errorf("create workspace temporary file: %w", err)
 	}
 	tmpPath := tmp.Name()
-	if err := tmp.Chmod(0o644); err == nil {
+	if chmodErr := tmp.Chmod(0o644); chmodErr == nil {
 		_, err = tmp.Write(data)
+	} else {
+		err = chmodErr
 	}
 	if err == nil {
 		err = tmp.Sync()

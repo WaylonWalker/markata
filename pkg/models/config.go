@@ -2878,7 +2878,7 @@ type ContentTemplatesConfig struct {
 	// FilenameMode maps template names to "title" or "numbered" filenames.
 	FilenameMode map[string]string `json:"filename_mode" yaml:"filename_mode" toml:"filename_mode"`
 
-	// ImageUpload selects "auto", "local", or "dropper" for uploaded images.
+	// ImageUpload selects the upload provider. Valid values are "auto", "local", and "dropper".
 	ImageUpload string `json:"image_upload" yaml:"image_upload" toml:"image_upload"`
 
 	// DropperUploadURL overrides the default Dropper JSON upload endpoint.

@@ -11,7 +11,10 @@ import (
 )
 
 // Local workbench only. Hosted draft discard must use the durable sync journal.
-const discardVersionKey = "version"
+const (
+	discardVersionKey  = "version"
+	workspaceStatusKey = "status"
+)
 
 type discardRequest struct {
 	Path    string `json:"path"`
@@ -84,8 +87,8 @@ func (h *Handler) servePublishDiscard(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(map[string]string{
-		"status":          "restored-local",
-		discardVersionKey: editorworkspace.SourceVersion(baseline),
+		workspaceStatusKey: "restored-local",
+		discardVersionKey:  editorworkspace.SourceVersion(baseline),
 	}); err != nil {
 		return
 	}
@@ -96,7 +99,7 @@ func (h *Handler) servePublishDiscard(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) serveUntrackedDiscard(
 	ctx context.Context, w http.ResponseWriter, req discardRequest, root, relative string,
 ) {
-	status, statusErr := gitOutput(ctx, root, "status", "--porcelain=v1", "-z", "--untracked-files=all", "--", relative)
+	status, statusErr := gitOutput(ctx, root, workspaceStatusKey, "--porcelain=v1", "-z", "--untracked-files=all", "--", relative)
 	if statusErr != nil || status != "?? "+relative+"\x00" {
 		fail(w, http.StatusConflict, "cannot discard: file is tracked, staged, ignored, or Git status is uncertain")
 		return
@@ -118,7 +121,7 @@ func (h *Handler) serveUntrackedDiscard(
 	}
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(map[string]string{"status": "removed-local"}); err != nil {
+	if err := json.NewEncoder(w).Encode(map[string]string{workspaceStatusKey: "removed-local"}); err != nil {
 		return
 	}
 }
