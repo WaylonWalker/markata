@@ -77,7 +77,7 @@ All editors MUST:
 6. Omit starter metadata from generated frontmatter.
 7. Preserve all other starter frontmatter values and body content.
 8. Serialize only fields already present in the selected starter or values
-   explicitly overridden during creation; do not inject implicit defaults.
+   explicitly overridden during creation, except for the CLI creation defaults below.
 9. Reject paths that escape the site root and report invalid starter metadata.
 
 The web workbench MUST support an optional date override when creating a post.
@@ -160,7 +160,8 @@ For example, when a starter specifies only `title: "{{title}}"`, creating a
 page writes the title, current local date, and `published: true`. It MUST NOT
 insert `slug`, `draft`, `tags`, or `description` keys. The title supplied for a
 file path does not require an absent `title` frontmatter field to be created.
-Explicit CLI flags and user-selected editor values override starter values.
+Explicit CLI flags, including publication flags, and user-selected editor
+values override starter values.
 
 ## Editor extensions
 
