@@ -168,6 +168,9 @@ jobs:
   test:
     name: Test
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+      pull-requests: read
     strategy:
       fail-fast: false
       matrix:
@@ -181,14 +184,76 @@ jobs:
           cache: true
       - name: Download dependencies
         run: go mod download
-      - name: Run tests (windows short)
-        if: (github.event_name == 'pull_request' || github.event_name == 'push') && matrix.os == 'windows-latest'
+      # Keep the required Windows check name stable for branch protection and
+      # Dependabot, but only pay for the full suite on Windows-sensitive PRs.
+      # The PR files API works for forks and fails closed if classification fails.
+      - name: Detect Windows-sensitive PR changes
+        id: windows_scope
+        if: github.event_name == 'pull_request' && matrix.os == 'windows-latest'
+        uses: dorny/paths-filter@v4
+        with:
+          filters: |
+            windows:
+              - '**/*_windows.go'
+              - '**/*_windows_test.go'
+              - '**/*windows*.go'
+              - '**/*.ps1'
+              - '.github/workflows/ci.yml'
+              - '.github/workflows/release.yml'
+              - '.github/workflows/pypi-go-wheels.yml'
+              - '.goreleaser.yml'
+              - 'go.mod'
+              - 'go.sum'
+              - 'install.sh'
+              - 'static/install.sh'
+              - 'internal/testbinary/**'
+              - 'pkg/sourcegit/**'
+              - 'pkg/editorial/**'
+              - 'pkg/editorsync/**'
+              - 'pkg/editorworkspace/**'
+              - 'pkg/editorhub/**'
+              - 'pkg/buildlab/process_*.go'
+              - 'pkg/servefix/**'
+              - 'pkg/serveopen/**'
+              - 'pkg/builderadmin/*windows*.go'
+              - 'cmd/markata-go/cmd/update.go'
+      - name: Require classified Windows PR scope
+        if: github.event_name == 'pull_request' && matrix.os == 'windows-latest'
+        shell: pwsh
+        env:
+          WINDOWS_SCOPE: ${{ steps.windows_scope.outputs.windows }}
+        run: |
+          if ($env:WINDOWS_SCOPE -ne 'true' -and $env:WINDOWS_SCOPE -ne 'false') {
+            Write-Error "Cannot classify Windows PR changes; refusing to pass the required check"
+            exit 1
+          }
+      - name: Run Windows PR CLI smoke and focused tests
+        if: github.event_name == 'pull_request' && matrix.os == 'windows-latest' && steps.windows_scope.outputs.windows == 'false'
+        shell: pwsh
+        run: |
+          go build -o "$env:RUNNER_TEMP\markata.exe" ./cmd/markata
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          go build -o "$env:RUNNER_TEMP\markata-go.exe" ./cmd/markata-go
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & "$env:RUNNER_TEMP\markata.exe" version
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & "$env:RUNNER_TEMP\markata-go.exe" version
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & "$env:RUNNER_TEMP\markata.exe" --help | Out-Null
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          go test -short ./internal/testbinary ./pkg/config ./pkg/sourcegit
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Run Windows full short suite for platform-sensitive PRs
+        if: github.event_name == 'pull_request' && matrix.os == 'windows-latest' && steps.windows_scope.outputs.windows == 'true'
         run: go test -v -short ./...
+      - name: Run Windows full suite on main, nightly, and manual CI
+        if: github.event_name != 'pull_request' && matrix.os == 'windows-latest'
+        run: go test -v ./...
       - name: Run tests (macOS short)
         if: (github.event_name == 'pull_request' || github.event_name == 'push') && matrix.os == 'macos-latest'
         run: go test -v -short ./...
-      - name: Run tests (non-linux full)
-        if: github.event_name != 'pull_request' && github.event_name != 'push'
+      - name: Run macOS full suite on nightly and manual CI
+        if: github.event_name != 'pull_request' && github.event_name != 'push' && matrix.os == 'macos-latest'
         run: go test -v ./...
 
   test-linux-core:

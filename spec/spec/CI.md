@@ -20,8 +20,19 @@ not to site-author build or deployment workflows.
 - Path selection MUST happen at job level, not by skipping the PR workflow;
   unrelated changes must still produce the ordinary lint and test checks.
 - All three Linux race/coverage shards, their `test-linux` aggregate check, and
-  macOS/Windows tests MUST remain. One existing Linux shard MUST smoke-test its
-  already-built CLI with `version` and `--help`; no extra build job is needed.
+  macOS/Windows test jobs MUST remain. One existing Linux shard MUST smoke-test
+  its already-built CLI with `version` and `--help`; no extra build job is needed.
+- PRs MUST keep the existing required Windows check identity. Ordinary PRs
+  MUST run a Windows CLI build, version/help smoke checks, and focused portable
+  tests; PRs touching Windows-specific files, platform-sensitive filesystem
+  or process code, installer/package inputs, or platform CI workflows MUST
+  run the existing full Windows short suite. Change detection MUST fail closed.
+- macOS PRs MUST retain the short suite. Main-branch pushes, scheduled and
+  manually dispatched CI MUST run the full Windows suite; scheduled/manual
+  CI MUST continue to run the full macOS suite.
+- Tag-driven releases MUST gate publication on full Linux race tests AND full
+  native macOS and Windows test suites from the exact tagged source revision,
+  not merely the previous main-branch CI run.
 - PR CLI tests MUST retain focused Build Lab regressions but skip the expensive
   observational `TestBuildLab_LinkedAndFixtureMutationsCharacterizeProduct`.
   Main pushes and daily/manual CI MUST continue to include that observation.

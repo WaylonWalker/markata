@@ -24,9 +24,34 @@ Use `just ci-diagnose RUN_ID` for read-only failed-job log classification; compl
 
 CI runs on pushes and pull requests targeting `main`/`master`, daily at 08:23 UTC,
 and through **Actions → CI → Run workflow**. Lint, all three Linux race/coverage
-shards, their aggregate `Test (ubuntu-latest, 1.27)` check, and macOS/Windows tests
-remain active. The CLI/search shard smoke-tests its existing binary with
-`version` and `--help`; there is no separate duplicate build.
+shards, their aggregate `Test (ubuntu-latest, 1.27)` check, and macOS/Windows
+test jobs remain active. The CLI/search shard smoke-tests its existing binary
+with `version` and `--help`; there is no separate duplicate build.
+
+### Native platform cadence
+
+| Trigger | macOS | Windows |
+| --- | --- | --- |
+| Ordinary PR | Full Go short suite | Build both CLI binaries; version/help smoke; focused `testbinary`, config and source-git Go tests |
+| Windows-sensitive PR | Full Go short suite | Full Go short suite |
+| Push to `main`/`master` | Full Go short suite | Full Go suite |
+| Scheduled/manual CI | Full Go suite | Full Go suite |
+| Version-tag release | Full Go suite on exact tag | Full Go suite on exact tag |
+
+Windows-sensitive PRs include Windows implementation/test files, PowerShell,
+installation/release workflows, Go dependencies and platform-sensitive process
+or filesystem packages. The Windows job uses the PR changed-files API (including
+forks) and **fails closed** if detection fails. It keeps the required check name
+`Test (windows-latest, 1.27)`, preserving branch rules and Dependabot auto-merge.
+
+The `Release` workflow must wait for its Linux race suite **and** full native
+macOS/Windows suites on the tagged revision before publishing. A successful
+nightly or main-branch run alone is not release approval. No Windows job or
+check is removed from branch protection.
+
+These changes affect product maintainer CI, not the `markata-go-site`
+authoring skill. Track actual end-to-end PR duration, not only individual job
+durations, before claiming a latency improvement.
 
 Specialized checks use job-level changed-file filters on PRs and pushes:
 
