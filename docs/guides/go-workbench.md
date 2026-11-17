@@ -23,6 +23,9 @@ The Go server calls Markata's standalone renderer directly. It starts no Python 
 It uses the same Markdown renderer as the [Python API](./python-renderer/) and [FastAPI editor](./fastapi-editor/).
 The preview does not build a site. The language service indexes Markdown and reads workspace configuration for existing mention support.
 
+Use the [Excalidraw canvas](excalidraw-editor.md) to create and edit drawings
+inside a Markdown page.
+
 The preview shows its rendered article and accepts updates before deferred
 feature initialization finishes. Mermaid and other preview features can finish
 initializing afterward. Diagnostics report script readiness and full iframe

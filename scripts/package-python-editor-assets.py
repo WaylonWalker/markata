@@ -14,10 +14,19 @@ assignment = next(node for node in ast.parse(source).body if isinstance(node, as
                   and any(isinstance(target, ast.Name) and target.id == 'ASSET_BUNDLE' for target in node.targets))
 output = io.BytesIO()
 with zipfile.ZipFile(io.BytesIO(base64.b64decode(assignment.value.value))) as archive:
-    names = set(archive.namelist()) | {'search-history.js', 'favicon.ico', 'site-tree.js', 'site-tree.css', 'site-tree.LICENSE'}
+    asset_root = root / 'pkg/workbench/web'
+    extra = {
+        'search-history.js', 'favicon.ico', 'site-tree.js', 'site-tree.css',
+        'site-tree.LICENSE', 'excalidraw-workbench.js', 'excalidraw-workbench.css',
+        'excalidraw-editor.js', 'excalidraw-editor.css',
+    }
+    fonts = asset_root / 'excalidraw-fonts'
+    if fonts.is_dir():
+        extra.update(path.relative_to(asset_root).as_posix() for path in fonts.rglob('*') if path.is_file())
+    names = {name for name in archive.namelist() if not name.startswith('excalidraw-fonts/')} | extra
     with zipfile.ZipFile(output, 'w', zipfile.ZIP_DEFLATED) as updated:
         for name in sorted(names):
-            asset = root / 'pkg/workbench/web' / name
+            asset = asset_root / name
             info = zipfile.ZipInfo(name, (2026, 10, 29, 0, 0, 0))
             info.compress_type = zipfile.ZIP_DEFLATED
             updated.writestr(info, asset.read_bytes() if asset.is_file() else archive.read(name))

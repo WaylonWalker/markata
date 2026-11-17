@@ -66,6 +66,7 @@ The docs explain *why* and *usage* - user-friendly guides, examples, tutorials.
 | [SPEC.md](./spec/SPEC.md) | Core architecture, CLI, concurrency |
 | [EDITORIAL_HISTORY.md](./spec/EDITORIAL_HISTORY.md) | Editorial history, lazy source comparisons, and editor credits |
 | [EDITORIAL_AUTHORING.md](./spec/EDITORIAL_AUTHORING.md) | Isolated attributed commits for humans and agents |
+| [EXCALIDRAW.md](./spec/EXCALIDRAW.md) | Excalidraw scene format and workbench authoring behavior |
 | [CLI_LIST.md](./spec/CLI_LIST.md) | CLI list command and output formats |
 | [CLI_SITE_DIR.md](./spec/CLI_SITE_DIR.md) | Cross-directory site selection and agent workflows |
 | [CLI_UX.md](./spec/CLI_UX.md) | Shared CLI UX rules for streams, color, and prompts |
