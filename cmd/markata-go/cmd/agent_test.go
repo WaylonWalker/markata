@@ -1080,14 +1080,14 @@ func TestRunAgentRemoveCommand_RejectsNonSkillDirectory(t *testing.T) {
 	}
 }
 
-func prepareGlobalAgentTest(t *testing.T) (string, string) {
+func prepareGlobalAgentTest(t *testing.T) (home string, binDir string) {
 	t.Helper()
-	home := t.TempDir()
+	home = t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
 	t.Setenv("HOMEDRIVE", filepath.VolumeName(home))
 	t.Setenv("HOMEPATH", strings.TrimPrefix(home, filepath.VolumeName(home)))
-	binDir := t.TempDir()
+	binDir = t.TempDir()
 	t.Setenv("PATH", binDir)
 	return home, binDir
 }
