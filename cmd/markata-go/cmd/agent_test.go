@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -1076,5 +1077,233 @@ func TestRunAgentRemoveCommand_RejectsNonSkillDirectory(t *testing.T) {
 
 	if _, statErr := os.Stat(notASkill); os.IsNotExist(statErr) {
 		t.Fatal("expected non-skill directory to be preserved")
+	}
+}
+
+
+func prepareGlobalAgentTest(t *testing.T) string {
+	t.Helper()
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+	t.Setenv("HOMEDRIVE", filepath.VolumeName(home))
+	t.Setenv("HOMEPATH", strings.TrimPrefix(home, filepath.VolumeName(home)))
+	binDir := t.TempDir()
+	t.Setenv("PATH", binDir)
+	return binDir
+}
+
+func fakeAgentExecutable(t *testing.T, binDir, name string) {
+	t.Helper()
+	if runtime.GOOS == "windows" {
+		name += ".exe"
+	}
+	if err := os.WriteFile(filepath.Join(binDir, name), []byte("fake executable"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func globalAgentTestDestination(t *testing.T, name string) string {
+	t.Helper()
+	target, err := normalizeAgentInstallTarget(name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	dest, err := agentSkillInstallDir("", agentskill.SiteSkillName, target, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return dest
+}
+
+func TestDetectAgentTargetsOnPath_OnlyExecutables(t *testing.T) {
+	binDir := prepareGlobalAgentTest(t)
+	if got := detectAgentTargetsOnPath(); len(got) != 0 {
+		t.Fatalf("got unexpected agents with empty PATH: %v", got)
+	}
+	// A shared directory does not imply that any executable is installed.
+	if err := os.MkdirAll(filepath.Join(os.Getenv("HOME"), ".agents", "skills"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if got := detectAgentTargetsOnPath(); len(got) != 0 {
+		t.Fatalf("shared skill directory was mistaken for an executable: %v", got)
+	}
+	fakeAgentExecutable(t, binDir, "codex")
+	fakeAgentExecutable(t, binDir, "claude")
+	names := make(map[string]bool)
+	for _, target := range detectAgentTargetsOnPath() {
+		names[target.Name] = true
+	}
+	if len(names) != 2 || !names["codex"] || !names["claude-code"] {
+		t.Fatalf("detected agents = %v; want codex and claude-code", names)
+	}
+}
+
+func TestInstallAllDetectedAgentTools_Global(t *testing.T) {
+	binDir := prepareGlobalAgentTest(t)
+	fakeAgentExecutable(t, binDir, "codex")
+	fakeAgentExecutable(t, binDir, "claude")
+
+	previousAgent, previousLegacy := agentInstallAgent, agentInstallLegacyTarget
+	previousName, previousDryRun := agentInstallName, agentInstallDryRun
+	previousGlobal, previousAll := agentInstallGlobal, agentInstallAllTools
+	previousCommand := currentCmd
+	t.Cleanup(func() {
+		agentInstallAgent, agentInstallLegacyTarget = previousAgent, previousLegacy
+		agentInstallName, agentInstallDryRun = previousName, previousDryRun
+		agentInstallGlobal, agentInstallAllTools = previousGlobal, previousAll
+		currentCmd = previousCommand
+	})
+	agentInstallAgent = nil
+	agentInstallLegacyTarget = ""
+	agentInstallName = agentskill.SiteSkillName
+	agentInstallDryRun = false
+	agentInstallGlobal = false
+	agentInstallAllTools = true
+
+	command := &cobra.Command{Use: "install"}
+	command.SetOut(new(bytes.Buffer))
+	if err := runAgentInstallCommand(command, nil); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"codex", "claude-code"} {
+		if _, err := os.Stat(filepath.Join(globalAgentTestDestination(t, name), "SKILL.md")); err != nil {
+			t.Errorf("missing skill for %s: %v", name, err)
+		}
+	}
+	if err := runAgentInstallCommand(command, []string{"."}); err == nil {
+		t.Fatal("expected --all-installed-tools to reject a site path")
+	}
+	agentInstallAgent = []string{"codex"}
+	if err := runAgentInstallCommand(command, nil); err == nil {
+		t.Fatal("expected --all-installed-tools to reject an explicit --agent")
+	}
+}
+
+func TestDetectedGlobalAgentUpdate_SkipsMissingAndProtectsOtherDirectories(t *testing.T) {
+	binDir := prepareGlobalAgentTest(t)
+	fakeAgentExecutable(t, binDir, "codex")
+	fakeAgentExecutable(t, binDir, "claude")
+	codex := globalAgentTestDestination(t, "codex")
+	if _, err := installAgentSkill(codex, "codex", agentScopeGlobal, false, false, Version); err != nil {
+		t.Fatal(err)
+	}
+	skillPath := filepath.Join(codex, "SKILL.md")
+	if err := os.WriteFile(skillPath, []byte("modified"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	claude := globalAgentTestDestination(t, "claude-code")
+
+	previousName, previousDryRun, previousCommand := agentUpdateName, agentUpdateDryRun, currentCmd
+	t.Cleanup(func() {
+		agentUpdateName, agentUpdateDryRun, currentCmd = previousName, previousDryRun, previousCommand
+	})
+	agentUpdateName, agentUpdateDryRun = agentskill.SiteSkillName, false
+	out := new(bytes.Buffer)
+	cmd := &cobra.Command{Use: "update"}
+	cmd.SetOut(out)
+	currentCmd = cmd
+
+	if err := runDetectedGlobalAgentUpdates(); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out.String(), "Skipping claude-code") {
+		t.Fatalf("missing installation not skipped: %s", out.String())
+	}
+	content, err := os.ReadFile(skillPath)
+	if err != nil || !strings.Contains(string(content), agentskill.SiteSkillName) {
+		t.Fatalf("existing codex skill not refreshed: %v, %s", err, content)
+	}
+	if _, err := os.Stat(claude); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("unexpected global install for skipped agent: %v", err)
+	}
+
+	if err := os.MkdirAll(claude, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	sentinel := filepath.Join(claude, "personal-notes.txt")
+	if err := os.WriteFile(sentinel, []byte("keep me"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(skillPath, []byte("modified again"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := runDetectedGlobalAgentUpdates(); err == nil || !strings.Contains(err.Error(), "claude-code") {
+		t.Fatalf("expected contextual error for unrelated directory, got %v", err)
+	}
+	if data, err := os.ReadFile(sentinel); err != nil || string(data) != "keep me" {
+		t.Fatalf("unrecognized directory was changed: %v, %q", err, data)
+	}
+	if data, err := os.ReadFile(skillPath); err != nil || !strings.Contains(string(data), agentskill.SiteSkillName) {
+		t.Fatalf("healthy installation was not updated after another agent failed: %v, %q", err, data)
+	}
+}
+
+func TestDetectedGlobalAgentDoctor_ReportsDriftAndErrors(t *testing.T) {
+	binDir := prepareGlobalAgentTest(t)
+	fakeAgentExecutable(t, binDir, "codex")
+	fakeAgentExecutable(t, binDir, "claude")
+	codex := globalAgentTestDestination(t, "codex")
+	if _, err := installAgentSkill(codex, "codex", agentScopeGlobal, false, false, "old-version"); err != nil {
+		t.Fatal(err)
+	}
+	claude := globalAgentTestDestination(t, "claude-code")
+	if err := os.MkdirAll(claude, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	previousAgent, previousLegacy := agentDoctorAgent, agentDoctorLegacyTarget
+	previousName, previousGlobal := agentDoctorName, agentDoctorGlobal
+	previousCommand := currentCmd
+	t.Cleanup(func() {
+		agentDoctorAgent, agentDoctorLegacyTarget = previousAgent, previousLegacy
+		agentDoctorName, agentDoctorGlobal = previousName, previousGlobal
+		currentCmd = previousCommand
+	})
+	agentDoctorAgent, agentDoctorLegacyTarget = "", ""
+	agentDoctorName, agentDoctorGlobal = agentskill.SiteSkillName, true
+	out := new(bytes.Buffer)
+	cmd := &cobra.Command{Use: "doctor"}
+	cmd.SetOut(out)
+	err := runDetectedGlobalAgentDoctors(cmd)
+	if ExitCodeForError(err) != doctorExitError {
+		t.Fatalf("got error %v and code %d; want doctor error", err, ExitCodeForError(err))
+	}
+	if err == nil || !strings.Contains(err.Error(), "claude-code") {
+		t.Fatalf("lost agent-specific diagnostic: %v", err)
+	}
+	if !strings.Contains(out.String(), "Skill has") || !strings.Contains(out.String(), "Agent:     codex") {
+		t.Fatalf("did not report drift for healthy install: %s", out.String())
+	}
+	if agentDoctorAgent != "" {
+		t.Fatalf("agent selection was not restored: %q", agentDoctorAgent)
+	}
+}
+
+func TestGlobalAgentSkillExists_RecognizesLegacySkill(t *testing.T) {
+	prepareGlobalAgentTest(t)
+	target, err := normalizeAgentInstallTarget("claude-code")
+	if err != nil {
+		t.Fatal(err)
+	}
+	exists, err := globalAgentSkillExists(target, agentskill.SiteSkillName)
+	if err != nil || exists {
+		t.Fatalf("missing skill returned %v, %v", exists, err)
+	}
+	dir := globalAgentTestDestination(t, "claude-code")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	skillPath := filepath.Join(dir, "SKILL.md")
+	if err := os.WriteFile(skillPath, []byte("other skill"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if exists, err := globalAgentSkillExists(target, agentskill.SiteSkillName); err == nil || exists {
+		t.Fatalf("unrelated skill incorrectly recognized: %v, %v", exists, err)
+	}
+	if err := os.WriteFile(skillPath, []byte("name: markata-go-site"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if exists, err := globalAgentSkillExists(target, agentskill.SiteSkillName); err != nil || !exists {
+		t.Fatalf("legacy Markata skill not recognized: %v, %v", exists, err)
 	}
 }
