@@ -112,7 +112,11 @@ func (r *chromiumExcalidrawRenderer) RenderSVG(ctx context.Context, req visualiz
 	if err != nil {
 		return nil, fmt.Errorf("export Excalidraw scene to SVG: %w", err)
 	}
-	return []byte(strings.TrimSpace(svg)), nil
+	inlined, err := inlineExcalidrawSVGFonts([]byte(strings.TrimSpace(svg)))
+	if err != nil {
+		return nil, fmt.Errorf("inline bundled Excalidraw fonts: %w", err)
+	}
+	return inlined, nil
 }
 
 func (r *chromiumExcalidrawRenderer) ensureBrowser(ctx context.Context) error {

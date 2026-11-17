@@ -12,7 +12,12 @@ import (
 	"strings"
 )
 
-const excalidrawSVGExportVersion = "excalidraw-0.18.1-static-svg-v2"
+const (
+	// ExcalidrawPackageVersion identifies the bundled upstream editor package.
+	ExcalidrawPackageVersion = "0.18.1"
+	// ExcalidrawSVGExportVersion identifies Markata's SVG export contract.
+	ExcalidrawSVGExportVersion = "excalidraw-" + ExcalidrawPackageVersion + "-static-svg-v2"
+)
 
 //go:embed excalidraw
 var excalidrawFiles embed.FS
@@ -54,7 +59,7 @@ func ExcalidrawRendererVersion() (string, error) {
 	if err := json.Unmarshal(manifestData, &manifest); err != nil {
 		return "", fmt.Errorf("parse local Excalidraw font manifest: %w", err)
 	}
-	if manifest.RendererVersion != excalidrawSVGExportVersion || len(manifest.Fonts) == 0 {
+	if manifest.RendererVersion != ExcalidrawSVGExportVersion || len(manifest.Fonts) == 0 {
 		return "", fmt.Errorf("local Excalidraw font manifest has unsupported version or no fonts")
 	}
 	fonts := append([]string(nil), manifest.Fonts...)

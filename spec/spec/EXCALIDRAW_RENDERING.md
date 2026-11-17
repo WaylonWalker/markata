@@ -38,6 +38,12 @@ payloads with an approved MIME type; it MUST reject nested SVG payloads and
 external links. The global validator MUST remain strict for every other
 renderer. Every SVG size limit MUST remain explicit and tested.
 
+Before shared validation, the explicit Chromium compatibility renderer MUST
+replace Excalidraw's pinned font URLs with `data:font/woff2` values read from
+the bundled font manifest. It MUST rewrite only exact font paths listed in
+that manifest. Unknown fonts and all other remote resources MUST remain
+rejected. The SVG size limit applies after font embedding.
+
 Scene JSON remains authoritative. A cached SVG MUST be discarded when any
 render input changes. Unsupported or malformed scenes MUST produce an
 actionable error while preserving the editable Markdown source.
