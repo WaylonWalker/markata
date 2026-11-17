@@ -1080,7 +1080,6 @@ func TestRunAgentRemoveCommand_RejectsNonSkillDirectory(t *testing.T) {
 	}
 }
 
-
 func prepareGlobalAgentTest(t *testing.T) string {
 	t.Helper()
 	home := t.TempDir()
