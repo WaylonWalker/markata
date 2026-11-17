@@ -219,12 +219,7 @@ func runAgentInstallCommand(cmd *cobra.Command, args []string) error {
 			outlnf("No supported agent executables found on PATH; nothing to install.")
 			return nil
 		}
-		for _, target := range uniqueGlobalAgentTargets(detected, agentInstallName) {
-			if err := runAgentWriteCommand(nil, target, true, agentInstallName, agentInstallDryRun, true, "install"); err != nil {
-				return fmt.Errorf("%s: %w", target.Name, err)
-			}
-		}
-		return nil
+		return runAgentWriteTargets(nil, detected, true, agentInstallName, agentInstallDryRun, true, "install")
 	}
 	if _, err := resolveAgentProjectRoot(args, agentInstallGlobal); err != nil {
 		return err
@@ -456,30 +451,72 @@ func runAgentWriteTargets(args []string, targets []agentInstallTarget, global bo
 func runDetectedGlobalAgentUpdates() error {
 	detected := detectInstalledAgentTargets()
 	updated := 0
+	var failures []error
 	for _, target := range uniqueGlobalAgentTargets(detected, agentUpdateName) {
-		if !globalAgentSkillExists(target, agentUpdateName) {
+		exists, err := globalAgentSkillExists(target, agentUpdateName)
+		if err != nil {
+			failures = append(failures, fmt.Errorf("%s: %w", target.Name, err))
+			continue
+		}
+		if !exists {
 			outlnf("Skipping %s: no global skill installation found.", target.Name)
 			continue
 		}
 		if err := runAgentWriteCommand(nil, target, true, agentUpdateName, agentUpdateDryRun, true, "update"); err != nil {
-			return fmt.Errorf("%s: %w", target.Name, err)
+			failures = append(failures, fmt.Errorf("%s: %w", target.Name, err))
+			continue
 		}
 		updated++
 	}
-	if updated == 0 {
+	if updated == 0 && len(failures) == 0 {
 		outlnf("No detected global agent skill installations to update.")
 	}
-	return nil
+	return errors.Join(failures...)
 }
 
-func globalAgentSkillExists(target agentInstallTarget, name string) bool {
+// globalAgentSkillExists recognizes only a Markata skill and never treats an
+// arbitrary directory as permission to overwrite its contents.
+func globalAgentSkillExists(target agentInstallTarget, name string) (bool, error) {
+	if err := validateSkillName(name); err != nil {
+		return false, err
+	}
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return false
+		return false, fmt.Errorf("locate home directory: %w", err)
 	}
 	dir := filepath.Join(home, filepath.FromSlash(target.GlobalPath), name)
 	info, err := os.Stat(dir)
-	return err == nil && info.IsDir()
+	if errors.Is(err, os.ErrNotExist) {
+		return false, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("stat skill directory %q: %w", dir, err)
+	}
+	if !info.IsDir() {
+		return false, fmt.Errorf("skill path %q is not a directory", dir)
+	}
+	manifest, err := agentskill.ReadManifest(dir)
+	if err == nil {
+		if _, ok := manifest.Files["SKILL.md"]; !ok {
+			return false, fmt.Errorf("skill directory %q has an unrecognized manifest; refusing automatic overwrite", dir)
+		}
+		return true, nil
+	}
+	if !errors.Is(err, os.ErrNotExist) {
+		return false, fmt.Errorf("read skill manifest at %q: %w", dir, err)
+	}
+	// Legacy installs may predate manifests. Require a recognizable skill file.
+	data, err := os.ReadFile(filepath.Join(dir, "SKILL.md"))
+	if errors.Is(err, os.ErrNotExist) {
+		return false, fmt.Errorf("skill directory %q has no Markata skill marker; refusing automatic overwrite", dir)
+	}
+	if err != nil {
+		return false, fmt.Errorf("read legacy skill at %q: %w", dir, err)
+	}
+	if !strings.Contains(string(data), agentskill.SiteSkillName) {
+		return false, fmt.Errorf("skill directory %q does not contain a Markata skill; refusing automatic overwrite", dir)
+	}
+	return true, nil
 }
 
 func runAgentWriteCommand(args []string, target agentInstallTarget, global bool, name string, dryRun, force bool, operation string) error {
@@ -743,9 +780,16 @@ func runDetectedGlobalAgentDoctors(cmd *cobra.Command) error {
 	originalAgent := agentDoctorAgent
 	maxExitCode := 0
 	checked := 0
+	var failures []error
 	defer func() { agentDoctorAgent = originalAgent }()
 	for _, target := range uniqueGlobalAgentTargets(detected, agentDoctorName) {
-		if !globalAgentSkillExists(target, agentDoctorName) {
+		exists, err := globalAgentSkillExists(target, agentDoctorName)
+		if err != nil {
+			failures = append(failures, fmt.Errorf("%s: %w", target.Name, err))
+			maxExitCode = doctorExitError
+			continue
+		}
+		if !exists {
 			outlnf("Skipping %s: no global skill installation found.", target.Name)
 			continue
 		}
@@ -755,14 +799,17 @@ func runDetectedGlobalAgentDoctors(cmd *cobra.Command) error {
 			if code > maxExitCode {
 				maxExitCode = code
 			}
+			if err.Error() != "" {
+				failures = append(failures, fmt.Errorf("%s: %w", target.Name, err))
+			}
 		}
 		checked++
 	}
-	if checked == 0 {
+	if checked == 0 && len(failures) == 0 {
 		outlnf("No detected global agent skill installations to check.")
 	}
 	if maxExitCode != 0 {
-		return newExitCodeError(maxExitCode, nil)
+		return newExitCodeError(maxExitCode, errors.Join(failures...))
 	}
 	return nil
 }
