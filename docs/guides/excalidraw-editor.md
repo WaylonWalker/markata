@@ -81,6 +81,10 @@ timeout = 30
 no_sandbox = false
 ```
 
+Markata is evaluating browserless SVG renderers. The current build still uses
+Chromium; see the [renderer comparison report](/docs/reports/excalidraw-renderer-comparison/)
+for measured options and the planned artifact workflow.
+
 Set `no_sandbox = true` only when the build runs in a container that requires
 it. If the renderer cannot find a browser, or a scene contains an unsupported
 feature, the build reports an error instead of publishing a code block as if it

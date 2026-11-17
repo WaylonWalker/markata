@@ -99,6 +99,10 @@ Excalidraw SVGs follow the site's configured light or dark fallback mode at
 build time. Standalone rendering defaults to dark when no site configuration
 is supplied.
 
+The current Excalidraw static adapter still requires Chromium. Browserless
+renderers and an editor-generated SVG artifact workflow are under evaluation;
+see the [comparison report](/docs/reports/excalidraw-renderer-comparison/).
+
 ## What comes next
 
 D2 is the next intended backend adapter, followed by Vega-Lite through

@@ -1,6 +1,9 @@
 # Excalidraw authoring in the workbench
 
-**Status:** editor integration and static SVG rendering.
+**Status:** editor integration and static SVG rendering. The current static
+adapter uses Chromium; the target browserless rendering contract and the
+comparison that informs it are in
+[EXCALIDRAW_RENDERING.md](EXCALIDRAW_RENDERING.md).
 **Tracked by:** [#2014](https://github.com/WaylonWalker/markata/issues/2014).
 **Related:** [Editor workspace](EDITOR_WORKSPACE.md), [static visualization foundation](STATIC_VISUALIZATIONS.md).
 
@@ -83,14 +86,18 @@ this first integration slice.
 ## Rendering boundary
 
 The site builder and standalone Markdown renderer MUST interpret valid
-`excalidraw` fences as saved scene JSON and render static SVG. The native Go
-renderer MUST use the locally bundled Excalidraw export implementation in
-headless Chromium. It MUST NOT access the network, and published pages MUST
-NOT load the Excalidraw editor runtime. The site build MUST publish a
-content-addressed SVG asset through `pkg/visualizations`; standalone rendering
-MUST return inert, self-contained SVG markup or a data URI without writing
-files. The default configuration MUST enable rendering. Setting
+`excalidraw` fences as saved scene JSON and render static SVG. The site build
+MUST publish a content-addressed SVG asset through `pkg/visualizations`;
+standalone rendering MUST return inert, self-contained SVG markup or a data URI
+without writing files. Published pages MUST NOT load the Excalidraw editor
+runtime. The default configuration MUST enable rendering. Setting
 `excalidraw.enabled = false` leaves the fence as ordinary highlighted code.
+
+Rendering modes, artifact fingerprints, offline output, validation, optional
+Chromium compatibility, and the current implementation status are specified
+in [EXCALIDRAW_RENDERING.md](EXCALIDRAW_RENDERING.md). That specification is
+the source of truth for the renderer backend; this authoring specification
+does not require Chromium as the default.
 
 Static SVG export MUST use the site's configured theme fallback mode. If no
 site configuration is available, export MUST use dark mode. The editor canvas
@@ -100,16 +107,8 @@ MUST apply Excalidraw's dark-mode export when the site fallback mode is dark,
 and MUST use normal export colors when the fallback mode is light.
 
 Rendering MUST validate the input as an Excalidraw scene and reject unsupported
-or unsafe scene features with a message that identifies the feature. The first
-static renderer MUST support Excalidraw shapes, lines, arrows, freedraw strokes,
-and text. It MUST report embedded images and linked/embeddable elements as
-unsupported instead of dropping them. It MUST enforce the shared 4 MiB SVG
-output limit and publish no partially rendered asset on failure. Alternative
-text MUST use scene text when present and a descriptive element-count fallback
-otherwise.
-
-Native rendering requires an installed Chromium-compatible browser only when
-an enabled scene is present. `excalidraw.chromium.browser_path`, `timeout`,
-and `no_sandbox` configure that renderer. Missing browser or
-invalid scene errors MUST explain how to resolve the problem. The separate
-WASM workbench remains outside this rendering implementation.
+or unsafe scene features with a message that identifies the feature. It MUST
+enforce explicit SVG output and raster-payload limits and publish no partially
+rendered asset on failure. Alternative text MUST use scene text when present
+and a descriptive element-count fallback otherwise. The separate WASM
+workbench remains outside this rendering implementation.
