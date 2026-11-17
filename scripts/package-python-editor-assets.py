@@ -24,9 +24,14 @@ with zipfile.ZipFile(io.BytesIO(base64.b64decode(assignment.value.value))) as ar
     fonts = shared_excalidraw / 'excalidraw-fonts'
     if fonts.is_dir():
         extra.update(path.relative_to(shared_excalidraw).as_posix() for path in fonts.rglob('*') if path.is_file())
+    chunks = shared_excalidraw / 'excalidraw-editor-chunks'
+    if chunks.is_dir():
+        extra.update(path.relative_to(shared_excalidraw).as_posix() for path in chunks.rglob('*') if path.is_file())
     shared_names = {'excalidraw-editor.js', 'excalidraw-editor.css'}
     if fonts.is_dir():
         shared_names.update(path.relative_to(shared_excalidraw).as_posix() for path in fonts.rglob('*') if path.is_file())
+    if chunks.is_dir():
+        shared_names.update(path.relative_to(shared_excalidraw).as_posix() for path in chunks.rglob('*') if path.is_file())
     names = {name for name in archive.namelist() if not name.startswith('excalidraw-fonts/')} | extra
     with zipfile.ZipFile(output, 'w', zipfile.ZIP_DEFLATED) as updated:
         for name in sorted(names):

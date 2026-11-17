@@ -457,14 +457,16 @@ version (SHA-256 of the exact file bytes). The browser sends this as
 `X-Markata-Expected-Version` with each `PUT /workspace/file`.
 
 The Go editor rejects a missing version with HTTP 428 and a stale version with
-HTTP 409 **without writing the file**. For a conflict, the browser retains its
-recovery copy and shows a save error; reopen the file to inspect/reconcile the
-external revision. When a conflict is detected, **Compare copies…**
-opens a read-only comparison of the browser draft and the current file on disk.
-Both copies can be downloaded separately before choosing how to resolve the
-conflict. No button in this comparison writes, merges, replaces, or deletes
-workspace content. On a phone the two panels stack vertically. If the server
-is unavailable, the browser draft can still be downloaded.
+HTTP 409 **without writing the file**, except when the current file already
+contains the exact submitted bytes. In that case, the server acknowledges the
+duplicate save and returns the current version without writing again. For a
+real conflict, the browser keeps the recovery copy and pauses automatic writes
+for that file, so it does not repeat the same stale request after every edit.
+Select **Compare copies…** to review the browser draft and the current file on
+disk. You can keep the browser draft after confirming the overwrite, or replace
+it with the disk copy. Autosave resumes against the version you reviewed. On a
+phone the two panels stack vertically. If the server is unavailable, the
+browser draft can still be downloaded.
 An older recovery record without a version token also
 fails closed. An acknowledged save updates the browser's recovery version so a
 normal reload does not invent a conflict. The current local Go handler

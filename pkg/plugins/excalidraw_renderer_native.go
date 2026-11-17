@@ -66,7 +66,7 @@ func newChromiumExcalidrawRenderer(config models.ExcalidrawConfig, darkMode bool
 	if err != nil {
 		return nil, err
 	}
-	server := httptest.NewServer(http.FileServer(http.FS(assets)))
+	server := httptest.NewServer(excalidrawFontAssetAlias(http.FileServer(http.FS(assets))))
 	renderer := &chromiumExcalidrawRenderer{
 		config:     config,
 		darkMode:   darkMode,
@@ -76,6 +76,27 @@ func newChromiumExcalidrawRenderer(config models.ExcalidrawConfig, darkMode bool
 		renderGate: make(chan struct{}, 1),
 	}
 	return renderer, nil
+}
+
+// Excalidraw requests font files below a fonts/ URL segment even though the
+// bundled asset directory stores them directly below excalidraw-fonts/.
+func excalidrawFontAssetAlias(next http.Handler) http.Handler {
+	const upstreamPrefix = "/excalidraw-fonts/fonts/"
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.HasPrefix(r.URL.Path, upstreamPrefix) {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		request := r.Clone(r.Context())
+		url := *r.URL
+		url.Path = "/excalidraw-fonts/" + strings.TrimPrefix(r.URL.Path, upstreamPrefix)
+		request.URL = &url
+		if strings.HasSuffix(url.Path, ".woff2") {
+			w.Header().Set("Content-Type", "font/woff2")
+		}
+		next.ServeHTTP(w, request)
+	})
 }
 
 func (r *chromiumExcalidrawRenderer) ID() string      { return excalidrawName }

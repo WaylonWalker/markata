@@ -307,8 +307,12 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "no-cache")
 		name := strings.TrimPrefix(r.URL.Path, "/editor/")
 		data, err := web.ReadFile("web/" + name)
-		if err != nil && (name == "excalidraw-editor.js" || name == "excalidraw-editor.css" || strings.HasPrefix(name, "excalidraw-fonts/")) {
-			data, err = visualizations.ReadExcalidrawAsset(name)
+		if err != nil && (name == "excalidraw-editor.js" || name == "excalidraw-editor.css" || strings.HasPrefix(name, "excalidraw-fonts/") || strings.HasPrefix(name, "excalidraw-editor-chunks/")) {
+			assetName := name
+			if strings.HasPrefix(assetName, "excalidraw-fonts/fonts/") {
+				assetName = "excalidraw-fonts/" + strings.TrimPrefix(assetName, "excalidraw-fonts/fonts/")
+			}
+			data, err = visualizations.ReadExcalidrawAsset(assetName)
 		}
 		if err != nil {
 			http.NotFound(w, r)
@@ -340,7 +344,11 @@ func serve(w http.ResponseWriter, r *http.Request, name string, data []byte) {
 	if w.Header().Get("Cache-Control") == "" {
 		w.Header().Set("Cache-Control", "public, max-age=3600, must-revalidate")
 	}
-	w.Header().Set("Content-Type", mime.TypeByExtension(path.Ext(name)))
+	contentType := mime.TypeByExtension(path.Ext(name))
+	if strings.EqualFold(path.Ext(name), ".woff2") {
+		contentType = "font/woff2"
+	}
+	w.Header().Set("Content-Type", contentType)
 	w.Header().Set("ETag", fmt.Sprintf(`"%x"`, sha256.Sum256(data)))
 	http.ServeContent(w, r, name, time.Time{}, bytes.NewReader(data))
 }
@@ -819,9 +827,9 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 		}
 		w.WriteHeader(http.StatusCreated)
 		if err := json.NewEncoder(w).Encode(map[string]string{
-			discardVersionKey: editorworkspace.SourceVersion(sourceWithImage(source, imageURL)),
-			"image":           imageURL,
-			"provider":        provider,
+			workspaceVersionKey: editorworkspace.SourceVersion(sourceWithImage(source, imageURL)),
+			"image":             imageURL,
+			"provider":          provider,
 		}); err != nil {
 			return
 		}
@@ -1013,8 +1021,19 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 					fail(w, http.StatusUnprocessableEntity, "cannot read workspace source before saving")
 					return
 				}
-				if editorworkspace.SourceVersion(current) != expected {
-					fail(w, http.StatusConflict, "file changed on disk; browser recovery copy kept; reopen and resolve conflict")
+				currentVersion := editorworkspace.SourceVersion(current)
+				if currentVersion != expected {
+					// A duplicate save may arrive after another tab already wrote the
+					// exact same bytes. Acknowledge that idempotently without touching
+					// the file again; a different current source remains a conflict.
+					if current != string(body) {
+						fail(w, http.StatusConflict, "file changed on disk; browser recovery copy kept; compare copies to resolve conflict")
+						return
+					}
+					w.Header().Set("Content-Type", "application/json")
+					if err := json.NewEncoder(w).Encode(map[string]string{workspaceVersionKey: currentVersion}); err != nil {
+						return
+					}
 					return
 				}
 			}

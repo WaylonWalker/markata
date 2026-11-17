@@ -24,8 +24,10 @@ const excalidrawRendererVersion = 'excalidraw-0.18.1-static-svg-v2';
 await mkdir(sharedExcalidraw, {recursive:true});
 await rm(path.join(sharedExcalidraw, 'excalidraw-editor.js'), {force:true});
 await rm(path.join(sharedExcalidraw, 'excalidraw-editor.css'), {force:true});
-await build({entryPoints:[path.join(root,'tools/site-tree/excalidraw-editor.js')], bundle:true, minify:true,
-  format:'esm', target:'es2022', outfile:path.join(sharedExcalidraw,'excalidraw-editor.js'), legalComments:'eof'});
+await rm(path.join(sharedExcalidraw, 'excalidraw-editor-chunks'), {recursive:true, force:true});
+await build({entryPoints:[path.join(root,'tools/site-tree/excalidraw-editor.js')], bundle:true, splitting:true, minify:true,
+  format:'esm', target:'es2022', outdir:sharedExcalidraw, entryNames:'excalidraw-editor',
+  chunkNames:'excalidraw-editor-chunks/[name]-[hash]', legalComments:'eof'});
 const excalidrawFonts = path.join(sharedExcalidraw, 'excalidraw-fonts');
 await rm(excalidrawFonts, {recursive:true, force:true});
 await mkdir(excalidrawFonts, {recursive:true});
@@ -47,6 +49,20 @@ await writeFile(path.join(excalidrawFonts,'manifest.json'), JSON.stringify({rend
 await build({entryPoints:[path.join(root,'tools/site-tree/excalidraw-editor.css')], bundle:true, minify:true,
   format:'esm', target:'es2022', outfile:path.join(sharedExcalidraw,'excalidraw-editor.css'),
   assetNames:'excalidraw-fonts/[name]', loader:{'.woff2':'file'}, legalComments:'eof', conditions:['production']});
+async function stripGeneratedJavaScriptWhitespace(dir) {
+  for (const entry of await readdir(dir, {withFileTypes:true})) {
+    const file = path.join(dir, entry.name);
+    if (entry.isDirectory()) await stripGeneratedJavaScriptWhitespace(file);
+    else if (entry.isFile() && entry.name.endsWith('.js')) {
+      const source = await readFile(file, 'utf8');
+      const normalized = source.replace(/[ \t]+$/gm, '');
+      if (normalized !== source) await writeFile(file, normalized);
+    }
+  }
+}
+// Third-party bundles contain trailing spaces in embedded shader and license
+// text. Keep the checked-in generated assets clean for git diff --check.
+await stripGeneratedJavaScriptWhitespace(sharedExcalidraw);
 await rm(path.join(workbenchWeb, 'excalidraw-editor.js'), {force:true});
 await rm(path.join(workbenchWeb, 'excalidraw-editor.css'), {force:true});
 await rm(path.join(workbenchWeb, 'excalidraw-fonts'), {recursive:true, force:true});

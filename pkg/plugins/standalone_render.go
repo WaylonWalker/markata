@@ -32,7 +32,12 @@ type StandaloneOptions struct {
 	OmitAssetContent bool
 }
 
-const standaloneFeatureTabs = "tabs"
+const (
+	standaloneFeatureTabs        = "tabs"
+	standaloneFeatureAdmonitions = "admonitions"
+	standaloneFeatureCode        = "code"
+	standaloneFeatureRoads       = "roads"
+)
 
 // RenderAsset is an ordered dependency for a rendered Markdown fragment.
 type RenderAsset struct {
@@ -115,7 +120,7 @@ func (renderer *StandaloneRenderer) Render(source string) (*StandaloneResult, er
 		return nil, fmt.Errorf("render markdown: %w", err)
 	}
 	post.ArticleHTML = article
-	r := &StandaloneResult{omitAssetContent: options.OmitAssetContent, SchemaVersion: StandaloneSchemaVersion, Features: map[string]bool{"mermaid": false, "chartjs": false, "excalidraw": false}, Assets: []RenderAsset{}, ExternalURLs: []string{}}
+	r := &StandaloneResult{omitAssetContent: options.OmitAssetContent, SchemaVersion: StandaloneSchemaVersion, Features: map[string]bool{featureFenceMermaid: false, featureFenceChartJS: false, excalidrawName: false}, Assets: []RenderAsset{}, ExternalURLs: []string{}}
 	if err := r.renderDiagrams(post, options); err != nil {
 		return nil, err
 	}
@@ -124,8 +129,8 @@ func (renderer *StandaloneRenderer) Render(source string) (*StandaloneResult, er
 	r.HTML = expandStandaloneIcons(post.ArticleHTML)
 	r.detectEnhancements()
 	for signal, feature := range map[string]string{
-		"needs_code_css": "code", "needs_admonitions_css": "admonitions",
-		"needs_roads": "roads", "has_figure": "figures", "has_anchor_links": "anchors",
+		"needs_code_css": standaloneFeatureCode, "needs_admonitions_css": standaloneFeatureAdmonitions,
+		"needs_roads": standaloneFeatureRoads, "has_figure": "figures", "has_anchor_links": "anchors",
 		"needs_md_tabs": standaloneFeatureTabs,
 	} {
 		r.Features[feature] = post.Extra[signal] == true
@@ -219,7 +224,7 @@ func (r *StandaloneResult) renderDiagrams(post *models.Post, options StandaloneO
 		if asset.URL == "" {
 			continue
 		}
-		r.Features["chartjs"] = true
+		r.Features[featureFenceChartJS] = true
 		name := strings.TrimPrefix(asset.URL, "/")
 		var content []byte
 		var err error
@@ -280,8 +285,8 @@ func (r *StandaloneResult) addPresentationAssets() error {
 	r.Assets = []RenderAsset{}
 	files := []string{"css/variables.css", "css/main.css", "css/components.css"}
 	for _, item := range []struct{ feature, path string }{
-		{"admonitions", "css/admonitions.css"}, {"code", "css/code.css"},
-		{"mermaid", "css/mermaid.css"}, {"roads", "css/roads.css"},
+		{standaloneFeatureAdmonitions, "css/admonitions.css"}, {standaloneFeatureCode, "css/code.css"},
+		{featureFenceMermaid, "css/mermaid.css"}, {standaloneFeatureRoads, "css/roads.css"},
 	} {
 		if r.Features[item.feature] {
 			files = append(files, item.path)
@@ -303,7 +308,7 @@ func (r *StandaloneResult) addPresentationAssets() error {
 		}
 	}
 	for _, item := range []struct{ feature, path string }{
-		{"roads", "js/roads.js"}, {"tables", "js/sortable-tables.js"},
+		{standaloneFeatureRoads, "js/roads.js"}, {"tables", "js/sortable-tables.js"},
 		{"checklists", "js/markdown-checklists.js"},
 		{standaloneFeatureTabs, "js/md-tabs.js"},
 	} {

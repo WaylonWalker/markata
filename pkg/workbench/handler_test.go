@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/WaylonWalker/markata/pkg/editorworkspace"
 	"github.com/WaylonWalker/markata/pkg/lsp"
+	"github.com/WaylonWalker/markata/pkg/visualizations"
 
 	"golang.org/x/net/html"
 )
@@ -55,6 +57,60 @@ func TestHandler_ExcalidrawArtifactsUseLocalFingerprintedFonts(t *testing.T) {
 	h.ServeHTTP(manifest, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost/editor/excalidraw-fonts/manifest.json", http.NoBody))
 	if manifest.Code != http.StatusOK || !strings.Contains(manifest.Body.String(), `"renderer_version": "excalidraw-0.18.1-static-svg-v2"`) {
 		t.Fatalf("local font manifest returned %d: %s", manifest.Code, manifest.Body.String())
+	}
+}
+
+func TestHandler_ExcalidrawFontAssetsSupportUpstreamFontsPrefix(t *testing.T) {
+	h := newHandler(t)
+	font := "Excalifont/Excalifont-Regular-a88b72a24fb54c9f94e3b5fdaa7481c9.woff2"
+	want, err := visualizations.ReadExcalidrawAsset("excalidraw-fonts/" + font)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, path := range []string{
+		"/editor/excalidraw-fonts/" + font,
+		"/editor/excalidraw-fonts/fonts/" + font,
+	} {
+		response := httptest.NewRecorder()
+		request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost"+path, http.NoBody)
+		h.ServeHTTP(response, request)
+		if response.Code != http.StatusOK {
+			t.Fatalf("font route %q returned %d: %s", path, response.Code, response.Body.String())
+		}
+		if response.Header().Get("Content-Type") != "font/woff2" {
+			t.Errorf("font route %q content type = %q, want font/woff2", path, response.Header().Get("Content-Type"))
+		}
+		if !bytes.Equal(response.Body.Bytes(), want) {
+			t.Errorf("font route %q did not return the bundled font bytes", path)
+		}
+	}
+}
+
+func TestHandler_ExcalidrawEditorServesSplitChunks(t *testing.T) {
+	assets, err := visualizations.ExcalidrawAssetFS()
+	if err != nil {
+		t.Fatal(err)
+	}
+	chunks, err := fs.Glob(assets, "excalidraw-editor-chunks/*.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(chunks) == 0 {
+		t.Fatal("the bundled Excalidraw editor has no split JavaScript chunks")
+	}
+	want, err := fs.ReadFile(assets, chunks[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := newHandler(t)
+	response := httptest.NewRecorder()
+	url := "http://localhost/editor/" + chunks[0]
+	h.ServeHTTP(response, httptest.NewRequestWithContext(context.Background(), http.MethodGet, url, http.NoBody))
+	if response.Code != http.StatusOK {
+		t.Fatalf("editor chunk returned %d: %s", response.Code, response.Body.String())
+	}
+	if !bytes.Equal(response.Body.Bytes(), want) {
+		t.Fatal("editor chunk response does not match the embedded asset")
 	}
 }
 

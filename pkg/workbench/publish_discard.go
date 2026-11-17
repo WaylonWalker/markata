@@ -12,8 +12,8 @@ import (
 
 // Local workbench only. Hosted draft discard must use the durable sync journal.
 const (
-	discardVersionKey  = "version"
-	workspaceStatusKey = "status"
+	workspaceVersionKey = "version"
+	workspaceStatusKey  = "status"
 )
 
 type discardRequest struct {
@@ -87,8 +87,8 @@ func (h *Handler) servePublishDiscard(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(map[string]string{
-		workspaceStatusKey: "restored-local",
-		discardVersionKey:  editorworkspace.SourceVersion(baseline),
+		workspaceStatusKey:  "restored-local",
+		workspaceVersionKey: editorworkspace.SourceVersion(baseline),
 	}); err != nil {
 		return
 	}

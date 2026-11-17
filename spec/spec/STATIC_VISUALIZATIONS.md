@@ -15,6 +15,11 @@ does not render D2 or Vega-Lite, change Mermaid/Chart.js behavior, or add an
 asset kind to the standalone renderer's schema-v1 `assets` list. A build cannot
 claim `offline-static` solely because this package exists.
 
+The Excalidraw Chromium renderer serves the editor and bundled fonts from its
+local asset server. It MUST resolve Excalidraw's upstream
+`/excalidraw-fonts/fonts/<path>` requests to the corresponding embedded font;
+rendering must not fetch font files from a remote service.
+
 ## Go interface and render identity
 
 A backend implements `Renderer` with `ID()`, `Version()`, and

@@ -29,12 +29,12 @@ type StandaloneCapabilities struct {
 // advertise behavior supported by RenderStandalone, not the full site builder.
 func GetStandaloneCapabilities() StandaloneCapabilities {
 	features := []string{
-		"admonitions", "anchors", "chartjs", "checklists", "code",
-		"figures", "mermaid", "roads", "tables",
+		standaloneFeatureAdmonitions, "anchors", featureFenceChartJS, "checklists", standaloneFeatureCode,
+		"figures", featureFenceMermaid, standaloneFeatureRoads, "tables",
 	}
 	diagramModes := map[string][]string{
-		"chartjs": {mermaidModeClient},
-		"mermaid": availableMermaidModes(),
+		featureFenceChartJS: {mermaidModeClient},
+		featureFenceMermaid: availableMermaidModes(),
 	}
 	if modes := availableExcalidrawModes(); len(modes) > 0 {
 		features = append(features, "excalidraw")

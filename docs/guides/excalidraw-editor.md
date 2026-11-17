@@ -50,6 +50,8 @@ between them. Read-only documents cannot open a drawing for editing.
 The scene stays in the Markdown file. Markata does not send it to Excalidraw's
 service. The editor loads its drawing code and bundled fonts from local Markata
 assets. The browser can use its normal font fallback for other characters.
+Font files are available offline through the local asset path used by the
+Excalidraw editor.
 
 The workbench can store documents up to 200,000 bytes. If applying a drawing
 would exceed this limit, Markata keeps the source unchanged and shows an error.
