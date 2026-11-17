@@ -1080,7 +1080,7 @@ func TestRunAgentRemoveCommand_RejectsNonSkillDirectory(t *testing.T) {
 	}
 }
 
-func prepareGlobalAgentTest(t *testing.T) string {
+func prepareGlobalAgentTest(t *testing.T) (string, string) {
 	t.Helper()
 	home := t.TempDir()
 	t.Setenv("HOME", home)
@@ -1089,7 +1089,7 @@ func prepareGlobalAgentTest(t *testing.T) string {
 	t.Setenv("HOMEPATH", strings.TrimPrefix(home, filepath.VolumeName(home)))
 	binDir := t.TempDir()
 	t.Setenv("PATH", binDir)
-	return binDir
+	return home, binDir
 }
 
 func fakeAgentExecutable(t *testing.T, binDir, name string) {
@@ -1097,7 +1097,7 @@ func fakeAgentExecutable(t *testing.T, binDir, name string) {
 	if runtime.GOOS == "windows" {
 		name += ".exe"
 	}
-	if err := os.WriteFile(filepath.Join(binDir, name), []byte("fake executable"), 0o755); err != nil {
+	if err := os.WriteFile(filepath.Join(binDir, name), []byte("fake executable"), 0o755); err != nil { //nolint:gosec // fixture must be executable for LookPath
 		t.Fatal(err)
 	}
 }
@@ -1116,12 +1116,12 @@ func globalAgentTestDestination(t *testing.T, name string) string {
 }
 
 func TestDetectAgentTargetsOnPath_OnlyExecutables(t *testing.T) {
-	binDir := prepareGlobalAgentTest(t)
+	home, binDir := prepareGlobalAgentTest(t)
 	if got := detectAgentTargetsOnPath(); len(got) != 0 {
 		t.Fatalf("got unexpected agents with empty PATH: %v", got)
 	}
 	// A shared directory does not imply that any executable is installed.
-	if err := os.MkdirAll(filepath.Join(os.Getenv("HOME"), ".agents", "skills"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(home, ".agents", "skills"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	if got := detectAgentTargetsOnPath(); len(got) != 0 {
@@ -1139,7 +1139,7 @@ func TestDetectAgentTargetsOnPath_OnlyExecutables(t *testing.T) {
 }
 
 func TestInstallAllDetectedAgentTools_Global(t *testing.T) {
-	binDir := prepareGlobalAgentTest(t)
+	_, binDir := prepareGlobalAgentTest(t)
 	fakeAgentExecutable(t, binDir, "codex")
 	fakeAgentExecutable(t, binDir, "claude")
 
@@ -1180,7 +1180,7 @@ func TestInstallAllDetectedAgentTools_Global(t *testing.T) {
 }
 
 func TestDetectedGlobalAgentUpdate_SkipsMissingAndProtectsOtherDirectories(t *testing.T) {
-	binDir := prepareGlobalAgentTest(t)
+	_, binDir := prepareGlobalAgentTest(t)
 	fakeAgentExecutable(t, binDir, "codex")
 	fakeAgentExecutable(t, binDir, "claude")
 	codex := globalAgentTestDestination(t, "codex")
@@ -1239,7 +1239,7 @@ func TestDetectedGlobalAgentUpdate_SkipsMissingAndProtectsOtherDirectories(t *te
 }
 
 func TestDetectedGlobalAgentDoctor_ReportsDriftAndErrors(t *testing.T) {
-	binDir := prepareGlobalAgentTest(t)
+	_, binDir := prepareGlobalAgentTest(t)
 	fakeAgentExecutable(t, binDir, "codex")
 	fakeAgentExecutable(t, binDir, "claude")
 	codex := globalAgentTestDestination(t, "codex")
