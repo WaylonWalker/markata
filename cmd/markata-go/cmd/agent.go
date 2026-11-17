@@ -317,20 +317,38 @@ func detectInstalledAgentTargets() []agentInstallTarget {
 	return uniqueGlobalAgentTargets(found, agentskill.SiteSkillName)
 }
 
+const (
+	agentNameAmp        = "amp"
+	agentNameClaudeCode = "claude-code"
+	agentNameCline      = "cline"
+	agentNameCrush      = "crush"
+	agentNameCursor     = "cursor"
+	agentNameGeminiCLI  = "gemini-cli"
+	agentNameGoose      = "goose"
+	agentNameKimiCLI    = "kimi-cli"
+	agentNameQwenCode   = "qwen-code"
+	agentBinaryCursor   = "cursor"
+	agentBinaryGemini   = "gemini"
+	agentBinaryGoose    = "goose"
+	agentBinaryCline    = "cline"
+	agentBinaryAmp      = "amp"
+	agentBinaryCrush    = "crush"
+)
+
 var agentExecutableNames = map[string][]string{
-	"opencode":       {"opencode"},
-	"claude-code":    {"claude"},
-	"codex":          {"codex"},
-	"cursor":         {"cursor", "cursor-agent"},
-	"gemini-cli":     {"gemini"},
-	"github-copilot": {"copilot"},
-	"goose":          {"goose"},
-	"cline":          {"cline"},
-	"amp":            {"amp"},
-	"qwen-code":      {"qwen"},
-	"kimi-cli":       {"kimi"},
-	"crush":          {"crush"},
-	"continue":       {"cn"},
+	agentNameOpencode:   {agentNameOpencode},
+	agentNameClaudeCode: {agentLegacyClaude},
+	agentNameCodex:      {agentNameCodex},
+	agentNameCursor:     {agentBinaryCursor, "cursor-agent"},
+	agentNameGeminiCLI:  {agentBinaryGemini},
+	"github-copilot":    {"copilot"},
+	agentNameGoose:      {agentBinaryGoose},
+	agentNameCline:      {agentBinaryCline},
+	agentNameAmp:        {agentBinaryAmp},
+	agentNameQwenCode:   {"qwen"},
+	agentNameKimiCLI:    {"kimi"},
+	agentNameCrush:      {agentBinaryCrush},
+	"continue":          {"cn"},
 }
 
 func hasAgentExecutable(target agentInstallTarget, binaries map[string][]string) bool {
