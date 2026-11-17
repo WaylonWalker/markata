@@ -95,6 +95,10 @@ currently reports linked elements and embedded images as unsupported. Large
 embedded fonts and complex SVG paths can still increase network and
 browser-paint cost.
 
+Excalidraw SVGs follow the site's configured light or dark fallback mode at
+build time. Standalone rendering defaults to dark when no site configuration
+is supplied.
+
 ## What comes next
 
 D2 is the next intended backend adapter, followed by Vega-Lite through

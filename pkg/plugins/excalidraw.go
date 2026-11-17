@@ -66,7 +66,11 @@ func (p *ExcalidrawPlugin) Render(m *lifecycle.Manager) (err error) {
 		return nil
 	}
 
-	renderer, err := newExcalidrawRenderer(p.config)
+	siteConfig, hasSiteConfig := m.Config().Extra["models_config"].(*models.Config)
+	if !hasSiteConfig {
+		siteConfig = nil
+	}
+	renderer, err := newExcalidrawRenderer(p.config, excalidrawDarkMode(siteConfig))
 	if err != nil {
 		return fmt.Errorf("initialize Excalidraw renderer: %w", err)
 	}
@@ -78,8 +82,8 @@ func (p *ExcalidrawPlugin) Render(m *lifecycle.Manager) (err error) {
 
 	var pipeline visualizations.Pipeline
 	siteURL := ""
-	if configured, ok := m.Config().Extra["models_config"].(*models.Config); ok {
-		siteURL = configured.URL
+	if siteConfig != nil {
+		siteURL = siteConfig.URL
 	}
 	basePath, err := excalidrawAssetBasePath(siteURL)
 	if err != nil {
@@ -116,6 +120,20 @@ func (p *ExcalidrawPlugin) Render(m *lifecycle.Manager) (err error) {
 		p.assets = append(p.assets, assetsByPath[assetPath])
 	}
 	return nil
+}
+
+func excalidrawDarkMode(config *models.Config) bool {
+	if config == nil || config.Theme.FallbackMode == "" {
+		return true
+	}
+	return config.Theme.FallbackMode != "light"
+}
+
+func excalidrawVersionForTheme(version string, darkMode bool) string {
+	if darkMode {
+		return version + ":dark"
+	}
+	return version + ":light"
 }
 
 func excalidrawAssetBasePath(siteURL string) (string, error) {

@@ -59,7 +59,8 @@ Chart.js source blocks. Neither is project-specific boilerplate.
 Markata renders `excalidraw` scene fences to static SVG through the shared
 `pkg/visualizations` pipeline. Native builds need local Chrome or Chromium only
 when a scene is present. Shapes, lines, arrows, freehand strokes, and text are
-supported; embedded images, links, and web embeds are not. Use Excalidraw for
+supported; embedded images, links, and web embeds are not. SVG exports follow
+the configured theme fallback mode, with dark mode as the default. Use Excalidraw for
 custom hand-drawn illustrations, and prefer Mermaid when relationships or
 flow are the main information. Do not invent `d2` or `vega-lite` fences or an
 `offline-static` guarantee. See `docs/guides/excalidraw-editor.md` and

@@ -23,15 +23,16 @@ import (
 )
 
 const (
-	excalidrawRendererVersion = "excalidraw-0.18.1-static-svg-v1"
+	excalidrawRendererVersion = "excalidraw-0.18.1-static-svg-v2"
 	maxExcalidrawSceneBytes   = 4 << 20
 )
 
 type chromiumExcalidrawRenderer struct {
-	config  models.ExcalidrawConfig
-	version string
-	server  *httptest.Server
-	url     string
+	config   models.ExcalidrawConfig
+	darkMode bool
+	version  string
+	server   *httptest.Server
+	url      string
 
 	mu             sync.Mutex
 	allocatorClose context.CancelFunc
@@ -41,7 +42,7 @@ type chromiumExcalidrawRenderer struct {
 	renderGate     chan struct{}
 }
 
-func newExcalidrawRenderer(config models.ExcalidrawConfig) (excalidrawSVGRenderer, error) {
+func newExcalidrawRenderer(config models.ExcalidrawConfig, darkMode bool) (excalidrawSVGRenderer, error) {
 	info := checkChromiumDependency(config.Chromium.BrowserPath)
 	if !info.IsInstalled {
 		message := "static Excalidraw rendering requires Chrome or Chromium; install a browser or set [markata-go.excalidraw.chromium].browser_path"
@@ -62,7 +63,8 @@ func newExcalidrawRenderer(config models.ExcalidrawConfig) (excalidrawSVGRendere
 	server := httptest.NewServer(http.FileServer(http.FS(assets)))
 	renderer := &chromiumExcalidrawRenderer{
 		config:     config,
-		version:    version,
+		darkMode:   darkMode,
+		version:    excalidrawVersionForTheme(version, darkMode),
 		server:     server,
 		url:        server.URL + "/renderer.html",
 		renderGate: make(chan struct{}, 1),
@@ -122,7 +124,7 @@ func (r *chromiumExcalidrawRenderer) RenderSVG(ctx context.Context, req visualiz
 	if err != nil {
 		return nil, fmt.Errorf("encode Excalidraw scene: %w", err)
 	}
-	script := "window.markataRenderExcalidrawSvg(JSON.parse(" + string(sceneLiteral) + "))"
+	script := "window.markataRenderExcalidrawSvg(JSON.parse(" + string(sceneLiteral) + ")," + fmt.Sprint(r.darkMode) + ")"
 	svg, err := chromedp.Run(mergedCtx, chromedp.Evaluate[string](script, chromedp.EvalAwaitPromise))
 	if err != nil {
 		return nil, fmt.Errorf("export Excalidraw scene to SVG: %w", err)

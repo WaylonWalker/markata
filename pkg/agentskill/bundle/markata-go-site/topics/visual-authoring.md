@@ -12,7 +12,9 @@ plain prose or a normal table when graphics would add no value.
 Excalidraw fences render to static SVG in native Go builds. Local Chrome or
 Chromium is needed only when a scene is present. The current adapter supports
 shapes, lines, arrows, freehand strokes, and text; images, links, and web
-embeds are not supported. D2 and Vega-Lite fences are still unavailable.
+embeds are not supported. SVG colors follow the site's configured light or
+dark fallback mode; dark is the default without site configuration. D2 and
+Vega-Lite fences are still unavailable.
 Use Mermaid for graph topology and Chart.js for data charts.
 
 ## Decide whether to compose a page or draw one diagram

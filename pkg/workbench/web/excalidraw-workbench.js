@@ -2,6 +2,8 @@
 (() => {
   'use strict';
 
+  const currentTheme = () => document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
+  const fenceMarkerLine = /^ {0,3}(?:`{3,}|~{3,})/;
   const emptyScene = () => ({
     type: 'excalidraw',
     version: 2,
@@ -144,6 +146,163 @@
     const button = document.querySelector('#drawing-open');
     let active = null;
     let canvas = null;
+    const fenceRecords = new Map();
+    let nextFenceID = 1;
+    let refreshScheduled = false;
+
+    function excalidrawFences() {
+      const fences = [];
+      let open = null;
+      for (let line = 0; line < editor.lineCount(); line++) {
+        const text = editor.getLine(line);
+        if (!open) {
+          const candidate = openingFence(text);
+          if (candidate) open = {...candidate,line};
+          continue;
+        }
+        if (!closingFence(text,open)) continue;
+        if (open.info.split(/\s+/,1)[0].toLowerCase() === 'excalidraw') {
+          fences.push({...open,closeLine:line,language:'excalidraw'});
+        }
+        open = null;
+      }
+      return fences;
+    }
+
+    function sceneSummary(fence) {
+      const from = {line:fence.line+1,ch:0};
+      const to = {line:fence.closeLine,ch:0};
+      const body = editor.getRange(from,to).replace(/\r?\n$/,'');
+      try {
+        const scene = parseScene(body);
+        const count = scene.elements.filter(element => !element.isDeleted).length;
+        return `${count} ${count === 1 ? 'element' : 'elements'}`;
+      } catch {
+        return 'Scene JSON needs attention';
+      }
+    }
+
+    function wireFenceControls(root, record, expanded) {
+      const label = document.createElement('span');
+      label.className = 'excalidraw-fence-controls__label';
+      label.textContent = `Excalidraw · ${record.summary}`;
+      const actions = document.createElement('span');
+      actions.className = 'excalidraw-fence-controls__actions';
+      const toggle = document.createElement('button');
+      toggle.type = 'button';
+      toggle.className = 'excalidraw-fence-controls__button';
+      toggle.textContent = expanded ? 'Hide JSON' : 'Show JSON';
+      toggle.setAttribute('aria-label', `${expanded ? 'Hide' : 'Show'} Excalidraw JSON`);
+      toggle.setAttribute('aria-expanded', String(expanded));
+      const edit = document.createElement('button');
+      edit.type = 'button';
+      edit.className = 'excalidraw-fence-controls__button excalidraw-fence-controls__button--edit';
+      edit.textContent = 'Edit drawing';
+      edit.disabled = !!editor.getOption('readOnly');
+      edit.addEventListener('click', () => {
+        if (!editor.getOption('readOnly')) openExisting(record.fence);
+      });
+      toggle.addEventListener('click', () => {
+        record.collapsed = !record.collapsed;
+        renderFence(record,record.fence);
+        window.requestAnimationFrame(() => record.toggleButton?.focus());
+      });
+      root.addEventListener('mousedown',event => event.stopPropagation());
+      root.addEventListener('click',event => event.stopPropagation());
+      root.addEventListener('keydown',event => event.stopPropagation());
+      actions.append(toggle,edit);
+      root.append(label,actions);
+      record.label = label;
+      record.toggleButton = toggle;
+      record.editButton = edit;
+    }
+
+    function renderFence(record, fence) {
+      record.fence = fence;
+      record.fold?.clear();
+      record.fold = null;
+      record.widget?.clear();
+      record.widget = null;
+      record.summary = sceneSummary(fence);
+
+      if (record.collapsed) {
+        const placeholder = document.createElement('span');
+        placeholder.className = 'excalidraw-fence-controls excalidraw-fence-controls--folded';
+        wireFenceControls(placeholder,record,false);
+        record.fold = editor.markText(
+          {line:fence.line+1,ch:0},
+          {line:fence.closeLine,ch:0},
+          {collapsed:true,clearOnEnter:false,inclusiveLeft:true,inclusiveRight:true,replacedWith:placeholder},
+        );
+      } else {
+        const controls = document.createElement('div');
+        controls.className = 'excalidraw-fence-controls excalidraw-fence-controls--expanded';
+        wireFenceControls(controls,record,true);
+        record.widget = editor.addLineWidget(fence.line,controls,{noHScroll:true,showIfHidden:true});
+      }
+    }
+
+    function removeFence(record) {
+      record.fold?.clear();
+      record.widget?.clear();
+      record.anchor.clear();
+      fenceRecords.delete(record.id);
+    }
+
+    function refreshFences() {
+      refreshScheduled = false;
+      const fences = excalidrawFences();
+      const remaining = new Map(fences.map(fence => [fence.line,fence]));
+      for (const record of fenceRecords.values()) {
+        const position = record.anchor.find();
+        const fence = position && remaining.get(position.line);
+        if (!fence) {
+          removeFence(record);
+          continue;
+        }
+        remaining.delete(position.line);
+        record.fence = fence;
+        const foldRange = record.fold?.find();
+        const foldIsCurrent = foldRange?.from.line === fence.line+1 &&
+          foldRange.from.ch === 0 && foldRange.to.line === fence.closeLine && foldRange.to.ch === 0;
+        if ((record.collapsed && !foldIsCurrent) || (!record.collapsed && !record.widget)) {
+          renderFence(record,fence);
+        } else if (record.dirty) {
+          record.summary = sceneSummary(fence);
+          if (record.label) record.label.textContent = `Excalidraw · ${record.summary}`;
+          if (record.editButton) record.editButton.disabled = !!editor.getOption('readOnly');
+        }
+        record.dirty = false;
+      }
+      for (const fence of remaining.values()) {
+        const record = {id:nextFenceID++,anchor:editor.setBookmark({line:fence.line,ch:0},{insertLeft:true}),collapsed:true,dirty:false};
+        fenceRecords.set(record.id,record);
+        renderFence(record,fence);
+      }
+    }
+
+    function scheduleFenceRefresh(change) {
+      let shouldRefresh = false;
+      for (let item = change; item; item = item.next) {
+        if (item.text?.some(line => fenceMarkerLine.test(line))) shouldRefresh = true;
+        const firstLine = Math.max(0,item.from.line-1);
+        const lastLine = Math.min(editor.lineCount()-1,item.to.line+1);
+        for (let line = firstLine; line <= lastLine; line++) {
+          if (fenceMarkerLine.test(editor.getLine(line))) shouldRefresh = true;
+        }
+      }
+      for (const record of fenceRecords.values()) {
+        const fence = record.fence;
+        for (let item = change; item; item = item.next) {
+          if (item.from.line <= fence.closeLine) shouldRefresh = true;
+          if (item.from.line <= fence.closeLine && item.to.line >= fence.line+1) record.dirty = true;
+        }
+      }
+      if (!shouldRefresh) return;
+      if (refreshScheduled) return;
+      refreshScheduled = true;
+      window.requestAnimationFrame(refreshFences);
+    }
 
     function afterFence(fence) {
       const line = fence.closeLine + 1;
@@ -183,7 +342,7 @@
       window.EXCALIDRAW_ASSET_PATH = '/editor/excalidraw-fonts/';
       Promise.all([ensureStyles(),import('/editor/excalidraw-editor.js')]).then(([,module]) => {
         if (!dialog.open || !active) return;
-        canvas = module.mountExcalidraw(host,scene);
+        canvas = module.mountExcalidraw(host,scene,undefined,currentTheme());
         host.hidden = false;
         loading.hidden = true;
         applyButton.disabled = false;
@@ -195,6 +354,7 @@
     }
 
     function openExisting(fence) {
+      if (editor.getOption('readOnly')) return;
       if (fence.closeLine == null) {
         showError('Close this Excalidraw fence before editing it. The source has not changed.');
         return;
@@ -278,7 +438,15 @@
       updateButton();
     });
     editor.on('cursorActivity',updateButton);
-    editor.on('change',updateButton);
+    editor.on('change',(_editor,change) => {updateButton();scheduleFenceRefresh(change);});
+    editor.on('optionChange',(_editor,option) => {
+      if (option === 'readOnly') {
+        for (const record of fenceRecords.values()) {
+          if (record.editButton) record.editButton.disabled = !!editor.getOption('readOnly');
+        }
+      }
+    });
+    refreshFences();
     updateButton();
 
     return [

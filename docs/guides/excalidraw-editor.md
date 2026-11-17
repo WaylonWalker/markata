@@ -29,10 +29,17 @@ Cancel or press Escape to close the canvas without changing the Markdown.
 
 ## Edit a drawing
 
-Place the cursor inside its `excalidraw` code fence, then select **Edit drawing**.
-You can also choose **Edit Excalidraw drawing** from the command palette.
-Select **Apply drawing** to save the scene. The editor keeps the opening and
-closing Markdown fence and updates the JSON between them.
+Complete Excalidraw fences start with the JSON folded to keep the source editor
+compact. Select **Show JSON** to inspect or edit the scene source, then select
+**Hide JSON** to fold it again. You can reach both controls and **Edit drawing**
+with Tab, then activate them with Enter or Space.
+
+Select **Edit drawing** on the scene controls to open that drawing, even when
+the cursor is elsewhere. You can also place the cursor inside the fence and
+select **Edit drawing** above the source, or choose **Edit Excalidraw drawing**
+from the command palette. Select **Apply drawing** to save the scene. The
+editor keeps the opening and closing Markdown fence and updates the JSON
+between them. Read-only documents cannot open a drawing for editing.
 
 ````markdown
 ```excalidraw
@@ -52,6 +59,12 @@ would exceed this limit, Markata keeps the source unchanged and shows an error.
 The editor preview and generated site render the scene as static SVG. Published
 pages use a content-addressed SVG file. They do not load the Excalidraw editor
 or its JavaScript.
+
+The SVG follows the site's configured fallback mode when Markata builds the
+page. Dark mode is the default when no site configuration is available. The
+editor canvas UI follows the active Markata mode. New drawings use that mode's
+canvas background; existing drawings keep their saved background while open
+for editing.
 
 The native Go renderer uses the local Excalidraw export bundle in headless
 Chrome or Chromium. A browser is needed only when a site contains an enabled

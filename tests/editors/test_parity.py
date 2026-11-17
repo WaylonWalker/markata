@@ -3,8 +3,8 @@ import argparse
 from contextlib import ExitStack
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
-import re
 import os
+import re
 import time
 from pathlib import Path
 import shutil
@@ -21,7 +21,61 @@ from editor_test_support import load_editor, serve_editor
 from command_palette_checks import check_commands, select_keymap
 
 
-def check(browser, url):
+def check_excalidraw_fence_controls(page):
+    markdown = '''# Diagram
+
+```excalidraw
+{"type":"excalidraw","version":2,"elements":[],"appState":{"viewBackgroundColor":"#ffffff"},"files":{}}
+```
+'''
+    page.evaluate("""markdown => {
+      const editor = document.querySelector('.CodeMirror')?.CodeMirror;
+      if (!editor) throw new Error('CodeMirror is unavailable');
+      editor.setValue(markdown);
+      editor.setCursor({line:0,ch:0});
+      editor.replaceRange('X', {line:0,ch:0});
+    }""", markdown)
+    original_source = markdown
+    edited_source = 'X' + markdown
+
+    show = page.locator('.excalidraw-fence-controls').get_by_role('button', name='Show Excalidraw JSON')
+    expect(show).to_be_visible()
+    expect(show).to_have_attribute('aria-expanded', 'false')
+    show.focus()
+    page.keyboard.press('Tab')
+    edit = page.locator('.excalidraw-fence-controls__button--edit')
+    expect(edit).to_be_focused()
+    page.keyboard.press('Enter')
+
+    dialog = page.locator('#excalidraw-dialog')
+    expect(dialog).to_be_visible()
+    canvas = page.locator('#excalidraw-canvas .excalidraw')
+    expect(canvas).to_be_visible(timeout=30000)
+    expect(canvas).to_have_class(re.compile(r'\btheme--dark\b'))
+    page.locator('#excalidraw-cancel').click()
+    expect(dialog).not_to_be_visible()
+    show = page.locator('.excalidraw-fence-controls').get_by_role('button', name='Show Excalidraw JSON')
+    expect(show).to_be_visible()
+
+    show.focus()
+    page.keyboard.press('Space')
+    hide = page.locator('.excalidraw-fence-controls').get_by_role('button', name='Hide Excalidraw JSON')
+    expect(hide).to_be_visible()
+    expect(hide).to_have_attribute('aria-expanded', 'true')
+    hide.focus()
+    page.keyboard.press('Space')
+    show = page.locator('.excalidraw-fence-controls').get_by_role('button', name='Show Excalidraw JSON')
+    expect(show).to_be_focused()
+    assert page.evaluate("document.querySelector('.CodeMirror').CodeMirror.getValue()") == edited_source
+    page.evaluate("document.querySelector('.CodeMirror').CodeMirror.undo()")
+    assert page.evaluate("document.querySelector('.CodeMirror').CodeMirror.getValue()") == original_source
+
+    page.evaluate("document.querySelector('.CodeMirror').CodeMirror.setOption('readOnly', true)")
+    expect(page.locator('.excalidraw-fence-controls__button--edit')).to_be_disabled()
+    page.evaluate("document.querySelector('.CodeMirror').CodeMirror.setOption('readOnly', false)")
+
+
+def check(browser, url, excalidraw=False):
     context = browser.new_context(accept_downloads=True)
     context.tracing.start(screenshots=True, snapshots=True, sources=True)
     try:
@@ -37,6 +91,8 @@ def check(browser, url):
         preview = page.frame_locator('#preview')
         expect(preview.locator('h1')).to_be_visible(timeout=60000)
         check_commands(page, preview)
+        if excalidraw:
+            check_excalidraw_fence_controls(page)
         expect(page.locator('#saved')).to_contain_text('Draft saved')
         assert page.locator('header h1').evaluate("e => getComputedStyle(e).fontFamily") != 'Georgia, serif'
         assert not page.locator('link[href$="/css/main.css"]').count()
@@ -137,7 +193,7 @@ def main():
                 with browser.new_context() as context:
                     check_site_tree(context.new_page(), url)
                 print(name + ': workspace tree passed', flush=True)
-            fonts.append(check(browser, url))
+            fonts.append(check(browser, url, excalidraw=name in ('Python', 'Go')))
             print(name + ': editor parity passed', flush=True)
             if name == 'Go':
                 from shortcut_ui_checks import check_app_shortcuts

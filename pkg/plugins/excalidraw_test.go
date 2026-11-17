@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/WaylonWalker/markata/pkg/models"
 	"github.com/WaylonWalker/markata/pkg/visualizations"
 )
 
@@ -41,6 +42,40 @@ func TestValidateExcalidrawScene(t *testing.T) {
 				t.Errorf("validateExcalidrawScene() alt = %q, want %q", got, tt.wantAlt)
 			}
 		})
+	}
+}
+
+func TestExcalidrawDarkMode_FollowsSiteFallback(t *testing.T) {
+	light := models.NewConfig()
+	light.Theme.FallbackMode = "light"
+	dark := models.NewConfig()
+	dark.Theme.FallbackMode = "dark"
+	tests := []struct {
+		name   string
+		config *models.Config
+		want   bool
+	}{
+		{name: "no site config defaults dark", want: true},
+		{name: "dark site", config: dark, want: true},
+		{name: "light site", config: light, want: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := excalidrawDarkMode(tt.config); got != tt.want {
+				t.Errorf("excalidrawDarkMode() = %t, want %t", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestExcalidrawVersionForTheme_SeparatesSVGCacheModes(t *testing.T) {
+	dark := excalidrawVersionForTheme("renderer-v1", true)
+	light := excalidrawVersionForTheme("renderer-v1", false)
+	if dark == light {
+		t.Fatalf("dark and light renderer versions both equal %q", dark)
+	}
+	if !strings.HasSuffix(dark, ":dark") || !strings.HasSuffix(light, ":light") {
+		t.Errorf("theme versions = %q and %q, want distinct dark/light suffixes", dark, light)
 	}
 }
 

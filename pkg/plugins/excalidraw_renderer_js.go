@@ -8,7 +8,7 @@ import (
 	"github.com/WaylonWalker/markata/pkg/models"
 )
 
-func newExcalidrawRenderer(models.ExcalidrawConfig) (excalidrawSVGRenderer, error) {
+func newExcalidrawRenderer(models.ExcalidrawConfig, bool) (excalidrawSVGRenderer, error) {
 	return nil, errors.New("static Excalidraw rendering requires the native Go renderer with Chrome or Chromium")
 }
 

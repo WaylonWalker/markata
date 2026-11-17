@@ -50,6 +50,24 @@ The controls MUST be disabled when the active document is read-only.
   200,000-byte editor limit. If it would exceed the limit, Apply MUST fail with
   a clear message and preserve the source.
 
+## Source editor presentation
+
+Complete `excalidraw` fences MUST start with their JSON body collapsed in the
+source editor so a scene does not occupy hundreds of editor lines by default.
+The opening and closing fence lines MUST remain visible. A compact summary
+MUST provide a **Show JSON** button and an **Edit drawing** button. When the
+JSON is expanded, a **Hide JSON** button and the same edit action MUST remain
+available. These controls MUST be native buttons reachable with Tab and
+operable with Enter and Space. Toggling visibility MUST NOT change Markdown
+source or create an undo step. Editing MUST open the scene associated with the
+control, even when the editor cursor is elsewhere. Read-only documents MUST
+not permit editing.
+
+Malformed or incomplete fences MUST remain visible and editable as source. A
+malformed scene summary MAY report that the JSON is invalid, but it MUST NOT
+discard or rewrite source. Existing scene-edit validation and preservation
+rules continue to apply.
+
 ## Runtime assets
 
 The Excalidraw editor JavaScript, styles, and fonts MUST be served from local
@@ -73,6 +91,13 @@ content-addressed SVG asset through `pkg/visualizations`; standalone rendering
 MUST return inert, self-contained SVG markup or a data URI without writing
 files. The default configuration MUST enable rendering. Setting
 `excalidraw.enabled = false` leaves the fence as ordinary highlighted code.
+
+Static SVG export MUST use the site's configured theme fallback mode. If no
+site configuration is available, export MUST use dark mode. The editor canvas
+UI MUST follow the active Markata light or dark mode. Existing scenes MUST
+retain their saved canvas background while being edited. Static SVG export
+MUST apply Excalidraw's dark-mode export when the site fallback mode is dark,
+and MUST use normal export colors when the fallback mode is light.
 
 Rendering MUST validate the input as an Excalidraw scene and reject unsupported
 or unsafe scene features with a message that identifies the feature. The first

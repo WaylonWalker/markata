@@ -241,7 +241,7 @@ func (r *StandaloneResult) renderExcalidraw(post *models.Post, options Standalon
 	if len(availableExcalidrawModes()) == 0 {
 		return fmt.Errorf("static Excalidraw rendering is unavailable in this build")
 	}
-	renderer, err := newExcalidrawRenderer(parseExcalidrawConfig(configExtra(options.Config)))
+	renderer, err := newExcalidrawRenderer(parseExcalidrawConfig(configExtra(options.Config)), excalidrawDarkMode(options.Config))
 	if err != nil {
 		return err
 	}
