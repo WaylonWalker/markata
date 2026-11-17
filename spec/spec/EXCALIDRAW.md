@@ -1,6 +1,6 @@
 # Excalidraw authoring in the workbench
 
-**Status:** initial editor integration; static site rendering is a follow-up.
+**Status:** editor integration and static SVG rendering.
 **Tracked by:** [#2014](https://github.com/WaylonWalker/markata/issues/2014).
 **Related:** [Editor workspace](EDITOR_WORKSPACE.md), [static visualization foundation](STATIC_VISUALIZATIONS.md).
 
@@ -64,9 +64,27 @@ this first integration slice.
 
 ## Rendering boundary
 
-This editor integration does not add Excalidraw rendering to the site builder
-or standalone Markdown renderer. Until that follow-up is implemented, an
-`excalidraw` block is ordinary fenced code in generated pages. A rendering
-implementation MUST use the saved scene JSON, publish static output by default,
-and report unsupported scene features clearly. It MUST NOT silently inject the
-Excalidraw editor runtime into published pages.
+The site builder and standalone Markdown renderer MUST interpret valid
+`excalidraw` fences as saved scene JSON and render static SVG. The native Go
+renderer MUST use the locally bundled Excalidraw export implementation in
+headless Chromium. It MUST NOT access the network, and published pages MUST
+NOT load the Excalidraw editor runtime. The site build MUST publish a
+content-addressed SVG asset through `pkg/visualizations`; standalone rendering
+MUST return inert, self-contained SVG markup or a data URI without writing
+files. The default configuration MUST enable rendering. Setting
+`excalidraw.enabled = false` leaves the fence as ordinary highlighted code.
+
+Rendering MUST validate the input as an Excalidraw scene and reject unsupported
+or unsafe scene features with a message that identifies the feature. The first
+static renderer MUST support Excalidraw shapes, lines, arrows, freedraw strokes,
+and text. It MUST report embedded images and linked/embeddable elements as
+unsupported instead of dropping them. It MUST enforce the shared 4 MiB SVG
+output limit and publish no partially rendered asset on failure. Alternative
+text MUST use scene text when present and a descriptive element-count fallback
+otherwise.
+
+Native rendering requires an installed Chromium-compatible browser only when
+an enabled scene is present. `excalidraw.chromium.browser_path`, `timeout`,
+and `no_sandbox` configure that renderer. Missing browser or
+invalid scene errors MUST explain how to resolve the problem. The separate
+WASM workbench remains outside this rendering implementation.

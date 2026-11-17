@@ -3909,6 +3909,34 @@ The lightbox overlay is themed to match the site's dark palette. CSS overrides i
 
 ---
 
+### excalidraw
+
+**Name:** `excalidraw`
+**Stage:** Render + Write
+**Purpose:** Converts Excalidraw scene fences into content-addressed static SVG assets.
+
+**Status:** Enabled by default. Rendering starts only when an Excalidraw fence is present. A native build needs Chrome or Chromium for SVG export.
+
+**Configuration (TOML):**
+
+```toml
+[markata-go.excalidraw]
+enabled = true
+
+[markata-go.excalidraw.chromium]
+browser_path = ""    # Auto-detect when empty
+timeout = 30
+no_sandbox = false
+```
+
+The renderer uses Markata's bundled Excalidraw export module. Published pages
+load only the resulting SVG asset; they do not load the editor JavaScript.
+Shapes, lines, arrows, freehand strokes, and text are supported. Embedded
+images, linked elements, and web embeds return a clear build error. Set
+`enabled = false` to keep the fence as highlighted scene JSON.
+
+---
+
 ### tailwind
 
 **Name:** `tailwind`  \

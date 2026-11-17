@@ -1,20 +1,18 @@
 ---
-title: "Static SVG visualization foundation"
-description: "Developing backend-rendered SVG adapters with deterministic assets, dimensions, caching, and explicit limits."
+title: "Static SVG visualization pipeline"
+description: "Render Excalidraw scenes to static SVG with Markata's shared publishing pipeline."
 date: 2026-10-31
 published: true
 tags: [documentation, rendering, performance, development]
 ---
 
 
-Markata is developing a shared backend rendering pipeline so diagrams and charts
-can arrive as **finished SVG assets**, with no visualization engine running in the
-reader's browser.
+Markata's shared backend rendering pipeline publishes **finished SVG assets**,
+with no visualization engine running in the reader's browser.
 
-> **Availability:** This is a **developer-only foundation** in
-> `pkg/visualizations`. There is **no supported `d2` or `vega-lite` Markdown
-> fence**, site configuration section, or new `markata render` capability yet.
-> The existing `mermaid` and `chartjs` syntax and output are unchanged.
+> **Availability:** `excalidraw` fences render to static SVG in native Go
+> builds. D2 and Vega-Lite fences are not supported. Mermaid and Chart.js keep
+> their existing syntax and behavior.
 
 ## What the foundation provides
 
@@ -59,7 +57,9 @@ type Renderer interface {
 Use `visualizations.Pipeline.Compile(ctx, backend, request)` for a rendered
 `Asset`. `visualizations.Publish(outputDir, asset)` writes a final static
 asset; `visualizations.FigureHTML(asset, alt, caption, aboveFold)` returns
-escaped markup with an explicit image width and height.
+escaped markup with an explicit image width and height. A site hosted at a path
+prefix can use `FigureHTMLWithBasePath` to project the asset URL below that
+prefix. Markata derives the prefix from the path in the configured site URL.
 
 The request must include all layout-affecting inputs, especially theme and
 font contents. Renderers must obey context cancellation and return actionable
@@ -90,19 +90,20 @@ go vet ./pkg/visualizations/...
   need a separate output audit.
 
 The current restrictions also reject some legitimate SVG features such
-as hyperlinks, embedded images, animation, and `foreignObject`. Test
-representative outputs before using a new engine. Large embedded fonts and
-complex SVG paths can still increase network and browser-paint cost.
+as hyperlinks, embedded images, animation, and `foreignObject`. Excalidraw
+currently reports linked elements and embedded images as unsupported. Large
+embedded fonts and complex SVG paths can still increase network and
+browser-paint cost.
 
 ## What comes next
 
-D2 is the intended first backend adapter, followed by Vega-Lite through
-`vl-convert`, once each meets compatibility and performance checks.
-Site-builder integration will need base-path-aware asset links and a
-version-compatible addition to the existing render asset manifest.
+D2 is the next intended backend adapter, followed by Vega-Lite through
+`vl-convert`, once each meets compatibility and performance checks. The shared
+standalone renderer keeps schema v1 and returns Excalidraw SVG as a data URI;
+it does not add an asset kind to the manifest.
 
-Mermaid and Chart.js remain the supported authoring tools until those
-follow-ups land. See the [Markdown guide](/docs/guides/markdown/),
+Mermaid and Chart.js remain available alongside Excalidraw. See the
+[Excalidraw guide](/docs/guides/excalidraw-editor/), [Markdown guide](/docs/guides/markdown/),
 [accessible Chart.js figures](/docs/guides/markdown-chart-fallback/),
 and [renderer interoperability contract](/docs/guides/python-renderer/).
 

@@ -49,6 +49,32 @@ would exceed this limit, Markata keeps the source unchanged and shows an error.
 
 ## Preview and site output
 
-This editor release stores and edits Excalidraw scenes. The current Markata
-renderer still displays an `excalidraw` fence as code. Static diagram rendering
-will be added in a separate renderer update.
+The editor preview and generated site render the scene as static SVG. Published
+pages use a content-addressed SVG file. They do not load the Excalidraw editor
+or its JavaScript.
+
+The native Go renderer uses the local Excalidraw export bundle in headless
+Chrome or Chromium. A browser is needed only when a site contains an enabled
+Excalidraw fence. Install Chrome or Chromium, or set its path in
+`markata-go.toml`:
+
+```toml
+[markata-go.excalidraw]
+enabled = true
+
+[markata-go.excalidraw.chromium]
+browser_path = "/usr/bin/chromium"
+timeout = 30
+no_sandbox = false
+```
+
+Set `no_sandbox = true` only when the build runs in a container that requires
+it. If the renderer cannot find a browser, or a scene contains an unsupported
+feature, the build reports an error instead of publishing a code block as if it
+were a rendered drawing. The first static renderer supports shapes, lines,
+arrows, freehand strokes, and text. Embedded images, links, and web embeds are
+not supported yet.
+
+Set `enabled = false` to keep Excalidraw fences as highlighted JSON code. The
+standalone renderer returns an inline SVG data URI and does not write an asset
+file.

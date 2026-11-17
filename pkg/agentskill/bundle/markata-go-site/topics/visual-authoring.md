@@ -9,10 +9,11 @@ plain prose or a normal table when graphics would add no value.
 
 ## Renderer availability
 
-A shared backend SVG cache/publisher exists internally, but D2 and Vega-Lite
-fences are **not** implemented. Do not author `d2` or `vega-lite` blocks as
-if they were supported: use existing Mermaid for graph topology and Chart.js
-for data charts until a tested adapter and authoring guide ship.
+Excalidraw fences render to static SVG in native Go builds. Local Chrome or
+Chromium is needed only when a scene is present. The current adapter supports
+shapes, lines, arrows, freehand strokes, and text; images, links, and web
+embeds are not supported. D2 and Vega-Lite fences are still unavailable.
+Use Mermaid for graph topology and Chart.js for data charts.
 
 ## Decide whether to compose a page or draw one diagram
 
@@ -69,6 +70,12 @@ widget from a chat application is not an authorable Markata Markdown
 primitive.
 
 ## Choose the visualization that matches the information
+
+Use an `excalidraw` fence for a custom hand-drawn illustration when shapes,
+arrows, and short labels explain the idea better than prose. Excalidraw scenes
+publish as static SVG. The current renderer supports shapes, lines, arrows,
+freehand strokes, and text; do not add embedded images, links, or web embeds.
+Use Mermaid when the diagram needs a precise graph or flowchart layout.
 
 | User intent | First choice in a Markata post |
 | --- | --- |

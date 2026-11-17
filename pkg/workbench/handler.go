@@ -30,6 +30,7 @@ import (
 	"github.com/WaylonWalker/markata/pkg/lsp"
 	"github.com/WaylonWalker/markata/pkg/models"
 	"github.com/WaylonWalker/markata/pkg/plugins"
+	"github.com/WaylonWalker/markata/pkg/visualizations"
 )
 
 const (
@@ -297,6 +298,9 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "no-cache")
 		name := strings.TrimPrefix(r.URL.Path, "/editor/")
 		data, err := web.ReadFile("web/" + name)
+		if err != nil && (name == "excalidraw-editor.js" || name == "excalidraw-editor.css" || strings.HasPrefix(name, "excalidraw-fonts/")) {
+			data, err = visualizations.ReadExcalidrawAsset(name)
+		}
 		if err != nil {
 			http.NotFound(w, r)
 			return

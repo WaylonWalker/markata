@@ -56,13 +56,14 @@ Chart.js source blocks. Neither is project-specific boilerplate.
 
 ## Current static-SVG backend availability
 
-Markata has an **internal** static SVG asset foundation in `pkg/visualizations`,
-but it is **not** yet an authoring feature. Do not invent `d2` or
-`vega-lite` Markdown fenced blocks, new config keys, or an `offline-static`
-guarantee. Until engine integration lands, author diagrams using supported
-Mermaid syntax and numerical charts using supported `chartjs` JSON, and
-verify the resulting page. See `docs/guides/static-visualizations.md`
-for the developer-only contract.
+Markata renders `excalidraw` scene fences to static SVG through the shared
+`pkg/visualizations` pipeline. Native builds need local Chrome or Chromium only
+when a scene is present. Shapes, lines, arrows, freehand strokes, and text are
+supported; embedded images, links, and web embeds are not. Use Excalidraw for
+custom hand-drawn illustrations, and prefer Mermaid when relationships or
+flow are the main information. Do not invent `d2` or `vega-lite` fences or an
+`offline-static` guarantee. See `docs/guides/excalidraw-editor.md` and
+`docs/guides/static-visualizations.md` for the authoring and renderer limits.
 
 ## Chart-first data visualization
 

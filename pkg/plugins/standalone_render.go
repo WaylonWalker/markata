@@ -1,6 +1,8 @@
 package plugins
 
 import (
+	"context"
+	"encoding/base64"
 	"fmt"
 	"html"
 	"strings"
@@ -13,6 +15,7 @@ import (
 	"github.com/WaylonWalker/markata/pkg/models"
 	"github.com/WaylonWalker/markata/pkg/palettes"
 	"github.com/WaylonWalker/markata/pkg/themes"
+	"github.com/WaylonWalker/markata/pkg/visualizations"
 )
 
 // StandaloneOptions configures rendering without a site build.
@@ -112,7 +115,7 @@ func (renderer *StandaloneRenderer) Render(source string) (*StandaloneResult, er
 		return nil, fmt.Errorf("render markdown: %w", err)
 	}
 	post.ArticleHTML = article
-	r := &StandaloneResult{omitAssetContent: options.OmitAssetContent, SchemaVersion: StandaloneSchemaVersion, Features: map[string]bool{"mermaid": false, "chartjs": false}, Assets: []RenderAsset{}, ExternalURLs: []string{}}
+	r := &StandaloneResult{omitAssetContent: options.OmitAssetContent, SchemaVersion: StandaloneSchemaVersion, Features: map[string]bool{"mermaid": false, "chartjs": false, "excalidraw": false}, Assets: []RenderAsset{}, ExternalURLs: []string{}}
 	if err := r.renderDiagrams(post, options); err != nil {
 		return nil, err
 	}
@@ -142,6 +145,9 @@ func (renderer *StandaloneRenderer) Render(source string) (*StandaloneResult, er
 }
 
 func (r *StandaloneResult) renderDiagrams(post *models.Post, options StandaloneOptions) error {
+	if err := r.renderExcalidraw(post, options); err != nil {
+		return fmt.Errorf("render excalidraw: %w", err)
+	}
 	mermaid := NewMermaidPlugin()
 	mermaid.config.Lightbox = false
 	mermaid.escapeClientSource = true
@@ -226,6 +232,46 @@ func (r *StandaloneResult) renderDiagrams(post *models.Post, options StandaloneO
 		asset.ID, asset.URL, asset.Content = name, "", string(content)
 	}
 	return nil
+}
+
+func (r *StandaloneResult) renderExcalidraw(post *models.Post, options StandaloneOptions) error {
+	if !parseExcalidrawConfig(configExtra(options.Config)).Enabled || !excalidrawCodeBlockPattern.MatchString(post.ArticleHTML) {
+		return nil
+	}
+	if len(availableExcalidrawModes()) == 0 {
+		return fmt.Errorf("static Excalidraw rendering is unavailable in this build")
+	}
+	renderer, err := newExcalidrawRenderer(parseExcalidrawConfig(configExtra(options.Config)))
+	if err != nil {
+		return err
+	}
+	defer renderer.Close()
+	var pipeline visualizations.Pipeline
+	updated, _, err := replaceExcalidrawBlocks(post.ArticleHTML, func(sceneSource string) (visualizations.Asset, error) {
+		return pipeline.Compile(context.Background(), renderer, visualizations.Request{Source: sceneSource})
+	}, inlineExcalidrawFigure)
+	if err != nil {
+		return err
+	}
+	post.ArticleHTML = updated
+	r.Features["excalidraw"] = true
+	return nil
+}
+
+func configExtra(config *models.Config) map[string]any {
+	if config == nil {
+		return nil
+	}
+	return config.Extra
+}
+
+func inlineExcalidrawFigure(asset visualizations.Asset, alt string) (string, error) {
+	if _, err := visualizations.NewSVGAsset(asset.SVG); err != nil {
+		return "", err
+	}
+	return `<figure class="markata-visualization"><img src="data:image/svg+xml;base64,` + base64.StdEncoding.EncodeToString(asset.SVG) +
+		`" width="` + fmt.Sprint(asset.Width) + `" height="` + fmt.Sprint(asset.Height) +
+		`" loading="lazy" decoding="async" alt="` + html.EscapeString(alt) + `"></figure>`, nil
 }
 
 func (r *StandaloneResult) addPresentationAssets() error {

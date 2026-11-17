@@ -1322,6 +1322,34 @@ In client mode, diagrams rerender when readers change the active theme or
 palette. Chromium mode uses the same palette colors in its static SVGs. CLI mode
 uses the Mermaid CLI theme and configuration.
 
+### Excalidraw Settings (`[markata-go.excalidraw]`)
+
+Excalidraw fences render to static SVG by default. The renderer needs a local
+Chrome or Chromium installation when a build contains an enabled Excalidraw
+scene.
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `enabled` | bool | `true` | Render Excalidraw fences as static SVG. Set to `false` to keep them as highlighted JSON code. |
+| `chromium.browser_path` | string | `""` | Path to Chrome or Chromium. Auto-detected when empty. |
+| `chromium.timeout` | int | `30` | Maximum seconds to wait for each SVG export. |
+| `chromium.no_sandbox` | bool | `false` | Disable the browser sandbox for containers that require it. |
+
+```toml
+[markata-go.excalidraw]
+enabled = true
+
+[markata-go.excalidraw.chromium]
+browser_path = ""
+timeout = 30
+no_sandbox = false
+```
+
+The native Go renderer uses Markata's bundled Excalidraw export code and does
+not load the editor runtime on published pages. Static output supports shapes,
+lines, arrows, freehand strokes, and text. Embedded images, links, and web
+embeds return an error until the static renderer supports them.
+
 #### CLI Mode Settings (`[markata-go.mermaid.cli]`)
 
 | Field | Type | Default | Description |

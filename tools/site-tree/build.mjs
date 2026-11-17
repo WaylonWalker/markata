@@ -19,9 +19,13 @@ await build({entryPoints:[path.join(root,'tools/site-tree/search-history.js')], 
   format:'iife', target:'es2020', outfile:path.join(root,'pkg/workbench/web/search-history.js'), legalComments:'eof'});
 const workbenchWeb = path.join(root, 'pkg/workbench/web');
 await mkdir(workbenchWeb, {recursive:true});
+const sharedExcalidraw = path.join(root, 'pkg/visualizations/excalidraw');
+await mkdir(sharedExcalidraw, {recursive:true});
+await rm(path.join(sharedExcalidraw, 'excalidraw-editor.js'), {force:true});
+await rm(path.join(sharedExcalidraw, 'excalidraw-editor.css'), {force:true});
 await build({entryPoints:[path.join(root,'tools/site-tree/excalidraw-editor.js')], bundle:true, minify:true,
-  format:'esm', target:'es2022', outfile:path.join(workbenchWeb,'excalidraw-editor.js'), legalComments:'eof'});
-const excalidrawFonts = path.join(workbenchWeb, 'excalidraw-fonts');
+  format:'esm', target:'es2022', outfile:path.join(sharedExcalidraw,'excalidraw-editor.js'), legalComments:'eof'});
+const excalidrawFonts = path.join(sharedExcalidraw, 'excalidraw-fonts');
 await rm(excalidrawFonts, {recursive:true, force:true});
 await mkdir(excalidrawFonts, {recursive:true});
 const excalidrawFontSource = path.join(root,'tools/site-tree/node_modules/@excalidraw/excalidraw/dist/prod/fonts');
@@ -29,8 +33,11 @@ for (const font of ['Assistant','Cascadia','ComicShanns','Excalifont','Liberatio
   await cp(path.join(excalidrawFontSource,font), path.join(excalidrawFonts,font), {recursive:true});
 }
 await build({entryPoints:[path.join(root,'tools/site-tree/excalidraw-editor.css')], bundle:true, minify:true,
-  format:'esm', target:'es2022', outfile:path.join(workbenchWeb,'excalidraw-editor.css'),
+  format:'esm', target:'es2022', outfile:path.join(sharedExcalidraw,'excalidraw-editor.css'),
   assetNames:'excalidraw-fonts/[name]', loader:{'.woff2':'file'}, legalComments:'eof', conditions:['production']});
+await rm(path.join(workbenchWeb, 'excalidraw-editor.js'), {force:true});
+await rm(path.join(workbenchWeb, 'excalidraw-editor.css'), {force:true});
+await rm(path.join(workbenchWeb, 'excalidraw-fonts'), {recursive:true, force:true});
 // Retain notices for the browser runtime and its bundled dependencies.
 const licenses = [
   ['fuzzysort','node_modules/fuzzysort/LICENSE'],

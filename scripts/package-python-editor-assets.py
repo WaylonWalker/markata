@@ -15,18 +15,22 @@ assignment = next(node for node in ast.parse(source).body if isinstance(node, as
 output = io.BytesIO()
 with zipfile.ZipFile(io.BytesIO(base64.b64decode(assignment.value.value))) as archive:
     asset_root = root / 'pkg/workbench/web'
+    shared_excalidraw = root / 'pkg/visualizations/excalidraw'
     extra = {
         'search-history.js', 'favicon.ico', 'site-tree.js', 'site-tree.css',
         'site-tree.LICENSE', 'excalidraw-workbench.js', 'excalidraw-workbench.css',
         'excalidraw-editor.js', 'excalidraw-editor.css',
     }
-    fonts = asset_root / 'excalidraw-fonts'
+    fonts = shared_excalidraw / 'excalidraw-fonts'
     if fonts.is_dir():
-        extra.update(path.relative_to(asset_root).as_posix() for path in fonts.rglob('*') if path.is_file())
+        extra.update(path.relative_to(shared_excalidraw).as_posix() for path in fonts.rglob('*') if path.is_file())
+    shared_names = {'excalidraw-editor.js', 'excalidraw-editor.css'}
+    if fonts.is_dir():
+        shared_names.update(path.relative_to(shared_excalidraw).as_posix() for path in fonts.rglob('*') if path.is_file())
     names = {name for name in archive.namelist() if not name.startswith('excalidraw-fonts/')} | extra
     with zipfile.ZipFile(output, 'w', zipfile.ZIP_DEFLATED) as updated:
         for name in sorted(names):
-            asset = asset_root / name
+            asset = (shared_excalidraw / name) if name in shared_names else (asset_root / name)
             info = zipfile.ZipInfo(name, (2026, 10, 29, 0, 0, 0))
             info.compress_type = zipfile.ZIP_DEFLATED
             updated.writestr(info, asset.read_bytes() if asset.is_file() else archive.read(name))
