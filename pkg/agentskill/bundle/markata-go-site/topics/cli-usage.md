@@ -169,7 +169,7 @@ Set `MARKATA_GO_SITE_DIR` in an alias or wrapper when repeatedly using one site.
 - The Go and FastAPI browser editor examples use the existing LSP through a same-origin `/lsp` WebSocket.
   Go uses `markata editor --workspace`; FastAPI uses `MARKATA_LSP_WORKSPACE`.
   FastAPI uses `markata-go lsp --browser-workspace` behind its stdio bridge.
-  Drafts stay in memory. The Go and Python editors open files discovered by Markata glob rules; edits stay in browser drafts and do not write source files.
+  The Go and Python editors open files discovered by Markata glob rules. The Go editor keeps browser recovery and autosaves eligible site files; the FastAPI demo keeps edits in browser drafts.
   The editors complete command-catalog containers and attributes, plus Mermaid
   diagram types and directions. Press Ctrl+Space to show completions.
   See `docs/guides/go-workbench.md` and `docs/guides/fastapi-editor.md` in the Markata repository.
@@ -378,10 +378,13 @@ For quick content discovery, use `markata workspace --paths --workspace <site>`.
 The editor loads path discovery first and document metadata in the background.
 The workspace editor provides a fuzzy file picker with Ctrl/Cmd+P and the
 command palette's Open file action. Search filenames, paths, or loaded titles;
-Enter opens a result and Escape cancels. Existing browser drafts are preserved.
+Enter opens a result and Escape cancels. The Go editor’s Settings window controls
+local pick history. Use the footer’s Diagnostics drawer to inspect startup or
+preview latency, and the Compare copies action to export an unsynced draft.
 
 The Go editor retains workspace discovery, document metadata, renderer state, and
 shared LSP data for one running server. Filesystem changes invalidate that state.
 Reload the page to refresh the Files and Tags trees. Reopening a clean file loads
 its latest disk source. Edited browser drafts stay intact when the source changes.
-Browser drafts do not modify workspace files.
+Go autosave writes the selected site file using a checked disk revision.
+Ctrl/Cmd+S publishes the current post. Use Review changes to inspect it first.

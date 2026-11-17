@@ -6,6 +6,8 @@ import (
 
 	"github.com/WaylonWalker/markata/pkg/lifecycle"
 	"github.com/WaylonWalker/markata/pkg/models"
+
+	"github.com/alecthomas/chroma/v2"
 )
 
 func TestRenderMarkdownPlugin_Name(t *testing.T) {
@@ -35,6 +37,36 @@ func TestRenderMarkdownPlugin_BasicParagraph(t *testing.T) {
 	expected := "<p>Hello world</p>"
 	if !strings.Contains(post.ArticleHTML, expected) {
 		t.Errorf("expected %q in output, got %q", expected, post.ArticleHTML)
+	}
+}
+
+func TestRenderMarkdownPlugin_FeatureFencesKeepPlainSource(t *testing.T) {
+	p := NewRenderMarkdownPlugin()
+	post := &models.Post{Content: "```mermaid\ngraph TD\n  A --> B\n```"}
+
+	if err := p.renderPost(post); err != nil {
+		t.Fatalf("renderPost error: %v", err)
+	}
+	for _, want := range []string{
+		`class="language-mermaid"`,
+		"graph TD",
+	} {
+		if !strings.Contains(post.ArticleHTML, want) {
+			t.Errorf("rendered feature fences %q do not contain %q", post.ArticleHTML, want)
+		}
+	}
+}
+
+func TestPlainFeatureFenceLexerReturnsPlainText(t *testing.T) {
+	for _, source := range []string{"graph TD\n  A --> B\n", `{"type":"bar"}`} {
+		iterator, err := (&plainFeatureFenceLexer{}).Tokenise(nil, source)
+		if err != nil {
+			t.Fatalf("Tokenise(%q) error: %v", source, err)
+		}
+		token := iterator()
+		if token.Type != chroma.Text || token.Value != source {
+			t.Errorf("Tokenise(%q) = %#v, want one plain text token", source, token)
+		}
 	}
 }
 

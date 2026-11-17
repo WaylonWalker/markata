@@ -4,9 +4,9 @@
 
   function attach() {
     const workspace = window.MarkataSiteTree;
-    const tree = document.querySelector('#site-files');
+    const recentPanel = document.querySelector('#site-recent');
     const label = document.querySelector('#active-file');
-    if (!workspace?.files || !workspace?.openFile || !tree || !label) return;
+    if (!workspace?.files || !workspace?.openFile || !recentPanel || !label) return;
 
     const storageKey = 'markata-recent-files-v1:' + (workspace.workspaceId?.() || location.origin);
     const read = () => {
@@ -16,25 +16,21 @@
       } catch { return []; }
     };
     let recent = read();
-    const details = document.createElement('details');
-    details.id = 'recent-files';
-    details.className = 'recent-files';
-    details.hidden = true;
-    details.open = true;
-    const summary = document.createElement('summary');
-    summary.textContent = 'Recent files';
     const list = document.createElement('div');
     list.id = 'recent-files-list';
     list.setAttribute('aria-label', 'Recently opened workspace files');
-    details.append(summary, list);
-    tree.before(details);
+    list.className = 'recent-files';
+    const empty = document.createElement('p');
+    empty.className = 'recent-files-empty';
+    empty.textContent = 'Open a site file and it will appear here.';
+    recentPanel.append(list, empty);
 
     let current = '';
     function render() {
       const files = new Map(workspace.files().filter(file => typeof file.path === 'string')
         .map(file => [file.path, file]));
       recent = [...new Set(recent)].filter(path => files.has(path)).slice(0, 8);
-      details.hidden = !recent.length;
+      empty.hidden = Boolean(recent.length);
       list.replaceChildren();
       for (const path of recent) {
         const file = files.get(path);
@@ -60,11 +56,15 @@
         render();
         return; // Never persist the scratch buffer as a site document.
       }
+      if (window.MarkataSearch?.enabled() === false) return;
       recent = [path, ...recent.filter(previous => previous !== path)].slice(0, 8);
       try { localStorage.setItem(storageKey, JSON.stringify(recent)); }
       catch { /* Still usable in the current tab when storage is unavailable. */ }
       render();
     }
+    window.addEventListener('markata-history-cleared', () => {
+      recent=[]; try {localStorage.removeItem(storageKey);} catch {} render();
+    });
     const observer = new MutationObserver(observeActive);
     observer.observe(label, {childList:true, characterData:true, subtree:true});
     observeActive();

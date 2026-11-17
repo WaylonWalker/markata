@@ -3,8 +3,24 @@ package plugins
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
+
+// BenchmarkStandaloneFeatureFences models a long editor page with many diagrams.
+// The renderer is reused, as it is by the local workbench.
+func BenchmarkStandaloneFeatureFences(b *testing.B) {
+	source := "# Preview\n\n" + strings.Repeat("```mermaid\ngraph LR\nStart-->End\n```\n\n", 12) +
+		"```chartjs\n{\"type\":\"bar\",\"data\":{\"labels\":[\"A\"],\"datasets\":[{\"data\":[1]}]}}\n```\n"
+	renderer := NewStandaloneRenderer(StandaloneOptions{Unsafe: true, MermaidMode: "client"})
+	b.ReportAllocs()
+	b.SetBytes(int64(len(source)))
+	for b.Loop() {
+		if _, err := renderer.Render(source); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
 
 // BenchmarkRenderStandaloneFixtures reuses the site benchmark post and visual fixtures.
 // File reads are excluded; renderer setup and conditional asset generation are included.

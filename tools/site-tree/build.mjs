@@ -15,6 +15,8 @@ await collect('');
 await build({entryPoints:[path.join(root,'tools/site-tree/site-tree.js')], bundle:true, minify:true,
   format:'iife', target:'es2020', outfile:path.join(root,'pkg/workbench/web/site-tree.js'),
   define:{SITE_FILES:JSON.stringify(files)}, legalComments:'eof'});
+await build({entryPoints:[path.join(root,'tools/site-tree/search-history.js')], bundle:true, minify:true,
+  format:'iife', target:'es2020', outfile:path.join(root,'pkg/workbench/web/search-history.js'), legalComments:'eof'});
 // Retain notices for the browser runtime and its bundled dependencies.
 const licenses = [
   'fuzzysort/LICENSE', '@pierre/trees/LICENSE.md', '@pierre/trees/NOTICE.md',

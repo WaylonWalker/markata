@@ -1,6 +1,9 @@
 """Run against a Go workbench with MARKATA_GO_WORKBENCH_URL set."""
 import os
+import json
+import threading
 import unittest
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from playwright.sync_api import expect, sync_playwright
 
@@ -57,6 +60,54 @@ class GoEditorBrowserTest(unittest.TestCase):
           return links.length===new Set(links).size;
         }"""), True)
 
+    def test_new_edits_do_not_wait_for_initial_image_load(self):
+        requested = threading.Event()
+        release = threading.Event()
+
+        class SlowImage(BaseHTTPRequestHandler):
+            def do_GET(self):
+                requested.set()
+                release.wait(10)
+                self.send_response(200)
+                self.send_header("Content-Type", "image/svg+xml")
+                self.end_headers()
+                self.wfile.write(b'<svg xmlns="http://www.w3.org/2000/svg"/>')
+
+            def log_message(self, *_args):
+                pass
+
+        server = ThreadingHTTPServer(("127.0.0.1", 0), SlowImage)
+        worker = threading.Thread(target=server.serve_forever, daemon=True)
+        worker.start()
+        try:
+            context = self.browser.new_context()
+            self.addCleanup(context.close)
+            page = context.new_page()
+
+            def slow_initial_document(route):
+                response = route.fetch()
+                data = response.json()
+                if data.get("document"):
+                    image = f'<img src="http://127.0.0.1:{server.server_port}/slow.svg">'
+                    data["document"] = data["document"].replace("</body>", image + "</body>")
+                route.fulfill(response=response, body=json.dumps(data))
+
+            page.route("**/render", slow_initial_document)
+            page.goto(os.environ["MARKATA_GO_WORKBENCH_URL"])
+            for _ in range(50):
+                if requested.is_set():
+                    break
+                page.wait_for_timeout(100)
+            self.assertTrue(requested.is_set(), "initial preview did not request the slow image")
+            page.evaluate("document.querySelector('.CodeMirror').CodeMirror.setValue('# Fresh before image')")
+            expect(page.frame_locator("#preview").locator("h1")).to_have_text(
+                "Fresh before image", timeout=3000)
+            self.assertFalse(release.is_set())
+        finally:
+            release.set()
+            server.shutdown()
+            worker.join(timeout=2)
+
     def test_conditional_styles_are_added_reused_and_removed(self):
         self.edit("# Code\n\n```go\nfmt.Println(1)\n```")
         expect(self.preview.locator("h1")).to_have_text("Code")
@@ -107,6 +158,34 @@ class GoEditorBrowserTest(unittest.TestCase):
             expect(self.preview.locator(".mermaid svg")).to_contain_text(label)
         self.assertEqual(self.frame.evaluate("window.__persistentPreview"), "retained")
 
+    def test_unrelated_edit_preserves_rendered_mermaid(self):
+        diagram = "```mermaid\ngraph LR\nStart-->End\n```"
+        self.edit(f"# Mermaid\n\n{diagram}\n\nBefore")
+        expect(self.preview.locator("pre.mermaid svg")).to_be_visible()
+        self.frame.evaluate("window.__mermaidSvg = document.querySelector('pre.mermaid svg')")
+
+        self.edit(f"# Mermaid\n\n{diagram}\n\nAfter")
+        expect(self.preview.locator(".post-content p").last).to_have_text("After")
+        self.assertTrue(self.frame.evaluate(
+            "window.__mermaidSvg === document.querySelector('pre.mermaid svg')"))
+
+        self.edit("# Mermaid\n\n```mermaid\ngraph LR\nChanged-->End\n```\n\nAfter")
+        expect(self.preview.locator("pre.mermaid svg")).to_contain_text("Changed")
+        self.assertFalse(self.frame.evaluate(
+            "window.__mermaidSvg === document.querySelector('pre.mermaid svg')"))
+
+    def test_offscreen_mermaid_renders_when_scrolled_into_view(self):
+        paragraphs = "\n\n".join(f"Paragraph {number}. " + "Read this text. " * 20
+                                  for number in range(30))
+        self.edit("# Long page\n\n" + paragraphs +
+                  "\n\n```mermaid\ngraph LR\nLazy-->Visible\n```")
+        expect(self.preview.locator("pre.mermaid")).to_have_count(1)
+        self.page.wait_for_timeout(500)
+        expect(self.preview.locator("pre.mermaid svg")).to_have_count(0)
+
+        self.frame.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+        expect(self.preview.locator("pre.mermaid svg")).to_contain_text("Lazy")
+
 
     def test_publish_rich_diff_marks_prose_and_safely_escapes_text(self):
         result = self.page.evaluate("""() => window.MarkataRichPublishDiff.richHTML(
@@ -122,6 +201,56 @@ class GoEditorBrowserTest(unittest.TestCase):
         )""")
         self.assertNotIn('<script>', risky)
         self.assertIn('&lt;script&gt;', risky)
+
+    def test_continuous_typing_still_updates_preview(self):
+        self.page.evaluate("""() => {
+          window.__typingProbe={done:false,updates:0};
+          window.addEventListener('message', event => {
+            if(event.data?.type==='preview-updated' && !window.__typingProbe.done)
+              window.__typingProbe.updates++;
+          });
+          const editor=document.querySelector('.CodeMirror').CodeMirror;
+          let count=0;
+          const interval=setInterval(() => {
+            editor.replaceRange(`\\nLive typing ${count}`, {line:editor.lastLine(),ch:editor.getLine(editor.lastLine()).length}, null, '+input');
+            count++;
+            if(count===40) {clearInterval(interval);window.__typingProbe.done=true;}
+          },40);
+        }""")
+        self.page.wait_for_function('window.__typingProbe.done', timeout=10000)
+        self.assertGreater(self.page.evaluate('window.__typingProbe.updates'), 0)
+        expect(self.preview.locator('.post-content')).to_contain_text('Live typing 39', timeout=10000)
+
+    def test_preview_discards_obsolete_inflight_frame_render(self):
+        self.edit("# Latest edit")
+        expect(self.preview.locator("h1")).to_have_text("Latest edit")
+        self.page.evaluate("""() => {
+          const preview=document.querySelector('#preview').contentWindow;
+          // Simulate an older completed render arriving after the editor
+          // announced a newer source revision.
+          preview.postMessage({type:'preview-invalidate',version:900000},'*');
+          preview.postMessage({
+            type:'markdown-render',version:899999,
+            html:'<h1>Obsolete rendering</h1>',
+            source_lines:[0],source_anchors:[],source_offset:0,line_count:1,
+            feature_head_html:'',body_end_html:'',attributes:{}
+          },'*');
+        }""")
+        self.page.wait_for_timeout(150)
+        expect(self.preview.locator("h1")).to_have_text("Latest edit")
+        self.assertEqual(self.frame.evaluate("window.__persistentPreview"), "retained")
+
+    def test_publish_rich_diff_one_edit_in_large_page(self):
+        result = self.page.evaluate("""() => {
+          const old=Array.from({length:600},(_,i)=>'<p>Paragraph '+i+'</p>');
+          const next=[...old];
+          next[300]='<p>Paragraph 300 with one small edit</p>';
+          return window.MarkataRichPublishDiff.richHTML(old.join(''),next.join(''));
+        }""")
+        self.assertIn('mk-rich-insert', result)
+        self.assertIn('one', result)
+        self.assertIn('Paragraph 599', result)
+        self.assertNotIn('too complex', result)
 
     def test_publish_rich_diff_keeps_complex_blocks_as_before_after(self):
         result = self.page.evaluate("""() => window.MarkataRichPublishDiff.richHTML(

@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -16,16 +17,25 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const (
+	contentTemplateNoteName    = "note"
+	contentTemplatePingName    = "ping"
+	contentTemplateArticleName = "article"
+	contentTemplateImageName   = "image"
+	contentTemplateGuideName   = "guide"
+	contentTemplateInlineName  = "inline"
+)
+
 var contentTemplateAliases = map[string][]string{
-	"article": {"blog-post", "essay", "tutorial"},
-	"note":    {"ping", "thought", "status", "tweet"},
-	"photo":   {"shot", "shots", "image", "gallery"},
-	"video":   {"clip", "cast", "stream"},
-	"link":    {"bookmark", "til", "stars"},
-	"quote":   {"quotation"},
-	"guide":   {"series", "step", "chapter"},
-	"inline":  {"gratitude", "micro"},
-	"contact": {"character", "person"},
+	contentTemplateArticleName: {"blog-post", "essay", "tutorial"},
+	contentTemplateNoteName:    {"thought", "status", "tweet"},
+	tmplPhoto:                  {"shot", "shots", contentTemplateImageName, "gallery"},
+	tmplVideo:                  {"clip", "cast", "stream"},
+	tmplLink:                   {"bookmark", "til", "stars"},
+	tmplQuote:                  {"quotation"},
+	contentTemplateGuideName:   {"series", "step", "chapter"},
+	contentTemplateInlineName:  {"gratitude", "micro"},
+	tmplContact:                {"character", "person"},
 }
 
 var (
@@ -55,6 +65,7 @@ type ContentTemplate struct {
 	Aliases         []string
 	ValidationError string
 	Directory       string
+	FilenameMode    string
 	Frontmatter     map[string]interface{}
 	Body            string
 	Source          string // "builtin", "config", or "file"
@@ -131,13 +142,23 @@ func builtinTemplates() map[string]ContentTemplate {
 			Body:   "Write your article here...",
 			Source: "builtin",
 		},
-		"note": {
-			Name:      "note",
+		contentTemplateNoteName: {
+			Name:      contentTemplateNoteName,
 			Directory: "pages/note",
 			Frontmatter: map[string]interface{}{
-				"template": "note",
+				"template": contentTemplateNoteName,
 			},
 			Body:   "A quick note...",
+			Source: "builtin",
+		},
+		contentTemplatePingName: {
+			Name:      contentTemplatePingName,
+			Directory: "pages/ping",
+			Frontmatter: map[string]interface{}{
+				"template":    contentTemplatePingName,
+				"templateKey": contentTemplatePingName,
+			},
+			Body:   "A quick ping...",
 			Source: "builtin",
 		},
 		"photo": {
@@ -285,9 +306,9 @@ func init() {
 // loadTemplates discovers and loads all available content templates.
 func loadTemplates() map[string]ContentTemplate {
 	templates := builtinTemplates()
+	cfg := loadConfigSafe()
 
 	// Load templates from config if available
-	cfg := loadConfigSafe()
 	if cfg != nil {
 		// Apply placement overrides from config
 		for name, dir := range cfg.ContentTemplates.Placement {
@@ -317,6 +338,29 @@ func loadTemplates() map[string]ContentTemplate {
 	} else {
 		// No config, try default directory
 		loadTemplatesFromDir("content-templates", templates)
+	}
+	if cfg != nil {
+		for name, directory := range cfg.ContentTemplates.Placement {
+			if template, exists := templates[name]; exists {
+				template.Directory = directory
+				templates[name] = template
+			} else if template, resolvedName, ok := resolveTemplateSelection(name, templates); ok {
+				template.Directory = directory
+				templates[resolvedName] = template
+			}
+		}
+		for name, mode := range cfg.ContentTemplates.FilenameMode {
+			if mode != listSortTitle && mode != "numbered" {
+				continue
+			}
+			if template, exists := templates[name]; exists {
+				template.FilenameMode = mode
+				templates[name] = template
+			} else if template, resolvedName, ok := resolveTemplateSelection(name, templates); ok {
+				template.FilenameMode = mode
+				templates[resolvedName] = template
+			}
+		}
 	}
 
 	return templates
@@ -546,6 +590,14 @@ func mergeTemplateConfig(base, override *configWrapper) {
 			base.ContentTemplates.Placement[name] = directory
 		}
 	}
+	if len(override.ContentTemplates.FilenameMode) > 0 {
+		if base.ContentTemplates.FilenameMode == nil {
+			base.ContentTemplates.FilenameMode = make(map[string]string)
+		}
+		for name, mode := range override.ContentTemplates.FilenameMode {
+			base.ContentTemplates.FilenameMode[name] = mode
+		}
+	}
 	if override.ContentTemplates.Templates != nil {
 		base.ContentTemplates.Templates = override.ContentTemplates.Templates
 	}
@@ -554,9 +606,10 @@ func mergeTemplateConfig(base, override *configWrapper) {
 // configWrapper wraps the content templates config for safe loading.
 type configWrapper struct {
 	ContentTemplates struct {
-		Directory string            `yaml:"directory" toml:"directory" json:"directory"`
-		Placement map[string]string `yaml:"placement" toml:"placement" json:"placement"`
-		Templates []struct {
+		Directory    string            `yaml:"directory" toml:"directory" json:"directory"`
+		Placement    map[string]string `yaml:"placement" toml:"placement" json:"placement"`
+		FilenameMode map[string]string `yaml:"filename_mode" toml:"filename_mode" json:"filename_mode"`
+		Templates    []struct {
 			Name        string                 `yaml:"name" toml:"name" json:"name"`
 			Directory   string                 `yaml:"directory" toml:"directory" json:"directory"`
 			Frontmatter map[string]interface{} `yaml:"frontmatter" toml:"frontmatter" json:"frontmatter"`
@@ -675,6 +728,17 @@ func writeContentFile(title, slug, outputDir string, draft, draftSet bool, tags 
 	if template.ValidationError != "" {
 		return fmt.Errorf("invalid starter %q: %s", template.Name, template.ValidationError)
 	}
+	if template.FilenameMode == "numbered" {
+		prefix := generateSlug(template.Name)
+		if prefix == "" {
+			prefix = "post"
+		}
+		next, err := nextNumberedSlug(outputDir, prefix)
+		if err != nil {
+			return fmt.Errorf("find next %s filename: %w", prefix, err)
+		}
+		slug = next
+	}
 	filename := slug + ".md"
 	fullPath := filepath.Join(outputDir, filename)
 
@@ -710,6 +774,34 @@ func writeContentFile(title, slug, outputDir string, draft, draftSet bool, tags 
 	}
 
 	return nil
+}
+
+func nextNumberedSlug(directory, prefix string) (string, error) {
+	entries, err := os.ReadDir(directory)
+	if os.IsNotExist(err) {
+		return prefix + "-1", nil
+	}
+	if err != nil {
+		return "", err
+	}
+	maximum := 0
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasPrefix(entry.Name(), prefix+"-") {
+			continue
+		}
+		extension := strings.ToLower(filepath.Ext(entry.Name()))
+		switch extension {
+		case ".md", ".markdown", ".mdown", ".mkd":
+		default:
+			continue
+		}
+		numberText := strings.TrimSuffix(strings.TrimPrefix(entry.Name(), prefix+"-"), extension)
+		number, parseErr := strconv.Atoi(numberText)
+		if parseErr == nil && number > maximum {
+			maximum = number
+		}
+	}
+	return fmt.Sprintf("%s-%d", prefix, maximum+1), nil
 }
 
 func runNewCommand(cmd *cobra.Command, args []string) error {

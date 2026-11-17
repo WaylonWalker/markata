@@ -8,7 +8,7 @@ tags: [documentation, editor, keyboard]
 
 # Application keyboard shortcuts
 
-In the Go workbench, open **Editor settings → Keyboard shortcuts…** or press **Ctrl/Cmd+K**, then **Ctrl/Cmd+S** with the VS Code preset. Search for commands, select a shortcut to record a new one, or reset your overrides. Markata rejects conflicting bindings.
+In the Go workbench, open **Editor settings → Keyboard Shortcuts** or press **Ctrl/Cmd+K**, then **Ctrl/Cmd+S** with the VS Code preset. Search for commands, select a shortcut to record a new one, or reset your overrides. Markata rejects conflicting bindings.
 
 The command palette has **Editor keymap: Default/Vim/Emacs/Sublime** actions,
 which persist the existing Markdown editor keymap independently of the app preset.
@@ -26,9 +26,9 @@ which persist the existing Markdown editor keymap independently of the app prese
 | Preview-only toggle | Ctrl/Cmd+Alt+V | Ctrl/Cmd+Alt+V |
 | Toggle line wrapping | Alt+Z | Alt+Z |
 | Toggle Problems panel | Ctrl/Cmd+Shift+M | Ctrl/Cmd+Shift+M |
-| Save now | Ctrl/Cmd+S | Ctrl/Cmd+S |
+| Publish Current Post | Ctrl/Cmd+S | Ctrl/Cmd+S |
 | New post from template | Ctrl/Cmd+Alt+N | Ctrl/Cmd+Alt+N |
-| Review & Publish | Ctrl/Cmd+Shift+Enter | Ctrl/Cmd+Shift+Enter |
+| Review changes | Ctrl/Cmd+Shift+Enter | Ctrl/Cmd+Shift+Enter |
 | Shortcut settings | Ctrl/Cmd+K, Ctrl/Cmd+S | Ctrl/Cmd+Alt+K |
 
 A comma between key combinations denotes a **sequence**, not a simultaneous key press. On some platforms, an operating-system shortcut may take precedence. You can remap Markata actions through settings.

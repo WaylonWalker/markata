@@ -22,6 +22,12 @@ The editor loads its sandboxed preview document once, then sends fragment update
 to the same frame. Shared styles and loaded script dependencies persist across
 edits. Conditional styles are reconciled without duplicates, old Chart.js
 instances are destroyed, and generated initialization scripts run in order.
+The initial preview MUST report content-ready after the article and bridge are
+available, without waiting for deferred feature initialization. It MUST accept
+latest-wins fragment updates after blocking preview scripts are parsed, without
+waiting for deferred module initialization or the iframe load event. Diagnostics
+MUST distinguish initial frame content readiness, script readiness, and the
+iframe load event from later iframe patch timing.
 The initial document includes each shared stylesheet once. Feature styles are
 marked for replacement and removal. The bridge accepts updates only from its
 parent; it does not grant same-origin access or replay DOMContentLoaded.
@@ -41,9 +47,52 @@ Workspace reads require a loopback client and a localhost or loopback Host.
 when `Sec-Fetch-Site` is present, it must be `same-origin`. Missing, malformed,
 or foreign origins are rejected with HTTP 403 before the workspace is changed.
 
-The browser waits 100 ms after the latest edit before rendering, runs at most one
-request at a time, coalesces pending edits, and rejects stale revisions. The
-status reports Go render time separately from total edit-to-preview latency.
+Workspace metadata indexing MUST parse large uncached file sets with the
+loader's bounded worker pool. Small file sets MAY load sequentially to avoid
+worker overhead. Index construction remains asynchronous to editor startup,
+and one workspace store MUST reuse parsed entries for unchanged files for the
+life of its server process.
+
+The Git Changes view MUST request a fresh working-tree inventory from
+`GET /workspace/changes` when the editor attaches, so its badge is ready before
+the view opens. The browser MUST retain the last inventory in memory, render it
+immediately when opening the view, and refresh it in the background. Successful
+workspace saves, window focus, manual refresh, and the open-view polling interval
+MUST trigger revalidation. The server MUST report current Git status rather than
+serving a long-lived cached snapshot. The active-post Review action MUST be
+located in the Changes panel header. Change rows MUST have enough
+vertical spacing to distinguish filenames, status, and actions in the narrow
+sidebar.
+Workspace navigation MUST use stable tabs for Recent, Files, Feeds, Tags, and
+Changes. Recent files MUST occupy their own panel rather than appearing inside
+Files. The tablist MUST support arrow-key navigation and expose the selected tab
+and panel accessibly. Switching tabs MUST NOT resize or move the sidebar shell.
+Unavailable Feeds and Tags tabs MUST remain disabled until their data is ready,
+or when the site has no matching entries.
+
+The Preview speed setting MUST support Auto, Fast, Normal, and Slow, and MUST
+persist in browser storage. Normal is the default and waits 50 ms after the
+latest edit, with a 250 ms maximum delay during continuous typing. Slow waits
+300 ms and starts a preview within 1,000 ms during continuous typing. Fast starts
+on each editor change without a debounce. At most one render request may be
+active at a time, and the client MUST keep at most one pending revision. Newer
+edits MUST replace pending work, and stale revisions MUST NOT be mounted in the
+preview. The iframe MUST keep at most one active update and one replaceable latest
+update, and MUST discard stale queued revisions. Auto MUST use Normal by default.
+It MUST select Slow when the browser reports data saver, a 2G connection, four
+or fewer logical CPU cores, 4 GiB or less device memory, or a discharging battery
+at or below 20%, when those signals are available. Auto MUST NOT select Fast.
+Performance Diagnostics MUST show the latest preview as a four-stage timeline:
+waiting (including debounce), server queue plus Go rendering, HTTP/response
+overhead, and preview display. HTTP/response overhead is the browser-measured
+request duration minus server queue and render timings; it includes server
+response encoding and browser JSON decoding, and MUST NOT be described as pure
+network time. The display stage MUST include iframe patch timing when available,
+including HTML parsing, DOM reconciliation, feature setup, scroll-map collection,
+scroll-map ordering, and caret-marker synchronization. Nested scroll anchors MUST
+map to their top-level preview block in linear time. The copied local diagnostics
+report MUST include the latest stage values and iframe details without source
+content or paths.
 Content patches preserve unchanged preview blocks. When the editor has focus,
 the actual caret line remains the synchronization target through the completed
 patch, including edits that leave the caret on the same source line. Its preview
@@ -77,6 +126,10 @@ participant IDs, labels, and colors so additional editor cursors can be added
 without changing the marker rendering model. Clicking rendered text in the
 preview MUST move the source cursor to the matching source position when a
 source match exists; links MUST retain their normal navigation behavior.
+When the local cursor follows trailing spaces that Markdown collapses, the
+preview SHOULD show subtle whitespace markers across the collapsed spaces and
+place the caret after the spaces before the source cursor. This cue MUST NOT
+change rendered Markdown or apply to non-trailing spaces.
 
 
 ## Integration benchmark

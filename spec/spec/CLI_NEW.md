@@ -139,7 +139,7 @@ URL-first link errors include the title suggestion and a recovery command.
 - `huh.Select` showing all available templates
 - Default: `post` (or value from `--template` flag)
 - Templates sourced from: builtins, config, content-templates/ directory
-- Built-in supported content types are shown with aliases when available, for example `note (aka: ping, thought, status, tweet)`
+- Built-in supported content types are shown with aliases when available, for example `note (aka: thought, status, tweet)`; Ping is a separate type in `pages/ping/`.
 - Each option shows: `name (aka: aliases) -> directory/ (source)` when aliases exist, otherwise `name -> directory/ (source)`
 - The command accepts either the canonical built-in type or any built-in alias via `--template`; aliases are written back to frontmatter as the selected `template`/`templateKey` value
 
@@ -151,6 +151,9 @@ URL-first link errors include the title suggestion and a recovery command.
   3. A "Custom..." option that reveals a text input
 - Default directories per template type are configurable in config under
   `[content_templates.placement]`
+- Filename defaults are configurable in `[content_templates.filename_mode]` as
+  `"title"` or `"numbered"`. Numbered files use the next available
+  `<template>-N` name in the selected directory.
 - Default directory pattern: `pages/<template>` for non-standard templates
 
 #### 4. Tag Selection

@@ -44,12 +44,14 @@ const placeEditorCursor = position => {
 };
 window.addEventListener('message',event=>{
   if (event.source !== frame.contentWindow) return;
+  if (event.data?.type === 'preview-content-ready') markPreviewContentReady();
+  if (event.data?.type === 'preview-features-ready') markPreviewReady();
   if (event.data?.type === 'open-post') window.MarkataSiteTree?.openPost(event.data.slug);
   if (event.data?.type === 'place-editor-cursor') placeEditorCursor(event.data);
   if (event.data?.type === 'workbench-preview-focus-editor')
     window.MarkataShortcuts?.execute('workbench.focusEditor');
   if (event.data?.type === 'preview-updated' && event.data.version === revision) {
-    finishPreview(event.data.version);
+    finishPreview(event.data.version,event.data.patch?.timing);
     scrollSync.previewUpdated();
   }
 });
@@ -64,7 +66,7 @@ const editor = CodeMirror.fromTextArea(source, {
   indentUnit:2, tabSize:4, viewportMargin:10, cursorScrollMargin:110, screenReaderLabel:'Markdown source'
 });
 const settingsDialog = document.querySelector('#settings-dialog');
-document.querySelector('#settings-open').addEventListener('click',() => settingsDialog.showModal());
+document.querySelector('#settings-open').addEventListener('click',() => window.MarkataSettings.open());
 document.querySelector('#settings-close').addEventListener('click',() => settingsDialog.close());
 const wrapSetting = document.querySelector('#setting-wrap');
 try { wrapSetting.checked = localStorage.getItem('markata-editor-wrap') !== 'false'; } catch { storageWarning(); }
@@ -140,16 +142,36 @@ const templateQuery = document.querySelector('#template-picker-query');
 const templateResults = document.querySelector('#template-picker-results');
 const templateCount = document.querySelector('#template-picker-count');
 const createTitle = document.querySelector('#create-title');
+const createLinkField = document.querySelector('#create-link-field');
+const createLinkURL = document.querySelector('#create-link-url');
+const createImageField = document.querySelector('#create-image-field');
+const createImageURL = document.querySelector('#create-image-url');
+const createImageFile = document.querySelector('#create-image-file');
+const createImagePaste = document.querySelector('#create-image-paste');
+const createImagePreview = document.querySelector('#create-image-preview');
+const createImageName = document.querySelector('#create-image-name');
+const createImageStorage = document.querySelector('#create-image-storage');
+const createNumbering = document.querySelector('#create-numbering');
+const createFilenameMode = document.querySelector('#create-filename-mode');
+const createRememberDefaults = document.querySelector('#create-remember-defaults');
+const createDate = document.querySelector('#create-date');
 const createSlug = document.querySelector('#create-slug');
 const createDirectory = document.querySelector('#create-directory');
+const createDirectoryHelp = document.querySelector('#create-directory-help');
 const createPathPreview = document.querySelector('#create-path-preview');
 let contentTemplates = [];
+let imageUploadProvider = 'local';
+let selectedContentTemplate = null;
+let selectedImageFile = null;
+let imagePreviewURL = '';
+let numberLookupRevision = 0;
 async function showCreateDialog() {
   try {
     const response = await fetch('/workspace/templates',{cache:'no-store'});
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Templates are unavailable.');
     contentTemplates = data.templates || [];
+    imageUploadProvider = data.image_upload || 'local';
     templateQuery.value = '';
     renderTemplateChoices();
     templatePicker.showModal();
@@ -175,6 +197,8 @@ function templateScore(template, query) {
 }
 function chooseTemplate(template) {
   if (!template) return;
+  numberLookupRevision++;
+  selectedContentTemplate = template;
   templatePicker.dataset.selectedTemplate = template.id;
   templatePicker.close();
   createError.hidden = true;
@@ -182,10 +206,29 @@ function chooseTemplate(template) {
   const titleMatch = template.source.match(/^title:\s*(.*)$/m);
   const parsedTitle = titleMatch?.[1]?.trim().replace(/^(?:"([\s\S]*)"|'([\s\S]*)')$/, '$1$2');
   const title = !parsedTitle || parsedTitle.includes('{{') ? template.name : parsedTitle;
-  createTitle.value = title;
+  const isLinkPost = template.id === 'builtin:link';
+  const isImagePost = ['builtin:photo','builtin:shot'].includes(template.id) || /^image:\s*/m.test(template.source);
+  createLinkField.hidden = !isLinkPost;
+  createLinkURL.required = isLinkPost;
+  createLinkURL.value = '';
+  createImageField.hidden = !isImagePost;
+  createImageStorage.textContent = imageUploadProvider === 'dropper'
+    ? 'Uploaded images go to Dropper.'
+    : 'Uploaded images are copied to static/images/.';
+  createImageURL.value = '';
+  createImageFile.value = '';
+  clearSelectedImage();
+  createTitle.value = isLinkPost ? '' : title;
+  createTitle.placeholder = isLinkPost ? 'A title for the link' : '';
   createSlug.value = '';
+  createSlug.readOnly = false;
   createSlug.placeholder = slugify(title) || 'post-title';
   createDirectory.value = defaultContentDirectory(template);
+  createDirectoryHelp.textContent = `Current site default for ${template.name}: ${template.directory || createDirectory.value}.`;
+  createDate.value = '';
+  createNumbering.hidden = false;
+  createFilenameMode.value = template.filename_mode || (template.numbered_by_default ? 'numbered' : 'title');
+  createRememberDefaults.checked = true;
   updateCreatePathPreview();
   createDialog.showModal();
   createTitle.focus();
@@ -205,6 +248,12 @@ function renderTemplateChoices() {
     const name = document.createElement('strong'); name.textContent = template.name;
     const description = document.createElement('span'); description.textContent = template.description || template.id;
     button.append(name,description);
+    if (template.aliases?.length) {
+      const aliases = document.createElement('span');
+      aliases.className = 'template-aliases';
+      aliases.textContent = `Also known as: ${template.aliases.join(', ')}`;
+      button.append(aliases);
+    }
     button.addEventListener('pointermove',() => selectTemplateChoice(index));
     button.addEventListener('click',() => chooseTemplate(template));
     return button;
@@ -223,16 +272,82 @@ function slugify(value) {
   return value.normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase()
     .replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
 }
+function clearSelectedImage() {
+  selectedImageFile = null;
+  if (imagePreviewURL) URL.revokeObjectURL(imagePreviewURL);
+  imagePreviewURL = '';
+  createImagePreview.removeAttribute('src');
+  createImagePreview.hidden = true;
+  createImageName.hidden = true;
+  createImageName.textContent = '';
+}
+function selectImageFile(file) {
+  if (!file || !/^image\/(?:png|jpeg|gif|webp)$/.test(file.type)) {
+    createError.textContent = 'Choose a PNG, JPEG, GIF, or WebP image.';
+    createError.hidden = false;
+    return;
+  }
+  if (file.size > 15 * 1024 * 1024) {
+    createError.textContent = 'Image must be 15 MiB or smaller.';
+    createError.hidden = false;
+    return;
+  }
+  createError.hidden = true;
+  createImageURL.value = '';
+  clearSelectedImage();
+  selectedImageFile = file;
+  imagePreviewURL = URL.createObjectURL(file);
+  createImagePreview.src = imagePreviewURL;
+  createImagePreview.hidden = false;
+  createImageName.textContent = `${file.name || 'Pasted image'} · ${(file.size / 1024 / 1024).toFixed(1)} MiB`;
+  createImageName.hidden = false;
+}
+function previewRemoteImage(value) {
+  const raw = value.trim();
+  if (!raw) return;
+  let parsed;
+  try { parsed = new URL(raw); } catch { return; }
+  if (!['http:','https:'].includes(parsed.protocol) || !parsed.hostname || parsed.username || parsed.password) return;
+  createImagePreview.src = parsed.href;
+  createImagePreview.hidden = false;
+  createImageName.textContent = 'Previewing remote image';
+  createImageName.hidden = false;
+}
 function defaultContentDirectory(template) {
   if (template.directory) return template.directory;
   const key = template.id.replace(/^builtin:/,'');
   return ({thought:'pages/thoughts',note:'pages/notes',photo:'pages/photos'})[key] || 'pages/blog';
 }
 function updateCreatePathPreview() {
+  const template = selectedContentTemplate;
+  if (createFilenameMode.value === 'numbered') {
+    const number = template.next_number || 1;
+    const prefix = template.number_prefix || slugify(template.name);
+    createSlug.value = `${prefix}-${number}`;
+    createSlug.readOnly = true;
+  } else {
+    if (createSlug.readOnly) createSlug.value = '';
+    createSlug.readOnly = false;
+  }
   const slug = createSlug.value.trim() || slugify(createTitle.value) || 'new-post';
   const directory = createDirectory.value.trim().replace(/\\/g,'/').replace(/^\/+|\/+$/g,'');
   createSlug.placeholder = slugify(createTitle.value) || 'post-title';
   createPathPreview.textContent = `${directory ? `${directory}/` : ''}${slug}.md`;
+}
+async function refreshNextContentNumber() {
+  if (!selectedContentTemplate || createFilenameMode.value !== 'numbered') return;
+  const revision = ++numberLookupRevision;
+  const directory = createDirectory.value.trim().replace(/\\/g,'/').replace(/^\/+|\/+$/g,'');
+  const prefix = selectedContentTemplate.number_prefix || slugify(selectedContentTemplate.name);
+  try {
+    const query = new URLSearchParams({directory,prefix});
+    const response = await fetch('/workspace/content-number?'+query.toString(),{cache:'no-store'});
+    const data = await response.json();
+    if (response.ok && revision === numberLookupRevision && Number.isInteger(data.next_number)) {
+      selectedContentTemplate.next_number = data.next_number;
+      updateCreatePathPreview();
+    }
+  } catch {}
 }
 templateQuery.addEventListener('input',() => {activeTemplate=0;renderTemplateChoices();});
 templatePicker.querySelector('#template-picker-close').addEventListener('click',() => templatePicker.close());
@@ -252,22 +367,100 @@ document.querySelector('#create-cancel').addEventListener('click',() => createDi
 createTitle.addEventListener('input',updateCreatePathPreview);
 createSlug.addEventListener('input',updateCreatePathPreview);
 createDirectory.addEventListener('input',updateCreatePathPreview);
+createDirectory.addEventListener('change',refreshNextContentNumber);
+createFilenameMode.addEventListener('change',() => {updateCreatePathPreview();refreshNextContentNumber();});
+createImageURL.addEventListener('input',() => {
+  if(createImageURL.value.trim()){
+    createImageFile.value='';
+    clearSelectedImage();
+    previewRemoteImage(createImageURL.value);
+  }else clearSelectedImage();
+});
+createImageFile.addEventListener('change',() => selectImageFile(createImageFile.files?.[0]));
+createImagePaste.addEventListener('click',() => createImageFile.click());
+createImagePaste.addEventListener('keydown',event => {
+  if(event.key==='Enter'||event.key===' '){event.preventDefault();createImageFile.click();}
+});
+createImagePaste.addEventListener('dragover',event => {event.preventDefault();createImagePaste.dataset.dragging='true';});
+createImagePaste.addEventListener('dragleave',() => delete createImagePaste.dataset.dragging);
+createImagePaste.addEventListener('drop',event => {
+  event.preventDefault();delete createImagePaste.dataset.dragging;
+  selectImageFile([...event.dataTransfer.files].find(file=>file.type.startsWith('image/')));
+});
+createDialog.addEventListener('paste',event => {
+  if(!createDialog.open)return;
+  const item=[...(event.clipboardData?.items||[])].find(candidate=>candidate.type.startsWith('image/'));
+  const file=item?.getAsFile();
+  if(file){event.preventDefault();selectImageFile(file);}
+});
+createDialog.addEventListener('close',clearSelectedImage);
+function setFrontmatterImage(source, imageURL) {
+  const match=String(source).match(/^(---\r?\n)([\s\S]*?)(\r?\n---(?:\r?\n|$))/);
+  if(!match)return `---\nimage: ${JSON.stringify(imageURL)}\n---\n\n${source}`;
+  const lines=match[2].split(/\r?\n/);
+  let found=false;
+  for(let i=0;i<lines.length;i++){
+    if(/^image:\s*/.test(lines[i])){lines[i]=`image: ${JSON.stringify(imageURL)}`;found=true;break;}
+  }
+  if(!found)lines.push(`image: ${JSON.stringify(imageURL)}`);
+  return `${match[1]}${lines.join('\n')}${match[3]}${String(source).slice(match[0].length)}`;
+}
 document.querySelector('#create-form').addEventListener('submit',async event => {
   event.preventDefault(); createError.hidden = true;
+  const submitButton=document.querySelector('#create-submit');
+  submitButton.disabled=true;
+  if (createFilenameMode.value === 'numbered') await refreshNextContentNumber();
   const template = contentTemplates.find(item => item.id === templatePicker.dataset.selectedTemplate);
   const title = createTitle.value.trim();
   const slug = createSlug.value.trim() || slugify(title);
+  const filenameMode = createFilenameMode.value;
   const directory = createDirectory.value.trim().replace(/\\/g,'/').replace(/^\/+|\/+$/g,'');
-  const path = `${directory ? `${directory}/` : ''}${slug}.md`;
-  if (!template || !title || !slug || !path) return;
-  const source = window.MarkataContentStarters.render(template.source,title,slug);
+  const path = `${directory && directory !== '.' ? `${directory}/` : ''}${slug}.md`;
+  if (!template || !title || !slug || !path) {submitButton.disabled=false;return;}
+  let source = window.MarkataContentStarters.render(template.source,title,slug,new Date(),createDate.value);
   try {
-    const response = await fetch('/workspace/file?path=' + encodeURIComponent(path),{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:source});
+    if (template.id === 'builtin:link') {
+      let sourceURL;
+      try { sourceURL = new URL(createLinkURL.value.trim()); }
+      catch { throw new Error('Enter a valid source URL beginning with https:// or http://.'); }
+      if (!['https:','http:'].includes(sourceURL.protocol) ||
+          !sourceURL.hostname || sourceURL.username || sourceURL.password) {
+        throw new Error('Use a public-style http(s) URL without embedded credentials.');
+      }
+      // Preserve the starter fields and quote the URL as a YAML string.
+      // Never fetch remote metadata from the editor client or Go server.
+      source = source.replace(/^url:\s*.*$/m, () => 'url: ' + JSON.stringify(sourceURL.href));
+    }
+    const imageURL=createImageURL.value.trim();
+    if(imageURL){
+      let parsedImageURL;
+      try{parsedImageURL=new URL(imageURL);}catch{throw new Error('Enter a valid image URL beginning with https:// or http://.');}
+      if(!['https:','http:'].includes(parsedImageURL.protocol)||!parsedImageURL.hostname||parsedImageURL.username||parsedImageURL.password)
+        throw new Error('Use a public-style http(s) image URL without embedded credentials.');
+      source=setFrontmatterImage(source,parsedImageURL.href);
+    }
+    const changedDefaults = directory !== template.directory || filenameMode !== (template.filename_mode || 'title');
+    if (createRememberDefaults.checked && changedDefaults) {
+      const settingsResponse = await fetch('/workspace/template-settings', {
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({id:template.id,directory,filename_mode:filenameMode})
+      });
+      const settingsData = await settingsResponse.json();
+      if (!settingsResponse.ok) throw new Error(settingsData.error || 'Cannot save these site defaults.');
+    }
+    let response;
+    if(selectedImageFile){
+      const form=new FormData();form.set('path',path);form.set('source',source);form.set('image_name',slug);form.set('image',selectedImageFile,selectedImageFile.name||'clipboard-image');
+      response=await fetch('/workspace/new-post',{method:'POST',body:form});
+    }else{
+      response=await fetch('/workspace/file?path='+encodeURIComponent(path),{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:source});
+    }
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Cannot create this file.');
     window.MarkataSiteTree?.activate(path);
     createDialog.close(); location.reload();
   } catch (error) { createError.textContent = error.message; createError.hidden = false; }
+  finally {submitButton.disabled=false;}
 });
 window.MarkataFrontmatter.attach(editor);
 const appShortcuts = window.MarkataShortcuts;
@@ -287,7 +480,8 @@ function toggleSidebar(visible = workbench.classList.contains('sidebar-hidden'))
 function focusExplorer() {
   toggleSidebar(true);
   const tree = document.querySelector('.site-tree:not([hidden])');
-  (tree?.querySelector('[tabindex="0"], button, [role="treeitem"]') || document.querySelector('#site-view'))?.focus();
+  (tree?.querySelector('[tabindex="0"], button, [role="treeitem"]') ||
+    document.querySelector('#workspace-view-tabs [aria-selected="true"]'))?.focus();
 }
 const registerApp = (id,label,category,bindings,run,description='') =>
   appShortcuts.register({id,label,category,bindings,run,description});
@@ -321,10 +515,10 @@ registerApp('workbench.lineWrap','Toggle Line Wrapping','Writing',
   () => {wrapSetting.checked=!wrapSetting.checked;wrapSetting.dispatchEvent(new Event('change'));});
 registerApp('workbench.problems','Toggle Problems','Diagnostics',
   {vscode:'Mod+Shift+M',writer:'Mod+Shift+M',vim:'Space X',emacs:''},toggleProblems);
-registerApp('workbench.save','Save Now','Writing',
+registerApp('workbench.save','Publish Current Post','Writing',
   {vscode:'Mod+S',writer:'Mod+S',vim:'Mod+S',emacs:'Ctrl+X Ctrl+S'},
-  () => {editor.save();saveDraft();},
-  'Flush the current draft or selected workspace post to storage.');
+  () => window.MarkataPublishReview?.quickPublish(),
+  'Publish only the active site post. Other changes remain untouched.');
 registerApp('workbench.newPost','New Post','Files',
   {vscode:'Mod+Alt+N',writer:'Mod+Alt+N',vim:'Space F N',emacs:''},
   showCreateDialog,'Create a workspace post from a template.');
@@ -337,6 +531,8 @@ registerApp('workbench.downloadMarkdown','Download Markdown File','Files',
 registerApp('workbench.shortcutSettings','Keyboard Shortcuts','Settings',
   {vscode:'Mod+K Mod+S',writer:'Mod+Alt+K',vim:'Space ?',emacs:'Alt+Shift+K'},
   () => appShortcuts.openSettings(),'View, change, or reset application keybindings.');
+window.MarkataSettings.attach(editor);
+window.MarkataDiagnostics.attach();
 window.MarkataPublishReview.attach(editor);
 window.MarkataCommandPalette.attach(editor,{actions:[
   {id:'edit-properties',label:'Page: Edit Properties',description:'Open the visual frontmatter object editor.',aliases:'frontmatter metadata tags date title publish fields',run:()=>window.MarkataFrontmatter.open()},
@@ -377,14 +573,76 @@ keymap.addEventListener('change', () => {
 });
 // Rejected imports must not be dismissed by an already-running preview response.
 let rejectedImportRevision = -1;
-let revision = 0, timer, busy = false, ready = false, lastEditAt = null;
-let previewStarted = false, previewReady = false, pendingPreview = null, activeRender = null;
-function finishPreview(version) {
-  if (!activeRender || activeRender.version !== version || version !== revision) return;
+let revision = 0, timer, busy = false, ready = false, lastEditAt = null, pendingSince = null;
+let pendingRender = false;
+let activeRenderController = null;
+let previewStarted = false, previewContentReady = false, previewReady = false, pendingPreview = null, activeRender = null;
+let previewFrameStartedAt = null, previewFrameContentReadyMS = null;
+function markPreviewContentReady() {
+  if (!previewStarted || previewContentReady) return;
+  previewContentReady = true;
+  if (previewFrameStartedAt !== null) {
+    previewFrameContentReadyMS = performance.now() - previewFrameStartedAt;
+    window.MarkataDiagnostics?.record('preview_frame_content_ready', previewFrameContentReadyMS);
+  }
+  scrollSync.ready();
+  scrollSync.previewUpdated();
+  if (activeRender?.initialDocument) activeRender.frameContentReadyMS = previewFrameContentReadyMS;
+  finishPreview(activeRender?.version);
+}
+function markPreviewReady() {
+  if (!previewStarted || previewReady) return;
+  previewReady = true;
+  syncAppearance();
+  scrollSync.ready();
+  if (previewFrameStartedAt !== null) {
+    window.MarkataDiagnostics?.record('preview_feature_startup', performance.now() - previewFrameStartedAt);
+  }
+  if (pendingPreview) {
+    const latest = pendingPreview;
+    pendingPreview = null;
+    if (latest.version === revision) updatePreview(latest.data, latest.version);
+  } else {
+    scrollSync.previewUpdated();
+    finishPreview(activeRender?.version);
+  }
+}
+function markPreviewLoadComplete() {
+  if (previewFrameStartedAt !== null) {
+    window.MarkataDiagnostics?.record('preview_iframe_load', performance.now() - previewFrameStartedAt);
+  }
+  markPreviewReady();
+}
+function finishPreview(version, patchTiming) {
+  if (!activeRender || activeRender.pipelineRecorded || activeRender.version !== version || version !== revision) return;
   window.MarkataStartupStatus?.previewReady();
   const {data} = activeRender;
-  const liveTime = Math.round(performance.now() - (activeRender.editAt ?? activeRender.startedAt));
-  status.textContent = `Go ${data.render_ms.toFixed(1)} ms${data.cached ? ' (cached)' : ''} · preview ${liveTime} ms · input ${(data.input_bytes/1024).toFixed(1)} KB · fragment ${((data.html_bytes)/1024).toFixed(1)} KB`;
+  const finishedAt = performance.now();
+  const editAt = activeRender.editAt ?? activeRender.startedAt;
+  const responseAt = activeRender.responseAt ?? activeRender.startedAt;
+  const requestMS = Math.max(0,responseAt-activeRender.startedAt);
+  const queueMS = Math.max(0,data.queue_ms ?? 0);
+  const renderMS = Math.max(0,data.render_ms ?? 0);
+  const stages = {
+    waiting_ms:Math.max(0,activeRender.startedAt-editAt),
+    rendering_ms:queueMS+renderMS,
+    network_ms:Math.max(0,requestMS-queueMS-renderMS),
+    display_ms:Math.max(0,finishedAt-responseAt),
+  };
+  const liveTime = Math.round(finishedAt-editAt);
+  window.MarkataDiagnostics?.record('edit_to_preview',liveTime);
+  status.textContent = `Preview ${liveTime} ms`;
+  status.title = `${activeRender.mode} mode · Go ${data.render_ms.toFixed(1)} ms${data.cached ? ' (cached)' : ''} · queue ${(data.queue_ms ?? 0).toFixed(1)} ms · input ${(data.input_bytes/1024).toFixed(1)} KB · fragment ${((data.html_bytes)/1024).toFixed(1)} KB`;
+  if (!activeRender.pipelineRecorded) {
+    activeRender.pipelineRecorded = true;
+    try {
+      window.MarkataDiagnostics?.recordPreviewPipeline(stages,{
+        request_ms:requestMS,queue_ms:queueMS,go_render_ms:renderMS,cached:data.cached,
+        input_bytes:data.input_bytes,html_bytes:data.html_bytes,mode:activeRender.mode,iframe:patchTiming||null,
+        frame_content_ready_ms:activeRender.frameContentReadyMS ?? previewFrameContentReadyMS,
+      });
+    } catch(error) { console.error('Could not record preview timings',error); }
+  }
 }
 function storageWarning() { saved.textContent = 'Draft not saved · storage unavailable or full · download a copy'; }
 function saveDraft() {
@@ -416,9 +674,71 @@ function updateFrontmatterSummary(markdown) {
   document.querySelector('#preview-details').textContent = details.join(' · ');
   panel.hidden = false;
 }
+function previewDelay() {
+  const now = performance.now();
+  const mode = activePreviewMode();
+  const cadence = mode === 'fast' ? {idle:0,burst:0} : mode === 'slow' ? {idle:300,burst:1000} : {idle:50,burst:250};
+  const idle = lastEditAt === null ? 0 : Math.max(0, cadence.idle - (now - lastEditAt));
+  return pendingSince === null ? idle : Math.min(idle, Math.max(0, cadence.burst - (now - pendingSince)));
+}
+let fastRenderQueued=false;
+function schedulePreviewRender() {
+  clearTimeout(timer);
+  if(activePreviewMode()==='fast') {
+    if(fastRenderQueued)return;
+    fastRenderQueued=true;
+    queueMicrotask(()=>{fastRenderQueued=false;void render();});
+    return;
+  }
+  timer=setTimeout(render,previewDelay());
+}
+const previewModeStorageKey='markata-preview-mode';
+let previewModePreference='normal', batterySaverActive=false;
+try {
+  const stored=localStorage.getItem(previewModeStorageKey);
+  if(['auto','fast','normal','slow'].includes(stored))previewModePreference=stored;
+} catch {}
+function autoPreviewShouldSlow() {
+  const connection=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
+  const effectiveType=connection?.effectiveType;
+  return batterySaverActive||connection?.saveData===true||effectiveType==='slow-2g'||effectiveType==='2g'||
+    (Number.isFinite(navigator.deviceMemory)&&navigator.deviceMemory<=4)||
+    (Number.isFinite(navigator.hardwareConcurrency)&&navigator.hardwareConcurrency<=4);
+}
+function activePreviewMode() {
+  return previewModePreference==='auto'?(autoPreviewShouldSlow()?'slow':'normal'):previewModePreference;
+}
+function previewModeChanged(mode) {
+  if(['auto','fast','normal','slow'].includes(mode))previewModePreference=mode;
+  if(pendingSince!==null)schedulePreviewRender();
+}
+window.addEventListener('markata-preview-mode-change',event=>previewModeChanged(event.detail?.mode));
+const connectionStatus=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
+connectionStatus?.addEventListener?.('change',()=>previewModeChanged(previewModePreference));
+try {
+  if(typeof navigator.getBattery==='function')navigator.getBattery().then(battery=>{
+    const update=()=>{
+      const next=!battery.charging&&battery.level<=0.2;
+      if(next===batterySaverActive)return;
+      batterySaverActive=next;previewModeChanged(previewModePreference);
+    };
+    update();battery.addEventListener('chargingchange',update);battery.addEventListener('levelchange',update);
+  }).catch(()=>{});
+} catch {}
 async function render() {
-  if (!ready || busy) return;
-  const version = revision, originalMarkdown = source.value;
+  if (!ready) return;
+  if (busy) {
+    // Keep the newest request pending rather than losing changes made while
+    // Go is still rendering an earlier revision.
+    pendingRender = true;
+    return;
+  }
+  pendingRender = false;
+  pendingSince = null;
+  // The CodeMirror document is the source of truth. The textarea is only
+  // a form mirror and may lag a programmatic document replacement.
+  const version = revision, originalMarkdown = editor.getValue();
+  const initialDocument = !previewStarted;
   const markdown = window.MarkataSiteTree?.markdown(originalMarkdown) ?? originalMarkdown;
   const frontmatter = originalMarkdown.match(/^---\r?\n[\s\S]*?\r?\n---(?:\r?\n|$)/);
   const sourceLineOffset = frontmatter && markdown !== originalMarkdown
@@ -432,8 +752,11 @@ async function render() {
   busy = true;
   status.textContent = 'Rendering…';
   const controller = new AbortController();
+  activeRenderController = controller;
   const timeout = setTimeout(() => controller.abort(), 30000);
   const started = performance.now();
+  const editAt = lastEditAt;
+  const renderMode = activePreviewMode();
   try {
     const response = await fetch('/render', {
       method:'POST', headers:{'Content-Type':'application/json'},
@@ -441,6 +764,7 @@ async function render() {
       signal:controller.signal
     });
     const data = await response.json();
+    const responseAt = performance.now();
     if (version !== revision) return;
     if (!response.ok) throw new Error(data.error || 'Rendering failed.');
     if (sourceLineOffset) {
@@ -449,22 +773,11 @@ async function render() {
     }
     data.source_offset = sourceLineOffset;
     scrollSync.update(data.source_lines, false, sourceLineOffset, data.source_anchors);
-    activeRender = {data, version, editAt:lastEditAt, startedAt:started};
+    activeRender = {data, version, editAt, startedAt:started, responseAt, mode:renderMode, initialDocument};
     if (!previewStarted) {
       previewStarted = true;
-      frame.onload = () => {
-        previewReady = true;
-        syncAppearance();
-        scrollSync.ready();
-        if (pendingPreview) {
-          const latest = pendingPreview;
-          pendingPreview = null;
-          if (latest.version === revision) updatePreview(latest.data, latest.version);
-        } else {
-          scrollSync.previewUpdated();
-          finishPreview(activeRender?.version);
-        }
-      };
+      frame.onload = markPreviewLoadComplete;
+      previewFrameStartedAt = performance.now();
       frame.srcdoc = data.document;
     } else if (!previewReady) {
       pendingPreview = {data, version};
@@ -479,17 +792,35 @@ async function render() {
     errorBox.hidden = false;
     status.textContent = 'Preview failed. Edit the Markdown to try again.';
   } finally {
-    clearTimeout(timeout); busy = false;
-    if (version !== revision) { clearTimeout(timer); timer = setTimeout(render, 0); }
+    clearTimeout(timeout);
+    if (activeRenderController === controller) activeRenderController = null;
+    busy = false;
+    // Stale or skipped renders must always yield to the latest editor text.
+    // Keep one pending revision; its selected preview mode controls when it runs.
+    if (pendingRender || version !== revision) {
+      pendingRender = false;
+      schedulePreviewRender();
+    }
   }
 }
 editor.on('change', (_instance, change) => {
+  // Discard and file-open replace the entire CodeMirror document. An old
+  // preview scroll map must not be reused for the replacement's cursor.
+  if (change.origin === 'setValue') scrollSync.reset();
   editor.save(); revision++; clearTimeout(timer);
+  // A render already posted into the iframe may still be queued or executing
+  // async feature setup. Invalidate it the moment the source changes.
+  frame.contentWindow?.postMessage({type:'preview-invalidate',version:revision},'*');
   lastEditAt = performance.now();
+  if (pendingSince === null) pendingSince = lastEditAt;
+  if (busy && activeRenderController) {
+    pendingRender = true;
+    activeRenderController.abort();
+  }
   updateFrontmatterSummary(editor.getValue());
   if (change.origin !== 'setValue') saveDraft();
   status.textContent = 'Waiting for edits…';
-  timer = setTimeout(render, 100);
+  schedulePreviewRender();
 });
 document.querySelector('#download').addEventListener('click', () => {
   const url = URL.createObjectURL(new Blob([source.value], {type:'text/markdown;charset=utf-8'}));
@@ -510,8 +841,6 @@ function updatePreview(data, version) {
 function attributes() { return Object.fromEntries(appearanceKeys.map(k => [k, document.documentElement.getAttribute(k)])); }
 function syncAppearance() { frame.contentWindow?.postMessage({type:'appearance',attributes:attributes()}, '*'); }
 new MutationObserver(syncAppearance).observe(document.documentElement, {attributes:true,attributeFilter:appearanceKeys});
-window.addEventListener('load', async () => { await workspaceReady; ready = true; render(); focusEditorForWriting(); }, {once:true});
-
 document.querySelector('#open').addEventListener('click', () => document.querySelector('#import').click());
 document.querySelector('#import').addEventListener('change', async event => {
   const file = event.target.files[0];
@@ -530,9 +859,36 @@ document.querySelector('#import').addEventListener('change', async event => {
 });
 if (!saved.textContent) saveDraft();
 
+// Typing and restoring a local draft must not await workspace discovery,
+// metadata indexing, LSP, or Go rendering.
+requestAnimationFrame(() => {
+  focusEditorForWriting();
+  window.MarkataStartupStatus?.editorReady?.();
+});
 const workspaceReady = window.MarkataSiteTree.attach(editor, storageWarning, {saveToSite:true});
+window.addEventListener('markata-site-index-ready', () => {
+  if (!ready) return;
+  revision++;
+  frame.contentWindow?.postMessage({type:'preview-invalidate',version:revision},'*');
+  activeRenderController?.abort();
+  pendingRender = busy;
+  clearTimeout(timer);
+  timer = setTimeout(render, 0);
+});
+// Once the selected site file is attached, display *its* latest preview.
 workspaceReady.then(() => {
+  ready = true;
   window.MarkataStartupStatus?.workspaceReady();
+  clearTimeout(timer);
+  timer = setTimeout(render, 0);
+}).catch(error => {
+  errorBox.textContent='Unable to initialize workspace: '+error.message;
+  errorBox.hidden=false;
+});
+
+
+workspaceReady.then(() => {
   window.MarkataFileFinder?.attach(editor);
   window.MarkataRecentFiles?.attach();
+  window.MarkataConflictCompare?.attach(editor);
 });

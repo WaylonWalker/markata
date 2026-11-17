@@ -110,11 +110,11 @@ func TestRunInteractiveMode_TemplateAlias(t *testing.T) {
 	if got := input.template.Frontmatter["templateKey"]; got != "ping" {
 		t.Fatalf("templateKey frontmatter = %v, want ping", got)
 	}
-	if input.template.Directory != "pages/note" {
-		t.Fatalf("directory = %q, want %q", input.template.Directory, "pages/note")
+	if input.template.Directory != "pages/ping" {
+		t.Fatalf("directory = %q, want %q", input.template.Directory, "pages/ping")
 	}
-	if newDir != "pages/note" {
-		t.Fatalf("newDir = %q, want %q", newDir, "pages/note")
+	if newDir != "pages/ping" {
+		t.Fatalf("newDir = %q, want %q", newDir, "pages/ping")
 	}
 	if newDraft {
 		t.Fatal("expected draft prompt to leave newDraft false")
@@ -177,7 +177,7 @@ func TestBuiltinTemplates(t *testing.T) {
 	templates := builtinTemplates()
 
 	// Check that all expected templates exist
-	expectedTemplates := []string{"post", "page", "docs", "article", "note", "photo", "video", "link", "quote", "guide", "inline", "contact", "author"}
+	expectedTemplates := []string{"post", "page", "docs", "article", "note", "ping", "photo", "video", "link", "quote", "guide", "inline", "contact", "author"}
 	for _, name := range expectedTemplates {
 		if _, exists := templates[name]; !exists {
 			t.Errorf("expected builtin template %q not found", name)
@@ -372,8 +372,8 @@ func TestResolveTemplateSelection_Alias(t *testing.T) {
 	if !ok {
 		t.Fatal("expected alias template resolution to succeed")
 	}
-	if resolvedName != "note" {
-		t.Fatalf("resolvedName = %q, want %q", resolvedName, "note")
+	if resolvedName != "ping" {
+		t.Fatalf("resolvedName = %q, want %q", resolvedName, "ping")
 	}
 	if got := template.Frontmatter["template"]; got != "ping" {
 		t.Fatalf("template frontmatter = %v, want ping", got)
@@ -381,8 +381,8 @@ func TestResolveTemplateSelection_Alias(t *testing.T) {
 	if got := template.Frontmatter["templateKey"]; got != "ping" {
 		t.Fatalf("templateKey frontmatter = %v, want ping", got)
 	}
-	if template.Directory != templates["note"].Directory {
-		t.Fatalf("directory = %q, want %q", template.Directory, templates["note"].Directory)
+	if template.Directory != "pages/ping" {
+		t.Fatalf("directory = %q, want %q", template.Directory, "pages/ping")
 	}
 }
 
@@ -390,7 +390,7 @@ func TestFormatTemplateEntry_IncludesAliases(t *testing.T) {
 	template := builtinTemplates()["note"]
 	entry := formatTemplateEntry("note", template)
 
-	if !strings.Contains(entry, "note (aka: ping, thought, status, tweet)") {
+	if !strings.Contains(entry, "note (aka: thought, status, tweet)") {
 		t.Fatalf("entry = %q, expected aliases", entry)
 	}
 	if !strings.Contains(entry, "-> pages/note/") {

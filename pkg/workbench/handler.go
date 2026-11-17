@@ -14,18 +14,28 @@ import (
 	"io"
 	"log"
 	"mime"
+	"mime/multipart"
 	"net"
 	"net/http"
+	"net/textproto"
 	"net/url"
+	"os"
 	"path"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/WaylonWalker/markata/pkg/editorworkspace"
 	"github.com/WaylonWalker/markata/pkg/lsp"
 	"github.com/WaylonWalker/markata/pkg/models"
 	"github.com/WaylonWalker/markata/pkg/plugins"
+)
+
+const (
+	imageUploadModeLocal   = "local"
+	imageUploadModeDropper = "dropper"
+	imageUploadModeAuto    = "auto"
 )
 
 const (
@@ -51,29 +61,39 @@ type workspaceSource interface {
 	Read(string) (string, error)
 	Write(string, string) error
 	Create(string, string) error
+	CreateWithImage(string, string, string, string, []byte) (string, error)
 	ReadImage(string) ([]byte, error)
+}
+
+type contentTemplateDefaultsWriter interface {
+	SetContentTemplateDefaults(string, string, string) error
+}
+
+type workspaceCreateChecker interface {
+	CheckCreate(string) error
 }
 
 // Handler serves the editor, render API and bundled appearance assets.
 // Mount it at the root of an origin. Authored HTML is enabled for trusted local
 // editing; isolate its preview using an opaque-origin iframe sandbox.
 type Handler struct {
-	store          *editorworkspace.Store
-	root           string
-	configRevision uint64
-	renderer       *plugins.StandaloneRenderer
-	siteConfig     *models.Config
-	workspace      workspaceSource
-	language       http.Handler
-	languageConfig lsp.BrowserConfig
-	appearance     *plugins.StandaloneAppearance
-	choices        map[string][]string
-	assets         map[string][]byte
-	index          []byte
-	bridge         string
-	gate           chan struct{}
-	lastSource     string
-	lastResult     *plugins.StandaloneResult
+	store            *editorworkspace.Store
+	root             string
+	configRevision   uint64
+	renderer         *plugins.StandaloneRenderer
+	siteConfig       *models.Config
+	workspace        workspaceSource
+	language         http.Handler
+	languageConfig   lsp.BrowserConfig
+	appearance       *plugins.StandaloneAppearance
+	choices          map[string][]string
+	assets           map[string][]byte
+	index            []byte
+	bridge           string
+	gate             chan struct{}
+	workspaceWriteMu sync.Mutex
+	lastSource       string
+	lastResult       *plugins.StandaloneResult
 }
 
 // New builds immutable appearance assets once. Reuse the handler for all requests.
@@ -93,12 +113,9 @@ func NewWithWorkspace(ctx context.Context, root string) (*Handler, error) {
 		_ = workspace.Close()
 		return nil, err
 	}
-	language, err := lsp.NewWebSocketHandlerWithIndex(ctx, root, log.Default(), workspace.Snapshot)
-	if err != nil {
-		_ = workspace.Close()
-		return nil, err
-	}
-	log.Printf("editor startup: LSP configuration and handler ready in %s", time.Since(lspStarted).Round(time.Millisecond))
+	// LSP setup can initialize a large site index; this is optional for
+	// writing. Bring the HTTP editor online first and warm LSP asynchronously.
+	language := &deferredLanguage{}
 	siteConfig, revision := workspace.Configuration()
 	appearanceStarted := time.Now()
 	handler, err := buildPresentation(root, workspace, config, language, siteConfig)
@@ -108,6 +125,17 @@ func NewWithWorkspace(ctx context.Context, root string) (*Handler, error) {
 	}
 	handler.store = workspace
 	handler.configRevision = revision
+	go func() {
+		service, err := lsp.NewWebSocketHandlerWithIndex(ctx, root, log.Default(), workspace.Snapshot)
+		if err != nil {
+			if ctx.Err() == nil {
+				log.Printf("editor startup: language service unavailable: %v", err)
+			}
+			return
+		}
+		language.ready(service)
+		log.Printf("editor startup: LSP ready asynchronously in %s", time.Since(lspStarted).Round(time.Millisecond))
+	}()
 	log.Printf("editor startup: appearance and browser assets ready in %s (total %s)", time.Since(appearanceStarted).Round(time.Millisecond), time.Since(started).Round(time.Millisecond))
 	return handler, nil
 }
@@ -313,6 +341,7 @@ func fail(w http.ResponseWriter, status int, message string) {
 }
 
 func (h *Handler) render(w http.ResponseWriter, r *http.Request) {
+	requestStarted := time.Now()
 	w.Header().Set("Cache-Control", "no-store")
 	if origin := r.Header.Get("Origin"); origin != "" {
 		u, err := url.Parse(origin)
@@ -344,6 +373,7 @@ func (h *Handler) render(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	started := time.Now()
+	queueMS := float64(started.Sub(requestStarted).Microseconds()) / 1000
 	response, err := h.prepareRender(r, req)
 	if err != nil {
 		if r.Context().Err() == nil {
@@ -353,6 +383,7 @@ func (h *Handler) render(w http.ResponseWriter, r *http.Request) {
 	}
 	ms := float64(time.Since(started).Microseconds()) / 1000
 	response.RenderMS = ms
+	response.QueueMS = queueMS
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Server-Timing", fmt.Sprintf("markata;dur=%.3f", ms))
 	if err := json.NewEncoder(w).Encode(response); err != nil {
@@ -369,16 +400,15 @@ func (h *Handler) prepareRender(r *http.Request, req *renderRequest) (*renderRes
 	var revision uint64
 	if snapshot, ok := h.workspace.(interface{ Snapshot() (*lsp.Index, uint64) }); ok {
 		index, revision = snapshot.Snapshot()
-		if index == nil || revision == 0 {
-			if _, err := h.workspace.Files(); err != nil {
-				return nil, fmt.Errorf("load workspace metadata for preview: %w", err)
-			}
-			index, revision = snapshot.Snapshot()
-		}
 	}
 	markdown := renderWorkbenchEmbeds(*req.Markdown, index, h.root)
 	markdown = renderWorkbenchWikilinks(markdown, index)
 	markdown, sourceAnchors := markSourceContainers(markdown)
+	// Index revisions change while the first preview is open. Plain Markdown
+	// has no workspace references, so an index update does not invalidate it.
+	if !strings.Contains(*req.Markdown, "[[") && !strings.Contains(*req.Markdown, "![embed](") {
+		revision = 0
+	}
 	cacheKey := fmt.Sprintf("%d\x00%s", revision, markdown)
 	result := h.lastResult
 	cached := result != nil && h.lastSource == cacheKey
@@ -418,6 +448,7 @@ type renderResponse struct {
 	FeatureHeadHTML string  `json:"feature_head_html"`
 	BodyEndHTML     string  `json:"body_end_html"`
 	RenderMS        float64 `json:"render_ms"`
+	QueueMS         float64 `json:"queue_ms"`
 	InputBytes      int     `json:"input_bytes"`
 	HTMLBytes       int     `json:"html_bytes"`
 	DocumentBytes   int     `json:"document_bytes"`
@@ -509,24 +540,163 @@ func (h *Handler) document(result *plugins.StandaloneResult, attributes map[stri
 		bg, fg = "#fff", "#1f2937"
 	}
 	initial := `<style>html{color-scheme:` + defaults[workbenchThemeAttribute] + `;background:` + bg + `}body{background:var(--color-background,` + bg + `);color:var(--color-text,` + fg + `)}</style>`
-	return `<!doctype html><html lang="en"` + attrs + `><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Markdown preview</title>` + initial + styles + h.featureHead(result) + `</head><body><main class="main-content"><div class="content-wrapper"><div class="post-shell"><article class="post h-entry"><div class="post-content e-content">` + result.HTML + `</div></article></div></div></main>` + strings.ReplaceAll(result.BodyEndHTML, "<script", `<script data-markata-generated="true"`) + h.bridge + `</body></html>`
+	return `<!doctype html><html lang="en"` + attrs + `><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Markdown preview</title>` + initial + styles + h.featureHead(result) + `</head><body><main class="main-content"><div class="content-wrapper"><div class="post-shell"><article class="post h-entry"><div class="post-content e-content">` + result.HTML + `</div></article></div></div></main><script>window.markataEditorPreview=true</script>` + h.bridge + strings.ReplaceAll(result.BodyEndHTML, "<script", `<script data-markata-generated="true"`) + `<script>parent.postMessage({type:'preview-features-ready'},'*')</script></body></html>`
 }
 
 func isWorkspaceRoute(routePath, method string) bool {
 	switch {
-	case routePath == "/workspace" || routePath == "/workspace/templates" || routePath == "/workspace/image" || routePath == "/workspace/index-status":
+	case routePath == "/workspace" || routePath == "/workspace/templates" || routePath == "/workspace/content-number" || routePath == "/workspace/image" || routePath == "/workspace/index-status" || routePath == "/workspace/changes":
 		return method == http.MethodGet
+	case routePath == "/workspace/new-post":
+		return method == http.MethodPost
+	case routePath == "/workspace/template-settings":
+		return method == http.MethodPost
 	case routePath == "/workspace/file":
 		return method == http.MethodGet || method == http.MethodPut || method == http.MethodPost
-	case routePath == "/workspace/publish/commit" || routePath == "/workspace/publish/push":
+	case routePath == "/workspace/publish/commit" || routePath == "/workspace/publish/push" || routePath == "/workspace/publish/discard":
 		return method == http.MethodPost
-	case routePath == "/workspace/publish/deployment" || routePath == "/workspace/publish/review":
+	case routePath == "/workspace/publish/deployment" || routePath == "/workspace/publish/review" || routePath == "/workspace/publish/readiness":
 		return method == http.MethodGet
 	case routePath == frontmatterInspectPath || routePath == frontmatterEditPath:
 		return method == http.MethodPost
 	default:
 		return false
 	}
+}
+
+func (h *Handler) imageUploadProvider() string {
+	mode := imageUploadModeAuto
+	if config := h.currentSiteConfig(); config != nil && config.ContentTemplates.ImageUpload != "" {
+		mode = config.ContentTemplates.ImageUpload
+	}
+	switch mode {
+	case imageUploadModeLocal:
+		return imageUploadModeLocal
+	case imageUploadModeDropper:
+		return imageUploadModeDropper
+	case imageUploadModeAuto:
+		if strings.TrimSpace(os.Getenv("DROPPER_TOKEN")) != "" {
+			return imageUploadModeDropper
+		}
+		return imageUploadModeLocal
+	default:
+		return "invalid"
+	}
+}
+
+func (h *Handler) dropperUploadEndpoint() string {
+	if configured := strings.TrimSpace(os.Getenv("DROPPER_API_URL")); configured != "" {
+		return configured
+	}
+	if config := h.currentSiteConfig(); config != nil && strings.TrimSpace(config.ContentTemplates.DropperUploadURL) != "" {
+		return strings.TrimSpace(config.ContentTemplates.DropperUploadURL)
+	}
+	return "https://dropper.waylonwalker.com/api/upload?format=json"
+}
+
+func (h *Handler) currentSiteConfig() *models.Config {
+	if h.store != nil {
+		if config, _ := h.store.Configuration(); config != nil {
+			return config
+		}
+	}
+	return h.siteConfig
+}
+
+func (h *Handler) uploadImageToDropper(ctx context.Context, filename, contentType string, data []byte) (string, error) {
+	token := strings.TrimSpace(os.Getenv("DROPPER_TOKEN"))
+	if token == "" {
+		return "", fmt.Errorf("dropper uploads require the server-side DROPPER_TOKEN")
+	}
+	endpoint := h.dropperUploadEndpoint()
+	if err := validateDropperUploadEndpoint(endpoint); err != nil {
+		return "", err
+	}
+	payload, formContentType, err := dropperUploadPayload(filename, contentType, data)
+	if err != nil {
+		return "", err
+	}
+	request, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, &payload)
+	if err != nil {
+		return "", fmt.Errorf("create dropper request: %w", err)
+	}
+	request.Header.Set("Authorization", "Bearer "+token)
+	request.Header.Set("Content-Type", formContentType)
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+		CheckRedirect: func(request *http.Request, via []*http.Request) error {
+			if len(via) > 0 && !strings.EqualFold(request.URL.Host, via[0].URL.Host) {
+				return http.ErrUseLastResponse
+			}
+			return nil
+		},
+	}
+	response, err := client.Do(request)
+	if err != nil {
+		return "", fmt.Errorf("dropper upload request failed: %w", err)
+	}
+	defer response.Body.Close()
+	responseBody, err := io.ReadAll(io.LimitReader(response.Body, 1<<20))
+	if err != nil {
+		return "", fmt.Errorf("read Dropper response: %w", err)
+	}
+	return dropperUploadResponseURL(response.StatusCode, response.Status, responseBody)
+}
+
+func validateDropperUploadEndpoint(endpoint string) error {
+	parsedEndpoint, err := url.ParseRequestURI(endpoint)
+	if err != nil || parsedEndpoint.Host == "" || parsedEndpoint.User != nil || parsedEndpoint.Scheme != "https" && !(parsedEndpoint.Scheme == "http" && isLoopbackHost(parsedEndpoint.Hostname())) {
+		return fmt.Errorf("dropper upload URL must use HTTPS or a loopback HTTP URL")
+	}
+	return nil
+}
+
+func dropperUploadPayload(filename, contentType string, data []byte) (bytes.Buffer, string, error) {
+	var payload bytes.Buffer
+	form := multipart.NewWriter(&payload)
+	partHeader := make(textproto.MIMEHeader)
+	partHeader.Set("Content-Disposition", fmt.Sprintf(`form-data; name="file"; filename=%q`, filename))
+	partHeader.Set("Content-Type", contentType)
+	part, err := form.CreatePart(partHeader)
+	if err != nil {
+		return payload, "", fmt.Errorf("prepare dropper upload: %w", err)
+	}
+	if _, err := part.Write(data); err != nil {
+		return payload, "", fmt.Errorf("prepare dropper image: %w", err)
+	}
+	if err := form.Close(); err != nil {
+		return payload, "", fmt.Errorf("finish dropper upload: %w", err)
+	}
+	return payload, form.FormDataContentType(), nil
+}
+
+func dropperUploadResponseURL(statusCode int, status string, responseBody []byte) (string, error) {
+	if statusCode < 200 || statusCode >= 300 {
+		message := strings.TrimSpace(string(responseBody))
+		if len(message) > 500 {
+			message = message[:500]
+		}
+		return "", fmt.Errorf("dropper upload failed (%s): %s", status, message)
+	}
+	var result struct {
+		URL string `json:"url"`
+	}
+	if err := json.Unmarshal(responseBody, &result); err != nil {
+		return "", fmt.Errorf("dropper returned invalid JSON: %w", err)
+	}
+	imageURL, err := url.ParseRequestURI(result.URL)
+	if err != nil || imageURL.Host == "" || imageURL.User != nil || imageURL.Scheme != "https" && !(imageURL.Scheme == "http" && isLoopbackHost(imageURL.Hostname())) {
+		return "", fmt.Errorf("dropper returned an invalid image URL")
+	}
+	return imageURL.String(), nil
+}
+
+func isLoopbackHost(host string) bool {
+	if strings.EqualFold(host, "localhost") {
+		return true
+	}
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsLoopback()
 }
 
 func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -551,10 +721,175 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 		serve(w, r, name, data)
 		return
 	}
+	if r.URL.Path == "/workspace/new-post" {
+		if !sameOriginWorkspaceMutation(r) {
+			fail(w, http.StatusForbidden, "same-origin workspace writes are required")
+			return
+		}
+		const maxImageBytes = 15 << 20
+		r.Body = http.MaxBytesReader(w, r.Body, maxSource+maxImageBytes+(1<<20))
+		if err := r.ParseMultipartForm(1 << 20); err != nil {
+			fail(w, http.StatusBadRequest, "cannot read new post upload")
+			return
+		}
+		if r.MultipartForm != nil {
+			defer func() {
+				if err := r.MultipartForm.RemoveAll(); err != nil {
+					log.Printf("cleanup multipart image upload: %v", err)
+				}
+			}()
+		}
+		source := r.FormValue("source")
+		if len(source) > maxSource {
+			fail(w, http.StatusRequestEntityTooLarge, "document exceeds 200,000 bytes")
+			return
+		}
+		image, header, err := r.FormFile("image")
+		if err != nil {
+			fail(w, http.StatusBadRequest, "image upload is missing")
+			return
+		}
+		defer image.Close()
+		data, err := io.ReadAll(io.LimitReader(image, maxImageBytes+1))
+		if err != nil {
+			fail(w, http.StatusBadRequest, "cannot read image upload")
+			return
+		}
+		if len(data) > maxImageBytes {
+			fail(w, http.StatusRequestEntityTooLarge, "image exceeds 15 MiB")
+			return
+		}
+		if _, err := editorworkspace.ImageExtension(header.Header.Get("Content-Type"), data); err != nil {
+			fail(w, http.StatusUnprocessableEntity, err.Error())
+			return
+		}
+		h.workspaceWriteMu.Lock()
+		defer h.workspaceWriteMu.Unlock()
+		postPath := r.FormValue("path")
+		imageName := r.FormValue("image_name")
+		provider := h.imageUploadProvider()
+		var imageURL string
+		var createErr error
+		switch provider {
+		case imageUploadModeDropper:
+			checker, ok := h.workspace.(workspaceCreateChecker)
+			if !ok {
+				fail(w, http.StatusNotImplemented, "workspace cannot validate a new post path")
+				return
+			}
+			if !validNumberPrefix(imageName) || len(imageName) > 100 {
+				fail(w, http.StatusBadRequest, "image name must be a lowercase slug")
+				return
+			}
+			extension, extensionErr := editorworkspace.ImageExtension(header.Header.Get("Content-Type"), data)
+			if extensionErr != nil {
+				fail(w, http.StatusUnprocessableEntity, extensionErr.Error())
+				return
+			}
+			if checkErr := checker.CheckCreate(postPath); checkErr != nil {
+				fail(w, http.StatusUnprocessableEntity, checkErr.Error())
+				return
+			}
+			imageURL, createErr = h.uploadImageToDropper(r.Context(), imageName+"."+extension, header.Header.Get("Content-Type"), data)
+			if createErr == nil {
+				source = sourceWithImage(source, imageURL)
+				createErr = h.workspace.Create(postPath, source)
+			}
+		case imageUploadModeLocal:
+			imageURL, createErr = h.workspace.CreateWithImage(postPath, source, imageName, header.Header.Get("Content-Type"), data)
+		default:
+			createErr = fmt.Errorf("unsupported image upload provider %q", provider)
+		}
+		if createErr != nil {
+			fail(w, http.StatusUnprocessableEntity, createErr.Error())
+			return
+		}
+		w.WriteHeader(http.StatusCreated)
+		if err := json.NewEncoder(w).Encode(map[string]string{
+			discardVersionKey: editorworkspace.SourceVersion(sourceWithImage(source, imageURL)),
+			"image":           imageURL,
+			"provider":        provider,
+		}); err != nil {
+			return
+		}
+		return
+	}
+	if r.URL.Path == "/workspace/template-settings" {
+		if !sameOriginWorkspaceMutation(r) {
+			fail(w, http.StatusForbidden, "same-origin workspace writes are required")
+			return
+		}
+		writer, ok := h.workspace.(contentTemplateDefaultsWriter)
+		if !ok {
+			fail(w, http.StatusNotImplemented, "site content defaults cannot be saved by this workspace")
+			return
+		}
+		var request struct {
+			ID           string `json:"id"`
+			Directory    string `json:"directory"`
+			FilenameMode string `json:"filename_mode"`
+		}
+		decoder := json.NewDecoder(io.LimitReader(r.Body, 32<<10))
+		decoder.DisallowUnknownFields()
+		if err := decoder.Decode(&request); err != nil {
+			fail(w, http.StatusBadRequest, "invalid site content defaults")
+			return
+		}
+		if !h.acquire(r) {
+			return
+		}
+		refreshErr := h.refreshPresentation()
+		templates, err := h.contentTemplates()
+		<-h.gate
+		if refreshErr != nil {
+			fail(w, http.StatusUnprocessableEntity, "cannot refresh site configuration: "+refreshErr.Error())
+			return
+		}
+		if err != nil {
+			fail(w, http.StatusUnprocessableEntity, "cannot load content templates: "+err.Error())
+			return
+		}
+		var key string
+		for i := range templates {
+			if templates[i].ID == request.ID {
+				key = contentTemplateKey(templates[i])
+				break
+			}
+		}
+		if key == "" || !validNumberPrefix(key) || !safeStarterOutputDirectory(request.Directory) || request.FilenameMode != contentFilenameModeTitle && request.FilenameMode != contentFilenameModeNumbered {
+			fail(w, http.StatusBadRequest, "invalid content type, folder, or filename mode")
+			return
+		}
+		h.workspaceWriteMu.Lock()
+		err = writer.SetContentTemplateDefaults(key, request.Directory, request.FilenameMode)
+		h.workspaceWriteMu.Unlock()
+		if err != nil {
+			fail(w, http.StatusUnprocessableEntity, "cannot save site content defaults: "+err.Error())
+			return
+		}
+		if !h.acquire(r) {
+			return
+		}
+		err = h.refreshPresentation()
+		<-h.gate
+		if err != nil {
+			fail(w, http.StatusUnprocessableEntity, "cannot reload site content defaults: "+err.Error())
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(map[string]bool{"saved": true}); err != nil {
+			return
+		}
+		return
+	}
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("Content-Type", "application/json")
 	if r.URL.Path == "/workspace/publish/commit" {
 		h.servePublishCommit(w, r)
+		return
+	}
+	if r.URL.Path == "/workspace/publish/discard" {
+		h.servePublishDiscard(w, r)
 		return
 	}
 	if r.URL.Path == "/workspace/publish/push" {
@@ -566,11 +901,21 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if r.URL.Path == "/workspace/frontmatter/inspect" || r.URL.Path == "/workspace/frontmatter/edit" {
+		h.workspaceWriteMu.Lock()
+		defer h.workspaceWriteMu.Unlock()
 		h.serveFrontmatterEditor(w, r)
 		return
 	}
 	if r.URL.Path == "/workspace/publish/review" {
 		h.servePublishReview(w, r)
+		return
+	}
+	if r.URL.Path == "/workspace/publish/readiness" {
+		h.servePublishReadiness(w, r)
+		return
+	}
+	if r.URL.Path == "/workspace/changes" {
+		h.serveWorkspaceChanges(w, r)
 		return
 	}
 	if r.URL.Path == "/workspace/index-status" {
@@ -584,12 +929,40 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if r.URL.Path == "/workspace/templates" {
+		if !h.acquire(r) {
+			return
+		}
+		refreshErr := h.refreshPresentation()
 		templates, err := h.contentTemplates()
+		<-h.gate
+		if refreshErr != nil {
+			fail(w, http.StatusUnprocessableEntity, "cannot refresh site configuration: "+refreshErr.Error())
+			return
+		}
 		if err != nil {
 			fail(w, 422, "cannot load content templates: "+err.Error())
 			return
 		}
-		if err := json.NewEncoder(w).Encode(map[string]any{"templates": templates}); err != nil {
+		if err := json.NewEncoder(w).Encode(map[string]any{"templates": templates, "image_upload": h.imageUploadProvider()}); err != nil {
+			return
+		}
+		return
+	}
+	if r.URL.Path == "/workspace/content-number" {
+		directory := r.URL.Query().Get("directory")
+		prefix := r.URL.Query().Get("prefix")
+		if !safeStarterOutputDirectory(directory) || !validNumberPrefix(prefix) {
+			fail(w, http.StatusBadRequest, "invalid content directory or number prefix")
+			return
+		}
+		next, err := nextContentNumber(h.root, directory, prefix)
+		if err != nil {
+			fail(w, http.StatusUnprocessableEntity, "cannot find next content number: "+err.Error())
+			return
+		}
+		w.Header().Set("Cache-Control", "no-store")
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(map[string]int{"next_number": next}); err != nil {
 			return
 		}
 		return
@@ -600,6 +973,9 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 				fail(w, http.StatusForbidden, "same-origin workspace writes are required")
 				return
 			}
+			// Serialize local editor writes with version-checked Discard restores.
+			h.workspaceWriteMu.Lock()
+			defer h.workspaceWriteMu.Unlock()
 			body, err := io.ReadAll(io.LimitReader(r.Body, maxSource+1))
 			if err != nil {
 				fail(w, 400, "cannot read source")
@@ -610,6 +986,25 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			sourcePath := r.URL.Query().Get("path")
+			if r.Method == http.MethodPut {
+				// Browser autosave is compare-and-swap against the exact source bytes
+				// it last loaded or successfully wrote. Reject stale saves rather
+				// than overwriting a newer file from another editor process.
+				expected := r.Header.Get("X-Markata-Expected-Version")
+				if !gitHashPattern.MatchString(expected) || len(expected) != 64 {
+					fail(w, http.StatusPreconditionRequired, "expected source version required; reload before saving")
+					return
+				}
+				current, readErr := h.workspace.Read(sourcePath)
+				if readErr != nil {
+					fail(w, http.StatusUnprocessableEntity, "cannot read workspace source before saving")
+					return
+				}
+				if editorworkspace.SourceVersion(current) != expected {
+					fail(w, http.StatusConflict, "file changed on disk; browser recovery copy kept; reopen and resolve conflict")
+					return
+				}
+			}
 			if r.Method == http.MethodPost {
 				err = h.workspace.Create(sourcePath, string(body))
 			} else {

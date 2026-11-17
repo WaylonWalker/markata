@@ -1985,17 +1985,27 @@ Content templates configure the `markata-go new` command, controlling default fr
 |-------|------|---------|-------------|
 | `directory` | string | `"content-templates"` | Directory for user-defined template files |
 | `placement` | object | `{post:"pages/post",page:"pages",docs:"docs"}` | Map of template names to output directories |
+| `filename_mode` | object | Title slug, except Ping and Gratitude use numbered names | Map of template names to `"title"` or `"numbered"` filenames |
+| `image_upload` | string | `"auto"` | `"auto"`, `"local"`, or `"dropper"` for uploaded images |
+| `dropper_upload_url` | string | Dropper's JSON upload endpoint | Optional API endpoint override |
 | `templates` | array | `[]` | Custom template definitions |
 
 ```toml
 [content_templates]
 directory = "content-templates"
+image_upload = "dropper"
 
 # Override default directory placement
 [content_templates.placement]
 post = "blog"          # markata-go new -t post creates in blog/
 page = "pages"
 docs = "documentation"
+ping = "pages/ping"
+
+[content_templates.filename_mode]
+ping = "numbered"
+gratitude = "numbered"
+note = "title"
 
 # Define custom templates
 [[content_templates.templates]]
@@ -2018,6 +2028,19 @@ prep_time = ""
 cook_time = ""
 servings = 4
 ```
+
+In `auto` mode, the workbench uploads pasted, dropped, or selected images to
+Dropper when the server has `DROPPER_TOKEN`; otherwise it saves them under
+`static/images/`. Use `local` or `dropper` to select a provider explicitly.
+The token stays in the server environment or site `.env` and is never sent to
+the browser. Set `dropper_upload_url` or `DROPPER_API_URL` when the upload API
+endpoint differs from the default.
+
+The workbench's new-post form lets you override the folder and filename mode
+for one post. Keep **Remember folder and file name style for this post type**
+selected to save changed defaults in this section of the site's config. The
+CLI uses those saved folder and filename defaults too. Numbered filenames use
+`<type>-N` and continue after the largest matching Markdown filename.
 
 **File-based Templates:**
 
@@ -2064,7 +2087,7 @@ markata-go new "Tutorial" -t tutorial     # Use custom template
 markata-go new "Recipe" -t recipe --dir custom  # Override directory
 ```
 
-Built-in content templates are listed with aliases in `markata-go new --list`, such as `note (aka: ping, thought, status, tweet)`. Built-in aliases are also accepted directly with `--template`.
+Built-in content templates are listed with aliases in `markata-go new --list`, such as `note (aka: thought, status, tweet)`. Ping is a separate type. Built-in aliases are also accepted directly with `--template`.
 
 Generated files include frontmatter plus the configured body template, but they do not include a starter `# H1` heading. markata-go already renders the page title from frontmatter, so starter content should begin with body text or `##` sections.
 

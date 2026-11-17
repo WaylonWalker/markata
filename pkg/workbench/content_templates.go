@@ -7,28 +7,42 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
 	"gopkg.in/yaml.v3"
 )
 
+const (
+	contentFilenameModeTitle    = "title"
+	contentFilenameModeNumbered = "numbered"
+	contentTemplateStatusAlias  = "status"
+)
+
 type contentTemplate struct {
-	ID          string   `json:"id"`
-	Name        string   `json:"name"`
-	Description string   `json:"description"`
-	Directory   string   `json:"directory"`
-	Aliases     []string `json:"aliases,omitempty"`
-	Source      string   `json:"source"`
+	ID                string   `json:"id"`
+	Name              string   `json:"name"`
+	Description       string   `json:"description"`
+	Directory         string   `json:"directory"`
+	Aliases           []string `json:"aliases,omitempty"`
+	NumberPrefix      string   `json:"number_prefix,omitempty"`
+	NumberedByDefault bool     `json:"numbered_by_default,omitempty"`
+	FilenameMode      string   `json:"filename_mode"`
+	NextNumber        int      `json:"next_number,omitempty"`
+	Source            string   `json:"source"`
 }
 
 type siteStarterMetadata struct {
-	name             string
-	description      string
-	directory        string
-	aliases          []string
-	cleanFrontmatter []byte
+	name              string
+	description       string
+	directory         string
+	aliases           []string
+	numberPrefix      string
+	numberedByDefault bool
+	cleanFrontmatter  []byte
 }
 
 func (h *Handler) contentTemplates() ([]contentTemplate, error) {
@@ -41,6 +55,8 @@ func (h *Handler) contentTemplates() ([]contentTemplate, error) {
 		if configured.Directory != "" {
 			directory = configured.Directory
 		}
+		// Placement config supplies defaults for built-ins. More specific
+		// config and Markdown starter directories take precedence.
 		for i := range templates {
 			if placement, ok := configured.Placement[contentTemplateKey(templates[i])]; ok {
 				if !safeStarterOutputDirectory(placement) {
@@ -95,6 +111,33 @@ func (h *Handler) contentTemplates() ([]contentTemplate, error) {
 	if err := validateContentTemplateNames(templates); err != nil {
 		return nil, err
 	}
+	for i := range templates {
+		key := contentTemplateKey(templates[i])
+		mode := contentFilenameModeTitle
+		if templates[i].NumberedByDefault {
+			mode = contentFilenameModeNumbered
+		}
+		if h.siteConfig != nil {
+			if configuredMode, ok := h.siteConfig.ContentTemplates.FilenameMode[key]; ok {
+				mode = configuredMode
+			}
+		}
+		if mode != contentFilenameModeTitle && mode != contentFilenameModeNumbered {
+			return nil, fmt.Errorf("starter %q has unsupported filename mode %q", templates[i].Name, mode)
+		}
+		templates[i].FilenameMode = mode
+		if templates[i].NumberPrefix == "" {
+			templates[i].NumberPrefix = contentNumberPrefix(key)
+			if templates[i].NumberPrefix == "" {
+				templates[i].NumberPrefix = "post"
+			}
+		}
+		next, err := nextContentNumber(h.root, templates[i].Directory, templates[i].NumberPrefix)
+		if err != nil {
+			return nil, fmt.Errorf("find next number for starter %q: %w", templates[i].Name, err)
+		}
+		templates[i].NextNumber = next
+	}
 	if len(templates) > len(builtins) {
 		builtinCount := len(builtins)
 		sort.Slice(templates[builtinCount:], func(i, j int) bool {
@@ -102,6 +145,24 @@ func (h *Handler) contentTemplates() ([]contentTemplate, error) {
 		})
 	}
 	return templates, nil
+}
+
+func contentNumberPrefix(name string) string {
+	var prefix strings.Builder
+	separator := false
+	for _, r := range strings.ToLower(name) {
+		switch {
+		case r >= 'a' && r <= 'z', r >= '0' && r <= '9':
+			if separator && prefix.Len() > 0 {
+				prefix.WriteByte('-')
+			}
+			prefix.WriteRune(r)
+			separator = false
+		default:
+			separator = true
+		}
+	}
+	return strings.Trim(prefix.String(), "-")
 }
 
 func contentTemplateKey(template contentTemplate) string {
@@ -139,10 +200,24 @@ func validateContentTemplateNames(templates []contentTemplate) error {
 
 func builtinContentTemplates(today string) []contentTemplate {
 	return []contentTemplate{
+		{ID: "builtin:post", Name: "Post", Description: "A standard blog post.", Directory: "pages/post", Source: "---\ntemplate: post\n---\n\nWrite your content here...\n"},
+		{ID: "builtin:page", Name: "Page", Description: "A static site page.", Directory: "pages", Source: "---\ntemplate: page\n---\n\nWrite your page content here...\n"},
+		{ID: "builtin:docs", Name: "Docs", Description: "A documentation page.", Directory: "docs", Source: "---\ntemplate: docs\n---\n\nWrite your documentation here...\n"},
+		{ID: "builtin:article", Name: "Article", Description: "A long-form article.", Directory: "pages/article", Aliases: []string{"blog-post", "essay", "tutorial"}, Source: "---\ntemplate: article\n---\n\nWrite your article here...\n"},
 		{ID: "builtin:blog-post", Name: "Blog post", Description: "A long-form article with title, date, and tags.", Directory: "pages/blog", Source: fmt.Sprintf("---\ntemplateKey: blog-post\ntitle: \"{{title}}\"\ndate: %s\npublished: false\ntags: []\n---\n\n# {{title}}\n\nStart writing here.\n", today)},
+		{ID: "builtin:note", Name: "Note", Description: "A quick note.", Directory: "pages/note", Aliases: []string{"thought", contentTemplateStatusAlias, "tweet"}, Source: "---\ntemplate: note\n---\n\nA quick note...\n"},
+		{ID: "builtin:ping", Name: "Ping", Description: "A short ping post.", Directory: "pages/ping", NumberPrefix: "ping", NumberedByDefault: true, Source: "---\ntemplate: ping\ntemplateKey: ping\n---\n\nA quick ping...\n"},
 		{ID: "builtin:thought", Name: "Thought", Description: "A short link or idea with a little context.", Directory: "pages/thoughts", Source: fmt.Sprintf("---\ntemplateKey: thought\ntitle: \"{{title}}\"\ndate: %s\npublished: false\ntags:\n  - thought\n---\n\nAdd a link or thought here.\n", today)},
-		{ID: "builtin:note", Name: "Note", Description: "A compact note for the site.", Directory: "pages/notes", Source: fmt.Sprintf("---\ntemplateKey: note\ntitle: \"{{title}}\"\ndate: %s\npublished: false\ntags:\n  - note\n---\n\nWrite a note here.\n", today)},
-		{ID: "builtin:photo", Name: "Photo", Description: "A photo post with an image path and caption.", Directory: "pages/photos", Source: fmt.Sprintf("---\ntemplateKey: photo\ntitle: \"{{title}}\"\ndate: %s\npublished: false\ntags:\n  - photo\nimage: /images/\n---\n\n![Describe the image](/images/)\n\nAdd a caption.\n", today)},
+		{ID: "builtin:photo", Name: "Photo", Description: "A photo post with an image path and caption.", Directory: "pages/photo", Aliases: []string{"shots", "image", "gallery"}, Source: "---\ntemplate: photo\nimage: \"\"\n---\n\nPhoto caption...\n"},
+		{ID: "builtin:shot", Name: "Shot", Description: "A shot post with an image.", Directory: "pages/photo", Source: "---\ntemplate: shot\ntemplateKey: shot\nimage: \"\"\n---\n\nAdd a caption.\n"},
+		{ID: "builtin:video", Name: "Video", Description: "A video post.", Directory: "pages/video", Aliases: []string{"clip", "cast", "stream"}, Source: "---\ntemplate: video\nvideo: \"\"\nimage: \"\"\nduration: \"\"\n---\n\nVideo description...\n"},
+		{ID: "builtin:link", Name: "Link", Description: "Save a web link with a title and source URL.", Directory: "pages/link", Aliases: []string{"bookmark", "til", "stars"}, Source: fmt.Sprintf("---\ntemplate: link\ntemplateKey: link\ntitle: \"{{title}}\"\ndate: %s\npublished: false\nurl: \"\"\nimage: \"\"\n---\n\nWhy I'm sharing this link...\n", today)},
+		{ID: "builtin:quote", Name: "Quote", Description: "A quote with attribution.", Directory: "pages/quote", Aliases: []string{"quotation"}, Source: "---\ntemplate: quote\nquote: \"\"\nsource: \"\"\n---\n\nAdditional commentary on this quote...\n"},
+		{ID: "builtin:guide", Name: "Guide", Description: "A step-by-step guide.", Directory: "pages/guide", Aliases: []string{"series", "step", "chapter"}, Source: "---\ntemplate: guide\n---\n\n## Introduction\n\nWrite your guide here...\n"},
+		{ID: "builtin:inline", Name: "Inline", Description: "A short, feed-first post.", Directory: "pages/inline", Aliases: []string{"micro"}, Source: "---\ntemplate: inline\n---\n\nInline content...\n"},
+		{ID: "builtin:gratitude", Name: "Gratitude", Description: "A short gratitude post.", Directory: "pages/inline", NumberPrefix: "gratitude", NumberedByDefault: true, Source: "---\ntemplate: gratitude\ntemplateKey: gratitude\n---\n\nI am grateful for...\n"},
+		{ID: "builtin:contact", Name: "Contact", Description: "A contact or profile page.", Directory: "pages/contact", Aliases: []string{"character", "person"}, Source: "---\ntemplate: contact\nhandle: \"\"\naliases: []\navatar: \"\"\nurl: \"\"\n---\n\nBio or contact details...\n"},
+		{ID: "builtin:author", Name: "Author", Description: "An author profile.", Directory: "pages/author", Source: "---\ntemplate: author\nname: \"\"\nbio: \"\"\nrole: \"\"\navatar: \"\"\nurl: \"\"\nemail: \"\"\nsocial: {}\nactive: true\nguest: false\n---\n\nExtended author bio...\n"},
 	}
 }
 
@@ -247,7 +322,12 @@ func siteContentTemplateFromSource(relative, name string, source []byte) (*conte
 	rendered.Write(metadata.cleanFrontmatter)
 	rendered.WriteString("---\n")
 	rendered.Write(body)
-	return &contentTemplate{ID: "local:" + filepath.ToSlash(relative), Name: metadata.name, Description: metadata.description, Directory: metadata.directory, Aliases: metadata.aliases, Source: rendered.String()}, nil
+	return &contentTemplate{
+		ID: "local:" + filepath.ToSlash(relative), Name: metadata.name,
+		Description: metadata.description, Directory: metadata.directory, Aliases: metadata.aliases,
+		NumberPrefix: metadata.numberPrefix, NumberedByDefault: metadata.numberedByDefault,
+		Source: rendered.String(),
+	}, nil
 }
 
 func parseSiteStarterMetadata(relative, name string, frontmatter []byte) (siteStarterMetadata, error) {
@@ -281,13 +361,87 @@ func parseSiteStarterMetadata(relative, name string, frontmatter []byte) (siteSt
 	if err != nil {
 		return siteStarterMetadata{}, err
 	}
+	numberPrefix, numberedByDefault, err := siteStarterNumbering(relative, starter)
+	if err != nil {
+		return siteStarterMetadata{}, err
+	}
 	delete(metadata, "starter")
 	delete(metadata, "_directory")
 	cleanFrontmatter, err := yaml.Marshal(metadata)
 	if err != nil {
 		return siteStarterMetadata{}, err
 	}
-	return siteStarterMetadata{name: name, description: description, directory: outputDirectory, aliases: aliases, cleanFrontmatter: cleanFrontmatter}, nil
+	return siteStarterMetadata{
+		name: name, description: description, directory: outputDirectory, aliases: aliases,
+		numberPrefix: numberPrefix, numberedByDefault: numberedByDefault, cleanFrontmatter: cleanFrontmatter,
+	}, nil
+}
+
+func siteStarterNumbering(relative string, starter map[string]any) (prefix string, numberedByDefault bool, err error) {
+	if raw, exists := starter["number_prefix"]; exists {
+		value, ok := raw.(string)
+		if !ok || !validNumberPrefix(value) {
+			return "", false, fmt.Errorf("starter %s starter.number_prefix must be a lowercase slug", filepath.ToSlash(relative))
+		}
+		prefix = value
+	}
+	numberedByDefault = false
+	if raw, exists := starter["numbered_by_default"]; exists {
+		value, ok := raw.(bool)
+		if !ok {
+			return "", false, fmt.Errorf("starter %s starter.numbered_by_default must be a boolean", filepath.ToSlash(relative))
+		}
+		numberedByDefault = value
+	}
+	if numberedByDefault && prefix == "" {
+		return "", false, fmt.Errorf("starter %s must set starter.number_prefix when numbering is enabled", filepath.ToSlash(relative))
+	}
+	return prefix, numberedByDefault, nil
+}
+
+var numberPrefixPattern = regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)*$`)
+
+func validNumberPrefix(prefix string) bool {
+	return numberPrefixPattern.MatchString(prefix)
+}
+
+func nextContentNumber(siteRoot, directory, prefix string) (int, error) {
+	if !safeStarterOutputDirectory(directory) || !validNumberPrefix(prefix) {
+		return 0, fmt.Errorf("invalid numbering directory or prefix")
+	}
+	root, err := filepath.Abs(siteRoot)
+	if err != nil {
+		return 0, err
+	}
+	folder := filepath.Join(root, filepath.FromSlash(directory))
+	resolved, err := filepath.EvalSymlinks(folder)
+	if os.IsNotExist(err) {
+		return 1, nil
+	}
+	if err != nil {
+		return 0, err
+	}
+	relative, err := filepath.Rel(root, resolved)
+	if err != nil || relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
+		return 0, fmt.Errorf("numbering directory escapes workspace")
+	}
+	entries, err := os.ReadDir(resolved)
+	if err != nil {
+		return 0, err
+	}
+	pattern := regexp.MustCompile(`^` + regexp.QuoteMeta(prefix) + `-(\d+)\.(?:md|markdown|mdown|mkd)$`)
+	maximum := 0
+	for _, entry := range entries {
+		match := pattern.FindStringSubmatch(entry.Name())
+		if len(match) != 2 || entry.IsDir() {
+			continue
+		}
+		number, parseErr := strconv.Atoi(match[1])
+		if parseErr == nil && number > maximum {
+			maximum = number
+		}
+	}
+	return maximum + 1, nil
 }
 
 func starterMetadataMap(relative string, metadata map[string]any) (map[string]any, error) {
