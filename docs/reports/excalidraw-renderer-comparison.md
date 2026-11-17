@@ -32,14 +32,21 @@ current Node setup used 267–312 MiB RSS and a text-metrics shim. The other Nod
 adapter used 352–495 MiB RSS, including a dependency on an Excalidraw test
 package version.
 
-The next useful experiment is to export SVG from the already bundled official
-editor when a user applies a scene, then persist it with a fingerprint of the
-scene, exporter assets, fonts, theme, and export options. This could let a
-normal build reuse a matching artifact without installing Chromium, Node, or
-Rust. Stale or missing output must trigger an explicitly configured
-browserless renderer or an actionable error. The artifact format and its
-interaction with the workbench's 200,000-byte document limit still need a
-design spike.
+The editor-export experiment is now implemented. Apply stores an optional
+gzip-compressed SVG artifact with the editable JSON, fingerprinted against the
+canonical scene, renderer and font assets, theme, and export options. A normal
+build reuses a matching artifact without installing Chromium, Node, or Rust.
+Missing or stale output produces an actionable error; Chromium remains
+available only when explicitly selected. If the artifact cannot be generated
+or would exceed the workbench's 200,000-byte document limit, Apply still saves
+the editable JSON and reports that static rendering is unavailable.
+
+This is an artifact-reuse path, not a browserless build-time renderer. Renderer
+comparison evidence does not yet support choosing Node or Rust as an automatic
+backend. The workbench's browser parity flow passed for the Python, Go, and
+WASM editors, including a dark-theme SVG export, local font embedding, and a
+static preview. Image and linked elements remain editable but are rejected by
+static publication under the existing SVG safety policy.
 
 Keep the Rust renderer as the first optional backend candidate after the
 rotated bound-text mismatch and platform packaging are resolved. Keep the

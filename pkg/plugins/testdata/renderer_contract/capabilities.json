@@ -17,7 +17,7 @@
   ],
   "diagram_modes": {
     "chartjs": ["client"],
-    "excalidraw": ["chromium"],
+    "excalidraw": ["auto", "cached", "chromium"],
     "mermaid": ["client", "go"]
   },
   "asset_modes": ["inline", "linked"],

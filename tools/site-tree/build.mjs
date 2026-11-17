@@ -20,6 +20,7 @@ await build({entryPoints:[path.join(root,'tools/site-tree/search-history.js')], 
 const workbenchWeb = path.join(root, 'pkg/workbench/web');
 await mkdir(workbenchWeb, {recursive:true});
 const sharedExcalidraw = path.join(root, 'pkg/visualizations/excalidraw');
+const excalidrawRendererVersion = 'excalidraw-0.18.1-static-svg-v2';
 await mkdir(sharedExcalidraw, {recursive:true});
 await rm(path.join(sharedExcalidraw, 'excalidraw-editor.js'), {force:true});
 await rm(path.join(sharedExcalidraw, 'excalidraw-editor.css'), {force:true});
@@ -32,6 +33,17 @@ const excalidrawFontSource = path.join(root,'tools/site-tree/node_modules/@excal
 for (const font of ['Assistant','Cascadia','ComicShanns','Excalifont','Liberation','Lilita','Nunito','Virgil']) {
   await cp(path.join(excalidrawFontSource,font), path.join(excalidrawFonts,font), {recursive:true});
 }
+const fontAssets = [];
+async function collectFontAssets(dir, prefix = '') {
+  for (const entry of await readdir(dir, {withFileTypes:true})) {
+    const name = prefix ? `${prefix}/${entry.name}` : entry.name;
+    if (entry.isDirectory()) await collectFontAssets(path.join(dir,entry.name),name);
+    else if (entry.isFile() && entry.name.endsWith('.woff2')) fontAssets.push(name);
+  }
+}
+await collectFontAssets(excalidrawFonts);
+fontAssets.sort();
+await writeFile(path.join(excalidrawFonts,'manifest.json'), JSON.stringify({renderer_version:excalidrawRendererVersion,fonts:fontAssets},null,2)+'\n');
 await build({entryPoints:[path.join(root,'tools/site-tree/excalidraw-editor.css')], bundle:true, minify:true,
   format:'esm', target:'es2022', outfile:path.join(sharedExcalidraw,'excalidraw-editor.css'),
   assetNames:'excalidraw-fonts/[name]', loader:{'.woff2':'file'}, legalComments:'eof', conditions:['production']});

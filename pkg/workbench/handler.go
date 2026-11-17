@@ -46,6 +46,7 @@ const (
 	workbenchPaletteAttribute   = "data-palette"
 	workbenchFontpackAttribute  = "data-fontpack"
 	workbenchLightMode          = "light"
+	workbenchDarkMode           = "dark"
 )
 
 //go:embed web
@@ -154,7 +155,15 @@ func buildPresentation(root string, workspace workspaceSource, config lsp.Browse
 	if err != nil {
 		return nil, err
 	}
-	h := &Handler{root: root, renderer: plugins.NewStandaloneRenderer(plugins.StandaloneOptions{Config: siteConfig, Unsafe: true, AssetBase: "/appearance", MermaidMode: "client"}), siteConfig: siteConfig, workspace: workspace, language: language, languageConfig: config, appearance: a, assets: a.Assets, gate: make(chan struct{}, 1), choices: map[string][]string{workbenchThemeAttribute: {workbenchLightMode, "dark"}, workbenchTextSizeAttribute: {"small", "medium", "large", "x-large"}}}
+	excalidrawVersion, err := visualizations.ExcalidrawRendererVersion()
+	if err != nil {
+		return nil, fmt.Errorf("fingerprint editor Excalidraw assets: %w", err)
+	}
+	excalidrawTheme := workbenchDarkMode
+	if siteConfig != nil && siteConfig.Theme.FallbackMode == "light" {
+		excalidrawTheme = "light"
+	}
+	h := &Handler{root: root, renderer: plugins.NewStandaloneRenderer(plugins.StandaloneOptions{Config: siteConfig, Unsafe: true, AssetBase: "/appearance", MermaidMode: "client"}), siteConfig: siteConfig, workspace: workspace, language: language, languageConfig: config, appearance: a, assets: a.Assets, gate: make(chan struct{}, 1), choices: map[string][]string{workbenchThemeAttribute: {workbenchLightMode, workbenchDarkMode}, workbenchTextSizeAttribute: {"small", "medium", "large", "x-large"}}}
 	h.assets["css/fonts.css"] = bytes.ReplaceAll(h.assets["css/fonts.css"], []byte("/assets/fonts/"), []byte("/appearance/assets/fonts/"))
 	for _, name := range []string{"palette", "aesthetic", "fonts"} {
 		match := manifestPattern.FindSubmatch(h.assets["css/"+name+".css"])
@@ -186,7 +195,7 @@ func buildPresentation(root string, workspace workspaceSource, config lsp.Browse
 		return nil, err
 	}
 	// Editor CSS precedes theme overrides. Site article layout belongs in the iframe.
-	editorHead := `<link rel="stylesheet" href="/editor/codemirror/lib/codemirror.css"><link rel="stylesheet" href="/editor/codemirror/addon/hint/show-hint.css"><link rel="stylesheet" href="/editor/codemirror/addon/dialog/dialog.css"><link rel="stylesheet" href="/editor/lsp.css"><script src="/editor/lsp.js"></script>`
+	editorHead := fmt.Sprintf(`<script>window.MARKATA_EXCALIDRAW_RENDERER_VERSION=%q;window.MARKATA_EXCALIDRAW_EXPORT_THEME=%q;</script><link rel="stylesheet" href="/editor/codemirror/lib/codemirror.css"><link rel="stylesheet" href="/editor/codemirror/addon/hint/show-hint.css"><link rel="stylesheet" href="/editor/codemirror/addon/dialog/dialog.css"><link rel="stylesheet" href="/editor/lsp.css"><script src="/editor/lsp.js"></script>`, excalidrawVersion, excalidrawTheme)
 	for _, name := range []string{"lib/codemirror", "mode/xml/xml", "mode/markdown/markdown", "mode/gfm/gfm", "mode/javascript/javascript", "mode/python/python", "mode/css/css", "mode/htmlmixed/htmlmixed", "addon/mode/overlay", "addon/edit/matchbrackets", "addon/hint/show-hint", "addon/search/searchcursor", "addon/dialog/dialog", "keymap/vim", "keymap/emacs", "keymap/sublime"} {
 		editorHead += `<script src="/editor/codemirror/` + name + `.js"></script>`
 	}
@@ -519,7 +528,7 @@ func (h *Handler) decodeRequest(w http.ResponseWriter, r *http.Request) *renderR
 }
 
 func (h *Handler) document(result *plugins.StandaloneResult, attributes map[string]string) string {
-	defaults := map[string]string{workbenchThemeAttribute: "dark", workbenchPaletteAttribute: "default-dark", workbenchAestheticAttribute: "minimal", workbenchFontpackAttribute: "system", workbenchTextSizeAttribute: "large"}
+	defaults := map[string]string{workbenchThemeAttribute: workbenchDarkMode, workbenchPaletteAttribute: "default-dark", workbenchAestheticAttribute: "minimal", workbenchFontpackAttribute: "system", workbenchTextSizeAttribute: "large"}
 	for key, value := range h.appearance.Defaults {
 		defaults[key] = value
 	}

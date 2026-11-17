@@ -20,7 +20,11 @@
   const error = document.querySelector('#excalidraw-error');
   const applyButton = document.querySelector('#excalidraw-apply');
   const applyAsButton = document.querySelector('#excalidraw-apply-as');
+  const applyStatus = document.querySelector('#excalidraw-apply-status') || document.querySelector('#saved') || document.querySelector('#status');
+  const artifactOptions = 'padding=20;fonts=inline-local-woff2;svg=1';
+  const editableElementTypes = new Set(['rectangle','diamond','ellipse','line','arrow','freedraw','text','image','frame','magicframe','iframe','embeddable']);
   let cssReady;
+  let rendererVersionPromise;
 
   function openingFence(line) {
     const match = /^ {0,3}(`{3,}|~{3,})(.*)$/.exec(line);
@@ -91,6 +95,15 @@
     if (!scene || typeof scene !== 'object' || scene.type !== 'excalidraw' || !Array.isArray(scene.elements)) {
       throw new Error('This block is not an Excalidraw scene. Its source has been kept unchanged.');
     }
+    if (scene.version !== 2) {
+      throw new Error(`This Excalidraw scene uses unsupported version ${scene.version}. Its source has been kept unchanged.`);
+    }
+    for (let index = 0; index < scene.elements.length; index++) {
+      const element = scene.elements[index];
+      if (!element || typeof element !== 'object' || !editableElementTypes.has(element.type)) {
+        throw new Error(`Excalidraw element ${index + 1} has an unsupported type. Its source has been kept unchanged.`);
+      }
+    }
     if (scene.appState != null && (typeof scene.appState !== 'object' || Array.isArray(scene.appState))) {
       throw new Error('This Excalidraw scene has invalid appState data. Its source has been kept unchanged.');
     }
@@ -98,6 +111,123 @@
       throw new Error('This Excalidraw scene has invalid image data. Its source has been kept unchanged.');
     }
     return scene;
+  }
+
+  function canonicalJSON(value) {
+    if (Array.isArray(value)) return `[${value.map(canonicalJSON).join(',')}]`;
+    if (value && typeof value === 'object') {
+      return `{${Object.keys(value).sort().map(key => `${JSON.stringify(key)}:${canonicalJSON(value[key])}`).join(',')}}`;
+    }
+    return JSON.stringify(value);
+  }
+
+  async function sha256Hex(value) {
+    const digest = await window.crypto.subtle.digest('SHA-256',new TextEncoder().encode(value));
+    return [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2,'0')).join('');
+  }
+
+  async function rendererVersion() {
+    if (typeof window.MARKATA_EXCALIDRAW_RENDERER_VERSION === 'string' && window.MARKATA_EXCALIDRAW_RENDERER_VERSION) {
+      return window.MARKATA_EXCALIDRAW_RENDERER_VERSION;
+    }
+    if (!rendererVersionPromise) rendererVersionPromise = (async () => {
+      const manifestResponse = await fetch('/editor/excalidraw-fonts/manifest.json',{cache:'no-store'});
+      if (!manifestResponse.ok) throw new Error('the bundled font manifest is unavailable');
+      const manifest = await manifestResponse.json();
+      if (typeof manifest.renderer_version !== 'string' || !Array.isArray(manifest.fonts) || manifest.fonts.length === 0) {
+        throw new Error('the bundled font manifest is invalid');
+      }
+      const fonts = [...manifest.fonts].sort();
+      const parts = [];
+      let size = 0;
+      for (const font of fonts) {
+        if (typeof font !== 'string' || !/^[A-Za-z0-9_.-]+(?:\/[A-Za-z0-9_.-]+)*\.woff2$/.test(font) || font.split('/').some(part => part === '.' || part === '..')) {
+          throw new Error('the bundled font manifest contains an invalid path');
+        }
+        const response = await fetch('/editor/excalidraw-fonts/' + font.split('/').map(encodeURIComponent).join('/'),{cache:'no-store'});
+        if (!response.ok) throw new Error(`a bundled font could not be checked (${response.status})`);
+        const nameBytes = new TextEncoder().encode(font);
+        const data = new Uint8Array(await response.arrayBuffer());
+        parts.push(nameBytes,new Uint8Array([0]),data);
+        size += nameBytes.length + 1 + data.length;
+      }
+      const input = new Uint8Array(size);
+      let offset = 0;
+      for (const part of parts) { input.set(part,offset); offset += part.length; }
+      const digest = await window.crypto.subtle.digest('SHA-256',input);
+      const hash = [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2,'0')).join('');
+      return `${manifest.renderer_version}:${hash}`;
+    })();
+    return rendererVersionPromise;
+  }
+
+  async function localFontDataURL(path) {
+    if (path.split('/').some(part => !part || part === '.' || part === '..')) {
+      throw new Error('the SVG contains an invalid font asset path');
+    }
+    const response = await fetch('/editor/excalidraw-fonts/' + path.split('/').map(encodeURIComponent).join('/'),{cache:'no-store'});
+    if (!response.ok) throw new Error(`a bundled font could not be loaded (${response.status})`);
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    let binary = '';
+    for (let offset = 0; offset < bytes.length; offset += 0x8000) {
+      binary += String.fromCharCode(...bytes.subarray(offset,offset+0x8000));
+    }
+    return 'data:font/woff2;base64,' + window.btoa(binary);
+  }
+
+  async function inlineLocalFonts(svg) {
+    const fontURL = /https:\/\/esm\.sh\/@excalidraw\/excalidraw@[^/]+\/dist\/prod\/fonts\/([^)'"\s]+)/g;
+    const matches = [...svg.matchAll(fontURL)];
+    for (const match of matches) {
+      const dataURL = await localFontDataURL(match[1]);
+      svg = svg.split(match[0]).join(dataURL);
+    }
+    if (/url\(\s*["']?https?:\/\//i.test(svg)) {
+      throw new Error('the SVG contains a remote resource that cannot be embedded offline');
+    }
+    return svg;
+  }
+
+  async function gzipBase64(value) {
+    if (typeof CompressionStream !== 'function') throw new Error('this browser cannot compress SVG artifacts');
+    const stream = new Blob([value]).stream().pipeThrough(new CompressionStream('gzip'));
+    const bytes = new Uint8Array(await new Response(stream).arrayBuffer());
+    let binary = '';
+    for (let offset = 0; offset < bytes.length; offset += 0x8000) {
+      binary += String.fromCharCode(...bytes.subarray(offset,offset+0x8000));
+    }
+    return window.btoa(binary);
+  }
+
+  async function createSVGArtifact(module, serialized) {
+    const currentRendererVersion = await rendererVersion();
+    const theme = window.MARKATA_EXCALIDRAW_EXPORT_THEME;
+    const exportTheme = ['dark','light'].includes(theme) ? theme : currentTheme();
+    if (!currentRendererVersion || !['dark','light'].includes(exportTheme)) {
+      throw new Error('the editor could not determine its renderer fingerprint or site theme');
+    }
+    const scene = parseScene(serialized);
+    delete scene._markata;
+    const canonical = canonicalJSON(scene);
+    const sourceSHA256 = await sha256Hex(canonical);
+    const svg = await inlineLocalFonts(await module.renderExcalidrawSvg(scene,exportTheme === 'dark'));
+    if (new TextEncoder().encode(svg).byteLength > 4 * 1024 * 1024) {
+      throw new Error('the SVG exceeds Markata’s 4 MiB static output limit');
+    }
+    if (/<(?:image|a|foreignObject|script|iframe|object|embed|feImage)(?:\s|\/?>)/i.test(svg)) {
+      throw new Error('the SVG uses an image, link, or active element that static publishing rejects');
+    }
+    const svgSHA256 = await sha256Hex(svg);
+    return {
+      format:'markata-excalidraw-svg-v1',
+      source_sha256:sourceSHA256,
+      renderer_version:currentRendererVersion,
+      theme:exportTheme,
+      options:artifactOptions,
+      encoding:'gzip+base64',
+      svg_sha256:svgSHA256,
+      svg:await gzipBase64(svg),
+    };
   }
 
   function documentSize(source) {
@@ -342,6 +472,7 @@
       window.EXCALIDRAW_ASSET_PATH = '/editor/excalidraw-fonts/';
       Promise.all([ensureStyles(),import('/editor/excalidraw-editor.js')]).then(([,module]) => {
         if (!dialog.open || !active) return;
+        active.module = module;
         canvas = module.mountExcalidraw(host,scene,undefined,currentTheme());
         host.hidden = false;
         loading.hidden = true;
@@ -397,22 +528,53 @@
       else openNew();
     }
 
-    function apply(asNew = false) {
+    async function apply(asNew = false) {
       if (!active || !canvas) return;
+      const session = active;
       try {
         const serialized = canvas.serialize();
         parseScene(serialized);
+        applyButton.disabled = true;
+        applyAsButton.disabled = true;
+        let sourceToApply = serialized;
+        let warning = '';
+        try {
+          const artifact = await createSVGArtifact(session.module,serialized);
+          const sceneWithArtifact = parseScene(serialized);
+          sceneWithArtifact._markata = {...(sceneWithArtifact._markata || {}),excalidraw_svg:artifact};
+          sourceToApply = JSON.stringify(sceneWithArtifact,null,2);
+        } catch (cause) {
+          warning = `No static SVG artifact was saved (${cause.message}).`;
+        }
+        if (!dialog.open || active !== session) return;
         if (active.mode === 'edit' && !asNew) {
-          replaceSceneBody(editor,active.target,serialized);
+          try {
+            replaceSceneBody(editor,session.target,sourceToApply);
+          } catch (cause) {
+            if (sourceToApply === serialized || !cause.message.includes('exceed 200,000 bytes')) throw cause;
+            replaceSceneBody(editor,session.target,serialized);
+            warning = 'The editable scene was applied without an SVG artifact because the document limit would be exceeded.';
+          }
         } else {
-          const position = active.mode === 'edit' ?
-            afterFence(active.target) : active.target;
-          insertText(editor,position,serialized);
+          const position = session.mode === 'edit' ? afterFence(session.target) : session.target;
+          try {
+            insertText(editor,position,sourceToApply);
+          } catch (cause) {
+            if (sourceToApply === serialized || !cause.message.includes('exceed 200,000 bytes')) throw cause;
+            insertText(editor,position,serialized);
+            warning = 'The editable scene was inserted without an SVG artifact because the document limit would be exceeded.';
+          }
+        }
+        if (applyStatus) {
+          applyStatus.textContent = warning ? `Scene applied. ${warning} Builds need a matching SVG artifact or explicit Chromium mode.` : '';
+          applyStatus.dataset.warning = warning ? 'true' : 'false';
         }
         dialog.close('apply');
       } catch (cause) {
         error.textContent = cause.message;
         error.hidden = false;
+        applyButton.disabled = false;
+        applyAsButton.disabled = false;
       }
     }
 

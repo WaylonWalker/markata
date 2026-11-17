@@ -56,9 +56,11 @@ would exceed this limit, Markata keeps the source unchanged and shows an error.
 
 ## Preview and site output
 
-The editor preview and generated site render the scene as static SVG. Published
-pages use a content-addressed SVG file. They do not load the Excalidraw editor
-or its JavaScript.
+The Go workbench can attach a compressed SVG export to the same scene block
+when you apply it. The export is optional: Markata still applies and saves the
+editable JSON if SVG export fails or does not fit inside the document limit.
+Published pages use a content-addressed SVG file. They do not load the
+Excalidraw editor or its JavaScript.
 
 The SVG follows the site's configured fallback mode when Markata builds the
 page. Dark mode is the default when no site configuration is available. The
@@ -66,14 +68,16 @@ editor canvas UI follows the active Markata mode. New drawings use that mode's
 canvas background; existing drawings keep their saved background while open
 for editing.
 
-The native Go renderer uses the local Excalidraw export bundle in headless
-Chrome or Chromium. A browser is needed only when a site contains an enabled
-Excalidraw fence. Install Chrome or Chromium, or set its path in
-`markata-go.toml`:
+The default `auto` mode reuses an editor-exported SVG only when its scene,
+renderer assets, fonts, theme, and export settings still match. It never
+starts Chromium. If an artifact is missing or stale, the build reports an
+error. Apply the scene again in the Go workbench to refresh its artifact, or
+explicitly select Chromium compatibility mode in `markata-go.toml`:
 
 ```toml
 [markata-go.excalidraw]
 enabled = true
+mode = "chromium"
 
 [markata-go.excalidraw.chromium]
 browser_path = "/usr/bin/chromium"
@@ -81,9 +85,10 @@ timeout = 30
 no_sandbox = false
 ```
 
-Markata is evaluating browserless SVG renderers. The current build still uses
-Chromium; see the [renderer comparison report](/docs/reports/excalidraw-renderer-comparison/)
-for measured options and the planned artifact workflow.
+`mode = "cached"` also requires a matching editor artifact and never starts a
+renderer. The current build does not yet advertise Node or Rust modes; see the
+[renderer comparison report](/docs/reports/excalidraw-renderer-comparison/)
+for measured options and known compatibility limits.
 
 Set `no_sandbox = true` only when the build runs in a container that requires
 it. If the renderer cannot find a browser, or a scene contains an unsupported

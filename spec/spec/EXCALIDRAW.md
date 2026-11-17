@@ -1,8 +1,8 @@
 # Excalidraw authoring in the workbench
 
-**Status:** editor integration and static SVG rendering. The current static
-adapter uses Chromium; the target browserless rendering contract and the
-comparison that informs it are in
+**Status:** editor integration and static SVG rendering. The default renderer
+reuses a fingerprinted editor artifact; Chromium is explicitly selected. The
+browserless rendering contract and comparison are in
 [EXCALIDRAW_RENDERING.md](EXCALIDRAW_RENDERING.md).
 **Tracked by:** [#2014](https://github.com/WaylonWalker/markata/issues/2014).
 **Related:** [Editor workspace](EDITOR_WORKSPACE.md), [static visualization foundation](STATIC_VISUALIZATIONS.md).

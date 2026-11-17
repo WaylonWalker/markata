@@ -4,12 +4,9 @@ package plugins
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/fs"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
@@ -19,13 +16,11 @@ import (
 
 	"github.com/WaylonWalker/markata/pkg/models"
 	"github.com/WaylonWalker/markata/pkg/visualizations"
+
 	"github.com/chromedp/chromedp"
 )
 
-const (
-	excalidrawRendererVersion = "excalidraw-0.18.1-static-svg-v2"
-	maxExcalidrawSceneBytes   = 4 << 20
-)
+const maxExcalidrawSceneBytes = 4 << 20
 
 type chromiumExcalidrawRenderer struct {
 	config   models.ExcalidrawConfig
@@ -43,6 +38,17 @@ type chromiumExcalidrawRenderer struct {
 }
 
 func newExcalidrawRenderer(config models.ExcalidrawConfig, darkMode bool) (excalidrawSVGRenderer, error) {
+	switch config.Mode {
+	case excalidrawModeAuto, excalidrawModeCached:
+		return newCachedExcalidrawRenderer(config.Mode, darkMode)
+	case excalidrawModeChromium:
+		return newChromiumExcalidrawRenderer(config, darkMode)
+	default:
+		return nil, fmt.Errorf("unsupported Excalidraw mode %q (supported: auto, cached, chromium)", config.Mode)
+	}
+}
+
+func newChromiumExcalidrawRenderer(config models.ExcalidrawConfig, darkMode bool) (excalidrawSVGRenderer, error) {
 	info := checkChromiumDependency(config.Chromium.BrowserPath)
 	if !info.IsInstalled {
 		message := "static Excalidraw rendering requires Chrome or Chromium; install a browser or set [markata-go.excalidraw.chromium].browser_path"
@@ -56,7 +62,7 @@ func newExcalidrawRenderer(config models.ExcalidrawConfig, darkMode bool) (excal
 	if err != nil {
 		return nil, err
 	}
-	version, err := excalidrawAssetsVersion(assets)
+	version, err := visualizations.ExcalidrawRendererVersion()
 	if err != nil {
 		return nil, err
 	}
@@ -72,31 +78,8 @@ func newExcalidrawRenderer(config models.ExcalidrawConfig, darkMode bool) (excal
 	return renderer, nil
 }
 
-func (r *chromiumExcalidrawRenderer) ID() string      { return "excalidraw" }
+func (r *chromiumExcalidrawRenderer) ID() string      { return excalidrawName }
 func (r *chromiumExcalidrawRenderer) Version() string { return r.version }
-
-func excalidrawAssetsVersion(assets fs.FS) (string, error) {
-	hash := sha256.New()
-	if err := fs.WalkDir(assets, ".", func(name string, entry fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if entry.IsDir() {
-			return nil
-		}
-		data, err := fs.ReadFile(assets, name)
-		if err != nil {
-			return err
-		}
-		_, _ = hash.Write([]byte(name))
-		_, _ = hash.Write([]byte{0})
-		_, _ = hash.Write(data)
-		return nil
-	}); err != nil {
-		return "", fmt.Errorf("fingerprint local Excalidraw assets: %w", err)
-	}
-	return excalidrawRendererVersion + ":" + hex.EncodeToString(hash.Sum(nil)), nil
-}
 
 func (r *chromiumExcalidrawRenderer) RenderSVG(ctx context.Context, req visualizations.Request) ([]byte, error) {
 	if len(req.Source) > maxExcalidrawSceneBytes {
@@ -136,7 +119,7 @@ func (r *chromiumExcalidrawRenderer) ensureBrowser(ctx context.Context) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if r.closed {
-		return errors.New("Excalidraw renderer is closed")
+		return errors.New("excalidraw renderer is closed")
 	}
 	if r.browserCtx != nil {
 		return nil
@@ -146,7 +129,7 @@ func (r *chromiumExcalidrawRenderer) ensureBrowser(ctx context.Context) error {
 	}
 	info := checkChromiumDependency(r.config.Chromium.BrowserPath)
 	if !info.IsInstalled {
-		return errors.New("Chrome or Chromium became unavailable before SVG rendering")
+		return errors.New("browser Chrome or Chromium became unavailable before SVG rendering")
 	}
 
 	allocatorOptions := append([]chromedp.ExecAllocatorOption(nil), chromedp.DefaultExecAllocatorOptions[:]...)
@@ -167,8 +150,12 @@ func (r *chromiumExcalidrawRenderer) ensureBrowser(ctx context.Context) error {
 		var ready bool
 		ready, err = chromedp.Run(browserCtx, chromedp.Evaluate[bool]("window.markataExcalidrawReady", chromedp.EvalAwaitPromise))
 		if err == nil && !ready {
-			reason, _ := chromedp.Run(browserCtx, chromedp.Evaluate[string]("window.markataExcalidrawError || 'unknown module loading error'"))
-			err = fmt.Errorf("local Excalidraw module failed to load: %s", reason)
+			reason, reasonErr := chromedp.Run(browserCtx, chromedp.Evaluate[string]("window.markataExcalidrawError || 'unknown module loading error'"))
+			if reasonErr != nil {
+				err = fmt.Errorf("read local Excalidraw module error: %w", reasonErr)
+			} else {
+				err = fmt.Errorf("local Excalidraw module failed to load: %s", reason)
+			}
 		}
 	}
 	stopTimeout()
@@ -206,4 +193,6 @@ func (r *chromiumExcalidrawRenderer) Close() error {
 	return nil
 }
 
-func availableExcalidrawModes() []string { return []string{"chromium"} }
+func availableExcalidrawModes() []string {
+	return []string{excalidrawModeAuto, excalidrawModeCached, excalidrawModeChromium}
+}

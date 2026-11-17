@@ -26,6 +26,18 @@
   min-height: 0;
 }
 
+#excalidraw-apply-status:empty { display: none; }
+#excalidraw-apply-status {
+  min-width: 0;
+  margin-left: auto;
+  color: var(--color-text-muted, #65717c);
+  font-size: 11px;
+  line-height: 1.35;
+}
+#excalidraw-apply-status[data-warning="true"] {
+  color: var(--color-warning, #8a4b12);
+}
+
 .excalidraw-heading,
 .excalidraw-footer {
   display: flex;

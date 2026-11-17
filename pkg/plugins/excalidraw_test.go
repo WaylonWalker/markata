@@ -79,6 +79,34 @@ func TestExcalidrawVersionForTheme_SeparatesSVGCacheModes(t *testing.T) {
 	}
 }
 
+func TestExcalidrawDefaultModeDoesNotSelectChromium(t *testing.T) {
+	config := models.NewExcalidrawConfig()
+	if config.Mode != excalidrawModeAuto {
+		t.Fatalf("default mode = %q, want auto", config.Mode)
+	}
+	renderer, err := newExcalidrawRenderer(config, true)
+	if err != nil {
+		t.Fatalf("newExcalidrawRenderer() error = %v", err)
+	}
+	defer renderer.Close()
+	if renderer.ID() != "excalidraw-editor-artifact" {
+		t.Fatalf("default renderer = %q, want editor artifact renderer", renderer.ID())
+	}
+}
+
+func TestParseExcalidrawConfigMode(t *testing.T) {
+	config := parseExcalidrawConfig(map[string]any{excalidrawName: map[string]any{"mode": "  CHROMIUM "}})
+	if config.Mode != excalidrawModeChromium {
+		t.Fatalf("mode = %q, want normalized chromium", config.Mode)
+	}
+	if err := validateExcalidrawMode(config.Mode); err != nil {
+		t.Fatalf("validateExcalidrawMode() error = %v", err)
+	}
+	if err := validateExcalidrawMode("node"); err == nil {
+		t.Fatal("validateExcalidrawMode(node) succeeded before a Node renderer is available")
+	}
+}
+
 func TestReplaceExcalidrawBlocks_RendersStaticFigure(t *testing.T) {
 	asset, err := visualizations.NewSVGAsset([]byte(`<svg xmlns="http://www.w3.org/2000/svg" width="20" height="10"><rect width="20" height="10"/></svg>`))
 	if err != nil {

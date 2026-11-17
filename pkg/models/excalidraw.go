@@ -1,7 +1,11 @@
 package models
 
+const defaultExcalidrawMode = "auto"
+
 // ExcalidrawConfig configures static rendering of Excalidraw code fences.
 type ExcalidrawConfig struct {
+	// Mode selects auto artifact reuse, cached-only reuse, or explicit Chromium rendering.
+	Mode     string                   `json:"mode" yaml:"mode" toml:"mode"`
 	Enabled  bool                     `json:"enabled" yaml:"enabled" toml:"enabled"`
 	Chromium ExcalidrawChromiumConfig `json:"chromium" yaml:"chromium" toml:"chromium"`
 }
@@ -16,6 +20,7 @@ type ExcalidrawChromiumConfig struct {
 // NewExcalidrawConfig returns defaults for the static Excalidraw renderer.
 func NewExcalidrawConfig() ExcalidrawConfig {
 	return ExcalidrawConfig{
+		Mode:    defaultExcalidrawMode,
 		Enabled: true,
 		Chromium: ExcalidrawChromiumConfig{
 			Timeout: 30,

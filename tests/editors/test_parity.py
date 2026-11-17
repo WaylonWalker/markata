@@ -1,8 +1,11 @@
 """Run with an installed Markata wheel after building Go and WASM workbenches."""
 import argparse
+import base64
 from contextlib import ExitStack
 from functools import partial
+import gzip
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+import json
 import os
 import re
 import time
@@ -22,12 +25,8 @@ from command_palette_checks import check_commands, select_keymap
 
 
 def check_excalidraw_fence_controls(page):
-    markdown = '''# Diagram
-
-```excalidraw
-{"type":"excalidraw","version":2,"elements":[],"appState":{"viewBackgroundColor":"#ffffff"},"files":{}}
-```
-'''
+    scene = (ROOT / 'pkg/plugins/testdata/excalidraw/renderer-corpus/text-fonts.excalidraw').read_text()
+    markdown = '# Diagram\n\n```excalidraw\n' + scene.rstrip() + '\n```\n'
     page.evaluate("""markdown => {
       const editor = document.querySelector('.CodeMirror')?.CodeMirror;
       if (!editor) throw new Error('CodeMirror is unavailable');
@@ -73,6 +72,23 @@ def check_excalidraw_fence_controls(page):
     page.evaluate("document.querySelector('.CodeMirror').CodeMirror.setOption('readOnly', true)")
     expect(page.locator('.excalidraw-fence-controls__button--edit')).to_be_disabled()
     page.evaluate("document.querySelector('.CodeMirror').CodeMirror.setOption('readOnly', false)")
+
+    page.locator('.excalidraw-fence-controls__button--edit').click()
+    expect(page.locator('#excalidraw-canvas .excalidraw')).to_be_visible(timeout=30000)
+    page.locator('#excalidraw-apply').click()
+    expect(dialog).not_to_be_visible(timeout=30000)
+    applied = page.evaluate("document.querySelector('.CodeMirror').CodeMirror.getValue()")
+    scene_json = re.search(r'```excalidraw\s*([\s\S]*?)\s*```', applied).group(1)
+    saved_scene = json.loads(scene_json)
+    artifact = saved_scene['_markata']['excalidraw_svg']
+    assert artifact['format'] == 'markata-excalidraw-svg-v1'
+    assert artifact['theme'] == 'dark'
+    assert re.fullmatch(r'[0-9a-f]{64}', artifact['source_sha256'])
+    assert re.fullmatch(r'[0-9a-f]{64}', artifact['svg_sha256'])
+    svg = gzip.decompress(base64.b64decode(artifact['svg'])).decode()
+    assert 'https://esm.sh/' not in svg
+    assert 'data:font/woff2;base64,' in svg
+    expect(page.frame_locator('#preview').locator('.markata-visualization img')).to_be_visible(timeout=60000)
 
 
 def check(browser, url, excalidraw=False):

@@ -36,7 +36,9 @@ func TestExcalidrawRendererSpike(t *testing.T) {
 	}
 
 	start := time.Now()
-	renderer, err := newExcalidrawRenderer(models.NewExcalidrawConfig(), true)
+	config := models.NewExcalidrawConfig()
+	config.Mode = excalidrawModeChromium
+	renderer, err := newExcalidrawRenderer(config, true)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -44,6 +44,20 @@ func TestHandler_FirstPreviewDoesNotWaitForSiteIndex(t *testing.T) {
 	}
 }
 
+func TestHandler_ExcalidrawArtifactsUseLocalFingerprintedFonts(t *testing.T) {
+	h := newHandler(t)
+	page := httptest.NewRecorder()
+	h.ServeHTTP(page, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost/", http.NoBody))
+	if page.Code != http.StatusOK || !strings.Contains(page.Body.String(), "MARKATA_EXCALIDRAW_RENDERER_VERSION") || !strings.Contains(page.Body.String(), `MARKATA_EXCALIDRAW_EXPORT_THEME="dark"`) {
+		t.Fatalf("workbench page did not provide the artifact renderer fingerprint and theme: %d", page.Code)
+	}
+	manifest := httptest.NewRecorder()
+	h.ServeHTTP(manifest, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost/editor/excalidraw-fonts/manifest.json", http.NoBody))
+	if manifest.Code != http.StatusOK || !strings.Contains(manifest.Body.String(), `"renderer_version": "excalidraw-0.18.1-static-svg-v2"`) {
+		t.Fatalf("local font manifest returned %d: %s", manifest.Code, manifest.Body.String())
+	}
+}
+
 func newHandler(t testing.TB) *Handler {
 	t.Helper()
 	h, err := New()

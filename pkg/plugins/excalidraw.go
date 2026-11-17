@@ -20,6 +20,15 @@ import (
 
 var excalidrawCodeBlockPattern = regexp.MustCompile(`(?s)<pre><code class="language-excalidraw"[^>]*>(.*?)</code></pre>`)
 
+const (
+	excalidrawName         = "excalidraw"
+	excalidrawModeAuto     = "auto"
+	excalidrawModeCached   = "cached"
+	excalidrawModeChromium = "chromium"
+	excalidrawElementText  = "text"
+	excalidrawElementImage = "image"
+)
+
 type excalidrawSVGRenderer interface {
 	visualizations.Renderer
 	Close() error
@@ -36,7 +45,7 @@ func NewExcalidrawPlugin() *ExcalidrawPlugin {
 	return &ExcalidrawPlugin{config: models.NewExcalidrawConfig()}
 }
 
-func (p *ExcalidrawPlugin) Name() string { return "excalidraw" }
+func (p *ExcalidrawPlugin) Name() string { return excalidrawName }
 
 func (p *ExcalidrawPlugin) Priority(stage lifecycle.Stage) int {
 	switch stage {
@@ -51,7 +60,7 @@ func (p *ExcalidrawPlugin) Priority(stage lifecycle.Stage) int {
 
 func (p *ExcalidrawPlugin) Configure(m *lifecycle.Manager) error {
 	p.config = parseExcalidrawConfig(m.Config().Extra)
-	return nil
+	return validateExcalidrawMode(p.config.Mode)
 }
 
 func (p *ExcalidrawPlugin) Render(m *lifecycle.Manager) (err error) {
@@ -161,7 +170,7 @@ func parseExcalidrawConfig(extra map[string]any) models.ExcalidrawConfig {
 	if extra == nil {
 		return config
 	}
-	raw, ok := extra["excalidraw"]
+	raw, ok := extra[excalidrawName]
 	if !ok {
 		return config
 	}
@@ -175,6 +184,9 @@ func parseExcalidrawConfig(extra map[string]any) models.ExcalidrawConfig {
 	}
 	if enabled, ok := values["enabled"].(bool); ok {
 		config.Enabled = enabled
+	}
+	if mode, ok := values["mode"].(string); ok {
+		config.Mode = strings.ToLower(strings.TrimSpace(mode))
 	}
 	if chromium, ok := values["chromium"].(map[string]any); ok {
 		if browserPath, ok := chromium["browser_path"].(string); ok {
@@ -192,10 +204,22 @@ func parseExcalidrawConfig(extra map[string]any) models.ExcalidrawConfig {
 
 func normalizeExcalidrawConfig(config models.ExcalidrawConfig) models.ExcalidrawConfig {
 	defaults := models.NewExcalidrawConfig()
+	if strings.TrimSpace(config.Mode) == "" {
+		config.Mode = defaults.Mode
+	}
 	if config.Chromium.Timeout <= 0 {
 		config.Chromium.Timeout = defaults.Chromium.Timeout
 	}
 	return config
+}
+
+func validateExcalidrawMode(mode string) error {
+	switch mode {
+	case excalidrawModeAuto, excalidrawModeCached, excalidrawModeChromium:
+		return nil
+	default:
+		return fmt.Errorf("unsupported Excalidraw mode %q (supported: auto, cached, chromium)", mode)
+	}
 }
 
 type excalidrawScene struct {
@@ -216,7 +240,7 @@ func validateExcalidrawScene(source string) (string, error) {
 	if err := json.Unmarshal([]byte(source), &scene); err != nil {
 		return "", fmt.Errorf("invalid scene JSON: %w", err)
 	}
-	if scene.Type != "excalidraw" || scene.Version != 2 || scene.Elements == nil {
+	if scene.Type != excalidrawName || scene.Version != 2 || scene.Elements == nil {
 		return "", errors.New("expected an Excalidraw version 2 scene with an elements array")
 	}
 	texts := make([]string, 0)
@@ -230,15 +254,15 @@ func validateExcalidrawScene(source string) (string, error) {
 			return "", fmt.Errorf("element %d has a link; linked elements are not supported in static SVG yet", index+1)
 		}
 		switch element.Type {
-		case "rectangle", "diamond", "ellipse", "line", "arrow", "freedraw", "text", "frame", "magicframe":
-		case "image":
+		case "rectangle", "diamond", "ellipse", "line", "arrow", "freedraw", excalidrawElementText, "frame", "magicframe":
+		case excalidrawElementImage:
 			return "", fmt.Errorf("element %d is an embedded image; image elements are not supported in static SVG yet", index+1)
 		case "iframe", "embeddable":
 			return "", fmt.Errorf("element %d is an embedded web element; embeds are not supported in static SVG yet", index+1)
 		default:
 			return "", fmt.Errorf("element %d has unsupported Excalidraw type %q", index+1, element.Type)
 		}
-		if element.Type == "text" && strings.TrimSpace(element.Text) != "" {
+		if element.Type == excalidrawElementText && strings.TrimSpace(element.Text) != "" {
 			texts = append(texts, strings.Join(strings.Fields(element.Text), " "))
 		}
 	}
@@ -271,7 +295,7 @@ func replaceExcalidrawBlocks(
 		sceneSource := html.UnescapeString(article[match[2]:match[3]])
 		alt, err := validateExcalidrawScene(sceneSource)
 		if err != nil {
-			return "", nil, fmt.Errorf("Excalidraw block: %w", err)
+			return "", nil, fmt.Errorf("excalidraw block: %w", err)
 		}
 		asset, err := render(sceneSource)
 		if err != nil {
