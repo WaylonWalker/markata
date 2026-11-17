@@ -45,8 +45,10 @@ Use --global to install into an agent's user-level skill directory. On an
 interactive terminal without --agent, markata-go detects installed agents and
 offers to install for all of them. Declining opens a fuzzy picker. Scripts
 retain the environment-detected target or universal project layout; global
-installs require an explicit --agent when prompting is unavailable.
-Repeat --agent or comma-separate names to install for several agents at once.
+installs require an explicit --agent when prompting is unavailable. Use
+--all-installed-tools to install or refresh the skill globally for each supported
+agent executable found on PATH. Repeat --agent or comma-separate names to
+install for several agents at once.
 
 Examples:
   markata-go agent install
@@ -55,6 +57,7 @@ Examples:
   markata-go agent install --agent github-copilot --agent claude-code
   markata-go agent install --global
   markata-go agent install --agent opencode --global
+  markata-go agent install --all-installed-tools
   markata-go agent install ../my-site --dry-run
   markata-go agent install . --force`,
 	Args: cobra.MaximumNArgs(1),
@@ -81,7 +84,8 @@ var agentDoctorCmd = &cobra.Command{
 	Short: "Check installed skill for drift against the current binary",
 	Long: `Compare installed skill files against the versions bundled in the current
 markata-go binary. Reports files that are modified, missing, or newly added
-since the skill was installed.
+since the skill was installed. With --global and no --agent, checks every
+detected global agent installation.
 
 Examples:
   markata-go agent doctor
@@ -98,7 +102,8 @@ var agentUpdateCmd = &cobra.Command{
 	Long: `Update the installed markata-go site skill in place.
 
 This is the user-friendly equivalent of running 'markata-go agent install --force'.
-Repeat --agent or comma-separate names to update several agents at once.
+Repeat --agent or comma-separate names to update several agents at once. With
+--global and no --agent, updates every detected global agent installation.
 
 Examples:
   markata-go agent update
@@ -133,6 +138,7 @@ var (
 	agentInstallForce        bool
 	agentInstallDryRun       bool
 	agentInstallGlobal       bool
+	agentInstallAllTools     bool
 
 	agentDoctorAgent        string
 	agentDoctorLegacyTarget string
@@ -163,6 +169,7 @@ func init() {
 	installFlags.StringSliceVar(&agentInstallAgent, "agent", nil, fmt.Sprintf("target agent (repeat or comma-separate; %s)", strings.Join(supportedAgentNames(), ", ")))
 	installFlags.StringVarP(&agentInstallLegacyTarget, "target", "", "", "legacy alias for --agent")
 	installFlags.BoolVarP(&agentInstallGlobal, "global", "g", false, "install into the selected agent's user-level skill directory")
+	installFlags.BoolVar(&agentInstallAllTools, "all-installed-tools", false, "install globally for every supported agent executable found on PATH")
 	installFlags.StringVar(&agentInstallName, "name", agentskill.SiteSkillName, "installed skill directory name")
 	installFlags.BoolVar(&agentInstallForce, "force", false, "overwrite bundled skill files if they already exist")
 	installFlags.BoolVar(&agentInstallDryRun, "dry-run", false, "show what would be installed without writing files")
@@ -171,7 +178,7 @@ func init() {
 	updateFlags := agentUpdateCmd.Flags()
 	updateFlags.StringSliceVar(&agentUpdateAgent, "agent", nil, fmt.Sprintf("target agent (repeat or comma-separate; %s)", strings.Join(supportedAgentNames(), ", ")))
 	updateFlags.StringVarP(&agentUpdateLegacyTarget, "target", "", "", "legacy alias for --agent")
-	updateFlags.BoolVarP(&agentUpdateGlobal, "global", "g", false, "update the selected agent's user-level skill directory")
+	updateFlags.BoolVarP(&agentUpdateGlobal, "global", "g", false, "update global skill directories; all detected agents when --agent is omitted")
 	updateFlags.StringVar(&agentUpdateName, "name", agentskill.SiteSkillName, "installed skill directory name")
 	updateFlags.BoolVar(&agentUpdateDryRun, "dry-run", false, "show what would be updated without writing files")
 	markTargetHidden(updateFlags)
@@ -179,7 +186,7 @@ func init() {
 	doctorFlags := agentDoctorCmd.Flags()
 	doctorFlags.StringVar(&agentDoctorAgent, "agent", "", fmt.Sprintf("target agent (%s)", strings.Join(supportedAgentNames(), ", ")))
 	doctorFlags.StringVarP(&agentDoctorLegacyTarget, "target", "", "", "legacy alias for --agent")
-	doctorFlags.BoolVarP(&agentDoctorGlobal, "global", "g", false, "check the selected agent's user-level skill directory")
+	doctorFlags.BoolVarP(&agentDoctorGlobal, "global", "g", false, "check global skill directories; all detected agents when --agent is omitted")
 	doctorFlags.StringVar(&agentDoctorName, "name", agentskill.SiteSkillName, "installed skill directory name")
 	markTargetHidden(doctorFlags)
 
@@ -200,6 +207,20 @@ func markTargetHidden(flags *pflag.FlagSet) {
 
 func runAgentInstallCommand(cmd *cobra.Command, args []string) error {
 	currentCmd = cmd
+	if agentInstallAllTools {
+		if len(args) > 0 {
+			return fmt.Errorf("--all-installed-tools cannot be used with a site path")
+		}
+		if len(agentInstallAgent) > 0 || strings.TrimSpace(agentInstallLegacyTarget) != "" {
+			return fmt.Errorf("--all-installed-tools cannot be combined with --agent or --target")
+		}
+		detected := detectAgentTargetsOnPath()
+		if len(detected) == 0 {
+			outlnf("No supported agent executables found on PATH; nothing to install.")
+			return nil
+		}
+		return runAgentWriteTargets(nil, detected, true, agentInstallName, agentInstallDryRun, true, "install")
+	}
 	if _, err := resolveAgentProjectRoot(args, agentInstallGlobal); err != nil {
 		return err
 	}
@@ -266,21 +287,7 @@ func installDetectedAgentTargets(args []string, detected []agentInstallTarget) e
 // Detection uses agent-specific executables and user configuration, not the
 // universal .agents directory shared by multiple agent implementations.
 func detectInstalledAgentTargets() []agentInstallTarget {
-	binaries := map[string][]string{
-		"opencode":       {"opencode"},
-		"claude-code":    {"claude"},
-		"codex":          {"codex"},
-		"cursor":         {"cursor", "cursor-agent"},
-		"gemini-cli":     {"gemini"},
-		"github-copilot": {"copilot"},
-		"goose":          {"goose"},
-		"cline":          {"cline"},
-		"amp":            {"amp"},
-		"qwen-code":      {"qwen"},
-		"kimi-cli":       {"kimi"},
-		"crush":          {"crush"},
-		"continue":       {"cn"},
-	}
+	binaries := agentExecutableNames
 	home, homeErr := os.UserHomeDir()
 	if homeErr != nil {
 		home = ""
@@ -290,13 +297,7 @@ func detectInstalledAgentTargets() []agentInstallTarget {
 		if target.Name == agentDefaultUniversal {
 			continue
 		}
-		present := false
-		for _, binary := range binaries[target.Name] {
-			if _, err := exec.LookPath(binary); err == nil {
-				present = true
-				break
-			}
-		}
+		present := hasAgentExecutable(target, binaries)
 		if !present && home != "" {
 			// Ignore generic/shared paths: they do not identify an agent.
 			if target.GlobalPath != ".agents/skills" && target.GlobalPath != ".config/agents/skills" {
@@ -308,7 +309,74 @@ func detectInstalledAgentTargets() []agentInstallTarget {
 			found = append(found, target)
 		}
 	}
+	return uniqueGlobalAgentTargets(found, agentskill.SiteSkillName)
+}
+
+const (
+	agentNameAmp        = "amp"
+	agentNameClaudeCode = "claude-code"
+	agentNameCline      = "cline"
+	agentNameCrush      = "crush"
+	agentNameCursor     = "cursor"
+	agentNameGeminiCLI  = "gemini-cli"
+	agentNameGoose      = "goose"
+	agentNameKimiCLI    = "kimi-cli"
+	agentNameQwenCode   = "qwen-code"
+	agentBinaryCursor   = "cursor"
+	agentBinaryGemini   = "gemini"
+	agentBinaryGoose    = "goose"
+	agentBinaryCline    = "cline"
+	agentBinaryAmp      = "amp"
+	agentBinaryCrush    = "crush"
+)
+
+var agentExecutableNames = map[string][]string{
+	agentNameOpencode:   {agentNameOpencode},
+	agentNameClaudeCode: {agentLegacyClaude},
+	agentNameCodex:      {agentNameCodex},
+	agentNameCursor:     {agentBinaryCursor, "cursor-agent"},
+	agentNameGeminiCLI:  {agentBinaryGemini},
+	"github-copilot":    {"copilot"},
+	agentNameGoose:      {agentBinaryGoose},
+	agentNameCline:      {agentBinaryCline},
+	agentNameAmp:        {agentBinaryAmp},
+	agentNameQwenCode:   {"qwen"},
+	agentNameKimiCLI:    {"kimi"},
+	agentNameCrush:      {agentBinaryCrush},
+	"continue":          {"cn"},
+}
+
+func hasAgentExecutable(target agentInstallTarget, binaries map[string][]string) bool {
+	for _, binary := range binaries[target.Name] {
+		if _, err := exec.LookPath(binary); err == nil {
+			return true
+		}
+	}
+	return false
+}
+
+func detectAgentTargetsOnPath() []agentInstallTarget {
+	var found []agentInstallTarget
+	for _, target := range supportedAgentTargets {
+		if target.Name != agentDefaultUniversal && hasAgentExecutable(target, agentExecutableNames) {
+			found = append(found, target)
+		}
+	}
 	return found
+}
+
+func uniqueGlobalAgentTargets(targets []agentInstallTarget, name string) []agentInstallTarget {
+	seen := make(map[string]bool, len(targets))
+	unique := make([]agentInstallTarget, 0, len(targets))
+	for _, target := range targets {
+		key := filepath.Join(target.GlobalPath, name)
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+		unique = append(unique, target)
+	}
+	return unique
 }
 
 func runAgentListAgentsCommand(cmd *cobra.Command, _ []string) error {
@@ -329,6 +397,16 @@ func runAgentListAgentsCommand(cmd *cobra.Command, _ []string) error {
 
 func runAgentUpdateCommand(cmd *cobra.Command, args []string) error {
 	currentCmd = cmd
+	_, explicit, err := resolveAgentWriteTargets(agentUpdateAgent, agentUpdateLegacyTarget)
+	if err != nil {
+		return err
+	}
+	if agentUpdateGlobal && !explicit {
+		if _, err := resolveAgentProjectRoot(args, true); err != nil {
+			return err
+		}
+		return runDetectedGlobalAgentUpdates()
+	}
 	targets, explicit, err := resolveAgentWriteTargets(agentUpdateAgent, agentUpdateLegacyTarget)
 	if err != nil {
 		return err
@@ -368,6 +446,77 @@ func runAgentWriteTargets(args []string, targets []agentInstallTarget, global bo
 		}
 	}
 	return errors.Join(failures...)
+}
+
+func runDetectedGlobalAgentUpdates() error {
+	detected := detectInstalledAgentTargets()
+	updated := 0
+	var failures []error
+	for _, target := range uniqueGlobalAgentTargets(detected, agentUpdateName) {
+		exists, err := globalAgentSkillExists(target, agentUpdateName)
+		if err != nil {
+			failures = append(failures, fmt.Errorf("%s: %w", target.Name, err))
+			continue
+		}
+		if !exists {
+			outlnf("Skipping %s: no global skill installation found.", target.Name)
+			continue
+		}
+		if err := runAgentWriteCommand(nil, target, true, agentUpdateName, agentUpdateDryRun, true, "update"); err != nil {
+			failures = append(failures, fmt.Errorf("%s: %w", target.Name, err))
+			continue
+		}
+		updated++
+	}
+	if updated == 0 && len(failures) == 0 {
+		outlnf("No detected global agent skill installations to update.")
+	}
+	return errors.Join(failures...)
+}
+
+// globalAgentSkillExists recognizes only a Markata skill and never treats an
+// arbitrary directory as permission to overwrite its contents.
+func globalAgentSkillExists(target agentInstallTarget, name string) (bool, error) {
+	if err := validateSkillName(name); err != nil {
+		return false, err
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return false, fmt.Errorf("locate home directory: %w", err)
+	}
+	dir := filepath.Join(home, filepath.FromSlash(target.GlobalPath), name)
+	info, err := os.Stat(dir)
+	if errors.Is(err, os.ErrNotExist) {
+		return false, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("stat skill directory %q: %w", dir, err)
+	}
+	if !info.IsDir() {
+		return false, fmt.Errorf("skill path %q is not a directory", dir)
+	}
+	manifest, err := agentskill.ReadManifest(dir)
+	if err == nil {
+		if _, ok := manifest.Files["SKILL.md"]; !ok {
+			return false, fmt.Errorf("skill directory %q has an unrecognized manifest; refusing automatic overwrite", dir)
+		}
+		return true, nil
+	}
+	if !errors.Is(err, os.ErrNotExist) {
+		return false, fmt.Errorf("read skill manifest at %q: %w", dir, err)
+	}
+	// Legacy installs may predate manifests. Require a recognizable skill file.
+	data, err := os.ReadFile(filepath.Join(dir, "SKILL.md"))
+	if errors.Is(err, os.ErrNotExist) {
+		return false, fmt.Errorf("skill directory %q has no Markata skill marker; refusing automatic overwrite", dir)
+	}
+	if err != nil {
+		return false, fmt.Errorf("read legacy skill at %q: %w", dir, err)
+	}
+	if !strings.Contains(string(data), agentskill.SiteSkillName) {
+		return false, fmt.Errorf("skill directory %q does not contain a Markata skill; refusing automatic overwrite", dir)
+	}
+	return true, nil
 }
 
 func runAgentWriteCommand(args []string, target agentInstallTarget, global bool, name string, dryRun, force bool, operation string) error {
@@ -543,6 +692,16 @@ const doctorExitError = 2
 
 func runAgentDoctorCommand(cmd *cobra.Command, args []string) error {
 	currentCmd = cmd
+	_, explicit, err := selectedAgentFlagValue(agentDoctorAgent, agentDoctorLegacyTarget)
+	if err != nil {
+		return newExitCodeError(doctorExitError, err)
+	}
+	if agentDoctorGlobal && !explicit {
+		if _, err := resolveAgentProjectRoot(args, true); err != nil {
+			return newExitCodeError(doctorExitError, err)
+		}
+		return runDetectedGlobalAgentDoctors(cmd)
+	}
 
 	target, err := resolveAgentInstallTarget(agentDoctorAgent, agentDoctorLegacyTarget, agentDoctorGlobal)
 	if err != nil {
@@ -613,6 +772,45 @@ func runAgentDoctorCommand(cmd *cobra.Command, args []string) error {
 	}
 
 	outlnf("%s", agentGreen("Skill is up to date."))
+	return nil
+}
+
+func runDetectedGlobalAgentDoctors(cmd *cobra.Command) error {
+	detected := detectInstalledAgentTargets()
+	originalAgent := agentDoctorAgent
+	maxExitCode := 0
+	checked := 0
+	var failures []error
+	defer func() { agentDoctorAgent = originalAgent }()
+	for _, target := range uniqueGlobalAgentTargets(detected, agentDoctorName) {
+		exists, err := globalAgentSkillExists(target, agentDoctorName)
+		if err != nil {
+			failures = append(failures, fmt.Errorf("%s: %w", target.Name, err))
+			maxExitCode = doctorExitError
+			continue
+		}
+		if !exists {
+			outlnf("Skipping %s: no global skill installation found.", target.Name)
+			continue
+		}
+		agentDoctorAgent = target.Name
+		if err := runAgentDoctorCommand(cmd, nil); err != nil {
+			code := ExitCodeForError(err)
+			if code > maxExitCode {
+				maxExitCode = code
+			}
+			if err.Error() != "" {
+				failures = append(failures, fmt.Errorf("%s: %w", target.Name, err))
+			}
+		}
+		checked++
+	}
+	if checked == 0 && len(failures) == 0 {
+		outlnf("No detected global agent skill installations to check.")
+	}
+	if maxExitCode != 0 {
+		return newExitCodeError(maxExitCode, errors.Join(failures...))
+	}
 	return nil
 }
 
