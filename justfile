@@ -36,10 +36,13 @@ run *args:
 # Install to $GOPATH/bin
 install *args:
     go install -ldflags '{{ldflags}}' {{main}}
+    # Use this checkout's freshly built code rather than an older markata on PATH.
     @if [ "{{args}}" = "--all-installed-tools" ]; then \
-        markata agent install --all-installed-tools && markata agent doctor --global; \
+        go run -ldflags '{{ldflags}}' {{main}} agent install --all-installed-tools && \
+        go run -ldflags '{{ldflags}}' {{main}} agent doctor --global; \
     elif [ -z "{{args}}" ]; then \
-        markata agent update --global && markata agent doctor --global; \
+        go run -ldflags '{{ldflags}}' {{main}} agent update --global && \
+        go run -ldflags '{{ldflags}}' {{main}} agent doctor --global; \
     else \
         echo "Usage: just install [--all-installed-tools]" >&2; \
         exit 2; \
