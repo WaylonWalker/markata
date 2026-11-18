@@ -42,7 +42,8 @@ func (h *Handler) workspaceFeeds() []feedEntry {
 			if err != nil || json.Unmarshal(data, &post) != nil {
 				continue
 			}
-			post.Path, post.Slug = info.Path, info.Slug
+			// Feed filters use the same workspace-relative paths as site config.
+			post.Path, post.Slug = workspaceRelativePath(h.root, info.Path), info.Slug
 			post.Tags = append([]string(nil), getMetadataStrings(info.Metadata["tags"])...)
 			title := info.Title
 			post.Title = &title
@@ -63,7 +64,7 @@ func (h *Handler) workspaceFeeds() []feedEntry {
 		}
 		for _, post := range matches {
 			if post.Published && !post.Private && !post.Draft {
-				entry.Paths = append(entry.Paths, workspaceRelativePath(h.root, post.Path))
+				entry.Paths = append(entry.Paths, post.Path)
 			}
 		}
 		sort.Strings(entry.Paths)
