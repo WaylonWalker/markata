@@ -52,7 +52,7 @@ func renderFrontmatterMetadataPreview(metadata map[string]interface{}, markdown 
 }
 
 func renderFrontmatterHeader(markdown, title, description string, linkTemplate, photoTemplate bool) string {
-	showTitle := title != "" && !linkTemplate && !bodyStartsWithTitle(markdown, title)
+	showTitle := title != "" && !linkTemplate && !bodyStartsWithH1(markdown)
 	showDescription := description != "" && !linkTemplate && !photoTemplate
 	if !showTitle && !showDescription {
 		return ""
@@ -218,13 +218,15 @@ func safePreviewHTTPURL(rawURL string) (string, *url.URL, bool) {
 	return canonicalURL, parsed, true
 }
 
-func bodyStartsWithTitle(markdown, title string) bool {
+// Preserve an authored leading H1 as the page heading. A frontmatter title
+// may intentionally differ from that heading; rendering both creates two H1s.
+func bodyStartsWithH1(markdown string) bool {
 	for _, line := range strings.Split(markdown, "\n") {
 		line = strings.TrimSpace(line)
 		if line == "" {
 			continue
 		}
-		return line == "# "+title
+		return strings.HasPrefix(line, "# ")
 	}
 	return false
 }
