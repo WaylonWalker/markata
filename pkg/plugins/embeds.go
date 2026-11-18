@@ -1188,6 +1188,21 @@ func (p *EmbedsPlugin) fetchExternalMetadata(rawURL string) *OGMetadata {
 	}
 }
 
+// ResolveExternalMetadata returns the metadata used to render an external
+// embed. Callers such as the workbench can use the same configured providers
+// and Open Graph fallback when creating link posts.
+func (p *EmbedsPlugin) ResolveExternalMetadata(rawURL string) (*OGMetadata, error) {
+	if p == nil {
+		return nil, fmt.Errorf("embed metadata resolver is unavailable")
+	}
+	rawURL = strings.TrimSpace(rawURL)
+	parsed, err := url.Parse(rawURL)
+	if err != nil || parsed.Hostname() == "" || (parsed.Scheme != schemeHTTP && parsed.Scheme != schemeHTTPS) || parsed.User != nil {
+		return nil, fmt.Errorf("metadata URL must be an absolute HTTP(S) URL without credentials")
+	}
+	return p.fetchExternalMetadata(rawURL), nil
+}
+
 func (p *EmbedsPlugin) resolveOEmbedMetadata(rawURL string) (*OGMetadata, bool) {
 	if !p.config.OEmbedEnabled || p.oembed == nil {
 		return nil, false

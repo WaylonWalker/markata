@@ -253,8 +253,9 @@
       const value=document.documentElement.getAttribute(key);
       if(value) appearance[key]=value;
     }
+    const frontmatter=source.match(/^---\r?\n[\s\S]*?\r?\n---(?:\r?\n|$)/);
     const response=await fetch('/render',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({markdown:contentBody(source),include_document:true,appearance}),signal});
+      body:JSON.stringify({markdown:contentBody(source),frontmatter_source:frontmatter?.[0] || '',include_document:true,appearance}),signal});
     const result=await response.json();
     if(!response.ok||!result.document) throw new Error(result.error||'Could not render the comparison');
     // Do not mutate an iframe until the caller verifies this is still the

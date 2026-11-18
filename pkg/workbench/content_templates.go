@@ -17,9 +17,14 @@ import (
 )
 
 const (
-	contentFilenameModeTitle    = "title"
-	contentFilenameModeNumbered = "numbered"
-	contentTemplateStatusAlias  = "status"
+	contentFilenameModeTitle     = "title"
+	contentFilenameModeNumbered  = "numbered"
+	contentTemplateStatusAlias   = "status"
+	contentTemplateAliasBookmark = "bookmark"
+	contentTemplateAliasShots    = "shots"
+	contentTemplateAliasStars    = "stars"
+	contentTemplateAliasTIL      = "til"
+	frontmatterImageKey          = "image"
 )
 
 type contentTemplate struct {
@@ -208,10 +213,10 @@ func builtinContentTemplates(today string) []contentTemplate {
 		{ID: "builtin:note", Name: "Note", Description: "A quick note.", Directory: "pages/note", Aliases: []string{"thought", contentTemplateStatusAlias, "tweet"}, Source: "---\ntemplate: note\n---\n\nA quick note...\n"},
 		{ID: "builtin:ping", Name: "Ping", Description: "A short ping post.", Directory: "pages/ping", NumberPrefix: "ping", NumberedByDefault: true, Source: "---\ntemplate: ping\ntemplateKey: ping\n---\n\nA quick ping...\n"},
 		{ID: "builtin:thought", Name: "Thought", Description: "A short link or idea with a little context.", Directory: "pages/thoughts", Source: fmt.Sprintf("---\ntemplateKey: thought\ntitle: \"{{title}}\"\ndate: %s\npublished: false\ntags:\n  - thought\n---\n\nAdd a link or thought here.\n", today)},
-		{ID: "builtin:photo", Name: "Photo", Description: "A photo post with an image path and caption.", Directory: "pages/photo", Aliases: []string{"shots", "image", "gallery"}, Source: "---\ntemplate: photo\nimage: \"\"\n---\n\nPhoto caption...\n"},
+		{ID: "builtin:photo", Name: "Photo", Description: "A photo post with an image path and caption.", Directory: "pages/photo", Aliases: []string{contentTemplateAliasShots, frontmatterImageKey, "gallery"}, Source: "---\ntemplate: photo\nimage: \"\"\n---\n\nPhoto caption...\n"},
 		{ID: "builtin:shot", Name: "Shot", Description: "A shot post with an image.", Directory: "pages/photo", Source: "---\ntemplate: shot\ntemplateKey: shot\nimage: \"\"\n---\n\nAdd a caption.\n"},
 		{ID: "builtin:video", Name: "Video", Description: "A video post.", Directory: "pages/video", Aliases: []string{"clip", "cast", "stream"}, Source: "---\ntemplate: video\nvideo: \"\"\nimage: \"\"\nduration: \"\"\n---\n\nVideo description...\n"},
-		{ID: "builtin:link", Name: "Link", Description: "Save a web link with a title and source URL.", Directory: "pages/link", Aliases: []string{"bookmark", "til", "stars"}, Source: fmt.Sprintf("---\ntemplate: link\ntemplateKey: link\ntitle: \"{{title}}\"\ndate: %s\npublished: false\nurl: \"\"\nimage: \"\"\n---\n\nWhy I'm sharing this link...\n", today)},
+		{ID: "builtin:link", Name: "Link", Description: "Save a web link with details from its source URL.", Directory: "pages/link", Aliases: []string{contentTemplateAliasBookmark, contentTemplateAliasTIL, contentTemplateAliasStars}, Source: fmt.Sprintf("---\ntemplate: link\ntemplateKey: link\ntitle: \"{{title}}\"\ndate: %s\npublished: false\nurl: \"\"\nimage: \"\"\n---\n\nWhy I'm sharing this link...\n", today)},
 		{ID: "builtin:quote", Name: "Quote", Description: "A quote with attribution.", Directory: "pages/quote", Aliases: []string{"quotation"}, Source: "---\ntemplate: quote\nquote: \"\"\nsource: \"\"\n---\n\nAdditional commentary on this quote...\n"},
 		{ID: "builtin:guide", Name: "Guide", Description: "A step-by-step guide.", Directory: "pages/guide", Aliases: []string{"series", "step", "chapter"}, Source: "---\ntemplate: guide\n---\n\n## Introduction\n\nWrite your guide here...\n"},
 		{ID: "builtin:inline", Name: "Inline", Description: "A short, feed-first post.", Directory: "pages/inline", Aliases: []string{"micro"}, Source: "---\ntemplate: inline\n---\n\nInline content...\n"},
