@@ -10,6 +10,7 @@ import (
 	"path"
 	"sort"
 	"strings"
+	"sync"
 )
 
 const (
@@ -41,9 +42,24 @@ func ReadExcalidrawAsset(name string) ([]byte, error) {
 	return fs.ReadFile(assets, name)
 }
 
-// ExcalidrawRendererVersion identifies the SVG exporter and every bundled
-// Excalidraw asset, including its JavaScript and fonts.
+// Cache the embedded asset fingerprint: this can be requested for each
+// workbench preview, but its input files do not change during a process.
+var excalidrawRendererVersionOnce sync.Once
+var excalidrawRendererVersionValue string
+var excalidrawRendererVersionErr error
+
+// ExcalidrawRendererVersion fingerprints the pinned SVG export contract,
+// bundled font bytes, and the exported JS/CSS entrypoints. The JS entrypoint
+// references content-hashed chunks, so rebuilt dependency changes also change
+// this fingerprint.
 func ExcalidrawRendererVersion() (string, error) {
+	excalidrawRendererVersionOnce.Do(func() {
+		excalidrawRendererVersionValue, excalidrawRendererVersionErr = computeExcalidrawRendererVersion()
+	})
+	return excalidrawRendererVersionValue, excalidrawRendererVersionErr
+}
+
+func computeExcalidrawRendererVersion() (string, error) {
 	assets, err := ExcalidrawAssetFS()
 	if err != nil {
 		return "", err
@@ -77,6 +93,15 @@ func ExcalidrawRendererVersion() (string, error) {
 			return "", fmt.Errorf("read bundled Excalidraw font %q: %w", font, err)
 		}
 		_, _ = hash.Write([]byte(font))
+		_, _ = hash.Write([]byte{0})
+		_, _ = hash.Write(data)
+	}
+	for _, name := range []string{"excalidraw-editor.js", "excalidraw-editor.css"} {
+		data, err := fs.ReadFile(assets, name)
+		if err != nil {
+			return "", fmt.Errorf("read bundled Excalidraw export asset %q: %w", name, err)
+		}
+		_, _ = hash.Write([]byte(name))
 		_, _ = hash.Write([]byte{0})
 		_, _ = hash.Write(data)
 	}
