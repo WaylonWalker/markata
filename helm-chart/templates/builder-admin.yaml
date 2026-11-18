@@ -219,6 +219,9 @@ spec:
             {{- if .Values.builderAdmin.fast }}
             - --fast
             {{- end }}
+            {{- if not .Values.builderAdmin.pageWeight }}
+            - --page-weight=false
+            {{- end }}
             {{- if .Values.builderAdmin.dag }}
             - --dag
             {{- end }}

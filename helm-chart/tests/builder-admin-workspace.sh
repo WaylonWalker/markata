@@ -38,6 +38,11 @@ grep -A1 'name: MARKATA_GO_BUILDER_ADMIN_STARTUP_REBUILD' "$tmp_dir/startup-disa
 if grep -q -- '--dag' "$tmp_dir/default.yaml"; then
   fail "default builder admin unexpectedly enabled --dag"
 fi
+if grep -q -- '--page-weight=false' "$tmp_dir/default.yaml"; then
+  fail "default builder admin unexpectedly disabled the page-weight scan"
+fi
+helm template workspace-test "$chart" "${common[@]}" --set builderAdmin.pageWeight=false >"$tmp_dir/page-weight-disabled.yaml"
+grep -q -- '--page-weight=false' "$tmp_dir/page-weight-disabled.yaml" || fail "disabled page-weight scanning omitted from Builder Admin arguments"
 
 helm template workspace-test "$chart" "${common[@]}" \
   --set builderAdmin.dag=true \

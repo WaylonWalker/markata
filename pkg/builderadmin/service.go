@@ -42,6 +42,8 @@ const (
 	maxWebhookBodyBytes = 1 << 20
 )
 
+const pageWeightReportPath = ".markata/page-weight.json"
+
 var ErrBuildQueueFull = errors.New("build queue is full")
 
 type Config struct {
@@ -59,6 +61,7 @@ type Config struct {
 	AutoBuildOnUpgrade   bool
 	WatchDebounce        time.Duration
 	Fast                 bool
+	SkipPageWeight       bool
 	MermaidMode          string
 	ReleasesKeep         int
 	SuccessfulBuildsKeep int
@@ -1458,6 +1461,9 @@ func (s *Service) buildCommandArgs(id, buildWork string) ([]string, func(), erro
 	if s.cfg.Fast {
 		args = append(args, "--fast")
 	}
+	if s.cfg.SkipPageWeight {
+		args = append(args, "--page-weight=false")
+	}
 	args = append(args, "--output", buildWork)
 	return args, cleanup, nil
 }
@@ -1469,6 +1475,12 @@ func (s *Service) promoteBuild(buildWork string) (string, string, error) {
 func (s *Service) promoteBuildLogged(buildWork string, log io.Writer) (string, string, error) {
 	s.releaseMu.Lock()
 	defer s.releaseMu.Unlock()
+	if s.cfg.SkipPageWeight {
+		if err := removePageWeightReport(buildWork); err != nil {
+			return "", "", err
+		}
+		_, _ = fmt.Fprintln(log, "page-weight scan disabled")
+	}
 	releaseID := time.Now().UTC().Format("20060102T150405Z") + "-" + hostSuffix()
 	releasesDir := filepath.Join(s.cfg.SiteDir, "releases")
 	releasePath, stats, err := stageIncrementalWorkspace(buildWork, releasesDir, releaseID, s.currentReleaseID())
@@ -1480,6 +1492,18 @@ func (s *Service) promoteBuildLogged(buildWork string, log io.Writer) (string, s
 		return "", "", err
 	}
 	return releaseID, releasePath, nil
+}
+
+func removePageWeightReport(workspace string) error {
+	root, err := os.OpenRoot(workspace)
+	if err != nil {
+		return fmt.Errorf("open build workspace for page-weight report cleanup: %w", err)
+	}
+	defer func() { _ = root.Close() }()
+	if err := root.Remove(pageWeightReportPath); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("remove stale page-weight report: %w", err)
+	}
+	return nil
 }
 
 func (s *Service) switchCurrentRelease(releaseID string) error {
