@@ -135,7 +135,7 @@ func newPublicMetadataHTTPClient(parent context.Context, seconds int) *http.Clie
 		return nil, dialErr
 	}
 	return &http.Client{
-		Timeout: time.Duration(seconds) * time.Second,
+		Timeout:   time.Duration(seconds) * time.Second,
 		Transport: &publicMetadataTransport{base: transport, parent: parent},
 		CheckRedirect: func(request *http.Request, via []*http.Request) error {
 			if len(via) >= 5 {
