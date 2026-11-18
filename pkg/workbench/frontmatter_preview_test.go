@@ -91,3 +91,11 @@ func TestRenderFrontmatterPreview_RejectsUnsafeLinkDestination(t *testing.T) {
 		t.Errorf("unsafe link destination was rendered: %s", got)
 	}
 }
+
+func TestRenderFrontmatterPreview_AuthoredLeadingHeadingTakesPrecedence(t *testing.T) {
+	source := "---\ntitle: Frontmatter title\n---\n"
+	got := renderFrontmatterPreview(source, "# Different body title\n\nBody")
+	if strings.Contains(got, "<h1") {
+		t.Fatalf("frontmatter preview must not add a second H1: %s", got)
+	}
+}
