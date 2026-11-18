@@ -187,6 +187,8 @@ let linkMetadataTimer = 0;
 let linkMetadataRevision = 0;
 let linkMetadataResolvedURL = '';
 let linkMetadataApplied = {};
+let linkMetadataTouched = new Set();
+let applyingLinkMetadata = false;
 let linkMetadataPromise = Promise.resolve();
 async function showCreateDialog() {
   try {
@@ -241,6 +243,7 @@ function chooseTemplate(template) {
   linkMetadataRevision++;
   linkMetadataResolvedURL = '';
   linkMetadataApplied = {};
+  linkMetadataTouched.clear();
   createLinkMetadataStatus.textContent = '';
   createLinkDescription.value = '';
   createLinkSiteName.value = '';
@@ -403,6 +406,8 @@ document.querySelector('#create-cancel').addEventListener('click',() => createDi
 createTitle.addEventListener('input',updateCreatePathPreview);
 for (const [key, control] of Object.entries(linkMetadataControls)) {
   control.addEventListener('input',() => {
+    if (applyingLinkMetadata) return;
+    linkMetadataTouched.add(key);
     if (linkMetadataApplied[key] && control.value.trim() !== linkMetadataApplied[key]) delete linkMetadataApplied[key];
   });
 }
@@ -471,17 +476,22 @@ async function loadLinkMetadata() {
     const data=await response.json();
     if(!response.ok)throw new Error(data.error||'Metadata lookup failed.');
     if(revision!==linkMetadataRevision||rawURL!==createLinkURL.value.trim())return;
-    for(const [key,control] of Object.entries(linkMetadataControls)){
-      const incoming=String(data[key]||'');
-      const current=control.value.trim();
-      const previous=linkMetadataApplied[key]||'';
-      if(!current||(previous&&current===previous)){
-        control.value=incoming;
-        if(incoming)linkMetadataApplied[key]=incoming;
-        else delete linkMetadataApplied[key];
-        if(key==='image')control.dispatchEvent(new Event('input',{bubbles:true}));
+    // User edits win even when the field was subsequently cleared. Do not
+    // mistake synthetic image-preview input events for manual edits.
+    applyingLinkMetadata=true;
+    try{
+      for(const [key,control] of Object.entries(linkMetadataControls)){
+        const incoming=String(data[key]||'');
+        const current=control.value.trim();
+        const previous=linkMetadataApplied[key]||'';
+        if(!linkMetadataTouched.has(key)&&(!current||(previous&&current===previous))){
+          control.value=incoming;
+          if(incoming)linkMetadataApplied[key]=incoming;
+          else delete linkMetadataApplied[key];
+          if(key==='image')control.dispatchEvent(new Event('input',{bubbles:true}));
+        }
       }
-    }
+    }finally{applyingLinkMetadata=false;}
     const provider=data.provider_name||data.site_name;
     const source=data.source?` via ${data.source}`:'';
     if(data.available){
