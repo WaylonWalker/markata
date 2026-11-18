@@ -114,7 +114,6 @@ func TestFinalCSSLinkCacheFallback(t *testing.T) {
 	}
 }
 
-
 func TestFinalCSSLinkCacheAcrossCleanupColdWarmAndRuleChange(t *testing.T) {
 	contentDir := t.TempDir()
 	output := t.TempDir()
