@@ -177,6 +177,13 @@ Workspace post embeds in `![[post-slug]]` or `![embed](path/to/post.md)` format
 render as cards linked to the matching site post. Fenced code examples remain
 literal source.
 
+The preview uses valid frontmatter without displaying the YAML itself. It shows
+the title and description, renders Link and bookmark metadata as a link card,
+and places Photo and Shot images above the body. Remote HTTP(S) images preview
+directly; `/images/` paths load from the site's `static/` directory. If the
+frontmatter YAML is invalid, the Markdown body still previews and the frame shows
+that it could not use the page metadata.
+
 ## Language assistance
 
 The editor connects to the existing Markata LSP through `/lsp` over WebSocket.
@@ -351,12 +358,14 @@ template defaults. The slug field stays empty when using the suggestion; its
 ghost text and the destination path update as the title changes. Enter a custom
 slug only when you want to override the title-derived filename. Creating the
 post opens the new file in the editor, where later edits autosave to the site.
-The built-in **Link** starter accepts a source URL alongside a title and filename.
-It stores a quoted `link:` frontmatter field and keeps `published: false`,
-so it is a draft until explicitly reviewed and published. The link must use
-`http://` or `https://` and cannot embed credentials. The flow does **not**
-fetch the destination page or import its title, description, or image yet;
-those metadata features require a separate secure, opt-in retrieval design.
+The built-in **Link** starter accepts a source URL and can fill in the title,
+description, and preview image from the same configured oEmbed and Open Graph
+providers used by [external embeds](./embeds/). It also imports available site,
+provider, media type, and author metadata. Enter a URL and pause briefly for the
+lookup. The form keeps every field editable and preserves values you enter.
+Metadata lookup failure does not remove the URL; enter a title manually to
+continue. The saved post keeps the destination URL as entered and starts as an
+unpublished draft.
 
 The footer reports whether the draft was saved. Storage failures leave editing and downloads available.
 See [shared editor features and runtime differences](/docs/guides/renderer-integration-benchmarks/#shared-editor-features-and-runtime-differences) for the comparison.

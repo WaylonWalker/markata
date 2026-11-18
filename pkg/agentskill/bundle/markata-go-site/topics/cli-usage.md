@@ -143,6 +143,11 @@ Explicit flags take priority, and starter defaults remain unless metadata or exp
 Plain prompts use the same title-confidence rules.
 Existing non-URL title arguments and other templates keep their behavior.
 
+In the Go browser workbench, choose the **Link** starter and enter the URL.
+Wait briefly for embed metadata to fill the title, description, image, site,
+provider, media type, and author fields. Review or edit each value before you
+create the post. Enter a title manually if metadata has no usable title.
+
 ### Content Workflow For Agents
 
 Use `markata-go explain content` for the complete inspect, find, edit, create,

@@ -144,8 +144,26 @@ const templateCount = document.querySelector('#template-picker-count');
 const createTitle = document.querySelector('#create-title');
 const createLinkField = document.querySelector('#create-link-field');
 const createLinkURL = document.querySelector('#create-link-url');
+const createLinkMetadata = document.querySelector('#create-link-metadata');
+const createLinkMetadataStatus = document.querySelector('#create-link-metadata-status');
+const createLinkDescription = document.querySelector('#create-link-description');
+const createLinkSiteName = document.querySelector('#create-link-site-name');
+const createLinkMediaType = document.querySelector('#create-link-media-type');
+const createLinkProvider = document.querySelector('#create-link-provider');
+const createLinkAuthor = document.querySelector('#create-link-author');
+const createLinkAuthorURL = document.querySelector('#create-link-author-url');
 const createImageField = document.querySelector('#create-image-field');
 const createImageURL = document.querySelector('#create-image-url');
+const linkMetadataControls = {
+  title: createTitle,
+  description: createLinkDescription,
+  image: createImageURL,
+  site_name: createLinkSiteName,
+  type: createLinkMediaType,
+  provider_name: createLinkProvider,
+  author_name: createLinkAuthor,
+  author_url: createLinkAuthorURL
+};
 const createImageFile = document.querySelector('#create-image-file');
 const createImagePaste = document.querySelector('#create-image-paste');
 const createImagePreview = document.querySelector('#create-image-preview');
@@ -165,6 +183,13 @@ let selectedContentTemplate = null;
 let selectedImageFile = null;
 let imagePreviewURL = '';
 let numberLookupRevision = 0;
+let linkMetadataTimer = 0;
+let linkMetadataRevision = 0;
+let linkMetadataResolvedURL = '';
+let linkMetadataApplied = {};
+let linkMetadataTouched = new Set();
+let applyingLinkMetadata = false;
+let linkMetadataPromise = Promise.resolve();
 async function showCreateDialog() {
   try {
     const response = await fetch('/workspace/templates',{cache:'no-store'});
@@ -209,9 +234,23 @@ function chooseTemplate(template) {
   const isLinkPost = template.id === 'builtin:link';
   const isImagePost = ['builtin:photo','builtin:shot'].includes(template.id) || /^image:\s*/m.test(template.source);
   createLinkField.hidden = !isLinkPost;
+  createLinkMetadata.hidden = !isLinkPost;
   createLinkURL.required = isLinkPost;
   createLinkURL.value = '';
-  createImageField.hidden = !isImagePost;
+  createTitle.required = !isLinkPost;
+  createImageField.hidden = !isImagePost && !isLinkPost;
+  clearTimeout(linkMetadataTimer);
+  linkMetadataRevision++;
+  linkMetadataResolvedURL = '';
+  linkMetadataApplied = {};
+  linkMetadataTouched.clear();
+  createLinkMetadataStatus.textContent = '';
+  createLinkDescription.value = '';
+  createLinkSiteName.value = '';
+  createLinkMediaType.value = '';
+  createLinkProvider.value = '';
+  createLinkAuthor.value = '';
+  createLinkAuthorURL.value = '';
   createImageStorage.textContent = imageUploadProvider === 'dropper'
     ? 'Uploaded images go to Dropper.'
     : 'Uploaded images are copied to static/images/.';
@@ -219,7 +258,7 @@ function chooseTemplate(template) {
   createImageFile.value = '';
   clearSelectedImage();
   createTitle.value = isLinkPost ? '' : title;
-  createTitle.placeholder = isLinkPost ? 'A title for the link' : '';
+  createTitle.placeholder = isLinkPost ? 'Filled from the source URL, or enter a title' : '';
   createSlug.value = '';
   createSlug.readOnly = false;
   createSlug.placeholder = slugify(title) || 'post-title';
@@ -365,6 +404,14 @@ document.querySelector('#create-back').addEventListener('click',() => {createDia
 document.querySelector('#create-close').addEventListener('click',() => createDialog.close());
 document.querySelector('#create-cancel').addEventListener('click',() => createDialog.close());
 createTitle.addEventListener('input',updateCreatePathPreview);
+for (const [key, control] of Object.entries(linkMetadataControls)) {
+  control.addEventListener('input',() => {
+    if (applyingLinkMetadata) return;
+    linkMetadataTouched.add(key);
+    if (linkMetadataApplied[key] && control.value.trim() !== linkMetadataApplied[key]) delete linkMetadataApplied[key];
+  });
+}
+createLinkURL.addEventListener('input',scheduleLinkMetadata);
 createSlug.addEventListener('input',updateCreatePathPreview);
 createDirectory.addEventListener('input',updateCreatePathPreview);
 createDirectory.addEventListener('change',refreshNextContentNumber);
@@ -394,42 +441,115 @@ createDialog.addEventListener('paste',event => {
   if(file){event.preventDefault();selectImageFile(file);}
 });
 createDialog.addEventListener('close',clearSelectedImage);
-function setFrontmatterImage(source, imageURL) {
+function setFrontmatterValue(source, key, value) {
   const match=String(source).match(/^(---\r?\n)([\s\S]*?)(\r?\n---(?:\r?\n|$))/);
-  if(!match)return `---\nimage: ${JSON.stringify(imageURL)}\n---\n\n${source}`;
+  const quoted=`${key}: ${JSON.stringify(String(value))}`;
+  if(!match)return `---\n${quoted}\n---\n\n${source}`;
   const lines=match[2].split(/\r?\n/);
   let found=false;
   for(let i=0;i<lines.length;i++){
-    if(/^image:\s*/.test(lines[i])){lines[i]=`image: ${JSON.stringify(imageURL)}`;found=true;break;}
+    if(new RegExp(`^${key}:\\s*`).test(lines[i])){lines[i]=quoted;found=true;break;}
   }
-  if(!found)lines.push(`image: ${JSON.stringify(imageURL)}`);
+  if(!found)lines.push(quoted);
   return `${match[1]}${lines.join('\n')}${match[3]}${String(source).slice(match[0].length)}`;
+}
+async function loadLinkMetadata() {
+  const rawURL=createLinkURL.value.trim();
+  if(!rawURL)return;
+  const revision=++linkMetadataRevision;
+  linkMetadataResolvedURL=rawURL;
+  let parsedURL;
+  try{parsedURL=new URL(rawURL);}catch{
+    createLinkMetadataStatus.textContent='Enter a complete HTTP(S) URL to look up metadata.';
+    return;
+  }
+  if(!['http:','https:'].includes(parsedURL.protocol)||!parsedURL.hostname||parsedURL.username||parsedURL.password){
+    createLinkMetadataStatus.textContent='Enter a complete HTTP(S) URL without credentials.';
+    return;
+  }
+  createLinkMetadataStatus.textContent='Looking up page metadata…';
+  try{
+    const response=await fetch('/workspace/link-metadata',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({url:rawURL}),cache:'no-store'
+    });
+    const data=await response.json();
+    if(!response.ok)throw new Error(data.error||'Metadata lookup failed.');
+    if(revision!==linkMetadataRevision||rawURL!==createLinkURL.value.trim())return;
+    // User edits win even when the field was subsequently cleared. Do not
+    // mistake synthetic image-preview input events for manual edits.
+    applyingLinkMetadata=true;
+    try{
+      for(const [key,control] of Object.entries(linkMetadataControls)){
+        const incoming=String(data[key]||'');
+        const current=control.value.trim();
+        const previous=linkMetadataApplied[key]||'';
+        if(!linkMetadataTouched.has(key)&&(!current||(previous&&current===previous))){
+          control.value=incoming;
+          if(incoming)linkMetadataApplied[key]=incoming;
+          else delete linkMetadataApplied[key];
+          if(key==='image')control.dispatchEvent(new Event('input',{bubbles:true}));
+        }
+      }
+    }finally{applyingLinkMetadata=false;}
+    const provider=data.provider_name||data.site_name;
+    const source=data.source?` via ${data.source}`:'';
+    if(data.available){
+      createLinkMetadataStatus.textContent=`Loaded metadata${provider?` from ${provider}`:''}${source}. Review or edit any field.`;
+      if(!data.title)createLinkMetadataStatus.textContent+=' Add a title to create the post.';
+    }else createLinkMetadataStatus.textContent='No embed metadata found. Enter a title to create the post.';
+    updateCreatePathPreview();
+  }catch(error){
+    if(revision===linkMetadataRevision&&rawURL===createLinkURL.value.trim())
+      createLinkMetadataStatus.textContent='Could not fetch metadata. Enter a title and any other details manually.';
+  }
+}
+function scheduleLinkMetadata() {
+  clearTimeout(linkMetadataTimer);
+  linkMetadataRevision++;
+  linkMetadataResolvedURL='';
+  const rawURL=createLinkURL.value.trim();
+  if(!rawURL){createLinkMetadataStatus.textContent='';return;}
+  createLinkMetadataStatus.textContent='Metadata lookup starts when the URL is complete.';
+  linkMetadataTimer=setTimeout(()=>{linkMetadataPromise=loadLinkMetadata();},450);
 }
 document.querySelector('#create-form').addEventListener('submit',async event => {
   event.preventDefault(); createError.hidden = true;
   const submitButton=document.querySelector('#create-submit');
   submitButton.disabled=true;
-  if (createFilenameMode.value === 'numbered') await refreshNextContentNumber();
   const template = contentTemplates.find(item => item.id === templatePicker.dataset.selectedTemplate);
-  const title = createTitle.value.trim();
-  const slug = createSlug.value.trim() || slugify(title);
   const filenameMode = createFilenameMode.value;
   const directory = createDirectory.value.trim().replace(/\\/g,'/').replace(/^\/+|\/+$/g,'');
-  const path = `${directory && directory !== '.' ? `${directory}/` : ''}${slug}.md`;
-  if (!template || !title || !slug || !path) {submitButton.disabled=false;return;}
-  let source = window.MarkataContentStarters.render(template.source,title,slug,new Date(),createDate.value);
   try {
+    if (!template) throw new Error('Choose a content template first.');
     if (template.id === 'builtin:link') {
+      const rawLinkURL=createLinkURL.value.trim();
       let sourceURL;
-      try { sourceURL = new URL(createLinkURL.value.trim()); }
+      try { sourceURL = new URL(rawLinkURL); }
       catch { throw new Error('Enter a valid source URL beginning with https:// or http://.'); }
       if (!['https:','http:'].includes(sourceURL.protocol) ||
           !sourceURL.hostname || sourceURL.username || sourceURL.password) {
         throw new Error('Use a public-style http(s) URL without embedded credentials.');
       }
-      // Preserve the starter fields and quote the URL as a YAML string.
-      // Never fetch remote metadata from the editor client or Go server.
-      source = source.replace(/^url:\s*.*$/m, () => 'url: ' + JSON.stringify(sourceURL.href));
+      clearTimeout(linkMetadataTimer);
+      if (linkMetadataResolvedURL !== rawLinkURL) linkMetadataPromise=loadLinkMetadata();
+      await linkMetadataPromise;
+    }
+    if (filenameMode === 'numbered') await refreshNextContentNumber();
+    const title = createTitle.value.trim();
+    if (!title) throw new Error(template.id === 'builtin:link'
+      ? 'No title was found for this URL. Enter a title to create the link post.'
+      : 'Enter a title to create the post.');
+    const slug = createSlug.value.trim() || slugify(title);
+    if (!slug) throw new Error('Enter a title or file name for this post.');
+    const path = `${directory && directory !== '.' ? `${directory}/` : ''}${slug}.md`;
+    let source = window.MarkataContentStarters.render(template.source,title,slug,new Date(),createDate.value);
+    if (template.id === 'builtin:link') {
+      source=setFrontmatterValue(source,'url',createLinkURL.value.trim());
+      for (const key of ['description','site_name','type','provider_name','author_name','author_url']) {
+        const value=linkMetadataControls[key].value.trim();
+        if(value)source=setFrontmatterValue(source,key,value);
+      }
     }
     const imageURL=createImageURL.value.trim();
     if(imageURL){
@@ -437,7 +557,7 @@ document.querySelector('#create-form').addEventListener('submit',async event => 
       try{parsedImageURL=new URL(imageURL);}catch{throw new Error('Enter a valid image URL beginning with https:// or http://.');}
       if(!['https:','http:'].includes(parsedImageURL.protocol)||!parsedImageURL.hostname||parsedImageURL.username||parsedImageURL.password)
         throw new Error('Use a public-style http(s) image URL without embedded credentials.');
-      source=setFrontmatterImage(source,parsedImageURL.href);
+      source=setFrontmatterValue(source,'image',imageURL);
     }
     const changedDefaults = directory !== template.directory || filenameMode !== (template.filename_mode || 'title');
     if (createRememberDefaults.checked && changedDefaults) {
@@ -760,7 +880,7 @@ async function render() {
   try {
     const response = await fetch('/render', {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({markdown, include_document:!previewStarted, appearance:Object.fromEntries(Object.entries(attributes()).filter(([,v])=>v))}),
+      body:JSON.stringify({markdown, frontmatter_source:frontmatter?.[0] || '', include_document:!previewStarted, appearance:Object.fromEntries(Object.entries(attributes()).filter(([,v])=>v))}),
       signal:controller.signal
     });
     const data = await response.json();

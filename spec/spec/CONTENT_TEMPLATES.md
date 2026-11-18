@@ -82,7 +82,13 @@ All editors MUST:
 
 The built-in Link starter MUST include a title variable, the current date,
 `published: false`, `url`, and `image` fields. The web workbench MUST require a
-valid HTTP(S) URL and store it in `url` without fetching remote metadata.
+valid HTTP(S) URL and store it in `url` exactly as entered.
+When a Link URL is entered, the workbench MUST resolve metadata with the same
+configured providers and resolution strategy used by external embeds. It MUST
+fill empty supported frontmatter fields for title, description, image,
+site name, media type, provider name, author name, and author URL. Users MUST be
+able to edit these values, and metadata MUST NOT replace a value they entered.
+Metadata lookup failure MUST leave the URL intact and allow manual entry.
 
 The web workbench MUST support an optional date override when creating a post.
 When empty, it preserves a starter date or applies the current local date.
@@ -94,6 +100,9 @@ NOT fetch them on the server. When image upload uses local storage, uploaded
 images MUST be saved under `static/images/` with the post filename as their
 basename. Creating the post and its image MUST fail without replacing an
 existing source or image file.
+When an uploaded image URL is added to the source, the workbench MUST replace
+the starter's top-level `image` field or add one when it is absent. It MUST
+preserve both frontmatter delimiters, every other starter field, and valid YAML.
 
 Sites MAY set `content_templates.image_upload` to `local`, `dropper`, or
 `auto`. In `auto`, the workbench MUST use Dropper when `DROPPER_TOKEN` is

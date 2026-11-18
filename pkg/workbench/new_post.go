@@ -14,11 +14,17 @@ func sourceWithImage(source, imageURL string) string {
 	if match == nil {
 		return "---\n" + quoted + "\n---\n\n" + source
 	}
-	lines := strings.Split(source[match[2]:match[3]], "\n")
+	frontmatterStart, frontmatterEnd := match[4], match[5]
+	lines := strings.Split(source[frontmatterStart:frontmatterEnd], "\n")
 	found := false
 	for i, line := range lines {
+		lineEnding := ""
+		if strings.HasSuffix(line, "\r") {
+			lineEnding = "\r"
+			line = strings.TrimSuffix(line, "\r")
+		}
 		if strings.HasPrefix(line, "image:") {
-			lines[i] = quoted
+			lines[i] = quoted + lineEnding
 			found = true
 			break
 		}
@@ -26,5 +32,5 @@ func sourceWithImage(source, imageURL string) string {
 	if !found {
 		lines = append(lines, quoted)
 	}
-	return source[:match[2]] + strings.Join(lines, "\n") + source[match[3]:]
+	return source[:frontmatterStart] + strings.Join(lines, "\n") + source[frontmatterEnd:]
 }

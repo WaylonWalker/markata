@@ -583,12 +583,18 @@ func sourceWithImage(source, imageURL string) string {
 	if match == nil {
 		return "---\n" + quoted + "\n---\n\n" + source
 	}
-	header := source[match[2]:match[3]]
+	frontmatterStart, frontmatterEnd := match[4], match[5]
+	header := source[frontmatterStart:frontmatterEnd]
 	lines := strings.Split(header, "\n")
 	found := false
 	for i, line := range lines {
+		lineEnding := ""
+		if strings.HasSuffix(line, "\r") {
+			lineEnding = "\r"
+			line = strings.TrimSuffix(line, "\r")
+		}
 		if strings.HasPrefix(line, "image:") {
-			lines[i] = quoted
+			lines[i] = quoted + lineEnding
 			found = true
 			break
 		}
@@ -596,7 +602,7 @@ func sourceWithImage(source, imageURL string) string {
 	if !found {
 		lines = append(lines, quoted)
 	}
-	return source[:match[2]] + strings.Join(lines, "\n") + source[match[3]:]
+	return source[:frontmatterStart] + strings.Join(lines, "\n") + source[frontmatterEnd:]
 }
 
 var sourceFrontmatterPattern = regexp.MustCompile(`(?s)^(---\r?\n)(.*?)(\r?\n---(?:\r?\n|$))`)
