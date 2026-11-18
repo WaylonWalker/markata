@@ -76,14 +76,18 @@ func TestPublicMetadataURL(t *testing.T) {
 
 func TestPublicMetadataClientDoesNotContactLocalServer(t *testing.T) {
 	var requests atomic.Int32
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		requests.Add(1)
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer server.Close()
 
 	client := newPublicMetadataHTTPClient(context.Background(), 2)
-	response, err := client.Get(server.URL)
+	request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, server.URL, http.NoBody)
+	if err != nil {
+		t.Fatal(err)
+	}
+	response, err := client.Do(request)
 	if err == nil {
 		response.Body.Close()
 		t.Fatal("metadata client unexpectedly fetched a loopback address")
@@ -95,12 +99,12 @@ func TestPublicMetadataClientDoesNotContactLocalServer(t *testing.T) {
 
 func TestPublicMetadataClientRejectsUnsafeRedirect(t *testing.T) {
 	client := newPublicMetadataHTTPClient(context.Background(), 2)
-	start, err := http.NewRequest(http.MethodGet, "https://example.org/article", nil)
+	start, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://example.org/article", http.NoBody)
 	if err != nil {
 		t.Fatal(err)
 	}
 	for _, target := range []string{"http://127.0.0.1:8000/admin", "http://169.254.169.254/latest/meta-data/", "file:///etc/passwd"} {
-		next, err := http.NewRequest(http.MethodGet, target, nil)
+		next, err := http.NewRequestWithContext(context.Background(), http.MethodGet, target, http.NoBody)
 		if err != nil {
 			t.Fatal(err)
 		}
