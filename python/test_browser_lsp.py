@@ -231,6 +231,13 @@ class BrowserLSPTest(unittest.TestCase):
                     page.goto(url)
                     expect(page.frame_locator("#preview").locator("h1")).to_have_text("Real workspace draft")
                     expect(page.locator("#language-status")).to_contain_text("LSP connected")
+                    # Completion scenarios edit the buffer repeatedly. Keep
+                    # those edits in the browser-only scratch document so this
+                    # shared workspace fixture remains intact for later tests.
+                    page.locator("#site-files").get_by_role(
+                        "treeitem", name="Unsaved draft.md", exact=True
+                    ).click()
+                    expect(page.locator("#active-file")).to_have_text("Unsaved draft.md")
                     for source, wanted in [("😀 [[gre]]", "😀 [[greeting]]"),
                                            ("😀 [Hello](hello)", "😀 [Hello](hello%20world.md)"),
                                            ("[[", "[[hello")]:

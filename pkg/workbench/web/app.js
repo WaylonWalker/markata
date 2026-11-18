@@ -65,6 +65,7 @@ const editor = CodeMirror.fromTextArea(source, {
   mode:'gfm', lineNumbers:true, lineWrapping:true, matchBrackets:true,
   indentUnit:2, tabSize:4, viewportMargin:10, cursorScrollMargin:110, screenReaderLabel:'Markdown source'
 });
+const excalidrawActions = window.MarkataExcalidraw.attach(editor);
 const settingsDialog = document.querySelector('#settings-dialog');
 document.querySelector('#settings-open').addEventListener('click',() => window.MarkataSettings.open());
 document.querySelector('#settings-close').addEventListener('click',() => settingsDialog.close());
@@ -655,6 +656,7 @@ window.MarkataSettings.attach(editor);
 window.MarkataDiagnostics.attach();
 window.MarkataPublishReview.attach(editor);
 window.MarkataCommandPalette.attach(editor,{actions:[
+  ...excalidrawActions,
   {id:'edit-properties',label:'Page: Edit Properties',description:'Open the visual frontmatter object editor.',aliases:'frontmatter metadata tags date title publish fields',run:()=>window.MarkataFrontmatter.open()},
   {id:'add-property',label:'Page: Add a Property',description:'Search and add a frontmatter property.',aliases:'frontmatter metadata field key',run:()=>window.MarkataFrontmatter.openAddProperty()},
   {id:'back-to-markdown',label:'Page: Back to Markdown',description:'Close page details and return to the article source.',aliases:'frontmatter source article escape close',run:()=>window.MarkataFrontmatter.close()},

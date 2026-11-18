@@ -256,6 +256,7 @@ var settingDocs = map[string]string{
 	"ErrorPagesConfig.Custom404Template":           "Custom404Template is the path to a custom 404 template (default: \"404.html\")",
 	"ErrorPagesConfig.Enable404":                   "Enable404 enables the built-in 404 page (default: true)",
 	"ErrorPagesConfig.MaxSuggestions":              "MaxSuggestions is the maximum number of similar posts to suggest (default: 5)",
+	"ExcalidrawConfig.Mode":                        "Mode selects auto artifact reuse, cached-only reuse, or explicit Chromium rendering.",
 	"ExternalEntry.Author":                         "Author is the entry author",
 	"ExternalEntry.Categories":                     "Categories are the entry categories/tags",
 	"ExternalEntry.Content":                        "Content is the full entry content (HTML)",

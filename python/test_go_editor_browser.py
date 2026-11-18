@@ -1,9 +1,12 @@
 """Run against a Go workbench with MARKATA_GO_WORKBENCH_URL set."""
 import os
 import json
+import hashlib
+import re
 import threading
 import unittest
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 
 from playwright.sync_api import expect, sync_playwright
 
@@ -220,6 +223,112 @@ class GoEditorBrowserTest(unittest.TestCase):
         self.page.wait_for_function('window.__typingProbe.done', timeout=10000)
         self.assertGreater(self.page.evaluate('window.__typingProbe.updates'), 0)
         expect(self.preview.locator('.post-content')).to_contain_text('Live typing 39', timeout=10000)
+
+    def test_stale_autosave_pauses_and_keeps_conflict_draft(self):
+        paths = self.page.evaluate("""() => window.MarkataSiteTree.files()
+          .map(file => file.path).filter(path => /\\.(md|markdown|mdown|mkd)$/i.test(path))""")
+        if not paths:
+            self.skipTest("the attached workbench has no Markdown files")
+        path = paths[0]
+        self.page.evaluate("path => window.MarkataSiteTree.openFile(path)", path)
+        self.page.wait_for_function("path => window.MarkataSiteTree.activeFile() === path", arg=path)
+
+        writes = []
+
+        def conflict_on_put(route):
+            if route.request.method == "PUT":
+                writes.append(route.request.post_data)
+                route.fulfill(status=409, content_type="application/json", body=json.dumps({
+                    "error": "file changed on disk; browser recovery copy kept; compare copies to resolve conflict"
+                }))
+            else:
+                route.continue_()
+
+        self.page.route(re.compile(r".*/workspace/file\?.*"), conflict_on_put)
+        self.page.evaluate("""() => {
+          const editor=document.querySelector('.CodeMirror').CodeMirror;
+          const line=editor.lastLine();
+          editor.replaceRange('\\n<!-- first local edit -->',
+            {line,ch:editor.getLine(line).length},null,'+input');
+        }""")
+        expect(self.page.locator("#saved")).to_contain_text("Site save failed", timeout=5000)
+        expect(self.page.get_by_role("button", name="Compare copies…")).to_be_visible()
+
+        self.page.evaluate("""() => {
+          const editor=document.querySelector('.CodeMirror').CodeMirror;
+          const line=editor.lastLine();
+          editor.replaceRange('\\n<!-- second local edit -->',
+            {line,ch:editor.getLine(line).length},null,'+input');
+        }""")
+        self.page.wait_for_timeout(700)
+        self.assertEqual(len(writes), 1, "autosave retried after the version conflict")
+        self.assertIn("second local edit", self.page.evaluate(
+            "() => document.querySelector('.CodeMirror').CodeMirror.getValue()"))
+        self.assertTrue(self.page.evaluate("""() => Object.keys(localStorage).some(key =>
+          localStorage.getItem(key)?.includes('second local edit'))"""),
+            "the browser recovery copy did not retain the latest edit")
+
+        self.page.get_by_role("button", name="Compare copies…").click()
+        dialog = self.page.locator("#workspace-conflict-dialog")
+        expect(dialog).to_be_visible()
+        expect(dialog.locator("#workspace-conflict-browser")).to_contain_text("second local edit")
+        dialog.locator("#workspace-conflict-done").click()
+
+    def test_excalidraw_loads_local_fonts_and_uses_its_worker_chunk(self):
+        paths = self.page.evaluate("""() => window.MarkataSiteTree.files()
+          .map(file => file.path).filter(path => /\\.(md|markdown|mdown|mkd)$/i.test(path))""")
+        if not paths:
+            self.skipTest("the attached workbench has no Markdown files")
+        path = paths[0]
+        self.page.evaluate("path => window.MarkataSiteTree.openFile(path)", path)
+        self.page.wait_for_function("path => window.MarkataSiteTree.activeFile() === path", arg=path)
+
+        writes = []
+
+        def acknowledge_browser_save(route):
+            if route.request.method == "PUT":
+                source = route.request.post_data or ""
+                writes.append(source)
+                route.fulfill(status=200, content_type="application/json", body=json.dumps({
+                    "version": hashlib.sha256(source.encode()).hexdigest()
+                }))
+            else:
+                route.continue_()
+
+        self.page.route(re.compile(r".*/workspace/file\?.*"), acknowledge_browser_save)
+        fixture = Path(__file__).resolve().parents[1] / "pkg/plugins/testdata/excalidraw/renderer-corpus/text-fonts.excalidraw"
+        scene = json.loads(fixture.read_text(encoding="utf-8"))
+        scene["x_markata_future_field"] = {"preserve": "roundtrip"}
+        scene["_markata"] = {"user_note": "keep me", "excalidraw_svg": {"stale": True}}
+        self.assertTrue(scene["elements"], "fixture must contain a scene element")
+        scene["elements"][0]["x_future_element_field"] = "preserve this too"
+        source = "# Excalidraw fonts\n\n```excalidraw\n" + json.dumps(scene) + "\n```\n"
+        font_responses, worker_warnings = [], []
+        self.page.on("response", lambda response: font_responses.append((response.status, response.url))
+                     if "/editor/excalidraw-fonts/fonts/" in response.url else None)
+        self.page.on("console", lambda message: worker_warnings.append(message.text)
+                     if "WorkerInTheMainChunkError" in message.text or "Failed to use workers for subsetting" in message.text else None)
+        self.page.evaluate("""source => {
+          const editor=document.querySelector('.CodeMirror').CodeMirror;
+          editor.setValue(source);
+          editor.setCursor({line:2,ch:0});
+        }""", source)
+        expect(self.page.locator("#drawing-open")).to_have_text("Edit drawing")
+        self.page.locator("#drawing-open").click()
+        expect(self.page.locator("#excalidraw-canvas")).to_be_visible(timeout=10000)
+        self.page.locator("#excalidraw-apply").click()
+        expect(self.page.locator("#excalidraw-dialog")).not_to_be_visible(timeout=20000)
+        self.assertTrue(font_responses, "Excalidraw did not request its bundled font files")
+        self.assertTrue(all(status == 200 for status, _ in font_responses), font_responses)
+        self.assertFalse(worker_warnings, worker_warnings)
+        expect(self.page.locator("#saved")).to_have_text("Saved to site", timeout=5000)
+        self.assertEqual(len(writes), 1, "applying the drawing should autosave one updated source")
+        serialized = writes[0].split("```excalidraw\n", 1)[1].split("\n```", 1)[0]
+        saved_scene = json.loads(serialized)
+        self.assertEqual(saved_scene["x_markata_future_field"], {"preserve": "roundtrip"})
+        self.assertEqual(saved_scene["elements"][0]["x_future_element_field"], "preserve this too")
+        self.assertEqual(saved_scene["_markata"]["user_note"], "keep me")
+        self.assertNotEqual(saved_scene["_markata"].get("excalidraw_svg"), {"stale": True})
 
     def test_preview_discards_obsolete_inflight_frame_render(self):
         self.edit("# Latest edit")

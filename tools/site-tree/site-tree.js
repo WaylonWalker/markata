@@ -13,14 +13,15 @@ let siteAutosave = false;
 const aliases = {}, feedAliases = {};
 const baselines = {}, versions = {}, restored = {};
 let workspaceCounts = {files:0,feeds:0,tags:0};
-const saveTimers = {}, saveQueues = {}, saveRevisions = {}, saveEpochs = {};
+const saveTimers = {}, saveQueues = {}, saveRevisions = {}, saveEpochs = {}, saveConflicts = {};
 function saveToSite(path, source) {
+  if (saveConflicts[path]) return;
   const revision = saveRevisions[path] = (saveRevisions[path] || 0) + 1;
   const epoch = saveEpochs[path] || 0;
   clearTimeout(saveTimers[path]);
   saveTimers[path] = setTimeout(() => {
     saveQueues[path] = (saveQueues[path] || Promise.resolve()).catch(() => {}).then(async () => {
-      if (revision !== saveRevisions[path] || epoch !== (saveEpochs[path] || 0)) return;
+      if (revision !== saveRevisions[path] || epoch !== (saveEpochs[path] || 0) || saveConflicts[path]) return;
       const expected = versions[path];
       // No known version means an older recovered draft cannot safely
       // overwrite a disk file. Keep browser recovery until user reconciles.
@@ -32,9 +33,15 @@ function saveToSite(path, source) {
           'X-Markata-Expected-Version':expected}, body:source
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Cannot save to the site');
-      // A discarded generation may finish in flight; ignore that obsolete ack.
+      // A discard or explicit conflict resolution may have superseded this
+      // request while it was in flight. Do not restore its stale conflict.
       if (epoch !== (saveEpochs[path] || 0)) return;
+      if (response.status === 409) {
+        saveConflicts[path] = true;
+        saveRevisions[path] = (saveRevisions[path] || 0) + 1;
+        clearTimeout(saveTimers[path]);
+      }
+      if (!response.ok) throw new Error(data.error || 'Cannot save to the site');
       window.MarkataDiagnostics?.record('save_acknowledgement',performance.now()-saveStarted);
       baselines[path] = source;
       versions[path] = data.version;
@@ -128,6 +135,8 @@ async function open(path) {
     // Keep the original expected version of a dirty browser draft when the
     // filesystem moved. Autosave will conflict rather than overwrite it.
     versions[path] = diskChanged ? previousVersion : disk.version;
+    if (diskChanged) saveConflicts[path] = true;
+    else delete saveConflicts[path];
   }
   syncing = true;
   try {
@@ -173,6 +182,7 @@ window.MarkataSiteTree = {
     saveRevisions[path] = (saveRevisions[path] || 0) + 1;
     saveEpochs[path] = (saveEpochs[path] || 0) + 1;
     clearTimeout(saveTimers[path]);
+    delete saveConflicts[path];
     drafts[path] = source;
     baselines[path] = source;
     versions[path] = version;
@@ -185,6 +195,7 @@ window.MarkataSiteTree = {
   keepBrowserDraft(path, version) {
     if (!currentEditor || active !== path || !Object.hasOwn(files, path) ||
         !/^[0-9a-f]{64}$/.test(version)) return false;
+    delete saveConflicts[path];
     versions[path] = version;
     saveToSite(path, currentEditor.getValue());
     return true;
@@ -195,6 +206,7 @@ window.MarkataSiteTree = {
     saveRevisions[path] = (saveRevisions[path] || 0) + 1;
     saveEpochs[path] = (saveEpochs[path] || 0) + 1;
     clearTimeout(saveTimers[path]);
+    delete saveConflicts[path];
     drafts[path] = source;
     baselines[path] = source;
     versions[path] = version;
@@ -212,6 +224,7 @@ window.MarkataSiteTree = {
     saveRevisions[path] = (saveRevisions[path] || 0) + 1;
     saveEpochs[path] = (saveEpochs[path] || 0) + 1;
     clearTimeout(saveTimers[path]);
+    delete saveConflicts[path];
     try {
       localStorage.removeItem(storageKey(path));
       localStorage.removeItem(legacyStorageKey(path));
@@ -229,7 +242,9 @@ window.MarkataSiteTree = {
     if (!editable(active)) return true;
     drafts[active] = currentEditor.getValue();
     try { writeDraft(active, drafts[active]);
-      document.querySelector('#saved').textContent = 'Draft saved on this device'; }
+      document.querySelector('#saved').textContent = saveConflicts[active]
+        ? 'Site save failed · file changed on disk; browser recovery copy kept'
+        : 'Draft saved on this device'; }
     catch { warning(); }
     if (siteAutosave && Object.hasOwn(baselines, active) && drafts[active] !== baselines[active]) saveToSite(active, drafts[active]);
     return true;

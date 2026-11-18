@@ -42,6 +42,14 @@ are served locally. Authored images and links may access external networks.
 `GET /favicon.ico` serves the bundled Markata favicon so browsers do not report
 a missing icon for the workbench origin.
 
+The Go workbench serves its Excalidraw editor and fonts from the embedded local
+asset set. The upstream editor requests font files below an additional `fonts/`
+URL segment; `/editor/excalidraw-fonts/fonts/<path>` MUST resolve to the same
+bundled asset as `/editor/excalidraw-fonts/<path>`. Split editor JavaScript
+chunks MUST also be served below `/editor/excalidraw-editor-chunks/`. These
+paths MUST remain contained in the embedded asset filesystem. This keeps text
+editing and SVG export offline.
+
 The Go workbench MUST keep YAML frontmatter out of the rendered Markdown while
 using valid frontmatter to preview the post title and description. Link and
 bookmark templates MUST preview their `link` or `url`, title, description,
@@ -52,6 +60,7 @@ root-relative `/images/` paths MUST resolve only to regular files under the
 workspace `static/` directory. Preview rendering MUST NOT fetch page metadata
 or modify source. Invalid YAML MUST leave the Markdown body preview available
 and show that frontmatter metadata could not be rendered.
+
 
 Workspace reads require a loopback client and a localhost or loopback Host.
 `PUT` and `POST /workspace/file` also require an exact same-origin `Origin`;
@@ -120,6 +129,18 @@ does not store drafts.
 
 Automatic LSP completion waits for a short typing pause instead of requesting a
 completion after every character. Ctrl+Space requests completion immediately.
+
+Workspace autosave compares each write against the exact source version the
+browser last read or successfully wrote. A stale version MUST return HTTP 409
+without changing the file, unless the current file already contains the exact
+requested bytes; that idempotent retry MUST return success with the current
+version and MUST NOT write the file again. After a 409, the browser MUST retain
+its recovery draft and stop automatic writes for that file until the user
+resolves the conflict. **Compare copies…** shows the browser draft and the
+current disk copy. Keeping the browser draft requires an explicit confirmation
+and writes against the reviewed disk version; using the disk copy replaces the
+editor buffer. Either choice updates the expected version before autosave
+resumes.
 
 The demo binds to 127.0.0.1 by default. It rejects cross-origin render requests
 and non-JSON content types. It has HTTP timeouts and graceful shutdown.

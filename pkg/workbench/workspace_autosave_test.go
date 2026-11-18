@@ -77,6 +77,13 @@ func TestWorkspaceAutosaveRejectsStaleFilesystemRevisions(t *testing.T) {
 	if read() != current {
 		t.Fatal("fresh autosave did not persist")
 	}
+	// A retry from another tab may carry the old token even though the exact
+	// requested bytes are already on disk. Acknowledge that without a write.
+	if got := put(editorworkspace.SourceVersion(external), current); got.Code != http.StatusOK {
+		t.Fatalf("byte-identical stale retry returned %d: %s", got.Code, got.Body.String())
+	} else if !strings.Contains(got.Body.String(), editorworkspace.SourceVersion(current)) {
+		t.Fatalf("idempotent save returned the wrong version: %s", got.Body.String())
+	}
 	if got := put(editorworkspace.SourceVersion(external), "# Too late\n"); got.Code != http.StatusConflict {
 		t.Fatalf("repeated old revision returned %d: %s", got.Code, got.Body.String())
 	}

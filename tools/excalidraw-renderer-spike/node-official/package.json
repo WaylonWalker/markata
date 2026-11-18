@@ -1,0 +1,8 @@
+{
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@excalidraw/utils": "0.1.8",
+    "jsdom": "24.1.3"
+  }
+}

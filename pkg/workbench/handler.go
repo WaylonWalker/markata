@@ -32,6 +32,7 @@ import (
 	"github.com/WaylonWalker/markata/pkg/lsp"
 	"github.com/WaylonWalker/markata/pkg/models"
 	"github.com/WaylonWalker/markata/pkg/plugins"
+	"github.com/WaylonWalker/markata/pkg/visualizations"
 )
 
 const (
@@ -47,6 +48,7 @@ const (
 	workbenchPaletteAttribute   = "data-palette"
 	workbenchFontpackAttribute  = "data-fontpack"
 	workbenchLightMode          = "light"
+	workbenchDarkMode           = "dark"
 )
 
 //go:embed web
@@ -155,7 +157,15 @@ func buildPresentation(root string, workspace workspaceSource, config lsp.Browse
 	if err != nil {
 		return nil, err
 	}
-	h := &Handler{root: root, renderer: plugins.NewStandaloneRenderer(plugins.StandaloneOptions{Config: siteConfig, Unsafe: true, AssetBase: "/appearance", MermaidMode: "client"}), siteConfig: siteConfig, workspace: workspace, language: language, languageConfig: config, appearance: a, assets: a.Assets, gate: make(chan struct{}, 1), choices: map[string][]string{workbenchThemeAttribute: {workbenchLightMode, "dark"}, workbenchTextSizeAttribute: {"small", "medium", "large", "x-large"}}}
+	excalidrawVersion, err := visualizations.ExcalidrawRendererVersion()
+	if err != nil {
+		return nil, fmt.Errorf("fingerprint editor Excalidraw assets: %w", err)
+	}
+	excalidrawTheme := workbenchDarkMode
+	if siteConfig != nil && siteConfig.Theme.FallbackMode == "light" {
+		excalidrawTheme = "light"
+	}
+	h := &Handler{root: root, renderer: plugins.NewStandaloneRenderer(plugins.StandaloneOptions{Config: siteConfig, Unsafe: true, AssetBase: "/appearance", MermaidMode: "client"}), siteConfig: siteConfig, workspace: workspace, language: language, languageConfig: config, appearance: a, assets: a.Assets, gate: make(chan struct{}, 1), choices: map[string][]string{workbenchThemeAttribute: {workbenchLightMode, workbenchDarkMode}, workbenchTextSizeAttribute: {"small", "medium", "large", "x-large"}}}
 	h.assets["css/fonts.css"] = bytes.ReplaceAll(h.assets["css/fonts.css"], []byte("/assets/fonts/"), []byte("/appearance/assets/fonts/"))
 	for _, name := range []string{"palette", "aesthetic", "fonts"} {
 		match := manifestPattern.FindSubmatch(h.assets["css/"+name+".css"])
@@ -187,7 +197,7 @@ func buildPresentation(root string, workspace workspaceSource, config lsp.Browse
 		return nil, err
 	}
 	// Editor CSS precedes theme overrides. Site article layout belongs in the iframe.
-	editorHead := `<link rel="stylesheet" href="/editor/codemirror/lib/codemirror.css"><link rel="stylesheet" href="/editor/codemirror/addon/hint/show-hint.css"><link rel="stylesheet" href="/editor/codemirror/addon/dialog/dialog.css"><link rel="stylesheet" href="/editor/lsp.css"><script src="/editor/lsp.js"></script>`
+	editorHead := fmt.Sprintf(`<script>window.MARKATA_EXCALIDRAW_RENDERER_VERSION=%q;window.MARKATA_EXCALIDRAW_EXPORT_THEME=%q;</script><link rel="stylesheet" href="/editor/codemirror/lib/codemirror.css"><link rel="stylesheet" href="/editor/codemirror/addon/hint/show-hint.css"><link rel="stylesheet" href="/editor/codemirror/addon/dialog/dialog.css"><link rel="stylesheet" href="/editor/lsp.css"><script src="/editor/lsp.js"></script>`, excalidrawVersion, excalidrawTheme)
 	for _, name := range []string{"lib/codemirror", "mode/xml/xml", "mode/markdown/markdown", "mode/gfm/gfm", "mode/javascript/javascript", "mode/python/python", "mode/css/css", "mode/htmlmixed/htmlmixed", "addon/mode/overlay", "addon/edit/matchbrackets", "addon/hint/show-hint", "addon/search/searchcursor", "addon/dialog/dialog", "keymap/vim", "keymap/emacs", "keymap/sublime"} {
 		editorHead += `<script src="/editor/codemirror/` + name + `.js"></script>`
 	}
@@ -299,6 +309,13 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "no-cache")
 		name := strings.TrimPrefix(r.URL.Path, "/editor/")
 		data, err := web.ReadFile("web/" + name)
+		if err != nil && (name == "excalidraw-editor.js" || name == "excalidraw-editor.css" || strings.HasPrefix(name, "excalidraw-fonts/") || strings.HasPrefix(name, "excalidraw-editor-chunks/")) {
+			assetName := name
+			if strings.HasPrefix(assetName, "excalidraw-fonts/fonts/") {
+				assetName = "excalidraw-fonts/" + strings.TrimPrefix(assetName, "excalidraw-fonts/fonts/")
+			}
+			data, err = visualizations.ReadExcalidrawAsset(assetName)
+		}
 		if err != nil {
 			http.NotFound(w, r)
 			return
@@ -329,7 +346,11 @@ func serve(w http.ResponseWriter, r *http.Request, name string, data []byte) {
 	if w.Header().Get("Cache-Control") == "" {
 		w.Header().Set("Cache-Control", "public, max-age=3600, must-revalidate")
 	}
-	w.Header().Set("Content-Type", mime.TypeByExtension(path.Ext(name)))
+	contentType := mime.TypeByExtension(path.Ext(name))
+	if strings.EqualFold(path.Ext(name), ".woff2") {
+		contentType = "font/woff2"
+	}
+	w.Header().Set("Content-Type", contentType)
 	w.Header().Set("ETag", fmt.Sprintf(`"%x"`, sha256.Sum256(data)))
 	http.ServeContent(w, r, name, time.Time{}, bytes.NewReader(data))
 }
@@ -532,7 +553,7 @@ func (h *Handler) decodeRequest(w http.ResponseWriter, r *http.Request) *renderR
 }
 
 func (h *Handler) document(result *plugins.StandaloneResult, attributes map[string]string) string {
-	defaults := map[string]string{workbenchThemeAttribute: "dark", workbenchPaletteAttribute: "default-dark", workbenchAestheticAttribute: "minimal", workbenchFontpackAttribute: "system", workbenchTextSizeAttribute: "large"}
+	defaults := map[string]string{workbenchThemeAttribute: workbenchDarkMode, workbenchPaletteAttribute: "default-dark", workbenchAestheticAttribute: "minimal", workbenchFontpackAttribute: "system", workbenchTextSizeAttribute: "large"}
 	for key, value := range h.appearance.Defaults {
 		defaults[key] = value
 	}
@@ -825,9 +846,9 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 		}
 		w.WriteHeader(http.StatusCreated)
 		if err := json.NewEncoder(w).Encode(map[string]string{
-			discardVersionKey: editorworkspace.SourceVersion(sourceWithImage(source, imageURL)),
-			"image":           imageURL,
-			"provider":        provider,
+			workspaceVersionKey: editorworkspace.SourceVersion(sourceWithImage(source, imageURL)),
+			"image":             imageURL,
+			"provider":          provider,
 		}); err != nil {
 			return
 		}
@@ -1023,8 +1044,19 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 					fail(w, http.StatusUnprocessableEntity, "cannot read workspace source before saving")
 					return
 				}
-				if editorworkspace.SourceVersion(current) != expected {
-					fail(w, http.StatusConflict, "file changed on disk; browser recovery copy kept; reopen and resolve conflict")
+				currentVersion := editorworkspace.SourceVersion(current)
+				if currentVersion != expected {
+					// A duplicate save may arrive after another tab already wrote the
+					// exact same bytes. Acknowledge that idempotently without touching
+					// the file again; a different current source remains a conflict.
+					if current != string(body) {
+						fail(w, http.StatusConflict, "file changed on disk; browser recovery copy kept; compare copies to resolve conflict")
+						return
+					}
+					w.Header().Set("Content-Type", "application/json")
+					if err := json.NewEncoder(w).Encode(map[string]string{workspaceVersionKey: currentVersion}); err != nil {
+						return
+					}
 					return
 				}
 			}

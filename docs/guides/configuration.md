@@ -1322,6 +1322,41 @@ In client mode, diagrams rerender when readers change the active theme or
 palette. Chromium mode uses the same palette colors in its static SVGs. CLI mode
 uses the Mermaid CLI theme and configuration.
 
+### Excalidraw Settings (`[markata-go.excalidraw]`)
+
+Excalidraw fences render to static SVG by default. The default `auto` mode
+reuses a fingerprinted SVG artifact generated when the Go workbench applies a
+scene. It never starts Chromium. A missing or stale artifact stops the build
+with an actionable error. Select `chromium` explicitly for compatibility
+rendering.
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `mode` | string | `"auto"` | `"auto"` or `"cached"` uses only a matching editor artifact; `"chromium"` explicitly runs Chrome or Chromium. |
+| `enabled` | bool | `true` | Render Excalidraw fences as static SVG. Set to `false` to keep them as highlighted JSON code. |
+| `chromium.browser_path` | string | `""` | Path to Chrome or Chromium. Auto-detected when empty. |
+| `chromium.timeout` | int | `30` | Maximum seconds to wait for each SVG export. |
+| `chromium.no_sandbox` | bool | `false` | Disable the browser sandbox for containers that require it. |
+
+```toml
+[markata-go.excalidraw]
+enabled = true
+mode = "auto"
+
+[markata-go.excalidraw.chromium]
+browser_path = ""
+timeout = 30
+no_sandbox = false
+```
+
+Applying a scene in the Go workbench stores its editable JSON and optional
+compressed SVG together in the Markdown fence. Markata checks the scene,
+bundled renderer and fonts, theme, and export options before using that SVG.
+Editing any of these inputs invalidates the artifact. Published pages load
+only the resulting static SVG, not the Excalidraw editor runtime. Static output
+supports shapes, lines, arrows, freehand strokes, and text. Embedded images,
+links, and web embeds return an error until the static renderer supports them.
+
 #### CLI Mode Settings (`[markata-go.mermaid.cli]`)
 
 | Field | Type | Default | Description |

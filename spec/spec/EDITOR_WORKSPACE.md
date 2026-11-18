@@ -41,3 +41,9 @@ Refs #1977 and #1903. The workspace includes the publishing and Changes flow in 
   completed index is published.
 - Continuous typing MUST NOT indefinitely postpone live preview. When the renderer is idle,
   an unrendered edit burst MUST start a render within 250 ms, using the current source.
+
+The Go workbench MUST support self-contained Excalidraw scene blocks as defined
+in [EXCALIDRAW.md](EXCALIDRAW.md). Editing a scene MUST update only its fenced
+JSON body in one normal editor transaction. Applying a new scene MUST insert
+its fence only after the author applies it. Canceling MUST leave the source
+unchanged.

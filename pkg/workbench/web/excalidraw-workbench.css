@@ -1,0 +1,255 @@
+#excalidraw-dialog {
+  width: min(1280px, 97vw);
+  height: min(920px, 94dvh);
+  max-width: none;
+  max-height: none;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--editor-divider, #d7d3c9);
+  border-radius: 12px;
+  background: var(--color-background, #f5f1e8);
+  color: var(--color-text, #25303b);
+  box-shadow: 0 24px 90px #090d1490;
+}
+
+#excalidraw-dialog::backdrop {
+  background: #090d14b8;
+  backdrop-filter: blur(4px);
+}
+
+.excalidraw-shell {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+#excalidraw-apply-status:empty { display: none; }
+#excalidraw-apply-status {
+  min-width: 0;
+  margin-left: auto;
+  color: var(--color-text-muted, #65717c);
+  font-size: 11px;
+  line-height: 1.35;
+}
+#excalidraw-apply-status[data-warning="true"] {
+  color: var(--color-warning, #8a4b12);
+}
+
+.excalidraw-heading,
+.excalidraw-footer {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 13px 20px;
+  background: var(--color-background, #f5f1e8);
+}
+
+.excalidraw-heading {
+  min-height: 0;
+  flex-wrap: nowrap;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--editor-divider, #d7d3c9);
+}
+
+.excalidraw-heading-copy { min-width: 0; }
+.excalidraw-kicker {
+  margin: 0 0 3px;
+  color: var(--color-primary, #a36b2a);
+  font: 650 10px/1.3 var(--font-code, ui-monospace, monospace);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
+.excalidraw-heading h2 { margin: 0; font-size: 17px; line-height: 1.2; }
+.excalidraw-heading p:last-child {
+  margin: 4px 0 0;
+  color: var(--color-text-muted, #65717c);
+  font-size: 12px;
+}
+
+#excalidraw-close,
+#excalidraw-cancel,
+#excalidraw-apply,
+#excalidraw-apply-as {
+  min-height: 36px;
+  padding: 0 13px;
+  border: 1px solid var(--editor-divider, #d7d3c9);
+  border-radius: 6px;
+  background: var(--color-surface, #ece8de);
+  color: inherit;
+  font: 600 12px/1 system-ui, sans-serif;
+  cursor: pointer;
+}
+
+#excalidraw-close { width: 36px; padding: 0; font-size: 20px; }
+#excalidraw-close:hover,
+#excalidraw-cancel:hover,
+#excalidraw-apply-as:hover { background: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface)); }
+#excalidraw-apply {
+  border-color: var(--color-primary, #a36b2a);
+  background: var(--color-primary, #a36b2a);
+  color: var(--color-on-primary, #fff);
+}
+#excalidraw-apply:hover { filter: brightness(1.08); }
+#excalidraw-apply:disabled { opacity: .55; cursor: wait; }
+
+.excalidraw-footer {
+  height: auto;
+  min-height: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  border-top: 1px solid var(--editor-divider, #d7d3c9);
+}
+
+.excalidraw-footer-note {
+  margin: 0 auto 0 0;
+  color: var(--color-text-muted, #65717c);
+  font-size: 12px;
+}
+
+#excalidraw-canvas {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  background-color: var(--color-surface, #ece8de);
+  background-image: radial-gradient(color-mix(in srgb, var(--color-text-muted, #65717c) 24%, transparent) .65px, transparent .65px);
+  background-size: 18px 18px;
+}
+
+#excalidraw-canvas[hidden] { display: none; }
+#excalidraw-canvas > .excalidraw { width: 100%; height: 100%; }
+#excalidraw-canvas .collab-button { display: none !important; }
+
+#excalidraw-loading,
+#excalidraw-error {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: min(520px, calc(100% - 40px));
+  margin: 0;
+  transform: translate(-50%, -50%);
+  color: var(--color-text-muted, #65717c);
+  text-align: center;
+  font-size: 13px;
+}
+
+#excalidraw-error {
+  inset: auto 16px 12px;
+  width: auto;
+  padding: 10px 12px;
+  transform: none;
+  border: 1px solid color-mix(in srgb, var(--color-error, #c54343) 35%, transparent);
+  border-radius: 6px;
+  background: var(--color-background, #f5f1e8);
+  color: var(--color-error, #b52d2d);
+  text-align: left;
+}
+
+#drawing-open {
+  flex: none;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--editor-divider, #d7d3c9);
+  border-radius: 6px;
+  background: var(--color-surface, #ece8de);
+  color: inherit;
+  font: 600 12px/1 system-ui, sans-serif;
+  cursor: pointer;
+}
+#drawing-open:disabled { opacity: .55; cursor: not-allowed; }
+
+.excalidraw-fence-controls {
+  color: var(--color-text, #203348);
+  font: 12px/1.35 system-ui, sans-serif;
+}
+
+.excalidraw-fence-controls--folded {
+  display: inline-flex;
+  max-width: min(100%, 680px);
+  min-height: 34px;
+  align-items: center;
+  gap: 16px;
+  margin: 2px 14px 4px 0;
+  padding: 3px 6px 3px 10px;
+  border-left: 2px solid var(--color-primary, #a36b2a);
+  border-radius: 0 5px 5px 0;
+  background: var(--color-surface, #ece8de);
+  vertical-align: middle;
+}
+
+.excalidraw-fence-controls--expanded {
+  display: flex;
+  min-height: 34px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 3px;
+  padding: 3px 8px 3px 10px;
+  border-left: 2px solid var(--color-primary, #a36b2a);
+  background: color-mix(in srgb, var(--color-surface, #ece8de) 78%, transparent);
+}
+
+.excalidraw-fence-controls__label {
+  min-width: 0;
+  color: var(--color-text-muted, #65717c);
+  font: 11px/1.3 var(--font-code, ui-monospace, monospace);
+  white-space: nowrap;
+}
+
+.excalidraw-fence-controls__actions {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+}
+
+.excalidraw-fence-controls__button {
+  min-height: 27px;
+  padding: 0 8px;
+  border: 1px solid var(--editor-divider, #d7d3c9);
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: 600 11px/1 system-ui, sans-serif;
+  cursor: pointer;
+}
+
+.excalidraw-fence-controls__button:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--color-primary, #a36b2a) 52%, var(--editor-divider, #d7d3c9));
+  background: color-mix(in srgb, var(--color-primary, #a36b2a) 9%, var(--color-surface, #ece8de));
+}
+
+.excalidraw-fence-controls__button:focus-visible {
+  outline: 2px solid var(--color-primary, #a36b2a);
+  outline-offset: 2px;
+}
+
+.excalidraw-fence-controls__button:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+.excalidraw-fence-controls__button--edit {
+  border-color: color-mix(in srgb, var(--color-primary, #a36b2a) 42%, var(--editor-divider, #d7d3c9));
+  color: var(--color-primary, #a36b2a);
+}
+
+@media (max-width: 520px) {
+  .excalidraw-fence-controls--folded { gap: 8px; }
+  .excalidraw-fence-controls__label { white-space: normal; }
+  .excalidraw-fence-controls__button { min-height: 32px; }
+}
+
+@media (max-width: 700px) {
+  #excalidraw-dialog { width: 100vw; height: 100dvh; border: 0; border-radius: 0; }
+  .excalidraw-heading,
+  .excalidraw-footer { gap: 8px; padding: 10px 12px; }
+  .excalidraw-heading h2 { font-size: 15px; }
+  .excalidraw-heading p:last-child { max-width: 36ch; }
+  .excalidraw-footer-note { flex-basis: 100%; }
+  #excalidraw-cancel,
+  #excalidraw-apply,
+  #excalidraw-apply-as { flex: 1; }
+}
