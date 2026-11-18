@@ -1,6 +1,8 @@
 package plugins
 
 import (
+	"crypto/sha256"
+	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -9,6 +11,7 @@ import (
 	"time"
 
 	"github.com/WaylonWalker/markata/internal/fileidentity"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
 )
 
 func TestFinalCSSLinkCacheReusesVerifiedFiles(t *testing.T) {
@@ -108,6 +111,100 @@ func TestFinalCSSLinkCacheFallback(t *testing.T) {
 	}
 	if path := finalCSSLinkCachePath(dir, dir); path != "" {
 		t.Fatalf("verification cache must not enter output: %s", path)
+	}
+}
+
+
+func TestFinalCSSLinkCacheAcrossCleanupColdWarmAndRuleChange(t *testing.T) {
+	contentDir := t.TempDir()
+	output := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(output, "css"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	cssPath := filepath.Join(output, "css", "site.css")
+	firstCSS := []byte("body { color: red }")
+	secondCSS := []byte("body { color: blue }")
+	firstHash := fmt.Sprintf("%x", sha256.Sum256(firstCSS))[:8]
+	secondHash := fmt.Sprintf("%x", sha256.Sum256(secondCSS))[:8]
+	if err := os.WriteFile(cssPath, firstCSS, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	const staleHash = "deadbeef"
+	const body = "<main>Authored text about site.deadbeef.css</main>"
+	firstHTML := "<link rel=\"stylesheet\" href=\"/css/site." + firstHash + ".css\">" + body
+	original := filepath.Join(output, "index.html")
+	if err := os.WriteFile(original, []byte(firstHTML), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	root, err := os.OpenRoot(output)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer root.Close()
+
+	manager := lifecycle.NewManager()
+	config := lifecycle.NewConfig()
+	config.ContentDir = contentDir
+	config.OutputDir = output
+	manager.SetConfig(config)
+	runCleanup := func() {
+		t.Helper()
+		// Force reconciliation as a build with a Configure-time CSS hash would.
+		manager.SetAssetHash("css/site.css", staleHash)
+		if err := reconcileFinalCSSAssets(manager, root, output); err != nil {
+			t.Fatal(err)
+		}
+	}
+	assertHTML := func(path, hash string) {
+		t.Helper()
+		data, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !strings.Contains(string(data), "/css/site."+hash+".css") {
+			t.Fatalf("%s has wrong final CSS reference: %s", path, data)
+		}
+		if !strings.Contains(string(data), body) {
+			t.Fatalf("%s modified authored body: %s", path, data)
+		}
+	}
+	// Cold cleanup verifies unchanged HTML and persists its identity cache.
+	runCleanup()
+	assertHTML(original, firstHash)
+	cachePath := finalCSSLinkCachePath(contentDir, output)
+	if fileidentity.Available && cachePath == "" {
+		t.Fatal("Linux identity cache unexpectedly disabled")
+	}
+	if cachePath != "" {
+		changes, _, err := collectFinalCSSChanges(map[string]string{"css/site.css": staleHash}, root, output)
+		if err != nil {
+			t.Fatal(err)
+		}
+		verified := loadFinalCSSLinkCache(cachePath, finalCSSLinkRules(changes), time.Now())
+		if _, ok := verified.Files["index.html"]; !ok {
+			t.Fatal("cold cleanup did not persist verification for unchanged HTML")
+		}
+	}
+	// A warm build must still inspect a freshly added cached page.
+	added := filepath.Join(output, "added.html")
+	addedHTML := "<link rel=\"stylesheet\" href=\"/css/site." + staleHash + ".css\">" + body
+	if err := os.WriteFile(added, []byte(addedHTML), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	runCleanup()
+	assertHTML(original, firstHash)
+	assertHTML(added, firstHash)
+
+	// A new final CSS digest invalidates any prior verified links, even when
+	// neither HTML input has changed.
+	if err := os.WriteFile(cssPath, secondCSS, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	runCleanup()
+	assertHTML(original, secondHash)
+	assertHTML(added, secondHash)
+	if firstHash == secondHash {
+		t.Fatal("test CSS fixtures must have different fingerprints")
 	}
 }
 
