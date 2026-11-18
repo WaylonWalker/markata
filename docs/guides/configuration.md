@@ -519,7 +519,11 @@ url = "https://github.com/WaylonWalker/markata-go"
 external = true
 ```
 
-The default theme adds a small preview when a local header or footer navigation URL matches a generated feed or published post. For a feed such as `/blog/`, hovering the link or focusing it with a keyboard shows its description, public post count, total words, reading time, and publication rhythm when those values are available. For a post, the preview uses its description, tags, word count, and reading time. Enabled Reader and Blogroll links show the number of active followed sources; an enabled Random post link shows how many posts are in its draw. External and unmatched links stay as ordinary links. Previews remain open while the pointer moves from the link into the panel, close when it leaves, and appear above page content. They are hidden on narrow or touch screens, where the navigation is a scrollable strip.
+The default theme adds a small preview when a local header or footer navigation URL matches a generated feed or published post. For a feed such as `/blog/`, the preview shows its description, public post count, and publication rhythm when available. For a post, the preview uses its description and tags. Enabled Reader and Blogroll links show the number of active followed sources.
+
+The Random post link shows a fixed description. Markata updates the eligible post list at the Random route when the draw changes. The shared preview can stay in cache.
+
+Open a preview with the pointer or keyboard focus. A pointer preview stays open while the pointer is on the link or panel. External and unmatched URLs use ordinary links. On narrow or touch screens, the navigation uses a scrollable strip in place of previews.
 
 Links inside a post can use the same preview. Write a normal Markdown link such as `[Start here](/start/)` or a wikilink such as `[[start]]`. When its destination is a public post or feed, hover or keyboard focus shows the destination title and available metadata. An absolute URL for the configured site also works; `http://localhost:8000/start/` works during local development. Tags shown on a post get a collection preview when their `/tags/<tag>/` feed exists. Links to other sites and links without a matching public page keep their usual behavior.
 

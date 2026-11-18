@@ -16,7 +16,7 @@
     {% if preview.sparkline %}<span class="nav-preview__rhythm"><svg viewBox="0 0 96 28" preserveAspectRatio="none" focusable="false"><polyline points="{{ preview.sparkline }}" /></svg><span>Publication rhythm</span></span>{% endif %}
     {% elif preview.kind == 'post' %}
     {% if preview.words or preview.minutes %}<span class="nav-preview__stats">{% if preview.words %}<span><strong>{{ preview.words_display }}</strong> words</span>{% endif %}{% if preview.minutes %}<span><strong>{{ preview.reading_display }}</strong> read</span>{% endif %}</span>{% endif %}
-    {% else %}
+    {% elif preview.count_label %}
     <span class="nav-preview__stats"><span><strong>{{ preview.count }}</strong> {{ preview.count_label }}</span></span>
     {% endif %}
   </span>
