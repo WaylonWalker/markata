@@ -42,7 +42,7 @@ func publicMetadataIP(ip netip.Addr) bool {
 
 func publicMetadataURL(destination *url.URL) bool {
 	if destination == nil || destination.User != nil || destination.Hostname() == "" ||
-		(destination.Scheme != "http" && destination.Scheme != "https") {
+		(destination.Scheme != insecureScheme && destination.Scheme != secureScheme) {
 		return false
 	}
 	host := strings.ToLower(strings.TrimSuffix(destination.Hostname(), "."))
@@ -99,7 +99,11 @@ func newPublicMetadataHTTPClient(parent context.Context, seconds int) *http.Clie
 		seconds = 10
 	}
 	dialer := &net.Dialer{Timeout: 5 * time.Second, KeepAlive: 30 * time.Second}
-	transport := http.DefaultTransport.(*http.Transport).Clone()
+	baseTransport, ok := http.DefaultTransport.(*http.Transport)
+	if !ok {
+		baseTransport = &http.Transport{}
+	}
+	transport := baseTransport.Clone()
 	transport.Proxy = nil // never let environment proxies bypass the address policy
 	transport.DisableKeepAlives = true
 	transport.DialContext = func(ctx context.Context, _ string, address string) (net.Conn, error) {
