@@ -17,7 +17,7 @@ import (
 // destinations before and after DNS resolution, and pin the validated address
 // for the actual connection (including every redirect).
 var forbiddenMetadataNetworks = []netip.Prefix{
-	netip.MustParsePrefix("100.64.0.0/10"),  // carrier-grade NAT
+	netip.MustParsePrefix("100.64.0.0/10"), // carrier-grade NAT
 	netip.MustParsePrefix("192.0.0.0/24"),  // protocol assignments
 	netip.MustParsePrefix("192.0.2.0/24"),  // documentation
 	netip.MustParsePrefix("198.18.0.0/15"), // benchmarking
