@@ -79,6 +79,11 @@ author opens a scene. Rendering or editing a scene MUST NOT require a request
 to Excalidraw's CDN or a remote account. When a bundled font does not contain a
 character, the browser MAY use its normal local font fallback.
 
+The FastAPI workbench's packaged Excalidraw entrypoint, styles, fonts, and
+editor chunks MUST match the renderer's embedded assets byte-for-byte. Asset
+packaging checks MUST detect drift so an editor cannot save an SVG fingerprint
+that the renderer rejects immediately.
+
 The same browser authoring controls MUST work in the Go and FastAPI workbenches,
 which share the editor assets. The separate offline WASM workbench is outside
 this first integration slice.
