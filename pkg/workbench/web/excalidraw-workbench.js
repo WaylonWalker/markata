@@ -364,6 +364,11 @@
         renderFence(record,record.fence);
         window.requestAnimationFrame(() => record.toggleButton?.focus());
       });
+      toggle.addEventListener('keydown', event => {
+        if (event.repeat || (event.key !== ' ' && event.code !== 'Space')) return;
+        event.preventDefault();
+        toggle.click();
+      });
       root.addEventListener('mousedown',event => event.stopPropagation());
       root.addEventListener('click',event => event.stopPropagation());
       root.addEventListener('keydown',event => event.stopPropagation());
