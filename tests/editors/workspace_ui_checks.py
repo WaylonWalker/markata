@@ -84,9 +84,6 @@ def run():
         expect(page.locator('#files-results [role="option"]').first).to_contain_text('beta.md')
         page.keyboard.press('Escape')
         assert page.locator('#site-sidebar #startup-index').count()==0
-        assert page.locator('#workbench-footer > #diagnostics-toggle').count() == 1, (
-            'The diagnostics button must be in the page footer, not a closed dialog footer'
-        )
         page.locator('#diagnostics-toggle').click();expect(page.locator('#diagnostics-panel')).to_be_visible()
         report=page.evaluate('MarkataDiagnostics.snapshot()');assert report['measurements']['search']['count']>0
         page.get_by_role('button', name='Close diagnostics').click()

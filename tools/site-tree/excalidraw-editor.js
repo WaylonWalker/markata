@@ -5,11 +5,6 @@ import {Excalidraw, exportToSvg, serializeAsJSON} from '@excalidraw/excalidraw';
 export function mountExcalidraw(host, initialScene, onChange, theme = 'dark') {
   const root = createRoot(host);
   let latest = JSON.stringify(initialScene, null, 2);
-  // Excalidraw serializes only its known fields. Preserve the rest of the
-  // embedded scene so a round trip cannot silently discard newer metadata.
-  const preservedRootFields = Object.fromEntries(
-    Object.entries(initialScene || {}).filter(([key]) => !['elements','appState','files'].includes(key)),
-  );
 
   root.render(React.createElement(Excalidraw, {
     initialData: initialScene,
@@ -23,30 +18,7 @@ export function mountExcalidraw(host, initialScene, onChange, theme = 'dark') {
   }));
 
   return {
-    serialize: () => {
-      const scene = JSON.parse(latest);
-      const rootFields = {...preservedRootFields};
-      // The cached export belongs to the previous scene and must be
-      // regenerated after edits rather than copied onto new source.
-      if (rootFields._markata && typeof rootFields._markata === 'object') {
-        rootFields._markata = {...rootFields._markata};
-        delete rootFields._markata.excalidraw_svg;
-      }
-      if (scene._markata && typeof scene._markata === 'object') {
-        scene._markata = {...scene._markata};
-        delete scene._markata.excalidraw_svg;
-      }
-      // Keep unknown per-element data from newer scene formats; the official
-      // serialization API may omit fields it does not recognize.
-      const originals = new Map((initialScene.elements || []).map(element => [element.id,element]));
-      if (Array.isArray(scene.elements)) {
-        scene.elements = scene.elements.map(element => ({...(originals.get(element.id) || {}),...element}));
-      }
-      if (scene.appState && typeof scene.appState === 'object') {
-        scene.appState = {...(initialScene.appState || {}),...scene.appState};
-      }
-      return JSON.stringify({...rootFields,...scene}, null, 2);
-    },
+    serialize: () => latest,
     destroy: () => root.unmount(),
   };
 }

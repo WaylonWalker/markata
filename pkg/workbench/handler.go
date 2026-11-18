@@ -21,12 +21,14 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/WaylonWalker/markata/pkg/editorworkspace"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
 	"github.com/WaylonWalker/markata/pkg/lsp"
 	"github.com/WaylonWalker/markata/pkg/models"
 	"github.com/WaylonWalker/markata/pkg/plugins"
@@ -425,6 +427,7 @@ func (h *Handler) prepareRender(r *http.Request, req *renderRequest) (*renderRes
 	markdown := renderWorkbenchEmbeds(*req.Markdown, index, h.root)
 	markdown = renderWorkbenchWikilinks(markdown, index)
 	markdown, sourceAnchors := markSourceContainers(markdown)
+	frontmatterPreview := renderFrontmatterPreview(frontmatterSource(req), markdown)
 	// Index revisions change while the first preview is open. Plain Markdown
 	// has no workspace references, so an index update does not invalidate it.
 	if !strings.Contains(*req.Markdown, "[[") && !strings.Contains(*req.Markdown, "![embed](") {
@@ -446,18 +449,28 @@ func (h *Handler) prepareRender(r *http.Request, req *renderRequest) (*renderRes
 		}
 		h.lastSource, h.lastResult = cacheKey, result
 	}
-	response := &renderResponse{HTML: result.HTML, SourceLines: h.renderer.SourceLines(markdown), SourceAnchors: sourceAnchors, FeatureHeadHTML: h.featureHead(result), BodyEndHTML: result.BodyEndHTML, InputBytes: len(*req.Markdown), HTMLBytes: len(result.HTML), Cached: cached}
+	previewResult := *result
+	previewResult.HTML = frontmatterPreview + result.HTML
+	response := &renderResponse{HTML: previewResult.HTML, SourceLines: h.renderer.SourceLines(markdown), SourceAnchors: sourceAnchors, FeatureHeadHTML: h.featureHead(result), BodyEndHTML: result.BodyEndHTML, InputBytes: len(*req.Markdown), HTMLBytes: len(previewResult.HTML), Cached: cached}
 	if req.IncludeDocument == nil || *req.IncludeDocument {
-		document := h.document(result, req.Appearance)
+		document := h.document(&previewResult, req.Appearance)
 		response.Document, response.DocumentBytes = &document, len(document)
 	}
 	return response, nil
 }
 
+func frontmatterSource(req *renderRequest) string {
+	if req == nil || req.FrontmatterSource == nil {
+		return ""
+	}
+	return *req.FrontmatterSource
+}
+
 type renderRequest struct {
-	Markdown        *string           `json:"markdown"`
-	Appearance      map[string]string `json:"appearance"`
-	IncludeDocument *bool             `json:"include_document"`
+	Markdown          *string           `json:"markdown"`
+	FrontmatterSource *string           `json:"frontmatter_source,omitempty"`
+	Appearance        map[string]string `json:"appearance"`
+	IncludeDocument   *bool             `json:"include_document"`
 }
 
 // renderResponse matches the Python reference's full-document/fragment contract.
@@ -519,6 +532,10 @@ func (h *Handler) decodeRequest(w http.ResponseWriter, r *http.Request) *renderR
 		fail(w, 413, "document exceeds 200000 UTF-8 bytes")
 		return nil
 	}
+	if req.FrontmatterSource != nil && len(*req.FrontmatterSource) > maxSource {
+		fail(w, 413, "frontmatter exceeds 200000 UTF-8 bytes")
+		return nil
+	}
 	for key, value := range req.Appearance {
 		valid := false
 		for _, choice := range h.choices[key] {
@@ -569,6 +586,8 @@ func isWorkspaceRoute(routePath, method string) bool {
 	case routePath == "/workspace" || routePath == "/workspace/templates" || routePath == "/workspace/content-number" || routePath == "/workspace/image" || routePath == "/workspace/index-status" || routePath == "/workspace/changes":
 		return method == http.MethodGet
 	case routePath == "/workspace/new-post":
+		return method == http.MethodPost
+	case routePath == "/workspace/link-metadata":
 		return method == http.MethodPost
 	case routePath == "/workspace/template-settings":
 		return method == http.MethodPost
@@ -835,6 +854,10 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
+	if r.URL.Path == "/workspace/link-metadata" {
+		h.serveLinkMetadata(w, r)
+		return
+	}
 	if r.URL.Path == "/workspace/template-settings" {
 		if !sameOriginWorkspaceMutation(r) {
 			fail(w, http.StatusForbidden, "same-origin workspace writes are required")
@@ -1095,6 +1118,155 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		return
 	}
+}
+
+type linkMetadataRequest struct {
+	URL string `json:"url"`
+}
+
+type linkMetadataResponse struct {
+	Title        string `json:"title,omitempty"`
+	Description  string `json:"description,omitempty"`
+	Image        string `json:"image,omitempty"`
+	SiteName     string `json:"site_name,omitempty"`
+	Type         string `json:"type,omitempty"`
+	ProviderName string `json:"provider_name,omitempty"`
+	AuthorName   string `json:"author_name,omitempty"`
+	AuthorURL    string `json:"author_url,omitempty"`
+	Source       string `json:"source,omitempty"`
+	Available    bool   `json:"available"`
+}
+
+func (h *Handler) serveLinkMetadata(w http.ResponseWriter, r *http.Request) {
+	if !sameOriginWorkspaceMutation(r) {
+		fail(w, http.StatusForbidden, "same-origin workspace requests are required")
+		return
+	}
+	request, err := decodeLinkMetadataRequest(w, r)
+	if err != nil {
+		fail(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	destination := strings.TrimSpace(request.URL)
+	if !validLinkMetadataURL(destination) {
+		fail(w, http.StatusBadRequest, "enter an absolute HTTP(S) URL without credentials")
+		return
+	}
+	if !h.acquire(r) {
+		return
+	}
+	refreshErr := h.refreshPresentation()
+	siteConfig := h.siteConfig
+	<-h.gate
+	if refreshErr != nil {
+		fail(w, http.StatusUnprocessableEntity, "cannot refresh site configuration: "+refreshErr.Error())
+		return
+	}
+	resolver, err := h.newEmbedMetadataResolver(siteConfig)
+	if err != nil {
+		fail(w, http.StatusUnprocessableEntity, "cannot configure embed metadata: "+err.Error())
+		return
+	}
+	resolver.SetMetadataHTTPClient(newPublicMetadataHTTPClient(r.Context(), resolver.Config().Timeout))
+	metadata, err := resolver.ResolveExternalMetadata(destination)
+	if err != nil {
+		fail(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	title := strings.TrimSpace(metadata.Title)
+	if title == strings.TrimSpace(resolver.Config().FallbackTitle) {
+		title = ""
+	}
+	response := linkMetadataResponse{
+		Title:        title,
+		Description:  metadata.Description,
+		Image:        absoluteMetadataURL(metadata.Image, destination),
+		SiteName:     metadata.SiteName,
+		Type:         metadata.Type,
+		ProviderName: metadata.ProviderName,
+		AuthorName:   metadata.AuthorName,
+		AuthorURL:    absoluteMetadataURL(metadata.AuthorURL, destination),
+		Source:       metadata.Source,
+	}
+	response.Available = linkMetadataIsAvailable(response)
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		return
+	}
+}
+
+func decodeLinkMetadataRequest(w http.ResponseWriter, r *http.Request) (linkMetadataRequest, error) {
+	r.Body = http.MaxBytesReader(w, r.Body, 16<<10)
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+	var request linkMetadataRequest
+	if err := decoder.Decode(&request); err != nil {
+		return linkMetadataRequest{}, errors.New("expected a JSON object with a link URL")
+	}
+	var trailing any
+	if err := decoder.Decode(&trailing); !errors.Is(err, io.EOF) {
+		return linkMetadataRequest{}, errors.New("expected one link metadata request")
+	}
+	return request, nil
+}
+
+func validLinkMetadataURL(destination string) bool {
+	if len(destination) > 8192 {
+		return false
+	}
+	parsed, err := url.Parse(destination)
+	if err != nil || parsed.Hostname() == "" || parsed.User != nil {
+		return false
+	}
+	return publicMetadataURL(parsed)
+}
+
+func linkMetadataIsAvailable(response linkMetadataResponse) bool {
+	return response.Title != "" || response.Description != "" || response.Image != "" || response.SiteName != "" || response.Type != "" || response.ProviderName != "" || response.AuthorName != "" || response.AuthorURL != ""
+}
+
+func absoluteMetadataURL(rawURL, baseURL string) string {
+	if strings.TrimSpace(rawURL) == "" {
+		return ""
+	}
+	parsed, err := url.Parse(strings.TrimSpace(rawURL))
+	if err != nil {
+		return ""
+	}
+	base, err := url.Parse(baseURL)
+	if err != nil {
+		return ""
+	}
+	resolved := base.ResolveReference(parsed)
+	if (resolved.Scheme != "http" && resolved.Scheme != "https") || resolved.Hostname() == "" || resolved.User != nil {
+		return ""
+	}
+	return resolved.String()
+}
+
+func (h *Handler) newEmbedMetadataResolver(siteConfig *models.Config) (*plugins.EmbedsPlugin, error) {
+	resolver := plugins.NewEmbedsPlugin()
+	manager := lifecycle.NewManager()
+	config := lifecycle.NewConfig()
+	config.ContentDir = h.root
+	if siteConfig != nil {
+		config.Extra = siteConfig.Extra
+	}
+	manager.SetConfig(config)
+	if err := resolver.Configure(manager); err != nil {
+		return nil, fmt.Errorf("configure embeds plugin: %w", err)
+	}
+	embedsConfig := resolver.Config()
+	if embedsConfig.CacheDir != "" && !filepath.IsAbs(embedsConfig.CacheDir) {
+		root, err := filepath.Abs(h.root)
+		if err != nil {
+			return nil, fmt.Errorf("resolve workspace path: %w", err)
+		}
+		embedsConfig.CacheDir = filepath.Join(root, embedsConfig.CacheDir)
+		resolver.SetConfig(embedsConfig)
+	}
+	return resolver, nil
 }
 
 func sameOriginWorkspaceMutation(r *http.Request) bool {

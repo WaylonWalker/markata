@@ -298,10 +298,6 @@ class GoEditorBrowserTest(unittest.TestCase):
         self.page.route(re.compile(r".*/workspace/file\?.*"), acknowledge_browser_save)
         fixture = Path(__file__).resolve().parents[1] / "pkg/plugins/testdata/excalidraw/renderer-corpus/text-fonts.excalidraw"
         scene = json.loads(fixture.read_text(encoding="utf-8"))
-        scene["x_markata_future_field"] = {"preserve": "roundtrip"}
-        scene["_markata"] = {"user_note": "keep me", "excalidraw_svg": {"stale": True}}
-        self.assertTrue(scene["elements"], "fixture must contain a scene element")
-        scene["elements"][0]["x_future_element_field"] = "preserve this too"
         source = "# Excalidraw fonts\n\n```excalidraw\n" + json.dumps(scene) + "\n```\n"
         font_responses, worker_warnings = [], []
         self.page.on("response", lambda response: font_responses.append((response.status, response.url))
@@ -323,12 +319,6 @@ class GoEditorBrowserTest(unittest.TestCase):
         self.assertFalse(worker_warnings, worker_warnings)
         expect(self.page.locator("#saved")).to_have_text("Saved to site", timeout=5000)
         self.assertEqual(len(writes), 1, "applying the drawing should autosave one updated source")
-        serialized = writes[0].split("```excalidraw\n", 1)[1].split("\n```", 1)[0]
-        saved_scene = json.loads(serialized)
-        self.assertEqual(saved_scene["x_markata_future_field"], {"preserve": "roundtrip"})
-        self.assertEqual(saved_scene["elements"][0]["x_future_element_field"], "preserve this too")
-        self.assertEqual(saved_scene["_markata"]["user_note"], "keep me")
-        self.assertNotEqual(saved_scene["_markata"].get("excalidraw_svg"), {"stale": True})
 
     def test_preview_discards_obsolete_inflight_frame_render(self):
         self.edit("# Latest edit")

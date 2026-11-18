@@ -151,18 +151,6 @@
         parts.push(nameBytes,new Uint8Array([0]),data);
         size += nameBytes.length + 1 + data.length;
       }
-      // The Go validator includes the exported JS/CSS entrypoints as well as
-      // fonts. The entrypoint imports content-hashed chunks, so exporter
-      // rebuilds invalidate the cached SVG even when the Excalidraw package
-      // version itself has not changed.
-      for (const name of ['excalidraw-editor.js','excalidraw-editor.css']) {
-        const response = await fetch('/editor/' + name,{cache:'no-store'});
-        if (!response.ok) throw new Error(`a bundled renderer asset could not be checked (${response.status})`);
-        const nameBytes = new TextEncoder().encode(name);
-        const data = new Uint8Array(await response.arrayBuffer());
-        parts.push(nameBytes,new Uint8Array([0]),data);
-        size += nameBytes.length + 1 + data.length;
-      }
       const input = new Uint8Array(size);
       let offset = 0;
       for (const part of parts) { input.set(part,offset); offset += part.length; }
@@ -211,17 +199,6 @@
     return window.btoa(binary);
   }
 
-  function staticPublishBlockers(scene) {
-    const blockers = new Set();
-    for (const element of scene.elements || []) {
-      if (element.isDeleted) continue;
-      if (typeof element.link === 'string' && element.link.trim()) blockers.add('linked elements');
-      if (element.type === 'image') blockers.add('embedded images');
-      if (element.type === 'iframe' || element.type === 'embeddable') blockers.add('web embeds');
-    }
-    return [...blockers];
-  }
-
   async function createSVGArtifact(module, serialized) {
     const currentRendererVersion = await rendererVersion();
     const theme = window.MARKATA_EXCALIDRAW_EXPORT_THEME;
@@ -230,10 +207,6 @@
       throw new Error('the editor could not determine its renderer fingerprint or site theme');
     }
     const scene = parseScene(serialized);
-    const blockers = staticPublishBlockers(scene);
-    if (blockers.length) {
-      throw new Error('static publishing does not yet support ' + blockers.join(', '));
-    }
     delete scene._markata;
     const canonical = canonicalJSON(scene);
     const sourceSHA256 = await sha256Hex(canonical);
@@ -500,16 +473,7 @@
       Promise.all([ensureStyles(),import('/editor/excalidraw-editor.js')]).then(([,module]) => {
         if (!dialog.open || !active) return;
         active.module = module;
-        canvas = module.mountExcalidraw(host,scene,source => {
-          try {
-            const unsupported = staticPublishBlockers(parseScene(source));
-            hint.textContent = unsupported.length
-              ? 'This drawing can be edited, but static publishing does not yet support ' + unsupported.join(', ') + '. Apply will save the drawing without a static image.'
-              : mode === 'edit' ? 'Changes stay in this draft until you apply.' : 'The scene is added to this page when you apply it.';
-          } catch {
-            // Invalid intermediary canvas state is handled at Apply.
-          }
-        },currentTheme());
+        canvas = module.mountExcalidraw(host,scene,undefined,currentTheme());
         host.hidden = false;
         loading.hidden = true;
         applyButton.disabled = false;
@@ -602,7 +566,7 @@
           }
         }
         if (applyStatus) {
-          applyStatus.textContent = warning ? `Scene applied. ${warning} Publishing will fail in the default mode until the unsupported content is removed or a compatible SVG artifact is available.` : '';
+          applyStatus.textContent = warning ? `Scene applied. ${warning} Builds need a matching SVG artifact or explicit Chromium mode.` : '';
           applyStatus.dataset.warning = warning ? 'true' : 'false';
         }
         dialog.close('apply');
