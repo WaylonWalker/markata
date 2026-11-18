@@ -54,6 +54,19 @@ func NewEmbedsPlugin() *EmbedsPlugin {
 	return plugin
 }
 
+// SetMetadataHTTPClient configures the HTTP client used by both Open Graph and
+// oEmbed metadata resolution. The workbench supplies a request-scoped client
+// that rejects private-network destinations. Call before resolving metadata.
+func (p *EmbedsPlugin) SetMetadataHTTPClient(client *http.Client) {
+	if p == nil || client == nil {
+		return
+	}
+	p.httpClient = client
+	if p.oembed != nil {
+		p.oembed.client = client
+	}
+}
+
 // Name returns the unique name of the plugin.
 func (p *EmbedsPlugin) Name() string {
 	return "embeds"
