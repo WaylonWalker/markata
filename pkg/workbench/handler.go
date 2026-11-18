@@ -1135,6 +1135,7 @@ func (h *Handler) serveLinkMetadata(w http.ResponseWriter, r *http.Request) {
 		fail(w, http.StatusUnprocessableEntity, "cannot configure embed metadata: "+err.Error())
 		return
 	}
+	resolver.SetMetadataHTTPClient(newPublicMetadataHTTPClient(r.Context(), resolver.Config().Timeout))
 	metadata, err := resolver.ResolveExternalMetadata(destination)
 	if err != nil {
 		fail(w, http.StatusBadRequest, err.Error())
@@ -1186,7 +1187,7 @@ func validLinkMetadataURL(destination string) bool {
 	if err != nil || parsed.Hostname() == "" || parsed.User != nil {
 		return false
 	}
-	return parsed.Scheme == insecureScheme || parsed.Scheme == secureScheme
+	return publicMetadataURL(parsed)
 }
 
 func linkMetadataIsAvailable(response linkMetadataResponse) bool {
