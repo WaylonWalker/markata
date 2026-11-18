@@ -323,7 +323,7 @@ class GoEditorBrowserTest(unittest.TestCase):
         self.assertFalse(worker_warnings, worker_warnings)
         expect(self.page.locator("#saved")).to_have_text("Saved to site", timeout=5000)
         self.assertEqual(len(writes), 1, "applying the drawing should autosave one updated source")
-        serialized = writes[0].split("```excalidraw\\n", 1)[1].split("\\n```", 1)[0]
+        serialized = writes[0].split("```excalidraw\n", 1)[1].split("\n```", 1)[0]
         saved_scene = json.loads(serialized)
         self.assertEqual(saved_scene["x_markata_future_field"], {"preserve": "roundtrip"})
         self.assertEqual(saved_scene["elements"][0]["x_future_element_field"], "preserve this too")
