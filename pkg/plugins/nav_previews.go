@@ -76,7 +76,7 @@ func buildNavPreviews(config *models.Config, posts []*models.Post, feeds []model
 		}
 		if preview := localPreviews[key]; preview != nil {
 			previews[item.URL] = preview
-		} else if special := specialNavPreview(key, posts, blogroll, random); special != nil {
+		} else if special := specialNavPreview(key, blogroll, random); special != nil {
 			previews[item.URL] = special
 		}
 	}
@@ -100,7 +100,7 @@ func buildLocalPreviews(posts []*models.Post, feeds []models.FeedConfig) map[str
 	return previews
 }
 
-func specialNavPreview(key string, posts []*models.Post, blogroll models.BlogrollConfig, random RandomPostConfig) map[string]interface{} {
+func specialNavPreview(key string, blogroll models.BlogrollConfig, random RandomPostConfig) map[string]interface{} {
 	if blogroll.Enabled {
 		blogrollSlug := blogroll.BlogrollSlug
 		if blogrollSlug == "" {
@@ -132,9 +132,10 @@ func specialNavPreview(key string, posts []*models.Post, blogroll models.Blogrol
 		}
 	}
 	if random.Enabled && key == cleanNavPath("/"+normalizeRandomPostPath(random.Path)) {
+		// The draw changes with published posts, while this preview is shared
+		// across rendered pages. Keep changing draw data at the Random route.
 		return map[string]interface{}{
 			"kind": "surprise", "description": "Find a post you might have missed.",
-			"count": len(eligibleRandomPostHrefs(posts, random.ExcludeTags)), "count_label": "posts in the draw",
 		}
 	}
 	return nil
