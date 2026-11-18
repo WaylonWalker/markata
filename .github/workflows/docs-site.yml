@@ -39,7 +39,7 @@ concurrency:
 jobs:
   verify:
     name: Build and validate documentation with Markata
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04 # Playwright 1.56.x does not support Ubuntu 26.04
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-go@v7
