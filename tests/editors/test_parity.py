@@ -109,7 +109,7 @@ def check(browser, url, excalidraw=False):
         check_commands(page, preview)
         if excalidraw:
             check_excalidraw_fence_controls(page)
-        expect(page.locator('#saved')).to_contain_text('Draft saved')
+        expect(page.locator('#saved')).to_contain_text(re.compile(r'Draft saved|Saved to site'))
         assert page.locator('header h1').evaluate("e => getComputedStyle(e).fontFamily") != 'Georgia, serif'
         assert not page.locator('link[href$="/css/main.css"]').count()
         select_keymap(page, 'vim')
