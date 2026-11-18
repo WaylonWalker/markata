@@ -40,6 +40,7 @@ builderAdmin:
   enabled: true
   port: 8080
   fast: false
+  pageWeight: true
   watch:
     enabled: true
     debounce: 2s
@@ -60,6 +61,16 @@ builderAdmin:
         - reader
         - update
 ```
+
+### Control page-weight diagnostics
+
+If you want to measure build time without the page-weight scan, set
+`builderAdmin.pageWeight: false` in Helm. For direct CLI use, pass
+`markata-go builder-admin --page-weight=false`.
+
+New releases omit `.markata/page-weight.json` in this mode. The other build
+diagnostics and reports in older releases stay available. To measure the
+impact, compare Builder Admin build times on the same warm source revision.
 
 ### Build automatically after a new Builder image starts
 

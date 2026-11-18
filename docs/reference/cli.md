@@ -598,6 +598,7 @@ markata-go builder-admin [flags]
 | `--watch` | Enable recursive file watching and queued rebuilds | `true` |
 | `--watch-debounce` | Debounce window for coalescing file changes | `2s` |
 | `--fast` | Use `markata-go build --fast` for queued builds | `false` |
+| `--page-weight` | Scan generated HTML and publish a page-weight report for queued builds | `true` |
 | `--mermaid-mode` | Override `[markata-go.mermaid].mode` for queued builds | `""` |
 | `--cache-mount` | Optional dedicated cache mount used for `.markata` and `.markata-cache` symlinks | `""` |
 | `--history-dir` | Directory for persisted admin state and logs | `<release-dir>/.builder-admin` |

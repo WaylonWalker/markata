@@ -85,6 +85,13 @@ Successful builds MUST preserve the existing atomic release publication model:
 5. atomically repoint `current` to the new release
 6. publish build success and queue release pruning according to retention policy
 
+Queued builds run page-weight diagnostics by default. Operators can set
+`builder-admin --page-weight=false` or the Helm value `builderAdmin.pageWeight: false`
+to skip this scan without changing other build diagnostics. The service MUST
+remove any previous `.markata/page-weight.json` from the candidate workspace
+before staging a release in this mode. Published releases MUST retain their
+original reports, including when an operator rolls back.
+
 Release pruning MUST NOT block successful publication or the next queued build.
 Pruning MUST remain serialized with promotion and rollback, and MUST re-check
 the current release before deleting each expired release.
