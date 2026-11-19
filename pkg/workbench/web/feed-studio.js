@@ -216,7 +216,9 @@
       const response = await fetchJSON('/workspace/feed-studio', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({slug: active, expected_version: version, ...data()}),
+        body: JSON.stringify({slug: active, expected_version: version,
+          changes: fields.filter(name => data()[name] !== original[name])
+            .map(name => name === 'template' ? 'templates.html' : name), ...data()}),
       });
       version = response.version;
       original = data();
