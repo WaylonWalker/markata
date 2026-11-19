@@ -32,6 +32,8 @@ self.addEventListener('activate', event => event.waitUntil(self.clients.claim())
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin || url.pathname !== '/share-target' || event.request.method !== 'POST') return;
+  // Native shares arrive as top-level navigations; reject cross-site web forms.
+  if (event.request.headers.get('Sec-Fetch-Site') === 'cross-site') return;
   event.respondWith((async () => {
     try {
       const form = await event.request.formData();
