@@ -275,6 +275,8 @@ func (h *Handler) feedStudioRead(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := json.NewEncoder(w).Encode(map[string]any{
 		"feeds": feeds, "posts": items, "version": version,
+		"rendered_available": feedStudioSnapshotAvailable(h.root, cfg, selected.Slug),
+		"rendered_url": feedSnapshotPrefix + strings.Trim(selected.Slug, "/") + "/",
 		"matched_count": matchedCount, "visible_count": visibleCount,
 		"partial": len(items) < visibleCount,
 	}); err != nil {
@@ -421,3 +423,8 @@ func (h *Handler) feedStudioSave(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+
+func feedStudioSnapshotAvailable(root string, cfg *models.Config, slug string) bool {
+	_, err := feedSnapshotFile(root, cfg, strings.Trim(slug, "/")+"/index.html")
+	return err == nil
+}
