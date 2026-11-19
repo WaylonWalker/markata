@@ -95,8 +95,9 @@ frontmatter. When the source URL contains a recognized stable post identifier,
 the preview MUST include it in the filename and URL slug. The file path MUST
 keep the generated filename under the selected folder.
 Feed navigation MUST use feed names as tree roots and paths relative to the
-workspace root beneath them; absolute filesystem paths MUST NOT appear as feed
-labels.
+workspace root beneath them. Configured feed filters MUST evaluate `path`
+against workspace-relative paths. Absolute filesystem paths MUST NOT appear as
+feed labels or member paths.
 In split layout, source and preview scrolling MUST synchronize in both directions
 by default. The active pane controls the position; editing or moving the source
 cursor makes the editor the active pane. Users MUST be able to disable scrolling
