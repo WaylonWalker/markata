@@ -27,7 +27,14 @@ async function storeShares(shares) {
     });
   } finally {db.close();}
 }
-self.addEventListener('install', event => event.waitUntil(self.skipWaiting()));
+// Let existing writing sessions finish before installing a replacement.
+// A first installation activates normally; updates wait for an explicit user action.
+self.addEventListener('message', event => {
+  if (event.data?.type !== 'MARKATA_ACTIVATE_UPDATE') return;
+  const sender=event.source;
+  if (!sender || sender.type !== 'window' || new URL(sender.url).origin !== self.location.origin) return;
+  event.waitUntil(self.skipWaiting());
+});
 self.addEventListener('activate', event => event.waitUntil(self.clients.claim()));
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
