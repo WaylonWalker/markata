@@ -47,5 +47,59 @@
         }
       ]
     }
-  }
+  },
+  "shortcuts": [
+    {
+      "name": "New note",
+      "short_name": "Note",
+      "description": "Start a new note",
+      "url": "/?compose=note",
+      "icons": [
+        {
+          "src": "/editor/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "New photo",
+      "short_name": "Photo",
+      "description": "Capture a photo post",
+      "url": "/?compose=photo",
+      "icons": [
+        {
+          "src": "/editor/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "New link",
+      "short_name": "Link",
+      "description": "Start a link post",
+      "url": "/?compose=link",
+      "icons": [
+        {
+          "src": "/editor/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Share inbox",
+      "short_name": "Inbox",
+      "description": "Review saved links and photos",
+      "url": "/?share_inbox=1",
+      "icons": [
+        {
+          "src": "/editor/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ]
 }
