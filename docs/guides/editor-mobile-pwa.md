@@ -14,7 +14,7 @@ Sharing several photos queues one unpublished draft per photo; none are silently
 
 On Android, the installed Markata icon offers shortcuts for **New Note**, **New Photo**, **New Link** and **Share Inbox**. Quick-create shortcuts open the existing site templates; they still require a reachable, authorized workspace. They never publish on their own.
 
-**Take photo** in the editor header opens the camera (or an image picker on devices without capture support) and saves the selected JPEG/PNG/GIF/WebP file into the same IndexedDB share inbox before a remote workspace is involved. This allows camera capture while offline. The photo waits for an explicit **Create draft** action; it does not become a server-side post until the workspace is available. The post dialog also offers **Take photo**.
+**Take photo** in the editor header opens the camera (or an image picker on devices without capture support) and saves the selected JPEG/PNG/GIF/WebP file into the same IndexedDB share inbox before a remote workspace is involved. This allows camera capture while offline. A cold offline launch falls back to a small, public-only offline capture screen for photos, links and notes. The photo waits for an explicit **Create draft** action after reopening the online editor; it does not become a server-side post until the workspace is available. The post dialog also offers **Take photo**.
 
 When pending shares exist, **Protect storage** asks the browser to retain local storage. The browser may decline; no web app can guarantee immunity to private browsing resets or user-initiated data clearing. Shared photos remain private device/browser-profile data, **not encrypted**, and are not currently isolated between signed-in accounts. Do not enable this shared inbox in a multi-user hosted deployment before account-bound locking/encryption is implemented.
 
@@ -22,9 +22,9 @@ Service-worker updates do not forcibly take over open editing sessions. When an 
 
 ## Security and deployment
 
-- The share service worker intercepts only POST /share-target, persists local share payloads and redirects to the editor. It does not cache authenticated pages, workspace documents, session data or API responses.
+- The share service worker handles POST /share-target and network-first GET / navigations. It caches **only** the public static /editor/offline-capture.html fallback for cold offline launches; authenticated pages, workspace documents, session data and API responses are never cached.
 - The existing /workspace API is **restricted to loopback**. This patch does not bypass or loosen that requirement. Creating and publishing posts from remote phones requires the authenticated hosted-editor, per-site permissions and sync infrastructure tracked under #1949, #1980 and #1981.
-- The app can receive shared content offline when its service worker and browser storage are available. Creating the post still requires a reachable and authorized backend. Avoid exposing an unauthenticated local editor to the public Internet.
+- The app can receive shared content and capture new links, notes and camera photos offline when its installed service worker and browser storage are available. The offline capture screen is **not** an offline editor or preview; creating and publishing the post still requires a reachable and authorized backend. Avoid exposing an unauthenticated local editor to the public Internet.
 - iOS Safari can install home-screen web apps but does not currently register PWAs as native iOS Share Sheet targets. iPhone users can open the editor and paste a URL or choose a file. Native inbound Share Sheet support on iOS requires a compatible platform API or native wrapper.
 - The queue lives on the device and browser profile where the item was shared; it does not sync across devices. A browser reset or storage eviction can remove it. HEIC photos are not currently accepted by the existing media pipeline.
 
