@@ -181,6 +181,8 @@ const createPathPreview = document.querySelector('#create-path-preview');
 let contentTemplates = [];
 let imageUploadProvider = 'local';
 let selectedContentTemplate = null;
+let activeMobileShare = null;
+let activeMobileShortcut = false;
 let selectedImageFile = null;
 let imagePreviewURL = '';
 let numberLookupRevision = 0;
@@ -191,7 +193,7 @@ let linkMetadataApplied = {};
 let linkMetadataTouched = new Set();
 let applyingLinkMetadata = false;
 let linkMetadataPromise = Promise.resolve();
-async function showCreateDialog() {
+async function showCreateDialog(preferredTemplateID = '') {
   try {
     const response = await fetch('/workspace/templates',{cache:'no-store'});
     const data = await response.json();
@@ -200,6 +202,10 @@ async function showCreateDialog() {
     imageUploadProvider = data.image_upload || 'local';
     templateQuery.value = '';
     renderTemplateChoices();
+    if (typeof preferredTemplateID === 'string') {
+      const chosen = contentTemplates.find(item => item.id === preferredTemplateID);
+      if (chosen) { chooseTemplate(chosen); return; }
+    }
     templatePicker.showModal();
     templateQuery.focus();
   } catch (error) {
@@ -431,6 +437,12 @@ createImageURL.addEventListener('input',() => {
   }else clearSelectedImage();
 });
 createImageFile.addEventListener('change',() => selectImageFile(createImageFile.files?.[0]));
+const createCameraFile = document.querySelector('#create-camera-file');
+createCameraFile.addEventListener('change',() => {
+  const file = createCameraFile.files?.[0];
+  createCameraFile.value = '';
+  if (file) selectImageFile(file);
+});
 createImagePaste.addEventListener('click',() => createImageFile.click());
 createImagePaste.addEventListener('keydown',event => {
   if(event.key==='Enter'||event.key===' '){event.preventDefault();createImageFile.click();}
@@ -447,7 +459,7 @@ createDialog.addEventListener('paste',event => {
   const file=item?.getAsFile();
   if(file){event.preventDefault();selectImageFile(file);}
 });
-createDialog.addEventListener('close',clearSelectedImage);
+createDialog.addEventListener('close',()=>{clearSelectedImage();activeMobileShare=null;activeMobileShortcut=false;});
 async function loadLinkMetadata() {
   const rawURL=createLinkURL.value.trim();
   if(!rawURL)return;
@@ -508,6 +520,38 @@ function scheduleLinkMetadata() {
   createLinkMetadataStatus.textContent='Metadata lookup starts when the URL is complete.';
   linkMetadataTimer=setTimeout(()=>{linkMetadataPromise=loadLinkMetadata();},450);
 }
+// Home-screen quick actions reuse the same authoring templates as the desktop editor.
+// A failed remote template request is shown by showCreateDialog, never silently saved.
+window.addEventListener('markata-compose', event => {
+  const kind = event.detail;
+  if (!['note','photo','link'].includes(kind) || createDialog.open || templatePicker.open) return;
+  activeMobileShortcut = true;
+  void showCreateDialog('builtin:' + kind);
+});
+window.addEventListener('markata-share-select', async event => {
+  const shared = event.detail;
+  if (!shared || typeof shared.id !== 'string') return;
+  // Never overwrite an open create dialog or publish without an explicit user action.
+  if (createDialog.open || templatePicker.open) return;
+  const id = shared.image ? 'builtin:photo' : shared.url ? 'builtin:link' : 'builtin:note';
+  await showCreateDialog(id);
+  if (!createDialog.open) return;
+  activeMobileShare = shared;
+  const name = shared.image?.name?.replace(/\.[a-z0-9]+$/i,'') || '';
+  const fallback = shared.image ? (name || 'Shared photo') : shared.url ? '' : 'Shared text';
+  const sharedTitle = String(shared.title || fallback).trim();
+  if (sharedTitle) {
+    createTitle.value = sharedTitle;
+    createTitle.dispatchEvent(new Event('input', {bubbles:true}));
+  }
+  if (shared.url && id === 'builtin:link') {
+    createLinkURL.value = shared.url;
+    createLinkURL.dispatchEvent(new Event('input', {bubbles:true}));
+  }
+  if (shared.image) selectImageFile(shared.image);
+  updateCreatePathPreview();
+});
+
 document.querySelector('#create-form').addEventListener('submit',async event => {
   event.preventDefault(); createError.hidden = true;
   const submitButton=document.querySelector('#create-submit');
@@ -554,6 +598,17 @@ document.querySelector('#create-form').addEventListener('submit',async event => 
         if(value)source=window.MarkataContentStarters.setFrontmatterValue(source,key,value);
       }
     }
+    if (activeMobileShare || activeMobileShortcut) {
+      // Quick capture and shared content start unpublished; author explicitly publishes later.
+      source = source.replace(/^published:[^\r\n]*$/m, 'published: false');
+    }
+    if (activeMobileShare) {
+      const sharedText=String(activeMobileShare.text || '').trim();
+      const caption = activeMobileShare.url && sharedText === activeMobileShare.url ? '' : sharedText;
+      if (caption) source = source.trimEnd() + '\n\n' + caption + '\n';
+      if (activeMobileShare.url && template.id !== 'builtin:link')
+        source += '\n' + activeMobileShare.url + '\n';
+    }
     const imageURL=createImageURL.value.trim();
     if(imageURL){
       let parsedImageURL;
@@ -580,6 +635,10 @@ document.querySelector('#create-form').addEventListener('submit',async event => 
     }
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Cannot create this file.');
+    if (activeMobileShare && window.MarkataMobileShare) {
+      try { await window.MarkataMobileShare.consume(activeMobileShare.id); }
+      catch (error) { console.warn('Share inbox item needs manual cleanup:',error); }
+    }
     window.MarkataSiteTree?.activate(path);
     createDialog.close(); location.reload();
   } catch (error) { createError.textContent = error.message; createError.hidden = false; }
