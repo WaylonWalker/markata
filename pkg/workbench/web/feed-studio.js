@@ -49,6 +49,8 @@
 
   }
   function setFields(feed) {
+    version = feed.version || version;
+    document.getElementById('fs-source').textContent = feed.source ? 'Editing ' + feed.source : 'Read-only feed source';
     for (const name of fields) {
       if (name === 'reverse') field(name).checked = Boolean(feed.reverse);
       else field(name).value = feed[name] ?? '';
