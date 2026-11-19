@@ -9,13 +9,13 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 
 	"github.com/WaylonWalker/markata/pkg/config"
 	"github.com/WaylonWalker/markata/pkg/filter"
 	"github.com/WaylonWalker/markata/pkg/lsp"
 	"github.com/WaylonWalker/markata/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/plugins"
 )
 
 // Feed Studio uses the same configured filters as the feed publisher. Its
@@ -119,47 +119,6 @@ func feedStudioMatch(posts []*models.Post, expression string) ([]*models.Post, e
 		}
 	}
 	return matches, nil
-}
-
-func feedStudioSort(posts []*models.Post, sortField string, reverse bool) {
-	sort.SliceStable(posts, func(i, j int) bool {
-		left, right := posts[i], posts[j]
-		switch sortField {
-		case "title":
-			a, b := "", ""
-			if left.Title != nil {
-				a = *left.Title
-			}
-			if right.Title != nil {
-				b = *right.Title
-			}
-			if a != b {
-				return strings.ToLower(a) < strings.ToLower(b)
-			}
-		case "slug":
-			if left.Slug != right.Slug {
-				return left.Slug < right.Slug
-			}
-		case "path":
-			return left.Path < right.Path
-		case "guide_order":
-			la, lok := left.Extra["guide_order"]
-			ra, rok := right.Extra["guide_order"]
-			if lok && rok && fmt.Sprint(la) != fmt.Sprint(ra) {
-				return fmt.Sprint(la) < fmt.Sprint(ra)
-			}
-		case "date", "":
-			if left.Date != nil && right.Date != nil && !left.Date.Equal(*right.Date) {
-				return left.Date.Before(*right.Date)
-			}
-		}
-		return left.Path < right.Path
-	})
-	if reverse {
-		for i, j := 0, len(posts)-1; i < j; i, j = i+1, j-1 {
-			posts[i], posts[j] = posts[j], posts[i]
-		}
-	}
 }
 
 func feedStudioVersion(source []byte) string {
@@ -289,7 +248,7 @@ func (h *Handler) feedStudioRead(w http.ResponseWriter, r *http.Request) {
 			reverse = true
 		}
 	}
-	feedStudioSort(matches, sortField, reverse)
+	plugins.SortPostsForFeed(matches, sortField, reverse)
 	matchedCount := len(matches)
 	offset := selected.Offset
 	if offset > len(matches) {
