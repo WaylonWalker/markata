@@ -217,6 +217,8 @@ jobs:
               - 'pkg/serveopen/**'
               - 'pkg/builderadmin/*windows*.go'
               - 'cmd/markata-go/cmd/update.go'
+            cache_determinism:
+              - 'tests/cache_determinism_test.go'
       - name: Require classified Windows PR scope
         if: github.event_name == 'pull_request' && matrix.os == 'windows-latest'
         shell: pwsh
@@ -246,6 +248,9 @@ jobs:
       - name: Run Windows full short suite for platform-sensitive PRs
         if: github.event_name == 'pull_request' && matrix.os == 'windows-latest' && steps.windows_scope.outputs.windows == 'true'
         run: go test -v -short ./...
+      - name: Run Windows cache determinism integration when changed
+        if: github.event_name == 'pull_request' && matrix.os == 'windows-latest' && steps.windows_scope.outputs.cache_determinism == 'true'
+        run: go test -v -count=1 -run '^TestCacheDeterminism_(ConcurrentPosts_DeterministicOrder|ThirdBuild_StillDeterministic)$' ./tests
       - name: Run Windows full suite on main, nightly, and manual CI
         if: github.event_name != 'pull_request' && matrix.os == 'windows-latest'
         run: go test -v ./...

@@ -109,6 +109,9 @@ func (s *cacheSite) buildWithCacheConfigAndExtra(configContent string, extra map
 	cfg.Extra["url"] = "https://example.com"
 	cfg.Extra["title"] = "Test Site"
 	cfg.Extra["cache_dir"] = s.cacheDir
+	// Output equality tests must not depend on live third-party CDN availability.
+	// The explicit vendor-asset test opts back into self-hosting below.
+	cfg.Extra["assets"] = models.AssetsConfig{Mode: "cdn"}
 	disableMinificationForTestBuild(cfg.Extra)
 	for key, value := range extra {
 		cfg.Extra[key] = value
@@ -161,6 +164,9 @@ func (s *cacheSite) buildWithCacheAndTheme(theme models.ThemeConfig) {
 	cfg.Extra["url"] = "https://example.com"
 	cfg.Extra["title"] = "Test Site"
 	cfg.Extra["cache_dir"] = s.cacheDir
+	// Output equality tests must not depend on live third-party CDN availability.
+	// The explicit vendor-asset test opts back into self-hosting below.
+	cfg.Extra["assets"] = models.AssetsConfig{Mode: "cdn"}
 	cfg.Extra["theme"] = theme
 	disableMinificationForTestBuild(cfg.Extra)
 	m.SetConfig(cfg)
@@ -210,6 +216,9 @@ func (s *cacheSite) buildWithCacheAndFeeds(feedConfigs []models.FeedConfig) {
 	cfg.Extra["url"] = "https://example.com"
 	cfg.Extra["title"] = "Test Site"
 	cfg.Extra["cache_dir"] = s.cacheDir
+	// Output equality tests must not depend on live third-party CDN availability.
+	// The explicit vendor-asset test opts back into self-hosting below.
+	cfg.Extra["assets"] = models.AssetsConfig{Mode: "cdn"}
 	disableMinificationForTestBuild(cfg.Extra)
 	cfg.Extra["feeds"] = feedConfigs
 	cfg.Extra["feed_defaults"] = models.FeedDefaults{
@@ -1750,6 +1759,7 @@ date: 2024-01-01
 	// This helper passes plugin settings through lifecycle.Config.Extra; writing
 	// the TOML alone does not configure the direct lifecycle test runner.
 	site.buildWithCacheConfigAndExtra("", map[string]interface{}{
+		"assets":  models.AssetsConfig{Mode: "self-hosted"},
 		"mermaid": map[string]interface{}{"mode": "client"},
 	})
 
