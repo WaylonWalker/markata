@@ -381,5 +381,57 @@ class GoEditorBrowserTest(unittest.TestCase):
         expect(self.page.locator('#publish-review')).not_to_be_visible()
 
 
+    def test_feed_studio_filter_preview_save_and_return_to_post(self):
+        file_path = self.page.evaluate(
+            "() => window.MarkataSiteTree.files()[0]?.path || 'pages/fixture.md'"
+        )
+        requests = []
+
+        def mock_feed_studio(route):
+            requests.append((route.request.method, route.request.url))
+            if route.request.method == "POST":
+                route.fulfill(
+                    status=200,
+                    json={"version": "b" * 64, "status": "saved", "file": "markata-go.toml"},
+                )
+                return
+            route.fulfill(
+                status=200,
+                json={
+                    "version": "a" * 64,
+                    "feeds": [{
+                        "slug": "blog", "title": "Blog", "description": "Posts",
+                        "filter": "published == true", "sort": "date",
+                        "reverse": True, "presentation": "editorial",
+                        "template": "custom-feed.html", "count": 1, "editable": True,
+                    }],
+                    "posts": [{"path": file_path, "slug": "fixture", "title": "Fixture post"}],
+                    "matched_count": 1, "visible_count": 1, "partial": False,
+                    "rendered_available": False, "rendered_url": "",
+                },
+            )
+
+        self.page.route("**/workspace/feed-studio*", mock_feed_studio)
+        self.page.evaluate("window.MarkataFeedStudio.open()")
+        expect(self.page.locator("#feed-studio")).to_be_visible()
+        expect(self.page.locator("#fs-feed")).to_have_value("blog")
+        expect(self.page.locator("#fs-template")).to_have_value("custom-feed.html")
+        expect(self.page.locator(".fs-post-card")).to_have_count(1)
+        expect(self.page.locator("#fs-preview-members")).to_have_attribute("aria-pressed", "true")
+
+        self.page.locator("#fs-filter").fill("published == true and 'go' in tags")
+        expect(self.page.locator("#fs-save")).to_be_enabled()
+        expect(self.page.locator("#fs-count")).to_contain_text("1 matching posts")
+        self.page.locator("#fs-save").click()
+        expect(self.page.locator("#fs-status")).to_contain_text("Saved to markata-go.toml")
+        self.assertTrue(any(method == "POST" for method, _ in requests))
+
+        self.page.get_by_role("button", name="Edit post").first.click()
+        expect(self.page.locator("#feed-studio")).not_to_be_visible()
+        expect(self.page.locator("#feed-studio-return")).to_be_visible()
+        self.page.locator("#feed-studio-return").click()
+        expect(self.page.locator("#feed-studio")).to_be_visible()
+
+
 if __name__ == "__main__":
     unittest.main()
