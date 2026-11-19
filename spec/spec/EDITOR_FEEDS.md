@@ -52,8 +52,11 @@ path ancestry, regular-file status, and resolved symlinks.
   arbitrary file read by the save endpoint.
 - Config fields not edited by Feed Studio MUST be preserved. Multiple-tab
   edits MUST result in a conflict rather than silently overwriting.
-- Feeds defined in included config files MUST be shown but read-only until a
-  safe source-aware editor is implemented.
+- Feeds defined by recursively included config files inside the trusted
+  workspace MUST be edited in their actual source file. Each save uses the
+  *owning file* SHA-256 version; the root file and unrelated includes MUST
+  remain byte-for-byte unchanged. Unsafe or outside-workspace targets MUST
+  remain read-only.
 - The built-site route never generates HTML on its own; no build or cached
   preview should block basic filter editing or editor startup.
 
@@ -68,5 +71,5 @@ path ancestry, regular-file status, and resolved symlinks.
 - Keyboard, narrow-screen and empty-feed states remain usable.
 
 The initial implementation is an iterative foundation. Follow-up work may
-add safe included-file editing, exact rebuilt preview scheduling, and
+add exact rebuilt preview scheduling, and
 template-specific post card rendering in the live membership view.
