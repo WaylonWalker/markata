@@ -14,7 +14,7 @@ type navigationTestWorkspace struct {
 	index *lsp.Index
 }
 
-func (w navigationTestWorkspace) Snapshot() (*lsp.Index, uint64) {
+func (w navigationTestWorkspace) Snapshot() (index *lsp.Index, revision uint64) {
 	return w.index, 1
 }
 
