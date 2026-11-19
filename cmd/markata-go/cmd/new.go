@@ -18,12 +18,12 @@ import (
 )
 
 const (
-	contentTemplateNoteName    = "note"
-	contentTemplatePingName    = "ping"
-	contentTemplateArticleName = "article"
-	contentTemplateImageName   = "image"
-	contentTemplateGuideName   = "guide"
-	contentTemplateInlineName  = "inline"
+	contentTemplateNoteName     = "note"
+	contentTemplatePingName     = "ping"
+	contentTemplateArticleName  = "article"
+	contentTemplateImageName    = "image"
+	contentTemplateGuideName    = "guide"
+	contentTemplateInlineName   = "inline"
 	contentFilenameModeNumbered = "numbered"
 )
 
