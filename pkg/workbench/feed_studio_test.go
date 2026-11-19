@@ -31,7 +31,7 @@ func TestFeedStudioMatchAndFilterErrors(t *testing.T) {
 }
 
 func TestFeedStudioSaveFormatPreservationAndConflicts(t *testing.T) {
-	tests := []struct{
+	tests := []struct {
 		name, filename, source, preserved string
 	}{
 		{
