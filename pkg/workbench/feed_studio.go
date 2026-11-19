@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 
 	"github.com/WaylonWalker/markata/pkg/config"
@@ -46,6 +47,7 @@ type feedStudioFeed struct {
 type feedStudioUpdate struct {
 	Slug            string `json:"slug"`
 	ExpectedVersion string `json:"expected_version"`
+	Changes         []string `json:"changes,omitempty"`
 	Title           string `json:"title"`
 	Description     string `json:"description"`
 	Filter          string `json:"filter"`
@@ -443,15 +445,37 @@ func (h *Handler) feedStudioSave(w http.ResponseWriter, r *http.Request) {
 		fail(w, http.StatusUnprocessableEntity, "cannot stage configuration: "+err.Error())
 		return
 	}
+	authored, _, err := feedStudioParseFile(filename)
+	if err != nil || index >= len(authored.Feeds) {
+		fail(w, http.StatusUnprocessableEntity, "cannot inspect authored feed fields")
+		return
+	}
+	previous := authored.Feeds[index]
+	changed := make(map[string]bool, len(update.Changes))
+	for _, key := range update.Changes {
+		changed[key] = true
+	}
 	settings := []struct {
-		key   string
-		value any
+		key      string
+		value    any
+		previous any
 	}{
-		{"title", update.Title}, {"description", update.Description}, {"filter", update.Filter},
-		{"sort", update.Sort}, {"reverse", update.Reverse},
-		{"presentation", update.Presentation}, {"templates.html", update.Template},
+		{"title", update.Title, previous.Title},
+		{"description", update.Description, previous.Description},
+		{"filter", update.Filter, previous.Filter},
+		{"sort", update.Sort, previous.Sort},
+		{"reverse", update.Reverse, previous.Reverse},
+		{"presentation", update.Presentation, previous.Presentation},
+		{"templates.html", update.Template, previous.Templates.HTML},
 	}
 	for _, setting := range settings {
+		shouldWrite := !reflect.DeepEqual(setting.previous, setting.value)
+		if len(update.Changes) > 0 {
+			shouldWrite = changed[setting.key]
+		}
+		if !shouldWrite {
+			continue
+		}
 		key := fmt.Sprintf("feeds[%d].%s", index, setting.key)
 		if err := config.SetValueInFile(tempPath, key, setting.value); err != nil {
 			fail(w, http.StatusUnprocessableEntity, "cannot update "+setting.key+": "+err.Error())
