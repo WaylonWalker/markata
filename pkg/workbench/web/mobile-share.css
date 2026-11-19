@@ -1,0 +1,4 @@
+#mobile-share-inbox:not([hidden]){display:flex;align-items:center;flex-wrap:wrap;gap:10px;padding:12px 18px;border-bottom:1px solid var(--editor-divider);background:var(--color-surface,#eee8ff);color:var(--color-text,#203348);font-size:14px}
+#mobile-share-inbox span{flex:1 1 190px}
+#mobile-share-inbox button{cursor:pointer;border:1px solid var(--editor-divider);border-radius:8px;padding:7px 12px;color:inherit;background:var(--color-background,#fff)}
+#mobile-share-inbox button:first-of-type{background:var(--color-accent,#5629a4);color:white}
