@@ -63,6 +63,35 @@
     }
   }
   window.MarkataMobileShare={consume:async id=>{await remove(id);await refresh();},refresh};
+  // Chrome exposes a native app-install prompt only when installability is met.
+  // Safari uses the Add to Home Screen action in its Share menu instead.
+  let installPrompt;
+  const installButton=document.createElement('button');
+  installButton.id='mobile-install';
+  installButton.type='button';
+  installButton.textContent='Install app';
+  installButton.hidden=true;
+  document.querySelector('body > header')?.append(installButton);
+  window.addEventListener('beforeinstallprompt',event=>{
+    event.preventDefault();
+    installPrompt=event;
+    installButton.hidden=false;
+  });
+  window.addEventListener('appinstalled',()=>{installButton.hidden=true;installPrompt=null;});
+  installButton.addEventListener('click',async()=>{
+    if(installPrompt){
+      const current=installPrompt;
+      installPrompt=null;
+      installButton.hidden=true;
+      await current.prompt();
+    } else if(/iPhone|iPad|iPod/.test(navigator.userAgent)) {
+      alert('In Safari, open Share and choose Add to Home Screen.');
+    }
+  });
+  if(/iPhone|iPad|iPod/.test(navigator.userAgent) &&
+     !window.navigator.standalone && !window.matchMedia('(display-mode: standalone)').matches) {
+    installButton.hidden=false;
+  }
   if('serviceWorker' in navigator && window.isSecureContext)
     navigator.serviceWorker.register('/editor/share-sw.js',{scope:'/'}).catch(err=>console.warn('Markata share target registration failed:',err));
   if(new URLSearchParams(location.search).has('share_error')) {
