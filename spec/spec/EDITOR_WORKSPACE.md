@@ -28,6 +28,10 @@ Refs #1977 and #1903. The workspace includes the publishing and Changes flow in 
 - The preview frame MUST accept the newest pending fragment once its message handler is ready.
   It MUST NOT wait for images, fonts, or other unrelated resource loads before applying an edit.
   A late frame load event MUST NOT replay an older fragment or finish the same preview twice.
+- Workbench-generated frontmatter previews MUST NOT consume Markdown source-block positions.
+  Cursor markers, click-to-place behavior, and synchronized scrolling MUST map authored Markdown
+  blocks to their rendered blocks even when a generated link card, heading, warning, or image
+  appears before them.
 - Editing text outside a Mermaid diagram MUST preserve that diagram's rendered DOM and MUST NOT
   queue another Mermaid render. Editing the diagram source MUST replace and render that diagram.
 - The editor preview SHOULD render Mermaid diagrams near the viewport first. Offscreen diagrams

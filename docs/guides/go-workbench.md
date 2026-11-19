@@ -97,7 +97,8 @@ subtle and marks the rendered block for the current caret line. Nested Markdown
 container boundaries add source anchors to improve scroll alignment in long
 sections; these markers exist only in the preview render and do not change your
 source. Within nested content, the marker follows the narrowest container that
-contains the caret line.
+contains the caret line. Generated frontmatter previews, including link cards,
+do not shift the marker away from the matching Markdown block.
 For the Go site-backed workbench, **Editor settings → Keyboard Shortcuts** opens
 application-wide key bindings. Choose Writer, VS Code, Vim, or Emacs application
 presets independently of the editor's Default/Vim/Emacs/Sublime text keymaps.
