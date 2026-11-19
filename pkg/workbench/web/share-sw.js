@@ -3,6 +3,8 @@ importScripts('/editor/share-target-utils.js');
 const DB_NAME = 'markata-share-inbox';
 const STORE = 'shares';
 const ROOT = new URL('/', self.registration.scope).href;
+const OFFLINE_PAGE = '/editor/offline-capture.html';
+const SHELL_CACHE = 'markata-offline-capture-v1';
 function openInbox() {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, 1);
@@ -27,6 +29,10 @@ async function storeShares(shares) {
     });
   } finally {db.close();}
 }
+// Cache only the public offline capture UI. Never cache workspace, auth, or API data.
+self.addEventListener('install', event => {
+  event.waitUntil(caches.open(SHELL_CACHE).then(cache => cache.add(OFFLINE_PAGE)));
+});
 // Let existing writing sessions finish before installing a replacement.
 // A first installation activates normally; updates wait for an explicit user action.
 self.addEventListener('message', event => {
@@ -35,10 +41,24 @@ self.addEventListener('message', event => {
   if (!sender || sender.type !== 'window' || new URL(sender.url).origin !== self.location.origin) return;
   event.waitUntil(self.skipWaiting());
 });
-self.addEventListener('activate', event => event.waitUntil(self.clients.claim()));
+self.addEventListener('activate', event => event.waitUntil((async () => {
+  const names=await caches.keys();
+  await Promise.all(names.filter(name=>name.startsWith('markata-offline-capture-') && name!==SHELL_CACHE)
+    .map(name=>caches.delete(name)));
+  await self.clients.claim();
+})()));
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
-  if (url.origin !== self.location.origin || url.pathname !== '/share-target' || event.request.method !== 'POST') return;
+  if (url.origin !== self.location.origin) return;
+  // Network-first root navigation: the full editor must never be cached.
+  // A cold offline launch (including the redirect after an OS share) gets
+  // only the static capture UI, which reads device-local IndexedDB.
+  if (url.pathname === '/' && event.request.method === 'GET' && event.request.mode === 'navigate') {
+    event.respondWith(fetch(event.request).catch(async () =>
+      (await caches.match(OFFLINE_PAGE)) || Response.error()));
+    return;
+  }
+  if (url.pathname !== '/share-target' || event.request.method !== 'POST') return;
   // Native shares arrive as top-level navigations; reject cross-site web forms.
   if (event.request.headers.get('Sec-Fetch-Site') === 'cross-site') return;
   event.respondWith((async () => {
