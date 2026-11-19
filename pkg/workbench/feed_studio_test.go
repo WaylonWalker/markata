@@ -117,6 +117,66 @@ func TestFeedStudioSaveFormatPreservationAndConflicts(t *testing.T) {
 	}
 }
 
+func TestFeedStudioEditsActualIncludedFeedFile(t *testing.T) {
+	root := t.TempDir()
+	configDir := filepath.Join(root, "config")
+	if err := os.MkdirAll(configDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	siteSource := "[markata-go]\ntitle = \"Test site\"\ninclude = [\"config/feeds.toml\"]\n"
+	sitePath := filepath.Join(root, "markata-go.toml")
+	if err := os.WriteFile(sitePath, []byte(siteSource), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	feedPath := filepath.Join(configDir, "feeds.toml")
+	feedSource := "# Preserve this exact comment\n[[markata-go.feeds]]\nslug = \"blog\"\ntitle = \"Original\"\nfilter = \"published == true\"\n"
+	if err := os.WriteFile(feedPath, []byte(feedSource), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	sources, err := feedStudioSources(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	source, ok := sources["blog"]
+	if !ok || source.path != feedPath || source.index != 0 || source.label != "config/feeds.toml" {
+		t.Fatalf("included feed source not discovered: %#v, found=%v", source, ok)
+	}
+	payload := feedStudioUpdate{
+		Slug: "blog", ExpectedVersion: source.version,
+		Title: "Updated from Feed Studio", Filter: "published == true",
+		Sort: "date", Reverse: true,
+	}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		t.Fatal(err)
+	}
+	handler := &Handler{root: root}
+	req := httptest.NewRequest(http.MethodPost, "http://localhost/workspace/feed-studio", strings.NewReader(string(body)))
+	req.Header.Set("Origin", "http://localhost")
+	w := httptest.NewRecorder()
+	handler.serveFeedStudio(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("included feed save failed: %d %s", w.Code, w.Body.String())
+	}
+	updated, err := os.ReadFile(feedPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(updated), "Updated from Feed Studio") || !strings.Contains(string(updated), "# Preserve this exact comment") {
+		t.Fatalf("included file lost edited fields or comments: %s", string(updated))
+	}
+	rootAfter, err := os.ReadFile(sitePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(rootAfter) != siteSource {
+		t.Fatalf("unexpected change to root config: %s", rootAfter)
+	}
+	if !strings.Contains(w.Body.String(), "config/feeds.toml") {
+		t.Fatalf("save response did not identify the edited file: %s", w.Body.String())
+	}
+}
+
 func TestFeedStudioSnapshotConfinedToOutput(t *testing.T) {
 	root := t.TempDir()
 	feedDir := filepath.Join(root, "output", "blog")
