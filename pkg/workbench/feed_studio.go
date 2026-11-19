@@ -136,6 +136,18 @@ func feedStudioSort(posts []*models.Post, sortField string, reverse bool) {
 			if a != b {
 				return strings.ToLower(a) < strings.ToLower(b)
 			}
+		case "slug":
+			if left.Slug != right.Slug {
+				return left.Slug < right.Slug
+			}
+		case "path":
+			return left.Path < right.Path
+		case "guide_order":
+			la, lok := left.Extra["guide_order"]
+			ra, rok := right.Extra["guide_order"]
+			if lok && rok && fmt.Sprint(la) != fmt.Sprint(ra) {
+				return fmt.Sprint(la) < fmt.Sprint(ra)
+			}
 		case "date", "":
 			if left.Date != nil && right.Date != nil && !left.Date.Equal(*right.Date) {
 				return left.Date.Before(*right.Date)
@@ -247,6 +259,15 @@ func (h *Handler) feedStudioRead(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Query().Has("reverse") {
 		reverse = r.URL.Query().Get("reverse") == "true"
 	}
+	if sortField == "" {
+		if selected.Type == models.FeedTypeGuide {
+			sortField = "guide_order"
+			reverse = false
+		} else {
+			sortField = "date"
+			reverse = true
+		}
+	}
 	feedStudioSort(matches, sortField, reverse)
 	matchedCount := len(matches)
 	offset := selected.Offset
@@ -294,8 +315,8 @@ func feedStudioEditable(root string, index int, slug string) bool {
 }
 
 func feedStudioValidate(update feedStudioUpdate) error {
-	if strings.TrimSpace(update.Title) == "" || len(update.Title) > 200 {
-		return fmt.Errorf("feed title must be between 1 and 200 characters")
+	if len(update.Title) > 200 {
+		return fmt.Errorf("feed title exceeds 200 characters")
 	}
 	if len(update.Description) > 4000 || len(update.Filter) > 4000 || len(update.Sort) > 100 || len(update.Template) > 255 {
 		return fmt.Errorf("feed settings exceed size limits")
