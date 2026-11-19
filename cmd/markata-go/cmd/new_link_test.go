@@ -85,7 +85,7 @@ func TestRunNewCommand_LinkURLMetadata(t *testing.T) {
 	for key, want := range map[string]interface{}{
 		"title": "A link & a title", "description": "A useful description",
 		"image": server.URL + "/preview.png", "url": destination,
-		"template": "bookmark", "draft": true,
+		"template": "bookmark", "draft": true, "slug": "link/a-link-a-title",
 	} {
 		if fm[key] != want {
 			t.Errorf("%s = %v, want %v", key, fm[key], want)
@@ -336,7 +336,7 @@ func TestRunInteractiveMode_LinkPreservesStarterDraft(t *testing.T) {
 	if err := os.Mkdir("content-templates", 0o755); err != nil {
 		t.Fatal(err)
 	}
-	starter := "---\n_directory: bookmarks\ndraft: true\nprivate: true\ntags: [keep]\n---\n\nMy commentary"
+	starter := "---\n_directory: bookmarks\nslug: custom/fetched-title\ndraft: true\nprivate: true\ntags: [keep]\n---\n\nMy commentary"
 	if err := os.WriteFile(filepath.Join("content-templates", "link.md"), []byte(starter), 0o600); err != nil {
 		t.Fatal(err)
 	}
@@ -348,7 +348,25 @@ func TestRunInteractiveMode_LinkPreservesStarterDraft(t *testing.T) {
 		t.Fatal(err)
 	}
 	fm := readLinkFrontmatter(t, filepath.Join("bookmarks", "fetched-title.md"))
-	if fm["draft"] != true || fm["private"] != true {
-		t.Fatalf("fast creation replaced starter publication/privacy defaults: %#v", fm)
+	if fm["draft"] != true || fm["private"] != true || fm["slug"] != "custom/fetched-title" {
+		t.Fatalf("fast creation replaced starter defaults or explicit slug: %#v", fm)
+	}
+}
+
+func TestWriteContentFile_LinkNumberedFilenameDoesNotGenerateSlug(t *testing.T) {
+	directory := t.TempDir()
+	template := ContentTemplate{
+		Name:         "link",
+		FilenameMode: "numbered",
+		Frontmatter:  map[string]interface{}{"title": "{{title}}"},
+		Body:         "A link post",
+	}
+	if err := writeContentFile("A Link", "a-link", directory, false, false, nil, template); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(directory, "link-1.md")
+	fm := readLinkFrontmatter(t, path)
+	if _, exists := fm["slug"]; exists {
+		t.Fatalf("numbered Link starter unexpectedly generated a URL slug: %#v", fm)
 	}
 }

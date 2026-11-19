@@ -373,9 +373,9 @@ function updateCreatePathPreview() {
   const directory = createDirectory.value.trim().replace(/\\/g,'/').replace(/^\/+|\/+$/g,'');
   createSlug.placeholder = slugify(createTitle.value) || 'post-title';
   const path = `${directory ? `${directory}/` : ''}${slug}.md`;
-  const generatedLinkSlug = template?.id === 'builtin:link' && createFilenameMode.value === 'title' &&
-    !createSlug.value.trim() && !hasFrontmatterKey(template.source, 'slug');
-  createPathPreview.textContent = generatedLinkSlug ? `${path} · URL /link/${slug}/` : path;
+  const generatedLinkSlug = window.MarkataContentStarters.generatedLinkSlug(
+    template?.source, template?.id, createFilenameMode.value, createSlug.value, slug);
+  createPathPreview.textContent = generatedLinkSlug ? `${path} · URL /${generatedLinkSlug}/` : path;
 }
 async function refreshNextContentNumber() {
   if (!selectedContentTemplate || createFilenameMode.value !== 'numbered') return;
@@ -445,24 +445,6 @@ createDialog.addEventListener('paste',event => {
   if(file){event.preventDefault();selectImageFile(file);}
 });
 createDialog.addEventListener('close',clearSelectedImage);
-function setFrontmatterValue(source, key, value) {
-  const match=String(source).match(/^(---\r?\n)([\s\S]*?)(\r?\n---(?:\r?\n|$))/);
-  const quoted=`${key}: ${JSON.stringify(String(value))}`;
-  if(!match)return `---\n${quoted}\n---\n\n${source}`;
-  const lines=match[2].split(/\r?\n/);
-  let found=false;
-  for(let i=0;i<lines.length;i++){
-    if(new RegExp(`^${key}:\\s*`).test(lines[i])){lines[i]=quoted;found=true;break;}
-  }
-  if(!found)lines.push(quoted);
-  return `${match[1]}${lines.join('\n')}${match[3]}${String(source).slice(match[0].length)}`;
-}
-function hasFrontmatterKey(source, key) {
-  const lines = String(source).split('\n');
-  if (!lines[0]?.startsWith('---')) return false;
-  const closing = lines.findIndex((line, index) => index > 0 && line.startsWith('---'));
-  return closing > 0 && lines.slice(1, closing).some(line => line.trimStart().startsWith(`${key}:`));
-}
 async function loadLinkMetadata() {
   const rawURL=createLinkURL.value.trim();
   if(!rawURL)return;
@@ -556,12 +538,14 @@ document.querySelector('#create-form').addEventListener('submit',async event => 
     const path = `${directory && directory !== '.' ? `${directory}/` : ''}${slug}.md`;
     let source = window.MarkataContentStarters.render(template.source,title,slug,new Date(),createDate.value);
     if (template.id === 'builtin:link') {
-      if (filenameMode === 'title' && !enteredFilename && !hasFrontmatterKey(source, 'slug'))
-        source=setFrontmatterValue(source,'slug',`link/${slug}`);
-      source=setFrontmatterValue(source,'url',createLinkURL.value.trim());
+      const generatedLinkSlug = window.MarkataContentStarters.generatedLinkSlug(
+        source, template.id, filenameMode, enteredFilename, slug);
+      if (generatedLinkSlug)
+        source=window.MarkataContentStarters.setFrontmatterValue(source,'slug',generatedLinkSlug);
+      source=window.MarkataContentStarters.setFrontmatterValue(source,'url',createLinkURL.value.trim());
       for (const key of ['description','site_name','type','provider_name','author_name','author_url']) {
         const value=linkMetadataControls[key].value.trim();
-        if(value)source=setFrontmatterValue(source,key,value);
+        if(value)source=window.MarkataContentStarters.setFrontmatterValue(source,key,value);
       }
     }
     const imageURL=createImageURL.value.trim();
