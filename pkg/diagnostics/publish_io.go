@@ -105,14 +105,14 @@ func (r *PublishIORecorder) Snapshot() PublishIOCounters {
 		return PublishIOCounters{}
 	}
 	stats := PublishIOCounters{
-		OutputsConsidered: r.considered.Load(),
-		OutputsSkipped:    r.skipped.Load(),
-		OutputsWritten:    r.written.Load(),
-		FilesWritten:     r.files.Load(),
-		FilesUnchanged:   r.unchanged.Load(),
-		WriteErrors:      r.errors.Load(),
-		BytesWritten:     r.bytes.Load(),
-		WriteDurationNS:  r.durationNS.Load(),
+		OutputsConsidered:  r.considered.Load(),
+		OutputsSkipped:     r.skipped.Load(),
+		OutputsWritten:     r.written.Load(),
+		FilesWritten:       r.files.Load(),
+		FilesUnchanged:     r.unchanged.Load(),
+		WriteErrors:        r.errors.Load(),
+		BytesWritten:       r.bytes.Load(),
+		WriteDurationNS:    r.durationNS.Load(),
 		MaxWriteDurationNS: r.maxNS.Load(),
 	}
 	if stats.WriteDurationNS > 0 {
