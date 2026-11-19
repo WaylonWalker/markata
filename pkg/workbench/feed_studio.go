@@ -196,6 +196,7 @@ func (h *Handler) feedStudioRead(w http.ResponseWriter, r *http.Request) {
 	selectedFilter, filterOverride := r.URL.Query()["filter"]
 	selectedSort := r.URL.Query().Get("sort")
 	var selected *models.FeedConfig
+	authoredFeeds, _ := feedStudioRootFeeds(h.root)
 	for i := range cfg.Feeds {
 		feed := &cfg.Feeds[i]
 		matches, matchErr := feedStudioMatch(posts, feed.Filter)
@@ -203,7 +204,7 @@ func (h *Handler) feedStudioRead(w http.ResponseWriter, r *http.Request) {
 		if matchErr != nil {
 			count = 0
 		}
-		editable := feedStudioEditable(h.root, i, feed.Slug)
+		_, editable := feedStudioRootFeedIndex(authoredFeeds, feed.Slug)
 		feeds = append(feeds, feedStudioFeed{
 			Slug: feed.Slug, Title: feed.Title, Description: feed.Description,
 			Filter: feed.Filter, Sort: feed.Sort, Reverse: feed.Reverse,
@@ -285,13 +286,40 @@ func (h *Handler) feedStudioRead(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func feedStudioEditable(root string, index int, slug string) bool {
+// Only feeds authored directly in the root config are writable. Parsing the
+// root document (rather than the merged configuration) distinguishes includes
+// without relying on syntax-tree indexed-value lookup.
+func feedStudioRootFeeds(root string) ([]models.FeedConfig, error) {
 	filename, err := feedStudioFile(root)
 	if err != nil {
-		return false
+		return nil, err
 	}
-	value, err := config.GetValueFromFile(filename, fmt.Sprintf("feeds[%d].slug", index))
-	return err == nil && value == slug
+	source, err := os.ReadFile(filename)
+	if err != nil {
+		return nil, err
+	}
+	var authored *models.Config
+	switch filepath.Ext(filename) {
+	case ".yaml", ".yml":
+		authored, err = config.ParseYAML(source)
+	case ".json":
+		authored, err = config.ParseJSON(source)
+	default:
+		authored, err = config.ParseTOML(source)
+	}
+	if err != nil {
+		return nil, err
+	}
+	return authored.Feeds, nil
+}
+
+func feedStudioRootFeedIndex(feeds []models.FeedConfig, slug string) (int, bool) {
+	for index := range feeds {
+		if feeds[index].Slug == slug {
+			return index, true
+		}
+	}
+	return -1, false
 }
 
 func feedStudioValidate(update feedStudioUpdate) error {
@@ -349,17 +377,13 @@ func (h *Handler) feedStudioSave(w http.ResponseWriter, r *http.Request) {
 		fail(w, http.StatusConflict, "site configuration changed on disk; reload and compare before saving")
 		return
 	}
-	cfg := h.currentSiteConfig()
-	index := -1
-	if cfg != nil {
-		for i := range cfg.Feeds {
-			if cfg.Feeds[i].Slug == update.Slug {
-				index = i
-				break
-			}
-		}
+	authoredFeeds, err := feedStudioRootFeeds(h.root)
+	if err != nil {
+		fail(w, http.StatusUnprocessableEntity, "cannot read authored feed settings: "+err.Error())
+		return
 	}
-	if index < 0 || !feedStudioEditable(h.root, index, update.Slug) {
+	index, editable := feedStudioRootFeedIndex(authoredFeeds, update.Slug)
+	if !editable {
 		fail(w, http.StatusUnprocessableEntity, "feed is not directly editable in the site config (it may come from an included file)")
 		return
 	}
