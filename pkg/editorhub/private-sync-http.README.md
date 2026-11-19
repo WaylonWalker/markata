@@ -62,3 +62,5 @@ map (or an external ACL) does **not** revoke permissions for an existing
 handler. Before hosting, provide an atomic registry/handler reload or a
 trusted live ACL provider and verify site-grant revocation end to end.
 The POC must not be described as immediately reflecting external ACL changes.
+Consumers must treat session site grants as advisory UI data, not a replacement
+for per-request server-side authorization of reads, writes or publishing.
