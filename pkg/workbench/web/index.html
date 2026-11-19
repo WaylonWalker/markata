@@ -167,9 +167,9 @@ footer{flex-wrap:nowrap}
   <p id="fs-empty" hidden>No feeds are configured yet. Add a feed in your Markata site configuration to get started.</p>
   <form id="fs-form" class="fs-layout" hidden>
     <div class="fs-settings">
-      <div class="fs-panel-head"><h3>Feed settings</h3><span id="fs-readonly" hidden>Included configuration · read only</span></div>
+      <div class="fs-panel-head"><h3>Feed settings</h3><span id="fs-readonly" hidden>Source not editable</span></div>
       <label for="fs-feed">Choose feed</label>
-      <select id="fs-feed" aria-label="Feed to edit"></select>
+      <select id="fs-feed" aria-label="Feed to edit"></select><p id="fs-source" class="fs-hint" aria-live="polite"></p>
       <label for="fs-title">Title</label>
       <input id="fs-title" name="title" type="text" maxlength="200" required>
       <label for="fs-description">Description</label>
