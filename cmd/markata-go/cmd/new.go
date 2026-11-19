@@ -974,6 +974,11 @@ func generateTemplatedContent(title, slug string, date time.Time, draft, draftSe
 	for key, value := range template.Frontmatter {
 		fm[key] = expandStarterValue(value, title, slug, date)
 	}
+	if strings.EqualFold(template.Name, "link") && template.FilenameMode != "numbered" && slug != "" {
+		if _, hasSlug := fm["slug"]; !hasSlug {
+			fm["slug"] = "link/" + slug
+		}
+	}
 	switch value := fm["date"].(type) {
 	case nil:
 		fm["date"] = date.Format("2006-01-02")

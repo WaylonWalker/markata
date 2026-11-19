@@ -52,6 +52,37 @@
     return `${frontmatter[1]}${lines.join("\n")}${frontmatter[3]}${expand(String(source).slice(frontmatter[0].length))}`;
   }
 
-  root.MarkataContentStarters = { render };
+  function hasFrontmatterKey(source, key) {
+    const match = String(source).match(/^(---\r?\n)([\s\S]*?)(\r?\n---(?:\r?\n|$))/);
+    if (!match) return false;
+    const escapedKey = String(key).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const field = new RegExp(`^${escapedKey}:\\s*`);
+    return match[2].split(/\r?\n/).some(line => field.test(line));
+  }
+
+  function setFrontmatterValue(source, key, value) {
+    const text = String(source);
+    const match = text.match(/^(---\r?\n)([\s\S]*?)(\r?\n---(?:\r?\n|$))/);
+    const quoted = `${key}: ${JSON.stringify(String(value))}`;
+    if (!match) return `---\n${quoted}\n---\n\n${text}`;
+    const lines = match[2].split(/\r?\n/);
+    const escapedKey = String(key).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const field = new RegExp(`^${escapedKey}:\\s*`);
+    const index = lines.findIndex(line => field.test(line));
+    if (index >= 0) lines[index] = quoted;
+    else lines.push(quoted);
+    return `${match[1]}${lines.join("\n")}${match[3]}${text.slice(match[0].length)}`;
+  }
+
+  function generatedLinkSlug(source, templateName, filenameMode, enteredFilename, slug) {
+    const isLinkStarter = String(templateName).trim().toLowerCase() === "link";
+    if (!isLinkStarter || filenameMode !== "title" || String(enteredFilename).trim() || !String(slug).trim()) {
+      return "";
+    }
+    if (hasFrontmatterKey(source, "slug")) return "";
+    return `link/${slug}`;
+  }
+
+  root.MarkataContentStarters = { render, hasFrontmatterKey, setFrontmatterValue, generatedLinkSlug };
   if (typeof module !== "undefined" && module.exports) module.exports = root.MarkataContentStarters;
 })(globalThis);

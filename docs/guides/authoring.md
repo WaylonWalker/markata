@@ -60,6 +60,10 @@ Markata fetches the page title, description, and preview image for the link post
 A usable Open Graph title (`og:title`) becomes the title automatically.
 Empty, URL-only, and hostname-only titles do not qualify.
 Other suggestions require your confirmation: Twitter metadata, the HTML title, the main heading, the decoded URL slug, then the hostname.
+When Markata generates the filename from the title, it sets the post slug to
+`link/<title-slug>`, so the URL starts with `/link/`. The filename stays
+`<title-slug>.md` in the selected directory. In the web workbench, the preview
+shows this URL slug; a filename you enter yourself is left unchanged.
 
 For YouTube videos, Markata first fetches the title and thumbnail from YouTube's official oEmbed endpoint.
 This avoids a large watch-page download.

@@ -89,6 +89,9 @@ title and a default destination folder. The slug field MUST remain empty when
 using the suggested slug; its placeholder and the displayed destination path
 MUST update as the title changes. If the author enters a slug, that value MUST
 take precedence over the title-derived suggestion.
+For a title-derived Link filename, the New Post flow MUST show the generated
+URL slug as `/link/<title-slug>/` and write `link/<title-slug>` to frontmatter.
+The file path MUST keep the unprefixed filename under the selected folder.
 Feed navigation MUST use feed names as tree roots and paths relative to the
 workspace root beneath them; absolute filesystem paths MUST NOT appear as feed
 labels.
