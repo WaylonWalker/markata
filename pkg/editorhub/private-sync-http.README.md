@@ -29,3 +29,38 @@ authenticated author; a site write grant alone cannot expose another writer's
 private conflict source. This is recovery, not automatic conflict resolution.
 
 Verify with `go test -race -count=1 ./pkg/editorhub ./pkg/editorsync`.
+
+## Verified browser identity bootstrap (issue #1979)
+
+The opt-in `NewPrivateSessionHandler` adds a read-only
+`GET /api/v1/session` endpoint to this composed handler. It returns the
+current verified stable `subject_id` and the caller's currently authorized
+site summaries. It does **not** return or store a session cookie, JWT,
+ForwardAuth header, GitHub credential, storage path or operator token. The
+response is `private, no-store`, `nosniff`, and same-origin-only; the
+handler derives the subject freshly via the injected trusted Authenticator
+for every request and never accepts an identity from browser-supplied JSON.
+
+A future browser adapter must fetch this endpoint with same-origin credentials
+and `cache: no-store`; checking a previous subject stored in IndexedDB is
+not proof of an active session. On logout, session expiry, account switch or
+revoked site grant, network sync must pause without discarding the outbox.
+No browser adapter, public ingress or production route is added in this PR.
+
+**Note:** verified identity for HTTP synchronization does not protect
+plaintext IndexedDB drafts from other people using the same browser profile.
+Device-local encryption/locking and logout/export remain separate required
+work before any family/shared-device deployment.
+
+### Revocation boundary
+
+The handler calls the trusted Authenticator on **every request**, so session
+revocation takes effect as soon as that authenticator refuses the request.
+Site grants are different: `Registry` is an immutable snapshot of startup
+configuration, not a live authorization provider. Editing the original grant
+map (or an external ACL) does **not** revoke permissions for an existing
+handler. Before hosting, provide an atomic registry/handler reload or a
+trusted live ACL provider and verify site-grant revocation end to end.
+The POC must not be described as immediately reflecting external ACL changes.
+Consumers must treat session site grants as advisory UI data, not a replacement
+for per-request server-side authorization of reads, writes or publishing.

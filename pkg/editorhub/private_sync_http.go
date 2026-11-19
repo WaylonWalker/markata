@@ -35,10 +35,15 @@ func NewPrivateSyncHandler(
 	if err != nil {
 		return nil, err
 	}
+	session, err := NewPrivateSessionHandler(registry, authenticate, allowedOrigin)
+	if err != nil {
+		return nil, err
+	}
 
 	// Each underlying route enforces site and subject permissions again.
 	// No catch-all or fallback to an operator interface is registered.
 	mux := http.NewServeMux()
+	mux.Handle("GET /api/v1/session", session)
 	mux.Handle("GET /api/v1/sites", discovery)
 	mux.Handle("POST /api/v1/sites/{site}/mutations", writes)
 	mux.Handle("GET /api/v1/sites/{site}/conflicts/{mutation}", writes)
