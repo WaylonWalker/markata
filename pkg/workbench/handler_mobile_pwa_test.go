@@ -80,8 +80,18 @@ func TestMobilePWAAssetsAndShareTarget(t *testing.T) {
 		strings.Contains(worker.Body.String(), "addEventListener('install', event => event.waitUntil(self.skipWaiting())") {
 		t.Fatal("service worker updates must be deliberately activated")
 	}
-	if strings.Contains(worker.Body.String(), "caches.open") {
-		t.Fatal("share worker must not cache private workspace data")
+	offline := get("/editor/offline-capture.html")
+	if !strings.Contains(offline.Body.String(), "markata-share-inbox") ||
+		!strings.Contains(offline.Body.String(), "Offline capture") {
+		t.Fatal("offline fallback must be a self-contained device-local capture UI")
+	}
+	if !strings.Contains(worker.Body.String(), "cache.add(OFFLINE_PAGE)") ||
+		!strings.Contains(worker.Body.String(), "const OFFLINE_PAGE = '/editor/offline-capture.html'") {
+		t.Fatal("share worker must precache only the public offline capture fallback")
+	}
+	if strings.Contains(worker.Body.String(), "cache.put(") ||
+		strings.Contains(worker.Body.String(), "cache.addAll(") {
+		t.Fatal("share worker must never cache private editor or workspace responses")
 	}
 	for _, path := range []string{"/editor/icon-192.png", "/editor/icon-512.png"} {
 		icon := get(path)
