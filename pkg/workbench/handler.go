@@ -585,6 +585,8 @@ func isWorkspaceRoute(routePath, method string) bool {
 	switch {
 	case routePath == "/workspace" || routePath == "/workspace/templates" || routePath == "/workspace/content-number" || routePath == "/workspace/image" || routePath == "/workspace/index-status" || routePath == "/workspace/changes":
 		return method == http.MethodGet
+	case strings.HasPrefix(routePath, feedSnapshotPrefix):
+		return method == http.MethodGet
 	case routePath == "/workspace/feed-studio":
 		return method == http.MethodGet || method == http.MethodPost
 	case routePath == "/workspace/new-post":
@@ -958,6 +960,10 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 	if r.URL.Path == "/workspace/publish/readiness" {
 		h.servePublishReadiness(w, r)
+		return
+	}
+	if strings.HasPrefix(r.URL.Path, feedSnapshotPrefix) {
+		h.serveFeedSnapshot(w, r)
 		return
 	}
 	if r.URL.Path == "/workspace/feed-studio" {
