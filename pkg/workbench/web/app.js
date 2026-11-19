@@ -369,9 +369,12 @@ function updateCreatePathPreview() {
     if (createSlug.readOnly) createSlug.value = '';
     createSlug.readOnly = false;
   }
-  const slug = createSlug.value.trim() || slugify(createTitle.value) || 'new-post';
+  const titleSlug = template?.id === 'builtin:link'
+    ? window.MarkataContentStarters.suggestLinkSlug(createTitle.value, createLinkURL.value)
+    : slugify(createTitle.value);
+  const slug = createSlug.value.trim() || titleSlug || 'new-post';
   const directory = createDirectory.value.trim().replace(/\\/g,'/').replace(/^\/+|\/+$/g,'');
-  createSlug.placeholder = slugify(createTitle.value) || 'post-title';
+  createSlug.placeholder = titleSlug || 'post-title';
   const path = `${directory ? `${directory}/` : ''}${slug}.md`;
   const generatedLinkSlug = window.MarkataContentStarters.generatedLinkSlug(
     template?.source, template?.name, createFilenameMode.value, createSlug.value, slug);
@@ -415,7 +418,7 @@ for (const [key, control] of Object.entries(linkMetadataControls)) {
     if (linkMetadataApplied[key] && control.value.trim() !== linkMetadataApplied[key]) delete linkMetadataApplied[key];
   });
 }
-createLinkURL.addEventListener('input',scheduleLinkMetadata);
+createLinkURL.addEventListener('input',() => {scheduleLinkMetadata();updateCreatePathPreview();});
 createSlug.addEventListener('input',updateCreatePathPreview);
 createDirectory.addEventListener('input',updateCreatePathPreview);
 createDirectory.addEventListener('change',refreshNextContentNumber);
@@ -533,7 +536,10 @@ document.querySelector('#create-form').addEventListener('submit',async event => 
       ? 'No title was found for this URL. Enter a title to create the link post.'
       : 'Enter a title to create the post.');
     const enteredFilename = createSlug.value.trim();
-    const slug = enteredFilename || slugify(title);
+    const titleSlug = template.id === 'builtin:link' && filenameMode === 'title'
+      ? window.MarkataContentStarters.suggestLinkSlug(title, createLinkURL.value)
+      : slugify(title);
+    const slug = enteredFilename || titleSlug;
     if (!slug) throw new Error('Enter a title or file name for this post.');
     const path = `${directory && directory !== '.' ? `${directory}/` : ''}${slug}.md`;
     let source = window.MarkataContentStarters.render(template.source,title,slug,new Date(),createDate.value);

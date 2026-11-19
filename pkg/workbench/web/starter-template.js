@@ -74,6 +74,33 @@
     return `${match[1]}${lines.join("\n")}${match[3]}${text.slice(match[0].length)}`;
   }
 
+  function slugify(value) {
+    return String(value).normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  }
+
+  function linkURLIdentifier(rawURL) {
+    try {
+      const source = new URL(rawURL);
+      const pathSegments = source.pathname.split("/").filter(Boolean);
+      const segments = pathSegments.map(segment => decodeURIComponent(segment));
+      for (let index = 0; index + 1 < segments.length; index++) {
+        if (!["status", "statuses", "post", "posts", "p", "reel", "reels", "comment", "comments"].includes(segments[index].toLowerCase())) continue;
+        const identifier = segments[index + 1];
+        if (identifier.length < 6 || !/[0-9]/.test(identifier)) continue;
+        const slug = slugify(identifier);
+        if (slug.length >= 6) return slug;
+      }
+    } catch {}
+    return "";
+  }
+
+  function suggestLinkSlug(title, rawURL) {
+    const slug = slugify(title);
+    const identifier = linkURLIdentifier(rawURL);
+    return identifier && slug && !slug.endsWith("-" + identifier) ? slug + "-" + identifier : slug;
+  }
+
   function generatedLinkSlug(source, templateName, filenameMode, enteredFilename, slug) {
     const isLinkStarter = String(templateName).trim().toLowerCase() === "link";
     if (!isLinkStarter || filenameMode !== "title" || String(enteredFilename).trim() || !String(slug).trim()) {
@@ -83,6 +110,6 @@
     return `link/${slug}`;
   }
 
-  root.MarkataContentStarters = { render, hasFrontmatterKey, setFrontmatterValue, generatedLinkSlug };
+  root.MarkataContentStarters = { render, hasFrontmatterKey, setFrontmatterValue, generatedLinkSlug, suggestLinkSlug };
   if (typeof module !== "undefined" && module.exports) module.exports = root.MarkataContentStarters;
 })(globalThis);

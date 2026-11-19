@@ -118,8 +118,11 @@ Other suggestions require user confirmation, in this order: Twitter metadata, HT
 For unattended creation without a trusted title, pass a user-approved `--title` with `--no-input`.
 An explicit `--title` always wins.
 When a Link filename comes from its title and the starter has no explicit slug,
-Markata sets `slug: link/<title-slug>`, producing a URL under `/link/` while the
-file name stays unchanged. Preserve an explicit starter slug.
+Markata sets `slug: link/<filename-slug>`, producing a URL under `/link/` while the
+file keeps the unprefixed filename slug. When the URL contains a recognized stable post ID,
+Markata appends it to the generated filename and slug, for example
+`link/<title-slug>-<post-id>`. Preserve an explicit starter slug and any
+filename entered by the author.
 
 For YouTube video links, use the same URL-first command.
 Markata fetches the title and thumbnail from YouTube's official oEmbed endpoint before HTML metadata.

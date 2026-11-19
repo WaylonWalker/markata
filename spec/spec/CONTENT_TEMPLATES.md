@@ -88,6 +88,11 @@ not define `slug`, the CLI and web workbench MUST write `slug: link/<title-slug>
 to frontmatter. The Markdown filename MUST keep the unprefixed title slug in
 the selected directory. An explicit starter slug or a filename entered by the
 user MUST NOT receive the automatic prefix.
+When the source URL contains a stable post identifier in a recognized path
+such as `/status/<id>`, `/post/<id>`, `/p/<id>`, or similar social post paths,
+the CLI and web workbench MUST append that identifier to the generated Link
+filename slug and generated `link/` URL slug. An explicitly entered filename
+MUST remain unchanged.
 When a Link URL is entered, the workbench MUST resolve metadata with the same
 configured providers and resolution strategy used by external embeds. It MUST
 fill empty supported frontmatter fields for title, description, image,
