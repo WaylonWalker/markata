@@ -308,6 +308,10 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case strings.HasPrefix(r.URL.Path, "/editor/"):
 		w.Header().Set("Cache-Control", "no-cache")
 		name := strings.TrimPrefix(r.URL.Path, "/editor/")
+		if name == "share-sw.js" {
+			w.Header().Set("Service-Worker-Allowed", "/")
+			w.Header().Set("Cache-Control", "no-cache")
+		}
 		data, err := web.ReadFile("web/" + name)
 		if err != nil && (name == "excalidraw-editor.js" || name == "excalidraw-editor.css" || strings.HasPrefix(name, "excalidraw-fonts/") || strings.HasPrefix(name, "excalidraw-editor-chunks/")) {
 			assetName := name
@@ -347,6 +351,9 @@ func serve(w http.ResponseWriter, r *http.Request, name string, data []byte) {
 		w.Header().Set("Cache-Control", "public, max-age=3600, must-revalidate")
 	}
 	contentType := mime.TypeByExtension(path.Ext(name))
+	if strings.EqualFold(path.Ext(name), ".webmanifest") {
+		contentType = "application/manifest+json"
+	}
 	if strings.EqualFold(path.Ext(name), ".woff2") {
 		contentType = "font/woff2"
 	}
