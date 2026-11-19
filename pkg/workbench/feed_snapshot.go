@@ -35,7 +35,7 @@ func feedSnapshotFile(root string, cfg *models.Config, requested string) (string
 		return "", err
 	}
 	underSite, err := filepath.Rel(siteRoot, outputRoot)
-	if err != nil || underSite == ".." || strings.HasPrefix(underSite, ".."+string(filepath.Separator)) {
+	if err != nil || underSite == "." || underSite == ".." || strings.HasPrefix(underSite, ".."+string(filepath.Separator)) {
 		return "", fmt.Errorf("feed output must stay inside the workspace")
 	}
 	requested = strings.TrimPrefix(requested, "/")
