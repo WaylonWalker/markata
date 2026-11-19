@@ -182,6 +182,7 @@ let contentTemplates = [];
 let imageUploadProvider = 'local';
 let selectedContentTemplate = null;
 let activeMobileShare = null;
+let activeMobileShortcut = false;
 let selectedImageFile = null;
 let imagePreviewURL = '';
 let numberLookupRevision = 0;
@@ -458,7 +459,7 @@ createDialog.addEventListener('paste',event => {
   const file=item?.getAsFile();
   if(file){event.preventDefault();selectImageFile(file);}
 });
-createDialog.addEventListener('close',()=>{clearSelectedImage();activeMobileShare=null;});
+createDialog.addEventListener('close',()=>{clearSelectedImage();activeMobileShare=null;activeMobileShortcut=false;});
 async function loadLinkMetadata() {
   const rawURL=createLinkURL.value.trim();
   if(!rawURL)return;
@@ -524,6 +525,7 @@ function scheduleLinkMetadata() {
 window.addEventListener('markata-compose', event => {
   const kind = event.detail;
   if (!['note','photo','link'].includes(kind) || createDialog.open || templatePicker.open) return;
+  activeMobileShortcut = true;
   void showCreateDialog('builtin:' + kind);
 });
 window.addEventListener('markata-share-select', async event => {
@@ -596,9 +598,11 @@ document.querySelector('#create-form').addEventListener('submit',async event => 
         if(value)source=window.MarkataContentStarters.setFrontmatterValue(source,key,value);
       }
     }
-    if (activeMobileShare) {
-      // Shared content is always a new unpublished post, not a public publication.
+    if (activeMobileShare || activeMobileShortcut) {
+      // Quick capture and shared content start unpublished; author explicitly publishes later.
       source = source.replace(/^published:[^\r\n]*$/m, 'published: false');
+    }
+    if (activeMobileShare) {
       const sharedText=String(activeMobileShare.text || '').trim();
       const caption = activeMobileShare.url && sharedText === activeMobileShare.url ? '' : sharedText;
       if (caption) source = source.trimEnd() + '\n\n' + caption + '\n';
