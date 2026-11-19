@@ -2,3 +2,5 @@
 #mobile-share-inbox span{flex:1 1 190px}
 #mobile-share-inbox button{cursor:pointer;border:1px solid var(--editor-divider);border-radius:8px;padding:7px 12px;color:inherit;background:var(--color-background,#fff)}
 #mobile-share-inbox button:first-of-type{background:var(--color-accent,#5629a4);color:white}
+
+#mobile-install:not([hidden]){display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--editor-divider);border-radius:8px;background:var(--color-background,#fff);color:var(--color-text,#203348);font:inherit;font-size:13px;font-weight:650;padding:8px 12px;cursor:pointer}
