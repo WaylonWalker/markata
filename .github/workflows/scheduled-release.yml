@@ -1,0 +1,149 @@
+name: Scheduled release candidate (no publish)
+
+# A green candidate is evidence for a subsequent human-approved tag/release.
+# No job here creates a tag, GitHub Release, container tag, or PyPI upload.
+run-name: "Candidate ${{ github.event.schedule == '0 14 * * 2,5' && 'stable' || inputs.channel || 'nightly' }}: ${{ github.sha }}"
+
+on:
+  schedule:
+    # Fixed UTC schedule; local Central time shifts by one hour at DST.
+    - cron: '0 8 * * *'       # Nightly snapshot, about 2-3 AM Central
+    - cron: '0 14 * * 2,5'    # Tue/Fri stable-candidate review, about 8-9 AM Central
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: 'Candidate channel; never publishes'
+        required: true
+        type: choice
+        options: [nightly, stable]
+        default: nightly
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: scheduled-release-candidate
+  cancel-in-progress: false
+
+jobs:
+  gate:
+    name: Determine whether a candidate is needed
+    runs-on: ubuntu-latest
+    outputs:
+      run_candidate: ${{ steps.check.outputs.run_candidate }}
+      channel: ${{ steps.check.outputs.channel }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Check current commit and previous successful candidate
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CHANNEL: ${{ github.event.schedule == '0 14 * * 2,5' && 'stable' || inputs.channel || 'nightly' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "channel=$CHANNEL" >> "$GITHUB_OUTPUT"
+          # Always permit a deliberate manual rebuild, including on a feature branch.
+          if [[ "$GITHUB_EVENT_NAME" != "schedule" ]]; then
+            echo "run_candidate=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          latest_tag="$(git tag --merged HEAD --list 'v[0-9]*' --sort=-version:refname | head -n 1)"
+          if [[ -n "$latest_tag" && "$(git rev-list -n 1 "$latest_tag")" == "$GITHUB_SHA" ]]; then
+            echo "main already matches $latest_tag; no new candidate" >> "$GITHUB_STEP_SUMMARY"
+            echo "run_candidate=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Do not rebuild the same commit and channel after a successful run.
+          # The current run is in progress, so it cannot appear in status=success.
+          previous="$(gh api "/repos/$GITHUB_REPOSITORY/actions/workflows/scheduled-release.yml/runs?branch=main&status=success&per_page=100" \
+            --jq ".workflow_runs[] | select(.head_sha == \"$GITHUB_SHA\" and .display_title == \"Candidate $CHANNEL: $GITHUB_SHA\") | .id" | head -n 1)"
+          if [[ -n "$previous" ]]; then
+            echo "Unchanged $CHANNEL candidate already passed in run $previous" >> "$GITHUB_STEP_SUMMARY"
+            echo "run_candidate=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "New $CHANNEL candidate for $GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
+          echo "run_candidate=true" >> "$GITHUB_OUTPUT"
+
+  verify:
+    name: Test and package candidate (no publish)
+    needs: gate
+    if: needs.gate.outputs.run_candidate == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # Keyless signature for the disposable snapshot, no publishing scope.
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-go@v7
+        with:
+          go-version: '1.26'
+          cache: true
+      - name: Validate release-note fragments
+        run: python3 -m unittest discover -s scripts -p 'test_release_notes.py' -v
+      - name: Assemble release-note preview
+        run: |
+          python3 scripts/release-notes.py --version candidate --output "$RUNNER_TEMP/RELEASE_NOTES.md"
+          test -s "$RUNNER_TEMP/RELEASE_NOTES.md"
+          cat "$RUNNER_TEMP/RELEASE_NOTES.md" >> "$GITHUB_STEP_SUMMARY"
+      - name: Full Go race tests
+        run: go test -race -timeout=30m ./...
+      - name: Check GoReleaser config
+        uses: goreleaser/goreleaser-action@v7
+        with:
+          distribution: goreleaser
+          version: '~> v2'
+          args: check
+      - name: Install Syft for SBOM generation
+        uses: anchore/sbom-action/download-syft@v0
+      - name: Install Cosign for checksum signing
+        uses: sigstore/cosign-installer@v3
+      # Full-archive SBOM/signing can overwhelm the all-target build on a
+      # single runner. The existing RC smoke has proven this exact snapshot
+      # command and checks both canonical/legacy archives and checksums.
+      # Sample the SBOM/signing tools separately; the tag workflow still
+      # generates and signs the complete release.
+      - name: Build release snapshot without publishing
+        uses: goreleaser/goreleaser-action@v7
+        with:
+          distribution: goreleaser
+          version: '~> v2'
+          args: release --snapshot --clean --skip=sign,sbom
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Verify canonical and legacy archives and checksums
+        run: bash scripts/check-rc-artifacts.sh
+      - name: Generate sample SPDX SBOM
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="$(find dist -maxdepth 1 -type f -name 'markata_*_linux_x86_64.tar.gz' -print -quit)"
+          test -n "$archive"
+          syft "$archive" -o spdx-json=dist/candidate-sample.spdx.json
+          test -s dist/candidate-sample.spdx.json
+      - name: Sign candidate checksum manifest
+        shell: bash
+        run: |
+          cosign sign-blob --yes \
+            --output-signature=dist/checksums.txt.sig \
+            --output-certificate=dist/checksums.txt.pem \
+            dist/checksums.txt
+          test -s dist/checksums.txt.sig
+          test -s dist/checksums.txt.pem
+      - name: Upload dry-run artifacts and notes
+        uses: actions/upload-artifact@v7
+        with:
+          name: scheduled-${{ needs.gate.outputs.channel }}-snapshot
+          path: |
+            dist/**
+            ${{ runner.temp }}/RELEASE_NOTES.md
+          retention-days: 7
