@@ -198,12 +198,33 @@ func (h *Handler) serveFeedStudio(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) feedStudioRead(w http.ResponseWriter, r *http.Request) {
-	cfg := h.currentSiteConfig()
-	if cfg == nil {
-		if err := json.NewEncoder(w).Encode(map[string]any{"feeds": []feedStudioFeed{}, "posts": []feedStudioItem{}, "error": "No site configuration is available"}); err != nil {
+	filename, err := feedStudioFile(h.root)
+	if errors.Is(err, os.ErrNotExist) {
+		_ = json.NewEncoder(w).Encode(map[string]any{"feeds": []feedStudioFeed{}, "posts": []feedStudioItem{}})
+		return
+	}
+	if err != nil {
+		fail(w, http.StatusUnprocessableEntity, "cannot read site configuration: "+err.Error())
+		return
+	}
+	var cfg *models.Config
+	// The initial feed selection must reflect newly saved configuration even
+	// before the asynchronous workspace file watcher catches up.
+	if !r.URL.Query().Has("slug") {
+		cfg, err = config.Load(filename)
+		if err != nil {
+			fail(w, http.StatusUnprocessableEntity, "cannot load feed settings: "+err.Error())
 			return
 		}
-		return
+	} else {
+		cfg = h.currentSiteConfig()
+		if cfg == nil {
+			cfg, err = config.Load(filename)
+			if err != nil {
+				fail(w, http.StatusUnprocessableEntity, "cannot load feed settings: "+err.Error())
+				return
+			}
+		}
 	}
 	version, err := feedStudioConfigVersion(h.root)
 	if err != nil {
