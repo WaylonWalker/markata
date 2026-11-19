@@ -80,9 +80,33 @@ immediately when opening the view, and refresh it in the background. Successful
 workspace saves, window focus, manual refresh, and the open-view polling interval
 MUST trigger revalidation. The server MUST report current Git status rather than
 serving a long-lived cached snapshot. The active-post Review action MUST be
-located in the Changes panel header. Change rows MUST have enough
-vertical spacing to distinguish filenames, status, and actions in the narrow
-sidebar.
+located in the Changes panel header.
+
+The Changes view MUST provide a review queue that distinguishes Markdown posts
+from other files, supports filtering by path, and exposes each entry's Git
+status, staged/unstaged state, and workspace scope. Selecting a supported text
+file MUST show its saved workspace source compared with the last committed Git
+baseline in a readable diff. The UI MUST label Git HEAD as the last commit and
+MUST NOT imply that it is deployed or live. Deleted files, conflicts, binary or
+oversized files, and files outside the selected site MUST keep a clear status
+and explanation when a source diff is unavailable.
+
+The review queue's **Keep in workspace** action MUST leave the file, Git index,
+and history unchanged. It only marks the entry reviewed for the current queue
+session and MUST be described as such. It MUST NOT stage, commit, push, publish,
+or hide the change from the Git inventory. **Review and reset** MUST open the
+existing single-document review for an eligible workspace Markdown file. Reset
+MUST remain unavailable for staged changes, deleted files, conflicts, and
+out-of-site or non-Markdown files; the UI MUST explain why. The existing
+confirmation, exact revision checks, and stale-draft refusal MUST remain in
+force. Reset MUST NOT affect unrelated paths or Git history.
+
+The review queue MUST keep navigation usable with keyboard and screen readers.
+On narrow screens, the file list and selected diff MUST stack without hiding the
+selected path, status, or decision actions. Closing the queue MUST preserve all
+workspace changes. Progress is session-only and MUST reset when the user
+requests a refresh or Git status changes. Background revalidation with the same
+inventory MUST preserve the current session's decisions.
 Workspace navigation MUST use stable tabs for Recent, Files, Feeds, Tags, and
 Changes. Recent files MUST occupy their own panel rather than appearing inside
 Files. The tablist MUST support arrow-key navigation and expose the selected tab

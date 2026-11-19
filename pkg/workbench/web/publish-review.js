@@ -786,9 +786,11 @@
   // The Changes panel is intentionally separate from per-page Review. Git
   // status must be the inventory source, never just the set of opened files.
   let changesPanel = null, changesButton = null, changesList = null, changesHost = null;
-  let changesSnapshot = null;
-  let changesGeneration = 0, changesTimer = null;
-  const changesExpanded = new Set();
+  let changesReviewDialog = null, changesReviewQueue = null, changesReviewDetail = null;
+  let changesSnapshot = null, changesReviewPath = null;
+  let changesGeneration = 0, changesTimer = null, changesReviewGeneration = 0;
+  let changesFilter = 'all', changesReviewFilter = 'all';
+  const changesReviewed = new Set();
   function changesOpen() {
     return document.querySelector('#site-view')?.value === 'changes';
   }
@@ -838,9 +840,6 @@
     if (change.kind === 'added') return 'A';
     return 'M';
   }
-  function isPostChange(change) {
-    return change.workspace && change.markdown && change.kind !== 'deleted' && change.kind !== 'conflict';
-  }
   function setChangesCount(label, description) {
     const badge = changesButton.querySelector('.workspace-changes-count');
     badge.textContent = label;
@@ -848,167 +847,375 @@
     changesButton.setAttribute('aria-label', 'Changes' + (description ? ': ' + description : ''));
     changesButton.title = description ? 'Changes · ' + description : 'Changes';
   }
-  function showWorkspaceChanges(data) {
-    changesSnapshot = data;
+  function changeInventorySignature(data) {
+    return JSON.stringify({head:data.head,entries:data.entries});
+  }
+  function filteredChanges(entries, filter, query) {
+    const needle = String(query || '').trim().toLocaleLowerCase();
+    return entries.filter(change => {
+      if (filter === 'posts' && !change.markdown) return false;
+      if (filter === 'other' && change.markdown) return false;
+      return !needle || (change.path + ' ' + change.status + ' ' + changeLabel(change))
+        .toLocaleLowerCase().includes(needle);
+    }).sort((a, b) => Number(!a.markdown) - Number(!b.markdown) || a.path.localeCompare(b.path));
+  }
+  function changeStateText(change) {
+    const states = [];
+    if (change.staged) states.push('staged');
+    if (change.unstaged) states.push('unstaged');
+    if (change.untracked) states.push('untracked');
+    if (!change.workspace) states.push('outside this site');
+    if (!states.length) states.push('working copy');
+    return states.join(' · ');
+  }
+  function renderInventoryRows() {
+    if (!changesSnapshot) return;
+    const entries = filteredChanges(changesSnapshot.entries, changesFilter,
+      changesPanel.querySelector('#workspace-changes-search').value);
     changesList.replaceChildren();
-    setChangesCount(data.total ? String(data.total) : '', data.total ? data.total + ' with changes' : '');
-    const heading = changesPanel.querySelector('#workspace-changes-summary');
-    heading.textContent = data.total
-      ? data.total + (data.total === 1 ? ' file' : ' files') + ' with changes'
-      : 'Nothing to review';
-    if (!data.total) {
+    if (!entries.length) {
       const empty = document.createElement('p');
       empty.className = 'workspace-changes-empty';
-      empty.textContent = 'All caught up. No working-tree changes. Unpushed commits may still exist.';
+      empty.textContent = changesSnapshot.total
+        ? 'No files match this filter.'
+        : 'All caught up. No working-tree changes. Unpushed commits may still exist.';
       changesList.append(empty);
       return;
     }
-    const entries = [...data.entries].sort((a, b) => Number(isPostChange(b)) - Number(isPostChange(a)));
-    const postCount = entries.filter(isPostChange).length;
     let group = null;
     for (const change of entries) {
-      const key = isPostChange(change) ? 'posts' : 'other';
-      if (key !== group) {
-        group = key;
-        const groupHeading = document.createElement('div');
-        groupHeading.className = 'workspace-change-group';
-        groupHeading.setAttribute('role', 'presentation');
-        const count = key === 'posts' ? postCount : entries.length - postCount;
-        groupHeading.textContent = (key === 'posts' ? 'Posts in editor' : 'Other files') + ' · ' + count;
-        changesList.append(groupHeading);
+      const nextGroup = change.markdown ? 'posts' : 'other';
+      if (nextGroup !== group) {
+        group = nextGroup;
+        const heading = document.createElement('div');
+        heading.className = 'workspace-change-group';
+        heading.setAttribute('role', 'presentation');
+        heading.textContent = group === 'posts' ? 'Posts' : 'Other files';
+        changesList.append(heading);
       }
-      const row = document.createElement('div');
+      const row = document.createElement('button');
+      row.type = 'button';
       row.className = 'workspace-change';
       row.dataset.kind = change.untracked ? 'untracked' : change.kind || 'modified';
-      row.setAttribute('role', 'listitem');
+      row.setAttribute('aria-label', change.path + ', ' + changeLabel(change) + ', ' + changeStateText(change));
       const code = document.createElement('span');
       code.className = 'workspace-change-code';
       code.textContent = changeCode(change);
-      code.title = changeLabel(change);
       code.setAttribute('aria-hidden', 'true');
-      const description = document.createElement('div');
+      const description = document.createElement('span');
       description.className = 'workspace-change-description';
       const name = document.createElement('strong');
-      const slash = change.path.lastIndexOf('/');
-      if (slash >= 0) {
-        const dir = document.createElement('span');
-        dir.className = 'workspace-change-dir';
-        dir.textContent = change.path.slice(0, slash + 1);
-        name.append(dir);
-      }
-      name.append(document.createTextNode(change.path.slice(slash + 1)));
+      name.textContent = change.path;
       name.title = change.path;
-      const tags = document.createElement('div');
-      tags.className = 'workspace-change-tags';
-      const addTag = (text, warn) => {
-        const tag = document.createElement('span');
-        tag.textContent = text;
-        if (warn) tag.className = 'is-warning';
-        tags.append(tag);
-      };
-      addTag(changeLabel(change));
-      if (change.staged) addTag('staged');
-      if (change.unstaged) addTag('unstaged');
-      if (change.previous_path) addTag('from ' + change.previous_path);
-      if (!change.workspace) addTag('outside this site', true);
-      else if (!change.markdown) addTag('not Markdown');
-      description.append(name, tags);
-      row.append(code, description);
-      const diffable = Boolean(change.workspace && change.editor_path &&
-        change.kind !== 'deleted' && change.kind !== 'conflict');
-      const openable = diffable && change.markdown &&
-        Boolean(window.MarkataSiteTree?.files?.()?.some(file => file.path === change.editor_path));
-      const action = document.createElement('div');
-      action.className = 'workspace-change-action';
-      row.append(action);
-      if (diffable) {
-        const disclosure = document.createElement('button');
-        disclosure.type = 'button';
-        disclosure.className = 'workspace-change-icon-action';
-        disclosure.setAttribute('aria-label', 'View diff');
-        disclosure.title = 'View diff';
-        disclosure.innerHTML = '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 5h6v14H4zM14 5h6v14h-6zM10 9h4M10 15h4"/></svg>';
-        const inline = document.createElement('div');
-        inline.className = 'workspace-change-inline';
-        inline.hidden = true;
-        disclosure.setAttribute('aria-expanded', 'false');
-        disclosure.addEventListener('click', async () => {
-          const show = inline.hidden;
-          inline.hidden = !show;
-          disclosure.setAttribute('aria-expanded', String(show));
-          disclosure.setAttribute('aria-label', show ? 'Hide diff' : 'View diff');
-          disclosure.title = show ? 'Hide diff' : 'View diff';
-          if (!show) return;
-          inline.textContent = 'Loading comparison…';
-          disclosure.disabled = true;
-          try {
-            const response = await fetch('/workspace/publish/review?path=' +
-              encodeURIComponent(change.editor_path), {cache:'no-store'});
-            const comparison = await response.json();
-            if (!response.ok || typeof comparison.current !== 'string' ||
-                typeof comparison.baseline !== 'string')
-              throw new Error(comparison.error || 'Comparison unavailable.');
-            inline.replaceChildren();
-            const diff = document.createElement('div');
-            diff.className = 'workspace-change-diff';
-            diff.setAttribute('role', 'region');
-            diff.setAttribute('aria-label', 'Diff for ' + change.path);
-            const lines = diffLines(comparison.baseline, comparison.current);
-            for (const line of lines.slice(0,160)) {
-              const item = document.createElement('div');
-              item.className = 'publish-diff-line ' + line.type;
-              item.textContent = (line.type === 'add' ? '+' : line.type === 'del' ? '-' : ' ') + ' ' + line.text;
-              diff.append(item);
-            }
-            if (!lines.length) diff.textContent = 'No source differences from the last commit.';
-            if (lines.length > 160) {
-              const more = document.createElement('p');
-              more.textContent = 'Showing 160 of ' + lines.length + ' changed and context lines.';
-              diff.append(more);
-            }
-            inline.append(diff);
-          } catch (error) {
-            inline.textContent = 'Could not load diff: ' + error.message;
-          } finally {
-            disclosure.disabled = false;
-          }
-        });
-        if (openable) {
-          const open = document.createElement('button');
-          open.type = 'button';
-          open.className = 'workspace-change-icon-action';
-          open.setAttribute('aria-label', 'Open this post in the editor');
-          open.title = 'Open this post in the editor';
-          open.innerHTML = '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M13 5h6v6M19 5l-9 9"/><path d="M17 13v5a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h5"/></svg>';
-          open.addEventListener('click', () => {
-            window.MarkataSiteTree.openFile(change.editor_path);
-            changesVisible(false);
-          });
-          const review = document.createElement('button');
-          review.type = 'button';
-          review.className = 'workspace-change-icon-action';
-          review.setAttribute('aria-label', 'Review, commit, push or discard this post');
-          review.title = 'Review, commit, push or discard this post';
-          review.innerHTML = '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M8 5H5v15h14V5h-3M9 3h6v4H9z"/><path d="m8 13 2 2 5-5"/></svg>';
-          review.addEventListener('click', async () => {
-            changesVisible(false);
-            await window.MarkataSiteTree.openFile(change.editor_path);
-            window.MarkataPublishReview?.open();
-          });
-          action.prepend(open, review);
-        }
-        action.append(disclosure);
-        changesList.append(row, inline);
-      } else {
-        const hint = document.createElement('small');
-        hint.className = 'workspace-change-unavailable';
-        hint.textContent = change.kind === 'deleted' ? 'Deleted' : 'Resolve in terminal';
-        action.append(hint);
-        changesList.append(row);
+      const status = document.createElement('span');
+      status.className = 'workspace-change-state';
+      status.textContent = changeLabel(change) + ' · ' + changeStateText(change);
+      description.append(name, status);
+      const arrow = document.createElement('span');
+      arrow.className = 'workspace-change-open-mark';
+      arrow.setAttribute('aria-hidden', 'true');
+      arrow.textContent = '›';
+      row.append(code, description, arrow);
+      row.addEventListener('click', () => openChangesReview(change.path));
+      changesList.append(row);
+    }
+  }
+  function showWorkspaceChanges(data, force = false) {
+    const changed = !changesSnapshot || changeInventorySignature(data) !== changeInventorySignature(changesSnapshot);
+    changesSnapshot = data;
+    setChangesCount(data.total ? String(data.total) : '', data.total ? data.total + ' with changes' : '');
+    const heading = changesPanel.querySelector('#workspace-changes-summary');
+    heading.textContent = data.total
+      ? data.total + (data.total === 1 ? ' file' : ' files') + ' with changes · ' +
+        data.staged + ' staged · ' + data.unstaged + ' unstaged'
+      : 'Nothing to review';
+    changesPanel.querySelector('#workspace-changes-review-open').disabled = !data.total;
+    changesPanel.querySelector('#workspace-changes-review-open').textContent = 'Review queue';
+    changesPanel.querySelector('#workspace-changes-staged').textContent = data.staged;
+    changesPanel.querySelector('#workspace-changes-unstaged').textContent = data.unstaged;
+    changesPanel.querySelector('#workspace-changes-untracked').textContent = data.untracked;
+    renderInventoryRows();
+    if (changesReviewDialog?.open) {
+      renderChangesReviewQueue();
+      if (changesReviewPath && (changed || force)) selectWorkspaceChange(changesReviewPath);
+    }
+  }
+  function changesReviewEntries() {
+    if (!changesSnapshot) return [];
+    return filteredChanges(changesSnapshot.entries, changesReviewFilter,
+      changesReviewDialog.querySelector('#workspace-review-search').value);
+  }
+  function renderChangesReviewQueue() {
+    if (!changesReviewQueue || !changesSnapshot) return;
+    const entries = changesReviewEntries();
+    if (!entries.some(change => change.path === changesReviewPath))
+      changesReviewPath = entries[0]?.path || null;
+    changesReviewQueue.replaceChildren();
+    if (!entries.length) {
+      const empty = document.createElement('p');
+      empty.className = 'workspace-review-queue-empty';
+      empty.textContent = changesSnapshot.total ? 'No files match this filter.' : 'No working-tree changes.';
+      changesReviewQueue.append(empty);
+    }
+    let group = null;
+    for (const change of entries) {
+      const nextGroup = change.markdown ? 'posts' : 'other';
+      if (nextGroup !== group) {
+        group = nextGroup;
+        const heading = document.createElement('div');
+        heading.className = 'workspace-review-group';
+        heading.textContent = group === 'posts' ? 'Posts' : 'Other files';
+        changesReviewQueue.append(heading);
+      }
+      const row = document.createElement('button');
+      row.type = 'button';
+      row.className = 'workspace-review-item';
+      row.dataset.kind = change.untracked ? 'untracked' : change.kind || 'modified';
+      row.dataset.path = change.path;
+      row.setAttribute('aria-current', String(change.path === changesReviewPath));
+      row.setAttribute('aria-label', change.path + ', ' + changeLabel(change) + ', ' + changeStateText(change));
+      const mark = document.createElement('span');
+      mark.className = 'workspace-review-item-mark';
+      mark.textContent = changeCode(change);
+      mark.setAttribute('aria-hidden', 'true');
+      const copy = document.createElement('span');
+      copy.className = 'workspace-review-item-copy';
+      const path = document.createElement('strong');
+      path.textContent = change.path;
+      path.title = change.path;
+      const stateText = document.createElement('small');
+      stateText.textContent = changeLabel(change) + ' · ' + changeStateText(change);
+      copy.append(path, stateText);
+      const flag = document.createElement('span');
+      flag.className = changesReviewed.has(change.path) ? 'workspace-review-kept' : 'workspace-review-pending';
+      flag.textContent = changesReviewed.has(change.path) ? 'Kept' : 'Review';
+      row.append(mark, copy, flag);
+      row.addEventListener('click', () => selectWorkspaceChange(change.path));
+      changesReviewQueue.append(row);
+    }
+    const position = entries.findIndex(change => change.path === changesReviewPath);
+    changesReviewDialog.querySelector('#workspace-review-position').textContent =
+      position < 0 ? '0 / ' + entries.length : (position + 1) + ' / ' + entries.length;
+    changesReviewDialog.querySelector('#workspace-review-progress').textContent =
+      changesReviewed.size + ' kept · ' + Math.max(0, changesSnapshot.total - changesReviewed.size) + ' to review';
+    const active = changesReviewQueue.querySelector('[aria-current="true"]');
+    active?.scrollIntoView({block:'nearest'});
+  }
+  function resetUnavailableReason(change) {
+    if (!change.workspace) return 'This file is outside the selected site.';
+    if (change.staged) return 'Reset is unavailable while this file has staged changes.';
+    if (change.kind === 'deleted') return 'Deleted files cannot be restored from this review queue.';
+    if (change.kind === 'conflict') return 'Resolve this Git conflict before resetting the file.';
+    if (!change.markdown) return 'Reset is available from the workbench for Markdown posts only.';
+    if (!isOpenableWorkspacePost(change))
+      return 'This Markdown file is not available in the editor workspace.';
+    return '';
+  }
+  function isOpenableWorkspacePost(change) {
+    return Boolean(change.workspace && change.markdown && change.editor_path &&
+      !['deleted', 'conflict'].includes(change.kind) &&
+      window.MarkataSiteTree?.files?.()?.some(file => file.path === change.editor_path));
+  }
+  async function renderWorkspaceChangeDiff(change, data, generation) {
+    const detail = changesReviewDetail;
+    const diff = detail.querySelector('#workspace-review-diff');
+    diff.replaceChildren();
+    const lines = diffLines(data.baseline, data.current);
+    detail.querySelector('#workspace-review-diff-count').textContent = lines.length ? 'Source changes' : 'No source differences';
+    if (!lines.length) {
+      const empty = document.createElement('p');
+      empty.className = 'workspace-review-diff-empty';
+      empty.textContent = 'The saved file matches the last committed version.';
+      diff.append(empty);
+    }
+    for (const line of lines) {
+      const row = document.createElement('div');
+      row.className = 'workspace-review-diff-line ' + line.type;
+      const prefix = document.createElement('span');
+      prefix.className = 'workspace-review-diff-prefix';
+      prefix.textContent = line.type === 'add' ? '+' : line.type === 'del' ? '−' : ' ';
+      const content = document.createElement('span');
+      content.textContent = line.text || ' ';
+      row.append(prefix, content);
+      diff.append(row);
+    }
+    detail.querySelector('#workspace-review-baseline').textContent = data.baseline_exists
+      ? 'Last commit · ' + data.head.slice(0, 8)
+      : 'No committed baseline · new file';
+    detail.querySelector('#workspace-review-working').textContent = 'Saved workspace version';
+    detail.querySelector('#workspace-review-meta').textContent = change.previous_path
+      ? 'Renamed from ' + change.previous_path + ' · ' + changeStateText(change)
+      : changeStateText(change);
+    detail.querySelector('#workspace-review-unavailable').hidden = true;
+    detail.querySelector('#workspace-review-diff-wrap').hidden = false;
+    try {
+      await loadPierre();
+      if (generation !== changesReviewGeneration || !changesReviewDialog?.open) return;
+      await window.MarkataPierreDiff.render(diff, data.baseline, data.current, {
+        filename: change.path, newFile: !data.baseline_exists, layout: 'unified'
+      });
+      if (generation !== changesReviewGeneration || !changesReviewDialog?.open)
+        window.MarkataPierreDiff.release(diff);
+    } catch {
+      if (generation !== changesReviewGeneration || !changesReviewDialog?.open) return;
+      window.MarkataPierreDiff?.release?.(diff);
+      diff.replaceChildren();
+      for (const line of lines) {
+        const row = document.createElement('div');
+        row.className = 'workspace-review-diff-line ' + line.type;
+        const prefix = document.createElement('span');
+        prefix.className = 'workspace-review-diff-prefix';
+        prefix.textContent = line.type === 'add' ? '+' : line.type === 'del' ? '−' : ' ';
+        const content = document.createElement('span');
+        content.textContent = line.text || ' ';
+        row.append(prefix, content);
+        diff.append(row);
       }
     }
   }
-  async function refreshWorkspaceChanges() {
+  function showWorkspaceChangeUnavailable(message) {
+    const detail = changesReviewDetail;
+    changesReviewGeneration++;
+    window.MarkataPierreDiff?.release?.(detail.querySelector('#workspace-review-diff'));
+    const load = detail.querySelector('#workspace-review-load');
+    if (load) load.hidden = true;
+    detail.querySelector('#workspace-review-diff-wrap').hidden = true;
+    const unavailable = detail.querySelector('#workspace-review-unavailable');
+    unavailable.textContent = message;
+    unavailable.hidden = false;
+    detail.querySelector('#workspace-review-diff-count').textContent = '';
+    detail.querySelector('#workspace-review-baseline').textContent = 'Baseline unavailable';
+    detail.querySelector('#workspace-review-working').textContent = '';
+  }
+  async function selectWorkspaceChange(path) {
+    if (!changesReviewDialog?.open) return;
+    const change = changesSnapshot?.entries.find(entry => entry.path === path);
+    if (!change) return;
+    window.MarkataPierreDiff?.release?.(changesReviewDetail.querySelector('#workspace-review-diff'));
+    changesReviewPath = path;
+    const generation = ++changesReviewGeneration;
+    renderChangesReviewQueue();
+    changesReviewDetail.innerHTML =
+      '<header class="workspace-review-detail-head"><div><small id="workspace-review-kind"></small><h3 id="workspace-review-path"></h3><p id="workspace-review-meta"></p></div></header>' +
+      '<div class="workspace-review-baselines"><span id="workspace-review-baseline">Loading baseline…</span><span id="workspace-review-working"></span><span id="workspace-review-diff-count"></span></div>' +
+      '<p class="workspace-review-load" id="workspace-review-load" role="status">Loading saved source comparison…</p>' +
+      '<div class="workspace-review-diff-wrap" id="workspace-review-diff-wrap" hidden><div class="workspace-review-diff" id="workspace-review-diff" role="region" tabindex="0" aria-label="Source diff"></div></div>' +
+      '<p class="workspace-review-unavailable" id="workspace-review-unavailable" role="status" hidden></p>' +
+      '<footer class="workspace-review-actions"><div><strong>Keep leaves this saved file unchanged.</strong><span id="workspace-review-reset-note">Reset opens the full post review and still asks you to confirm.</span></div><button type="button" id="workspace-review-keep">Keep in workspace</button><button type="button" id="workspace-review-open-file">Open in editor</button><button type="button" id="workspace-review-reset">Review and reset…</button></footer>';
+    const detail = changesReviewDetail;
+    detail.querySelector('#workspace-review-kind').textContent = changeLabel(change) + ' · ' + change.status;
+    detail.querySelector('#workspace-review-path').textContent = change.path;
+    detail.querySelector('#workspace-review-meta').textContent = change.previous_path
+      ? 'Renamed from ' + change.previous_path + ' · ' + changeStateText(change)
+      : changeStateText(change);
+    const keep = detail.querySelector('#workspace-review-keep');
+    keep.disabled = changesReviewed.has(change.path);
+    keep.textContent = changesReviewed.has(change.path) ? 'Kept for this review' : 'Keep in workspace';
+    keep.addEventListener('click', () => {
+      changesReviewed.add(change.path);
+      renderChangesReviewQueue();
+      keep.disabled = true;
+      keep.textContent = 'Kept for this review';
+      const next = changesReviewEntries().find(entry => !changesReviewed.has(entry.path));
+      if (next) {
+        selectWorkspaceChange(next.path);
+        changesReviewQueue.querySelector('[aria-current="true"]')?.focus();
+      }
+    });
+    const reset = detail.querySelector('#workspace-review-reset');
+    const openFile = detail.querySelector('#workspace-review-open-file');
+    const resetReason = resetUnavailableReason(change);
+    reset.disabled = Boolean(resetReason);
+    detail.querySelector('#workspace-review-reset-note').textContent = resetReason || 'Reset opens the full post review and still asks you to confirm.';
+    reset.title = resetReason || 'Open the saved Markdown post and review its reset safeguards.';
+    openFile.disabled = !isOpenableWorkspacePost(change);
+    openFile.title = openFile.disabled ? resetReason || 'This file cannot be opened in the editor.' : 'Open this Markdown post in the editor.';
+    openFile.addEventListener('click', async () => {
+      if (openFile.disabled) return;
+      openFile.disabled = true;
+      try {
+        await window.MarkataSiteTree.openFile(change.editor_path);
+        if (window.MarkataSiteTree.activeFile?.() !== change.editor_path)
+          throw new Error('The selected file is not available in the editor workspace.');
+        changesReviewDialog.close();
+        changesVisible(false);
+      } catch (error) {
+        openFile.disabled = false;
+        showWorkspaceChangeUnavailable('Could not open this file: ' + error.message);
+      }
+    });
+    reset.addEventListener('click', async () => {
+      if (reset.disabled || !window.MarkataSiteTree?.openFile || !window.MarkataPublishReview?.open) return;
+      reset.disabled = true;
+      reset.textContent = 'Opening review…';
+      try {
+        await window.MarkataSiteTree.openFile(change.editor_path);
+        if (window.MarkataSiteTree.activeFile?.() !== change.editor_path)
+          throw new Error('The selected file is not available in the editor workspace.');
+        changesReviewDialog.close();
+        await window.MarkataPublishReview.open();
+      } catch (error) {
+        reset.disabled = false;
+        reset.textContent = 'Review and reset…';
+        showWorkspaceChangeUnavailable('Could not open the post review: ' + error.message);
+      }
+    });
+    if (resetReason) reset.title = resetReason;
+    if (!change.workspace) {
+      showWorkspaceChangeUnavailable('This change is outside the selected site. Its path and Git status are listed here, but source content is not opened from this workspace.');
+      return;
+    }
+    if (change.kind === 'deleted') {
+      showWorkspaceChangeUnavailable('This file was deleted from the working tree. The inventory shows its Git status, but there is no saved working copy to compare here.');
+      return;
+    }
+    if (change.kind === 'conflict') {
+      showWorkspaceChangeUnavailable('This file has an unresolved Git conflict. Resolve the conflict before reviewing or resetting its source.');
+      return;
+    }
+    if (!change.editor_path) {
+      showWorkspaceChangeUnavailable('The current file path is not available in this workspace.');
+      return;
+    }
+    try {
+      const response = await fetch('/workspace/publish/review?path=' + encodeURIComponent(change.editor_path), {cache:'no-store'});
+      const data = await response.json();
+      if (generation !== changesReviewGeneration || changesReviewPath !== path) return;
+      if (!response.ok || typeof data.current !== 'string' || typeof data.baseline !== 'string')
+        throw new Error(data.error || 'Comparison unavailable.');
+      detail.querySelector('#workspace-review-load').hidden = true;
+      await renderWorkspaceChangeDiff(change, data, generation);
+    } catch (error) {
+      if (generation !== changesReviewGeneration || changesReviewPath !== path) return;
+      detail.querySelector('#workspace-review-load').hidden = true;
+      reset.disabled = true;
+      reset.title = 'Reset is unavailable because this file could not be compared safely.';
+      detail.querySelector('#workspace-review-reset-note').textContent = 'Reset is unavailable because the saved source could not be compared safely.';
+      showWorkspaceChangeUnavailable('Could not compare this file: ' + error.message);
+    }
+  }
+  async function openChangesReview(path) {
+    if (!changesSnapshot) {
+      await refreshWorkspaceChanges();
+      if (!changesSnapshot) return;
+    }
+    changesReviewed.clear();
+    changesReviewFilter = 'all';
+    changesReviewDialog.querySelector('#workspace-review-search').value = '';
+    for (const button of changesReviewDialog.querySelectorAll('[data-review-filter]')) {
+      const selected = button.dataset.reviewFilter === 'all';
+      button.setAttribute('aria-pressed', String(selected));
+    }
+    changesReviewPath = path || changesSnapshot.entries[0]?.path || null;
+    renderChangesReviewQueue();
+    changesReviewDialog.showModal();
+    if (changesReviewPath) {
+      selectWorkspaceChange(changesReviewPath);
+      changesReviewQueue.querySelector('[aria-current="true"]')?.focus();
+    }
+    else showWorkspaceChangeUnavailable('There are no workspace changes to review. Unpushed commits may still exist.');
+  }
+  async function refreshWorkspaceChanges(force = false) {
     if (!changesPanel) return;
     const generation = ++changesGeneration;
     const summary = changesPanel.querySelector('#workspace-changes-summary');
@@ -1018,17 +1225,25 @@
       const data = await response.json();
       if (generation !== changesGeneration) return;
       if (!response.ok || !Array.isArray(data.entries)) throw new Error(data.error || 'Change inventory unavailable');
+      const changed = !changesSnapshot || changeInventorySignature(data) !== changeInventorySignature(changesSnapshot);
+      if (changed || force) changesReviewed.clear();
       if (changesOpen()) {
-        showWorkspaceChanges(data);
+        showWorkspaceChanges(data, force);
       } else {
         changesSnapshot = data;
         setChangesCount(data.total ? String(data.total) : '', data.total ? data.total + ' with changes' : '');
+        if (changesReviewDialog?.open) {
+          renderChangesReviewQueue();
+          if (changesReviewPath && (changed || force)) selectWorkspaceChange(changesReviewPath);
+        }
       }
     } catch (error) {
       if (generation !== changesGeneration) return;
       if (changesOpen()) summary.textContent = 'Cannot list all changes: ' + error.message;
       setChangesCount('!', 'cannot list changes');
       if (changesOpen()) changesList.replaceChildren();
+      if (changesReviewDialog?.open)
+        changesReviewDialog.querySelector('#workspace-review-progress').textContent = 'Refresh failed · ' + error.message;
     }
   }
   function attachWorkspaceChanges() {
@@ -1041,23 +1256,102 @@
     changesPanel.hidden = true;
     changesPanel.setAttribute('aria-label', 'Workspace changes');
     changesPanel.innerHTML =
-      '<header><h2>Changes</h2><button type="button" id="workspace-changes-refresh">Refresh</button>' +
-      '<button type="button" id="workspace-changes-close" aria-label="Close changes panel" title="Close">×</button></header>' +
-      '<div class="workspace-changes-intro">' +
-      '<p id="workspace-changes-summary" role="status">Checking all Git changes…</p>' +
-      '<p class="workspace-changes-help">Review posts before committing or pushing. ' +
-      'Saving a draft does not publish it.</p></div>' +
-      '<div id="workspace-changes-list" role="list"></div>';
+      '<header class="workspace-changes-header"><div class="workspace-changes-heading"><small>WORKTREE</small><h2>Changes</h2></div>' +
+      '<div class="workspace-changes-tools"><button type="button" id="workspace-changes-review-open">Review changes</button>' +
+      '<button type="button" id="workspace-changes-refresh" aria-label="Refresh changes" title="Refresh changes">↻</button>' +
+      '<button type="button" id="workspace-changes-close" aria-label="Close changes panel" title="Close">×</button></div></header>' +
+      '<div class="workspace-changes-intro"><p id="workspace-changes-summary" role="status">Checking all Git changes…</p>' +
+      '<p class="workspace-changes-help">Review saved files against the last commit. Keeping leaves them in the worktree.</p>' +
+      '<div class="workspace-changes-stats" aria-label="Change status counts">' +
+      '<div><strong id="workspace-changes-staged">0</strong><span>Staged</span></div>' +
+      '<div><strong id="workspace-changes-unstaged">0</strong><span>Unstaged</span></div>' +
+      '<div><strong id="workspace-changes-untracked">0</strong><span>Untracked</span></div></div>' +
+      '<label class="workspace-changes-search"><span>Find a file</span><input id="workspace-changes-search" type="search" placeholder="Filter by path" autocomplete="off"></label>' +
+      '<div class="workspace-changes-filters" role="group" aria-label="Filter change list">' +
+      '<button type="button" data-inventory-filter="all" aria-pressed="true">All</button>' +
+      '<button type="button" data-inventory-filter="posts" aria-pressed="false">Posts</button>' +
+      '<button type="button" data-inventory-filter="other" aria-pressed="false">Other</button></div></div>' +
+      '<div id="workspace-changes-list" role="group" aria-label="Changed files"></div>';
     changesHost.append(changesPanel);
     changesList = changesPanel.querySelector('#workspace-changes-list');
     document.querySelector('#site-view').addEventListener('change', syncChangesView);
+    changesPanel.querySelector('#workspace-changes-review-open')
+      .addEventListener('click', () => openChangesReview());
     changesPanel.querySelector('#workspace-changes-refresh')
-      .addEventListener('click', refreshWorkspaceChanges);
+      .addEventListener('click', () => refreshWorkspaceChanges(true));
     changesPanel.querySelector('#workspace-changes-close')
       .addEventListener('click', () => changesVisible(false));
-    window.addEventListener('focus', refreshWorkspaceChanges);
-    window.addEventListener('markata-workspace-file-saved', () => {
+    changesPanel.querySelector('#workspace-changes-search').addEventListener('input', renderInventoryRows);
+    changesPanel.querySelectorAll('[data-inventory-filter]').forEach(button => button.addEventListener('click', () => {
+      changesFilter = button.dataset.inventoryFilter;
+      changesPanel.querySelectorAll('[data-inventory-filter]').forEach(other =>
+        other.setAttribute('aria-pressed', String(other === button)));
+      renderInventoryRows();
+    }));
+    changesReviewDialog = document.createElement('dialog');
+    changesReviewDialog.id = 'workspace-changes-review';
+    changesReviewDialog.setAttribute('aria-labelledby', 'workspace-review-title');
+    changesReviewDialog.innerHTML =
+      '<header class="workspace-review-header"><div><small>WORKSPACE REVIEW</small><h2 id="workspace-review-title">Review changes</h2>' +
+      '<p>Compare saved files with the last committed version. This review does not publish anything.</p></div>' +
+      '<div class="workspace-review-header-tools"><span id="workspace-review-position">0 / 0</span><span id="workspace-review-progress">0 kept · 0 to review</span>' +
+      '<button type="button" id="workspace-review-refresh" title="Refresh inventory">Refresh</button>' +
+      '<button type="button" id="workspace-review-close" aria-label="Close review">×</button></div></header>' +
+      '<div class="workspace-review-layout"><aside class="workspace-review-sidebar" aria-label="Changed files">' +
+      '<label class="workspace-review-search"><span>Find a file</span><input id="workspace-review-search" type="search" placeholder="Filter by path" autocomplete="off"></label>' +
+      '<div class="workspace-review-filters" role="group" aria-label="Filter review queue">' +
+      '<button type="button" data-review-filter="all" aria-pressed="true">All</button>' +
+      '<button type="button" data-review-filter="posts" aria-pressed="false">Posts</button>' +
+      '<button type="button" data-review-filter="other" aria-pressed="false">Other</button></div>' +
+      '<div id="workspace-review-queue" role="group" aria-label="Changes to review"></div></aside>' +
+      '<section class="workspace-review-detail" aria-label="Selected change">' +
+      '<header class="workspace-review-detail-head"><div><small>SELECT A FILE</small><h3>Review workspace changes</h3><p>Choose a file to compare it with the last commit.</p></div></header>' +
+      '<div class="workspace-review-baselines"><span id="workspace-review-baseline">Last committed version</span><span id="workspace-review-working">Saved workspace version</span><span id="workspace-review-diff-count"></span></div>' +
+      '<div class="workspace-review-diff-wrap" id="workspace-review-diff-wrap" hidden><div class="workspace-review-diff" id="workspace-review-diff" role="region" tabindex="0" aria-label="Source diff"></div></div>' +
+      '<p class="workspace-review-unavailable" id="workspace-review-unavailable" role="status">No file selected.</p>' +
+      '<footer class="workspace-review-actions"><div><strong>Keep leaves this saved file unchanged.</strong><span>Reset opens the full post review and still asks you to confirm.</span></div>' +
+      '<button type="button" id="workspace-review-keep" disabled>Keep in workspace</button>' +
+      '<button type="button" id="workspace-review-reset" disabled>Review and reset…</button></footer></section></div>';
+    document.body.append(changesReviewDialog);
+    changesReviewQueue = changesReviewDialog.querySelector('#workspace-review-queue');
+    changesReviewDetail = changesReviewDialog.querySelector('.workspace-review-detail');
+    changesReviewDialog.querySelector('#workspace-review-close').addEventListener('click', () => changesReviewDialog.close());
+    changesReviewDialog.querySelector('#workspace-review-refresh').addEventListener('click', () => refreshWorkspaceChanges(true));
+    changesReviewDialog.querySelector('#workspace-review-search').addEventListener('input', () => {
+      changesReviewPath = null;
+      renderChangesReviewQueue();
+      if (changesReviewPath) selectWorkspaceChange(changesReviewPath);
+      else showWorkspaceChangeUnavailable('No files match this filter.');
+    });
+    changesReviewDialog.querySelectorAll('[data-review-filter]').forEach(button => button.addEventListener('click', () => {
+      changesReviewFilter = button.dataset.reviewFilter;
+      changesReviewDialog.querySelectorAll('[data-review-filter]').forEach(other =>
+        other.setAttribute('aria-pressed', String(other === button)));
+      changesReviewPath = null;
+      renderChangesReviewQueue();
+      if (changesReviewPath) selectWorkspaceChange(changesReviewPath);
+      else showWorkspaceChangeUnavailable('No files match this filter.');
+    }));
+    changesReviewQueue.addEventListener('keydown', event => {
+      if (!['ArrowUp', 'ArrowDown'].includes(event.key)) return;
+      const rows = [...changesReviewQueue.querySelectorAll('.workspace-review-item')];
+      const index = rows.indexOf(event.target.closest('.workspace-review-item'));
+      if (index < 0) return;
+      event.preventDefault();
+      const next = rows[Math.max(0, Math.min(rows.length - 1, index + (event.key === 'ArrowDown' ? 1 : -1)))];
+      next.focus();
+      selectWorkspaceChange(next.dataset.path);
+    });
+    changesReviewDialog.addEventListener('close', () => {
+      changesReviewGeneration++;
+      changesReviewPath = null;
+      changesReviewed.clear();
+      window.MarkataPierreDiff?.release?.(changesReviewDetail.querySelector('#workspace-review-diff'));
       refreshWorkspaceChanges();
+    });
+    window.addEventListener('focus', () => refreshWorkspaceChanges(true));
+    window.addEventListener('markata-workspace-file-saved', () => {
+      refreshWorkspaceChanges(true);
     });
     let persisted = false;
     try { persisted = localStorage.getItem('markata-workspace-changes-open') === 'true'; }
@@ -1124,7 +1418,8 @@
     document.querySelector('#saved')?.insertAdjacentElement('afterend',publishStatus);
     attachWorkspaceChanges();
     const changesHeader=changesPanel?.querySelector('header');
-    if(changesHeader)changesHeader.insertBefore(reviewButton,changesHeader.querySelector('#workspace-changes-refresh'));
+    const changesTools=changesPanel?.querySelector('.workspace-changes-tools');
+    if(changesTools)changesTools.insertBefore(reviewButton,changesTools.querySelector('#workspace-changes-refresh'));
     else button.insertAdjacentElement('afterend',reviewButton);
     editor.on('change',updatePublishButton);
     const fileLabel = document.querySelector('#active-file');
