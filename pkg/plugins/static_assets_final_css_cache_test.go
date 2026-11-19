@@ -244,3 +244,87 @@ func TestFinalCSSLinkCacheEmptyVerificationReplacesOldCache(t *testing.T) {
 		t.Fatalf("empty verification should replace the old cache: %+v", got)
 	}
 }
+
+func TestFinalCSSLinkCacheOutputPromotionInvalidates(t *testing.T) {
+	if !fileidentity.Available {
+		t.Skip("filesystem identity caching is Linux-only")
+	}
+	base := t.TempDir()
+	contentDir := filepath.Join(base, "content")
+	output := filepath.Join(base, "published")
+	replacement := filepath.Join(base, "replacement")
+	if err := os.MkdirAll(contentDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(output, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	changes := []finalCSSReplacement{{
+		matcher:     regexp.MustCompile(`^css/theme\.[0-9a-f]{8}\.css$`),
+		destination: "css/theme.cafebabe.css",
+	}}
+	const current = `<link rel="stylesheet" href="/css/theme.cafebabe.css">`
+	const stale = `<link rel="stylesheet" href="/css/theme.deadbeef.css">`
+	root, err := os.OpenRoot(output)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer root.Close()
+	if err := root.WriteFile("index.html", []byte(current), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	oldInfo, err := root.Stat("index.html")
+	if err != nil {
+		t.Fatal(err)
+	}
+	first, err := rewriteOutputCSSLinks(root, output, changes, finalCSSLinkCache{}, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(first.verified) != 1 {
+		t.Skip("the filesystem cannot provide a reusable file identity")
+	}
+
+	// Promote a new output tree at the same path. A size- and mtime-matched
+	// HTML file must still miss the saved cache because its inode changed.
+	if err := os.MkdirAll(replacement, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	replacedFile := filepath.Join(replacement, "index.html")
+	if err := os.WriteFile(replacedFile, []byte(stale), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chtimes(replacedFile, oldInfo.ModTime(), oldInfo.ModTime()); err != nil {
+		t.Fatal(err)
+	}
+	rules := finalCSSLinkRules(changes)
+	clock := time.Now().Add(time.Hour)
+	cachePath := finalCSSLinkCachePath(contentDir, output)
+	if cachePath == "" {
+		t.Fatal("expected a cache path outside published output")
+	}
+	saveFinalCSSLinkCache(cachePath, finalCSSLinkCache{Rules: rules, Observed: clock, Files: first.verified})
+	if err := os.Rename(output, filepath.Join(base, "previous-release")); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Rename(replacement, output); err != nil {
+		t.Fatal(err)
+	}
+	if nextPath := finalCSSLinkCachePath(contentDir, output); nextPath != cachePath {
+		t.Fatalf("cache path changed after output promotion: %q != %q", nextPath, cachePath)
+	}
+	newRoot, err := os.OpenRoot(output)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer newRoot.Close()
+	previous := loadFinalCSSLinkCache(cachePath, rules, clock)
+	second, err := rewriteOutputCSSLinks(newRoot, output, changes, previous, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if second.reused != 0 || second.checked != 1 || len(second.updatedHTMLHashes) != 1 {
+		t.Fatalf("promoted HTML must be rechecked and rewritten: %+v", second)
+	}
+	assertFinalCSSLink(t, newRoot, "index.html", current)
+}
