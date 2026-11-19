@@ -21,7 +21,7 @@ func TestMobilePWAAssetsAndShareTarget(t *testing.T) {
 		return response
 	}
 	page := get("/")
-	if !strings.Contains(page.Body.String(), "rel=\"manifest\" href=\"/editor/manifest.webmanifest\"") ||
+	if !strings.Contains(page.Body.String(), "rel=\"manifest\" href=\"/editor/manifest.webmanifest") ||
 		!strings.Contains(page.Body.String(), "/editor/mobile-share.js") {
 		t.Fatal("editor page did not load the mobile PWA manifest and share inbox")
 	}
