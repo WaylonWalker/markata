@@ -2,6 +2,7 @@ package workbench
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -14,7 +15,7 @@ func TestMobilePWAAssetsAndShareTarget(t *testing.T) {
 	get := func(path string) *httptest.ResponseRecorder {
 		t.Helper()
 		response := httptest.NewRecorder()
-		h.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "http://localhost"+path, http.NoBody))
+		h.ServeHTTP(response, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost"+path, http.NoBody))
 		if response.Code != http.StatusOK {
 			t.Fatalf("GET %s: %d %s", path, response.Code, response.Body.String())
 		}
@@ -55,7 +56,7 @@ func TestMobilePWAAssetsAndShareTarget(t *testing.T) {
 	// Only the installed service worker should handle OS shares.
 	// Never expose a public server-side POST route bypassing workspace ACL.
 	post := httptest.NewRecorder()
-	h.ServeHTTP(post, httptest.NewRequest(http.MethodPost, "http://localhost/share-target", strings.NewReader("untrusted")))
+	h.ServeHTTP(post, httptest.NewRequestWithContext(context.Background(), http.MethodPost, "http://localhost/share-target", strings.NewReader("untrusted")))
 	if post.Code != http.StatusMethodNotAllowed {
 		t.Fatalf("unhandled public share POST = %d, want 405", post.Code)
 	}
