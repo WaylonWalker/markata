@@ -61,9 +61,13 @@ A usable Open Graph title (`og:title`) becomes the title automatically.
 Empty, URL-only, and hostname-only titles do not qualify.
 Other suggestions require your confirmation: Twitter metadata, the HTML title, the main heading, the decoded URL slug, then the hostname.
 When Markata generates the filename from the title, it sets the post slug to
-`link/<title-slug>`, so the URL starts with `/link/`. The filename stays
-`<title-slug>.md` in the selected directory. In the web workbench, the preview
-shows this URL slug; a filename you enter yourself is left unchanged.
+`link/<filename-slug>`, so the URL starts with `/link/`. The Markdown file uses
+the unprefixed filename slug in the selected directory. In the web workbench,
+the preview shows this URL slug. A filename you enter yourself is left unchanged.
+When the source URL has a stable post ID, such as an X status ID, Markata adds
+that ID to the generated filename and URL slug. For example, a title slug of
+`typecraft-typecraft-dev-on-x` from a `/status/2123191397247578186` URL becomes
+`typecraft-typecraft-dev-on-x-2123191397247578186`.
 
 For YouTube videos, Markata first fetches the title and thumbnail from YouTube's official oEmbed endpoint.
 This avoids a large watch-page download.

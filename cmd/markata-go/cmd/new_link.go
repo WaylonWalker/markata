@@ -251,14 +251,51 @@ func applyNewLinkMetadata(template ContentTemplate, rawURL string, metadata newL
 }
 
 func newLinkSlug(title, rawURL string) string {
-	if slug := generateSlug(title); slug != "" {
-		return slug
+	if slug := generateNewLinkSlug(title); slug != "" {
+		return appendNewLinkURLIdentifier(slug, rawURL)
 	}
-	if slug := generateSlug(newLinkFallbackTitle(rawURL)); slug != "" {
-		return slug
+	if slug := generateNewLinkSlug(newLinkFallbackTitle(rawURL)); slug != "" {
+		return appendNewLinkURLIdentifier(slug, rawURL)
 	}
 	hash := sha256.Sum256([]byte(rawURL))
 	return fmt.Sprintf("link-%x", hash[:6])
+}
+
+func generateNewLinkSlug(title string) string {
+	// Match the workbench slugger, which treats underscores as separators.
+	return generateSlug(strings.ReplaceAll(title, "_", "-"))
+}
+
+func appendNewLinkURLIdentifier(slug, rawURL string) string {
+	if identifier := newLinkURLIdentifier(rawURL); identifier != "" && !strings.HasSuffix(slug, "-"+identifier) {
+		return slug + "-" + identifier
+	}
+	return slug
+}
+
+// newLinkURLIdentifier returns a stable post ID from common social URL paths.
+// It keeps title-derived Link slugs distinct when a provider reuses similar titles.
+func newLinkURLIdentifier(rawURL string) string {
+	parsed, err := url.Parse(strings.TrimSpace(rawURL))
+	if err != nil {
+		return ""
+	}
+
+	segments := strings.Split(strings.Trim(parsed.Path, "/"), "/")
+	for index := 0; index+1 < len(segments); index++ {
+		switch strings.ToLower(segments[index]) {
+		case "status", "statuses", tmplPost, listSortPosts, "p", "reel", "reels", "comment", "comments":
+			identifier := segments[index+1]
+			if len(identifier) < 6 || !strings.ContainsAny(identifier, "0123456789") {
+				continue
+			}
+			if slug := generateSlug(identifier); len(slug) >= 6 {
+				return slug
+			}
+		}
+	}
+
+	return ""
 }
 
 func promptNewLinkTitle(reader *bufio.Reader, suggestion string) (string, error) {

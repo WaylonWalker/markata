@@ -370,3 +370,39 @@ func TestWriteContentFile_LinkNumberedFilenameDoesNotGenerateSlug(t *testing.T) 
 		t.Fatalf("numbered Link starter unexpectedly generated a URL slug: %#v", fm)
 	}
 }
+
+func TestNewLinkSlug_IncludesStableSourceIdentifier(t *testing.T) {
+	tests := []struct {
+		name  string
+		title string
+		url   string
+		want  string
+	}{
+		{
+			name:  "X status",
+			title: "typecraft (@typecraft_dev) on X",
+			url:   "https://x.com/typecraft_dev/status/2123191397247578186",
+			want:  "typecraft-typecraft-dev-on-x-2123191397247578186",
+		},
+		{
+			name:  "Threads post",
+			title: "A Post",
+			url:   "https://threads.net/@person/post/123456789",
+			want:  "a-post-123456789",
+		},
+		{
+			name:  "ordinary article URL",
+			title: "Same Title",
+			url:   "https://example.com/article",
+			want:  "same-title",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := newLinkSlug(tt.title, tt.url); got != tt.want {
+				t.Errorf("newLinkSlug(%q, %q) = %q, want %q", tt.title, tt.url, got, tt.want)
+			}
+		})
+	}
+}

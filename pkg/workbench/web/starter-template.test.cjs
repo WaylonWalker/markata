@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { render, generatedLinkSlug, setFrontmatterValue } = require("./starter-template.js");
+const { render, generatedLinkSlug, setFrontmatterValue, suggestLinkSlug } = require("./starter-template.js");
 
 test("starter title substitutions remain valid quoted YAML scalars", () => {
   const source = [
@@ -87,6 +87,20 @@ test("manual and numbered Link filenames do not get generated URL slugs", () => 
   const source = '---\ntitle: "{{title}}"\n---\n';
   assert.equal(generatedLinkSlug(source, "Link", "title", "chosen-name", "my-link"), "");
   assert.equal(generatedLinkSlug(source, "Link", "numbered", "", "link-1"), "");
+});
+
+test("Link slug suggestions include stable source post IDs", () => {
+  const title = "typecraft (@typecraft_dev) on X";
+  const first = suggestLinkSlug(title, "https://x.com/typecraft_dev/status/2123191397247578186");
+  const second = suggestLinkSlug(title, "https://x.com/typecraft_dev/status/2123191397247578187");
+
+  assert.equal(first, "typecraft-typecraft-dev-on-x-2123191397247578186");
+  assert.notEqual(first, second);
+});
+
+test("Link slug suggestions use social post IDs and leave ordinary URLs alone", () => {
+  assert.equal(suggestLinkSlug("A Post", "https://threads.net/@person/post/123456789"), "a-post-123456789");
+  assert.equal(suggestLinkSlug("Same Title", "https://example.com/article"), "same-title");
 });
 
 test("starter without frontmatter receives creation defaults", () => {
