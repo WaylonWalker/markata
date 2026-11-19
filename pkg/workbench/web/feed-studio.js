@@ -46,7 +46,7 @@
     const writable = selected?.editable === true;
     document.getElementById('fs-save').disabled = !writable || !validFilter || !dirty();
     document.getElementById('fs-readonly').hidden = writable;
-    if (dirty() && writable && validFilter) setStatus('Unsaved feed settings · previewing changes');
+    
   }
   function setFields(feed) {
     for (const name of fields) {
@@ -81,7 +81,7 @@
     }
     if (selected && feeds.some(feed => feed.slug === selected)) select.value = selected;
     else if (feeds.length) select.value = feeds[0].slug;
-    active = select.value || null;
+    active = select.value;
     document.getElementById('fs-empty').hidden = feeds.length > 0;
     form.hidden = feeds.length === 0;
   }
@@ -97,12 +97,12 @@
       const response = await fetchJSON('/workspace/feed-studio');
       version = response.version || '';
       renderSelector(response.feeds || [], selected);
-      if (active) {
+      if (feeds.some(item => item.slug === active)) {
         const feed = feeds.find(item => item.slug === active);
         setFields(feed);
         try { localStorage.setItem('markata-feed-studio-selected', active); } catch {}
         await refreshPreview();
-        setStatus('Feed ready · edit fields to preview matching posts');
+        if (validFilter) setStatus('Feed ready · edit fields to preview matching posts');
       } else setStatus('No configured feeds yet');
     } catch (error) {
       setStatus(error.message, true);
@@ -168,7 +168,7 @@
     }
   }
   async function refreshPreview() {
-    if (!active) return;
+    if (!feeds.some(item => item.slug === active)) return;
     const sequence = ++requestNumber;
     aborter?.abort();
     aborter = new AbortController();
@@ -198,12 +198,13 @@
   }
   function schedulePreview() {
     clearTimeout(timer);
+    setStatus('Unsaved feed settings · previewing changes');
     updateSave();
     timer = setTimeout(refreshPreview, 260);
   }
   async function save(event) {
     event.preventDefault();
-    if (!active || !validFilter || !dirty()) return;
+    if (!feeds.some(item => item.slug === active) || !validFilter || !dirty()) return;
     const selected = feeds.find(feed => feed.slug === active);
     if (!selected?.editable) return;
     const button = document.getElementById('fs-save');
