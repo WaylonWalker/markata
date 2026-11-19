@@ -4,3 +4,8 @@
 #mobile-share-inbox button:first-of-type{background:var(--color-accent,#5629a4);color:white}
 
 #mobile-install:not([hidden]){display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--editor-divider);border-radius:8px;background:var(--color-background,#fff);color:var(--color-text,#203348);font:inherit;font-size:13px;font-weight:650;padding:8px 12px;cursor:pointer}
+
+#mobile-camera,#mobile-update{display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--editor-divider);border-radius:8px;background:var(--color-background,#fff);color:var(--color-text,#203348);font:inherit;font-size:13px;font-weight:650;padding:8px 12px;cursor:pointer}
+#mobile-update{border-color:var(--color-accent,#5629a4)}
+#mobile-update:disabled{opacity:.55;cursor:default}
+@media(max-width:480px){#mobile-share-inbox{padding:10px 12px}#mobile-share-inbox button{flex:1 1 auto}}
