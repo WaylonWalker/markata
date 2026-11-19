@@ -10,6 +10,16 @@ Choose **Create draft** in the inbox. The existing Link, Photo or Note starter i
 
 Sharing several photos queues one unpublished draft per photo; none are silently discarded. The limit is six photos per share, 15 MiB each and 40 MiB total. If storage is unavailable, the editor displays an error rather than claiming the share was retained.
 
+## Quick actions, camera capture and updates
+
+On Android, the installed Markata icon offers shortcuts for **New Note**, **New Photo**, **New Link** and **Share Inbox**. Quick-create shortcuts open the existing site templates; they still require a reachable, authorized workspace. They never publish on their own.
+
+**Take photo** in the editor header opens the camera (or an image picker on devices without capture support) and saves the selected JPEG/PNG/GIF/WebP file into the same IndexedDB share inbox before a remote workspace is involved. This allows camera capture while offline. The photo waits for an explicit **Create draft** action; it does not become a server-side post until the workspace is available. The post dialog also offers **Take photo**.
+
+When pending shares exist, **Protect storage** asks the browser to retain local storage. The browser may decline; no web app can guarantee immunity to private browsing resets or user-initiated data clearing. Shared photos remain private device/browser-profile data, **not encrypted**, and are not currently isolated between signed-in accounts. Do not enable this shared inbox in a multi-user hosted deployment before account-bound locking/encryption is implemented.
+
+Service-worker updates do not forcibly take over open editing sessions. When an update is waiting, the header offers **Update app** with an explicit save-and-reload confirmation; avoid updating while edits are still saving.
+
 ## Security and deployment
 
 - The share service worker intercepts only POST /share-target, persists local share payloads and redirects to the editor. It does not cache authenticated pages, workspace documents, session data or API responses.
@@ -25,4 +35,4 @@ Run:
     node --test pkg/workbench/web/share-target-utils.test.cjs
     go test ./pkg/workbench
 
-Then test Chrome Android real-device installation and OS Share Sheet handling for links, text, photo, multi-photo batches, offline receipt, reload, discard, and creation through an authorized editor. Before exposing a hosted build, add end-to-end authenticated remote upload tests and confirm the browser service worker cannot bypass authorization.
+Then test Android home-screen shortcuts (including offline photo capture), storage protection refusal, manual update activation, and Chrome Android real-device installation and OS Share Sheet handling for links, text, photo, multi-photo batches, offline receipt, reload, discard, and creation through an authorized editor. Before exposing a hosted build, add end-to-end authenticated remote upload tests and confirm the browser service worker cannot bypass authorization.
