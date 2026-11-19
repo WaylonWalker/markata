@@ -83,7 +83,8 @@ const patchArticle=(article,html)=>{
   for(const node of next){if(node===cursor)cursor=cursor.nextElementSibling;else article.insertBefore(node,cursor);}
   return {changedNodes,total:next.length,retained:retained.size,removed:previous.length-retained.size,parseMs,reconcileMs:performance.now()-reconcileStarted};
 };
-const sourceBackedArticleChildren=article=>[...article.children].filter(node=>!node.hasAttribute('data-markata-generated-preview'));
+const generatedFrontmatterPreview='.workbench-frontmatter-warning,.workbench-frontmatter-header,.workbench-frontmatter-image,.workbench-link-preview';
+const sourceBackedArticleChildren=article=>[...article.children].filter(node=>!node.matches(generatedFrontmatterPreview));
 const syncSourceLines=(existing,fresh)=>{
   const selector='[data-markata-source-line],[data-markata-source-end-line]';
   const markers=node=>[...(node.matches(selector)?[node]:[]),...node.querySelectorAll(selector)];
@@ -259,7 +260,7 @@ const scrollState=(user,syncID=null,timing=null)=>{
   const blocksFinished=performance.now();
   const selector='[data-markata-source-line],[data-markata-source-end-line]';
   for(const element of article.querySelectorAll(selector)){
-    if(element.closest('[data-markata-generated-preview]'))continue;
+    if(element.closest(generatedFrontmatterPreview))continue;
     const elementRect=positionedRect(element);
     if(!elementRect)continue;
     let root=element,depth=0;

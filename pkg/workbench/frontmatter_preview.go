@@ -15,7 +15,7 @@ func renderFrontmatterPreview(frontmatterSource, markdown string) string {
 	}
 	metadata, _, err := plugins.ParseFrontmatter(frontmatterSource)
 	if err != nil {
-		return `<aside class="workbench-frontmatter-warning" data-markata-generated-preview="true" role="status">Frontmatter preview is unavailable until the YAML is valid.</aside>`
+		return `<aside class="workbench-frontmatter-warning" role="status">Frontmatter preview is unavailable until the YAML is valid.</aside>`
 	}
 	if len(metadata) == 0 {
 		return ""
@@ -59,7 +59,7 @@ func renderFrontmatterHeader(markdown, title, description string, linkTemplate, 
 	}
 
 	var header strings.Builder
-	header.WriteString(`<header class="workbench-frontmatter-header" data-markata-generated-preview="true">`)
+	header.WriteString(`<header class="workbench-frontmatter-header">`)
 	if showTitle {
 		header.WriteString(`<h1 class="p-name">`)
 		header.WriteString(html.EscapeString(title))
@@ -88,7 +88,7 @@ func renderFrontmatterPhotoImage(image, title, description, markdown string) str
 	}
 
 	var figure strings.Builder
-	figure.WriteString(`<figure class="photo-figure workbench-frontmatter-image" data-markata-generated-preview="true"><img class="u-photo" src="`)
+	figure.WriteString(`<figure class="photo-figure workbench-frontmatter-image"><img class="u-photo" src="`)
 	figure.WriteString(html.EscapeString(imageURL))
 	figure.WriteString(`" alt="`)
 	figure.WriteString(html.EscapeString(alt))
@@ -138,7 +138,7 @@ func renderFrontmatterLinkCard(metadata map[string]interface{}, rawURL string) s
 	imageURL := workbenchPreviewImageURL(plugins.GetString(metadata, frontmatterImageKey))
 
 	var card strings.Builder
-	card.WriteString(`<aside class="embed-card embed-card-external workbench-link-preview" data-markata-embed="true" data-markata-generated-preview="true"><a class="embed-card-link" href="`)
+	card.WriteString(`<aside class="embed-card embed-card-external workbench-link-preview" data-markata-embed="true"><a class="embed-card-link" href="`)
 	card.WriteString(html.EscapeString(destination))
 	card.WriteString(`" target="_blank" rel="noopener noreferrer">`)
 	if imageURL != "" {
