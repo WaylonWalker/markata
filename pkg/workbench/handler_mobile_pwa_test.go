@@ -44,9 +44,9 @@ func TestMobilePWAAssetsAndShareTarget(t *testing.T) {
 		t.Fatalf("mobile manifest must offer four shortcuts: %+v", config["shortcuts"])
 	}
 	wantShortcuts := map[string]bool{
-		"/?compose=note": false,
+		"/?compose=note":  false,
 		"/?compose=photo": false,
-		"/?compose=link": false,
+		"/?compose=link":  false,
 		"/?share_inbox=1": false,
 	}
 	for _, item := range shortcuts {
