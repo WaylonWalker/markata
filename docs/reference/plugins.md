@@ -2000,12 +2000,13 @@ A doughnut chart is useful for showing a primary metric with breakdown:
 
 **Name:** `contribution_graph`  
 **Stage:** Render (after render_markdown)  
-**Purpose:** Renders GitHub-style calendar heatmaps showing activity over time using Cal-Heatmap.
+**Purpose:** Renders GitHub-style calendar heatmaps showing activity over time as native Go SVG by default, with opt-in Cal-Heatmap for interactive/advanced layouts.
 
 **Configuration (TOML):**
 ```toml
 [markata-go.contribution_graph]
 enabled = true
+mode = "auto"                                          # native SVG where supported; fallback to Cal-Heatmap
 cdn_url = "/assets/vendor/cal-heatmap"                # Cal-Heatmap base URL (local by default)
 container_class = "contribution-graph-container"
 theme = "light"
@@ -2016,6 +2017,7 @@ scale_max_percentile = 0
 | Option | Default | Description |
 |--------|---------|-------------|
 | `enabled` | `true` | Enable/disable the plugin |
+| `mode` | `auto` | Native SVG for supported layouts, Cal-Heatmap fallback for advanced ones. `go` requires native SVG; `client` always uses Cal-Heatmap. |
 | `cdn_url` | `/assets/vendor/cal-heatmap` | Cal-Heatmap base URL (local by default) |
 | `container_class` | `contribution-graph-container` | CSS class for wrapper div |
 | `theme` | `light` | Color theme (light, dark) |
@@ -2032,14 +2034,22 @@ scale_max_percentile = 0
   ],
   "options": {
     "domain": "year",
-    "subDomain": "day",
-    "cellSize": 12
+    "subDomain": "day"
   }
 }
 ```
 ````
 
-**HTML output:**
+**Native HTML output (default):**
+```html
+<div class="contribution-graph-container">
+  <svg class="contribution-graph-svg" role="img" viewBox="0 0 784 132">...</svg>
+</div>
+```
+
+CSS variables recolor SVG cells with the active palette without JS. Each day has an accessible `<title>` tooltip. Supported native options are `year`, `domain = "year"`, `subDomain = "day"`, `maxValue` and `maxPercentile`. Other options return a visible error: choose `mode = "client"` to use them.
+
+**HTML output in explicit `mode = "client"`:**
 ```html
 <div class="contribution-graph-container">
   <div id="contribution-graph-1"></div>
