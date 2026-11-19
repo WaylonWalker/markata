@@ -83,6 +83,7 @@ const patchArticle=(article,html)=>{
   for(const node of next){if(node===cursor)cursor=cursor.nextElementSibling;else article.insertBefore(node,cursor);}
   return {changedNodes,total:next.length,retained:retained.size,removed:previous.length-retained.size,parseMs,reconcileMs:performance.now()-reconcileStarted};
 };
+const sourceBackedArticleChildren=article=>[...article.children].filter(node=>!node.hasAttribute('data-markata-generated-preview'));
 const syncSourceLines=(existing,fresh)=>{
   const selector='[data-markata-source-line],[data-markata-source-end-line]';
   const markers=node=>[...(node.matches(selector)?[node]:[]),...node.querySelectorAll(selector)];
@@ -237,7 +238,7 @@ const scrollState=(user,syncID=null,timing=null)=>{
   const started=performance.now();
   const article=document.querySelector('.post-content');
   if(!article)return;
-  const elements=[...article.children];
+  const elements=sourceBackedArticleChildren(article);
   const elementIndices=new Map(elements.map((element,index)=>[element,index]));
   const layoutStarted=performance.now();
   const rect=article.getBoundingClientRect();
@@ -258,6 +259,7 @@ const scrollState=(user,syncID=null,timing=null)=>{
   const blocksFinished=performance.now();
   const selector='[data-markata-source-line],[data-markata-source-end-line]';
   for(const element of article.querySelectorAll(selector)){
+    if(element.closest('[data-markata-generated-preview]'))continue;
     const elementRect=positionedRect(element);
     if(!elementRect)continue;
     let root=element,depth=0;
@@ -486,7 +488,7 @@ document.addEventListener('click',event=>{
   const before=document.createRange();before.selectNodeContents(textBlock);before.setEnd(range.startContainer,range.startOffset);
   const offset=String(before.toString()).replace(/\s+/g,' ').trimStart().length;
   let root=textBlock;while(root.parentElement&&root.parentElement!==article)root=root.parentElement;
-  const index=[...article.children].indexOf(root);if(index<0)return;
+  const index=sourceBackedArticleChildren(article).indexOf(root);if(index<0)return;
   const nested=sourcePositionAnchors.filter(anchor=>anchor.nested&&anchor.index===index&&anchor.node.contains(textBlock)).sort((a,b)=>b.depth-a.depth)[0];
   const start=(nested?.line??((sourceLines[index]??0)+sourceLineOffset))-1;
   const nextTop=sourceLines.slice(index+1).find(Number.isFinite);
