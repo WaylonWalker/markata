@@ -97,6 +97,10 @@ jobs:
           MARKATA_CI_TIMINGS_DIR: ${{ runner.temp }}/markata-ci-timings
         run: python3 scripts/ci/pr_check.py --base HEAD^ --only-go
 
+      - name: Test mobile share target utilities
+        if: steps.scope.outputs.docs_only != 'true'
+        run: node --test pkg/workbench/web/share-target-utils.test.cjs
+
       - name: Check CI helper contracts
         run: python3 -m unittest discover -s scripts/ci -p 'test_*.py'
 
