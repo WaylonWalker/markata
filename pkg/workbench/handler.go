@@ -585,6 +585,8 @@ func isWorkspaceRoute(routePath, method string) bool {
 	switch {
 	case routePath == "/workspace" || routePath == "/workspace/templates" || routePath == "/workspace/content-number" || routePath == "/workspace/image" || routePath == "/workspace/index-status" || routePath == "/workspace/changes":
 		return method == http.MethodGet
+	case routePath == "/workspace/feed-studio":
+		return method == http.MethodGet || method == http.MethodPost
 	case routePath == "/workspace/new-post":
 		return method == http.MethodPost
 	case routePath == "/workspace/link-metadata":
@@ -956,6 +958,10 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 	if r.URL.Path == "/workspace/publish/readiness" {
 		h.servePublishReadiness(w, r)
+		return
+	}
+	if r.URL.Path == "/workspace/feed-studio" {
+		h.serveFeedStudio(w, r)
 		return
 	}
 	if r.URL.Path == "/workspace/changes" {
