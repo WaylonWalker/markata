@@ -24,6 +24,7 @@ const (
 	contentTemplateImageName   = "image"
 	contentTemplateGuideName   = "guide"
 	contentTemplateInlineName  = "inline"
+	contentFilenameModeNumbered = "numbered"
 )
 
 var contentTemplateAliases = map[string][]string{
@@ -350,7 +351,7 @@ func loadTemplates() map[string]ContentTemplate {
 			}
 		}
 		for name, mode := range cfg.ContentTemplates.FilenameMode {
-			if mode != listSortTitle && mode != "numbered" {
+			if mode != listSortTitle && mode != contentFilenameModeNumbered {
 				continue
 			}
 			if template, exists := templates[name]; exists {
@@ -728,7 +729,7 @@ func writeContentFile(title, slug, outputDir string, draft, draftSet bool, tags 
 	if template.ValidationError != "" {
 		return fmt.Errorf("invalid starter %q: %s", template.Name, template.ValidationError)
 	}
-	if template.FilenameMode == "numbered" {
+	if template.FilenameMode == contentFilenameModeNumbered {
 		prefix := generateSlug(template.Name)
 		if prefix == "" {
 			prefix = "post"
@@ -974,7 +975,7 @@ func generateTemplatedContent(title, slug string, date time.Time, draft, draftSe
 	for key, value := range template.Frontmatter {
 		fm[key] = expandStarterValue(value, title, slug, date)
 	}
-	if strings.EqualFold(template.Name, "link") && template.FilenameMode != "numbered" && slug != "" {
+	if strings.EqualFold(template.Name, "link") && template.FilenameMode != contentFilenameModeNumbered && slug != "" {
 		if _, hasSlug := fm["slug"]; !hasSlug {
 			fm["slug"] = "link/" + slug
 		}
