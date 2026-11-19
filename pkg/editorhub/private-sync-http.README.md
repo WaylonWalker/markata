@@ -51,3 +51,14 @@ No browser adapter, public ingress or production route is added in this PR.
 plaintext IndexedDB drafts from other people using the same browser profile.
 Device-local encryption/locking and logout/export remain separate required
 work before any family/shared-device deployment.
+
+### Revocation boundary
+
+The handler calls the trusted Authenticator on **every request**, so session
+revocation takes effect as soon as that authenticator refuses the request.
+Site grants are different: `Registry` is an immutable snapshot of startup
+configuration, not a live authorization provider. Editing the original grant
+map (or an external ACL) does **not** revoke permissions for an existing
+handler. Before hosting, provide an atomic registry/handler reload or a
+trusted live ACL provider and verify site-grant revocation end to end.
+The POC must not be described as immediately reflecting external ACL changes.
