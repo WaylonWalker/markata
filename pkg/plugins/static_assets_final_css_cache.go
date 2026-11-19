@@ -92,7 +92,7 @@ func loadFinalCSSLinkCache(path, rules string, now time.Time) finalCSSLinkCache 
 }
 
 func saveFinalCSSLinkCache(path string, cached finalCSSLinkCache) {
-	if path == "" || len(cached.Files) == 0 {
+	if path == "" {
 		return
 	}
 	data, err := json.Marshal(cached)
