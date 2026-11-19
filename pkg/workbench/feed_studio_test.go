@@ -36,17 +36,17 @@ func TestFeedStudioSaveFormatPreservationAndConflicts(t *testing.T) {
 	}{
 		{
 			name: "toml", filename: "markata-go.toml",
-			source: "# Feed comments should survive\n[[markata-go.feeds]]\nslug = \"blog\"\ntitle = \"Original\"\nfilter = \"published == true\"\nextra_setting = \"preserve-me\"\n",
+			source:    "# Feed comments should survive\n[[markata-go.feeds]]\nslug = \"blog\"\ntitle = \"Original\"\nfilter = \"published == true\"\nextra_setting = \"preserve-me\"\n",
 			preserved: "# Feed comments should survive",
 		},
 		{
 			name: "yaml", filename: "markata-go.yaml",
-			source: "markata-go:\n  feeds:\n    - slug: blog\n      title: Original\n      filter: published == true\n      extra_setting: preserve-me\n",
+			source:    "markata-go:\n  feeds:\n    - slug: blog\n      title: Original\n      filter: published == true\n      extra_setting: preserve-me\n",
 			preserved: "extra_setting: preserve-me",
 		},
 		{
 			name: "json", filename: "markata-go.json",
-			source: "{\"markata-go\":{\"feeds\":[{\"slug\":\"blog\",\"title\":\"Original\",\"filter\":\"published == true\",\"extra_setting\":\"preserve-me\"}]}}",
+			source:    "{\"markata-go\":{\"feeds\":[{\"slug\":\"blog\",\"title\":\"Original\",\"filter\":\"published == true\",\"extra_setting\":\"preserve-me\"}]}}",
 			preserved: "preserve-me",
 		},
 	}
@@ -60,8 +60,8 @@ func TestFeedStudioSaveFormatPreservationAndConflicts(t *testing.T) {
 			h := &Handler{
 				root: root,
 				siteConfig: &models.Config{Feeds: []models.FeedConfig{{
-					Slug: "blog",
-					Title: "Original",
+					Slug:   "blog",
+					Title:  "Original",
 					Filter: "published == true",
 				}}},
 			}
