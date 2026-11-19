@@ -421,7 +421,7 @@ func (h *Handler) feedStudioSave(w http.ResponseWriter, r *http.Request) {
 		fail(w, http.StatusConflict, "site configuration changed on disk; reload and compare before saving")
 		return
 	}
-	
+
 	temporary, err := os.CreateTemp(filepath.Dir(filename), ".markata-feed-*"+filepath.Ext(filename))
 	if err != nil {
 		fail(w, http.StatusUnprocessableEntity, "cannot create configuration staging file")
