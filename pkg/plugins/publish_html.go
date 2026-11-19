@@ -79,7 +79,7 @@ func getPostExtraString(post *models.Post, keys ...string) string {
 // It supports multiple output formats: HTML, Markdown source, and OG card HTML.
 type PublishHTMLPlugin struct {
 	templatesPlugin *TemplatesPlugin
-	ioRecorder     *diagnostics.PublishIORecorder
+	ioRecorder      *diagnostics.PublishIORecorder
 }
 
 // NewPublishHTMLPlugin creates a new PublishHTMLPlugin.
