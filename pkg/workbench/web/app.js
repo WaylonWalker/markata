@@ -513,6 +513,13 @@ function scheduleLinkMetadata() {
   createLinkMetadataStatus.textContent='Metadata lookup starts when the URL is complete.';
   linkMetadataTimer=setTimeout(()=>{linkMetadataPromise=loadLinkMetadata();},450);
 }
+// Home-screen quick actions reuse the same authoring templates as the desktop editor.
+// A failed remote template request is shown by showCreateDialog, never silently saved.
+window.addEventListener('markata-compose', event => {
+  const kind = event.detail;
+  if (!['note','photo','link'].includes(kind) || createDialog.open || templatePicker.open) return;
+  void showCreateDialog('builtin:' + kind);
+});
 window.addEventListener('markata-share-select', async event => {
   const shared = event.detail;
   if (!shared || typeof shared.id !== 'string') return;
