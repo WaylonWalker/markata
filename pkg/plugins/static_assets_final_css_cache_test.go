@@ -214,3 +214,33 @@ func assertFinalCSSLink(t *testing.T, root *os.Root, filename, want string) {
 		t.Fatalf("%s = %q, want %q, err = %v", filename, data, want, err)
 	}
 }
+
+func TestFinalCSSLinkCacheEmptyVerificationReplacesOldCache(t *testing.T) {
+	cachePath := filepath.Join(t.TempDir(), "verification.json")
+	rules := "unchanged-rules"
+	now := time.Now()
+	old := finalCSSLinkCache{
+		Rules:    rules,
+		Observed: now.Add(-time.Minute),
+		Files: map[string]fileidentity.Identity{
+			"stale.html": {Device: 1, Inode: 1, Size: 42},
+		},
+	}
+	saveFinalCSSLinkCache(cachePath, old)
+	if got := loadFinalCSSLinkCache(cachePath, rules, now); len(got.Files) != 1 {
+		t.Fatalf("initial cache should contain the previous verified file: %+v", got)
+	}
+
+	// A subsequent successful cleanup may have no eligible HTML identities.
+	// It must replace the old snapshot instead of keeping stale verification.
+	empty := finalCSSLinkCache{
+		Rules:    rules,
+		Observed: now,
+		Files:    map[string]fileidentity.Identity{},
+	}
+	saveFinalCSSLinkCache(cachePath, empty)
+	got := loadFinalCSSLinkCache(cachePath, rules, now.Add(time.Second))
+	if len(got.Files) != 0 || !got.Observed.Equal(now) {
+		t.Fatalf("empty verification should replace the old cache: %+v", got)
+	}
+}
