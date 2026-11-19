@@ -56,7 +56,7 @@
     const match = String(source).match(/^(---\r?\n)([\s\S]*?)(\r?\n---(?:\r?\n|$))/);
     if (!match) return false;
     const escapedKey = String(key).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const field = new RegExp(`^\\s*${escapedKey}:\\s*`);
+    const field = new RegExp(`^${escapedKey}:\\s*`);
     return match[2].split(/\r?\n/).some(line => field.test(line));
   }
 
@@ -74,8 +74,9 @@
     return `${match[1]}${lines.join("\n")}${match[3]}${text.slice(match[0].length)}`;
   }
 
-  function generatedLinkSlug(source, templateID, filenameMode, enteredFilename, slug) {
-    if (templateID !== "builtin:link" || filenameMode !== "title" || String(enteredFilename).trim() || !String(slug).trim()) {
+  function generatedLinkSlug(source, templateName, filenameMode, enteredFilename, slug) {
+    const isLinkStarter = String(templateName).trim().toLowerCase() === "link";
+    if (!isLinkStarter || filenameMode !== "title" || String(enteredFilename).trim() || !String(slug).trim()) {
       return "";
     }
     if (hasFrontmatterKey(source, "slug")) return "";

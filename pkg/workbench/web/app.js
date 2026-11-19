@@ -374,7 +374,7 @@ function updateCreatePathPreview() {
   createSlug.placeholder = slugify(createTitle.value) || 'post-title';
   const path = `${directory ? `${directory}/` : ''}${slug}.md`;
   const generatedLinkSlug = window.MarkataContentStarters.generatedLinkSlug(
-    template?.source, template?.id, createFilenameMode.value, createSlug.value, slug);
+    template?.source, template?.name, createFilenameMode.value, createSlug.value, slug);
   createPathPreview.textContent = generatedLinkSlug ? `${path} · URL /${generatedLinkSlug}/` : path;
 }
 async function refreshNextContentNumber() {
@@ -537,11 +537,11 @@ document.querySelector('#create-form').addEventListener('submit',async event => 
     if (!slug) throw new Error('Enter a title or file name for this post.');
     const path = `${directory && directory !== '.' ? `${directory}/` : ''}${slug}.md`;
     let source = window.MarkataContentStarters.render(template.source,title,slug,new Date(),createDate.value);
+    const generatedLinkSlug = window.MarkataContentStarters.generatedLinkSlug(
+      source, template.name, filenameMode, enteredFilename, slug);
+    if (generatedLinkSlug)
+      source=window.MarkataContentStarters.setFrontmatterValue(source,'slug',generatedLinkSlug);
     if (template.id === 'builtin:link') {
-      const generatedLinkSlug = window.MarkataContentStarters.generatedLinkSlug(
-        source, template.id, filenameMode, enteredFilename, slug);
-      if (generatedLinkSlug)
-        source=window.MarkataContentStarters.setFrontmatterValue(source,'slug',generatedLinkSlug);
       source=window.MarkataContentStarters.setFrontmatterValue(source,'url',createLinkURL.value.trim());
       for (const key of ['description','site_name','type','provider_name','author_name','author_url']) {
         const value=linkMetadataControls[key].value.trim();
