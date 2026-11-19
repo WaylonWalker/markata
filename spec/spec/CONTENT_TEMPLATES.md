@@ -83,6 +83,11 @@ All editors MUST:
 The built-in Link starter MUST include a title variable, the current date,
 `published: false`, `url`, and `image` fields. The web workbench MUST require a
 valid HTTP(S) URL and store it in `url` exactly as entered.
+When a Link post uses a title-derived filename and the selected starter does
+not define `slug`, the CLI and web workbench MUST write `slug: link/<title-slug>`
+to frontmatter. The Markdown filename MUST keep the unprefixed title slug in
+the selected directory. An explicit starter slug or a filename entered by the
+user MUST NOT receive the automatic prefix.
 When a Link URL is entered, the workbench MUST resolve metadata with the same
 configured providers and resolution strategy used by external embeds. It MUST
 fill empty supported frontmatter fields for title, description, image,

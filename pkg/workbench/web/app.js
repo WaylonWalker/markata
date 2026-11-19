@@ -372,7 +372,10 @@ function updateCreatePathPreview() {
   const slug = createSlug.value.trim() || slugify(createTitle.value) || 'new-post';
   const directory = createDirectory.value.trim().replace(/\\/g,'/').replace(/^\/+|\/+$/g,'');
   createSlug.placeholder = slugify(createTitle.value) || 'post-title';
-  createPathPreview.textContent = `${directory ? `${directory}/` : ''}${slug}.md`;
+  const path = `${directory ? `${directory}/` : ''}${slug}.md`;
+  const generatedLinkSlug = template?.id === 'builtin:link' && createFilenameMode.value === 'title' &&
+    !createSlug.value.trim() && !hasFrontmatterKey(template.source, 'slug');
+  createPathPreview.textContent = generatedLinkSlug ? `${path} · URL /link/${slug}/` : path;
 }
 async function refreshNextContentNumber() {
   if (!selectedContentTemplate || createFilenameMode.value !== 'numbered') return;
@@ -453,6 +456,12 @@ function setFrontmatterValue(source, key, value) {
   }
   if(!found)lines.push(quoted);
   return `${match[1]}${lines.join('\n')}${match[3]}${String(source).slice(match[0].length)}`;
+}
+function hasFrontmatterKey(source, key) {
+  const lines = String(source).split('\n');
+  if (!lines[0]?.startsWith('---')) return false;
+  const closing = lines.findIndex((line, index) => index > 0 && line.startsWith('---'));
+  return closing > 0 && lines.slice(1, closing).some(line => line.trimStart().startsWith(`${key}:`));
 }
 async function loadLinkMetadata() {
   const rawURL=createLinkURL.value.trim();
@@ -541,11 +550,14 @@ document.querySelector('#create-form').addEventListener('submit',async event => 
     if (!title) throw new Error(template.id === 'builtin:link'
       ? 'No title was found for this URL. Enter a title to create the link post.'
       : 'Enter a title to create the post.');
-    const slug = createSlug.value.trim() || slugify(title);
+    const enteredFilename = createSlug.value.trim();
+    const slug = enteredFilename || slugify(title);
     if (!slug) throw new Error('Enter a title or file name for this post.');
     const path = `${directory && directory !== '.' ? `${directory}/` : ''}${slug}.md`;
     let source = window.MarkataContentStarters.render(template.source,title,slug,new Date(),createDate.value);
     if (template.id === 'builtin:link') {
+      if (filenameMode === 'title' && !enteredFilename && !hasFrontmatterKey(source, 'slug'))
+        source=setFrontmatterValue(source,'slug',`link/${slug}`);
       source=setFrontmatterValue(source,'url',createLinkURL.value.trim());
       for (const key of ['description','site_name','type','provider_name','author_name','author_url']) {
         const value=linkMetadataControls[key].value.trim();
