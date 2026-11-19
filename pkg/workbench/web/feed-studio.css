@@ -62,3 +62,4 @@
   #feed-studio .fs-post-card{align-items:flex-start}
   #feed-studio .fs-preview{min-height:65dvh}
 }
+#feed-studio #fs-source{margin:-5px 0 5px;overflow-wrap:anywhere;font-family:var(--font-code,ui-monospace,monospace)}
