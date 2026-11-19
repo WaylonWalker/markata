@@ -11,7 +11,8 @@ sidebar. Feed Studio appears beside the existing workspace navigation.
 Choose a feed, then edit its title, description, post filter, ordering,
 presentation, or HTML template. The settings are stored in your site's
 `markata-go.toml`, `markata-go.yaml`, `markata-go.yml` or
-`markata-go.json`, not in a separate Feed Studio database.
+`markata-go.json`, or an included configuration such as `config/feeds.toml`,
+not in a separate Feed Studio database.
 
 ## Write a filter
 
@@ -51,9 +52,11 @@ workspace Changes and publishing workflow. Feed Studio protects against
 concurrent edits: if another process has changed the config file, the
 save is rejected and your current form values remain visible.
 
-Feeds authored in an included configuration file can be inspected but are
-currently read-only in Feed Studio. Edit their source configuration to
-change them until source-aware includes are supported.
+Feeds authored in an included file such as `config/feeds.toml` are editable
+in place. Feed Studio shows the source filename below the feed selector and
+saves to that file instead of rewriting `markata-go.toml`. The same version
+protection applies. Includes pointing outside the trusted workspace are
+intentionally not editable.
 
 For the complete feed model see [Feeds](feeds.md) and
 [Feed Views](feed-views.md).
