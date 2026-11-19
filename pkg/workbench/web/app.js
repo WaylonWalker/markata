@@ -436,6 +436,12 @@ createImageURL.addEventListener('input',() => {
   }else clearSelectedImage();
 });
 createImageFile.addEventListener('change',() => selectImageFile(createImageFile.files?.[0]));
+const createCameraFile = document.querySelector('#create-camera-file');
+createCameraFile.addEventListener('change',() => {
+  const file = createCameraFile.files?.[0];
+  createCameraFile.value = '';
+  if (file) selectImageFile(file);
+});
 createImagePaste.addEventListener('click',() => createImageFile.click());
 createImagePaste.addEventListener('keydown',event => {
   if(event.key==='Enter'||event.key===' '){event.preventDefault();createImageFile.click();}
