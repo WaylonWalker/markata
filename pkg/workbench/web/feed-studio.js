@@ -46,7 +46,7 @@
     const writable = selected?.editable === true;
     document.getElementById('fs-save').disabled = !writable || !validFilter || !dirty();
     document.getElementById('fs-readonly').hidden = writable;
-    
+
   }
   function setFields(feed) {
     for (const name of fields) {
