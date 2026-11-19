@@ -39,6 +39,8 @@ type feedStudioFeed struct {
 	Template     string `json:"template"`
 	Count        int    `json:"count"`
 	Editable     bool   `json:"editable"`
+	Source       string `json:"source,omitempty"`
+	Version      string `json:"version,omitempty"`
 }
 
 type feedStudioUpdate struct {
@@ -196,7 +198,7 @@ func (h *Handler) feedStudioRead(w http.ResponseWriter, r *http.Request) {
 	selectedFilter, filterOverride := r.URL.Query()["filter"]
 	selectedSort := r.URL.Query().Get("sort")
 	var selected *models.FeedConfig
-	authoredFeeds, _ := feedStudioRootFeeds(h.root)
+	sources, _ := feedStudioSources(h.root)
 	for i := range cfg.Feeds {
 		feed := &cfg.Feeds[i]
 		matches, matchErr := feedStudioMatch(posts, feed.Filter)
@@ -204,12 +206,13 @@ func (h *Handler) feedStudioRead(w http.ResponseWriter, r *http.Request) {
 		if matchErr != nil {
 			count = 0
 		}
-		_, editable := feedStudioRootFeedIndex(authoredFeeds, feed.Slug)
+		source, editable := sources[feed.Slug]
 		feeds = append(feeds, feedStudioFeed{
 			Slug: feed.Slug, Title: feed.Title, Description: feed.Description,
 			Filter: feed.Filter, Sort: feed.Sort, Reverse: feed.Reverse,
 			Presentation: feed.Presentation, Template: feed.Templates.HTML,
 			Count: count, Editable: editable,
+			Source: source.label, Version: source.version,
 		})
 		if feed.Slug == selectedSlug {
 			selected = feed
@@ -286,17 +289,20 @@ func (h *Handler) feedStudioRead(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// Only feeds authored directly in the root config are writable. Parsing the
-// root document (rather than the merged configuration) distinguishes includes
-// without relying on syntax-tree indexed-value lookup.
-func feedStudioRootFeeds(root string) ([]models.FeedConfig, error) {
-	filename, err := feedStudioFile(root)
-	if err != nil {
-		return nil, err
-	}
+// A feed's owner is the last included file that defines its slug. The
+// configuration composer merges includes in discovery order with later values
+// overriding earlier ones, so resolving the same order gives the correct file.
+type feedStudioSource struct {
+	path    string
+	index   int
+	version string
+	label   string
+}
+
+func feedStudioParseFile(filename string) (*models.Config, []byte, error) {
 	source, err := os.ReadFile(filename)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	var authored *models.Config
 	switch filepath.Ext(filename) {
@@ -304,22 +310,53 @@ func feedStudioRootFeeds(root string) ([]models.FeedConfig, error) {
 		authored, err = config.ParseYAML(source)
 	case ".json":
 		authored, err = config.ParseJSON(source)
-	default:
+	case ".toml":
 		authored, err = config.ParseTOML(source)
+	default:
+		return nil, nil, fmt.Errorf("unsupported config format: %s", filename)
 	}
+	return authored, source, err
+}
+
+func feedStudioSources(root string) (map[string]feedStudioSource, error) {
+	mainFile, err := feedStudioFile(root)
 	if err != nil {
 		return nil, err
 	}
-	return authored.Feeds, nil
-}
-
-func feedStudioRootFeedIndex(feeds []models.FeedConfig, slug string) (int, bool) {
-	for index := range feeds {
-		if feeds[index].Slug == slug {
-			return index, true
+	paths, err := config.DiscoverIncludedConfigPaths(mainFile)
+	if err != nil {
+		return nil, err
+	}
+	rootReal, err := filepath.EvalSymlinks(root)
+	if err != nil {
+		return nil, err
+	}
+	sources := make(map[string]feedStudioSource)
+	for _, path := range paths {
+		info, err := os.Lstat(path)
+		if err != nil || !info.Mode().IsRegular() {
+			continue
+		}
+		actual, err := filepath.EvalSymlinks(path)
+		if err != nil {
+			continue
+		}
+		relative, err := filepath.Rel(rootReal, actual)
+		if err != nil || relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
+			continue
+		}
+		authored, content, err := feedStudioParseFile(actual)
+		if err != nil {
+			continue
+		}
+		for index, feed := range authored.Feeds {
+			sources[feed.Slug] = feedStudioSource{
+				path: actual, index: index,
+				version: feedStudioVersion(content), label: filepath.ToSlash(relative),
+			}
 		}
 	}
-	return -1, false
+	return sources, nil
 }
 
 func feedStudioValidate(update feedStudioUpdate) error {
@@ -358,11 +395,18 @@ func (h *Handler) feedStudioSave(w http.ResponseWriter, r *http.Request) {
 	}
 	h.workspaceWriteMu.Lock()
 	defer h.workspaceWriteMu.Unlock()
-	filename, err := feedStudioFile(h.root)
+	sources, err := feedStudioSources(h.root)
 	if err != nil {
-		fail(w, http.StatusUnprocessableEntity, "cannot locate site configuration")
+		fail(w, http.StatusUnprocessableEntity, "cannot discover feed configuration sources: "+err.Error())
 		return
 	}
+	source, editable := sources[update.Slug]
+	if !editable {
+		fail(w, http.StatusUnprocessableEntity, "feed source is outside this workspace or not editable")
+		return
+	}
+	filename := source.path
+	index := source.index
 	info, err := os.Lstat(filename)
 	if err != nil || !info.Mode().IsRegular() {
 		fail(w, http.StatusUnprocessableEntity, "site configuration is not a regular file")
@@ -377,17 +421,8 @@ func (h *Handler) feedStudioSave(w http.ResponseWriter, r *http.Request) {
 		fail(w, http.StatusConflict, "site configuration changed on disk; reload and compare before saving")
 		return
 	}
-	authoredFeeds, err := feedStudioRootFeeds(h.root)
-	if err != nil {
-		fail(w, http.StatusUnprocessableEntity, "cannot read authored feed settings: "+err.Error())
-		return
-	}
-	index, editable := feedStudioRootFeedIndex(authoredFeeds, update.Slug)
-	if !editable {
-		fail(w, http.StatusUnprocessableEntity, "feed is not directly editable in the site config (it may come from an included file)")
-		return
-	}
-	temporary, err := os.CreateTemp(h.root, ".markata-feed-*"+filepath.Ext(filename))
+	
+	temporary, err := os.CreateTemp(filepath.Dir(filename), ".markata-feed-*"+filepath.Ext(filename))
 	if err != nil {
 		fail(w, http.StatusUnprocessableEntity, "cannot create configuration staging file")
 		return
@@ -423,7 +458,7 @@ func (h *Handler) feedStudioSave(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	parsed, err := config.Load(tempPath)
+	parsed, _, err := feedStudioParseFile(tempPath)
 	if err != nil {
 		fail(w, http.StatusUnprocessableEntity, "invalid site configuration after edit: "+err.Error())
 		return
@@ -442,7 +477,7 @@ func (h *Handler) feedStudioSave(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := json.NewEncoder(w).Encode(map[string]string{
-		"version": feedStudioVersion(saved), "status": "saved", "file": filepath.Base(filename),
+		"version": feedStudioVersion(saved), "status": "saved", "file": source.label,
 	}); err != nil {
 		return
 	}
