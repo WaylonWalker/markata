@@ -39,9 +39,46 @@ func TestMobilePWAAssetsAndShareTarget(t *testing.T) {
 		target["method"] != "POST" || target["enctype"] != "multipart/form-data" {
 		t.Fatalf("invalid mobile share manifest: %+v", config)
 	}
+	shortcuts, ok := config["shortcuts"].([]any)
+	if !ok || len(shortcuts) != 4 {
+		t.Fatalf("mobile manifest must offer four shortcuts: %+v", config["shortcuts"])
+	}
+	wantShortcuts := map[string]bool{
+		"/?compose=note": false,
+		"/?compose=photo": false,
+		"/?compose=link": false,
+		"/?share_inbox=1": false,
+	}
+	for _, item := range shortcuts {
+		entry, ok := item.(map[string]any)
+		if !ok {
+			t.Fatalf("invalid mobile shortcut: %+v", item)
+		}
+		url, ok := entry["url"].(string)
+		if !ok {
+			t.Fatalf("invalid mobile shortcut URL: %+v", entry)
+		}
+		if _, exists := wantShortcuts[url]; !exists {
+			t.Fatalf("unexpected shortcut %q", url)
+		}
+		wantShortcuts[url] = true
+	}
+	for url, seen := range wantShortcuts {
+		if !seen {
+			t.Fatalf("missing shortcut %q", url)
+		}
+	}
+	if !strings.Contains(page.Body.String(), "create-camera-file") ||
+		!strings.Contains(page.Body.String(), "/editor/share-target-utils.js") {
+		t.Fatal("editor must include direct camera capture and shared file validation")
+	}
 	worker := get("/editor/share-sw.js")
 	if worker.Header().Get("Service-Worker-Allowed") != "/" {
 		t.Fatal("share worker must be allowed to handle root-scope navigation")
+	}
+	if !strings.Contains(worker.Body.String(), "MARKATA_ACTIVATE_UPDATE") ||
+		strings.Contains(worker.Body.String(), "addEventListener('install', event => event.waitUntil(self.skipWaiting())") {
+		t.Fatal("service worker updates must be deliberately activated")
 	}
 	if strings.Contains(worker.Body.String(), "caches.open") {
 		t.Fatal("share worker must not cache private workspace data")
