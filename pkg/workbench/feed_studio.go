@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -14,7 +13,6 @@ import (
 	"strings"
 
 	"github.com/WaylonWalker/markata/pkg/config"
-	"github.com/WaylonWalker/markata/pkg/editorworkspace"
 	"github.com/WaylonWalker/markata/pkg/filter"
 	"github.com/WaylonWalker/markata/pkg/lsp"
 	"github.com/WaylonWalker/markata/pkg/models"
@@ -273,7 +271,6 @@ func (h *Handler) feedStudioRead(w http.ResponseWriter, r *http.Request) {
 		if post.Date != nil {
 			item.Date = post.Date.Format("2006-01-02")
 		}
-		item.Image = post.Image
 		items = append(items, item)
 	}
 	if err := json.NewEncoder(w).Encode(map[string]any{
@@ -424,6 +421,3 @@ func (h *Handler) feedStudioSave(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// Guard against reading more than the configured limit in future feed actions.
-var _ = io.LimitReader
-var _ = editorworkspace.SourceVersion
