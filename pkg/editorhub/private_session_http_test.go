@@ -102,6 +102,32 @@ func TestPrivateSessionRejectsSpoofingAndCrossSiteRequests(t *testing.T) {
 			r.Header.Set("Sec-Fetch-Site", "cross-site")
 			return r
 		}(), http.StatusForbidden},
+		{"same-site sibling origin", func() *http.Request {
+			r := composedRequest(http.MethodGet, "alice", "/api/v1/session", "")
+			r.Header.Set("Sec-Fetch-Site", "same-site")
+			return r
+		}(), http.StatusForbidden},
+		{"invalid fetch metadata", func() *http.Request {
+			r := composedRequest(http.MethodGet, "alice", "/api/v1/session", "")
+			r.Header.Set("Sec-Fetch-Site", "unrecognized")
+			return r
+		}(), http.StatusForbidden},
+		{"duplicate fetch metadata", func() *http.Request {
+			r := composedRequest(http.MethodGet, "alice", "/api/v1/session", "")
+			r.Header.Add("Sec-Fetch-Site", "same-origin")
+			r.Header.Add("Sec-Fetch-Site", "same-site")
+			return r
+		}(), http.StatusForbidden},
+		{"same-origin fetch metadata", func() *http.Request {
+			r := composedRequest(http.MethodGet, "alice", "/api/v1/session", "")
+			r.Header.Set("Sec-Fetch-Site", "same-origin")
+			return r
+		}(), http.StatusOK},
+		{"direct navigation metadata", func() *http.Request {
+			r := composedRequest(http.MethodGet, "alice", "/api/v1/session", "")
+			r.Header.Set("Sec-Fetch-Site", "none")
+			return r
+		}(), http.StatusOK},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			w := httptest.NewRecorder()
@@ -119,6 +145,13 @@ func TestPrivateSessionRejectsSpoofingAndCrossSiteRequests(t *testing.T) {
 	if w.Code != http.StatusUnauthorized {
 		t.Fatalf("untrusted header authorized session: %d", w.Code)
 	}
+	head := composedRequest(http.MethodHead, "alice", "/api/v1/session", "")
+	headResponse := httptest.NewRecorder()
+	handler.ServeHTTP(headResponse, head)
+	if headResponse.Code != http.StatusMethodNotAllowed ||
+		headResponse.Header().Get("Allow") != http.MethodGet {
+		t.Fatalf("HEAD should be rejected as GET-only: %d Allow=%q", headResponse.Code, headResponse.Header().Get("Allow"))
+	}
 }
 
 func TestPrivateSessionConstructorRejectsUnsafeInputs(t *testing.T) {
@@ -127,7 +160,8 @@ func TestPrivateSessionConstructorRejectsUnsafeInputs(t *testing.T) {
 		t.Fatal(err)
 	}
 	auth := func(*http.Request) (string, error) { return "alice", errors.New("not verified") }
-	for _, origin := range []string{"", "http://editor.example.test", "https://editor.example.test/path", "https://user@editor.example.test"} {
+	for _, origin := range []string{"", "http://editor.example.test", "https://editor.example.test/path", "https://user@editor.example.test",
+		"https://editor.example.test?", "https://editor.example.test:", "https://:443"} {
 		if handler, err := NewPrivateSessionHandler(registry, auth, origin); err == nil || handler != nil {
 			t.Fatalf("invalid origin accepted: %q", origin)
 		}
