@@ -48,6 +48,39 @@ func TestWorkspaceFeeds_MatchesRelativePathFilters(t *testing.T) {
 	}
 }
 
+func TestWorkspaceFeeds_MatchesRelativePathFiltersWithRelativeRoot(t *testing.T) {
+	root, err := filepath.Abs(".")
+	if err != nil {
+		t.Fatal(err)
+	}
+	postPath := filepath.Join(root, "pages", "blog", "post.md")
+	index := lsp.NewWorkspaceIndex(log.Default(), root, []*lsp.PostInfo{{
+		Path:  postPath,
+		Slug:  "post",
+		Title: "Post",
+		Metadata: map[string]interface{}{
+			"published": true,
+		},
+	}})
+	handler := &Handler{
+		root:      ".",
+		workspace: navigationTestWorkspace{index: index},
+		siteConfig: &models.Config{Feeds: []models.FeedConfig{{
+			Slug:   "blog",
+			Title:  "Blog",
+			Filter: "path.startswith('pages/blog/')",
+		}}},
+	}
+
+	feeds := handler.workspaceFeeds()
+	if len(feeds) != 1 {
+		t.Fatalf("workspaceFeeds() returned %d feeds, want 1", len(feeds))
+	}
+	if len(feeds[0].Paths) != 1 || feeds[0].Paths[0] != "pages/blog/post.md" {
+		t.Fatalf("feed paths = %v, want [pages/blog/post.md]", feeds[0].Paths)
+	}
+}
+
 func TestWorkspaceRelativePath(t *testing.T) {
 	tests := []struct {
 		name, root, path, want string

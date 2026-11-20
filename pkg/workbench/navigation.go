@@ -95,6 +95,11 @@ func getMetadataStrings(value any) []string {
 // feed membership can be compared with discovered files.
 func workspaceRelativePath(root, path string) string {
 	if root != "" {
+		if !filepath.IsAbs(root) && filepath.IsAbs(path) {
+			if absoluteRoot, err := filepath.Abs(root); err == nil {
+				root = absoluteRoot
+			}
+		}
 		if relative, err := filepath.Rel(root, path); err == nil && !strings.HasPrefix(relative, "..") {
 			return filepath.ToSlash(relative)
 		}
