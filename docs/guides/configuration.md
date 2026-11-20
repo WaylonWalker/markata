@@ -680,6 +680,11 @@ fingerprint of generated HTML paths and bytes. Purged CSS is reused only when st
 bytes, discovered selectors, and purge options match. Missing or invalid cache entries
 fall back to the normal scan or purge path.
 
+On Linux filesystems with verified file identities, a warm build can reuse the selector
+set without reading unchanged HTML again. Added, removed, replaced, or unstable files use
+the full content check. Other filesystems keep the full content check on every build.
+Look for `mode=identity` and `bytes_read=0` in the build log to confirm this fast path ran.
+
 On Linux, Markata can reuse a previous check of final stylesheet links in
 unchanged HTML. A new stylesheet digest or a changed HTML file causes a new
 check. The build log lists how many HTML files Markata checks, reuses, and

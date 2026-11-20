@@ -5,12 +5,15 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
+	"github.com/WaylonWalker/markata/internal/fileidentity"
 	"github.com/WaylonWalker/markata/pkg/csspurge"
 	"github.com/WaylonWalker/markata/pkg/lifecycle"
 	"github.com/WaylonWalker/markata/pkg/logging"
@@ -110,51 +113,143 @@ type purgeProcessingStats struct {
 
 // scanHTMLFilesForSelectors finds and scans HTML files for used selectors.
 func scanHTMLFilesForSelectors(outputDir, cacheDir string, concurrency int, verbose bool) (*csspurge.UsedSelectors, bool, error) {
+	used, stats, err := scanHTMLFilesForSelectorsWithStats(outputDir, cacheDir, concurrency, verbose)
+	return used, stats.CacheHit, err
+}
+
+type htmlSelectorScanStats struct {
+	Files       int
+	BytesRead   int64
+	BytesReused int64
+	CacheHit    bool
+	CacheMode   string
+}
+
+const (
+	htmlSelectorCacheModeIdentity = "identity"
+	htmlSelectorCacheModeContent  = "content"
+	htmlSelectorCacheModeScan     = "scan"
+)
+
+func scanHTMLFilesForSelectorsWithStats(outputDir, cacheDir string, concurrency int, verbose bool) (*csspurge.UsedSelectors, htmlSelectorScanStats, error) {
 	htmlFiles, err := findHTMLFiles(outputDir)
 	if err != nil {
-		return nil, false, fmt.Errorf("failed to find HTML files: %w", err)
+		return nil, htmlSelectorScanStats{}, fmt.Errorf("failed to find HTML files: %w", err)
 	}
 
 	if len(htmlFiles) == 0 {
 		if verbose {
 			cssPurgeLog.Printf("No HTML files found, skipping")
 		}
-		return nil, false, nil
+		return nil, htmlSelectorScanStats{}, nil
 	}
 
 	if verbose {
 		cssPurgeLog.Printf("Found %d HTML files to analyze", len(htmlFiles))
 	}
 
-	fingerprint, scannedBytes, fingerprintOK := fingerprintHTMLFiles(htmlFiles, outputDir, concurrency)
 	cachePath := filepath.Join(cacheDir, "html-selectors.json")
-	if fingerprintOK {
-		if cached, ok := loadCSSPurgeHTMLCache(cachePath); ok && cached.Schema == cssPurgeHTMLCacheSchema && cached.Fingerprint == fingerprint && cached.Selectors.Classes != nil && cached.Selectors.IDs != nil && cached.Selectors.Elements != nil && cached.Selectors.Attributes != nil {
-			cssPurgeLog.Printf("HTML selector cache hit: files=%d bytes=%d", len(htmlFiles), scannedBytes)
-			return &cached.Selectors, true, nil
+	cached, cacheExists := loadCSSPurgeHTMLCache(cachePath)
+	if cacheExists && validCSSPurgeHTMLCache(cached) && fileidentity.Available {
+		identities, complete := currentHTMLFileIdentities(htmlFiles, outputDir)
+		if complete && cssPurgeHTMLIdentityCacheMatches(cached, identities, time.Now()) {
+			stats := htmlSelectorScanStats{
+				Files:       len(htmlFiles),
+				BytesReused: cached.HTMLBytes,
+				CacheHit:    true,
+				CacheMode:   htmlSelectorCacheModeIdentity,
+			}
+			cssPurgeLog.Printf("HTML selector cache hit: files=%d bytes_reused=%d bytes_read=0 mode=identity", stats.Files, stats.BytesReused)
+			return &cached.Selectors, stats, nil
 		}
+	}
+
+	fingerprint, scannedBytes, identities, fingerprintOK := fingerprintHTMLFiles(htmlFiles, outputDir, concurrency)
+	stats := htmlSelectorScanStats{Files: len(htmlFiles), BytesRead: scannedBytes}
+	if fingerprintOK && cacheExists && validCSSPurgeHTMLCache(cached) && cached.Fingerprint == fingerprint {
+		cached.Observed = time.Now()
+		cached.HTMLBytes = scannedBytes
+		cached.Files = identities
+		saveCSSPurgeHTMLCache(cachePath, cached)
+		stats.CacheHit = true
+		stats.CacheMode = htmlSelectorCacheModeContent
+		cssPurgeLog.Printf("HTML selector cache hit: files=%d bytes_read=%d mode=content", len(htmlFiles), scannedBytes)
+		return &cached.Selectors, stats, nil
 	}
 
 	used, complete := scanHTMLFilesConcurrently(htmlFiles, concurrency)
 	if fingerprintOK && complete {
-		saveCSSPurgeHTMLCache(cachePath, cssPurgeHTMLCache{Schema: cssPurgeHTMLCacheSchema, Fingerprint: fingerprint, Selectors: *used})
+		saveCSSPurgeHTMLCache(cachePath, cssPurgeHTMLCache{
+			Schema:      cssPurgeHTMLCacheSchema,
+			Fingerprint: fingerprint,
+			Observed:    time.Now(),
+			HTMLBytes:   scannedBytes,
+			Files:       identities,
+			Selectors:   *used,
+		})
 	}
-	cssPurgeLog.Printf("HTML selector scan: files=%d bytes=%d cache_hit=false", len(htmlFiles), scannedBytes)
+	stats.CacheMode = htmlSelectorCacheModeScan
+	cssPurgeLog.Printf("HTML selector scan: files=%d bytes_read=%d cache_hit=false", len(htmlFiles), scannedBytes)
 
 	if verbose {
 		cssPurgeLog.Printf("Found %d classes, %d IDs, %d elements, %d attributes",
 			len(used.Classes), len(used.IDs), len(used.Elements), len(used.Attributes))
 	}
 
-	return used, false, nil
+	return used, stats, nil
 }
 
-const cssPurgeHTMLCacheSchema = 1
+const cssPurgeHTMLCacheSchema = 2
 
 type cssPurgeHTMLCache struct {
-	Schema      int                    `json:"schema"`
-	Fingerprint string                 `json:"fingerprint"`
-	Selectors   csspurge.UsedSelectors `json:"selectors"`
+	Schema      int                              `json:"schema"`
+	Fingerprint string                           `json:"fingerprint"`
+	Observed    time.Time                        `json:"observed,omitempty"`
+	HTMLBytes   int64                            `json:"html_bytes,omitempty"`
+	Files       map[string]fileidentity.Identity `json:"files,omitempty"`
+	Selectors   csspurge.UsedSelectors           `json:"selectors"`
+}
+
+func validCSSPurgeHTMLCache(cached cssPurgeHTMLCache) bool {
+	return cached.Schema == cssPurgeHTMLCacheSchema && cached.Fingerprint != "" && cached.HTMLBytes >= 0 &&
+		cached.Selectors.Classes != nil && cached.Selectors.IDs != nil &&
+		cached.Selectors.Elements != nil && cached.Selectors.Attributes != nil
+}
+
+func currentHTMLFileIdentities(files []string, outputDir string) (map[string]fileidentity.Identity, bool) {
+	if !fileidentity.Available {
+		return nil, false
+	}
+	identities := make(map[string]fileidentity.Identity, len(files))
+	for _, path := range files {
+		info, err := os.Lstat(path)
+		if err != nil || !info.Mode().IsRegular() {
+			return nil, false
+		}
+		identity := fileidentity.Read(info)
+		if identity.Inode == 0 {
+			return nil, false
+		}
+		relative, err := filepath.Rel(outputDir, path)
+		if err != nil || !filepath.IsLocal(relative) {
+			return nil, false
+		}
+		identities[filepath.ToSlash(relative)] = identity
+	}
+	return identities, len(identities) == len(files)
+}
+
+func cssPurgeHTMLIdentityCacheMatches(cached cssPurgeHTMLCache, current map[string]fileidentity.Identity, now time.Time) bool {
+	if !fileidentity.Available || !validCSSPurgeHTMLCache(cached) || cached.Observed.IsZero() ||
+		now.Before(cached.Observed) || len(cached.Files) == 0 || len(cached.Files) != len(current) {
+		return false
+	}
+	for path, identity := range current {
+		if previous, ok := cached.Files[path]; !ok || previous != identity || !identity.StableBefore(cached.Observed) {
+			return false
+		}
+	}
+	return true
 }
 
 func loadCSSPurgeHTMLCache(path string) (cssPurgeHTMLCache, bool) {
@@ -190,13 +285,14 @@ func saveCSSPurgeHTMLCache(path string, entry cssPurgeHTMLCache) {
 }
 
 type htmlFingerprintResult struct {
-	path string
-	sum  [sha256.Size]byte
-	size int64
-	err  error
+	path     string
+	sum      [sha256.Size]byte
+	size     int64
+	identity fileidentity.Identity
+	err      error
 }
 
-func fingerprintHTMLFiles(files []string, outputDir string, concurrency int) (fingerprint string, scannedBytes int64, ok bool) {
+func fingerprintHTMLFiles(files []string, outputDir string, concurrency int) (fingerprint string, scannedBytes int64, identities map[string]fileidentity.Identity, ok bool) {
 	if concurrency < 1 {
 		concurrency = 1
 	}
@@ -211,12 +307,7 @@ func fingerprintHTMLFiles(files []string, outputDir string, concurrency int) (fi
 		go func() {
 			defer wg.Done()
 			for path := range jobs {
-				content, err := os.ReadFile(path)
-				result := htmlFingerprintResult{path: path, err: err}
-				if err == nil {
-					result.sum = sha256.Sum256(content)
-					result.size = int64(len(content))
-				}
+				result := fingerprintHTMLFile(path)
 				results <- result
 			}
 		}()
@@ -233,13 +324,16 @@ func fingerprintHTMLFiles(files []string, outputDir string, concurrency int) (fi
 	for result := range results {
 		if result.err != nil {
 			cssPurgeLog.Warnf("fingerprinting %s: %v", result.path, result.err)
-			return "", totalBytes, false
+			return "", totalBytes, nil, false
 		}
 		totalBytes += result.size
 		items = append(items, result)
 	}
 	sort.Slice(items, func(i, j int) bool { return items[i].path < items[j].path })
 	input := sha256.New()
+	if fileidentity.Available {
+		identities = make(map[string]fileidentity.Identity, len(items))
+	}
 	for _, item := range items {
 		rel, err := filepath.Rel(outputDir, item.path)
 		if err != nil {
@@ -248,8 +342,86 @@ func fingerprintHTMLFiles(files []string, outputDir string, concurrency int) (fi
 		_, _ = input.Write([]byte(filepath.ToSlash(rel)))
 		_, _ = input.Write([]byte{0})
 		_, _ = input.Write(item.sum[:])
+		if identities != nil {
+			if item.identity.Inode == 0 || !filepath.IsLocal(rel) {
+				identities = nil
+			} else if identities != nil {
+				identities[filepath.ToSlash(rel)] = item.identity
+			}
+		}
 	}
-	return hex.EncodeToString(input.Sum(nil)), totalBytes, true
+	if identities != nil && len(identities) != len(items) {
+		identities = nil
+	}
+	return hex.EncodeToString(input.Sum(nil)), totalBytes, identities, true
+}
+
+type htmlFingerprintReader struct{ io.Reader }
+
+var cssPurgeFingerprintBufferPool = sync.Pool{
+	New: func() any {
+		buffer := make([]byte, 64<<10)
+		return &buffer
+	},
+}
+
+func fingerprintHTMLFile(path string) htmlFingerprintResult {
+	result := htmlFingerprintResult{path: path}
+	file, err := os.Open(path)
+	if err != nil {
+		result.err = err
+		return result
+	}
+	var before os.FileInfo
+	if fileidentity.Available {
+		before, err = file.Stat()
+		if err != nil {
+			_ = file.Close()
+			result.err = err
+			return result
+		}
+	}
+	hasher := sha256.New()
+	buffer, ok := cssPurgeFingerprintBufferPool.Get().(*[]byte)
+	if !ok || buffer == nil {
+		fresh := make([]byte, 64<<10)
+		buffer = &fresh
+	}
+	result.size, err = io.CopyBuffer(hasher, htmlFingerprintReader{Reader: file}, *buffer)
+	cssPurgeFingerprintBufferPool.Put(buffer)
+	var after os.FileInfo
+	var afterErr error
+	if fileidentity.Available {
+		after, afterErr = file.Stat()
+	}
+	closeErr := file.Close()
+	if err != nil {
+		result.err = err
+		return result
+	}
+	if afterErr != nil {
+		result.err = afterErr
+		return result
+	}
+	if closeErr != nil {
+		result.err = closeErr
+		return result
+	}
+	hasher.Sum(result.sum[:0])
+	if !fileidentity.Available || !before.Mode().IsRegular() || !after.Mode().IsRegular() {
+		return result
+	}
+	beforeIdentity := fileidentity.Read(before)
+	afterIdentity := fileidentity.Read(after)
+	pathInfo, err := os.Lstat(path)
+	if err != nil || !pathInfo.Mode().IsRegular() {
+		return result
+	}
+	pathIdentity := fileidentity.Read(pathInfo)
+	if beforeIdentity.Inode != 0 && beforeIdentity == afterIdentity && afterIdentity == pathIdentity {
+		result.identity = afterIdentity
+	}
+	return result
 }
 
 // buildPurgeOptions creates PurgeOptions from configuration.
