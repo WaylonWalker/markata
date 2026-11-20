@@ -58,6 +58,8 @@ window.addEventListener('message',event=>{
 const status = document.querySelector('#status');
 const errorBox = document.querySelector('#error');
 const saved = document.querySelector('#saved');
+const imageUploadStatus = document.querySelector('#image-upload-status');
+const pendingImageUploadResolutions = new Map();
 const initial = '# A place to think\n\nEdit this side. Markata renders the other.\n\n!!! note\n    Your draft stays in this browser.\n\n## A small example\n\n```go\nresult, err := plugins.RenderStandalone("# Hello", options)\n```\n\n## Follow the idea\n\n```mermaid\ngraph LR\n  Markdown --> Go --> Preview\n```\n\n- [x] Start writing\n- [ ] Make something useful\n';
 try { source.value = localStorage.getItem('markata-workbench-draft') ?? initial; }
 catch { source.value = initial; storageWarning(); }
@@ -65,6 +67,120 @@ const editor = CodeMirror.fromTextArea(source, {
   mode:'gfm', lineNumbers:true, lineWrapping:true, matchBrackets:true,
   indentUnit:2, tabSize:4, viewportMargin:10, cursorScrollMargin:110, screenReaderLabel:'Markdown source'
 });
+function setImageUploadStatus(message, state = '') {
+  imageUploadStatus.textContent = message;
+  imageUploadStatus.title = message;
+  imageUploadStatus.dataset.state = state;
+}
+function activeImageUploadDocument() {
+  const tree = window.MarkataSiteTree;
+  return tree?.isReady?.() ? tree.activeFile?.() || null : null;
+}
+function imageUploadPlaceholder(id) {
+  return `<span class="markata-image-upload" data-markata-upload-id="${id}" role="status" aria-live="polite" aria-busy="true" style="display:inline-flex;align-items:center;gap:.4em;padding:.1em .5em;border:1px solid currentColor;border-radius:999px;opacity:.75;font-size:.9em">⏳ Uploading image…</span>`;
+}
+function replaceImageUploadPlaceholder(marker, replacement) {
+  const start = editor.getValue().indexOf(marker);
+  if (start < 0) return false;
+  editor.replaceRange(replacement, editor.posFromIndex(start), editor.posFromIndex(start + marker.length), '+markata-image-upload');
+  return true;
+}
+function resolvePendingImageUploads() {
+  const activeDocument = activeImageUploadDocument();
+  const currentValue = editor.getValue();
+  for (const [marker, pending] of pendingImageUploadResolutions) {
+    if (pending.document && activeDocument !== pending.document) continue;
+    if (!currentValue.includes(marker)) {
+      if (!pending.document) continue;
+      pendingImageUploadResolutions.delete(marker);
+      setImageUploadStatus(pending.missingMessage, 'error');
+      continue;
+    }
+    pendingImageUploadResolutions.delete(marker);
+    if (replaceImageUploadPlaceholder(marker, pending.replacement)) setImageUploadStatus(pending.message, pending.state);
+  }
+}
+function settleImageUpload(marker, documentAtPaste, replacement, message, missingMessage, state) {
+  const activeDocument = activeImageUploadDocument();
+  const canResolveHere = !documentAtPaste || activeDocument === documentAtPaste;
+  if (canResolveHere && replaceImageUploadPlaceholder(marker, replacement)) {
+    setImageUploadStatus(message, state);
+    return;
+  }
+  if (documentAtPaste && activeDocument !== documentAtPaste) {
+    pendingImageUploadResolutions.set(marker, {document:documentAtPaste,replacement,message,missingMessage,state});
+    setImageUploadStatus(`Upload finished. Return to ${documentAtPaste} to resolve its placeholder.`);
+    return;
+  }
+  if (!documentAtPaste) {
+    pendingImageUploadResolutions.set(marker, {document:null,replacement,message,missingMessage,state});
+    setImageUploadStatus('Upload finished. Return to the document with its placeholder to resolve it.');
+    return;
+  }
+  setImageUploadStatus(missingMessage, 'error');
+}
+function pastedImageMarkdown(file, imageURL) {
+  const label = String(file.name || 'image')
+    .replace(/\.[^.\\/]+$/, '')
+    .replace(/[\r\n]+/g, ' ')
+    .replace(/([\\[\]])/g, '\\$1')
+    .trim() || 'image';
+  return `![${label}](<${imageURL}>)`;
+}
+async function uploadPastedImage(file) {
+  const id = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const marker = imageUploadPlaceholder(id);
+  const originalText = editor.getSelection();
+  const documentAtPaste = activeImageUploadDocument();
+  editor.replaceRange(marker, editor.getCursor('from'), editor.getCursor('to'), '+markata-image-upload');
+  setImageUploadStatus(`Uploading ${file.name || 'image'} to Dropper…`);
+  const form = new FormData();
+  form.set('image', file, file.name || 'pasted-image');
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 35000);
+  try {
+    const response = await fetch('/workspace/dropper-upload', {method:'POST',body:form,signal:controller.signal});
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || `Dropper upload failed (${response.status}).`);
+    const imageURL = new URL(data.url);
+    if (!['https:', 'http:'].includes(imageURL.protocol) || !imageURL.hostname || imageURL.username || imageURL.password)
+      throw new Error('Dropper returned an invalid image URL.');
+    const markdown = pastedImageMarkdown(file, imageURL.href);
+    settleImageUpload(
+      marker,
+      documentAtPaste,
+      markdown,
+      `${file.name || 'Image'} uploaded to Dropper.`,
+      `Image uploaded, but its placeholder was removed. Markdown to recover: ${markdown}`,
+      'success'
+    );
+  } catch (error) {
+    const reason = error.name === 'AbortError' ? 'the upload timed out' : error.message;
+    const message = `Could not upload ${file.name || 'image'} to Dropper: ${reason}.`;
+    settleImageUpload(
+      marker,
+      documentAtPaste,
+      originalText,
+      `${message} The selected text was restored.`,
+      `${message} Its placeholder was removed before the selection could be restored.`,
+      'error'
+    );
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+editor.getWrapperElement().addEventListener('paste', event => {
+  const item = [...(event.clipboardData?.items || [])].find(candidate => candidate.type.startsWith('image/'));
+  const file = item?.getAsFile();
+  if (!file) return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  if (!['image/png','image/jpeg','image/gif','image/webp'].includes(file.type.toLowerCase())) {
+    setImageUploadStatus('Paste a PNG, JPEG, GIF, or WebP image.', 'error');
+    return;
+  }
+  void uploadPastedImage(file);
+}, true);
 const excalidrawActions = window.MarkataExcalidraw.attach(editor);
 const settingsDialog = document.querySelector('#settings-dialog');
 document.querySelector('#settings-open').addEventListener('click',() => window.MarkataSettings.open());
@@ -946,6 +1062,7 @@ editor.on('change', (_instance, change) => {
   status.textContent = 'Waiting for edits…';
   schedulePreviewRender();
 });
+editor.on('change', () => queueMicrotask(resolvePendingImageUploads));
 document.querySelector('#download').addEventListener('click', () => {
   const url = URL.createObjectURL(new Blob([source.value], {type:'text/markdown;charset=utf-8'}));
   const link = document.createElement('a');

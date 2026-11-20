@@ -61,6 +61,25 @@ workspace `static/` directory. Preview rendering MUST NOT fetch page metadata
 or modify source. Invalid YAML MUST leave the Markdown body preview available
 and show that frontmatter metadata could not be rendered.
 
+Pasting a PNG, JPEG, GIF, or WebP image into the Markdown editor MUST upload it
+through the workbench's Dropper integration and insert an image Markdown link at
+the selection. The editor MUST replace the selection immediately with a unique,
+accessible upload status placeholder. On success, it MUST replace only that
+placeholder with the image Markdown. On failure, it MUST restore the selected
+text when the placeholder remains. If the author changes documents while the
+upload is pending, completion MUST NOT insert Markdown into the newly active
+document; the originating placeholder MUST be resolved if that document is
+opened again. If the author removes the placeholder, the editor MUST preserve
+the current source and report the uploaded Markdown so it can be recovered.
+
+`POST /workspace/dropper-upload` MUST accept one multipart `image` file only
+for same-origin loopback workspace requests. It MUST enforce the existing
+15 MiB limit and verify that the declared MIME type matches PNG, JPEG, GIF, or
+WebP image data before contacting Dropper. Dropper credentials MUST remain
+server-side. Uploads MUST be disabled when the effective
+`content_templates.image_upload` provider is `local`. A successful response
+MUST return the validated Dropper image URL. It MUST NOT write a workspace file.
+
 
 Workspace reads require a loopback client and a localhost or loopback Host.
 `PUT` and `POST /workspace/file` also require an exact same-origin `Origin`;

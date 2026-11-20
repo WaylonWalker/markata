@@ -26,6 +26,22 @@ The preview does not build a site. The language service indexes Markdown and rea
 Use the [Excalidraw canvas](excalidraw-editor.md) to create and edit drawings
 inside a Markdown page.
 
+### Paste an image into Markdown
+
+When the site's effective `content_templates.image_upload` setting uses
+Dropper, paste a PNG, JPEG, GIF, or WebP image into the Markdown editor. The
+workbench places an **Uploading image…** marker at the cursor while it uploads,
+then replaces that marker with an image link such as `![image](https://…)`.
+The server uses `DROPPER_TOKEN`; the browser does not receive the token. The
+upload limit is 15 MiB.
+
+If an upload fails, the workbench restores the selected text when the marker is
+still present. If you remove the marker while an upload is running, the editor
+does not overwrite your edits and reports the Markdown returned by Dropper.
+Uploads are unavailable when `content_templates.image_upload` resolves to
+`local`. See the [content starter guide](content-starters.md) for provider
+configuration.
+
 The preview shows its rendered article and accepts updates before deferred
 feature initialization finishes. Mermaid and other preview features can finish
 initializing afterward. Diagnostics report script readiness and full iframe

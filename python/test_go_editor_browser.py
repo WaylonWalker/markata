@@ -45,6 +45,58 @@ class GoEditorBrowserTest(unittest.TestCase):
     def edit(self, markdown):
         self.page.evaluate("s => document.querySelector('.CodeMirror').CodeMirror.setValue(s)", markdown)
 
+    def defer_dropper_upload(self):
+        self.page.evaluate("""() => {
+          const originalFetch = window.fetch.bind(window);
+          window.__resolveDropperUpload = null;
+          window.fetch = (url, options) => {
+            if (String(url) !== '/workspace/dropper-upload') return originalFetch(url, options);
+            return new Promise(resolve => {
+              window.__resolveDropperUpload = (status, payload) => resolve(new Response(JSON.stringify(payload), {
+                status, headers: {'Content-Type': 'application/json'}
+              }));
+            });
+          };
+        }""")
+
+    def paste_test_image(self):
+        return self.page.evaluate("""() => {
+          const cm = document.querySelector('.CodeMirror').CodeMirror;
+          cm.setValue('before selected after');
+          cm.setSelection({line: 0, ch: 7}, {line: 0, ch: 15});
+          const clipboard = new DataTransfer();
+          clipboard.items.add(new File([new Uint8Array([137, 80, 78, 71])], 'pasted-photo.png', {type: 'image/png'}));
+          const event = new ClipboardEvent('paste', {bubbles: true, cancelable: true, clipboardData: clipboard});
+          cm.getWrapperElement().dispatchEvent(event);
+          return {prevented: event.defaultPrevented, source: cm.getValue()};
+        }""")
+
+    def test_pasted_image_shows_placeholder_then_inserts_markdown(self):
+        self.defer_dropper_upload()
+        pasted = self.paste_test_image()
+        self.assertTrue(pasted['prevented'])
+        self.assertIn('data-markata-upload-id=', pasted['source'])
+        self.assertIn('aria-busy="true"', pasted['source'])
+        self.assertIn('⏳ Uploading image…', pasted['source'])
+        self.assertNotIn('https://dropper.example.com/file/pasted.png', pasted['source'])
+
+        self.page.evaluate("""() => window.__resolveDropperUpload(201, {
+          provider: 'dropper', url: 'https://dropper.example.com/file/pasted.png'
+        })""")
+        self.page.wait_for_function("""() => document.querySelector('.CodeMirror').CodeMirror.getValue()
+          === 'before ![pasted-photo](<https://dropper.example.com/file/pasted.png>) after'""")
+        self.assertEqual(self.page.locator('#image-upload-status').text_content(), 'pasted-photo.png uploaded to Dropper.')
+
+    def test_failed_pasted_image_restores_selected_text(self):
+        self.defer_dropper_upload()
+        pasted = self.paste_test_image()
+        self.assertIn('Uploading image…', pasted['source'])
+        self.page.evaluate("""() => window.__resolveDropperUpload(502, {error: 'Dropper is unavailable'})""")
+        self.page.wait_for_function("""() => document.querySelector('.CodeMirror').CodeMirror.getValue()
+          === 'before selected after'""")
+        self.assertIn('Could not upload pasted-photo.png to Dropper: Dropper is unavailable.', self.page.locator('#image-upload-status').text_content())
+        self.assertEqual(self.page.locator('#image-upload-status').get_attribute('data-state'), 'error')
+
     def test_fragments_retain_frame_and_styles(self):
         self.edit("# Plain")
         expect(self.preview.locator("h1")).to_have_text("Plain")
