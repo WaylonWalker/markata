@@ -457,8 +457,9 @@ function chooseTemplate(template) {
   createRememberDefaults.checked = true;
   updateCreatePathPreview();
   createDialog.showModal();
-  createTitle.focus();
-  createTitle.select();
+  const initialField = isLinkPost ? createLinkURL : isImagePost ? createImageURL : createTitle;
+  initialField.focus();
+  if (initialField === createTitle) createTitle.select();
 }
 function renderTemplateChoices() {
   const query = templateQuery.value.trim().toLowerCase();
