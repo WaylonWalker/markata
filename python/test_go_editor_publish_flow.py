@@ -551,6 +551,9 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         page.on("pageerror", lambda error: errors.append(str(error)))
         page.goto(self.url)
         self.open_site_file(page, "posts/quick-publish.md", errors)
+        publish_button = page.locator("#publish-open")
+        expect(publish_button).to_have_text("Publish post", timeout=15000)
+        expect(publish_button).to_be_enabled()
         source = page.evaluate("document.querySelector('.CodeMirror').CodeMirror.getValue()")
         self.edit_source(page, source.replace("# Quick before", "# Quick after"))
         expect(page.locator("#saved")).to_have_text("Saved to site", timeout=10000)
@@ -559,12 +562,33 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         expect(panel.locator("#workspace-changes-list")).to_contain_text("posts/quick-publish.md")
         page.locator(".CodeMirror").click()
         page.keyboard.press("Control+S")
-        expect(page.locator("#markata-publish-status")).to_contain_text("Published to Git", timeout=30000)
+        expect(page.locator("#markata-publish-status")).to_contain_text("Up to date in Git", timeout=30000)
+        expect(publish_button).to_have_text("Up to date", timeout=15000)
+        expect(publish_button).to_be_disabled()
         expect(panel.locator("#workspace-changes-list")).not_to_contain_text("posts/quick-publish.md")
         self.assertIn("# Quick after", self.git(self.site, "show", "HEAD:posts/quick-publish.md"))
         self.assertIn("published: true", self.git(self.site, "show", "HEAD:posts/quick-publish.md"))
         self.assertEqual(self.git(self.site, "rev-parse", "HEAD"),
                          self.git(self.remote, "rev-parse", "refs/heads/main"))
+
+        compare_button = page.get_by_role("button", name="Compare changes for the active post")
+        expect(compare_button).to_be_visible()
+        compare_button.click()
+        review = page.locator("#publish-review")
+        expect(review.locator("#publish-no-changes")).to_be_visible()
+        expect(review.locator("#publish-no-changes")).to_contain_text("All caught up")
+        review.locator("#publish-back").click()
+
+        # A later edit re-enables the action and the adjacent control compares
+        # the newly saved source against the commit produced above.
+        source = page.evaluate("document.querySelector('.CodeMirror').CodeMirror.getValue()")
+        self.edit_source(page, source + "\nA later edit to publish.\n")
+        expect(page.locator("#saved")).to_have_text("Saved to site", timeout=10000)
+        expect(publish_button).to_have_text("Publish post", timeout=15000)
+        expect(publish_button).to_be_enabled()
+        compare_button.click()
+        expect(review.locator("#publish-source-diff")).to_contain_text("A later edit to publish.")
+        review.locator("#publish-back").click()
         self.assertEqual(errors, [])
 
     def test_git_gutter_large_document(self):
