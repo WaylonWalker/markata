@@ -63,14 +63,18 @@ and show that frontmatter metadata could not be rendered.
 
 Pasting a PNG, JPEG, GIF, or WebP image into the Markdown editor MUST upload it
 through the workbench's Dropper integration and insert an image Markdown link at
-the selection. The editor MUST replace the selection immediately with a unique,
-accessible upload status placeholder. On success, it MUST replace only that
-placeholder with the image Markdown. On failure, it MUST restore the selected
-text when the placeholder remains. If the author changes documents while the
-upload is pending, completion MUST NOT insert Markdown into the newly active
-document; the originating placeholder MUST be resolved if that document is
-opened again. If the author removes the placeholder, the editor MUST preserve
-the current source and report the uploaded Markdown so it can be recovered.
+the selection. The editor MUST accept image files exposed through either
+`clipboardData.items` or `clipboardData.files`. If the clipboard identifies image
+data but does not expose readable image bytes, the editor MUST show an accessible
+error instead of silently ignoring the paste. The editor MUST replace the
+selection immediately with a unique, accessible upload status placeholder. On
+success, it MUST replace only that placeholder with the image Markdown. On
+failure, it MUST restore the selected text when the placeholder remains. If the
+author changes documents while the upload is pending, completion MUST NOT insert
+Markdown into the newly active document; the originating placeholder MUST be
+resolved if that document is opened again. If the author removes the placeholder,
+the editor MUST preserve the current source and report the uploaded Markdown so
+it can be recovered.
 
 `POST /workspace/dropper-upload` MUST accept one multipart `image` file only
 for same-origin loopback workspace requests. It MUST enforce the existing

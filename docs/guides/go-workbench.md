@@ -35,6 +35,11 @@ then replaces that marker with an image link such as `![image](https://…)`.
 The server uses `DROPPER_TOKEN`; the browser does not receive the token. The
 upload limit is 15 MiB.
 
+Paste while the Markdown editor has focus. If the browser reports image data but
+does not make the image bytes available, the workbench shows an error in the
+editor toolbar. Try copying the image again or drop the image file into the
+editor.
+
 If an upload fails, the workbench restores the selected text when the marker is
 still present. If you remove the marker while an upload is running, the editor
 does not overwrite your edits and reports the Markdown returned by Dropper.

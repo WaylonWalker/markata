@@ -169,10 +169,26 @@ async function uploadPastedImage(file) {
     clearTimeout(timeout);
   }
 }
+function imageFromClipboard(clipboardData) {
+  const items = [...(clipboardData?.items || [])];
+  const files = [...(clipboardData?.files || [])];
+  const isImageType = value => typeof value === 'string' && value.toLowerCase().startsWith('image/');
+  const imageItem = items.find(candidate => candidate.kind === 'file' && isImageType(candidate.type));
+  const file = imageItem?.getAsFile() || files.find(candidate => isImageType(candidate.type)) || null;
+  const advertisesImage = Boolean(imageItem || files.some(candidate => isImageType(candidate.type))
+    || [...(clipboardData?.types || [])].some(isImageType));
+  return {file, advertisesImage};
+}
 editor.getWrapperElement().addEventListener('paste', event => {
-  const item = [...(event.clipboardData?.items || [])].find(candidate => candidate.type.startsWith('image/'));
-  const file = item?.getAsFile();
-  if (!file) return;
+  const {file, advertisesImage} = imageFromClipboard(event.clipboardData);
+  if (!file) {
+    if (advertisesImage) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      setImageUploadStatus('Image paste unavailable. Copy again or drop the image file.', 'error');
+    }
+    return;
+  }
   event.preventDefault();
   event.stopImmediatePropagation();
   if (!['image/png','image/jpeg','image/gif','image/webp'].includes(file.type.toLowerCase())) {
