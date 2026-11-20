@@ -876,9 +876,19 @@ MUST NOT turn off purging for unrelated selectors. Sites overriding
 pseudo-only selectors like `:root` or `::selection` to avoid dropping base/theme styles.
 Full builds MAY cache the aggregate selector set and purged CSS under
 `.markata-cache/css-purge` in the content directory. Selector cache validity MUST include
-the sorted generated HTML paths and exact file bytes. Purged CSS cache validity MUST
-include stylesheet bytes, the selector set, and purge options. Missing or invalid cache
-entries MUST fall back to the normal scan or purge path.
+the sorted generated HTML paths and exact file bytes. On Linux filesystems with verified
+file identities, a cache populated from exact HTML bytes MAY reuse the selector set without
+reading those bytes again only when the complete generated HTML path set is unchanged and
+every regular file has the same stable device, inode, size, mode, modification time, and
+change time captured while hashing those exact bytes. Each identity MUST be stable for more
+than the filesystem timestamp guard before the stored observation time. Future observations,
+missing or added paths, changed identities, symlinks, unsupported filesystems, and invalid
+cache data MUST fall back to the exact-byte fingerprint. If that fingerprint matches the
+cached exact-byte fingerprint, the cached selector set MAY be reused. Otherwise Markata MUST
+scan the HTML files again. Exact-byte fingerprinting SHOULD stream file contents through a
+bounded buffer. Cache entries MUST be versioned. Purged CSS cache validity MUST include
+stylesheet bytes, the selector set, and purge options. Missing or invalid cache entries MUST
+fall back to the normal scan or purge path.
 
 ### Tailwind (`[my-ssg.tailwind]`)
 
