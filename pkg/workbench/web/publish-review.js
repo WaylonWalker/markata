@@ -1016,7 +1016,7 @@
       !['deleted', 'conflict'].includes(change.kind) &&
       window.MarkataSiteTree?.files?.()?.some(file => file.path === change.editor_path));
   }
-  async function renderWorkspaceChangeDiff(change, data, generation) {
+  function renderWorkspaceChangeDiff(change, data) {
     const detail = changesReviewDetail;
     const diff = detail.querySelector('#workspace-review-diff');
     diff.replaceChildren();
@@ -1028,6 +1028,16 @@
       empty.textContent = 'The saved file matches the last committed version.';
       diff.append(empty);
     }
+    detail.querySelector('#workspace-review-baseline').textContent = data.baseline_exists
+      ? 'Last commit · ' + data.head.slice(0, 8)
+      : 'No committed baseline · new file';
+    detail.querySelector('#workspace-review-working').textContent = 'Saved workspace version';
+    detail.querySelector('#workspace-review-meta').textContent = change.previous_path
+      ? 'Renamed from ' + change.previous_path + ' · ' + changeStateText(change)
+      : changeStateText(change);
+    detail.querySelector('#workspace-review-unavailable').hidden = true;
+    detail.querySelector('#workspace-review-diff-wrap').hidden = false;
+    diff.setAttribute('aria-label', 'Source diff for ' + change.path);
     for (const line of lines) {
       const row = document.createElement('div');
       row.className = 'workspace-review-diff-line ' + line.type;
@@ -1038,39 +1048,6 @@
       content.textContent = line.text || ' ';
       row.append(prefix, content);
       diff.append(row);
-    }
-    detail.querySelector('#workspace-review-baseline').textContent = data.baseline_exists
-      ? 'Last commit · ' + data.head.slice(0, 8)
-      : 'No committed baseline · new file';
-    detail.querySelector('#workspace-review-working').textContent = 'Saved workspace version';
-    detail.querySelector('#workspace-review-meta').textContent = change.previous_path
-      ? 'Renamed from ' + change.previous_path + ' · ' + changeStateText(change)
-      : changeStateText(change);
-    detail.querySelector('#workspace-review-unavailable').hidden = true;
-    detail.querySelector('#workspace-review-diff-wrap').hidden = false;
-    try {
-      await loadPierre();
-      if (generation !== changesReviewGeneration || !changesReviewDialog?.open) return;
-      await window.MarkataPierreDiff.render(diff, data.baseline, data.current, {
-        filename: change.path, newFile: !data.baseline_exists, layout: 'unified'
-      });
-      if (generation !== changesReviewGeneration || !changesReviewDialog?.open)
-        window.MarkataPierreDiff.release(diff);
-    } catch {
-      if (generation !== changesReviewGeneration || !changesReviewDialog?.open) return;
-      window.MarkataPierreDiff?.release?.(diff);
-      diff.replaceChildren();
-      for (const line of lines) {
-        const row = document.createElement('div');
-        row.className = 'workspace-review-diff-line ' + line.type;
-        const prefix = document.createElement('span');
-        prefix.className = 'workspace-review-diff-prefix';
-        prefix.textContent = line.type === 'add' ? '+' : line.type === 'del' ? '−' : ' ';
-        const content = document.createElement('span');
-        content.textContent = line.text || ' ';
-        row.append(prefix, content);
-        diff.append(row);
-      }
     }
   }
   function showWorkspaceChangeUnavailable(message) {
@@ -1096,12 +1073,12 @@
     const generation = ++changesReviewGeneration;
     renderChangesReviewQueue();
     changesReviewDetail.innerHTML =
-      '<header class="workspace-review-detail-head"><div><small id="workspace-review-kind"></small><h3 id="workspace-review-path"></h3><p id="workspace-review-meta"></p></div></header>' +
+      '<header class="workspace-review-detail-head"><div><small id="workspace-review-kind"></small><h3 id="workspace-review-path"></h3><p id="workspace-review-meta"></p></div><button type="button" id="workspace-review-formats">Full review…</button></header>' +
       '<div class="workspace-review-baselines"><span id="workspace-review-baseline">Loading baseline…</span><span id="workspace-review-working"></span><span id="workspace-review-diff-count"></span></div>' +
       '<p class="workspace-review-load" id="workspace-review-load" role="status">Loading saved source comparison…</p>' +
       '<div class="workspace-review-diff-wrap" id="workspace-review-diff-wrap" hidden><div class="workspace-review-diff" id="workspace-review-diff" role="region" tabindex="0" aria-label="Source diff"></div></div>' +
       '<p class="workspace-review-unavailable" id="workspace-review-unavailable" role="status" hidden></p>' +
-      '<footer class="workspace-review-actions"><div><strong>Keep leaves this saved file unchanged.</strong><span id="workspace-review-reset-note">Reset opens the full post review and still asks you to confirm.</span></div><button type="button" id="workspace-review-keep">Keep in workspace</button><button type="button" id="workspace-review-open-file">Open in editor</button><button type="button" id="workspace-review-reset">Review and reset…</button></footer>';
+      '<footer class="workspace-review-actions"><div><strong>Keep leaves this saved file unchanged.</strong><span id="workspace-review-reset-note">Full review has rendered, side-by-side, source, and full diff modes; reset needs confirmation.</span></div><button type="button" id="workspace-review-keep">Keep in workspace</button><button type="button" id="workspace-review-open-file">Open in editor</button><button type="button" id="workspace-review-reset">Review and reset…</button></footer>';
     const detail = changesReviewDetail;
     detail.querySelector('#workspace-review-kind').textContent = changeLabel(change) + ' · ' + change.status;
     detail.querySelector('#workspace-review-path').textContent = change.path;
@@ -1123,11 +1100,32 @@
       }
     });
     const reset = detail.querySelector('#workspace-review-reset');
+    const formats = detail.querySelector('#workspace-review-formats');
     const openFile = detail.querySelector('#workspace-review-open-file');
     const resetReason = resetUnavailableReason(change);
     reset.disabled = Boolean(resetReason);
-    detail.querySelector('#workspace-review-reset-note').textContent = resetReason || 'Reset opens the full post review and still asks you to confirm.';
+    detail.querySelector('#workspace-review-reset-note').textContent = resetReason || 'Full review has rendered, side-by-side, source, and full diff modes; reset needs confirmation.';
     reset.title = resetReason || 'Open the saved Markdown post and review its reset safeguards.';
+    formats.disabled = !isOpenableWorkspacePost(change);
+    formats.title = formats.disabled
+      ? 'Full review modes are available for Markdown posts in this workspace.'
+      : 'Choose rendered, side-by-side, source, or full diff.';
+    formats.addEventListener('click', async () => {
+      if (formats.disabled || !window.MarkataSiteTree?.openFile || !window.MarkataPublishReview?.open) return;
+      formats.disabled = true;
+      formats.textContent = 'Opening review…';
+      try {
+        await window.MarkataSiteTree.openFile(change.editor_path);
+        if (window.MarkataSiteTree.activeFile?.() !== change.editor_path)
+          throw new Error('The selected file is not available in the editor workspace.');
+        changesReviewDialog.close();
+        await window.MarkataPublishReview.open();
+      } catch (error) {
+        formats.disabled = false;
+        formats.textContent = 'Full review…';
+        showWorkspaceChangeUnavailable('Could not open the full post review: ' + error.message);
+      }
+    });
     openFile.disabled = !isOpenableWorkspacePost(change);
     openFile.title = openFile.disabled ? resetReason || 'This file cannot be opened in the editor.' : 'Open this Markdown post in the editor.';
     openFile.addEventListener('click', async () => {
@@ -1184,7 +1182,8 @@
       if (!response.ok || typeof data.current !== 'string' || typeof data.baseline !== 'string')
         throw new Error(data.error || 'Comparison unavailable.');
       detail.querySelector('#workspace-review-load').hidden = true;
-      await renderWorkspaceChangeDiff(change, data, generation);
+      if (generation !== changesReviewGeneration || !changesReviewDialog?.open) return;
+      renderWorkspaceChangeDiff(change, data);
     } catch (error) {
       if (generation !== changesReviewGeneration || changesReviewPath !== path) return;
       detail.querySelector('#workspace-review-load').hidden = true;

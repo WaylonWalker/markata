@@ -66,6 +66,10 @@ changes, deleted files, conflicts, and out-of-site or non-Markdown files, with
 a reason shown to the writer. Reset MUST NOT change unrelated paths or Git
 history.
 
+The Changes queue MUST keep its quick source comparison readable without the
+optional full-diff renderer. Its Markdown review action MUST expose the
+existing rendered, side-by-side, source, and full-diff modes.
+
 The review queue is an inspection and triage surface; multi-file commit and
 publish remain separate workflows. Closing review leaves all workspace changes
 untouched. Never equate an empty worktree with a fully pushed or live site;

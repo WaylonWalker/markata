@@ -401,6 +401,8 @@ opens the full review for an unstaged Markdown post. **Open in editor** opens
 an editable Markdown post without changing its worktree status. In the reset
 review, select **Discard changes…** and confirm to restore the exact last
 committed source.
+Select **Full review…** in the diff header to choose Rendered diff, Side by
+side, Source diff, or Full diff for a Markdown post.
 The workbench disables reset for staged files, deleted files, conflicts,
 non-Markdown files, and files outside the selected site. The server also
 rejects stale source versions or a changed Git baseline. Other files can be

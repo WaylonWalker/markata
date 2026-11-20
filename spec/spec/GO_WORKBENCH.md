@@ -91,6 +91,10 @@ MUST NOT imply that it is deployed or live. Deleted files, conflicts, binary or
 oversized files, and files outside the selected site MUST keep a clear status
 and explanation when a source diff is unavailable.
 
+For an eligible Markdown post, the review queue MUST provide a clear path to
+the existing rendered, side-by-side, source, and full-diff review modes. The
+quick source view MUST remain readable without the optional full-diff renderer.
+
 The review queue's **Keep in workspace** action MUST leave the file, Git index,
 and history unchanged. It only marks the entry reviewed for the current queue
 session and MUST be described as such. It MUST NOT stage, commit, push, publish,
