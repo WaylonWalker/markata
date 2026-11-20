@@ -560,7 +560,7 @@ document.querySelector('#create-form').addEventListener('submit',async event => 
       try{parsedImageURL=new URL(imageURL);}catch{throw new Error('Enter a valid image URL beginning with https:// or http://.');}
       if(!['https:','http:'].includes(parsedImageURL.protocol)||!parsedImageURL.hostname||parsedImageURL.username||parsedImageURL.password)
         throw new Error('Use a public-style http(s) image URL without embedded credentials.');
-      source=setFrontmatterValue(source,'image',imageURL);
+      source=window.MarkataContentStarters.setFrontmatterValue(source,'image',imageURL);
     }
     const changedDefaults = directory !== template.directory || filenameMode !== (template.filename_mode || 'title');
     if (createRememberDefaults.checked && changedDefaults) {
