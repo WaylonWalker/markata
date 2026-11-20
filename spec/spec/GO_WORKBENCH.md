@@ -61,6 +61,36 @@ workspace `static/` directory. Preview rendering MUST NOT fetch page metadata
 or modify source. Invalid YAML MUST leave the Markdown body preview available
 and show that frontmatter metadata could not be rendered.
 
+Pasting a PNG, JPEG, GIF, or WebP image into the Markdown editor MUST upload it
+through the workbench's Dropper integration and insert an image Markdown link at
+the selection. The editor MUST accept image files exposed through either
+`clipboardData.items` or `clipboardData.files`. If the clipboard identifies image
+data but does not expose readable image bytes, the editor MUST show an accessible
+error instead of silently ignoring the paste. The editor MUST replace the
+selection immediately with a unique, accessible upload status placeholder. On
+success, it MUST replace only that placeholder with the image Markdown. On
+failure, it MUST restore the selected text when the placeholder remains. If the
+author changes documents while the upload is pending, completion MUST NOT insert
+Markdown into the newly active document; the originating placeholder MUST be
+resolved if that document is opened again. If the author removes the placeholder,
+the editor MUST preserve the current source and report the uploaded Markdown so
+it can be recovered.
+
+In Vim normal or visual mode, `p` and `P` MUST check the browser clipboard for
+an image before invoking Vim's register paste. A clipboard image MUST use the
+same upload placeholder and Dropper flow as a native paste event. When no image
+is available, the editor MUST replay the original Vim paste command. Clipboard
+read failures MUST be reported accessibly and MUST preserve Vim's register paste
+behavior. `Ctrl+V` MUST retain Vim's blockwise visual-selection behavior.
+
+`POST /workspace/dropper-upload` MUST accept one multipart `image` file only
+for same-origin loopback workspace requests. It MUST enforce the existing
+15 MiB limit and verify that the declared MIME type matches PNG, JPEG, GIF, or
+WebP image data before contacting Dropper. Dropper credentials MUST remain
+server-side. Uploads MUST be disabled when the effective
+`content_templates.image_upload` provider is `local`. A successful response
+MUST return the validated Dropper image URL. It MUST NOT write a workspace file.
+
 
 Workspace reads require a loopback client and a localhost or loopback Host.
 `PUT` and `POST /workspace/file` also require an exact same-origin `Origin`;

@@ -585,7 +585,7 @@ func isWorkspaceRoute(routePath, method string) bool {
 	switch {
 	case routePath == "/workspace" || routePath == "/workspace/templates" || routePath == "/workspace/content-number" || routePath == "/workspace/image" || routePath == "/workspace/index-status" || routePath == "/workspace/changes":
 		return method == http.MethodGet
-	case routePath == "/workspace/new-post":
+	case routePath == "/workspace/new-post" || routePath == "/workspace/dropper-upload":
 		return method == http.MethodPost
 	case routePath == "/workspace/link-metadata":
 		return method == http.MethodPost
@@ -759,6 +759,10 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 		}
 		w.Header().Set("Cache-Control", "no-store")
 		serve(w, r, name, data)
+		return
+	}
+	if r.URL.Path == "/workspace/dropper-upload" {
+		h.serveWorkspaceDropperUpload(w, r)
 		return
 	}
 	if r.URL.Path == "/workspace/new-post" {
@@ -1116,6 +1120,77 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Server-Timing", fmt.Sprintf("site-paths;dur=%.1f", indexMS))
 	}
 	if err := json.NewEncoder(w).Encode(response); err != nil {
+		return
+	}
+}
+
+func (h *Handler) serveWorkspaceDropperUpload(w http.ResponseWriter, r *http.Request) {
+	if !sameOriginWorkspaceMutation(r) {
+		fail(w, http.StatusForbidden, "same-origin workspace writes are required")
+		return
+	}
+	if h.imageUploadProvider() != imageUploadModeDropper {
+		fail(w, http.StatusConflict, "Dropper image uploads are not enabled for this site")
+		return
+	}
+	if strings.TrimSpace(os.Getenv("DROPPER_TOKEN")) == "" {
+		fail(w, http.StatusServiceUnavailable, "Dropper uploads are not configured on this server")
+		return
+	}
+
+	const maxImageBytes = 15 << 20
+	r.Body = http.MaxBytesReader(w, r.Body, maxImageBytes+(1<<20))
+	if err := r.ParseMultipartForm(1 << 20); err != nil {
+		var maxBytesErr *http.MaxBytesError
+		if errors.As(err, &maxBytesErr) {
+			fail(w, http.StatusRequestEntityTooLarge, "image exceeds 15 MiB")
+			return
+		}
+		fail(w, http.StatusBadRequest, "cannot read image upload")
+		return
+	}
+	if r.MultipartForm != nil {
+		defer func() {
+			if err := r.MultipartForm.RemoveAll(); err != nil {
+				log.Printf("cleanup multipart Dropper upload: %v", err)
+			}
+		}()
+	}
+	files := r.MultipartForm.File["image"]
+	if len(r.MultipartForm.File) != 1 || len(files) != 1 {
+		fail(w, http.StatusBadRequest, "provide exactly one image file")
+		return
+	}
+	image, header, err := r.FormFile("image")
+	if err != nil {
+		fail(w, http.StatusBadRequest, "image upload is missing")
+		return
+	}
+	defer image.Close()
+	data, err := io.ReadAll(io.LimitReader(image, maxImageBytes+1))
+	if err != nil {
+		fail(w, http.StatusBadRequest, "cannot read image upload")
+		return
+	}
+	if len(data) > maxImageBytes {
+		fail(w, http.StatusRequestEntityTooLarge, "image exceeds 15 MiB")
+		return
+	}
+	extension, err := editorworkspace.ImageExtension(header.Header.Get("Content-Type"), data)
+	if err != nil {
+		fail(w, http.StatusUnprocessableEntity, err.Error())
+		return
+	}
+	filename := fmt.Sprintf("markata-image-%d.%s", time.Now().UTC().UnixNano(), extension)
+	imageURL, err := h.uploadImageToDropper(r.Context(), filename, header.Header.Get("Content-Type"), data)
+	if err != nil {
+		fail(w, http.StatusBadGateway, err.Error())
+		return
+	}
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	if err := json.NewEncoder(w).Encode(map[string]string{"url": imageURL, "provider": imageUploadModeDropper}); err != nil {
 		return
 	}
 }
