@@ -69,6 +69,7 @@ The docs explain *why* and *usage* - user-friendly guides, examples, tutorials.
 | [EDITORIAL_HISTORY.md](./spec/EDITORIAL_HISTORY.md) | Editorial history, lazy source comparisons, and editor credits |
 | [EDITORIAL_AUTHORING.md](./spec/EDITORIAL_AUTHORING.md) | Isolated attributed commits for humans and agents |
 | [EXCALIDRAW.md](./spec/EXCALIDRAW.md) | Excalidraw scene format and workbench authoring behavior |
+| [EDITOR_WORKSPACE.md](./spec/EDITOR_WORKSPACE.md) | Editor workspace, local access, hosted ForwardAuth boundary, and mutations |
 | [EXCALIDRAW_RENDERING.md](./spec/EXCALIDRAW_RENDERING.md) | Browserless static rendering contract and renderer comparison |
 | [CLI_LIST.md](./spec/CLI_LIST.md) | CLI list command and output formats |
 | [CLI_SITE_DIR.md](./spec/CLI_SITE_DIR.md) | Cross-directory site selection and agent workflows |

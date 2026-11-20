@@ -108,3 +108,4 @@ fi
 
 printf 'Builder Admin workspace and DAG Helm tests passed.\n'
 bash "$repo_root/helm-chart/tests/portable-defaults.sh"
+bash "$repo_root/helm-chart/tests/builder-admin-editor.sh"

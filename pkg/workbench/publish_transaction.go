@@ -77,13 +77,13 @@ func hashApprovedSource(ctx context.Context, root, source string) (string, error
 	return blob, nil
 }
 
-func readPublishInput(w http.ResponseWriter, r *http.Request, dst any) bool {
+func (h *Handler) readPublishInput(w http.ResponseWriter, r *http.Request, dst any) bool {
 	if r.Method != http.MethodPost {
 		w.Header().Set("Allow", "POST")
 		fail(w, http.StatusMethodNotAllowed, "POST required")
 		return false
 	}
-	if !sameOriginWorkspaceMutation(r) {
+	if !h.sameOriginWorkspaceMutation(r) {
 		fail(w, http.StatusForbidden, "same-origin confirmation required")
 		return false
 	}
@@ -181,7 +181,7 @@ func (h *Handler) publishPath(path string) (string, string, error) {
 //nolint:gocyclo // Explicit validation and failure responses keep the publish transaction auditable.
 func (h *Handler) servePublishCommit(w http.ResponseWriter, r *http.Request) {
 	var req commitRequest
-	if !readPublishInput(w, r, &req) {
+	if !h.readPublishInput(w, r, &req) {
 		return
 	}
 	if !gitHashPattern.MatchString(req.Head) || !gitHashPattern.MatchString(req.Version) {
@@ -299,7 +299,7 @@ func (h *Handler) servePublishCommit(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) servePublishPush(w http.ResponseWriter, r *http.Request) {
 	var req pushRequest
-	if !readPublishInput(w, r, &req) {
+	if !h.readPublishInput(w, r, &req) {
 		return
 	}
 	if !gitHashPattern.MatchString(req.Commit) || !branchPattern.MatchString(req.Branch) {

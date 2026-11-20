@@ -752,16 +752,18 @@ markata editor [flags]
 ```
 
 The editor uses Markata's Go renderer and LSP in the same process. It binds to
-loopback by default and prints its local URL. Browser drafts stay in memory;
-use **Download .md** to save a copy. The file tree opens discovered workspace sources. Edits remain browser drafts;
-the command does not save changes to source files.
+loopback by default and prints its local URL. The file tree opens discovered
+workspace sources, which can be edited and saved from the browser.
 
 #### Flags
 
 | Flag | Description | Default |
 | --- | --- | --- |
 | `--workspace` | Markdown workspace used for language assistance | `.` |
-| `--listen` | Loopback HTTP address | `127.0.0.1:8766` |
+| `--listen` | HTTP listener address; non-loopback requires hosted auth | `127.0.0.1:8766` |
+| `--public-origin` | Canonical HTTPS origin for hosted Hlab ForwardAuth | None |
+| `--trusted-proxy-cidr` | Trusted reverse proxy source range; repeatable | None |
+| `--required-scope` | App-specific Hlab writer scope required on every request | None |
 | `--port`, `-p` | HTTP port (overrides the port in `--listen`) | `8766` |
 
 #### Examples
@@ -777,8 +779,23 @@ markata editor --workspace ~/sites/blog
 markata editor --listen 127.0.0.1:8767
 ```
 
-The listener accepts only `localhost` or a loopback IP address. See the
-[Go editor guide](/docs/guides/go-workbench/) for browser behavior and LSP completions.
+The listener accepts only `localhost` or a loopback IP address by default.
+Non-loopback addresses require hosted Hlab ForwardAuth configuration with all
+three settings: `--public-origin`, one or more `--trusted-proxy-cidr` values,
+and `--required-scope`. The origin must be canonical HTTPS, and the scope must
+be app-specific. Example:
+
+```bash
+markata editor --workspace /data/source --listen 0.0.0.0:8766 \
+  --public-origin https://edit.example.com \
+  --trusted-proxy-cidr 10.42.0.0/24 \
+  --required-scope markata-editor:admin
+```
+
+The app checks every request against the configured proxy peer, Host, forwarded
+Hlab user ID, and exact required scope. See the
+[Go editor guide](/docs/guides/go-workbench/) for the Hlab Auth route contract,
+browser behavior, and LSP completions.
 
 ---
 
