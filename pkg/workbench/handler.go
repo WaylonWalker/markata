@@ -98,6 +98,7 @@ type Handler struct {
 	workspaceWriteMu sync.Mutex
 	lastSource       string
 	lastResult       *plugins.StandaloneResult
+	hostedAuth       *hostedAuth
 }
 
 // New builds immutable appearance assets once. Reuse the handler for all requests.
@@ -130,7 +131,7 @@ func NewWithWorkspace(ctx context.Context, root string) (*Handler, error) {
 	handler.store = workspace
 	handler.configRevision = revision
 	go func() {
-		service, err := lsp.NewWebSocketHandlerWithIndex(ctx, root, log.Default(), workspace.Snapshot)
+		service, err := lsp.NewWebSocketHandlerWithIndexAndOriginCheck(ctx, root, log.Default(), workspace.Snapshot, handler.validLSPOrigin)
 		if err != nil {
 			if ctx.Err() == nil {
 				log.Printf("editor startup: language service unavailable: %v", err)
@@ -253,6 +254,14 @@ func styleLink(name string) string { return `<link rel="stylesheet" href="/appea
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-Content-Type-Options", "nosniff")
+	if h.hostedAuth != nil {
+		w.Header().Set("Cache-Control", "private, no-store")
+		w = &privateNoStoreResponseWriter{ResponseWriter: w}
+		if !h.authorizeHostedRequest(r) {
+			http.Error(w, "authenticated editor access required", http.StatusUnauthorized)
+			return
+		}
+	}
 	switch {
 	case isWorkspaceRoute(r.URL.Path, r.Method):
 		h.serveWorkspace(w, r)
@@ -303,7 +312,9 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.NotFound(w, r)
 			return
 		}
-		w.Header().Set("Access-Control-Allow-Origin", "*")
+		if h.hostedAuth == nil {
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+		}
 		serve(w, r, r.URL.Path, data)
 	case strings.HasPrefix(r.URL.Path, "/editor/"):
 		w.Header().Set("Cache-Control", "no-cache")
@@ -366,7 +377,12 @@ func fail(w http.ResponseWriter, status int, message string) {
 func (h *Handler) render(w http.ResponseWriter, r *http.Request) {
 	requestStarted := time.Now()
 	w.Header().Set("Cache-Control", "no-store")
-	if origin := r.Header.Get("Origin"); origin != "" {
+	if h.hostedAuth != nil {
+		if !h.sameOriginWorkspaceMutation(r) {
+			fail(w, http.StatusForbidden, "same-origin rendering is required")
+			return
+		}
+	} else if origin := r.Header.Get("Origin"); origin != "" {
 		u, err := url.Parse(origin)
 		if err != nil || u.Host != r.Host || (u.Scheme != "http" && u.Scheme != "https") {
 			fail(w, 403, "cross-origin rendering is disabled")
@@ -740,15 +756,17 @@ func isLoopbackHost(host string) bool {
 }
 
 func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
-	peer, _, peerErr := net.SplitHostPort(r.RemoteAddr)
-	if peerErr != nil || net.ParseIP(peer) == nil || !net.ParseIP(peer).IsLoopback() {
-		http.Error(w, "local workspace access required", http.StatusForbidden)
-		return
-	}
-	host, hostErr := url.Parse("//" + r.Host)
-	if hostErr != nil || host.User != nil || host.Path != "" || (host.Hostname() != "localhost" && (net.ParseIP(host.Hostname()) == nil || !net.ParseIP(host.Hostname()).IsLoopback())) {
-		http.Error(w, "local workspace access required", http.StatusForbidden)
-		return
+	if h.hostedAuth == nil {
+		peer, _, peerErr := net.SplitHostPort(r.RemoteAddr)
+		if peerErr != nil || net.ParseIP(peer) == nil || !net.ParseIP(peer).IsLoopback() {
+			http.Error(w, "local workspace access required", http.StatusForbidden)
+			return
+		}
+		host, hostErr := url.Parse("//" + r.Host)
+		if hostErr != nil || host.User != nil || host.Path != "" || (host.Hostname() != "localhost" && (net.ParseIP(host.Hostname()) == nil || !net.ParseIP(host.Hostname()).IsLoopback())) {
+			http.Error(w, "local workspace access required", http.StatusForbidden)
+			return
+		}
 	}
 	if r.URL.Path == "/workspace/image" {
 		name := r.URL.Query().Get("path")
@@ -766,7 +784,7 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if r.URL.Path == "/workspace/new-post" {
-		if !sameOriginWorkspaceMutation(r) {
+		if !h.sameOriginWorkspaceMutation(r) {
 			fail(w, http.StatusForbidden, "same-origin workspace writes are required")
 			return
 		}
@@ -863,7 +881,7 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if r.URL.Path == "/workspace/template-settings" {
-		if !sameOriginWorkspaceMutation(r) {
+		if !h.sameOriginWorkspaceMutation(r) {
 			fail(w, http.StatusForbidden, "same-origin workspace writes are required")
 			return
 		}
@@ -1017,7 +1035,7 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 	if r.URL.Path == "/workspace/file" {
 		if r.Method == http.MethodPut || r.Method == http.MethodPost {
-			if !sameOriginWorkspaceMutation(r) {
+			if !h.sameOriginWorkspaceMutation(r) {
 				fail(w, http.StatusForbidden, "same-origin workspace writes are required")
 				return
 			}
@@ -1125,7 +1143,7 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) serveWorkspaceDropperUpload(w http.ResponseWriter, r *http.Request) {
-	if !sameOriginWorkspaceMutation(r) {
+	if !h.sameOriginWorkspaceMutation(r) {
 		fail(w, http.StatusForbidden, "same-origin workspace writes are required")
 		return
 	}
@@ -1213,7 +1231,7 @@ type linkMetadataResponse struct {
 }
 
 func (h *Handler) serveLinkMetadata(w http.ResponseWriter, r *http.Request) {
-	if !sameOriginWorkspaceMutation(r) {
+	if !h.sameOriginWorkspaceMutation(r) {
 		fail(w, http.StatusForbidden, "same-origin workspace requests are required")
 		return
 	}
@@ -1364,6 +1382,27 @@ func sameOriginWorkspaceMutation(r *http.Request) bool {
 		return false
 	}
 	return true
+}
+
+func (h *Handler) sameOriginWorkspaceMutation(r *http.Request) bool {
+	if h.hostedAuth == nil {
+		return sameOriginWorkspaceMutation(r)
+	}
+	origins := r.Header.Values("Origin")
+	if len(origins) != 1 || origins[0] != h.hostedAuth.origin {
+		return false
+	}
+	if site := r.Header.Get("Sec-Fetch-Site"); site != "" && site != "same-origin" {
+		return false
+	}
+	return true
+}
+
+func (h *Handler) validLSPOrigin(r *http.Request) bool {
+	if h.hostedAuth == nil {
+		return lsp.ValidBrowserOrigin(r)
+	}
+	return h.authorizeHostedRequest(r) && h.sameOriginWorkspaceMutation(r)
 }
 
 func (h *Handler) acquire(r *http.Request) bool {

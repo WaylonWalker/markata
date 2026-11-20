@@ -245,6 +245,47 @@ func TestBrowserWebSocket_OriginAndMessageBounds(t *testing.T) {
 	}
 }
 
+func TestBrowserWebSocket_UsesSuppliedOriginPolicy(t *testing.T) {
+	root, _ := browserFixture(t)
+	handler, err := NewWebSocketHandlerWithIndexAndOriginCheck(
+		context.Background(),
+		root,
+		log.New(io.Discard, "", 0),
+		nil,
+		func(r *http.Request) bool {
+			return r.Host == "edit.example.com" && r.Header.Get("Origin") == "https://edit.example.com"
+		},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	server := httptest.NewServer(handler)
+	defer server.Close()
+
+	headers := http.Header{"Origin": {"https://edit.example.com"}}
+	headers.Set("Host", "edit.example.com")
+	conn, response, err := websocket.DefaultDialer.Dial("ws"+strings.TrimPrefix(server.URL, "http"), headers)
+	if response != nil {
+		_ = response.Body.Close()
+	}
+	if err != nil {
+		t.Fatalf("trusted hosted origin was rejected: %v", err)
+	}
+	_ = conn.Close()
+
+	headers.Set("Origin", "https://attacker.example")
+	conn, response, err = websocket.DefaultDialer.Dial("ws"+strings.TrimPrefix(server.URL, "http"), headers)
+	if conn != nil {
+		_ = conn.Close()
+	}
+	if response != nil {
+		_ = response.Body.Close()
+	}
+	if err == nil || response == nil || response.StatusCode != http.StatusForbidden {
+		t.Fatal("attacker origin was accepted by the supplied origin policy")
+	}
+}
+
 func TestBrowserSession_IgnoresWatchedFiles(t *testing.T) {
 	root, _ := browserFixture(t)
 	server, err := NewBrowserSession(log.New(io.Discard, "", 0), root)

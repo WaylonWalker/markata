@@ -1,7 +1,7 @@
 ---
 title: "Live Markdown editor with Go"
 description: "Run or embed a Go server with a live Markata Markdown editor"
-date: 2026-10-28
+date: 2026-11-20
 published: true
 tags:
   - documentation
@@ -22,6 +22,68 @@ For a checkout build, run `go run ./cmd/markata-go editor --workspace ./docs`.
 The Go server calls Markata's standalone renderer directly. It starts no Python process and needs no WASM runtime.
 It uses the same Markdown renderer as the [Python API](./python-renderer/) and [FastAPI editor](./fastapi-editor/).
 The preview does not build a site. The language service indexes Markdown and reads workspace configuration for existing mention support.
+
+### Run behind Hlab Auth
+
+The editor binds to loopback by default. Keep that setting for local work.
+Hosted mode requires an HTTPS public origin, the reverse proxy's source CIDR,
+and an app-specific Hlab writer scope:
+
+```bash
+markata editor \
+  --workspace /data/source \
+  --listen 0.0.0.0:8766 \
+  --public-origin https://edit.example.com \
+  --trusted-proxy-cidr 10.42.0.0/24 \
+  --required-scope markata-editor:admin
+```
+
+Use the exact proxy source ranges enforced by the cluster NetworkPolicy. The
+server checks the TCP peer address, public Host, stable `X-Hlab-User-Id`, and
+the exact scope on every request, including assets, workspace APIs, and LSP
+WebSockets. It does not use `X-Forwarded-For` or `X-Hlab-Auth-Method`.
+Traefik must strip client-supplied `X-Hlab-*` headers before ForwardAuth and
+forward only the identity headers returned by Hlab Auth. Restrict the editor
+service to Traefik in the NetworkPolicy.
+
+Register a dedicated Hlab app for the editor. Require its administrative scope
+at the editor so a viewer scope cannot save files, upload images, or publish.
+Do not reuse the broader Build Admin scope. The proxy route must use Hlab
+ForwardAuth and return the `__Host-hlab-app-session` cookie for browser login
+handoff. Hosted mutations also require the exact configured public Origin, and
+hosted responses are marked private and no-store.
+
+Do not expose the listener directly to the internet. Non-loopback binding is
+rejected unless all hosted authentication settings are valid.
+
+The Markata Helm chart can run the editor as a sidecar beside Builder Admin. It
+shares the site's source checkout, but uses a separate authenticated ingress:
+
+```yaml
+builderAdmin:
+  editor:
+    enabled: true
+    requiredScope: markata-editor:admin
+    ingress:
+      host: edit.example.com
+      ingressClassName: traefik
+      tls:
+        secretName: edit-example-com-tls
+    gitAuth:
+      existingSecretName: markata-editor-git-publish
+      privateKeyKey: ssh-privatekey
+      knownHosts: |
+        github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl
+```
+
+The chart reuses the Builder Admin ForwardAuth service URL and trusted proxy
+CIDRs. It creates a separate middleware, service, ingress, and NetworkPolicy
+rule for the editor port. Create the TLS secret with the cluster's certificate
+controller. Register a dedicated Hlab app for `edit.example.com`; do not add
+this host to the Build Admin app or grant its operator scope to the editor.
+The GitHub deploy key must be write-enabled for only the site's repository;
+store its private key in a namespace-scoped SealedSecret and use the verified
+GitHub host key shown above for strict SSH host checking.
 
 Use the [Excalidraw canvas](excalidraw-editor.md) to create and edit drawings
 inside a Markdown page.

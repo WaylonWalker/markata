@@ -1,0 +1,127 @@
+{{- if .Values.builderAdmin.editor.enabled }}
+{{- if not .Values.builderAdmin.enabled }}{{ fail "builderAdmin.enabled must be true when the hosted editor is enabled" }}{{ end }}
+{{- if not .Values.builderAdmin.ingress.enabled }}{{ fail "builderAdmin.ingress.enabled must be true when the hosted editor is enabled" }}{{ end }}
+{{- if not .Values.builderAdmin.ingress.auth.enabled }}{{ fail "builderAdmin.ingress.auth.enabled must be true when the hosted editor is enabled" }}{{ end }}
+{{- if not .Values.builderAdmin.ingress.tls.enabled }}{{ fail "builderAdmin.ingress.tls.enabled must be true when the hosted editor is enabled" }}{{ end }}
+{{- if not .Values.builderAdmin.networkPolicy.enabled }}{{ fail "builderAdmin.networkPolicy.enabled must be true when the hosted editor is enabled" }}{{ end }}
+{{- include "markata-notes.validateBuilderAdminAuthInternalURL" . }}
+{{- $_ := required "builderAdmin.editor.ingress.host is required when the hosted editor is enabled" .Values.builderAdmin.editor.ingress.host }}
+{{- if eq .Values.builderAdmin.editor.ingress.host .Values.builderAdmin.ingress.host }}{{ fail "builderAdmin.editor.ingress.host must differ from builderAdmin.ingress.host" }}{{ end }}
+{{- $_ := required "builderAdmin.editor.ingress.ingressClassName is required when the hosted editor is enabled" .Values.builderAdmin.editor.ingress.ingressClassName }}
+{{- $_ := required "builderAdmin.editor.ingress.tls.secretName is required when the hosted editor is enabled" .Values.builderAdmin.editor.ingress.tls.secretName }}
+{{- $_ := required "builderAdmin.editor.requiredScope is required when the hosted editor is enabled" .Values.builderAdmin.editor.requiredScope }}
+{{- $_ := required "builderAdmin.editor.gitAuth.existingSecretName is required when the hosted editor is enabled" .Values.builderAdmin.editor.gitAuth.existingSecretName }}
+{{- $_ := required "builderAdmin.editor.gitAuth.privateKeyKey is required when the hosted editor is enabled" .Values.builderAdmin.editor.gitAuth.privateKeyKey }}
+{{- $_ := required "builderAdmin.editor.gitAuth.knownHosts is required when the hosted editor is enabled" .Values.builderAdmin.editor.gitAuth.knownHosts }}
+{{- $namespace := include "markata-notes.namespace" . }}
+{{- $name := printf "%s-notes-editor" .Values.project_identifier }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: "{{ .Values.project_identifier }}-notes-editor-ssh"
+  namespace: {{ $namespace | quote }}
+  labels:
+    {{- include "markata-notes.labels" . | nindent 4 }}
+data:
+  known_hosts: |-
+    {{- .Values.builderAdmin.editor.gitAuth.knownHosts | nindent 4 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name | quote }}
+  namespace: {{ $namespace | quote }}
+  labels:
+    service: {{ printf "%s-notes-builder-admin" .Values.project_identifier | quote }}
+    {{- include "markata-notes.labels" . | nindent 4 }}
+spec:
+  selector:
+    service: {{ printf "%s-notes-builder-admin" .Values.project_identifier | quote }}
+  ports:
+    - name: http
+      protocol: TCP
+      port: {{ .Values.builderAdmin.editor.port }}
+      targetPort: editor-http
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ printf "%s-notes-editor-strip-identity" .Values.project_identifier | quote }}
+  namespace: {{ $namespace | quote }}
+  labels:
+    {{- include "markata-notes.labels" . | nindent 4 }}
+spec:
+  headers:
+    customRequestHeaders:
+      X-Hlab-User-Id: ""
+      X-Hlab-Username: ""
+      X-Hlab-Display-Name: ""
+      X-Hlab-Email: ""
+      X-Hlab-Groups: ""
+      X-Hlab-Roles: ""
+      X-Hlab-Scopes: ""
+      X-Hlab-Auth-Method: ""
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ printf "%s-notes-editor-forward-auth" .Values.project_identifier | quote }}
+  namespace: {{ $namespace | quote }}
+  labels:
+    {{- include "markata-notes.labels" . | nindent 4 }}
+spec:
+  forwardAuth:
+    address: "{{ .Values.builderAdmin.ingress.auth.internalUrl | trimSuffix "/" }}{{ .Values.builderAdmin.ingress.auth.forwardAuthPath }}"
+    trustForwardHeader: false
+    addAuthCookiesToResponse:
+      - "__Host-hlab-app-session"
+    authResponseHeaders:
+      - X-Hlab-User-Id
+      - X-Hlab-Username
+      - X-Hlab-Display-Name
+      - X-Hlab-Email
+      - X-Hlab-Groups
+      - X-Hlab-Roles
+      - X-Hlab-Scopes
+      - X-Hlab-Auth-Method
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ printf "%s-notes-editor-auth" .Values.project_identifier | quote }}
+  namespace: {{ $namespace | quote }}
+  labels:
+    {{- include "markata-notes.labels" . | nindent 4 }}
+spec:
+  chain:
+    middlewares:
+      - name: {{ printf "%s-notes-editor-strip-identity" .Values.project_identifier | quote }}
+      - name: {{ printf "%s-notes-editor-forward-auth" .Values.project_identifier | quote }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $name | quote }}
+  namespace: {{ $namespace | quote }}
+  labels:
+    {{- include "markata-notes.labels" . | nindent 4 }}
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: "{{ $namespace }}-{{ printf "%s-notes-editor-auth" .Values.project_identifier }}@kubernetescrd"
+spec:
+  ingressClassName: {{ .Values.builderAdmin.editor.ingress.ingressClassName | quote }}
+  tls:
+    - secretName: {{ .Values.builderAdmin.editor.ingress.tls.secretName | quote }}
+      hosts:
+        - {{ .Values.builderAdmin.editor.ingress.host | quote }}
+  rules:
+    - host: {{ .Values.builderAdmin.editor.ingress.host | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ $name | quote }}
+                port:
+                  number: {{ .Values.builderAdmin.editor.port }}
+{{- end }}

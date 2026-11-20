@@ -10,6 +10,14 @@
 {{- $_ := required "builderAdmin.auth.headers.userID is required when builder-admin is enabled" .Values.builderAdmin.auth.headers.userID }}
 {{- if .Values.builderAdmin.webhook.enabled }}{{- $_ := required "builderAdmin.webhook.existingSecretName is required when builderAdmin.webhook.enabled" .Values.builderAdmin.webhook.existingSecretName }}{{- $_ := required "builderAdmin.webhook.existingSecretKey is required when builderAdmin.webhook.enabled" .Values.builderAdmin.webhook.existingSecretKey }}{{- end }}
 {{- if .Values.builderAdmin.sourceGit.enabled }}{{- $_ := required "builderAdmin.sourceGit.repository is required when builderAdmin.sourceGit.enabled" .Values.builderAdmin.sourceGit.repository }}{{- $_ := required "builderAdmin.sourceGit.branch is required when builderAdmin.sourceGit.enabled" .Values.builderAdmin.sourceGit.branch }}{{- if lt (int .Values.builderAdmin.sourceGit.depth) 1 }}{{ fail "builderAdmin.sourceGit.depth must be at least 1" }}{{ end }}{{- end }}
+{{- if .Values.builderAdmin.editor.enabled }}
+{{- $_ := required "builderAdmin.editor.ingress.host is required when the hosted editor is enabled" .Values.builderAdmin.editor.ingress.host }}
+{{- $_ := required "builderAdmin.editor.ingress.ingressClassName is required when the hosted editor is enabled" .Values.builderAdmin.editor.ingress.ingressClassName }}
+{{- $_ := required "builderAdmin.editor.ingress.tls.secretName is required when the hosted editor is enabled" .Values.builderAdmin.editor.ingress.tls.secretName }}
+{{- $_ := required "builderAdmin.editor.requiredScope is required when the hosted editor is enabled" .Values.builderAdmin.editor.requiredScope }}
+{{- if not (or (hasSuffix ":admin" .Values.builderAdmin.editor.requiredScope) (hasSuffix ":write" .Values.builderAdmin.editor.requiredScope)) }}{{ fail "builderAdmin.editor.requiredScope must be an app-specific writer scope ending in :admin or :write" }}{{ end }}
+{{- if ne (int .Values.builderAdmin.editor.port) 8766 }}{{ fail "builderAdmin.editor.port must match the editor's supported port 8766" }}{{ end }}
+{{- end }}
 {{- if .Values.builderAdmin.workspace.enabled }}
 {{- $_ := required "builderAdmin.workspace.mountPath is required when workspace is enabled" .Values.builderAdmin.workspace.mountPath }}
 {{- $_ := required "builderAdmin.workspace.workDir is required when workspace is enabled" .Values.builderAdmin.workspace.workDir }}
@@ -316,6 +324,74 @@ spec:
             timeoutSeconds: 1
             periodSeconds: 5
             failureThreshold: 12
+        {{- if .Values.builderAdmin.editor.enabled }}
+        - name: "{{ .Values.project_identifier }}-notes-editor"
+          image: "{{ .Values.build.builderImage.name }}:{{ .Values.build.builderImage.tag }}"
+          imagePullPolicy: {{ .Values.build.builderImage.pullPolicy }}
+          command:
+            - markata-go
+            - editor
+          args:
+            - --workspace
+            - /data/source
+            - --listen
+            - "0.0.0.0:{{ .Values.builderAdmin.editor.port }}"
+            - --public-origin
+            - {{ printf "https://%s" .Values.builderAdmin.editor.ingress.host | quote }}
+            - --required-scope
+            - {{ .Values.builderAdmin.editor.requiredScope | quote }}
+            {{- range .Values.builderAdmin.auth.trustedProxyCIDRs }}
+            - --trusted-proxy-cidr
+            - {{ . | quote }}
+            {{- end }}
+          env:
+            - name: GIT_CONFIG_COUNT
+              value: "2"
+            - name: GIT_CONFIG_KEY_0
+              value: safe.directory
+            - name: GIT_CONFIG_VALUE_0
+              value: /data/source
+            - name: GIT_CONFIG_KEY_1
+              value: url.ssh://git@github.com/.insteadOf
+            - name: GIT_CONFIG_VALUE_1
+              value: https://github.com/
+            - name: GIT_SSH_COMMAND
+              value: {{ "ssh -i /run/markata-git/id_ed25519 -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=/etc/ssh/known_hosts -o GlobalKnownHostsFile=/dev/null" | quote }}
+            {{- with .Values.builderAdmin.editor.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          ports:
+            - containerPort: {{ .Values.builderAdmin.editor.port }}
+              name: editor-http
+              protocol: TCP
+          resources:
+            {{- toYaml .Values.builderAdmin.editor.resources | nindent 12 }}
+          volumeMounts:
+            - name: source
+              mountPath: /data/source
+              {{- if .Values.builderAdmin.sourceGit.enabled }}
+              subPath: checkout
+              {{- end }}
+            - name: editor-git-publish
+              mountPath: /run/markata-git
+              readOnly: true
+            - name: editor-ssh-known-hosts
+              mountPath: /etc/ssh/known_hosts
+              subPath: known_hosts
+              readOnly: true
+          startupProbe:
+            tcpSocket:
+              port: editor-http
+            timeoutSeconds: 1
+            failureThreshold: 30
+            periodSeconds: 5
+          readinessProbe:
+            tcpSocket:
+              port: editor-http
+            timeoutSeconds: 1
+            periodSeconds: 5
+            failureThreshold: 12
+        {{- end }}
       volumes:
         - name: source
           {{- if eq (.Values.storage.source.mode | default "pvc") "hostPath" }}
@@ -326,6 +402,23 @@ spec:
           persistentVolumeClaim:
             claimName: "{{ include "markata-notes.sourcePvcName" . }}"
           {{- end }}
+        {{- if .Values.builderAdmin.editor.enabled }}
+        - name: editor-git-publish
+          secret:
+            secretName: {{ .Values.builderAdmin.editor.gitAuth.existingSecretName | quote }}
+            # This key is mounted only into the non-root editor container, whose
+            # UID cannot read a root-owned 0400 Secret volume.
+            defaultMode: 0444
+            items:
+              - key: {{ .Values.builderAdmin.editor.gitAuth.privateKeyKey | quote }}
+                path: id_ed25519
+        - name: editor-ssh-known-hosts
+          configMap:
+            name: "{{ .Values.project_identifier }}-notes-editor-ssh"
+            items:
+              - key: known_hosts
+                path: known_hosts
+        {{- end }}
         - name: site
           {{- if eq (.Values.storage.site.mode | default "pvc") "hostPath" }}
           hostPath:
