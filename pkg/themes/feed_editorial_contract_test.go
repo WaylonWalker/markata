@@ -199,7 +199,6 @@ func TestEditorialArchiveDefersCalendarStylesAndLeadImages(t *testing.T) {
 	}
 }
 
-
 // Link posts must never inherit full-width image banners from the editorial
 // lead/standard layouts, including narrow screens and editor-authored images.
 func TestEditorialLinkCardsUseCompactThumbnails(t *testing.T) {
