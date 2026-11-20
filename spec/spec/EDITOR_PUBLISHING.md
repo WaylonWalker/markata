@@ -39,7 +39,7 @@ The review MUST provide a Commit message tab showing the exact message used for
 the local Git commit. The user MUST be able to edit it, and the server MUST use
 the supplied message for that commit.
 
-## Workspace-wide Changes inventory (incremental implementation)
+## Workspace-wide Changes review queue
 
 The workbench MUST enumerate all Git worktree changes independently of which
 files have ever been opened in the editor. A read-only, loopback-only
@@ -49,11 +49,32 @@ current site rather than silently filtering them away. On failure the UI
 shows an error, never an empty success state. The desktop Changes panel
 remains available while writing; mobile uses a dismissible bottom sheet.
 
-This first slice is **inventory and navigation only**. Showing a Git change
-does not make a file eligible for editor writes, publish, or discard. The
-single-file publish flow and deliberate selected-files commit/push remain
-separate tasks. Never equate an empty worktree with a fully pushed or live
-site; local commits may be ahead of the remote.
+The Changes view MUST let writers filter a review queue by path and distinguish
+posts from other files. Selecting a supported text file shows the current
+saved source against the last committed Git baseline. The interface MUST show
+Git status and staged/unstaged state and MUST clearly explain when it cannot
+show a diff, such as for deleted, conflicted, binary, oversized, or out-of-site
+files. Git HEAD is the last commit, not a verified deployment revision.
+
+**Keep in workspace** is a session-only review decision. It leaves the file and
+Git index unchanged and does not stage, commit, push, publish, or remove the
+entry from the Git inventory. **Review and reset** opens the existing
+single-document Review flow only for eligible workspace Markdown files. Reset
+must retain its explicit confirmation, exact saved-source and Git-baseline
+preconditions, and stale-draft refusal. It remains unavailable for staged
+changes, deleted files, conflicts, and out-of-site or non-Markdown files, with
+a reason shown to the writer. Reset MUST NOT change unrelated paths or Git
+history.
+
+The Changes queue MUST keep its quick source comparison readable without the
+optional full-diff renderer. Its Markdown review action MUST expose the
+existing rendered, side-by-side, source, and full-diff modes.
+
+The review queue is an inspection and triage surface; multi-file commit and
+publish remain separate workflows. Closing review leaves all workspace changes
+untouched. Never equate an empty worktree with a fully pushed or live site;
+local commits may be ahead of the remote. See `GO_WORKBENCH.md` for the
+keyboard, responsive layout, refresh, and session-progress requirements.
 
 ## Revision identity
 

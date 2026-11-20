@@ -388,19 +388,31 @@ To open the command palette with a complete example loaded, visit `/?example`.
 Select the **Changes** tab in the workspace sidebar to view the Git inventory.
 It enumerates the entire Git working tree, not only posts
 opened in the editor. Editable posts are listed first, followed by other files.
-Every changed file that still exists has **View diff**, which shows the change
-inline against the last commit, including config and other non-Markdown files.
-Each post also has **Open**, which loads it in the editor, and **Review**, which
-opens the Review dialog for that post. Commit, push, and discard for posts are
-available only from that dialog, where the existing checks apply. Other files
-are read-only in the panel. Deleted files and conflicts are labeled but have no
-action, and files outside the selected site are listed as well.
+Use **Find a file** or the **All**, **Posts**, and **Other** filters to narrow
+the list. Select **Review queue** to open the review surface. It shows each
+file's Git status and compares supported text files with the last committed
+version. The review labels Git HEAD as **Last commit**; it does not mean that
+version is live. Deleted files, conflicts, binary or oversized files, and files
+outside the selected site show why a source diff is unavailable.
 
-The panel refreshes after a successful commit, push or discard as well as
-periodically while open. It is a read-only inventory: multi-file selection and
-**Publish selected** are not implemented yet. A local commit is not a remote
-publication, and a push does not prove the site is live. If Git status fails,
-the panel reports an error rather than pretending there are no changes.
+**Keep in workspace** leaves the saved file and Git status unchanged. It marks
+the file as reviewed only for the current queue session. **Review and reset**
+opens the full review for an unstaged Markdown post. **Open in editor** opens
+an editable Markdown post without changing its worktree status. In the reset
+review, select **Discard changes…** and confirm to restore the exact last
+committed source.
+Select **Full review…** in the diff header to choose Rendered diff, Side by
+side, Source diff, or Full diff for a Markdown post.
+The workbench disables reset for staged files, deleted files, conflicts,
+non-Markdown files, and files outside the selected site. The server also
+rejects stale source versions or a changed Git baseline. Other files can be
+compared when they are supported text files, but this flow does not reset them.
+
+The panel refreshes after a successful commit, push, or discard and
+periodically while open. This is an inspection and triage view; multi-file
+selection and **Publish selected** are not available. A local commit is not a
+remote publication, and a push does not prove the site is live. If Git status
+fails, the panel reports an error rather than pretending there are no changes.
 The change count is loaded in the background when the editor starts and refreshed
 when a site file saves or the editor regains focus. Opening the view shows its
 last inventory immediately while a fresh Git status check runs. **Review** for
