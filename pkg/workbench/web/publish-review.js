@@ -575,11 +575,64 @@
   let quickBusy = false;
   let pendingQuick = null;
   let publishStatus = null;
+  let compareButton = null;
+  let publishSnapshot = null;
+  let publishCheckGeneration = 0;
+  let publishRefreshPromise = null;
+  let publishRefreshTimer = null;
   function reportQuick(message, type='info') {
     if (!publishStatus) return;
     publishStatus.textContent = message;
     publishStatus.dataset.state = type;
     publishStatus.title = message;
+  }
+  function refreshPublishState(force=false) {
+    const path = canOpen();
+    if (!path) {
+      publishCheckGeneration++;
+      publishSnapshot = null;
+      publishRefreshPromise = null;
+      updatePublishButton();
+      return Promise.resolve();
+    }
+    if (!force && publishSnapshot?.path === path && publishSnapshot.checking)
+      return publishRefreshPromise || Promise.resolve();
+
+    const generation = ++publishCheckGeneration;
+    publishSnapshot = {path, checking:true};
+    if (!quickBusy && !pendingQuick) reportQuick('Checking the saved post against Git…', 'loading');
+    updatePublishButton();
+    publishRefreshPromise = (async () => {
+      try {
+        const response = await fetch('/workspace/publish/review?path=' + encodeURIComponent(path),
+          {cache:'no-store'});
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Could not check the saved post.');
+        if (generation !== publishCheckGeneration || canOpen() !== path) return;
+        publishSnapshot = {
+          path,
+          current:data.current,
+          baseline:data.baseline,
+          baselineExists:data.baseline_exists,
+          changed:data.changed,
+          head:data.head,
+          checking:false,
+          error:null,
+        };
+        updatePublishButton();
+      } catch (error) {
+        if (generation !== publishCheckGeneration || canOpen() !== path) return;
+        publishSnapshot = {path,checking:false,error};
+        updatePublishButton();
+      } finally {
+        if (generation === publishCheckGeneration) publishRefreshPromise = null;
+      }
+    })();
+    return publishRefreshPromise;
+  }
+  function schedulePublishStateRefresh() {
+    clearTimeout(publishRefreshTimer);
+    publishRefreshTimer = setTimeout(() => refreshPublishState(), 180);
   }
   async function finishQuickPush(pending) {
     reportQuick('Publishing to your site…', 'loading');
@@ -594,6 +647,7 @@
     reportQuick('Published to Git · site build not yet verified', 'info');
     refreshWorkspaceChanges();
     refreshChangeGutter();
+    await refreshPublishState(true);
   }
   async function quickPublish() {
     if (quickBusy || state.busy) return;
@@ -637,6 +691,7 @@
       if (!reviewData.changed) {
         reportQuick('No unpublished content changes. Git does not confirm your site is live.');
         refreshWorkspaceChanges();
+        await refreshPublishState(true);
         return;
       }
       if (reviewData.current !== snapshot)
@@ -666,7 +721,6 @@
       reportQuick('Not published: ' + error.message, 'warning');
     } finally {
       quickBusy = false;
-      button.disabled = false;
       updatePublishButton();
     }
   }
@@ -674,13 +728,69 @@
   function updatePublishButton() {
     if (!button || !editor) return;
     const path = canOpen();
-    const label = pendingQuick ? 'Retry publish' : (!path ? 'Choose post' : 'Publish post');
+    const snapshot = path && publishSnapshot?.path === path ? publishSnapshot : null;
+    const fields = frontmatter(editor.getValue());
+    const alreadyPublic = fields.published === 'true' && fields.draft !== 'true';
+    const upToDate = Boolean(snapshot && !snapshot.checking && !snapshot.error &&
+      !snapshot.changed && snapshot.current === editor.getValue() && alreadyPublic);
+    let publishState = 'ready';
+    let label = 'Publish post';
+    if (!path) {
+      publishState = 'no-post';
+      label = 'Choose post';
+    } else if (quickBusy) {
+      publishState = 'publishing';
+      label = 'Publishing…';
+    } else if (pendingQuick) {
+      publishState = 'retry';
+      label = 'Retry publish';
+    } else if (!snapshot || snapshot.checking) {
+      publishState = 'checking';
+      label = 'Checking…';
+    } else if (snapshot.error) {
+      publishState = 'unknown';
+      label = 'Publish post';
+    } else if (upToDate) {
+      publishState = 'up-to-date';
+      label = 'Up to date';
+    }
+    const isUpToDate = publishState === 'up-to-date';
     const icon=document.createElementNS('http://www.w3.org/2000/svg','svg');
     icon.setAttribute('viewBox','0 0 24 24');icon.setAttribute('aria-hidden','true');icon.setAttribute('focusable','false');
     const pathNode=document.createElementNS('http://www.w3.org/2000/svg','path');
-    pathNode.setAttribute('d','M12 15V3m0 0 4 4m-4-4L8 7M4 14v6h16v-6');icon.append(pathNode);
+    pathNode.setAttribute('d',isUpToDate?'M5 12l4 4L19 6':'M12 15V3m0 0 4 4m-4-4L8 7M4 14v6h16v-6');icon.append(pathNode);
     button.replaceChildren(icon,document.createTextNode(label));
-    button.title = 'Publish this post only (Ctrl/Cmd+S). Review changes with Ctrl/Cmd+Shift+Enter.';
+    button.dataset.publishState = publishState;
+    button.disabled = quickBusy || publishState === 'checking' || publishState === 'up-to-date' || !path;
+    button.setAttribute('aria-busy',String(publishState === 'checking' || quickBusy));
+    const accessibleLabel = isUpToDate ? 'Up to date; no changes to publish'
+      : publishState === 'no-post' ? 'Choose a site post to publish'
+        : publishState === 'checking' ? 'Checking publish state'
+          : publishState === 'retry' ? 'Retry pending publish'
+            : publishState === 'publishing' ? 'Publishing current post'
+              : 'Publish current post';
+    button.setAttribute('aria-label',accessibleLabel);
+    button.title = isUpToDate
+      ? 'This post matches its last Git commit. A site build or deployment is not verified.'
+      : publishState === 'unknown'
+        ? 'Git status is unavailable. Publishing will check Git again before committing.'
+        : publishState === 'checking'
+          ? 'Checking whether the saved post differs from its last Git commit.'
+          : publishState === 'retry'
+            ? 'Retry the pending publish for the post that was committed but not pushed.'
+            : publishState === 'publishing'
+              ? 'Publishing this post to Git…'
+              : publishState === 'no-post'
+                ? 'Choose a site Markdown post to see its publish state.'
+                : 'Publish this post only (Ctrl/Cmd+S). Compare changes beside this button.';
+    if (!quickBusy && !pendingQuick) {
+      if (publishState === 'checking') reportQuick('Checking the saved post against Git…', 'loading');
+      else if (publishState === 'unknown') reportQuick('Could not check Git status. Publishing will check again before committing.', 'warning');
+      else if (publishState === 'up-to-date') reportQuick('Up to date in Git · site build not verified.', 'info');
+      else if (publishState === 'ready') reportQuick(alreadyPublic?'Changes are available to publish.':'Ready to publish this post.', 'info');
+      else if (publishState === 'no-post') reportQuick('Choose a site Markdown post to see publish status.', 'info');
+    }
+    if (compareButton) compareButton.disabled = !path;
   }
 
   // Git-style gutter. Compare the visible editor to Git HEAD, not autosave.
@@ -1348,9 +1458,13 @@
       window.MarkataPierreDiff?.release?.(changesReviewDetail.querySelector('#workspace-review-diff'));
       refreshWorkspaceChanges();
     });
-    window.addEventListener('focus', () => refreshWorkspaceChanges(true));
+    window.addEventListener('focus', () => {
+      refreshWorkspaceChanges(true);
+      schedulePublishStateRefresh();
+    });
     window.addEventListener('markata-workspace-file-saved', () => {
       refreshWorkspaceChanges(true);
+      schedulePublishStateRefresh();
     });
     let persisted = false;
     try { persisted = localStorage.getItem('markata-workspace-changes-open') === 'true'; }
@@ -1372,7 +1486,10 @@
     document.querySelector('#saved')?.insertAdjacentElement('afterend',gutterStatus);
     editor.on('change',scheduleChangeGutter);
     const activeLabel=document.querySelector('#active-file');
-    if(activeLabel)new MutationObserver(refreshChangeGutter).observe(activeLabel,{childList:true,characterData:true,subtree:true});
+    if(activeLabel)new MutationObserver(() => {
+      refreshChangeGutter();
+      schedulePublishStateRefresh();
+    }).observe(activeLabel,{childList:true,characterData:true,subtree:true});
     setTimeout(refreshChangeGutter,0);
     const startPublish=()=>{quickPublish();return true;};
     editor.addKeyMap({'Ctrl-S':startPublish,'Cmd-S':startPublish,'Ctrl-X Ctrl-S':startPublish});
@@ -1401,29 +1518,34 @@
     document.body.append(doc);dialog=doc;notice=doc.querySelector('#publish-notice');panels=doc.querySelector('#publish-body');
     button.addEventListener('click',quickPublish);
     // Keep detailed review discoverable without making it a publish prerequisite.
-    const reviewButton=document.createElement('button');
-    reviewButton.type='button';
-    reviewButton.id='publish-review-open';
-    reviewButton.className='workspace-active-review';
-    reviewButton.textContent='Review';
-    reviewButton.setAttribute('aria-label','Review changes for the active post');
-    reviewButton.title='Advanced review for the active post (Ctrl/Cmd+Shift+Enter)';
-    reviewButton.addEventListener('click',open);
+    compareButton=document.createElement('button');
+    compareButton.type='button';
+    compareButton.id='publish-review-open';
+    compareButton.className='workspace-active-review';
+    compareButton.textContent='Compare';
+    compareButton.setAttribute('aria-label','Compare changes for the active post');
+    compareButton.title='Compare the active post with its last Git commit (Ctrl/Cmd+Shift+Enter)';
+    compareButton.addEventListener('click',open);
     publishStatus=document.createElement('span');
     publishStatus.id='markata-publish-status';
     publishStatus.setAttribute('role','status');
     publishStatus.setAttribute('aria-live','polite');
-    publishStatus.textContent='Not published';
+    publishStatus.textContent='Checking the saved post against Git…';
     document.querySelector('#saved')?.insertAdjacentElement('afterend',publishStatus);
+    const savedLabel=document.querySelector('#saved');
+    if(savedLabel)new MutationObserver(() => {
+      if (/saved to site/i.test(savedLabel.textContent || '')) schedulePublishStateRefresh();
+    }).observe(savedLabel,{childList:true,characterData:true,subtree:true});
     attachWorkspaceChanges();
-    const changesHeader=changesPanel?.querySelector('header');
-    const changesTools=changesPanel?.querySelector('.workspace-changes-tools');
-    if(changesTools)changesTools.insertBefore(reviewButton,changesTools.querySelector('#workspace-changes-refresh'));
-    else button.insertAdjacentElement('afterend',reviewButton);
+    settings.parentElement.insertBefore(compareButton,settings);
     editor.on('change',updatePublishButton);
     const fileLabel = document.querySelector('#active-file');
     if (fileLabel) new MutationObserver(updatePublishButton).observe(fileLabel,{subtree:true,characterData:true,childList:true});
     updatePublishButton();
+    refreshPublishState();
+    window.setInterval(() => {
+      if (document.visibilityState === 'visible' && canOpen()) schedulePublishStateRefresh();
+    }, 30000);
     doc.querySelector('#publish-close').addEventListener('click',()=>doc.close());
     doc.querySelector('#publish-back').addEventListener('click',()=>doc.close());
     doc.querySelector('#publish-discard').addEventListener('click',()=>{

@@ -442,7 +442,8 @@ fails, the panel reports an error rather than pretending there are no changes.
 The change count is loaded in the background when the editor starts and refreshed
 when a site file saves or the editor regains focus. Opening the view shows its
 last inventory immediately while a fresh Git status check runs. **Review** for
-the active post is in the Changes panel header.
+the workspace-wide list is in the Changes panel header. **Compare** beside
+**Publish post** opens the active post's detailed review.
 
 Use **Publish post** in the header or **Ctrl/Cmd+S** (Emacs **Ctrl-X Ctrl-S**,
 Vim `:w`) to publish *only the active site Markdown post*. This explicitly
@@ -455,9 +456,16 @@ session can retry the pending commit without creating a duplicate. If the
 editor is reloaded in that state, inspect Git and remote status before
 retrying; automatic recovery across browser restarts is not yet implemented.
 
-Use the separate **Review changes** control or **Ctrl/Cmd+Shift+Enter** when
-you want a detailed comparison of the active post. The optional advanced
-review dialog still offers separate **Commit selected page** and
+When the saved post is public, is not a draft, and matches its last Git commit,
+the button changes to a disabled **Up to date** state. Editing the post makes
+**Publish post** available again. Unpublished and draft posts remain publishable
+so the action can update their publication metadata. **Up to date** describes
+Git only; it does not confirm a site build or deployment. Use the compact
+**Compare** control beside the button to open the active post's saved-source
+comparison with its last Git commit.
+
+Use **Ctrl/Cmd+Shift+Enter** to open the same detailed comparison. The optional
+advanced review dialog still offers separate **Commit selected page** and
 **Push to origin** controls; these are not required for the primary quick
 publish path. For a Git-tracked file, **Discard changes…** requires a
 confirmation and restores exactly the last committed source in the local workbench.

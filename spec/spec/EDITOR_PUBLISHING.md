@@ -17,6 +17,17 @@ A scratch file MUST NOT be treated as a site post. Its action MUST indicate that
 it needs to be saved to the site first. The editor MUST distinguish autosaved
 workspace content from content that has been deployed successfully.
 
+The quick-publish action MUST reflect the active post's saved Git state. While
+the state is unknown or being refreshed, it MUST NOT claim that the post is up
+to date. When the saved source matches the last committed Git version and the
+post is public and not a draft, the action MUST show a disabled **Up to date**
+state. An unpublished or draft post MUST remain publishable even when its source
+matches Git, because quick publish changes its publication metadata. A local
+edit that differs from the saved or committed source MUST make **Publish post**
+available again. A compact **Compare** control beside the action MUST open the
+active post's existing review against its committed Git baseline. The status
+MUST identify Git state without implying that a build or deployment is live.
+
 The desktop review MUST support side-by-side rendered versions, while mobile
 MUST show one version at a time with tap targets and optional horizontal swiping.
 Keyboard and screen-reader access MUST not depend on swiping. The dialog MUST

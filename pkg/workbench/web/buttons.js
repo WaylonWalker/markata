@@ -12,7 +12,7 @@
   const DANGER = '#publish-discard-accept';
   const SUBTLE = '.editor-toolbar > button,#frontmatter-raw,#fm-add-toggle,#fm-more,#preview-focus-editor,#site-sidebar .files-open';
   const GHOST = '#commands,#publish-review-open,#settings-open,#theme-picker-toggle,#palette-mode-toggle,#diagnostics-toggle,#problems-toggle,.theme-switcher button';
-  const SMALL = '#preview-focus-editor,#diagnostics-toggle,#problems-toggle,#workspace-conflict-review,#fm-add-toggle';
+  const SMALL = '#preview-focus-editor,#diagnostics-toggle,#problems-toggle,#workspace-conflict-review,#publish-review-open,#fm-add-toggle';
   const KBD = {
     'publish-open': 'Ctrl+S',
     'publish-review-open': 'Ctrl+Shift+Enter',
