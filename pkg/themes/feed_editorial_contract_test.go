@@ -242,7 +242,7 @@ func TestEditorialLinkCardsUseCompactThumbnails(t *testing.T) {
 		t.Fatal(err)
 	}
 	for name, markup := range map[string]string{
-		"theme": string(theme),
+		"theme":   string(theme),
 		"starter": string(starter),
 	} {
 		for _, want := range []string{
