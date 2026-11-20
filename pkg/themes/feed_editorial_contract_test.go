@@ -2,6 +2,7 @@ package themes
 
 import (
 	"io/fs"
+	"os"
 	"strings"
 	"testing"
 )
@@ -194,6 +195,70 @@ func TestEditorialArchiveDefersCalendarStylesAndLeadImages(t *testing.T) {
 	} {
 		if strings.Contains(card, unwanted) {
 			t.Errorf("editorial link thumbnails must not include %q", unwanted)
+		}
+	}
+}
+
+
+// Link posts must never inherit full-width image banners from the editorial
+// lead/standard layouts, including narrow screens and editor-authored images.
+func TestEditorialLinkCardsUseCompactThumbnails(t *testing.T) {
+	raw, err := fs.ReadFile(DefaultStatic(), "css/feeds.css")
+	if err != nil {
+		t.Fatal(err)
+	}
+	css := string(raw)
+	for _, want := range []string{
+		"width: clamp(96px, 12vw, 144px);",
+		"width: clamp(96px, 22vw, 112px);",
+		"width: clamp(88px, 24vw, 112px);",
+		"width: min(26%, 156px);",
+		"width: min(26%, 112px);",
+		"width: min(28%, 104px);",
+		".editorial-entry--lead .card-link .card-excerpt",
+	} {
+		if !strings.Contains(css, want) {
+			t.Errorf("missing compact link-card styling %q", want)
+		}
+	}
+	for _, unwanted := range []string{
+		".editorial-entry--standard .card-link .card-link-image {\n    width: 100%;",
+		".editorial-entry--lead .card-link .card-link-image {\n    width: 100%;",
+		".editorial-entry--standard .card-link .card-link-wrapper {\n    flex-direction: column;",
+		".editorial-entry--lead .card-link .card-link-wrapper {\n    flex-direction: column;",
+	} {
+		if strings.Contains(css, unwanted) {
+			t.Errorf("editorial links must not become image banners: %q", unwanted)
+		}
+	}
+
+	theme, err := ReadTemplate("partials/cards/link-card.html")
+	if err != nil {
+		t.Fatal(err)
+	}
+	// The checked-in starter template and bundled theme should use identical
+	// image budgets; sites may override the markup while retaining the CSS.
+	starter, err := os.ReadFile("../../templates/partials/cards/link-card.html")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for name, markup := range map[string]string{
+		"theme": string(theme),
+		"starter": string(starter),
+	} {
+		for _, want := range []string{
+			`responsive_srcset:"96,128,160,240,320"`,
+			`with_size:"240,160"`,
+			`sizes="(max-width: 760px) 112px, 156px"`,
+			`loading="lazy" decoding="async"`,
+		} {
+			if !strings.Contains(markup, want) {
+				t.Errorf("%s link card missing %q", name, want)
+			}
+		}
+		if strings.Contains(markup, `with_size:"720,450"`) ||
+			strings.Contains(markup, `fetchpriority="high"`) {
+			t.Errorf("%s link cards must not request hero image resources", name)
 		}
 	}
 }

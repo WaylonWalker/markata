@@ -940,14 +940,21 @@ article.post > .post-content > .feed.h-feed {
   padding: .65rem clamp(.75rem, 2.5vw, 1.5rem);
 }
 
+/* Link previews are supporting media, not photo essays or hero stories.
+ * Keep the thumbnail beside the text at every editorial breakpoint. */
+.feed--editorial .editorial-entry--standard .card-link .card-link-wrapper {
+  flex-direction: row;
+}
+
 .feed--editorial .editorial-entry--standard .card-link .card-link-image {
-  width: clamp(140px, 23vw, 220px);
-  aspect-ratio: 16 / 10;
+  width: clamp(96px, 12vw, 144px);
+  aspect-ratio: 3 / 2;
+  height: auto;
 }
 
 .feed--editorial .editorial-entry--standard .card-link .card-title {
-  font-size: clamp(1.18rem, 2.1vw, 1.65rem);
-  line-height: 1.22;
+  font-size: clamp(1rem, 1.5vw, 1.2rem);
+  line-height: 1.3;
   min-height: 0;
   -webkit-line-clamp: 3;
 }
@@ -1055,7 +1062,7 @@ article.post > .post-content > .feed.h-feed {
   }
 
   .feed--editorial .editorial-entry--standard .card-link .card-link-image {
-    width: 120px;
+    width: clamp(96px, 22vw, 112px);
     aspect-ratio: 3 / 2;
     height: auto;
   }
@@ -1071,12 +1078,12 @@ article.post > .post-content > .feed.h-feed {
 
 @media (max-width: 420px) {
   .feed--editorial .editorial-entry--standard .card-link .card-link-wrapper {
-    flex-direction: column;
+    flex-direction: row;
   }
 
   .feed--editorial .editorial-entry--standard .card-link .card-link-image {
-    width: 100%;
-    aspect-ratio: 16 / 9;
+    width: clamp(88px, 24vw, 112px);
+    aspect-ratio: 3 / 2;
   }
 
   .feed--editorial .editorial-shot-grid {
@@ -1136,10 +1143,17 @@ article.post > .post-content > .feed.h-feed {
   padding: 0;
 }
 
+/* An automatically selected weekly lead link remains a bookmark-sized card. */
+.feed--editorial .editorial-entry--lead .card-link .card-title,
+.feed--editorial .editorial-entry--featured .card-link .card-title {
+  font-size: clamp(1.1rem, 1.7vw, 1.4rem);
+  letter-spacing: normal;
+}
+
 .feed--editorial .editorial-entry--lead .card-link .card-link-image {
-  width: min(40%, 330px);
+  width: min(26%, 156px);
   height: auto;
-  aspect-ratio: 16 / 10;
+  aspect-ratio: 3 / 2;
   border-radius: var(--radius-md, 8px);
 }
 
@@ -1168,6 +1182,10 @@ article.post > .post-content > .feed.h-feed {
   -webkit-line-clamp: 5;
   overflow: hidden;
   max-width: 76ch;
+}
+
+.feed--editorial .editorial-entry--lead .card-link .card-excerpt {
+  -webkit-line-clamp: 3;
 }
 
 .feed--editorial .editorial-entry--quiet .card-text,
@@ -1263,23 +1281,26 @@ article.post > .post-content > .feed.h-feed {
   }
 
   .feed--editorial .editorial-entry--lead .card-link .card-link-image {
-    width: min(38%, 180px);
+    width: min(26%, 112px);
   }
 
-  .feed--editorial .editorial-entry--lead .card-title,
-  .feed--editorial .editorial-entry--lead .card-link .card-title {
+  .feed--editorial .editorial-entry--lead .card-title {
     font-size: clamp(1.35rem, 5vw, 1.8rem);
+  }
+
+  .feed--editorial .editorial-entry--lead .card-link .card-title {
+    font-size: clamp(1.05rem, 4vw, 1.25rem);
   }
 }
 
 @media (max-width: 480px) {
   .feed--editorial .editorial-entry--lead .card-link .card-link-wrapper {
-    flex-direction: column;
+    flex-direction: row;
   }
 
   .feed--editorial .editorial-entry--lead .card-link .card-link-image {
-    width: 100%;
-    aspect-ratio: 16 / 9;
+    width: min(28%, 104px);
+    aspect-ratio: 3 / 2;
   }
 
   .feed--editorial .editorial-entry--lead .card-link .card-link-content {
