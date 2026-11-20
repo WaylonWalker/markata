@@ -521,7 +521,7 @@ class GoEditorPublishFlowTest(unittest.TestCase):
             untracked.unlink(missing_ok=True)
             outside.unlink(missing_ok=True)
 
-    def test_changes_panel_inspects_diff_without_review_dialog(self):
+    def test_changes_panel_opens_diff_without_full_post_review(self):
         post = self.site / "posts" / "external-edit.md"
         original = post.read_text(encoding="utf-8")
         post.write_text("# Changed without opening in editor\n", encoding="utf-8")
@@ -534,8 +534,11 @@ class GoEditorPublishFlowTest(unittest.TestCase):
             panel = page.locator("#workspace-changes-panel")
             row = panel.locator(".workspace-change").filter(has_text="posts/external-edit.md")
             expect(row).to_be_visible()
-            row.get_by_role("button", name="View diff").click()
-            expect(panel.locator(".workspace-change-diff")).to_contain_text("Changed without opening")
+            panel.locator("#workspace-changes-review-open").click()
+            review = page.locator("#workspace-changes-review")
+            expect(review).to_be_visible()
+            review.locator(".workspace-review-item").filter(has_text="posts/external-edit.md").click()
+            expect(review.locator("#workspace-review-diff")).to_contain_text("Changed without opening")
             expect(page.locator("#publish-review")).not_to_be_visible()
         finally:
             post.write_text(original, encoding="utf-8")
