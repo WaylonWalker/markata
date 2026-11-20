@@ -76,6 +76,13 @@ resolved if that document is opened again. If the author removes the placeholder
 the editor MUST preserve the current source and report the uploaded Markdown so
 it can be recovered.
 
+In Vim normal or visual mode, `p` and `P` MUST check the browser clipboard for
+an image before invoking Vim's register paste. A clipboard image MUST use the
+same upload placeholder and Dropper flow as a native paste event. When no image
+is available, the editor MUST replay the original Vim paste command. Clipboard
+read failures MUST be reported accessibly and MUST preserve Vim's register paste
+behavior. `Ctrl+V` MUST retain Vim's blockwise visual-selection behavior.
+
 `POST /workspace/dropper-upload` MUST accept one multipart `image` file only
 for same-origin loopback workspace requests. It MUST enforce the existing
 15 MiB limit and verify that the declared MIME type matches PNG, JPEG, GIF, or

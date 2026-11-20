@@ -97,6 +97,54 @@ class GoEditorBrowserTest(unittest.TestCase):
         self.assertIn('Could not upload pasted-photo.png to Dropper: Dropper is unavailable.', self.page.locator('#image-upload-status').text_content())
         self.assertEqual(self.page.locator('#image-upload-status').get_attribute('data-state'), 'error')
 
+    def test_vim_paste_uses_browser_clipboard_image_before_register_paste(self):
+        self.defer_dropper_upload()
+        self.page.evaluate("""() => {
+          const cm = document.querySelector('.CodeMirror').CodeMirror;
+          const keymap = document.querySelector('#keymap');
+          keymap.value = 'vim';
+          keymap.dispatchEvent(new Event('change'));
+          cm.setValue('before after');
+          cm.setCursor({line: 0, ch: 6});
+          window.CodeMirror.Vim.exitInsertMode(cm);
+          Object.defineProperty(navigator.clipboard, 'read', {configurable: true, value: async () => [{
+            types: ['image/png'],
+            getType: async type => new Blob([new Uint8Array([137, 80, 78, 71])], {type})
+          }]});
+          cm.getInputField().dispatchEvent(new KeyboardEvent('keydown', {
+            bubbles: true, cancelable: true, key: 'p'
+          }));
+        }""")
+        self.page.wait_for_function("""() => window.__resolveDropperUpload
+          && document.querySelector('.CodeMirror').CodeMirror.getValue().includes('⏳ Uploading image…')""")
+        source = self.page.evaluate("document.querySelector('.CodeMirror').CodeMirror.getValue()")
+        self.assertTrue(source.startswith('before<span class="markata-image-upload"'))
+        self.assertIn('aria-busy="true"', source)
+        self.assertTrue(source.endswith('</span> after'))
+        self.page.evaluate("""() => window.__resolveDropperUpload(201, {
+          provider: 'dropper', url: 'https://dropper.example.com/file/pasted-image.png'
+        })""")
+        self.page.wait_for_function("""() => document.querySelector('.CodeMirror').CodeMirror.getValue()
+          === 'before![pasted-image](<https://dropper.example.com/file/pasted-image.png>) after'""")
+
+    def test_vim_paste_without_clipboard_image_uses_vim_register(self):
+        self.page.evaluate("""() => {
+          const cm = document.querySelector('.CodeMirror').CodeMirror;
+          const keymap = document.querySelector('#keymap');
+          keymap.value = 'vim';
+          keymap.dispatchEvent(new Event('change'));
+          cm.setValue('before after');
+          cm.setCursor({line: 0, ch: 6});
+          window.CodeMirror.Vim.exitInsertMode(cm);
+          window.CodeMirror.Vim.getRegisterController().getRegister('"').setText('from register', false);
+          Object.defineProperty(navigator.clipboard, 'read', {configurable: true, value: async () => [{types: ['text/plain']}]});
+          cm.getInputField().dispatchEvent(new KeyboardEvent('keydown', {
+            bubbles: true, cancelable: true, key: 'p'
+          }));
+        }""")
+        self.page.wait_for_function("""() => document.querySelector('.CodeMirror').CodeMirror.getValue()
+          === 'beforefrom register after'""")
+
     def test_fragments_retain_frame_and_styles(self):
         self.edit("# Plain")
         expect(self.preview.locator("h1")).to_have_text("Plain")

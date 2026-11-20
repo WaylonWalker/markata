@@ -40,6 +40,11 @@ does not make the image bytes available, the workbench shows an error in the
 editor toolbar. Try copying the image again or drop the image file into the
 editor.
 
+With the Vim keymap, press `p` or `P` in normal or visual mode to upload an image
+from the system clipboard. If the clipboard has no image, those keys keep their
+usual Vim register-paste behavior. `Ctrl+V` remains Vim's blockwise selection
+command.
+
 If an upload fails, the workbench restores the selected text when the marker is
 still present. If you remove the marker while an upload is running, the editor
 does not overwrite your edits and reports the Markdown returned by Dropper.
