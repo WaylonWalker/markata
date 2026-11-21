@@ -38,7 +38,14 @@ Reloading the editor applies changes to authored scripts.
 The preview uses the shared standalone appearance assets and ordered renderer
 assets. The handler permits raw authored HTML for local trusted editing. The
 browser isolates preview scripts in an opaque-origin iframe sandbox. All assets
-are served locally. Authored images and links may access external networks.
+are served locally. In hosted mode, the initial document MUST carry its
+appearance styles and the selected font files into the opaque-origin frame;
+preview rendering MUST NOT rely on authenticated subresource requests from that
+frame. Later font-pack changes MUST use an authenticated request from the parent
+workbench and update the isolated frame without granting it same-origin access.
+The workbench MUST NOT make workspace-derived appearance assets public to avoid
+the authentication boundary. Authored images and links may access external
+networks.
 `GET /favicon.ico` serves the bundled Markata favicon so browsers do not report
 a missing icon for the workbench origin.
 

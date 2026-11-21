@@ -53,6 +53,10 @@ ForwardAuth and return the `__Host-hlab-app-session` cookie for browser login
 handoff. Hosted mutations also require the exact configured public Origin, and
 hosted responses are marked private and no-store.
 
+The rendered preview keeps its opaque-origin script sandbox. The workbench
+delivers its appearance styles and selected font files inside that preview, so
+they do not need a separate Hlab login handoff.
+
 Do not expose the listener directly to the internet. Non-loopback binding is
 rejected unless all hosted authentication settings are valid.
 
