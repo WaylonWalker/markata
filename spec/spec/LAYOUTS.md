@@ -825,6 +825,15 @@ The post copy control provides a compact "Copy this post" menu near the top of a
 - Load shared copy-menu behavior from a cacheable, deferred JavaScript asset
   when the control is rendered; do not duplicate the implementation inline on
   every post page.
+- A custom theme that uses the embedded default templates MUST inherit the
+  embedded static assets, including `js/post-copy.js`, even if the custom theme
+  does not ship that asset. A project static override or same-path theme asset
+  MUST take precedence over the embedded fallback.
+- Static asset registration and Cleanup MUST publish a content-hashed copy of
+  the effective post-copy JavaScript for `theme_asset_hashed`. Builds for
+  custom themes that inherit the default post template MUST not leave
+  `/js/post-copy.js` referenced as an unhashed URL or return 404 for the
+  hashed URL.
 - Rich copy must rewrite relative links/media URLs in the copied fragment to absolute URLs before writing HTML to the clipboard.
 - The menu closes after a successful copy and exposes short-lived visual feedback for the chosen action.
 

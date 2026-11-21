@@ -1781,3 +1781,58 @@ date: 2024-01-01
 		t.Fatalf("diagram page should import mermaid from the vendored path")
 	}
 }
+
+func TestBuild_CustomThemeInheritsEmbeddedPostCopyAsset(t *testing.T) {
+	site := newCacheSite(t)
+	site.addPost("post.md", `---
+title: Custom Theme Post
+published: true
+---
+Copy this post.
+`)
+
+	customStaticDir := filepath.Join(site.dir, "themes", "acme", "static", "js")
+	if err := os.MkdirAll(customStaticDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(customStaticDir, "acme.js"), []byte("window.acme = true;"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	site.buildWithCacheAndTheme(models.ThemeConfig{Name: "acme"})
+
+	postCopySource, err := os.ReadFile(filepath.Join(site.outputDir, "js", "post-copy.js"))
+	if err != nil {
+		t.Fatalf("read post-copy source asset: %v", err)
+	}
+	if len(postCopySource) == 0 {
+		t.Fatal("published post-copy source asset is empty")
+	}
+
+	if _, err := os.Stat(filepath.Join(site.outputDir, "js", "acme.js")); err != nil {
+		t.Fatalf("custom theme asset was not published: %v", err)
+	}
+
+	page, err := os.ReadFile(filepath.Join(site.outputDir, "post", "index.html"))
+	if err != nil {
+		t.Fatalf("read custom-theme post page: %v", err)
+	}
+	pageText := string(page)
+
+	matches, err := filepath.Glob(filepath.Join(site.outputDir, "js", "post-copy.*.js"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(matches) != 1 {
+		t.Fatalf("expected one hashed post-copy asset, got %d", len(matches))
+	}
+
+	hashedName := "/" + filepath.ToSlash(strings.TrimPrefix(matches[0], site.outputDir))
+	hashedName = strings.TrimPrefix(hashedName, "//")
+	if !strings.Contains(pageText, hashedName) {
+		t.Fatalf("custom-theme post page should reference %s", hashedName)
+	}
+	if strings.Contains(pageText, `src="/js/post-copy.js"`) {
+		t.Fatal("custom-theme post page should use the hashed post-copy asset")
+	}
+}
