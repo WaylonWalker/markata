@@ -1090,6 +1090,8 @@ article.post {
   box-sizing: content-box;
   padding: var(--space-10) var(--space-10) var(--space-8);
   border-radius: var(--radius-xl);
+  background: var(--article-bg, var(--color-background));
+  border: 1px solid var(--color-border-soft, var(--color-border));
 }
 
 /* A wider reading measure without allowing card padding to overflow on phones. */
@@ -1126,11 +1128,14 @@ body:has(.background-decoration) article.post {
   flex: 1 1 20rem;
   min-width: 0;
   overflow-wrap: anywhere;
+  text-wrap: balance;
+  font-size: clamp(2.5rem, 4.6vw, 3.8rem);
+  line-height: 1.08;
 }
 
-/* The build supplies a readable first paint; font-aware fitting runs later. */
-.post-header h1[data-title-size="long"] { font-size: clamp(var(--text-3xl), 3vw, var(--text-4xl)); }
-.post-header h1[data-title-size="very-long"] { font-size: clamp(var(--text-2xl), 2.5vw, var(--text-3xl)); }
+/* Server-rendered title scale avoids post-paint JS resize flashes and CLS. */
+.post-header h1[data-title-size="long"] { font-size: clamp(2.15rem, 3.8vw, 3.2rem); }
+.post-header h1[data-title-size="very-long"] { font-size: clamp(1.85rem, 3.2vw, 2.65rem); }
 
 .post-meta {
   display: flex;
@@ -1521,8 +1526,11 @@ body:has(.background-decoration) div.feed {
   margin-bottom: var(--space-8);
 }
 
-.feed-header h1 {
+.feed-header h1,
+.page-header h1 {
   margin-top: 0;
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  line-height: 1.06;
 }
 
 .feed-header p {

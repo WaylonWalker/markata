@@ -51,6 +51,23 @@ func TestConfigToMap_PreservesExplicitFalseLayoutDefaults(t *testing.T) {
 	}
 }
 
+func TestConfigToMap_PrimaryFeedsRequiresHTMLFormat(t *testing.T) {
+	config := &models.Config{
+		Feeds: []models.FeedConfig{
+			{Slug: "blog", Title: "Blog", Primary: true, Formats: models.FeedFormats{HTML: true, RSS: true}},
+			{Slug: "json-only", Title: "JSON Only", Primary: true, Formats: models.FeedFormats{HTML: false, JSON: true}},
+		},
+	}
+	configMap := GetConfigMap(config)
+	feeds, ok := configMap["primary_feeds"].([]map[string]interface{})
+	if !ok {
+		t.Fatalf("primary_feeds missing or wrong type: %T", configMap["primary_feeds"])
+	}
+	if len(feeds) != 1 || feeds[0]["slug"] != "blog" {
+		t.Fatalf("expected only HTML-enabled primary feed 'blog', got %+v", feeds)
+	}
+}
+
 func TestPostToMap_InlinksOutlinks(t *testing.T) {
 	sourceTitle := "Source"
 	targetTitle := "Target"

@@ -1982,6 +1982,11 @@ func toModelsConfigUncached(config *lifecycle.Config) *models.Config {
 	// Copy feeds page config if available
 	modelsConfig.FeedsPage = feedsPageConfigFromExtra(config.Extra["feeds_page"])
 
+	// Copy configured feeds so default templates can surface primary/sidebar feed surfing
+	if feeds, ok := config.Extra["feeds"].([]models.FeedConfig); ok {
+		modelsConfig.Feeds = feeds
+	}
+
 	// Copy SEO config if available
 	switch seoVal := config.Extra["seo"].(type) {
 	case models.SEOConfig:
