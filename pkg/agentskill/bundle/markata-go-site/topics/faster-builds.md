@@ -12,9 +12,6 @@ Use this topic when the task is build speed, local iteration speed, or profiling
 - use `markata-go reader update --concurrency <n>` when reader refresh latency is dominated by many remote feeds
 - use `-m fast.toml` or `--merge-config fast.toml` when you want a slimmer dev config without editing the main site config
 - compare warm builds, not just cold builds
-- use the 100-post progressive Markdown fixture from `benchmarks/site` to test
-  content-growth costs; its fixed seed and first-to-third-paragraph range make
-  results reproducible
 - use `markata-go build --benchmark-summary-json=/tmp/benchmark.json` for compact structured timing
 - keep reusable page behavior in shared, deferred cacheable JavaScript assets
   instead of duplicating large inline scripts; preserve inline code needed for
