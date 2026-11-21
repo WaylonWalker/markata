@@ -61,6 +61,7 @@ grep -q 'install -m 0400 /run/markata-git-secret/id_ed25519 /run/markata-git/id_
 grep -q 'runAsUser: 65534' <<<"$publisher_container" || fail "publisher must use the passwd-resolvable nobody user"
 grep -q 'runAsGroup: 1000' <<<"$publisher_container" || fail "publisher must share the editor group for the local socket"
 grep -A1 'name: HOME' <<<"$publisher_container" | grep -q 'value: /tmp' || fail "publisher HOME must use its writable temporary volume"
+grep -A8 'startupProbe:' <<<"$editor_container" | grep -q 'failureThreshold: 120' || fail "editor startup probe must allow ten minutes for workspace discovery"
 grep -q 'secretName: "editor-key"' "$tmp_dir/all.yaml" || fail "publisher Git deploy key secret is not mounted"
 grep -A8 'name: editor-git-publish$' "$tmp_dir/all.yaml" | grep -Eq 'defaultMode: (256|0400)' || fail "source deploy key is not owner-readable only"
 if grep -q 'GIT_SSH_COMMAND' "$tmp_dir/all.yaml"; then

@@ -468,7 +468,8 @@ spec:
             tcpSocket:
               port: editor-http
             timeoutSeconds: 1
-            failureThreshold: 30
+            # Workspace discovery and watcher registration happen before the listener opens.
+            failureThreshold: 120
             periodSeconds: 5
           readinessProbe:
             tcpSocket:
