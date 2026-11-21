@@ -57,7 +57,7 @@ if grep -q 'ports:' <<<"$publisher_container"; then
   fail "Git publisher must not expose a network port"
 fi
 grep -q 'name: prepare-editor-git-key' "$tmp_dir/all.yaml" || fail "private key copy init container is missing"
-grep -q 'install -m 0400 -o 1000 -g 1000' "$tmp_dir/all.yaml" || fail "private key copy does not use OpenSSH-safe permissions"
+grep -q 'install -m 0400 /run/markata-git-secret/id_ed25519 /run/markata-git/id_ed25519 && chown 1000:1000 /run/markata-git/id_ed25519' "$tmp_dir/all.yaml" || fail "private key copy must set OpenSSH-safe permissions before changing ownership"
 grep -q 'secretName: "editor-key"' "$tmp_dir/all.yaml" || fail "publisher Git deploy key secret is not mounted"
 grep -A8 'name: editor-git-publish$' "$tmp_dir/all.yaml" | grep -Eq 'defaultMode: (256|0400)' || fail "source deploy key is not owner-readable only"
 if grep -q 'GIT_SSH_COMMAND' "$tmp_dir/all.yaml"; then
