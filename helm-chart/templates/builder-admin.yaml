@@ -163,7 +163,7 @@ spec:
             - /bin/sh
             - -ceu
           args:
-            - install -m 0400 -o 1000 -g 1000 /run/markata-git-secret/id_ed25519 /run/markata-git/id_ed25519
+            - install -m 0400 /run/markata-git-secret/id_ed25519 /run/markata-git/id_ed25519 && chown 1000:1000 /run/markata-git/id_ed25519
           resources:
             requests:
               cpu: 10m
