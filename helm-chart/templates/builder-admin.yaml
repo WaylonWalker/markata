@@ -163,7 +163,7 @@ spec:
             - /bin/sh
             - -ceu
           args:
-            - install -m 0400 /run/markata-git-secret/id_ed25519 /run/markata-git/id_ed25519 && chown 1000:1000 /run/markata-git/id_ed25519
+            - install -m 0400 /run/markata-git-secret/id_ed25519 /run/markata-git/id_ed25519 && chown 65534:1000 /run/markata-git/id_ed25519
           resources:
             requests:
               cpu: 10m
@@ -383,7 +383,7 @@ spec:
             {{- toYaml .Values.builderAdmin.editor.publisherResources | nindent 12 }}
           securityContext:
             runAsNonRoot: true
-            runAsUser: 1000
+            runAsUser: 65534
             runAsGroup: 1000
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
