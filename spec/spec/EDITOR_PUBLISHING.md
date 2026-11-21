@@ -203,9 +203,11 @@ bundled asset, Playwright and deployment recovery paths are verified.
 
 Hosted deployments MUST mount the Git SSH Secret only into a short-lived init
 container, which copies it to an ephemeral volume with owner-only permissions
-for the dedicated Git publisher process. The editor MUST NOT receive either
-key volume, `GIT_SSH_COMMAND`, or an SSH agent socket. It may request remote
-readiness and push only through the publisher's local Unix socket.
+for the dedicated Git publisher process. The publisher runtime UID MUST resolve
+to a passwd entry for OpenSSH, and the private key MUST be owned by that UID.
+The editor MUST NOT receive either key volume, `GIT_SSH_COMMAND`, or an SSH
+agent socket. It may request remote readiness and push only through the
+publisher's local Unix socket.
 
 The publisher MUST use an operator-configured HTTPS GitHub origin and branch,
 and MUST reject any checkout whose configured fetch origin differs from those
