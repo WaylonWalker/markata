@@ -156,7 +156,16 @@ func TestUnixGitPublisher_RemoteHeadUsesLocalSocket(t *testing.T) {
 			return "", errors.New("unexpected Git command")
 		}
 	})
-	socket := filepath.Join(t.TempDir(), "publisher.sock")
+	socketDir, err := os.MkdirTemp("", "mp-")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := os.RemoveAll(socketDir); err != nil {
+			t.Errorf("remove short socket directory: %v", err)
+		}
+	})
+	socket := filepath.Join(socketDir, "s")
 	listenConfig := net.ListenConfig{}
 	listener, err := listenConfig.Listen(context.Background(), "unix", socket)
 	if err != nil {
