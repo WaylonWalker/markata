@@ -1090,6 +1090,11 @@ article.post {
   box-sizing: content-box;
   padding: var(--space-10) var(--space-10) var(--space-8);
   border-radius: var(--radius-xl);
+}
+
+/* Blog reading cards need an opaque surface; documentation already has its
+ * own grid and reading measure. Keep its existing geometry and typography. */
+:where(body:not(.layout--docs)) article.post {
   background: var(--article-bg, var(--color-background));
   border: 1px solid var(--color-border-soft, var(--color-border));
 }
@@ -1128,6 +1133,9 @@ body:has(.background-decoration) article.post {
   flex: 1 1 20rem;
   min-width: 0;
   overflow-wrap: anywhere;
+}
+
+:where(body:not(.layout--docs)) .post-header h1 {
   text-wrap: balance;
   font-size: clamp(2.5rem, 4.6vw, 3.8rem);
   line-height: 1.08;

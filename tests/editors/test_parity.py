@@ -37,6 +37,10 @@ def check_excalidraw_fence_controls(page):
     original_source = markdown
     edited_source = 'X' + markdown
 
+    # Cached-only rendering intentionally rejects a scene without an artifact.
+    # Wait for this preview to settle before exercising the keyboard controls.
+    expect(page.get_by_role('alert').filter(has_text='no matching cached Excalidraw SVG')).to_be_visible(timeout=60000)
+
     show = page.locator('.excalidraw-fence-controls').get_by_role('button', name='Show Excalidraw JSON')
     expect(show).to_be_visible()
     expect(show).to_have_attribute('aria-expanded', 'false')
@@ -57,6 +61,7 @@ def check_excalidraw_fence_controls(page):
     expect(show).to_be_visible()
 
     show.focus()
+    expect(show).to_be_focused()
     page.keyboard.press('Space')
     hide = page.locator('.excalidraw-fence-controls').get_by_role('button', name='Hide Excalidraw JSON')
     expect(hide).to_be_visible()
@@ -89,6 +94,7 @@ def check_excalidraw_fence_controls(page):
     assert 'https://esm.sh/' not in svg
     assert 'data:font/woff2;base64,' in svg
     expect(page.frame_locator('#preview').locator('.markata-visualization img')).to_be_visible(timeout=60000)
+    expect(page.get_by_role('alert').filter(has_text='no matching cached Excalidraw SVG')).not_to_be_visible()
 
 
 def check(browser, url, excalidraw=False):
