@@ -912,6 +912,22 @@ result = evaluate_ast(ast, context={"post": post, "today": today})
 - Use incremental builds
 - Stream large files instead of loading into memory
 
+### Benchmark Fixture Growth
+
+- The persistent `benchmarks/site` fixture MUST contain exactly 100 generated
+  Markdown posts.
+- Benchmark generation MUST use a fixed random seed so repeated runs produce
+  the same titles, tags, frontmatter, and body text.
+- The 100 posts MUST cover a monotonic content-growth curve:
+  - post 1 has one sentence;
+  - post 100 has three paragraphs;
+  - intermediate posts grow in paragraph count and sentence count.
+- Every generated post MUST include Markdown formatting beyond plain prose,
+  including a heading and at least one additional construct such as emphasis,
+  a list, a blockquote, a code fence, or a link.
+- Warm-build comparisons MUST keep caches intact, prime the fixture once, and
+  compare cold and repeated warm builds separately.
+
 ### 6. Benchmark Toolchain Compatibility
 
 - Scheduled benchmark workflows MUST use the Go version declared by `go.mod`.

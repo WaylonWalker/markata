@@ -13,6 +13,29 @@ tags:
 
 markata-go includes a comprehensive benchmarking suite for measuring and optimizing build performance. This guide covers how to run benchmarks locally, interpret results, and use profiling tools to identify bottlenecks.
 
+The persistent benchmark fixture uses exactly 100 reproducible random Markdown
+posts. A fixed seed keeps each generated corpus identical across runs. Post
+sizes grow progressively: the first post contains one sentence, intermediate
+posts add content, and the final post contains three paragraphs. Every post
+includes Markdown headings plus lists, emphasis, links, blockquotes, tables,
+or code fences.
+
+Regenerate the fixture with:
+
+```bash
+just perf-generate
+```
+
+Use the generated fixture for cold-build, warm-cache-priming, and steady-state
+warm-build comparisons. Do not mix cache-cleared and cache-warm measurements
+in the same result.
+
+Shared post-copy behavior is served from one deferred, cacheable JavaScript
+asset instead of being repeated inline on every post page. Keep page-specific
+copy data in the small per-page JSON payload; keep reusable behavior in the
+shared asset. This reduces repeated HTML transfer and avoids parsing the same
+implementation on every page.
+
 ### Explain template work before optimizing it
 
 Inspect `jq '.content.template_cache' benchmark.json`, or
