@@ -26,6 +26,8 @@ common=(
   --set builderAdmin.editor.enabled=true
   --set-string builderAdmin.editor.requiredScope=markata-editor:admin
   --set-string builderAdmin.editor.gitAuth.existingSecretName=editor-key
+  --set-string builderAdmin.editor.gitAuth.repository=https://github.com/example/site
+  --set-string builderAdmin.editor.gitAuth.branch=main
   --set-string 'builderAdmin.editor.gitAuth.knownHosts=github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl'
   --set-string builderAdmin.editor.ingress.host=edit.example.com
   --set-string builderAdmin.editor.ingress.ingressClassName=traefik
@@ -39,9 +41,28 @@ grep -q -- '--public-origin' "$tmp_dir/all.yaml" || fail "editor public origin m
 grep -q -- 'https://edit.example.com' "$tmp_dir/all.yaml" || fail "editor origin does not match ingress host"
 grep -q -- '--required-scope' "$tmp_dir/all.yaml" || fail "editor scope argument missing"
 grep -q -- 'markata-editor:admin' "$tmp_dir/all.yaml" || fail "editor writer scope missing"
-grep -q 'secretName: "editor-key"' "$tmp_dir/all.yaml" || fail "editor Git deploy key secret is not mounted"
-grep -A8 'name: editor-git-publish' "$tmp_dir/all.yaml" | grep -Eq 'defaultMode: (292|0444)' || fail "editor Git deploy key is not readable by the non-root editor container"
-grep -q 'StrictHostKeyChecking=yes' "$tmp_dir/all.yaml" || fail "editor SSH does not verify the GitHub host key"
+publisher_container="$(sed -n '/^[[:space:]]*- name: "editor-test-notes-editor-git-publisher"$/,/readinessProbe:/p' "$tmp_dir/all.yaml")"
+editor_container="$(sed -n '/^[[:space:]]*- name: "editor-test-notes-editor"$/,/readinessProbe:/p' "$tmp_dir/all.yaml")"
+key_initializer="$(sed -n '/^[[:space:]]*- name: prepare-editor-git-key$/,/^[[:space:]]*- name: editor-git-publish-key$/p' "$tmp_dir/all.yaml")"
+grep -q 'editor-git-publish-key' <<<"$publisher_container" || fail "publisher does not mount the private-key copy"
+grep -q 'editor-ssh-known-hosts' <<<"$publisher_container" || fail "publisher does not mount verified known_hosts"
+grep -q -- 'https://github.com/example/site' <<<"$publisher_container" || fail "publisher origin allowlist is missing"
+grep -q 'refs/heads/main' <<<"$publisher_container" || fail "publisher branch allowlist is missing"
+grep -q 'editor-git-publisher-socket' <<<"$editor_container" || fail "editor does not mount the publisher socket"
+if grep -Eq 'name: editor-git-publish(-key)?$|editor-ssh-known-hosts|GIT_SSH_COMMAND' <<<"$editor_container"; then
+  fail "editor container has direct Git credential access"
+fi
+grep -q 'name: editor-git-publish$' <<<"$key_initializer" || fail "init container does not mount the source Secret"
+if grep -q 'ports:' <<<"$publisher_container"; then
+  fail "Git publisher must not expose a network port"
+fi
+grep -q 'name: prepare-editor-git-key' "$tmp_dir/all.yaml" || fail "private key copy init container is missing"
+grep -q 'install -m 0400 -o 1000 -g 1000' "$tmp_dir/all.yaml" || fail "private key copy does not use OpenSSH-safe permissions"
+grep -q 'secretName: "editor-key"' "$tmp_dir/all.yaml" || fail "publisher Git deploy key secret is not mounted"
+grep -A8 'name: editor-git-publish$' "$tmp_dir/all.yaml" | grep -Eq 'defaultMode: (256|0400)' || fail "source deploy key is not owner-readable only"
+if grep -q 'GIT_SSH_COMMAND' "$tmp_dir/all.yaml"; then
+  fail "SSH private-key command is exposed in the pod environment"
+fi
 grep -q 'github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl' "$tmp_dir/all.yaml" || fail "editor known_hosts entry is missing"
 grep -q 'X-Hlab-User-Id: ""' "$tmp_dir/all.yaml" || fail "editor middleware does not strip spoofed user ID"
 grep -q 'X-Hlab-Scopes: ""' "$tmp_dir/all.yaml" || fail "editor middleware does not strip spoofed scopes"
@@ -67,5 +88,21 @@ if helm template editor-test "$chart" \
   >/dev/null 2>&1; then
   fail "hosted editor rendered without protected Builder Admin infrastructure"
 fi
+
+if helm template editor-test "$chart" "${common[@]}" \
+  --set-string builderAdmin.editor.gitAuth.repository= \
+  --set-string builderAdmin.sourceGit.repository= \
+  >/dev/null 2>&1; then
+  fail "hosted publisher rendered without an explicit GitHub repository allowlist"
+fi
+
+helm template editor-test "$chart" "${common[@]}" \
+  --set builderAdmin.sourceGit.enabled=true \
+  --set-string builderAdmin.sourceGit.repository=https://github.com/example/source \
+  --set-string builderAdmin.editor.gitAuth.repository= \
+  --set-string builderAdmin.editor.gitAuth.branch= \
+  >"$tmp_dir/source-git-defaults.yaml"
+grep -q -- 'https://github.com/example/source' "$tmp_dir/source-git-defaults.yaml" || fail "publisher did not default to sourceGit.repository"
+grep -q 'refs/heads/main' "$tmp_dir/source-git-defaults.yaml" || fail "publisher did not default to sourceGit.branch"
 
 printf 'Builder Admin hosted editor Helm tests passed.\n'
