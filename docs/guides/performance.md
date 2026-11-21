@@ -13,6 +13,12 @@ tags:
 
 markata-go includes a comprehensive benchmarking suite for measuring and optimizing build performance. This guide covers how to run benchmarks locally, interpret results, and use profiling tools to identify bottlenecks.
 
+Shared post-copy behavior is served from one deferred, cacheable JavaScript
+asset instead of being repeated inline on every post page. Keep page-specific
+copy data in the small per-page JSON payload; keep reusable behavior in the
+shared asset. This reduces repeated HTML transfer and avoids parsing the same
+implementation on every page.
+
 ### Explain template work before optimizing it
 
 Inspect `jq '.content.template_cache' benchmark.json`, or

@@ -822,6 +822,9 @@ The post copy control provides a compact "Copy this post" menu near the top of a
 **Implementation notes**:
 
 - The control is automatic on post pages unless disabled in site configuration.
+- Load shared copy-menu behavior from a cacheable, deferred JavaScript asset
+  when the control is rendered; do not duplicate the implementation inline on
+  every post page.
 - Rich copy must rewrite relative links/media URLs in the copied fragment to absolute URLs before writing HTML to the clipboard.
 - The menu closes after a successful copy and exposes short-lived visual feedback for the chosen action.
 
