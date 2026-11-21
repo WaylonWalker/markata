@@ -3,6 +3,7 @@ package workbench
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strings"
 	"time"
@@ -44,17 +45,24 @@ func (h *Handler) servePublishReadiness(w http.ResponseWriter, r *http.Request) 
 		fail(w, http.StatusUnprocessableEntity, "a Git origin remote is required for publishing")
 		return
 	}
-	remote, err := commitGit(ctx, root, "", "ls-remote", "--heads", "origin", branch)
+	var remoteHead string
+	if h.gitPublisher != nil {
+		remoteHead, err = h.gitPublisher.RemoteHead(ctx, branch, head)
+	} else {
+		var remote string
+		remote, err = commitGit(ctx, root, "", "ls-remote", "--heads", "origin", branch)
+		parts := strings.Fields(remote)
+		if err == nil && len(parts) == 2 && parts[1] == branch && gitHashPattern.MatchString(parts[0]) {
+			remoteHead = parts[0]
+		} else if err == nil {
+			err = errors.New("remote branch is missing or ambiguous")
+		}
+	}
 	if err != nil {
 		fail(w, http.StatusServiceUnavailable, "cannot verify remote Git state; nothing published")
 		return
 	}
-	parts := strings.Fields(remote)
-	if len(parts) != 2 || parts[1] != branch || !gitHashPattern.MatchString(parts[0]) {
-		fail(w, http.StatusConflict, "remote branch is missing or ambiguous; nothing published")
-		return
-	}
-	if parts[0] != head {
+	if remoteHead != head {
 		fail(w, http.StatusConflict, "local branch differs from origin. Review and sync pending commits before publishing this post.")
 		return
 	}

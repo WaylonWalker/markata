@@ -13,6 +13,10 @@
 {{- $_ := required "builderAdmin.editor.gitAuth.existingSecretName is required when the hosted editor is enabled" .Values.builderAdmin.editor.gitAuth.existingSecretName }}
 {{- $_ := required "builderAdmin.editor.gitAuth.privateKeyKey is required when the hosted editor is enabled" .Values.builderAdmin.editor.gitAuth.privateKeyKey }}
 {{- $_ := required "builderAdmin.editor.gitAuth.knownHosts is required when the hosted editor is enabled" .Values.builderAdmin.editor.gitAuth.knownHosts }}
+{{- $gitRepository := .Values.builderAdmin.editor.gitAuth.repository | default .Values.builderAdmin.sourceGit.repository }}
+{{- $gitBranch := .Values.builderAdmin.editor.gitAuth.branch | default .Values.builderAdmin.sourceGit.branch }}
+{{- $_ := required "builderAdmin.editor.gitAuth.repository or builderAdmin.sourceGit.repository is required when the hosted editor is enabled" $gitRepository }}
+{{- $_ := required "builderAdmin.editor.gitAuth.branch or builderAdmin.sourceGit.branch is required when the hosted editor is enabled" $gitBranch }}
 {{- $namespace := include "markata-notes.namespace" . }}
 {{- $name := printf "%s-notes-editor" .Values.project_identifier }}
 apiVersion: v1

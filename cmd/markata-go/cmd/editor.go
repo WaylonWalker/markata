@@ -19,12 +19,13 @@ import (
 )
 
 var (
-	editorWorkspace         = "."
-	editorPort              int
-	editorListen            = "127.0.0.1:8766"
-	editorPublicOrigin      string
-	editorTrustedProxyCIDRs []string
-	editorRequiredScope     string
+	editorWorkspace          = "."
+	editorPort               int
+	editorListen             = "127.0.0.1:8766"
+	editorPublicOrigin       string
+	editorTrustedProxyCIDRs  []string
+	editorRequiredScope      string
+	editorGitPublisherSocket string
 )
 
 var editorCmd = &cobra.Command{
@@ -45,6 +46,7 @@ func init() {
 	editorCmd.Flags().StringVar(&editorPublicOrigin, "public-origin", "", "canonical HTTPS origin for hosted Hlab ForwardAuth")
 	editorCmd.Flags().StringSliceVar(&editorTrustedProxyCIDRs, "trusted-proxy-cidr", nil, "trusted reverse-proxy source CIDR (repeatable)")
 	editorCmd.Flags().StringVar(&editorRequiredScope, "required-scope", "", "app-specific Hlab writer scope required for every request")
+	editorCmd.Flags().StringVar(&editorGitPublisherSocket, "git-publisher-socket", "", "delegate hosted Git remote checks and pushes to a local Unix-socket publisher")
 }
 
 func runEditorCommand(cmd *cobra.Command, _ []string) error {
@@ -76,7 +78,11 @@ func runEditorCommand(cmd *cobra.Command, _ []string) error {
 	if _, err := fmt.Fprintln(cmd.ErrOrStderr(), colorize("Preparing Markata editor assets…", currentLogTheme.Component, colorEnabledFor(streamIsTerminal(cmd.ErrOrStderr())))); err != nil {
 		return fmt.Errorf("write editor status: %w", err)
 	}
-	handler, err := workbench.NewWithWorkspace(ctx, editorWorkspace)
+	var publisher workbench.GitPublisher
+	if editorGitPublisherSocket != "" {
+		publisher = workbench.NewUnixGitPublisher(editorGitPublisherSocket)
+	}
+	handler, err := workbench.NewWithWorkspaceAndGitPublisher(ctx, editorWorkspace, publisher)
 	if err != nil {
 		return err
 	}

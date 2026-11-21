@@ -102,6 +102,7 @@ type Handler struct {
 	lastSource       string
 	lastResult       *plugins.StandaloneResult
 	hostedAuth       *hostedAuth
+	gitPublisher     GitPublisher
 }
 
 // New builds immutable appearance assets once. Reuse the handler for all requests.
@@ -109,6 +110,13 @@ func New() (*Handler, error) { return NewWithWorkspace(context.Background(), "."
 
 // NewWithWorkspace enables LSP for a server-selected workspace. Cancel ctx on shutdown.
 func NewWithWorkspace(ctx context.Context, root string) (*Handler, error) {
+	return NewWithWorkspaceAndGitPublisher(ctx, root, nil)
+}
+
+// NewWithWorkspaceAndGitPublisher enables LSP for a server-selected workspace
+// and delegates hosted remote Git operations to publisher. Cancel ctx on
+// shutdown. A nil publisher preserves direct local Git behavior.
+func NewWithWorkspaceAndGitPublisher(ctx context.Context, root string, publisher GitPublisher) (*Handler, error) {
 	started := time.Now()
 	workspace, err := editorworkspace.Open(ctx, root)
 	if err != nil {
@@ -133,6 +141,7 @@ func NewWithWorkspace(ctx context.Context, root string) (*Handler, error) {
 	}
 	handler.store = workspace
 	handler.configRevision = revision
+	handler.gitPublisher = publisher
 	go func() {
 		service, err := lsp.NewWebSocketHandlerWithIndexAndOriginCheck(ctx, root, log.Default(), workspace.Snapshot, handler.validLSPOrigin)
 		if err != nil {

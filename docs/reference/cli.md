@@ -764,6 +764,7 @@ workspace sources, which can be edited and saved from the browser.
 | `--public-origin` | Canonical HTTPS origin for hosted Hlab ForwardAuth | None |
 | `--trusted-proxy-cidr` | Trusted reverse proxy source range; repeatable | None |
 | `--required-scope` | App-specific Hlab writer scope required on every request | None |
+| `--git-publisher-socket` | Unix socket for hosted Git readiness and push operations | None |
 | `--port`, `-p` | HTTP port (overrides the port in `--listen`) | `8766` |
 
 #### Examples

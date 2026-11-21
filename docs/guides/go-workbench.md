@@ -74,6 +74,8 @@ builderAdmin:
       tls:
         secretName: edit-example-com-tls
     gitAuth:
+      repository: https://github.com/owner/site
+      branch: main
       existingSecretName: markata-editor-git-publish
       privateKeyKey: ssh-privatekey
       knownHosts: |
@@ -87,7 +89,13 @@ controller. Register a dedicated Hlab app for `edit.example.com`; do not add
 this host to the Build Admin app or grant its operator scope to the editor.
 The GitHub deploy key must be write-enabled for only the site's repository;
 store its private key in a namespace-scoped SealedSecret and use the verified
-GitHub host key shown above for strict SSH host checking.
+GitHub host key shown above for strict SSH host checking. An init container
+copies the Secret into an ephemeral volume with owner-only file permissions;
+the Git publisher sidecar is the only long-running container that mounts that
+volume. It uses the configured repository and branch as an allowlist, and
+accepts requests only over a local Unix socket. The editor has no private-key
+mount, SSH command, or agent socket; it continues to require the authenticated
+review, commit, and push flow.
 
 Use the [Excalidraw canvas](excalidraw-editor.md) to create and edit drawings
 inside a Markdown page.
