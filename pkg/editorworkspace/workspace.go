@@ -91,9 +91,14 @@ func (w *Workspace) Config() (*models.Config, error) {
 }
 
 func (w *Workspace) manager() (*lifecycle.Manager, error) {
+	m, _, err := w.managerWithIgnoreRules()
+	return m, err
+}
+
+func (w *Workspace) managerWithIgnoreRules() (*lifecycle.Manager, func(string) bool, error) {
 	cfg, err := w.Config()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if cfg == nil {
 		cfg = models.NewConfig()
@@ -107,10 +112,10 @@ func (w *Workspace) manager() (*lifecycle.Manager, error) {
 	m.SetConfig(lc)
 	glob := plugins.NewGlobPlugin()
 	if err := glob.Configure(m); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if err := glob.Glob(m); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	safe := []string{}
 	for _, path := range m.Files() {
@@ -119,7 +124,7 @@ func (w *Workspace) manager() (*lifecycle.Manager, error) {
 		}
 	}
 	m.SetFiles(safe)
-	return m, nil
+	return m, glob.IsIgnoredPath, nil
 }
 
 func (w *Workspace) resolve(path string) (string, error) {

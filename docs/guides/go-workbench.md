@@ -139,6 +139,10 @@ assets. Once the HTTP listener is ready, the browser still loads its source
 file list and lazily requests frontmatter plus the site link index; these are
 **not** part of the initial server-ready message.
 
+Filesystem watchers prune directories matched by the workspace's `.gitignore`
+rules. This keeps generated output and cache trees out of editor startup while
+preserving watches for discovered content and the workspace root.
+
 Large uncached metadata loads use a bounded worker pool. The store then reuses
 unchanged metadata while that server process stays open. A new server process
 builds its own index, so large sites still incur a one-time indexing cost per

@@ -52,6 +52,11 @@ JSON body in one normal editor transaction. Applying a new scene MUST insert
 its fence only after the author applies it. Canceling MUST leave the source
 unchanged.
 
+Workspace filesystem watchers MUST prune directories ignored by the configured
+Git ignore rules. They MUST retain the workspace root and watches for discovered
+content directories so new content can be discovered after filesystem events.
+Ignored build and cache trees MUST NOT delay editor startup or receive watchers.
+
 ## Hosted editor access
 
 The editor MUST bind to loopback by default. A non-loopback listener MUST be

@@ -203,6 +203,12 @@ func (p *GlobPlugin) isIgnored(path string) bool {
 	return false
 }
 
+// IsIgnoredPath reports whether path matches the configured .gitignore rules.
+// Paths must be relative to the content directory.
+func (p *GlobPlugin) IsIgnoredPath(path string) bool {
+	return p.isIgnored(path)
+}
+
 // Glob discovers content files matching the configured patterns.
 // Uses cached file list when patterns haven't changed.
 func (p *GlobPlugin) Glob(m *lifecycle.Manager) error {
