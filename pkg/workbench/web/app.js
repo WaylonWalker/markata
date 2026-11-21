@@ -44,7 +44,11 @@ const placeEditorCursor = position => {
 };
 window.addEventListener('message',event=>{
   if (event.source !== frame.contentWindow) return;
-  if (event.data?.type === 'preview-content-ready') markPreviewContentReady();
+  if (event.data?.type === 'preview-content-ready') {
+    markPreviewContentReady();
+    previewFontpack=null;
+    syncAppearance();
+  }
   if (event.data?.type === 'preview-features-ready') markPreviewReady();
   if (event.data?.type === 'open-post') window.MarkataSiteTree?.openPost(event.data.slug);
   if (event.data?.type === 'place-editor-cursor') placeEditorCursor(event.data);
@@ -1150,7 +1154,22 @@ function updatePreview(data, version) {
     attributes:attributes()}, '*');
 }
 function attributes() { return Object.fromEntries(appearanceKeys.map(k => [k, document.documentElement.getAttribute(k)])); }
-function syncAppearance() { frame.contentWindow?.postMessage({type:'appearance',attributes:attributes()}, '*'); }
+let previewFontpack = null, previewFontRequest = 0;
+function syncAppearance() {
+  const values=attributes();
+  frame.contentWindow?.postMessage({type:'appearance',attributes:values}, '*');
+  const fontpack=values['data-fontpack'];
+  if(!fontpack||fontpack===previewFontpack)return;
+  previewFontpack=fontpack;
+  const request=++previewFontRequest;
+  fetch('/preview-fonts.css?fontpack='+encodeURIComponent(fontpack),{cache:'no-store'})
+    .then(response=>{if(!response.ok)throw new Error('Could not load preview font pack');return response.text();})
+    .then(css=>{
+      if(request!==previewFontRequest||attributes()['data-fontpack']!==fontpack)return;
+      frame.contentWindow?.postMessage({type:'preview-font-css',fontpack,css}, '*');
+    })
+    .catch(error=>console.warn('Preview font pack could not be updated:',error));
+}
 new MutationObserver(syncAppearance).observe(document.documentElement, {attributes:true,attributeFilter:appearanceKeys});
 document.querySelector('#open').addEventListener('click', () => document.querySelector('#import').click());
 document.querySelector('#import').addEventListener('change', async event => {
