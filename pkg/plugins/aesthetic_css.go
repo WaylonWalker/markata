@@ -561,24 +561,23 @@ func randomizedMotifSVG(m models.ThemeMotifConfig, raw []byte) []byte {
 		}
 		cx := (float64(col)+0.5)*cellW + rowShift + rx*scatter*cellW*0.36
 		cy := (float64(row)+0.5)*cellH + ry*scatter*cellH*0.36
-		for cx < 0 {
-			cx += float64(width)
-		}
-		for cx >= float64(width) {
-			cx -= float64(width)
-		}
-		for cy < 0 {
-			cy += float64(height)
-		}
-		for cy >= float64(height) {
-			cy -= float64(height)
-		}
+		cx = wrapMotifCoordinate(cx, float64(width))
+		cy = wrapMotifCoordinate(cy, float64(height))
 		deg := rr * wobble * 26.0
 		sc := (1.0 + rs*scatter*0.14) * markScale
 		fmt.Fprintf(&b, `<path data-index="%d" fill="%s" opacity="1" transform="translate(%.2f %.2f) rotate(%.2f) scale(%.5f) translate(-844.2 -452.9)" d="%s"/>`, index, fill, cx, cy, deg, sc, pathD)
 	}
 	b.WriteString(`</svg>`)
 	return []byte(b.String())
+}
+
+// wrapMotifCoordinate keeps a displaced mark's center within the repeating tile.
+func wrapMotifCoordinate(value, size float64) float64 {
+	value = math.Mod(value, size)
+	if value < 0 {
+		value += size
+	}
+	return value
 }
 
 // screenprintSurfaceSVG upgrades the placeholder 2-dot screenprint asset into

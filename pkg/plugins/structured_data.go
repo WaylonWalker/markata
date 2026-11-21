@@ -343,7 +343,8 @@ func (p *StructuredDataPlugin) getAuthor(post *models.Post, config *lifecycle.Co
 
 	// Check configured default author in [authors]
 	if modelsConfig, ok := config.Extra["models_config"].(*models.Config); ok && modelsConfig.Authors.Authors != nil {
-		for _, author := range modelsConfig.Authors.Authors {
+		for id := range modelsConfig.Authors.Authors {
+			author := modelsConfig.Authors.Authors[id]
 			if author.Default && author.Name != "" {
 				agent := models.NewSchemaAgent("Person", author.Name)
 				if author.URL != nil && *author.URL != "" {
