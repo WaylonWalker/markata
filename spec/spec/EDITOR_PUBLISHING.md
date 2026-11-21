@@ -225,3 +225,7 @@ an HTTP or Kubernetes Service. Hlab Auth continues to authorize editor
 requests. The publisher is a credential boundary, not an alternate browser
 authentication path; a request to publish is accepted only through the editor's
 existing authenticated review, commit, and push flow.
+
+Hosted editor startup probes MUST allow at least ten minutes for initial
+workspace discovery and filesystem watcher registration before restarting the
+container. Readiness probes remain short after the HTTP listener starts.
