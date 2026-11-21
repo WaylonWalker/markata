@@ -1053,8 +1053,9 @@ article.post > .post-content > .feed.h-feed {
   padding: .65rem clamp(.75rem, 2.5vw, 1.5rem);
 }
 
-/* Link posts read as short commentary on an external bookmark, not hero essays. */
-.feed--editorial .editorial-entry .card-link {
+/* Link posts read as short commentary on an external bookmark, not hero essays.
+ * Scoped to article.card-link so <a class="card-link"> inside note cards is untouched. */
+.feed--editorial .editorial-entry article.card-link {
   padding: 0.9rem 1.15rem;
   border: 1px solid var(--color-border-soft, var(--color-border));
   border-left: 3px solid color-mix(in srgb, var(--color-primary) 60%, var(--color-border));
@@ -1062,26 +1063,53 @@ article.post > .post-content > .feed.h-feed {
   background: color-mix(in srgb, var(--color-surface, var(--color-background)) 82%, transparent);
 }
 
-.feed--editorial .editorial-entry .card-link .card-link-image {
-  display: none;
-}
-
-.feed--editorial .editorial-entry .card-link .card-link-wrapper {
-  display: block;
-  gap: 0;
-}
-
-.feed--editorial .editorial-entry .card-link .card-link-content {
+.feed--editorial .editorial-entry article.card-link .card-link-wrapper {
   display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.35rem 0.65rem;
+  flex-direction: row-reverse;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.feed--editorial .editorial-entry article.card-link .card-link-image {
+  display: block;
+  flex: 0 0 116px;
+  width: 116px;
+  max-width: 116px;
+  height: auto;
+  aspect-ratio: 16 / 10;
+  margin: 0;
+  border-radius: var(--radius-sm, 6px);
+  overflow: hidden;
+  border: 1px solid var(--color-border-soft, var(--color-border));
+  opacity: 0.88;
+  transition: opacity 0.18s ease;
+}
+
+.feed--editorial .editorial-entry article.card-link:hover .card-link-image {
+  opacity: 1;
+}
+
+.feed--editorial .editorial-entry article.card-link .card-link-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.feed--editorial .editorial-entry article.card-link .card-link-content {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
   padding: 0;
 }
 
-.feed--editorial .editorial-entry .card-link .card-title,
-.feed--editorial .editorial-entry--lead .card-link .card-title,
-.feed--editorial .editorial-entry--standard .card-link .card-title {
+.feed--editorial .editorial-entry article.card-link .card-title,
+.feed--editorial .editorial-entry--lead article.card-link .card-title,
+.feed--editorial .editorial-entry--standard article.card-link .card-title {
   font-family: var(--font-body, system-ui, sans-serif);
   font-size: clamp(1.05rem, 1.5vw, 1.25rem);
   font-weight: 650;
@@ -1091,7 +1119,7 @@ article.post > .post-content > .feed.h-feed {
   -webkit-line-clamp: 2;
 }
 
-.feed--editorial .editorial-entry .card-link .card-domain {
+.feed--editorial .editorial-entry article.card-link .card-domain {
   display: inline-flex;
   align-items: center;
   padding: 0.12rem 0.5rem;
@@ -1105,28 +1133,36 @@ article.post > .post-content > .feed.h-feed {
   white-space: nowrap;
 }
 
-.feed--editorial .editorial-entry .card-link .card-domain:hover {
+.feed--editorial .editorial-entry article.card-link .card-domain:hover {
   color: var(--color-primary);
   border-color: var(--color-primary);
 }
 
-.feed--editorial .editorial-entry .card-link .card-body,
-.feed--editorial .editorial-entry--lead .card-link .card-body,
-.feed--editorial .editorial-entry--standard .card-link .card-body {
-  padding: 0.45rem 0 0;
+.feed--editorial .editorial-entry article.card-link .card-body,
+.feed--editorial .editorial-entry--lead article.card-link .card-body,
+.feed--editorial .editorial-entry--standard article.card-link .card-body {
+  padding: 0.5rem 0 0;
 }
 
-.feed--editorial .editorial-entry .card-link .card-excerpt,
-.feed--editorial .editorial-entry--standard .card-link .card-excerpt {
+.feed--editorial .editorial-entry article.card-link .card-excerpt,
+.feed--editorial .editorial-entry--standard article.card-link .card-excerpt {
   -webkit-line-clamp: 3;
   font-size: 0.94rem;
   line-height: 1.55;
   color: var(--color-text-muted);
 }
 
-.feed--editorial .editorial-entry .card-link .card-meta {
+@media (max-width: 520px) {
+  .feed--editorial .editorial-entry article.card-link .card-link-image {
+    flex: 0 0 84px;
+    width: 84px;
+    max-width: 84px;
+  }
+}
+
+.feed--editorial .editorial-entry article.card-link .card-meta {
   margin-top: 0.55rem;
-  padding-top: 0.45rem;
+  padding: 0.45rem 0 0;
   border-top: 1px solid color-mix(in srgb, var(--color-border-soft, var(--color-border)) 60%, transparent);
 }
 
@@ -1294,30 +1330,42 @@ article.post > .post-content > .feed.h-feed {
   -webkit-line-clamp: 3;
 }
 
-/* Lead link cards stay compact so original writing keeps visual priority. */
-.feed--editorial .editorial-entry--lead .card-link .card-link-image {
-  display: none;
+/* Lead link cards stay compact with a small right thumbnail so original writing keeps visual priority. */
+.feed--editorial .editorial-entry--lead > article.card-link {
+  padding: 0.95rem 1.15rem;
+  border-bottom: 1px solid var(--color-border-soft, var(--color-border));
 }
 
-.feed--editorial .editorial-entry--lead .card-link .card-link-wrapper {
+.feed--editorial .editorial-entry--lead article.card-link .card-link-image {
   display: block;
-  gap: 0;
+  flex: 0 0 132px;
+  width: 132px;
+  max-width: 132px;
+  aspect-ratio: 16 / 10;
 }
 
-.feed--editorial .editorial-entry--lead .card-link .card-link-content {
+.feed--editorial .editorial-entry--lead article.card-link .card-link-wrapper {
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.feed--editorial .editorial-entry--lead article.card-link .card-link-content {
   padding: 0;
 }
 
-.feed--editorial .editorial-entry--lead .card-link .card-title {
-  font-size: clamp(1.12rem, 1.8vw, 1.35rem);
+.feed--editorial .editorial-entry--lead article.card-link .card-title {
+  font-size: clamp(1.12rem, 1.8vw, 1.32rem);
   line-height: 1.28;
   letter-spacing: -0.01em;
   min-height: 0;
   -webkit-line-clamp: 2;
 }
 
-.feed--editorial .editorial-entry--lead .card-link .card-body {
-  padding: 0.45rem 0 0;
+.feed--editorial .editorial-entry--lead article.card-link .card-body {
+  padding: 0.5rem 0 0;
 }
 
 /* Clamp secondary previews visually without deleting article text or
