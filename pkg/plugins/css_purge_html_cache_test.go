@@ -149,7 +149,11 @@ func TestCSSPurgeHTMLCache_ParsesOnlyChangedFiles(t *testing.T) {
 	// exact hash should preserve its cached selectors without parsing the page.
 	writeHTML(t, stablePage, stable)
 	sameBytes, sameBytesStats, err := scanHTMLFilesForSelectorsWithStats(output, cache, 2, false)
-	if err != nil || !sameBytesStats.CacheHit || sameBytesStats.CacheMode != wantPartialMode ||
+	wantSameBytesMode := htmlSelectorCacheModeContent
+	if fileidentity.Available {
+		wantSameBytesMode = htmlSelectorCacheModeIdentityPartial
+	}
+	if err != nil || !sameBytesStats.CacheHit || sameBytesStats.CacheMode != wantSameBytesMode ||
 		sameBytesStats.FilesParsed != 0 || sameBytesStats.FilesReused != 1 || !reflect.DeepEqual(third, sameBytes) {
 		t.Fatalf("identical-content replacement: stats=%+v selectors=%+v err=%v", sameBytesStats, sameBytes, err)
 	}
