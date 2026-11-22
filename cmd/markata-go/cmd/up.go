@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -20,6 +21,8 @@ const (
 	upDefaultEditorPort  = 8766
 	upDefaultPreviewPort = 8000
 	upShutdownTimeout    = 8 * time.Second
+	upServiceEditor      = "editor"
+	upServiceBuilder     = "builder"
 )
 
 var (
@@ -92,14 +95,14 @@ func planUpServices(opts upOptions) ([]upService, error) {
 	services := make([]upService, 0, 2)
 	if !opts.builderOnly {
 		services = append(services, upService{
-			name: "editor",
+			name: upServiceEditor,
 			args: []string{"editor", "--listen", net.JoinHostPort("127.0.0.1", strconv.Itoa(opts.editorPort))},
 			url:  "http://" + net.JoinHostPort("127.0.0.1", strconv.Itoa(opts.editorPort)) + "/",
 		})
 	}
 	if !opts.editorOnly {
 		services = append(services, upService{
-			name: "builder",
+			name: upServiceBuilder,
 			args: []string{"serve", "--no-tui", "--host", "127.0.0.1", "--port", strconv.Itoa(opts.previewPort)},
 			url:  "http://" + net.JoinHostPort("127.0.0.1", strconv.Itoa(opts.previewPort)) + "/",
 		})
@@ -138,13 +141,13 @@ func upGlobalArgs(workspace string) ([]string, error) {
 	return args, nil
 }
 
-func checkUpPorts(services []upService) error {
+func checkUpPorts(ctx context.Context, services []upService) error {
 	for _, service := range services {
 		host, port, err := net.SplitHostPort(service.url[len("http://") : len(service.url)-1])
 		if err != nil {
 			return err
 		}
-		listener, err := net.Listen("tcp", net.JoinHostPort(host, port))
+		listener, err := (&net.ListenConfig{}).Listen(ctx, "tcp", net.JoinHostPort(host, port))
 		if err != nil {
 			return fmt.Errorf("%s cannot listen on %s:%s: %w", service.name, host, port, err)
 		}
@@ -171,7 +174,7 @@ func runUpCommand(cmd *cobra.Command, _ []string) error {
 	}
 	// Prevent an accidental connection to an unrelated local listener. Child
 	// commands still validate their own binding if another process races us.
-	if err := checkUpPorts(services); err != nil {
+	if err := checkUpPorts(cmd.Context(), services); err != nil {
 		return err
 	}
 	executable, err := os.Executable()
@@ -192,12 +195,13 @@ func superviseUp(ctx context.Context, executable, workspace string, globalArgs [
 	exits := make(chan upExit, len(services))
 	running := make(map[string]*exec.Cmd, len(services))
 	for _, service := range services {
+		//nolint:gosec // executable is os.Executable; service args come from fixed, validated CLI subcommands.
 		child := exec.Command(executable, append(append([]string(nil), globalArgs...), service.args...)...)
 		child.Dir = workspace
 		child.Stdout = stdout
 		child.Stderr = stderr
 		if err := child.Start(); err != nil {
-			if service.name != "builder" || len(running) == 0 {
+			if service.name != upServiceBuilder || len(running) == 0 {
 				stopUpServices(running, exits)
 				return fmt.Errorf("start %s: %w", service.name, err)
 			}
@@ -219,7 +223,7 @@ func superviseUp(ctx context.Context, executable, workspace string, globalArgs [
 				continue
 			}
 			delete(running, result.name)
-			if result.name == "builder" && len(running) > 0 {
+			if result.name == upServiceBuilder && len(running) > 0 {
 				_, _ = fmt.Fprintf(stderr, "Builder stopped (%v). Editor is still running; inspect the builder output and restart Markata to retry.\n", result.err)
 				continue
 			}
@@ -235,10 +239,16 @@ func superviseUp(ctx context.Context, executable, workspace string, globalArgs [
 
 // Stop only child processes started by this invocation. Allow the existing
 // editor and builder signal handlers to finish cleanly before forcing exit.
+func killUpChild(process *os.Process) {
+	if err := process.Kill(); err != nil && !errors.Is(err, os.ErrProcessDone) {
+		_, _ = fmt.Fprintf(os.Stderr, "Markata child cleanup: %v\n", err)
+	}
+}
+
 func stopUpServices(running map[string]*exec.Cmd, exits <-chan upExit) {
 	for _, child := range running {
 		if err := child.Process.Signal(os.Interrupt); err != nil {
-			_ = child.Process.Kill()
+			killUpChild(child.Process)
 		}
 	}
 	timer := time.NewTimer(upShutdownTimeout)
@@ -249,7 +259,7 @@ func stopUpServices(running map[string]*exec.Cmd, exits <-chan upExit) {
 			delete(running, result.name)
 		case <-timer.C:
 			for _, child := range running {
-				_ = child.Process.Kill()
+				killUpChild(child.Process)
 			}
 			for len(running) > 0 {
 				result := <-exits
