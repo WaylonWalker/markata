@@ -13,6 +13,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -222,6 +223,17 @@ func TestDropperUploader_DoesNotForwardUpstreamBodyOrCredential(t *testing.T) {
 }
 
 func TestDropperUploaderSocketPermissions(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		err := ServeDropperUploader(context.Background(), DropperUploaderServerConfig{
+			SocketPath: filepath.Join(t.TempDir(), "u.sock"),
+			Endpoint:   "https://dropper.example.com/api/upload?format=json",
+			Token:      "test-token",
+		})
+		if err == nil || !strings.Contains(err.Error(), "unsupported on Windows") {
+			t.Fatalf("expected fail-closed Windows transport diagnostic, got %v", err)
+		}
+		return
+	}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	socket := newDropperTestSocketPath(t)
