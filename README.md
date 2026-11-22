@@ -36,8 +36,8 @@ PyPI now distributes the Go implementation after a version break from [Python Ma
 ## Quick start
 
 ```sh
-mkdir my-site && cd my-site
-markata config init
+markata setup my-site
+cd my-site
 markata new "Hello World"
 markata serve
 ```
