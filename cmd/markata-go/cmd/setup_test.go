@@ -70,3 +70,17 @@ func TestSetupRejectsFileAsWorkspace(t *testing.T) {
 		t.Fatal("expected error for file workspace")
 	}
 }
+
+func TestSetupRejectsUndiscoverableConfig(t *testing.T) {
+	workspace := t.TempDir()
+	if err := os.WriteFile(filepath.Join(workspace, "markata.toml"), []byte("title = \"Existing\"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	err := runSetupCommand(&cobra.Command{}, []string{workspace})
+	if err == nil || !strings.Contains(err.Error(), "does not automatically discover") {
+		t.Fatalf("expected guidance for unrecognized config name, got %v", err)
+	}
+	if _, statErr := os.Stat(filepath.Join(workspace, defaultConfigFilename)); !os.IsNotExist(statErr) {
+		t.Fatalf("setup created a duplicate config: %v", statErr)
+	}
+}
