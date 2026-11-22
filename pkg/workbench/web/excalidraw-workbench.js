@@ -364,17 +364,15 @@
         renderFence(record,record.fence);
         window.requestAnimationFrame(() => record.toggleButton?.focus());
       });
-      // CodeMirror controls can live in a collapsed mark or line widget.
-      // Handle Space explicitly on release so the focused DOM node is not
-      // replaced during keydown and the editor never receives a literal space.
+      // CodeMirror fence widgets can lose button focus between Space down and
+      // Space up. Activate on keydown and cancel the native key action so no
+      // space is inserted into the Markdown or a second click is dispatched.
       root.setAttribute('data-cm-ignore-events','true');
       toggle.addEventListener('keydown', event => {
-        if (event.key === ' ' || event.code === 'Space') event.preventDefault();
-      });
-      toggle.addEventListener('keyup', event => {
         if (event.key !== ' ' && event.code !== 'Space') return;
         event.preventDefault();
         event.stopPropagation();
+        if (event.repeat) return;
         toggle.click();
       });
       root.addEventListener('mousedown',event => event.stopPropagation());
