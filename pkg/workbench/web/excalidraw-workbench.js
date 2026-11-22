@@ -357,7 +357,7 @@
       edit.textContent = 'Edit drawing';
       edit.disabled = !!editor.getOption('readOnly');
       edit.addEventListener('click', () => {
-        if (!editor.getOption('readOnly')) openExisting(record.fence);
+        if (!editor.getOption('readOnly')) openExisting(record.fence,record);
       });
       toggle.addEventListener('click', () => {
         record.collapsed = !record.collapsed;
@@ -489,10 +489,11 @@
         : 'Create an Excalidraw scene at the cursor';
     }
 
-    function openDialog(mode, scene, target) {
-      // Retain the launcher before showModal moves focus into the canvas.
+    function openDialog(mode, scene, target, launcherRecord = null) {
+      // CodeMirror may replace the actual launcher while the modal is open.
+      // Keep its fence record so the current button can be found on close.
       const opener = document.activeElement === document.body ? button : document.activeElement;
-      active = {mode,target,opener};
+      active = {mode,target,opener,launcherRecord};
       title.textContent = mode === 'edit' ? 'Edit drawing' : 'New drawing';
       hint.textContent = mode === 'edit'
         ? 'Changes stay in this draft until you apply.'
@@ -534,7 +535,7 @@
       });
     }
 
-    function openExisting(fence) {
+    function openExisting(fence, launcherRecord = null) {
       if (editor.getOption('readOnly')) return;
       if (fence.closeLine == null) {
         showError('Close this Excalidraw fence before editing it. The source has not changed.');
@@ -544,7 +545,7 @@
       const to = {line:fence.closeLine,ch:0};
       const body = editor.getRange(from,to).replace(/\r?\n$/,'');
       try {
-        openDialog('edit',parseScene(body),fence);
+        openDialog('edit',parseScene(body),fence,launcherRecord);
       } catch (cause) {
         showError(cause.message);
       }
@@ -635,6 +636,7 @@
     applyAsButton.addEventListener('click',() => apply(true));
     dialog.addEventListener('close',() => {
       const opener = active?.opener;
+      const launcherRecord = active?.launcherRecord;
       const applied = dialog.returnValue === 'apply';
       canvas?.destroy();
       canvas = null;
@@ -647,15 +649,21 @@
       applyAsButton.hidden = true;
       applyButton.disabled = false;
       applyAsButton.disabled = false;
-      // CodeMirror may asynchronously reclaim focus when the modal closes.
-      // On Cancel, restore the actual launcher's focus after its cleanup;
-      // on Apply, return to the Markdown editor with the new drawing.
+      // On Cancel, return to the *current* fence control, not a detached
+      // element retained before CodeMirror redrew the collapsed marker.
+      // On Apply, return to the Markdown editor with the new drawing.
       if (applied) {
         editor.refresh();
         editor.focus();
       } else {
         window.requestAnimationFrame(() => {
-          if (opener?.isConnected) opener.focus({preventScroll:true});
+          let launcher = opener;
+          if (launcherRecord) {
+            const currentRecord = fenceRecords.get(launcherRecord.id) ||
+              [...fenceRecords.values()].find(record => record.fence.line === launcherRecord.fence.line);
+            launcher = currentRecord?.editButton || opener;
+          }
+          if (launcher?.isConnected && !launcher.disabled) launcher.focus({preventScroll:true});
           else if (!button.disabled) button.focus({preventScroll:true});
         });
       }
