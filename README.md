@@ -48,6 +48,16 @@ Build the output when you're ready:
 markata build
 ```
 
+## Let your agent set up the site
+
+The installer gives you the Markata engine. To choose your own templates, plugins, and deployment environment, hand your coding agent the release-matched first-run instructions:
+
+```sh
+markata --skill
+```
+
+This prints a standalone Markdown guide without modifying the site. For a full project skill with topic references, use `markata agent install` and verify with `markata agent doctor`. Agents should run a production build and ask before deploying.
+
 ## Set up your coding agent
 
 ```sh
