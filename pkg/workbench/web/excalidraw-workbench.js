@@ -647,8 +647,10 @@
       applyAsButton.disabled = false;
       // Closing a modal restores its opener natively. Do not steal focus
       // from a fence control after Cancel (the close event is asynchronous).
-      if (dialog.returnValue === 'apply') editor.focus();
-      editor.refresh();
+      if (dialog.returnValue === 'apply') {
+        editor.refresh();
+        editor.focus();
+      }
       updateButton();
     });
     editor.on('cursorActivity',updateButton);
