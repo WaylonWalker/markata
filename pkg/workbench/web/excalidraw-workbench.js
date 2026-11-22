@@ -364,8 +364,19 @@
         renderFence(record,record.fence);
         window.requestAnimationFrame(() => record.toggleButton?.focus());
       });
-      // Native button activation handles Enter and Space. Synthesizing a click
-      // on keydown replaces the focused button before the key is released.
+      // CodeMirror controls can live in a collapsed mark or line widget.
+      // Handle Space explicitly on release so the focused DOM node is not
+      // replaced during keydown and the editor never receives a literal space.
+      root.setAttribute('data-cm-ignore-events','true');
+      toggle.addEventListener('keydown', event => {
+        if (event.key === ' ' || event.code === 'Space') event.preventDefault();
+      });
+      toggle.addEventListener('keyup', event => {
+        if (event.key !== ' ' && event.code !== 'Space') return;
+        event.preventDefault();
+        event.stopPropagation();
+        toggle.click();
+      });
       root.addEventListener('mousedown',event => event.stopPropagation());
       root.addEventListener('click',event => event.stopPropagation());
       root.addEventListener('keydown',event => event.stopPropagation());
@@ -496,6 +507,7 @@
       applyButton.disabled = true;
       applyAsButton.hidden = mode !== 'edit';
       applyAsButton.disabled = true;
+      dialog.returnValue = '';
       dialog.showModal();
 
       window.EXCALIDRAW_ASSET_PATH = '/editor/excalidraw-fonts/';
