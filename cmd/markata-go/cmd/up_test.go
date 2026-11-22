@@ -15,7 +15,7 @@ import (
 )
 
 type synchronizedUpTestOutput struct {
-	mu sync.Mutex
+	mu  sync.Mutex
 	buf bytes.Buffer
 }
 
