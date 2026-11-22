@@ -3,6 +3,7 @@ package editorworkspace
 import (
 	"context"
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"io/fs"
 	"log"
@@ -498,7 +499,7 @@ func (s *Store) refresh(events map[string]bool, forceConfig bool) error {
 	if err := s.ctx.Err(); err != nil {
 		return err
 	}
-	manager, err := s.workspace.manager()
+	manager, isIgnoredPath, err := s.workspace.managerWithIgnoreRules()
 	if err != nil {
 		return err
 	}
@@ -549,28 +550,59 @@ func (s *Store) refresh(events map[string]bool, forceConfig bool) error {
 		s.indexPending = len(paths) - len(s.entries)
 	}
 	s.mu.Unlock()
-	return s.addWatches()
+	return s.addWatches(isIgnoredPath)
 }
 
-func (s *Store) addWatches() error {
-	return filepath.WalkDir(s.workspace.root, func(path string, entry fs.DirEntry, walkErr error) error {
+func (s *Store) addWatches(isIgnoredPath func(string) bool) error {
+	directories, ignoredDirectories, err := workspaceWatchDirectories(s.workspace.root, isIgnoredPath)
+	if err != nil {
+		return err
+	}
+	for _, path := range ignoredDirectories {
+		if err := s.watcher.Remove(path); err != nil && !errors.Is(err, fsnotify.ErrNonExistentWatch) {
+			return fmt.Errorf("remove ignored workspace watch: %w", err)
+		}
+	}
+	for _, path := range directories {
+		if err := s.watcher.Add(path); err != nil {
+			return fmt.Errorf("watch workspace directory: %w", err)
+		}
+	}
+	return nil
+}
+
+func workspaceWatchDirectories(root string, isIgnoredPath func(string) bool) (directories, ignoredDirectories []string, err error) {
+	directories = make([]string, 0)
+	ignoredDirectories = make([]string, 0)
+	err = filepath.WalkDir(root, func(path string, entry fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return nil
 		}
 		if !entry.IsDir() {
 			return nil
 		}
-		if path != s.workspace.root {
+		if path != root {
+			relative, err := filepath.Rel(root, path)
+			if err != nil {
+				return fmt.Errorf("resolve workspace watch path: %w", err)
+			}
+			if isIgnoredPath != nil && isIgnoredPath(filepath.ToSlash(relative)) {
+				ignoredDirectories = append(ignoredDirectories, path)
+				return filepath.SkipDir
+			}
 			switch entry.Name() {
 			case ".git", "node_modules", "output", "cache", ".markata", ".markata-cache", ".venv", "venv":
+				ignoredDirectories = append(ignoredDirectories, path)
 				return filepath.SkipDir
 			}
 		}
-		if err := s.watcher.Add(path); err != nil {
-			return fmt.Errorf("watch workspace directory: %w", err)
-		}
+		directories = append(directories, path)
 		return nil
 	})
+	if err != nil {
+		return nil, nil, fmt.Errorf("walk workspace watch directories: %w", err)
+	}
+	return directories, ignoredDirectories, nil
 }
 
 func (s *Store) watch() {

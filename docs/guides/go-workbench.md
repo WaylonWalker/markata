@@ -53,6 +53,10 @@ ForwardAuth and return the `__Host-hlab-app-session` cookie for browser login
 handoff. Hosted mutations also require the exact configured public Origin, and
 hosted responses are marked private and no-store.
 
+The rendered preview keeps its opaque-origin script sandbox. The workbench
+delivers its appearance styles and selected font files inside that preview, so
+they do not need a separate Hlab login handoff.
+
 Do not expose the listener directly to the internet. Non-loopback binding is
 rejected unless all hosted authentication settings are valid.
 
@@ -70,6 +74,8 @@ builderAdmin:
       tls:
         secretName: edit-example-com-tls
     gitAuth:
+      repository: https://github.com/owner/site
+      branch: main
       existingSecretName: markata-editor-git-publish
       privateKeyKey: ssh-privatekey
       knownHosts: |
@@ -83,7 +89,30 @@ controller. Register a dedicated Hlab app for `edit.example.com`; do not add
 this host to the Build Admin app or grant its operator scope to the editor.
 The GitHub deploy key must be write-enabled for only the site's repository;
 store its private key in a namespace-scoped SealedSecret and use the verified
-GitHub host key shown above for strict SSH host checking.
+GitHub host key shown above for strict SSH host checking. An init container
+copies the Secret into an ephemeral volume with owner-only file permissions;
+the Git publisher sidecar is the only long-running container that mounts that
+volume. It uses the configured repository and branch as an allowlist, and
+accepts requests only over a local Unix socket. The editor has no private-key
+mount, SSH command, or agent socket; it continues to require the authenticated
+review, commit, and push flow.
+
+Hosted deployments can enable `builderAdmin.editor.dropperUploader` and point
+it at a namespace-scoped Secret containing the Dropper token. The chart runs a
+separate uploader sidecar that exposes only validated image uploads over a Unix
+socket. Only that sidecar receives the token; the editor container and browser
+do not. The broker accepts PNG, JPEG, GIF, and WebP images up to 15 MiB and
+forwards them to its fixed Dropper upload endpoint. Configure the chart values:
+
+```yaml
+builderAdmin:
+  editor:
+    dropperUploader:
+      enabled: true
+      existingSecretName: markata-editor-dropper
+      tokenKey: token
+      endpoint: https://dropper.waylonwalker.com/api/upload?format=json
+```
 
 Use the [Excalidraw canvas](excalidraw-editor.md) to create and edit drawings
 inside a Markdown page.
@@ -94,8 +123,9 @@ When the site's effective `content_templates.image_upload` setting uses
 Dropper, paste a PNG, JPEG, GIF, or WebP image into the Markdown editor. The
 workbench places an **Uploading image…** marker at the cursor while it uploads,
 then replaces that marker with an image link such as `![image](https://…)`.
-The server uses `DROPPER_TOKEN`; the browser does not receive the token. The
-upload limit is 15 MiB.
+The workbench uses a server-side Dropper credential; the browser never receives
+it. In hosted deployments, the credential stays in the uploader sidecar and is
+not available to the editor process. The upload limit is 15 MiB.
 
 Paste while the Markdown editor has focus. If the browser reports image data but
 does not make the image bytes available, the workbench shows an error in the
@@ -126,6 +156,10 @@ workspace discovery/watcher setup, LSP preparation, and appearance/browser
 assets. Once the HTTP listener is ready, the browser still loads its source
 file list and lazily requests frontmatter plus the site link index; these are
 **not** part of the initial server-ready message.
+
+Filesystem watchers prune directories matched by the workspace's `.gitignore`
+rules. This keeps generated output and cache trees out of editor startup while
+preserving watches for discovered content and the workspace root.
 
 Large uncached metadata loads use a bounded worker pool. The store then reuses
 unchanged metadata while that server process stays open. A new server process

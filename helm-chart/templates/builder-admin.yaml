@@ -17,6 +17,9 @@
 {{- $_ := required "builderAdmin.editor.requiredScope is required when the hosted editor is enabled" .Values.builderAdmin.editor.requiredScope }}
 {{- if not (or (hasSuffix ":admin" .Values.builderAdmin.editor.requiredScope) (hasSuffix ":write" .Values.builderAdmin.editor.requiredScope)) }}{{ fail "builderAdmin.editor.requiredScope must be an app-specific writer scope ending in :admin or :write" }}{{ end }}
 {{- if ne (int .Values.builderAdmin.editor.port) 8766 }}{{ fail "builderAdmin.editor.port must match the editor's supported port 8766" }}{{ end }}
+{{- range .Values.builderAdmin.editor.extraEnv }}
+{{- if eq .name "DROPPER_TOKEN" }}{{ fail "DROPPER_TOKEN must be configured only on the hosted editor Dropper uploader sidecar" }}{{ end }}
+{{- end }}
 {{- end }}
 {{- if .Values.builderAdmin.workspace.enabled }}
 {{- $_ := required "builderAdmin.workspace.mountPath is required when workspace is enabled" .Values.builderAdmin.workspace.mountPath }}
@@ -71,7 +74,7 @@ spec:
       imagePullSecrets:
         {{- toYaml .Values.imagePullSecrets | nindent 8 }}
       {{- end }}
-      {{- if or .Values.builderAdmin.sourceGit.enabled (and (ne (.Values.storage.source.mode | default "pvc") "hostPath") .Values.search.waitForSource.enabled) }}
+      {{- if or .Values.builderAdmin.sourceGit.enabled (and (ne (.Values.storage.source.mode | default "pvc") "hostPath") .Values.search.waitForSource.enabled) .Values.builderAdmin.editor.enabled }}
       initContainers:
         {{- if .Values.builderAdmin.sourceGit.enabled }}
         - name: initialize-source-git
@@ -154,6 +157,42 @@ spec:
           volumeMounts:
             - name: source
               mountPath: /data/source
+        {{- end }}
+        {{- if .Values.builderAdmin.editor.enabled }}
+        - name: prepare-editor-git-key
+          image: "{{ .Values.build.builderImage.name }}:{{ .Values.build.builderImage.tag }}"
+          imagePullPolicy: {{ .Values.build.builderImage.pullPolicy }}
+          command:
+            - /bin/sh
+            - -ceu
+          args:
+            - install -m 0400 /run/markata-git-secret/id_ed25519 /run/markata-git/id_ed25519 && chown 65534:1000 /run/markata-git/id_ed25519{{- if .Values.builderAdmin.editor.dropperUploader.enabled }} && chmod 0770 /run/markata-dropper && chown 65534:1000 /run/markata-dropper{{- end }}
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              memory: 64Mi
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+              add:
+                - CHOWN
+          volumeMounts:
+            - name: editor-git-publish
+              mountPath: /run/markata-git-secret
+              readOnly: true
+            - name: editor-git-publish-key
+              mountPath: /run/markata-git
+            {{- if .Values.builderAdmin.editor.dropperUploader.enabled }}
+            - name: editor-dropper-uploader-socket
+              mountPath: /run/markata-dropper
+            {{- end }}
         {{- end }}
       {{- end }}
       containers:
@@ -325,6 +364,113 @@ spec:
             periodSeconds: 5
             failureThreshold: 12
         {{- if .Values.builderAdmin.editor.enabled }}
+        - name: "{{ .Values.project_identifier }}-notes-editor-git-publisher"
+          image: "{{ .Values.build.builderImage.name }}:{{ .Values.build.builderImage.tag }}"
+          imagePullPolicy: {{ .Values.build.builderImage.pullPolicy }}
+          command:
+            - markata-go
+            - editor-git-publisher
+          args:
+            - --source-dir
+            - /data/source
+            - --socket
+            - /run/markata-publisher/publisher.sock
+            - --origin-url
+            - {{ (.Values.builderAdmin.editor.gitAuth.repository | default .Values.builderAdmin.sourceGit.repository) | quote }}
+            - --branch
+            - {{ printf "refs/heads/%s" (.Values.builderAdmin.editor.gitAuth.branch | default .Values.builderAdmin.sourceGit.branch) | quote }}
+            - --private-key
+            - /run/markata-git/id_ed25519
+            - --known-hosts
+            - /etc/ssh/known_hosts
+          env:
+            - name: HOME
+              value: /tmp
+          resources:
+            {{- toYaml .Values.builderAdmin.editor.publisherResources | nindent 12 }}
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65534
+            runAsGroup: 1000
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: source
+              mountPath: /data/source
+              {{- if .Values.builderAdmin.sourceGit.enabled }}
+              subPath: checkout
+              {{- end }}
+            - name: editor-git-publish-key
+              mountPath: /run/markata-git
+              readOnly: true
+            - name: editor-ssh-known-hosts
+              mountPath: /etc/ssh/known_hosts
+              subPath: known_hosts
+              readOnly: true
+            - name: editor-git-publisher-socket
+              mountPath: /run/markata-publisher
+            - name: editor-git-publisher-tmp
+              mountPath: /tmp
+          startupProbe:
+            exec:
+              command: ["/bin/sh", "-ec", "test -S /run/markata-publisher/publisher.sock"]
+            timeoutSeconds: 1
+            periodSeconds: 2
+            failureThreshold: 30
+          readinessProbe:
+            exec:
+              command: ["/bin/sh", "-ec", "test -S /run/markata-publisher/publisher.sock"]
+            timeoutSeconds: 1
+            periodSeconds: 5
+            failureThreshold: 3
+        {{- if .Values.builderAdmin.editor.dropperUploader.enabled }}
+        - name: "{{ .Values.project_identifier }}-notes-editor-dropper-uploader"
+          image: "{{ .Values.build.builderImage.name }}:{{ .Values.build.builderImage.tag }}"
+          imagePullPolicy: {{ .Values.build.builderImage.pullPolicy }}
+          command:
+            - markata-go
+            - editor-dropper-uploader
+          args:
+            - --socket
+            - /run/markata-dropper/uploader.sock
+            - --endpoint
+            - {{ .Values.builderAdmin.editor.dropperUploader.endpoint | quote }}
+          env:
+            - name: DROPPER_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.builderAdmin.editor.dropperUploader.existingSecretName | quote }}
+                  key: {{ .Values.builderAdmin.editor.dropperUploader.tokenKey | quote }}
+          resources:
+            {{- toYaml .Values.builderAdmin.editor.dropperUploader.resources | nindent 12 }}
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65534
+            runAsGroup: 1000
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: editor-dropper-uploader-socket
+              mountPath: /run/markata-dropper
+          startupProbe:
+            exec:
+              command: ["/bin/sh", "-ec", "test -S /run/markata-dropper/uploader.sock"]
+            timeoutSeconds: 1
+            periodSeconds: 2
+            failureThreshold: 30
+          readinessProbe:
+            exec:
+              command: ["/bin/sh", "-ec", "test -S /run/markata-dropper/uploader.sock"]
+            timeoutSeconds: 1
+            periodSeconds: 5
+            failureThreshold: 3
+        {{- end }}
         - name: "{{ .Values.project_identifier }}-notes-editor"
           image: "{{ .Values.build.builderImage.name }}:{{ .Values.build.builderImage.tag }}"
           imagePullPolicy: {{ .Values.build.builderImage.pullPolicy }}
@@ -340,23 +486,23 @@ spec:
             - {{ printf "https://%s" .Values.builderAdmin.editor.ingress.host | quote }}
             - --required-scope
             - {{ .Values.builderAdmin.editor.requiredScope | quote }}
+            - --git-publisher-socket
+            - /run/markata-publisher/publisher.sock
+            {{- if .Values.builderAdmin.editor.dropperUploader.enabled }}
+            - --dropper-uploader-socket
+            - /run/markata-dropper/uploader.sock
+            {{- end }}
             {{- range .Values.builderAdmin.auth.trustedProxyCIDRs }}
             - --trusted-proxy-cidr
             - {{ . | quote }}
             {{- end }}
           env:
             - name: GIT_CONFIG_COUNT
-              value: "2"
+              value: "1"
             - name: GIT_CONFIG_KEY_0
               value: safe.directory
             - name: GIT_CONFIG_VALUE_0
               value: /data/source
-            - name: GIT_CONFIG_KEY_1
-              value: url.ssh://git@github.com/.insteadOf
-            - name: GIT_CONFIG_VALUE_1
-              value: https://github.com/
-            - name: GIT_SSH_COMMAND
-              value: {{ "ssh -i /run/markata-git/id_ed25519 -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=/etc/ssh/known_hosts -o GlobalKnownHostsFile=/dev/null" | quote }}
             {{- with .Values.builderAdmin.editor.extraEnv }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
@@ -372,18 +518,18 @@ spec:
               {{- if .Values.builderAdmin.sourceGit.enabled }}
               subPath: checkout
               {{- end }}
-            - name: editor-git-publish
-              mountPath: /run/markata-git
-              readOnly: true
-            - name: editor-ssh-known-hosts
-              mountPath: /etc/ssh/known_hosts
-              subPath: known_hosts
-              readOnly: true
+            - name: editor-git-publisher-socket
+              mountPath: /run/markata-publisher
+            {{- if .Values.builderAdmin.editor.dropperUploader.enabled }}
+            - name: editor-dropper-uploader-socket
+              mountPath: /run/markata-dropper
+            {{- end }}
           startupProbe:
             tcpSocket:
               port: editor-http
             timeoutSeconds: 1
-            failureThreshold: 30
+            # Workspace discovery and watcher registration happen before the listener opens.
+            failureThreshold: 120
             periodSeconds: 5
           readinessProbe:
             tcpSocket:
@@ -403,12 +549,22 @@ spec:
             claimName: "{{ include "markata-notes.sourcePvcName" . }}"
           {{- end }}
         {{- if .Values.builderAdmin.editor.enabled }}
+        - name: editor-git-publisher-socket
+          emptyDir: {}
+        {{- if .Values.builderAdmin.editor.dropperUploader.enabled }}
+        - name: editor-dropper-uploader-socket
+          emptyDir: {}
+        {{- end }}
+        - name: editor-git-publisher-tmp
+          emptyDir: {}
+        - name: editor-git-publish-key
+          emptyDir: {}
         - name: editor-git-publish
           secret:
             secretName: {{ .Values.builderAdmin.editor.gitAuth.existingSecretName | quote }}
-            # This key is mounted only into the non-root editor container, whose
-            # UID cannot read a root-owned 0400 Secret volume.
-            defaultMode: 0444
+            # OpenSSH requires owner-only key permissions. The init container
+            # copies this root-owned source into a publisher-only 0400 volume.
+            defaultMode: 0400
             items:
               - key: {{ .Values.builderAdmin.editor.gitAuth.privateKeyKey | quote }}
                 path: id_ed25519

@@ -115,10 +115,13 @@ the starter's top-level `image` field or add one when it is absent. It MUST
 preserve both frontmatter delimiters, every other starter field, and valid YAML.
 
 Sites MAY set `content_templates.image_upload` to `local`, `dropper`, or
-`auto`. In `auto`, the workbench MUST use Dropper when `DROPPER_TOKEN` is
-available to the server and local storage otherwise. Dropper credentials MUST
-remain server-side. The workbench MUST preview valid remote image URLs without
-uploading them.
+`auto`. In `auto`, the workbench MUST use Dropper when a credential-bearing
+Dropper uploader is configured or `DROPPER_TOKEN` is available to a local
+server, and local storage otherwise. Dropper credentials MUST remain outside
+the browser and the hosted workbench process. A hosted uploader broker MUST
+accept only validated image uploads and MUST use one configured Dropper upload
+endpoint. The workbench MUST preview valid remote image URLs without uploading
+them.
 
 A starter MAY define `starter.number_prefix` and
 `starter.numbered_by_default`. The prefix MUST be a lowercase slug. When the

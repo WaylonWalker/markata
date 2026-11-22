@@ -7,6 +7,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"embed"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -57,6 +58,8 @@ var web embed.FS
 const maxSource = 200000
 
 var manifestPattern = regexp.MustCompile(`--(palette|aesthetic|fontpack)-manifest:\s*'((?:\\.|[^'])*)'`)
+var stylesheetLinkPattern = regexp.MustCompile(`(?i)<link\b[^>]*\brel\s*=\s*(?:"stylesheet"|'stylesheet')[^>]*>`)
+var stylesheetHrefPattern = regexp.MustCompile(`(?i)\bhref\s*=\s*"([^"]+)"|\bhref\s*=\s*'([^']+)'`)
 
 type workspaceSource interface {
 	Config() (*models.Config, error)
@@ -99,6 +102,8 @@ type Handler struct {
 	lastSource       string
 	lastResult       *plugins.StandaloneResult
 	hostedAuth       *hostedAuth
+	gitPublisher     GitPublisher
+	dropperUploader  DropperUploader
 }
 
 // New builds immutable appearance assets once. Reuse the handler for all requests.
@@ -106,6 +111,21 @@ func New() (*Handler, error) { return NewWithWorkspace(context.Background(), "."
 
 // NewWithWorkspace enables LSP for a server-selected workspace. Cancel ctx on shutdown.
 func NewWithWorkspace(ctx context.Context, root string) (*Handler, error) {
+	return NewWithWorkspaceAndGitPublisher(ctx, root, nil)
+}
+
+// NewWithWorkspaceAndGitPublisher enables LSP for a server-selected workspace
+// and delegates hosted remote Git operations to publisher. Cancel ctx on
+// shutdown. A nil publisher preserves direct local Git behavior.
+func NewWithWorkspaceAndGitPublisher(ctx context.Context, root string, publisher GitPublisher) (*Handler, error) {
+	return NewWithWorkspaceAndGitPublisherAndDropperUploader(ctx, root, publisher, nil)
+}
+
+// NewWithWorkspaceAndGitPublisherAndDropperUploader enables LSP for a
+// server-selected workspace, delegates hosted remote Git operations to
+// publisher, and delegates hosted Dropper uploads to uploader. Nil services
+// preserve the local editor's direct behavior. Cancel ctx on shutdown.
+func NewWithWorkspaceAndGitPublisherAndDropperUploader(ctx context.Context, root string, publisher GitPublisher, uploader DropperUploader) (*Handler, error) {
 	started := time.Now()
 	workspace, err := editorworkspace.Open(ctx, root)
 	if err != nil {
@@ -130,6 +150,8 @@ func NewWithWorkspace(ctx context.Context, root string) (*Handler, error) {
 	}
 	handler.store = workspace
 	handler.configRevision = revision
+	handler.gitPublisher = publisher
+	handler.dropperUploader = uploader
 	go func() {
 		service, err := lsp.NewWebSocketHandlerWithIndexAndOriginCheck(ctx, root, log.Default(), workspace.Snapshot, handler.validLSPOrigin)
 		if err != nil {
@@ -267,6 +289,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.serveWorkspace(w, r)
 	case r.URL.Path == "/lsp":
 		h.language.ServeHTTP(w, r)
+	case r.URL.Path == "/preview-fonts.css":
+		h.servePreviewFonts(w, r)
 	case r.URL.Path == "/lsp/config" && r.Method == http.MethodGet:
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Cache-Control", "no-store")
@@ -467,7 +491,11 @@ func (h *Handler) prepareRender(r *http.Request, req *renderRequest) (*renderRes
 	}
 	previewResult := *result
 	previewResult.HTML = frontmatterPreview + result.HTML
-	response := &renderResponse{HTML: previewResult.HTML, SourceLines: h.renderer.SourceLines(markdown), SourceAnchors: sourceAnchors, FeatureHeadHTML: h.featureHead(result), BodyEndHTML: result.BodyEndHTML, InputBytes: len(*req.Markdown), HTMLBytes: len(previewResult.HTML), Cached: cached}
+	fontpack := req.Appearance[workbenchFontpackAttribute]
+	if fontpack == "" {
+		fontpack = h.appearance.Defaults[workbenchFontpackAttribute]
+	}
+	response := &renderResponse{HTML: previewResult.HTML, SourceLines: h.renderer.SourceLines(markdown), SourceAnchors: sourceAnchors, FeatureHeadHTML: h.featureHead(result, fontpack), BodyEndHTML: result.BodyEndHTML, InputBytes: len(*req.Markdown), HTMLBytes: len(previewResult.HTML), Cached: cached}
 	if req.IncludeDocument == nil || *req.IncludeDocument {
 		document := h.document(&previewResult, req.Appearance)
 		response.Document, response.DocumentBytes = &document, len(document)
@@ -507,12 +535,108 @@ type renderResponse struct {
 
 // featureHead omits styles already owned by the persistent appearance shell.
 // Mark feature styles so subsequent fragments can remove unused styles as well.
-func (h *Handler) featureHead(result *plugins.StandaloneResult) string {
+func (h *Handler) featureHead(result *plugins.StandaloneResult, fontpack string) string {
 	head := result.HeadHTML
 	for _, name := range h.appearance.Styles {
 		head = strings.ReplaceAll(head, styleLink(name)+"\n", "")
 	}
+	head = h.inlinePreviewStylesheetMarkup(head, fontpack)
 	return strings.NewReplacer("<link ", `<link data-markata-render-head="true" `, "<style>", `<style data-markata-render-head="true">`).Replace(head)
+}
+
+func (h *Handler) inlinePreviewStylesheetMarkup(markup, fontpack string) string {
+	return stylesheetLinkPattern.ReplaceAllStringFunc(markup, func(tag string) string {
+		match := stylesheetHrefPattern.FindStringSubmatch(tag)
+		if len(match) != 3 {
+			return tag
+		}
+		rawURL := match[1]
+		if rawURL == "" {
+			rawURL = match[2]
+		}
+		parsed, err := url.Parse(rawURL)
+		if err != nil || parsed.IsAbs() || parsed.Host != "" || !strings.HasPrefix(parsed.Path, "/appearance/") {
+			return tag
+		}
+		name := strings.TrimPrefix(parsed.Path, "/appearance/")
+		data, ok := h.assets[name]
+		if !ok {
+			return tag
+		}
+		css := h.inlinePreviewCSS(name, data, fontpack)
+		dataURL := "data:text/css;base64," + base64.StdEncoding.EncodeToString(css)
+		quote := `"`
+		if strings.Contains(match[0], "'") {
+			quote = `'`
+		}
+		return strings.Replace(tag, match[0], "href="+quote+dataURL+quote, 1)
+	})
+}
+
+func (h *Handler) inlinePreviewCSS(name string, css []byte, fontpack string) []byte {
+	if name != "css/fonts.css" || h.appearance == nil {
+		return css
+	}
+	fontSources := make(map[string]bool)
+	for _, source := range h.appearance.FontPackSources[fontpack] {
+		fontSources[source] = true
+	}
+	if len(fontSources) == 0 {
+		return css
+	}
+	result := append([]byte(nil), css...)
+	for assetURL, source := range h.appearance.FontAssetSources {
+		if !fontSources[source] {
+			continue
+		}
+		asset, ok := h.assets[strings.TrimPrefix(assetURL, "/")]
+		if !ok {
+			continue
+		}
+		previewURL := "/appearance" + assetURL
+		dataURL := "data:font/woff2;base64," + base64.StdEncoding.EncodeToString(asset)
+		result = bytes.ReplaceAll(result, []byte(previewURL), []byte(dataURL))
+	}
+	return result
+}
+
+func (h *Handler) previewFontCSS(fontpack string) ([]byte, bool) {
+	if h.appearance == nil {
+		return nil, false
+	}
+	if fontpack == "" {
+		fontpack = h.appearance.Defaults[workbenchFontpackAttribute]
+	}
+	if _, ok := h.appearance.FontPackSources[fontpack]; !ok {
+		return nil, false
+	}
+	css, ok := h.assets["css/fonts.css"]
+	if !ok {
+		return nil, false
+	}
+	return h.inlinePreviewCSS("css/fonts.css", css, fontpack), true
+}
+
+func (h *Handler) servePreviewFonts(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet && r.Method != http.MethodHead {
+		w.Header().Set("Allow", "GET, HEAD")
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	css, ok := h.previewFontCSS(r.URL.Query().Get("fontpack"))
+	if !ok {
+		http.Error(w, "unknown font pack", http.StatusBadRequest)
+		return
+	}
+	w.Header().Set("Content-Type", "text/css; charset=utf-8")
+	w.Header().Set("Cache-Control", "private, no-store")
+	if r.Method == http.MethodHead {
+		return
+	}
+	//nolint:gosec // G705: this response is text/css from local appearance assets, not HTML.
+	if _, err := w.Write(css); err != nil {
+		return
+	}
 }
 
 func (h *Handler) decodeRequest(w http.ResponseWriter, r *http.Request) *renderRequest {
@@ -587,14 +711,31 @@ func (h *Handler) document(result *plugins.StandaloneResult, attributes map[stri
 	}
 	styles := ""
 	for _, name := range h.appearance.Styles {
-		styles += h.versionedStyleLink(name)
+		data, ok := h.assets[name]
+		if !ok {
+			styles += h.versionedStyleLink(name)
+			continue
+		}
+		css := h.inlinePreviewCSS(name, data, defaults[workbenchFontpackAttribute])
+		if name == "css/fonts.css" {
+			encoded, err := json.Marshal(string(css))
+			if err == nil {
+				styles += `<script>(function(){const style=document.createElement('style');style.id="markata-preview-fonts";style.textContent=` + string(encoded) + `;document.head.append(style)})()</script>`
+			}
+			continue
+		}
+		styles += dataStylesheetLink(css)
 	}
 	bg, fg := "#131721", "#e5e7eb"
 	if defaults[workbenchThemeAttribute] == workbenchLightMode {
 		bg, fg = "#fff", "#1f2937"
 	}
 	initial := `<style>html{color-scheme:` + defaults[workbenchThemeAttribute] + `;background:` + bg + `}body{background:var(--color-background,` + bg + `);color:var(--color-text,` + fg + `)}</style>`
-	return `<!doctype html><html lang="en"` + attrs + `><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Markdown preview</title>` + initial + styles + h.featureHead(result) + `</head><body><main class="main-content"><div class="content-wrapper"><div class="post-shell"><article class="post h-entry"><div class="post-content e-content">` + result.HTML + `</div></article></div></div></main><script>window.markataEditorPreview=true</script>` + h.bridge + strings.ReplaceAll(result.BodyEndHTML, "<script", `<script data-markata-generated="true"`) + `<script>parent.postMessage({type:'preview-features-ready'},'*')</script></body></html>`
+	return `<!doctype html><html lang="en"` + attrs + `><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Markdown preview</title>` + initial + styles + h.featureHead(result, defaults[workbenchFontpackAttribute]) + `</head><body><main class="main-content"><div class="content-wrapper"><div class="post-shell"><article class="post h-entry"><div class="post-content e-content">` + result.HTML + `</div></article></div></div></main><script>window.markataEditorPreview=true</script>` + h.bridge + strings.ReplaceAll(result.BodyEndHTML, "<script", `<script data-markata-generated="true"`) + `<script>parent.postMessage({type:'preview-features-ready'},'*')</script></body></html>`
+}
+
+func dataStylesheetLink(css []byte) string {
+	return `<link rel="stylesheet" href="data:text/css;base64,` + base64.StdEncoding.EncodeToString(css) + `">`
 }
 
 func isWorkspaceRoute(routePath, method string) bool {
@@ -631,7 +772,7 @@ func (h *Handler) imageUploadProvider() string {
 	case imageUploadModeDropper:
 		return imageUploadModeDropper
 	case imageUploadModeAuto:
-		if strings.TrimSpace(os.Getenv("DROPPER_TOKEN")) != "" {
+		if h.dropperUploader != nil || strings.TrimSpace(os.Getenv("DROPPER_TOKEN")) != "" {
 			return imageUploadModeDropper
 		}
 		return imageUploadModeLocal
@@ -660,43 +801,14 @@ func (h *Handler) currentSiteConfig() *models.Config {
 }
 
 func (h *Handler) uploadImageToDropper(ctx context.Context, filename, contentType string, data []byte) (string, error) {
+	if h.dropperUploader != nil {
+		return h.dropperUploader.Upload(ctx, filename, contentType, data)
+	}
 	token := strings.TrimSpace(os.Getenv("DROPPER_TOKEN"))
 	if token == "" {
 		return "", fmt.Errorf("dropper uploads require the server-side DROPPER_TOKEN")
 	}
-	endpoint := h.dropperUploadEndpoint()
-	if err := validateDropperUploadEndpoint(endpoint); err != nil {
-		return "", err
-	}
-	payload, formContentType, err := dropperUploadPayload(filename, contentType, data)
-	if err != nil {
-		return "", err
-	}
-	request, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, &payload)
-	if err != nil {
-		return "", fmt.Errorf("create dropper request: %w", err)
-	}
-	request.Header.Set("Authorization", "Bearer "+token)
-	request.Header.Set("Content-Type", formContentType)
-	client := &http.Client{
-		Timeout: 30 * time.Second,
-		CheckRedirect: func(request *http.Request, via []*http.Request) error {
-			if len(via) > 0 && !strings.EqualFold(request.URL.Host, via[0].URL.Host) {
-				return http.ErrUseLastResponse
-			}
-			return nil
-		},
-	}
-	response, err := client.Do(request)
-	if err != nil {
-		return "", fmt.Errorf("dropper upload request failed: %w", err)
-	}
-	defer response.Body.Close()
-	responseBody, err := io.ReadAll(io.LimitReader(response.Body, 1<<20))
-	if err != nil {
-		return "", fmt.Errorf("read Dropper response: %w", err)
-	}
-	return dropperUploadResponseURL(response.StatusCode, response.Status, responseBody)
+	return uploadImageToDropper(ctx, h.dropperUploadEndpoint(), token, filename, contentType, data)
 }
 
 func validateDropperUploadEndpoint(endpoint string) error {
@@ -728,11 +840,7 @@ func dropperUploadPayload(filename, contentType string, data []byte) (bytes.Buff
 
 func dropperUploadResponseURL(statusCode int, status string, responseBody []byte) (string, error) {
 	if statusCode < 200 || statusCode >= 300 {
-		message := strings.TrimSpace(string(responseBody))
-		if len(message) > 500 {
-			message = message[:500]
-		}
-		return "", fmt.Errorf("dropper upload failed (%s): %s", status, message)
+		return "", fmt.Errorf("dropper upload failed (%s)", status)
 	}
 	var result struct {
 		URL string `json:"url"`
@@ -740,11 +848,7 @@ func dropperUploadResponseURL(statusCode int, status string, responseBody []byte
 	if err := json.Unmarshal(responseBody, &result); err != nil {
 		return "", fmt.Errorf("dropper returned invalid JSON: %w", err)
 	}
-	imageURL, err := url.ParseRequestURI(result.URL)
-	if err != nil || imageURL.Host == "" || imageURL.User != nil || imageURL.Scheme != "https" && !(imageURL.Scheme == "http" && isLoopbackHost(imageURL.Hostname())) {
-		return "", fmt.Errorf("dropper returned an invalid image URL")
-	}
-	return imageURL.String(), nil
+	return validatedDropperImageURL(result.URL)
 }
 
 func isLoopbackHost(host string) bool {
@@ -1151,7 +1255,7 @@ func (h *Handler) serveWorkspaceDropperUpload(w http.ResponseWriter, r *http.Req
 		fail(w, http.StatusConflict, "Dropper image uploads are not enabled for this site")
 		return
 	}
-	if strings.TrimSpace(os.Getenv("DROPPER_TOKEN")) == "" {
+	if h.dropperUploader == nil && strings.TrimSpace(os.Getenv("DROPPER_TOKEN")) == "" {
 		fail(w, http.StatusServiceUnavailable, "Dropper uploads are not configured on this server")
 		return
 	}

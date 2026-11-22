@@ -327,9 +327,15 @@ func (h *Handler) servePublishPush(w http.ResponseWriter, r *http.Request) {
 		fail(w, 422, "origin push remote is not configured")
 		return
 	}
-	// Non-forced push; remote rejects non-fast-forwards. This may kick off the
-	// user's external build, but it does not prove the site is deployed.
-	if _, err = commitGit(ctx, root, "", "push", "--porcelain", "origin", ref+":"+ref); err != nil {
+	// Hosted instances delegate the credential-bearing operation to the local
+	// publisher. Local editors retain direct Git behavior. A successful push
+	// may kick off an external build, but does not prove the site is deployed.
+	if h.gitPublisher != nil {
+		err = h.gitPublisher.Push(ctx, ref, req.Commit)
+	} else {
+		_, err = commitGit(ctx, root, "", "push", "--porcelain", "origin", ref+":"+ref)
+	}
+	if err != nil {
 		fail(w, 422, "remote push failed; local commit is retained")
 		return
 	}

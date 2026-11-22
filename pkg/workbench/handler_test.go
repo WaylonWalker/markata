@@ -3,6 +3,7 @@ package workbench
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/fs"
@@ -181,6 +182,14 @@ func TestHandler_RenderAndAssets(t *testing.T) {
 			}
 			for _, a := range tag.Attr {
 				if a.Key != "src" && a.Key != "href" {
+					continue
+				}
+				if strings.HasPrefix(a.Val, "data:text/css;base64,") {
+					encoded := strings.TrimPrefix(a.Val, "data:text/css;base64,")
+					css, err := base64.StdEncoding.DecodeString(encoded)
+					if err != nil || len(css) == 0 {
+						t.Fatalf("invalid embedded stylesheet: %v", err)
+					}
 					continue
 				}
 				if !strings.HasPrefix(a.Val, "/appearance/") {
@@ -420,11 +429,18 @@ func TestHandler_FragmentUpdatesOmitSharedCSS(t *testing.T) {
 			if strings.Contains(result.FeatureHeadHTML, name) {
 				t.Errorf("fragment repeats shared style %s", name)
 			}
-			if include && strings.Count(*result.Document, `href="/appearance/`+name) != 1 {
-				t.Errorf("document must include %s exactly once", name)
+			if include {
+				if name == "css/fonts.css" {
+					if strings.Count(*result.Document, `id="markata-preview-fonts"`) != 1 {
+						t.Errorf("document must include %s exactly once", name)
+					}
+				} else if strings.Count(*result.Document, dataStylesheetLink(h.assets[name])) != 1 {
+					t.Errorf("document must embed %s exactly once", name)
+				}
 			}
 		}
-		if !strings.Contains(result.FeatureHeadHTML, `data-markata-render-head="true"`) || !strings.Contains(result.FeatureHeadHTML, "css/code.css") {
+		codeCSS := "data:text/css;base64," + base64.StdEncoding.EncodeToString(h.assets["css/code.css"])
+		if !strings.Contains(result.FeatureHeadHTML, `data-markata-render-head="true"`) || !strings.Contains(result.FeatureHeadHTML, codeCSS) {
 			t.Fatal("missing marked conditional styles")
 		}
 		if include {
