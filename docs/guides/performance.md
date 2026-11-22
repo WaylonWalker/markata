@@ -513,6 +513,16 @@ Trigger a manual workflow with a comparison branch:
 
 ### Improving Performance
 
+When a post is rerendered after a broad config or template invalidation,
+`publish_html` compares its final bytes with an existing regular output file.
+If they match, it leaves the file untouched so CSS purge can reuse its verified
+file identity. This helps only when a page is processed again but its output is
+identical; ordinary warm cache hits already skip publication. The comparison
+cost is not included in `write_duration_ns`, so use publish-stage wall time and
+CSS purge's `mode` and `bytes_hashed` fields to measure its effect. See
+[Publish I/O diagnostics](content-diagnostics.md#publish-io-diagnostics) for
+counter definitions.
+
 #### Concurrency
 
 Adjust the concurrency level in `markata-go.toml`:

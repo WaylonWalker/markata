@@ -92,9 +92,17 @@ func (p *PublishHTMLPlugin) Name() string {
 	return "publish_html"
 }
 
-// writeMeasuredFile captures only the WriteFile syscall, excluding rendering
-// and directory setup. Its nil recorder path supports direct plugin tests.
+// writeMeasuredFile leaves an identical regular file untouched. For changed
+// output it captures only the WriteFile syscall, excluding comparison,
+// rendering, and directory setup. Its nil recorder path supports direct tests.
 func (p *PublishHTMLPlugin) writeMeasuredFile(path string, content []byte) error {
+	if info, err := os.Lstat(path); err == nil && info.Mode().IsRegular() {
+		if existing, readErr := os.ReadFile(path); readErr == nil && bytes.Equal(existing, content) {
+			p.ioRecorder.FileUnchanged()
+			return nil
+		}
+	}
+
 	start := time.Now()
 	//nolint:gosec // G306: published files must be world-readable by the web server
 	err := os.WriteFile(path, content, 0o644)

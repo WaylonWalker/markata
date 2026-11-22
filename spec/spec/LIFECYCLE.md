@@ -1029,6 +1029,14 @@ page, so an empty `post.article_html` value MUST NOT prevent that cached page
 from being written. If the full-page cache entry is unavailable, the post MUST
 be rendered instead of being treated as successfully restored.
 
+When a post is rendered or restored for publication, the publisher MUST leave
+an existing regular output file untouched when its bytes already equal the
+desired output. This preserves file identity for downstream consumers such as
+CSS selector caching. Missing or different files are written normally. A
+comparison error MUST fall through to the normal write path, and non-regular
+paths such as symlinks retain the normal write behavior. This comparison does
+not change the existing mode behavior for files that already exist.
+
 ### Cache Invalidation Rules
 
 | Change | Invalidation Scope |
