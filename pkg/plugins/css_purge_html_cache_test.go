@@ -2,6 +2,7 @@ package plugins
 
 import (
 	"crypto/sha256"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -68,6 +69,63 @@ func TestCSSPurgeHTMLCache_ReusesAndInvalidatesSelectorSet(t *testing.T) {
 	}
 }
 
+func TestCSSPurgeHTMLCache_ParsesOnlyChangedFiles(t *testing.T) {
+	root := t.TempDir()
+	output := filepath.Join(root, "output")
+	cache := filepath.Join(root, "cache")
+	changedPage := filepath.Join(output, "changed.html")
+	stablePage := filepath.Join(output, "stable.html")
+	changedInitial := `<main class="alpha"></main>`
+	changedNext := `<main class="bravo"></main>`
+	stable := `<aside class="stable" id="keep"></aside>`
+	if len(changedInitial) != len(changedNext) {
+		t.Fatalf("test contents must have the same length: %d != %d", len(changedInitial), len(changedNext))
+	}
+	writeHTML(t, changedPage, changedInitial)
+	writeHTML(t, stablePage, stable)
+
+	first, firstStats, err := scanHTMLFilesForSelectorsWithStats(output, cache, 2, false)
+	if err != nil || firstStats.FilesParsed != 2 || firstStats.FilesReused != 0 || firstStats.CacheMode != htmlSelectorCacheModeScan {
+		t.Fatalf("initial scan: stats=%+v err=%v", firstStats, err)
+	}
+	if !first.Classes["alpha"] || !first.Classes["stable"] || !first.IDs["keep"] {
+		t.Fatalf("initial selector set missing values: %+v", first)
+	}
+
+	// A fresh inode and same-size replacement must use the exact content hash
+	// to identify only the changed page, then replace rather than union its old
+	// selectors.
+	writeHTML(t, changedPage, changedNext)
+	second, secondStats, err := scanHTMLFilesForSelectorsWithStats(output, cache, 2, false)
+	if err != nil || secondStats.CacheHit || secondStats.CacheMode != htmlSelectorCacheModePartial ||
+		secondStats.FilesParsed != 1 || secondStats.FilesReused != 1 {
+		t.Fatalf("partial scan: stats=%+v err=%v", secondStats, err)
+	}
+	if !second.Classes["bravo"] || !second.Classes["stable"] || second.Classes["alpha"] || !second.IDs["keep"] {
+		t.Fatalf("partial selector set is stale or incomplete: %+v", second)
+	}
+
+	if err := os.Remove(changedPage); err != nil {
+		t.Fatal(err)
+	}
+	third, thirdStats, err := scanHTMLFilesForSelectorsWithStats(output, cache, 2, false)
+	if err != nil || thirdStats.CacheHit || thirdStats.CacheMode != htmlSelectorCacheModePartial ||
+		thirdStats.FilesParsed != 0 || thirdStats.FilesReused != 1 {
+		t.Fatalf("removed-page update: stats=%+v err=%v", thirdStats, err)
+	}
+	if third.Classes["alpha"] || third.Classes["bravo"] || !third.Classes["stable"] || !third.IDs["keep"] {
+		t.Fatalf("removed page selectors remain in union: %+v", third)
+	}
+
+	clean, _, err := scanHTMLFilesForSelectors(output, filepath.Join(root, "clean-cache"), 2, false)
+	if err != nil {
+		t.Fatalf("clean full scan: %v", err)
+	}
+	if !reflect.DeepEqual(third, clean) {
+		t.Fatalf("incremental selectors differ from clean scan: incremental=%+v clean=%+v", third, clean)
+	}
+}
+
 func TestCSSPurgeHTMLCache_CorruptCacheFallsBackToScan(t *testing.T) {
 	root := t.TempDir()
 	output := filepath.Join(root, "output")
@@ -86,6 +144,64 @@ func TestCSSPurgeHTMLCache_CorruptCacheFallsBackToScan(t *testing.T) {
 	}
 }
 
+func TestCSSPurgeHTMLCache_RejectsValidJSONWithAlteredAggregateSelectors(t *testing.T) {
+	root := t.TempDir()
+	output := filepath.Join(root, "output")
+	cache := filepath.Join(root, "cache")
+	writeHTML(t, filepath.Join(output, "index.html"), `<main class="protected"></main>`)
+
+	initial, _, err := scanHTMLFilesForSelectors(output, cache, 1, false)
+	if err != nil || !initial.Classes["protected"] {
+		t.Fatalf("initial scan: selectors=%+v err=%v", initial, err)
+	}
+	cachePath := filepath.Join(cache, "html-selectors.json")
+	encoded, err := os.ReadFile(cachePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var corrupted cssPurgeHTMLCache
+	if err := json.Unmarshal(encoded, &corrupted); err != nil {
+		t.Fatal(err)
+	}
+	corrupted.Selectors.Classes["protected"] = false
+	encoded, err = json.Marshal(corrupted)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(cachePath, encoded, 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	recovered, stats, err := scanHTMLFilesForSelectorsWithStats(output, cache, 1, false)
+	if err != nil || stats.CacheMode == htmlSelectorCacheModeIdentity || !recovered.Classes["protected"] {
+		t.Fatalf("altered aggregate cache was trusted: stats=%+v selectors=%+v err=%v", stats, recovered, err)
+	}
+}
+
+func TestCSSPurgeHTMLScan_ParsesBytesThatWereHashed(t *testing.T) {
+	root := t.TempDir()
+	output := filepath.Join(root, "output")
+	page := filepath.Join(output, "index.html")
+	writeHTML(t, page, `<main class="current"></main>`)
+	expected := map[string]string{"index.html": "a stale fingerprint"}
+
+	parsed, complete, hashesMatch := scanHTMLFilesWithExpectedHashesConcurrently([]string{page}, output, expected, 1)
+	if !complete || hashesMatch || !parsed[page].Classes["current"] {
+		t.Fatalf("changed bytes were not parsed consistently: complete=%t hashes_match=%t selectors=%+v", complete, hashesMatch, parsed[page])
+	}
+	if err := validateCSSPurgeHTMLScan(complete, hashesMatch); err == nil {
+		t.Fatal("changed HTML snapshot was allowed to proceed to CSS purging")
+	}
+
+	content, err := os.ReadFile(page)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := cssPurgeBytesHash(content); got == expected["index.html"] {
+		t.Fatal("test expected hash unexpectedly matches current page")
+	}
+}
+
 func TestCSSPurgeHTMLCache_StableIdentityHitAvoidsHTMLReads(t *testing.T) {
 	if !fileidentity.Available {
 		t.Skip("verified file identity is available on Linux only")
@@ -101,11 +217,14 @@ func TestCSSPurgeHTMLCache_StableIdentityHitAvoidsHTMLReads(t *testing.T) {
 	// safety window. Age the output before priming the cache to test the warm hit.
 	time.Sleep(1100 * time.Millisecond)
 	first, firstStats, err := scanHTMLFilesForSelectorsWithStats(output, cache, 2, false)
-	if err != nil || firstStats.BytesRead != int64(len(initial)) || firstStats.CacheMode != htmlSelectorCacheModeScan {
+	if err != nil || firstStats.BytesHashed != int64(len(initial)) || firstStats.CacheMode != htmlSelectorCacheModeScan {
 		t.Fatalf("initial scan: stats=%+v err=%v", firstStats, err)
 	}
+	if err := os.WriteFile(filepath.Join(cache, htmlSelectorFileCacheName), []byte("corrupt page cache"), 0o600); err != nil {
+		t.Fatal(err)
+	}
 	warm, warmStats, err := scanHTMLFilesForSelectorsWithStats(output, cache, 2, false)
-	if err != nil || !warmStats.CacheHit || warmStats.CacheMode != htmlSelectorCacheModeIdentity || warmStats.BytesRead != 0 || warmStats.BytesReused != int64(len(initial)) {
+	if err != nil || !warmStats.CacheHit || warmStats.CacheMode != htmlSelectorCacheModeIdentity || warmStats.BytesHashed != 0 {
 		t.Fatalf("identity hit: stats=%+v err=%v", warmStats, err)
 	}
 	if !reflect.DeepEqual(first, warm) {
@@ -165,7 +284,7 @@ func TestCSSPurgeHTMLCache_SymlinkFallsBackToExactContentHash(t *testing.T) {
 		t.Fatalf("symlink initial scan: stats=%+v selectors=%+v err=%v", firstStats, first, err)
 	}
 	warm, warmStats, err := scanHTMLFilesForSelectorsWithStats(output, cache, 1, false)
-	if err != nil || !warm.Classes["linked"] || !warmStats.CacheHit || warmStats.CacheMode != htmlSelectorCacheModeContent || warmStats.BytesRead == 0 {
+	if err != nil || !warm.Classes["linked"] || !warmStats.CacheHit || warmStats.CacheMode != htmlSelectorCacheModeContent || warmStats.BytesHashed == 0 {
 		t.Fatalf("symlink fallback: stats=%+v selectors=%+v err=%v", warmStats, warm, err)
 	}
 }
