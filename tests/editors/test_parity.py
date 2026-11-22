@@ -57,6 +57,9 @@ def check_excalidraw_fence_controls(page):
     expect(canvas).to_have_class(re.compile(r'\btheme--dark\b'))
     page.locator('#excalidraw-cancel').click()
     expect(dialog).not_to_be_visible()
+    # Modal Cancel restores the keyboard launcher rather than the hidden
+    # CodeMirror input. Wait for that restoration before moving to Show JSON.
+    expect(edit).to_be_focused()
     show = page.locator('.excalidraw-fence-controls').get_by_role('button', name='Show Excalidraw JSON')
     expect(show).to_be_visible()
 
