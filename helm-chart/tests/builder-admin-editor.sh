@@ -80,6 +80,7 @@ helm template editor-test "$chart" "${common[@]}" \
   --set-string builderAdmin.editor.dropperUploader.existingSecretName=editor-dropper \
   --set-string builderAdmin.editor.dropperUploader.tokenKey=token \
   >"$tmp_dir/with-dropper.yaml"
+grep -q 'install -m 0400 /run/markata-git-secret/id_ed25519 /run/markata-git/id_ed25519 && chown 65534:1000 /run/markata-git/id_ed25519 && chmod 0770 /run/markata-dropper && chown 65534:1000 /run/markata-dropper' "$tmp_dir/with-dropper.yaml" || fail "uploader socket permissions must be set before its ownership changes"
 dropper_uploader="$(sed -n '/^[[:space:]]*- name: "editor-test-notes-editor-dropper-uploader"$/,/readinessProbe:/p' "$tmp_dir/with-dropper.yaml")"
 dropper_editor="$(sed -n '/^[[:space:]]*- name: "editor-test-notes-editor"$/,/readinessProbe:/p' "$tmp_dir/with-dropper.yaml")"
 grep -q 'name: DROPPER_TOKEN' <<<"$dropper_uploader" || fail "Dropper uploader does not receive the token"
