@@ -150,11 +150,13 @@ func TestCSSPurgeHTMLCache_ParsesOnlyChangedFiles(t *testing.T) {
 	writeHTML(t, stablePage, stable)
 	sameBytes, sameBytesStats, err := scanHTMLFilesForSelectorsWithStats(output, cache, 2, false)
 	wantSameBytesMode := htmlSelectorCacheModeContent
+	wantSameBytesReused := 0
 	if fileidentity.Available {
 		wantSameBytesMode = htmlSelectorCacheModeIdentityPartial
+		wantSameBytesReused = 1
 	}
 	if err != nil || !sameBytesStats.CacheHit || sameBytesStats.CacheMode != wantSameBytesMode ||
-		sameBytesStats.FilesParsed != 0 || sameBytesStats.FilesReused != 1 || !reflect.DeepEqual(third, sameBytes) {
+		sameBytesStats.FilesParsed != 0 || sameBytesStats.FilesReused != wantSameBytesReused || !reflect.DeepEqual(third, sameBytes) {
 		t.Fatalf("identical-content replacement: stats=%+v selectors=%+v err=%v", sameBytesStats, sameBytes, err)
 	}
 	if fileidentity.Available && sameBytesStats.BytesHashed != int64(len(stable)) {
