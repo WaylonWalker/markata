@@ -60,6 +60,26 @@ markata-go build pages/sample.md
 markata-go serve pages/sample.md
 ```
 
+## Local editor + builder: `up`
+
+`markata up` starts the Markdown editor and the static-site builder/live
+preview together in the current workspace. Both listen on loopback; the
+URLs printed at startup are *expected*, not verified healthy URLs.
+
+```sh
+markata up
+markata up --editor-port 8767 --preview-port 8001
+markata up --editor-only
+markata up --builder-only
+```
+
+By default the editor listens on `http://127.0.0.1:8766/` and the
+builder's preview on `http://127.0.0.1:8000/`. Builder failures do not
+close the editor. Press Ctrl+C to stop the foreground workspace.
+This command does not install a background service or configure external
+hosting; use your existing agent with `markata --skill` for customization
+and deployment decisions. See [Workspace Up](/docs/guides/workspace-up/).
+
 ## Agent-assisted troubleshooting: `triage`
 
 `markata triage` collects a small, privacy-conscious diagnostic summary and passes a troubleshooting prompt to an interactive coding agent, clipboard, or stdout. The default is a fuzzy picker of **detected installed** coding agents plus clipboard and stdout. When either terminal stream is redirected or `--no-input` is used, it prints **only the Markdown prompt** to stdout.
