@@ -1,13 +1,17 @@
 package plugins
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/WaylonWalker/markata/internal/fileidentity"
 	"github.com/WaylonWalker/markata/pkg/buildcache"
+	"github.com/WaylonWalker/markata/pkg/diagnostics"
 	"github.com/WaylonWalker/markata/pkg/lifecycle"
 	"github.com/WaylonWalker/markata/pkg/models"
 	"github.com/WaylonWalker/markata/pkg/terminalpage"
@@ -55,6 +59,137 @@ func createTestManager(t *testing.T, config *lifecycle.Config) *lifecycle.Manage
 	// Set the config in the manager
 	m.SetConfig(config)
 	return m
+}
+
+func TestPublishHTMLWriteMeasuredFile_PreservesIdenticalRegularFile(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "index.html")
+	content := []byte("<main>same output</main>")
+	if err := os.WriteFile(path, content, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	wantModTime := time.Date(2020, time.January, 2, 3, 4, 5, 0, time.UTC)
+	if err := os.Chtimes(path, wantModTime, wantModTime); err != nil {
+		t.Fatal(err)
+	}
+	before, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	recorder := &diagnostics.PublishIORecorder{}
+	plugin := NewPublishHTMLPlugin()
+	plugin.ioRecorder = recorder
+	if err := plugin.writeMeasuredFile(path, content); err != nil {
+		t.Fatalf("writeMeasuredFile() error = %v", err)
+	}
+	after, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !after.ModTime().Equal(before.ModTime()) {
+		t.Errorf("file modification time changed: before=%v after=%v", before.ModTime(), after.ModTime())
+	}
+	if after.Mode().Perm() != before.Mode().Perm() {
+		t.Errorf("file mode changed: before=%04o after=%04o", before.Mode().Perm(), after.Mode().Perm())
+	}
+	got := recorder.Snapshot()
+	if got.FilesUnchanged != 1 || got.FilesWritten != 0 || got.BytesWritten != 0 {
+		t.Errorf("publish counters = %+v, want one unchanged file and no writes", got)
+	}
+}
+
+func TestPublishHTMLWriteMeasuredFile_WritesChangedFile(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "index.html")
+	if err := os.WriteFile(path, []byte("old output"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	recorder := &diagnostics.PublishIORecorder{}
+	plugin := NewPublishHTMLPlugin()
+	plugin.ioRecorder = recorder
+	want := []byte("new output")
+	if err := plugin.writeMeasuredFile(path, want); err != nil {
+		t.Fatalf("writeMeasuredFile() error = %v", err)
+	}
+	gotContent, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(gotContent, want) {
+		t.Errorf("file content = %q, want %q", gotContent, want)
+	}
+	got := recorder.Snapshot()
+	if got.FilesUnchanged != 0 || got.FilesWritten != 1 || got.BytesWritten != int64(len(want)) {
+		t.Errorf("publish counters = %+v, want one write of %d bytes", got, len(want))
+	}
+}
+
+func TestPublishHTMLWriteMeasuredFile_DoesNotSkipSymlink(t *testing.T) {
+	dir := t.TempDir()
+	targetPath := filepath.Join(dir, "target.html")
+	linkPath := filepath.Join(dir, "index.html")
+	content := []byte("<main>same output</main>")
+	if err := os.WriteFile(targetPath, content, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(targetPath, linkPath); err != nil {
+		t.Skipf("symlink creation is unavailable: %v", err)
+	}
+
+	recorder := &diagnostics.PublishIORecorder{}
+	plugin := NewPublishHTMLPlugin()
+	plugin.ioRecorder = recorder
+	if err := plugin.writeMeasuredFile(linkPath, content); err != nil {
+		t.Fatalf("writeMeasuredFile() error = %v", err)
+	}
+	info, err := os.Lstat(linkPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Mode()&os.ModeSymlink == 0 {
+		t.Fatalf("output path no longer refers to a symlink: mode=%v", info.Mode())
+	}
+	got := recorder.Snapshot()
+	if got.FilesUnchanged != 0 || got.FilesWritten != 1 {
+		t.Errorf("publish counters = %+v, want one write and no unchanged-file skip", got)
+	}
+}
+
+func TestPublishHTMLWriteMeasuredFile_PreservesCSSSelectorIdentity(t *testing.T) {
+	if !fileidentity.Available {
+		t.Skip("verified file identity is available on Linux only")
+	}
+	root := t.TempDir()
+	outputDir := filepath.Join(root, "output")
+	cacheDir := filepath.Join(root, "cache")
+	path := filepath.Join(outputDir, "index.html")
+	content := []byte(`<main class="same-output" id="stable"></main>`)
+	writeHTML(t, path, string(content))
+
+	// The identity cache requires files to predate its observation by one
+	// second, so age this output before priming it.
+	time.Sleep(1100 * time.Millisecond)
+	first, firstStats, err := scanHTMLFilesForSelectorsWithStats(outputDir, cacheDir, 1, false)
+	if err != nil || firstStats.CacheMode != htmlSelectorCacheModeScan {
+		t.Fatalf("initial selector scan: stats=%+v err=%v", firstStats, err)
+	}
+
+	recorder := &diagnostics.PublishIORecorder{}
+	plugin := NewPublishHTMLPlugin()
+	plugin.ioRecorder = recorder
+	if err := plugin.writeMeasuredFile(path, content); err != nil {
+		t.Fatalf("writeMeasuredFile() error = %v", err)
+	}
+	got, gotStats, err := scanHTMLFilesForSelectorsWithStats(outputDir, cacheDir, 1, false)
+	if err != nil || gotStats.CacheMode != htmlSelectorCacheModeIdentity || gotStats.BytesHashed != 0 {
+		t.Fatalf("selector identity after identical publish: stats=%+v err=%v", gotStats, err)
+	}
+	if cssPurgeAggregateSelectorHash(got) != cssPurgeAggregateSelectorHash(first) {
+		t.Fatalf("selector hash changed after identical publish: got=%s want=%s", cssPurgeAggregateSelectorHash(got), cssPurgeAggregateSelectorHash(first))
+	}
+	if got := recorder.Snapshot(); got.FilesUnchanged != 1 || got.FilesWritten != 0 {
+		t.Errorf("publish counters = %+v, want one unchanged file and no writes", got)
+	}
 }
 
 func renderOGHTML(t *testing.T, post *models.Post) string {
