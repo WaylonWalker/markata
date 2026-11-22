@@ -155,11 +155,13 @@ So `--fast` is good for content, template, and most styling iteration, but it is
 - If output is network-bound, inspect plugins that fetch remote content.
 - If output is read-heavy, inspect globbing, cache loads, and broad content scans.
 - If output is write-heavy, inspect cache saves, feed publishing, Pagefind output, and static output.
-- CSS purge caches discovered selectors and purged stylesheets. On Linux, an unchanged
-  output tree with stable verified file identities can reuse selectors with
-  `mode=identity` and `bytes_read=0`; changed, added, removed, unstable, or unidentifiable
-  HTML falls back to exact content hashing and scanning. Compare warm builds before
-  changing purge behavior, because disabling purge can increase stylesheet transfer.
+- CSS purge caches discovered selectors and purged stylesheets. On Linux, stable verified
+  per-file identities can reuse selectors without reading unchanged HTML, even when another
+  page changes. `mode=identity` is a complete hit; `mode=identity-partial` hashes only files
+  with changed or unverified identities and parses only new content. Added pages are scanned,
+  removed pages are dropped, and unsupported or unidentifiable HTML uses exact-content
+  fallback. Compare warm builds before changing purge behavior, because disabling purge can
+  increase stylesheet transfer.
 - If warm builds still spend time in `configure/build_cache`, check whether template or config files actually changed before assuming the cache is stale; the build cache now fingerprints the template tree before it does a full rehash.
 - The image-library cache reuses local media content fingerprints when each file's path, size, and modification time are unchanged. On filesystems that expose change time, it also detects same-size replacements that preserve mtime; output directories are excluded from source-media hashing, and the canonical image-library hash uses verified content fingerprints rather than mtime. Avoid clearing `.markata/` when measuring this warm-build path.
 - If `/tags` or `/garden` writes are hot, prefer cached per-post semantic hashes so the listing hashes don't need to re-derive the same per-post summaries every build.

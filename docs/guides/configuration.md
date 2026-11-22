@@ -686,14 +686,18 @@ writers are not supported. If a changed page differs from its hashed snapshot, C
 aborts.
 
 On Linux filesystems with verified file identities, a warm build can reuse the complete
-selector set without reading unchanged HTML again. If identities do not match, exact content
-hashes remain authoritative; matching per-file hashes reuse their selectors without parsing
-those pages again. Added, removed, replaced, or unstable files are checked against exact
-content. A partial scan still hashes every HTML file, then parses new or changed pages a
-second time. The `reused` count means cached selector sets; it does not mean those HTML bytes
-were skipped during hashing. Other filesystems keep the full content check on every build.
-Look for `mode=identity` and `bytes_hashed=0` in the build log to confirm the identity fast
-path ran.
+selector set without reading unchanged HTML again. If one or more identities change, Markata
+can still reuse selectors for files whose identities match the prior exact scan. It hashes
+only files with changed, missing, or unstable identities, then parses only files whose exact
+content hash is new. Added files are hashed and scanned; removed files are omitted. If file
+identities cannot be established, including symlinked HTML, Markata checks exact content for
+the full path set. Other filesystems also keep the full content check on every build.
+
+The `reused` count means selector sets reused. In `mode=identity-partial`, matching identities
+avoid both hashing and parsing; `bytes_hashed` counts only files with changed or unverified
+identities. In other modes it reports the bytes read for the full fingerprint pass. Look for
+`mode=identity` with `bytes_hashed=0` for a complete identity hit, or `mode=identity-partial`
+for a partial build that avoided reading unchanged HTML.
 
 On Linux, Markata can reuse a previous check of final stylesheet links in
 unchanged HTML. A new stylesheet digest or a changed HTML file causes a new
