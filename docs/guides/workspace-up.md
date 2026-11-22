@@ -1,6 +1,7 @@
 ---
 title: "Start the Markata workspace"
 description: "Run the browser editor and live-reloading site builder together."
+date: 2026-11-22
 published: true
 tags: [documentation, editor, cli]
 ---
