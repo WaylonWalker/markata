@@ -78,11 +78,10 @@ func runSetupCommand(cmd *cobra.Command, args []string) error {
 		if err := f.Close(); err != nil {
 			return fmt.Errorf("close configuration: %w", err)
 		}
-		existing = defaultConfigFilename
 		fmt.Fprintf(cmd.OutOrStdout(), "Created starter configuration: %s\n", target)
 	} else {
 		fmt.Fprintf(cmd.OutOrStdout(), "Found existing configuration: %s\n", filepath.Join(abs, existing))
 	}
-	fmt.Fprintf(cmd.OutOrStdout(), "\nWorkspace ready: %s\n\nNext:\n  cd %q\n  markata editor\n\nBuild and preview your site:\n  markata serve\n", abs)
+	fmt.Fprintf(cmd.OutOrStdout(), "\nWorkspace ready: %s\n\nNext:\n  cd %q\n  markata editor\n\nBuild and preview your site:\n  markata serve\n", abs, abs)
 	return nil
 }
