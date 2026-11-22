@@ -83,6 +83,10 @@ func TestCSSPurgeHTMLCache_ParsesOnlyChangedFiles(t *testing.T) {
 	}
 	writeHTML(t, changedPage, changedInitial)
 	writeHTML(t, stablePage, stable)
+	if fileidentity.Available {
+		// Keep fixture identities outside the coarse-filesystem timestamp guard.
+		time.Sleep(1100 * time.Millisecond)
+	}
 
 	first, firstStats, err := scanHTMLFilesForSelectorsWithStats(output, cache, 2, false)
 	if err != nil || firstStats.FilesParsed != 2 || firstStats.FilesReused != 0 || firstStats.CacheMode != htmlSelectorCacheModeScan {
@@ -92,14 +96,30 @@ func TestCSSPurgeHTMLCache_ParsesOnlyChangedFiles(t *testing.T) {
 		t.Fatalf("initial selector set missing values: %+v", first)
 	}
 
-	// A fresh inode and same-size replacement must use the exact content hash
-	// to identify only the changed page, then replace rather than union its old
-	// selectors.
+	// A same-size replacement must use the exact content hash to identify only
+	// the changed page, then replace rather than union its old selectors.
+	changedInfo, err := os.Stat(changedPage)
+	if err != nil {
+		t.Fatal(err)
+	}
 	writeHTML(t, changedPage, changedNext)
+	if err := os.Chtimes(changedPage, changedInfo.ModTime(), changedInfo.ModTime()); err != nil {
+		t.Fatal(err)
+	}
+	if fileidentity.Available {
+		time.Sleep(1100 * time.Millisecond)
+	}
 	second, secondStats, err := scanHTMLFilesForSelectorsWithStats(output, cache, 2, false)
-	if err != nil || secondStats.CacheHit || secondStats.CacheMode != htmlSelectorCacheModePartial ||
+	wantPartialMode := htmlSelectorCacheModePartial
+	if fileidentity.Available {
+		wantPartialMode = htmlSelectorCacheModeIdentityPartial
+	}
+	if err != nil || secondStats.CacheHit || secondStats.CacheMode != wantPartialMode ||
 		secondStats.FilesParsed != 1 || secondStats.FilesReused != 1 {
 		t.Fatalf("partial scan: stats=%+v err=%v", secondStats, err)
+	}
+	if fileidentity.Available && secondStats.BytesHashed != int64(len(changedNext)) {
+		t.Fatalf("partial identity scan hashed %d bytes, want only changed page bytes %d", secondStats.BytesHashed, len(changedNext))
 	}
 	if !second.Classes["bravo"] || !second.Classes["stable"] || second.Classes["alpha"] || !second.IDs["keep"] {
 		t.Fatalf("partial selector set is stale or incomplete: %+v", second)
@@ -109,7 +129,7 @@ func TestCSSPurgeHTMLCache_ParsesOnlyChangedFiles(t *testing.T) {
 		t.Fatal(err)
 	}
 	third, thirdStats, err := scanHTMLFilesForSelectorsWithStats(output, cache, 2, false)
-	if err != nil || thirdStats.CacheHit || thirdStats.CacheMode != htmlSelectorCacheModePartial ||
+	if err != nil || thirdStats.CacheHit || thirdStats.CacheMode != wantPartialMode ||
 		thirdStats.FilesParsed != 0 || thirdStats.FilesReused != 1 {
 		t.Fatalf("removed-page update: stats=%+v err=%v", thirdStats, err)
 	}
@@ -123,6 +143,18 @@ func TestCSSPurgeHTMLCache_ParsesOnlyChangedFiles(t *testing.T) {
 	}
 	if !reflect.DeepEqual(third, clean) {
 		t.Fatalf("incremental selectors differ from clean scan: incremental=%+v clean=%+v", third, clean)
+	}
+
+	// Replacing a page with identical bytes changes its verified identity. The
+	// exact hash should preserve its cached selectors without parsing the page.
+	writeHTML(t, stablePage, stable)
+	sameBytes, sameBytesStats, err := scanHTMLFilesForSelectorsWithStats(output, cache, 2, false)
+	if err != nil || !sameBytesStats.CacheHit || sameBytesStats.CacheMode != wantPartialMode ||
+		sameBytesStats.FilesParsed != 0 || sameBytesStats.FilesReused != 1 || !reflect.DeepEqual(third, sameBytes) {
+		t.Fatalf("identical-content replacement: stats=%+v selectors=%+v err=%v", sameBytesStats, sameBytes, err)
+	}
+	if fileidentity.Available && sameBytesStats.BytesHashed != int64(len(stable)) {
+		t.Fatalf("identical-content replacement hashed %d bytes, want only replaced page bytes %d", sameBytesStats.BytesHashed, len(stable))
 	}
 }
 

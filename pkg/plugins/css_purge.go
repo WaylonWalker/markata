@@ -127,11 +127,12 @@ type htmlSelectorScanStats struct {
 }
 
 const (
-	htmlSelectorCacheModeIdentity = "identity"
-	htmlSelectorCacheModeContent  = "content"
-	htmlSelectorCacheModePartial  = "partial"
-	htmlSelectorCacheModeScan     = "scan"
-	htmlSelectorFileCacheName     = "html-selectors-per-file.json"
+	htmlSelectorCacheModeIdentity        = "identity"
+	htmlSelectorCacheModeIdentityPartial = "identity-partial"
+	htmlSelectorCacheModeContent         = "content"
+	htmlSelectorCacheModePartial         = "partial"
+	htmlSelectorCacheModeScan            = "scan"
+	htmlSelectorFileCacheName            = "html-selectors-per-file.json"
 )
 
 func scanHTMLFilesForSelectorsWithStats(outputDir, cacheDir string, concurrency int, verbose bool) (*csspurge.UsedSelectors, htmlSelectorScanStats, error) {
@@ -154,9 +155,11 @@ func scanHTMLFilesForSelectorsWithStats(outputDir, cacheDir string, concurrency 
 	cachePath := filepath.Join(cacheDir, "html-selectors.json")
 	cached, cacheExists := loadCSSPurgeHTMLCache(cachePath)
 	cacheValid := cacheExists && validCSSPurgeHTMLCache(cached)
+	var identities map[string]fileidentity.Identity
+	identitiesComplete := false
 	if cacheValid && fileidentity.Available {
-		identities, complete := currentHTMLFileIdentities(htmlFiles, outputDir)
-		if complete && cssPurgeHTMLIdentityCacheMatches(cached, identities, time.Now()) {
+		identities, identitiesComplete = currentHTMLFileIdentities(htmlFiles, outputDir)
+		if identitiesComplete && cssPurgeHTMLIdentityCacheMatches(cached, identities, time.Now()) {
 			stats := htmlSelectorScanStats{
 				Files:     len(htmlFiles),
 				CacheHit:  true,
@@ -164,6 +167,16 @@ func scanHTMLFilesForSelectorsWithStats(outputDir, cacheDir string, concurrency 
 			}
 			cssPurgeLog.Printf("HTML selector cache hit: files=%d bytes_hashed=0 mode=identity", stats.Files)
 			return &cached.Selectors, stats, nil
+		}
+	}
+
+	fileCachePath := filepath.Join(cacheDir, htmlSelectorFileCacheName)
+	fileCache, fileCacheExists := loadCSSPurgeHTMLFileCache(fileCachePath)
+	fileCacheValid := fileCacheExists && validCSSPurgeHTMLFileCache(fileCache)
+	if cacheValid && fileCacheValid && fileCache.Fingerprint == cached.Fingerprint && identitiesComplete {
+		used, stats, handled, err := scanHTMLFilesByIdentity(htmlFiles, outputDir, cachePath, fileCachePath, concurrency, cached, fileCache, identities)
+		if handled || err != nil {
+			return used, stats, err
 		}
 	}
 
@@ -190,8 +203,6 @@ func scanHTMLFilesForSelectorsWithStats(outputDir, cacheDir string, concurrency 
 		return &cached.Selectors, stats, nil
 	}
 
-	fileCache, fileCacheExists := loadCSSPurgeHTMLFileCache(filepath.Join(cacheDir, htmlSelectorFileCacheName))
-	fileCacheValid := fileCacheExists && validCSSPurgeHTMLFileCache(fileCache)
 	used := csspurge.NewUsedSelectors()
 	fileSelectors := make(map[string]cssPurgeHTMLFileSelectors, len(fingerprint.fileHashes))
 	changedFiles := make([]string, 0, len(fingerprint.fileHashes))
@@ -232,7 +243,7 @@ func scanHTMLFilesForSelectorsWithStats(outputDir, cacheDir string, concurrency 
 			Fingerprint: fingerprint.fingerprint,
 			Files:       fileSelectors,
 		}
-		saveCSSPurgeHTMLFileCache(filepath.Join(cacheDir, htmlSelectorFileCacheName), fileCache)
+		saveCSSPurgeHTMLFileCache(fileCachePath, fileCache)
 		saveCSSPurgeHTMLCache(cachePath, cssPurgeHTMLCache{
 			Schema:       cssPurgeHTMLCacheSchema,
 			Fingerprint:  fingerprint.fingerprint,
@@ -256,6 +267,197 @@ func scanHTMLFilesForSelectorsWithStats(outputDir, cacheDir string, concurrency 
 	}
 
 	return used, stats, nil
+}
+
+// scanHTMLFilesByIdentity reuses per-file selector data for files that still
+// have the identity captured during the prior exact-content scan. Only files
+// whose identity is new or uncertain need an exact content hash.
+func scanHTMLFilesByIdentity(
+	files []string,
+	outputDir, cachePath, fileCachePath string,
+	concurrency int,
+	cached cssPurgeHTMLCache,
+	fileCache cssPurgeHTMLFileCache,
+	currentIdentities map[string]fileidentity.Identity,
+) (*csspurge.UsedSelectors, htmlSelectorScanStats, bool, error) {
+	stats := htmlSelectorScanStats{Files: len(files)}
+	if now := time.Now(); cached.Observed.IsZero() || now.Before(cached.Observed) {
+		// A missing or future observation cannot authorize identity reuse. The
+		// caller will use the exact-content fallback for the full file set.
+		return nil, stats, false, nil
+	}
+
+	used, fileSelectors, changedFiles, reused, ok := reuseCSSPurgeSelectorsByIdentity(files, outputDir, cached, fileCache, currentIdentities)
+	if !ok {
+		return nil, stats, false, nil
+	}
+	stats.FilesReused = reused
+	fingerprint, toParse, reused, ok := fingerprintChangedCSSPurgeFiles(changedFiles, outputDir, concurrency, fileCache, used, fileSelectors)
+	if !ok {
+		return nil, stats, false, nil
+	}
+	stats.BytesHashed = fingerprint.scannedBytes
+	stats.FilesReused += reused
+
+	parsedSelectors, complete, hashesMatch := scanHTMLFilesWithExpectedHashesConcurrently(toParse, outputDir, fingerprint.fileHashes, concurrency)
+	stats.FilesParsed = len(parsedSelectors)
+	if err := validateCSSPurgeHTMLScan(complete, hashesMatch); err != nil {
+		return nil, stats, true, err
+	}
+	if err := mergeParsedCSSPurgeSelectors(parsedSelectors, outputDir, fingerprint.fileHashes, fileSelectors, used); err != nil {
+		return nil, stats, true, err
+	}
+	if len(fileSelectors) != len(files) {
+		return nil, stats, false, nil
+	}
+
+	nextIdentities, ok := cssPurgeIdentitiesAfterFingerprint(outputDir, currentIdentities, changedFiles, fingerprint.identities)
+	if !ok {
+		return nil, stats, false, nil
+	}
+	contentFingerprint := cssPurgeHTMLFingerprintFromCache(fileSelectors)
+	if contentFingerprint == "" {
+		return nil, stats, false, nil
+	}
+	fileCache = cssPurgeHTMLFileCache{
+		Schema:      cssPurgeHTMLFileCacheSchema,
+		Fingerprint: contentFingerprint,
+		Files:       fileSelectors,
+	}
+	saveCSSPurgeHTMLFileCache(fileCachePath, fileCache)
+
+	var htmlBytes int64
+	for _, identity := range currentIdentities {
+		htmlBytes += identity.Size
+	}
+	saveCSSPurgeHTMLCache(cachePath, cssPurgeHTMLCache{
+		Schema:       cssPurgeHTMLCacheSchema,
+		Fingerprint:  contentFingerprint,
+		SelectorHash: cssPurgeAggregateSelectorHash(used),
+		Observed:     time.Now(),
+		HTMLBytes:    htmlBytes,
+		Files:        nextIdentities,
+		Selectors:    *used,
+	})
+
+	stats.CacheHit = contentFingerprint == cached.Fingerprint
+	stats.CacheMode = htmlSelectorCacheModeIdentityPartial
+	cssPurgeLog.Printf("HTML selector scan: files=%d bytes_hashed=%d parsed=%d reused=%d cache_hit=%t mode=%s", stats.Files, stats.BytesHashed, stats.FilesParsed, stats.FilesReused, stats.CacheHit, stats.CacheMode)
+	return used, stats, true, nil
+}
+
+func reuseCSSPurgeSelectorsByIdentity(
+	files []string,
+	outputDir string,
+	cached cssPurgeHTMLCache,
+	fileCache cssPurgeHTMLFileCache,
+	currentIdentities map[string]fileidentity.Identity,
+) (used *csspurge.UsedSelectors, fileSelectors map[string]cssPurgeHTMLFileSelectors, changedFiles []string, reused int, ok bool) {
+	used = csspurge.NewUsedSelectors()
+	fileSelectors = make(map[string]cssPurgeHTMLFileSelectors, len(files))
+	changedFiles = make([]string, 0, len(files))
+	for _, path := range files {
+		relative, err := filepath.Rel(outputDir, path)
+		if err != nil || !filepath.IsLocal(relative) {
+			return nil, nil, nil, reused, false
+		}
+		relative = filepath.ToSlash(relative)
+		identity := currentIdentities[relative]
+		previousIdentity, hasPreviousIdentity := cached.Files[relative]
+		previousSelectors, hasPreviousSelectors := fileCache.Files[relative]
+		if hasPreviousIdentity && hasPreviousSelectors && identity == previousIdentity && identity.StableBefore(cached.Observed) {
+			fileSelectors[relative] = previousSelectors
+			used.Merge(previousSelectors.Selectors.toUsedSelectors())
+			reused++
+			continue
+		}
+		changedFiles = append(changedFiles, path)
+	}
+	sort.Strings(changedFiles)
+	return used, fileSelectors, changedFiles, reused, true
+}
+
+func fingerprintChangedCSSPurgeFiles(
+	changedFiles []string,
+	outputDir string,
+	concurrency int,
+	fileCache cssPurgeHTMLFileCache,
+	used *csspurge.UsedSelectors,
+	fileSelectors map[string]cssPurgeHTMLFileSelectors,
+) (fingerprint htmlFingerprintSummary, toParse []string, reused int, ok bool) {
+	fingerprint = htmlFingerprintSummary{fileHashes: make(map[string]string), identities: make(map[string]fileidentity.Identity), ok: true}
+	if len(changedFiles) > 0 {
+		fingerprint = fingerprintHTMLFiles(changedFiles, outputDir, concurrency)
+		if !fingerprint.ok {
+			return fingerprint, nil, 0, false
+		}
+	}
+
+	toParse = make([]string, 0, len(changedFiles))
+	for _, path := range changedFiles {
+		relative, err := filepath.Rel(outputDir, path)
+		if err != nil || !filepath.IsLocal(relative) {
+			return fingerprint, nil, reused, false
+		}
+		relative = filepath.ToSlash(relative)
+		contentHash := fingerprint.fileHashes[relative]
+		if previous, ok := fileCache.Files[relative]; ok && previous.ContentHash == contentHash {
+			fileSelectors[relative] = previous
+			used.Merge(previous.Selectors.toUsedSelectors())
+			reused++
+			continue
+		}
+		toParse = append(toParse, path)
+	}
+	return fingerprint, toParse, reused, true
+}
+
+func mergeParsedCSSPurgeSelectors(
+	parsed map[string]*csspurge.UsedSelectors,
+	outputDir string,
+	expectedHashes map[string]string,
+	fileSelectors map[string]cssPurgeHTMLFileSelectors,
+	used *csspurge.UsedSelectors,
+) error {
+	for path, selectors := range parsed {
+		relative, err := filepath.Rel(outputDir, path)
+		if err != nil || !filepath.IsLocal(relative) {
+			return fmt.Errorf("invalid HTML path %s", path)
+		}
+		relative = filepath.ToSlash(relative)
+		fileSelectors[relative] = sealCSSPurgeHTMLFileSelectors(cssPurgeHTMLFileSelectors{
+			ContentHash: expectedHashes[relative],
+			Selectors:   cssPurgeCachedSelectorsFromUsed(selectors),
+		})
+		used.Merge(selectors)
+	}
+	return nil
+}
+
+func cssPurgeIdentitiesAfterFingerprint(
+	outputDir string,
+	currentIdentities map[string]fileidentity.Identity,
+	changedFiles []string,
+	fingerprintedIdentities map[string]fileidentity.Identity,
+) (map[string]fileidentity.Identity, bool) {
+	identities := make(map[string]fileidentity.Identity, len(currentIdentities))
+	for relative, identity := range currentIdentities {
+		identities[relative] = identity
+	}
+	for _, path := range changedFiles {
+		relative, err := filepath.Rel(outputDir, path)
+		if err != nil || !filepath.IsLocal(relative) {
+			return nil, false
+		}
+		delete(identities, filepath.ToSlash(relative))
+	}
+	for relative, identity := range fingerprintedIdentities {
+		identities[relative] = identity
+	}
+	if len(identities) == 0 {
+		return nil, true
+	}
+	return identities, true
 }
 
 const cssPurgeHTMLCacheSchema = 4
