@@ -20,6 +20,10 @@ read `topics/visualize-session.md` for the create, serve, and open workflow.
 An explicit source-only or single-file request takes precedence over automatic preview.
 Ordinary chart, diagram, and styling requests use the relevant authoring topics without automatically starting a server.
 
+## New-site or bring-your-own-agent setup
+
+For new-site setup and portable agent handoff, first read `topics/first-setup.md`. The `markata --skill` CLI prints that same version-matched standalone guide without installing anything.
+
 ## Start Here
 
 Before making changes:
