@@ -490,7 +490,9 @@
     }
 
     function openDialog(mode, scene, target) {
-      active = {mode,target};
+      // Retain the launcher before showModal moves focus into the canvas.
+      const opener = document.activeElement === document.body ? button : document.activeElement;
+      active = {mode,target,opener};
       title.textContent = mode === 'edit' ? 'Edit drawing' : 'New drawing';
       hint.textContent = mode === 'edit'
         ? 'Changes stay in this draft until you apply.'
@@ -632,6 +634,8 @@
     applyButton.addEventListener('click',() => apply(false));
     applyAsButton.addEventListener('click',() => apply(true));
     dialog.addEventListener('close',() => {
+      const opener = active?.opener;
+      const applied = dialog.returnValue === 'apply';
       canvas?.destroy();
       canvas = null;
       active = null;
@@ -643,11 +647,17 @@
       applyAsButton.hidden = true;
       applyButton.disabled = false;
       applyAsButton.disabled = false;
-      // Closing a modal restores its opener natively. Do not steal focus
-      // from a fence control after Cancel (the close event is asynchronous).
-      if (dialog.returnValue === 'apply') {
+      // CodeMirror may asynchronously reclaim focus when the modal closes.
+      // On Cancel, restore the actual launcher's focus after its cleanup;
+      // on Apply, return to the Markdown editor with the new drawing.
+      if (applied) {
         editor.refresh();
         editor.focus();
+      } else {
+        window.requestAnimationFrame(() => {
+          if (opener?.isConnected) opener.focus({preventScroll:true});
+          else if (!button.disabled) button.focus({preventScroll:true});
+        });
       }
       updateButton();
     });
