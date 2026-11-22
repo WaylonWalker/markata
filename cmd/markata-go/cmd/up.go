@@ -140,7 +140,7 @@ func upGlobalArgs(workspace string) ([]string, error) {
 
 func checkUpPorts(services []upService) error {
 	for _, service := range services {
-		host, port, err := net.SplitHostPort(service.url[len("http://"):len(service.url)-1])
+		host, port, err := net.SplitHostPort(service.url[len("http://") : len(service.url)-1])
 		if err != nil {
 			return err
 		}
