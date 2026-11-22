@@ -364,11 +364,8 @@
         renderFence(record,record.fence);
         window.requestAnimationFrame(() => record.toggleButton?.focus());
       });
-      toggle.addEventListener('keydown', event => {
-        if (event.repeat || (event.key !== ' ' && event.code !== 'Space')) return;
-        event.preventDefault();
-        toggle.click();
-      });
+      // Native button activation handles Enter and Space. Synthesizing a click
+      // on keydown replaces the focused button before the key is released.
       root.addEventListener('mousedown',event => event.stopPropagation());
       root.addEventListener('click',event => event.stopPropagation());
       root.addEventListener('keydown',event => event.stopPropagation());
@@ -636,7 +633,9 @@
       applyAsButton.hidden = true;
       applyButton.disabled = false;
       applyAsButton.disabled = false;
-      editor.focus();
+      // Closing a modal restores its opener natively. Do not steal focus
+      // from a fence control after Cancel (the close event is asynchronous).
+      if (dialog.returnValue === 'apply') editor.focus();
       editor.refresh();
       updateButton();
     });
