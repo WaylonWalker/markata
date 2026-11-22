@@ -161,6 +161,12 @@ Profiling:
 }
 
 func runRootCommand(cmd *cobra.Command, args []string) error {
+	if rootSkillRequested {
+		if len(args) != 0 {
+			return fmt.Errorf("--skill does not accept file arguments")
+		}
+		return printFirstRunSkill(cmd.OutOrStdout())
+	}
 	if len(args) == 0 {
 		return cmd.Help()
 	}
