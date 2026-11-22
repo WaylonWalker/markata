@@ -96,6 +96,11 @@ Profiling:
 	RunE: runRootCommand,
 	PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 		currentCmd = cmd
+		// The agent handoff is a fast, read-only introspection command. Do not
+		// load a workspace, execute config/plugin setup or require a valid site.
+		if cmd == rootCmd && rootSkillRequested {
+			return nil
+		}
 		if cmd.Flags().Lookup("dag") != nil {
 			if err := validateDAGEnvironment(cmd); err != nil {
 				return err
