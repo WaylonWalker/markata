@@ -340,6 +340,8 @@
     }
 
     function wireFenceControls(root, record, expanded) {
+      // Identify the live control even if CodeMirror replaces its widget DOM.
+      root.dataset.excalidrawFenceId = String(record.id);
       const label = document.createElement('span');
       label.className = 'excalidraw-fence-controls__label';
       label.textContent = `Excalidraw · ${record.summary}`;
@@ -367,7 +369,7 @@
       // CodeMirror fence widgets can lose button focus between Space down and
       // Space up. Activate on keydown and cancel the native key action so no
       // space is inserted into the Markdown or a second click is dispatched.
-      root.setAttribute('data-cm-ignore-events','true');
+      root.setAttribute('cm-ignore-events','true');
       toggle.addEventListener('keydown', event => {
         if (event.key !== ' ' && event.code !== 'Space') return;
         event.preventDefault();
@@ -661,7 +663,10 @@
           if (launcherRecord) {
             const currentRecord = fenceRecords.get(launcherRecord.id) ||
               [...fenceRecords.values()].find(record => record.fence.line === launcherRecord.fence.line);
-            launcher = currentRecord?.editButton || opener;
+            const liveButton = currentRecord && document.querySelector(
+              `[data-excalidraw-fence-id="${currentRecord.id}"] .excalidraw-fence-controls__button--edit`
+            );
+            launcher = liveButton || currentRecord?.editButton || opener;
           }
           if (launcher?.isConnected && !launcher.disabled) launcher.focus({preventScroll:true});
           else if (!button.disabled) button.focus({preventScroll:true});
