@@ -73,7 +73,7 @@ func TestSetupRejectsFileAsWorkspace(t *testing.T) {
 
 func TestSetupRejectsUndiscoverableConfig(t *testing.T) {
 	workspace := t.TempDir()
-	if err := os.WriteFile(filepath.Join(workspace, "markata.toml"), []byte("title = \"Existing\"\n"), 0o600); err != nil {
+	if err := os.WriteFile(filepath.Join(workspace, setupAlternateTOML), []byte("title = \"Existing\"\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	err := runSetupCommand(&cobra.Command{}, []string{workspace})
