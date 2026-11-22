@@ -34,7 +34,7 @@ var (
 var upCmd = &cobra.Command{
 	Use:   "up",
 	Short: "Start the editor and live site builder together",
-	Long: "Start the Markdown editor immediately and the live-reloading site builder alongside it. Both listen on loopback; publishing remains an explicit action. Ctrl+C stops both processes. Background service management will be added separately.",
+	Long:  "Start the Markdown editor immediately and the live-reloading site builder alongside it. Both listen on loopback; publishing remains an explicit action. Ctrl+C stops both processes. Background service management will be added separately.",
 	Args:  cobra.NoArgs,
 	RunE:  runUpCommand,
 }
