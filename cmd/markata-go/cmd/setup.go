@@ -44,7 +44,7 @@ func runSetupCommand(cmd *cobra.Command, args []string) error {
 	}
 
 	// Respect recognized legacy config filenames; never overwrite existing sites.
-	configNames := []string{"markata-go.toml", "markata.toml", "markata-go.yaml", "markata-go.yml", "markata-go.json", "markata.yaml", "markata.yml", "markata.json"}
+	configNames := []string{"markata-go.toml", "markata-go.yaml", "markata-go.yml", "markata-go.json"}
 	existing := ""
 	for _, name := range configNames {
 		candidate := filepath.Join(abs, name)
@@ -56,6 +56,16 @@ func runSetupCommand(cmd *cobra.Command, args []string) error {
 		}
 	}
 	if existing == "" {
+		// Alternate filenames are not currently auto-discovered by Markata.
+		// Do not silently create a second configuration beside one of them.
+		for _, name := range []string{"markata.toml", "markata.yaml", "markata.yml", "markata.json"} {
+			candidate := filepath.Join(abs, name)
+			if _, err := os.Stat(candidate); err == nil {
+				return fmt.Errorf("found %s, which Markata does not automatically discover; rename it to markata-go.toml (or pass --config explicitly)", candidate)
+			} else if !os.IsNotExist(err) {
+				return fmt.Errorf("inspect configuration %s: %w", candidate, err)
+			}
+		}
 		target := filepath.Join(abs, defaultConfigFilename)
 		f, err := os.OpenFile(target, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
 		if err != nil {
