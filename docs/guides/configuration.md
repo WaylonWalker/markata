@@ -674,16 +674,26 @@ custom `preserve` list, include `"md-code-*"` alongside your own patterns;
 custom lists replace, rather than extend, the defaults.
  The purge logic always preserves key @-rules and keeps
 pseudo-only selectors like `:root` or `::selection` to avoid dropping base/theme styles.
-Full builds cache the discovered selector set and purged CSS under
-`.markata-cache/css-purge` in the content directory. The selector cache checks a content
-fingerprint of generated HTML paths and bytes. Purged CSS is reused only when stylesheet
-bytes, discovered selectors, and purge options match. Missing or invalid cache entries
-fall back to the normal scan or purge path.
+Full builds cache discovered selectors and purged CSS under
+`.markata-cache/css-purge` in the content directory. The selector cache checks exact content
+hashes for generated HTML paths and bytes. If one page changes, the cache reuses selector
+data for unchanged pages and scans only new or changed pages. Removed pages are removed from
+the selector set. Purged CSS is reused only when stylesheet bytes, discovered selectors, and
+purge options match. Missing or invalid cache entries fall back to the normal scan or purge
+path. If Markata cannot scan every HTML file, it stops CSS purging so it cannot remove rules
+used by an unread page. The output tree must stay unchanged while cleanup scans it; concurrent
+writers are not supported. If a changed page differs from its hashed snapshot, CSS purging
+aborts.
 
-On Linux filesystems with verified file identities, a warm build can reuse the selector
-set without reading unchanged HTML again. Added, removed, replaced, or unstable files use
-the full content check. Other filesystems keep the full content check on every build.
-Look for `mode=identity` and `bytes_read=0` in the build log to confirm this fast path ran.
+On Linux filesystems with verified file identities, a warm build can reuse the complete
+selector set without reading unchanged HTML again. If identities do not match, exact content
+hashes remain authoritative; matching per-file hashes reuse their selectors without parsing
+those pages again. Added, removed, replaced, or unstable files are checked against exact
+content. A partial scan still hashes every HTML file, then parses new or changed pages a
+second time. The `reused` count means cached selector sets; it does not mean those HTML bytes
+were skipped during hashing. Other filesystems keep the full content check on every build.
+Look for `mode=identity` and `bytes_hashed=0` in the build log to confirm the identity fast
+path ran.
 
 On Linux, Markata can reuse a previous check of final stylesheet links in
 unchanged HTML. A new stylesheet digest or a changed HTML file causes a new
