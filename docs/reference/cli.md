@@ -60,6 +60,24 @@ markata-go build pages/sample.md
 markata-go serve pages/sample.md
 ```
 
+## Optional workspace bootstrap: `setup`
+
+`markata setup [workspace]` creates a default site configuration only when
+the target directory lacks an existing supported config. Rerunning it on a
+configured workspace preserves that configuration without overwriting it.
+
+```sh
+markata setup my-site
+cd my-site
+markata editor
+markata serve
+```
+
+The command prints immediate next steps and does **not** install an agent,
+choose a deployment provider, publish, or start a background server. It can
+run noninteractively; users who prefer an agent-defined setup should run
+`markata --skill` once that feature is installed.
+
 ## Agent-assisted troubleshooting: `triage`
 
 `markata triage` collects a small, privacy-conscious diagnostic summary and passes a troubleshooting prompt to an interactive coding agent, clipboard, or stdout. The default is a fuzzy picker of **detected installed** coding agents plus clipboard and stdout. When either terminal stream is redirected or `--no-input` is used, it prints **only the Markdown prompt** to stdout.
