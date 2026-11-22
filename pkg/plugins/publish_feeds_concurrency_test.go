@@ -2,6 +2,8 @@ package plugins
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -58,6 +60,13 @@ func TestPublishFeeds_ConcurrentHTMLRenderingSharesPosts(t *testing.T) {
 
 	if err := NewPublishFeedsPlugin().Write(m); err != nil {
 		t.Fatalf("Write() error = %v", err)
+	}
+	page, err := os.ReadFile(filepath.Join(outputDir, "feed-00", "index.html"))
+	if err != nil {
+		t.Fatalf("reading rendered feed page: %v", err)
+	}
+	if len(page) == 0 {
+		t.Fatal("rendered feed page is empty")
 	}
 }
 
