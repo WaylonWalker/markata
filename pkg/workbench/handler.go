@@ -103,6 +103,7 @@ type Handler struct {
 	lastResult       *plugins.StandaloneResult
 	hostedAuth       *hostedAuth
 	gitPublisher     GitPublisher
+	dropperUploader  DropperUploader
 }
 
 // New builds immutable appearance assets once. Reuse the handler for all requests.
@@ -117,6 +118,14 @@ func NewWithWorkspace(ctx context.Context, root string) (*Handler, error) {
 // and delegates hosted remote Git operations to publisher. Cancel ctx on
 // shutdown. A nil publisher preserves direct local Git behavior.
 func NewWithWorkspaceAndGitPublisher(ctx context.Context, root string, publisher GitPublisher) (*Handler, error) {
+	return NewWithWorkspaceAndGitPublisherAndDropperUploader(ctx, root, publisher, nil)
+}
+
+// NewWithWorkspaceAndGitPublisherAndDropperUploader enables LSP for a
+// server-selected workspace, delegates hosted remote Git operations to
+// publisher, and delegates hosted Dropper uploads to uploader. Nil services
+// preserve the local editor's direct behavior. Cancel ctx on shutdown.
+func NewWithWorkspaceAndGitPublisherAndDropperUploader(ctx context.Context, root string, publisher GitPublisher, uploader DropperUploader) (*Handler, error) {
 	started := time.Now()
 	workspace, err := editorworkspace.Open(ctx, root)
 	if err != nil {
@@ -142,6 +151,7 @@ func NewWithWorkspaceAndGitPublisher(ctx context.Context, root string, publisher
 	handler.store = workspace
 	handler.configRevision = revision
 	handler.gitPublisher = publisher
+	handler.dropperUploader = uploader
 	go func() {
 		service, err := lsp.NewWebSocketHandlerWithIndexAndOriginCheck(ctx, root, log.Default(), workspace.Snapshot, handler.validLSPOrigin)
 		if err != nil {
@@ -762,7 +772,7 @@ func (h *Handler) imageUploadProvider() string {
 	case imageUploadModeDropper:
 		return imageUploadModeDropper
 	case imageUploadModeAuto:
-		if strings.TrimSpace(os.Getenv("DROPPER_TOKEN")) != "" {
+		if h.dropperUploader != nil || strings.TrimSpace(os.Getenv("DROPPER_TOKEN")) != "" {
 			return imageUploadModeDropper
 		}
 		return imageUploadModeLocal
@@ -791,43 +801,14 @@ func (h *Handler) currentSiteConfig() *models.Config {
 }
 
 func (h *Handler) uploadImageToDropper(ctx context.Context, filename, contentType string, data []byte) (string, error) {
+	if h.dropperUploader != nil {
+		return h.dropperUploader.Upload(ctx, filename, contentType, data)
+	}
 	token := strings.TrimSpace(os.Getenv("DROPPER_TOKEN"))
 	if token == "" {
 		return "", fmt.Errorf("dropper uploads require the server-side DROPPER_TOKEN")
 	}
-	endpoint := h.dropperUploadEndpoint()
-	if err := validateDropperUploadEndpoint(endpoint); err != nil {
-		return "", err
-	}
-	payload, formContentType, err := dropperUploadPayload(filename, contentType, data)
-	if err != nil {
-		return "", err
-	}
-	request, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, &payload)
-	if err != nil {
-		return "", fmt.Errorf("create dropper request: %w", err)
-	}
-	request.Header.Set("Authorization", "Bearer "+token)
-	request.Header.Set("Content-Type", formContentType)
-	client := &http.Client{
-		Timeout: 30 * time.Second,
-		CheckRedirect: func(request *http.Request, via []*http.Request) error {
-			if len(via) > 0 && !strings.EqualFold(request.URL.Host, via[0].URL.Host) {
-				return http.ErrUseLastResponse
-			}
-			return nil
-		},
-	}
-	response, err := client.Do(request)
-	if err != nil {
-		return "", fmt.Errorf("dropper upload request failed: %w", err)
-	}
-	defer response.Body.Close()
-	responseBody, err := io.ReadAll(io.LimitReader(response.Body, 1<<20))
-	if err != nil {
-		return "", fmt.Errorf("read Dropper response: %w", err)
-	}
-	return dropperUploadResponseURL(response.StatusCode, response.Status, responseBody)
+	return uploadImageToDropper(ctx, h.dropperUploadEndpoint(), token, filename, contentType, data)
 }
 
 func validateDropperUploadEndpoint(endpoint string) error {
@@ -859,11 +840,7 @@ func dropperUploadPayload(filename, contentType string, data []byte) (bytes.Buff
 
 func dropperUploadResponseURL(statusCode int, status string, responseBody []byte) (string, error) {
 	if statusCode < 200 || statusCode >= 300 {
-		message := strings.TrimSpace(string(responseBody))
-		if len(message) > 500 {
-			message = message[:500]
-		}
-		return "", fmt.Errorf("dropper upload failed (%s): %s", status, message)
+		return "", fmt.Errorf("dropper upload failed (%s)", status)
 	}
 	var result struct {
 		URL string `json:"url"`
@@ -871,11 +848,7 @@ func dropperUploadResponseURL(statusCode int, status string, responseBody []byte
 	if err := json.Unmarshal(responseBody, &result); err != nil {
 		return "", fmt.Errorf("dropper returned invalid JSON: %w", err)
 	}
-	imageURL, err := url.ParseRequestURI(result.URL)
-	if err != nil || imageURL.Host == "" || imageURL.User != nil || imageURL.Scheme != "https" && !(imageURL.Scheme == "http" && isLoopbackHost(imageURL.Hostname())) {
-		return "", fmt.Errorf("dropper returned an invalid image URL")
-	}
-	return imageURL.String(), nil
+	return validatedDropperImageURL(result.URL)
 }
 
 func isLoopbackHost(host string) bool {
@@ -1282,7 +1255,7 @@ func (h *Handler) serveWorkspaceDropperUpload(w http.ResponseWriter, r *http.Req
 		fail(w, http.StatusConflict, "Dropper image uploads are not enabled for this site")
 		return
 	}
-	if strings.TrimSpace(os.Getenv("DROPPER_TOKEN")) == "" {
+	if h.dropperUploader == nil && strings.TrimSpace(os.Getenv("DROPPER_TOKEN")) == "" {
 		fail(w, http.StatusServiceUnavailable, "Dropper uploads are not configured on this server")
 		return
 	}

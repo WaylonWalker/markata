@@ -17,6 +17,11 @@
 {{- $gitBranch := .Values.builderAdmin.editor.gitAuth.branch | default .Values.builderAdmin.sourceGit.branch }}
 {{- $_ := required "builderAdmin.editor.gitAuth.repository or builderAdmin.sourceGit.repository is required when the hosted editor is enabled" $gitRepository }}
 {{- $_ := required "builderAdmin.editor.gitAuth.branch or builderAdmin.sourceGit.branch is required when the hosted editor is enabled" $gitBranch }}
+{{- if .Values.builderAdmin.editor.dropperUploader.enabled }}
+{{- $_ := required "builderAdmin.editor.dropperUploader.existingSecretName is required when Dropper uploads are enabled" .Values.builderAdmin.editor.dropperUploader.existingSecretName }}
+{{- $_ := required "builderAdmin.editor.dropperUploader.tokenKey is required when Dropper uploads are enabled" .Values.builderAdmin.editor.dropperUploader.tokenKey }}
+{{- $_ := required "builderAdmin.editor.dropperUploader.endpoint is required when Dropper uploads are enabled" .Values.builderAdmin.editor.dropperUploader.endpoint }}
+{{- end }}
 {{- $namespace := include "markata-notes.namespace" . }}
 {{- $name := printf "%s-notes-editor" .Values.project_identifier }}
 apiVersion: v1
