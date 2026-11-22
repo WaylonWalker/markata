@@ -94,7 +94,11 @@ behavior. `Ctrl+V` MUST retain Vim's blockwise visual-selection behavior.
 for same-origin loopback workspace requests. It MUST enforce the existing
 15 MiB limit and verify that the declared MIME type matches PNG, JPEG, GIF, or
 WebP image data before contacting Dropper. Dropper credentials MUST remain
-server-side. Uploads MUST be disabled when the effective
+outside the browser and the hosted workbench process. A hosted workbench MAY
+delegate uploads to a credential-bearing broker over a Unix domain socket; the
+broker MUST accept only validated image uploads and MUST use one configured
+Dropper upload endpoint. Local workbenches MAY use a server-side
+`DROPPER_TOKEN`. Uploads MUST be disabled when the effective
 `content_templates.image_upload` provider is `local`. A successful response
 MUST return the validated Dropper image URL. It MUST NOT write a workspace file.
 

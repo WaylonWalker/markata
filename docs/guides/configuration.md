@@ -2079,11 +2079,13 @@ servings = 4
 ```
 
 In `auto` mode, the workbench uploads pasted, dropped, or selected images to
-Dropper when the server has `DROPPER_TOKEN`; otherwise it saves them under
-`static/images/`. Use `local` or `dropper` to select a provider explicitly.
-The token stays in the server environment or site `.env` and is never sent to
-the browser. Set `dropper_upload_url` or `DROPPER_API_URL` when the upload API
-endpoint differs from the default.
+Dropper when it has a configured uploader or server-side `DROPPER_TOKEN`;
+otherwise it saves them under `static/images/`. Use `local` or `dropper` to
+select a provider explicitly. The token is never sent to the browser. For
+hosted deployments, configure the chart's `builderAdmin.editor.dropperUploader`
+sidecar so the editor process does not receive the token. Local workbenches can
+use the server environment or site `.env`. Set `dropper_upload_url` or
+`DROPPER_API_URL` when the upload API endpoint differs from the default.
 
 The workbench's new-post form lets you override the folder and filename mode
 for one post. Keep **Remember folder and file name style for this post type**

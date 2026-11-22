@@ -131,6 +131,45 @@ func TestWorkspaceDropperUpload_RequiresDropperProvider(t *testing.T) {
 	}
 }
 
+func TestWorkspaceDropperUpload_UsesCredentialIsolatedUploader(t *testing.T) {
+	t.Setenv("DROPPER_TOKEN", "")
+	uploader := &fakeDropperUploader{url: "https://dropper.example.com/file/pasted.png"}
+	h := newHandler(t)
+	h.store = nil
+	h.dropperUploader = uploader
+	h.siteConfig = &models.Config{ContentTemplates: models.ContentTemplatesConfig{ImageUpload: imageUploadModeAuto}}
+
+	if got := h.imageUploadProvider(); got != imageUploadModeDropper {
+		t.Fatalf("auto provider = %q, want %q", got, imageUploadModeDropper)
+	}
+	response := postWorkspaceImage(t, h, testPastePNG, "image/png", "http://localhost")
+	if response.Code != http.StatusCreated {
+		t.Fatalf("upload returned %d: %s", response.Code, response.Body.String())
+	}
+	if uploader.calls != 1 || uploader.filename == "" || uploader.contentType != "image/png" || !bytes.Equal(uploader.data, testPastePNG) {
+		t.Fatalf("isolated uploader received calls=%d filename=%q contentType=%q data=%x", uploader.calls, uploader.filename, uploader.contentType, uploader.data)
+	}
+	if strings.Contains(response.Body.String(), "test-dropper-token") {
+		t.Fatal("Dropper token leaked in the workbench response")
+	}
+}
+
+type fakeDropperUploader struct {
+	calls       int
+	filename    string
+	contentType string
+	data        []byte
+	url         string
+}
+
+func (u *fakeDropperUploader) Upload(_ context.Context, filename, contentType string, data []byte) (string, error) {
+	u.calls++
+	u.filename = filename
+	u.contentType = contentType
+	u.data = append([]byte(nil), data...)
+	return u.url, nil
+}
+
 func postWorkspaceImage(t *testing.T, h *Handler, image []byte, contentType, origin string) *httptest.ResponseRecorder {
 	t.Helper()
 	var body bytes.Buffer

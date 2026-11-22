@@ -97,6 +97,23 @@ accepts requests only over a local Unix socket. The editor has no private-key
 mount, SSH command, or agent socket; it continues to require the authenticated
 review, commit, and push flow.
 
+Hosted deployments can enable `builderAdmin.editor.dropperUploader` and point
+it at a namespace-scoped Secret containing the Dropper token. The chart runs a
+separate uploader sidecar that exposes only validated image uploads over a Unix
+socket. Only that sidecar receives the token; the editor container and browser
+do not. The broker accepts PNG, JPEG, GIF, and WebP images up to 15 MiB and
+forwards them to its fixed Dropper upload endpoint. Configure the chart values:
+
+```yaml
+builderAdmin:
+  editor:
+    dropperUploader:
+      enabled: true
+      existingSecretName: markata-editor-dropper
+      tokenKey: token
+      endpoint: https://dropper.waylonwalker.com/api/upload?format=json
+```
+
 Use the [Excalidraw canvas](excalidraw-editor.md) to create and edit drawings
 inside a Markdown page.
 
@@ -106,8 +123,9 @@ When the site's effective `content_templates.image_upload` setting uses
 Dropper, paste a PNG, JPEG, GIF, or WebP image into the Markdown editor. The
 workbench places an **Uploading image…** marker at the cursor while it uploads,
 then replaces that marker with an image link such as `![image](https://…)`.
-The server uses `DROPPER_TOKEN`; the browser does not receive the token. The
-upload limit is 15 MiB.
+The workbench uses a server-side Dropper credential; the browser never receives
+it. In hosted deployments, the credential stays in the uploader sidecar and is
+not available to the editor process. The upload limit is 15 MiB.
 
 Paste while the Markdown editor has focus. If the browser reports image data but
 does not make the image bytes available, the workbench shows an error in the
