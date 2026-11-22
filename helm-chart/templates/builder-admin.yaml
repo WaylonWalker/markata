@@ -166,7 +166,7 @@ spec:
             - /bin/sh
             - -ceu
           args:
-            - install -m 0400 /run/markata-git-secret/id_ed25519 /run/markata-git/id_ed25519 && chown 65534:1000 /run/markata-git/id_ed25519{{- if .Values.builderAdmin.editor.dropperUploader.enabled }} && chown 65534:1000 /run/markata-dropper && chmod 0770 /run/markata-dropper{{- end }}
+            - install -m 0400 /run/markata-git-secret/id_ed25519 /run/markata-git/id_ed25519 && chown 65534:1000 /run/markata-git/id_ed25519{{- if .Values.builderAdmin.editor.dropperUploader.enabled }} && chmod 0770 /run/markata-dropper && chown 65534:1000 /run/markata-dropper{{- end }}
           resources:
             requests:
               cpu: 10m
