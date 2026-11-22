@@ -1,3 +1,11 @@
+---
+title: "Verify reproducible Markata builds"
+description: "Compare generated static sites by SHA-256 and understand what deterministic output proves."
+date: 2026-11-22
+published: true
+tags: [documentation, building, reproducibility]
+---
+
 # Reproducible build verification
 
 Markata generates static site artifacts that you can deploy anywhere. To **prove
