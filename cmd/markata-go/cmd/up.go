@@ -196,7 +196,10 @@ func superviseUp(ctx context.Context, executable, workspace string, globalArgs [
 	running := make(map[string]*exec.Cmd, len(services))
 	for _, service := range services {
 		//nolint:gosec // executable is os.Executable; service args come from fixed, validated CLI subcommands.
-		child := exec.Command(executable, append(append([]string(nil), globalArgs...), service.args...)...)
+		// The supervisor owns shutdown, so the child process must not be
+		// killed by automatic context cancellation before its signal handler
+		// has a chance to flush state and close listeners.
+		child := exec.CommandContext(context.WithoutCancel(ctx), executable, append(append([]string(nil), globalArgs...), service.args...)...)
 		child.Dir = workspace
 		child.Stdout = stdout
 		child.Stderr = stderr
