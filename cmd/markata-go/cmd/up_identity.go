@@ -161,4 +161,3 @@ func findExistingUpServices(ctx context.Context, services []upService, workspace
 	}
 	return newServices, reused, nil
 }
-
