@@ -30,7 +30,7 @@ var (
 	upPreviewPort = upDefaultPreviewPort
 	upEditorOnly  bool
 	upBuilderOnly bool
-	upStrictPorts  bool
+	upStrictPorts bool
 )
 
 // up starts the existing Go editor and site builder in independent child
