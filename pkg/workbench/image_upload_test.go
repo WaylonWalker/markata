@@ -211,8 +211,8 @@ func TestNewPost_DropperMultiRejectsBeforeUploading(t *testing.T) {
 	var body bytes.Buffer
 	form := multipart.NewWriter(&body)
 	for name, value := range map[string]string{
-		"path": "posts/shared.md",
-		"source": "---\ntitle: Shared photos\n---\n",
+		"path":       "posts/shared.md",
+		"source":     "---\ntitle: Shared photos\n---\n",
 		"image_name": "shared",
 	} {
 		if err := form.WriteField(name, value); err != nil {
