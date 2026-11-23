@@ -13,10 +13,10 @@ import (
 )
 
 const (
-	pwaImageType       = "image/png"
-	pwaIcon512Path     = "/pwa-icon-512.png"
-	pwaSharePhotosField  = "images"
-	pwaGalleryFlagTrue = "true"
+	pwaImageType        = "image/png"
+	pwaIcon512Path      = "/pwa-icon-512.png"
+	pwaSharePhotosField = "images"
+	pwaGalleryFlagTrue  = "true"
 )
 
 var pwaIconBytes = []byte(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
