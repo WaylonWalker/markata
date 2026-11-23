@@ -161,7 +161,7 @@ func TestHandler_PWAManifestAndFlowsServed(t *testing.T) {
 		size int
 	}{
 		{"/pwa-icon-192.png", 192},
-		{pwaIcon512Path, 512},
+		{"/pwa-icon-512.png", 512},
 	} {
 		response := httptest.NewRecorder()
 		h.ServeHTTP(response, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost"+tc.path, http.NoBody))

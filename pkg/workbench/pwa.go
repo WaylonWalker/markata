@@ -14,7 +14,6 @@ import (
 
 const (
 	pwaImageType        = "image/png"
-	pwaIcon512Path      = "/pwa-icon-512.png"
 	pwaSharePhotosField = "images"
 	pwaGalleryFlagTrue  = "true"
 )
@@ -95,7 +94,7 @@ func (h *Handler) handlePWARasterIcon(w http.ResponseWriter, r *http.Request) {
 		pwaRasterIcons = map[int][]byte{192: pwaRasterPNG(192), 512: pwaRasterPNG(512)}
 	})
 	size := 192
-	if r.URL.Path == pwaIcon512Path {
+	if r.URL.Path == "/pwa-icon-512.png" {
 		size = 512
 	}
 	data := pwaRasterIcons[size]
@@ -286,7 +285,7 @@ func (h *Handler) handlePWAManifest(w http.ResponseWriter, r *http.Request) {
 		ThemeColor:      "#0f172a",
 		Icons: []pwaIcon{
 			{Src: "/pwa-icon-192.png", Sizes: "192x192", Type: pwaImageType, Purpose: "any"},
-			{Src: pwaIcon512Path, Sizes: "512x512", Type: pwaImageType, Purpose: "any maskable"},
+			{Src: "/pwa-icon-512.png", Sizes: "512x512", Type: pwaImageType, Purpose: "any maskable"},
 			{Src: "/pwa-icon.svg", Sizes: "any", Type: "image/svg+xml", Purpose: "any maskable"},
 		},
 		Shortcuts: []pwaShortcut{
