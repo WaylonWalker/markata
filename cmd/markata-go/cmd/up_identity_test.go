@@ -36,7 +36,11 @@ func TestUpIdentityIsLocalAndDoesNotExposeWorkspacePath(t *testing.T) {
 	}
 	server := httptest.NewServer(withUpIdentity(http.NotFoundHandler(), upServiceEditor, workspace))
 	defer server.Close()
-	response, err := http.Get(server.URL + upIdentityPath) //nolint:gosec // Local test listener
+	request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, server.URL+upIdentityPath, http.NoBody)
+	if err != nil {
+		t.Fatal(err)
+	}
+	response, err := http.DefaultClient.Do(request)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -51,7 +55,7 @@ func TestUpIdentityIsLocalAndDoesNotExposeWorkspacePath(t *testing.T) {
 	if strings.Contains(value.Workspace, workspace) {
 		t.Fatal("identity response must not expose local directory name")
 	}
-	remote := httptest.NewRequest(http.MethodGet, "http://other.invalid"+upIdentityPath, nil)
+	remote := httptest.NewRequest(http.MethodGet, "http://other.invalid"+upIdentityPath, http.NoBody)
 	remote.RemoteAddr = "127.0.0.1:48888"
 	writer := httptest.NewRecorder()
 	withUpIdentity(http.NotFoundHandler(), upServiceEditor, workspace).ServeHTTP(writer, remote)
@@ -154,7 +158,9 @@ func TestUpDoesNotTrustUnidentifiedLocalWebServer(t *testing.T) {
 			http.Redirect(w, r, "https://example.com/secret", http.StatusFound)
 			return
 		}
-		_, _ = io.WriteString(w, "<html>unrelated app</html>")
+		if _, err := io.WriteString(w, "<html>unrelated app</html>"); err != nil {
+			t.Errorf("write unrelated test response: %v", err)
+		}
 	}))
 	defer server.Close()
 	parsed, err := url.Parse(server.URL)
@@ -171,7 +177,7 @@ func TestUpDoesNotTrustUnidentifiedLocalWebServer(t *testing.T) {
 }
 
 func TestUpIdentityOnlyUsesLoopback(t *testing.T) {
-	r := httptest.NewRequest(http.MethodGet, "http://127.0.0.1:8766/", nil)
+	r := httptest.NewRequest(http.MethodGet, "http://127.0.0.1:8766/", http.NoBody)
 	r.RemoteAddr = net.JoinHostPort("127.0.0.1", "42345")
 	if !upIsLoopbackRequest(r) {
 		t.Fatal("expected loopback request")
