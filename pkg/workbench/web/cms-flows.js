@@ -40,6 +40,61 @@
     }));
   }
 
+  const PENDING_PUBLISH_KEY = 'markata-pending-capture-publish-v1';
+
+  // The shipped site-tree bundle only opens files already in its initial index.
+  // After creating a new file, persist the selection and reload that index.
+  // Never assume an optional .refresh() method exists.
+  async function activateSavedPost(path, shouldPublish = false) {
+    const tree = window.MarkataSiteTree;
+    if (!tree?.activeFile || !tree?.activate || !tree?.openFile) {
+      throw new Error('Editor file navigation is not available. Your note is saved; reload to open it.');
+    }
+    if (shouldPublish) {
+      sessionStorage.setItem(PENDING_PUBLISH_KEY, JSON.stringify({ path, at: Date.now() }));
+    }
+    if ((tree.files?.() || []).some((file) => file.path === path)) {
+      await tree.openFile(path);
+      if (tree.activeFile() === path) {
+        if (shouldPublish) {
+          sessionStorage.removeItem(PENDING_PUBLISH_KEY);
+          await window.MarkataPublishReview?.quickPublish?.();
+        }
+        return true;
+      }
+    }
+    tree.activate(path);
+    location.reload();
+    return false;
+  }
+
+  async function resumeCapturedPublish() {
+    const raw = sessionStorage.getItem(PENDING_PUBLISH_KEY);
+    if (!raw) return;
+    sessionStorage.removeItem(PENDING_PUBLISH_KEY);
+    let request;
+    try { request = JSON.parse(raw); } catch { return; }
+    if (!request?.path || Date.now() - request.at > 60000) return;
+    // Wait for the site-tree async attach to select the requested file.
+    for (let attempt = 0; attempt < 60; attempt++) {
+      const tree = window.MarkataSiteTree;
+      if (tree?.activeFile?.() === request.path) {
+        const response = await fetch('/workspace/file?path=' + encodeURIComponent(request.path), { cache: 'no-store' });
+        if (!response.ok) break;
+        const disk = await response.json();
+        const editor = getEditor();
+        if (!editor || editor.getValue() !== disk.source) break;
+        await window.MarkataPublishReview?.quickPublish?.();
+        return;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    toast('Note saved, but automatic publishing was stopped because the new file could not be verified.', 'warning');
+  }
+  // Run only after workspace initialization; the publish action is bound to
+  // the verified active file, never whatever was active before the new note.
+  if (sessionStorage.getItem(PENDING_PUBLISH_KEY)) resumeCapturedPublish();
+
   function detectDirectory(candidates, fallback) {
     const files = window.MarkataSiteTree?.files?.() || [];
     for (const dir of candidates) {
@@ -51,7 +106,7 @@
     return fallback;
   }
 
-  async function openOrCreateDailyNote(appendBlock = '') {
+  async function openOrCreateDailyNote(appendBlock = '', shouldPublish = false) {
     const date = todayISO();
     const dir = detectDirectory(['daily', 'pages/daily', 'journal', 'posts/daily'], 'daily');
     const path = `${dir}/${date}.md`;
@@ -100,18 +155,19 @@
           throw new Error(err.error || 'Could not create daily note');
         }
       }
-      await window.MarkataSiteTree?.refresh?.();
-      await window.MarkataSiteTree?.openFile?.(path);
-      if (window.matchMedia('(max-width: 768px)').matches) {
-        window.MarkataCMSShell?.setMobileView?.('write');
+      const activated = await activateSavedPost(path, shouldPublish);
+      if (activated) {
+        if (window.matchMedia('(max-width: 768px)').matches) {
+          window.MarkataCMSShell?.setMobileView?.('write');
+        }
+        const cm = getEditor();
+        if (cm) {
+          const last = cm.lastLine();
+          cm.setCursor({ line: last, ch: cm.getLine(last).length });
+          cm.focus();
+        }
+        toast(appendBlock ? `Appended to ${path}` : `Opened daily note ${path}`, 'info');
       }
-      const cm = getEditor();
-      if (cm) {
-        const last = cm.lastLine();
-        cm.setCursor({ line: last, ch: cm.getLine(last).length });
-        cm.focus();
-      }
-      toast(appendBlock ? `Appended to ${path}` : `Opened daily note ${path}`, 'info');
       return path;
     } catch (err) {
       toast(err.message || 'Could not open daily note', 'warning');
@@ -164,6 +220,7 @@
       </label>
       <p id="cms-qn-status" class="cms-flow-status" role="status" hidden></p>
       <footer class="cms-flow-actions">
+        <button type="button" id="cms-qn-discard-share" hidden>Discard shared photos</button>
         <button type="button" class="cms-flow-cancel">Cancel</button>
         <button type="submit" id="cms-qn-submit" class="cms-flow-primary">Save Note</button>
       </footer>
@@ -179,6 +236,7 @@
   const qnPublish = quickDialog.querySelector('#cms-qn-publish');
   const qnStatus = quickDialog.querySelector('#cms-qn-status');
   const qnSubmit = quickDialog.querySelector('#cms-qn-submit');
+  const qnDiscardShare = quickDialog.querySelector('#cms-qn-discard-share');
   const qnImageInput = quickDialog.querySelector('#cms-qn-images');
   const qnPhotoList = quickDialog.querySelector('#cms-qn-photo-list');
   let qnPhotos = [];
@@ -283,6 +341,20 @@
   });
   quickDialog.querySelector('.cms-flow-close').addEventListener('click', () => quickDialog.close());
   quickDialog.querySelector('.cms-flow-cancel').addEventListener('click', () => quickDialog.close());
+  qnDiscardShare.addEventListener('click', async () => {
+    if (!pendingShareId) return;
+    try {
+      await removeStagedShare(pendingShareId);
+      pendingShareId = null;
+      updatePhotos([]);
+      history.replaceState(null, '', location.pathname + location.hash);
+      quickDialog.close();
+      toast('Discarded unsaved shared photos.', 'info');
+    } catch (error) {
+      qnStatus.hidden = false;
+      qnStatus.textContent = 'Could not discard shared photos: ' + error.message;
+    }
+  });
 
   async function enrichURL(url) {
     if (!url || !/^https?:\/\//i.test(url)) return;
@@ -331,6 +403,7 @@
     qnPublish.checked = false;
     qnStatus.hidden = true;
     pendingShareId = prefill.shareId || null;
+    qnDiscardShare.hidden = !pendingShareId;
     updatePhotos(prefill.files || []);
     setQuickDest(prefill.dest || 'note');
     quickDialog.showModal();
@@ -363,12 +436,10 @@
           : `- **${nowTime()}**${title ? ` — **${title}**` : ''}`;
         const block = bodyText ? `${heading}\n  ${bodyText.replace(/\n/g, '\n  ')}` : heading;
         quickDialog.close();
-        const savedPath = await openOrCreateDailyNote(block);
+        const savedPath = await openOrCreateDailyNote(block, shouldPublish);
         if (!savedPath) {
-          // Never publish the previously active document if daily capture fails.
           throw new Error('Could not save the daily note; nothing was published.');
         }
-        if (shouldPublish) await window.MarkataPublishReview?.quickPublish?.();
         return;
       }
 
@@ -384,8 +455,8 @@
         '---',
         `title: ${JSON.stringify(title || `Quick Note ${date}`)}`,
         `date: ${date}`,
-        `published: ${shouldPublish ? 'true' : 'false'}`,
-        `draft: ${shouldPublish ? 'false' : 'true'}`,
+        'published: false',
+        'draft: true',
         yamlTags,
       ];
       if (url) lines.push(`link: ${JSON.stringify(url)}`);
@@ -431,14 +502,10 @@
           toast('Note saved, but the temporary share could not be cleared.', 'warning');
         }
       }
-      await window.MarkataSiteTree?.refresh?.();
-      await window.MarkataSiteTree?.openFile?.(path);
-      if (window.matchMedia('(max-width: 768px)').matches) {
-        window.MarkataCMSShell?.setMobileView?.('write');
-      }
       toast(`Created ${path}`, 'info');
-      if (shouldPublish) {
-        setTimeout(() => window.MarkataPublishReview?.quickPublish?.(), 250);
+      const activated = await activateSavedPost(path, shouldPublish);
+      if (activated && window.matchMedia('(max-width: 768px)').matches) {
+        window.MarkataCMSShell?.setMobileView?.('write');
       }
     } catch (err) {
       qnStatus.hidden = false;
@@ -640,6 +707,7 @@
         try {
           const capture = await readStagedShare(shareId);
           if (!capture || Date.now() - capture.createdAt > 24 * 60 * 60 * 1000) {
+            if (capture) await removeStagedShare(shareId);
             throw new Error('Shared photos expired or are no longer available.');
           }
           const text = capture.text || '';

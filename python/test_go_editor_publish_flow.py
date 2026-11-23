@@ -777,8 +777,9 @@ class GoEditorPublishFlowTest(unittest.TestCase):
             form.append('images', new File([bytes], 'first.png', {type: 'image/png'}));
             form.append('images', new File([bytes], 'second.png', {type: 'image/png'}));
             const response = await fetch('/share-target', {method: 'POST', body: form});
-            if (!response.redirected) throw new Error('Share target did not redirect');
-            return response.url;
+            const capture = await response.json();
+            if (!response.ok || !capture.share_id) throw new Error('Share target failed: ' + JSON.stringify(capture));
+            return location.origin + '/?share_id=' + encodeURIComponent(capture.share_id);
         }""")
         self.assertIn("share_id=", shared_url)
         page.goto(shared_url)
@@ -833,8 +834,9 @@ class GoEditorPublishFlowTest(unittest.TestCase):
             form.set('share_title', 'Single shared photo');
             form.append('images', new File([bytes], 'picture.png', {type: 'image/png'}));
             const response = await fetch('/share-target', {method: 'POST', body: form});
-            if (!response.redirected) throw Error('Share target did not redirect');
-            return response.url;
+            const capture = await response.json();
+            if (!response.ok || !capture.share_id) throw Error('Share target failed: ' + JSON.stringify(capture));
+            return location.origin + '/?share_id=' + encodeURIComponent(capture.share_id);
         }""")
         page.goto(shared_url)
         dialog = page.locator("#cms-quick-note-dialog")

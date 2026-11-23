@@ -120,6 +120,7 @@ const SHARE_STORE = 'captures';
 const MAX_FILES = 8;
 const MAX_IMAGE = 15 * 1024 * 1024;
 const MAX_TOTAL = 48 * 1024 * 1024;
+const SHARE_TTL = 24 * 60 * 60 * 1000;
 
 function openShareDatabase() {
   return new Promise((resolve, reject) => {
@@ -135,7 +136,19 @@ async function stageShare(capture) {
   try {
     await new Promise((resolve, reject) => {
       const tx = db.transaction(SHARE_STORE, 'readwrite');
-      tx.objectStore(SHARE_STORE).put(capture);
+      const store = tx.objectStore(SHARE_STORE);
+      // Cleanup expired captures during every share; cancelled previews
+      // should not keep private photos in browser storage forever.
+      const cursor = store.openCursor();
+      cursor.onsuccess = () => {
+        const item = cursor.result;
+        if (!item) return;
+        if (!item.value?.createdAt || Date.now() - item.value.createdAt > SHARE_TTL) {
+          item.delete();
+        }
+        item.continue();
+      };
+      store.put(capture);
       tx.oncomplete = resolve;
       tx.onerror = () => reject(tx.error);
       tx.onabort = () => reject(tx.error || Error('Cannot stage shared photo'));
@@ -178,10 +191,20 @@ self.addEventListener('fetch', (event) => {
           url: String(form.get('share_url') || '').slice(0, 4096),
           files: photos,
         });
-        return Response.redirect('/?share_id=' + encodeURIComponent(id), 303);
+        if (event.request.mode === 'navigate') {
+          return Response.redirect(new URL('/?share_id=' + encodeURIComponent(id), self.location.origin).href, 303);
+        }
+        return new Response(JSON.stringify({ share_id: id }), {
+          status: 201, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+        });
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Could not receive shared photos';
-        return Response.redirect('/?share_error=' + encodeURIComponent(message), 303);
+        if (event.request.mode === 'navigate') {
+          return Response.redirect(new URL('/?share_error=' + encodeURIComponent(message), self.location.origin).href, 303);
+        }
+        return new Response(JSON.stringify({ error: message }), {
+          status: 400, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+        });
       }
     })());
     return;
