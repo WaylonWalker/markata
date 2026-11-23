@@ -178,8 +178,8 @@ func TestUpDoesNotTrustUnidentifiedLocalWebServer(t *testing.T) {
 }
 
 func TestUpIdentityOnlyUsesLoopback(t *testing.T) {
-	r := httptest.NewRequest(http.MethodGet, "http://127.0.0.1:8766/", http.NoBody)
-	r.RemoteAddr = net.JoinHostPort("127.0.0.1", "42345")
+	r := httptest.NewRequest(http.MethodGet, "http://"+upLoopbackAddress+":8766/", http.NoBody)
+	r.RemoteAddr = net.JoinHostPort(upLoopbackAddress, "42345")
 	if !upIsLoopbackRequest(r) {
 		t.Fatal("expected loopback request")
 	}
@@ -190,13 +190,14 @@ func TestUpIdentityOnlyUsesLoopback(t *testing.T) {
 }
 
 func TestUpConfigurationIdentityRespectsSelectedBuildInputs(t *testing.T) {
+	const defaultOutput = "output"
 	workspace := t.TempDir()
 	config := "markata-go.toml"
-	base, err := upConfigurationIdentity(workspace, config, nil, "output")
+	base, err := upConfigurationIdentity(workspace, config, nil, defaultOutput)
 	if err != nil {
 		t.Fatal(err)
 	}
-	absolute, err := upConfigurationIdentity(workspace, filepath.Join(workspace, config), nil, filepath.Join(workspace, "output"))
+	absolute, err := upConfigurationIdentity(workspace, filepath.Join(workspace, config), nil, filepath.Join(workspace, defaultOutput))
 	if err != nil || absolute != base {
 		t.Fatalf("relative and absolute config locations must match: %s, %s (%v)", base, absolute, err)
 	}
@@ -205,10 +206,10 @@ func TestUpConfigurationIdentityRespectsSelectedBuildInputs(t *testing.T) {
 		merged []string
 		output string
 	}{
-		{config: "custom.toml", output: "output"},
-		{config: config, merged: []string{"local.toml"}, output: "output"},
-		{config: config, merged: []string{"a.toml", "b.toml"}, output: "output"},
-		{config: config, merged: []string{"b.toml", "a.toml"}, output: "output"},
+		{config: "custom.toml", output: defaultOutput},
+		{config: config, merged: []string{"local.toml"}, output: defaultOutput},
+		{config: config, merged: []string{"a.toml", "b.toml"}, output: defaultOutput},
+		{config: config, merged: []string{"b.toml", "a.toml"}, output: defaultOutput},
 		{config: config, output: "other-output"},
 	} {
 		digest, err := upConfigurationIdentity(workspace, tc.config, tc.merged, tc.output)
