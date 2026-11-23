@@ -66,6 +66,25 @@ class ReproCompareTests(unittest.TestCase):
         with contextlib.redirect_stdout(io.StringIO()):
             self.assertEqual(main([str(self.left), str(self.right)]), 1)
 
+    def test_empty_outputs_are_unverified_by_default(self) -> None:
+        with self.assertRaisesRegex(ValueError, "empty generated output"):
+            compare_trees(self.left, self.right)
+        result = compare_trees(self.left, self.right, allow_empty=True)
+        self.assertTrue(result["identical"])
+
+        self.put(self.left, "index.html", b"ok")
+        with self.assertRaisesRegex(ValueError, "empty generated output"):
+            compare_trees(self.left, self.right)
+
+        with contextlib.redirect_stderr(io.StringIO()):
+            self.assertEqual(main([str(self.left), str(self.right)]), 2)
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            self.assertEqual(
+                main([str(self.left), str(self.right), "--allow-empty"]), 1
+            )
+        self.assertFalse(json.loads(out.getvalue())["identical"])
+
     def test_invalid_directory_is_not_claimed_equal(self) -> None:
         with contextlib.redirect_stderr(io.StringIO()):
             self.assertEqual(main([str(self.left), str(self.right / "missing")]), 2)
