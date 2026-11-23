@@ -400,7 +400,7 @@ func (w *Workspace) CreateWithImages(path, source, imageName string, images []Up
 	if err := prepareMultiImageFiles(imageParent, imageName, images, &urls, &targets, &temps); err != nil {
 		return nil, err
 	}
-		finalSource := SourceWithUploadedImages(source, urls)
+	finalSource := SourceWithUploadedImages(source, urls)
 	if len(finalSource) > 200000 {
 		return nil, fmt.Errorf("source exceeds 200,000 bytes")
 	}
