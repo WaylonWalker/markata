@@ -72,21 +72,46 @@ func runSetupCommand(cmd *cobra.Command, args []string) error {
 			}
 		}
 		target := filepath.Join(abs, defaultConfigFilename)
-		f, err := os.OpenFile(target, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
-		if err != nil {
-			return fmt.Errorf("create configuration (will not overwrite): %w", err)
-		}
-		if _, err := f.WriteString(defaultConfigTOML); err != nil {
-			_ = f.Close()
-			return fmt.Errorf("write configuration: %w", err)
-		}
-		if err := f.Close(); err != nil {
-			return fmt.Errorf("close configuration: %w", err)
+		if err := writeSetupConfig(target); err != nil {
+			return err
 		}
 		fmt.Fprintf(cmd.OutOrStdout(), "Created starter configuration: %s\n", target)
 	} else {
 		fmt.Fprintf(cmd.OutOrStdout(), "Found existing configuration: %s\n", filepath.Join(abs, existing))
 	}
 	fmt.Fprintf(cmd.OutOrStdout(), "\nWorkspace ready: %s\n\nNext:\n  cd %q\n  markata editor\n\nBuild and preview your site:\n  markata serve\n", abs, abs)
+	return nil
+}
+
+// writeSetupConfig stages a complete default configuration in the target
+// directory and links it into place atomically, without replacing any file.
+// Unlike writing directly to the final name, failed writes and interrupts
+// cannot leave a partially initialized workspace behind. The hard link is
+// created only after the complete staged file has been flushed and closed.
+func writeSetupConfig(target string) error {
+	staged, err := os.CreateTemp(filepath.Dir(target), ".markata-setup-*.tmp")
+	if err != nil {
+		return fmt.Errorf("stage configuration: %w", err)
+	}
+	defer func() { _ = os.Remove(staged.Name()) }()
+
+	if _, err := staged.WriteString(defaultConfigTOML); err != nil {
+		_ = staged.Close()
+		return fmt.Errorf("write staged configuration: %w", err)
+	}
+	if err := staged.Chmod(0o644); err != nil {
+		_ = staged.Close()
+		return fmt.Errorf("set configuration permissions: %w", err)
+	}
+	if err := staged.Sync(); err != nil {
+		_ = staged.Close()
+		return fmt.Errorf("flush configuration: %w", err)
+	}
+	if err := staged.Close(); err != nil {
+		return fmt.Errorf("close configuration: %w", err)
+	}
+	if err := os.Link(staged.Name(), target); err != nil {
+		return fmt.Errorf("create configuration without overwriting existing data: %w", err)
+	}
 	return nil
 }
