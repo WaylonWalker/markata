@@ -50,10 +50,17 @@ type pwaShareTargetParams struct {
 	URL   string `json:"url"`
 }
 
+type pwaShareTargetFile struct {
+    Name string `json:"name"`
+    Accept []string `json:"accept"`
+}
+
 type pwaShareTarget struct {
-	Action string               `json:"action"`
-	Method string               `json:"method"`
-	Params pwaShareTargetParams `json:"params"`
+    Action string `json:"action"`
+    Method string `json:"method"`
+    Enctype string `json:"enctype"`
+    Params pwaShareTargetParams `json:"params"`
+    Files []pwaShareTargetFile `json:"files"`
 }
 
 type pwaManifest struct {
@@ -122,8 +129,13 @@ func (h *Handler) handlePWAManifest(w http.ResponseWriter, r *http.Request) {
 			},
 		},
 		ShareTarget: pwaShareTarget{
-			Action: "/",
-			Method: "GET",
+			Action: "/share-target",
+            Method: "POST",
+            Enctype: "multipart/form-data",
+            Files: []pwaShareTargetFile{{
+                Name: "images",
+                Accept: []string{"image/png", "image/jpeg", "image/gif", "image/webp"},
+            }},
 			Params: pwaShareTargetParams{
 				Title: "share_title",
 				Text:  "share_text",

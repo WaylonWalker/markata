@@ -320,6 +320,25 @@ func (s *Store) CreateWithImage(path, source, imageName, contentType string, ima
 	return imageURL, nil
 }
 
+// CreateWithImages creates a post and 2-8 images while keeping the store index
+// consistent with the single-image creation path.
+func (s *Store) CreateWithImages(path, source, imageName string, images []UploadedImage) ([]string, error) {
+    if err := s.ctx.Err(); err != nil { return nil, err }
+    local := filepath.Clean(filepath.FromSlash(path))
+    if !filepath.IsLocal(local) || !isMarkdownSource(local) {
+        return nil, fmt.Errorf("new workspace path must be a local Markdown file")
+    }
+    path = filepath.ToSlash(local)
+    s.mu.RLock()
+    _, exists := s.paths[path]
+    s.mu.RUnlock()
+    if exists { return nil, fmt.Errorf("workspace file already exists") }
+    urls, err := s.workspace.CreateWithImages(path, source, imageName, images)
+    if err != nil { return nil, err }
+    if err := s.refresh(nil, false); err != nil { return nil, err }
+    return urls, nil
+}
+
 // SetContentTemplateDefaults updates site-wide starter placement and naming.
 func (s *Store) SetContentTemplateDefaults(name, directory, filenameMode string) error {
 	if err := s.ctx.Err(); err != nil {
