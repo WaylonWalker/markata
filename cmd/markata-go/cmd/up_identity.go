@@ -89,7 +89,7 @@ func upIsLoopbackRequest(r *http.Request) bool {
 // aren't followed, and slow or non-Markata listeners are ignored.
 func probeUpService(ctx context.Context, port int) (upServiceIdentity, bool) {
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet,
-		"http://"+net.JoinHostPort("127.0.0.1", strconv.Itoa(port))+upIdentityPath, nil)
+		"http://"+net.JoinHostPort(upLoopbackAddress, strconv.Itoa(port))+upIdentityPath, http.NoBody)
 	if err != nil {
 		return upServiceIdentity{}, false
 	}
