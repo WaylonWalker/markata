@@ -92,16 +92,20 @@ func TestHandler_PWAManifestAndFlowsServed(t *testing.T) {
 		t.Fatalf("manifest display = %v, want standalone", manifest["display"])
 	}
 	target, ok := manifest["share_target"].(map[string]any)
-    if !ok { t.Fatal("manifest missing share_target") }
-    if target["action"] != "/share-target" || target["method"] != "POST" || target["enctype"] != "multipart/form-data" {
-        t.Fatalf("share target must be a multipart POST: %#v", target)
-    }
-    files, ok := target["files"].([]any)
-    if !ok || len(files) != 1 {
-        t.Fatalf("share target must accept one image collection: %#v", target["files"])
-    }
-    fields := files[0].(map[string]any)
-    if fields["name"] != "images" { t.Fatalf("wrong share field: %#v", fields) }
+	if !ok {
+		t.Fatal("manifest missing share_target")
+	}
+	if target["action"] != "/share-target" || target["method"] != "POST" || target["enctype"] != "multipart/form-data" {
+		t.Fatalf("share target must be a multipart POST: %#v", target)
+	}
+	files, ok := target["files"].([]any)
+	if !ok || len(files) != 1 {
+		t.Fatalf("share target must accept one image collection: %#v", target["files"])
+	}
+	fields := files[0].(map[string]any)
+	if fields["name"] != "images" {
+		t.Fatalf("wrong share field: %#v", fields)
+	}
 	for _, route := range []string{"/sw.js", "/pwa-icon.svg"} {
 		rec := httptest.NewRecorder()
 		h.ServeHTTP(rec, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost"+route, http.NoBody))

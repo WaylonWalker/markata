@@ -195,7 +195,6 @@ func TestWorkspace_DeleteRejectsSymlinksAndStaleVersions(t *testing.T) {
 	}
 }
 
-
 func TestWorkspace_CreateWithImagesCreatesGalleryAndCover(t *testing.T) {
 	root := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(root, "posts"), 0o755); err != nil {
