@@ -319,7 +319,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.handlePWAServiceWorker(w, r)
 	case r.URL.Path == "/pwa-icon.svg":
 		h.handlePWAIcon(w, r)
-	case r.URL.Path == "/pwa-icon-192.png" || r.URL.Path == "/pwa-icon-512.png":
+	case r.URL.Path == "/pwa-icon-192.png" || r.URL.Path == pwaIcon512Path:
 		h.handlePWARasterIcon(w, r)
 	case r.URL.Path == "/favicon.ico":
 		data, err := web.ReadFile("web/favicon.ico")
@@ -959,12 +959,18 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 		postPath := r.FormValue("path")
 		imageName := r.FormValue("image_name")
 		provider := h.imageUploadProvider()
-		includeGallery := r.FormValue("include_gallery") == "true"
+		includeGallery := r.FormValue("include_gallery") == pwaGalleryFlagTrue
 		var images []string
 		var createErr error
 		storedSource := source
 		switch provider {
 		case imageUploadModeDropper:
+			// Dropper has no transactional delete API. Do not leak previous
+			// uploads when a later photo fails or the post is rejected.
+			if len(uploads) > 1 {
+				fail(w, http.StatusConflict, "multi-photo Dropper uploads require cleanup support; use local image storage")
+				return
+			}
 			checker, ok := h.workspace.(workspaceCreateChecker)
 			if !ok {
 				fail(w, http.StatusNotImplemented, "workspace cannot validate a new post path")
@@ -979,7 +985,11 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			for i, photo := range uploads {
-				extension, _ := editorworkspace.ImageExtension(photo.ContentType, photo.Data)
+				extension, extensionErr := editorworkspace.ImageExtension(photo.ContentType, photo.Data)
+				if extensionErr != nil {
+					createErr = extensionErr
+					break
+				}
 				name := imageName
 				if len(uploads) > 1 {
 					name = fmt.Sprintf("%s-%d", imageName, i+1)
@@ -1001,17 +1011,21 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 			}
 		case imageUploadModeLocal:
 			if len(uploads) == 1 {
-				var url string
+				var uploadedURL string
 				singleSource := source
 				if includeGallery {
-					extension, _ := editorworkspace.ImageExtension(uploads[0].ContentType, uploads[0].Data)
+					extension, extensionErr := editorworkspace.ImageExtension(uploads[0].ContentType, uploads[0].Data)
+					if extensionErr != nil {
+						fail(w, http.StatusUnprocessableEntity, extensionErr.Error())
+						return
+					}
 					localURL := "/images/" + imageName + "." + extension
 					singleSource = editorworkspace.SourceWithUploadedImages(source, []string{localURL})
 				}
-				url, createErr = h.workspace.CreateWithImage(postPath, singleSource, imageName, uploads[0].ContentType, uploads[0].Data)
+				uploadedURL, createErr = h.workspace.CreateWithImage(postPath, singleSource, imageName, uploads[0].ContentType, uploads[0].Data)
 				if createErr == nil {
-					images = []string{url}
-					storedSource = sourceWithImage(singleSource, url)
+					images = []string{uploadedURL}
+					storedSource = sourceWithImage(singleSource, uploadedURL)
 				}
 			} else {
 				creator, ok := h.workspace.(workspaceMultiImageCreator)
@@ -1035,7 +1049,7 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 		if err := json.NewEncoder(w).Encode(map[string]any{
 			workspaceVersionKey: editorworkspace.SourceVersion(storedSource),
 			"image":             images[0],
-			"images":            images,
+			pwaSharePhotosKey:  images,
 			"provider":          provider,
 		}); err != nil {
 			return

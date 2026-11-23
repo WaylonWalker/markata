@@ -12,6 +12,13 @@ import (
 	"sync"
 )
 
+const (
+	pwaImageType       = "image/png"
+	pwaIcon512Path     = "/pwa-icon-512.png"
+	pwaSharePhotosKey  = "images"
+	pwaGalleryFlagTrue = "true"
+)
+
 var pwaIconBytes = []byte(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <rect width="512" height="512" rx="112" fill="#0f172a"/>
   <rect x="44" y="44" width="424" height="424" rx="84" fill="none" stroke="#f59e0b" stroke-width="20"/>
@@ -88,7 +95,7 @@ func (h *Handler) handlePWARasterIcon(w http.ResponseWriter, r *http.Request) {
 		pwaRasterIcons = map[int][]byte{192: pwaRasterPNG(192), 512: pwaRasterPNG(512)}
 	})
 	size := 192
-	if r.URL.Path == "/pwa-icon-512.png" {
+	if r.URL.Path == pwaIcon512Path {
 		size = 512
 	}
 	data := pwaRasterIcons[size]
@@ -96,10 +103,12 @@ func (h *Handler) handlePWARasterIcon(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "cannot generate PWA icon", http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set("Content-Type", "image/png")
+	w.Header().Set("Content-Type", pwaImageType)
 	w.Header().Set("Cache-Control", "public, max-age=86400")
 	if r.Method == http.MethodGet {
-		_, _ = w.Write(data)
+		if _, err := w.Write(data); err != nil {
+			return
+		}
 	}
 }
 
@@ -252,8 +261,8 @@ func (h *Handler) handlePWAManifest(w http.ResponseWriter, r *http.Request) {
 		BackgroundColor: "#0f172a",
 		ThemeColor:      "#0f172a",
 		Icons: []pwaIcon{
-			{Src: "/pwa-icon-192.png", Sizes: "192x192", Type: "image/png", Purpose: "any"},
-			{Src: "/pwa-icon-512.png", Sizes: "512x512", Type: "image/png", Purpose: "any maskable"},
+			{Src: "/pwa-icon-192.png", Sizes: "192x192", Type: pwaImageType, Purpose: "any"},
+			{Src: pwaIcon512Path, Sizes: "512x512", Type: pwaImageType, Purpose: "any maskable"},
 			{Src: "/pwa-icon.svg", Sizes: "any", Type: "image/svg+xml", Purpose: "any maskable"},
 		},
 		Shortcuts: []pwaShortcut{
@@ -281,7 +290,7 @@ func (h *Handler) handlePWAManifest(w http.ResponseWriter, r *http.Request) {
 			Method:  "POST",
 			Enctype: "multipart/form-data",
 			Files: []pwaShareTargetFile{{
-				Name:   "images",
+				Name:   pwaSharePhotosKey,
 				Accept: []string{"image/png", "image/jpeg", "image/gif", "image/webp"},
 			}},
 			Params: pwaShareTargetParams{

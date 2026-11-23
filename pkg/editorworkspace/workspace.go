@@ -397,30 +397,10 @@ func (w *Workspace) CreateWithImages(path, source, imageName string, images []Up
 			_ = os.Remove(tmp)
 		}
 	}()
-	total := 0
-	for i, photo := range images {
-		total += len(photo.Data)
-		if len(photo.Data) == 0 || len(photo.Data) > 15<<20 || total > 48<<20 {
-			return nil, fmt.Errorf("photos must be nonempty, at most 15 MiB each and 48 MiB total")
-		}
-		extension, err := ImageExtension(photo.ContentType, photo.Data)
-		if err != nil {
-			return nil, err
-		}
-		filename := fmt.Sprintf("%s-%d.%s", imageName, i+1, extension)
-		target := filepath.Join(imageParent, filename)
-		if err := requireNewFile(target); err != nil {
-			return nil, err
-		}
-		tmp, err := writeTempBytes(imageParent, ".markata-image-*", photo.Data)
-		if err != nil {
-			return nil, err
-		}
-		temps = append(temps, tmp)
-		targets = append(targets, target)
-		urls = append(urls, "/images/"+filename)
+	if err := prepareMultiImageFiles(imageParent, imageName, images, &urls, &targets, &temps); err != nil {
+		return nil, err
 	}
-	finalSource := SourceWithUploadedImages(source, urls)
+		finalSource := SourceWithUploadedImages(source, urls)
 	if len(finalSource) > 200000 {
 		return nil, fmt.Errorf("source exceeds 200,000 bytes")
 	}
@@ -449,6 +429,35 @@ func (w *Workspace) CreateWithImages(path, source, imageName string, images []Up
 	}
 	completed = true
 	return urls, nil
+}
+
+// prepareMultiImageFiles validates and stages every photo. The caller owns
+// cleaning up temps on failure and atomically linking the staged files.
+func prepareMultiImageFiles(imageParent, imageName string, images []UploadedImage, urls, targets, temps *[]string) error {
+		total := 0
+		for i, photo := range images {
+			total += len(photo.Data)
+			if len(photo.Data) == 0 || len(photo.Data) > 15<<20 || total > 48<<20 {
+				return fmt.Errorf("photos must be nonempty, at most 15 MiB each and 48 MiB total")
+			}
+			extension, err := ImageExtension(photo.ContentType, photo.Data)
+			if err != nil {
+				return err
+			}
+			filename := fmt.Sprintf("%s-%d.%s", imageName, i+1, extension)
+			target := filepath.Join(imageParent, filename)
+			if err := requireNewFile(target); err != nil {
+				return err
+			}
+			tmp, err := writeTempBytes(imageParent, ".markata-image-*", photo.Data)
+			if err != nil {
+				return err
+			}
+			temps = append(temps, tmp)
+			targets = append(targets, target)
+			urls = append(urls, "/images/"+filename)
+		}
+	return nil
 }
 
 // CreateWithImage atomically creates a Markdown file and a local static image.

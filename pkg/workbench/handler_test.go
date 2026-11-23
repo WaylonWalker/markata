@@ -103,8 +103,11 @@ func TestHandler_PWAManifestAndFlowsServed(t *testing.T) {
 	if !ok || len(files) != 1 {
 		t.Fatalf("share target must accept one image collection: %#v", target["files"])
 	}
-	fields := files[0].(map[string]any)
-	if fields["name"] != "images" {
+	fields, isMap := files[0].(map[string]any)
+	if !isMap {
+		t.Fatalf("share target file entry must be an object: %#v", files[0])
+	}
+	if fields["name"] != pwaSharePhotosKey {
 		t.Fatalf("wrong share field: %#v", fields)
 	}
 	for _, route := range []string{"/sw.js", "/pwa-icon.svg", "/pwa-icon-192.png", "/pwa-icon-512.png"} {
@@ -119,11 +122,11 @@ func TestHandler_PWAManifestAndFlowsServed(t *testing.T) {
 		size int
 	}{
 		{"/pwa-icon-192.png", 192},
-		{"/pwa-icon-512.png", 512},
+		{pwaIcon512Path, 512},
 	} {
 		response := httptest.NewRecorder()
 		h.ServeHTTP(response, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost"+tc.path, http.NoBody))
-		if response.Code != http.StatusOK || response.Header().Get("Content-Type") != "image/png" {
+		if response.Code != http.StatusOK || response.Header().Get("Content-Type") != pwaImageType {
 			t.Fatalf("raster icon %s returned HTTP %d", tc.path, response.Code)
 		}
 		icon, err := png.DecodeConfig(bytes.NewReader(response.Body.Bytes()))
@@ -131,7 +134,6 @@ func TestHandler_PWAManifestAndFlowsServed(t *testing.T) {
 			t.Fatalf("raster icon %s dimensions: %+v, %v", tc.path, icon, err)
 		}
 	}
-
 }
 
 func TestHandler_ExcalidrawArtifactsUseLocalFingerprintedFonts(t *testing.T) {
