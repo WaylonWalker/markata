@@ -253,6 +253,30 @@
       request.onerror = () => reject(request.error);
     });
   }
+  // Also expire abandoned shares on ordinary app startup; staging cleanup
+  // alone would leave cancelled photos indefinitely if no new share arrives.
+  async function cleanupStagedShares() {
+    const db = await shareDatabase();
+    try {
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction(SHARE_STORE, 'readwrite');
+        const cursor = tx.objectStore(SHARE_STORE).openCursor();
+        cursor.onsuccess = () => {
+          const item = cursor.result;
+          if (!item) return;
+          if (!item.value?.createdAt || Date.now() - item.value.createdAt > 24 * 60 * 60 * 1000) {
+            item.delete();
+          }
+          item.continue();
+        };
+        tx.oncomplete = resolve;
+        tx.onerror = () => reject(tx.error);
+        tx.onabort = () => reject(tx.error);
+      });
+    } finally { db.close(); }
+  }
+  cleanupStagedShares().catch(() => {});
+
   async function readStagedShare(id) {
     const db = await shareDatabase();
     try {
