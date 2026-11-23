@@ -1,6 +1,7 @@
 package workbench
 
 import (
+	"fmt"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -195,4 +196,55 @@ func postWorkspaceImage(t *testing.T, h *Handler, image []byte, contentType, ori
 	response := httptest.NewRecorder()
 	h.ServeHTTP(response, request)
 	return response
+}
+
+// Multi-photo Dropper cannot guarantee rollback, so fail before any remote
+// upload rather than leaving orphaned images when a later step fails.
+func TestNewPost_DropperMultiRejectsBeforeUploading(t *testing.T) {
+	t.Setenv("DROPPER_TOKEN", "")
+	uploader := &fakeDropperUploader{url: "https://dropper.example.com/file/shared.png"}
+	h := newHandler(t)
+	h.store = nil
+	h.dropperUploader = uploader
+	h.siteConfig = &models.Config{ContentTemplates: models.ContentTemplatesConfig{ImageUpload: imageUploadModeDropper}}
+
+	var body bytes.Buffer
+	form := multipart.NewWriter(&body)
+	for name, value := range map[string]string{
+		"path": "posts/shared.md",
+		"source": "---\ntitle: Shared photos\n---\n",
+		"image_name": "shared",
+	} {
+		if err := form.WriteField(name, value); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for i := 0; i < 2; i++ {
+		hdr := make(textproto.MIMEHeader)
+		hdr.Set("Content-Disposition", fmt.Sprintf(`form-data; name="image"; filename="shared-%d.png"`, i))
+		hdr.Set("Content-Type", "image/png")
+		part, err := form.CreatePart(hdr)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := part.Write(testPastePNG); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := form.Close(); err != nil {
+		t.Fatal(err)
+	}
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "http://localhost/workspace/new-post", &body)
+	request.RemoteAddr = "127.0.0.1:54321"
+	request.Header.Set("Origin", "http://localhost")
+	request.Header.Set("Sec-Fetch-Site", "same-origin")
+	request.Header.Set("Content-Type", form.FormDataContentType())
+	response := httptest.NewRecorder()
+	h.ServeHTTP(response, request)
+	if response.Code != http.StatusConflict {
+		t.Fatalf("multi-photo Dropper upload: HTTP %d: %s", response.Code, response.Body.String())
+	}
+	if uploader.calls != 0 {
+		t.Fatalf("rejected album performed %d remote uploads", uploader.calls)
+	}
 }
