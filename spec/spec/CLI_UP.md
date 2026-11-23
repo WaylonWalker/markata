@@ -27,12 +27,14 @@ It reuses the existing browser editor and `serve` watcher/builder unchanged.
   actionable conflicts and candidate-range exhaustion without hiding errors.
 - Local editor and preview expose a **read-only, GET-only** identity at
   `/_markata/up-identity` on loopback, containing a protocol marker,
-  service role and SHA-256 of the canonical workspace directory (never its
-  raw path). This endpoint rejects non-loopback peers and hosts. Hosted
+  service role, SHA-256 of the canonical workspace directory, and a
+  separate SHA-256 of selected config/merge-config/output paths (never the
+  raw paths). This endpoint rejects non-loopback peers and hosts. Hosted
   authenticated editor instances do not expose it.
 - Before starting children, `up` checks the bounded local port range for
   recognized same-workspace editor/preview services. It reuses matching
-  roles and reports their actual URLs; if both already run, return success
+  configuration and output scopes for each role; it must not adopt a
+  mismatched session. It reports their actual URLs; if both already run, return success
   without starting duplicate processes.
 - Reusing means **observation only**. Ctrl+C stops exclusively children
   launched by the current command. A local identity marker is not remote
