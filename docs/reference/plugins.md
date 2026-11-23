@@ -1632,6 +1632,8 @@ cwebp_path = ""
 3. Writes optimized variants next to the original output file using width suffixes.
 4. Uses a cache key (path, mod time, size, quality, encoder) to skip re-encoding.
 5. Missing encoders emit warnings and skip the format without failing the build.
+6. Preserves every image reference while optimizing a repeated output path once per responsive width set in each build.
+7. Reports target occurrences separately from unique optimization targets.
 
 **HTML output:**
 
