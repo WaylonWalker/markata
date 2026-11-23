@@ -684,7 +684,7 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         )
 
         page.locator("#sidebar-toggle").click()
-        expect(page.locator("#workbench")).to_have_class(re.compile(r"\\bsidebar-hidden\\b"))
+        expect(page.locator("#workbench")).to_have_class(re.compile(r"\bsidebar-hidden\b"))
         page.locator("#publish-menu-toggle").click()
         menu = page.locator("#publish-menu")
         expect(menu).to_be_visible()
@@ -693,7 +693,7 @@ class GoEditorPublishFlowTest(unittest.TestCase):
             "rgba(0, 0, 0, 0)",
         )
         menu.locator('[data-publish-action="changes"]').click()
-        expect(page.locator("#workbench")).not_to_have_class(re.compile(r"\\bsidebar-hidden\\b"))
+        expect(page.locator("#workbench")).not_to_have_class(re.compile(r"\bsidebar-hidden\b"))
         expect(page.locator("#workspace-tab-changes")).to_have_attribute("aria-selected", "true")
         self.assertEqual(errors, [])
 
@@ -724,6 +724,7 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         self.assertEqual(seen_methods, ["POST"])
         dialog.locator("#cms-qn-submit").click()
         expect(dialog).not_to_be_visible(timeout=10000)
+        expect(page.locator("#active-file")).to_contain_text("quick-capture-fixture-", timeout=10000)
         first_path = page.locator("#active-file").inner_text()
         self.assertIn("quick-capture-fixture-", first_path)
 
@@ -734,6 +735,7 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         dialog.locator("#cms-qn-body").fill("Second independent note")
         dialog.locator("#cms-qn-submit").click()
         expect(dialog).not_to_be_visible(timeout=10000)
+        expect(page.locator("#active-file")).to_contain_text("quick-capture-fixture-", timeout=10000)
         second_path = page.locator("#active-file").inner_text()
         self.assertNotEqual(first_path, second_path)
         self.assertTrue((self.site / first_path).exists())
