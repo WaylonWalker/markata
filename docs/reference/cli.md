@@ -78,6 +78,25 @@ topic-based skill, use `markata agent install` followed by
 `markata agent doctor`. See [Agent Skills](/docs/guides/agent-skills/).
 This root-level flag does not take a Markdown filename argument.
 
+## Local editor and preview: `up`
+
+`markata up` supervises a local Markdown editor and static-site builder
+using the existing Go services. It binds both components to loopback and
+stops only processes started by this invocation. A builder failure does not
+prevent editing; saving a draft never publishes your site.
+
+```sh
+markata up
+markata up --editor-port 8767 --preview-port 8001
+markata up --editor-only
+markata up --builder-only
+```
+
+The URLs shown at startup are expected addresses, not verified readiness.
+Ctrl+C requests shutdown; Windows may require forcefully terminating owned
+children. This optional foreground convenience does not configure hosting or
+pairing. See [Workspace Up](/docs/guides/workspace-up/).
+
 ## Agent-assisted troubleshooting: `triage`
 
 `markata triage` collects a small, privacy-conscious diagnostic summary and passes a troubleshooting prompt to an interactive coding agent, clipboard, or stdout. The default is a fuzzy picker of **detected installed** coding agents plus clipboard and stdout. When either terminal stream is redirected or `--no-input` is used, it prints **only the Markdown prompt** to stdout.
