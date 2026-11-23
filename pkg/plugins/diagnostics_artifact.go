@@ -2,6 +2,7 @@ package plugins
 
 import (
 	"bufio"
+	"compress/gzip"
 	"context"
 	"errors"
 	"fmt"
@@ -22,6 +23,8 @@ const diagnosticsArtifactSourceTimeout = 2 * time.Second
 const diagnosticsArtifactDefaultOutputDir = "output"
 
 const diagnosticsArtifactBufferSize = 64 << 10
+
+const diagnosticsArtifactCompressionGzip = "gzip"
 
 // DiagnosticsArtifactPlugin persists the manager-owned content diagnostics
 // snapshot after a complete successful lifecycle run.
@@ -62,6 +65,10 @@ func (p *DiagnosticsArtifactPlugin) Cleanup(m *lifecycle.Manager) error {
 	if diagnosticsNonProductionMode(config) {
 		return nil
 	}
+	compression, err := diagnosticsArtifactCompression(config)
+	if err != nil {
+		return &diagnosticsArtifactError{err: err}
+	}
 	outputDir := config.OutputDir
 	if outputDir == "" {
 		outputDir = diagnosticsArtifactDefaultOutputDir
@@ -89,13 +96,69 @@ func (p *DiagnosticsArtifactPlugin) Cleanup(m *lifecycle.Manager) error {
 		Executor:       string(m.BuildExecutor()),
 	}
 
-	destination := filepath.Join(outputDir, diagnostics.DefaultArtifactPath)
+	destinationPath := diagnostics.DefaultArtifactPath
+	if compression == diagnosticsArtifactCompressionGzip {
+		destinationPath = diagnostics.CompressedArtifactPath
+	}
+	destination := filepath.Join(outputDir, destinationPath)
 	if err := writeDiagnosticsArtifactMeasured(destination, func(writer io.Writer) error {
-		return diagnostics.WriteArtifact(writer, snapshot, info)
+		if compression != diagnosticsArtifactCompressionGzip {
+			return diagnostics.WriteArtifact(writer, snapshot, info)
+		}
+		// BestSpeed reduces the CPU cost of publication; the diagnostics JSON is
+		// highly repetitive, so it still gains a large reduction in output bytes.
+		compressed, err := gzip.NewWriterLevel(writer, gzip.BestSpeed)
+		if err != nil {
+			return err
+		}
+		if err := diagnostics.WriteArtifact(compressed, snapshot, info); err != nil {
+			_ = compressed.Close()
+			return err
+		}
+		return compressed.Close()
 	}, &phases); err != nil {
 		return &diagnosticsArtifactError{err: err}
 	}
+	stalePath := diagnostics.DefaultArtifactPath
+	if compression == "" {
+		stalePath = diagnostics.CompressedArtifactPath
+	}
+	if stalePath != destinationPath {
+		if err := os.Remove(filepath.Join(outputDir, stalePath)); err != nil && !errors.Is(err, os.ErrNotExist) {
+			return &diagnosticsArtifactError{err: fmt.Errorf("remove stale diagnostics artifact %s: %w", stalePath, err)}
+		}
+	}
 	return nil
+}
+
+func diagnosticsArtifactCompression(config *lifecycle.Config) (string, error) {
+	if config == nil || config.Extra == nil {
+		return "", nil
+	}
+	raw, ok := config.Extra["diagnostics_artifact"]
+	if !ok {
+		return "", nil
+	}
+	options, ok := raw.(map[string]interface{})
+	if !ok {
+		return "", fmt.Errorf("diagnostics_artifact configuration must be a table")
+	}
+	value, ok := options["compression"]
+	if !ok {
+		return "", nil
+	}
+	compression, ok := value.(string)
+	if !ok {
+		return "", fmt.Errorf("diagnostics_artifact.compression must be a string")
+	}
+	switch compression {
+	case "", "none":
+		return "", nil
+	case diagnosticsArtifactCompressionGzip:
+		return compression, nil
+	default:
+		return "", fmt.Errorf("unsupported diagnostics_artifact.compression %q; supported values are \"gzip\" and \"none\"", compression)
+	}
 }
 
 func diagnosticsNonProductionMode(config *lifecycle.Config) bool {

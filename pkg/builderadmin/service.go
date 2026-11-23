@@ -1449,14 +1449,16 @@ func (s *Service) buildCommandArgs(id, buildWork string) ([]string, func(), erro
 		args = append(args, "--config", s.cfg.ConfigPath)
 	}
 	cleanup := func() {}
+	overridePath := filepath.Join(s.overrideDir, "builder-admin.toml")
+	var contents strings.Builder
 	if s.cfg.MermaidMode != "" {
-		overridePath := filepath.Join(s.overrideDir, "builder-admin.toml")
-		contents := fmt.Sprintf("[markata-go.mermaid]\nmode = %q\n", s.cfg.MermaidMode)
-		if err := os.WriteFile(overridePath, []byte(contents), 0o644); err != nil {
-			return nil, cleanup, err
-		}
-		args = append(args, "-m", overridePath)
+		fmt.Fprintf(&contents, "[markata-go.mermaid]\nmode = %q\n\n", s.cfg.MermaidMode)
 	}
+	contents.WriteString("[markata-go.diagnostics_artifact]\ncompression = \"gzip\"\n")
+	if err := os.WriteFile(overridePath, []byte(contents.String()), 0o644); err != nil {
+		return nil, cleanup, err
+	}
+	args = append(args, "-m", overridePath)
 	args = append(args, "build")
 	if s.cfg.Fast {
 		args = append(args, "--fast")
@@ -2230,12 +2232,8 @@ func (s *Service) addCurrentReleaseDiagnostics(snapshot *servecontrol.Snapshot, 
 		return
 	}
 	path := filepath.Join(s.cfg.SiteDir, "current", diagnostics.DefaultArtifactPath)
-	info, err := os.Stat(path)
-	if err != nil || info.Size() > 16<<20 {
-		return
-	}
-	data, err := os.ReadFile(path)
-	if err != nil {
+	data, ok := readDiagnosticsArtifactBounded(path, 16<<20)
+	if !ok {
 		return
 	}
 	artifact, err := diagnostics.ParseArtifact(data)

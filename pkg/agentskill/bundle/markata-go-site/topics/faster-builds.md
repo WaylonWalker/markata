@@ -192,6 +192,8 @@ So `--fast` is good for content, template, and most styling iteration, but it is
   serialization/flush durations to file-write time; separately labeled inclusive
   wall totals overlap file writes. Directory/temp setup and removal are outside
   these phases; these are elapsed timings, not tracing spans or artifact fields.
+  Builder Admin releases gzip the same full JSON as
+  `.markata/diagnostics.json.gz`; inspect it with `gzip -dc ... | jq`.
   Publication uses a fixed 64 KiB buffer; large writes may bypass it, so measure
   raw calls instead of dividing artifact size by buffer size. Do not translate
   lower temporary serializer allocation into a whole-build RSS claim: live

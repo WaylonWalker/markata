@@ -60,6 +60,10 @@ runs, fast or incremental development-server builds, failed builds, or incomplet
 builds do not publish a new diagnostics artifact. A normal `serve` build can
 publish it after a successful full lifecycle.
 
+Builder Admin stores this complete artifact losslessly as
+`.markata/diagnostics.json.gz` to reduce release I/O. Decompress it with `gzip -dc`
+before inspecting it with `jq`; ordinary CLI builds keep the plain JSON path.
+
 Minimal GitHub Actions shape:
 
 ```yaml
