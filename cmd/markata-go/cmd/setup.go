@@ -11,9 +11,11 @@ import (
 const (
 	setupLegacyJSON    = "markata-go.json"
 	setupLegacyYAML    = "markata-go.yaml"
+	setupLegacyYML     = "markata-go.yml"
 	setupAlternateTOML = "markata.toml"
 	setupAlternateYAML = "markata.yaml"
 	setupAlternateYML  = "markata.yml"
+	setupAlternateJSON = "markata.json"
 )
 
 // setupCmd provides a safe, non-interactive first-run path without changing
@@ -52,7 +54,7 @@ func runSetupCommand(cmd *cobra.Command, args []string) error {
 	}
 
 	// Respect recognized legacy config filenames; never overwrite existing sites.
-	configNames := []string{defaultConfigFilename, setupLegacyYAML, "markata-go.yml", setupLegacyJSON}
+	configNames := []string{defaultConfigFilename, setupLegacyYAML, setupLegacyYML, setupLegacyJSON}
 	existing := ""
 	for _, name := range configNames {
 		candidate := filepath.Join(abs, name)
@@ -66,7 +68,7 @@ func runSetupCommand(cmd *cobra.Command, args []string) error {
 	if existing == "" {
 		// Alternate filenames are not currently auto-discovered by Markata.
 		// Do not silently create a second configuration beside one of them.
-		for _, name := range []string{setupAlternateTOML, setupAlternateYAML, setupAlternateYML, "markata.json"} {
+		for _, name := range []string{setupAlternateTOML, setupAlternateYAML, setupAlternateYML, setupAlternateJSON} {
 			candidate := filepath.Join(abs, name)
 			if _, err := os.Stat(candidate); err == nil {
 				return fmt.Errorf("found %s, which Markata does not automatically discover; rename it to %s (or pass --config explicitly)", candidate, defaultConfigFilename)
