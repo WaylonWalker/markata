@@ -735,7 +735,11 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         dialog.locator("#cms-qn-body").fill("Second independent note")
         dialog.locator("#cms-qn-submit").click()
         expect(dialog).not_to_be_visible(timeout=10000)
-        expect(page.locator("#active-file")).to_contain_text("quick-capture-fixture-", timeout=10000)
+        page.wait_for_function(
+            "(previous) => document.querySelector('#active-file')?.textContent?.trim() !== previous",
+            arg=first_path,
+            timeout=10000,
+        )
         second_path = page.locator("#active-file").inner_text()
         self.assertNotEqual(first_path, second_path)
         self.assertTrue((self.site / first_path).exists())
