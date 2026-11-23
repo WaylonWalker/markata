@@ -21,7 +21,7 @@ var pwaIconBytes = []byte(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 
 
 // Raster icons back up the SVG to satisfy Chromium's installability checks.
 var (
-	pwaRasterOnce sync.Once
+	pwaRasterOnce  sync.Once
 	pwaRasterIcons map[int][]byte
 )
 type pwaPoint struct{ x, y float64 }
@@ -35,6 +35,7 @@ func pwaRounded(x, y, left, top, right, bottom, radius float64) bool {
 	dx, dy := x-cx, y-cy
 	return dx*dx+dy*dy <= radius*radius
 }
+
 func pwaPolygon(x, y float64, p []pwaPoint) bool {
 	inside := false
 	for i, j := 0, len(p)-1; i < len(p); j, i = i, i+1 {
@@ -45,6 +46,7 @@ func pwaPolygon(x, y float64, p []pwaPoint) bool {
 	}
 	return inside
 }
+
 func pwaRasterPNG(size int) []byte {
 	img := image.NewRGBA(image.Rect(0, 0, size, size))
 	navy := color.RGBA{15, 23, 42, 255}
@@ -75,6 +77,7 @@ func pwaRasterPNG(size int) []byte {
 	}
 	return encoded.Bytes()
 }
+
 func (h *Handler) handlePWARasterIcon(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet && r.Method != http.MethodHead {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
