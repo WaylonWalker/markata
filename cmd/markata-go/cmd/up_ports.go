@@ -10,7 +10,7 @@ import (
 
 const (
 	upPortFallbackRange = 20
-	upLoopbackAddress  = "127.0.0.1"
+	upLoopbackAddress   = "127.0.0.1"
 )
 
 // upPortPolicy distinguishes a user-requested listener from a default. Never
