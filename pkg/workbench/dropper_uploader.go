@@ -149,7 +149,7 @@ func ServeDropperUploader(ctx context.Context, config DropperUploaderServerConfi
 	// os.Chmod may succeed while Stat still reports a world-writable socket.
 	// Fail closed until a Windows-specific ACL-backed transport is implemented.
 	if runtime.GOOS == "windows" {
-		return errors.New("Dropper uploader Unix-socket credentials are unsupported on Windows; use a Linux/macOS uploader backend")
+		return errors.New("dropper uploader Unix-socket credentials are unsupported on Windows; use a Linux/macOS uploader backend")
 	}
 	service, err := newDropperUploaderService(config)
 	if err != nil {
