@@ -34,10 +34,33 @@ markata up --editor-only
 markata up --builder-only
 ```
 
-The editor and builder bind to **loopback only**. A port conflict stops startup
-rather than exposing a service on another interface. The parent forwards
-Ctrl+C to its child processes, gives them an opportunity to shut down
-gracefully on platforms that support interrupt delivery, and forcibly stops\nremaining children when needed (including Windows).
+The editor and builder bind to **loopback only**. If a **default** port is
+already in use, `markata up` searches the next 20 local ports, tells you
+which port changed, and prints the **actual** editor and preview URLs. It
+does not kill or attach to whatever is listening on the original port.
+For example, if an existing process owns 8766, the editor may run at
+`http://127.0.0.1:8767/` while the preview stays on 8000.
+
+Explicit `--editor-port` and `--preview-port` values are **strict**: Markata
+stops with an actionable conflict instead of silently moving the service.
+Use `markata up --strict-ports` if you also want fixed defaults for scripts,
+reverse proxies, bookmarks, or agent integrations.
+
+```sh
+markata up                       # recover default ports automatically
+markata up --editor-port 8767    # require exactly 8767
+markata up --strict-ports        # never change 8766 / 8000
+```
+
+**An occupied port does not prove the existing listener belongs to this
+workspace.** Until a local workspace ownership handshake is implemented,
+`up` never reuses or terminates an unknown process and may start a separate
+instance on a free port. Avoid running multiple editors against the same
+workspace unintentionally.
+
+The parent forwards Ctrl+C to its child processes, gives them an opportunity
+to shut down gracefully where supported, and forcibly stops remaining
+children when needed (including Windows).
 
 For separate processes and advanced options, you can still run
 `markata editor` and `markata serve` independently.
