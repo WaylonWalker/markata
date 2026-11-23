@@ -174,13 +174,19 @@ func runUpCommand(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("resolve child options: %w", err)
 	}
-	// Default local ports are conveniences, not requirements. Explicit ports
-	// remain strict, and no listener is ever replaced or terminated.
-	services, changes, err := chooseUpPorts(cmd.Context(), services, upPortPolicy{
+	policy := upPortPolicy{
 		strict:          upStrictPorts,
 		editorExplicit:  cmd.Flags().Changed("editor-port"),
 		previewExplicit: cmd.Flags().Changed("preview-port"),
-	})
+	}
+	// Recognize existing Markata services for this workspace before choosing
+	// new ports. No unknown process is attached to, stopped, or replaced.
+	toLaunch, reused, err := findExistingUpServices(cmd.Context(), services, workspace, policy)
+	if err != nil {
+		return err
+	}
+	// Default local ports are conveniences; explicit ports remain strict.
+	services, changes, err := chooseUpPorts(cmd.Context(), toLaunch, policy)
 	if err != nil {
 		return err
 	}
@@ -192,10 +198,22 @@ func runUpCommand(cmd *cobra.Command, _ []string) error {
 	for _, change := range changes {
 		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "%s port %d is occupied; using %d instead (loopback only).\n", change.service, change.previous, change.selected)
 	}
+	for _, service := range reused {
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s already running for this workspace: %s\n", service.name, service.url)
+	}
 	for _, service := range services {
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s starting: %s\n", service.name, service.url)
 	}
-	_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Ctrl+C stops this workspace. Save does not publish.")
+	if len(services) == 0 {
+		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Workspace already running. No duplicate services started.")
+		return nil
+	}
+	if len(reused) > 0 {
+		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Ctrl+C stops only the new services; existing services keep running.")
+	} else {
+		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Ctrl+C stops this workspace.")
+	}
+	_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Saving drafts does not publish.")
 	ctx, cancel := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 	return superviseUp(ctx, executable, workspace, globalArgs, services, cmd.OutOrStdout(), cmd.ErrOrStderr())
