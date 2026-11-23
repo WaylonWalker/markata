@@ -24,6 +24,7 @@ var (
 	pwaRasterOnce  sync.Once
 	pwaRasterIcons map[int][]byte
 )
+
 type pwaPoint struct{ x, y float64 }
 
 func pwaRounded(x, y, left, top, right, bottom, radius float64) bool {
