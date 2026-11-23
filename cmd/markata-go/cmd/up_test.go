@@ -5,6 +5,7 @@ import (
 	"context"
 	"net"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strconv"
@@ -164,5 +165,35 @@ func TestUpSupervisorEditorExitIsFatal(t *testing.T) {
 	err = superviseUp(ctx, fixture, dir, []string{"--no-input"}, services, &out, &errs)
 	if err == nil || !strings.Contains(err.Error(), "editor exited") {
 		t.Fatalf("expected editor exit to stop the workspace, got %v", err)
+	}
+}
+
+func TestUpHelperProcess(t *testing.T) {
+	if os.Getenv("MARKATA_UP_TEST_HELPER") != "1" {
+		return
+	}
+	// This test is launched as a subprocess; the supervisor must stop it.
+	// Its lifetime is deliberately longer than the shutdown timeout.
+	time.Sleep(30 * time.Second)
+}
+
+func TestStopUpServicesTerminatesOwnedProcess(t *testing.T) {
+	// Run a real Go test executable as the child on every supported OS,
+	// including Windows where os.Interrupt may require forceful cleanup.
+	//nolint:gosec // os.Args[0] is the current test binary, never untrusted input.
+	child := exec.CommandContext(context.Background(), os.Args[0], "-test.run=^TestUpHelperProcess$")
+	child.Env = append(os.Environ(), "MARKATA_UP_TEST_HELPER=1")
+	if err := child.Start(); err != nil {
+		t.Fatal(err)
+	}
+	exits := make(chan upExit, 1)
+	go func() { exits <- upExit{name: upServiceEditor, err: child.Wait()} }()
+	started := time.Now()
+	stopUpServices(map[string]*exec.Cmd{upServiceEditor: child}, exits)
+	if elapsed := time.Since(started); elapsed > upShutdownTimeout+3*time.Second {
+		t.Fatalf("child shutdown exceeded timeout: %s", elapsed)
+	}
+	if child.ProcessState == nil || !child.ProcessState.Exited() {
+		t.Fatal("supervisor left its managed child running")
 	}
 }
