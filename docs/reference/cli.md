@@ -2622,3 +2622,21 @@ See the [workspace file tree guide](/docs/guides/renderer-site-tree/).
 Use `markata workspace --paths --workspace PATH` to list discovered source paths
 without loading document metadata. The editor uses this fast path on startup and
 loads titles and tags in the background.
+
+
+## Optional workspace bootstrap: `setup`
+
+`markata setup [workspace]` creates a default site configuration in a new
+workspace without overwriting an existing config. It works noninteractively
+and preserves supported legacy configuration names.
+
+```sh
+markata setup my-site
+cd my-site
+markata editor
+markata serve
+```
+
+This optional command does not install an agent, choose a hosting provider,
+start a background service, or publish. For the primary agent-first onboarding,
+use `markata --skill`.
