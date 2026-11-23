@@ -42,11 +42,17 @@ def inventory(root: Path, excludes: list[str]) -> dict[str, dict[str, object]]:
 
 
 def compare_trees(
-    left: Path, right: Path, excludes: list[str] | None = None
+    left: Path, right: Path, excludes: list[str] | None = None,
+    *, allow_empty: bool = False,
 ) -> dict[str, object]:
     exclusions = excludes or []
     previous = inventory(left, exclusions)
     current = inventory(right, exclusions)
+    if not allow_empty and (not previous or not current):
+        raise ValueError(
+            "empty generated output: cannot verify a build with zero files "
+            "(pass --allow-empty to compare intentionally empty trees)"
+        )
     old_paths = set(previous)
     new_paths = set(current)
     changed = [
@@ -79,9 +85,15 @@ def main(argv: list[str] | None = None) -> int:
         metavar="GLOB",
         help="explicit relative-path glob to ignore (repeatable; no default exclusions)",
     )
+    parser.add_argument(
+        "--allow-empty", action="store_true",
+        help="explicitly allow empty output trees (disabled for build verification)",
+    )
     args = parser.parse_args(argv)
     try:
-        result = compare_trees(args.left, args.right, args.exclude)
+        result = compare_trees(
+            args.left, args.right, args.exclude, allow_empty=args.allow_empty
+        )
     except (OSError, ValueError) as error:
         print(f"repro_compare: {error}", file=sys.stderr)
         return 2
