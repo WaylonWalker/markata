@@ -47,6 +47,62 @@ func TestHandler_FirstPreviewDoesNotWaitForSiteIndex(t *testing.T) {
 	}
 }
 
+func TestHandler_CMSShellAssetsServed(t *testing.T) {
+	h := newHandler(t)
+	page := httptest.NewRecorder()
+	h.ServeHTTP(page, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost/", http.NoBody))
+	if page.Code != http.StatusOK {
+		t.Fatalf("GET / returned %d", page.Code)
+	}
+	body := page.Body.String()
+	for _, want := range []string{
+		`/editor/cms-shell.css`,
+		`/editor/cms-shell.js`,
+		`id="mobile-nav"`,
+		`id="mobile-editing-toolbar"`,
+		`id="header-commands"`,
+		`class="header-modes"`,
+		`id="header-new-post"`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("workbench index missing %q", want)
+		}
+	}
+	for _, asset := range []string{"/editor/cms-shell.css", "/editor/cms-shell.js", "/editor/cms-flows.js"} {
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost"+asset, http.NoBody))
+		if rec.Code != http.StatusOK || rec.Body.Len() == 0 {
+			t.Fatalf("GET %s returned %d (%d bytes)", asset, rec.Code, rec.Body.Len())
+		}
+	}
+}
+
+func TestHandler_PWAManifestAndFlowsServed(t *testing.T) {
+	h := newHandler(t)
+	manifestRec := httptest.NewRecorder()
+	h.ServeHTTP(manifestRec, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost/manifest.webmanifest", http.NoBody))
+	if manifestRec.Code != http.StatusOK {
+		t.Fatalf("GET /manifest.webmanifest returned %d", manifestRec.Code)
+	}
+	var manifest map[string]any
+	if err := json.Unmarshal(manifestRec.Body.Bytes(), &manifest); err != nil {
+		t.Fatalf("invalid manifest JSON: %v", err)
+	}
+	if manifest["display"] != "standalone" {
+		t.Fatalf("manifest display = %v, want standalone", manifest["display"])
+	}
+	if _, ok := manifest["share_target"].(map[string]any); !ok {
+		t.Fatalf("manifest missing share_target")
+	}
+	for _, route := range []string{"/sw.js", "/pwa-icon.svg"} {
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost"+route, http.NoBody))
+		if rec.Code != http.StatusOK || rec.Body.Len() == 0 {
+			t.Fatalf("GET %s returned %d (%d bytes)", route, rec.Code, rec.Body.Len())
+		}
+	}
+}
+
 func TestHandler_ExcalidrawArtifactsUseLocalFingerprintedFonts(t *testing.T) {
 	h := newHandler(t)
 	page := httptest.NewRecorder()

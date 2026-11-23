@@ -604,6 +604,67 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         review.locator("#publish-back").click()
         self.assertEqual(errors, [])
 
+    def test_mobile_cms_navigation_and_desktop_mode_switcher(self):
+        # Desktop mode switcher and sidebar toggle
+        desktop_ctx = self.browser.new_context(viewport={"width": 1440, "height": 900})
+        self.addCleanup(desktop_ctx.close)
+        page = desktop_ctx.new_page()
+        errors = []
+        page.on("pageerror", lambda error: errors.append(str(error)))
+        page.goto(self.url)
+        expect(page.locator(".header-modes")).to_be_visible()
+        page.locator('.header-modes [data-layout-mode="editor"]').click()
+        expect(page.locator("#workbench")).to_have_attribute("data-layout", "editor")
+        page.locator('.header-modes [data-layout-mode="preview"]').click()
+        expect(page.locator("#workbench")).to_have_attribute("data-layout", "preview")
+        page.locator('.header-modes [data-layout-mode="split"]').click()
+        expect(page.locator("#workbench")).to_have_attribute("data-layout", "split")
+        page.locator("#sidebar-toggle").click()
+        expect(page.locator("#workbench")).to_have_class(re.compile(r"\bsidebar-hidden\b"))
+        page.locator("#sidebar-toggle").click()
+        expect(page.locator("#workbench")).not_to_have_class(re.compile(r"\bsidebar-hidden\b"))
+        self.assertEqual(errors, [])
+
+        # Mobile full-height CMS app shell (Content / Write / Preview / New)
+        mobile_ctx = self.browser.new_context(viewport={"width": 390, "height": 844})
+        self.addCleanup(mobile_ctx.close)
+        mpage = mobile_ctx.new_page()
+        merrors = []
+        mpage.on("pageerror", lambda error: merrors.append(str(error)))
+        mpage.goto(self.url)
+        expect(mpage.locator("#mobile-nav")).to_be_visible()
+        expect(mpage.locator("#site-sidebar")).to_be_visible()
+        expect(mpage.locator("#editor-pane")).to_be_hidden()
+        expect(mpage.locator("#preview-pane")).to_be_hidden()
+        self.assertGreater(mpage.locator("#site-sidebar").bounding_box()["height"], 500)
+        self.assertLessEqual(mpage.evaluate("document.documentElement.scrollWidth"), 390)
+
+        mpage.locator('#mobile-nav [data-mobile-tab="write"]').click()
+        expect(mpage.locator("#editor-pane")).to_be_visible()
+        expect(mpage.locator(".CodeMirror")).to_be_visible()
+        expect(mpage.locator("#mobile-editing-toolbar")).to_be_visible()
+        expect(mpage.locator("#site-sidebar")).to_be_hidden()
+        self.assertGreater(mpage.locator("#editor-pane").bounding_box()["height"], 500)
+
+        # Mobile header command palette button opens Command Palette directly from Write
+        mpage.locator("#header-commands").click()
+        expect(mpage.locator("dialog.markdown-commands[open]")).to_be_visible()
+        mpage.keyboard.press("Escape")
+
+        # Tapping header document chip opens Page Properties on mobile
+        mpage.locator("#header-doc").click()
+        expect(mpage.locator("#frontmatter-panel")).to_be_visible()
+        mpage.locator("#frontmatter-toggle").click()
+
+        mpage.locator('#mobile-nav [data-mobile-tab="preview"]').click()
+        expect(mpage.locator("#preview-pane")).to_be_visible()
+        expect(mpage.locator("#editor-pane")).to_be_hidden()
+        self.assertGreater(mpage.locator("#preview-pane").bounding_box()["height"], 500)
+
+        mpage.locator("#mobile-new-post").click()
+        expect(mpage.locator("#template-picker")).to_be_visible()
+        self.assertEqual(merrors, [])
+
     def test_00_review_unchanged_file_is_immediate_and_clear(self):
         context = self.browser.new_context()
         self.addCleanup(context.close)

@@ -384,19 +384,20 @@
       record.widget = null;
       record.summary = sceneSummary(fence);
 
-      if (record.collapsed) {
+      if (record.collapsed && fence.closeLine > fence.line + 1) {
         const placeholder = document.createElement('span');
         placeholder.className = 'excalidraw-fence-controls excalidraw-fence-controls--folded';
         wireFenceControls(placeholder,record,false);
+        const lastBodyLine = fence.closeLine - 1;
         record.fold = editor.markText(
           {line:fence.line+1,ch:0},
-          {line:fence.closeLine,ch:0},
+          {line:lastBodyLine,ch:(editor.getLine(lastBodyLine) || '').length},
           {collapsed:true,clearOnEnter:false,inclusiveLeft:true,inclusiveRight:true,replacedWith:placeholder},
         );
       } else {
         const controls = document.createElement('div');
         controls.className = 'excalidraw-fence-controls excalidraw-fence-controls--expanded';
-        wireFenceControls(controls,record,true);
+        wireFenceControls(controls,record,!record.collapsed);
         record.widget = editor.addLineWidget(fence.line,controls,{noHScroll:true,showIfHidden:true});
       }
     }

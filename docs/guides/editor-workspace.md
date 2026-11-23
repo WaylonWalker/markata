@@ -16,6 +16,26 @@ Writing includes line wrapping and the editor keymap. Preview controls
 layout and synchronized scrolling. Keyboard Shortcuts contains the application
 preset, search, conflict-aware shortcut recorder, and reset controls.
 
+## CMS navigation and mobile workflow
+
+On desktop viewports, the top bar keeps the active page title, save status, a
+sidebar toggle, a **Write / Split / Preview** layout switcher, **+ New**, and
+**Publish post** within reach without opening settings.
+
+On narrow screens (`<= 768px`), the editor switches to a full-height mobile CMS
+shell with a bottom navigation bar (**Content**, **Write**, **Preview**, and
+**New**):
+
+- **Content** shows the full-screen browser for Recent, Files, Feeds, Tags, and
+  Changes. Opening a file transitions directly to **Write**.
+- **Write** gives the full viewport to Markdown editing, Page Properties, and
+  Drawings, plus a mobile formatting bar (**Undo**, **Redo**, **Head**, **List**,
+  **Code**, **Link**, **Cmd**, **Done**) that stays above the virtual keyboard.
+- **Preview** renders the live site preview full-screen. Swipe left/right to
+  move between **Write** and **Preview**, pull down at the top to open the
+  Command Palette, or tap the **⌘** button in the top bar from any view.
+- **New** opens the content template picker bottom sheet directly.
+
 ## Find files and commands
 
 Ctrl/Cmd+P finds files; Ctrl/Cmd+Shift+P finds commands with the default application

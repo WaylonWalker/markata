@@ -1,20 +1,20 @@
 #excalidraw-dialog {
-  width: min(1280px, 97vw);
-  height: min(920px, 94dvh);
+  width: 100vw;
+  height: 100dvh;
   max-width: none;
   max-height: none;
+  margin: 0;
   padding: 0;
   overflow: hidden;
-  border: 1px solid var(--editor-divider, #d7d3c9);
-  border-radius: 12px;
+  border: 0;
+  border-radius: 0;
   background: var(--color-background, #f5f1e8);
   color: var(--color-text, #25303b);
-  box-shadow: 0 24px 90px #090d1490;
+  box-shadow: none;
 }
 
 #excalidraw-dialog::backdrop {
-  background: #090d14b8;
-  backdrop-filter: blur(4px);
+  background: #090d14d0;
 }
 
 .excalidraw-shell {
@@ -42,32 +42,42 @@
 .excalidraw-footer {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 13px 20px;
+  gap: 12px;
+  padding: 8px 16px;
   background: var(--color-background, #f5f1e8);
 }
 
 .excalidraw-heading {
-  min-height: 0;
+  min-height: 46px;
   flex-wrap: nowrap;
   justify-content: space-between;
   border-bottom: 1px solid var(--editor-divider, #d7d3c9);
 }
 
-.excalidraw-heading-copy { min-width: 0; }
+.excalidraw-heading-copy {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
 .excalidraw-kicker {
-  margin: 0 0 3px;
-  color: var(--color-primary, #a36b2a);
-  font: 650 10px/1.3 var(--font-code, ui-monospace, monospace);
-  letter-spacing: .14em;
-  text-transform: uppercase;
+  display: none;
 }
 
-.excalidraw-heading h2 { margin: 0; font-size: 17px; line-height: 1.2; }
+.excalidraw-heading h2 {
+  margin: 0;
+  font-family: var(--cms-ui-font, system-ui, sans-serif);
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.2;
+}
 .excalidraw-heading p:last-child {
-  margin: 4px 0 0;
+  margin: 0;
   color: var(--color-text-muted, #65717c);
   font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 #excalidraw-close,
@@ -80,26 +90,27 @@
   border-radius: 6px;
   background: var(--color-surface, #ece8de);
   color: inherit;
-  font: 600 12px/1 system-ui, sans-serif;
+  font: 600 12.5px/1 system-ui, sans-serif;
   cursor: pointer;
 }
 
-#excalidraw-close { width: 36px; padding: 0; font-size: 20px; }
+#excalidraw-close { width: 34px; min-height: 34px; padding: 0; font-size: 20px; }
 #excalidraw-close:hover,
 #excalidraw-cancel:hover,
 #excalidraw-apply-as:hover { background: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface)); }
 #excalidraw-apply {
   border-color: var(--color-primary, #a36b2a);
   background: var(--color-primary, #a36b2a);
-  color: var(--color-on-primary, #fff);
+  color: var(--btn-on-accent, var(--color-on-primary, #fff));
 }
 #excalidraw-apply:hover { filter: brightness(1.08); }
 #excalidraw-apply:disabled { opacity: .55; cursor: wait; }
 
 .excalidraw-footer {
   height: auto;
-  min-height: 0;
-  flex-wrap: wrap;
+  min-height: 48px;
+  padding: 8px 16px calc(8px + env(safe-area-inset-bottom, 0px));
+  flex-wrap: nowrap;
   justify-content: flex-end;
   border-top: 1px solid var(--editor-divider, #d7d3c9);
 }
@@ -114,6 +125,7 @@
   position: relative;
   min-width: 0;
   min-height: 0;
+  touch-action: none;
   background-color: var(--color-surface, #ece8de);
   background-image: radial-gradient(color-mix(in srgb, var(--color-text-muted, #65717c) 24%, transparent) .65px, transparent .65px);
   background-size: 18px 18px;
@@ -121,7 +133,24 @@
 
 #excalidraw-canvas[hidden] { display: none; }
 #excalidraw-canvas > .excalidraw { width: 100%; height: 100%; }
+#excalidraw-canvas section { height: auto; display: block; }
 #excalidraw-canvas .collab-button { display: none !important; }
+
+@media (max-width: 768px) {
+  .excalidraw-heading p:last-child,
+  .excalidraw-footer-note {
+    display: none;
+  }
+
+  .excalidraw-footer {
+    gap: 8px;
+  }
+
+  .excalidraw-footer button {
+    flex: 1 1 auto;
+    min-height: 40px;
+  }
+}
 
 #excalidraw-loading,
 #excalidraw-error {
@@ -149,14 +178,6 @@
 
 #drawing-open {
   flex: none;
-  min-height: 36px;
-  padding: 0 12px;
-  border: 1px solid var(--editor-divider, #d7d3c9);
-  border-radius: 6px;
-  background: var(--color-surface, #ece8de);
-  color: inherit;
-  font: 600 12px/1 system-ui, sans-serif;
-  cursor: pointer;
 }
 #drawing-open:disabled { opacity: .55; cursor: not-allowed; }
 

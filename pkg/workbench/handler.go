@@ -309,6 +309,12 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 	case r.URL.Path == "/":
 		h.serveIndex(w, r)
+	case r.URL.Path == "/manifest.webmanifest":
+		h.handlePWAManifest(w, r)
+	case r.URL.Path == "/sw.js":
+		h.handlePWAServiceWorker(w, r)
+	case r.URL.Path == "/pwa-icon.svg":
+		h.handlePWAIcon(w, r)
 	case r.URL.Path == "/favicon.ico":
 		data, err := web.ReadFile("web/favicon.ico")
 		if err != nil {
