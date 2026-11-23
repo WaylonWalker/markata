@@ -60,6 +60,13 @@ jobs:
           test -s docs-site/_site/docs/guides/authoring/index.html
           test -s docs-site/_site/docs/guides/deployment/index.html
           test -s docs-site/_site/docs/guides/deployment-guide/index.html
+          # The public curl installer must be a raw shell file, not HTML,
+          # and must exactly match the reviewed root installer.
+          test -s docs-site/_site/install.sh
+          cmp install.sh static/install.sh
+          cmp static/install.sh docs-site/_site/install.sh
+          bash -n docs-site/_site/install.sh
+          head -n 1 docs-site/_site/install.sh | grep -Fx '#!/bin/bash'
           test -s docs-site/_site/favicon.ico
           grep -F 'class="chroma"' docs-site/_site/docs/guides/authoring/index.html
           grep -F 'aria-label="Documentation navigation"' docs-site/_site/docs/guides/authoring/index.html
