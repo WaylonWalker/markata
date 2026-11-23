@@ -736,8 +736,13 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         dialog.locator("#cms-qn-body").fill("Second independent note")
         dialog.locator("#cms-qn-submit").click()
         expect(dialog).not_to_be_visible(timeout=10000)
+        # The editor reloads when a newly created source enters the tree.
+        # Ignore the temporary scratch selection during that reload.
         page.wait_for_function(
-            "(previous) => document.querySelector('#active-file')?.textContent?.trim() !== previous",
+            """(previous) => {
+                const current = document.querySelector('#active-file')?.textContent?.trim() || '';
+                return current.includes('quick-capture-fixture-') && current !== previous;
+            }""",
             arg=first_path,
             timeout=10000,
         )

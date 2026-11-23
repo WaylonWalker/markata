@@ -107,7 +107,7 @@ func TestHandler_PWAManifestAndFlowsServed(t *testing.T) {
 	if !isMap {
 		t.Fatalf("share target file entry must be an object: %#v", files[0])
 	}
-	if fields["name"] != pwaSharePhotosKey {
+	if fields["name"] != pwaSharePhotosField {
 		t.Fatalf("wrong share field: %#v", fields)
 	}
 	for _, route := range []string{"/sw.js", "/pwa-icon.svg", "/pwa-icon-192.png", "/pwa-icon-512.png"} {

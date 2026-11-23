@@ -1049,7 +1049,7 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 		if err := json.NewEncoder(w).Encode(map[string]any{
 			workspaceVersionKey: editorworkspace.SourceVersion(storedSource),
 			"image":             images[0],
-			pwaSharePhotosKey:   images,
+			pwaSharePhotosField:   images,
 			"provider":          provider,
 		}); err != nil {
 			return

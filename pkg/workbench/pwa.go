@@ -15,7 +15,7 @@ import (
 const (
 	pwaImageType       = "image/png"
 	pwaIcon512Path     = "/pwa-icon-512.png"
-	pwaSharePhotosKey  = "images"
+	pwaSharePhotosField  = "images"
 	pwaGalleryFlagTrue = "true"
 )
 
@@ -137,7 +137,7 @@ async function stageShare(capture) {
     await new Promise((resolve, reject) => {
       const tx = db.transaction(SHARE_STORE, 'readwrite');
       const store = tx.objectStore(SHARE_STORE);
-      // Cleanup expired captures during every share; cancelled previews
+      // Cleanup expired captures during every share; canceled previews
       // should not keep private photos in browser storage forever.
       const cursor = store.openCursor();
       cursor.onsuccess = () => {
@@ -314,7 +314,7 @@ func (h *Handler) handlePWAManifest(w http.ResponseWriter, r *http.Request) {
 			Method:  "POST",
 			Enctype: "multipart/form-data",
 			Files: []pwaShareTargetFile{{
-				Name:   pwaSharePhotosKey,
+				Name:   pwaSharePhotosField,
 				Accept: []string{"image/png", "image/jpeg", "image/gif", "image/webp"},
 			}},
 			Params: pwaShareTargetParams{
