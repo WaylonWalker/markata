@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
@@ -185,5 +186,37 @@ func TestUpIdentityOnlyUsesLoopback(t *testing.T) {
 	r.RemoteAddr = "10.0.0.4:42345"
 	if upIsLoopbackRequest(r) {
 		t.Fatal("remote network must not qualify")
+	}
+}
+
+func TestUpConfigurationIdentityRespectsSelectedBuildInputs(t *testing.T) {
+	workspace := t.TempDir()
+	config := "markata-go.toml"
+	base, err := upConfigurationIdentity(workspace, config, nil, "output")
+	if err != nil {
+		t.Fatal(err)
+	}
+	absolute, err := upConfigurationIdentity(workspace, filepath.Join(workspace, config), nil, filepath.Join(workspace, "output"))
+	if err != nil || absolute != base {
+		t.Fatalf("relative and absolute config locations must match: %s, %s (%v)", base, absolute, err)
+	}
+	for _, tc := range []struct {
+		config string
+		merged []string
+		output string
+	}{
+		{config: "custom.toml", output: "output"},
+		{config: config, merged: []string{"local.toml"}, output: "output"},
+		{config: config, merged: []string{"a.toml", "b.toml"}, output: "output"},
+		{config: config, merged: []string{"b.toml", "a.toml"}, output: "output"},
+		{config: config, output: "other-output"},
+	} {
+		digest, err := upConfigurationIdentity(workspace, tc.config, tc.merged, tc.output)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if digest == base {
+			t.Fatalf("different config/merge/output must not be reusable: %#v", tc)
+		}
 	}
 }
