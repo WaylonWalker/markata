@@ -847,7 +847,7 @@ class GoEditorPublishFlowTest(unittest.TestCase):
             {"name": "nav.png", "mimeType": "image/png", "buffer": tiny_png}
         )
         with page.expect_navigation(wait_until="domcontentloaded"):
-            page.evaluate("document.querySelector('form[action="/share-target"]').submit()")
+            page.evaluate("document.querySelector('form[action=\\\"/share-target\\\"]').submit()")
         self.assertIn("share_id=", page.url)
         dialog = page.locator("#cms-quick-note-dialog")
         expect(dialog).to_be_visible(timeout=10000)
