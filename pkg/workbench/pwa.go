@@ -57,12 +57,18 @@ self.addEventListener('fetch', (event) => {
       try {
         const form = await event.request.formData();
         const photos = form.getAll('images').filter((item) => item instanceof File && item.size);
+        const mediaType = (photo) => {
+          const suffix = String(photo.name || '').split('.').pop().toLowerCase();
+          const types = {png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg',
+            gif: 'image/gif', webp: 'image/webp'};
+          return photo.type || types[suffix] || '';
+        };
         if (photos.length > MAX_FILES) throw Error('Share a maximum of 8 photos at once');
         const size = photos.reduce((sum, photo) => sum + photo.size, 0);
         if (size > MAX_TOTAL || photos.some((photo) => photo.size > MAX_IMAGE)) {
           throw Error('Each photo must be 15 MiB or less; 48 MiB total');
         }
-        if (photos.some((photo) => !['image/png','image/jpeg','image/gif','image/webp'].includes(photo.type))) {
+        if (photos.some((photo) => !['image/png','image/jpeg','image/gif','image/webp'].includes(mediaType(photo)))) {
           throw Error('Only PNG, JPEG, GIF, and WebP photos are supported');
         }
         const id = crypto.randomUUID();

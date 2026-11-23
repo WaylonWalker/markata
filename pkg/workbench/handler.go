@@ -957,6 +957,7 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 		postPath := r.FormValue("path")
 		imageName := r.FormValue("image_name")
 		provider := h.imageUploadProvider()
+		includeGallery := r.FormValue("include_gallery") == "true"
 		var images []string
 		var createErr error
 		storedSource := source
@@ -989,7 +990,7 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 				images = append(images, imageURL)
 			}
 			if createErr == nil {
-				if len(images) > 1 {
+				if len(images) > 1 || includeGallery {
 					storedSource = editorworkspace.SourceWithUploadedImages(source, images)
 				} else {
 					storedSource = sourceWithImage(source, images[0])
@@ -999,10 +1000,16 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 		case imageUploadModeLocal:
 			if len(uploads) == 1 {
 				var url string
-				url, createErr = h.workspace.CreateWithImage(postPath, source, imageName, uploads[0].ContentType, uploads[0].Data)
+				singleSource := source
+				if includeGallery {
+					extension, _ := editorworkspace.ImageExtension(uploads[0].ContentType, uploads[0].Data)
+					localURL := "/images/" + imageName + "." + extension
+					singleSource = editorworkspace.SourceWithUploadedImages(source, []string{localURL})
+				}
+				url, createErr = h.workspace.CreateWithImage(postPath, singleSource, imageName, uploads[0].ContentType, uploads[0].Data)
 				if createErr == nil {
 					images = []string{url}
-					storedSource = sourceWithImage(source, url)
+					storedSource = sourceWithImage(singleSource, url)
 				}
 			} else {
 				creator, ok := h.workspace.(workspaceMultiImageCreator)

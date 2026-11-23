@@ -399,6 +399,7 @@
         form.set('path', path);
         form.set('source', lines.join('\n'));
         form.set('image_name', slug + '-' + unique);
+        form.set('include_gallery', 'true');
         for (const file of qnPhotos) {
           // Some Android providers omit File.type. The server still verifies
           // the actual image bytes independently.
