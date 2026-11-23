@@ -21,9 +21,9 @@ added/removed files and both SHA-256 digests for changed files. Exit codes:
 
 - `0`: identical file names and byte contents
 - `1`: changed, added, or removed output
-- `2`: invalid input directory or unsafe/unreadable output entry
+- `2`: invalid or empty output directory (including a missing build), or unsafe/unreadable output entry
 
-No dynamic files are silently excluded. When needed, pass an explicit
+By default, an empty output directory fails verification rather than silently reporting reproducibility. Use `--allow-empty` only if you intentionally want to compare empty directory structures.\n\nNo dynamic files are silently excluded. When needed, pass an explicit
 `--exclude 'some/relative/path/*'` and preserve the exclusion list in CI
 results. The comparator refuses symlinks rather than reading outside an output
 tree. File modification times are deliberately not compared.
