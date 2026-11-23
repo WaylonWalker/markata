@@ -21,7 +21,7 @@ results for stable output, and does not compare file modification timestamps.
 There are **no default exclusions**. Files inside output trees must be regular
 files; symlinks are rejected rather than followed. Reads do not modify output.
 
-Exit codes: `0` for an identical set of relative paths and bytes; `1` for
+Empty output roots are invalid by default because absence of artifacts is not evidence of a successful build. An explicit `--allow-empty` flag permits intentional generic comparisons.\n\nExit codes: `0` for an identical nonempty set of relative paths and bytes; `1` for
 different artifact sets or bytes; `2` for invalid input directories, symlinks,
 or I/O errors. Errors are printed to stderr; JSON is emitted for successful
 comparisons (including unequal outputs).
