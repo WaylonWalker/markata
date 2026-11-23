@@ -25,10 +25,19 @@ It reuses the existing browser editor and `serve` watcher/builder unchanged.
 - An explicitly supplied `--editor-port` or `--preview-port` must not be
   changed. `--strict-ports` enforces that rule on defaults too. Report
   actionable conflicts and candidate-range exhaustion without hiding errors.
-- Do not claim ownership of an existing Markata process based only on a port.
-  Same-workspace idempotence/reuse requires a separate verifiable identity
-  boundary under issue #2108; until then, a second invocation may create a
-  separate editor on another port.
+- Local editor and preview expose a **read-only, GET-only** identity at
+  `/_markata/up-identity` on loopback, containing a protocol marker,
+  service role and SHA-256 of the canonical workspace directory (never its
+  raw path). This endpoint rejects non-loopback peers and hosts. Hosted
+  authenticated editor instances do not expose it.
+- Before starting children, `up` checks the bounded local port range for
+  recognized same-workspace editor/preview services. It reuses matching
+  roles and reports their actual URLs; if both already run, return success
+  without starting duplicate processes.
+- Reusing means **observation only**. Ctrl+C stops exclusively children
+  launched by the current command. A local identity marker is not remote
+  authentication or permission to stop or control an existing process.
+  Older, unrelated and wrong-workspace listeners are never reused.
 - The command prints **starting URLs**, never claims ready until the individual
   service reports readiness. A builder failure is reported and the editor
   remains usable; an editor failure ends the foreground workspace.
