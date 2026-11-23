@@ -84,3 +84,23 @@ func TestSetupRejectsUndiscoverableConfig(t *testing.T) {
 		t.Fatalf("setup created a duplicate config: %v", statErr)
 	}
 }
+
+func TestSetupAtomicCreationDoesNotReplaceExistingConfig(t *testing.T) {
+	workspace := t.TempDir()
+	target := filepath.Join(workspace, defaultConfigFilename)
+	const original = "# existing user configuration\n"
+	if err := os.WriteFile(target, []byte(original), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := writeSetupConfig(target); err == nil {
+		t.Fatal("setup must not overwrite an existing file")
+	}
+	got, err := os.ReadFile(target)
+	if err != nil || string(got) != original {
+		t.Fatalf("existing configuration changed: %v, %q", err, got)
+	}
+	matches, err := filepath.Glob(filepath.Join(workspace, ".markata-setup-*.tmp"))
+	if err != nil || len(matches) != 0 {
+		t.Fatalf("staged files left after failure: %v, %v", matches, err)
+	}
+}
