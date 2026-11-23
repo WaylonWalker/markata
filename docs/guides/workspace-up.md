@@ -52,11 +52,20 @@ markata up --editor-port 8767    # require exactly 8767
 markata up --strict-ports        # never change 8766 / 8000
 ```
 
-**An occupied port does not prove the existing listener belongs to this
-workspace.** Until a local workspace ownership handshake is implemented,
-`up` never reuses or terminates an unknown process and may start a separate
-instance on a free port. Avoid running multiple editors against the same
-workspace unintentionally.
+If a local Markata editor or preview already serves **the same workspace**,
+`up` recognizes its read-only loopback identity and **reuses the existing
+service**. That means running `markata up` twice won't silently start two
+editors when both instances can speak this protocol. It can also reuse a
+separately started local `markata editor` or `markata serve` from the same
+version. A matched service is not taken over; Ctrl+C only stops processes
+started by the current invocation. If both are already running, `up`
+reports the URLs and exits successfully.
+
+Older Markata versions and unrelated listeners do not have this identity
+endpoint. Those remain untouched; with default ports, `up` can start a new
+service on a free loopback port. This is a local discovery hint, **not a
+network authentication or permission mechanism**.
+
 
 The parent forwards Ctrl+C to its child processes, gives them an opportunity
 to shut down gracefully where supported, and forcibly stops remaining
