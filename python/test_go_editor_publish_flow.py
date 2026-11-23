@@ -807,6 +807,47 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         self.assertIn('image: "/images/', source)
         self.assertEqual(errors, [])
 
+
+    def test_pwa_android_single_photo_is_visible_in_post_body(self):
+        context = self.browser.new_context(viewport={"width": 390, "height": 844})
+        self.addCleanup(context.close)
+        page = context.new_page()
+        errors = []
+        page.on("pageerror", lambda error: errors.append(str(error)))
+        page.goto(self.url)
+        page.evaluate("""async () => {
+            await navigator.serviceWorker.ready;
+            if (!navigator.serviceWorker.controller) {
+                await new Promise((resolve, reject) => {
+                    const timeout = setTimeout(() => reject(new Error('No controller')), 10000);
+                    navigator.serviceWorker.addEventListener('controllerchange', () => {
+                        clearTimeout(timeout); resolve();
+                    }, {once: true});
+                });
+            }
+        }""")
+        shared_url = page.evaluate("""async () => {
+            const base64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLhqQAAAABJRU5ErkJggg==';
+            const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+            const form = new FormData();
+            form.set('share_title', 'Single shared photo');
+            form.append('images', new File([bytes], 'picture.png', {type: 'image/png'}));
+            const response = await fetch('/share-target', {method: 'POST', body: form});
+            if (!response.redirected) throw Error('Share target did not redirect');
+            return response.url;
+        }""")
+        page.goto(shared_url)
+        dialog = page.locator("#cms-quick-note-dialog")
+        expect(dialog).to_be_visible(timeout=10000)
+        expect(dialog.locator("#cms-qn-photo-list img")).to_have_count(1)
+        dialog.locator("#cms-qn-submit").click()
+        expect(dialog).not_to_be_visible(timeout=15000)
+        expect(page.locator("#active-file")).to_contain_text("single-shared-photo-", timeout=15000)
+        source = (self.site / page.locator("#active-file").inner_text()).read_text(encoding="utf-8")
+        self.assertIn('image: "/images/', source)
+        self.assertIn("![Shared photo 1](/images/", source)
+        self.assertEqual(errors, [])
+
     def test_00_review_unchanged_file_is_immediate_and_clear(self):
         context = self.browser.new_context()
         self.addCleanup(context.close)
