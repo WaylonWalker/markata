@@ -746,6 +746,67 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         self.assertTrue((self.site / second_path).exists())
         self.assertEqual(errors, [])
 
+
+    def test_pwa_android_multi_photo_share_capture_and_save(self):
+        context = self.browser.new_context(viewport={"width": 390, "height": 844})
+        self.addCleanup(context.close)
+        page = context.new_page()
+        errors = []
+        page.on("pageerror", lambda error: errors.append(str(error)))
+        page.goto(self.url)
+        page.evaluate("""async () => {
+            const registration = await navigator.serviceWorker.ready;
+            if (!registration.active) throw new Error('Share service worker not active');
+            if (!navigator.serviceWorker.controller) {
+                await new Promise((resolve, reject) => {
+                    const timeout = setTimeout(() => reject(new Error('No controller')), 10000);
+                    navigator.serviceWorker.addEventListener('controllerchange', () => {
+                        clearTimeout(timeout); resolve();
+                    }, {once: true});
+                });
+            }
+        }""")
+        shared_url = page.evaluate("""async () => {
+            // A tiny, valid PNG sent through the same Web Share Target multipart
+            // POST that Android delivers to an installed Markata PWA.
+            const base64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLhqQAAAABJRU5ErkJggg==';
+            const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+            const form = new FormData();
+            form.set('share_title', 'Weekend photos');
+            form.set('share_text', 'Two images from Android');
+            form.append('images', new File([bytes], 'first.png', {type: 'image/png'}));
+            form.append('images', new File([bytes], 'second.png', {type: 'image/png'}));
+            const response = await fetch('/share-target', {method: 'POST', body: form});
+            if (!response.redirected) throw new Error('Share target did not redirect');
+            return response.url;
+        }""")
+        self.assertIn("share_id=", shared_url)
+        page.goto(shared_url)
+        dialog = page.locator("#cms-quick-note-dialog")
+        expect(dialog).to_be_visible(timeout=10000)
+        expect(dialog.locator("#cms-qn-heading")).to_have_value("Weekend photos")
+        expect(dialog.locator("#cms-qn-body")).to_have_value("Two images from Android")
+        expect(dialog.locator("#cms-qn-photo-list img")).to_have_count(2)
+        self.assertFalse(list((self.site / "static" / "images").glob("weekend-photos*"))
+                         if (self.site / "static" / "images").exists() else False)
+
+        # The share remains recoverable if the PWA is closed before saving.
+        dialog.locator(".cms-flow-close").click()
+        page.reload()
+        expect(dialog).to_be_visible(timeout=10000)
+        expect(dialog.locator("#cms-qn-photo-list img")).to_have_count(2)
+        dialog.locator("#cms-qn-submit").click()
+        expect(dialog).not_to_be_visible(timeout=15000)
+        expect(page.locator("#active-file")).to_contain_text("weekend-photos-", timeout=15000)
+        self.assertNotIn("share_id=", page.url)
+
+        post_path = page.locator("#active-file").inner_text()
+        source = (self.site / post_path).read_text(encoding="utf-8")
+        self.assertIn("![Shared photo 1](/images/", source)
+        self.assertIn("![Shared photo 2](/images/", source)
+        self.assertIn('image: "/images/', source)
+        self.assertEqual(errors, [])
+
     def test_00_review_unchanged_file_is_immediate_and_clear(self):
         context = self.browser.new_context()
         self.addCleanup(context.close)
