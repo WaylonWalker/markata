@@ -56,7 +56,7 @@ func TestUpIdentityIsLocalAndDoesNotExposeWorkspacePath(t *testing.T) {
 	if strings.Contains(value.Workspace, workspace) {
 		t.Fatal("identity response must not expose local directory name")
 	}
-	remote := httptest.NewRequest(http.MethodGet, "http://other.invalid"+upIdentityPath, http.NoBody)
+	remote := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://other.invalid"+upIdentityPath, http.NoBody)
 	remote.RemoteAddr = "127.0.0.1:48888"
 	writer := httptest.NewRecorder()
 	withUpIdentity(http.NotFoundHandler(), upServiceEditor, workspace).ServeHTTP(writer, remote)
@@ -178,7 +178,7 @@ func TestUpDoesNotTrustUnidentifiedLocalWebServer(t *testing.T) {
 }
 
 func TestUpIdentityOnlyUsesLoopback(t *testing.T) {
-	r := httptest.NewRequest(http.MethodGet, "http://"+upLoopbackAddress+":8766/", http.NoBody)
+	r := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://"+upLoopbackAddress+":8766/", http.NoBody)
 	r.RemoteAddr = net.JoinHostPort(upLoopbackAddress, "42345")
 	if !upIsLoopbackRequest(r) {
 		t.Fatal("expected loopback request")
