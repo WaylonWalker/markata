@@ -37,12 +37,12 @@ require (
 	github.com/yuin/goldmark-highlighting/v2 v2.0.0-20230729083705-37449abec8cc
 	github.com/zkrebbekx/go-mermaid v0.1.6
 	go.abhg.dev/goldmark/anchor v0.2.0
-	golang.org/x/crypto v0.58.0
+	golang.org/x/crypto v0.59.0
 	golang.org/x/image v0.47.0
 	golang.org/x/net v0.62.0
 	golang.org/x/sys v0.50.0
 	golang.org/x/term v0.48.0
-	golang.org/x/text v0.43.0
+	golang.org/x/text v0.44.0
 	gopkg.in/yaml.v3 v3.0.1
 	modernc.org/sqlite v1.62.0
 )
