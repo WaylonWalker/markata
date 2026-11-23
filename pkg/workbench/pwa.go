@@ -1,9 +1,15 @@
 package workbench
 
 import (
+	"bytes"
 	"encoding/json"
+	"image"
+	"image/color"
+	"image/png"
+	"math"
 	"net/http"
 	"strings"
+	"sync"
 )
 
 var pwaIconBytes = []byte(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
@@ -12,6 +18,86 @@ var pwaIconBytes = []byte(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 
   <path d="M144 352V160h44l68 104 68-104h44v192h-44V230l-56 84h-24l-56-84v122z" fill="#f8fafc"/>
 </svg>
 `)
+
+// Raster icons back up the SVG to satisfy Chromium's installability checks.
+var (
+	pwaRasterOnce sync.Once
+	pwaRasterIcons map[int][]byte
+)
+type pwaPoint struct{ x, y float64 }
+
+func pwaRounded(x, y, left, top, right, bottom, radius float64) bool {
+	if x < left || x > right || y < top || y > bottom {
+		return false
+	}
+	cx := math.Max(left+radius, math.Min(right-radius, x))
+	cy := math.Max(top+radius, math.Min(bottom-radius, y))
+	dx, dy := x-cx, y-cy
+	return dx*dx+dy*dy <= radius*radius
+}
+func pwaPolygon(x, y float64, p []pwaPoint) bool {
+	inside := false
+	for i, j := 0, len(p)-1; i < len(p); j, i = i, i+1 {
+		a, b := p[i], p[j]
+		if (a.y > y) != (b.y > y) && x < (b.x-a.x)*(y-a.y)/(b.y-a.y)+a.x {
+			inside = !inside
+		}
+	}
+	return inside
+}
+func pwaRasterPNG(size int) []byte {
+	img := image.NewRGBA(image.Rect(0, 0, size, size))
+	navy := color.RGBA{15, 23, 42, 255}
+	gold := color.RGBA{245, 158, 11, 255}
+	white := color.RGBA{248, 250, 252, 255}
+	glyph := []pwaPoint{
+		{144, 352}, {144, 160}, {188, 160}, {256, 264},
+		{324, 160}, {368, 160}, {368, 352}, {324, 352},
+		{324, 230}, {268, 314}, {244, 314}, {188, 230}, {188, 352},
+	}
+	for y := 0; y < size; y++ {
+		for x := 0; x < size; x++ {
+			sx := (float64(x) + .5) * 512 / float64(size)
+			sy := (float64(y) + .5) * 512 / float64(size)
+			c := navy
+			if pwaRounded(sx, sy, 44, 44, 468, 468, 84) && !pwaRounded(sx, sy, 64, 64, 448, 448, 64) {
+				c = gold
+			}
+			if pwaPolygon(sx, sy, glyph) {
+				c = white
+			}
+			img.SetRGBA(x, y, c)
+		}
+	}
+	var encoded bytes.Buffer
+	if png.Encode(&encoded, img) != nil {
+		return nil
+	}
+	return encoded.Bytes()
+}
+func (h *Handler) handlePWARasterIcon(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet && r.Method != http.MethodHead {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	pwaRasterOnce.Do(func() {
+		pwaRasterIcons = map[int][]byte{192: pwaRasterPNG(192), 512: pwaRasterPNG(512)}
+	})
+	size := 192
+	if r.URL.Path == "/pwa-icon-512.png" {
+		size = 512
+	}
+	data := pwaRasterIcons[size]
+	if len(data) == 0 {
+		http.Error(w, "cannot generate PWA icon", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "image/png")
+	w.Header().Set("Cache-Control", "public, max-age=86400")
+	if r.Method == http.MethodGet {
+		_, _ = w.Write(data)
+	}
+}
 
 var pwaServiceWorkerBytes = []byte(`// Markata Web Share Target. POST bodies never reach the workspace server:
 // stage images temporarily in this origin's IndexedDB and redirect to the
@@ -162,12 +248,9 @@ func (h *Handler) handlePWAManifest(w http.ResponseWriter, r *http.Request) {
 		BackgroundColor: "#0f172a",
 		ThemeColor:      "#0f172a",
 		Icons: []pwaIcon{
-			{
-				Src:     "/pwa-icon.svg",
-				Sizes:   "any",
-				Type:    "image/svg+xml",
-				Purpose: "any maskable",
-			},
+			{Src: "/pwa-icon-192.png", Sizes: "192x192", Type: "image/png", Purpose: "any"},
+			{Src: "/pwa-icon-512.png", Sizes: "512x512", Type: "image/png", Purpose: "any maskable"},
+			{Src: "/pwa-icon.svg", Sizes: "any", Type: "image/svg+xml", Purpose: "any maskable"},
 		},
 		Shortcuts: []pwaShortcut{
 			{

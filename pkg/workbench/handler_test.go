@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"image/png"
 	"io/fs"
 	"net/http"
 	"net/http/httptest"
@@ -106,13 +107,31 @@ func TestHandler_PWAManifestAndFlowsServed(t *testing.T) {
 	if fields["name"] != "images" {
 		t.Fatalf("wrong share field: %#v", fields)
 	}
-	for _, route := range []string{"/sw.js", "/pwa-icon.svg"} {
+	for _, route := range []string{"/sw.js", "/pwa-icon.svg", "/pwa-icon-192.png", "/pwa-icon-512.png"} {
 		rec := httptest.NewRecorder()
 		h.ServeHTTP(rec, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost"+route, http.NoBody))
 		if rec.Code != http.StatusOK || rec.Body.Len() == 0 {
 			t.Fatalf("GET %s returned %d (%d bytes)", route, rec.Code, rec.Body.Len())
 		}
 	}
+	for _, tc := range []struct {
+		path string
+		size int
+	}{
+		{"/pwa-icon-192.png", 192},
+		{"/pwa-icon-512.png", 512},
+	} {
+		response := httptest.NewRecorder()
+		h.ServeHTTP(response, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost"+tc.path, http.NoBody))
+		if response.Code != http.StatusOK || response.Header().Get("Content-Type") != "image/png" {
+			t.Fatalf("raster icon %s returned HTTP %d", tc.path, response.Code)
+		}
+		icon, err := png.DecodeConfig(bytes.NewReader(response.Body.Bytes()))
+		if err != nil || icon.Width != tc.size || icon.Height != tc.size {
+			t.Fatalf("raster icon %s dimensions: %+v, %v", tc.path, icon, err)
+		}
+	}
+
 }
 
 func TestHandler_ExcalidrawArtifactsUseLocalFingerprintedFonts(t *testing.T) {

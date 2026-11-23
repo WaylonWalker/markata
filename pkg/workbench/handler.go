@@ -319,6 +319,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.handlePWAServiceWorker(w, r)
 	case r.URL.Path == "/pwa-icon.svg":
 		h.handlePWAIcon(w, r)
+	case r.URL.Path == "/pwa-icon-192.png" || r.URL.Path == "/pwa-icon-512.png":
+		h.handlePWARasterIcon(w, r)
 	case r.URL.Path == "/favicon.ico":
 		data, err := web.ReadFile("web/favicon.ico")
 		if err != nil {
