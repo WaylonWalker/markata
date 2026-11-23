@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import copy
 import unittest
 
 from buildlab_evidence import summarize
