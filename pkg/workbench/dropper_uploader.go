@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -143,6 +144,13 @@ func newDropperUploaderService(config DropperUploaderServerConfig) (*dropperUplo
 // ServeDropperUploader serves a fixed image-upload capability on a Unix
 // socket. The Dropper token never enters the workbench container or browser.
 func ServeDropperUploader(ctx context.Context, config DropperUploaderServerConfig) error {
+	// A credential-bearing local socket requires enforceable owner/group
+	// permissions. Windows does not guarantee the POSIX 0660 mode contract:
+	// os.Chmod may succeed while Stat still reports a world-writable socket.
+	// Fail closed until a Windows-specific ACL-backed transport is implemented.
+	if runtime.GOOS == "windows" {
+		return errors.New("dropper uploader Unix-socket credentials are unsupported on Windows; use a Linux/macOS uploader backend")
+	}
 	service, err := newDropperUploaderService(config)
 	if err != nil {
 		return err

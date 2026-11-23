@@ -672,3 +672,19 @@ This verification identifies the release's **source Git revision**, not
 its byte-for-byte rendered output, CDN cache rollout, or availability at
 every public edge. Site URL health checks and other deployment providers
 need dedicated follow-up adapters.
+
+
+### Credential-bearing Dropper uploader platform support
+
+A hosted Markata editor can delegate photo uploads to a **separate local
+Dropper uploader process**, so the editor and browser never receive the
+upstream upload token. That capability currently relies on a Unix-domain
+socket with POSIX owner/group permissions (mode `0660`). It is supported
+only on operating systems where those permission bits are enforceable.
+
+On Windows, the credential-bearing Unix-socket uploader **fails closed** with
+an unsupported-platform error. Windows may report `0666` for Unix sockets
+even after `chmod 0660`; a successful chmod call is not evidence of a
+restricted Windows ACL. Use a secure Linux/macOS uploader backend or wait for
+a Windows ACL-based transport to be implemented and tested. This restriction
+does **not** disable the standard local editor or Markdown site builder.
