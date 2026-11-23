@@ -874,6 +874,38 @@ body > header h1 {
   }
 }
 
+/* Share capture previews, including photos delivered from Android's share sheet. */
+.cms-qn-photo-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+  gap: 8px;
+}
+.cms-qn-photo {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.cms-qn-photo img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--cms-hairline);
+}
+.cms-qn-photo button {
+  min-height: 28px;
+  border: 1px solid var(--cms-hairline);
+  border-radius: 6px;
+  background: var(--cms-surface);
+  color: var(--cms-ink);
+  cursor: pointer;
+}
+.cms-flow-segmented button:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
 /* ============================================================================
    Split Publish Control, Advanced Review Menu, & Live Publish Toast
    ============================================================================ */

@@ -67,3 +67,8 @@ site before making performance claims.
 
 See the [Go workbench guide](go-workbench.md) for publishing, Changes review, and
 comparing unsynced copies.
+
+
+### Share photos from Android
+
+Install the editor PWA from an HTTPS origin and choose **Markata** from Android's Share menu. The share target accepts text, URLs, and up to eight PNG/JPEG/GIF/WebP photos (15 MiB per image, 48 MiB total). Shared photos are staged only in this browser until you review and save them in **Quick Note**. They are written to the workspace via the existing new-post image upload route, retaining the site's configured local or Dropper image provider; the first photo becomes the cover and all photos are added to the Markdown body. Canceling or reloading before saving preserves the staged share for up to 24 hours as long as the share URL is retained. Daily-note append does not support photo attachments. Actual publishing remains an explicit action.

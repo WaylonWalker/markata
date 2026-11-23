@@ -13,20 +13,75 @@ var pwaIconBytes = []byte(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 
 </svg>
 `)
 
-var pwaServiceWorkerBytes = []byte(`// Minimal Markata Editor PWA service worker.
-// Keeps the app installable and enables OS Share Target while always
-// preferring fresh network responses for workspace APIs and live previews.
-self.addEventListener('install', (event) => {
-  self.skipWaiting();
-});
+var pwaServiceWorkerBytes = []byte(`// Markata Web Share Target. POST bodies never reach the workspace server:
+// stage images temporarily in this origin's IndexedDB and redirect to the
+// editor, which asks the user to review/save using its existing guarded API.
+const SHARE_DB = 'markata-share-captures-v1';
+const SHARE_STORE = 'captures';
+const MAX_FILES = 8;
+const MAX_IMAGE = 15 * 1024 * 1024;
+const MAX_TOTAL = 48 * 1024 * 1024;
 
-self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim());
-});
+function openShareDatabase() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(SHARE_DB, 1);
+    req.onupgradeneeded = () => req.result.createObjectStore(SHARE_STORE, { keyPath: 'id' });
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function stageShare(capture) {
+  const db = await openShareDatabase();
+  try {
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(SHARE_STORE, 'readwrite');
+      tx.objectStore(SHARE_STORE).put(capture);
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error || Error('Cannot stage shared photo'));
+    });
+  } finally {
+    db.close();
+  }
+}
+
+self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()));
 
 self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'GET') return;
-  event.respondWith(fetch(event.request));
+  const url = new URL(event.request.url);
+  if (url.origin === self.location.origin && url.pathname === '/share-target'
+      && event.request.method === 'POST') {
+    event.respondWith((async () => {
+      try {
+        const form = await event.request.formData();
+        const photos = form.getAll('images').filter((item) => item instanceof File && item.size);
+        if (photos.length > MAX_FILES) throw Error('Share a maximum of 8 photos at once');
+        const size = photos.reduce((sum, photo) => sum + photo.size, 0);
+        if (size > MAX_TOTAL || photos.some((photo) => photo.size > MAX_IMAGE)) {
+          throw Error('Each photo must be 15 MiB or less; 48 MiB total');
+        }
+        if (photos.some((photo) => !['image/png','image/jpeg','image/gif','image/webp'].includes(photo.type))) {
+          throw Error('Only PNG, JPEG, GIF, and WebP photos are supported');
+        }
+        const id = crypto.randomUUID();
+        await stageShare({
+          id, createdAt: Date.now(),
+          title: String(form.get('share_title') || '').slice(0, 2048),
+          text: String(form.get('share_text') || '').slice(0, 200000),
+          url: String(form.get('share_url') || '').slice(0, 4096),
+          files: photos,
+        });
+        return Response.redirect('/?share_id=' + encodeURIComponent(id), 303);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Could not receive shared photos';
+        return Response.redirect('/?share_error=' + encodeURIComponent(message), 303);
+      }
+    })());
+    return;
+  }
+  if (event.request.method === 'GET') event.respondWith(fetch(event.request));
 });
 `)
 

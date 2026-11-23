@@ -153,6 +153,11 @@
         <span>Tags <small>(comma-separated)</small></span>
         <input id="cms-qn-tags" type="text" placeholder="note, link" autocomplete="off">
       </label>
+      <label class="cms-flow-field">
+        <span>Photos <small>(up to 8 · 15 MiB each, 48 MiB total)</small></span>
+        <input id="cms-qn-images" type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple>
+      </label>
+      <div id="cms-qn-photo-list" class="cms-qn-photo-list" aria-live="polite"></div>
       <label class="cms-flow-check">
         <input id="cms-qn-publish" type="checkbox">
         <span>Mark public &amp; publish immediately after saving</span>
@@ -174,6 +179,97 @@
   const qnPublish = quickDialog.querySelector('#cms-qn-publish');
   const qnStatus = quickDialog.querySelector('#cms-qn-status');
   const qnSubmit = quickDialog.querySelector('#cms-qn-submit');
+  const qnImageInput = quickDialog.querySelector('#cms-qn-images');
+  const qnPhotoList = quickDialog.querySelector('#cms-qn-photo-list');
+  let qnPhotos = [];
+  let qnPhotoURLs = [];
+  let pendingShareId = null;
+  const SHARE_DB = 'markata-share-captures-v1';
+  const SHARE_STORE = 'captures';
+
+  function shareDatabase() {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open(SHARE_DB, 1);
+      request.onupgradeneeded = () => request.result.createObjectStore(SHARE_STORE, { keyPath: 'id' });
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  }
+  async function readStagedShare(id) {
+    const db = await shareDatabase();
+    try {
+      return await new Promise((resolve, reject) => {
+        const tx = db.transaction(SHARE_STORE, 'readonly');
+        const req = tx.objectStore(SHARE_STORE).get(id);
+        req.onsuccess = () => resolve(req.result || null);
+        req.onerror = () => reject(req.error);
+      });
+    } finally { db.close(); }
+  }
+  async function removeStagedShare(id) {
+    const db = await shareDatabase();
+    try {
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction(SHARE_STORE, 'readwrite');
+        tx.objectStore(SHARE_STORE).delete(id);
+        tx.oncomplete = resolve;
+        tx.onerror = () => reject(tx.error);
+        tx.onabort = () => reject(tx.error);
+      });
+    } finally { db.close(); }
+  }
+
+  function photoType(file) {
+    const types = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg',
+      gif: 'image/gif', webp: 'image/webp' };
+    return file.type || types[(file.name || '').split('.').pop().toLowerCase()] || '';
+  }
+
+  function updatePhotos(files) {
+    const next = Array.from(files || []);
+    const sum = next.reduce((total, file) => total + file.size, 0);
+    if (next.length > 8 || sum > 48 * 1024 * 1024 ||
+        next.some((file) => !file.size || file.size > 15 * 1024 * 1024 ||
+          !['image/png','image/jpeg','image/gif','image/webp'].includes(photoType(file)))) {
+      throw new Error('Choose up to 8 PNG/JPEG/GIF/WebP photos (15 MiB each, 48 MiB total).');
+    }
+    qnPhotoURLs.forEach((url) => URL.revokeObjectURL(url));
+    qnPhotoURLs = [];
+    qnPhotos = next;
+    qnImageInput.value = '';
+    qnPhotoList.replaceChildren();
+    for (const [index, file] of qnPhotos.entries()) {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'cms-qn-photo';
+      const preview = document.createElement('img');
+      const objectURL = URL.createObjectURL(file);
+      qnPhotoURLs.push(objectURL);
+      preview.src = objectURL;
+      preview.alt = file.name || ('Shared photo ' + (index + 1));
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.textContent = 'Remove';
+      remove.setAttribute('aria-label', 'Remove photo ' + (index + 1));
+      remove.addEventListener('click', () => {
+        updatePhotos(qnPhotos.filter((_, position) => position !== index));
+      });
+      wrapper.append(preview, remove);
+      qnPhotoList.append(wrapper);
+    }
+    const daily = quickDialog.querySelector('[data-qn-dest="daily"]');
+    daily.disabled = qnPhotos.length > 0;
+    if (qnPhotos.length && qnDest === 'daily') setQuickDest('note');
+  }
+  qnImageInput.addEventListener('change', () => {
+    try {
+      updatePhotos([...qnPhotos, ...qnImageInput.files]);
+      qnStatus.hidden = true;
+    } catch (error) {
+      qnImageInput.value = '';
+      qnStatus.hidden = false;
+      qnStatus.textContent = error.message;
+    }
+  });
 
   function setQuickDest(dest) {
     qnDest = dest;
@@ -234,6 +330,8 @@
     qnTags.value = prefill.tags || (prefill.url ? 'link' : 'note');
     qnPublish.checked = false;
     qnStatus.hidden = true;
+    pendingShareId = prefill.shareId || null;
+    updatePhotos(prefill.files || []);
     setQuickDest(prefill.dest || 'note');
     quickDialog.showModal();
     if (prefill.url && !prefill.title) {
@@ -250,7 +348,7 @@
     const tags = qnTags.value.split(',').map((t) => t.trim()).filter(Boolean);
     const shouldPublish = qnPublish.checked;
 
-    if (!title && !url && !bodyText) {
+    if (!title && !url && !bodyText && !qnPhotos.length) {
       qnStatus.hidden = false;
       qnStatus.textContent = 'Add a title, URL, or note before saving.';
       return;
@@ -259,6 +357,7 @@
     qnSubmit.disabled = true;
     try {
       if (qnDest === 'daily') {
+        if (qnPhotos.length) throw new Error('Photos must be saved in a new note, not appended to a daily note.');
         const heading = url
           ? `- **${nowTime()}** — [${title || url}](${url})`
           : `- **${nowTime()}**${title ? ` — **${title}**` : ''}`;
@@ -275,7 +374,7 @@
 
       const date = todayISO();
       const dir = detectDirectory(['thoughts', 'notes', 'posts', 'pages'], 'notes');
-      const slug = slugify(title) || 'quick-note';
+      const slug = slugify(title) || (qnPhotos.length ? 'shared-photos' : 'quick-note');
       // Titles can repeat, and share targets can arrive seconds apart; keep
       // independent captures from colliding with existing filenames.
       const unique = `${date}-${nowStamp()}-${Math.random().toString(36).slice(2, 10)}`;
@@ -294,16 +393,43 @@
       if (url) lines.push(`[${title || url}](${url})`, '');
       if (bodyText) lines.push(bodyText, '');
 
-      const resp = await fetch('/workspace/file?path=' + encodeURIComponent(path), {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-        body: lines.join('\n'),
-      });
+      let resp;
+      if (qnPhotos.length) {
+        const form = new FormData();
+        form.set('path', path);
+        form.set('source', lines.join('\n'));
+        form.set('image_name', slug + '-' + unique);
+        for (const file of qnPhotos) {
+          // Some Android providers omit File.type. The server still verifies
+          // the actual image bytes independently.
+          const upload = file.type ? file : new File([file], file.name || 'shared-photo', {
+            type: photoType(file),
+          });
+          form.append('image', upload, upload.name || 'shared-photo');
+        }
+        resp = await fetch('/workspace/new-post', { method: 'POST', body: form });
+      } else {
+        resp = await fetch('/workspace/file?path=' + encodeURIComponent(path), {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+          body: lines.join('\n'),
+        });
+      }
       if (!resp.ok) {
         const err = await resp.json().catch(() => ({}));
         throw new Error(err.error || 'Could not create quick note');
       }
       quickDialog.close();
+      if (pendingShareId) {
+        try {
+          await removeStagedShare(pendingShareId);
+          pendingShareId = null;
+          history.replaceState(null, '', location.pathname + location.hash);
+        } catch {
+          // The document is already saved; keeping the staged copy is safe.
+          toast('Note saved, but the temporary share could not be cleared.', 'warning');
+        }
+      }
       await window.MarkataSiteTree?.refresh?.();
       await window.MarkataSiteTree?.openFile?.(path);
       if (window.matchMedia('(max-width: 768px)').matches) {
@@ -496,14 +622,35 @@
     const shareTitle = params.get('share_title') || '';
     const shareText = params.get('share_text') || '';
     const shareUrl = params.get('share_url') || '';
-    if (!flow && !shareTitle && !shareText && !shareUrl) return;
+    const shareId = params.get('share_id');
+    const shareError = params.get('share_error');
+    if (!flow && !shareTitle && !shareText && !shareUrl && !shareId && !shareError) return;
 
     const cleanURL = location.pathname + location.hash;
-    history.replaceState(null, '', cleanURL);
+    // Keep a photo share's ID in the URL until it is successfully saved:
+    // cancel/reload should not silently discard the staged attachment.
+    if (!shareId) history.replaceState(null, '', cleanURL);
 
     // Wait briefly for site tree to initialize
-    setTimeout(() => {
-      if (shareTitle || shareText || shareUrl) {
+    setTimeout(async () => {
+      if (shareError) {
+        toast('Share failed: ' + shareError, 'warning');
+      } else if (shareId) {
+        try {
+          const capture = await readStagedShare(shareId);
+          if (!capture || Date.now() - capture.createdAt > 24 * 60 * 60 * 1000) {
+            throw new Error('Shared photos expired or are no longer available.');
+          }
+          const text = capture.text || '';
+          const sharedURL = capture.url || (/^https?:\/\/\S+$/i.test(text.trim()) ? text.trim() : '');
+          openQuickNote({
+            shareId, title: capture.title || '', text: sharedURL === text.trim() ? '' : text,
+            url: sharedURL, files: capture.files || [],
+          });
+        } catch (error) {
+          toast('Could not open shared photos: ' + error.message, 'warning');
+        }
+      } else if (shareTitle || shareText || shareUrl) {
         // Android often puts the shared URL inside share_text when share_url is empty
         let url = shareUrl;
         let text = shareText;
