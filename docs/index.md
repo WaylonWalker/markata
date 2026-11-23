@@ -31,7 +31,7 @@ Choose an install method. Markata is a Go CLI; Python is not required to run it.
 For Linux and macOS, read [the installer source](https://github.com/WaylonWalker/markata/blob/main/install.sh) first if you want to inspect it.
 
 ```bash title="Terminal"
-curl -fsSL https://raw.githubusercontent.com/WaylonWalker/markata/main/install.sh | bash
+curl -fsSL https://markata.dev/install.sh | bash
 markata version
 ```
 
@@ -42,7 +42,7 @@ markata version
 Download and inspect the installer before you run it:
 
 ```bash title="Terminal"
-curl -fsSLo install-markata.sh https://raw.githubusercontent.com/WaylonWalker/markata/main/install.sh
+curl -fsSLo install-markata.sh https://markata.dev/install.sh
 less install-markata.sh
 bash install-markata.sh
 markata version
