@@ -3,6 +3,7 @@
 Set MARKATA_GO_EDITOR_BINARY to a built markata-go executable to run this
 end-to-end test. It creates a temporary site repository and bare remote.
 """
+import base64
 import os
 import re
 import socket
@@ -808,6 +809,53 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         self.assertIn('image: "/images/', source)
         self.assertEqual(errors, [])
 
+
+
+    def test_android_share_target_handles_real_multipart_post_navigation(self):
+        context = self.browser.new_context(viewport={"width": 390, "height": 844})
+        self.addCleanup(context.close)
+        page = context.new_page()
+        page.goto(self.url)
+        page.evaluate("""async () => {
+            await navigator.serviceWorker.ready;
+            if (!navigator.serviceWorker.controller) {
+                await new Promise((resolve, reject) => {
+                    const timeout = setTimeout(() => reject(Error('No controller')), 10000);
+                    navigator.serviceWorker.addEventListener('controllerchange', () => {
+                        clearTimeout(timeout); resolve();
+                    }, {once: true});
+                });
+            }
+            const form = document.createElement('form');
+            form.action = '/share-target';
+            form.method = 'POST';
+            form.enctype = 'multipart/form-data';
+            const title = document.createElement('input');
+            title.name = 'share_title';
+            title.value = 'From Android POST navigation';
+            const file = document.createElement('input');
+            file.type = 'file';
+            file.name = 'images';
+            file.id = 'pwa-share-navigation-photo';
+            form.append(title, file);
+            document.body.append(form);
+        }""")
+        tiny_png = base64.b64decode(
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLhqQAAAABJRU5ErkJggg=="
+        )
+        page.locator("#pwa-share-navigation-photo").set_input_files(
+            {"name": "nav.png", "mimeType": "image/png", "buffer": tiny_png}
+        )
+        with page.expect_navigation(wait_until="domcontentloaded"):
+            page.evaluate("document.querySelector('form[action="/share-target"]').submit()")
+        self.assertIn("share_id=", page.url)
+        dialog = page.locator("#cms-quick-note-dialog")
+        expect(dialog).to_be_visible(timeout=10000)
+        expect(dialog.locator("#cms-qn-heading")).to_have_value("From Android POST navigation")
+        expect(dialog.locator("#cms-qn-photo-list img")).to_have_count(1)
+        dialog.locator("#cms-qn-discard-share").click()
+        expect(dialog).not_to_be_visible()
+        self.assertNotIn("share_id=", page.url)
 
     def test_pwa_android_single_photo_is_visible_in_post_body(self):
         context = self.browser.new_context(viewport={"width": 390, "height": 844})
