@@ -299,6 +299,9 @@ func runServeCommand(cmd *cobra.Command, args []string) error {
 	searchEndpoint, searchHandlerPath := configuredSearchEndpoints(getModelsConfig(m))
 	serveSearchEndpoint = searchEndpoint
 	handler := mountServeAdmin(createHandler(outputPath, m, searchHandlerPath), runtime, m.Config().ContentDir, adminEnabled)
+	if serveHost == "127.0.0.1" || serveHost == "localhost" {
+		handler = withUpIdentity(handler, upServiceBuilder, ".")
+	}
 
 	listener, err := listenWithPortRecovery(cmd, addr)
 	if err != nil {
