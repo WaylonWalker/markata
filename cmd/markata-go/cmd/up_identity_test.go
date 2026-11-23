@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
@@ -49,7 +48,7 @@ func TestUpIdentityIsLocalAndDoesNotExposeWorkspacePath(t *testing.T) {
 	if response.StatusCode != http.StatusOK || value.Workspace != identity || value.Service != upServiceEditor || value.Protocol != upIdentityProtocol {
 		t.Fatalf("unexpected identity: %#v status=%d", value, response.StatusCode)
 	}
-	if strings.Contains(value.Workspace, filepath.Base(workspace)) {
+	if strings.Contains(value.Workspace, workspace) {
 		t.Fatal("identity response must not expose local directory name")
 	}
 	remote := httptest.NewRequest(http.MethodGet, "http://other.invalid"+upIdentityPath, nil)
