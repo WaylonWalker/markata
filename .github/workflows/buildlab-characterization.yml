@@ -34,3 +34,50 @@ jobs:
 
       - name: Run observational Build Lab characterization
         run: go test -v -race -timeout=30m ./cmd/markata-go/cmd -run '^TestBuildLab_LinkedAndFixtureMutationsCharacterizeProduct$'
+
+  evidence:
+    name: Verify isolated production output reproducibility
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: Test evidence parser
+        run: python3 -m unittest discover -s scripts/ci -p 'test_buildlab_evidence.py'
+
+      - name: Build current Markata executable
+        run: go build -o "$RUNNER_TEMP/markata" ./cmd/markata
+
+      - name: Compare independent clean production builds
+        shell: bash
+        run: |
+          "$RUNNER_TEMP/markata" buildlab run \
+            --fixture "$GITHUB_WORKSPACE/examples/editor-site" \
+            --baseline "$RUNNER_TEMP/markata" \
+            --candidate "$RUNNER_TEMP/markata" \
+            --check-determinism=true \
+            --volatile "" \
+            --result "$RUNNER_TEMP/buildlab-repro.json"
+
+      - name: Verify evidence and publish timing summary
+        if: always()
+        run: |
+          python3 scripts/ci/buildlab_evidence.py \
+            "$RUNNER_TEMP/buildlab-repro.json" \
+            --summary "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload structured comparison
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: buildlab-repro-${{ github.sha }}
+          path: ${{ runner.temp }}/buildlab-repro.json
+          if-no-files-found: warn
+          retention-days: 30
