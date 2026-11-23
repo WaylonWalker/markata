@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#5629a4">
+<title>Markata · Offline capture</title>
+<style>
+:root{font-family:system-ui,-apple-system,sans-serif;color-scheme:light dark}
+body{max-width:640px;margin:auto;padding:20px 18px 44px;line-height:1.5}
+h1{font-size:1.7rem;margin-bottom:.25rem}
+h2{font-size:1.2rem}
+p{margin:0 0 20px}
+section{padding:14px 0;border-top:1px solid #8886}
+label{display:block;font-weight:600;margin:12px 0 5px}
+input,textarea,button{font:inherit}
+input:not([type=file]),textarea{box-sizing:border-box;width:100%;padding:12px;border:1px solid #888;border-radius:8px}
+textarea{min-height:90px;resize:vertical}
+button,.action{display:inline-block;padding:10px 14px;border-radius:9px;border:1px solid #888;background:transparent;color:inherit;cursor:pointer;text-decoration:none;margin:5px 5px 5px 0}
+.primary{background:#5629a4;color:#fff;border-color:#5629a4}
+small{display:block;color:inherit;opacity:.8}
+#status{min-height:24px}
+li{padding:10px 0;border-bottom:1px solid #8884;overflow-wrap:anywhere}
+li span{display:block}
+</style>
+</head>
+<body>
+<main>
+<h1>Markata · Offline capture</h1>
+<p>The full editor is unavailable. Save a link, note, or photo here on this device, then open the editor when you're back online. Nothing is published automatically.</p>
+<p id="connection" role="status"></p>
+<a class="action" href="/">Open editor</a>
+<section>
+<h2>Save a link or note</h2>
+<form id="note-form">
+<label for="title">Title (optional)</label><input id="title" autocomplete="off" maxlength="500">
+<label for="url">Link (optional)</label><input id="url" type="url" inputmode="url" placeholder="https://example.com">
+<label for="text">Text (optional)</label><textarea id="text" maxlength="8192"></textarea>
+<button class="primary" type="submit">Save to inbox</button>
+</form>
+</section>
+<section>
+<h2>Take a photo</h2>
+<label for="photo">Camera or photo library</label>
+<input id="photo" type="file" accept="image/png,image/jpeg,image/gif,image/webp" capture="environment">
+<small>PNG, JPEG, GIF or WebP, up to 15 MiB. Unsupported files won't be saved.</small>
+</section>
+<section>
+<h2>Saved on this device</h2>
+<p id="status" role="status" aria-live="polite"></p>
+<ol id="inbox"></ol>
+<button id="protect" type="button" hidden>Protect local storage</button>
+<small>Browser storage can be cleared or evicted. This is not synchronized or encrypted between accounts. Do not use a shared device for private drafts.</small>
+</section>
+</main>
+<script>
+(() => {
+  'use strict';
+  const DB='markata-share-inbox',STORE='shares';
+  const status=document.getElementById('status');
+  const list=document.getElementById('inbox');
+  const protect=document.getElementById('protect');
+  const connection=document.getElementById('connection');
+  function connectionStatus(){connection.textContent=navigator.onLine?'Connection detected. Try opening the editor.':'Offline. Captures stay on this device until you choose to create a post.';}
+  connectionStatus();
+  window.addEventListener('online',connectionStatus);
+  window.addEventListener('offline',connectionStatus);
+  function openInbox() {
+    return new Promise((resolve,reject)=>{
+      const request=indexedDB.open(DB,1);
+      request.onupgradeneeded=()=>{
+        if(!request.result.objectStoreNames.contains(STORE))
+          request.result.createObjectStore(STORE,{keyPath:'id'});
+      };
+      request.onsuccess=()=>resolve(request.result);
+      request.onerror=()=>reject(request.error);
+    });
+  }
+  async function transact(mode,act) {
+    const db=await openInbox();
+    try{
+      return await new Promise((resolve,reject)=>{
+        const tx=db.transaction(STORE,mode);
+        const req=act(tx.objectStore(STORE));
+        let result;
+        req.onsuccess=()=>result=req.result;
+        tx.oncomplete=()=>resolve(result);
+        tx.onerror=()=>reject(tx.error||new Error('Storage failed'));
+        tx.onabort=()=>reject(tx.error||new Error('Storage failed'));
+      });
+    }finally{db.close();}
+  }
+  function safeURL(raw){
+    if(!raw)return '';
+    const parsed=new URL(raw.trim());
+    if(!['http:','https:'].includes(parsed.protocol)||!parsed.hostname||parsed.username||parsed.password)
+      throw new Error('Use a valid http(s) link without credentials.');
+    return parsed.href;
+  }
+  async function save(entry){
+    await transact('readwrite',store=>store.add({
+      id:crypto.randomUUID()+'-0',receivedAt:Date.now(),
+      title:entry.title||'',text:entry.text||'',url:entry.url||'',
+      image:entry.image||null,imageCount:entry.image?1:0,imageIndex:entry.image?1:0
+    }));
+    status.textContent='Saved locally. Open the editor when available to create a post.';
+    await refresh();
+  }
+  function kind(entry){return entry.image?'Photo: '+(entry.image.name||'Camera photo'):entry.url?'Link: '+entry.url:'Note: '+(entry.title||entry.text||'Untitled').slice(0,100);}
+  async function refresh(){
+    try {
+      const rows=(await transact('readonly',store=>store.getAll())).sort((a,b)=>a.receivedAt-b.receivedAt);
+      list.replaceChildren();
+      for(const entry of rows){
+        const li=document.createElement('li'),name=document.createElement('span'),remove=document.createElement('button');
+        name.textContent=kind(entry);
+        remove.textContent='Discard';
+        remove.type='button';
+        remove.addEventListener('click',async()=>{
+          try{await transact('readwrite',store=>store.delete(entry.id));await refresh();}
+          catch {status.textContent='Could not discard this saved item.';}
+        });
+        li.append(name,remove);
+        list.append(li);
+      }
+      if(!rows.length) status.textContent='No items in the share inbox.';
+      protect.hidden=!rows.length||!navigator.storage?.persist;
+    }catch(error){status.textContent='Cannot read local shares: '+error.message;}
+  }
+  document.getElementById('note-form').addEventListener('submit',async event=>{
+    event.preventDefault();
+    const title=document.getElementById('title').value.trim();
+    const text=document.getElementById('text').value.trim();
+    try {
+      const url=safeURL(document.getElementById('url').value);
+      if(!title&&!text&&!url)throw new Error('Enter a link or some text first.');
+      await save({title,text,url});
+      event.target.reset();
+    }catch(error){status.textContent='Not saved: '+error.message;}
+  });
+  document.getElementById('photo').addEventListener('change',async event=>{
+    const photo=event.target.files?.[0];
+    event.target.value='';
+    if(!photo)return;
+    try {
+      if(!['image/jpeg','image/png','image/gif','image/webp'].includes(photo.type))
+        throw new Error('Only PNG, JPEG, GIF and WebP are supported.');
+      if(photo.size>15*1024*1024)throw new Error('Photo exceeds 15 MiB.');
+      await save({image:photo});
+    }catch(error){status.textContent='Photo not saved: '+error.message;}
+  });
+  protect.addEventListener('click',async()=>{
+    try {
+      const granted=await navigator.storage.persist();
+      status.textContent=granted?'Storage protection granted.':'Browser did not grant persistent storage; important drafts may be evicted.';
+    }catch {status.textContent='Storage protection unavailable.';}
+  });
+  void refresh();
+})();
+</script>
+</body>
+</html>
