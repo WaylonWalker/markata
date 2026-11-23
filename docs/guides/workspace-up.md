@@ -37,7 +37,7 @@ markata up --builder-only
 The editor and builder bind to **loopback only**. A port conflict stops startup
 rather than exposing a service on another interface. The parent forwards
 Ctrl+C to its child processes, gives them an opportunity to shut down
-gracefully, and cleans them up before exiting.
+gracefully on platforms that support interrupt delivery, and forcibly stops\nremaining children when needed (including Windows).
 
 For separate processes and advanced options, you can still run
 `markata editor` and `markata serve` independently.
