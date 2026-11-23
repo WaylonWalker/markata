@@ -53,8 +53,8 @@ markata up --strict-ports        # never change 8766 / 8000
 ```
 
 If a local Markata editor or preview already serves **the same workspace**,
-`up` recognizes its read-only loopback identity and **reuses the existing
-service**. That means running `markata up` twice won't silently start two
+`up` recognizes its read-only loopback workspace **and configuration** identity
+and **reuses the existing service**. That means running `markata up` twice won't silently start two
 editors when both instances can speak this protocol. It can also reuse a
 separately started local `markata editor` or `markata serve` from the same
 version. A matched service is not taken over; Ctrl+C only stops processes
