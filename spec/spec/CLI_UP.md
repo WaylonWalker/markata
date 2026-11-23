@@ -18,8 +18,17 @@ It reuses the existing browser editor and `serve` watcher/builder unchanged.
   `127.0.0.1:8000`. Override via `--editor-port` and
   `--preview-port`. Both services must bind loopback and use distinct ports.
 - `--editor-only` and `--builder-only` are mutually exclusive.
-- Verify ports are unoccupied before launching; an unexpected port collision
-  must fail rather than silently choosing a new/public interface.
+- Check default ports before launch. If occupied, choose the first available
+  loopback port in the next 20 candidates and tell the user exactly what
+  changed; never bind a different interface, kill or attach to unknown
+  listeners. The editor and builder ports remain independent.
+- An explicitly supplied `--editor-port` or `--preview-port` must not be
+  changed. `--strict-ports` enforces that rule on defaults too. Report
+  actionable conflicts and candidate-range exhaustion without hiding errors.
+- Do not claim ownership of an existing Markata process based only on a port.
+  Same-workspace idempotence/reuse requires a separate verifiable identity
+  boundary under issue #2108; until then, a second invocation may create a
+  separate editor on another port.
 - The command prints **starting URLs**, never claims ready until the individual
   service reports readiness. A builder failure is reported and the editor
   remains usable; an editor failure ends the foreground workspace.
