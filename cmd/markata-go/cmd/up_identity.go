@@ -21,9 +21,10 @@ const (
 )
 
 type upServiceIdentity struct {
-	Protocol  string `json:"protocol"`
-	Workspace string `json:"workspace"`
-	Service   string `json:"service"`
+	Protocol      string `json:"protocol"`
+	Workspace     string `json:"workspace"`
+	Configuration string `json:"configuration"`
+	Service       string `json:"service"`
 }
 
 func upWorkspaceIdentity(workspace string) (string, error) {
@@ -40,11 +41,67 @@ func upWorkspaceIdentity(workspace string) (string, error) {
 	return fmt.Sprintf("%x", digest), nil
 }
 
+// upConfigurationIdentity keeps separate CLI configurations from being
+// accidentally reused as one workspace. It never reveals the chosen paths;
+// the exported fingerprint is a digest, not a credential or authorization.
+func upConfigurationIdentity(workspace, config string, merged []string, output string) (string, error) {
+	normalized := func(path string) (string, error) {
+		if path == "" {
+			return "", nil
+		}
+		if !filepath.IsAbs(path) {
+			path = filepath.Join(workspace, path)
+		}
+		absolute, err := filepath.Abs(path)
+		if err != nil {
+			return "", err
+		}
+		if resolved, resolveErr := filepath.EvalSymlinks(absolute); resolveErr == nil {
+			absolute = resolved
+		}
+		return filepath.Clean(absolute), nil
+	}
+	primary, err := normalized(config)
+	if err != nil {
+		return "", err
+	}
+	mergePaths := make([]string, 0, len(merged))
+	for _, path := range merged {
+		canonical, err := normalized(path)
+		if err != nil {
+			return "", err
+		}
+		mergePaths = append(mergePaths, canonical)
+	}
+	destination, err := normalized(output)
+	if err != nil {
+		return "", err
+	}
+	payload, err := json.Marshal(struct {
+		Primary string   `json:"primary"`
+		Merge   []string `json:"merge"`
+		Output  string   `json:"output"`
+	}{Primary: primary, Merge: mergePaths, Output: destination})
+	if err != nil {
+		return "", err
+	}
+	sum := sha256.Sum256(payload)
+	return fmt.Sprintf("%x", sum), nil
+}
+
+func currentUpConfigurationIdentity(workspace string) (string, error) {
+	return upConfigurationIdentity(workspace, cfgFile, mergeConfigFiles, outputDir)
+}
+
 // withUpIdentity exposes only a read-only local identity. It never exposes
 // the workspace path, PID, source contents, credentials or admin operations.
 // Its response is a *hint* for safe local reuse, not remote authentication.
 func withUpIdentity(next http.Handler, service, workspace string) http.Handler {
 	identity, err := upWorkspaceIdentity(workspace)
+	if err != nil {
+		return next
+	}
+	configuration, err := currentUpConfigurationIdentity(workspace)
 	if err != nil {
 		return next
 	}
@@ -61,7 +118,7 @@ func withUpIdentity(next http.Handler, service, workspace string) http.Handler {
 		w.Header().Set("Cache-Control", "private, no-store")
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		if err := json.NewEncoder(w).Encode(upServiceIdentity{
-			Protocol: upIdentityProtocol, Workspace: identity, Service: service,
+			Protocol: upIdentityProtocol, Workspace: identity, Configuration: configuration, Service: service,
 		}); err != nil {
 			return
 		}
@@ -128,6 +185,10 @@ func findExistingUpServices(ctx context.Context, services []upService, workspace
 	if err != nil {
 		return nil, nil, err
 	}
+	configuration, err := currentUpConfigurationIdentity(workspace)
+	if err != nil {
+		return nil, nil, err
+	}
 	newServices = make([]upService, 0, len(services))
 	for _, service := range services {
 		base, portErr := upServicePort(service)
@@ -144,7 +205,7 @@ func findExistingUpServices(ctx context.Context, services []upService, workspace
 				return nil, nil, err
 			}
 			instance, ok := probeUpService(ctx, port)
-			if !ok || instance.Workspace != identity || instance.Service != service.name {
+			if !ok || instance.Workspace != identity || instance.Configuration != configuration || instance.Service != service.name {
 				continue
 			}
 			reusable, updateErr := withUpServicePort(service, port)
