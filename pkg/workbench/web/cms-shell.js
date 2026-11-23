@@ -478,9 +478,14 @@
       return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
     });
     const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-    const ink = luminance > 0.42 ? '#11151d' : '#ffffff';
-    document.documentElement.style.setProperty('--btn-on-accent', ink);
-    document.documentElement.style.setProperty('--cms-on-accent', ink);
+    // Only write when needed. The observer also watches the root style
+    // attribute, so unconditional setProperty creates a self-triggering loop.
+    const ink = luminance > 0.179 ? '#11151d' : '#ffffff';
+    for (const token of ['--btn-on-accent', '--cms-on-accent']) {
+      if (document.documentElement.style.getPropertyValue(token) !== ink) {
+        document.documentElement.style.setProperty(token, ink);
+      }
+    }
   }
   ensurePrimaryContrast();
   new MutationObserver(ensurePrimaryContrast).observe(document.documentElement, {
@@ -493,10 +498,15 @@
   function openWorkspaceChanges() {
     if (isMobile()) {
       setMobileView('content');
-    } else if (workbench.classList.contains('sidebar-collapsed')) {
-      setSidebarCollapsed(false);
+    } else if (workbench.classList.contains('sidebar-hidden')) {
+      // Reuse the existing navigation action so inert/aria-hidden are restored.
+      if (window.MarkataShortcuts?.execute) {
+        window.MarkataShortcuts.execute('workbench.toggleSidebar');
+      } else {
+        sidebarToggle?.click();
+      }
     }
-    const changesTab = document.querySelector('#site-sidebar [data-sidebar-tab="changes"]');
+    const changesTab = document.querySelector('#workspace-tab-changes');
     changesTab?.click();
   }
 

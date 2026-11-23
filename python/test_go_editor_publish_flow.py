@@ -665,6 +665,81 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         expect(mpage.locator("#template-picker")).to_be_visible()
         self.assertEqual(merrors, [])
 
+
+    def test_cms_publish_menu_opens_changes_and_theme_surfaces_are_opaque(self):
+        context = self.browser.new_context(viewport={"width": 1366, "height": 850})
+        self.addCleanup(context.close)
+        page = context.new_page()
+        errors = []
+        page.on("pageerror", lambda error: errors.append(str(error)))
+        page.goto(self.url)
+
+        # Recoloring must settle instead of feeding the root style observer
+        # back into itself and freezing the editor.
+        page.evaluate("document.documentElement.setAttribute('data-theme', 'dark')")
+        expect(page.locator("#header-doc")).to_be_visible()
+        self.assertIn(
+            page.evaluate("document.documentElement.style.getPropertyValue('--cms-on-accent')"),
+            ("#ffffff", "#11151d"),
+        )
+
+        page.locator("#sidebar-toggle").click()
+        expect(page.locator("#workbench")).to_have_class(re.compile(r"\\bsidebar-hidden\\b"))
+        page.locator("#publish-menu-toggle").click()
+        menu = page.locator("#publish-menu")
+        expect(menu).to_be_visible()
+        self.assertNotEqual(
+            menu.evaluate("(node) => getComputedStyle(node).backgroundColor"),
+            "rgba(0, 0, 0, 0)",
+        )
+        menu.locator('[data-publish-action="changes"]').click()
+        expect(page.locator("#workbench")).not_to_have_class(re.compile(r"\\bsidebar-hidden\\b"))
+        expect(page.locator("#workspace-tab-changes")).to_have_attribute("aria-selected", "true")
+        self.assertEqual(errors, [])
+
+    def test_cms_quick_note_post_metadata_and_distinct_filenames(self):
+        context = self.browser.new_context(viewport={"width": 1280, "height": 800})
+        self.addCleanup(context.close)
+        page = context.new_page()
+        errors = []
+        seen_methods = []
+        page.on("pageerror", lambda error: errors.append(str(error)))
+
+        def metadata_route(route):
+            seen_methods.append(route.request.method)
+            route.fulfill(
+                status=200,
+                content_type="application/json",
+                body='{"title":"Quick Capture Fixture","description":"Found from link metadata"}',
+            )
+
+        page.route("**/workspace/link-metadata", metadata_route)
+        page.goto(self.url)
+        page.locator('#cms-quick-actions [data-cms-flow="quick"]').click()
+        dialog = page.locator("#cms-quick-note-dialog")
+        expect(dialog).to_be_visible()
+        dialog.locator("#cms-qn-url").fill("https://example.org/quick-capture")
+        dialog.locator("#cms-qn-body").click()
+        expect(dialog.locator("#cms-qn-heading")).to_have_value("Quick Capture Fixture")
+        self.assertEqual(seen_methods, ["POST"])
+        dialog.locator("#cms-qn-submit").click()
+        expect(dialog).not_to_be_visible(timeout=10000)
+        first_path = page.locator("#active-file").inner_text()
+        self.assertIn("quick-capture-fixture-", first_path)
+
+        # Another capture with the same title should create a different file.
+        page.locator('#cms-quick-actions [data-cms-flow="quick"]').click()
+        expect(dialog).to_be_visible()
+        dialog.locator("#cms-qn-heading").fill("Quick Capture Fixture")
+        dialog.locator("#cms-qn-body").fill("Second independent note")
+        dialog.locator("#cms-qn-submit").click()
+        expect(dialog).not_to_be_visible(timeout=10000)
+        second_path = page.locator("#active-file").inner_text()
+        self.assertNotEqual(first_path, second_path)
+        self.assertTrue((self.site / first_path).exists())
+        self.assertTrue((self.site / second_path).exists())
+        self.assertEqual(errors, [])
+
     def test_00_review_unchanged_file_is_immediate_and_clear(self):
         context = self.browser.new_context()
         self.addCleanup(context.close)

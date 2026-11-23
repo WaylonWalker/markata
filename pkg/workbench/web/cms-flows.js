@@ -193,7 +193,14 @@
     qnStatus.hidden = false;
     qnStatus.textContent = 'Fetching link details…';
     try {
-      const resp = await fetch('/workspace/link-metadata?url=' + encodeURIComponent(url), { cache: 'no-store' });
+      // Keep this in sync with app.js: the workspace metadata endpoint
+      // intentionally accepts POST JSON rather than a query-string GET.
+      const resp = await fetch('/workspace/link-metadata', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url }),
+        cache: 'no-store',
+      });
       if (!resp.ok) {
         qnStatus.hidden = true;
         return;
@@ -257,16 +264,23 @@
           : `- **${nowTime()}**${title ? ` — **${title}**` : ''}`;
         const block = bodyText ? `${heading}\n  ${bodyText.replace(/\n/g, '\n  ')}` : heading;
         quickDialog.close();
-        await openOrCreateDailyNote(block);
-        if (shouldPublish) window.MarkataPublishReview?.quickPublish?.();
+        const savedPath = await openOrCreateDailyNote(block);
+        if (!savedPath) {
+          // Never publish the previously active document if daily capture fails.
+          throw new Error('Could not save the daily note; nothing was published.');
+        }
+        if (shouldPublish) await window.MarkataPublishReview?.quickPublish?.();
         return;
       }
 
       const date = todayISO();
       const dir = detectDirectory(['thoughts', 'notes', 'posts', 'pages'], 'notes');
-      const slug = slugify(title) || `${date}-${nowStamp()}`;
-      const path = `${dir}/${slug}.md`;
-      const yamlTags = tags.length ? ['tags:', ...tags.map((t) => `  - ${t}`)].join('\n') : 'tags:\n  - note';
+      const slug = slugify(title) || 'quick-note';
+      // Titles can repeat, and share targets can arrive seconds apart; keep
+      // independent captures from colliding with existing filenames.
+      const unique = `${date}-${nowStamp()}-${Math.random().toString(36).slice(2, 10)}`;
+      const path = `${dir}/${slug}-${unique}.md`;
+      const yamlTags = tags.length ? ['tags:', ...tags.map((t) => `  - ${JSON.stringify(t)}`)].join('\n') : 'tags:\n  - note';
       const lines = [
         '---',
         `title: ${JSON.stringify(title || `Quick Note ${date}`)}`,

@@ -5,6 +5,9 @@
   --cms-canvas: var(--color-background, #f4f7fb);
   --cms-rail: color-mix(in srgb, var(--color-surface, #eaf0f8) 64%, var(--cms-canvas));
   --cms-elevated: var(--color-surface, #eaf0f8);
+  --cms-surface: var(--cms-elevated);
+  --cms-hover: color-mix(in srgb, var(--color-text, #203348) 8%, var(--cms-surface));
+  --cms-mono-font: var(--font-code, ui-monospace, SFMono-Regular, monospace);
   --cms-ink: var(--color-text, #203348);
   --cms-muted: var(--color-text-muted, #52697f);
   --cms-accent: var(--color-primary, #245fc5);
