@@ -267,4 +267,3 @@ func TestWorkspace_CreateWithImagesRejectsExistingImageWithoutWritingPost(t *tes
 		t.Fatalf("existing image changed: %q, %v", data, err)
 	}
 }
-
