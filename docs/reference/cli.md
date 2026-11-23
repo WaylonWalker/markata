@@ -60,6 +60,24 @@ markata-go build pages/sample.md
 markata-go serve pages/sample.md
 ```
 
+## Agent-first setup: `--skill`
+
+`markata --skill` prints a self-contained setup guide **from the installed
+binary**, suitable for pasting into the coding agent you already use. The output
+is stable, plain Markdown, with no site setup, network access, or file writes.
+
+```sh
+markata --skill
+markata --skill > /tmp/markata-first-setup.md
+```
+
+The guide asks the agent to inspect existing content and configuration, choose
+simple themes/templates before custom plugins, verify production builds, and
+seek approval before selecting a hosting provider or deploying. For the full
+topic-based skill, use `markata agent install` followed by
+`markata agent doctor`. See [Agent Skills](/docs/guides/agent-skills/).
+This root-level flag does not take a Markdown filename argument.
+
 ## Agent-assisted troubleshooting: `triage`
 
 `markata triage` collects a small, privacy-conscious diagnostic summary and passes a troubleshooting prompt to an interactive coding agent, clipboard, or stdout. The default is a fuzzy picker of **detected installed** coding agents plus clipboard and stdout. When either terminal stream is redirected or `--no-input` is used, it prints **only the Markdown prompt** to stdout.
