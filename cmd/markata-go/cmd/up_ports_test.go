@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func listenUpFixture(t *testing.T) (net.Listener, int) {
+func listenUpFixture(t *testing.T) (listener net.Listener, port int) {
 	t.Helper()
 	listener, err := (&net.ListenConfig{}).Listen(context.Background(), "tcp", "127.0.0.1:0")
 	if err != nil {
