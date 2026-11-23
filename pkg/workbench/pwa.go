@@ -209,7 +209,8 @@ self.addEventListener('fetch', (event) => {
     })());
     return;
   }
-  if (event.request.method === 'GET') event.respondWith(fetch(event.request));
+  // Non-share requests go directly to the network; no GET interception.
+  // This keeps editor APIs responsive and makes browser request routing reliable.
 });
 `)
 
