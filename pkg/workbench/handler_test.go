@@ -9,6 +9,8 @@ import (
 	"image/png"
 	"io/fs"
 	"net/http"
+	"os"
+	"path/filepath"
 	"net/http/httptest"
 	"strings"
 	"sync"
@@ -45,6 +47,43 @@ func TestHandler_FirstPreviewDoesNotWaitForSiteIndex(t *testing.T) {
 	}
 	if workspace.filesCalled {
 		t.Fatal("preview synchronously loaded site metadata")
+	}
+}
+
+func TestHandler_InlineGalleryImagesServeContainedWorkspaceFiles(t *testing.T) {
+	h := newHandler(t)
+	root := t.TempDir()
+	imageDir := filepath.Join(root, "static", "images")
+	if err := os.MkdirAll(imageDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(imageDir, "shared.png"), testPastePNG, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	workspace, err := editorworkspace.New(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	h.workspace = workspace
+	for _, tc := range []struct {
+		path string
+		want int
+	}{
+		{"/images/shared.png", http.StatusOK},
+		{"/images/unknown.png", http.StatusNotFound},
+		{"/images/../secret.png", http.StatusNotFound},
+	} {
+		response := httptest.NewRecorder()
+		req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost"+tc.path, http.NoBody)
+		h.ServeHTTP(response, req)
+		if response.Code != tc.want {
+			t.Fatalf("GET %s returned %d (want %d)", tc.path, response.Code, tc.want)
+		}
+		if tc.want == http.StatusOK {
+			if response.Header().Get("Content-Type") != pwaImageType || !bytes.Equal(response.Body.Bytes(), testPastePNG) {
+				t.Fatalf("inline gallery image was not served intact")
+			}
+		}
 	}
 }
 

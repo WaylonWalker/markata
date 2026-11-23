@@ -328,6 +328,22 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		serve(w, r, "favicon.ico", data)
+	case strings.HasPrefix(r.URL.Path, "/images/"):
+		// Inline gallery Markdown uses /images/... while the cover image is
+		// rendered through /workspace/image. Both must use the same contained
+		// workspace reader, never a raw filesystem path.
+		if h.workspace == nil {
+			http.NotFound(w, r)
+			return
+		}
+		name := strings.TrimPrefix(r.URL.Path, "/")
+		data, err := h.workspace.ReadImage(name)
+		if err != nil {
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Cache-Control", "no-store")
+		serve(w, r, name, data)
 	case strings.HasPrefix(r.URL.Path, "/appearance/"):
 		w.Header().Set("Cache-Control", "no-cache")
 		// The only mutation occurs under the render gate. Copy the slice header while
