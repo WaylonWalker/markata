@@ -96,7 +96,6 @@ func TestUpSupervisorBuilderFailureKeepsEditor(t *testing.T) {
 	if err := os.WriteFile(fixture, []byte(script), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	//nolint:gosec // Test subprocess fixtures must be executable.
 	if err := os.Chmod(fixture, 0o700); err != nil {
 		t.Fatal(err)
 	}
@@ -151,7 +150,6 @@ func TestUpSupervisorEditorExitIsFatal(t *testing.T) {
 	if err := os.WriteFile(fixture, []byte(script), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	//nolint:gosec // Test subprocess fixtures must be executable.
 	if err := os.Chmod(fixture, 0o700); err != nil {
 		t.Fatal(err)
 	}
@@ -168,7 +166,7 @@ func TestUpSupervisorEditorExitIsFatal(t *testing.T) {
 	}
 }
 
-func TestUpHelperProcess(t *testing.T) {
+func TestUpHelperProcess(_ *testing.T) {
 	if os.Getenv("MARKATA_UP_TEST_HELPER") != "1" {
 		return
 	}
@@ -189,11 +187,15 @@ func TestStopUpServicesTerminatesOwnedProcess(t *testing.T) {
 	exits := make(chan upExit, 1)
 	go func() { exits <- upExit{name: upServiceEditor, err: child.Wait()} }()
 	started := time.Now()
-	stopUpServices(map[string]*exec.Cmd{upServiceEditor: child}, exits)
+	running := map[string]*exec.Cmd{upServiceEditor: child}
+	stopUpServices(running, exits)
 	if elapsed := time.Since(started); elapsed > upShutdownTimeout+3*time.Second {
 		t.Fatalf("child shutdown exceeded timeout: %s", elapsed)
 	}
-	if child.ProcessState == nil || !child.ProcessState.Exited() {
-		t.Fatal("supervisor left its managed child running")
+	// stopUpServices only removes a child after consuming its Wait result;
+	// an empty owned-process map proves the process was reaped by the
+	// supervisor, including on platforms with non-POSIX exit semantics.
+	if len(running) != 0 {
+		t.Fatalf("supervisor left %d managed children waiting", len(running))
 	}
 }
