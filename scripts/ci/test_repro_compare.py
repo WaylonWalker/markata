@@ -48,6 +48,10 @@ class ReproCompareTests(unittest.TestCase):
         self.assertEqual(len(result["changed"][0]["left"]["sha256"]), 64)
 
     def test_exclusions_are_explicit_and_reported(self) -> None:
+        # Preserve a genuine nonempty build artifact while excluding the
+        # explicitly variable metadata file.
+        self.put(self.left, "index.html", b"same")
+        self.put(self.right, "index.html", b"same")
         self.put(self.left, "generated/build.json", b"timestamp=one")
         self.put(self.right, "generated/build.json", b"timestamp=two")
         self.assertFalse(compare_trees(self.left, self.right)["identical"])
