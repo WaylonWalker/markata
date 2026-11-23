@@ -149,7 +149,7 @@ func TestHandler_PWAManifestAndFlowsServed(t *testing.T) {
 	if fields["name"] != pwaSharePhotosField {
 		t.Fatalf("wrong share field: %#v", fields)
 	}
-	for _, route := range []string{"/sw.js", "/pwa-icon.svg", "/pwa-icon-192.png", "/pwa-icon-512.png"} {
+	for _, route := range []string{"/sw.js", "/pwa-icon.svg", "/pwa-icon-192.png", rasterLargeIconPath} {
 		rec := httptest.NewRecorder()
 		h.ServeHTTP(rec, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost"+route, http.NoBody))
 		if rec.Code != http.StatusOK || rec.Body.Len() == 0 {
@@ -161,7 +161,7 @@ func TestHandler_PWAManifestAndFlowsServed(t *testing.T) {
 		size int
 	}{
 		{"/pwa-icon-192.png", 192},
-		{"/pwa-icon-512.png", 512},
+		{rasterLargeIconPath, 512},
 	} {
 		response := httptest.NewRecorder()
 		h.ServeHTTP(response, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost"+tc.path, http.NoBody))
