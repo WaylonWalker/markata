@@ -434,29 +434,29 @@ func (w *Workspace) CreateWithImages(path, source, imageName string, images []Up
 // prepareMultiImageFiles validates and stages every photo. The caller owns
 // cleaning up temps on failure and atomically linking the staged files.
 func prepareMultiImageFiles(imageParent, imageName string, images []UploadedImage, urls, targets, temps *[]string) error {
-		total := 0
-		for i, photo := range images {
-			total += len(photo.Data)
-			if len(photo.Data) == 0 || len(photo.Data) > 15<<20 || total > 48<<20 {
-				return fmt.Errorf("photos must be nonempty, at most 15 MiB each and 48 MiB total")
-			}
-			extension, err := ImageExtension(photo.ContentType, photo.Data)
-			if err != nil {
-				return err
-			}
-			filename := fmt.Sprintf("%s-%d.%s", imageName, i+1, extension)
-			target := filepath.Join(imageParent, filename)
-			if err := requireNewFile(target); err != nil {
-				return err
-			}
-			tmp, err := writeTempBytes(imageParent, ".markata-image-*", photo.Data)
-			if err != nil {
-				return err
-			}
-			temps = append(temps, tmp)
-			targets = append(targets, target)
-			urls = append(urls, "/images/"+filename)
+	total := 0
+	for i, photo := range images {
+		total += len(photo.Data)
+		if len(photo.Data) == 0 || len(photo.Data) > 15<<20 || total > 48<<20 {
+			return fmt.Errorf("photos must be nonempty, at most 15 MiB each and 48 MiB total")
 		}
+		extension, err := ImageExtension(photo.ContentType, photo.Data)
+		if err != nil {
+			return err
+		}
+		filename := fmt.Sprintf("%s-%d.%s", imageName, i+1, extension)
+		target := filepath.Join(imageParent, filename)
+		if err := requireNewFile(target); err != nil {
+			return err
+		}
+		tmp, err := writeTempBytes(imageParent, ".markata-image-*", photo.Data)
+		if err != nil {
+			return err
+		}
+		*temps = append(*temps, tmp)
+		*targets = append(*targets, target)
+		*urls = append(*urls, "/images/"+filename)
+	}
 	return nil
 }
 
