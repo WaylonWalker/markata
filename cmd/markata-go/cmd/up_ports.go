@@ -8,7 +8,10 @@ import (
 	"strings"
 )
 
-const upPortFallbackRange = 20
+const (
+	upPortFallbackRange = 20
+	upLoopbackAddress  = "127.0.0.1"
+)
 
 // upPortPolicy distinguishes a user-requested listener from a default. Never
 // change explicit ports silently; scripted users can enforce both defaults.
@@ -119,7 +122,7 @@ func upServicePort(service upService) (int, error) {
 	if err != nil {
 		return 0, fmt.Errorf("invalid %s listener %q: %w", service.name, service.url, err)
 	}
-	if host != "127.0.0.1" {
+	if host != upLoopbackAddress {
 		return 0, fmt.Errorf("%s must listen on 127.0.0.1, got %q", service.name, host)
 	}
 	port, err := strconv.Atoi(portText)
@@ -134,11 +137,11 @@ func withUpServicePort(service upService, port int) (upService, error) {
 		return upService{}, err
 	}
 	service.args = append([]string(nil), service.args...)
-	service.url = "http://" + net.JoinHostPort("127.0.0.1", strconv.Itoa(port)) + "/"
+	service.url = "http://" + net.JoinHostPort(upLoopbackAddress, strconv.Itoa(port)) + "/"
 	flag, value := "", ""
 	switch service.name {
 	case upServiceEditor:
-		flag, value = "--listen", net.JoinHostPort("127.0.0.1", strconv.Itoa(port))
+		flag, value = "--listen", net.JoinHostPort(upLoopbackAddress, strconv.Itoa(port))
 	case upServiceBuilder:
 		flag, value = "--port", strconv.Itoa(port)
 	default:
@@ -155,7 +158,7 @@ func withUpServicePort(service upService, port int) (upService, error) {
 
 func upPortFlag(service string) string {
 	if service == upServiceEditor {
-		return "editor"
+		return upServiceEditor
 	}
 	return "preview"
 }
