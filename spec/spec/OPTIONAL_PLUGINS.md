@@ -1043,8 +1043,8 @@ cwebp_path = ""                   # Optional explicit path
 4. During write, generate requested formats and responsive width variants next to the original output image.
 5. Use cache metadata to skip re-encoding unchanged inputs.
 6. If an encoder is missing, warn and skip that format without failing the build.
-7. Keep every qualifying HTML image reference, but process duplicate resolved output paths once per distinct responsive width set in a build.
-8. Report both image target occurrences and unique optimization targets so repeated references are visible without implying repeated encoding.
+7. Keep every qualifying HTML image reference, but process each resolved output path once per build using the union of its requested responsive widths.
+8. Report both image target occurrences and unique optimization targets (one per resolved output path) so repeated references are visible without implying repeated encoding.
 
 **Output Files:**
 

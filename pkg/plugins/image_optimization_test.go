@@ -77,10 +77,10 @@ func TestImageOptimization_StatsCountMissingSource(t *testing.T) {
 	}
 }
 
-func TestDeduplicateImageOptimizationTargetsByOutputAndWidths(t *testing.T) {
+func TestDeduplicateImageOptimizationTargetsByOutputPath(t *testing.T) {
 	targets := []imageOptimizationTarget{
-		{Src: "/avatar.png", PostSlug: "first", Widths: []int{480, 160}},
-		{Src: "/avatar.png", PostSlug: "second"}, // Defaults to the same widths.
+		{Src: "/avatar.png", PostSlug: "first", Widths: []int{480, 768}},
+		{Src: "/avatar.png", PostSlug: "second", Widths: []int{480, 768, 1200}},
 		{Src: "/avatar.png", PostSlug: "third", Widths: []int{160}},
 		{Src: "images/cat.png", PostSlug: "first"},
 		{Src: "images/cat.png", PostSlug: "first", Widths: []int{480, 160}},
@@ -90,18 +90,21 @@ func TestDeduplicateImageOptimizationTargetsByOutputAndWidths(t *testing.T) {
 	}
 
 	unique := deduplicateImageOptimizationTargets("output", targets, []int{160, 480})
-	if len(unique) != 5 {
-		t.Fatalf("deduplicated targets = %d, want 5: %#v", len(unique), unique)
+	if len(unique) != 4 {
+		t.Fatalf("deduplicated targets = %d, want 4: %#v", len(unique), unique)
 	}
 
-	wantSources := []string{"/avatar.png", "/avatar.png", "images/cat.png", "images/cat.png", "/../escape.png"}
+	wantSources := []string{"/avatar.png", "images/cat.png", "images/cat.png", "/../escape.png"}
 	for i, want := range wantSources {
 		if unique[i].Src != want {
 			t.Errorf("unique[%d].Src = %q, want %q", i, unique[i].Src, want)
 		}
 	}
-	if !reflect.DeepEqual(unique[0].Widths, []int{480, 160}) || !reflect.DeepEqual(unique[1].Widths, []int{160}) {
-		t.Fatalf("deduplication did not preserve distinct responsive widths: %#v", unique[:2])
+	if !reflect.DeepEqual(unique[0].Widths, []int{160, 480, 768, 1200}) {
+		t.Fatalf("deduplication did not union requested responsive widths: %#v", unique[0].Widths)
+	}
+	if !reflect.DeepEqual(unique[1].Widths, []int{160, 480}) {
+		t.Fatalf("deduplication did not apply default responsive widths: %#v", unique[1].Widths)
 	}
 }
 
@@ -129,8 +132,8 @@ func TestImageOptimizationWriteOptimizesRepeatedTargetsOnce(t *testing.T) {
 	post := models.NewPost("post.md")
 	post.Extra = map[string]any{
 		"image_optimization": []imageOptimizationTarget{
-			{Src: "/avatar.png", PostSlug: "first", Widths: []int{480}},
-			{Src: "/avatar.png", PostSlug: "second", Widths: []int{480}},
+			{Src: "/avatar.png", PostSlug: "first", Widths: []int{320, 480}},
+			{Src: "/avatar.png", PostSlug: "second", Widths: []int{480, 768}},
 		},
 	}
 	manager.SetPosts([]*models.Post{post})
@@ -148,14 +151,14 @@ func TestImageOptimizationWriteOptimizesRepeatedTargetsOnce(t *testing.T) {
 		if plugin.stats.targetOccurrences != 2 || plugin.stats.uniqueTargets != 1 {
 			t.Fatalf("run %d target counts = (%d, %d), want (2 occurrences, 1 unique)", run+1, plugin.stats.targetOccurrences, plugin.stats.uniqueTargets)
 		}
-		if plugin.stats.variantsChecked != 1 {
-			t.Errorf("run %d variants checked = %d, want 1", run+1, plugin.stats.variantsChecked)
+		if plugin.stats.variantsChecked != 3 {
+			t.Errorf("run %d variants checked = %d, want 3 unique widths", run+1, plugin.stats.variantsChecked)
 		}
-		if run == 0 && (plugin.stats.encoderCalls != 1 || plugin.stats.cacheHits != 0) {
-			t.Errorf("first run stats = %+v, want one encode and no cache hit", plugin.stats)
+		if run == 0 && (plugin.stats.encoderCalls != 3 || plugin.stats.cacheHits != 0) {
+			t.Errorf("first run stats = %+v, want three encodes and no cache hit", plugin.stats)
 		}
-		if run == 1 && (plugin.stats.encoderCalls != 0 || plugin.stats.cacheHits != 1) {
-			t.Errorf("second run stats = %+v, want one cache hit and no encode", plugin.stats)
+		if run == 1 && (plugin.stats.encoderCalls != 0 || plugin.stats.cacheHits != 3) {
+			t.Errorf("second run stats = %+v, want three cache hits and no encode", plugin.stats)
 		}
 	}
 }

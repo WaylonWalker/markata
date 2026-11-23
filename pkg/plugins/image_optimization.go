@@ -731,45 +731,45 @@ type imageOptimizationTargetKey struct {
 	outputPath  string
 	invalidSrc  string
 	invalidSlug string
-	widths      string
 }
 
 // deduplicateImageOptimizationTargets keeps every HTML reference intact while
-// scheduling image work once per output file and responsive width set.
+// scheduling work once per output file with the union of its requested widths.
 func deduplicateImageOptimizationTargets(outputDir string, targets []imageOptimizationTarget, defaultWidths []int) []imageOptimizationTarget {
 	if len(targets) < 2 {
 		return targets
 	}
 
 	unique := make([]imageOptimizationTarget, 0, len(targets))
-	seen := make(map[imageOptimizationTargetKey]struct{}, len(targets))
+	indexes := make(map[imageOptimizationTargetKey]int, len(targets))
 	for _, target := range targets {
-		key := imageOptimizationTargetKey{widths: imageOptimizationWidthsKey(target.Widths, defaultWidths)}
+		key := imageOptimizationTargetKey{}
+		widths := target.Widths
+		if len(widths) == 0 {
+			widths = defaultWidths
+		}
+		widths = normalizeWidths(widths)
+
 		if outputPath, err := resolveImageOutputPath(outputDir, target); err == nil {
 			key.outputPath = outputPath
 		} else {
 			key.invalidSrc = target.Src
 			key.invalidSlug = target.PostSlug
 		}
-		if _, exists := seen[key]; exists {
+
+		if index, exists := indexes[key]; exists {
+			if key.outputPath != "" {
+				unique[index].Widths = normalizeWidths(append(unique[index].Widths, widths...))
+			}
 			continue
 		}
-		seen[key] = struct{}{}
+		indexes[key] = len(unique)
+		if key.outputPath != "" {
+			target.Widths = widths
+		}
 		unique = append(unique, target)
 	}
 	return unique
-}
-
-func imageOptimizationWidthsKey(widths, defaultWidths []int) string {
-	if len(widths) == 0 {
-		widths = defaultWidths
-	}
-	normalized := normalizeWidths(widths)
-	parts := make([]string, len(normalized))
-	for i, width := range normalized {
-		parts[i] = strconv.Itoa(width)
-	}
-	return strings.Join(parts, ",")
 }
 
 func isLocalImageSrc(src string) bool {
