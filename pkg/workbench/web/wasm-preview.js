@@ -75,7 +75,7 @@
   // formatting stay on Go. This is not a general Markdown feature detector.
   function simpleTextOnly(source) {
     if (typeof source !== 'string') return false;
-    return !/(?:^---\\s*$|^\\s*(?:```|~~~|:::|!!!|@@|\\|)|^ {4}\\S|\\[\\[|!\\[|\\[[^\\]]+\\]\\(|:lucide-|<|\\{\\{|\\{%|^\\s*\\||^\\s*[-*+] \\[[xX ]\\])/m.test(source);
+    return !/(?:^---[ \t]*$|^[ \t]*(?:\x60{3}|~{3}|:{3}|!{3}|@@)|^ {4}\S|\[\[|!\[|\[[^\]]+\]\(|:lucide-|<|\{\{|\{%|^[ \t]*\||^[ \t]*[-*+] \[[xX ]\])/m.test(source);
   }
   function compareParity(goPayload, wasmPayload, sourceOffset = 0) {
     if (!goPayload || !wasmPayload || !Array.isArray(goPayload.source_lines) ||
