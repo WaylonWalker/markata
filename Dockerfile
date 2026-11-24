@@ -29,7 +29,8 @@ ARG BUILD_DATE=unknown
 RUN mkdir -p pkg/workbench/web/wasm \
     && CGO_ENABLED=0 GOOS=js GOARCH=wasm go build -trimpath -ldflags="-s -w" \
        -o pkg/workbench/web/wasm/markata.wasm ./cmd/markata-wasm \
-    && cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" pkg/workbench/web/wasm/wasm_exec.js
+    && cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" pkg/workbench/web/wasm/wasm_exec.js \
+    && gzip -n -9 -c pkg/workbench/web/wasm/markata.wasm > pkg/workbench/web/wasm/markata.wasm.gz
 
 # Build static binary with version information
 # CGO_ENABLED=0 ensures fully static binary
