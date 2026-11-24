@@ -1039,6 +1039,57 @@ try {
     update();battery.addEventListener('chargingchange',update);battery.addEventListener('levelchange',update);
   }).catch(()=>{});
 } catch {}
+// Local WASM previews are opt-in until authenticated-hosted parity and latency
+// are measured. Each site document must first match an authoritative Go render.
+const wasmPreviewOptIn = new URLSearchParams(location.search).get('wasm-preview') === '1';
+let wasmWorker = null, wasmReady = false, wasmParity = null, lastGoPreview = null;
+const previewDocumentIdentity = () => window.MarkataSiteTree?.filename() || 'draft.md';
+async function certifyWasm(snapshot) {
+  if (!wasmReady || !wasmWorker || !snapshot ||
+      !window.MarkataWasmPreview.simpleTextOnly(snapshot.markdown) ||
+      snapshot.version !== revision) return;
+  try {
+    const reply = await wasmWorker.render(snapshot.markdown);
+    const wasm = window.MarkataPreviewContract.fromWasm(reply.result,
+      {render_ms: reply.render_ms, input_bytes: new TextEncoder().encode(snapshot.markdown).length});
+    if (snapshot.version !== revision || snapshot.documentId !== previewDocumentIdentity()) return;
+    const proof = window.MarkataWasmPreview.compareParity(snapshot.data, wasm, snapshot.sourceLineOffset);
+    wasmParity = proof ? {
+      ...proof, documentId: snapshot.documentId, frontmatter: snapshot.frontmatter,
+      sourceLineOffset: snapshot.sourceLineOffset,
+    } : null;
+  } catch {
+    // An unknown feature or dependency is not proof of parity. Continue in Go.
+    wasmParity = null;
+  }
+}
+function startOptionalWasmPreview() {
+  if (!wasmPreviewOptIn || !window.MARKATA_WASM_VERSION || !window.MarkataWasmPreview) return;
+  const started = performance.now();
+  try {
+    const worker = window.MarkataWasmPreview.create(window.MARKATA_WASM_VERSION);
+    wasmWorker = worker;
+    worker.ready.then(() => {
+      wasmReady = true;
+      window.MarkataDiagnostics?.record('wasm_bootstrap', performance.now() - started);
+      if (lastGoPreview) void certifyWasm(lastGoPreview);
+    }).catch(error => {
+      wasmReady = false;
+      wasmParity = null;
+      console.warn('WASM preview unavailable; continuing in Go:', error);
+    });
+    window.addEventListener('pagehide', () => worker.close(), {once: true});
+  } catch (error) {
+    console.warn('Could not initialize local preview:', error);
+  }
+}
+function canUseWasmPreview(markdown, frontmatter, sourceLineOffset) {
+  return wasmReady && wasmWorker && wasmParity && previewStarted && previewReady &&
+    wasmParity.documentId === previewDocumentIdentity() &&
+    wasmParity.frontmatter === (frontmatter || '') &&
+    wasmParity.sourceLineOffset === sourceLineOffset &&
+    window.MarkataWasmPreview.simpleTextOnly(markdown);
+}
 async function render() {
   if (!ready) return;
   if (busy) {
