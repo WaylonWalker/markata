@@ -20,7 +20,7 @@ def main():
         site = Path(root) / 'site'
         shutil.copytree(ROOT / 'examples/editor-site', site)
         process = subprocess.Popen(
-            [args.go_binary, '--listen', '127.0.0.1:0', '--workspace', str(site)],
+            [args.go_binary, 'editor', '--listen', '127.0.0.1:0', '--workspace', str(site)],
             stderr=subprocess.PIPE, text=True,
         )
         watchdog = threading.Timer(60, process.terminate)
