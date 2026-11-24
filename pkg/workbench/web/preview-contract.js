@@ -34,7 +34,7 @@
       source_offset: sourceOffset,
     };
   }
-  /* This only accepts asset-free, parity-certified fragments. Never paste
+  /* This only accepts base-style, parity-certified fragments. Never paste
    * arbitrary standalone tags into the authenticated workbench preview. */
   function fromWasm(result, timing = {}) {
     if (!result || result.schema_version !== SCHEMA_VERSION || result.error)
@@ -42,7 +42,12 @@
     if (typeof result.html !== 'string')
       throw new Error('WASM preview has no HTML');
     const sourceLines = lineList(result.source_lines, 'source lines');
-    if (!Array.isArray(result.assets) || result.assets.length !== 0 ||
+    // The opaque preview shell already owns these three base stylesheets.
+    // Feature CSS, generated scripts, and other dependencies remain Go-only
+    // until the asset bridge explicitly supports them.
+    const baseStyles = new Set(['css/variables.css', 'css/main.css', 'css/components.css']);
+    if (!Array.isArray(result.assets) ||
+        result.assets.some(asset => !baseStyles.has(asset.id) || asset.kind !== 'style' || asset.content) ||
         Object.values(result.features || {}).some(Boolean))
       throw new Error('WASM preview requires Go-managed assets or features');
     if (!knownNumber(timing.render_ms || 0) || !knownNumber(timing.input_bytes || 0))
