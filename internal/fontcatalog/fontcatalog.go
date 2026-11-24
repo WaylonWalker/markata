@@ -1,3 +1,5 @@
+//go:build !js
+
 // Package fontcatalog owns the built-in font catalog and its immutable assets.
 // Keeping the embed here prevents runtime code from depending on the process
 // working directory or on a source checkout being present.

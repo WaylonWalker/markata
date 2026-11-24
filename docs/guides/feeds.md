@@ -9,9 +9,13 @@ tags:
   - feeds
 ---
 
-# Feeds
+## Feeds
 
 For a photo-first shots archive, set `html = "feed-photo-grid.html"` under the feed's `[markata-go.feeds.templates]` table. See the [photo galleries guide](/docs/guides/galleries/).
+
+Editorial feed cards keep thumbnails lazy loaded, including featured weekly
+leads. Use eager loading and high fetch priority only when a page's actual
+above-the-fold image is likely to be its Largest Contentful Paint element.
 
 Feeds are the core differentiator of markata-go. A feed is a **filtered, sorted, paginated collection of posts** that can output to **multiple formats** simultaneously from a single definition.
 
@@ -219,6 +223,8 @@ lists them.
 ## Filtering Posts
 
 The `filter` field uses a Python-like expression syntax to select which posts appear in a feed.
+
+In the workbench Feed view, `path` filters use paths relative to the workspace root, with `/` separators. For example, `path.startswith('pages/blog/')` matches posts under `pages/blog/`.
 
 For template-based filters, `template` and `templateKey` are interchangeable. Equality checks also respect built-in template aliases, so `templateKey == "shots"` matches posts using `shot`, `shots`, or `photo`.
 
@@ -1613,3 +1619,22 @@ the same while its month details are available on demand.
 - [Templates Guide](/docs/guides/templates/) - Template system documentation
 - [Frontmatter Guide](/docs/guides/frontmatter/) - Post metadata for filtering
 - [Quick Reference](/docs/guides/quick-reference/) - Filter expression cheat sheet
+
+### Editorial loading
+
+Editorial archives render the visible cards immediately and let the browser
+defer layout for offscreen cards and later weeks until they approach the
+viewport. All posts are still in the HTML, including when JavaScript is
+disabled. Browser find and printing keep access to the complete page. Browsers
+without content visibility support render the complete page normally.
+
+Keyboard navigation setup does not download the next archive page. Link hover,
+focus, and explicit feed cycling can still prepare the next navigation.
+
+Calendar feeds reserve their full list width before optional calendar styles
+arrive. Navbar search also reserves its final width before search hydration,
+so opening an archive does not move the content as those styles finish loading.
+
+Editorial weeks below the first viewport reserve space according to the number
+of items they contain. This keeps unrendered weeks from crowding following
+sections. The browser remembers their actual height after revealing them.

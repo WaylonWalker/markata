@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/WaylonWalker/markata-go/pkg/csspurge"
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/csspurge"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 func TestCSSPurgeCache_ReusesOnlyMatchingInputs(t *testing.T) {

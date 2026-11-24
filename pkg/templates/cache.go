@@ -4,7 +4,7 @@ package templates
 import (
 	"sync"
 
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 // PostMapCache provides thread-safe caching for post-to-map conversions.

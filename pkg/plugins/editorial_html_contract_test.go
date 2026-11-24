@@ -7,17 +7,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/buildcache"
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/buildcache"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 func TestEditorialHTMLContractAndCachedFallback(t *testing.T) {
 	dir := t.TempDir()
 	file := filepath.Join(dir, "index.html")
 	classic := `<div class="posts posts-list">old fallback</div>`
-	editorial := `<div class="feed feed--editorial" data-feed-presentation="editorial"><div class="editorial-feed posts-list" data-editorial-version="3"></div></div>`
-	priorEditorial := `<div class="feed feed--editorial" data-feed-presentation="editorial"><div class="editorial-feed posts-list" data-editorial-version="2"></div></div>`
+	editorial := `<div class="feed feed--editorial" data-feed-presentation="editorial"><div class="editorial-feed posts-list" data-editorial-version="4"></div></div>`
+	priorEditorial := `<div class="feed feed--editorial" data-feed-presentation="editorial"><div class="editorial-feed posts-list" data-editorial-version="3"></div></div>`
 	if editorialHTMLMarkupValid(priorEditorial) {
 		t.Fatal("prior editorial markup must be rebuilt for the new layout")
 	}
@@ -60,7 +60,8 @@ func TestEditorialPageRendersMarkupNotFallback(t *testing.T) {
 	if err != nil {
 		t.Fatalf("editorial page failed: %v", err)
 	}
-	if !editorialHTMLMarkupValid(html) || !strings.Contains(html, "The week of") {
+	if !editorialHTMLMarkupValid(html) || !strings.Contains(html, "data-editorial-relative-week") ||
+		!strings.Contains(html, "data-week-start=\"2026-10-12\"") {
 		t.Fatal("editorial page rendered without weekly markup")
 	}
 }

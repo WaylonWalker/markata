@@ -25,14 +25,14 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/buildcache"
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/models"
-	"github.com/WaylonWalker/markata-go/pkg/palettes"
-	"github.com/WaylonWalker/markata-go/pkg/searchapi"
-	"github.com/WaylonWalker/markata-go/pkg/servecontrol"
-	"github.com/WaylonWalker/markata-go/pkg/servefix"
-	"github.com/WaylonWalker/markata-go/pkg/servetui"
+	"github.com/WaylonWalker/markata/pkg/buildcache"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/palettes"
+	"github.com/WaylonWalker/markata/pkg/searchapi"
+	"github.com/WaylonWalker/markata/pkg/servecontrol"
+	"github.com/WaylonWalker/markata/pkg/servefix"
+	"github.com/WaylonWalker/markata/pkg/servetui"
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
@@ -299,12 +299,16 @@ func runServeCommand(cmd *cobra.Command, args []string) error {
 	searchEndpoint, searchHandlerPath := configuredSearchEndpoints(getModelsConfig(m))
 	serveSearchEndpoint = searchEndpoint
 	handler := mountServeAdmin(createHandler(outputPath, m, searchHandlerPath), runtime, m.Config().ContentDir, adminEnabled)
+	if serveHost == upLoopbackAddress || serveHost == "localhost" {
+		handler = withUpIdentity(handler, upServiceBuilder, ".")
+	}
 
-	listener, err := net.Listen("tcp", addr)
+	listener, err := listenWithPortRecovery(cmd, addr)
 	if err != nil {
 		return diagnoseServeListenError(err, addr)
 	}
 	defer listener.Close()
+	addr = listener.Addr().String()
 
 	rebuildCh, closeWatcher, err := setupWatcher(ctx, m, &wg)
 	if err != nil {

@@ -43,6 +43,7 @@ This document specifies all built-in plugins that ship with the static site gene
 │    ├─ publish_html       Write individual post HTML files           │
 │    ├─ random_post        Write /random/ redirect page               │
 │    ├─ well_known         Generate .well-known endpoints             │
+│    ├─ llms_txt           Generate public /llms.txt discovery index   │
 │    ├─ copy_assets        Copy static files                           │
 │    ├─ redirects          Generate HTML redirect pages                │
 │    ├─ css_minify         Minify CSS files (PriorityLast)             │
@@ -735,7 +736,7 @@ for post in core.filter("not skip"):
 
 **Stage:** `render` (with late priority, after `render_markdown`)
 
-**Purpose:** Convert markdown image syntax for video files into native video elements that load when the reader requests playback.
+**Purpose:** Convert markdown video syntax to native video elements that autoplay muted when visible unless the reader opts out.
 
 **Configuration:**
 ```toml
@@ -744,7 +745,7 @@ enabled = true
 video_extensions = [".mp4", ".webm", ".ogg", ".ogv", ".mov", ".m4v", ".avi", ".mkv"]
 video_class = "md-video"
 controls = true
-autoplay = false                   # Opt in to automatic playback
+autoplay = true                    # Muted autoplay when in viewport (opt out with false)
 loop = true                        # GIF-like behavior
 muted = true                       # Required for autoplay
 playsinline = true                 # Inline on mobile
@@ -759,7 +760,7 @@ preload = "none"
 | `video_extensions` | []string | `[".mp4", ".webm", ...]` | Extensions to treat as video |
 | `video_class` | string | `"md-video"` | CSS class for video elements |
 | `controls` | bool | `true` | Show video controls |
-| `autoplay` | bool | `false` | Auto-start playback; off by default to avoid surprise media downloads |
+| `autoplay` | bool | `true` | Authored viewport autoplay for Markdown article videos; feed previews stay manual |
 | `loop` | bool | `true` | Loop continuously |
 | `muted` | bool | `true` | Mute audio |
 | `playsinline` | bool | `true` | Play inline on iOS |
@@ -782,7 +783,7 @@ preload = "none"
 
 **Example output:**
 ```html
-<video loop muted playsinline controls preload="none" class="md-video">
+<video data-authored-autoplay="true" loop muted playsinline controls preload="none" class="md-video">
   <source src="https://example.com/video.mp4" type="video/mp4">
   kickflip down the 3 stair
 </video>
@@ -1751,3 +1752,25 @@ hooks = [
 - [CONFIG.md](./CONFIG.md) - Plugin configuration
 - [SPEC.md](./SPEC.md) - Core specification
 - [LIFECYCLE.md](./LIFECYCLE.md) - Lifecycle stages
+
+
+## Automatically Generated `llms.txt`
+
+The default full-site build runs `llms_txt` in the Write stage at last
+priority, after static assets, published posts, and sitemap output. The
+plugin creates an H1, a site-description blockquote, and Markdown link-list
+sections for the homepage, documentation, and recent published content.
+It favors `.md` URLs when that format is enabled and falls back to HTML
+links. Only public, published, non-skipped and indexable posts are eligible.
+An authored `llms.md` takes precedence only when it is public, published,
+non-draft, non-skipped, and text output is enabled. Private posts never
+suppress the generated public index. A configured site URL is used for
+absolute links only when it is HTTP(S), has no user information, query, or
+fragment; otherwise links are relative.
+
+Site config `[markata-go.llms_txt]` accepts `enabled` (default true) and
+`max_pages` (default 30; cap 100). An explicitly authored `llms.md`, a
+project static `llms.txt`, or a hand-managed output file takes precedence.
+Authored content also takes precedence when generation is disabled. Only
+auto-generated output without an authored source is removed when disabled.
+This plugin is not part of single-page builds.

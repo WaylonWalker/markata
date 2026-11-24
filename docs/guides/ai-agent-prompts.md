@@ -10,7 +10,6 @@ tags:
   - automation
 ---
 
-# AI Agent Prompt Templates
 
 markata-go includes reusable GPT-5.4 prompt templates for OpenCode workflows.
 Use the generator script to fetch issue metadata from GitHub and render prompt

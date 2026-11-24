@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"github.com/spf13/cobra"
 )
 
 const (
@@ -17,6 +19,7 @@ const (
 	agentScopeGlobal  = "global"
 
 	agentNameOpencode = "opencode"
+	agentNameCodex    = "codex"
 	envValueDisabled  = "false"
 )
 
@@ -36,7 +39,7 @@ var supportedAgentTargets = []agentInstallTarget{
 	{Name: "claude-code", ProjectPath: ".claude/skills", GlobalPath: ".claude/skills", Aliases: []string{agentLegacyClaude}},
 	{Name: "cline", ProjectPath: ".agents/skills", GlobalPath: ".agents/skills"},
 	{Name: "codebuddy", ProjectPath: ".codebuddy/skills", GlobalPath: ".codebuddy/skills"},
-	{Name: "codex", ProjectPath: ".agents/skills", GlobalPath: ".codex/skills"},
+	{Name: agentNameCodex, ProjectPath: ".agents/skills", GlobalPath: ".codex/skills"},
 	{Name: "command-code", ProjectPath: ".commandcode/skills", GlobalPath: ".commandcode/skills"},
 	{Name: "continue", ProjectPath: ".continue/skills", GlobalPath: ".continue/skills"},
 	{Name: "cortex", ProjectPath: ".cortex/skills", GlobalPath: ".snowflake/cortex/skills"},
@@ -92,9 +95,73 @@ func normalizeAgentInstallTarget(name string) (agentInstallTarget, error) {
 	canonical := strings.ToLower(strings.TrimSpace(name))
 	target, ok := supportedAgentTargetsByName[canonical]
 	if !ok {
-		return agentInstallTarget{}, fmt.Errorf("unknown agent %q; see 'markata-go agent install --help' for supported values", name)
+		message := fmt.Sprintf("unknown agent %q.", name)
+		for _, suggestion := range suggestAgentNames(canonical) {
+			message += fmt.Sprintf("\nDid you mean --agent %s?", suggestion)
+		}
+		return agentInstallTarget{}, fmt.Errorf("%s\nRun '%s' for supported values", message, cliCommand("agent list-agents"))
 	}
 	return target, nil
+}
+
+func suggestAgentNames(name string) []string {
+	command := &cobra.Command{Use: "agent", SuggestionsMinimumDistance: 2}
+	for _, target := range supportedAgentTargets {
+		for _, candidate := range append([]string{target.Name}, target.Aliases...) {
+			child := &cobra.Command{
+				Use: candidate,
+				Run: func(_ *cobra.Command, _ []string) {},
+			}
+			if len(name) >= 3 && strings.Contains(candidate, name) {
+				child.SuggestFor = []string{name}
+			}
+			command.AddCommand(child)
+		}
+	}
+	seen := make(map[string]bool)
+	var suggestions []string
+	for _, suggestion := range command.SuggestionsFor(name) {
+		canonical := supportedAgentTargetsByName[suggestion].Name
+		if !seen[canonical] {
+			suggestions = append(suggestions, canonical)
+			seen[canonical] = true
+		}
+	}
+	sort.Strings(suggestions)
+	return suggestions
+}
+
+// resolveAgentWriteTargets validates every explicit target before a write begins.
+// Legacy --target may accompany --agent only when it names one of the targets.
+func resolveAgentWriteTargets(agentFlags []string, legacyTarget string) ([]agentInstallTarget, bool, error) {
+	targets := make([]agentInstallTarget, 0, len(agentFlags)+1)
+	seen := make(map[string]bool, len(agentFlags)+1)
+	for _, name := range agentFlags {
+		if strings.TrimSpace(name) == "" {
+			return nil, false, fmt.Errorf("--agent requires a non-empty agent name")
+		}
+		target, err := normalizeAgentInstallTarget(name)
+		if err != nil {
+			return nil, false, err
+		}
+		if !seen[target.Name] {
+			targets = append(targets, target)
+			seen[target.Name] = true
+		}
+	}
+	if strings.TrimSpace(legacyTarget) != "" {
+		legacy, err := normalizeAgentInstallTarget(legacyTarget)
+		if err != nil {
+			return nil, false, err
+		}
+		if len(agentFlags) != 0 && !seen[legacy.Name] {
+			return nil, false, fmt.Errorf("--agent %q conflicts with legacy --target %q", strings.Join(agentFlags, ", "), legacyTarget)
+		}
+		if !seen[legacy.Name] {
+			targets = append(targets, legacy)
+		}
+	}
+	return targets, len(targets) != 0, nil
 }
 
 func resolveAgentInstallTarget(agentFlag, legacyTarget string, global bool) (agentInstallTarget, error) {
@@ -103,7 +170,7 @@ func resolveAgentInstallTarget(agentFlag, legacyTarget string, global bool) (age
 		return agentInstallTarget{}, err
 	}
 	if global && !explicitSet {
-		return agentInstallTarget{}, fmt.Errorf("--global requires --agent so markata-go can choose the correct user skill directory")
+		return agentInstallTarget{}, fmt.Errorf("--global requires --agent without an interactive picker; use '--agent github-copilot' or run '%s' for supported values", cliCommand("agent list-agents"))
 	}
 	if explicitSet {
 		return normalizeAgentInstallTarget(explicit)
@@ -145,7 +212,7 @@ func detectDefaultAgent() string {
 	case envVarEnabled("CLAUDECODE"), envVarEnabled("CLAUDE_CODE"):
 		return "claude-code"
 	case envVarEnabled("CODEX"), envVarEnabled("OPENAI_CODEX"):
-		return "codex"
+		return agentNameCodex
 	case envVarEnabled("CURSOR_AGENT"), os.Getenv("CURSOR_TRACE_ID") != "":
 		return "cursor"
 	case envVarEnabled("GEMINI_CLI"):

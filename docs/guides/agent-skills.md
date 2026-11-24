@@ -1,240 +1,203 @@
 ---
-title: "Agent Skills"
-description: "Install the bundled markata-go site skill so coding agents can work with your site using focused topic guidance"
-date: 2026-04-01
+title: "Give your agent the Markata skill"
+description: "Teach OpenCode, Codex, Claude Code, Cursor, and other coding agents to build a Markata site."
+date: 2026-10-18
 published: true
-tags:
-  - documentation
-  - agents
-  - cli
+tags: [documentation, agents]
 ---
 
-# Agent Skills
 
-markata-go can install a bundled skill into your site repository or an agent-specific global skill directory so coding agents have project-specific guidance for common markata-go tasks.
+Let's be honest: a lot of websites get built alongside coding agents. **Give the agent the instructions that ship with Markata**, rather than a stale prompt found in a chat.
 
-## Install
+The skill is bundled with the **Go binary**; you don't need a separate installer or a proprietary cloud service.
 
-See the supported agent ids and install paths directly in the CLI:
+## Start without installing an agent integration
+
+```sh
+markata --skill
+```
+
+This prints the **self-contained, release-matched first-run guide** bundled with the CLI. Paste its output into Amp, Codex, Claude Code, or any agent of your choice. The guide asks the agent to inspect your existing site, clarify where you want to publish, prefer native config and templates before plugins, then verify a full build before deployment. No files are written and no provider is selected automatically.
+
+To give your agent the complete topic-based skill (custom templates, plugins, builds, performance, deployments), continue below.
+
+## 1. Open your site repository
 
 ```bash
-markata-go agent list-agents
+cd my-site
+markata agent list-agents
 ```
 
-Install into the current agent's project layout:
+This prints the agent identifiers and their project/global skill locations. Supported harnesses include **OpenCode, Codex, Claude Code, Cursor, GitHub Copilot, Gemini CLI**, and more.
+
+## 2. Install the skill
+
+Use auto-detection (fallback: portable `.agents/skills/markata-go-site/`):
 
 ```bash
-markata-go agent install
+markata agent install
 ```
 
-When markata-go can detect the current agent from the environment, it uses that agent's project path. Otherwise it falls back to the portable `universal` layout:
-
-```text
-.agents/skills/markata-go-site/
-```
-
-Install into Claude Code's project layout explicitly:
+Or choose your harness explicitly:
 
 ```bash
-markata-go agent install --agent claude-code
+markata agent install --agent opencode
+markata agent install --agent claude-code
+markata agent install --agent codex
 ```
 
-This creates:
-
-```text
-.claude/skills/markata-go-site/
-```
-
-Install into OpenCode's global skill directory instead of the current repository:
+Install for several agents in one command by repeating `--agent`, or passing
+comma-separated names:
 
 ```bash
-markata-go agent install --agent opencode -g
+markata agent install --agent github-copilot --agent claude-code
+markata agent install --agent github-copilot,claude-code
+markata agent install -g --agent github-copilot --agent claude-code
 ```
 
-This creates:
+For a specific agent, use `--agent`. For Claude Code, the project skill goes in `.claude/skills/markata-go-site/`; for a universal project install, it goes in `.agents/skills/markata-go-site/`.
 
-```text
-~/.config/opencode/skills/markata-go-site/
-```
+The `setup` alias also installs the skill. On an interactive terminal, either
+command lists detected agents and asks whether to install for all of them. Press
+Enter or `y` to accept. Enter `n` to choose an agent from the fuzzy picker.
+If no agents are detected, the picker opens directly. Agents that share a skill
+directory use one installation.
 
-Use a global installation when agents commonly start outside the site repository
-and select a site with `markata-go --site-dir <path> ...`. The bundled skill
-then directs agents to `markata-go explain content` for listing, searching,
-creating, editing, and validating content.
-
-`-g` / `--global` always requires an explicit `--agent` so markata-go can choose the right user directory.
-
-## Preview Without Writing
+For a global installation, use:
 
 ```bash
-markata-go agent install --dry-run
+markata agent install -g
 ```
 
-## Overwrite An Existing Installed Skill
+The picker uses an fzf-style layout: the prompt stays at the bottom, with results above it.
+The selected agent and matching characters use the terminal theme colors.
+
+Type an agent name or abbreviation, such as `copilot` or `ghcp`. Use the arrow keys to navigate. Press Enter to select.
+Escape or Ctrl+C cancels without an installation.
+`--no-color` or `NO_COLOR` disables the colors.
+For multiple-agent installs and updates, agent names and aliases are deduplicated.
+Agents sharing a project or global skill directory require only one write.
+A failure includes the agent name; other independent destinations are still
+attempted, and completed installations remain in place.
+
+For scripts, project installs keep the environment-detected agent or universal fallback. Global installs need an explicit agent:
 
 ```bash
-markata-go agent install --force
+markata agent install --agent opencode --global
+markata agent install --agent github-copilot --global
 ```
 
-## Update The Installed Skill
+The picker requires interactive input and output terminals. With `--no-input` or `TERM=dumb`, an explicit `--agent` is required.
+Unknown names show suggestions, such as `Did you mean --agent github-copilot?` for `--agent copilot`.
+Suggestions do not select an agent automatically.
 
-Use `update` as the friendlier wrapper around reinstalling with overwrite:
+## Install or update global skills for detected agents
+
+The repository's `just install` recipe installs the `markata` binary, updates
+global skills for detected agents that already have one, and checks those
+installations:
 
 ```bash
-markata-go agent update
+just install
 ```
 
-Preview the update without writing files:
+To install or refresh the skill for every supported agent executable found on
+`PATH`, use:
 
 ```bash
-markata-go agent update --dry-run
+just install --all-installed-tools
 ```
 
-## Check For Drift
+This installs globally for detected executables such as `claude`, `codex`, or
+`opencode`. The recipe then runs `agent doctor` for the detected global
+installations. It does not infer additional tools from generic shared skill
+directories.
 
-After upgrading the markata-go binary, the bundled skill may have new or updated files. Use `doctor` to check:
+You can run the global update and check steps directly after installing a new
+binary:
 
 ```bash
-markata-go agent doctor
+markata agent update --global
+markata agent doctor --global
 ```
 
-Example output when the skill is current:
-
-```text
-Skill:     markata-go-site
-Agent:     universal
-Scope:     project
-Location:  .agents/skills/markata-go-site/
-Installed: 0.5.0
-Current:   0.5.0
-
-  ok        SKILL.md
-  ok        topics/configuration.md
-  ...
-
-Skill is up to date.
-```
-
-Example output when drift is detected:
-
-```text
-Skill:     markata-go-site
-Agent:     universal
-Scope:     project
-Location:  .agents/skills/markata-go-site/
-Installed: 0.4.0
-Current:   0.5.0
-
-  ok        SKILL.md
-  modified  topics/configuration.md
-  new       reference/new-reference.md
-
-Skill has 2 issue(s). Run 'markata-go agent install --force' to update.
-```
-
-File statuses:
-
-| Status | Meaning |
-|--------|---------|
-| `ok` | File matches the bundled version |
-| `modified` | File content differs from the bundled version |
-| `new` | File was added to the bundle since last install |
-| `missing` | File was in the bundle at install time but no longer is |
-
-If the skill was installed before manifest support was added, `doctor` will recommend re-installing with `--force`.
-
-## Remove The Installed Skill
-
-Remove the installed skill directory:
+## 3. Check it
 
 ```bash
-markata-go agent remove
+markata agent doctor
 ```
 
-`uninstall` is an alias:
+On a Markata upgrade, bring your skill up to date:
 
 ```bash
-markata-go agent uninstall
+markata agent update
+markata agent update -g --agent github-copilot --agent claude-code
+markata agent doctor
 ```
 
-You can also target Claude Code's layout explicitly:
+Use `--dry-run` on `install` or `update` to preview paths, or `markata agent install --force` to overwrite local customizations.
+
+## 4. Start with a small instruction
+
+> Read the installed Markata site skill and the current configuration. Create a draft Markdown post about what this site is for. Do not change the theme, plugins, or deployment setup. Show me the file and run a fast build to check it.
+
+Agents can inspect the site with:
 
 ```bash
-markata-go agent remove --agent claude-code
+markata config show
+markata list posts
+markata explain content
+markata build --fast
 ```
 
-Remove from a global agent directory:
+For rich content with symbols like :lucide-rocket: or :lucide-database:,
+responsive icon cards, or status/reporting blocks, the bundled skill includes
+`topics/rich-markdown.md`. Ask the agent to read that topic before creating
+new CSS, templates, or JS. The built-in icon syntax is documented under
+[Icon Shortcodes](/docs/guides/icons/).
 
-```bash
-markata-go agent remove --agent opencode -g
-```
+Keep a human in the loop for publishing and deployment. Markata's skill guides agents through frontmatter, themes, feed patterns, templates, site builds, and when **not** to create a plugin.
 
-## Installed Layout
+## Visualize a session or topic
 
-The skill is split into an entrypoint, focused topic files, reference material, and starter examples:
+After you install the skill, ask your agent:
 
-```text
-SKILL.md
-topics/
-  configuration.md
-  writing-frontmatter.md
-  cli-usage.md
-  build-deployment.md
-  faster-builds.md
-  theme-creation.md
-  template-management.md
-  plugin-creation.md
-reference/
-  template-context.md
-  feed-patterns.md
-  palette-reference.md
-examples/
-  fast.toml
-  markata-go.local.toml
-  palettes/
-    my-brand.toml
-  templates/
-    base.html
-    post.html
-    feed.html
-evals/
-  evals.json
-```
+> Visualize this session.
 
-Topic files provide narrative guidance for common tasks. Reference files give quick-lookup shapes (template variables, feed config patterns). Example files provide starter configs and templates for new sites or agents that need a concrete starting point. `evals/evals.json` provides a starter regression prompt set for reviewing changes to the bundled skill itself.
+The agent creates a visual Markdown post from the conversation's work, decisions, and unresolved items.
+It serves a local preview, checks the exact post URL, and attempts to open that URL in your browser.
+The handoff includes the Markdown path, preview URL, browser-open result, and server handle or stop instruction.
 
-## What The Skill Covers
+For supplied material, use either phrase:
 
-- configuration and config inspection
-- writing content and frontmatter
-- everyday CLI usage
-- build and deployment strategy
-- faster local build loops
-- theme and palette work
-- template overrides and layout changes
-- deciding when plugin work is actually necessary
-- template variable reference for post, feed, and base templates
-- feed config patterns and common feed recipes
-- starter config and template files for new sites
+> Visualize this: our release process starts with a draft, then review, then approval.
 
-## Supported Agents
+> Make a visual post from these notes.
 
-`markata-go agent` mirrors the same agent identifiers as `vercel-labs/skills`, including `opencode`, `claude-code`, `codex`, `cursor`, `gemini-cli`, `qwen-code`, `warp`, `windsurf`, `github-copilot`, and the rest of that compatibility matrix.
+These are natural-language instructions for the agent, not Markata CLI commands.
+Ordinary chart, diagram, or styling requests do not automatically start a preview server.
 
-Use `markata-go agent list-agents` to print the full supported list with project and global install paths.
+For Markdown without a preview, state that constraint:
 
-For project installs, omitting `--agent` uses the current agent when markata-go can detect it from the environment. If no agent is detected, markata-go falls back to `universal`, which installs to `.agents/skills/markata-go-site/`.
+> Visualize this session. Source only: create exactly one Markdown file.
 
-## Recommended Workflow For Agents
+The agent then creates the file without a server or preview scaffolding.
+Outside a Markata site, a full preview uses an isolated temporary site.
+The agent keeps that scaffolding outside your repository.
 
-1. Inspect active config with `markata-go config show`.
-2. Inspect site content with `markata-go list posts`, `markata-go list feeds`, or `markata-go list tags`.
-3. Use `markata-go explain <topic>` for built-in command context.
-4. Iterate with `markata-go build --fast` or `markata-go serve --fast`.
-5. Reach for plugin work only when config, frontmatter, templates, and CSS are not enough.
+Local preview does not authorize public publication or deployment.
+The agent preserves publication flags and excludes secrets.
+The agent reports browser or persistent-server limitations instead of claiming that the page opened.
+On a remote machine, the preview can require port forwarding to reach your browser.
 
-## Why The Command Is Named `agent`
+The workflow lives in the bundled skill's `topics/visualize-session.md`.
+For an existing installation, use `markata agent update` after you install a binary with the updated skill.
 
-The `agent` command group is intentionally generic.
+## Fixes
 
-Today it installs the bundled skill. Later it can grow additional subcommands for export workflows or MCP-oriented integrations without changing the skill format that site repositories already use.
+- If the wrong harness is detected, pass `--agent` explicitly.
+- If no skill is found, run `markata agent install --dry-run` and check the reported destination.
+- After upgrading the binary, run `markata agent doctor` and then `markata agent update`.
+- Keep the installed skill with your site's source control when you want a reproducible project setup.
+
+Next: [Write your first post](/docs/guides/authoring/) or [Quickstart](/docs/quickstart/).

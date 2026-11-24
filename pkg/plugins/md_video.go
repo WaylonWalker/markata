@@ -8,9 +8,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/models"
-	"github.com/WaylonWalker/markata-go/pkg/templates"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/templates"
 )
 
 // MDVideoPlugin converts markdown image syntax for video files into HTML video elements.
@@ -22,7 +22,7 @@ import (
 //
 // Example output (HTML):
 //
-//	<video loop muted playsinline controls preload="none" class="md-video" style="margin-inline:auto">
+//	<video data-authored-autoplay="true" loop muted playsinline controls preload="none" class="md-video" style="margin-inline:auto">
 //	  <source src="video.mp4" type="video/mp4">
 //	  Your browser does not support the video tag.
 //	</video>

@@ -9,7 +9,6 @@ tags:
   - content
 ---
 
-# Embeds
 
 The embeds plugin lets you embed rich preview cards for both internal posts and external URLs in your markdown content.
 
@@ -48,6 +47,11 @@ Here's a great resource:
 ```
 
 This resolves metadata via oEmbed (when available), then falls back to Open Graph, and displays a card with the title, description, and image.
+
+The Go workbench's **Link** starter uses the same configured providers to fill
+empty post fields for title, description, image, site name, media type,
+provider, and author. Review or edit these values before creating the post.
+See the [Go workbench guide](./go-workbench/) for the full flow.
 
 If the URL is a Hacker News discussion link, markata-go resolves the outbound article URL first so the card can use the real article metadata while still showing a "Found on HN" link to the original discussion.
 

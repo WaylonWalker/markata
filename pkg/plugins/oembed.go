@@ -22,8 +22,8 @@ import (
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/renderer/html"
 
-	"github.com/WaylonWalker/markata-go/pkg/models"
-	"github.com/WaylonWalker/markata-go/pkg/palettes"
+	"github.com/WaylonWalker/markata/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/palettes"
 )
 
 // OEmbedResponse represents the JSON oEmbed response fields we care about.
@@ -251,7 +251,7 @@ func (r *oembedResolver) fetchProvidersJSON() error {
 	if err != nil {
 		return fmt.Errorf("failed to create request for providers.json: %w", err)
 	}
-	req.Header.Set("User-Agent", "markata-go/1.0 (+https://github.com/WaylonWalker/markata-go)")
+	req.Header.Set("User-Agent", "markata-go/1.0 (+https://github.com/WaylonWalker/markata)")
 
 	resp, err := r.client.Do(req)
 	if err != nil {
@@ -385,7 +385,7 @@ func (r *oembedResolver) resolveWithProvider(provider *oembedProvider, rawURL st
 		return nil, true, err
 	}
 
-	req.Header.Set("User-Agent", "markata-go/1.0 (+https://github.com/WaylonWalker/markata-go)")
+	req.Header.Set("User-Agent", "markata-go/1.0 (+https://github.com/WaylonWalker/markata)")
 	req.Header.Set("Accept", "application/json")
 
 	payload, err := r.fetchOEmbedResponse(endpoint)
@@ -491,7 +491,7 @@ func (r *oembedResolver) fetchOEmbedResponse(endpoint string) (*OEmbedResponse, 
 		return nil, err
 	}
 
-	req.Header.Set("User-Agent", "markata-go/1.0 (+https://github.com/WaylonWalker/markata-go)")
+	req.Header.Set("User-Agent", "markata-go/1.0 (+https://github.com/WaylonWalker/markata)")
 	req.Header.Set("Accept", "application/json")
 
 	resp, err := r.client.Do(req)
@@ -552,7 +552,7 @@ func (r *oembedResolver) fetchPageHTML(rawURL string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	req.Header.Set("User-Agent", "markata-go/1.0 (+https://github.com/WaylonWalker/markata-go)")
+	req.Header.Set("User-Agent", "markata-go/1.0 (+https://github.com/WaylonWalker/markata)")
 	req.Header.Set("Accept", "text/html,application/xhtml+xml")
 
 	resp, err := r.client.Do(req)
@@ -824,7 +824,7 @@ func fetchRedditImage(resolver *oembedResolver, rawURL string) (*OEmbedResponse,
 		return nil, fmt.Errorf("reddit fetch: %w", err)
 	}
 
-	req.Header.Set("User-Agent", "markata-go/1.0 (+https://github.com/WaylonWalker/markata-go)")
+	req.Header.Set("User-Agent", "markata-go/1.0 (+https://github.com/WaylonWalker/markata)")
 	req.Header.Set("Accept", "application/json")
 
 	resp, err := resolver.client.Do(req)
@@ -908,7 +908,7 @@ func fetchTikTokEmbed(resolver *oembedResolver, rawURL string) (*OEmbedResponse,
 		return nil, fmt.Errorf("tiktok: create request: %w", err)
 	}
 
-	req.Header.Set("User-Agent", "markata-go/1.0 (+https://github.com/WaylonWalker/markata-go)")
+	req.Header.Set("User-Agent", "markata-go/1.0 (+https://github.com/WaylonWalker/markata)")
 	req.Header.Set("Accept", "application/json")
 
 	resp, err := resolver.client.Do(req)
@@ -951,7 +951,7 @@ func fetchGitHubGistEmbed(resolver *oembedResolver, rawURL string) (*OEmbedRespo
 		return nil, fmt.Errorf("gist: create request: %w", err)
 	}
 
-	req.Header.Set("User-Agent", "markata-go/1.0 (+https://github.com/WaylonWalker/markata-go)")
+	req.Header.Set("User-Agent", "markata-go/1.0 (+https://github.com/WaylonWalker/markata)")
 	req.Header.Set("Accept", "application/vnd.github+json")
 
 	resp, err := resolver.client.Do(req)
@@ -1072,7 +1072,7 @@ func fetchRemoteContent(client *http.Client, rawURL string) (string, error) {
 		return "", fmt.Errorf("fetch content: %w", err)
 	}
 
-	req.Header.Set("User-Agent", "markata-go/1.0 (+https://github.com/WaylonWalker/markata-go)")
+	req.Header.Set("User-Agent", "markata-go/1.0 (+https://github.com/WaylonWalker/markata)")
 	req.Header.Set("Accept", "text/plain")
 
 	resp, err := client.Do(req)
@@ -1150,7 +1150,7 @@ func fetchGiphyEmbed(resolver *oembedResolver, rawURL string) (*OEmbedResponse, 
 		return nil, fmt.Errorf("giphy: create request: %w", err)
 	}
 
-	req.Header.Set("User-Agent", "markata-go/1.0 (+https://github.com/WaylonWalker/markata-go)")
+	req.Header.Set("User-Agent", "markata-go/1.0 (+https://github.com/WaylonWalker/markata)")
 	req.Header.Set("Accept", "application/json")
 
 	resp, err := resolver.client.Do(req)

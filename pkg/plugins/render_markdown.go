@@ -11,11 +11,11 @@ import (
 
 	chromahtml "github.com/alecthomas/chroma/v2/formatters/html"
 
-	"github.com/WaylonWalker/markata-go/pkg/buildcache"
-	"github.com/WaylonWalker/markata-go/pkg/diagnostics"
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/models"
-	"github.com/WaylonWalker/markata-go/pkg/palettes"
+	"github.com/WaylonWalker/markata/pkg/buildcache"
+	"github.com/WaylonWalker/markata/pkg/diagnostics"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/palettes"
 	"github.com/yuin/goldmark"
 	emoji "github.com/yuin/goldmark-emoji"
 	emojiast "github.com/yuin/goldmark-emoji/ast"
@@ -23,6 +23,7 @@ import (
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
+	"github.com/yuin/goldmark/renderer"
 	"github.com/yuin/goldmark/renderer/html"
 	"github.com/yuin/goldmark/text"
 	"github.com/yuin/goldmark/util"
@@ -134,6 +135,7 @@ func DefaultMarkdownExtensionConfig() MarkdownExtensionConfig {
 
 // createMarkdownRenderer creates a goldmark instance with the specified highlighting options.
 func createMarkdownRenderer(chromaTheme string, lineNumbers bool, extConfig MarkdownExtensionConfig, unsafeOptions ...bool) goldmark.Markdown {
+	registerFeatureFenceLexers()
 	unsafeHTML := true
 	if len(unsafeOptions) > 0 {
 		unsafeHTML = unsafeOptions[0]
@@ -152,6 +154,7 @@ func createMarkdownRenderer(chromaTheme string, lineNumbers bool, extConfig Mark
 	highlightOpts := []highlighting.Option{
 		highlighting.WithStyle(chromaTheme),
 		highlighting.WithFormatOptions(formatOptions...),
+		highlighting.WithWrapperRenderer(codeFenceWrapper),
 	}
 
 	extensions := []goldmark.Extender{
@@ -222,7 +225,11 @@ func createMarkdownRenderer(chromaTheme string, lineNumbers bool, extConfig Mark
 			parser.WithASTTransformers(
 				util.Prioritized(&AttributeTransformer{}, -100),
 				util.Prioritized(&HeadingIDTransformer{}, -90),
+				util.Prioritized(&codeFenceTransformer{}, -85),
 			),
+		),
+		goldmark.WithRendererOptions(
+			renderer.WithNodeRenderers(util.Prioritized(&pluginFenceRenderer{}, 100)),
 		),
 	}
 	if unsafeHTML {
@@ -1125,6 +1132,10 @@ func (p *RenderMarkdownPlugin) detectCSSRequirements(post *models.Post) {
 		post.Extra = make(map[string]interface{})
 	}
 
+	// Only pages with native tabs request the tiny enhancement script.
+	// Store the boolean directly to avoid a branch in this shared detector.
+	post.Extra["needs_md_tabs"] = strings.Contains(post.ArticleHTML, "data-md-tabs")
+
 	// Detect admonitions - check for admonition class
 	if strings.Contains(post.ArticleHTML, `class="admonition`) {
 		post.Extra["needs_admonitions_css"] = true
@@ -1165,7 +1176,15 @@ func (p *RenderMarkdownPlugin) detectCSSRequirements(post *models.Post) {
 	if strings.Contains(post.ArticleHTML, `class="anchor"`) {
 		post.Extra["has_anchor_links"] = true
 	}
+
+	// Detect roads - `::: road STYLE` containers or elements with data-road.
+	if strings.Contains(post.ArticleHTML, "road") && roadMarkupPattern.MatchString(post.ArticleHTML) {
+		post.Extra["needs_roads"] = true
+	}
 }
+
+// roadMarkupPattern matches a "road" class token or a data-road attribute.
+var roadMarkupPattern = regexp.MustCompile(`class="(?:[^"]*\s)?road(?:\s[^"]*)?"|\sdata-road[\s=>]`)
 
 // Ensure RenderMarkdownPlugin implements the required interfaces.
 var (

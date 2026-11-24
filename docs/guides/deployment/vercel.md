@@ -9,7 +9,6 @@ tags:
   - vercel
 ---
 
-# Deploy to Vercel
 
 Vercel provides zero-configuration deployments with excellent performance and edge capabilities. It's known for its speed and developer experience.
 

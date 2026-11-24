@@ -8,8 +8,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/WaylonWalker/markata-go/pkg/config"
-	"github.com/WaylonWalker/markata-go/pkg/lint"
+	"github.com/WaylonWalker/markata/pkg/config"
+	"github.com/WaylonWalker/markata/pkg/lint"
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/spf13/cobra"
 )
@@ -33,6 +33,7 @@ The linter detects:
   - Invalid date formats (non-ISO 8601)
   - Malformed image links (missing alt text)
   - Protocol-less URLs (should use https://)
+  - Likely bare-domain Markdown link targets (e.g. [site](example.dev))
 
 When run without arguments, lints all files matching the configured glob patterns
 (defaults to **/*.md). Explicit file arguments override config patterns.
@@ -101,9 +102,18 @@ func runLintCommand(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
+	// Match against the configured blogroll, without making network requests.
+	// A disabled blogroll preserves the CLI's historical lint behavior.
+	var mentionResolver *blogrollMentionResolver
+	cfg, cfgErr := config.Load(cfgFile)
+	if cfgErr != nil {
+		return fmt.Errorf("loading config for mention lint: %w", cfgErr)
+	}
+	mentionResolver = newBlogrollMentionResolver(cfg.Blogroll)
+
 	stats := &lintStats{}
 	for _, file := range files {
-		processFile(file, stats)
+		processFile(file, stats, mentionResolver)
 	}
 	processEncryptionPolicyLint(stats)
 
@@ -347,7 +357,7 @@ func expandGlobPatterns(args []string) ([]string, error) {
 }
 
 // processFile lints a single file and updates stats.
-func processFile(file string, stats *lintStats) {
+func processFile(file string, stats *lintStats, mentionResolver *blogrollMentionResolver) {
 	// Skip non-markdown files
 	ext := filepath.Ext(file)
 	if ext != markdownShortExtension && ext != markdownExtension {
@@ -363,9 +373,19 @@ func processFile(file string, stats *lintStats) {
 	}
 
 	var result *lint.Result
-	if lintFix {
+	switch {
+	case lintFix:
 		result = lint.Fix(file, string(content))
-	} else {
+		if mentionResolver != nil {
+			for _, issue := range lint.WithResolver(file, string(content), mentionResolver).Issues {
+				if issue.Type == "unknown-mention" {
+					result.Issues = append(result.Issues, issue)
+				}
+			}
+		}
+	case mentionResolver != nil:
+		result = lint.WithResolver(file, string(content), mentionResolver)
+	default:
 		result = lint.Lint(file, string(content))
 	}
 

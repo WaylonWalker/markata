@@ -9,7 +9,6 @@ tags:
   - performance
 ---
 
-# Experimental DAG builds
 
 ```bash
 markata-go build --dag --benchmark-json=dag.json

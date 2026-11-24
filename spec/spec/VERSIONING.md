@@ -51,6 +51,14 @@ var (
 )
 ```
 
+Every build entry point MUST target these variables using their canonical Go
+import path, `github.com/WaylonWalker/markata/cmd/markata-go/cmd`. This includes
+the Docker builder image and local `just` builds. A path from the retired
+`github.com/WaylonWalker/markata-go` module is not valid; Go silently ignores
+linker flags that do not match a package variable. Production binaries MUST
+report the supplied version, commit, and build date through `markata-go
+version`.
+
 ### Version Command
 
 ```bash
@@ -180,9 +188,9 @@ just build
 
 # Manual with ldflags
 go build -ldflags "-s -w \
-  -X github.com/WaylonWalker/markata-go/cmd/markata-go/cmd.Version=$(git describe --tags) \
-  -X github.com/WaylonWalker/markata-go/cmd/markata-go/cmd.Commit=$(git rev-parse --short HEAD) \
-  -X github.com/WaylonWalker/markata-go/cmd/markata-go/cmd.Date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+  -X github.com/WaylonWalker/markata/cmd/markata-go/cmd.Version=$(git describe --tags) \
+  -X github.com/WaylonWalker/markata/cmd/markata-go/cmd.Commit=$(git rev-parse --short HEAD) \
+  -X github.com/WaylonWalker/markata/cmd/markata-go/cmd.Date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
   -o markata-go ./cmd/markata-go
 ```
 

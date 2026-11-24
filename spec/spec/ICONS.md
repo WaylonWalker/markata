@@ -87,6 +87,46 @@ The wrapper is vertically aligned with surrounding text. Source SVG `width` and 
 
 Icon shortcodes are decorative by default and are hidden from assistive technology. Authors should include visible text when an icon carries meaning.
 
+The plugin serializes SVG source on one line before inserting it into Markdown.
+This keeps multiline SVG files from being split into Markdown paragraphs and
+escaped instead of rendered as inline SVG.
+
+## Article Compositions
+
+In the default article theme, the existing inline SVG shortcode may be
+composed with static Markdown container classes. The icon resolver MUST remain
+independent of the presentation class so icons work in prose too.
+
+- `md-icon` centers and sizes an icon within a card or block, using
+  `data-size="sm"` (1rem), default (1.25rem), or `data-size="lg"` (1.75rem).
+- `md-feature` lays out an icon tile and Markdown content without JS.
+- `md-feature-icon` contains a regular `:lucide-…:` shortcode.
+- `md-feature-body` contains meaningful headings, paragraphs, links or lists.
+
+These article-scoped layouts MUST NOT affect existing global `.icon`,
+`.card`, `wa-*` or feed-card styles. They MUST maintain a mobile layout that
+does not overflow the article width. Unknown icon names retain their literal
+shortcode; do not silently replace missing glyphs with an unrelated icon.
+SVGs remain decorative and aria-hidden; an icon conveying meaning MUST have
+visible adjacent text.
+
+````markdown
+::: md-feature
+
+:::: md-feature-icon
+:lucide-rocket:
+
+::::
+
+:::: md-feature-body
+### Verify production
+Check the deployed image and the live site.
+
+::::
+
+:::
+````
+
 ## Code Protection
 
 The plugin must not transform or vendor shortcodes inside code:

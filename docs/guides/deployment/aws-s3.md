@@ -9,7 +9,6 @@ tags:
   - aws-s3
 ---
 
-# Deploy to AWS S3
 
 Amazon S3 provides highly durable object storage that's ideal for hosting static websites. Combined with CloudFront CDN, it offers enterprise-grade performance and security.
 

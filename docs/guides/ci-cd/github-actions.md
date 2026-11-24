@@ -11,7 +11,6 @@ tags:
   - github-actions
 ---
 
-# GitHub Actions CI/CD
 
 GitHub Actions provides powerful CI/CD capabilities directly integrated with your GitHub repository. This guide covers everything from basic deployments to advanced multi-environment setups.
 

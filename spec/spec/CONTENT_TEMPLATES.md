@@ -1,0 +1,226 @@
+# Shared Markdown Content Starters Specification
+
+This specification defines site-authored Markdown starters used to create
+content from `markata-go new`, its interactive TUI, and the web workbench.
+Each editor may provide a different interaction, but they share discovery,
+metadata, defaults, and generated Markdown behavior.
+
+## Goals
+
+- Let a site define a content starter once, in Markdown.
+- Make the starter available to CLI, TUI, and web workbench editors.
+- Keep starter files readable and useful when opened as ordinary Markdown.
+- Preserve existing CLI built-ins and configuration-based templates.
+- Make editor-specific actions optional extensions, not required for a starter.
+
+## Starter files
+
+The default directory is `content-templates/`. A starter is one `.md` file at
+the top level of that directory. The file basename is its canonical name
+unless the optional `name` metadata field supplies a canonical name.
+The configured `content_templates.directory` setting may change this location.
+Nested starter discovery is not required by this specification.
+
+```markdown
+---
+starter:
+  name: guide
+  description: A structured guide with an introduction, steps, and summary.
+  aliases:
+    - tutorial
+    - how-to
+_directory: guides
+templateKey: guide
+title: "{{title}}"
+date: "{{date}}"
+published: false
+tags: []
+---
+
+## Introduction
+
+## Steps
+
+## Summary
+```
+
+The opening YAML block defines starter metadata and default content
+frontmatter. The Markdown after the closing delimiter is the starter body.
+The optional `starter` mapping may define `name`, `description`, and `aliases`
+for discovery. Those fields and `_directory` MUST NOT appear in generated
+content. A top-level `description` remains ordinary page frontmatter.
+`_directory` is the default output directory.
+When `_directory` is omitted, editors use the canonical starter name as the
+output directory. When `starter.name` is omitted, the basename supplies it.
+When `starter.description` is omitted, editors may use a concise generated
+description. `starter.aliases` MUST be a list of strings.
+
+## Shared creation behavior
+
+All editors MUST:
+
+1. Discover configured Markdown starters and merge them with built-in starters.
+   The web workbench MUST include every canonical built-in type exposed by
+   `markata-go new`: `post`, `page`, `docs`, `article`, `note`, `ping`, `photo`,
+   `video`, `link`, `quote`, `guide`, `inline`, `contact`, and `author`.
+   Existing editor-specific starters MAY remain available in addition to these.
+   The web workbench MUST also offer `ping`, `shot`, and `gratitude` as
+   selectable variants. Each variant MUST preserve its own `template` and
+   `templateKey` values so a site can filter it separately from `note`,
+   `photo`, or `inline` while using the corresponding card layout.
+   Ping MUST use `pages/ping` by default, separate from Note's `pages/note`.
+2. Resolve CLI/TUI selections by canonical name or alias. In the web workbench,
+   show aliases as searchable terms and select by the visible canonical starter.
+3. Ask for or accept a title when the starter requires one.
+4. Generate a collision-safe slug-based Markdown path inside the selected site.
+5. Expand the standard variables below in both starter frontmatter and body.
+6. Omit starter metadata from generated frontmatter.
+7. Preserve all other starter frontmatter values and body content.
+8. Serialize only fields already present in the selected starter or values
+   explicitly overridden during creation, except for the CLI creation defaults below.
+9. Reject paths that escape the site root and report invalid starter metadata.
+
+The built-in Link starter MUST include a title variable, the current date,
+`published: false`, `url`, and `image` fields. The web workbench MUST require a
+valid HTTP(S) URL and store it in `url` exactly as entered.
+When a Link post uses a title-derived filename and the selected starter does
+not define `slug`, the CLI and web workbench MUST write `slug: link/<title-slug>`
+to frontmatter. The Markdown filename MUST keep the unprefixed title slug in
+the selected directory. An explicit starter slug or a filename entered by the
+user MUST NOT receive the automatic prefix.
+When the source URL contains a stable post identifier in a recognized path
+such as `/status/<id>`, `/post/<id>`, `/p/<id>`, or similar social post paths,
+the CLI and web workbench MUST append that identifier to the generated Link
+filename slug and generated `link/` URL slug. An explicitly entered filename
+MUST remain unchanged.
+When a Link URL is entered, the workbench MUST resolve metadata with the same
+configured providers and resolution strategy used by external embeds. It MUST
+fill empty supported frontmatter fields for title, description, image,
+site name, media type, provider name, author name, and author URL. Users MUST be
+able to edit these values, and metadata MUST NOT replace a value they entered.
+Metadata lookup failure MUST leave the URL intact and allow manual entry.
+
+The web workbench MUST support an optional date override when creating a post.
+When empty, it preserves a starter date or applies the current local date.
+When set, the selected date overrides the starter date.
+
+Photo and shot starters MUST accept an image URL or a pasted/dropped PNG, JPEG,
+GIF, or WebP image. Image URLs MUST be stored as authored; the workbench MUST
+NOT fetch them on the server. When image upload uses local storage, uploaded
+images MUST be saved under `static/images/` with the post filename as their
+basename. Creating the post and its image MUST fail without replacing an
+existing source or image file.
+When an uploaded image URL is added to the source, the workbench MUST replace
+the starter's top-level `image` field or add one when it is absent. It MUST
+preserve both frontmatter delimiters, every other starter field, and valid YAML.
+
+Sites MAY set `content_templates.image_upload` to `local`, `dropper`, or
+`auto`. In `auto`, the workbench MUST use Dropper when a credential-bearing
+Dropper uploader is configured or `DROPPER_TOKEN` is available to a local
+server, and local storage otherwise. Dropper credentials MUST remain outside
+the browser and the hosted workbench process. A hosted uploader broker MUST
+accept only validated image uploads and MUST use one configured Dropper upload
+endpoint. The workbench MUST preview valid remote image URLs without uploading
+them.
+
+A starter MAY define `starter.number_prefix` and
+`starter.numbered_by_default`. The prefix MUST be a lowercase slug. When the
+user enables numbering, the editor uses the next available
+`{prefix}-{number}` filename in the starter's output directory. The user MUST
+be able to disable numbering for that post. Numbering MUST NOT replace an
+existing file.
+
+Sites MAY configure per-template defaults with
+`content_templates.placement` and `content_templates.filename_mode`. Filename
+mode MUST be `title` or `numbered`. The editor MUST present the selected
+folder and filename mode as editable defaults and allow a one-post override.
+When the user chooses to remember changed defaults, the editor MUST persist
+them in site configuration. `markata-go new` MUST honor those saved defaults.
+
+Site-authored starters override a config starter or built-in starter with
+the same canonical name. Canonical names MUST remain selectable even when a
+different starter uses that name as an alias. CLI/TUI MUST report an ambiguous
+alias instead of silently choosing a starter. The web workbench may show multiple canonical results for an alias
+search; it MUST NOT silently select one. Existing built-in alias catalogs may
+differ between editor surfaces for compatibility.
+Starter output directories MUST be relative paths that remain inside the site
+root. A CLI user's explicit `--dir` override retains the CLI's existing
+directory override behavior.
+
+## Standard variables
+
+| Variable | Meaning |
+|---|---|
+| `{{title}}` | User-provided title, YAML-escaped when emitted in YAML |
+| `{{slug}}` | Lowercase, URL-safe slug derived from the title |
+| `{{date}}` | Current local date as `YYYY-MM-DD` |
+| `{{datetime}}` | Current time in UTC as RFC 3339 |
+
+Unknown variables MUST remain literal so a starter can contain template syntax
+for another processor. Standard variables are supported in YAML scalar values,
+including scalar items in block or flow sequences, but not in YAML keys. Editors
+MUST escape substitutions for the surrounding YAML scalar context; they MUST
+NOT parse and re-serialize the body as YAML.
+
+Editors may provide standard creation fields such as tags, draft/published,
+private, and authors. The precedence order is:
+
+1. Values explicitly supplied by the user (including `false`, cleared values,
+   and empty lists).
+2. Values present in a site-authored Markdown starter.
+3. Site-configured template and site-level defaults.
+4. Markata built-in defaults.
+
+Except for the creation defaults below, an editor MUST NOT serialize inherited
+defaults unless the user explicitly selects an override. An editor MAY show
+those defaults in its controls.
+
+The CLI and web workbench MUST apply the same two creation defaults to every
+starter and interaction mode. They write the current local `date` when the
+starter date is absent, null, or blank, and preserve an explicit starter date.
+They write `published: true` when no publication setting exists. They preserve
+an explicit publication value and supply `published: false` for an explicit
+`draft: true` when `published` is absent. Other absent fields remain absent.
+
+For example, when a starter specifies only `title: "{{title}}"`, creating a
+page writes the title, current local date, and `published: true`. It MUST NOT
+insert `slug`, `draft`, `tags`, or `description` keys. The title supplied for a
+file path does not require an absent `title` frontmatter field to be created.
+Explicit CLI flags, including publication flags, and user-selected editor
+values override starter values.
+
+## Editor extensions
+
+The Markdown starter is the portable baseline. Editors MAY offer optional
+named capabilities such as URL metadata lookup or image upload. A starter may
+request a capability through a validated metadata field, but a missing
+capability MUST NOT prevent the starter from appearing or its Markdown from
+being created. Arbitrary code execution, shell commands, and editor-specific
+JavaScript embedded in a starter are out of scope.
+
+## Compatibility and precedence
+
+- Existing built-in starter names and CLI aliases remain available.
+- Existing TOML `content_templates.templates` definitions remain supported.
+- Markdown starters in the configured `content_templates.directory` take
+  precedence over same-named config templates and built-ins.
+- TOML/JSON/YAML configured templates take precedence over built-ins, and
+  configured placements apply where no higher-precedence starter specifies
+  its own output directory.
+- Web workbench discovery MUST use the same configured/default directory and
+  metadata contract as the CLI.
+- The interactive TUI uses the same resolved catalog as non-interactive CLI.
+
+## Errors
+
+Editors MUST identify the starter file for YAML, alias, variable, or path
+errors. Invalid starter metadata MUST be reported before a file is created.
+Starters MUST NOT be interpreted as executable code.
+
+## Conformance
+
+An editor conforms when the same starter file, site root, and explicitly
+selected creation inputs produce equivalent persisted frontmatter, substituted
+values, body, and output directory. Editors MAY display different effective
+fallbacks without writing them to the file. Differences in prompts and visual presentation are
+allowed.

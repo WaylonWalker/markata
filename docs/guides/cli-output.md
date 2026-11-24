@@ -9,7 +9,6 @@ tags:
   - themes
 ---
 
-# CLI Output
 
 Markata uses your configured site palette for interactive help, status output,
 and section headings. Help sections use Unicode box-drawing rules sized to your

@@ -1,7 +1,7 @@
 package services
 
 import (
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
 )
 
 // NewApp creates a new App with all services initialized.

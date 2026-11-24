@@ -3,7 +3,7 @@ package search
 import (
 	"testing"
 
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 func TestSynonymSearch(t *testing.T) {

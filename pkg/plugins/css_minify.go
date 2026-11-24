@@ -13,8 +13,8 @@ import (
 	"github.com/tdewolff/minify/v2"
 	"github.com/tdewolff/minify/v2/css"
 
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 // cssBufPool reuses bytes.Buffer instances across CSS minification calls to reduce allocations.
@@ -174,6 +174,9 @@ func (p *CSSMinifyPlugin) findCSSFiles(dir string) ([]string, error) {
 
 // isExcluded checks if a file should be excluded from minification.
 func (p *CSSMinifyPlugin) isExcluded(filePath string) bool {
+	if isVersionedCSSFile(filePath) {
+		return true
+	}
 	if isPagefindAsset(filePath) {
 		return true
 	}

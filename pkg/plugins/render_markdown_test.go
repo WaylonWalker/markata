@@ -4,8 +4,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/models"
+
+	"github.com/alecthomas/chroma/v2"
 )
 
 func TestRenderMarkdownPlugin_Name(t *testing.T) {
@@ -35,6 +37,36 @@ func TestRenderMarkdownPlugin_BasicParagraph(t *testing.T) {
 	expected := "<p>Hello world</p>"
 	if !strings.Contains(post.ArticleHTML, expected) {
 		t.Errorf("expected %q in output, got %q", expected, post.ArticleHTML)
+	}
+}
+
+func TestRenderMarkdownPlugin_FeatureFencesKeepPlainSource(t *testing.T) {
+	p := NewRenderMarkdownPlugin()
+	post := &models.Post{Content: "```mermaid\ngraph TD\n  A --> B\n```"}
+
+	if err := p.renderPost(post); err != nil {
+		t.Fatalf("renderPost error: %v", err)
+	}
+	for _, want := range []string{
+		`class="language-mermaid"`,
+		"graph TD",
+	} {
+		if !strings.Contains(post.ArticleHTML, want) {
+			t.Errorf("rendered feature fences %q do not contain %q", post.ArticleHTML, want)
+		}
+	}
+}
+
+func TestPlainFeatureFenceLexerReturnsPlainText(t *testing.T) {
+	for _, source := range []string{"graph TD\n  A --> B\n", `{"type":"bar"}`} {
+		iterator, err := (&plainFeatureFenceLexer{}).Tokenise(nil, source)
+		if err != nil {
+			t.Fatalf("Tokenise(%q) error: %v", source, err)
+		}
+		token := iterator()
+		if token.Type != chroma.Text || token.Value != source {
+			t.Errorf("Tokenise(%q) = %#v, want one plain text token", source, token)
+		}
 	}
 }
 
@@ -1429,5 +1461,50 @@ func TestRenderMarkdownPlugin_ExtensionConfig_Disabled(t *testing.T) {
 	// Without definition list extension, should not have <dl>
 	if strings.Contains(post2.ArticleHTML, "<dl>") {
 		t.Error("Definition list should be disabled but <dl> found in output")
+	}
+}
+
+func TestRenderMarkdownPlugin_DetectRoads(t *testing.T) {
+	tests := []struct {
+		name    string
+		content string
+		want    bool
+	}{
+		{"road container", "::: road timeline\n\n- [Kickoff](#a) Jan\n:::", true},
+		{"road container with attributes", "::: road {data-road=\"git\"}\n\n- [Init](#a) main\n:::", true},
+		{"raw div with data-road", "<div data-road=\"winding\">\n\n- [Start](#a)\n\n</div>", true},
+		{"similar class name", "<div class=\"roadmap\">plan</div>", false},
+		{"plain list", "- [Kickoff](#a) Jan", false},
+		{"word road in text", "The road goes ever on.", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := NewRenderMarkdownPlugin()
+			post := &models.Post{Content: tt.content}
+			if err := p.renderPost(post); err != nil {
+				t.Fatalf("renderPost error: %v", err)
+			}
+			got := post.Extra["needs_roads"] == true
+			if got != tt.want {
+				t.Errorf("needs_roads = %v, want %v\nhtml: %s", got, tt.want, post.ArticleHTML)
+			}
+		})
+	}
+}
+
+func TestRenderMarkdownPlugin_PreservesFixedRoadAttributes(t *testing.T) {
+	post := &models.Post{Content: `::: road timeline {data-road-progress-mode="static" data-road-progress="65"}
+
+- [Design](#design)
+- [Release](#release)
+:::`}
+	if err := NewRenderMarkdownPlugin().renderPost(post); err != nil {
+		t.Fatal(err)
+	}
+	for _, attribute := range []string{`data-road-progress-mode="static"`, `data-road-progress="65"`} {
+		if !strings.Contains(post.ArticleHTML, attribute) {
+			t.Errorf("rendered road is missing %s: %s", attribute, post.ArticleHTML)
+		}
 	}
 }

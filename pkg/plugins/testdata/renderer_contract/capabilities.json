@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "renderer": "markata-standalone",
+  "formats": ["html_fragment"],
+  "options": ["asset_base", "inline_assets", "unsafe", "mermaid_mode"],
+  "features": [
+    "admonitions",
+    "anchors",
+    "chartjs",
+    "checklists",
+    "code",
+    "excalidraw",
+    "figures",
+    "mermaid",
+    "roads",
+    "tables"
+  ],
+  "diagram_modes": {
+    "chartjs": ["client"],
+    "excalidraw": ["auto", "cached", "chromium"],
+    "mermaid": ["client", "go"]
+  },
+  "asset_modes": ["inline", "linked"],
+  "loads_site_config": false,
+  "external_url_audit": false
+}

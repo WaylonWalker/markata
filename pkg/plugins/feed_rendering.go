@@ -1,6 +1,6 @@
 package plugins
 
-import "github.com/WaylonWalker/markata-go/pkg/models"
+import "github.com/WaylonWalker/markata/pkg/models"
 
 // splitFeedRenderablePosts partitions posts into:
 // 1) pagePosts: posts visible on feed HTML pages

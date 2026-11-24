@@ -1,5 +1,5 @@
 {{- define "markata-notes.namespace" -}}
-{{- printf "%s-notes" .Values.project_identifier -}}
+{{- default (printf "%s-notes" .Values.project_identifier) .Values.namespaceOverride -}}
 {{- end -}}
 
 {{- define "markata-notes.projectName" -}}
@@ -17,7 +17,7 @@ helm.sh/chart: "{{ printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" }
 {{- end -}}
 
 {{- define "markata-notes.sitePvcName" -}}
-{{- printf "%s-notes-site%s-pvc" .Values.project_identifier (.Values.storage.site.pvcNameSuffix | default "") -}}
+{{- default (printf "%s-notes-site%s-pvc" .Values.project_identifier (.Values.storage.site.pvcNameSuffix | default "")) .Values.storage.site.existingClaimName -}}
 {{- end -}}
 
 {{- define "markata-notes.sourcePvcName" -}}

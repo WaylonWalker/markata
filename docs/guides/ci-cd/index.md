@@ -10,7 +10,6 @@ tags:
   - deployment
 ---
 
-# CI/CD Deployment Guide
 
 Automate your markata-go site builds and deployments using continuous integration (CI) and continuous deployment (CD) pipelines. This guide covers the most popular platforms and deployment patterns.
 

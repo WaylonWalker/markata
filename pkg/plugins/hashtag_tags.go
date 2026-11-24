@@ -8,8 +8,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 // HashtagTagsPlugin transforms #tag syntax into HTML links with tag statistics.

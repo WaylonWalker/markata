@@ -263,6 +263,12 @@ Implementations SHOULD support:
 | Smart Quotes | `"text"` | `"text"` (curly) |
 | Definition Lists | `Term\n:   Def` | `<dl>`, `<dt>`, `<dd>` |
 
+GFM tables with a header row MUST expose sortable header controls in rendered
+post pages. Sorting MUST toggle between ascending and descending order, preserve
+stable order for equal values, sort numeric columns numerically, and leave empty
+values at the end. The sortable-table script MUST be deferred and included only
+on pages whose rendered body contains a table with a header.
+
 ### Attribute Syntax
 
 The attribute syntax `{...}` allows adding CSS classes, IDs, and other attributes to elements.
@@ -589,6 +595,24 @@ With syntax highlighting (optional):
     <span class="hljs-built_in">print</span>(<span class="hljs-string">"world"</span>)
 </code></pre>
 ```
+
+Fenced code info strings MAY include a quoted title:
+
+````markdown
+```bash title="Terminal"
+markata build
+```
+
+```go title="main.go"
+package main
+```
+````
+
+The renderer MUST preserve language and title metadata in semantic HTML for
+the theme to present as code-block chrome. Copy controls MUST copy code text
+only. With JavaScript disabled, highlighted code and its title MUST remain
+readable. Plugin-owned fences such as Mermaid MUST preserve their plain fence
+markup for the owning plugin.
 
 ---
 

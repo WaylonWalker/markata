@@ -1,0 +1,123 @@
+const {test} = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const {chromium} = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
+
+const root = path.join(__dirname, '../pkg/themes/default/static');
+const codeJS = fs.readFileSync(path.join(root, 'js/code-chrome.js'), 'utf8');
+const shortcutsJS = fs.readFileSync(path.join(root, 'js/shortcuts-registry.js'), 'utf8');
+const codeCSS = fs.readFileSync(path.join(root, 'css/code.css'), 'utf8');
+const aestheticCSS = fs.readFileSync(path.join(root, 'css/aesthetic.css'), 'utf8');
+const longCommand = 'kubectl get nodes --output=custom-columns=NAME:.metadata.name,STATUS:.status.conditions[0].type,READY:.status.conditions[0].status --sort-by=.metadata.name';
+
+const markup = `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>:root{--font-mono:monospace;--color-text:#222;--color-surface:#eee;--color-background:white;--color-border:#bbb;--color-text-muted:#777;--color-primary:blue;--radius-lg:.5rem;--radius:.25rem;--space-2:.5rem;--space-3:.75rem;--space-4:1rem;--text-sm:.9rem;--text-xs:.75rem;}</style>
+<style>${codeCSS}</style></head><body>
+<article class="post-content" style="width:calc(100% - 2rem);max-width:600px;margin:0 auto">
+  <div id="source"><pre><code class="language-bash">kubectl get pods -A\n${longCommand}\n</code></pre></div>
+  <pre class="mermaid"><code class="language-mermaid">graph TD;A-->B;</code></pre>
+</article></body></html>`;
+
+for (const width of [320, 1440]) {
+  test(`code copy enhancement is accessible and idempotent at ${width}px`, async () => {
+    const browser = await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_EXECUTABLE || undefined,args:['--no-sandbox']});
+    try {
+      const context = await browser.newContext({viewport:{width,height:900},javaScriptEnabled:true});
+      const page = await context.newPage();
+      await page.setContent(markup);
+      await page.evaluate(() => {
+        window.copiedText = null;
+        Object.defineProperty(navigator, 'clipboard', {configurable:true,value:{writeText:async text => {window.copiedText=text;}}});
+      });
+      await page.addScriptTag({content:shortcutsJS});
+      await page.evaluate(() => {
+        window.shortcutCalls = 0;
+        window.shortcutsRegistry.register({
+          key: 'Enter', modifiers: [], description: 'Open highlighted post', group: 'navigation',
+          handler: event => { event.preventDefault(); window.shortcutCalls++; },
+        });
+      });
+      await page.addScriptTag({content:codeJS});
+      assert.equal(await page.locator('.code-block__copy').count(), 1, 'only code blocks, never Mermaid, get controls');
+      assert.equal(await page.locator('#source .code-block').getAttribute('data-lang'), 'bash');
+      assert.equal(await page.locator('pre.mermaid .code-block__copy').count(), 0);
+
+      const button = page.getByRole('button',{name:'Copy code'});
+      await button.focus();
+      assert.equal(await button.evaluate(el => getComputedStyle(el).outlineStyle), 'solid', 'keyboard focus must be visible');
+      await page.keyboard.press('Enter');
+      assert.equal(await page.evaluate(() => window.copiedText), `kubectl get pods -A\n${longCommand}`);
+      assert.equal(await page.getByRole('button',{name:'Code copied'}).count(), 1);
+      assert.equal(await page.evaluate(() => window.shortcutCalls), 0,
+        'global Enter shortcuts must not intercept native button activation');
+      const metrics = await page.evaluate(() => {
+        const pre = document.querySelector('#source pre');
+        const button = pre.closest('.code-block').querySelector('.code-block__copy');
+        const code = pre.querySelector('code');
+        const b = button.getBoundingClientRect();
+        const c = code.getBoundingClientRect();
+        return {page:document.documentElement.scrollWidth,viewport:innerWidth,
+          codeScroll:pre.scrollWidth,codeClient:pre.clientWidth,
+          buttonRight:b.right,codeRight:c.right,buttonTop:b.top,codeTop:c.top};
+      });
+      assert.ok(metrics.page <= metrics.viewport+1, 'code toolbar must not overflow narrow article: '+JSON.stringify(metrics));
+      assert.ok(metrics.codeScroll > metrics.codeClient, 'long code lines should scroll inside the pre: '+JSON.stringify(metrics));
+
+      await page.evaluate(() => {
+        document.querySelector('#source').innerHTML = '<pre><code class="language-go">fmt.Println("hello")</code></pre>';
+        window.dispatchEvent(new Event('view-transition-complete'));
+        window.markataInitCodeChrome();
+      });
+      assert.equal(await page.locator('.code-block__copy').count(), 1, 'SPA navigation gets one fresh control');
+      assert.equal(await page.locator('#source .code-block').getAttribute('data-lang'), 'go');
+      assert.equal(await page.locator('.code-block__copy').getAttribute('data-markata-ui'), 'code-copy');
+      await context.close();
+    } finally {
+      await browser.close();
+    }
+  });
+}
+
+test('code remains readable without JavaScript', async () => {
+  const browser = await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_EXECUTABLE || undefined,args:['--no-sandbox']});
+  try {
+    const context = await browser.newContext({javaScriptEnabled:false});
+    const page = await context.newPage();
+    await page.setContent(markup);
+    assert.equal(await page.locator('.code-block__copy').count(), 0);
+    assert.equal(await page.locator('#source pre code').textContent(), `kubectl get pods -A\n${longCommand}\n`);
+    await context.close();
+  } finally {
+    await browser.close();
+  }
+});
+
+test('Minimal aesthetic keeps its code-block surface over the palette highlighting background', async () => {
+  const browser = await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_EXECUTABLE || undefined,args:['--no-sandbox']});
+  try {
+    const page = await browser.newPage();
+    // Ayu Dark deliberately gives code-bg the same color as the page. If
+    // generated .chroma rules are unlayered, they override the Minimal preset
+    // and make the entire code block disappear into that background.
+    await page.setContent(`<!doctype html><html data-aesthetic="minimal"><head><style>
+      @layer reset, tokens, base, components, utilities, overrides;
+      :root {--color-background:#0d1017;--color-code-bg:#0d1017;--color-text:#bfbdb6;
+        --color-surface:#131721;--color-border:#1c232f;--space-4:1rem;--space-6:1.5rem;
+        --radius-lg:.75rem;--font-mono:monospace;--text-sm:.875rem;}
+      body {background-color:var(--color-background);color:var(--color-text);}
+    </style><style>${codeCSS}</style><style>${aestheticCSS}</style>
+    <style>@layer components {.chroma {background-color:var(--color-code-bg);}}</style>
+    </head><body><article class="post-content">
+      <pre class="chroma"><code>markata config init</code></pre>
+    </article></body></html>`);
+    const colors = await page.evaluate(() => ({
+      code: getComputedStyle(document.querySelector('pre.chroma')).backgroundColor,
+      page: getComputedStyle(document.body).backgroundColor,
+    }));
+    assert.notEqual(colors.code, colors.page,
+      'Minimal code block must remain visible even when palette code-bg equals page background');
+  } finally {
+    await browser.close();
+  }
+});

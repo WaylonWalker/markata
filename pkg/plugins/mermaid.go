@@ -9,13 +9,14 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/WaylonWalker/markata-go/pkg/buildcache"
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/buildcache"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 const (
 	mermaidModeClient   = "client"
+	mermaidModeGo       = "go"
 	mermaidModeCLI      = "cli"
 	mermaidModeChromium = "chromium"
 )
@@ -23,12 +24,14 @@ const (
 // MermaidPlugin converts Mermaid code blocks into rendered diagrams.
 // It runs at the render stage (post_render, after markdown conversion).
 type MermaidPlugin struct {
-	config        models.MermaidConfig
-	renderer      mermaidRenderer
-	paletteColors *mermaidPaletteColors // resolved at configure time, nil if no palette
-	assetURLs     map[string]string
-	cache         *buildcache.Cache
-	renderKey     string
+	scriptCollector    func(string) // standalone rendering collects generated scripts as assets
+	escapeClientSource bool
+	config             models.MermaidConfig
+	renderer           mermaidRenderer
+	paletteColors      *mermaidPaletteColors // resolved at configure time, nil if no palette
+	assetURLs          map[string]string
+	cache              *buildcache.Cache
+	renderKey          string
 }
 
 // NewMermaidPlugin creates a new MermaidPlugin with default settings.
@@ -74,6 +77,7 @@ func (p *MermaidPlugin) Configure(m *lifecycle.Manager) error {
 		p.parseMainConfig(cfgMap)
 		p.parseCLIConfig(cfgMap)
 		p.parseChromiumConfig(cfgMap)
+		p.parseGoConfig(cfgMap)
 	}
 
 	// Validate the selected mode and check dependencies
@@ -134,6 +138,55 @@ func (p *MermaidPlugin) parseCLIConfig(cfgMap map[string]interface{}) {
 	}
 }
 
+// parseGoConfig reads the opt-in native Go diagram renderer's style settings.
+func (p *MermaidPlugin) parseGoConfig(cfgMap map[string]interface{}) {
+	cfg, ok := cfgMap["go"].(map[string]interface{})
+	if !ok {
+		return
+	}
+	if p.config.GoConfig == nil {
+		p.config.GoConfig = &models.GoMermaidRendererConfig{}
+	}
+	n := p.config.GoConfig
+	if font, ok := cfg["font_family"].(string); ok && font != "" {
+		n.FontFamily = font
+	}
+	for _, item := range []struct {
+		key    string
+		target *float64
+	}{
+		{"font_size", &n.FontSize},
+		{"node_spacing", &n.NodeSpacing},
+		{"rank_spacing", &n.RankSpacing},
+		{"padding", &n.Padding},
+	} {
+		if value, ok := mermaidFloat(cfg[item.key]); ok && value > 0 {
+			*item.target = value
+		}
+	}
+	if v, ok := cfg["curved_edges"].(bool); ok {
+		n.CurvedEdges = v
+	}
+	if v, ok := cfg["transparent_background"].(bool); ok {
+		n.TransparentBackground = v
+	}
+}
+
+func mermaidFloat(value interface{}) (float64, bool) {
+	switch v := value.(type) {
+	case float64:
+		return v, true
+	case float32:
+		return float64(v), true
+	case int:
+		return float64(v), true
+	case int64:
+		return float64(v), true
+	default:
+		return 0, false
+	}
+}
+
 // parseChromiumConfig extracts Chromium renderer configuration from the config map.
 func (p *MermaidPlugin) parseChromiumConfig(cfgMap map[string]interface{}) {
 	chromCfg, ok := cfgMap["chromium"].(map[string]interface{})
@@ -163,11 +216,11 @@ func (p *MermaidPlugin) parseChromiumConfig(cfgMap map[string]interface{}) {
 func (p *MermaidPlugin) validateMode() error {
 	// Validate mode value
 	switch p.config.Mode {
-	case mermaidModeClient, mermaidModeCLI, mermaidModeChromium:
+	case mermaidModeClient, mermaidModeCLI, mermaidModeChromium, mermaidModeGo:
 		// valid modes
 	default:
 		return models.NewConfigValidationError("mermaid.mode", p.config.Mode,
-			"invalid mode: must be 'client', 'cli', or 'chromium'")
+			"invalid mode: must be 'client', 'go', 'cli', or 'chromium'")
 	}
 
 	// Check dependencies for non-client modes
@@ -204,6 +257,9 @@ func (p *MermaidPlugin) Render(m *lifecycle.Manager) (err error) {
 	if p.config.Mode != mermaidModeClient {
 		renderer, createErr := newMermaidRenderer(p.config, p.paletteColors)
 		if createErr != nil {
+			if p.config.Mode == mermaidModeGo {
+				return fmt.Errorf("native Mermaid renderer: %w", createErr)
+			}
 			p.config.Mode = mermaidModeClient
 		} else {
 			p.renderer = renderer
@@ -323,6 +379,12 @@ func (p *MermaidPlugin) diagramRenderHash(diagramCode string) string {
 			builder.WriteString("false")
 		}
 	}
+	if p.config.Mode == mermaidModeGo {
+		builder.WriteString("\ngo.version:")
+		builder.WriteString(nativeMermaidVersion)
+		builder.WriteString("\ngo.config:")
+		builder.WriteString(fmt.Sprintf("%+v", p.config.GoConfig))
+	}
 	if p.paletteColors != nil {
 		builder.WriteString("\npalette:")
 		builder.WriteString(p.paletteColors.themeVariablesJSON())
@@ -392,6 +454,8 @@ func (p *MermaidPlugin) rendererCacheKey() string {
 	}
 
 	switch p.config.Mode {
+	case mermaidModeGo:
+		return nativeMermaidVersion
 	case mermaidModeCLI:
 		info := checkCLIDependency(p.config.CLIConfig.MMDCPath)
 		if !info.IsInstalled {
@@ -464,6 +528,9 @@ func (p *MermaidPlugin) processPost(post *models.Post) error {
 
 			// For client mode: return as mermaid pre block
 			if mode == mermaidModeClient {
+				if p.escapeClientSource {
+					diagramCode = html.EscapeString(diagramCode)
+				}
 				return `<pre class="mermaid">` + "\n" + diagramCode + "\n</pre>"
 			}
 
@@ -541,23 +608,32 @@ func (p *MermaidPlugin) injectMermaidScript(htmlContent string) string {
 <script type="module">
 ` + p.mermaidImportJS() + p.mermaidLightboxJS() + `
   mermaid.initialize({ startOnLoad: false, theme: '` + p.config.Theme + `' });
-  window.initMermaid = async () => {
+  window.initMermaid = async (root = document) => {
+    const roots = Array.isArray(root) ? root : [root];
+    const blocks = roots.flatMap(node => node.matches?.('pre.mermaid') ? [node] : [...(node.querySelectorAll?.('pre.mermaid') || [])]);
+    if (!blocks.length) return;
     try {
-      await mermaid.run();
+      await mermaid.run({ nodes: blocks });
     } catch (e) {
       console.error('mermaid.run failed:', e);
     }
     ensureMermaidLightbox();
   };
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => window.initMermaid());
-  } else {
-    window.initMermaid();
+  if (!window.markataEditorPreview) {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => window.initMermaid());
+    } else {
+      window.initMermaid();
+    }
   }
 </script>`
 	}
 
 	// Append the script to the end of the content
+	if p.scriptCollector != nil {
+		p.scriptCollector(script)
+		return htmlContent
+	}
 	return htmlContent + script
 }
 
@@ -565,54 +641,98 @@ func (p *MermaidPlugin) cssVariablesScript() string {
 	return `
 <script type="module">
 ` + p.mermaidImportJS() + `
-  const rootStyle = getComputedStyle(document.documentElement);
-  const css = (name, fallback) => (rootStyle.getPropertyValue(name) || fallback).trim();
-  const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches ||
-    document.documentElement.dataset.theme === 'dark';
-  const accent = css('--color-primary', '#ffcd11');
-  const flowchart = {
-    nodeSpacing: 60,
-    rankSpacing: 90,
-    padding: 12,
-  };
-  const themeCSS = ` + "`" + `
+  const diagramSources = new WeakMap();
+  let renderQueue = Promise.resolve();
+  const renderDiagrams = async (root = document) => {
+    const roots = Array.isArray(root) ? root : [root];
+    const blocks = roots.flatMap(node => node.matches?.('pre.mermaid') ? [node] : [...(node.querySelectorAll?.('pre.mermaid') || [])]);
+    if (blocks.length === 0) return;
+
+    for (const block of blocks) {
+      if (!diagramSources.has(block)) {
+        const source = block.textContent || '';
+        diagramSources.set(block, source);
+        block.dataset.markataMermaidSource = source;
+      }
+      block.removeAttribute('data-processed');
+      block.textContent = diagramSources.get(block);
+    }
+
+    const css = (name, fallback) => {
+      const probe = document.createElement('span');
+      probe.style.backgroundColor = ` + "`" + `var(${name}, ${fallback})` + "`" + `;
+      document.documentElement.appendChild(probe);
+      const value = getComputedStyle(probe).backgroundColor;
+      probe.remove();
+      // Mermaid 10 does not accept color-mix(), color(), or other CSS color
+      // functions. Resolve the active CSS color through canvas to an RGB value.
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      if (!context) return value;
+      context.fillStyle = value;
+      context.fillRect(0, 0, 1, 1);
+      const [red, green, blue] = context.getImageData(0, 0, 1, 1).data;
+      return ` + "`" + `rgb(${red}, ${green}, ${blue})` + "`" + `;
+    };
+    // The active palette is the source of truth: OS preference may differ
+    // from the user-selected theme.
+    const background = css('--color-background', '#ffffff');
+    const accent = css('--color-primary', '#64748b');
+    const surface = css('--color-surface', background);
+    const foreground = css('--color-text', '#1f2937');
+    const border = css('--color-border', accent);
+    const flowchart = { nodeSpacing: 60, rankSpacing: 90, padding: 12 };
+    const themeCSS = ` + "`" + `
     .label foreignObject > div { padding: 14px 14px 10px; line-height: 1.2; }
     .nodeLabel { padding: 14px 14px 10px; line-height: 1.2; }
-    * { cursor: pointer; }
+
   ` + "`" + `;
-  const themeVariables = {
-    background: css('--color-background', '#ffffff'),
-    primaryColor: css('--color-code-bg', '#0a0a0a'),
-    primaryTextColor: css('--color-text', '#1f2937'),
-    primaryBorderColor: accent,
-    lineColor: accent,
-    textColor: css('--color-text', '#1f2937'),
-    nodeBkg: css('--color-code-bg', '#0a0a0a'),
-    nodeBorder: accent,
-    nodeTextColor: css('--color-text', '#1f2937'),
-    fontSize: '16px',
-    nodePadding: 20,
-    nodeTextMargin: 14,
-    clusterBkg: isDark ? css('--color-background', '#0f0f0f') : css('--color-surface', '#f9fafb'),
-    clusterBorder: accent,
-    clusterTextColor: css('--color-text', '#1f2937'),
-    titleColor: css('--color-text', '#1f2937'),
-    edgeLabelBackground: css('--color-code-bg', '#0a0a0a'),
-  };
-` + p.mermaidLightboxJS() + `
-  mermaid.initialize({ startOnLoad: false, theme: 'base', themeVariables, flowchart, themeCSS });
-  window.initMermaid = async () => {
-    try {
-      await mermaid.run();
-    } catch (e) {
-      console.error('mermaid.run failed:', e);
-    }
+    const themeVariables = {
+      background,
+      primaryColor: surface,
+      primaryTextColor: foreground,
+      primaryBorderColor: border,
+      // Diagram edges encode direction and relationships, so keep them at
+      // foreground contrast instead of the intentionally subtle node border.
+      lineColor: foreground,
+      textColor: foreground,
+      nodeBkg: surface,
+      nodeBorder: border,
+      nodeTextColor: foreground,
+      fontSize: '16px',
+      nodePadding: 20,
+      nodeTextMargin: 14,
+      clusterBkg: background,
+      clusterBorder: border,
+      clusterTextColor: foreground,
+      titleColor: foreground,
+      edgeLabelBackground: surface,
+    };
+
+    mermaid.initialize({ startOnLoad: false, theme: 'base', themeVariables, flowchart, themeCSS });
+    await mermaid.run({ nodes: blocks });
     ensureMermaidLightbox();
   };
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => window.initMermaid());
-  } else {
-    window.initMermaid();
+
+  window.initMermaid = (root = document) => {
+    renderQueue = renderQueue.then(() => renderDiagrams(root)).catch(e => {
+      console.error('mermaid.run failed:', e);
+    });
+    return renderQueue;
+  };
+  const rerenderMermaid = () => window.initMermaid(window.markataEditorPreview
+    ? [...document.querySelectorAll('pre.mermaid[data-processed]')] : document);
+  window.addEventListener('theme-change', rerenderMermaid);
+  window.addEventListener('palette-change', rerenderMermaid);
+  window.addEventListener('color-mode-change', rerenderMermaid);
+  window.addEventListener('view-transition-complete', rerenderMermaid);
+` + p.mermaidLightboxJS() + `
+  if (!window.markataEditorPreview) {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => window.initMermaid());
+    } else {
+      window.initMermaid();
+    }
   }
 </script>`
 }

@@ -35,9 +35,15 @@
 
   {% if config.Extra.fontpack_css %}
   {% if not config.Extra.fontpack_preloads_json %}
+  {% if feed_presentation == "editorial" and feed_sections %}
+  {% for url in config.Extra.fontpack_editorial_preload_urls %}
+  <link rel="preload" href="{{ url }}" as="font" type="font/woff2" crossorigin>
+  {% endfor %}
+  {% else %}
   {% for url in post.Extra._fontpack_preload_urls | default:config.Extra.fontpack_preload_urls %}
   <link rel="preload" href="{{ url }}" as="font" type="font/woff2" crossorigin>
   {% endfor %}
+  {% endif %}
   {% endif %}
   {% endif %}
   <!-- Core CSS (always loaded) -->
@@ -51,9 +57,15 @@
   {% endif %}
   <link rel="stylesheet" href="{{ 'css/main.css' | theme_asset_hashed }}">
   <link rel="stylesheet" href="{{ 'css/components.css' | theme_asset_hashed }}">
+  <link rel="stylesheet" href="{{ 'css/layouts.css' | theme_asset_hashed }}">
   <link rel="stylesheet" href="{{ 'css/text-size.css' | theme_asset_hashed }}">
   {% if config.Extra.fontpack_css %}
   <link rel="stylesheet" href="{{ 'css/fonts.css' | theme_asset_hashed }}">
+  {% endif %}
+
+  {# Native tabs need no JavaScript for reading; enhance only on tab pages. #}
+  {% if needs_md_tabs %}
+  <script src="{{ 'js/md-tabs.js' | theme_asset_hashed }}" defer></script>
   {% endif %}
 
   <!-- Conditional CSS: only loaded when page content requires it -->
@@ -63,6 +75,8 @@
   {% if needs_code_css %}
   <link rel="stylesheet" href="{{ 'css/code.css' | theme_asset_hashed }}">
   <link rel="stylesheet" href="{{ 'css/chroma.css' | theme_asset_hashed }}">
+  {# Only code-bearing pages receive the enhancement bundle; no-JS stays readable. #}
+  <script src="{{ 'js/code-chrome.js' | theme_asset_hashed }}" defer></script>
   {% endif %}
   {# Plain post pages do not need feed-card styles on first paint. #}
   {% if not skip_cards_css %}
@@ -77,19 +91,18 @@
   {% if has_encrypted_content %}
   <link rel="stylesheet" href="{{ 'css/encryption.css' | theme_asset_hashed }}">
   {% endif %}
+  {% if needs_roads %}
+  <link rel="stylesheet" href="{{ 'css/roads.css' | theme_asset_hashed }}">
+  <script src="{{ 'js/roads.js' | theme_asset_hashed }}" defer></script>
+  {% endif %}
 
   <!-- Palette Switcher CSS (when enabled) -->
   {% include "partials/palette-switcher-styles.html" %}
 
-  <!-- Search CSS: layout styles load eagerly, pagefind UI loads on interaction -->
+  <!-- Search CSS: closed interaction surface, do not block initial paint -->
   {% if config.search.enabled %}
-  {% if feed_presentation == "editorial" %}
-  {# Search is a closed interaction surface on the archive; do not block the initial article paint. #}
   <link rel="stylesheet" href="{{ 'css/search.css' | theme_asset_hashed }}" media="print" onload="this.media='all'">
   <noscript><link rel="stylesheet" href="{{ 'css/search.css' | theme_asset_hashed }}"></noscript>
-  {% else %}
-  <link rel="stylesheet" href="{{ 'css/search.css' | theme_asset_hashed }}">
-  {% endif %}
   {% endif %}
 
 
@@ -455,157 +468,9 @@
   <style id="markata-mark-presentation">
     html mark { background-color: var(--color-highlight) !important; color: var(--color-highlight-text) !important; }
   </style>
-  <style id="markata-canonical-document-profile">
-    /* Internal conformance profile; scoped so normal site documents are unchanged. */
-     [data-rendering-specimen="canonical-headings"] {
-      box-sizing: border-box;
-       width: 1280px !important;
-       height: 1000px !important;
-       min-height: 1000px !important;
-       padding: 24px;
-       overflow: hidden !important;
-       line-height: 1.6 !important;
-    }
-    [data-rendering-specimen="canonical-headings"] .canonical-document {
-      box-sizing: border-box;
-       width: 680px;
-       max-width: 100%;
-      margin-inline: auto;
-       padding-inline: 0;
-      font-family: var(--font-body, system-ui, sans-serif);
-      font-size: 1rem;
-      line-height: 1.6;
-    }
-    [data-rendering-specimen="canonical-headings"] .canonical-document__title,
-    [data-rendering-specimen="canonical-headings"] .post-content h1,
-    [data-rendering-specimen="canonical-headings"] .post-content h2,
-    [data-rendering-specimen="canonical-headings"] .post-content h3,
-    [data-rendering-specimen="canonical-headings"] .post-content h4,
-    [data-rendering-specimen="canonical-headings"] .post-content h5,
-    [data-rendering-specimen="canonical-headings"] .post-content h6 {
-       font-family: var(--font-heading, var(--font-body, system-ui, sans-serif)) !important;
-       font-weight: 400;
-       overflow: visible;
-       border: 0;
-       padding: 0;
-    }
-    [data-rendering-specimen="canonical-headings"] .canonical-document__title {
-      margin: 0 0 0.75rem;
-      font-size: clamp(2.5rem, 8vw, 5rem);
-      line-height: 0.95;
-    }
-    [data-rendering-specimen="canonical-headings"] .post-content h1 {
-      margin: 2.5rem 0 0.75rem;
-      font-size: clamp(2.5rem, 8vw, 5rem);
-      line-height: 0.95;
-    }
-     [data-rendering-specimen="canonical-headings"] .post-content h2 {
-      margin: 2.5rem 0 0.75rem;
-      font-size: clamp(2rem, 5vw, 3.5rem);
-       line-height: 1;
-     }
-     [data-rendering-specimen="canonical-headings"] > .markata-canonical-texture-layer {
-       position: absolute;
-       inset: 0;
-       width: 1280px;
-       height: 1000px;
-       pointer-events: none;
-       background-repeat: repeat;
-       background-image: var(--theme-texture-image, none);
-       background-size: calc(180px * var(--theme-texture-scale, 0.92));
-       opacity: var(--theme-texture-opacity, 0);
-       z-index: 20;
-     }
-    [data-rendering-specimen="canonical-headings"] .post-content h3 { margin: 2.5rem 0 0.75rem; font-size: 2rem; line-height: 1.05; }
-    [data-rendering-specimen="canonical-headings"] .post-content h4 { margin: 2.5rem 0 0.75rem; font-size: 1.5rem; line-height: 1.1; }
-    [data-rendering-specimen="canonical-headings"] .post-content h5 { margin: 2.5rem 0 0.75rem; font-size: 1.25rem; line-height: 1.2; }
-    [data-rendering-specimen="canonical-headings"] .post-content h6 { margin: 2.5rem 0 0.75rem; font-size: 1rem; line-height: 1.25; }
-     [data-rendering-specimen="canonical-headings"] .canonical-document :is(code, pre, kbd, samp) { font-family: var(--font-code, ui-monospace, monospace); }
-     [data-rendering-specimen="canonical-headings"] .canonical-document :is(strong, em, mark, a) { font-family: inherit; }
-      [data-rendering-specimen="canonical-headings"] .canonical-document :is(code, kbd, samp) { font-family: var(--font-code, ui-monospace, monospace); }
-      html[data-fontpack] [data-rendering-specimen="canonical-headings"] .post-content :is(h1, h2, h3, h4, h5, h6) :is(strong, em, a) { color: var(--color-text) !important; font-family: var(--font-heading) !important; }
-      html[data-fontpack] [data-rendering-specimen="canonical-headings"] .post-content :is(h1, h2, h3, h4, h5, h6) mark { background: var(--color-highlight) !important; color: var(--color-highlight-text) !important; -webkit-text-fill-color: var(--color-highlight-text) !important; }
-      [data-rendering-specimen="canonical-headings"] .canonical-document :is(h1, h2, h3, h4, h5, h6) :is(strong, em, a) { color: var(--color-text) !important; font-family: var(--font-heading) !important; }
-      [data-rendering-specimen="canonical-headings"] .canonical-document :is(h1, h2, h3, h4, h5, h6) mark { background: var(--color-highlight) !important; color: var(--color-highlight-text) !important; -webkit-text-fill-color: var(--color-highlight-text) !important; }
-      [data-rendering-specimen="canonical-headings"] :is(h1, h2, h3, h4, h5, h6) :is(strong, em, a) { color: var(--color-text) !important; font-family: var(--font-heading) !important; }
-      [data-rendering-specimen="canonical-headings"] :is(h1, h2, h3, h4, h5, h6) mark { background: var(--color-highlight) !important; color: var(--color-highlight-text) !important; -webkit-text-fill-color: var(--color-highlight-text) !important; }
-      [data-rendering-specimen="canonical-headings"] .post-content :is(h1, h2, h3, h4, h5, h6) :is(code, kbd, samp) { color: inherit !important; font-family: var(--font-code, ui-monospace, monospace) !important; }
-     html.canonical-specimen-route body { background-size: 1344px 559px !important; }
-     html.canonical-specimen-route body { line-height: 1.6 !important; }
-     html.canonical-specimen-route body::before { background-size: calc(180px * .92) calc(180px * .92) !important; }
-     html.canonical-specimen-route body::after { background-size: 1344px 559px !important; }
-    [data-rendering-specimen="canonical-headings"] .post-content p {
-      margin: 1rem 0;
-    }
-     [data-rendering-specimen="canonical-headings"] mark {
-       box-decoration-break: clone;
-       -webkit-box-decoration-break: clone;
-     }
-     /* The capture harness uses this query route. Keep the specimen itself as
-        the only painted surface; normal site chrome must not enter evidence. */
-      html.canonical-specimen-route body,
-      body:has([data-rendering-specimen="canonical-headings"]) {
-        overflow: hidden;
-      }
-      html.canonical-specimen-route body > :not(.page-wrapper),
-      body:has([data-rendering-specimen="canonical-headings"]) > :not(.skip-link):not(.site-header):not(#view-transition-progress):not(footer):not(.page-wrapper) {
-        display: none !important;
-      }
-     body:has([data-rendering-specimen="canonical-headings"]) > .skip-link,
-     body:has([data-rendering-specimen="canonical-headings"]) > .site-header,
-     body:has([data-rendering-specimen="canonical-headings"]) > #view-transition-progress,
-     body:has([data-rendering-specimen="canonical-headings"]) > footer {
-       display: none !important;
-     }
-      html.canonical-specimen-route body .page-wrapper,
-      body:has([data-rendering-specimen="canonical-headings"]) .page-wrapper {
-        display: contents;
-      }
-      body:has([data-rendering-specimen="canonical-headings"]) .page-wrapper > :not(main) {
-        display: none !important;
-      }
-      html.canonical-specimen-route body .page-wrapper > :not(main) {
-        display: none !important;
-      }
-      html.canonical-specimen-route body [data-rendering-specimen="canonical-headings"],
-      body:has([data-rendering-specimen="canonical-headings"]) [data-rendering-specimen="canonical-headings"] {
-        box-sizing: border-box;
-          width: 1280px !important;
-          height: 1000px !important;
-          min-height: 1000px !important;
-          max-width: none !important;
-          margin: 0;
-          padding: 24px;
-          overflow: hidden !important;
-      }
-       html.canonical-specimen-route [data-rendering-specimen="canonical-headings"] .canonical-document {
-         width: 680px !important;
-         max-width: 100% !important;
-         margin-inline: auto;
-       }
-       html.canonical-specimen-route:not(.canonical-natural-route) [data-rendering-specimen="canonical-headings"] {
-         box-sizing: border-box !important;
-         width: 1280px !important;
-         height: 1000px !important;
-         min-height: 1000px !important;
-         max-height: 1000px !important;
-         overflow: hidden !important;
-       }
-       html.canonical-natural-route,
-       html.canonical-natural-route body,
-       html.canonical-natural-route body .page-wrapper,
-       html.canonical-natural-route body [data-rendering-specimen="canonical-headings"] {
-         height: auto !important;
-         min-height: 0 !important;
-         max-height: none !important;
-         overflow: visible !important;
-       }
-       html.canonical-natural-route body { width: 1280px; }
-       html.canonical-natural-route body [data-rendering-specimen="canonical-headings"] {
-         width: 1280px !important;
-         max-width: none !important;
-       }
-  </style>
+  {% if canonical_rendering_fixture %}
+  <link rel="stylesheet" href="{{ 'css/canonical-specimen.css' | theme_asset_hashed }}">
+  {% endif %}
   {% endblock %}
   <script src="{{ 'js/adaptive-loading.js' | theme_asset_hashed }}" defer></script>
 </head>
@@ -995,7 +860,6 @@
    {% if feed_presentation != "editorial" %}
    <script src="{{ 'js/heading-highlights.js' | theme_asset_hashed }}" defer></script>
    {% endif %}
-   <script src="{{ 'js/fit-post-titles.js' | theme_asset_hashed }}" defer></script>
    {# Always loaded: view transitions can reach TOC/wikilink pages from pages without them. #}
    <script src="{{ 'js/scroll-spy.js' | theme_asset_hashed }}" defer></script>
    <script src="{{ 'js/tooltips.js' | theme_asset_hashed }}" defer></script>
@@ -1033,6 +897,11 @@
   <script src="{{ 'js/view-transitions.js' | theme_asset_hashed }}" defer></script>
   <!-- Conditional CSS loader: injects missing CSS after view-transition SPA navigations -->
   <script src="{{ 'js/conditional-css.js' | theme_asset_hashed }}" defer></script>
+  {% endif %}
+
+  {# Lightweight sidebar fallback if optional navigation JavaScript is unavailable. #}
+  {% if config.components.feed_sidebar.enabled or resolved_doc_sidebar.enabled or resolved_content_sidebar.enabled %}
+  <script src="{{ 'js/sidebar-rescue.js' | theme_asset_hashed }}" defer></script>
   {% endif %}
 
   <!-- Decryption JS (only loaded for encrypted posts) -->
@@ -1117,14 +986,17 @@
           raf(refresh);
         }
 
+        var resizeObserver = window.ResizeObserver ? new ResizeObserver(schedule) : null;
+        if (resizeObserver) resizeObserver.observe(article);
         window.addEventListener('scroll', schedule, { passive: true });
         window.addEventListener('resize', schedule);
         window.__articleProgressCleanup = function() {
+          if (resizeObserver) resizeObserver.disconnect();
           window.removeEventListener('scroll', schedule);
           window.removeEventListener('resize', schedule);
         };
 
-        schedule();
+        if (!resizeObserver) schedule();
       }
 
       window.initArticleProgressIndicator = initArticleProgressIndicator;

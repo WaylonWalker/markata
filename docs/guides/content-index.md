@@ -8,7 +8,6 @@ tags:
   - content-index
 ---
 
-# Content Index
 
 Markata can write one compact JSON file with the metadata it resolved during a
 build. It does not include article bodies.

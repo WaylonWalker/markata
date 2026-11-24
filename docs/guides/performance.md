@@ -10,9 +10,14 @@ tags:
   - optimization
 ---
 
-# Performance Benchmarking
 
 markata-go includes a comprehensive benchmarking suite for measuring and optimizing build performance. This guide covers how to run benchmarks locally, interpret results, and use profiling tools to identify bottlenecks.
+
+Shared post-copy behavior is served from one deferred, cacheable JavaScript
+asset instead of being repeated inline on every post page. Keep page-specific
+copy data in the small per-page JSON payload; keep reusable behavior in the
+shared asset. This reduces repeated HTML transfer and avoids parsing the same
+implementation on every page.
 
 ### Explain template work before optimizing it
 
@@ -197,6 +202,7 @@ Use this summary to decide what tool to reach for next:
 - mostly `CPU` -> capture a CPU profile with `just perf-profile`
 - mostly `Network wait` -> inspect `Slowest requests` first, then the owning plugins that fetch remote content or external metadata
 - mostly `Disk read` -> inspect globbing, cache loads, index reads, and wide content scans
+- if `cleanup/css_purge` is hot, inspect the HTML selector log's `bytes_hashed`, `parsed`, and `reused` counts; when output identities cannot be reused, exact per-file hashes can reuse selector data without reparsing unchanged pages
 - mostly `Disk write` -> inspect publishing, cache saves, index generation, and emitted static output
 - if `configure/build_cache` is hot on warm builds, check whether the template or config tree actually changed; unchanged template trees now reuse a cheap fingerprint before falling back to a full content hash
 - if `/tags` or `/garden` hashing is hot, prefer cached per-post semantic hashes over re-deriving the same per-post summaries inside the listing hashers
@@ -506,6 +512,16 @@ Trigger a manual workflow with a comparison branch:
 5. **Memory allocations** - String operations
 
 ### Improving Performance
+
+When a post is rerendered after a broad config or template invalidation,
+`publish_html` compares its final bytes with an existing regular output file.
+If they match, it leaves the file untouched so CSS purge can reuse its verified
+file identity. This helps only when a page is processed again but its output is
+identical; ordinary warm cache hits already skip publication. The comparison
+cost is not included in `write_duration_ns`, so use publish-stage wall time and
+CSS purge's `mode` and `bytes_hashed` fields to measure its effect. See
+[Publish I/O diagnostics](content-diagnostics.md#publish-io-diagnostics) for
+counter definitions.
 
 #### Concurrency
 

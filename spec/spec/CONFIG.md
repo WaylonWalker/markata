@@ -865,11 +865,45 @@ warning_threshold = 0
 ```
 
 CSS purge removes unused rules by scanning generated HTML and keeping only selectors
-that are actually present. The purge logic always preserves key @-rules and keeps
+that are actually present.
+CSS purge MUST preserve the default theme's `md-code-*` classes even when
+absent from generated HTML, because the code-copy enhancement adds them at
+browser runtime. The generated `code.css` MUST retain positioning and keyboard
+focus rules for `.md-code-copy` and `pre.md-code-enhanced`. This protection
+MUST NOT turn off purging for unrelated selectors. Sites overriding
+`preserve` should include `md-code-*` in their custom list.
+ The purge logic always preserves key @-rules and keeps
 pseudo-only selectors like `:root` or `::selection` to avoid dropping base/theme styles.
-Full builds MAY reuse cached purged CSS from `.markata-cache/css-purge` under the content
-directory when the stylesheet bytes, discovered selector set, and purge options match.
-Missing or invalid cache entries MUST fall back to purging the stylesheet normally.
+Full builds MAY cache the aggregate selector set, per-file selector sets, exact per-file HTML
+hashes, verified file identities, and purged CSS under `.markata-cache/css-purge` in the
+content directory. Selector cache validity MUST include the sorted generated HTML paths and
+exact file bytes. On Linux filesystems with verified file identities, a cache populated from
+exact HTML bytes MAY reuse the aggregate selector set without reading those bytes when the
+complete generated HTML path set is unchanged and every regular file has the same stable
+device, inode, size, mode, modification time, and change time captured while hashing those
+exact bytes. Each identity MUST be stable for more than the filesystem timestamp guard before
+the stored observation time.
+
+When the aggregate identity fast path misses, Markata MAY use the per-file selector cache to
+avoid hashing unchanged files. It MUST validate that the per-file cache fingerprint matches
+the aggregate exact-content fingerprint. A current regular file MAY reuse its per-file
+selectors without a content read only when its identity exactly matches the identity captured
+after the prior exact hash and is stable before the prior observation time. Added, changed,
+unverified, or timestamp-unstable files MUST be fingerprinted from exact bytes. If an exact
+hash matches that path's cached content hash, its cached selectors MAY be reused; otherwise
+the file MUST be scanned. Removed paths MUST be omitted from the selector union. If complete
+identities cannot be established, including symlinked HTML or unsupported filesystems,
+Markata MUST use exact-byte fingerprinting for the full current path set. Future observations
+and invalid or mismatched cache data MUST never authorize identity-based reuse.
+
+Exact-byte fingerprinting SHOULD stream file contents through a bounded buffer. Cache entries
+MUST be versioned. Purged CSS cache validity MUST include stylesheet bytes, the selector set,
+and purge options. Missing or invalid cache entries MUST fall back to the normal scan or
+purge path. Markata MUST abort CSS purging when it cannot scan every HTML file; it MUST NOT
+purge CSS with an incomplete selector set. The generated output tree MUST remain immutable
+while the cleanup scan runs; concurrent writers are unsupported. When a parsed page differs
+from the exact bytes fingerprinted earlier in that scan, Markata MUST abort CSS purging and
+MUST NOT publish either selector cache.
 
 ### Tailwind (`[my-ssg.tailwind]`)
 

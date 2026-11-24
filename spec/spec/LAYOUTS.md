@@ -17,6 +17,12 @@ The layout system provides configurable page structures for different content ty
 
 Markata-go provides four built-in layout presets. Each preset configures components appropriately for its use case.
 
+The default theme MUST bundle a template for every built-in layout preset.
+`LayoutConfig.Paths` MUST select the longest matching URL prefix before the
+global layout name, so a landing page can coexist with documentation pages.
+Template context conversion MUST preserve explicit `false` values for
+collapsible sidebar and TOC defaults.
+
 ### Layout Preset Overview
 
 | Layout | Sidebar | TOC | Header | Footer | Best For |
@@ -29,6 +35,12 @@ Markata-go provides four built-in layout presets. Each preset configures compone
 ### `docs` Layout
 
 The 3-panel documentation layout optimized for technical content.
+
+The documentation navigation MUST preserve the hierarchy supplied by
+`sidebar_items`. Items with children MUST render as keyboard-accessible
+disclosure groups. The current page and each ancestor group MUST be open in
+the generated HTML; unrelated groups MUST start closed. Directory index pages
+with children MUST remain directly reachable from their group.
 
 ```
 +------------------------------------------------------------------+
@@ -132,6 +144,21 @@ entries. The sidebar uses `toc_position` and `toc_width` from
 ### `landing` Layout
 
 Full-width layout for marketing pages and home pages.
+
+The bundled default theme MUST provide `layouts/landing.html`. Packaged sites
+that select `landing` MUST NOT depend on repository-local override templates.
+The landing template MUST render optional frontmatter hero fields and Markdown
+body content while omitting documentation sidebars and article metadata. Hero
+frontmatter MAY include an `eyebrow` string above the title and a `title_lines`
+string list for intentional line breaks. When `title_lines` is present, the
+template MUST render each line as escaped text inside the semantic page heading.
+The lines MUST retain the same wording and order as the full title. Without
+`title_lines`, the template MUST render the full title as a single text value.
+On viewports at or below 768 CSS pixels, the landing header MUST place the
+title and theme controls on the first row, optional search on its own row, and
+navigation below them. At or below 390 CSS pixels, header links MUST wrap
+without creating page-level horizontal overflow. A landing-page fragment
+destination MUST include scroll offset for the shared header height.
 
 ```
 +------------------------------------------------------------------+
@@ -795,6 +822,18 @@ The post copy control provides a compact "Copy this post" menu near the top of a
 **Implementation notes**:
 
 - The control is automatic on post pages unless disabled in site configuration.
+- Load shared copy-menu behavior from a cacheable, deferred JavaScript asset
+  when the control is rendered; do not duplicate the implementation inline on
+  every post page.
+- A custom theme that uses the embedded default templates MUST inherit the
+  embedded static assets, including `js/post-copy.js`, even if the custom theme
+  does not ship that asset. A project static override or same-path theme asset
+  MUST take precedence over the embedded fallback.
+- Static asset registration and Cleanup MUST publish a content-hashed copy of
+  the effective post-copy JavaScript for `theme_asset_hashed`. Builds for
+  custom themes that inherit the default post template MUST not leave
+  `/js/post-copy.js` referenced as an unhashed URL or return 404 for the
+  hashed URL.
 - Rich copy must rewrite relative links/media URLs in the copied fragment to absolute URLs before writing HTML to the clipboard.
 - The menu closes after a successful copy and exposes short-lived visual feedback for the chosen action.
 
@@ -975,6 +1014,11 @@ On mobile devices (< 768px):
 2. **TOC** - Collapses to floating button or hides
 3. **Header** - Remains sticky with hamburger toggle
 4. **Content** - Expands to full width
+
+Layouts MUST reflow without depending on page-level `overflow-x: hidden` or
+`overflow-x: clip` to conceal content. Code blocks may scroll within their
+own bounded container; generated heading anchors MUST not widen narrow reading
+columns.
 
 ```css
 /* Responsive layout */

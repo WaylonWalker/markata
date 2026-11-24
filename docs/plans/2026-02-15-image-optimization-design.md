@@ -1,4 +1,12 @@
-# Image Optimization Plugin Design
+---
+title: "Image Optimization Plugin Design"
+description: "Add an optional imageoptimization plugin that generates AVIF/WebP variants for local images at build time and rewrites HTML to use <picture> with a stable..."
+date: 2026-02-15
+published: true
+tags:
+  - documentation
+---
+
 
 ## Goal
 

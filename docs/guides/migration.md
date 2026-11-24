@@ -9,7 +9,6 @@ tags:
   - getting-started
 ---
 
-# Migrating from Python markata
 
 This guide helps you migrate your existing Python markata site to markata-go. The migration tool automates most of the process while highlighting areas that need manual attention.
 

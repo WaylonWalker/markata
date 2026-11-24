@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/models"
-	"github.com/WaylonWalker/markata-go/pkg/templates"
+	"github.com/WaylonWalker/markata/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/templates"
 )
 
 func TestNavPreviews_ResolveAndRender(t *testing.T) {
@@ -97,7 +97,7 @@ func TestNavPreviews_GeneratedRoutesAndFooter(t *testing.T) {
 	if previews["/following/"]["kind"] != "followed" || previews["/following/"]["count"] != 2 {
 		t.Fatalf("blogroll preview = %#v", previews["/following/"])
 	}
-	if previews["/surprise/"]["kind"] != "surprise" || previews["/surprise/"]["count"] != 1 {
+	if previews["/surprise/"]["kind"] != "surprise" || previews["/surprise/"]["count"] != nil {
 		t.Fatalf("random preview = %#v", previews["/surprise/"])
 	}
 	engine, err := templates.NewEngine("../../templates")
@@ -119,6 +119,11 @@ func TestNavPreviews_GeneratedRoutesAndFooter(t *testing.T) {
 	}
 	if !strings.Contains(navHTML, "RSS reader") || !strings.Contains(navHTML, "followed RSS feeds") {
 		t.Fatalf("reader link lacks RSS preview: %s", navHTML)
+	}
+	if !strings.Contains(navHTML, `href="/surprise/" class="nav-link">Random</a>`) ||
+		!strings.Contains(navHTML, "Find a post you might have missed.") ||
+		strings.Contains(navHTML, "<strong></strong>") {
+		t.Fatalf("random link lacks a usable preview and link: %s", navHTML)
 	}
 }
 

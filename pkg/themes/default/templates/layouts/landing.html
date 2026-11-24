@@ -1,0 +1,86 @@
+{# Landing Layout - Full-width layout for marketing pages #}
+{% extends "base.html" %}
+
+{% block title %}{{ post.title_text | default:config.title | default:'My Site' }}{% endblock %}
+{% block description %}{{ post.description | default:config.description | default:'' }}{% endblock %}
+
+{% block body_class %}layout layout--landing{% endblock %}
+
+{% block header %}
+<header class="site-header site-header--{{ config.layout.landing.header_style | default:'transparent' }}{% if config.layout.landing.header_sticky %} site-header--sticky{% endif %}" data-pagefind-ignore>
+    <div class="container">
+        {% if config.header.show_logo or config.header.show_title %}
+        <a href="/" class="site-title">
+            {% if config.header.show_logo and config.logo %}
+            <img src="{{ config.logo }}" alt="{{ config.title }}" class="site-logo" width="32" height="32">
+            {% endif %}
+            {% if config.header.show_title %}{{ config.title | default:"Home" }}{% endif %}
+        </a>
+        {% endif %}
+        {% if config.header.show_nav %}
+        {% include "components/nav.html" %}
+        {% endif %}
+        <div class="header-actions">
+            {% if config.search.enabled and config.header.show_search %}
+            {% include "components/search.html" %}
+            {% endif %}
+            {% include "partials/palette-switcher.html" %}
+        </div>
+    </div>
+</header>
+{% endblock %}
+
+{% block main %}
+<div class="layout-container layout-container--landing">
+    {% if config.layout.landing.hero_enabled and post.hero %}
+    <section class="hero" aria-label="Hero">
+        <div class="hero-content">
+            {% if post.hero.eyebrow %}
+            <p class="hero-eyebrow">{{ post.hero.eyebrow }}</p>
+            {% endif %}
+            {% if post.hero.title %}
+            <h1 class="hero-title">
+                {% if post.hero.title_lines %}
+                {% for line in post.hero.title_lines %}<span class="hero-title-line">{{ line }}</span>{% endfor %}
+                {% else %}
+                {{ post.hero.title }}
+                {% endif %}
+            </h1>
+            {% endif %}
+            {% if post.hero.subtitle %}
+            <p class="hero-subtitle">{{ post.hero.subtitle }}</p>
+            {% endif %}
+            {% if post.hero.cta_primary or post.hero.cta_secondary %}
+            <div class="hero-actions">
+                {% if post.hero.cta_primary %}
+                <a href="{{ post.hero.cta_primary.href }}" class="btn btn--primary">{{ post.hero.cta_primary.text }}</a>
+                {% endif %}
+                {% if post.hero.cta_secondary %}
+                <a href="{{ post.hero.cta_secondary.href }}" class="btn btn--secondary">{{ post.hero.cta_secondary.text }}</a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+        {% if post.hero.image %}
+        <div class="hero-image">
+            <img src="{{ post.hero.image }}" alt="{{ post.hero.title | default:post.title }}" width="1200" height="630" loading="lazy">
+        </div>
+        {% endif %}
+    </section>
+    {% endif %}
+
+    <main class="layout-content layout-content--landing" id="main-content" tabindex="-1" style="--content-max-width: {{ config.layout.landing.content_max_width | default:'100%' }}">
+        <div class="post-content{% if post.css_class %} {{ post.css_class }}{% endif %}">
+            {{ body | safe }}
+        </div>
+    </main>
+</div>
+{% endblock %}
+
+{% block footer %}
+{% if config.layout.landing.footer_style != 'none' %}
+{% with footer_style=config.layout.landing.footer_style|default:"full" %}
+{% include "components/footer.html" %}
+{% endwith %}
+{% endif %}
+{% endblock %}

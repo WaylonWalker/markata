@@ -72,11 +72,23 @@ func GetValueFromFile(path, key string) (any, error) {
 
 // SetValueInFile updates a config file in place with the provided key path/value.
 func SetValueInFile(path, key string, value any) error {
+	return setValueInFile(path, key, value, true)
+}
+
+// SetValueInFileDirect updates a config file without adding the legacy
+// markata-go namespace to the key path.
+func SetValueInFileDirect(path, key string, value any) error {
+	return setValueInFile(path, key, value, false)
+}
+
+func setValueInFile(path, key string, value any, normalize bool) error {
 	segments, err := ParseKeyPath(key)
 	if err != nil {
 		return err
 	}
-	segments = normalizeConfigPath(segments)
+	if normalize {
+		segments = normalizeConfigPath(segments)
+	}
 
 	format := detectConfigFormat(path)
 

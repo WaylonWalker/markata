@@ -1,8 +1,8 @@
         <div class="post-byline__author p-author h-card"{% if author_obj.details %} data-details="{{ author_obj.details }}" title="{{ author_obj.details }}"{% endif %}>
             {% if author_obj.avatar %}
-            <img class="u-photo post-byline__photo" src="{{ author_obj.avatar }}" alt="{{ author_obj.name }} avatar" width="36" height="36" loading="lazy">
+            <img class="u-photo post-byline__photo" src="{{ author_obj.avatar }}" alt="{{ author_obj.name }} avatar" width="36" height="36" loading="{% if eager_author_avatar|default:False %}eager{% else %}lazy{% endif %}">
             {% elif config.seo.author_image %}
-            <img class="u-photo post-byline__photo" src="{% if config.seo.author_image | startswith:'http' %}{{ config.seo.author_image }}{% else %}{{ config.url }}{{ config.seo.author_image }}{% endif %}" alt="{{ author_obj.name }} avatar" width="36" height="36" loading="lazy">
+            <img class="u-photo post-byline__photo" src="{% if config.seo.author_image | startswith:'http' %}{{ config.seo.author_image }}{% else %}{{ config.url }}{{ config.seo.author_image }}{% endif %}" alt="{{ author_obj.name }} avatar" width="36" height="36" loading="{% if eager_author_avatar|default:False %}eager{% else %}lazy{% endif %}">
             {% endif %}
             <div class="post-byline__author-info">
                 {% if author_obj.url %}

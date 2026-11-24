@@ -20,8 +20,8 @@ permissions:
   contents: read
 
 env:
-  GO_VERSION: "1.26"
-  LINT_GO_VERSION: "1.26"
+  GO_VERSION: "1.27"
+  LINT_GO_VERSION: "1.27"
 
 jobs:
   changes:
@@ -75,13 +75,29 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
       - uses: actions/setup-go@v7
         with:
           go-version: ${{ env.LINT_GO_VERSION }}
           cache: true
-      - name: Run golangci-lint
-        # Match just lint: v1 releases do not use the /v2 module path.
-        run: go run github.com/golangci/golangci-lint/cmd/golangci-lint@v1.64.8 run --timeout=5m
+      # The v2 analyzer surfaces substantial legacy lint debt not reported
+      # by v1. Preserve all configured linters, enforce new findings on PRs
+      # and pushes, and periodically audit the full tree without suppressing
+      # baseline diagnostic output.
+      - name: Run golangci-lint v2 (new issues)
+        env:
+          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          base="$BASE_SHA"
+          if [[ -z "$base" || "$base" =~ ^0+$ ]]; then
+            base="$(git rev-parse HEAD^)"
+          fi
+          go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0 run --new-from-rev="$base" --timeout=5m
+      - name: Report full v2 lint debt on scheduled CI
+        if: github.event_name == 'schedule'
+        continue-on-error: true
+        run: go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0 run --timeout=5m
 
   manifest-completeness:
     name: Font Manifest Completeness
@@ -144,15 +160,22 @@ jobs:
         run: helm lint helm-chart
       - name: Test nginx CORS behavior
         run: ./helm-chart/tests/nginx-cors.sh
+      - name: Test existing site claim binding
+        run: ./helm-chart/tests/site-volume-name.sh
+      - name: Test search cache mount behavior
+        run: ./helm-chart/tests/search-local-cache.sh
 
   test:
     name: Test
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+      pull-requests: read
     strategy:
       fail-fast: false
       matrix:
         os: [macos-latest, windows-latest]
-        go: ["1.26"]
+        go: ["1.27"]
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-go@v7
@@ -161,14 +184,81 @@ jobs:
           cache: true
       - name: Download dependencies
         run: go mod download
-      - name: Run tests (windows short)
-        if: (github.event_name == 'pull_request' || github.event_name == 'push') && matrix.os == 'windows-latest'
+      # Keep the required Windows check name stable for branch protection and
+      # Dependabot, but only pay for the full suite on Windows-sensitive PRs.
+      # The PR files API works for forks and fails closed if classification fails.
+      - name: Detect Windows-sensitive PR changes
+        id: windows_scope
+        if: github.event_name == 'pull_request' && matrix.os == 'windows-latest'
+        uses: dorny/paths-filter@v4
+        with:
+          filters: |
+            windows:
+              - '**/*_windows.go'
+              - '**/*_windows_test.go'
+              - '**/*windows*.go'
+              - '**/*.ps1'
+              - '.github/workflows/ci.yml'
+              - '.github/workflows/release.yml'
+              - '.github/workflows/pypi-go-wheels.yml'
+              - '.goreleaser.yml'
+              - 'go.mod'
+              - 'go.sum'
+              - 'install.sh'
+              - 'static/install.sh'
+              - 'internal/testbinary/**'
+              - 'pkg/sourcegit/**'
+              - 'pkg/editorial/**'
+              - 'pkg/editorsync/**'
+              - 'pkg/editorworkspace/**'
+              - 'pkg/editorhub/**'
+              - 'pkg/buildlab/process_*.go'
+              - 'pkg/servefix/**'
+              - 'pkg/serveopen/**'
+              - 'pkg/builderadmin/*windows*.go'
+              - 'cmd/markata-go/cmd/update.go'
+            cache_determinism:
+              - 'tests/cache_determinism_test.go'
+      - name: Require classified Windows PR scope
+        if: github.event_name == 'pull_request' && matrix.os == 'windows-latest'
+        shell: pwsh
+        env:
+          WINDOWS_SCOPE: ${{ steps.windows_scope.outputs.windows }}
+        run: |
+          if ($env:WINDOWS_SCOPE -ne 'true' -and $env:WINDOWS_SCOPE -ne 'false') {
+            Write-Error "Cannot classify Windows PR changes; refusing to pass the required check"
+            exit 1
+          }
+      - name: Run Windows PR CLI smoke and focused tests
+        if: github.event_name == 'pull_request' && matrix.os == 'windows-latest' && steps.windows_scope.outputs.windows == 'false'
+        shell: pwsh
+        run: |
+          go build -o "$env:RUNNER_TEMP\markata.exe" ./cmd/markata
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          go build -o "$env:RUNNER_TEMP\markata-go.exe" ./cmd/markata-go
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & "$env:RUNNER_TEMP\markata.exe" version
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & "$env:RUNNER_TEMP\markata-go.exe" version
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & "$env:RUNNER_TEMP\markata.exe" --help | Out-Null
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          go test -short ./internal/testbinary ./pkg/config ./pkg/sourcegit
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Run Windows full short suite for platform-sensitive PRs
+        if: github.event_name == 'pull_request' && matrix.os == 'windows-latest' && steps.windows_scope.outputs.windows == 'true'
         run: go test -v -short ./...
+      - name: Run Windows cache determinism integration when changed
+        if: github.event_name == 'pull_request' && matrix.os == 'windows-latest' && steps.windows_scope.outputs.cache_determinism == 'true'
+        run: go test -v -count=1 -run '^TestCacheDeterminism_(ConcurrentPosts_DeterministicOrder|ThirdBuild_StillDeterministic)$' ./tests
+      - name: Run Windows full suite on main, nightly, and manual CI
+        if: github.event_name != 'pull_request' && matrix.os == 'windows-latest'
+        run: go test -v ./...
       - name: Run tests (macOS short)
         if: (github.event_name == 'pull_request' || github.event_name == 'push') && matrix.os == 'macos-latest'
         run: go test -v -short ./...
-      - name: Run tests (non-linux full)
-        if: github.event_name != 'pull_request' && github.event_name != 'push'
+      - name: Run macOS full suite on nightly and manual CI
+        if: github.event_name != 'pull_request' && github.event_name != 'push' && matrix.os == 'macos-latest'
         run: go test -v ./...
 
   test-linux-core:
@@ -194,20 +284,42 @@ jobs:
           start=$SECONDS
           go list ./... > "$RUNNER_TEMP/all-packages.txt"
           mapfile -t all_packages < "$RUNNER_TEMP/all-packages.txt"
+          # Fail visibly if the module name changes again: otherwise these
+          # test packages would silently fall into the core shard as duplicates.
+          expected_exclusions=(
+            github.com/WaylonWalker/markata/cmd/markata-go/cmd
+            github.com/WaylonWalker/markata/pkg/search
+            github.com/WaylonWalker/markata/pkg/searchapi
+            github.com/WaylonWalker/markata/tests
+          )
+          for excluded in "${expected_exclusions[@]}"; do
+            if ! grep -Fxq "$excluded" "$RUNNER_TEMP/all-packages.txt"; then
+              printf 'Expected package missing from CI shard exclusions: %s\n' "$excluded" >&2
+              exit 1
+            fi
+          done
           packages=()
           for package in "${all_packages[@]}"; do
             case "$package" in
-              github.com/WaylonWalker/markata-go/cmd/markata-go/cmd|github.com/WaylonWalker/markata-go/pkg/search|github.com/WaylonWalker/markata-go/pkg/searchapi|github.com/WaylonWalker/markata-go/tests) continue ;;
+              github.com/WaylonWalker/markata/cmd/markata-go/cmd|github.com/WaylonWalker/markata/pkg/search|github.com/WaylonWalker/markata/pkg/searchapi|github.com/WaylonWalker/markata/tests) continue ;;
             esac
             packages+=("$package")
           done
           [[ ${#packages[@]} -gt 0 ]] || { echo "No core Go test packages were selected" >&2; exit 1; }
-          go test -v -race -timeout=30m -coverprofile=coverage-core.out -covermode=atomic "${packages[@]}"
+          python3 scripts/ci/go_test_timing.py --label "Linux core race/coverage" --output "$RUNNER_TEMP/ci-timings/core.json" -- go test -json -v -race -timeout=30m -coverprofile=coverage-core.out -covermode=atomic "${packages[@]}"
           echo "Core race + coverage: $((SECONDS-start))s" >> "$GITHUB_STEP_SUMMARY"
       - uses: codecov/codecov-action@v7
         with:
           files: ./coverage-core.out
           fail_ci_if_error: false
+      - name: Upload core Go timing report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: ci-go-timings-linux-core
+          path: ${{ runner.temp }}/ci-timings/
+          if-no-files-found: ignore
+          retention-days: 14
 
   test-linux-cli:
     name: Linux tests (CLI and search)
@@ -235,18 +347,33 @@ jobs:
         if: github.event_name == 'pull_request'
         run: |
           start=$SECONDS
-          go test -v -race -timeout=30m -coverprofile=coverage-cli.out -covermode=atomic -skip '^TestBuildLab_LinkedAndFixtureMutationsCharacterizeProduct$' ./cmd/markata-go/cmd ./pkg/search ./pkg/searchapi
+          python3 scripts/ci/go_test_timing.py --label "Linux CLI/search race/coverage (PR)" --output "$RUNNER_TEMP/ci-timings/cli.json" -- go test -json -v -race -timeout=30m -coverprofile=coverage-cli.out -covermode=atomic -skip '^TestBuildLab_LinkedAndFixtureMutationsCharacterizeProduct$' ./cmd/markata-go/cmd ./pkg/search ./pkg/searchapi
           echo "CLI/search race + coverage: $((SECONDS-start))s" >> "$GITHUB_STEP_SUMMARY"
       - name: Run CLI and search tests (race + coverage)
         if: github.event_name != 'pull_request'
         run: |
           start=$SECONDS
-          go test -v -race -timeout=30m -coverprofile=coverage-cli.out -covermode=atomic ./cmd/markata-go/cmd ./pkg/search ./pkg/searchapi
+          python3 scripts/ci/go_test_timing.py --label "Linux CLI/search race/coverage (full)" --output "$RUNNER_TEMP/ci-timings/cli.json" -- go test -json -v -race -timeout=30m -coverprofile=coverage-cli.out -covermode=atomic ./cmd/markata-go/cmd ./pkg/search ./pkg/searchapi
           echo "CLI/search race + coverage: $((SECONDS-start))s" >> "$GITHUB_STEP_SUMMARY"
+      # Allocation thresholds are meaningful only without race/coverage
+      # instrumentation. Correctness and write-buffering checks stay in -race.
+      - name: Check streaming JSON allocations (uninstrumented)
+        run: |
+          start=$SECONDS
+          python3 scripts/ci/go_test_timing.py --label "Linux streaming JSON allocation" --output "$RUNNER_TEMP/ci-timings/allocation.json" -- go test -json -v -count=1 -run '^TestBenchmarkJSONStreamAllocation$' ./cmd/markata-go/cmd
+          echo "Streaming JSON allocation regression: $((SECONDS-start))s" >> "$GITHUB_STEP_SUMMARY"
       - uses: codecov/codecov-action@v7
         with:
           files: ./coverage-cli.out
           fail_ci_if_error: false
+      - name: Upload CLI/search Go timing reports
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: ci-go-timings-linux-cli
+          path: ${{ runner.temp }}/ci-timings/
+          if-no-files-found: ignore
+          retention-days: 14
 
   test-linux-site:
     name: Linux tests (site integration)
@@ -269,15 +396,23 @@ jobs:
       - name: Run site integration tests (race + coverage)
         run: |
           start=$SECONDS
-          go test -v -race -timeout=30m -coverprofile=coverage-site.out -covermode=atomic ./tests
+          python3 scripts/ci/go_test_timing.py --label "Linux site race/coverage" --output "$RUNNER_TEMP/ci-timings/site.json" -- go test -json -v -race -timeout=30m -coverprofile=coverage-site.out -covermode=atomic ./tests
           echo "Site integration race + coverage: $((SECONDS-start))s" >> "$GITHUB_STEP_SUMMARY"
       - uses: codecov/codecov-action@v7
         with:
           files: ./coverage-site.out
           fail_ci_if_error: false
+      - name: Upload site Go timing report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: ci-go-timings-linux-site
+          path: ${{ runner.temp }}/ci-timings/
+          if-no-files-found: ignore
+          retention-days: 14
 
   test-linux:
-    name: Test (ubuntu-latest, 1.26)
+    name: Test (ubuntu-latest, 1.27)
     runs-on: ubuntu-latest
     if: always()
     needs: [test-linux-core, test-linux-cli, test-linux-site]

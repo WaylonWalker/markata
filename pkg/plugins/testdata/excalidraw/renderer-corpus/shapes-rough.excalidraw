@@ -1,0 +1,199 @@
+{
+  "type": "excalidraw",
+  "version": 2,
+  "source": "https://excalidraw.com",
+  "elements": [
+    {
+      "angle": 0.2,
+      "backgroundColor": "#a5d8ff",
+      "fillStyle": "hachure",
+      "groupIds": [],
+      "isDeleted": false,
+      "locked": false,
+      "opacity": 100,
+      "roughness": 1,
+      "seed": 11,
+      "strokeColor": "#1e1e1e",
+      "strokeStyle": "solid",
+      "strokeWidth": 2,
+      "updated": 1,
+      "version": 1,
+      "versionNonce": 11,
+      "id": "rect",
+      "type": "rectangle",
+      "x": -20,
+      "y": 10,
+      "width": 180,
+      "height": 88,
+      "roundness": {
+        "type": 3
+      },
+      "boundElements": [
+        {
+          "id": "rect-label",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "angle": 0,
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "groupIds": [],
+      "isDeleted": false,
+      "locked": false,
+      "opacity": 100,
+      "roughness": 1,
+      "seed": 11,
+      "strokeColor": "#1e1e1e",
+      "strokeStyle": "solid",
+      "strokeWidth": 2,
+      "updated": 1,
+      "version": 1,
+      "versionNonce": 11,
+      "id": "rect-label",
+      "type": "text",
+      "x": 15,
+      "y": 35,
+      "width": 115,
+      "height": 32,
+      "text": "Rough box",
+      "originalText": "Rough box",
+      "fontSize": 20,
+      "fontFamily": 5,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "baseline": 18,
+      "lineHeight": 1.25,
+      "containerId": "rect",
+      "autoResize": false
+    },
+    {
+      "angle": 0,
+      "backgroundColor": "#d0bfff",
+      "fillStyle": "cross-hatch",
+      "groupIds": [],
+      "isDeleted": false,
+      "locked": false,
+      "opacity": 100,
+      "roughness": 2,
+      "seed": 23,
+      "strokeColor": "#1971c2",
+      "strokeStyle": "dashed",
+      "strokeWidth": 2,
+      "updated": 1,
+      "version": 1,
+      "versionNonce": 11,
+      "id": "ellipse",
+      "type": "ellipse",
+      "x": 220,
+      "y": 0,
+      "width": 110,
+      "height": 75
+    },
+    {
+      "angle": 0,
+      "backgroundColor": "#b2f2bb",
+      "fillStyle": "solid",
+      "groupIds": [],
+      "isDeleted": false,
+      "locked": false,
+      "opacity": 100,
+      "roughness": 1,
+      "seed": 37,
+      "strokeColor": "#2f9e44",
+      "strokeStyle": "solid",
+      "strokeWidth": 2,
+      "updated": 1,
+      "version": 1,
+      "versionNonce": 11,
+      "id": "diamond",
+      "type": "diamond",
+      "x": 360,
+      "y": 4,
+      "width": 100,
+      "height": 80
+    },
+    {
+      "angle": 0,
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "groupIds": [],
+      "isDeleted": false,
+      "locked": false,
+      "opacity": 100,
+      "roughness": 1,
+      "seed": 41,
+      "strokeColor": "#1e1e1e",
+      "strokeStyle": "solid",
+      "strokeWidth": 2,
+      "updated": 1,
+      "version": 1,
+      "versionNonce": 11,
+      "id": "arrow",
+      "type": "arrow",
+      "x": 10,
+      "y": 150,
+      "width": 320,
+      "height": 30,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          100,
+          45
+        ],
+        [
+          320,
+          30
+        ]
+      ],
+      "startArrowhead": "triangle",
+      "endArrowhead": "arrow"
+    },
+    {
+      "angle": 0,
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "groupIds": [],
+      "isDeleted": false,
+      "locked": false,
+      "opacity": 100,
+      "roughness": 1,
+      "seed": 53,
+      "strokeColor": "#1e1e1e",
+      "strokeStyle": "dotted",
+      "strokeWidth": 2,
+      "updated": 1,
+      "version": 1,
+      "versionNonce": 11,
+      "id": "line",
+      "type": "line",
+      "x": 340,
+      "y": 150,
+      "width": 120,
+      "height": 50,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          40,
+          50
+        ],
+        [
+          120,
+          20
+        ]
+      ]
+    }
+  ],
+  "appState": {
+    "viewBackgroundColor": "#ffffff",
+    "gridSize": null
+  },
+  "files": {}
+}

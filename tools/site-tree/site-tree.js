@@ -1,0 +1,390 @@
+import {remember as rememberPick, fileScope} from './search-history.js';
+import {attachFilePicker} from './file-picker.js';
+import {FileTree} from '@pierre/trees';
+
+let files = SITE_FILES;
+let workspaceKey = "example", metadata = [], metadataByPath = new Map(), selection = 0;
+let scratchPath = 'draft.md';
+const legacyStorageKey = path => 'markata-workspace-v1:' + workspaceKey + ':' + path;
+const storageKey = path => legacyStorageKey('buffer:') + (path === scratchPath ? 'scratch' : 'file:' + path);
+let active = 'draft.md', drafts = {}, currentEditor, warning, label;
+let fileTree, feedTree, tagTree, syncing = false;
+let siteAutosave = false;
+const aliases = {}, feedAliases = {};
+const baselines = {}, versions = {}, restored = {};
+let workspaceCounts = {files:0,feeds:0,tags:0};
+const saveTimers = {}, saveQueues = {}, saveRevisions = {}, saveEpochs = {}, saveConflicts = {};
+function saveToSite(path, source) {
+  if (saveConflicts[path]) return;
+  const revision = saveRevisions[path] = (saveRevisions[path] || 0) + 1;
+  const epoch = saveEpochs[path] || 0;
+  clearTimeout(saveTimers[path]);
+  saveTimers[path] = setTimeout(() => {
+    saveQueues[path] = (saveQueues[path] || Promise.resolve()).catch(() => {}).then(async () => {
+      if (revision !== saveRevisions[path] || epoch !== (saveEpochs[path] || 0) || saveConflicts[path]) return;
+      const expected = versions[path];
+      // No known version means an older recovered draft cannot safely
+      // overwrite a disk file. Keep browser recovery until user reconciles.
+      if (typeof expected !== 'string' || !/^[0-9a-f]{64}$/.test(expected))
+        throw new Error('Cannot safely sync without a known disk version; browser draft kept');
+      const saveStarted = performance.now();
+      const response = await fetch('/workspace/file?path=' + encodeURIComponent(path), {
+        method:'PUT', headers:{'Content-Type':'text/plain;charset=utf-8',
+          'X-Markata-Expected-Version':expected}, body:source
+      });
+      const data = await response.json();
+      // A discard or explicit conflict resolution may have superseded this
+      // request while it was in flight. Do not restore its stale conflict.
+      if (epoch !== (saveEpochs[path] || 0)) return;
+      if (response.status === 409) {
+        saveConflicts[path] = true;
+        saveRevisions[path] = (saveRevisions[path] || 0) + 1;
+        clearTimeout(saveTimers[path]);
+      }
+      if (!response.ok) throw new Error(data.error || 'Cannot save to the site');
+      window.MarkataDiagnostics?.record('save_acknowledgement',performance.now()-saveStarted);
+      baselines[path] = source;
+      versions[path] = data.version;
+      // A successful server save updates recovery's clean version only if
+      // there is not already a newer unsaved edit in the browser buffer.
+      if (drafts[path] === source && (active !== path || currentEditor.getValue() === source)) {
+        try { writeDraft(path, source, true); } catch { warning(); }
+      }
+      if (active === path && currentEditor.getValue() === source) {
+        document.querySelector('#saved').textContent = 'Saved to site';
+      }
+    }).catch(error => {
+      if (epoch !== (saveEpochs[path] || 0)) return;
+      if (active === path) document.querySelector('#saved').textContent = `Site save failed · ${error.message} · recovery copy kept`;
+    });
+  },350);
+}
+function syncSelection(tree, path) {
+  if (!tree || !path) return;
+  for (const previous of tree.getSelectedPaths()) if (previous !== path) tree.getItem(previous)?.deselect();
+  if (!tree.getSelectedPaths().includes(path)) tree.getItem(path)?.select();
+}
+const editable = path => /\.(md|markdown|mdown|mkd)$/i.test(path);
+function readDraft(path, fallback) {
+  delete restored[path];
+  let cached = localStorage.getItem(storageKey(path));
+  if (cached === null && (path === scratchPath || path !== 'draft.md')) cached = localStorage.getItem(legacyStorageKey(path === scratchPath ? 'draft.md' : path));
+  if (cached === null) return fallback;
+  try {
+    const record = JSON.parse(cached);
+    if (['markata-draft-v2','markata-draft-v3'].includes(record?.format) && typeof record.source === 'string') { restored[path] = record; return record.source; }
+  } catch { /* Legacy drafts contain plain Markdown. */ }
+  // Earlier builds could persist an empty placeholder before loading source.
+  // Preserve all nonempty legacy drafts; new records also preserve intentional blanks.
+  return cached === '' && path !== scratchPath ? fallback : cached;
+}
+function writeDraft(path, source, savedToSite = false) {
+  const record = {format:'markata-draft-v3', source, dirty:path === scratchPath || source !== baselines[path], version:versions[path], savedToSite};
+  localStorage.setItem(storageKey(path), JSON.stringify(record));
+  restored[path] = record;
+}
+function remember() {
+  if (!currentEditor || !editable(active)) return;
+  drafts[active] = currentEditor.getValue();
+  try {
+    const savedToSite = restored[active]?.savedToSite === true && drafts[active] === baselines[active];
+    writeDraft(active, drafts[active], savedToSite);
+  }
+  catch { warning(); }
+}
+async function open(path) {
+  if (syncing) return;
+  if (!Object.hasOwn(files,path) && path !== scratchPath) return;
+  const openedAt = performance.now();
+  const request = ++selection;
+  let disk = null;
+  if (Object.hasOwn(files,path)) {
+    try {
+      const response = await fetch('/workspace/file?path=' + encodeURIComponent(path));
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || data.detail || 'Cannot open source');
+      if (request !== selection) return;
+      disk = data;
+    } catch (error) {
+      const box = document.querySelector('#error'); box.textContent = error.message; box.hidden = false; return;
+    }
+  }
+  remember();
+  let diskChanged = false;
+  if (disk) {
+    let previous, dirty, previousVersion;
+    if (Object.hasOwn(drafts,path)) {
+      previous = drafts[path]; dirty = previous !== baselines[path]; previousVersion = versions[path];
+    } else {
+      try { previous = readDraft(path,disk.source); }
+      catch { previous = disk.source; warning(); }
+      previousVersion = restored[path]?.version;
+      dirty = restored[path]?.format === 'markata-draft-v3' ? restored[path].dirty !== false : previous !== disk.source;
+      // A previous successful autosave was clean when acknowledged, but if
+      // another process later changes the file it is now a competing revision.
+      // Preserve that exact browser copy instead of trusting the old dirty flag.
+      if ((restored[path]?.dirty !== false || restored[path]?.savedToSite === true) && previous !== disk.source &&
+          (!previousVersion || previousVersion !== disk.version)) dirty = true;
+    }
+    // A dirty recovery without a version is unsafe too: keep it, but fail
+    // closed on autosave until the user reconciles the filesystem revision.
+    diskChanged = Boolean(dirty && (!previousVersion || previousVersion !== disk.version));
+    drafts[path] = dirty ? previous : disk.source;
+    files[path] = disk.source;
+    baselines[path] = disk.source;
+    // Keep the original expected version of a dirty browser draft when the
+    // filesystem moved. Autosave will conflict rather than overwrite it.
+    versions[path] = diskChanged ? previousVersion : disk.version;
+    if (diskChanged) saveConflicts[path] = true;
+    else delete saveConflicts[path];
+  }
+  syncing = true;
+  try {
+    syncSelection(fileTree, path);
+    for (const [tree, lookup] of [[feedTree,feedAliases],[tagTree,aliases]]) {
+      const selectedAlias = tree?.getSelectedPaths().find(alias => lookup[alias] === path);
+      const alias = selectedAlias || Object.keys(lookup).find(alias => lookup[alias] === path);
+      for (const previous of tree?.getSelectedPaths() || []) {
+        if (previous !== alias) tree.getItem(previous)?.deselect();
+      }
+      syncSelection(tree, alias);
+    }
+  } finally { syncing = false; }
+  active = path;
+  try { localStorage.setItem('markata-workspace-active-v1:' + workspaceKey, path); } catch { warning(); }
+  if (!(path in drafts)) {
+    drafts[path] = files[path] || '';
+    if (editable(path)) {
+      try { drafts[path] = readDraft(path, drafts[path]); }
+      catch { warning(); }
+    }
+  }
+  currentEditor.setOption('readOnly', !editable(path));
+  // Commands remain available for file navigation from read-only sources.
+  currentEditor.setOption('mode', editable(path) ? 'gfm' : 'text/plain');
+  label.textContent = path + (editable(path) ? '' : ' · read only');
+  label.title = metadataByPath.get(path)?.title || path;
+  currentEditor.setValue(drafts[path]);
+  currentEditor.clearHistory();
+  if (Object.hasOwn(files,path)) rememberPick(fileScope(),path);
+  window.MarkataDiagnostics?.record('file_open',performance.now()-openedAt);
+  document.querySelector('#download').textContent = editable(path) ? 'Download .md' : 'Download .toml';
+  if (diskChanged) document.querySelector('#saved').textContent = 'File changed on disk · keeping your browser draft';
+}
+window.MarkataSiteTree = {
+  openPicker() { picker?.open(); },
+  // Called only after the version-checked Discard endpoint confirms a restore.
+  // Invalidate delayed saves of the pre-discard browser buffer and mark this
+  // exact source/version clean in local recovery storage.
+  reconcileRestored(path, source, version) {
+    if (!currentEditor || active !== path || !Object.hasOwn(files, path) ||
+        !/^[0-9a-f]{64}$/.test(version)) return false;
+    saveRevisions[path] = (saveRevisions[path] || 0) + 1;
+    saveEpochs[path] = (saveEpochs[path] || 0) + 1;
+    clearTimeout(saveTimers[path]);
+    delete saveConflicts[path];
+    drafts[path] = source;
+    baselines[path] = source;
+    versions[path] = version;
+    try { writeDraft(path, source); } catch { warning(); return false; }
+    document.querySelector('#saved').textContent = 'Restored committed version · saved to site';
+    return true;
+  },
+  // Conflict resolution from the compare dialog. The disk version the user
+  // reviewed becomes the save base; the chosen copy becomes the buffer.
+  keepBrowserDraft(path, version) {
+    if (!currentEditor || active !== path || !Object.hasOwn(files, path) ||
+        !/^[0-9a-f]{64}$/.test(version)) return false;
+    delete saveConflicts[path];
+    versions[path] = version;
+    saveToSite(path, currentEditor.getValue());
+    return true;
+  },
+  useDiskCopy(path, source, version) {
+    if (!currentEditor || active !== path || !Object.hasOwn(files, path) ||
+        !/^[0-9a-f]{64}$/.test(version)) return false;
+    saveRevisions[path] = (saveRevisions[path] || 0) + 1;
+    saveEpochs[path] = (saveEpochs[path] || 0) + 1;
+    clearTimeout(saveTimers[path]);
+    delete saveConflicts[path];
+    drafts[path] = source;
+    baselines[path] = source;
+    versions[path] = version;
+    files[path] = source;
+    try { writeDraft(path, source); } catch { warning(); return false; }
+    currentEditor.setValue(source);
+    document.querySelector('#saved').textContent = 'Using disk copy · saved to site';
+    return true;
+  },
+  // Called only after the guarded local Discard endpoint has deleted a
+  // reviewed untracked source. Clear this file's recovery copy, leaving every
+  // other local draft untouched; the caller then reloads workspace discovery.
+  forgetDeleted(path) {
+    if (!currentEditor || active !== path || !Object.hasOwn(files, path)) return false;
+    saveRevisions[path] = (saveRevisions[path] || 0) + 1;
+    saveEpochs[path] = (saveEpochs[path] || 0) + 1;
+    clearTimeout(saveTimers[path]);
+    delete saveConflicts[path];
+    try {
+      localStorage.removeItem(storageKey(path));
+      localStorage.removeItem(legacyStorageKey(path));
+      localStorage.removeItem('markata-workspace-active-v1:' + workspaceKey);
+    } catch { warning(); return false; }
+    delete drafts[path];
+    delete baselines[path];
+    delete versions[path];
+    delete restored[path];
+    delete files[path];
+    return true;
+  },
+  save() {
+    if (!currentEditor) return false;
+    if (!editable(active)) return true;
+    drafts[active] = currentEditor.getValue();
+    try { writeDraft(active, drafts[active]);
+      document.querySelector('#saved').textContent = saveConflicts[active]
+        ? 'Site save failed · file changed on disk; browser recovery copy kept'
+        : 'Draft saved on this device'; }
+    catch { warning(); }
+    if (siteAutosave && Object.hasOwn(baselines, active) && drafts[active] !== baselines[active]) saveToSite(active, drafts[active]);
+    return true;
+  },
+  filename: () => active === scratchPath ? 'draft.md' : active.split('/').pop(),
+  markdown(text) {
+    if (!editable(active)) return '````toml\n' + text + '\n````';
+    const frontmatter = text.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
+    if (!frontmatter) return text;
+    const image = frontmatter[1].match(/^image:\s*['"]?(\/images\/[^\s'"#?]+\.(?:jpg|jpeg|png|webp|gif|avif))['"]?\s*$/im)?.[1];
+    const body = text.slice(frontmatter[0].length);
+    return image ? `![Post image](/workspace/image?path=${encodeURIComponent(image.slice(1))})\n\n${body}` : body;
+  },
+  async import(text) { await open(scratchPath); currentEditor.setValue(text); this.save(); },
+  openPost(slug) {
+    const post = metadata.find(file => file.slug?.toLowerCase() === slug.toLowerCase());
+    if (post) open(post.path);
+  },
+  isReady: () => Boolean(fileTree),
+  files: () => metadata.map(file => ({...file})),
+  openFile(path) { if (Object.hasOwn(files, path)) return open(path); },
+  activeFile: () => active,
+  isSiteFile: path => Object.hasOwn(files, path),
+  workspaceId: () => workspaceKey,
+  activate(path) { localStorage.setItem('markata-workspace-active-v1:' + workspaceKey,path); },
+  async attach(editor, storageWarning, options = {}) {
+    currentEditor = editor; warning = storageWarning;
+    siteAutosave = options.saveToSite === true;
+    try {
+      const response = await fetch('/workspace');
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || data.detail || 'Cannot load workspace');
+      metadata = data.files; workspaceKey = data.rootUri || data.root || location.origin;
+      files = Object.fromEntries(metadata.map(file => [file.path, null]));
+    } catch (error) {
+      const box = document.querySelector('#error'); box.textContent = error.message; box.hidden = false;
+      files = {};
+    }
+    editor.on('beforeChange', (instance, change) => {
+      if (!editable(active) && change.origin !== 'setValue') change.cancel();
+    });
+    scratchPath = 'draft.md';
+    for (let suffix = 1; Object.hasOwn(files, scratchPath); suffix++) scratchPath = suffix === 1 ? 'Unsaved draft.md' : `Unsaved draft ${suffix}.md`;
+    picker = attachFilePicker(editor, open);
+    picker.update([{path:scratchPath}, ...metadata]);
+    active = scratchPath;
+    let selected = Object.keys(files)[0] || scratchPath;
+    try {
+      selected = localStorage.getItem('markata-workspace-active-v1:' + workspaceKey) || selected;
+      drafts[scratchPath] = readDraft(scratchPath, editor.getValue());
+    } catch { drafts[scratchPath] = editor.getValue(); warning(); }
+    editor.setValue(drafts[scratchPath]);
+    label = document.querySelector('#active-file');
+    label.textContent = scratchPath;
+    fileTree = new FileTree({paths:[scratchPath, ...Object.keys(files)], initialExpansion:'open',
+      search:true,
+      onSelectionChange(paths) { if (paths.length) open(paths[paths.length - 1]); }});
+    fileTree.render({containerWrapper:document.querySelector('#site-files')});
+    const feedOption = document.querySelector('#site-view option[value="feeds"]');
+    const tagOption = document.querySelector('#site-view option[value="tags"]');
+    feedOption.disabled = true; tagOption.disabled = true;
+    feedOption.textContent = 'Feeds (loading…)'; tagOption.textContent = 'Tags (loading…)';
+    const buildTags = () => {
+      if (feedTree) return;
+      for (const file of metadata) {
+        for (const tag of file.tags || []) aliases[`${tag}/${file.path}`] = file.path;
+      }
+      tagTree = new FileTree({paths:Object.keys(aliases),initialExpansion:'open',search:true,
+        onSelectionChange(paths) {const path=aliases[paths[paths.length-1]];if(path)open(path);}});
+      tagTree.render({containerWrapper:document.querySelector('#site-tags')});
+      syncing = true;
+      try { syncSelection(tagTree, Object.keys(aliases).find(alias => aliases[alias] === active)); }
+      finally { syncing = false; }
+    };
+    const buildFeeds = feeds => {
+      if (feedTree || !feeds?.length) return;
+      let rootPath = '';
+      try { rootPath = decodeURIComponent(new URL(workspaceKey).pathname).replace(/\\/g,'/').replace(/\/+$/,''); }
+      catch { /* Display paths without an absolute host root when the root is not a URI. */ }
+      for (const feed of feeds || []) for (const path of feed.paths || []) {
+        let displayPath = String(path).replace(/\\/g,'/');
+        if (rootPath && displayPath.startsWith(`${rootPath}/`)) displayPath = displayPath.slice(rootPath.length + 1);
+        displayPath = displayPath.replace(/^\/+/, '');
+        const file = metadataByPath.get(displayPath);
+        let leaf = String(file?.slug || displayPath.replace(/\//g,' — ')).replace(/\//g,' — ');
+        const root = `${feed.title} (${feed.paths.length.toLocaleString()})`;
+        const base = leaf;
+        for (let suffix=2; Object.hasOwn(feedAliases,`${root}/${leaf}`); suffix++) leaf = `${base} (${suffix})`;
+        feedAliases[`${root}/${leaf}`] = displayPath;
+      }
+      feedTree = new FileTree({paths:Object.keys(feedAliases),initialExpansion:0,search:true,
+        onSelectionChange(paths) {const path=feedAliases[paths[paths.length-1]];if(path)open(path);}});
+      feedTree.render({containerWrapper:document.querySelector('#site-feeds')});
+      syncing = true;
+      try { syncSelection(feedTree, Object.keys(feedAliases).find(alias => feedAliases[alias] === active)); }
+      finally { syncing = false; }
+    };
+    const updateWorkspaceContext = view => {
+      const context = document.querySelector('#site-context');
+      const count = workspaceCounts[view] || 0;
+      context.textContent = view === 'recent' ? 'Recently opened workspace files.'
+        : view === 'files' ? `${count} source files in this site.`
+        : view === 'feeds' ? `${count} configured feeds · select a post to open it.`
+        : view === 'changes' ? 'Working tree changes since the last commit.'
+        : `${count} tags from loaded frontmatter.`;
+    };
+    document.querySelector('#site-view').addEventListener('change', event => {
+      if (event.target.value === 'feeds') buildFeeds(window.MarkataSiteTree.feeds || []);
+      if (event.target.value === 'tags') buildTags();
+      for (const view of ['recent', 'files', 'feeds', 'tags']) {
+        const panel = document.querySelector('#site-' + view);
+        if (panel) panel.hidden = event.target.value !== view;
+      }
+      updateWorkspaceContext(event.target.value);
+    });
+    document.querySelector('#site-view').dispatchEvent(new Event('change'));
+    // Start with a real site post. The previous standalone draft stays in the tree.
+    await open(Object.hasOwn(files, selected) || selected === scratchPath ? selected : (Object.keys(files)[0] || scratchPath));
+    // Yield to the initial preview; metadata is never part of attach's promise.
+    setTimeout(async () => {
+      try {
+        const response = await fetch('/workspace?metadata=true');
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || data.detail || 'Metadata unavailable');
+        metadata = data.files;
+        picker.update([{path:scratchPath}, ...metadata]);
+        metadataByPath = new Map(metadata.map(file => [file.path,file]));
+        label.title = metadataByPath.get(active)?.title || active;
+        const tags = new Set(metadata.flatMap(file => file.tags || []));
+        workspaceCounts.files = metadata.length;
+        workspaceCounts.tags = tags.size;
+        document.querySelector('#site-view option[value="files"]').textContent = `Files (${metadata.length})`;
+        tagOption.textContent = `Tags (${tags.size})`; tagOption.disabled = tags.size === 0;
+        const feeds = data.feeds || [];
+        workspaceCounts.feeds = feeds.length;
+        window.MarkataSiteTree.feeds = feeds;
+        feedOption.textContent = `Feeds (${feeds.length})`; feedOption.disabled = feeds.length === 0;
+        if (document.querySelector('#site-view').value === 'feeds') buildFeeds(feeds);
+        updateWorkspaceContext(document.querySelector('#site-view').value);
+      } catch { tagOption.textContent = 'Tags unavailable'; feedOption.textContent = 'Feeds unavailable'; }
+    },0);
+  }
+};

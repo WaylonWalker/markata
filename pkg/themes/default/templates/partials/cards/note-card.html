@@ -11,8 +11,9 @@
 
   <div class="card-body">
     <div class="card-content">
-      {% if post.content %}
-      <div class="card-text p-content">{{ post.content | plaintext | truncatechars:1000 }}</div>
+      {# Render the already-produced Markdown HTML; plaintext expects HTML, not Markdown source. #}
+      {% if post.article_html %}
+      <div class="card-text p-content">{{ post.article_html | excerpt:"paragraphs=3,chars=1000" }}</div>
       {% elif post.description %}
       <p class="card-text p-content">{{ post.description }}</p>
       {% endif %}

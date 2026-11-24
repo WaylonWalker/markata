@@ -10,7 +10,6 @@ tags:
   - reference
 ---
 
-# Quick Reference
 
 A quick reference for common markata-go commands, configuration snippets, and troubleshooting tips.
 
@@ -105,6 +104,37 @@ markata-go palette export catppuccin-mocha --format css
 # Clone a palette for customization
 markata-go palette clone catppuccin-mocha --name "my-theme"
 ```
+
+---
+
+## Rich Markdown icon shortcuts
+
+Use the existing Lucide shortcode in any Markdown post:
+
+````markdown
+:lucide-rocket: Deployment
+
+::: md-feature
+
+:::: md-feature-icon
+:lucide-rocket:
+
+::::
+
+:::: md-feature-body
+### Verify production
+Confirm the deployed image, with visible text for accessibility.
+
+::::
+
+:::
+````
+
+Combine `md-icon` with `md-card` for centered icon cards. See
+[Icon Shortcodes](/docs/guides/icons/) and
+[Markdown Containers](/docs/guides/markdown-containers/). Agents should read
+the bundled skill's `topics/rich-markdown.md` before inventing custom icon
+code.
 
 ---
 

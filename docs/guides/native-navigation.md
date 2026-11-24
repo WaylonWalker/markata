@@ -5,7 +5,7 @@ published: true
 tags: [performance, navigation, experiment]
 ---
 
-# Try browser-native navigation
+## Try browser-native navigation
 
 For a staging or local site, add:
 

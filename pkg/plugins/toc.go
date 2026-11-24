@@ -8,8 +8,8 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 // TocPlugin extracts headings from markdown content and builds a

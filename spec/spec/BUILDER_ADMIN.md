@@ -50,6 +50,7 @@ Required trigger sources:
 - scheduled refresh completion when configured to enqueue a build
 - rollback action
 - signed GitHub or Forgejo push webhook after a successful source update
+- Helm startup/leadership acquisition when the running Builder commit differs from the latest successful build; this MUST go through the serialized queue rather than a direct build
 
 ## Leadership And Handoff
 
@@ -83,6 +84,13 @@ Successful builds MUST preserve the existing atomic release publication model:
 4. stage an independent release under `releases/`, then atomically rename it to `releases/<release-id>/`
 5. atomically repoint `current` to the new release
 6. publish build success and queue release pruning according to retention policy
+
+Queued builds run page-weight diagnostics by default. Operators can set
+`builder-admin --page-weight=false` or the Helm value `builderAdmin.pageWeight: false`
+to skip this scan without changing other build diagnostics. The service MUST
+remove any previous `.markata/page-weight.json` from the candidate workspace
+before staging a release in this mode. Published releases MUST retain their
+original reports, including when an operator rolls back.
 
 Release pruning MUST NOT block successful publication or the next queued build.
 Pruning MUST remain serialized with promotion and rollback, and MUST re-check
@@ -160,6 +168,114 @@ Each build record MUST include:
 - parsed performance summary
 - produced release id, when applicable
 - whether the result became live
+
+### Verified unchanged builds
+
+Builder Admin MAY complete a manual UI or API build request as `success` with
+result `unchanged` when it proves that the live release still matches the
+inputs of a recent successful publication. This check MUST run before build
+workspace preparation and MUST NOT modify the workspace, current symlink,
+release list, or release contents. It MUST record an auditable build record
+with an `unchanged` result and the total check duration. The record MUST also
+include source scan time, external input scan time and entry count, and live
+release scan time and entry count. The UI and API MUST expose these values.
+
+The unchanged result MUST be limited to explicit manual UI/API build requests
+and automatic `scheduled-refresh` builds without changed paths, source
+synchronization, or force mode. A scheduled-refresh build MAY use the shortcut
+only after the `reader-update` refresh operation has completed successfully;
+the normal source and configured cache fingerprints MUST detect its changes.
+Other scheduled refresh tasks MUST run a full build unless they declare all
+output-affecting roots. Any queued
+operation, missing or mismatched live-release workspace marker, missing
+baseline, expired baseline, changed source snapshot, changed external cache,
+changed effective config or build option, changed builder revision, or
+unavailable fingerprint MUST fall through to a normal build. A configured hook
+that is not registered in the current builder binary is inert and does not
+affect its output. A registered hook without a declared no-op input contract
+and unsupported time-dependent template expressions MUST disable the shortcut.
+The baseline MUST be recorded only after a successful publication whose source
+and external cache snapshots are unchanged across the build. The baseline MUST
+also bind the content digest of the running builder executable and the Linux
+file identity of every entry in the live release tree. The current symlink MUST
+resolve exactly to that release inside the configured releases directory.
+Builder Admin treats published release trees as immutable: its writers create
+a new staging tree, atomically switch `current`, and prune only non-current
+releases. An unsafe pointer, unsupported file type, or changed release entry
+MUST fall through to a normal build. Concurrent out-of-band edits are outside
+the serialization contract. A no-op MUST NOT extend the baseline expiry or
+refresh publication timestamps such as the diagnostics artifact's `BuiltAt`
+value.
+
+Before accepting an unchanged result, Builder Admin MUST perform a final
+stability check. It MUST re-read Git source metadata and compare it with the
+captured source state, then recheck the Linux file identities of every captured
+external input entry. This final check MAY reuse decoded configuration,
+environment, and builder identity from the initial snapshot when their mutable
+file inputs are covered by the source or external input checks. The resolved
+site configuration file MUST be among the captured inputs, including when it
+is outside the Git checkout. The final check MUST rediscover input roots that
+depend on executable-sidecar theme directories and compare them with the
+captured roots.
+
+The first implementation MUST cap a baseline at 30 minutes and expire it at
+the next local calendar day boundary, whichever comes first. It MUST include
+the effective configuration, build environment, builder revision, output-affecting
+options, source Git snapshot, configured external cache metadata, and current
+date in the fingerprint. On Linux, external cache entries MUST include file
+identity metadata that detects same-size, same-mtime rewrites through change
+time. Platforms without that identity MUST run a normal build. Failure to read
+or persist the baseline MUST fail closed and MUST NOT fail an otherwise
+successful publication.
+
+The incremental build cache hook MUST be active and enabled. Its configured
+`build-cache.json` file MUST be included in the no-op input snapshot. Baseline
+creation MUST fail closed if the build log reports a cache save failure. When a
+source post can resolve external embed metadata, baseline creation MUST verify
+that the persistent build cache contains a matching embed-transform result for
+that post under the current source content and embed configuration. A missing, stale, disabled, or
+unpersisted transform result MUST disable baseline creation.
+
+When Tailwind builds are enabled, the shortcut MUST be disabled until its
+external executable and installer cache are included in the input contract.
+An explicit `tailwind.build = false` setting is required to use the shortcut.
+Enabled icon-vendor downloads, Python docs generation, external link hover,
+Mermaid modes other than the native Go renderer, and Excalidraw Chromium
+rendering MUST also disable the shortcut until their external inputs are
+included in the fingerprint contract.
+The Pagefind search backend MUST disable the shortcut because a CLI binary can
+become available or auto-install later and produce a new index. The Bleve
+backend MAY use the shortcut when its configured source and cache roots match.
+
+When build-time link avatars are enabled, baseline creation MUST verify that
+every renderable Markdown post has a persisted link-avatar transform result.
+Missing transform coverage MUST disable baseline creation because the plugin
+can fetch remote favicon data during a full render. Browser-only avatar mode
+does not require this check. Self-hosted CDN assets MUST have complete verified
+cache entries before a baseline is recorded; missing assets can become
+available on a later build and change output.
+
+When Markdown contains mention candidates and mention metadata is enabled, the
+shortcut MUST be disabled until it can prove complete fresh cache coverage for
+every referenced external domain. A nonempty cache is not sufficient because
+the normal build fetches metadata for any missing domain. Other age-based inputs
+MUST declare an equivalent freshness contract before they can be covered by a
+no-op baseline.
+
+The filtered source snapshot MUST reject ignored Markdown paths that the
+builder's root `.gitignore` rules do not exclude. It MUST fingerprint ignored
+non-Markdown files and the full contents of ignored directories because other
+plugins can read those files as assets. It MUST also reject Git stat settings
+and index flags that can hide changed tracked files from `git status`. It MUST
+reject configured `core.fsmonitor` hooks and absolute content globs. Any external
+theme template or static directory that can affect the build MUST be included in
+the input fingerprint. The default `.well-known/time` endpoint changes on every
+build, so sites that enable it MUST use a full build.
+
+Manual UI and API build requests MUST default to the verified unchanged check.
+Both surfaces MUST provide an explicit force option that bypasses it. Legacy
+API requests with an empty body MUST remain valid. Successful scheduled refresh
+operations MAY use the same check for their automatically enqueued build.
 
 The UI MUST show current queue state, running build state, and the current live release.
 
@@ -411,6 +527,17 @@ port-forward` is intentionally not an operator-access path because it bypasses p
 When webhook support is enabled, the chart MUST render a separate exact `/webhook` ingress path
 without the operator ForwardAuth middleware. Its HMAC secret MUST be supplied from a Kubernetes
 Secret rather than a command-line argument.
+
+The chart MAY initialize the source directory from a configured Git repository before starting
+Builder Admin. When enabled, an empty source directory MUST be cloned at the configured branch;
+an existing checkout MUST be fast-forwarded to that branch before the service starts. A non-empty
+directory without a Git checkout MUST fail without deleting its contents. The init step MUST NOT
+receive webhook secrets; subsequent signed push events remain responsible for source updates and
+queued builds.
+
+When the backing filesystem creates reserved root entries such as `lost+found`, the chart MUST
+place the checkout in a dedicated child directory and mount that checkout as the builder source.
+The source-ready marker, when used, MUST remain outside the Git checkout.
 
 The default rendered-release retention MUST keep at least 25 releases, including the current live release, so operators have more than ten rollback targets by default.
 

@@ -11,10 +11,10 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/WaylonWalker/markata-go/pkg/buildcache"
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/models"
-	"github.com/WaylonWalker/markata-go/pkg/templates"
+	"github.com/WaylonWalker/markata/pkg/buildcache"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/templates"
 )
 
 // Node type constants for the garden graph.
@@ -149,9 +149,10 @@ func (p *GardenViewPlugin) Write(m *lifecycle.Manager) error {
 	}
 
 	if cache != nil {
-		if !cache.GardenDirty() {
-			return nil
-		}
+		// Content-only dirty flags do not capture deleted posts until cache
+		// cleanup, which runs after this Write stage. The semantic fingerprint
+		// is cheap to calculate and includes the current membership, so compare
+		// it even when the per-post change flag is clear.
 		gardenHash := computeGardenHash(m.Posts(), &gardenConfig, cache)
 		if cached := cache.GetGardenHash(); cached != "" && cached == gardenHash {
 			return nil

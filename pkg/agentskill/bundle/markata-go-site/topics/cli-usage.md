@@ -2,6 +2,14 @@
 
 Use this topic for everyday site work and safe project inspection.
 
+## Terminal Colors
+
+CLI output, logs, forms, and TUIs share semantic colors from the configured site palette.
+The theme's `fallback_mode` selects the light or dark palette variant.
+Without a usable site palette, these surfaces share one fallback theme.
+Palette picker swatches still show each previewed palette.
+Use `--no-color` or `--log-format plain` to suppress terminal colors.
+
 ## High-Value Commands
 
 ### Build And Serve
@@ -88,6 +96,64 @@ Bare `markata-go config` behaves like `markata-go config show`.
 - `markata-go init` (initialize a new project with TUI wizard)
 - `markata-go init --plain` (plain text prompts for non-TTY environments)
 
+Every `new` file includes a date and an explicit publication value, for all templates and interaction modes.
+An absent, null, or blank date becomes the current local date.
+Publication defaults to `true`.
+Preserve explicit starter dates and publication settings, including drafts.
+Use `--draft` for an explicit unpublished override.
+
+#### URL-first Link Posts
+
+Use an HTTP(S) destination URL with `link` or its aliases (`bookmark`, `til`, `stars`):
+
+```bash
+markata new --template link 'https://example.com/my-article'
+markata new --template link 'https://example.com/my-article' --title 'My article' --draft --no-input
+```
+
+The command fetches a title, description, and preview image.
+A usable `og:title` supplies a trusted automatic title.
+Empty, URL-only, and hostname-only titles are not trusted.
+Other suggestions require user confirmation, in this order: Twitter metadata, HTML title, main heading, decoded URL slug, then hostname.
+For unattended creation without a trusted title, pass a user-approved `--title` with `--no-input`.
+An explicit `--title` always wins.
+When a Link filename comes from its title and the starter has no explicit slug,
+Markata sets `slug: link/<filename-slug>`, producing a URL under `/link/` while the
+file keeps the unprefixed filename slug. When the URL contains a recognized stable post ID,
+Markata appends it to the generated filename and slug, for example
+`link/<title-slug>-<post-id>`. Preserve an explicit starter slug and any
+filename entered by the author.
+
+For YouTube video links, use the same URL-first command.
+Markata fetches the title and thumbnail from YouTube's official oEmbed endpoint before HTML metadata.
+A usable oEmbed title is also trusted.
+Watch, `youtu.be`, mobile, and Shorts URLs support this lookup.
+Keep the description optional because YouTube oEmbed does not supply one.
+If oEmbed fails, Markata reports the error and tries HTML metadata.
+If both lookups fail, confirm or replace the suggestion that includes the video ID.
+
+Without a terminal, or with `--no-input`, low-confidence creation returns an error and writes no file.
+The error supplies a copy-pastable command with `--title` that preserves the destination URL and explicit flags.
+Use that command after the user confirms the title.
+If metadata lookup fails, interactive creation warns and supports manual fields.
+A description and image are optional.
+Preserve starter defaults rather than invent missing metadata.
+
+The post preserves the entered destination across redirects.
+Relative images resolve against the fetched page URL.
+
+The wizard selects the template first and asks for a link URL before the title.
+After lookup and any required title confirmation, **Create** is the default action.
+**Edit details** exposes title, description, image, directory, tags, privacy, and authors.
+Explicit flags take priority, and starter defaults remain unless metadata or explicit input replaces them.
+Plain prompts use the same title-confidence rules.
+Existing non-URL title arguments and other templates keep their behavior.
+
+In the Go browser workbench, choose the **Link** starter and enter the URL.
+Wait briefly for embed metadata to fill the title, description, image, site,
+provider, media type, and author fields. Review or edit each value before you
+create the post. Enter a title manually if metadata has no usable title.
+
 ### Content Workflow For Agents
 
 Use `markata-go explain content` for the complete inspect, find, edit, create,
@@ -110,6 +176,14 @@ Set `MARKATA_GO_SITE_DIR` in an alias or wrapper when repeatedly using one site.
 - `markata-go lint` (lint markdown files for common issues)
 - `markata-go lint --fix` (auto-fix fixable issues)
 - `markata-go lint --dry-run` (show files without linting)
+- `markata editor --workspace <site> --port 8766` (start the Go browser editor on loopback)
+- The Go and FastAPI browser editor examples use the existing LSP through a same-origin `/lsp` WebSocket.
+  Go uses `markata editor --workspace`; FastAPI uses `MARKATA_LSP_WORKSPACE`.
+  FastAPI uses `markata-go lsp --browser-workspace` behind its stdio bridge.
+  The Go and Python editors open files discovered by Markata glob rules. The Go editor keeps browser recovery and autosaves eligible site files; the FastAPI demo keeps edits in browser drafts.
+  The editors complete command-catalog containers and attributes, plus Mermaid
+  diagram types and directions. Press Ctrl+Space to show completions.
+  See `docs/guides/go-workbench.md` and `docs/guides/fastapi-editor.md` in the Markata repository.
 - `markata-go lsp doctor` (check local LSP command and project configuration)
 - `markata-go lsp doctor --no-verify-editor` (detect installed editors without loading their configuration)
 - `markata-go lsp setup` (print setup guidance for each installed supported editor; use `--editor <editor>` for `generic`, `neovim`, `helix`, `emacs`, `zed`, or `vscode`)
@@ -199,6 +273,7 @@ repository includes the markata-go documentation.
 - `markata-go agent list-agents` (list supported agent ids and their install paths)
 - `markata-go agent install` (install bundled agent skill into the detected project agent or the universal layout)
 - `markata-go agent install --agent <name> [-g]` (choose a specific agent and optional global install scope)
+- `markata-go agent install -g` (open an fzf-style picker with a bottom prompt and colored matches; scripts must pass `--agent`, such as `github-copilot`; `--no-color` disables colors)
 - `markata-go agent doctor` (check for drift after binary upgrades)
 - `markata-go version`
 
@@ -295,3 +370,32 @@ Unknown commands, flags, and close config key typos report possible matches.
 Treat each suggestion as a hint and use the fully spelled command or key.
 Run the specific command's `--help` when no suggestion fits. A bare Markdown
 path such as `markata-go post.md` still runs a one-file build.
+
+
+### Mention attribution and lint warnings
+
+In Markdown, `@handle` refers to a person and `~handle` attributes a
+quote. Both resolve from active, configured blogroll feeds and aliases.
+When blogroll is enabled, `markata-go lint` reports
+`unknown-mention` warnings for unresolved handles. Add a verified
+entry or alias to the blogroll before linking: CLI lint/build never
+searches social networks or guesses a person's identity.
+
+Use `markata workspace --workspace <site>` to inspect discovered document metadata as JSON.
+Add `--file <relative-path>` to read a discovered source. Python exposes the same API as `markata.workspace_files`.
+
+The editor applies the selected site configuration to appearance defaults and Markdown highlighting. Python renderer APIs accept `workspace=`; CLI rendering accepts `render --workspace <site>`. Browser preferences can override appearance defaults.
+For quick content discovery, use `markata workspace --paths --workspace <site>`.
+The editor loads path discovery first and document metadata in the background.
+The workspace editor provides a fuzzy file picker with Ctrl/Cmd+P and the
+command palette's Open file action. Search filenames, paths, or loaded titles;
+Enter opens a result and Escape cancels. The Go editor’s Settings window controls
+local pick history. Use the footer’s Diagnostics drawer to inspect startup or
+preview latency, and the Compare copies action to export an unsynced draft.
+
+The Go editor retains workspace discovery, document metadata, renderer state, and
+shared LSP data for one running server. Filesystem changes invalidate that state.
+Reload the page to refresh the Files and Tags trees. Reopening a clean file loads
+its latest disk source. Edited browser drafts stay intact when the source changes.
+Go autosave writes the selected site file using a checked disk revision.
+Ctrl/Cmd+S publishes the current post. Use Review changes to inspect it first.

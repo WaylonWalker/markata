@@ -11,17 +11,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/palettes"
+	"github.com/WaylonWalker/markata/pkg/palettes"
+	"github.com/WaylonWalker/markata/pkg/terminaltheme"
 )
 
 const (
-	ansiBlue   = "\033[34m"
-	ansiCyan   = "\033[36m"
-	ansiDim    = "\033[2m"
-	ansiGreen  = "\033[32m"
-	ansiRed    = "\033[31m"
-	ansiReset  = "\033[0m"
-	ansiYellow = "\033[33m"
+	ansiReset = "\033[0m"
 
 	metaPrefix = "\x1emarkata|"
 	metaSep    = "\x1f"
@@ -122,88 +117,45 @@ func NewWriter(opts Options) *Writer {
 	if theme.Component == "" {
 		theme = DefaultTheme()
 	}
+	color := allowColor(opts)
 
 	return &Writer{
 		out:      writer,
 		observer: opts.Observer,
-		format:   resolveFormat(format, opts.IsTTY),
-		color:    allowColor(opts),
+		format:   resolveFormat(format, opts.IsTTY || color),
+		color:    color,
 		theme:    theme,
 	}
 }
 
 func DefaultTheme() Theme {
+	return ThemeFromTerminalTheme(terminaltheme.Default())
+}
+
+// ThemeFromTerminalTheme adapts shared semantic colors to logging roles.
+func ThemeFromTerminalTheme(colors terminaltheme.Theme) Theme {
 	return Theme{
-		Timestamp: ansiDim,
-		Component: ansiCyan,
-		Success:   ansiGreen,
-		Warning:   ansiYellow,
-		Error:     ansiRed,
+		Timestamp: colors.TextMuted,
+		Component: colors.Accent,
+		Success:   colors.Success,
+		Warning:   colors.Warning,
+		Error:     colors.Error,
 		PhaseColor: map[string]string{
-			"configure": ansiCyan,
-			"validate":  ansiYellow,
-			"glob":      ansiBlue,
-			"load":      ansiCyan,
-			"transform": ansiBlue,
-			"render":    ansiCyan,
-			"collect":   ansiYellow,
-			"write":     ansiBlue,
-			"cleanup":   ansiDim,
+			"configure": colors.Info,
+			"validate":  colors.Warning,
+			"glob":      colors.Accent,
+			"load":      colors.Info,
+			"transform": colors.Link,
+			"render":    colors.Accent,
+			"collect":   colors.Success,
+			"write":     colors.Warning,
+			"cleanup":   colors.TextMuted,
 		},
 	}
 }
 
 func ThemeFromPalette(palette *palettes.Palette) Theme {
-	if palette == nil {
-		return DefaultTheme()
-	}
-
-	resolve := func(names ...string) string {
-		for _, name := range names {
-			if hex := palette.Resolve(name); hex != "" {
-				return hex
-			}
-		}
-		return ""
-	}
-
-	theme := DefaultTheme()
-	if value := resolve("text-muted", "border", "text-secondary", "text"); value != "" {
-		theme.Timestamp = value
-	}
-	if value := resolve("primary", "info", "text-primary", "text"); value != "" {
-		theme.Component = value
-	}
-	if value := resolve("success", "primary", "secondary"); value != "" {
-		theme.Success = value
-	}
-	if value := resolve("warning", "secondary", "primary"); value != "" {
-		theme.Warning = value
-	}
-	if value := resolve("error", "primary", "secondary"); value != "" {
-		theme.Error = value
-	}
-
-	theme.PhaseColor = map[string]string{
-		"configure": resolve("primary", "info", "text-primary"),
-		"validate":  resolve("warning", "secondary", "primary"),
-		"glob":      resolve("secondary", "info", "primary"),
-		"load":      resolve("info", "primary", "secondary"),
-		"transform": resolve("tertiary", "primary", "secondary"),
-		"render":    resolve("primary", "tertiary", "info"),
-		"collect":   resolve("success", "secondary", "primary"),
-		"write":     resolve("warning", "primary", "secondary"),
-		"cleanup":   resolve("text-muted", "border", "text-secondary"),
-	}
-
-	defaults := DefaultTheme().PhaseColor
-	for phase, value := range theme.PhaseColor {
-		if value == "" {
-			theme.PhaseColor[phase] = defaults[phase]
-		}
-	}
-
-	return theme
+	return ThemeFromTerminalTheme(terminaltheme.FromPalette(palette))
 }
 
 func Component(name string) Logger {
@@ -353,19 +305,23 @@ func resolveFormat(format Format, isTTY bool) Format {
 }
 
 func allowColor(opts Options) bool {
-	if opts.NoColor || opts.Format == FormatPlain {
+	return ColorEnabled(opts.IsTTY, opts.Format, opts.ForceColor, opts.NoColor)
+}
+
+// ColorEnabled applies the shared color policy for CLI output and logging.
+// Explicit disable options take precedence, then explicit force options, then
+// automatic TTY and environment detection.
+func ColorEnabled(isTTY bool, format Format, forceColor, noColor bool) bool {
+	if noColor || format == FormatPlain {
 		return false
 	}
-	if strings.TrimSpace(os.Getenv("NO_COLOR")) != "" {
-		return false
-	}
-	if os.Getenv("TERM") == "dumb" {
-		return false
-	}
-	if opts.ForceColor {
+	if forceColor || (os.Getenv("FORCE_COLOR") != "" && os.Getenv("FORCE_COLOR") != "0") {
 		return true
 	}
-	return opts.IsTTY
+	if os.Getenv("NO_COLOR") != "" || os.Getenv("TERM") == "dumb" || !isTTY {
+		return false
+	}
+	return true
 }
 
 func style(text, color string, enabled bool) string {

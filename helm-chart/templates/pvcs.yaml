@@ -18,7 +18,7 @@ spec:
 {{- if and (eq (.Values.storage.source.mode | default "pvc") "pvc") (eq (.Values.storage.site.mode | default "pvc") "pvc") }}
 ---
 {{- end }}
-{{- if eq (.Values.storage.site.mode | default "pvc") "pvc" }}
+{{- if and (eq (.Values.storage.site.mode | default "pvc") "pvc") (not .Values.storage.site.existingClaimName) }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:

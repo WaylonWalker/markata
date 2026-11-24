@@ -12,8 +12,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/htmltotext"
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/htmltotext"
+	"github.com/WaylonWalker/markata/pkg/models"
 
 	"github.com/flosch/pongo2/v6"
 	"golang.org/x/net/html"

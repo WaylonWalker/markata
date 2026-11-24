@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/WaylonWalker/markata-go/pkg/servecontrol"
+	"github.com/WaylonWalker/markata/pkg/servecontrol"
 )
 
 type adminStateResponse struct {
@@ -128,7 +128,8 @@ func (s *Service) handleAPIBuilds(w http.ResponseWriter, r *http.Request) {
 	if s.handleStandbyMutation(w, r) {
 		return
 	}
-	if err := decodeEmptyAPIRequest(w, r); err != nil {
+	request, err := decodeBuildAPIRequest(w, r)
+	if err != nil {
 		writeAPIError(w, http.StatusBadRequest, "invalid_request", err.Error())
 		return
 	}
@@ -137,12 +138,39 @@ func (s *Service) handleAPIBuilds(w http.ResponseWriter, r *http.Request) {
 		writeAPIError(w, http.StatusUnauthorized, "authentication_required", "A trusted operator identity is required.")
 		return
 	}
-	operation, err := s.enqueueBuildAs("agent-api", "Builder-admin API build", nil, actorID)
+	operation, err := s.enqueueBuildAsForce("agent-api", "Builder-admin API build", nil, actorID, request.Force)
 	if err != nil {
 		writeAPIQueueError(w, err)
 		return
 	}
 	writeAPIJSON(w, http.StatusAccepted, apiOperationResponse{Operation: operation, Status: "queued"})
+}
+
+type buildAPIRequest struct {
+	Force bool `json:"force"`
+}
+
+func decodeBuildAPIRequest(w http.ResponseWriter, r *http.Request) (buildAPIRequest, error) {
+	var request buildAPIRequest
+	if r.Body == nil || r.ContentLength == 0 {
+		return request, nil
+	}
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+	var decoded *buildAPIRequest
+	if err := decoder.Decode(&decoded); errors.Is(err, io.EOF) {
+		return request, nil
+	} else if err != nil {
+		return request, fmt.Errorf("request body must be an empty object or contain a boolean force field: %w", err)
+	}
+	if decoded == nil {
+		return request, errors.New("request body must be a JSON object")
+	}
+	if err := decoder.Decode(&struct{}{}); !errors.Is(err, io.EOF) {
+		return request, errors.New("request body must contain one JSON object")
+	}
+	return *decoded, nil
 }
 
 func (s *Service) handleAPIRefresh(w http.ResponseWriter, r *http.Request) {

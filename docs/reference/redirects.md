@@ -3,7 +3,6 @@ title: Redirects Reference
 description: Configuration and generated outputs for the built-in redirects plugin.
 ---
 
-# Redirects Reference
 
 The built-in `redirects` plugin reads a `_redirects` source file and generates nginx-native redirects plus optional HTML fallback pages.
 

@@ -23,6 +23,11 @@ func TestConditionalCSS_ResetsNavHoverAcrossViewTransitions(t *testing.T) {
 		"window.addEventListener('view-transition-complete'",
 		"if (navHoverSuppressed)",
 		"navHoverReleaseArmed = true;",
+		"function loadConditionalCSS()",
+		"document.addEventListener('DOMContentLoaded', function() {\n    loadConditionalCSS();",
+		"var deferredCSS = { admonitions: true, code: true, chroma: true };",
+		"function injectCSSWhenNearViewport(baseName, selector)",
+		"{ rootMargin: '2400px 0px' }",
 	} {
 		if !strings.Contains(js, needle) {
 			t.Fatalf("conditional-css.js missing nav-hover reset behavior %q", needle)

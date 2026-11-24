@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/models"
-	"github.com/WaylonWalker/markata-go/pkg/templates"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/templates"
 )
 
 func TestTemplatesPlugin_GetFeedSidebarPosts_PrefersPrimaryFeed(t *testing.T) {
@@ -924,6 +924,12 @@ func TestTemplatesPlugin_Render_PostCopyShowsOnlyAvailableRoutes(t *testing.T) {
 	}
 	if strings.Contains(rendered, `data-copy-kind="ansi-curl"`) {
 		t.Fatal("did not expect ansi route in rendered post copy menu")
+	}
+	if !strings.Contains(rendered, "post-copy") || !strings.Contains(rendered, " defer") {
+		t.Fatal("expected post-copy behavior to load from the deferred shared asset")
+	}
+	if strings.Contains(rendered, "window.__markataPostCopyBound") {
+		t.Fatal("post-copy implementation must not be duplicated inline")
 	}
 }
 

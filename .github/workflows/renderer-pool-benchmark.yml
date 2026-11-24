@@ -1,0 +1,122 @@
+name: Renderer pool performance
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/renderer-pool-benchmark.yml'
+      - 'python/benchmark_renderer_pool.py'
+      - 'python/markata/pool.py'
+      - 'python/markata/rendering.py'
+      - 'pkg/renderprotocol/**'
+      - 'pkg/plugins/standalone_render.go'
+      - 'cmd/markata-go/cmd/render.go'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  benchmark:
+    name: One-shot vs warm pool (Go 1.27 / Python 3.13)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v7
+        with:
+          go-version: '1.27'
+          cache: true
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - name: Build actual Go renderer
+        run: |
+          mkdir -p python/markata/bin
+          go build -o python/markata/bin/markata ./cmd/markata-go
+      - name: Benchmark fresh subprocess vs warm app-owned pool
+        env:
+          PYTHONPATH: python
+          MARKATA_BENCHMARK_OUTPUT: ${{ runner.temp }}/renderer-pool-bench.json
+        run: python python/benchmark_renderer_pool.py
+      - name: Publish benchmark table
+        env:
+          MARKATA_BENCHMARK_OUTPUT: ${{ runner.temp }}/renderer-pool-bench.json
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          report = json.loads(Path(os.environ["MARKATA_BENCHMARK_OUTPUT"]).read_text())
+          rows = [
+              "## Fresh subprocess vs warm renderer pool",
+              "",
+              "Direct Python API to bundled Go binary, on the same runner.",
+              "24 measured calls plus three warmups per case. Pool startup excluded from latency, included separately in JSON.",
+              "",
+              "| Fixture | Concurrency | One-shot p50 / p95 (ms) | Pool p50 / p95 (ms) | Latency speedup | Throughput speedup |",
+              "|---|---:|---:|---:|---:|---:|",
+          ]
+          for name, value in report["fixtures"].items():
+              for concurrency, item in value["cases"].items():
+                  direct, pool = item["one_shot"], item["pool"]
+                  rows.append(
+                      f"| {name} | {concurrency} | {direct['p50_ms']} / {direct['p95_ms']} | "
+                      f"{pool['p50_ms']} / {pool['p95_ms']} | "
+                      f"{item['latency_speedup']}x | {item['throughput_speedup']}x |"
+                  )
+          Path(os.environ["GITHUB_STEP_SUMMARY"]).write_text("\n".join(rows) + "\n")
+          print("\n".join(rows))
+          PY
+      - name: Build native Mermaid candidate libraries (separate Go module)
+        working-directory: tools/mermaid-compare
+        run: go build -mod=mod -o "${RUNNER_TEMP}/mermaid-compare" .
+      - name: Measure SVG-only costs, theme/font differences and Markata fixtures
+        run: |
+          flags=""
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then flags="--full --iterations 20"; else flags="--full --iterations 3"; fi
+          python tools/mermaid-compare/run.py \
+            --binary "${RUNNER_TEMP}/mermaid-compare" \
+            --output "${RUNNER_TEMP}/mermaid-candidates" \
+            ${flags}
+      - name: Generate native SVG side-by-side comparison gallery
+        if: always()
+        run: |
+          if [ -f "${RUNNER_TEMP}/mermaid-candidates/comparison.json" ]; then
+            python tools/mermaid-compare/gallery.py "${RUNNER_TEMP}/mermaid-candidates"
+          fi
+      - name: Build concurrency-1 median latency bar chart including native Mermaid
+        if: always()
+        run: |
+          if [ -f "${RUNNER_TEMP}/renderer-pool-bench.json" ] && [ -f "${RUNNER_TEMP}/mermaid-candidates/comparison.json" ]; then
+            python tools/mermaid-compare/pool_latency_chart.py \
+              --pool-report "${RUNNER_TEMP}/renderer-pool-bench.json" \
+              --native-report "${RUNNER_TEMP}/mermaid-candidates/comparison.json" \
+              --output-dir "${RUNNER_TEMP}/mermaid-candidates"
+          fi
+      - name: Add concurrency-1 median latency chart table to summary
+        if: always()
+        run: |
+          if [ -f "${RUNNER_TEMP}/mermaid-candidates/median-render-latency-c1.md" ]; then
+            cat "${RUNNER_TEMP}/mermaid-candidates/median-render-latency-c1.md" >> "${GITHUB_STEP_SUMMARY}"
+          fi
+      - name: Add candidate timings and differences to perf graph and summary
+        if: always()
+        run: |
+          if [ -f "${RUNNER_TEMP}/mermaid-candidates/comparison.md" ]; then
+            cat "${RUNNER_TEMP}/mermaid-candidates/comparison.md" >> "${GITHUB_STEP_SUMMARY}"
+          fi
+      - name: Publish native comparison artifacts (SVG, JSON, Markdown, perf graph)
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: native-mermaid-comparison
+          path: ${{ runner.temp }}/mermaid-candidates
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Save machine-readable benchmark report
+        uses: actions/upload-artifact@v7
+        with:
+          name: renderer-pool-benchmark
+          path: ${{ runner.temp }}/renderer-pool-bench.json
+          retention-days: 14

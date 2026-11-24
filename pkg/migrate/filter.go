@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/WaylonWalker/markata-go/pkg/filter"
+	"github.com/WaylonWalker/markata/pkg/filter"
 )
 
 // Filter migrates a Python markata filter expression to markata-go syntax.

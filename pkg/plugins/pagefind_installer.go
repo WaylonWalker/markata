@@ -17,8 +17,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/buildstats"
-	"github.com/WaylonWalker/markata-go/pkg/logging"
+	"github.com/WaylonWalker/markata/pkg/buildstats"
+	"github.com/WaylonWalker/markata/pkg/logging"
 )
 
 var pagefindInstallLog = logging.Component("pagefind_installer").Phase("cleanup")

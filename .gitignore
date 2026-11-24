@@ -595,6 +595,9 @@ mono_crash.*
 [Dd]ebugPublic/
 [Rr]elease/
 [Rr]eleases/
+# Release notes are source content for the documentation site, not artifacts.
+!docs/releases/
+!docs/releases/**
 x64/
 x86/
 [Ww][Ii][Nn]32/
@@ -979,9 +982,14 @@ cache
 output
 output-rendering-contract
 .markata
+docs-site/_site/
+static/.icons/
 
 # Test-generated artifacts (tailwind rebuilds on every test run)
 tests/static/markata-tailwind.css
+static/markata-tailwind.css
+docs-site/_site/
+**/.icons/
 .agents
 .markata-secrets
 continue-prompt-gpt-54-issue-942.txt
@@ -994,3 +1002,11 @@ scripts/fill_continue_prompts.py
 scripts/test_fill_continue_prompts.py
 worktrees
 .markata-cache
+/test-results
+
+# Generated static WASM demo
+.wasm-workbench/
+# Vendored browser editor runtime (not a Python virtualenv library directory).
+!examples/wasm-workbench/codemirror/lib/
+!examples/wasm-workbench/codemirror/lib/codemirror.js
+!examples/wasm-workbench/codemirror/lib/codemirror.css

@@ -1,0 +1,119 @@
+---
+title: "Editor workspace file tree"
+description: "Browse a cloned Markata workspace in the Go and Python editors"
+date: 2026-10-30
+published: true
+tags: [documentation, editor]
+---
+
+Start the Go editor for a cloned site:
+
+```bash
+markata editor --workspace ~/git/my-site --port 8002
+```
+
+For the Python example, set `MARKATA_LSP_WORKSPACE` to the same site directory
+before starting `examples/fastapi_editor.py`.
+
+The Files tree lists content discovered by Markata's glob plugin. The editor
+reads `markata-go.toml`, YAML, or JSON configuration from the selected workspace.
+It uses the configured glob patterns and gitignore behavior. Without a config,
+it discovers Markdown under `pages/` and `posts/` with Markata's defaults. The
+Feeds view groups posts selected by configured feed filters. The Tags view groups
+loaded documents by their frontmatter tags. The selector shows each view's count.
+
+Select a file to load its original source, including frontmatter. Edit it and
+view the Go-rendered preview. The Go workbench saves selected Markdown files to
+the site after a short pause and keeps a browser recovery copy. Scratch drafts
+and imported files stay in browser storage. Use the command palette to export
+the active file or import a Markdown file. The scratch `draft.md` buffer remains
+available for imported documents.
+
+Only discovered files inside the selected workspace can be read or written.
+Files reached through symlinks outside the workspace are excluded. Reads and
+writes are limited to 200,000 bytes; a failed read or save leaves the current
+editor buffer intact.
+
+## API usage
+
+Go applications can use `editorworkspace.New(root)`, `Files()`, `Read(path)`, and `Write(path, source)`
+from `github.com/WaylonWalker/markata/pkg/editorworkspace`. Discovery uses the
+existing glob and load plugins without running a site build.
+
+Python applications can use the same implementation through the bundled binary:
+
+```python
+from markata import workspace_files
+
+listing = workspace_files("/path/to/site")
+source = workspace_files("/path/to/site", path="posts/hello.md")["source"]
+```
+
+The CLI exposes the JSON interface as `markata workspace --workspace /path/to/site`
+and `markata workspace --workspace /path/to/site --file posts/hello.md`.
+
+The Go and FastAPI servers provide `GET /workspace` and
+`GET /workspace/file?path=posts/hello.md`. The Go server also accepts
+`PUT /workspace/file?path=posts/hello.md` for autosave. The browser loads source
+on demand. The Go editor requires `X-Markata-Expected-Version`
+for each PUT: use the exact `version` returned by GET, then update that version
+from every successful write response. A missing token returns 428; a mismatched
+token returns 409 and does not replace newer disk content. POST file creation
+uses a separate creation path and does not require a previous version.
+See the [Go editor guide](./go-workbench/) and [Python editor guide](./fastapi-editor/).
+
+## Site defaults
+
+When the selected workspace has a config, the editor applies its palette,
+light/dark fallback, aesthetic, fontpack, text size, palette variables, custom CSS,
+and Markdown highlighting settings. Local `palettes/` and `aesthetics/` catalogs
+resolve from that workspace, as does an explicit `fontpacks_file`.
+Saved browser appearance preferences take priority over site defaults.
+The preview remains an article preview; it does not run page templates or a site build.
+
+Shot posts with an `image: /images/...` frontmatter field show that image above
+their Markdown body in the editor preview. The image loads from the workspace's
+`static/images/` directory. The editor preview does not apply the site's feed
+photo-grid template; use a site build to inspect the complete feed layout.
+
+Python hosts can pass `workspace="/path/to/site"` to `appearance()`, `render()`,
+and `render_async()`. The JSON command equivalent is
+`markata render --workspace /path/to/site --json` (Markdown on stdin), or
+`markata render --workspace /path/to/site --appearance` for controls and assets.
+
+The editor first discovers paths and opens the selected source. Titles, tags, and
+feed membership
+load afterward in the background. The Tags view becomes available when metadata
+is ready and builds its tree when opened. Metadata errors do not block editing.
+Use `markata workspace --paths --workspace PATH` or
+`workspace_files(PATH, metadata=False)` for discovery without parsing documents.
+Server clients can request `GET /workspace?metadata=true` when they need metadata.
+
+If the workspace contains a real `draft.md`, the scratch buffer appears as
+**Unsaved draft.md** (or a numbered variant if that name also exists). Imports
+open the scratch buffer, and real workspace files retain their own browser drafts.
+
+## Reuse server state
+
+The Go editor retains discovered paths and parsed document metadata for its workspace.
+Repeated file requests check cached membership and read only the selected source.
+The server reuses its Markdown renderer until the site configuration changes.
+Browser LSP sessions share parsed workspace data and keep unsaved documents private.
+
+A filesystem watcher refreshes changed documents after a short delay.
+Configuration and appearance changes refresh the renderer on its next request.
+A periodic scan recovers missed filesystem events.
+The Files, Feeds, and Tags trees refresh when you reload the browser page.
+
+Reopening a file or reloading the page loads its latest disk content if its browser draft has no edits.
+If the draft has edits, the editor preserves them.
+A warning identifies disk changes when the saved draft has a source version.
+Older saved drafts remain intact during migration.
+The Go workbench automatically saves edits to selected workspace Markdown files.
+Scratch drafts and imports stay in browser storage until you export them. The
+browser retains a recovery copy if a site save fails.
+
+Go hosts can open retained state with `editorworkspace.Open(ctx, root)`.
+Use `Paths()`, `Files()`, `Read(path)`, and `Snapshot()` for cached access.
+Call `Close()` when the host stops, or cancel the parent context.
+The existing `editorworkspace.New(root)` and Python helpers keep their one-shot behavior.

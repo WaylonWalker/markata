@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/WaylonWalker/markata-go/pkg/suggest"
+	"github.com/WaylonWalker/markata/pkg/suggest"
 )
 
 // likelyConfigTypo detects close spellings of known keys while preserving
@@ -66,7 +66,37 @@ func likelyConfigTypo(wrapper map[string]any) error {
 		}
 		return nil
 	}
+	if err := misplacedFeedFormats(root); err != nil {
+		return err
+	}
 	return walk(root, "")
+}
+
+// misplacedFeedFormats catches known format toggles silently ignored at feed
+// level. Unknown extension fields are deliberately left alone.
+func misplacedFeedFormats(root map[string]any) error {
+	feeds, ok := root["feeds"].([]any)
+	if !ok {
+		return nil
+	}
+	formatKeys := []string{"html", "simple_html", "rss", "atom", "json", "markdown", "text", "sitemap"}
+	for i, value := range feeds {
+		feed, ok := value.(map[string]any)
+		if !ok {
+			continue
+		}
+		for _, key := range formatKeys {
+			if _, exists := feed[key]; !exists {
+				continue
+			}
+			location := fmt.Sprintf("feeds[%d]", i)
+			if slug, ok := feed["slug"].(string); ok && slug != "" {
+				location += fmt.Sprintf(" (slug %q)", slug)
+			}
+			return fmt.Errorf("misplaced feed format key %q in %s: move it to feeds[%d].formats.%s", key, location, i, key)
+		}
+	}
+	return nil
 }
 
 func knownConfigKeyChildren() map[string][]string {

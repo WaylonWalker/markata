@@ -10,9 +10,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/builderadmin"
-	"github.com/WaylonWalker/markata-go/pkg/config"
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/builderadmin"
+	"github.com/WaylonWalker/markata/pkg/config"
+	"github.com/WaylonWalker/markata/pkg/models"
 	"github.com/spf13/cobra"
 )
 
@@ -27,6 +27,7 @@ var (
 	builderAdminWatch                 bool
 	builderAdminWatchDebounce         time.Duration
 	builderAdminFast                  bool
+	builderAdminPageWeight            bool
 	builderAdminMermaidMode           string
 	builderAdminReleasesKeep          int
 	builderAdminSuccessfulBuildsKeep  int
@@ -51,6 +52,8 @@ var (
 	builderAdminWebhookSecret         string
 )
 
+var builderAdminAutoBuildOnUpgrade bool
+
 var builderAdminCmd = &cobra.Command{
 	Use:   "builder-admin",
 	Short: "Run the long-lived builder admin HTTP service",
@@ -71,8 +74,10 @@ func init() {
 	builderAdminCmd.Flags().StringVar(&builderAdminCacheMount, "cache-mount", "", "optional dedicated cache mount for .markata symlinks")
 	builderAdminCmd.Flags().StringVar(&builderAdminHistoryDir, "history-dir", "", "directory for persisted builder-admin state and logs")
 	builderAdminCmd.Flags().BoolVar(&builderAdminWatch, "watch", true, "enable recursive file watching")
+	builderAdminCmd.Flags().BoolVar(&builderAdminAutoBuildOnUpgrade, "build-on-startup-revision-change", os.Getenv("MARKATA_GO_BUILDER_ADMIN_STARTUP_REBUILD") == "true", "build on leader startup when the builder revision differs from the last successful build")
 	builderAdminCmd.Flags().DurationVar(&builderAdminWatchDebounce, "watch-debounce", 2*time.Second, "debounce window for file-watch rebuilds")
 	builderAdminCmd.Flags().BoolVar(&builderAdminFast, "fast", false, "run queued builds with --fast")
+	builderAdminCmd.Flags().BoolVar(&builderAdminPageWeight, "page-weight", true, "scan generated HTML and publish a page-weight report for queued builds")
 	builderAdminCmd.Flags().StringVar(&builderAdminMermaidMode, "mermaid-mode", "", "override [markata-go.mermaid].mode for queued builds")
 	builderAdminCmd.Flags().IntVar(&builderAdminReleasesKeep, "releases-keep", 25, "number of rendered releases to keep")
 	builderAdminCmd.Flags().IntVar(&builderAdminSuccessfulBuildsKeep, "successful-builds-keep", 60, "number of successful build records to keep")
@@ -126,8 +131,10 @@ func runBuilderAdmin(cmd *cobra.Command, _ []string) error {
 		CacheMount:           builderAdminCacheMount,
 		HistoryDir:           builderAdminHistoryDir,
 		WatchEnabled:         builderAdminWatch,
+		AutoBuildOnUpgrade:   builderAdminAutoBuildOnUpgrade,
 		WatchDebounce:        builderAdminWatchDebounce,
 		Fast:                 builderAdminFast,
+		SkipPageWeight:       !builderAdminPageWeight,
 		MermaidMode:          builderAdminMermaidMode,
 		ReleasesKeep:         builderAdminReleasesKeep,
 		SuccessfulBuildsKeep: builderAdminSuccessfulBuildsKeep,

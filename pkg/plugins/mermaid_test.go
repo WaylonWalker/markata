@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/WaylonWalker/markata-go/pkg/buildcache"
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/buildcache"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 type countingMermaidRenderer struct {
@@ -189,6 +189,20 @@ func TestMermaidPlugin_BasicFlowchart(t *testing.T) {
 	}
 	if !strings.Contains(post.ArticleHTML, "mermaid.initialize") {
 		t.Errorf("expected mermaid.initialize in output, got %q", post.ArticleHTML)
+	}
+}
+
+func TestMermaidPlugin_CSSVariableScriptRendersScopedBlocks(t *testing.T) {
+	script := NewMermaidPlugin().cssVariablesScript()
+	for _, want := range []string{
+		"window.initMermaid = (root = document) =>",
+		"Array.isArray(root) ? root : [root]",
+		"block.dataset.markataMermaidSource = source",
+		"mermaid.run({ nodes: blocks })",
+	} {
+		if !strings.Contains(script, want) {
+			t.Errorf("Mermaid script does not support scoped rendering: missing %q", want)
+		}
 	}
 }
 
@@ -1040,5 +1054,43 @@ func TestMermaidPlugin_ChromiumConfig(t *testing.T) {
 	}
 	if cfg.ChromiumConfig.MaxConcurrent != 8 {
 		t.Errorf("expected MaxConcurrent 8, got %d", cfg.ChromiumConfig.MaxConcurrent)
+	}
+}
+
+func TestMermaidCSSVariablesUseThemeSurfaceAndBorder(t *testing.T) {
+	script := NewMermaidPlugin().cssVariablesScript()
+	for _, expected := range []string{
+		"primaryColor: surface",
+		"nodeBkg: surface",
+		"edgeLabelBackground: surface",
+		"primaryTextColor: foreground",
+		"nodeTextColor: foreground",
+		"primaryBorderColor: border",
+		"nodeBorder: border",
+		"lineColor: foreground",
+		"clusterBorder: border",
+		"clusterBkg: background",
+		"context.getImageData(0, 0, 1, 1)",
+		"Mermaid 10 does not accept color-mix()",
+		"new WeakMap()",
+		"removeAttribute('data-processed')",
+		"const source = block.textContent || ''",
+		"block.dataset.markataMermaidSource = source",
+		"window.addEventListener('theme-change'",
+		"window.addEventListener('palette-change'",
+		"window.addEventListener('color-mode-change'",
+	} {
+		if !strings.Contains(script, expected) {
+			t.Errorf("Mermaid theme script missing %q", expected)
+		}
+	}
+	if strings.Contains(script, "prefers-color-scheme: dark") {
+		t.Error("Mermaid palette should not override selected site theme with OS preference")
+	}
+	if strings.Contains(script, "* { cursor: pointer; }") {
+		t.Error("Mermaid should not make every diagram element appear interactive")
+	}
+	if strings.Contains(script, "nodeBkg: css('--color-code-bg'") {
+		t.Error("Mermaid node fill should not use code background")
 	}
 }

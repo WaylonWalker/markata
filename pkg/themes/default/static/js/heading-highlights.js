@@ -7,6 +7,14 @@
 
   var selector = "html[data-fontpack] :is(.post-header h1, .post-content h1, .post-content h2) .heading-highlight";
   var scheduled = false;
+  var followingFonts = false;
+
+  function followFonts() {
+    if (followingFonts) return;
+    followingFonts = true;
+    // Subscribe after observer delivery has confirmed the first layout.
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(schedule);
+  }
 
   function schedule() {
     if (scheduled) return;
@@ -97,7 +105,10 @@
     wrapper.classList.add("is-measured");
   }
 
-  var resizeObserver = window.ResizeObserver ? new ResizeObserver(schedule) : null;
+  var resizeObserver = window.ResizeObserver ? new ResizeObserver(function () {
+    followFonts();
+    schedule();
+  }) : null;
   var observed = new WeakSet();
 
   function observeTargets() {
@@ -111,7 +122,8 @@
 
   function observe() {
     observeTargets();
-    if (document.fonts && document.fonts.ready) document.fonts.ready.then(schedule);
+    // Avoid touching font readiness on pages without highlighted headings.
+    if (!resizeObserver) requestAnimationFrame(function () { requestAnimationFrame(followFonts); });
     // Re-measure when heading text changes or the typography/palette on
     // <html> changes. Attribute changes elsewhere (including this script's own
     // is-measured class and style writes such as --sidebar-top) are ignored so
@@ -137,7 +149,7 @@
       attributeFilter: ["class", "data-fontpack", "data-palette", "data-theme", "data-aesthetic", "data-text-size"]
     });
     window.addEventListener("resize", schedule, { passive: true });
-    schedule();
+    if (!resizeObserver) schedule();
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", observe);

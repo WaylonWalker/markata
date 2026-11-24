@@ -26,4 +26,16 @@ spec:
       ports:
         - protocol: TCP
           port: {{ .Values.builderAdmin.port }}
+    {{- if .Values.builderAdmin.editor.enabled }}
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              {{- toYaml .Values.builderAdmin.networkPolicy.traefikNamespaceSelector | nindent 14 }}
+          podSelector:
+            matchLabels:
+              {{- toYaml .Values.builderAdmin.networkPolicy.traefikPodSelector | nindent 14 }}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.builderAdmin.editor.port }}
+    {{- end }}
 {{- end }}

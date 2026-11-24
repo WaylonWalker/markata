@@ -19,7 +19,7 @@ All three modes are configured under `[markata-go.mermaid]`:
 ```toml
 [markata-go.mermaid]
 enabled = true
-mode = "client"                    # "client", "cli", or "chromium"
+mode = "go"                        # "go" (native default), "client", "cli", "chromium"
 theme = "default"                  # default, dark, forest, neutral
 use_css_variables = true           # Apply site palette to diagrams
 lightbox = true                    # Enable click-to-zoom lightbox
@@ -29,7 +29,7 @@ lightbox_selector = ".glightbox-mermaid"
 [markata-go.mermaid.cli]
 mmdc_path = ""                     # Auto-detect if empty
 
-# Chromium mode settings (mermaidcdp)
+# Chromium mode settings (chromedp)
 [markata-go.mermaid.chromium]
 browser_path = ""                  # Auto-detect if empty
 timeout = 30                       # Seconds per diagram
@@ -39,7 +39,7 @@ no_sandbox = false                 # Disable Chromium sandbox (required in conta
 
 ## Mode Details
 
-### Client Mode (Default)
+### Client Mode (Explicit Compatibility)
 
 **Rendering:** Browser-side via Mermaid.js CDN  
 **Stage:** Render (post-processing)  
@@ -131,13 +131,17 @@ mmdc --version
 
 ---
 
-### Chromium Mode (mermaidcdp)
+### Native Go Mode (Default)
+
+Native Mermaid generation runs inside the Go process without a browser, Node, or mmdc. Unsupported syntax produces an explicit error; select `client` or `chromium` explicitly to use Mermaid.js.
+
+### Chromium Mode (chromedp)
 
 **Rendering:** Build-time via Chrome DevTools Protocol  
 **Stage:** Render (post-processing)  
 **Requirements:** Chrome/Chromium browser binary
 
-Uses the `mermaidcdp` Go package to render diagrams via Chrome's headless browser, reusing a single browser connection for all diagrams.
+Uses the project's chromedp renderer to render diagrams in a headless Chrome browser. It reuses one browser connection for all diagrams. The renderer applies configured palette colors when available and uses the configured Mermaid theme otherwise.
 
 ```toml
 [markata-go.mermaid]

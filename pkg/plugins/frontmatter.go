@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/WaylonWalker/markata-go/pkg/diagnostics"
+	"github.com/WaylonWalker/markata/pkg/diagnostics"
 	"gopkg.in/yaml.v3"
 )
 

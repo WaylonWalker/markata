@@ -1,74 +1,136 @@
 ---
-title: "Documentation"
-description: "Complete documentation for markata-go, a comprehensive, extendable static site generator written in Go"
-date: 2024-01-15
+title: "Your words. On your web."
+description: "A fast static site generator for people and their agents. Write Markdown and publish a website you own."
+slug: ""
+date: 2026-11-02
 published: true
-slug: /docs/home/
-tags:
-  - documentation
+tags: [documentation, getting-started]
+hero:
+  title: "Your words. On your web."
+  title_lines:
+    - "Your words."
+    - "On your web."
+  eyebrow: "Markdown to website"
+  subtitle: "A fast static site generator for people and their agents."
+  cta_primary:
+    text: "Install Markata"
+    href: "#install"
+  cta_secondary:
+    text: "Read the quickstart"
+    href: "/docs/quickstart/"
 ---
 
-# markata-go Documentation
+## One command to start {#install}
 
-A comprehensive, extendable static site generator written in Go.
+Choose an install method. Markata is a Go CLI; Python is not required to run it.
 
----
+::: md-tabs {data-label="Installation methods" style="boxed"}
 
-## Quick Links
+:::: md-tab {label="curl"}
 
-- [[quickstart|Quickstart]] - Get running in 5 minutes
-- [[getting-started|Getting Started]] - Full tutorial walkthrough
-- [Serve Control Center](/docs/guides/serve-control-center/) - Inspect builds, warnings, and pages while serving
+For Linux and macOS, read [the installer source](https://github.com/WaylonWalker/markata/blob/main/install.sh) first if you want to inspect it.
 
----
+```bash title="Terminal"
+curl -fsSL https://raw.githubusercontent.com/WaylonWalker/markata/main/install.sh | bash
+markata version
+```
 
-## Guides
+::::
 
-### Content
+:::: md-tab {label="Bash"}
 
-- [[frontmatter-guide|Frontmatter]] - Post metadata and fields
-- [[markdown-features|Markdown Features]] - Supported syntax and extensions
-- [[image-library|Image Library]] - Search and reuse site images
-- [[dynamic-content|Dynamic Content]] - Using Jinja templates in Markdown
+Download and inspect the installer before you run it:
 
-### Feeds & Output
+```bash title="Terminal"
+curl -fsSLo install-markata.sh https://raw.githubusercontent.com/WaylonWalker/markata/main/install.sh
+less install-markata.sh
+bash install-markata.sh
+markata version
+```
 
-- [[feeds-guide|Feeds]] - Create archives and collections
-- [[syndication-feeds|Syndication]] - RSS, Atom, JSON Feed, and Sitemap
+::::
 
-### Customization
+:::: md-tab {label="mise"}
 
-- [[configuration-guide|Configuration]] - All configuration options
-- [[templates-guide|Templates]] - Customize your site's appearance
-- [[view-transitions|View Transitions]] - Smooth page navigation animations
-- [[resource-hints|Resource Hints]] - Auto-generate performance hints
-- [[plugin-development|Plugin Development]] - Extend markata-go
+Install a release globally, or omit `-g` to pin Markata to this project:
 
-### Publishing
+```bash title="Terminal"
+mise use -g github:WaylonWalker/markata
+markata version
+```
 
-- [[deployment-guide|Deployment]] - Host your site
-- [[ci-cd-guide|CI/CD]] - Automated builds and deployments
-  - [[github-actions|GitHub Actions]] - Deploy with GitHub Actions
-  - [[gitlab-ci|GitLab CI]] - Deploy with GitLab CI
+::::
 
----
+:::: md-tab {label="Go"}
 
-## Reference
+Install from source with Go 1.27 or newer:
 
-- [[cli-reference|CLI Reference]] - All commands and flags
-- [[advanced-usage|Advanced Usage]] - Power user features
-- [[maintainer-ci|Maintainer CI]] - Product repository validation and publishing policy
+```bash title="Terminal"
+go install github.com/WaylonWalker/markata/cmd/markata@main
+markata version
+```
 
----
+::::
 
-## Help
+:::: md-tab {label="GitHub"}
 
-- [[troubleshooting|Troubleshooting]] - Common issues and solutions
-- [[framework-comparison|Comparison]] - How markata-go compares to other SSGs
+Choose the archive for your operating system and architecture from [GitHub Releases](https://github.com/WaylonWalker/markata/releases). Verify its checksum, extract it, and put the executable on your `PATH`.
 
----
+::::
 
-## External Links
+:::: md-tab {label="PyPI"}
 
-- [GitHub Repository](https://github.com/waylonwalker/markata-go)
-- [Issue Tracker](https://github.com/waylonwalker/markata-go/issues)
+The current `markata` package installs the Go CLI. Older pinned package versions are the original Python project. Check the selected version and platform support before installing.
+
+```bash title="Terminal"
+uv tool install markata
+uvx markata --help
+```
+
+See [installation details](/docs/installation/) for pip, pipx, and the version transition.
+
+::::
+
+:::
+
+The installer provides both `markata` and the compatible `markata-go` command. See [all installation options](/docs/installation/).
+
+## Make something small
+
+::: md-grid {data-columns="2" data-gap="lg"}
+
+:::: md-card
+
+### Give your agent the manual
+
+Markata ships a site-authoring skill for Codex, Claude Code, OpenCode, Cursor, and other coding agents.
+
+```bash title="Terminal"
+markata agent install
+markata agent doctor
+```
+
+See the [agent setup guide](/docs/guides/agent-skills/) for project and global installs.
+
+::::
+
+:::: md-card
+
+### Write Markdown. Publish HTML.
+
+Start a site and preview your first page:
+
+```bash title="Terminal"
+mkdir my-site && cd my-site
+markata config init
+markata new "Hello World"
+markata serve
+```
+
+Open [localhost:8000](http://localhost:8000). Run `markata build` when you are ready to publish.
+
+::::
+
+:::
+
+Continue with the [quickstart](/docs/quickstart/), learn [how to write posts](/docs/guides/authoring/), or [explore all documentation](/docs/).

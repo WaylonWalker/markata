@@ -9,7 +9,6 @@ tags:
   - cli
 ---
 
-# CLI List Command Design
 
 ## Goal
 

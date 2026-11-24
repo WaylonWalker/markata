@@ -11,10 +11,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/WaylonWalker/markata-go/pkg/buildcache"
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/templates"
-	"github.com/WaylonWalker/markata-go/pkg/themes"
+	"github.com/WaylonWalker/markata/pkg/buildcache"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/templates"
+	"github.com/WaylonWalker/markata/pkg/themes"
 )
 
 // StaticAssetsPlugin copies static assets from themes and project directories to output.
@@ -38,28 +39,15 @@ func (p *StaticAssetsPlugin) Name() string {
 // This enables cache busting via the theme_asset_hashed filter.
 func (p *StaticAssetsPlugin) Configure(m *lifecycle.Manager) error {
 	config := m.Config()
-
-	// Get theme name
-	themeName := ThemeDefault
-	if extra := config.Extra; extra != nil {
-		if theme, ok := extra["theme"].(map[string]interface{}); ok {
-			if name, ok := theme["name"].(string); ok && name != "" {
-				themeName = name
-			}
-		}
-		if name, ok := extra["theme"].(string); ok && name != "" {
-			themeName = name
-		}
-	}
+	themeName := configuredThemeName(config)
 
 	// Compute hashes for assets in priority order (last wins)
 	assetHashes := make(map[string]string)
 
-	// 1. Hash embedded assets (base layer)
-	if themeName == ThemeDefault {
-		if err := p.hashEmbeddedAssets(assetHashes); err != nil {
-			return fmt.Errorf("hashing embedded assets: %w", err)
-		}
+	// 1. Hash embedded assets as the base layer. Non-default themes may inherit
+	// default templates, so their fallback assets must be hashable too.
+	if err := p.hashEmbeddedAssets(assetHashes); err != nil {
+		return fmt.Errorf("hashing embedded assets: %w", err)
 	}
 
 	// 2. Hash filesystem theme assets (overrides embedded)
@@ -86,15 +74,17 @@ func (p *StaticAssetsPlugin) Configure(m *lifecycle.Manager) error {
 	// Set hashes in templates package for theme_asset_hashed filter
 	templates.SetAssetHashes(assetHashes)
 
-	// Update build cache with combined assets hash
-	// This ensures all pages are rebuilt when any JS/CSS file changes
+	return nil
+}
+
+// Validate fingerprints the final asset registry after all Configure hooks.
+// Generated styles such as palette-core.css register after static files.
+func (p *StaticAssetsPlugin) Validate(m *lifecycle.Manager) error {
 	if cache := GetBuildCache(m); cache != nil {
-		assetsHash := buildcache.HashAssetMap(assetHashes)
-		if cache.SetAssetsHash(assetsHash) {
+		if cache.SetAssetsHash(buildcache.HashAssetMap(m.AssetHashes())) {
 			log.Printf("[static_assets] JS/CSS assets changed, full rebuild required")
 		}
 	}
-
 	return nil
 }
 
@@ -113,26 +103,12 @@ func (p *StaticAssetsPlugin) Write(m *lifecycle.Manager) error {
 	}
 	defer outputFS.Close()
 
-	// Get theme name from config (default to "default")
-	themeName := ThemeDefault
-	if extra := config.Extra; extra != nil {
-		if theme, ok := extra["theme"].(map[string]interface{}); ok {
-			if name, ok := theme["name"].(string); ok && name != "" {
-				themeName = name
-			}
-		}
-		// Also check for simple theme string
-		if name, ok := extra["theme"].(string); ok && name != "" {
-			themeName = name
-		}
-	}
+	themeName := configuredThemeName(config)
 
-	// Layer 1: Copy embedded static files for default theme (base layer)
-	// This ensures all default assets are present even if filesystem theme is incomplete
-	if themeName == ThemeDefault {
-		if err := p.copyEmbeddedStaticWithRoot(outputDir, outputFS); err != nil {
-			return fmt.Errorf("copying embedded static files: %w", err)
-		}
+	// Layer 1: Copy embedded static files as the base layer so default-template
+	// fallbacks have their assets even when a non-default theme is selected.
+	if err := p.copyEmbeddedStaticWithRoot(outputDir, outputFS); err != nil {
+		return fmt.Errorf("copying embedded static files: %w", err)
 	}
 
 	// Layer 2: Copy filesystem theme static files (overrides embedded)
@@ -152,6 +128,33 @@ func (p *StaticAssetsPlugin) Write(m *lifecycle.Manager) error {
 	}
 
 	return nil
+}
+
+func configuredThemeName(config *lifecycle.Config) string {
+	if config == nil || config.Extra == nil {
+		return ThemeDefault
+	}
+
+	switch theme := config.Extra["theme"].(type) {
+	case models.ThemeConfig:
+		if theme.Name != "" {
+			return theme.Name
+		}
+	case *models.ThemeConfig:
+		if theme != nil && theme.Name != "" {
+			return theme.Name
+		}
+	case map[string]interface{}:
+		if name, ok := theme["name"].(string); ok && name != "" {
+			return name
+		}
+	case string:
+		if theme != "" {
+			return theme
+		}
+	}
+
+	return ThemeDefault
 }
 
 func (p *StaticAssetsPlugin) projectStaticDir(config *lifecycle.Config) string {
@@ -180,6 +183,9 @@ func (p *StaticAssetsPlugin) Cleanup(m *lifecycle.Manager) error {
 	}
 	defer outputFS.Close()
 
+	if err := reconcileFinalCSSAssets(m, outputFS, outputDir); err != nil {
+		return fmt.Errorf("reconcile final CSS fingerprints: %w", err)
+	}
 	if err := p.createHashedCopiesWithRoot(m, outputDir, outputFS); err != nil {
 		return fmt.Errorf("creating hashed asset copies: %w", err)
 	}
@@ -534,6 +540,10 @@ func (p *StaticAssetsPlugin) createHashedCopiesWithRoot(m *lifecycle.Manager, ou
 func (p *StaticAssetsPlugin) Priority(stage lifecycle.Stage) int {
 	// Configure registers asset hashes; Write copies source images before
 	// image optimization reads them.
+	if stage == lifecycle.StageCleanup {
+		// CSS purge must complete before final CSS fingerprints are published.
+		return lifecycle.PriorityLast
+	}
 	if stage == lifecycle.StageConfigure || stage == lifecycle.StageWrite {
 		return lifecycle.PriorityEarly
 	}
@@ -544,6 +554,7 @@ func (p *StaticAssetsPlugin) Priority(stage lifecycle.Stage) int {
 var (
 	_ lifecycle.Plugin          = (*StaticAssetsPlugin)(nil)
 	_ lifecycle.ConfigurePlugin = (*StaticAssetsPlugin)(nil)
+	_ lifecycle.ValidatePlugin  = (*StaticAssetsPlugin)(nil)
 	_ lifecycle.WritePlugin     = (*StaticAssetsPlugin)(nil)
 	_ lifecycle.CleanupPlugin   = (*StaticAssetsPlugin)(nil)
 	_ lifecycle.PriorityPlugin  = (*StaticAssetsPlugin)(nil)

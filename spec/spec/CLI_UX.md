@@ -77,13 +77,16 @@ This makes commands testable, consistent under redirection, and safe to compose.
 
 Color MAY be used to increase scannability, but MUST remain optional.
 
-Color output MUST be disabled when any of the following are true for the target
-stream:
+By default, color MUST be enabled for a TTY stream and disabled for a redirected
+stream. `NO_COLOR` MUST disable automatic color when it is set to any non-empty
+value, including whitespace. `TERM=dumb` MUST also disable automatic color.
 
-- the stream is not a TTY
-- `NO_COLOR` is set and non-empty
-- `TERM=dumb`
-- the user passes `--no-color`
+Explicit options have this precedence:
+
+- `--no-color` and plain log format disable color
+- `--color` or a non-empty `FORCE_COLOR` value other than `0` force color,
+  including for redirected output and when `NO_COLOR` or `TERM=dumb` is set
+- otherwise, color follows the TTY and environment rules above
 
 Commands MAY also offer explicit formatting controls for operational logs.
 When they do, the supported modes SHOULD include:
@@ -99,6 +102,12 @@ Rich log format MAY use structured logging metadata to drive presentation.
 When phase metadata is available, lifecycle-oriented logs SHOULD colorize by
 phase rather than by component name alone. If a site palette is configured,
 rich logs SHOULD prefer palette-derived colors when they remain readable.
+
+All CLI surfaces MUST resolve their semantic colors from the same terminal
+theme. When a site palette is configured, logs, help, prompts, and TUIs MUST use
+that palette. When no palette is configured, they MUST use the shared CLI
+fallback theme. Palette pickers MAY show each candidate palette in its preview,
+but their controls and labels MUST use the active CLI theme.
 
 Commands SHOULD make color decisions per stream. For example, `stderr` MAY stay
 colored when `stdout` is piped.

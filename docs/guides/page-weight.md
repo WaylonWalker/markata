@@ -7,7 +7,6 @@ tags:
   - build
 ---
 
-# Find heavy posts during builds
 
 Run a normal build:
 

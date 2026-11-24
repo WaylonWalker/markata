@@ -97,6 +97,7 @@ type ContentSummary struct {
 type ContentLedgerSnapshot struct {
 	Summary       ContentSummary       `json:"summary"`
 	TemplateCache *TemplateCacheStats  `json:"template_cache,omitempty"`
+	PublishIO     *PublishIOStats      `json:"publish_io,omitempty"`
 	Entries       []ContentDisposition `json:"entries"`
 }
 
@@ -112,6 +113,7 @@ type ContentLedger struct {
 	mu            sync.RWMutex
 	entries       map[string]*contentLedgerEntry
 	templateCache *TemplateCacheStats
+	publishIO     *PublishIOStats
 }
 
 // NewContentLedger creates an empty content ledger.
@@ -140,6 +142,7 @@ func (l *ContentLedger) Discover(paths []string) {
 	l.mu.Lock()
 	l.entries = entries
 	l.templateCache = nil
+	l.publishIO = nil
 	l.mu.Unlock()
 }
 
@@ -171,6 +174,7 @@ func (l *ContentLedger) Reset() {
 	l.mu.Lock()
 	l.entries = make(map[string]*contentLedgerEntry)
 	l.templateCache = nil
+	l.publishIO = nil
 	l.mu.Unlock()
 }
 
@@ -419,6 +423,7 @@ func (l *ContentLedger) Snapshot() ContentLedgerSnapshot {
 
 	l.mu.RLock()
 	templateCache := cloneTemplateCacheStats(l.templateCache)
+	publishIO := clonePublishIOStats(l.publishIO)
 	entries := make([]ContentDisposition, 0, len(l.entries))
 	for _, entry := range l.entries {
 		entries = append(entries, copyContentDisposition(entry))
@@ -431,6 +436,7 @@ func (l *ContentLedger) Snapshot() ContentLedgerSnapshot {
 
 	snapshot := ContentLedgerSnapshot{
 		TemplateCache: templateCache,
+		PublishIO:     publishIO,
 		Entries:       entries,
 	}
 	for index := range snapshot.Entries {

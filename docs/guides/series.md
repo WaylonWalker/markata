@@ -10,7 +10,7 @@ tags:
   - feeds
 ---
 
-# Series
+## Series
 
 Series are **ordered collections of posts meant to be read sequentially**. They are perfect for multi-part tutorials, article series, and course chapters.
 

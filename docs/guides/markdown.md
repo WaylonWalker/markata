@@ -11,7 +11,6 @@ tags:
   - content
 ---
 
-# Markdown Features
 
 markata-go supports standard Markdown (CommonMark), GitHub Flavored Markdown (GFM) extensions, and several powerful additions like admonitions, wikilinks, and automatic table of contents generation. This guide covers everything you need to know about writing content in markata-go.
 
@@ -27,6 +26,10 @@ markata-go supports standard Markdown (CommonMark), GitHub Flavored Markdown (GF
 - [Table of Contents](#table-of-contents)
 - [Heading Anchors](#heading-anchors)
 - [Footnotes](#footnotes)
+- [Lucide icons](/docs/guides/icons/) - inline SVG icons, centered icon cards, and feature rows
+- [Native Markdown tabs](/docs/guides/markdown-containers/#native-tabs-no-web-awesome-required) - tabbed code and install instructions
+- [Rich Markdown layouts](/docs/guides/markdown-containers/) - responsive cards, grids, and diagrams
+- [Roads](/docs/guides/roads/) - scroll-drawn timelines and roadmaps (separate guide)
 
 
 ---
@@ -463,6 +466,12 @@ markata-go supports GitHub Flavored Markdown extensions.
 ### Tables
 
 Tables use pipes (`|`) and hyphens (`-`) to define structure. Use colons (`:`) for alignment.
+
+Tables with a header row are sortable in rendered posts. Activate a column by
+selecting its header; select it again to reverse the order. Text sorts naturally,
+numeric values sort numerically, and empty cells stay at the end. The sorting
+controls are keyboard accessible. The small sorting script is loaded only on
+pages that contain a header table.
 
 **Input:**
 
@@ -924,6 +933,30 @@ anchor = false  # default: false (use heading_anchors plugin instead)
 ---
 
 ## Code Blocks
+
+### Code copy controls (progressive enhancement)
+
+On pages containing code blocks, the default theme can add a compact **Copy**
+button, a language label, and an optional filename. The controls reuse the
+palette-aware Chroma styling and don't require another highlighter. Mermaid,
+Chart.js, and CSV fences keep their plugin-specific rendering.
+
+Add a title after the language to show a filename or terminal label:
+
+````markdown
+```bash title="Terminal"
+markata build
+```
+
+```go title="main.go"
+package main
+```
+````
+
+The title is optional. Shell fences use **Terminal** by default. The code stays
+readable without JavaScript; the copy control appears when the enhancement
+script loads. If clipboard access is unavailable, the control selects the code
+so readers can copy it manually.
 
 Fenced code blocks support syntax highlighting for many languages.
 

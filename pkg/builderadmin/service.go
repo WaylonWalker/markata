@@ -24,9 +24,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/diagnostics"
-	"github.com/WaylonWalker/markata-go/pkg/servecontrol"
-	"github.com/WaylonWalker/markata-go/pkg/sourcegit"
+	"github.com/WaylonWalker/markata/pkg/diagnostics"
+	"github.com/WaylonWalker/markata/pkg/servecontrol"
+	"github.com/WaylonWalker/markata/pkg/sourcegit"
 	"github.com/fsnotify/fsnotify"
 )
 
@@ -42,6 +42,8 @@ const (
 	maxWebhookBodyBytes = 1 << 20
 )
 
+const pageWeightReportPath = ".markata/page-weight.json"
+
 var ErrBuildQueueFull = errors.New("build queue is full")
 
 type Config struct {
@@ -56,8 +58,10 @@ type Config struct {
 	CacheMount           string
 	HistoryDir           string
 	WatchEnabled         bool
+	AutoBuildOnUpgrade   bool
 	WatchDebounce        time.Duration
 	Fast                 bool
+	SkipPageWeight       bool
 	MermaidMode          string
 	ReleasesKeep         int
 	SuccessfulBuildsKeep int
@@ -109,6 +113,7 @@ type QueuedOperation struct {
 	ReleaseID   string    `json:"release_id,omitempty"`
 	TaskName    string    `json:"task_name,omitempty"`
 	SyncSource  bool      `json:"sync_source,omitempty"`
+	Force       bool      `json:"force,omitempty"`
 }
 
 type RunningOperation struct {
@@ -125,34 +130,41 @@ type RunningOperation struct {
 }
 
 type BuildRecord struct {
-	ID              string                    `json:"id"`
-	Kind            string                    `json:"kind"`
-	ActorID         string                    `json:"actor_id,omitempty"`
-	Status          string                    `json:"status"`
-	TriggerType     string                    `json:"trigger_type"`
-	TriggerDetail   string                    `json:"trigger_detail,omitempty"`
-	ChangedPaths    []string                  `json:"changed_paths,omitempty"`
-	Impact          string                    `json:"impact,omitempty"`
-	EnqueuedAt      time.Time                 `json:"enqueued_at"`
-	StartedAt       time.Time                 `json:"started_at"`
-	FinishedAt      time.Time                 `json:"finished_at"`
-	QueueWaitMS     int64                     `json:"queue_wait_ms"`
-	PrepareMS       int64                     `json:"prepare_ms"`
-	BuildMS         int64                     `json:"build_ms"`
-	PromoteMS       int64                     `json:"promote_ms"`
-	PruneMS         int64                     `json:"prune_ms"`
-	TotalMS         int64                     `json:"total_ms"`
-	ReleaseID       string                    `json:"release_id,omitempty"`
-	ReleasePath     string                    `json:"release_path,omitempty"`
-	BecameLive      bool                      `json:"became_live"`
-	LogPath         string                    `json:"log_path,omitempty"`
-	LogDiagnostics  []servecontrol.Diagnostic `json:"log_diagnostics,omitempty"`
-	PerfSummary     []string                  `json:"perf_summary,omitempty"`
-	Error           string                    `json:"error,omitempty"`
-	RollbackRelease string                    `json:"rollback_release,omitempty"`
-	BuilderVersion  string                    `json:"builder_version,omitempty"`
-	BuilderCommit   string                    `json:"builder_commit,omitempty"`
-	SourceCommit    string                    `json:"source_commit,omitempty"`
+	ID                 string                    `json:"id"`
+	Kind               string                    `json:"kind"`
+	ActorID            string                    `json:"actor_id,omitempty"`
+	Status             string                    `json:"status"`
+	Result             string                    `json:"result,omitempty"`
+	TriggerType        string                    `json:"trigger_type"`
+	TriggerDetail      string                    `json:"trigger_detail,omitempty"`
+	ChangedPaths       []string                  `json:"changed_paths,omitempty"`
+	Impact             string                    `json:"impact,omitempty"`
+	EnqueuedAt         time.Time                 `json:"enqueued_at"`
+	StartedAt          time.Time                 `json:"started_at"`
+	FinishedAt         time.Time                 `json:"finished_at"`
+	QueueWaitMS        int64                     `json:"queue_wait_ms"`
+	PrepareMS          int64                     `json:"prepare_ms"`
+	BuildMS            int64                     `json:"build_ms"`
+	PromoteMS          int64                     `json:"promote_ms"`
+	PruneMS            int64                     `json:"prune_ms"`
+	TotalMS            int64                     `json:"total_ms"`
+	NoOpMS             int64                     `json:"no_op_ms,omitempty"`
+	NoOpSourceMS       int64                     `json:"no_op_source_ms,omitempty"`
+	NoOpInputsMS       int64                     `json:"no_op_inputs_ms,omitempty"`
+	NoOpInputEntries   int64                     `json:"no_op_input_entries,omitempty"`
+	NoOpReleaseMS      int64                     `json:"no_op_release_ms,omitempty"`
+	NoOpReleaseEntries int64                     `json:"no_op_release_entries,omitempty"`
+	ReleaseID          string                    `json:"release_id,omitempty"`
+	ReleasePath        string                    `json:"release_path,omitempty"`
+	BecameLive         bool                      `json:"became_live"`
+	LogPath            string                    `json:"log_path,omitempty"`
+	LogDiagnostics     []servecontrol.Diagnostic `json:"log_diagnostics,omitempty"`
+	PerfSummary        []string                  `json:"perf_summary,omitempty"`
+	Error              string                    `json:"error,omitempty"`
+	RollbackRelease    string                    `json:"rollback_release,omitempty"`
+	BuilderVersion     string                    `json:"builder_version,omitempty"`
+	BuilderCommit      string                    `json:"builder_commit,omitempty"`
+	SourceCommit       string                    `json:"source_commit,omitempty"`
 }
 
 type RefreshRecord struct {
@@ -215,6 +227,9 @@ type Service struct {
 	stateMu              sync.Mutex
 	state                State
 	controlRuntime       *servecontrol.Runtime
+	noOpBuilderMu        sync.Mutex
+	noOpBuilderDigest    string
+	noOpBuilderIdentity  string
 	releaseMu            sync.Mutex
 	pruneScheduleMu      sync.Mutex
 	pruneRunning         bool
@@ -417,6 +432,20 @@ func (s *Service) tryBecomeLeader(ctx context.Context) {
 	if err := tryLockFile(s.leaderLock); err != nil {
 		return
 	}
+	// A standby pod can outlive multiple successful builds by the old leader.
+	// Reload after acquiring the exclusive lock so we do not overwrite state
+	// or compare the new executable against stale successful-build history.
+	s.stateMu.Lock()
+	err := s.loadState()
+	if err == nil {
+		s.refreshControlStateWithFiles(s.state)
+	}
+	s.stateMu.Unlock()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "builder-admin: reload state on leader handoff: %v\n", err)
+		_ = unlockFile(s.leaderLock)
+		return
+	}
 	if err := s.writeLeaderRecord(); err != nil {
 		_ = unlockFile(s.leaderLock)
 		return
@@ -506,6 +535,34 @@ func (s *Service) resumeLeaderSession() {
 			s.queueCh <- req
 		}
 	}
+	s.enqueueStartupRevisionBuild()
+}
+
+// Called only after taking leadership. An already-queued ordinary build uses
+// the newly running executable, so adding another would be redundant.
+func (s *Service) enqueueStartupRevisionBuild() {
+	if !s.cfg.AutoBuildOnUpgrade {
+		return
+	}
+	state := s.snapshotState()
+	if state.Running != nil && state.Running.Kind == "build" {
+		return
+	}
+	for _, pending := range state.Queue {
+		if pending.Kind == "build" && !pending.SyncSource {
+			return
+		}
+	}
+	liveCommit, _ := s.liveReleaseRevisions()
+	reason, needed := startupRevisionBuildReason(s.cfg.BuilderCommit, state, liveCommit)
+	if !needed {
+		return
+	}
+	if err := s.enqueueBuild("startup-revision", reason, nil); err != nil {
+		fmt.Fprintf(os.Stderr, "builder-admin: enqueue startup revision build: %v\n", err)
+		return
+	}
+	fmt.Fprintf(os.Stderr, "builder-admin: queued startup revision build: %s\n", reason)
 }
 
 func (s *Service) recoverQueuedState() []QueuedOperation {
@@ -750,8 +807,9 @@ func (s *Service) handleBuilds(w http.ResponseWriter, r *http.Request) {
 		if !s.validateCSRF(w, r) {
 			return
 		}
+		force := strings.EqualFold(r.FormValue("force"), "true")
 		profile, _ := operatorProfileFromHeaders(r.Header, s.cfg.AuthHeaders)
-		if _, err := s.enqueueBuildAs("manual-ui", "Manual build from admin UI", nil, profile.UserID); err != nil {
+		if _, err := s.enqueueBuildAsForce("manual-ui", "Manual build from admin UI", nil, profile.UserID, force); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -959,8 +1017,16 @@ func completedJobs(state State) []completedJobView {
 		release := ""
 		if build.BecameLive {
 			release = "Live"
+		} else if build.Result == "unchanged" {
+			release = "Current"
 		}
-		jobs = append(jobs, completedJobView{ID: build.ID, Kind: kind, Status: build.Status, Trigger: build.TriggerType, FinishedAt: build.FinishedAt, QueueWaitMS: build.QueueWaitMS, RunMS: build.BuildMS, Release: release, LogPath: build.LogPath, Build: build})
+		runMS := build.BuildMS
+		status := build.Status
+		if build.Result == "unchanged" {
+			runMS = build.NoOpMS
+			status = "unchanged"
+		}
+		jobs = append(jobs, completedJobView{ID: build.ID, Kind: kind, Status: status, Trigger: build.TriggerType, FinishedAt: build.FinishedAt, QueueWaitMS: build.QueueWaitMS, RunMS: runMS, Release: release, LogPath: build.LogPath, Build: build})
 	}
 	for i := range state.Refresh {
 		refresh := &state.Refresh[i]
@@ -1019,6 +1085,10 @@ func (s *Service) enqueueBuild(triggerType, detail string, changed []string) err
 }
 
 func (s *Service) enqueueBuildAs(triggerType, detail string, changed []string, actorID string) (QueuedOperation, error) {
+	return s.enqueueBuildAsForce(triggerType, detail, changed, actorID, false)
+}
+
+func (s *Service) enqueueBuildAsForce(triggerType, detail string, changed []string, actorID string, force bool) (QueuedOperation, error) {
 	queued := QueuedOperation{
 		ID:          nextID("build"),
 		Kind:        "build",
@@ -1028,6 +1098,7 @@ func (s *Service) enqueueBuildAs(triggerType, detail string, changed []string, a
 		Detail:      detail,
 		Changed:     append([]string(nil), changed...),
 		EnqueuedAt:  time.Now().UTC(),
+		Force:       force,
 	}
 	s.pushQueued(queued)
 	request := queueRequest{QueuedOperation: queued}
@@ -1162,6 +1233,10 @@ func (s *Service) runBuild(ctx context.Context, req queueRequest) {
 	leaderCtx := ctx
 	ctx, cancel := context.WithTimeout(ctx, s.cfg.BuildTimeout)
 	defer cancel()
+	s.updateRunningPhase("verify inputs")
+	if unchanged, _ := s.verifiedNoOp(ctx, req, &record, logFile); unchanged {
+		return
+	}
 
 	phaseStart := time.Now()
 	s.updateRunningPhase("prepare")
@@ -1176,6 +1251,7 @@ func (s *Service) runBuild(ctx context.Context, req queueRequest) {
 		return
 	}
 	record.PrepareMS = time.Since(phaseStart).Milliseconds()
+	inputBefore, inputBeforeErr := s.noOpInputSnapshot(ctx)
 	if sourceCommit, gitErr := sourcegit.Head(ctx, s.cfg.SourceDir); gitErr == nil {
 		record.SourceCommit = reliableBuilderRevision(sourceCommit)
 	}
@@ -1226,9 +1302,34 @@ func (s *Service) runBuild(ctx context.Context, req queueRequest) {
 	record.BecameLive = true
 	if err := markReusableWorkspace(buildWork, releaseID); err != nil {
 		_, _ = fmt.Fprintln(logFile, "workspace reuse unavailable:", err)
+	} else {
+		if err := logFile.Sync(); err != nil {
+			_, _ = fmt.Fprintln(logFile, "verified no-op baseline unavailable: build log could not be synced")
+		} else if cacheSaveFailed, logErr := buildCacheSaveFailed(filepath.Join(s.logDir, logPath)); logErr != nil {
+			_, _ = fmt.Fprintln(logFile, "verified no-op baseline unavailable: build cache save status could not be verified")
+		} else if cacheSaveFailed {
+			_, _ = fmt.Fprintln(logFile, "verified no-op baseline unavailable: build cache save failed")
+		} else {
+			inputAfter, inputAfterErr := s.noOpInputSnapshot(ctx)
+			if inputBeforeErr == nil && inputAfterErr == nil && inputBefore.Fingerprint == inputAfter.Fingerprint {
+				if externalExpiresAt, err := s.validateNoOpSemantics(ctx); err != nil {
+					_, _ = fmt.Fprintln(logFile, "verified no-op baseline unavailable:", err)
+				} else {
+					inputAfter.ExternalExpiresAt = externalExpiresAt
+					if err := s.saveNoOpBaseline(ctx, inputAfter, releaseID, time.Now()); err != nil {
+						_, _ = fmt.Fprintln(logFile, "verified no-op baseline unavailable:", err)
+					}
+				}
+			} else if inputBeforeErr != nil || inputAfterErr != nil {
+				_, _ = fmt.Fprintln(logFile, "verified no-op baseline unavailable: inputs could not be fingerprinted")
+			} else {
+				_, _ = fmt.Fprintln(logFile, "verified no-op baseline unavailable: inputs changed during build")
+			}
+		}
 	}
 
 	record.Status = "success"
+	record.Result = "published"
 	record.FinishedAt = time.Now().UTC()
 	record.TotalMS = record.FinishedAt.Sub(started).Milliseconds()
 	record.PerfSummary = extractPerfSummaryFromFile(filepath.Join(s.logDir, logPath))
@@ -1405,17 +1506,22 @@ func (s *Service) buildCommandArgs(id, buildWork string) ([]string, func(), erro
 		args = append(args, "--config", s.cfg.ConfigPath)
 	}
 	cleanup := func() {}
+	overridePath := filepath.Join(s.overrideDir, "builder-admin.toml")
+	var contents strings.Builder
 	if s.cfg.MermaidMode != "" {
-		overridePath := filepath.Join(s.overrideDir, "builder-admin.toml")
-		contents := fmt.Sprintf("[markata-go.mermaid]\nmode = %q\n", s.cfg.MermaidMode)
-		if err := os.WriteFile(overridePath, []byte(contents), 0o644); err != nil {
-			return nil, cleanup, err
-		}
-		args = append(args, "-m", overridePath)
+		fmt.Fprintf(&contents, "[markata-go.mermaid]\nmode = %q\n\n", s.cfg.MermaidMode)
 	}
+	contents.WriteString("[markata-go.diagnostics_artifact]\ncompression = \"gzip\"\n")
+	if err := os.WriteFile(overridePath, []byte(contents.String()), 0o644); err != nil {
+		return nil, cleanup, err
+	}
+	args = append(args, "-m", overridePath)
 	args = append(args, "build")
 	if s.cfg.Fast {
 		args = append(args, "--fast")
+	}
+	if s.cfg.SkipPageWeight {
+		args = append(args, "--page-weight=false")
 	}
 	args = append(args, "--output", buildWork)
 	return args, cleanup, nil
@@ -1428,6 +1534,12 @@ func (s *Service) promoteBuild(buildWork string) (string, string, error) {
 func (s *Service) promoteBuildLogged(buildWork string, log io.Writer) (string, string, error) {
 	s.releaseMu.Lock()
 	defer s.releaseMu.Unlock()
+	if s.cfg.SkipPageWeight {
+		if err := removePageWeightReport(buildWork); err != nil {
+			return "", "", err
+		}
+		_, _ = fmt.Fprintln(log, "page-weight scan disabled")
+	}
 	releaseID := time.Now().UTC().Format("20060102T150405Z") + "-" + hostSuffix()
 	releasesDir := filepath.Join(s.cfg.SiteDir, "releases")
 	releasePath, stats, err := stageIncrementalWorkspace(buildWork, releasesDir, releaseID, s.currentReleaseID())
@@ -1439,6 +1551,18 @@ func (s *Service) promoteBuildLogged(buildWork string, log io.Writer) (string, s
 		return "", "", err
 	}
 	return releaseID, releasePath, nil
+}
+
+func removePageWeightReport(workspace string) error {
+	root, err := os.OpenRoot(workspace)
+	if err != nil {
+		return fmt.Errorf("open build workspace for page-weight report cleanup: %w", err)
+	}
+	defer func() { _ = root.Close() }()
+	if err := root.Remove(pageWeightReportPath); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("remove stale page-weight report: %w", err)
+	}
+	return nil
 }
 
 func (s *Service) switchCurrentRelease(releaseID string) error {
@@ -1821,18 +1945,26 @@ func (s *Service) pruneBuildHistoryLocked() {
 	kept := make([]BuildRecord, 0, len(s.state.Builds))
 	successCount := 0
 	failureCount := 0
+	unchangedCount := 0
 	for _, record := range s.state.Builds {
 		keep := false
-		switch record.Status {
-		case "success":
-			if successCount < s.cfg.SuccessfulBuildsKeep {
+		if record.Result == "unchanged" {
+			if unchangedCount < s.cfg.SuccessfulBuildsKeep {
 				keep = true
-				successCount++
+				unchangedCount++
 			}
-		default:
-			if failureCount < s.cfg.FailedBuildsKeep {
-				keep = true
-				failureCount++
+		} else {
+			switch record.Status {
+			case "success":
+				if successCount < s.cfg.SuccessfulBuildsKeep {
+					keep = true
+					successCount++
+				}
+			default:
+				if failureCount < s.cfg.FailedBuildsKeep {
+					keep = true
+					failureCount++
+				}
 			}
 		}
 		if keep {
@@ -2165,12 +2297,8 @@ func (s *Service) addCurrentReleaseDiagnostics(snapshot *servecontrol.Snapshot, 
 		return
 	}
 	path := filepath.Join(s.cfg.SiteDir, "current", diagnostics.DefaultArtifactPath)
-	info, err := os.Stat(path)
-	if err != nil || info.Size() > 16<<20 {
-		return
-	}
-	data, err := os.ReadFile(path)
-	if err != nil {
+	data, ok := readDiagnosticsArtifactBounded(path, 16<<20)
+	if !ok {
 		return
 	}
 	artifact, err := diagnostics.ParseArtifact(data)
@@ -2179,7 +2307,7 @@ func (s *Service) addCurrentReleaseDiagnostics(snapshot *servecontrol.Snapshot, 
 	}
 	jobID := ""
 	for _, build := range state.Builds {
-		if build.ReleaseID == releaseID && build.Kind == "build" && build.Status == "success" {
+		if build.Result != "unchanged" && build.ReleaseID == releaseID && build.Kind == "build" && build.Status == "success" {
 			jobID = build.ID
 			break
 		}
@@ -2233,7 +2361,7 @@ func (s *Service) discoverReleases() []ReleaseView {
 	}
 	buildByRelease := make(map[string]releaseBuildMeta)
 	for _, record := range s.viewState().Builds {
-		if record.ReleaseID != "" && buildByRelease[record.ReleaseID].id == "" {
+		if record.Result != "unchanged" && record.ReleaseID != "" && buildByRelease[record.ReleaseID].id == "" {
 			buildByRelease[record.ReleaseID] = releaseBuildMeta{
 				id:            record.ID,
 				status:        record.Status,
@@ -2805,7 +2933,7 @@ const indexHTML = `<!doctype html>
       </div>
     </section>
     <section class="actions" aria-label="Build actions">
-      <form method="post" action="/api/builds" data-capability="enqueueBuild"><input type="hidden" name="csrf_token" value="{{ .CSRFToken }}"><button type="submit">Enqueue Build</button></form>
+      <form method="post" action="/api/builds" data-capability="enqueueBuild"><input type="hidden" name="csrf_token" value="{{ .CSRFToken }}"><button type="submit">Build if changed</button><button class="secondary" type="submit" name="force" value="true">Force full build</button></form>
       {{ range .RefreshTasks }}
       <form method="post" action="/api/refresh/{{ .Name }}" data-capability="enqueueRefresh"><input type="hidden" name="csrf_token" value="{{ $.CSRFToken }}"><button class="secondary" type="submit">Run {{ .Name }}</button></form>
       {{ end }}
@@ -2942,6 +3070,7 @@ const indexHTML = `<!doctype html>
       case 'idle':
 		return 'status-neutral';
       case 'success':
+      case 'unchanged':
       case 'live':
       case 'ready':
         return 'status-success';
@@ -2950,6 +3079,7 @@ const indexHTML = `<!doctype html>
       case 'refresh':
       case 'promote':
       case 'prepare':
+      case 'verify inputs':
       case 'prune':
         return 'status-running';
       case 'queued':
@@ -2977,7 +3107,7 @@ const indexHTML = `<!doctype html>
 
   function buildTimeBaseline(builds) {
     const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
-    const values = (builds || []).filter((build) => build.status === 'success' && Number(build.build_ms) > 0 && new Date(build.finished_at).getTime() >= cutoff).slice(0, 60).map((build) => Number(build.build_ms));
+    const values = (builds || []).filter((build) => build.status === 'success' && build.result !== 'unchanged' && Number(build.build_ms) > 0 && new Date(build.finished_at).getTime() >= cutoff).slice(0, 60).map((build) => Number(build.build_ms));
     if (values.length < 8) return null;
     const center = median(values);
     const mad = median(values.map((value) => Math.abs(value - center)));
@@ -3156,18 +3286,19 @@ const indexHTML = `<!doctype html>
       const changed = (item.changed_paths || []).map((path) => '<code>' + escapeHtml(path) + '</code>').join(' ');
       const summary = summaryPreview(item.perf_summary || []).map(escapeHtml).join('\n');
       const details = '<details class="build-details"><summary>More</summary><div class="detail-list"><div><strong>Build ID:</strong> <code>' + escapeHtml(item.id) + '</code></div>' + (item.builder_commit ? '<div><strong>Builder revision:</strong> <code title="' + escapeHtml(item.builder_commit) + '">' + escapeHtml(revisionAbbrev(item.builder_commit)) + '</code></div>' : '') + (item.source_commit ? '<div><strong>Source revision:</strong> <code title="' + escapeHtml(item.source_commit) + '">' + escapeHtml(revisionAbbrev(item.source_commit)) + '</code></div>' : '') + timings +
+		(item.result === 'unchanged' ? '<div><strong>Result:</strong> Inputs matched the live release.</div><div><strong>Check time:</strong> ' + escapeHtml(fmtSeconds(item.no_op_ms)) + '</div><div><strong>Source scan:</strong> ' + escapeHtml(fmtSeconds(item.no_op_source_ms)) + '</div><div><strong>Input scan:</strong> ' + escapeHtml(fmtSeconds(item.no_op_inputs_ms)) + ' (' + escapeHtml(String(item.no_op_input_entries || 0)) + ' entries)</div><div><strong>Release scan:</strong> ' + escapeHtml(fmtSeconds(item.no_op_release_ms)) + ' (' + escapeHtml(String(item.no_op_release_entries || 0)) + ' entries)</div>' : '') +
         (item.trigger_detail ? '<div><strong>Reason:</strong> ' + escapeHtml(item.trigger_detail) + '</div>' : '') +
         (changed ? '<div><strong>Changed:</strong> ' + changed + '</div>' : '') +
         (item.log_path ? '<div><a href="/logs/' + encodeURIComponent(item.log_path) + '">Open raw log</a></div>' : '') +
         (summary ? '<pre>' + summary + '</pre>' : '') + '</div></details>';
       return '<tr class="work-row" data-expandable tabindex="0" aria-expanded="false" data-finished="' + escapeHtml(item.finished_at) + '">' +
-        '<td data-label="Status">' + statusPill(item.status) + '</td>' +
+        '<td data-label="Status">' + statusPill(item.result === 'unchanged' ? 'unchanged' : item.status) + '</td>' +
         '<td data-label="Job"><a class="record-link" href="/builds/' + encodeURIComponent(item.id) + '">' + (item.rollback_release ? 'View promotion record →' : 'View build record →') + '</a></td>' +
         '<td data-label="Source">' + escapeHtml(item.trigger_type) + (item.builder_commit ? '<br><code title="Builder ' + escapeHtml(item.builder_commit) + '">' + escapeHtml(revisionAbbrev(item.builder_commit)) + '</code>' : '') + '</td>' +
         '<td data-label="When" class="time-stamp">' + escapeHtml(fmtTime(item.finished_at)) + '</td>' +
         '<td data-label="Wait">' + escapeHtml(fmtSeconds(item.queue_wait_ms)) + '</td>' +
-        '<td data-label="Run">' + (item.status === 'success' ? buildTimeCell(item.build_ms, baseline) : escapeHtml(fmtSeconds(item.build_ms))) + '</td>' +
-        '<td data-label="Release">' + (item.became_live ? 'Live' : '') + '</td>' +
+        '<td data-label="Run">' + (item.result === 'unchanged' ? escapeHtml(fmtSeconds(item.no_op_ms)) : item.status === 'success' ? buildTimeCell(item.build_ms, baseline) : escapeHtml(fmtSeconds(item.build_ms))) + '</td>' +
+        '<td data-label="Release">' + (item.became_live ? 'Live' : item.result === 'unchanged' ? 'Current' : '') + '</td>' +
         '<td data-label="Details">' + details + '</td>' +
       '</tr>';
     }).join('');

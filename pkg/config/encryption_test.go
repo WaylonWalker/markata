@@ -3,8 +3,8 @@ package config
 import (
 	"testing"
 
-	"github.com/WaylonWalker/markata-go/pkg/encryption"
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/encryption"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 func TestParseTOML_EncryptionDefaults(t *testing.T) {

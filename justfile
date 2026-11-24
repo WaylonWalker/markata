@@ -1,4 +1,4 @@
-# justfile for markata-go
+# justfile for markata
 # https://just.systems/man/en/
 
 # Default recipe - show available commands
@@ -6,12 +6,12 @@ default:
     @just --list
 
 # Project variables
-project := "markata-go"
-main := "./cmd/markata-go"
+project := "markata"
+main := "./cmd/markata"
 version := `git describe --tags --always --dirty 2>/dev/null || echo "dev"`
 commit := `git rev-parse --short HEAD 2>/dev/null || echo "none"`
 date := `date -u +"%Y-%m-%dT%H:%M:%SZ"`
-ldflags := "-s -w -X github.com/WaylonWalker/markata-go/cmd/markata-go/cmd.Version=" + version + " -X github.com/WaylonWalker/markata-go/cmd/markata-go/cmd.Commit=" + commit + " -X github.com/WaylonWalker/markata-go/cmd/markata-go/cmd.Date=" + date
+ldflags := "-s -w -X github.com/WaylonWalker/markata/cmd/markata-go/cmd.Version=" + version + " -X github.com/WaylonWalker/markata/cmd/markata-go/cmd.Commit=" + commit + " -X github.com/WaylonWalker/markata/cmd/markata-go/cmd.Date=" + date
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Development
@@ -21,7 +21,7 @@ ldflags := "-s -w -X github.com/WaylonWalker/markata-go/cmd/markata-go/cmd.Versi
 build:
     go build -ldflags '{{ldflags}}' -o {{project}} {{main}}
 
-# Canonical command alongside the historical markata-go development binary
+# Explicit canonical build alias
 build-markata:
     go build -ldflags '{{ldflags}}' -o markata ./cmd/markata
 
@@ -34,8 +34,19 @@ run *args:
     go run -ldflags '{{ldflags}}' {{main}} {{args}}
 
 # Install to $GOPATH/bin
-install:
+install *args:
     go install -ldflags '{{ldflags}}' {{main}}
+    # Use this checkout's freshly built code rather than an older markata on PATH.
+    @if [ "{{args}}" = "--all-installed-tools" ]; then \
+        go run -ldflags '{{ldflags}}' {{main}} agent install --all-installed-tools && \
+        go run -ldflags '{{ldflags}}' {{main}} agent doctor --global; \
+    elif [ -z "{{args}}" ]; then \
+        go run -ldflags '{{ldflags}}' {{main}} agent update --global && \
+        go run -ldflags '{{ldflags}}' {{main}} agent doctor --global; \
+    else \
+        echo "Usage: just install [--all-installed-tools]" >&2; \
+        exit 2; \
+    fi
 
 # Clean build artifacts
 clean:
@@ -98,21 +109,24 @@ fmt:
 vet:
     go vet ./...
 
-# Run golangci-lint via `go run` so CI/local checks don't depend on a preinstalled binary
+# Gate new lint findings against origin/main; run 'just lint-full' for debt audit.
 lint:
-    go run github.com/golangci/golangci-lint/cmd/golangci-lint@v1.64.8 run --timeout=5m
+    go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0 run --timeout=5m --new-from-rev=origin/main
+
+lint-full:
+    go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0 run --timeout=5m
 
 # Run fast lint with only essential linters (good for development iteration)
 lint-fast:
-    go run github.com/golangci/golangci-lint/cmd/golangci-lint@v1.64.8 run --timeout=2m --fast
+    go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0 run --timeout=2m --fast-only
 
 # Run lint on only changed files (compared to main branch)
 lint-new:
-    go run github.com/golangci/golangci-lint/cmd/golangci-lint@v1.64.8 run --timeout=5m --new-from-rev=origin/main
+    go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0 run --timeout=5m --new-from-rev=origin/main
 
 # Run lint with reduced parallelism (less CPU/memory pressure, good for laptops)
 lint-gentle:
-    GOLANGCI_LINT_CONCURRENCY=4 go run github.com/golangci/golangci-lint/cmd/golangci-lint@v1.64.8 run --timeout=5m
+    GOLANGCI_LINT_CONCURRENCY=4 go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0 run --timeout=5m --new-from-rev=origin/main
 
 # Run all quality checks
 check: fmt vet lint test
@@ -173,7 +187,7 @@ version: build
 
 # Generate and view docs (if godoc is installed)
 docs:
-    @echo "Starting godoc server at http://localhost:6060/pkg/github.com/WaylonWalker/markata-go/"
+    @echo "Starting godoc server at http://localhost:6060/pkg/github.com/WaylonWalker/markata/"
     godoc -http=:6060
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -200,7 +214,7 @@ site-new title: build
 setup:
     @echo "Setting up development environment..."
     go mod download
-    go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+    go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0
     go install golang.org/x/tools/cmd/goimports@latest
     go install github.com/goreleaser/goreleaser/v2@latest
     @echo ""
@@ -274,3 +288,13 @@ perf-generate:
     @echo "Generating benchmark fixture..."
     go run benchmarks/generate_posts.go
     @echo "Generated benchmark posts in benchmarks/site/posts/"
+
+# Local merge preflight. Go build/test/gofmt implementation is shared with PR Gate.
+pr-check *args:
+    python3 scripts/ci/pr_check.py {{args}}
+
+ci-diagnose run:
+    python3 scripts/ci/diagnose.py --run {{run}}
+
+test-ci-helpers:
+    python3 -m unittest discover -s scripts/ci -p 'test_*.py'

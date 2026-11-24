@@ -9,7 +9,6 @@ tags:
   - structured-data
 ---
 
-# Structured Data & SEO
 
 markata-go automatically generates comprehensive structured data for your posts to improve search engine visibility and social media sharing.
 

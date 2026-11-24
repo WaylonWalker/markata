@@ -10,7 +10,6 @@ tags:
   - cli
 ---
 
-# CLI Reference
 
 markata-go provides a command-line interface for building, serving, and managing your static site.
 
@@ -60,6 +59,76 @@ markata-go build pages/sample.md
 # live preview of just that file, rebuilt on every change:
 markata-go serve pages/sample.md
 ```
+
+## Agent-first setup: `--skill`
+
+`markata --skill` prints a self-contained setup guide **from the installed
+binary**, suitable for pasting into the coding agent you already use. The output
+is stable, plain Markdown, with no site setup, network access, or file writes.
+
+```sh
+markata --skill
+markata --skill > /tmp/markata-first-setup.md
+```
+
+The guide asks the agent to inspect existing content and configuration, choose
+simple themes/templates before custom plugins, verify production builds, and
+seek approval before selecting a hosting provider or deploying. For the full
+topic-based skill, use `markata agent install` followed by
+`markata agent doctor`. See [Agent Skills](/docs/guides/agent-skills/).
+This root-level flag does not take a Markdown filename argument.
+
+## Local editor and preview: `up`
+
+`markata up` supervises a local Markdown editor and static-site builder
+using the existing Go services. It binds both components to loopback and
+stops only processes started by this invocation. A builder failure does not
+prevent editing; saving a draft never publishes your site.
+
+```sh
+markata up
+markata up --editor-port 8767 --preview-port 8001
+markata up --editor-only
+markata up --builder-only
+markata up --strict-ports        # fail rather than move default ports
+```
+
+By default, an occupied editor/preview port triggers a search for a free
+loopback port, and Markata prints the actual URL. The command reuses any
+existing same-workspace Markata editor/preview it recognizes through its
+local-only identity endpoint. Explicit `--editor-port` and `--preview-port`
+are never silently changed; `--strict-ports` also fixes defaults.
+An unknown listener is never stopped or adopted.
+
+The URLs shown at startup are expected addresses, not verified readiness.
+Ctrl+C requests shutdown; Windows may require forcefully terminating owned
+children. This optional foreground convenience does not configure hosting or
+pairing. See [Workspace Up](/docs/guides/workspace-up/).
+
+## Agent-assisted troubleshooting: `triage`
+
+`markata triage` collects a small, privacy-conscious diagnostic summary and passes a troubleshooting prompt to an interactive coding agent, clipboard, or stdout. The default is a fuzzy picker of **detected installed** coding agents plus clipboard and stdout. When either terminal stream is redirected or `--no-input` is used, it prints **only the Markdown prompt** to stdout.
+
+```sh
+markata triage
+markata triage --to opencode
+markata triage --agent claude
+markata triage --issue "My posts aren't appearing" --to clipboard
+markata triage --to stdout | codex exec -
+markata triage --to stdout > triage-prompt.md
+```
+
+| Flag | Description | Default |
+| --- | --- | --- |
+| `--to` | `auto`, `stdout`, `clipboard`, `opencode`, `claude`, `codex`, `gemini`, or `cursor` | `auto` |
+| `--agent` | Convenience alias for an installed agent name; cannot be combined with `--to` | none |
+| `--issue` | Optional brief user-provided problem description (up to 4000 bytes) | none |
+
+Only supported agent executables found on PATH are offered. An explicit agent launch needs a terminal so the agent can ask follow-up questions. For pipelines use stdout and the selected agent's own noninteractive mode. Clipboard uses local platform helpers and fails clearly if unavailable. No agent is launched automatically in a noninteractive session.
+
+The prompt contains the **running CLI** version, not necessarily the version where the bug occurred, plus OS, architecture, runtime, executable/install hints, project path and **config filenames only**. It never reads config values, logs, full environment values or secrets. Review local paths before sharing a prompt. The agent should first clarify the user's issue, confirm the actual affected version/deployment and ask before applying changes.
+
+For examples and privacy details, see [Triage a Markata problem](../guides/triage.md).
 
 ## Global Flags
 
@@ -124,10 +193,15 @@ markata-go follows a few shared CLI rules:
 - warnings, progress, prompts, and errors are written to `stderr`
 - interactive terminal output uses color by default when the target stream is a TTY
 - operational logs use centralized formatting; `--log-format auto` chooses rich logs for TTYs and plain logs otherwise
-- `--color` forces ANSI color output, while `--no-color` disables it everywhere
+- `--color` and `FORCE_COLOR` force ANSI color output, while `--no-color` disables it everywhere
 - rich logs can use structured metadata such as lifecycle phase, and builds/serve runs can tint log colors from the configured site palette
-- color is disabled when output is not a terminal, when `NO_COLOR` is set, when
-  `TERM=dumb`, or when `--no-color` is passed
+- color is enabled by default for interactive terminal streams and disabled for
+  redirected streams; `NO_COLOR` (any non-empty value) and `TERM=dumb` disable
+  automatic color
+- `--color` or `FORCE_COLOR` overrides automatic detection; `--no-color` and
+  `--log-format plain` always disable color
+- terminal logs, help, prompts, and TUIs use the configured site palette when
+  available, with one shared CLI theme as the fallback
 - interactive commands such as `new` and `init` honor `--no-input`
 - commands that expose structured data should prefer explicit machine-readable
   modes such as `--json` or `--format json`
@@ -139,6 +213,17 @@ Issues: https://github.com/WaylonWalker/markata-go/issues
 ---
 
 ## Commands
+
+### version
+
+Print the version, commit, build date, Go runtime, and platform for this CLI
+binary. Release and container builds inject the version, commit, and build date
+at compile time. Use `--short` when a script needs only the version string.
+
+```bash
+markata-go version
+markata-go version --short
+```
 
 ### lsp
 
@@ -201,6 +286,7 @@ Install bundled agent integrations for markata-go site repositories.
 
 ```bash
 markata-go agent install [site-path] [flags]
+markata-go agent setup [site-path] [flags]
 ```
 
 #### Subcommands
@@ -212,6 +298,7 @@ List the supported agent identifiers and their project/global skill directories.
 ##### install
 
 Install the bundled `markata-go-site` skill into a repository.
+`setup` is an alias for `install`.
 
 | Flag | Description | Default |
 |------|-------------|---------|
@@ -220,6 +307,27 @@ Install the bundled `markata-go-site` skill into a repository.
 | `--name` | Installed skill directory name | `markata-go-site` |
 | `--force` | Overwrite bundled skill files if they already exist | `false` |
 | `--dry-run` | Show what would be installed without writing files | `false` |
+| `--all-installed-tools` | Install globally for each supported agent executable found on `PATH` | `false` |
+
+On an interactive terminal with no explicit agent, the command detects installed
+agents and offers to install for all of them. Declining opens the fuzzy picker.
+Agents that share an installation directory are installed only once. EOF cancels
+the confirmation. If one installation fails, prior successful installations
+remain and the error names the failed agent.
+
+With `--global` and no agent, an interactive terminal opens a fuzzy picker when
+no detected agents are available.
+The picker places the prompt below the results, like fzf, and colors the selection and matching characters.
+`--no-color` and `NO_COLOR` disable the colors.
+Type to filter, use Up/Down to navigate, and press Enter to select.
+Escape or Ctrl+C cancels without an installation.
+Non-interactive project installs keep the environment-detected agent or fall
+back to `universal`. Non-interactive global installs require an explicit agent,
+such as `--agent github-copilot`.
+Unknown names show close matches without selecting one automatically.
+For example, `--agent copilot` suggests `--agent github-copilot`.
+`--all-installed-tools` is non-interactive and installs or refreshes the global
+skill for supported agent executables found on `PATH`.
 
 ##### update
 
@@ -230,9 +338,12 @@ This is the user-friendly equivalent of reinstalling with `--force`.
 | Flag | Description | Default |
 |------|-------------|---------|
 | `--agent` | Update a specific agent install such as `opencode` or `claude-code` | auto-detected, else `universal` |
-| `-g`, `--global` | Update the selected agent's user-level skill directory | `false` |
+| `-g`, `--global` | Update global skill directories; all detected agents when `--agent` is omitted | `false` |
 | `--name` | Installed skill directory name | `markata-go-site` |
 | `--dry-run` | Show what would be updated without writing files | `false` |
+
+With `--global` and no `--agent`, `update` updates all detected global agents
+that already have this skill installed, and skips the others.
 
 ##### doctor
 
@@ -241,8 +352,11 @@ Check the installed skill for drift against the versions bundled in the current 
 | Flag | Description | Default |
 |------|-------------|---------|
 | `--agent` | Check a specific agent install such as `opencode` or `claude-code` | auto-detected, else `universal` |
-| `-g`, `--global` | Check the selected agent's user-level skill directory | `false` |
+| `-g`, `--global` | Check global skill directories; all detected agents when `--agent` is omitted | `false` |
 | `--name` | Installed skill directory name | `markata-go-site` |
+
+With `--global` and no `--agent`, `doctor` checks all detected global agents
+that already have this skill installed, and skips the others.
 
 Exit codes:
 
@@ -529,6 +643,7 @@ markata-go builder-admin [flags]
 | `--watch` | Enable recursive file watching and queued rebuilds | `true` |
 | `--watch-debounce` | Debounce window for coalescing file changes | `2s` |
 | `--fast` | Use `markata-go build --fast` for queued builds | `false` |
+| `--page-weight` | Scan generated HTML and publish a page-weight report for queued builds | `true` |
 | `--mermaid-mode` | Override `[markata-go.mermaid].mode` for queued builds | `""` |
 | `--cache-mount` | Optional dedicated cache mount used for `.markata` and `.markata-cache` symlinks | `""` |
 | `--history-dir` | Directory for persisted admin state and logs | `<release-dir>/.builder-admin` |
@@ -663,6 +778,70 @@ markata-go reader update -c production.toml
 - requires at least one `[[markata-go.blogroll.feeds]]` entry
 - bypasses normal cache age checks so it can fetch fresh remote feed data immediately
 - reuses stale cached feed data on fetch failures when available
+
+---
+
+### editor
+
+The editor accepts `--port` (`-p`) to select its HTTP port. When a port is occupied,
+`editor` and `serve` suggest a rerun command. In an interactive terminal, Enter
+accepts an available port; `q` followed by Enter or Ctrl+C cancels.
+
+
+Run the browser-based Go Markdown editor against a selected workspace.
+
+#### Usage
+
+```bash
+markata editor [flags]
+```
+
+The editor uses Markata's Go renderer and LSP in the same process. It binds to
+loopback by default and prints its local URL. The file tree opens discovered
+workspace sources, which can be edited and saved from the browser.
+
+#### Flags
+
+| Flag | Description | Default |
+| --- | --- | --- |
+| `--workspace` | Markdown workspace used for language assistance | `.` |
+| `--listen` | HTTP listener address; non-loopback requires hosted auth | `127.0.0.1:8766` |
+| `--public-origin` | Canonical HTTPS origin for hosted Hlab ForwardAuth | None |
+| `--trusted-proxy-cidr` | Trusted reverse proxy source range; repeatable | None |
+| `--required-scope` | App-specific Hlab writer scope required on every request | None |
+| `--git-publisher-socket` | Unix socket for hosted Git readiness and push operations | None |
+| `--port`, `-p` | HTTP port (overrides the port in `--listen`) | `8766` |
+
+#### Examples
+
+```bash
+# Open the editor for the current workspace
+markata editor
+
+# Select a site workspace
+markata editor --workspace ~/sites/blog
+
+# Change the local port
+markata editor --listen 127.0.0.1:8767
+```
+
+The listener accepts only `localhost` or a loopback IP address by default.
+Non-loopback addresses require hosted Hlab ForwardAuth configuration with all
+three settings: `--public-origin`, one or more `--trusted-proxy-cidr` values,
+and `--required-scope`. The origin must be canonical HTTPS, and the scope must
+be app-specific. Example:
+
+```bash
+markata editor --workspace /data/source --listen 0.0.0.0:8766 \
+  --public-origin https://edit.example.com \
+  --trusted-proxy-cidr 10.42.0.0/24 \
+  --required-scope markata-editor:admin
+```
+
+The app checks every request against the configured proxy peer, Host, forwarded
+Hlab user ID, and exact required scope. See the
+[Go editor guide](/docs/guides/go-workbench/) for the Hlab Auth route contract,
+browser behavior, and LSP completions.
 
 ---
 
@@ -1214,7 +1393,7 @@ markata-go new [title] [flags]
 
 | Argument | Description | Required |
 |----------|-------------|----------|
-| `title` | The title of the new content | No (prompted if not provided) |
+| `title` | Content title, or an HTTP(S) destination URL for `link` and its aliases | No (prompted if not provided) |
 
 #### Flags
 
@@ -1226,6 +1405,16 @@ markata-go new [title] [flags]
 | `--draft` | | Create as a draft | `false` |
 | `--tags` | | Comma-separated list of tags | `""` |
 | `--plain` | | Use plain text prompts instead of TUI wizard | `false` |
+| `--title` | | Explicit title override, including URL-first link posts | `""` |
+
+The global `--no-input` flag disables prompts and the TUI.
+Explicit flags take priority over metadata, inferred values, and wizard values.
+
+Every template and creation mode writes a `date` and an explicit `published` value.
+An absent, null, or blank date becomes the current local date as `YYYY-MM-DD`.
+An explicit starter date remains unchanged.
+Publication defaults to `true`, but starter drafts and unpublished settings remain in effect.
+The `--draft` flag overrides those publication settings.
 
 #### Built-in Templates
 
@@ -1235,7 +1424,8 @@ markata-go new [title] [flags]
 | `page` | `pages/` | Static pages |
 | `docs` | `docs/` | Documentation pages |
 | `article` (`blog-post`, `essay`, `tutorial`) | `pages/article/` | Long-form article content |
-| `note` (`ping`, `thought`, `status`, `tweet`) | `pages/note/` | Short note and micro-post content |
+| `note` (`thought`, `status`, `tweet`) | `pages/note/` | Short note and micro-post content |
+| `ping` | `pages/ping/` | Short ping posts |
 | `photo` (`shot`, `shots`, `image`, `gallery`) | `pages/photo/` | Image-focused posts |
 | `video` (`clip`, `cast`, `stream`) | `pages/video/` | Video posts |
 | `link` (`bookmark`, `til`, `stars`) | `pages/link/` | Link and bookmark posts |
@@ -1288,6 +1478,54 @@ markata-go new
 markata-go new --plain
 ```
 
+#### URL-first Link Posts
+
+```bash
+# Fetch the title, description, and preview image
+markata new --template link 'https://example.com/my-article'
+
+# Supply an explicit title for noninteractive creation
+markata new --template link 'https://example.com/my-article' --title 'My article' --tags 'reading' --draft --no-input
+```
+
+For `link` and its aliases (`bookmark`, `til`, `stars`), an HTTP(S) argument identifies the destination URL.
+Existing non-URL title arguments still work.
+Other templates keep their existing behavior.
+The post preserves the entered URL, even after redirects or canonical metadata.
+Invalid URLs produce an actionable error.
+
+Metadata lookup has a bounded timeout and response size.
+A usable `og:title` becomes the title automatically.
+Empty, URL-only, and hostname-only titles are not trusted.
+An explicit `--title` always wins.
+
+YouTube video links use YouTube's official oEmbed endpoint before HTML metadata.
+Watch, `youtu.be`, mobile, and Shorts URLs support this lookup.
+A usable oEmbed title is trusted, and its thumbnail supplies the preview image.
+The description remains optional because YouTube oEmbed does not supply one.
+If oEmbed fails, the command warns and tries HTML metadata.
+If both lookups fail, the suggested title includes the video ID instead of `watch`.
+Both lookups share the timeout and keep the response-size limit.
+
+Without a trusted title or `--title`, interactive creation asks you to confirm or replace a suggestion.
+Suggestions use this order:
+
+1. Twitter metadata
+2. HTML title
+3. Main heading
+4. Decoded URL slug
+5. Hostname
+
+Every suggestion from these sources requires confirmation.
+Relative preview images resolve against the fetched page URL.
+A missing description or image does not prevent creation, and Markata does not invent either field.
+Starter defaults remain intact unless metadata or explicit input replaces a field.
+
+If metadata lookup fails, the command warns and continues with manual fields.
+Without a terminal, or with `--no-input`, a missing trusted or explicit title causes an error before any file is written.
+The error includes a copy-pastable command with a suggested `--title` override.
+That command preserves the destination URL and your explicit flags.
+
 #### Template System
 
 Templates control the default frontmatter and output directory for new content.
@@ -1298,7 +1536,7 @@ Templates control the default frontmatter and output directory for new content.
 2. **Config templates** - Defined in `markata-go.toml` under `[content_templates]`
 3. **File templates** - Markdown files in `content-templates/` directory
 
-Built-in content types with aliases are shown in `markata-go new --list` as `type (aka: alias1, alias2)`. You can also pass those aliases directly to `--template`; for example, `--template ping` resolves to the built-in `note` template while preserving `template: ping` in frontmatter.
+Built-in content types with aliases are shown in `markata-go new --list` as `type (aka: alias1, alias2)`. You can also pass those aliases directly to `--template`. Ping is a separate content type and defaults to `pages/ping/`; Note defaults to `pages/note/`.
 
 **Configuration Example:**
 
@@ -1345,12 +1583,28 @@ servings: 4
 
 The `_directory` field in frontmatter sets the output directory (removed from generated content).
 
+The same Markdown starter files are available to the interactive TUI and web
+workbench. Starter metadata may include `starter.name`,
+`starter.description`, and `starter.aliases`; this mapping is for discovery
+and does not become page frontmatter. Use
+`{{title}}`, `{{slug}}`, `{{date}}`, and `{{datetime}}` for shared substitutions
+in frontmatter values and body text. See the [content starters guide](../guides/content-starters.md)
+for an example and the [starter specification](../../spec/spec/CONTENT_TEMPLATES.md)
+for compatibility and precedence rules.
+
 #### Interactive Mode
 
 When called without a title argument (or no arguments at all), the command launches an
 interactive TUI wizard powered by [charmbracelet/huh](https://github.com/charmbracelet/huh).
 
-The wizard guides you through:
+The wizard selects the template first.
+For links, it asks for the URL before the title, then fetches metadata.
+Without a trusted title or `--title`, the wizard asks you to confirm or enter a title.
+**Create** is the default action after lookup and any required title confirmation.
+The optional **Edit details** action exposes the title, description, image, directory, tags, privacy, and authors.
+Explicit flags take priority in the wizard.
+
+For other templates, the wizard keeps the existing fields:
 
 1. **Template selection** - Pick from built-in, config, and file-based templates
 2. **Title** - Enter the post title
@@ -1379,6 +1633,8 @@ Created: pages/post/my-new-post.md
 
 **Plain text mode:** Use `--plain` or pipe input to get simple text prompts instead of the TUI.
 Falls back automatically when stdin is not a TTY.
+URL-first links use the same title-confidence rules in plain text mode.
+Without a terminal, supply `--title` if no trusted title is available.
 
 #### Generated File
 
@@ -2320,3 +2576,76 @@ Use `--json` to obtain the full list of resulting commits. See
 [Editorial authoring](../../guides/editorial-authoring/) and
 [Editorial history](../../guides/editorial-history/) for ownership rules,
 primary author configuration, and the built-site comparison view.
+
+## Render Markdown without a site
+
+```bash
+printf '# Hello\n' | markata render
+printf '# Hello\n' | markata render --json --inline-assets
+```
+
+`render` reads stdin. `--json` returns the HTML fragment, feature signals and
+ordered CSS/JS assets. `--inline-assets` embeds all bundled assets, including
+Mermaid and Chart.js libraries, into the returned asset tags. `--asset-base`
+sets the linked asset URL prefix (default `/markata-assets`). `--unsafe` permits
+raw authored HTML for trusted content. No site build or configuration is needed.
+See [Python and FastAPI rendering](/docs/guides/python-renderer/).
+
+`markata render --appearance` emits versioned JSON with reusable appearance picker
+markup, ordered style/script paths, and base64 asset bytes. It does not read stdin.
+Host applications serve these assets and insert the controls in their own layouts.
+
+`markata render --capabilities` emits the standalone renderer's versioned JSON
+contract without reading stdin. Check its `features`, `diagram_modes`, and
+`asset_modes` before selecting an integration path. The report describes the
+standalone renderer, not site-build plugins or a selected workspace. Do not
+combine this flag with `--appearance` or `--workspace`.
+
+Use `markata render --stdio` for a long-running JSON Lines session. Send one
+JSON request per line with `id`, `op`, and, for rendering, `source`. Each
+nonempty request receives one JSON response line. Use `op: "capabilities"` to
+inspect support and `op: "shutdown"` to stop the process. Set render options
+per request in `options`; the command rejects `--workspace` and other render
+mode flags with `--stdio`. See the [stdio protocol](../../spec/spec/RENDERER_STDIO.md)
+for framing, limits, errors, and a working example.
+
+## Go Markdown workbench demo
+
+From a source checkout, run the separate demo command:
+
+```bash
+go run ./cmd/markata-workbench --listen 127.0.0.1:8767
+```
+
+The default listen address is `127.0.0.1:8766`. Use `--help` for command help.
+The [Go workbench guide](../guides/go-workbench/) covers editing, the render API,
+and embedding its HTTP handler in a Go application.
+
+### Browser LSP bridge
+
+```bash
+markata-go lsp --browser-workspace /absolute/path/to/site
+```
+
+This option keeps the stdio transport and confines a browser bridge to a server-selected workspace.
+It accepts the synthetic `.markata/browser-draft.md` URI and ignores browser requests to read watched files.
+The [FastAPI editor](../guides/fastapi-editor/) uses this option behind its WebSocket endpoint.
+Ordinary editor clients continue to use `markata-go lsp` without this option.
+
+The [Go editor example](../guides/go-workbench/) provides its own launch command:
+
+```bash
+go run ./cmd/markata-workbench --workspace /absolute/path/to/site
+```
+
+`--workspace` selects the Markdown directory for completion. It defaults to the current directory.
+
+### workspace
+
+List discovered source metadata as JSON with `markata workspace --workspace PATH`.
+Read original source with `markata workspace --workspace PATH --file posts/hello.md`.
+See the [workspace file tree guide](/docs/guides/renderer-site-tree/).
+
+Use `markata workspace --paths --workspace PATH` to list discovered source paths
+without loading document metadata. The editor uses this fast path on startup and
+loads titles and tags in the background.

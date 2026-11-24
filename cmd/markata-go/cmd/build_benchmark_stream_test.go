@@ -10,14 +10,13 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"runtime"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/buildstats"
-	"github.com/WaylonWalker/markata-go/pkg/diagnostics"
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/buildstats"
+	"github.com/WaylonWalker/markata/pkg/diagnostics"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
 )
 
 // Keep the original encoder and custom MarshalJSON as an independent wire-format
@@ -290,32 +289,10 @@ func (w *benchmarkCountingWriter) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-func TestBenchmarkJSONStreamAllocation(t *testing.T) {
+// Buffered writes are a correctness property, so keep this assertion in the
+// race-enabled test suite rather than with the uninstrumented allocation guard.
+func TestBenchmarkJSONStreamBufferedWrites(t *testing.T) {
 	result := benchmarkStreamFixture(1500, 24)
-	measure := func(write func(io.Writer, *BuildResult) error) uint64 {
-		t.Helper()
-		// Warm reusable encoding/json pools before measuring. GC bounds leftover
-		// buffers between implementations; fixture allocation is excluded.
-		if err := write(io.Discard, result); err != nil {
-			t.Fatal(err)
-		}
-		runtime.GC()
-		var before, after runtime.MemStats
-		runtime.ReadMemStats(&before)
-		if err := write(io.Discard, result); err != nil {
-			t.Fatal(err)
-		}
-		runtime.ReadMemStats(&after)
-		return after.TotalAlloc - before.TotalAlloc
-	}
-	legacy, streamed := measure(legacyBenchmarkJSON), measure(writeBenchmarkJSON)
-	t.Logf("legacy = %d B, streamed = %d B; allocation reduction = %.2f%%",
-		legacy, streamed, 100*(1-float64(streamed)/float64(legacy)))
-	// Generous relative budget survives pool/GC/toolchain variation while
-	// rejecting any implementation that still materializes the full report.
-	if streamed >= legacy/8 {
-		t.Fatalf("stream allocated %d bytes; want below 1/8 of legacy %d", streamed, legacy)
-	}
 	var output benchmarkCountingWriter
 	if err := writeBenchmarkJSON(&output, result); err != nil {
 		t.Fatal(err)
@@ -323,7 +300,6 @@ func TestBenchmarkJSONStreamAllocation(t *testing.T) {
 	if output.calls > int(output.bytes/4096)+2 {
 		t.Fatalf("unbuffered writes: %d calls for %d bytes", output.calls, output.bytes)
 	}
-	runtime.KeepAlive(result)
 }
 
 func BenchmarkBenchmarkJSON(b *testing.B) {

@@ -8,7 +8,7 @@ import (
 )
 
 // TODO: Import the aesthetic package when it's implemented.
-// import "github.com/WaylonWalker/markata-go/pkg/aesthetics"
+// import "github.com/WaylonWalker/markata/pkg/aesthetics"
 
 // tokenNone is the constant value for "none" tokens.
 const tokenNone = "none"

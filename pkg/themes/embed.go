@@ -5,14 +5,10 @@
 package themes
 
 import (
-	"embed"
 	"io/fs"
 	"path"
 	"strings"
 )
-
-//go:embed all:default
-var defaultTheme embed.FS
 
 // DefaultTemplates returns a filesystem containing the default theme templates.
 func DefaultTemplates() fs.FS {

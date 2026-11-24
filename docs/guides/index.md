@@ -10,9 +10,16 @@ tags:
   - learning
 ---
 
-# Guides Hub
 
 Welcome to the markata-go documentation! Choose a learning path based on your goals, or browse individual guides below.
+
+---
+
+The [Icon Shortcodes](/docs/guides/icons/) guide and
+[Markdown Containers](/docs/guides/markdown-containers/) show how to build
+responsive icon cards, feature rows and architecture diagrams entirely in
+Markdown. Coding agents can follow
+[the bundled Markata skill](/docs/guides/agent-skills/) for these patterns.
 
 ---
 
@@ -129,6 +136,7 @@ For developers who want full control and customization.
 ### Advanced
 - [Agent Skills](/docs/guides/agent-skills/) - Install the bundled markata-go site skill for coding agents
 - [Plugin Development](/docs/guides/plugin-development/) - Creating custom plugins
+- [Static SVG Foundation](/docs/guides/static-visualizations/) - Developer-only backend SVG contract and adapter roadmap
 - [Migration](/docs/guides/migration/) - Migrating from other static site generators
 - [Performance and Profiling](/docs/guides/performance/) - Benchmarking and profiling builds
 - [Resource Hints Implementation](/docs/reference/resource-hints-implementation/) - Technical details

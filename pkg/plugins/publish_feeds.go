@@ -16,14 +16,15 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/buildcache"
-	"github.com/WaylonWalker/markata-go/pkg/diagnostics"
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/logging"
-	"github.com/WaylonWalker/markata-go/pkg/models"
-	"github.com/WaylonWalker/markata-go/pkg/templates"
-	"github.com/WaylonWalker/markata-go/pkg/themes"
+	"github.com/WaylonWalker/markata/pkg/buildcache"
+	"github.com/WaylonWalker/markata/pkg/diagnostics"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/logging"
+	"github.com/WaylonWalker/markata/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/templates"
+	"github.com/WaylonWalker/markata/pkg/themes"
 )
 
 var publishFeedsLog = logging.Component("publish_feeds").Phase("write")
@@ -42,6 +43,7 @@ type PublishFeedsPlugin struct {
 	// postFeedHashCache memoizes per-post feed semantic hashes for the current build.
 	postFeedHashMu    sync.RWMutex
 	postFeedHashCache map[string]string
+	ioRecorder        *diagnostics.PublishIORecorder
 }
 
 // NewPublishFeedsPlugin creates a new PublishFeedsPlugin.
@@ -134,6 +136,13 @@ func (p *PublishFeedsPlugin) Configure(m *lifecycle.Manager) error {
 // Feed generation is parallelized for better performance with many feeds.
 // Uses incremental build cache to skip feeds with unchanged content.
 func (p *PublishFeedsPlugin) Write(m *lifecycle.Manager) error {
+	stats := &diagnostics.PublishIORecorder{}
+	p.ioRecorder = stats
+	defer func() {
+		m.ContentLedger().SetPublishIO(p.Name(), stats.Snapshot())
+		p.ioRecorder = nil
+	}()
+
 	p.resetPostFeedHashCache()
 	p.navPreviews = nil
 	if previews, ok := m.Cache().Get("nav_previews"); ok {
@@ -144,6 +153,7 @@ func (p *PublishFeedsPlugin) Write(m *lifecycle.Manager) error {
 
 	config := m.Config()
 	feedConfigs := getCachedFeedConfigs(m)
+	stats.Consider(len(feedConfigs))
 	if err := validateShortsRoutes(feedConfigs, m.Posts()); err != nil {
 		return err
 	}
@@ -218,6 +228,7 @@ func (p *PublishFeedsPlugin) publishFeeds(m *lifecycle.Manager, config *lifecycl
 			skip, hash := p.shouldSkipFeedWithConfigAndChanges(fc, buildCache, outputDir, config, affectedPaths)
 			if skip {
 				skippedCount++
+				p.ioRecorder.Skip()
 				recordFeedOutput(m, fc)
 				continue
 			}
@@ -242,6 +253,7 @@ func (p *PublishFeedsPlugin) publishFeeds(m *lifecycle.Manager, config *lifecycl
 		skip, hash := p.shouldSkipFeedWithConfigAndChanges(fc, buildCache, outputDir, config, affectedPaths)
 		if skip {
 			skippedCount++
+			p.ioRecorder.Skip()
 			recordFeedOutput(m, fc)
 			continue
 		}
@@ -311,6 +323,7 @@ func (p *PublishFeedsPlugin) publishFeedsAsync(m *lifecycle.Manager, feedConfigs
 			skip, hash := p.shouldSkipFeedWithConfigAndChanges(fc, buildCache, outputDir, config, affectedPaths)
 			if skip {
 				skippedCount++
+				p.ioRecorder.Skip()
 				recordFeedOutput(m, fc)
 				continue
 			}
@@ -340,6 +353,7 @@ func (p *PublishFeedsPlugin) publishFeedsAsync(m *lifecycle.Manager, feedConfigs
 					countMu.Lock()
 					skippedCount++
 					countMu.Unlock()
+					p.ioRecorder.Skip()
 					recordFeedOutput(m, fc)
 					return
 				}
@@ -804,6 +818,7 @@ func (p *PublishFeedsPlugin) publishFeed(fc *models.FeedConfig, config *lifecycl
 		}
 	}
 
+	p.ioRecorder.OutputWritten()
 	return nil
 }
 
@@ -966,6 +981,7 @@ func (p *PublishFeedsPlugin) safeWriteFile(path string, content []byte) error {
 	}
 
 	if existing, err := os.ReadFile(path); err == nil && bytes.Equal(existing, content) {
+		p.ioRecorder.FileUnchanged()
 		return nil
 	}
 
@@ -979,8 +995,11 @@ func (p *PublishFeedsPlugin) writeFile(path string, content []byte) error {
 		return err
 	}
 
-	//nolint:gosec // G306: Output files need 0644 for web serving
-	return os.WriteFile(path, content, 0o644)
+	start := time.Now()
+	//nolint:gosec // G306: output files need 0644 for web serving
+	err := os.WriteFile(path, content, 0o644)
+	p.ioRecorder.RecordWrite(len(content), time.Since(start), err)
+	return err
 }
 
 // publishFormat publishes a single format if enabled and handles redirects.
@@ -1755,7 +1774,7 @@ func (p *PublishFeedsPlugin) publishSitemap(fc *models.FeedConfig, config *lifec
 
 	// Add all posts in this feed
 	for _, post := range fc.Posts {
-		if !post.Published || post.Draft || post.Skip || post.Private {
+		if post == nil || !post.Published || post.Draft || post.Skip || post.Private || sitemapPostNoindex(post) {
 			continue
 		}
 

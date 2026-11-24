@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/WaylonWalker/markata-go/pkg/builderadmin"
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/builderadmin"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 func TestApplyBuilderAdminConfigHeaders(t *testing.T) {

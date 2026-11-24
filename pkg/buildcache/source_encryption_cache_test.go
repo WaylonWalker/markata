@@ -3,7 +3,7 @@ package buildcache
 import (
 	"testing"
 
-	"github.com/WaylonWalker/markata-go/pkg/encryption"
+	"github.com/WaylonWalker/markata/pkg/encryption"
 )
 
 func TestSourceEncryptionCache_SaveLoadAndValidate(t *testing.T) {

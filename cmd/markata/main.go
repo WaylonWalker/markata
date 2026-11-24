@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/WaylonWalker/markata-go/cmd/markata-go/cmd"
+	"github.com/WaylonWalker/markata/cmd/markata-go/cmd"
 )
 
 func main() {
 	if err := cmd.ExecuteAs("markata"); err != nil {
 		exitCode := cmd.ExitCodeForError(err)
-		if message := cmd.FormatError(err); message != "" {
+		if message := cmd.FormatErrorAs(err, "markata"); message != "" {
 			fmt.Fprintln(os.Stderr, message)
 		}
 		os.Exit(exitCode)

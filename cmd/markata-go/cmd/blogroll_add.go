@@ -16,10 +16,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/blogroll"
-	"github.com/WaylonWalker/markata-go/pkg/config"
-	"github.com/WaylonWalker/markata-go/pkg/models"
-	"github.com/WaylonWalker/markata-go/pkg/plugins"
+	"github.com/WaylonWalker/markata/pkg/blogroll"
+	"github.com/WaylonWalker/markata/pkg/config"
+	"github.com/WaylonWalker/markata/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/plugins"
 
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/charmbracelet/huh"
@@ -161,7 +161,9 @@ func runBlogrollAdd(_ *cobra.Command, args []string) error {
 }
 
 type youtubeOEmbedResponse struct {
-	AuthorURL string `json:"author_url"`
+	AuthorURL    string `json:"author_url"`
+	Title        string `json:"title"`
+	ThumbnailURL string `json:"thumbnail_url"`
 }
 
 // feedValues holds the values for building a feed config.
@@ -451,7 +453,7 @@ func promptForBlogrollConfigPath(paths []string) (string, error) {
 				Options(options...).
 				Value(&selected),
 		),
-	).WithTheme(createHuhTheme(""))
+	).WithTheme(createHuhThemeForPalette(currentCLIPalette))
 
 	if err := form.Run(); err != nil {
 		return "", err
@@ -597,11 +599,7 @@ func promptForFeedValues(cfg *models.Config, _ *blogroll.Metadata, fv feedValues
 }
 
 func promptForFeedValuesHuh(cfg *models.Config, fv feedValues) (feedValues, error) {
-	paletteName := ""
-	if cfg != nil {
-		paletteName = cfg.Theme.Palette
-	}
-	theme := createHuhTheme(paletteName)
+	theme := createHuhThemeForPalette(currentCLIPalette)
 
 	tagsInput := strings.Join(fv.tags, ", ")
 	typeChoice := string(fv.feedType)

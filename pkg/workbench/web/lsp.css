@@ -1,0 +1,5 @@
+.CodeMirror-hints{z-index:1001;background:var(--color-surface,#fff);color:var(--color-text,#203348);border-color:var(--color-text-muted,#52697f);max-width:min(36rem,90vw)}
+li.CodeMirror-hint{color:inherit;padding:4px 8px;max-width:34rem}
+li.CodeMirror-hint-active{background:var(--color-primary,#245fc5);color:var(--color-background,#fff)}
+.markata-lsp-diagnostic{text-decoration:underline wavy var(--color-error,#b42318);text-underline-offset:3px}
+#language-status{white-space:nowrap}

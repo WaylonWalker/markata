@@ -8,7 +8,6 @@ tags:
   - troubleshooting
 ---
 
-# Troubleshooting
 
 This guide covers common issues users encounter when working with markata-go and how to resolve them.
 
@@ -1364,3 +1363,7 @@ markata-go new "My Post Title"
 # Check version
 markata-go --version
 ```
+
+## Agent-assisted troubleshooting
+
+Run `markata triage` to prepare a diagnostic prompt and choose an installed coding agent, clipboard, or stdout. See the [triage guide](/docs/guides/triage/).

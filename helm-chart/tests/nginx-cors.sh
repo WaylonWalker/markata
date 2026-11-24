@@ -214,6 +214,24 @@ grep -Eqi '^Location: (https?://[^/]+)?/__preview/r1/' "$tmp_dir/preview-redirec
 containers=()
 printf '{"kind":"content-index"}' >"$site_root/current/content-index.json"
 
+edge_config="$tmp_dir/edge-cache.conf"
+render_config "$edge_config" --set site.cacheHtmlAtEdge=true
+edge_container="markata-nginx-edge-cache-$$-$RANDOM"
+"$container_engine" run --rm \
+  --volume "$edge_config:/etc/nginx/nginx.conf:ro" \
+  "$nginx_image" nginx -t
+start_nginx "$edge_config" "$edge_container"
+edge_url="$nginx_url"
+wait_for_nginx "$edge_url"
+request "$edge_url" /index.html 200 public-index edge-cache-html
+assert_header "$tmp_dir/edge-cache-html.headers" 'Cache-Control: public, max-age=0, s-maxage=60'
+assert_no_header "$tmp_dir/edge-cache-html.headers" 'Cache-Control: no-store' 'edge-cache HTML response remained uncacheable'
+request "$edge_url" /__preview/r1/index.html 200 "$preview_root_body" edge-cache-preview
+assert_no_header "$tmp_dir/edge-cache-preview.headers" 'Cache-Control' 'protected preview received the public edge-cache policy'
+
+"$container_engine" rm -f "$edge_container" >/dev/null
+containers=()
+
 disabled_container="markata-nginx-no-cors-$$-$RANDOM"
 start_nginx "$tmp_dir/disabled.conf" "$disabled_container"
 disabled_url="$nginx_url"

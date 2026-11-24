@@ -3,6 +3,7 @@ package plugins
 import (
 	"bufio"
 	"bytes"
+	"compress/gzip"
 	"errors"
 	"io"
 	"os"
@@ -11,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/diagnostics"
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/diagnostics"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
 )
 
 func TestDiagnosticsArtifactPlugin_Priority(t *testing.T) {
@@ -28,6 +29,13 @@ func TestDiagnosticsArtifactPlugin_Priority(t *testing.T) {
 func TestDiagnosticsArtifactPlugin_WritesAfterCompleteLifecycle(t *testing.T) {
 	outputDir := t.TempDir()
 	contentDir := t.TempDir()
+	staleCompressedPath := filepath.Join(outputDir, diagnostics.CompressedArtifactPath)
+	if err := os.MkdirAll(filepath.Dir(staleCompressedPath), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(staleCompressedPath, []byte("stale compressed artifact"), 0o600); err != nil {
+		t.Fatal(err)
+	}
 	m := lifecycle.NewManager()
 	m.SetConfig(&lifecycle.Config{
 		ContentDir: contentDir,
@@ -58,6 +66,137 @@ func TestDiagnosticsArtifactPlugin_WritesAfterCompleteLifecycle(t *testing.T) {
 	}
 	if len(artifact.Entries) != 1 || artifact.Entries[0].Path != "post.md" {
 		t.Fatalf("entries = %#v", artifact.Entries)
+	}
+	if _, err := os.Stat(staleCompressedPath); !os.IsNotExist(err) {
+		t.Fatalf("stale compressed artifact remains after plain publication: %v", err)
+	}
+}
+
+func TestDiagnosticsArtifactPlugin_GzipIsLosslessAndReplacesPlainArtifact(t *testing.T) {
+	outputDir := t.TempDir()
+	plainPath := filepath.Join(outputDir, diagnostics.DefaultArtifactPath)
+	compressedPath := filepath.Join(outputDir, diagnostics.CompressedArtifactPath)
+	if err := os.MkdirAll(filepath.Dir(plainPath), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(plainPath, []byte("stale plain artifact"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	m := lifecycle.NewManager()
+	m.SetConfig(&lifecycle.Config{
+		OutputDir: outputDir,
+		Extra: map[string]interface{}{
+			"markata_version":      "test-version",
+			"markata_commit":       "0123456789abcdef0123456789abcdef01234567",
+			"diagnostics_artifact": map[string]interface{}{"compression": "gzip"},
+		},
+	})
+	m.RegisterPlugin(NewDiagnosticsArtifactPlugin())
+	m.SetFiles([]string{"post.md"})
+	m.ContentLedger().MarkLoaded("post.md")
+	if err := m.Run(); err != nil {
+		t.Fatalf("Manager.Run() error = %v", err)
+	}
+
+	compressedFile, err := os.Open(compressedPath)
+	if err != nil {
+		t.Fatalf("open compressed diagnostics artifact: %v", err)
+	}
+	reader, err := gzip.NewReader(compressedFile)
+	if err != nil {
+		compressedFile.Close()
+		t.Fatalf("open diagnostics gzip stream: %v", err)
+	}
+	data, readErr := io.ReadAll(reader)
+	readerErr := reader.Close()
+	fileErr := compressedFile.Close()
+	if readErr != nil || readerErr != nil || fileErr != nil {
+		t.Fatalf("read compressed artifact: read=%v gzip_close=%v file_close=%v", readErr, readerErr, fileErr)
+	}
+	artifact, err := diagnostics.ParseArtifact(data)
+	if err != nil {
+		t.Fatalf("ParseArtifact() error = %v", err)
+	}
+	if artifact.Generator.Version != "test-version" || artifact.Generator.Commit != "0123456789abcdef0123456789abcdef01234567" {
+		t.Fatalf("generator = %#v", artifact.Generator)
+	}
+	if len(artifact.Entries) != 1 || artifact.Entries[0].Path != "post.md" {
+		t.Fatalf("entries = %#v", artifact.Entries)
+	}
+	if _, err := os.Stat(plainPath); !os.IsNotExist(err) {
+		t.Fatalf("stale plain artifact remains after gzip publication: %v", err)
+	}
+}
+
+func TestDiagnosticsArtifactCompression_RejectsUnknownMode(t *testing.T) {
+	_, err := diagnosticsArtifactCompression(&lifecycle.Config{Extra: map[string]interface{}{
+		"diagnostics_artifact": map[string]interface{}{"compression": "br"},
+	}})
+	if err == nil {
+		t.Fatal("unknown diagnostics artifact compression succeeded")
+	}
+}
+
+func TestDiagnosticsArtifactPlugin_ReportsStaleRemovalFailure(t *testing.T) {
+	outputDir := t.TempDir()
+	stalePath := filepath.Join(outputDir, diagnostics.DefaultArtifactPath)
+	mkdirErr := os.MkdirAll(filepath.Join(stalePath, "keep"), 0o755)
+	if mkdirErr != nil {
+		t.Fatal(mkdirErr)
+	}
+
+	m := lifecycle.NewManager()
+	m.Config().OutputDir = outputDir
+	m.Config().Extra["diagnostics_artifact"] = map[string]interface{}{"compression": "gzip"}
+	m.RegisterPlugin(NewDiagnosticsArtifactPlugin())
+	runErr := m.Run()
+	if runErr == nil {
+		t.Fatal("Manager.Run() succeeded after stale artifact cleanup failed")
+	}
+	_, compressedStatErr := os.Stat(filepath.Join(outputDir, diagnostics.CompressedArtifactPath))
+	if compressedStatErr != nil {
+		t.Fatalf("new compressed artifact is missing: %v", compressedStatErr)
+	}
+	_, staleStatErr := os.Stat(filepath.Join(stalePath, "keep"))
+	if staleStatErr != nil {
+		t.Fatalf("stale artifact directory was changed: %v", staleStatErr)
+	}
+}
+
+func TestDiagnosticsArtifactGzipSerialization_PreservesExactJSON(t *testing.T) {
+	snapshot := diagnosticsArtifactFeedFixture(3, 2)
+	info := diagnostics.ArtifactBuildInfo{
+		MarkataVersion: "test",
+		MarkataCommit:  "0123456789abcdef0123456789abcdef01234567",
+		SourceCommit:   "abcdef0123456789abcdef0123456789abcdef01",
+		BuiltAt:        time.Unix(1, 0),
+	}
+	want, err := diagnostics.MarshalArtifact(snapshot, info)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var compressed bytes.Buffer
+	writer := gzip.NewWriter(&compressed)
+	writeErr := diagnostics.WriteArtifact(writer, snapshot, info)
+	if writeErr != nil {
+		t.Fatal(writeErr)
+	}
+	writerCloseErr := writer.Close()
+	if writerCloseErr != nil {
+		t.Fatal(writerCloseErr)
+	}
+	reader, err := gzip.NewReader(bytes.NewReader(compressed.Bytes()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := io.ReadAll(reader)
+	closeErr := reader.Close()
+	if err != nil || closeErr != nil {
+		t.Fatalf("decompress diagnostics: read=%v close=%v", err, closeErr)
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatal("gzip decompression changed the version-1 JSON bytes")
 	}
 }
 

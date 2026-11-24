@@ -1,3 +1,5 @@
+//go:build !js
+
 package plugins
 
 import (
@@ -5,7 +7,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"html"
+	"io"
 	"log"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -13,164 +17,11 @@ import (
 	"sync"
 	"time"
 
-	cdruntime "github.com/chromedp/cdproto/runtime"
 	"github.com/chromedp/chromedp"
 
-	"github.com/WaylonWalker/markata-go/pkg/models"
-	"github.com/WaylonWalker/markata-go/pkg/palettes"
-	"github.com/WaylonWalker/markata-go/pkg/runtimeenv"
-	gmermaid "go.abhg.dev/goldmark/mermaid"
-	"go.abhg.dev/goldmark/mermaid/mermaidcdp"
+	"github.com/WaylonWalker/markata/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/runtimeenv"
 )
-
-// mermaidRenderer is an interface for rendering Mermaid diagrams in different modes
-type mermaidRenderer interface {
-	// render processes a mermaid diagram code and returns the rendered output
-	// For client mode: returns the diagram code wrapped in mermaid markers
-	// For cli/chromium modes: returns the SVG output
-	render(diagramCode string) (string, error)
-	// close cleans up any resources (e.g., browser connections)
-	close() error
-}
-
-// mermaidPaletteColors holds resolved palette colors for Mermaid theming.
-// These are resolved at build time from the site's palette and passed to
-// mermaid.initialize() as themeVariables for consistent diagram styling.
-type mermaidPaletteColors struct {
-	Background   string // bg-primary -> --color-background
-	PrimaryColor string // code-bg -> --color-code-bg (node fill)
-	TextColor    string // text-primary -> --color-text
-	Accent       string // accent -> --color-primary (borders, lines)
-	Surface      string // bg-surface -> --color-surface (cluster bg)
-	IsDark       bool   // whether this is a dark variant
-}
-
-// resolvePaletteColors loads and resolves palette colors for mermaid theming.
-// Returns nil if no palette is configured or colors cannot be resolved.
-func resolvePaletteColors(extra map[string]interface{}) *mermaidPaletteColors {
-	if extra == nil {
-		return nil
-	}
-
-	// Extract palette name from config.Extra["theme"]
-	// The theme config may be a map[string]interface{} (raw TOML) or
-	// models.ThemeConfig (if already parsed by another plugin).
-	var paletteName string
-	switch theme := extra["theme"].(type) {
-	case map[string]interface{}:
-		if p, ok := theme["palette"].(string); ok {
-			paletteName = p
-		}
-	case models.ThemeConfig:
-		paletteName = theme.Palette
-	case *models.ThemeConfig:
-		if theme != nil {
-			paletteName = theme.Palette
-		}
-	}
-
-	if paletteName == "" {
-		return nil
-	}
-
-	loader := palettes.NewLoader()
-	palette, err := loader.Load(paletteName)
-	if err != nil {
-		log.Printf("[mermaid] could not load palette %q: %v", paletteName, err)
-		return nil
-	}
-
-	colors := &mermaidPaletteColors{
-		Background:   palette.Resolve("bg-primary"),
-		PrimaryColor: palette.Resolve("code-bg"),
-		TextColor:    palette.Resolve("text-primary"),
-		Accent:       palette.Resolve("accent"),
-		Surface:      palette.Resolve("bg-surface"),
-		IsDark:       palette.Variant == palettes.VariantDark,
-	}
-
-	// Only return if we got at least the accent color
-	if colors.Accent == "" {
-		log.Printf("[mermaid] palette %q has no accent color, using default theme", paletteName)
-		return nil
-	}
-
-	log.Printf("[mermaid] resolved palette %q colors for theming (accent=%s, bg=%s, text=%s)",
-		paletteName, colors.Accent, colors.Background, colors.TextColor)
-	return colors
-}
-
-// Default fallback colors for mermaid theme variables when palette values are missing.
-const (
-	defaultMermaidBg      = "#ffffff"
-	defaultMermaidPrimary = "#0a0a0a"
-	defaultMermaidText    = "#1f2937"
-	defaultMermaidSurface = "#f9fafb"
-)
-
-// themeVariablesJSON returns the mermaid themeVariables object as a JSON string.
-func (c *mermaidPaletteColors) themeVariablesJSON() string {
-	bg := c.Background
-	if bg == "" {
-		bg = defaultMermaidBg
-	}
-	primary := c.PrimaryColor
-	if primary == "" {
-		primary = defaultMermaidPrimary
-	}
-	text := c.TextColor
-	if text == "" {
-		text = defaultMermaidText
-	}
-	surface := c.Surface
-	if surface == "" {
-		surface = defaultMermaidSurface
-	}
-
-	clusterBg := surface
-	if c.IsDark {
-		clusterBg = bg
-	}
-
-	vars := map[string]interface{}{
-		"background":          bg,
-		"primaryColor":        primary,
-		"primaryTextColor":    text,
-		"primaryBorderColor":  c.Accent,
-		"lineColor":           c.Accent,
-		"textColor":           text,
-		"nodeBkg":             primary,
-		"nodeBorder":          c.Accent,
-		"nodeTextColor":       text,
-		"fontSize":            "16px",
-		"clusterBkg":          clusterBg,
-		"clusterBorder":       c.Accent,
-		"clusterTextColor":    text,
-		"titleColor":          text,
-		"edgeLabelBackground": primary,
-	}
-
-	b, err := json.Marshal(vars)
-	if err != nil {
-		log.Printf("[mermaid] failed to marshal theme variables: %v", err)
-		return "{}"
-	}
-	return string(b)
-}
-
-// clientRenderer renders diagrams client-side via JavaScript
-type clientRenderer struct {
-	config models.MermaidConfig
-}
-
-func (r *clientRenderer) render(diagramCode string) (string, error) {
-	// Client-side rendering: just return the diagram code, the script will render it
-	return diagramCode, nil
-}
-
-func (r *clientRenderer) close() error {
-	return nil
-}
 
 // cliRenderer renders diagrams using the mmdc CLI tool
 type cliRenderer struct {
@@ -228,7 +79,7 @@ func (r *cliRenderer) close() error {
 // chromiumRenderer renders diagrams using Chrome DevTools Protocol.
 // When paletteColors is set, it uses a custom chromedp flow that passes
 // themeVariables to mermaid.initialize() for palette-aware theming.
-// Otherwise, it falls back to mermaidcdp.Compiler for default theming.
+// Otherwise, it uses Mermaid's configured default theme.
 type chromiumRenderer struct {
 	config        models.MermaidConfig
 	paletteColors *mermaidPaletteColors
@@ -239,13 +90,9 @@ type chromiumRenderer struct {
 	// Custom chromedp compiler (when palette colors are set)
 	browserCtx    context.Context //nolint:containedctx // chromedp requires storing context
 	browserCancel context.CancelFunc
-
-	// Fallback mermaidcdp compiler (when no palette colors)
-	compiler *mermaidcdp.Compiler
 }
 
 // mermaidJSVersion is the MermaidJS version to download for chromium rendering.
-const mermaidJSVersion = "10.9.5"
 
 // getMermaidJSCacheDir returns the cache directory for MermaidJS source files,
 // following XDG conventions (~/.cache/markata-go/mermaid/).
@@ -296,7 +143,7 @@ func loadOrDownloadJSSource(ctx context.Context, version string) (string, error)
 		}
 		// Cache dir unavailable; fall back to direct download
 		log.Printf("[mermaid] chromium: cache unavailable (%v), downloading directly", err)
-		return mermaidcdp.DownloadJSSource(ctx, version)
+		return downloadMermaidJSSource(ctx, version, http.DefaultClient)
 	}
 
 	cacheFile := filepath.Join(cacheDir, fmt.Sprintf("mermaid-v%s.min.js", version))
@@ -315,7 +162,7 @@ func loadOrDownloadJSSource(ctx context.Context, version string) (string, error)
 
 	// Download and cache
 	log.Println("[mermaid] chromium: downloading MermaidJS source...")
-	jsSource, err := mermaidcdp.DownloadJSSource(ctx, version)
+	jsSource, err := downloadMermaidJSSource(ctx, version, http.DefaultClient)
 	if err != nil {
 		return "", err
 	}
@@ -331,14 +178,43 @@ func loadOrDownloadJSSource(ctx context.Context, version string) (string, error)
 	return jsSource, nil
 }
 
+func downloadMermaidJSSource(ctx context.Context, version string, client *http.Client) (string, error) {
+	if version == "" {
+		return "", fmt.Errorf("MermaidJS version must be specified")
+	}
+
+	url := "https://cdn.jsdelivr.net/npm/mermaid@" + version + "/dist/mermaid.min.js"
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
+	if err != nil {
+		return "", fmt.Errorf("prepare MermaidJS download request: %w", err)
+	}
+	response, err := client.Do(request)
+	if err != nil {
+		return "", fmt.Errorf("download MermaidJS: %w", err)
+	}
+	defer response.Body.Close()
+	if response.StatusCode != http.StatusOK {
+		if _, err := io.Copy(io.Discard, response.Body); err != nil {
+			return "", fmt.Errorf("download MermaidJS: HTTP status %d (read error response: %w)", response.StatusCode, err)
+		}
+		return "", fmt.Errorf("download MermaidJS: HTTP status %d", response.StatusCode)
+	}
+
+	var source strings.Builder
+	if _, err := io.Copy(&source, response.Body); err != nil {
+		return "", fmt.Errorf("read MermaidJS response: %w", err)
+	}
+	return source.String(), nil
+}
+
 // _renderSVGJS is the JavaScript helper injected into the headless browser
-// to render mermaid diagrams. Equivalent to mermaidcdp's extras.js.
+// to render Mermaid diagrams in the headless browser.
 const _renderSVGJS = `async function renderSVG(src) {
 	const { svg } = await mermaid.render('mermaid', src);
 	return svg;
 }`
 
-// ensureCompilerCustom sets up a custom chromedp flow with themeVariables support.
+// ensureCompilerCustom sets up a chromedp flow with configured Mermaid theming.
 func (r *chromiumRenderer) ensureCompilerCustom(jsSource string) {
 	noSandbox := r.config.ChromiumConfig != nil && r.config.ChromiumConfig.NoSandbox
 
@@ -376,52 +252,46 @@ func (r *chromiumRenderer) ensureCompilerCustom(jsSource string) {
 	r.browserCancel = browserCancel
 
 	// Load MermaidJS source
-	var ready *cdruntime.RemoteObject
-	if err := chromedp.Run(ctx, chromedp.Evaluate(jsSource, &ready)); err != nil {
+	if _, err := chromedp.Run(ctx, chromedp.Evaluate[chromedp.Void](jsSource)); err != nil {
 		r.initErr = fmt.Errorf("failed to load MermaidJS in browser: %w", err)
 		browserCancel()
 		return
 	}
 
 	// Inject renderSVG helper
-	ready = nil
-	if err := chromedp.Run(ctx, chromedp.Evaluate(_renderSVGJS, &ready)); err != nil {
+	if _, err := chromedp.Run(ctx, chromedp.Evaluate[chromedp.Void](_renderSVGJS)); err != nil {
 		r.initErr = fmt.Errorf("failed to inject renderSVG helper: %w", err)
 		browserCancel()
 		return
 	}
 
-	// Build mermaid.initialize() call with themeVariables
-	initJS := fmt.Sprintf(
-		`mermaid.initialize({startOnLoad: false, theme: 'base', themeVariables: %s, flowchart: {nodeSpacing: 60, rankSpacing: 90, padding: 12}})`,
-		r.paletteColors.themeVariablesJSON(),
-	)
+	initConfig := map[string]interface{}{"startOnLoad": false}
+	if r.paletteColors != nil {
+		initConfig["theme"] = "base"
+		initConfig["themeVariables"] = json.RawMessage(r.paletteColors.themeVariablesJSON())
+		initConfig["flowchart"] = map[string]interface{}{
+			"nodeSpacing": 60,
+			"rankSpacing": 90,
+			"padding":     12,
+		}
+	} else if r.config.Theme != "" {
+		initConfig["theme"] = r.config.Theme
+	}
+	configJSON, err := json.Marshal(initConfig)
+	if err != nil {
+		r.initErr = fmt.Errorf("failed to encode Mermaid theme: %w", err)
+		browserCancel()
+		return
+	}
+	initJS := "mermaid.initialize(" + string(configJSON) + ")"
 
-	ready = nil
-	if err := chromedp.Run(ctx, chromedp.Evaluate(initJS, &ready)); err != nil {
-		r.initErr = fmt.Errorf("failed to initialize mermaid with palette theme: %w", err)
+	if _, err := chromedp.Run(ctx, chromedp.Evaluate[chromedp.Void](initJS)); err != nil {
+		r.initErr = fmt.Errorf("failed to initialize Mermaid: %w", err)
 		browserCancel()
 		return
 	}
 
-	log.Println("[mermaid] chromium: initialized with palette-aware theming")
-}
-
-// ensureCompilerFallback sets up the standard mermaidcdp.Compiler (no palette).
-func (r *chromiumRenderer) ensureCompilerFallback(jsSource string) {
-	cfg := &mermaidcdp.Config{
-		JSSource:  jsSource,
-		Theme:     r.config.Theme,
-		NoSandbox: r.config.ChromiumConfig != nil && r.config.ChromiumConfig.NoSandbox,
-	}
-
-	var err error
-	r.compiler, err = mermaidcdp.New(cfg)
-	if err != nil {
-		r.initErr = fmt.Errorf("failed to start chromium compiler: %w", err)
-		log.Printf("[mermaid] chromium: browser launch failed: %v", err)
-		return
-	}
+	log.Println("[mermaid] chromium: initialized with configured theming")
 }
 
 func (r *chromiumRenderer) ensureCompiler() error {
@@ -437,11 +307,7 @@ func (r *chromiumRenderer) ensureCompiler() error {
 
 		log.Println("[mermaid] chromium: launching headless browser...")
 
-		if r.paletteColors != nil {
-			r.ensureCompilerCustom(jsSource)
-		} else {
-			r.ensureCompilerFallback(jsSource)
-		}
+		r.ensureCompilerCustom(jsSource)
 
 		if r.initErr != nil {
 			return
@@ -476,13 +342,7 @@ func (r *chromiumRenderer) render(diagramCode string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
 	defer cancel()
 
-	// Custom flow: render directly via chromedp
-	if r.browserCtx != nil {
-		return r.renderCustom(ctx, diagramCode)
-	}
-
-	// Fallback: render via mermaidcdp.Compiler
-	return r.renderFallback(ctx, diagramCode)
+	return r.renderCustom(ctx, diagramCode)
 }
 
 // renderCustom renders a diagram using the custom chromedp browser context.
@@ -495,14 +355,7 @@ func (r *chromiumRenderer) renderCustom(timeoutCtx context.Context, diagramCode 
 	}
 	script.WriteString(")")
 
-	var result string
-	render := chromedp.Evaluate(
-		script.String(),
-		&result,
-		func(p *cdruntime.EvaluateParams) *cdruntime.EvaluateParams {
-			return p.WithAwaitPromise(true)
-		},
-	)
+	render := chromedp.Evaluate[string](script.String(), chromedp.EvalAwaitPromise)
 
 	// Merge browser context (for chromedp state) with timeout context.
 	// chromedp needs its context for browser access, but we want the
@@ -510,22 +363,12 @@ func (r *chromiumRenderer) renderCustom(timeoutCtx context.Context, diagramCode 
 	mergedCtx, mergeCancel := mergeContextLifetime(r.browserCtx, timeoutCtx)
 	defer mergeCancel()
 
-	if err := chromedp.Run(mergedCtx, render); err != nil {
+	result, err := chromedp.Run(mergedCtx, render)
+	if err != nil {
 		return "", fmt.Errorf("mermaid rendering failed: %w", err)
 	}
 
 	svgOutput := html.UnescapeString(result)
-	return strings.TrimSpace(svgOutput), nil
-}
-
-// renderFallback renders a diagram via the mermaidcdp.Compiler.
-func (r *chromiumRenderer) renderFallback(ctx context.Context, diagramCode string) (string, error) {
-	resp, err := r.compiler.Compile(ctx, &gmermaid.CompileRequest{Source: diagramCode})
-	if err != nil {
-		return "", fmt.Errorf("mermaidcdp rendering failed: %w", err)
-	}
-
-	svgOutput := html.UnescapeString(resp.SVG)
 	return strings.TrimSpace(svgOutput), nil
 }
 
@@ -534,10 +377,6 @@ func (r *chromiumRenderer) close() error {
 		log.Println("[mermaid] chromium: closing browser (custom)")
 		r.browserCancel()
 		return nil
-	}
-	if r.compiler != nil {
-		log.Println("[mermaid] chromium: closing browser")
-		return r.compiler.Close()
 	}
 	return nil
 }
@@ -561,6 +400,9 @@ func newMermaidRenderer(config models.MermaidConfig, paletteColors *mermaidPalet
 	switch config.Mode {
 	case "client":
 		return &clientRenderer{config: config}, nil
+
+	case "go":
+		return newNativeMermaidRenderer(config, paletteColors), nil
 
 	case "cli":
 		// Validate CLI dependencies

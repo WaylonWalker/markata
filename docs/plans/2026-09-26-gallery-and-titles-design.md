@@ -1,4 +1,12 @@
-# Gallery pages and title sizing
+---
+title: "Gallery pages and title sizing"
+description: "Issue: #1289"
+date: 2026-09-26
+published: true
+tags:
+  - documentation
+---
+
 
 Issue: #1289
 

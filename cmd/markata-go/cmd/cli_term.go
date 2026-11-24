@@ -2,7 +2,9 @@ package cmd
 
 import (
 	"os"
-	"strings"
+
+	"github.com/WaylonWalker/markata/pkg/logging"
+	"golang.org/x/term"
 )
 
 func inputIsTerminal() bool {
@@ -30,7 +32,8 @@ func fileLikeTerminal(stream any) bool {
 	if err != nil {
 		return false
 	}
-	return (stat.Mode() & os.ModeCharDevice) != 0
+	// Character devices include /dev/null. Check that the descriptor is an actual terminal.
+	return (stat.Mode()&os.ModeCharDevice) != 0 && term.IsTerminal(int(file.Fd()))
 }
 
 func colorEnabledOnOutput() bool {
@@ -38,17 +41,5 @@ func colorEnabledOnOutput() bool {
 }
 
 func colorEnabledFor(isTTY bool) bool {
-	if noColor || logFormat == "plain" {
-		return false
-	}
-	if forceColor {
-		return true
-	}
-	if !isTTY {
-		return false
-	}
-	if os.Getenv("TERM") == "dumb" {
-		return false
-	}
-	return strings.TrimSpace(os.Getenv("NO_COLOR")) == ""
+	return logging.ColorEnabled(isTTY, logging.Format(logFormat), forceColor, noColor)
 }

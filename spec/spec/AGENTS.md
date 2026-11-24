@@ -31,6 +31,7 @@ The initial required topic files are:
 - `theme-creation.md`
 - `template-management.md`
 - `plugin-creation.md`
+- `roads.md`
 
 The initial reference files are:
 
@@ -72,6 +73,31 @@ The bundled skill MUST also include a starter eval set that covers at least:
 - template or layout edits
 - build or deploy debugging
 - deciding whether work belongs in config, templates, feeds, CSS, or plugins
+
+## Visualize Workflow
+
+The existing `markata-go-site` skill includes a focused `topics/visualize-session.md` branch.
+Its description names these natural-language triggers:
+`visualize this session`, `visualize this`, and `make a visual post`.
+These phrases are agent instructions, not new CLI commands.
+
+The workflow creates an evidence-backed visual Markdown post, serves a local preview,
+checks the exact post URL, and attempts to open that URL in the user's browser.
+Session posts distinguish completed work, decisions, and unresolved work.
+The workflow excludes secrets and unrequested private material.
+
+An explicit source-only or single-file request takes precedence over automatic preview.
+Ordinary chart, diagram, and styling requests do not automatically start this workflow.
+Outside a Markata site, preview scaffolding stays in an isolated temporary directory.
+The workflow preserves existing publication flags and requires separate authorization for public publishing.
+
+Agents reuse only a server that serves the intended site and output.
+New preview servers bind to loopback and remain available for the user through the agent's supported persistent-process mechanism.
+Agents report process-lifetime or browser-opening limitations instead of claiming success.
+Completion requires the Markdown artifact, a successful response for the intended post,
+and an attempted browser open, or an explicit report of the blocked stage.
+
+Regression prompts cover session evidence, supplied topics, and explicit source-only requests.
 
 ## Skill Maintenance Requirement
 
@@ -190,9 +216,22 @@ Optional flags:
 
 ### `install` behavior
 
+- `setup` MUST be an alias for `install`.
+- On an interactive terminal without an explicit agent, the command MUST offer to install for detected agents, or open the picker if none are detected or the user declines.
+- In non-interactive project installs without `--agent`, the command MUST retain the existing environment-detected target or universal fallback.
+- In non-interactive global installs without `--agent`, the command MUST return an actionable error.
+- EOF at the confirmation prompt MUST cancel without installing.
+- Detected agents that share an installation directory MUST be installed only once.
+- If installation for multiple agents fails, the error MUST identify the failed agent; prior successful installs may remain.
 - `site-path` defaults to the current directory.
-- When `--agent` is omitted for project installs, the command MUST default to the current agent when it can detect one from the environment. If no current agent can be detected, it MUST default to `universal`.
-- `--global` MUST require an explicit `--agent`.
+- When `--agent` is omitted for non-interactive project installs, the command MUST default to the current agent when it can detect one from the environment. If no current agent can be detected, it MUST default to `universal`.
+- When `--global` is set without `--agent` or the legacy `--target`, `install` MUST open a fuzzy agent picker on interactive input and output terminals.
+- The picker MUST list supported agent identifiers and global directories. Typing MUST filter names by ordered character matches.
+- The picker MUST use fzf's default bottom-up layout: the prompt at the bottom, the first result nearest the prompt, and additional results above it. Up MUST move toward results above the current selection; Down MUST move toward the prompt.
+- The picker MUST color the selection, matched characters, and prompt with the active terminal theme. It MUST respect the CLI's color controls, including `--no-color` and `NO_COLOR`.
+- Enter MUST select an agent. Escape or Ctrl+C MUST cancel without writing files.
+- With `--no-input`, `TERM=dumb`, or non-terminal input or output, `--global` MUST require an explicit agent and show an example plus `agent list-agents` guidance.
+- Unknown agent names MUST remain errors and suggest close identifiers, including `github-copilot` for `copilot`. Suggestions MUST include short names, case-insensitive matches, and minor spelling errors without selecting an agent automatically.
 - `--global` MUST install into the selected agent's user-level skill directory instead of a repository path.
 - `site-path` MUST be rejected when `--global` is set.
 - The command MUST install bundled files into the selected agent layout.
@@ -200,6 +239,10 @@ Optional flags:
 - `--dry-run` MUST report what would be written without modifying the filesystem.
 - Primary results MUST be written to `stdout`.
 - Errors MUST suggest `--force` when overwrite conflicts are the only blocker.
+- `--all-installed-tools` MUST install globally for every supported agent
+  executable found on `PATH`, without prompting. It MUST ignore shared skill
+  directories when identifying tools, and MUST succeed with a clear message if
+  no supported executable is found.
 
 ---
 
@@ -222,10 +265,35 @@ Optional flags:
 - `site-path` defaults to the current directory.
 - The command MUST update the installed skill in place using the currently bundled files.
 - `update` MUST behave like `install --force` with the same agent and scope resolution.
-- `--global` MUST require an explicit `--agent`.
 - `site-path` MUST be rejected when `--global` is set.
 - `--dry-run` MUST report what would be updated without modifying the filesystem.
 - Primary results MUST be written to `stdout`.
+
+When `--global` is set without `--agent`, `update` MUST update every detected
+agent that already has the bundled skill installed in its global skill
+directory. Detection MUST use agent-specific executables on `PATH` and
+agent-specific user configuration directories. The command MUST skip detected
+agents without an existing skill installation and report them as skipped.
+
+### `doctor` global detection
+
+When `--global` is set without `--agent`, `doctor` MUST check every detected
+agent that has the bundled skill installed in its global skill directory. It
+MUST use the same detection rules as `update`, report each agent independently,
+and return drift if any checked installation has drift. Missing installations
+MUST be reported as skipped rather than treated as errors.
+
+### `just install` integration
+
+The repository's `just install` recipe MUST install the `markata` binary and
+then update and doctor all detected global agent skill installations. It MUST
+run without interactive input.
+
+`just install --all-installed-tools` MUST install the bundled skill globally
+for each supported agent executable found on `PATH`, then run doctor for those
+installations. This option MUST NOT infer tools from shared configuration
+directories. If no supported executable is found, it MUST report that no tools
+were installed and exit successfully after installing the binary.
 
 ---
 
@@ -305,7 +373,6 @@ The `doctor` command detects drift between installed skill files and the bundled
 
 - `site-path` defaults to the current directory.
 - The command MUST locate the installed skill directory using the same agent/scope/name resolution as `install`.
-- `--global` MUST require an explicit `--agent`.
 - `site-path` MUST be rejected when `--global` is set.
 - If no manifest file exists, the command MUST report that the skill was installed without a manifest and recommend re-installing with the current binary.
 - If the manifest exists, the command MUST compare:

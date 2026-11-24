@@ -1,36 +1,19 @@
-# golangci-lint configuration
-# https://golangci-lint.run/usage/configuration/
-
+version: "2"
 run:
-  timeout: 5m
+  go: "1.27"
   tests: true
-  go: "1.22"
-  # Note: Set GOLANGCI_LINT_CONCURRENCY=4 to reduce CPU/memory pressure locally
-  # By default, uses all available cores for faster CI
-
 linters:
   enable:
-    # Default linters
-    - errcheck
-    - gosimple
-    - govet
-    - ineffassign
-    - staticcheck
-    - unused
-
-    # Additional linters
     - bodyclose
+    - copyloopvar
     - dogsled
     - dupl
     - errorlint
     - exhaustive
-    - copyloopvar
     - gochecknoinits
     - goconst
     - gocritic
     - gocyclo
-    - gofmt
-    - goimports
     - goprintffuncname
     - gosec
     - misspell
@@ -40,175 +23,159 @@ linters:
     - prealloc
     - revive
     - rowserrcheck
-    - stylecheck
+    - staticcheck
     - tparallel
     - unconvert
     - unparam
     - whitespace
-
   disable:
-    - gochecknoglobals  # We use globals for CLI flags
-    - funlen            # Some functions are necessarily long
-    - lll               # Line length is handled by formatter
-    - wsl               # Too opinionated about whitespace
-
-linters-settings:
-  errcheck:
-    check-type-assertions: true
-    check-blank: true
-
-  errorlint:
-    errorf: true
-    asserts: true
-    comparison: true
-
-  exhaustive:
-    default-signifies-exhaustive: true
-
-  goconst:
-    min-len: 3
-    min-occurrences: 3
-
-  gocritic:
-    enabled-tags:
-      - diagnostic
-      # - experimental  # Disabled: adds many checks, high resource cost, unstable APIs
-      - opinionated
-      - performance
-      - style
-    disabled-checks:
-      - whyNoLint
-      - hugeParam  # Sometimes unavoidable with large structs
-
-  gocyclo:
-    min-complexity: 20
-
-  gofmt:
-    simplify: true
-
-  goimports:
-    local-prefixes: github.com/example/markata-go
-
-  gosec:
-    excludes:
-      - G104  # Unhandled errors (covered by errcheck)
-      - G304  # File path from variable (intentional in SSG)
-
-  misspell:
-    locale: US
-
-  nakedret:
-    max-func-lines: 30
-
-  nolintlint:
-    require-explanation: true
-    require-specific: true
-
-  revive:
+    - funlen
+    - gochecknoglobals
+    - lll
+    - wsl
+  settings:
+    errcheck:
+      check-type-assertions: true
+      check-blank: true
+    errorlint:
+      errorf: true
+      asserts: true
+      comparison: true
+    exhaustive:
+      default-signifies-exhaustive: true
+    goconst:
+      min-len: 3
+      min-occurrences: 3
+    gocritic:
+      disabled-checks:
+        - whyNoLint
+        - hugeParam
+      enabled-tags:
+        - diagnostic
+        - opinionated
+        - performance
+        - style
+    gocyclo:
+      min-complexity: 20
+    gosec:
+      excludes:
+        - G104
+        - G304
+    misspell:
+      locale: US
+    nakedret:
+      max-func-lines: 30
+    nolintlint:
+      require-explanation: true
+      require-specific: true
+    revive:
+      rules:
+        - name: blank-imports
+        - name: context-as-argument
+        - name: context-keys-type
+        - name: dot-imports
+        - name: error-return
+        - name: error-strings
+        - name: error-naming
+        - name: exported
+        - name: if-return
+        - name: increment-decrement
+        - name: var-naming
+        - name: var-declaration
+        - name: package-comments
+        - name: range
+        - name: receiver-naming
+        - name: time-naming
+        - name: unexported-return
+        - name: indent-error-flow
+        - name: errorf
+        - name: empty-block
+        - name: superfluous-else
+        - name: unused-parameter
+        - name: unreachable-code
+        - name: redefines-builtin-id
+    staticcheck:
+      checks:
+        - all
+        - -ST1000
+        - -QF*
+    unparam:
+      check-exported: false
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
     rules:
-      - name: blank-imports
-      - name: context-as-argument
-      - name: context-keys-type
-      - name: dot-imports
-      - name: error-return
-      - name: error-strings
-      - name: error-naming
-      - name: exported
-      - name: if-return
-      - name: increment-decrement
-      - name: var-naming
-      - name: var-declaration
-      - name: package-comments
-      - name: range
-      - name: receiver-naming
-      - name: time-naming
-      - name: unexported-return
-      - name: indent-error-flow
-      - name: errorf
-      - name: empty-block
-      - name: superfluous-else
-      - name: unused-parameter
-      - name: unreachable-code
-      - name: redefines-builtin-id
-
-  stylecheck:
-    checks:
-      - all
-      - -ST1000  # Package comments (we use doc.go)
-
-  unparam:
-    check-exported: false
-
+      - linters:
+          - dupl
+          - funlen
+          - goconst
+          - gocyclo
+        path: _test\.go
+      - linters:
+          - gocritic
+          - gosec
+        path: pkg/fontpacks/.*_test\.go
+      - linters:
+          - dupl
+        path: pkg/config/parser\.go
+      - linters:
+          - gochecknoinits
+        path: main\.go
+      - linters:
+          - gochecknoinits
+        path: cmd/
+      - path: _test\.go
+        text: dot-imports
+      - linters:
+          - errcheck
+          - goconst
+          - gocritic
+          - gosec
+          - revive
+          - tparallel
+          - unparam
+        path: pkg/builderadmin/
+      - linters:
+          - gocyclo
+          - revive
+        path: pkg/plugins/build_cache\.go
+      - linters:
+          - unused
+        path: pkg/plugins/feed_rendering\.go
+      - linters:
+          - unused
+        path: pkg/plugins/publish_feeds\.go
+      - linters:
+          - gocritic
+        path: pkg/plugins/glob\.go
+      - linters:
+          - revive
+        path: cmd/markata-go/cmd/builder_admin\.go
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
 issues:
-  exclude-rules:
-    # Test files can have longer functions and more complexity
-    - path: _test\.go
-      linters:
-        - dupl
-        - gocyclo
-        - goconst
-        - funlen
-
-    # Fontpack fixture files intentionally use public-style permissions and
-    # nested asset paths to model generated static-site output.
-    - path: pkg/fontpacks/.*_test\.go
-      linters:
-        - gosec
-        - gocritic
-
-    # Config parser has legitimate duplication for TOML/YAML/JSON converters
-    - path: pkg/config/parser\.go
-      linters:
-        - dupl
-
-    # Main can have init
-    - path: main\.go
-      linters:
-        - gochecknoinits
-
-    # CLI commands often use init
-    - path: cmd/
-      linters:
-        - gochecknoinits
-
-    # Allow dot imports in tests for testify
-    - path: _test\.go
-      text: "dot-imports"
-
-    # Builder admin is a large operational surface and currently carries
-    # implementation-specific lint debt unrelated to performance behavior.
-    - path: pkg/builderadmin/
-      linters:
-        - errcheck
-        - goconst
-        - gocritic
-        - gosec
-        - revive
-        - tparallel
-        - unparam
-
-    # Existing plugin debt unrelated to the perf behavior under review.
-    - path: pkg/plugins/build_cache\.go
-      linters:
-        - gocyclo
-        - revive
-
-    - path: pkg/plugins/feed_rendering\.go
-      linters:
-        - unused
-
-    - path: pkg/plugins/publish_feeds\.go
-      linters:
-        - unused
-
-    - path: pkg/plugins/glob\.go
-      linters:
-        - gocritic
-
-    - path: cmd/markata-go/cmd/builder_admin\.go
-      linters:
-        - revive
-
   max-issues-per-linter: 50
   max-same-issues: 10
   new: false
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    gofmt:
+      simplify: true
+    goimports:
+      local-prefixes:
+        - github.com/WaylonWalker/markata
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

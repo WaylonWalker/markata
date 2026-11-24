@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/WaylonWalker/markata-go/pkg/palettes"
+	"github.com/WaylonWalker/markata/pkg/palettes"
 )
 
 func TestWriterNormalizesBracketedComponent(t *testing.T) {
@@ -54,11 +54,45 @@ func TestWriterDoesNotTreatWarningAsComponent(t *testing.T) {
 }
 
 func TestAllowColorForceColor(t *testing.T) {
-	t.Setenv("NO_COLOR", "")
+	t.Setenv("NO_COLOR", "1")
+	t.Setenv("FORCE_COLOR", "")
 	t.Setenv("TERM", "xterm-256color")
 
 	if !allowColor(Options{Format: FormatRich, ForceColor: true}) {
 		t.Fatal("expected force color to enable color")
+	}
+}
+
+func TestColorEnabledMatchesCLIForcePrecedence(t *testing.T) {
+	t.Setenv("NO_COLOR", "1")
+	t.Setenv("FORCE_COLOR", "")
+	t.Setenv("TERM", "dumb")
+	if !ColorEnabled(false, FormatRich, true, false) {
+		t.Fatal("explicit force color should override automatic suppression")
+	}
+}
+
+func TestWriterForceColorUsesRichAutoFormat(t *testing.T) {
+	t.Setenv("NO_COLOR", "")
+	t.Setenv("FORCE_COLOR", "")
+	t.Setenv("TERM", "xterm-256color")
+	buf := bytes.NewBuffer(nil)
+	writer := NewWriter(Options{Writer: buf, Format: FormatAuto, ForceColor: true, IsTTY: false})
+
+	if _, err := writer.Write([]byte("[build] complete\n")); err != nil {
+		t.Fatalf("Write() error = %v", err)
+	}
+	if !strings.Contains(buf.String(), ansiTrueColor(DefaultTheme().Component)+"[build]"+ansiReset) {
+		t.Fatalf("forced auto-format output = %q, want ANSI color", buf.String())
+	}
+}
+
+func TestColorEnabledWhitespaceNoColor(t *testing.T) {
+	t.Setenv("NO_COLOR", " ")
+	t.Setenv("FORCE_COLOR", "")
+	t.Setenv("TERM", "xterm-256color")
+	if ColorEnabled(true, FormatAuto, false, false) {
+		t.Fatal("any non-empty NO_COLOR value should disable automatic color")
 	}
 }
 
@@ -72,7 +106,7 @@ func TestRichComponentUsesPhaseColor(t *testing.T) {
 		t.Fatalf("Write() error = %v", err)
 	}
 
-	if !strings.Contains(buf.String(), ansiCyan+"[lifecycle]"+ansiReset) {
+	if !strings.Contains(buf.String(), ansiTrueColor(DefaultTheme().PhaseColor["render"])+"[lifecycle]"+ansiReset) {
 		t.Fatalf("output = %q", buf.String())
 	}
 }
@@ -98,8 +132,8 @@ func TestThemeFromPaletteUsesPaletteColors(t *testing.T) {
 	if theme.Success != "#778899" {
 		t.Fatalf("Success = %q, want %q", theme.Success, "#778899")
 	}
-	if theme.PhaseColor["transform"] != "#334455" {
-		t.Fatalf("transform color = %q, want %q", theme.PhaseColor["transform"], "#334455")
+	if theme.PhaseColor["transform"] != "#112233" {
+		t.Fatalf("transform color = %q, want %q", theme.PhaseColor["transform"], "#112233")
 	}
 	if theme.PhaseColor["collect"] != "#778899" {
 		t.Fatalf("collect color = %q, want %q", theme.PhaseColor["collect"], "#778899")

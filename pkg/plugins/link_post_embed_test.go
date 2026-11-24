@@ -4,7 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/buildcache"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 func TestLinkPostDestination(t *testing.T) {
@@ -46,6 +47,30 @@ func TestLinkPostEmbedCacheHashTracksFrontmatterDestination(t *testing.T) {
 	article := linkPostEmbedCacheHash(post, "config")
 	if article == second {
 		t.Fatal("changing from link post to article must invalidate the embed transform cache")
+	}
+}
+
+func TestHasCachedEmbedTransformRequiresCurrentContentAndConfig(t *testing.T) {
+	post := &models.Post{Path: "posts/embed.md", Content: "![embed](https://example.com/post)"}
+	cache := buildcache.New(t.TempDir())
+	plugin := NewEmbedsPlugin()
+	signature := embedsCacheSignature(plugin.config, nil)
+	cache.CacheEmbedsContent(post.Path, linkPostEmbedCacheHash(post, signature), "<div>cached</div>")
+	if !HasCachedEmbedTransform(cache, post, nil) {
+		t.Fatal("current embed transform cache was not found")
+	}
+	post.Content += "\nchanged"
+	if HasCachedEmbedTransform(cache, post, nil) {
+		t.Fatal("stale embed transform cache was accepted")
+	}
+}
+
+func TestHasExternalEmbedCandidateIgnoresCodeBlocks(t *testing.T) {
+	if HasExternalEmbedCandidate(&models.Post{Content: "```md\n![embed](https://example.com/post)\n```"}) {
+		t.Fatal("embed example in a code block was treated as an active candidate")
+	}
+	if !HasExternalEmbedCandidate(&models.Post{Content: "![[https://example.com/post]]"}) {
+		t.Fatal("Obsidian external embed was not detected")
 	}
 }
 

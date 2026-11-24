@@ -3,7 +3,7 @@ package lint
 import (
 	"testing"
 
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 func boolPtr(b bool) *bool {

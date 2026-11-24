@@ -4,7 +4,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/buildstats"
+	"github.com/WaylonWalker/markata/pkg/buildstats"
 )
 
 // SpanViewRow is the bounded presentation model used by Builder Admin trace

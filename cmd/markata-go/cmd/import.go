@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/importer"
+	"github.com/WaylonWalker/markata/pkg/importer"
 	"github.com/spf13/cobra"
 )
 

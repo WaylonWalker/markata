@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -93,7 +94,7 @@ func TestRunInteractiveMode_TemplateAlias(t *testing.T) {
 	newTemplate = "ping"
 
 	cmd := &cobra.Command{}
-	cmd.SetIn(strings.NewReader("My Ping\nnotes\n\nn\n"))
+	cmd.SetIn(strings.NewReader("ping\nMy Ping\n\n\nn\n"))
 	cmd.SetOut(bytes.NewBuffer(nil))
 	cmd.SetErr(bytes.NewBuffer(nil))
 	currentCmd = cmd
@@ -109,11 +110,11 @@ func TestRunInteractiveMode_TemplateAlias(t *testing.T) {
 	if got := input.template.Frontmatter["templateKey"]; got != "ping" {
 		t.Fatalf("templateKey frontmatter = %v, want ping", got)
 	}
-	if input.template.Directory != "pages/note" {
-		t.Fatalf("directory = %q, want %q", input.template.Directory, "pages/note")
+	if input.template.Directory != "pages/ping" {
+		t.Fatalf("directory = %q, want %q", input.template.Directory, "pages/ping")
 	}
-	if newDir != "pages/note" {
-		t.Fatalf("newDir = %q, want %q", newDir, "pages/note")
+	if newDir != "pages/ping" {
+		t.Fatalf("newDir = %q, want %q", newDir, "pages/ping")
 	}
 	if newDraft {
 		t.Fatal("expected draft prompt to leave newDraft false")
@@ -176,7 +177,7 @@ func TestBuiltinTemplates(t *testing.T) {
 	templates := builtinTemplates()
 
 	// Check that all expected templates exist
-	expectedTemplates := []string{"post", "page", "docs", "article", "note", "photo", "video", "link", "quote", "guide", "inline", "contact", "author"}
+	expectedTemplates := []string{"post", "page", "docs", "article", "note", "ping", "photo", "video", "link", "quote", "guide", "inline", "contact", "author"}
 	for _, name := range expectedTemplates {
 		if _, exists := templates[name]; !exists {
 			t.Errorf("expected builtin template %q not found", name)
@@ -314,13 +315,16 @@ func TestGenerateTemplatedContent(t *testing.T) {
 		Frontmatter: map[string]interface{}{
 			"templateKey": "post",
 			"layout":      "post.html",
+			"title":       "{{title}}",
+			"slug":        "{{slug}}",
+			"date":        "{{date}}",
 		},
 		Body:   "Start writing here...",
 		Source: "builtin",
 	}
 
 	date := time.Date(2024, 1, 15, 0, 0, 0, 0, time.UTC)
-	content := generateTemplatedContent("My Test Post", "my-test-post", date, true, []string{"go", "test"}, template)
+	content := generateTemplatedContent("My Test Post", "my-test-post", date, true, true, []string{"go", "test"}, template)
 
 	// Check frontmatter delimiters
 	if !strings.HasPrefix(content, "---\n") {
@@ -368,8 +372,8 @@ func TestResolveTemplateSelection_Alias(t *testing.T) {
 	if !ok {
 		t.Fatal("expected alias template resolution to succeed")
 	}
-	if resolvedName != "note" {
-		t.Fatalf("resolvedName = %q, want %q", resolvedName, "note")
+	if resolvedName != "ping" {
+		t.Fatalf("resolvedName = %q, want %q", resolvedName, "ping")
 	}
 	if got := template.Frontmatter["template"]; got != "ping" {
 		t.Fatalf("template frontmatter = %v, want ping", got)
@@ -377,8 +381,8 @@ func TestResolveTemplateSelection_Alias(t *testing.T) {
 	if got := template.Frontmatter["templateKey"]; got != "ping" {
 		t.Fatalf("templateKey frontmatter = %v, want ping", got)
 	}
-	if template.Directory != templates["note"].Directory {
-		t.Fatalf("directory = %q, want %q", template.Directory, templates["note"].Directory)
+	if template.Directory != "pages/ping" {
+		t.Fatalf("directory = %q, want %q", template.Directory, "pages/ping")
 	}
 }
 
@@ -386,7 +390,7 @@ func TestFormatTemplateEntry_IncludesAliases(t *testing.T) {
 	template := builtinTemplates()["note"]
 	entry := formatTemplateEntry("note", template)
 
-	if !strings.Contains(entry, "note (aka: ping, thought, status, tweet)") {
+	if !strings.Contains(entry, "note (aka: thought, status, tweet)") {
 		t.Fatalf("entry = %q, expected aliases", entry)
 	}
 	if !strings.Contains(entry, "-> pages/note/") {
@@ -524,5 +528,244 @@ func TestContentTemplatesConfig_GetPlacement(t *testing.T) {
 				t.Errorf("GetPlacement(%q) = %q, want %q", tt.templateName, dir, tt.expected)
 			}
 		})
+	}
+}
+
+func TestParseTemplateFile_StarterMetadata(t *testing.T) {
+	content := "---\nstarter:\n  name: how-to\n  description: A useful guide\n  aliases:\n    - tutorial\n_directory: guides\ndescription: Page description\ntitle: \"{{title}}\"\ndate: \"{{date}}\"\n---\n\n## {{title}}\n"
+	template := parseTemplateFile("guide", content)
+	if template.Name != "how-to" || template.Directory != "guides" || template.Description != "A useful guide" {
+		t.Fatalf("template metadata = %#v", template)
+	}
+	if len(template.Aliases) != 1 || template.Aliases[0] != "tutorial" {
+		t.Fatalf("aliases = %#v", template.Aliases)
+	}
+	for _, key := range []string{"starter", "_directory"} {
+		if _, ok := template.Frontmatter[key]; ok {
+			t.Errorf("metadata %q leaked into generated frontmatter", key)
+		}
+	}
+	if template.Frontmatter["description"] != "Page description" {
+		t.Fatal("page description frontmatter was not preserved")
+	}
+}
+
+func TestParseTemplateFile_UsesCanonicalNameAsDefaultDirectory(t *testing.T) {
+	template := parseTemplateFile("guide", "---\nstarter:\n  name: how-to\n---\n\nBody\n")
+	if template.Name != "how-to" || template.Directory != "how-to" {
+		t.Fatalf("name/directory = %q/%q, want how-to/how-to", template.Name, template.Directory)
+	}
+}
+
+func TestParseTemplateFile_ExplicitDirectoryWinsOverCanonicalName(t *testing.T) {
+	template := parseTemplateFile("guide", "---\nstarter:\n  name: how-to\n_directory: guide\n---\n\nBody\n")
+	if template.Name != "how-to" || template.Directory != "guide" {
+		t.Fatalf("explicit directory lost: %#v", template)
+	}
+}
+
+func TestParseTemplateFile_ReportsInvalidStarterMetadata(t *testing.T) {
+	for _, content := range []string{
+		"---\nstarter: invalid\n---\nBody\n",
+		"---\nstarter:\n  aliases: one\n---\nBody\n",
+		"---\nstarter: [broken\n---\nBody\n",
+		"---\nstarter:\n  name: no-close\n",
+	} {
+		template := parseTemplateFile("broken", content)
+		if template.ValidationError == "" {
+			t.Fatalf("invalid starter metadata was not reported: %s", content)
+		}
+	}
+}
+
+func TestResolveTemplateSelection_SiteAliasDoesNotInjectFields(t *testing.T) {
+	templates := map[string]ContentTemplate{
+		"guide": {
+			Name:        "guide",
+			Source:      "file",
+			Directory:   "guides",
+			Aliases:     []string{"tutorial"},
+			Frontmatter: map[string]interface{}{"title": "{{title}}"},
+		},
+	}
+	resolved, canonical, ok := resolveTemplateSelection("tutorial", templates)
+	if !ok || canonical != "guide" {
+		t.Fatalf("site alias did not resolve: %#v %q", resolved, canonical)
+	}
+	for _, key := range []string{"template", "templateKey"} {
+		if _, exists := resolved.Frontmatter[key]; exists {
+			t.Errorf("site alias injected %q into content", key)
+		}
+	}
+}
+
+func TestResolveTemplateSelection_PrefersCanonicalOverAlias(t *testing.T) {
+	templates := map[string]ContentTemplate{
+		"post":  {Name: "post", Directory: "posts"},
+		"guide": {Name: "guide", Directory: "guides", Aliases: []string{"post"}},
+	}
+	template, canonical, ok := resolveTemplateSelection("post", templates)
+	if !ok || canonical != "post" || template.Name != "post" {
+		t.Fatalf("canonical selection failed: %q, %#v, %t", canonical, template, ok)
+	}
+}
+
+func TestResolveTemplateSelection_RejectsAmbiguousAliasButKeepsNames(t *testing.T) {
+	templates := builtinTemplates()
+	templates["guide"] = ContentTemplate{Name: "guide", Directory: "guides", Aliases: []string{"tutorial"}}
+	if _, _, ok := resolveTemplateSelection("tutorial", templates); ok {
+		t.Fatal("expected ambiguous tutorial alias to be rejected")
+	}
+	if template, _, ok := resolveTemplateSelection("article", templates); !ok || template.Name != "article" {
+		t.Fatal("article canonical name must remain usable")
+	}
+	if template, _, ok := resolveTemplateSelection("guide", templates); !ok || template.Name != "guide" {
+		t.Fatal("guide canonical name must remain usable")
+	}
+}
+
+func TestLoadTemplatesFromDir_ReportsDuplicateCanonicalName(t *testing.T) {
+	directory := t.TempDir()
+	for _, name := range []string{"one.md", "two.md"} {
+		if err := os.WriteFile(filepath.Join(directory, name), []byte("---\nstarter:\n  name: guide\n---\nBody"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	templates := map[string]ContentTemplate{}
+	loadTemplatesFromDir(directory, templates)
+	if got := templates["guide"].ValidationError; !strings.Contains(got, "one.md") || !strings.Contains(got, "two.md") {
+		t.Fatalf("duplicate starter conflict must identify both files: %q", got)
+	}
+}
+
+func TestValidateTemplateAliases_KeepsBuiltinsUsable(t *testing.T) {
+	templates := builtinTemplates()
+	// The built-ins must resolve by canonical name.
+	for name, template := range templates {
+		if template.ValidationError != "" {
+			t.Errorf("built-in %q unexpectedly invalid: %s", name, template.ValidationError)
+		}
+	}
+}
+
+func TestGenerateTemplatedContent_ExpandsStarterVariables(t *testing.T) {
+	template := ContentTemplate{Frontmatter: map[string]interface{}{"subtitle": "{{title}} ({{slug}})", "when": "{{date}}"}, Body: "## {{title}} on {{datetime}}"}
+	date := time.Date(2024, 1, 15, 12, 30, 0, 0, time.UTC)
+	content := generateTemplatedContent("A Guide", "a-guide", date, false, false, nil, template)
+	for _, expected := range []string{"subtitle: A Guide (a-guide)", "when: \"2024-01-15\"", "## A Guide on 2024-01-15T12:30:00Z"} {
+		if !strings.Contains(content, expected) {
+			t.Errorf("content missing %q:\n%s", expected, content)
+		}
+	}
+}
+
+func TestGenerateTemplatedContent_AddsCreationDefaultsOnly(t *testing.T) {
+	template := ContentTemplate{
+		Frontmatter: map[string]interface{}{"title": "{{title}}"},
+		Body:        "## {{title}}",
+	}
+	date := time.Date(2024, 1, 15, 0, 0, 0, 0, time.UTC)
+	content := generateTemplatedContent("My Page", "my-page", date, false, false, nil, template)
+	if !strings.Contains(content, "title: My Page") || !strings.Contains(content, "## My Page") {
+		t.Fatalf("starter title was not expanded: %s", content)
+	}
+	for _, field := range []string{"date: \"2024-01-15\"", "published: true"} {
+		if !strings.Contains(content, field) {
+			t.Errorf("creation default %q missing: %s", field, content)
+		}
+	}
+	for _, field := range []string{"slug:", "draft:", "tags:", "description:"} {
+		if strings.Contains(content, field) {
+			t.Errorf("inherited default %q should not be written: %s", field, content)
+		}
+	}
+}
+
+func TestGenerateTemplatedContent_ExplicitOverrides(t *testing.T) {
+	template := ContentTemplate{Frontmatter: map[string]interface{}{
+		"draft": true, "published": false, "tags": []string{"starter"},
+	}}
+	date := time.Date(2024, 1, 15, 0, 0, 0, 0, time.UTC)
+	content := generateTemplatedContent("Page", "page", date, false, true, []string{}, template)
+	for _, expected := range []string{"draft: false", "published: true", "tags: []"} {
+		if !strings.Contains(content, expected) {
+			t.Errorf("explicit override missing %q: %s", expected, content)
+		}
+	}
+}
+
+func TestGenerateTemplatedContent_NoFrontmatterAddsCreationDefaults(t *testing.T) {
+	template := ContentTemplate{Body: "Hello {{title}}"}
+	date := time.Date(2024, 1, 15, 0, 0, 0, 0, time.UTC)
+	content := generateTemplatedContent("World", "world", date, false, false, nil, template)
+	if content != "---\ndate: \"2024-01-15\"\npublished: true\n---\n\nHello World\n" {
+		t.Fatalf("unexpected generated body: %q", content)
+	}
+}
+
+func TestGenerateTemplatedContent_CreationDefaultPrecedence(t *testing.T) {
+	for _, tt := range []struct {
+		name        string
+		frontmatter map[string]interface{}
+		wantDate    string
+		wantPublish bool
+	}{
+		{"missing values", nil, "2024-01-15", true},
+		{"blank date", map[string]interface{}{"date": "   "}, "2024-01-15", true},
+		{"null date", map[string]interface{}{"date": nil}, "2024-01-15", true},
+		{"null publication", map[string]interface{}{"published": nil}, "2024-01-15", true},
+		{"explicit date", map[string]interface{}{"date": "2023-12-01"}, "2023-12-01", true},
+		{"starter unpublished", map[string]interface{}{"published": false}, "2024-01-15", false},
+		{"starter draft", map[string]interface{}{"draft": true}, "2024-01-15", false},
+		{"starter not draft", map[string]interface{}{"draft": false}, "2024-01-15", true},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			date := time.Date(2024, 1, 15, 23, 30, 0, 0, time.FixedZone("local", -7*60*60))
+			content := generateTemplatedContent("Post", "post", date, false, false, nil, ContentTemplate{
+				Frontmatter: tt.frontmatter, Body: "Post body",
+			})
+			for _, want := range []string{fmt.Sprintf("date: %q", tt.wantDate), fmt.Sprintf("published: %t", tt.wantPublish)} {
+				if !strings.Contains(content, want) {
+					t.Errorf("missing %q:\n%s", want, content)
+				}
+			}
+		})
+	}
+}
+
+func TestGenerateTemplatedContent_PreservesUnselectedStarterDefaults(t *testing.T) {
+	template := ContentTemplate{Frontmatter: map[string]interface{}{
+		"published":   false,
+		"draft":       true,
+		"tags":        []interface{}{"site-tag"},
+		"description": "Starter description",
+	}}
+	date := time.Date(2024, 1, 15, 0, 0, 0, 0, time.UTC)
+	content := generateTemplatedContent("A Guide", "a-guide", date, false, false, nil, template)
+	for _, expected := range []string{"published: false", "draft: true", "- site-tag", "description: Starter description"} {
+		if !strings.Contains(content, expected) {
+			t.Errorf("content missing preserved value %q:\n%s", expected, content)
+		}
+	}
+}
+
+func TestApplyNewWizardState_DraftFlagOverridesPublicationDefault(t *testing.T) {
+	cmd, _ := linkTestCommand(t)
+	if err := cmd.ParseFlags([]string{"--draft"}); err != nil {
+		t.Fatal(err)
+	}
+	currentCmd = cmd
+	state := &newWizardState{
+		Template: "post", Title: "Wizard draft", PrivateChoice: "inherit",
+	}
+	if err := applyNewWizardState(state, builtinTemplates()); err != nil {
+		t.Fatal(err)
+	}
+	fm := readLinkFrontmatter(t, filepath.Join("pages", "post", "wizard-draft.md"))
+	if fm["published"] != false || fm["draft"] != true {
+		t.Fatalf("wizard ignored explicit draft flag: %#v", fm)
+	}
+	if _, ok := fm["date"].(string); !ok {
+		t.Fatalf("wizard draft has no date: %#v", fm)
 	}
 }

@@ -7,7 +7,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/WaylonWalker/markata-go/pkg/config"
+	"github.com/WaylonWalker/markata/pkg/config"
 )
 
 func configFilesHash(cfgPath string, mergeFiles []string) (string, error) {

@@ -7,11 +7,11 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/WaylonWalker/markata-go/pkg/buildcache"
-	"github.com/WaylonWalker/markata-go/pkg/config"
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/logging"
-	"github.com/WaylonWalker/markata-go/pkg/themes"
+	"github.com/WaylonWalker/markata/pkg/buildcache"
+	"github.com/WaylonWalker/markata/pkg/config"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/logging"
+	"github.com/WaylonWalker/markata/pkg/themes"
 )
 
 var buildCacheLog = logging.Component("build_cache")
@@ -168,6 +168,11 @@ func (p *BuildCachePlugin) Load(m *lifecycle.Manager) error {
 		affected = make(map[string]bool, len(changedPaths))
 	}
 	for path := range changedPaths {
+		// The previous slug must be invalidated before transform refreshes the
+		// graph's path-to-slug entry, otherwise inbound links keep old routes.
+		if oldSlug := p.cache.Graph.SlugForPath(path); oldSlug != "" {
+			p.cache.MarkSlugChanged(oldSlug)
+		}
 		for _, identity := range identitiesByPath[path] {
 			p.cache.MarkSlugChanged(identity)
 		}

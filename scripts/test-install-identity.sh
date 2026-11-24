@@ -3,6 +3,17 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# The GoReleaser brand must be canonical without dropping old archive names.
+grep -Fxq 'project_name: markata' "${repo_root}/.goreleaser.yml"
+cmp "${repo_root}/install.sh" "${repo_root}/static/install.sh"
+grep -Fxq '      markata-go_' "${repo_root}/.goreleaser.yml"
+grep -Fxq '      markata_' "${repo_root}/.goreleaser.yml"
+# GitHub repo was renamed; installer must use the canonical release URL.
+grep -Fq 'REPO="WaylonWalker/markata"' "${repo_root}/install.sh"
+if grep -Fq 'REPO="WaylonWalker/markata-go"' "${repo_root}/install.sh"; then
+    echo "Installer unexpectedly targets the legacy repository" >&2
+    exit 1
+fi
 test_dir="$(mktemp -d)"
 trap 'rm -rf "${test_dir}"' EXIT
 mkdir -p "${test_dir}/bin" "${test_dir}/assets" "${test_dir}/install"
@@ -32,10 +43,10 @@ export FAKE_RELEASE_DIR="${test_dir}/assets"
 export MARKATA_INSTALL_DIR="${test_dir}/install"
 export MARKATA_VERSION="v0.99.9"
 
-os=linux
 case "$(uname -s)" in
-    Linux*) ;;
-    *) echo "Installer smoke test only supports Linux" >&2; exit 1 ;;
+    Linux*) os=linux ;;
+    Darwin*) os=darwin ;;
+    *) echo "Installer smoke test supports Linux and macOS" >&2; exit 1 ;;
 esac
 case "$(uname -m)" in
     x86_64|amd64) arch=x86_64 ;;
@@ -59,6 +70,11 @@ fi
 BINARY
     chmod +x "${work}/${name}"
     tar -czf "${FAKE_RELEASE_DIR}/${name}_0.99.9_${os}_${arch}.tar.gz" -C "${work}" "${name}"
+    if command -v sha256sum >/dev/null 2>&1; then
+        ( cd "${FAKE_RELEASE_DIR}" && sha256sum *.tar.gz > checksums.txt )
+    else
+        ( cd "${FAKE_RELEASE_DIR}" && shasum -a 256 *.tar.gz > checksums.txt )
+    fi
 }
 
 make_archive markata
@@ -71,6 +87,19 @@ rm "${FAKE_RELEASE_DIR}/markata_0.99.9_${os}_${arch}.tar.gz"
 make_archive markata-go
 bash "${repo_root}/install.sh" >/dev/null
 cmp "${MARKATA_INSTALL_DIR}/markata" "${MARKATA_INSTALL_DIR}/markata-go"
+
+# A modified archive must fail before the installed commands are touched.
+printf x >> "${FAKE_RELEASE_DIR}/markata-go_0.99.9_${os}_${arch}.tar.gz"
+if bash "${repo_root}/install.sh" > "${test_dir}/tampered.log" 2>&1; then
+    echo "Tampered release archive was accepted" >&2
+    exit 1
+fi
+grep -q 'SHA-256 mismatch' "${test_dir}/tampered.log"
+cmp "${MARKATA_INSTALL_DIR}/markata" "${MARKATA_INSTALL_DIR}/markata-go"
+
+# Restore a *valid* archive and manifest before independently checking
+# executable collision handling. Otherwise SHA verification masks that case.
+make_archive markata-go
 
 # A Python or unrelated executable must not be overwritten.
 printf '#!/bin/sh\necho legacy-python\n' > "${MARKATA_INSTALL_DIR}/markata"

@@ -144,6 +144,9 @@ func TestCache_MarkRebuiltWithSlug_TracksChange(t *testing.T) {
 	if len(changed) != 1 || changed[0] != "post-a" {
 		t.Errorf("GetChangedSlugs = %v, want [post-a]", changed)
 	}
+	if got := cache.GetCachedPost("pages/post-a.md").Slug; got != "post-a" {
+		t.Fatalf("cached slug = %q, want post-a", got)
+	}
 }
 
 func TestCache_MarkRebuiltWithSlug_PreservesCachedHTMLPaths(t *testing.T) {

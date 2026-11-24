@@ -1,7 +1,7 @@
 package plugins
 
 import (
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
 )
 
 // SinglePageRootPlugin publishes every loaded post at the site root.
@@ -62,6 +62,7 @@ var singlePageExcludedPlugins = map[string]bool{
 	"feeds_listing":           true,
 	"garden_view":             true,
 	"sitemap":                 true,
+	"llms_txt":                true,
 	"content_index":           true,
 	"pagefind":                true,
 }

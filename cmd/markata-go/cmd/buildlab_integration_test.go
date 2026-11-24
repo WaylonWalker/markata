@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/internal/testbinary"
-	"github.com/WaylonWalker/markata-go/pkg/buildlab"
+	"github.com/WaylonWalker/markata/internal/testbinary"
+	"github.com/WaylonWalker/markata/pkg/buildlab"
 )
 
 // This test is deliberately observational. Current main may report product
@@ -78,6 +78,7 @@ func TestBuildLab_LinkedAndFixtureMutationsCharacterizeProduct(t *testing.T) {
 
 func TestBuildLab_DeletePostPrunesGeneratedOutput(t *testing.T) {
 	requireLinuxBuildLab(t)
+	parallelBuildLab(t)
 	fixture := filepath.Join(moduleRoot(t), "cmd", "markata-go", "cmd", "testdata", "buildlab-site")
 	binary := buildTestBinary(t)
 	result, runErr := buildlab.RunScenario(context.Background(), buildlab.ScenarioRunConfig{
@@ -109,6 +110,7 @@ func TestBuildLab_DeletePostPrunesGeneratedOutput(t *testing.T) {
 
 func TestBuildLab_LinkedTargetEditMatchesCleanPageAndFeeds(t *testing.T) {
 	requireLinuxBuildLab(t)
+	parallelBuildLab(t)
 	fixture := filepath.Join(moduleRoot(t), "cmd", "markata-go", "cmd", "testdata", "buildlab-site")
 	binary := buildTestBinary(t)
 	result, runErr := buildlab.RunScenario(context.Background(), buildlab.ScenarioRunConfig{
@@ -217,6 +219,7 @@ func assertLinkedTargetIncrementalScope(t *testing.T, fixture, binary string) {
 
 func TestBuildLab_ConfigChangeRebuildsFeedsListing(t *testing.T) {
 	requireLinuxBuildLab(t)
+	parallelBuildLab(t)
 	fixture := filepath.Join(moduleRoot(t), "cmd", "markata-go", "cmd", "testdata", "buildlab-site")
 	binary := buildTestBinary(t)
 	result, runErr := buildlab.RunScenario(context.Background(), buildlab.ScenarioRunConfig{
@@ -238,6 +241,9 @@ func TestBuildLab_ConfigChangeRebuildsFeedsListing(t *testing.T) {
 		t.Fatalf("Build Lab run error = %v", runErr)
 	}
 	if result.Verdict != buildLabPassVerdict {
+		for _, checkpoint := range result.Checkpoints {
+			t.Logf("Build Lab operation %d (%s): correctness = %+v; diagnostics = %+v", checkpoint.OperationIndex, checkpoint.Operation, checkpoint.Correctness, checkpoint.Diagnostics)
+		}
 		t.Fatalf("Build Lab verdict = %s, want %s; diagnostics = %+v", result.Verdict, buildLabPassVerdict, result.Diagnostics)
 	}
 	if len(result.Checkpoints) != 2 {
@@ -351,6 +357,20 @@ func buildTestBinary(t *testing.T) string {
 	}
 	return binary
 }
+
+// Build Lab scenarios run separate CLIs inside isolated workspaces. Running
+// them two at a time shortens the long serial CLI package without saturating
+// small CI runners with concurrent site builds. These tests still execute on
+// every selected Go test run; only their scheduling changes.
+var buildLabScenarioSlots = make(chan struct{}, 2)
+
+func parallelBuildLab(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	buildLabScenarioSlots <- struct{}{}
+	t.Cleanup(func() { <-buildLabScenarioSlots })
+}
+
 func requireLinuxBuildLab(t *testing.T) {
 	t.Helper()
 	if runtime.GOOS != "linux" {

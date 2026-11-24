@@ -8,7 +8,7 @@ tags:
   - comparison
 ---
 
-# Static Site Generator Comparison Guide
+## Static Site Generator Comparison Guide
 
 A comprehensive comparison of markata-go against popular static site generators to help you choose the right tool for your project.
 

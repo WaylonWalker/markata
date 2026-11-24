@@ -11,7 +11,6 @@ tags:
   - ci-cd
 ---
 
-# GitLab CI for Content Quality
 
 GitLab CI/CD provides powerful pipeline capabilities for validating your markata-go site content. This guide covers pipeline configuration, caching strategies, merge request quality gates, and badge generation.
 

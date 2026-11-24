@@ -14,9 +14,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/models"
-	markatatemplates "github.com/WaylonWalker/markata-go/pkg/templates"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/models"
+	markatatemplates "github.com/WaylonWalker/markata/pkg/templates"
 	"github.com/bmatcuk/doublestar/v4"
 )
 

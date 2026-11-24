@@ -29,8 +29,8 @@ import (
 	"golang.org/x/image/webp"
 	"golang.org/x/net/html"
 
-	"github.com/WaylonWalker/markata-go/pkg/models"
-	"github.com/WaylonWalker/markata-go/pkg/templates"
+	"github.com/WaylonWalker/markata/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/templates"
 )
 
 // BuildOptions controls image discovery.

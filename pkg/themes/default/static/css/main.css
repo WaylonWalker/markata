@@ -396,6 +396,18 @@ h6:hover .heading-anchor,
   text-decoration: none;
 }
 
+@media (max-width: 640px) {
+  .post-content :is(h1, h2, h3, h4, h5, h6) {
+    padding-inline-end: 1.25rem;
+  }
+
+  .post-content :is(h1, h2, h3, h4, h5, h6) .heading-anchor {
+    left: auto;
+    right: 0;
+    margin-inline-start: 0;
+  }
+}
+
 p {
   margin-bottom: var(--space-4);
 }
@@ -776,19 +788,122 @@ table {
 }
 
 th, td {
-  padding: var(--space-3);
+  padding: .7rem .85rem;
   text-align: left;
   border-bottom: 1px solid var(--color-border-soft);
 }
 
-/* Long unbroken values (URLs, dotted keys) must not push tables past the column. */
+.post-content > table {
+  position: relative;
+  left: 50%;
+  width: min(1200px, calc(100vw - 3rem));
+  max-width: none;
+  margin-inline: 0;
+  transform: translateX(-50%);
+}
+
+/* Keep table values intact; the table itself scrolls when its columns need room. */
 .post-content :is(th, td) {
-  overflow-wrap: anywhere;
+  overflow-wrap: normal;
+  vertical-align: top;
 }
 
 th {
   font-weight: 600;
   background: color-mix(in srgb, var(--color-surface) 70%, transparent);
+  border-bottom: 2px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.table-sort-button {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  min-height: 0;
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  font: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  text-align: inherit;
+  cursor: pointer;
+  transition: color .15s ease;
+}
+
+.table-sort-button:hover {
+  color: var(--color-primary);
+  background: transparent;
+  border-color: transparent;
+}
+
+.table-sort-button::after {
+  content: '↕';
+  display: inline-block;
+  width: 1ch;
+  flex: 0 0 1ch;
+  color: var(--color-text-muted);
+  opacity: .55;
+  font-size: .75em;
+  line-height: 1;
+  text-align: center;
+}
+
+th[aria-sort="ascending"] .table-sort-button::after,
+th[aria-sort="descending"] .table-sort-button::after {
+  color: var(--color-primary);
+  opacity: 1;
+}
+
+th[aria-sort="ascending"] .table-sort-button::after { content: '↑'; }
+th[aria-sort="descending"] .table-sort-button::after { content: '↓'; }
+
+.table-sort-button:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 4px;
+  border-radius: 2px;
+}
+
+.post-content tbody tr:nth-child(even) {
+  background: color-mix(in srgb, var(--color-surface) 32%, transparent);
+}
+
+.post-content tbody tr:hover {
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+}
+
+@media (max-width: 900px) {
+  .post-content > table {
+    width: calc(100vw - 2rem);
+    font-size: clamp(.7rem, 1.7vw, .9rem);
+  }
+
+  .post-content > table :is(th, td) {
+    padding: .55rem .65rem;
+  }
+}
+
+@media (max-width: 560px) {
+  .post-content > table {
+    display: block;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: thin;
+  }
+
+  .post-content > table thead,
+  .post-content > table tbody,
+  .post-content > table tr {
+    width: max-content;
+  }
+
+  .post-content > table th,
+  .post-content > table td {
+    white-space: normal;
+    min-width: 5.5rem;
+  }
 }
 
 /* Horizontal rule */
@@ -977,6 +1092,13 @@ article.post {
   border-radius: var(--radius-xl);
 }
 
+/* Blog reading cards need an opaque surface; documentation already has its
+ * own grid and reading measure. Keep its existing geometry and typography. */
+:where(body:not(.layout--docs)) article.post {
+  background: var(--article-bg, var(--color-background));
+  border: 1px solid var(--color-border-soft, var(--color-border));
+}
+
 /* A wider reading measure without allowing card padding to overflow on phones. */
 body.reader-mode article.post {
   box-sizing: border-box;
@@ -1013,9 +1135,15 @@ body:has(.background-decoration) article.post {
   overflow-wrap: anywhere;
 }
 
-/* The build supplies a readable first paint; font-aware fitting runs later. */
-.post-header h1[data-title-size="long"] { font-size: clamp(var(--text-3xl), 3vw, var(--text-4xl)); }
-.post-header h1[data-title-size="very-long"] { font-size: clamp(var(--text-2xl), 2.5vw, var(--text-3xl)); }
+:where(body:not(.layout--docs)) .post-header h1 {
+  text-wrap: balance;
+  font-size: clamp(2.5rem, 4.6vw, 3.8rem);
+  line-height: 1.08;
+}
+
+/* Server-rendered title scale avoids post-paint JS resize flashes and CLS. */
+.post-header h1[data-title-size="long"] { font-size: clamp(2.15rem, 3.8vw, 3.2rem); }
+.post-header h1[data-title-size="very-long"] { font-size: clamp(1.85rem, 3.2vw, 2.65rem); }
 
 .post-meta {
   display: flex;
@@ -1406,8 +1534,11 @@ body:has(.background-decoration) div.feed {
   margin-bottom: var(--space-8);
 }
 
-.feed-header h1 {
+.feed-header h1,
+.page-header h1 {
   margin-top: 0;
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  line-height: 1.06;
 }
 
 .feed-header p {
@@ -1546,8 +1677,8 @@ body:has(.background-decoration) div.feed {
 }
 
 .pagination-page.current {
-  background: var(--color-primary);
-  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 45%, #000 55%);
+  border-color: color-mix(in srgb, var(--color-primary) 45%, #000 55%);
   color: white;
   font-weight: 600;
 }
@@ -1999,12 +2130,6 @@ a.wikilink.wikilink-missing:focus-visible {
 
 /* Responsive */
 @media (max-width: 768px) {
-  /* Prevent horizontal overflow - WCAG 2.1 SC 1.4.10 Reflow */
-  body {
-    overflow-x: hidden;
-    max-width: 100vw;
-  }
-
   /* Container - reduce padding on mobile */
   .container {
     padding: 0 var(--space-3);
@@ -2025,7 +2150,6 @@ a.wikilink.wikilink-missing:focus-visible {
      placed independently on the grid. */
   .site-header {
     padding: var(--space-3) var(--space-3) var(--space-2);
-    overflow-x: hidden;
   }
 
   .site-header .container {

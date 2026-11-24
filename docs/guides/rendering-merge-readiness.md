@@ -9,7 +9,6 @@ tags:
   - migration
 ---
 
-# Rendering migration merge-readiness evidence
 
 This record closes the rendering-contract acceptance checklist. It does not
 claim full application WCAG compliance or exact cross-browser pixel parity.

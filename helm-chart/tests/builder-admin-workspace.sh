@@ -32,9 +32,17 @@ fi
 if grep -q 'name: workspace' "$tmp_dir/default.yaml"; then
   fail "disabled workspace emitted a workspace mount or volume"
 fi
+grep -A1 'name: MARKATA_GO_BUILDER_ADMIN_STARTUP_REBUILD' "$tmp_dir/default.yaml" | grep -q 'value: "true"' || fail "Helm default must enable startup revision builds via env"
+helm template workspace-test "$chart" "${common[@]}" --set builderAdmin.buildOnStartupRevisionChange=false >"$tmp_dir/startup-disabled.yaml"
+grep -A1 'name: MARKATA_GO_BUILDER_ADMIN_STARTUP_REBUILD' "$tmp_dir/startup-disabled.yaml" | grep -q 'value: "false"' || fail "disabled startup revision builds not reflected in Helm template"
 if grep -q -- '--dag' "$tmp_dir/default.yaml"; then
   fail "default builder admin unexpectedly enabled --dag"
 fi
+if grep -q -- '--page-weight=false' "$tmp_dir/default.yaml"; then
+  fail "default builder admin unexpectedly disabled the page-weight scan"
+fi
+helm template workspace-test "$chart" "${common[@]}" --set builderAdmin.pageWeight=false >"$tmp_dir/page-weight-disabled.yaml"
+grep -q -- '--page-weight=false' "$tmp_dir/page-weight-disabled.yaml" || fail "disabled page-weight scanning omitted from Builder Admin arguments"
 
 helm template workspace-test "$chart" "${common[@]}" \
   --set builderAdmin.dag=true \
@@ -51,6 +59,26 @@ grep -q '/data/work/build' "$tmp_dir/emptydir.yaml" || fail "emptyDir workspace 
 grep -q 'mountPath: /data/work' "$tmp_dir/emptydir.yaml" || grep -q 'mountPath: "/data/work"' "$tmp_dir/emptydir.yaml" || fail "emptyDir workspace omitted mountPath"
 grep -q 'name: workspace' "$tmp_dir/emptydir.yaml" || fail "emptyDir workspace volume was not rendered"
 grep -q 'emptyDir:' "$tmp_dir/emptydir.yaml" || fail "emptyDir workspace did not render an emptyDir volume"
+
+helm template workspace-test "$chart" "${common[@]}" \
+  --set builderAdmin.sourceGit.enabled=true \
+  --set-string builderAdmin.sourceGit.repository=https://github.com/example/site.git \
+  --set-string builderAdmin.sourceGit.branch=main \
+  --set builderAdmin.webhook.enabled=true \
+  --set-string builderAdmin.webhook.existingSecretName=site-webhook \
+  >"$tmp_dir/source-git.yaml"
+grep -q 'name: initialize-source-git' "$tmp_dir/source-git.yaml" || fail "sourceGit omitted its initializer"
+grep -q 'mountPath: /data/source-volume' "$tmp_dir/source-git.yaml" || fail "sourceGit initializer must mount the source volume root"
+grep -q 'source_volume=/data/source-volume' "$tmp_dir/source-git.yaml" || fail "sourceGit initializer omitted its checkout root"
+grep -q 'git clone --depth' "$tmp_dir/source-git.yaml" || fail "sourceGit initializer omitted shallow clone"
+grep -q 'mountPath: /data/source' "$tmp_dir/source-git.yaml" || fail "builder source mount is missing"
+grep -q 'subPath: checkout' "$tmp_dir/source-git.yaml" || fail "builder must mount the checkout subdirectory"
+grep -q 'MARKATA_GO_BUILDER_ADMIN_WEBHOOK_SECRET' "$tmp_dir/source-git.yaml" || fail "webhook secret is not injected"
+if helm template workspace-test "$chart" "${common[@]}" \
+  --set builderAdmin.sourceGit.enabled=true \
+  >/dev/null 2>&1; then
+  fail "sourceGit without a repository rendered successfully"
+fi
 
 grep -q 'name: site' "$tmp_dir/emptydir.yaml" || fail "workspace render lost the durable site volume"
 grep -q 'mountPath: /data/site' "$tmp_dir/emptydir.yaml" || grep -q 'mountPath: "/data/site"' "$tmp_dir/emptydir.yaml" || fail "workspace render lost the durable site mount"
@@ -80,3 +108,4 @@ fi
 
 printf 'Builder Admin workspace and DAG Helm tests passed.\n'
 bash "$repo_root/helm-chart/tests/portable-defaults.sh"
+bash "$repo_root/helm-chart/tests/builder-admin-editor.sh"

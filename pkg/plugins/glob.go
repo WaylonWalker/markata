@@ -7,8 +7,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/WaylonWalker/markata-go/pkg/buildcache"
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/buildcache"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
 	"github.com/bmatcuk/doublestar/v4"
 )
 
@@ -69,6 +69,17 @@ func NewGlobPlugin() *GlobPlugin {
 		patterns:     []string{"**/*.md"},
 		useGitignore: true,
 	}
+}
+
+// NewSiteGitignoreMatcher loads the root .gitignore using the same matching
+// rules as GlobPlugin and returns a reusable path matcher.
+func NewSiteGitignoreMatcher(contentDir string) (func(string) bool, error) {
+	plugin := NewGlobPlugin()
+	if err := plugin.loadGitignore(contentDir); err != nil && !os.IsNotExist(err) {
+		return nil, err
+	}
+	plugin.prepareIgnoreRules()
+	return plugin.isIgnored, nil
 }
 
 // Name returns the plugin identifier.
@@ -201,6 +212,12 @@ func (p *GlobPlugin) isIgnored(path string) bool {
 	}
 
 	return false
+}
+
+// IsIgnoredPath reports whether path matches the configured .gitignore rules.
+// Paths must be relative to the content directory.
+func (p *GlobPlugin) IsIgnoredPath(path string) bool {
+	return p.isIgnored(path)
 }
 
 // Glob discovers content files matching the configured patterns.

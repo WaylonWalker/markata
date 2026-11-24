@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 func TestOEmbedResolver_Resolve(t *testing.T) {

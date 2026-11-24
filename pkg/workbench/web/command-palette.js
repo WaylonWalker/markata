@@ -1,0 +1,142 @@
+/* Shared by the Go, Python and offline WASM workbenches. */
+(() => {
+  'use strict';
+  const commands = window.MarkataMarkdownCommands;
+
+  window.MarkataCommandPalette = {attach};
+  function attach(editor, options = {}) {
+    const entries = () => {
+      const openFileActions = typeof window.MarkataSiteTree?.openPicker === 'function' ?
+        [{id:'open-file',label:'Open file',description:'Fuzzy search workspace files',
+          syntax:'Ctrl/Cmd+P',aliases:'find quick open picker',
+          action:() => window.MarkataSiteTree.openPicker()}] : [];
+      const registered = (window.MarkataShortcuts?.all() || []).map(action => ({
+        id: action.id, label: action.label, description: action.description || '',
+        when: action.when, aliases: action.aliases || '', shortcut: window.MarkataShortcuts.bindingFor(action.id),
+        run: () => setTimeout(() => window.MarkataShortcuts.execute(action.id), 0)
+      }));
+      return [...new Map([...openFileActions, ...commands, ...(options.actions || []), ...registered].map(item => [item.id,item])).values()];
+    };
+    const button = document.createElement('button');
+    button.type = 'button'; button.id = 'commands';
+    button.textContent = 'Commands'; button.title = 'Command Palette (Ctrl/Cmd+Shift+P)';
+    button.setAttribute('aria-haspopup', 'dialog');
+    const commandHost = document.querySelector('#site-sidebar .files-open') ||
+      document.querySelector('#site-sidebar .pane-label') || document.querySelector('.editor-toolbar');
+    commandHost?.after(button);
+    const dialog = document.createElement('dialog');
+    dialog.className = 'markdown-commands'; dialog.setAttribute('aria-labelledby', 'commands-title');
+    dialog.innerHTML = '<div class="commands-heading"><h2 id="commands-title">Command Palette</h2><button type="button" class="commands-close" aria-label="Close commands">Close</button></div><label for="commands-query">Find a command or action</label><input id="commands-query" type="search" placeholder="Try callout, diagram, create, or download" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="true" aria-controls="commands-results"><p id="commands-count" role="status"></p><div id="commands-results" role="listbox" aria-label="Commands and actions"></div><p class="commands-help">↑ ↓ Choose · Enter Run · Esc Close</p>';
+    document.body.append(dialog);
+    const query = dialog.querySelector('input');
+    const results = dialog.querySelector('[role=listbox]');
+    const count = dialog.querySelector('[role=status]');
+    let matches = entries(), active = 0, selection, commandSearch;
+    function select(index) {
+      active = index;
+      [...results.children].forEach((row, i) => row.setAttribute('aria-selected', String(i === active)));
+      const row = results.children[active];
+      if (row) {
+        query.setAttribute('aria-activedescendant', row.id);
+        row.scrollIntoView({block:'nearest'});
+      } else query.removeAttribute('aria-activedescendant');
+    }
+    function refresh() {
+      const ranked = commandSearch(query.value);
+      matches = ranked.map(result => result.obj);
+      results.replaceChildren();
+      count.textContent = ranked.total > matches.length ? `Showing ${matches.length} of ${ranked.total} commands. Refine your search to see more.` : matches.length ? `${matches.length} commands` : 'No matching commands. Try another word or clear the search.';
+      matches.forEach((command, index) => {
+        const row = document.createElement('div');
+        row.id = `markdown-command-${command.id}`; row.setAttribute('role','option');
+        const label = document.createElement('strong'); label.textContent = command.label;
+        const detail = document.createElement('span'); detail.textContent = command.description;
+        row.append(label, detail);
+        if (command.shortcut) {
+          const shortcut = document.createElement('kbd');
+          shortcut.className = 'command-shortcut';
+          shortcut.textContent = command.shortcut;
+          row.append(shortcut);
+        }
+        if (command.syntax) {const syntax = document.createElement('code'); syntax.textContent = command.syntax; row.append(syntax);}
+        row.addEventListener('pointermove', () => select(index));
+        row.addEventListener('click', () => insert(command));
+        results.append(row);
+      });
+      select(0);
+    }
+    function open() {
+      if (dialog.open) return;
+      selection = {from:editor.getCursor('from'), to:editor.getCursor('to'), text:editor.getSelection()};
+      const available = entries().filter(command => !command.when || command.when());
+      commandSearch = window.MarkataSearch.createSearch(
+        available, ['label', 'aliases', 'description', 'syntax', 'shortcut'], [1, .8, .6, .7, .7], 'commands', command => command.id
+      );
+      query.value = ''; dialog.showModal(); refresh(); query.focus();
+    }
+    function close() { dialog.close(); }
+    function insert(command) {
+      if (typeof command.run === 'function') {close(); command.run(); window.MarkataSearch?.remember('commands',command.id); return;}
+      if (typeof command.action === 'function') {close(); command.action(); window.MarkataSearch?.remember('commands',command.id); return;}
+      if (editor.getOption('readOnly')) return;
+      const text = command.useSelection === false ? command.placeholder : selection.text || command.placeholder;
+      // Keep all lines of a selected passage inside an indented block.
+      const indent = command.template.slice(0, command.template.indexOf('{{text}}')).match(/\n( +)$/)?.[1] || '';
+      const content = text.replace(/\n/g, '\n' + indent);
+      const marker = command.template.indexOf('{{text}}');
+      let snippet = command.template.replace('{{text}}', () => content);
+      let prefix = '', suffix = '';
+      const from = editor.indexFromPos(selection.from), to = editor.indexFromPos(selection.to);
+      const source = editor.getValue();
+      if (command.block) {
+        const before = source.slice(0, from), after = source.slice(to);
+        if (before) prefix = before.endsWith('\n\n') ? '' : before.endsWith('\n') ? '\n' : '\n\n';
+        if (after) suffix = after.startsWith('\n\n') ? '' : after.startsWith('\n') ? '\n' : '\n\n';
+      }
+      snippet = prefix + snippet + suffix;
+      editor.operation(() => {
+        // Separate palette insertion from the user's preceding/following typing.
+        editor.changeGeneration(true);
+        editor.replaceRange(snippet, selection.from, selection.to, '+command');
+        editor.setSelection(editor.posFromIndex(from + prefix.length + marker), editor.posFromIndex(from + prefix.length + marker + content.length));
+        editor.changeGeneration(true);
+      });
+      window.MarkataSearch?.remember('commands',command.id);
+      close();
+    }
+    button.addEventListener('click', open);
+    query.addEventListener('input', refresh);
+    dialog.querySelector('.commands-close').addEventListener('click', close);
+    dialog.addEventListener('click', event => {
+      const box = dialog.getBoundingClientRect();
+      if (event.target === dialog && (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom)) close();
+    });
+    dialog.addEventListener('close', () => editor.focus());
+    dialog.addEventListener('keydown', event => {
+      if (event.isComposing) return;
+      if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); close(); return; }
+      if (['ArrowDown', 'ArrowUp', 'Enter'].includes(event.key) && event.target === query) {
+        event.preventDefault();
+        if (event.key === 'Enter') { if (matches[active]) insert(matches[active]); }
+        else if (matches.length) select((active + (event.key === 'ArrowDown' ? 1 : -1) + matches.length) % matches.length);
+      }
+    });
+    if (window.MarkataShortcuts) {
+      window.MarkataShortcuts.register({
+        id:'workbench.commandPalette', label:'Command Palette', category:'Navigation',
+        description:'Search every writing or application command.',
+        bindings:{vscode:'Mod+Shift+P',writer:'Mod+K',vim:'Mod+Shift+P',emacs:'Alt+X'},
+        run:open
+      });
+    } else {
+      // Shared Python/WASM workbenches still use the original handler.
+      document.addEventListener('keydown', event => {
+        const key=event.key.toLowerCase(), modifier=event.ctrlKey||event.metaKey;
+        if (!event.isComposing && modifier && !event.altKey &&
+          ((key==='k'&&!event.shiftKey)||(key==='p'&&event.shiftKey))) {
+          event.preventDefault();event.stopPropagation();open();
+        }
+      },true);
+    }
+  }
+})();

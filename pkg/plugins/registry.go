@@ -4,7 +4,7 @@ package plugins
 import (
 	"sync"
 
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
 )
 
 // pluginRegistry holds all registered plugin constructors.
@@ -45,6 +45,7 @@ func registerBuiltinPluginsLocked() {
 	pluginRegistry.constructors["random_post"] = func() lifecycle.Plugin { return NewRandomPostPlugin() }
 	pluginRegistry.constructors["well_known"] = func() lifecycle.Plugin { return NewWellKnownPlugin() }
 	pluginRegistry.constructors["sitemap"] = func() lifecycle.Plugin { return NewSitemapPlugin() }
+	pluginRegistry.constructors["llms_txt"] = func() lifecycle.Plugin { return NewLLMsTXTPlugin() }
 	pluginRegistry.constructors["content_index"] = func() lifecycle.Plugin { return NewContentIndexPlugin() }
 	pluginRegistry.constructors["images"] = func() lifecycle.Plugin { return NewImageLibraryPlugin() }
 	pluginRegistry.constructors["wikilinks"] = func() lifecycle.Plugin { return NewWikilinksPlugin() }
@@ -61,6 +62,7 @@ func registerBuiltinPluginsLocked() {
 	pluginRegistry.constructors["redirects"] = func() lifecycle.Plugin { return NewRedirectsPlugin() }
 	pluginRegistry.constructors["csv_fence"] = func() lifecycle.Plugin { return NewCSVFencePlugin() }
 	pluginRegistry.constructors["mermaid"] = func() lifecycle.Plugin { return NewMermaidPlugin() }
+	pluginRegistry.constructors["excalidraw"] = func() lifecycle.Plugin { return NewExcalidrawPlugin() }
 	pluginRegistry.constructors["link_collector"] = func() lifecycle.Plugin { return NewLinkCollectorPlugin() }
 	pluginRegistry.constructors["glossary"] = func() lifecycle.Plugin { return NewGlossaryPlugin() }
 	pluginRegistry.constructors["md_video"] = func() lifecycle.Plugin { return NewMDVideoPlugin() }
@@ -202,6 +204,7 @@ func DefaultPlugins() []lifecycle.Plugin {
 		NewChartJSPlugin(),           // Convert Chart.js code blocks to charts
 		NewCSVFencePlugin(),          // Convert CSV code blocks to tables
 		NewMermaidPlugin(),           // Convert Mermaid code blocks to diagrams
+		NewExcalidrawPlugin(),        // Convert Excalidraw scene blocks to static SVG
 		NewGlossaryPlugin(),          // Auto-link glossary terms (Render + Write stages)
 		NewWikilinkHoverPlugin(),     // Add hover data to wikilinks (runs after wikilinks)
 		NewExternalLinkHoverPlugin(), // Add hover data to external links (opt-in)
@@ -240,6 +243,7 @@ func DefaultPlugins() []lifecycle.Plugin {
 		NewGardenViewPlugin(),   // Generate knowledge graph + garden page
 		// NewResourceHintsPlugin(), // Inject resource hints (after HTML written) // DISABLED: Performance issue on large sites
 		NewSitemapPlugin(),
+		NewLLMsTXTPlugin(), // Generate a curated /llms.txt from published pages
 		NewContentIndexPlugin(),
 
 		// Cleanup stage plugins

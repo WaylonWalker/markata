@@ -7,9 +7,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/models"
-	markatatemplates "github.com/WaylonWalker/markata-go/pkg/templates"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/models"
+	markatatemplates "github.com/WaylonWalker/markata/pkg/templates"
 )
 
 // ImageZoomPlugin adds optional image zoom/lightbox functionality using GLightbox.

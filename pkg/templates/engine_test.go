@@ -5,10 +5,12 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
+	"testing/fstest"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 func TestNewEngine(t *testing.T) {
@@ -40,6 +42,74 @@ func TestNewEngine(t *testing.T) {
 				t.Error("NewEngine() returned nil engine")
 			}
 		})
+	}
+}
+
+func TestSearchPathLoader_EmbeddedIncludesPreferProjectOverride(t *testing.T) {
+	directory := t.TempDir()
+	projectTemplate := filepath.Join(directory, "partials", "card.html")
+	if err := os.MkdirAll(filepath.Dir(projectTemplate), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(projectTemplate, []byte("project"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	loader := &searchPathLoader{
+		searchPaths: []string{directory},
+		embeddedFS: fstest.MapFS{
+			"partials/card.html": &fstest.MapFile{Data: []byte("embedded")},
+		},
+	}
+
+	got := loader.Abs("embedded:feed.html", "partials/card.html")
+	want, err := filepath.Abs(projectTemplate)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != want {
+		t.Fatalf("Abs() = %q, want project override %q", got, want)
+	}
+}
+
+func TestSearchPathLoader_EmbeddedSiblingIncludesPreferProjectOverride(t *testing.T) {
+	directory := t.TempDir()
+	projectTemplate := filepath.Join(directory, "partials", "card.html")
+	if err := os.MkdirAll(filepath.Dir(projectTemplate), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(projectTemplate, []byte("project"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	loader := &searchPathLoader{
+		searchPaths: []string{directory},
+		embeddedFS: fstest.MapFS{
+			"partials/feed.html": &fstest.MapFile{Data: []byte("{% include \"card.html\" %}")},
+			"partials/card.html": &fstest.MapFile{Data: []byte("embedded")},
+		},
+	}
+
+	got := loader.Abs("embedded:partials/feed.html", "card.html")
+	want, err := filepath.Abs(projectTemplate)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != want {
+		t.Fatalf("Abs() = %q, want project sibling override %q", got, want)
+	}
+}
+
+func TestSearchPathLoader_EmbeddedIncludesFallBackToEmbeddedTemplate(t *testing.T) {
+	loader := &searchPathLoader{
+		searchPaths: []string{t.TempDir()},
+		embeddedFS: fstest.MapFS{
+			"partials/card.html": &fstest.MapFile{Data: []byte("embedded")},
+		},
+	}
+
+	if got, want := loader.Abs("embedded:feed.html", "partials/card.html"), "embedded:partials/card.html"; got != want {
+		t.Fatalf("Abs() = %q, want embedded fallback %q", got, want)
 	}
 }
 
@@ -363,6 +433,25 @@ func TestContext_ToPongo2(t *testing.T) {
 	if p2ctx["extra_key"] != "extra_value" {
 		t.Error("extra context value not set")
 	}
+}
+
+func TestContext_ToPongo2_ConcurrentConfigIsPerRender(t *testing.T) {
+	config := &models.Config{Title: "Test Site", Theme: models.ThemeConfig{Name: "test-theme"}}
+	ctx := NewContext(nil, "", config)
+	const renders = 128
+	var wg sync.WaitGroup
+	for i := 0; i < renders; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			pongoCtx := ctx.ToPongo2()
+			configMap, ok := pongoCtx["config"].(map[string]interface{})
+			if !ok || configMap["title"] != "Test Site" {
+				t.Errorf("config context = %#v", pongoCtx["config"])
+			}
+		}()
+	}
+	wg.Wait()
 }
 
 func TestContext_ToPongo2_ResolvedContentSidebar(t *testing.T) {

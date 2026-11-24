@@ -2,13 +2,12 @@ package builderadmin
 
 import (
 	"context"
-	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/diagnostics"
-	"github.com/WaylonWalker/markata-go/pkg/sourcegit"
+	"github.com/WaylonWalker/markata/pkg/diagnostics"
+	"github.com/WaylonWalker/markata/pkg/sourcegit"
 )
 
 const (
@@ -56,7 +55,7 @@ func compareBuilderRevisions(current string, state State, publishedCommit string
 	var latest *BuildRecord
 	for i := range state.Builds {
 		record := &state.Builds[i]
-		if record.Kind == "rollback" || record.RollbackRelease != "" || record.Status != "success" {
+		if record.Kind == "rollback" || record.RollbackRelease != "" || record.Result == "unchanged" || record.Status != "success" {
 			continue
 		}
 		if latest == nil || record.FinishedAt.After(latest.FinishedAt) {
@@ -87,6 +86,40 @@ func compareBuilderRevisions(current string, state State, publishedCommit string
 	return result
 }
 
+// startupRevisionBuildReason compares against the latest successful real
+// build, not any historical build of the same revision. Rollback is not a
+// build. The live diagnostics artifact backs up legacy history records.
+func startupRevisionBuildReason(current string, state State, publishedCommit string) (string, bool) {
+	current = reliableBuilderRevision(current)
+	if current == "" {
+		return "", false // Mutable tags and dev/none are not revision identities.
+	}
+	var latest *BuildRecord
+	for i := range state.Builds {
+		record := &state.Builds[i]
+		if record.Status != "success" || record.Result == "unchanged" || record.Kind == "rollback" || record.RollbackRelease != "" {
+			continue
+		}
+		if latest == nil || record.FinishedAt.After(latest.FinishedAt) {
+			latest = record
+		}
+	}
+	previous := ""
+	if latest != nil {
+		previous = reliableBuilderRevision(latest.BuilderCommit)
+	}
+	if previous == "" {
+		previous = reliableBuilderRevision(publishedCommit)
+	}
+	if previous == current {
+		return "", false
+	}
+	if previous == "" {
+		return "No previous successful build with reliable commit provenance; building " + current, true
+	}
+	return "Builder revision changed from " + previous + " to " + current, true
+}
+
 func (s *Service) revisionStatus(state State) RevisionStatus {
 	builder, source := s.liveReleaseRevisions()
 	result := compareBuilderRevisions(s.cfg.BuilderCommit, state, builder)
@@ -106,16 +139,8 @@ func (s *Service) revisionStatus(state State) RevisionStatus {
 
 func (s *Service) liveReleaseRevisions() (builder, source string) {
 	path := filepath.Join(s.cfg.SiteDir, "current", diagnostics.DefaultArtifactPath)
-	info, err := os.Stat(path)
-	if err != nil || info.Size() > 2<<20 {
-		return "", ""
-	}
-	payload, err := os.ReadFile(path)
-	if err != nil {
-		return "", ""
-	}
-	artifact, err := diagnostics.ParseArtifact(payload)
-	if err != nil {
+	artifact, ok := readDiagnosticsArtifactIdentity(path)
+	if !ok {
 		return "", ""
 	}
 	builder = reliableBuilderRevision(artifact.Generator.Commit)

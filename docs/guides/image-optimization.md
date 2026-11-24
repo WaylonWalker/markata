@@ -9,7 +9,6 @@ tags:
   - performance
 ---
 
-# Image Optimization
 
 The `image_optimization` plugin generates AVIF and WebP variants for local images and rewrites HTML to use a `<picture>` element with the original image as the fallback.
 
@@ -52,9 +51,9 @@ Output HTML:
 
 The generated `.avif` and `.webp` files are written next to the original image in the output folder.
 
-The optimizer reuses the image cache in `.markata/image-cache` and skips re-encoding unchanged inputs across rebuilds.
-Each build logs a summary of targets, missing sources, variants checked, cache hits and misses,
-and encoder calls and failures. This makes cache reuse distinguishable from actual image work.
+The optimizer reuses the image cache in `.markata/image-cache` and validates source bytes with SHA-256, so a file timestamp change alone does not trigger re-encoding. It hashes each unique source once per build, and the hashing work scales with the total bytes in those images. Within one build, repeated references to the same local output image share one optimization pass that generates the union of their requested widths. Each image occurrence still keeps its own `<picture>` markup.
+
+Each build logs target occurrences and unique target candidates after deduplication. A candidate counts once in `unique_targets` even if its path cannot be resolved or its source file is missing; those candidates are also counted in `missing_sources`. `duplicate_targets` is the number of occurrences removed by deduplication. The summary also reports variants checked, cache hits and misses, and encoder calls and failures.
 
 ## Configuration
 

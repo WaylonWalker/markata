@@ -11,7 +11,6 @@ tags:
   - security
 ---
 
-# Encryption and Private Posts
 
 markata-go can encrypt post content so that only visitors with the correct password can read it. Encryption uses AES-256-GCM and runs entirely client-side -- your server never sees the decrypted content.
 

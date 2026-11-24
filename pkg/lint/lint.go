@@ -19,7 +19,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/WaylonWalker/markata-go/pkg/diagnostics"
+	"github.com/WaylonWalker/markata/pkg/diagnostics"
 )
 
 // Pre-compiled regex patterns for lint fix operations.

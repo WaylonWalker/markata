@@ -1,6 +1,7 @@
 project_identifier: example
 project_name: example
 environment: prod
+namespaceOverride: ""
 
 # Public Markata images do not require registry credentials. Add secrets here
 # only when your environment mirrors or overrides them with a private registry.
@@ -48,7 +49,7 @@ build:
     enabled: false
     url: ""
   mermaid:
-    mode: client
+    mode: go
   lock:
     enabled: true
     dirName: ".markata-notes-build-lock"
@@ -90,13 +91,18 @@ builderAdmin:
   watch:
     enabled: true
     debounce: 2s
+  # Build immediately on rollout when the executable's embedded commit differs
+  # from the last successful published build. Only the active leader enqueues.
+  buildOnStartupRevisionChange: true
   # Queued builder-admin builds default to full builds so blogroll, mentions, and other
   # user-facing outputs stay live unless an environment explicitly opts into faster previews.
   fast: false
+  # Scan generated HTML and publish the page-weight report with each queued build.
+  pageWeight: true
   # Experimental: route queued builds through the serial DAG executor. Keep false
   # until Build Lab and production canaries have established output equivalence.
   dag: false
-  mermaidMode: client
+  mermaidMode: go
   releases:
     keep: 25
   history:
@@ -124,6 +130,61 @@ builderAdmin:
     # MARKATA_GO_BUILDER_ADMIN_WEBHOOK_SECRET and is never placed in args.
     existingSecretName: ""
     existingSecretKey: webhook-secret
+  # Optionally seed and refresh the source checkout before Builder Admin starts.
+  # Webhook builds then use this checkout as their fast-forward-only remote.
+  sourceGit:
+    enabled: false
+    repository: ""
+    branch: main
+    depth: 1
+    image: alpine/git:2.47.2
+    pullPolicy: IfNotPresent
+  # Optional hosted Markdown editor sidecar. It shares the source checkout but
+  # has a separate Hlab ForwardAuth ingress and Traefik-only network policy.
+  editor:
+    enabled: false
+    port: 8766
+    requiredScope: ""
+    ingress:
+      host: ""
+      ingressClassName: ""
+      tls:
+        secretName: ""
+    gitAuth:
+      existingSecretName: ""
+      privateKeyKey: ssh-privatekey
+      knownHosts: ""
+      # The publisher's fixed remote allowlist. repository defaults to
+      # builderAdmin.sourceGit.repository when that source is configured.
+      repository: ""
+      branch: ""
+    extraEnv: []
+    resources:
+      requests:
+        cpu: 100m
+        memory: 512Mi
+        ephemeral-storage: 500Mi
+      limits:
+        memory: 2Gi
+        ephemeral-storage: 2Gi
+    publisherResources:
+      requests:
+        cpu: 10m
+        memory: 32Mi
+      limits:
+        memory: 128Mi
+    dropperUploader:
+      # A credential-isolated sidecar for hosted editor media uploads.
+      enabled: false
+      existingSecretName: ""
+      tokenKey: token
+      endpoint: https://dropper.waylonwalker.com/api/upload?format=json
+      resources:
+        requests:
+          cpu: 10m
+          memory: 32Mi
+        limits:
+          memory: 128Mi
   # Builder admin is fail-closed: only source addresses in this list may supply
   # the identity headers injected by the protected Traefik route.
   auth:
@@ -145,6 +206,9 @@ builderAdmin:
     enabled: false
     host: ""
     ingressClassName: ""
+    # Additional annotations for the protected ingress. The chart owns the
+    # Traefik middleware annotation and ignores it if set here.
+    annotations: {}
     tls:
       enabled: false
       secretName: ""
@@ -187,6 +251,8 @@ site:
     tag: "1.27.5-alpine"
     pullPolicy: IfNotPresent
   use404Page: false
+  # Opt public HTML into a 60-second shared-cache TTL while browsers revalidate.
+  cacheHtmlAtEdge: false
   # HTTP path that must return a successful response before the site is ready.
   healthPath: /
   cors:
@@ -283,6 +349,8 @@ storage:
       type: Directory
   site:
     mode: pvc
+    # Bind an existing claim instead of creating a chart-managed site PVC.
+    existingClaimName: ""
     # Empty uses the cluster's default StorageClass.
     storageClassName: ""
     size: 10Gi

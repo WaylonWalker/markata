@@ -60,7 +60,7 @@
           <div class="reader-entry-meta-row">
             <a href="{{ entry.feed_url }}" target="_blank" rel="noopener noreferrer" class="reader-entry-source-link">
               {% if entry.source_icon_url %}
-              <img src="{{ entry.source_icon_url }}" alt="" class="reader-entry-source-icon" width="16" height="16" loading="lazy">
+              <img src="{{ entry.source_icon_url }}" alt="" class="reader-entry-source-icon" width="16" height="16" loading="lazy" decoding="async">
               {% else %}
               <span class="reader-entry-source-icon reader-entry-source-icon--fallback" aria-hidden="true"></span>
               {% endif %}
@@ -85,14 +85,14 @@
 
           {% if entry.image_url %}
           <a href="{{ entry.url }}" target="_blank" rel="noopener noreferrer" aria-label="Read {{ entry.title }} (opens in new tab)" class="reader-entry-image-link reader-entry-image-link--{{ entry.preview_kind }}">
-            <img src="{{ entry.image_url }}" alt="" class="reader-entry-image reader-entry-image--{{ entry.preview_kind }}" width="960" height="540" loading="lazy">
+            <img src="{{ entry.image_url }}"{% if entry.image_srcset %} srcset="{{ entry.image_srcset }}" sizes="100vw"{% endif %} alt="" class="reader-entry-image reader-entry-image--{{ entry.preview_kind }}" width="960" height="540" loading="lazy" decoding="async">
           </a>
           {% else %}
           <a href="{{ entry.url }}" target="_blank" rel="noopener noreferrer" aria-label="Read {{ entry.title }} (opens in new tab)" class="reader-entry-image-link reader-entry-image-link--source-tile">
             <span class="reader-entry-source-tile" aria-hidden="true">
               <span class="reader-entry-source-tile-top">
                 {% if entry.source_icon_url %}
-                <img src="{{ entry.source_icon_url }}" alt="" class="reader-entry-source-tile-icon" width="20" height="20" loading="lazy">
+                <img src="{{ entry.source_icon_url }}" alt="" class="reader-entry-source-tile-icon" width="20" height="20" loading="lazy" decoding="async">
                 {% else %}
                 <span class="reader-entry-source-tile-badge">{{ entry.source_initial }}</span>
                 {% endif %}

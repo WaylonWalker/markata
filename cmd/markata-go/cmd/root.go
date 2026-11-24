@@ -7,8 +7,7 @@ import (
 	"runtime/pprof"
 	"strings"
 
-	"github.com/WaylonWalker/markata-go/pkg/logging"
-	"github.com/WaylonWalker/markata-go/pkg/suggest"
+	"github.com/WaylonWalker/markata/pkg/suggest"
 	"github.com/spf13/cobra"
 )
 
@@ -73,10 +72,10 @@ Common help:
   markata-go explain content # Agent workflow for site content
 
 Documentation:
-  https://github.com/WaylonWalker/markata-go/tree/main/docs
+  https://github.com/WaylonWalker/markata/tree/main/docs
 
 Issues:
-  https://github.com/WaylonWalker/markata-go/issues
+  https://github.com/WaylonWalker/markata/issues
 
 Profiling:
   markata-go build --cpuprofile cpu.prof   # Write CPU profile
@@ -97,6 +96,11 @@ Profiling:
 	RunE: runRootCommand,
 	PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 		currentCmd = cmd
+		// The agent handoff is a fast, read-only introspection command. Do not
+		// load a workspace, execute config/plugin setup or require a valid site.
+		if cmd.Parent() == nil && rootSkillRequested {
+			return nil
+		}
 		if cmd.Flags().Lookup("dag") != nil {
 			if err := validateDAGEnvironment(cmd); err != nil {
 				return err
@@ -105,7 +109,10 @@ Profiling:
 		// Build Lab resolves and binds every child to its copied workspace. Do
 		// not let the caller's site-directory selection change the parent
 		// process's fixture resolution or child command setup.
-		if !isBuildLabCommand(cmd) {
+		// Triage must still work when a requested site directory is broken.
+		// It reports the inaccessible path rather than failing before diagnostics.
+		// Standalone rendering never depends on the selected site directory.
+		if !isBuildLabCommand(cmd) && cmd != triageCmd && cmd.Name() != "render" {
 			if err := activateSiteDir(); err != nil {
 				return err
 			}
@@ -113,8 +120,9 @@ Profiling:
 		if noColor && forceColor {
 			return fmt.Errorf("cannot use --color and --no-color together")
 		}
+		configureTUIColor()
 
-		if err := configureCommandLogger(logging.DefaultTheme()); err != nil {
+		if err := configureCLIThemeFromConfig(); err != nil {
 			return err
 		}
 
@@ -158,6 +166,12 @@ Profiling:
 }
 
 func runRootCommand(cmd *cobra.Command, args []string) error {
+	if rootSkillRequested {
+		if len(args) != 0 {
+			return fmt.Errorf("--skill does not accept file arguments")
+		}
+		return printFirstRunSkill(cmd.OutOrStdout())
+	}
 	if len(args) == 0 {
 		return cmd.Help()
 	}

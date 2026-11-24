@@ -66,6 +66,34 @@ For candidate entries, the summary fields mean:
 Counts are derived from ledger entries. They MUST NOT be assembled by adding
 plugin-local counters.
 
+## Bounded publisher I/O diagnostics
+
+Successful full-build artifacts MAY include `publish_io` before `entries`
+in schema version 1. Its optional `publish_html` and `publish_feeds` objects
+contain only fixed aggregate counts and durations. Absence is valid for older
+artifacts and builds without these publishers.
+
+Each publisher MUST count logical outputs considered, skipped by the existing
+cache gates, and successfully processed by its publish path. Logical units are
+non-skipped, non-draft posts for HTML and configured feeds for feed publication;
+a unit can emit multiple files. Actual successful `os.WriteFile` calls MUST
+be counted separately with total payload bytes and summed syscall latency.
+Feed byte-equality skips MAY be reported as `files_unchanged`; unsuccessful
+write calls MUST increment `write_errors` but not successful bytes/files.
+The bounded recorder MUST report exact max latency and an approximate p95 from
+a fixed histogram, without collecting a per-file sample list.
+
+`write_duration_ns` is the sum of successful write calls and MUST NOT be
+presented as stage wall time; concurrent calls overlap. The derived
+`write_throughput_bytes_per_sec` uses bytes divided by summed write durations.
+Directory creation, source hashing, file comparisons, removed outputs, and
+other plugins' publication work are not covered by these syscall counters.
+Both publishers MUST use the same schema under both executors. Counters MUST
+remain bounded, concurrent-safe, and build-local, with no paths, filenames,
+payloads, secrets, or per-file traces. Reset and Discover MUST clear aggregate
+state; snapshots and artifacts MUST own copies. Existing cache and output
+semantics MUST NOT change merely to produce telemetry.
+
 ## Per-File Entry
 
 ### Bounded template-cache observations
@@ -94,8 +122,8 @@ encryption affected-path marks merely for being private.
 Snapshots and version-1 artifacts MAY contain `template_cache` before the final
 `entries` field. Older version-1 documents without it remain valid. Benchmark
 JSON exposes the same value at `.content.template_cache`; the artifact exposes
-it at `.template_cache`. This phase observes template cache decisions only; it
-does not implement publish-I/O diagnostics or change cache invalidation or HTML.
+it at `.template_cache`. This section observes template cache decisions only; publish-I/O diagnostics
+are separately aggregated, without changing cache invalidation or HTML.
 
 The optional object contains scalar integer counts `classified`, `skipped`,
 `cacheable`, `restored`, `render_required`, `render_succeeded`, `render_failed`,
@@ -374,6 +402,16 @@ The normal full build MUST write the diagnostics artifact to:
 The artifact is enabled by default and does not require a configuration entry.
 It is part of the generated output, so Builder Admin carries it into each
 successful release automatically.
+
+`markata-go.diagnostics_artifact.compression` optionally selects the on-disk
+encoding. The default `none` writes the path above. The value `gzip` writes the
+same complete version-1 JSON bytes losslessly to
+`<output_dir>/.markata/diagnostics.json.gz` and removes the stale counterpart
+only after successful publication. Builder Admin builds MUST select `gzip` so
+large diagnostic entries do not dominate release publication. Builder Admin
+readers MUST apply size limits to the uncompressed artifact and MUST be able to
+read generator and source revisions from the bounded artifact header without
+inflating the entry array. Unsupported compression values MUST fail cleanup.
 
 ### Versioned wire format
 

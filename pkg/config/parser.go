@@ -8,8 +8,8 @@ import (
 	"github.com/BurntSushi/toml"
 	"gopkg.in/yaml.v3"
 
-	"github.com/WaylonWalker/markata-go/pkg/models"
-	"github.com/WaylonWalker/markata-go/pkg/renderingcontract"
+	"github.com/WaylonWalker/markata/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/renderingcontract"
 )
 
 // configSource defines the interface for format-specific config structs (TOML, YAML, JSON)
@@ -288,6 +288,23 @@ type templatesConverter interface {
 	toTemplatesConfig() models.TemplatesConfig
 }
 
+// explicitFeedFormatOverrides preserves the distinction between an omitted
+// format and a deliberately false format across TOML, YAML and JSON parsing.
+func explicitFeedFormatOverrides(values ...*bool) map[string]bool {
+	names := [...]string{"html", "simple_html", "rss", "atom", "json", "markdown", "text", "sitemap"}
+	var result map[string]bool
+	for i, value := range values {
+		if value == nil {
+			continue
+		}
+		if result == nil {
+			result = make(map[string]bool)
+		}
+		result[names[i]] = *value
+	}
+	return result
+}
+
 // buildConfig constructs a models.Config from a configSource.
 // This helper eliminates code duplication across TOML, YAML, and JSON config converters.
 func buildConfig(src configSource) *models.Config {
@@ -472,6 +489,9 @@ func ParseTOML(data []byte) (*models.Config, error) {
 	if err := toml.Unmarshal(data, &rawWrapper); err != nil {
 		return config, nil // Non-fatal: continue with parsed config
 	}
+	if err := applyContentTemplateSettings(config, rawWrapper); err != nil {
+		return nil, err
+	}
 
 	// Extract the markata-go section as a map
 	if markataGoRaw, ok := rawWrapper["markata-go"].(map[string]any); ok {
@@ -610,9 +630,31 @@ func ParseYAML(data []byte) (*models.Config, error) {
 	config := wrapper.MarkataGo.toConfig()
 	var raw map[string]any
 	if err := yaml.Unmarshal(data, &raw); err == nil {
+		if err := applyContentTemplateSettings(config, raw); err != nil {
+			return nil, err
+		}
 		normalizeParsedTheme(config, raw)
+		copyLLMsTXTConfig(config, raw)
 	}
 	return config, nil
+}
+
+// copyLLMsTXTConfig retains the untyped llms_txt plugin options in YAML/JSON
+// as well as TOML. Unlike TOML, these parsers do not automatically copy
+// unknown [markata-go] plugin sections to Config.Extra.
+func copyLLMsTXTConfig(config *models.Config, raw map[string]any) {
+	root, ok := raw["markata-go"].(map[string]any)
+	if !ok {
+		return
+	}
+	llmsConfig, ok := root["llms_txt"].(map[string]any)
+	if !ok {
+		return
+	}
+	if config.Extra == nil {
+		config.Extra = make(map[string]any)
+	}
+	config.Extra["llms_txt"] = llmsConfig
 }
 
 // ParseJSON parses JSON configuration data into a Config struct.
@@ -633,7 +675,11 @@ func ParseJSON(data []byte) (*models.Config, error) {
 	config := wrapper.MarkataGo.toConfig()
 	var raw map[string]any
 	if err := json.Unmarshal(data, &raw); err == nil {
+		if err := applyContentTemplateSettings(config, raw); err != nil {
+			return nil, err
+		}
 		normalizeParsedTheme(config, raw)
+		copyLLMsTXTConfig(config, raw)
 	}
 	return config, nil
 }
@@ -2198,7 +2244,7 @@ func (f *tomlFontConfig) toFontConfig() models.FontConfig {
 }
 
 func (f *tomlFeedConfig) toFeedConfig() models.FeedConfig {
-	return models.FeedConfig{
+	result := models.FeedConfig{
 		Slug:            f.Slug,
 		Presentation:    f.Presentation,
 		Title:           f.Title,
@@ -2222,6 +2268,11 @@ func (f *tomlFeedConfig) toFeedConfig() models.FeedConfig {
 		Formats:         f.Formats.toFeedFormats(),
 		Templates:       f.Templates.toFeedTemplates(),
 	}
+	result.SetFormatOverrides(explicitFeedFormatOverrides(
+		f.Formats.HTML, f.Formats.SimpleHTML, f.Formats.RSS, f.Formats.Atom,
+		f.Formats.JSON, f.Formats.Markdown, f.Formats.Text, f.Formats.Sitemap,
+	))
+	return result
 }
 
 func (f *tomlFeedFormats) toFeedFormats() models.FeedFormats {
@@ -3790,7 +3841,7 @@ func (f *yamlFooterConfig) toFooterConfig() models.FooterConfig {
 }
 
 func (f *yamlFeedConfig) toFeedConfig() models.FeedConfig {
-	return models.FeedConfig{
+	result := models.FeedConfig{
 		Slug:            f.Slug,
 		Presentation:    f.Presentation,
 		Title:           f.Title,
@@ -3814,6 +3865,11 @@ func (f *yamlFeedConfig) toFeedConfig() models.FeedConfig {
 		Formats:         f.Formats.toFeedFormats(),
 		Templates:       f.Templates.toFeedTemplates(),
 	}
+	result.SetFormatOverrides(explicitFeedFormatOverrides(
+		f.Formats.HTML, f.Formats.SimpleHTML, f.Formats.RSS, f.Formats.Atom,
+		f.Formats.JSON, f.Formats.Markdown, f.Formats.Text, f.Formats.Sitemap,
+	))
+	return result
 }
 
 func (f *yamlFeedFormats) toFeedFormats() models.FeedFormats {
@@ -5406,7 +5462,7 @@ func (f *jsonFooterConfig) toFooterConfig() models.FooterConfig {
 }
 
 func (f *jsonFeedConfig) toFeedConfig() models.FeedConfig {
-	return models.FeedConfig{
+	result := models.FeedConfig{
 		Slug:            f.Slug,
 		Presentation:    f.Presentation,
 		Title:           f.Title,
@@ -5430,6 +5486,11 @@ func (f *jsonFeedConfig) toFeedConfig() models.FeedConfig {
 		Formats:         f.Formats.toFeedFormats(),
 		Templates:       f.Templates.toFeedTemplates(),
 	}
+	result.SetFormatOverrides(explicitFeedFormatOverrides(
+		f.Formats.HTML, f.Formats.SimpleHTML, f.Formats.RSS, f.Formats.Atom,
+		f.Formats.JSON, f.Formats.Markdown, f.Formats.Text, f.Formats.Sitemap,
+	))
+	return result
 }
 
 func (f *jsonFeedFormats) toFeedFormats() models.FeedFormats {

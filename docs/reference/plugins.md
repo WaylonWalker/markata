@@ -10,7 +10,7 @@ tags:
   - plugins
 ---
 
-# Built-in Plugins Reference
+## Built-in Plugins Reference
 
 This reference documents all built-in plugins that ship with markata-go. Plugins are organized by their lifecycle stage.
 
@@ -36,6 +36,28 @@ Configure -> Glob -> Load -> Transform -> Render -> Collect -> Write -> Cleanup
 | Collect | Build collections/feeds | series, feeds, auto_feeds, prevnext, overwrite_check, static_file_conflicts |
 | Write | Output files to disk | publish_html, random_post, publish_feeds, sitemap, content_index, images, rss, atom, jsonfeed, static_assets, redirects |
 | Cleanup | Post-build tasks | pagefind, diagnostics_artifact |
+
+---
+
+### icons
+
+**Name:** `icons`<br>
+**Stage:** Transform (after other source transforms, before Markdown rendering)<br>
+**Purpose:** Resolve Zensical-style SVG shortcodes in Markdown.
+
+````markdown
+A release :lucide-rocket: ready to ship.
+````
+
+The icon is inlined as decorative SVG, with no icon-font or client-side
+dependency. The default pinned Lucide pack is vendored on first use, with
+project-local SVGs under `.icons/` or `static/.icons/` taking precedence.
+For disconnected first-use builds, supply a cached/local pack or keep the
+literal shortcode; there is no forced network request in offline mode.
+
+The default theme supports `md-icon` inside cards and `md-feature` with
+`md-feature-icon`/`md-feature-body` for icon-first feature rows, without
+changing shortcode semantics. See [Icon Shortcodes](/docs/guides/icons/).
 
 ---
 
@@ -1265,7 +1287,7 @@ h4:hover .heading-anchor {
 
 **Name:** `md_video`  
 **Stage:** Render (post_render)  
-**Purpose:** Converts markdown image syntax for video files into HTML video elements with native controls and on-demand loading.
+**Purpose:** Converts markdown image syntax for video files into HTML video elements with native controls and viewport-triggered muted autoplay.
 
 **Configuration (TOML):**
 ```toml
@@ -1274,7 +1296,7 @@ enabled = true                    # Enable the plugin (default: true)
 video_extensions = [".mp4", ".webm", ".ogg", ".ogv", ".mov", ".m4v", ".avi", ".mkv"]  # Extensions to treat as video
 video_class = "md-video"          # CSS class for video elements (default)
 controls = true                   # Show video controls (default: true)
-autoplay = false                  # Authored autoplay intent (default: false)
+autoplay = true                   # Viewport autoplay intent for Markdown (default: true)
 loop = true                       # Loop video continuously (default: true)
 muted = true                      # Mute audio (default: true, required for autoplay)
 playsinline = true                # Play inline on mobile (default: true)
@@ -1283,12 +1305,15 @@ preload = "none"                  # Preload hint: "none", "metadata", "auto" (de
 
 **Autoplay intent and loading policy**
 
-Set `autoplay = true` to author GIF-like Markdown playback. Generated HTML stores
-that intent in `data-authored-autoplay="true"` and keeps `preload="none"`.
-Full Quality or already-confident fast Auto at page entry may start unrequested authored videos.
-Save Data, constrained Auto, reduced motion, and the no-JS baseline keep native
-interaction. Raw HTML preserves its own autoplay intent; the Markdown setting
-never adds autoplay to a raw video that omitted it. See
+Markdown video enables GIF-like autoplay by default once visible. Generated
+HTML stores this intent in `data-authored-autoplay="true"` and keeps
+`preload="none"` before viewport playback. Set `autoplay = false` to opt
+out for all Markdown videos. Auto suppresses starts on measured constrained
+connections; Save Data and reduced motion always suppress them. A browser
+without JavaScript/IntersectionObserver uses native controls. Only
+controller-started video pauses offscreen, not manually started video.
+Raw HTML retains its own explicit autoplay intent, and Markdown configuration
+never adds autoplay to raw video that omitted it. See
 [Adaptive loading](../adaptive-loading/) for policy and recovery behavior.
 
 To use traditional video behavior (click to play with sound):
@@ -1319,7 +1344,7 @@ controls = true
 
 **HTML output:**
 ```html
-<video loop muted playsinline controls preload="none" class="md-video" style="margin-inline:auto">
+<video data-authored-autoplay="true" loop muted playsinline controls preload="none" class="md-video" style="margin-inline:auto">
   <source src="https://example.com/video.mp4" type="video/mp4">
   kickflip down the 3 stair - fingerboarding
 </video>
@@ -1607,6 +1632,8 @@ cwebp_path = ""
 3. Writes optimized variants next to the original output file using width suffixes.
 4. Uses a cache key (path, mod time, size, quality, encoder) to skip re-encoding.
 5. Missing encoders emit warnings and skip the format without failing the build.
+6. Preserves every image reference while optimizing each output path once per build with the union of requested widths.
+7. Reports target occurrences separately from unique optimization targets (one per resolved output path).
 
 **HTML output:**
 
@@ -1751,6 +1778,12 @@ container_class = "chartjs-container"                  # CSS class for wrapper d
 | `enabled` | `true` | Enable/disable the plugin |
 | `cdn_url` | `/assets/vendor/chartjs/chart.min.js` | Chart.js URL (local by default) |
 | `container_class` | `chartjs-container` | CSS class for wrapper div |
+| `data_display` | `open` | Initial fallback disclosure state: `open` or `collapsed` |
+
+Optional top-level JSON strings `title` and `caption` create a semantic,
+accessible figure card without adding a TOC heading. Top-level `data_display`
+overrides the site default per chart. All three keys are stripped before Chart.js
+initialization. See [chart figures and fallbacks](../guides/markdown-chart-fallback.md).
 
 **Markdown syntax:**
 ````markdown
@@ -2930,6 +2963,23 @@ output/
 
 ---
 
+### llms_txt
+
+**Name:** `llms_txt`  
+**Stage:** Write (last priority)  
+**Purpose:** Automatically generate a concise v2-style `/llms.txt` index
+for AI agents from public site metadata and selected published pages.
+
+**Configuration:** `[markata-go.llms_txt]` with `enabled = true` and
+`max_pages = 30` defaults. Caps output at 100 entries. Drafts, private,
+skipped, unpublished, and `noindex` posts are excluded. The generator
+uses `.md` links when Markdown post output is enabled.
+
+A published `llms.md` or project static `llms.txt` wins over auto
+generation; existing manual output is also preserved. Disabling only
+deletes content identified as automatically generated. Excluded from
+single-page builds.
+
 ### sitemap
 
 **Name:** `sitemap`  
@@ -3716,7 +3766,7 @@ jinja: true
 
 **Name:** `mermaid`  
 **Stage:** Render (post_render)  
-**Purpose:** Converts Mermaid code blocks into rendered diagrams. Supports client-side rendering (default), CLI-based pre-rendering via mmdc, or headless Chromium pre-rendering via mermaidcdp.
+**Purpose:** Converts Mermaid code blocks into rendered diagrams. Defaults to native Go SVG rendering; also supports explicit client-side Mermaid.js, CLI pre-rendering via mmdc, or headless Chromium.
 
 **Status:** Enabled by default. Set `enabled = false` to disable.
 
@@ -3724,7 +3774,7 @@ jinja: true
 ```toml
 [markata-go.mermaid]
 enabled = true                                              # Enabled by default; set to false to disable
-mode = "client"                                             # "client", "cli", or "chromium"
+mode = "go"                                                 # default native SVG; optional: "client", "cli", "chromium"
 cdn_url = "/assets/vendor/mermaid/mermaid.min.js"      # Mermaid URL (client mode, local by default)
 theme = "default"                                           # Mermaid theme (default, dark, forest, neutral)
 use_css_variables = true                                    # Derive diagram colors from site CSS palette (default: true)
@@ -3750,7 +3800,7 @@ no_sandbox = false                                          # Required in contai
 | `mode` | string | `"client"` | Rendering mode: `client` (browser-side JS), `cli` (mmdc), or `chromium` (headless Chrome) |
 | `cdn_url` | string | `/assets/vendor/mermaid/mermaid.min.js` | Mermaid URL (client mode, local by default) |
 | `theme` | string | `"default"` | Mermaid theme: default, dark, forest, neutral. Ignored when `use_css_variables` is true. |
-| `use_css_variables` | bool | `true` | Read site CSS custom properties (`--color-background`, `--color-text`, `--color-primary`, `--color-code-bg`, `--color-surface`) and pass them to Mermaid's theming. Hardcoded fallbacks are used if variables are not defined. |
+| `use_css_variables` | bool | `true` | Use `--color-surface` for node fills and edge-label backgrounds, `--color-text` for labels, `--color-border` (falling back to `--color-primary`) for borders and edges, and `--color-background` for cluster fills. |
 | `lightbox` | bool | `true` | Enable click-to-zoom lightbox overlay with interactive pan and zoom via svg-pan-zoom. |
 | `lightbox_selector` | string | `".glightbox-mermaid"` | CSS selector for mermaid lightbox links. Retained for backward compatibility; the programmatic GLightbox API does not use it. |
 | `chromium.no_sandbox` | bool | `false` | Disable Chromium sandbox. Required when running inside Docker, Distrobox, or other containerized environments. |
@@ -3763,9 +3813,10 @@ no_sandbox = false                                          # Required in contai
 3. In **cli/chromium** modes: pre-renders diagrams to static SVGs embedded directly in HTML
 4. Only injects the script once per post (even with multiple diagrams)
 5. When `use_css_variables` is true, reads site CSS custom properties and passes them to `mermaid.initialize()` so diagrams match the site palette automatically
-6. When `lightbox` is true, attaches click handlers to each rendered SVG. Clicking opens a programmatic GLightbox overlay with svg-pan-zoom for interactive pan and zoom. svg-pan-zoom (~29KB) is lazy-loaded from vendor assets by default.
-7. In chromium mode, the MermaidJS library is cached at `~/.cache/markata-go/mermaid/` to avoid re-downloading on each build
-8. In cli/chromium modes, rendered SVGs are cached in the build cache and reused when the diagram source and rendering inputs are unchanged
+6. Client mode retains each diagram's source and rerenders its SVG when the site theme, palette, or color mode changes. Chromium mode uses the same palette colors when it pre-renders SVGs. CLI mode follows Mermaid CLI theme and configuration.
+7. When `lightbox` is true, attaches click handlers to each rendered SVG. Clicking opens a programmatic GLightbox overlay with svg-pan-zoom for interactive pan and zoom. svg-pan-zoom (~29KB) is lazy-loaded from vendor assets by default.
+8. In chromium mode, the MermaidJS library is cached at `~/.cache/markata-go/mermaid/` to avoid re-downloading on each build
+9. In cli/chromium modes, rendered SVGs are cached in the build cache and reused when the diagram source and rendering inputs are unchanged
 
 **Markdown usage:**
 ````markdown
@@ -3857,6 +3908,37 @@ The lightbox overlay is themed to match the site's dark palette. CSS overrides i
 - svg-pan-zoom JS (~29KB, BSD-2 license) is only loaded on first diagram click
 - GLightbox CSS/JS is loaded with the page (shared with image_zoom if enabled)
 - Pan-zoom instance is destroyed on lightbox close to prevent memory leaks
+
+---
+
+### excalidraw
+
+**Name:** `excalidraw`
+**Stage:** Render + Write
+**Purpose:** Converts Excalidraw scene fences into content-addressed static SVG assets.
+
+**Status:** Enabled by default. `auto` uses a matching SVG artifact generated by the Go workbench and never starts Chromium. Select `mode = "chromium"` to run the compatibility renderer explicitly.
+
+**Configuration (TOML):**
+
+```toml
+[markata-go.excalidraw]
+enabled = true
+mode = "auto"
+
+[markata-go.excalidraw.chromium]
+browser_path = ""    # Auto-detect when empty
+timeout = 30
+no_sandbox = false
+```
+
+The Go workbench can store an optional compressed SVG artifact beside the
+editable scene JSON in the same Markdown fence. Markata checks the scene,
+renderer and font assets, theme, and export options before using it. Published
+pages load only the resulting SVG asset; they do not load the editor JavaScript.
+Shapes, lines, arrows, freehand strokes, and text are supported. Embedded
+images, linked elements, and web embeds return a clear build error. Set
+`enabled = false` to keep the fence as highlighted scene JSON.
 
 ---
 

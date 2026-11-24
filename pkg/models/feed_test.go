@@ -675,3 +675,28 @@ func TestSyndicationConfig(t *testing.T) {
 func strPtr(s string) *string {
 	return &s
 }
+
+func TestFeedConfigApplyDefaultsPreservesExplicitFalse(t *testing.T) {
+	defaults := NewFeedDefaults()
+	for _, tc := range []struct {
+		name      string
+		overrides map[string]bool
+		wantHTML  bool
+		wantRSS   bool
+		wantSite  bool
+	}{
+		{"sitemap off", map[string]bool{"sitemap": false}, true, true, false},
+		{"all three off", map[string]bool{"html": false, "rss": false, "sitemap": false}, false, false, false},
+		{"rss only on", map[string]bool{"html": false, "rss": true, "sitemap": false}, false, true, false},
+		{"inherit defaults", nil, true, true, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			feed := FeedConfig{}
+			feed.SetFormatOverrides(tc.overrides)
+			feed.ApplyDefaults(defaults)
+			if feed.Formats.HTML != tc.wantHTML || feed.Formats.RSS != tc.wantRSS || feed.Formats.Sitemap != tc.wantSite {
+				t.Fatalf("formats = %+v, expected html=%v rss=%v sitemap=%v", feed.Formats, tc.wantHTML, tc.wantRSS, tc.wantSite)
+			}
+		})
+	}
+}

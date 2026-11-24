@@ -14,7 +14,7 @@
         "contract_version": 1,
         "palette": "ayu-dark",
         "aesthetic": "minimal",
-        "fontpack": "brush-poster",
+        "fontpack": "system",
         "texture": {
           "kind": "screenprint",
           "color_mix": 0.35,
@@ -42,7 +42,7 @@
       "expected_plan": {
         "palette": "ayu-dark",
         "aesthetic": "minimal",
-        "fontpack": "brush-poster",
+        "fontpack": "system",
         "texture": {
           "recipe": "screenprint",
           "mix": 0.35,
@@ -103,7 +103,7 @@
         "contract_version": 1,
         "palette": "ayu-light",
         "aesthetic": "minimal",
-        "fontpack": "brush-poster",
+        "fontpack": "system",
         "texture": {
           "kind": "screenprint",
           "color_mix": 0.35,
@@ -131,7 +131,7 @@
       "expected_plan": {
         "palette": "ayu-light",
         "aesthetic": "minimal",
-        "fontpack": "brush-poster",
+        "fontpack": "system",
         "texture": {
           "recipe": "screenprint",
           "mix": 0.35,
@@ -192,7 +192,7 @@
         "contract_version": 1,
         "palette": "nord-dark",
         "aesthetic": "minimal",
-        "fontpack": "brush-poster",
+        "fontpack": "system",
         "texture": {
           "kind": "screenprint",
           "color_mix": 0.35,
@@ -220,7 +220,7 @@
       "expected_plan": {
         "palette": "nord-dark",
         "aesthetic": "minimal",
-        "fontpack": "brush-poster",
+        "fontpack": "system",
         "texture": {
           "recipe": "screenprint",
           "mix": 0.35,
@@ -297,7 +297,7 @@
         "contract_version": 1,
         "palette": "ayu-dark",
         "aesthetic": "minimal",
-        "fontpack": "brush-poster",
+        "fontpack": "system",
         "texture": {
           "kind": "screenprint",
           "color_mix": 0,
@@ -325,7 +325,7 @@
       "expected_plan": {
         "palette": "ayu-dark",
         "aesthetic": "minimal",
-        "fontpack": "brush-poster",
+        "fontpack": "system",
         "texture": {
           "recipe": "screenprint",
           "mix": 0,
@@ -403,7 +403,7 @@
         "contract_version": 1,
         "palette": "ayu-dark",
         "aesthetic": "minimal",
-        "fontpack": "brush-poster",
+        "fontpack": "system",
         "texture": {
           "kind": "screenprint",
           "color_mix": 0.35,
@@ -431,7 +431,7 @@
       "expected_plan": {
         "palette": "ayu-dark",
         "aesthetic": "minimal",
-        "fontpack": "brush-poster",
+        "fontpack": "system",
         "texture": {
           "recipe": "screenprint",
           "mix": 0.35,
@@ -508,7 +508,7 @@
         "contract_version": 1,
         "palette": "ayu-dark",
         "aesthetic": "minimal",
-        "fontpack": "brush-poster",
+        "fontpack": "system",
         "texture": {
           "kind": "screenprint",
           "color_mix": 0.35,
@@ -536,7 +536,7 @@
       "expected_plan": {
         "palette": "ayu-dark",
         "aesthetic": "minimal",
-        "fontpack": "brush-poster",
+        "fontpack": "system",
         "texture": {
           "recipe": "screenprint",
           "mix": 0.35,
@@ -596,7 +596,7 @@
         "contract_version": 1,
         "palette": "ayu-dark",
         "aesthetic": "minimal",
-        "fontpack": "brush-poster",
+        "fontpack": "system",
         "texture": {
           "kind": "screenprint",
           "color_mix": 0.35,
@@ -625,7 +625,7 @@
       "expected_plan": {
         "palette": "ayu-dark",
         "aesthetic": "minimal",
-        "fontpack": "brush-poster",
+        "fontpack": "system",
         "texture": {
           "recipe": "screenprint",
           "mix": 0.35,
@@ -690,7 +690,7 @@
         "contract_version": 1,
         "palette": "ayu-dark",
         "aesthetic": "minimal",
-        "fontpack": "brush-poster",
+        "fontpack": "system",
         "texture": {
           "kind": "screenprint",
           "color_mix": 0.35,
@@ -719,7 +719,7 @@
       "expected_plan": {
         "palette": "ayu-dark",
         "aesthetic": "minimal",
-        "fontpack": "brush-poster",
+        "fontpack": "system",
         "texture": {
           "recipe": "screenprint",
           "mix": 0.35,
@@ -790,7 +790,7 @@
         "contract_version": 1,
         "palette": "ayu-dark",
         "aesthetic": "minimal",
-        "fontpack": "brush-poster",
+        "fontpack": "system",
         "texture": {
           "kind": "screenprint",
           "color_mix": 0.35,
@@ -819,7 +819,7 @@
       "expected_plan": {
         "palette": "ayu-dark",
         "aesthetic": "minimal",
-        "fontpack": "brush-poster",
+        "fontpack": "system",
         "texture": {
           "recipe": "screenprint",
           "mix": 0.35,
@@ -890,7 +890,7 @@
         "contract_version": 1,
         "palette": "ayu-dark",
         "aesthetic": "minimal",
-        "fontpack": "brush-poster",
+        "fontpack": "system",
         "texture": {
           "kind": "screenprint",
           "color_mix": 0.35,
@@ -918,7 +918,7 @@
       "expected_plan": {
         "palette": "ayu-dark",
         "aesthetic": "minimal",
-        "fontpack": "brush-poster",
+        "fontpack": "system",
         "texture": {
           "recipe": "screenprint",
           "mix": 0.35,
@@ -1005,7 +1005,7 @@
         "contract_version": 1,
         "palette": "ayu-dark",
         "aesthetic": "minimal",
-        "fontpack": "brush-poster",
+        "fontpack": "system",
         "texture": {
           "kind": "screenprint",
           "color_mix": 0,
@@ -1033,7 +1033,7 @@
       "expected_plan": {
         "palette": "ayu-dark",
         "aesthetic": "minimal",
-        "fontpack": "brush-poster",
+        "fontpack": "system",
         "texture": {
           "recipe": "screenprint",
           "mix": 0,

@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 // AtomFeed represents an Atom feed.
@@ -95,7 +95,7 @@ func GenerateAtom(feed *lifecycle.Feed, config *lifecycle.Config) (string, error
 			{Href: feedURL, Rel: "self", Type: "application/atom+xml"},
 		},
 		Author:    &AtomAuthor{Name: meta.Author, URI: meta.AuthorURL},
-		Generator: &AtomGenerator{URI: "https://github.com/WaylonWalker/markata-go", Value: "markata-go"},
+		Generator: &AtomGenerator{URI: "https://github.com/WaylonWalker/markata", Value: "markata-go"},
 		Entries:   make([]AtomEntry, 0, len(posts)),
 	}
 	if isArchiveFeedPath(feedPath) {

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
 )
 
 func TestRedirectsPlugin_HTMLFallbackDefaultsEnabled(t *testing.T) {

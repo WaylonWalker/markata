@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/buildcache"
-	"github.com/WaylonWalker/markata-go/pkg/diagnostics"
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/buildcache"
+	"github.com/WaylonWalker/markata/pkg/diagnostics"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 // TestPublishFeedsPlugin_Name tests the plugin name.
@@ -337,7 +337,7 @@ func TestCleanupPaginatedFeedDirs_RemovesStalePageDirectories(t *testing.T) {
 // TestPublishFeedsPlugin_FormatRedirectsCreateDirectories tests that format redirects work correctly.
 // - For md/txt: Content at /slug.ext, reversed redirect from /slug/index.ext/index.html -> /slug.ext
 // - For json: Content at /slug/feed.json, forward redirect from /slug.json/index.html -> /slug/feed.json
-// Fixes: https://github.com/WaylonWalker/markata-go/issues/248
+// Fixes: https://github.com/WaylonWalker/markata/issues/248
 func TestPublishFeedsPlugin_FormatRedirectsCreateDirectories(t *testing.T) {
 	tempDir := t.TempDir()
 	plugin := NewPublishFeedsPlugin()

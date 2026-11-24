@@ -12,8 +12,8 @@ import (
 	"github.com/BurntSushi/toml"
 	"gopkg.in/yaml.v3"
 
-	"github.com/WaylonWalker/markata-go/pkg/models"
-	"github.com/WaylonWalker/markata-go/pkg/renderingcontract"
+	"github.com/WaylonWalker/markata/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/renderingcontract"
 )
 
 // loadResolvedConfig loads a config file, resolves recursive includes, then
@@ -25,7 +25,7 @@ func loadResolvedConfig(configPath string) (*models.Config, error) {
 	}
 
 	warnings := normalizeRenderingTheme(rawWrapper)
-	defaultRaw, err := rawWrapperFromConfig(DefaultConfig())
+	defaultRaw, err := rawWrapperFromDefaultConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode default config: %w", err)
 	}
@@ -302,8 +302,31 @@ func configFromRawWrapper(rawWrapper map[string]any) (*models.Config, error) {
 	}
 
 	config := wrapper.MarkataGo.toConfig()
+	if err := applyContentTemplateSettings(config, rawWrapper); err != nil {
+		return nil, err
+	}
 	populateExtra(config, rawWrapper)
 	return config, nil
+}
+
+func applyContentTemplateSettings(config *models.Config, rawWrapper map[string]any) error {
+	settings, ok := rawWrapper["content_templates"]
+	if !ok {
+		if markataGo, exists := rawWrapper["markata-go"].(map[string]any); exists {
+			settings, ok = markataGo["content_templates"]
+		}
+	}
+	if !ok || settings == nil {
+		return nil
+	}
+	data, err := json.Marshal(settings)
+	if err != nil {
+		return fmt.Errorf("encode content template settings: %w", err)
+	}
+	if err := json.Unmarshal(data, &config.ContentTemplates); err != nil {
+		return fmt.Errorf("decode content template settings: %w", err)
+	}
+	return nil
 }
 
 func rawWrapperFromConfig(config *models.Config) (map[string]any, error) {
@@ -318,6 +341,34 @@ func rawWrapperFromConfig(config *models.Config) (map[string]any, error) {
 	}
 
 	return rawWrapper, nil
+}
+
+// rawWrapperFromDefaultConfig keeps unset formats on built-in feeds absent
+// from the raw layer. JSON serialization otherwise turns their zero values
+// into explicit false values before user config is merged.
+func rawWrapperFromDefaultConfig() (map[string]any, error) {
+	defaults := DefaultConfig()
+	raw, err := rawWrapperFromConfig(defaults)
+	if err != nil {
+		return nil, err
+	}
+	root, ok := raw["markata-go"].(map[string]any)
+	if !ok {
+		return raw, nil
+	}
+	feeds, ok := root["feeds"].([]any)
+	if !ok {
+		return raw, nil
+	}
+	for i := range defaults.Feeds {
+		if i >= len(feeds) || defaults.Feeds[i].Formats.HasAnyEnabled() {
+			continue
+		}
+		if rawFeed, ok := feeds[i].(map[string]any); ok {
+			delete(rawFeed, "formats")
+		}
+	}
+	return raw, nil
 }
 
 func populateExtra(config *models.Config, rawWrapper map[string]any) {

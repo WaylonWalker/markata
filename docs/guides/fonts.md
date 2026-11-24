@@ -8,7 +8,6 @@ tags:
   - typography
 ---
 
-# Font packs
 
 Markata defaults to the offline `system` pack. It makes no external font
 requests and emits no font binaries. To choose another pack, add this to the
@@ -30,8 +29,12 @@ directory. Bundled builds do not run Python or FontTools during `markata build`.
 The generated `css/fonts.css` has a content-hashed URL for caching. Pages
 preload the emitted WOFF2 files for their body and main heading ahead of CSS;
 per-page overrides use their own pack. A stored picker choice is restored
-before paint and preloads that choice too. Other fonts (including code and
-additional script coverage) load when needed. Font faces use
+before paint and preloads that choice too. Nonempty editorial feeds also preload
+the code face used by their visible week labels, so layout does not have to
+discover that font later. Calendar controls reserve their space while loading
+to keep the archive toolbar stable. Shared sources are fetched once, and system code
+stacks need no download. Other layouts keep code fonts on demand. Additional
+script coverage also loads when needed. Font faces use
 `font-display: swap`, so slow networks can still briefly show fallback text;
 preloading reduces that delay without forcing fallback fonts permanently.
 

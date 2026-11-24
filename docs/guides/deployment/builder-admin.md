@@ -10,7 +10,6 @@ tags:
   - performance
 ---
 
-# Builder Admin
 
 The builder admin service keeps a warm markata-go build worker running inside your cluster.
 
@@ -41,6 +40,7 @@ builderAdmin:
   enabled: true
   port: 8080
   fast: false
+  pageWeight: true
   watch:
     enabled: true
     debounce: 2s
@@ -61,6 +61,44 @@ builderAdmin:
         - reader
         - update
 ```
+
+### Control page-weight diagnostics
+
+If you want to measure build time without the page-weight scan, set
+`builderAdmin.pageWeight: false` in Helm. For direct CLI use, pass
+`markata-go builder-admin --page-weight=false`.
+
+New releases omit `.markata/page-weight.json` in this mode. The other build
+diagnostics and reports in older releases stay available. To measure the
+impact, compare Builder Admin build times on the same warm source revision.
+
+### Build automatically after a new Builder image starts
+
+Helm enables `builderAdmin.buildOnStartupRevisionChange: true` by default.
+When the replacement Builder Admin pod acquires leadership, it compares the
+running binary's embedded Git commit against the **last successful real build**.
+If the revisions differ, it immediately enqueues a normal full build with
+trigger `startup-revision` and records the comparison in build history.
+Publication remains atomic: a failed build keeps the last live release.
+
+An unchanged restart does not enqueue another build. Existing pending normal
+builds suppress duplicates, and standby pods never enqueue during rolling
+updates. Before comparing revisions, the new leader reloads the previous
+leader's persisted state. Rollbacks and failed builds do not count as
+successful builds for this comparison.
+
+For older build records without a commit, Builder Admin checks the live
+diagnostics artifact. If neither source supplies a reliable previous
+revision, it performs one build to establish a baseline. A running
+executable without a reliable Git commit SHA does not automatically
+build based on a mutable image tag or development version.
+
+Set `builderAdmin.buildOnStartupRevisionChange: false` to disable the
+Helm behavior. Helm injects `MARKATA_GO_BUILDER_ADMIN_STARTUP_REBUILD` as an
+environment variable instead of passing a new flag; older builder images
+ignore the variable, avoiding startup failures during staggered rollouts.
+Direct CLI use is opt-in via
+`markata-go builder-admin --build-on-startup-revision-change`.
 
 ### Put transient build work on node-local storage
 
@@ -317,6 +355,11 @@ curl -fsS -H "Authorization: Bearer $HLAB_TOKEN" \
 
 curl -fsS -X POST -H "Authorization: Bearer $HLAB_TOKEN" \
   https://builder.example.com/api/v1/builds
+
+# Force a full build even when the inputs match the live release.
+curl -fsS -X POST -H "Authorization: Bearer $HLAB_TOKEN" \
+  -H 'Content-Type: application/json' -d '{"force":true}' \
+  https://builder.example.com/api/v1/builds
 ```
 
 The API also provides `GET /api/v1/builds/{id}`, `GET /api/v1/refreshes/{id}`,
@@ -355,8 +398,51 @@ The UI shows:
 ## Reading the Operator UI
 
 The default **Jobs** workspace is the primary operational view. It puts running work, queued
-work, and completed builds, refreshes, and rollbacks in one list. Use **Enqueue Build** for a
-manual build, then inspect its row for status, queue wait, build duration, trigger, and release.
+work, and completed builds, refreshes, and rollbacks in one list. Use **Build if changed** for a
+manual build. Builder Admin can record it as unchanged when a recent successful release still
+matches the verified source, configuration, and external cache inputs. Use **Force full build** to
+bypass this check. An unchanged result does not prepare a workspace or create a release.
+
+The unchanged check applies to manual UI and API requests and builds automatically queued after the
+successful `reader-update` refresh task. Other refresh tasks use a full build. A reader update that
+changes source or configured cache inputs still causes a full build. The check is limited to 30
+minutes and expires at the next local calendar day boundary. If
+the service cannot verify its inputs, it runs a normal build. Build history records the unchanged
+result and its check duration. The build API accepts an optional `{"force": true}` body; existing
+empty-body requests continue to work. An unchanged result does not refresh publication timestamps
+such as the diagnostics artifact's `BuiltAt` value.
+
+The [unchanged-build benchmark report](/docs/reports/builder-admin-noop-benchmark/) records the local
+performance method and its limits. Production storage still needs a separate measurement.
+
+If Markdown contains mention candidates, the service runs a full build. It cannot use the unchanged
+result until it can prove fresh cache coverage for every referenced external domain. A nonempty cache
+does not prove that the cache contains every domain. Other time based inputs need a matching freshness
+check before they can use the unchanged result. Markdown excluded only by Git's global or repository
+exclude files disables the shortcut. Ignored directories and non-Markdown files are fingerprinted
+because plugins can use them as assets. Unsafe Git stat settings and index flags that can hide edits
+also disable the shortcut. Tailwind builds must be explicitly disabled with
+`tailwind.build = false`; otherwise the external binary and installer cache can change output
+without changing the source fingerprint. Enabled icon-vendor downloads, Python docs generation,
+external link hover, non-Go Mermaid modes, and Excalidraw Chromium rendering also use external inputs
+that disable the shortcut. Pagefind search also disables the shortcut because its CLI can appear
+after a build that skipped indexing. The Bleve backend remains eligible. Use **Force full build** to
+retry transient external fetches before the unchanged window expires. Absolute content globs are not
+eligible. External theme template and static directories are fingerprinted when present. The default
+`.well-known/time` endpoint changes on every build, so sites that enable it use a full build.
+
+When a post can fetch external embed metadata, the service also verifies that the persistent
+build cache contains the current transformed result for that post. The build cache must be enabled,
+and a custom cache directory is included in the input check. The service also verifies the live
+release pointer, every release entry's file identity, and the running builder executable before it
+records an unchanged result. Builder Admin treats published releases as immutable between atomic
+promotions; concurrent edits by other writers are outside this guarantee.
+
+For local or hosted link avatars, each renderable Markdown post must also have a persisted transform
+result. Self-hosted CDN assets must be present in the verified asset cache. If either cache is
+incomplete, Builder Admin runs a full build so remote data or assets can be retried.
+
+Then inspect the build row for status, queue wait, build duration, trigger, and release.
 
 Select **Details** on a build to see phase timings, changed paths, parsed performance lines, and
 the raw log. Release pruning runs asynchronously after publication, so a completed build can be live
@@ -438,6 +524,31 @@ builderAdmin:
     existingSecretName: builder-webhook
     existingSecretKey: webhook-secret
 ```
+
+For a public GitHub repository, the chart can initialize the source PVC as a
+shallow checkout before Builder Admin starts. It refreshes that checkout on
+pod startup; signed push webhooks keep it current between restarts:
+
+```yaml
+builderAdmin:
+  sourceGit:
+    enabled: true
+    repository: https://github.com/WaylonWalker/markata.git
+    branch: main
+    depth: 1
+  webhook:
+    enabled: true
+    branch: main
+    existingSecretName: markata-docs-builder-webhook
+    existingSecretKey: webhook-secret
+```
+
+`sourceGit` only seeds an empty source directory or refreshes an existing Git
+checkout. If the directory contains files but no `.git` repository, startup
+fails without deleting those files. The webhook continues to use a
+fast-forward-only pull and queues a build only when the checkout changes.
+Configure the builder's site config with `search.configPath` when the source
+repository uses a non-default config filename.
 
 Create separate releases for `main`, `dev`, and `qa` when they publish different domains. Give each
 release a distinct source checkout, site storage, builder-admin ingress host, and webhook secret.

@@ -42,7 +42,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/diagnostics"
+	"github.com/WaylonWalker/markata/pkg/diagnostics"
 )
 
 // CacheVersion is incremented when the cache format changes.
@@ -638,11 +638,13 @@ func (c *Cache) MarkRebuiltWithSlug(sourcePath, slug, inputHash, outputPath, tem
 		cached.InputHash = inputHash
 		cached.OutputPath = outputPath
 		cached.Template = template
+		cached.Slug = slug
 	} else {
 		c.Posts[sourcePath] = &PostCache{
 			InputHash:  inputHash,
 			OutputPath: outputPath,
 			Template:   template,
+			Slug:       slug,
 		}
 	}
 	c.dirty = true

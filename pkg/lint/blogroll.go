@@ -5,7 +5,7 @@ package lint
 import (
 	"fmt"
 
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 // BlogrollIssue represents a linting issue found in blogroll configuration.

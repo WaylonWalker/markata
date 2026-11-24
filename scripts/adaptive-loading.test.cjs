@@ -2,6 +2,15 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const policy = require('../pkg/themes/default/static/js/adaptive-loading.js');
 
+test('visible article autoplay respects constrained mode, motion, and Save Data', () => {
+  assert.equal(policy.canAutoplayInViewport('unknown', false, false), true);
+  assert.equal(policy.canAutoplayInViewport('normal', false, false), true);
+  assert.equal(policy.canAutoplayInViewport('full-quality', false, false), true);
+  assert.equal(policy.canAutoplayInViewport('constrained', false, false), false);
+  assert.equal(policy.canAutoplayInViewport('normal', true, false), false);
+  assert.equal(policy.canAutoplayInViewport('full-quality', false, true), false);
+});
+
 test('missing Network Information API leaves Auto usable', () => {
   const current = policy.networkHint(policy.state(), undefined);
   assert.equal(current.recommendation, 'unknown');

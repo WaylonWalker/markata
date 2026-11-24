@@ -9,7 +9,7 @@ Builder Admin is a long-running build worker with a browser dashboard and a vers
 - [Operator dashboard](/): Browser UI with jobs, build/release history, and logs.
 - [Agent API documentation](/api/v1/llms.txt): This guide, accessible using a validated bearer token.
 - [Current state](/api/v1/state): JSON state, revision status, queued/running operations, completed builds, releases, and configured refresh task names.
-- [Builder Admin deployment and authentication guide](https://github.com/WaylonWalker/markata-go/blob/main/docs/guides/deployment/builder-admin.md): Full configuration, ingress, SSO, webhook, and release workflow documentation.
+- [Builder Admin deployment and authentication guide](https://github.com/WaylonWalker/markata/blob/main/docs/guides/deployment/builder-admin.md): Full configuration, ingress, SSO, webhook, and release workflow documentation.
 
 ## How to sign in
 
@@ -44,7 +44,7 @@ These endpoints return data for the authenticated operator. Don't assume a queue
 
 The following endpoints **enqueue** operations and affect the build or published release. They require an authorized bearer token and explicit operator approval before an agent calls them:
 
-- `POST /api/v1/builds`: Queue a full site build.
+- `POST /api/v1/builds`: Queue a build if inputs changed; a verified no-op may retain the live release with result `unchanged`. To explicitly force a full build, send JSON `{"force":true}` with `Content-Type: application/json`.
 - `POST /api/v1/refresh/{task-name}`: Queue a configured refresh task. Choose a task from `refresh_tasks` in `GET /api/v1/state`.
 - `POST /api/v1/releases/{release-id}/rollback`: Promote a retained release; this changes the live rendered site **without reverting source Git history**. Verify the target release before requesting approval.
 

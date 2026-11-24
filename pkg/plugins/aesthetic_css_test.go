@@ -9,11 +9,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/models"
-	"github.com/WaylonWalker/markata-go/pkg/renderingcontract"
-	"github.com/WaylonWalker/markata-go/pkg/renderingrecipe"
-	"github.com/WaylonWalker/markata-go/pkg/themes"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/renderingcontract"
+	"github.com/WaylonWalker/markata/pkg/renderingrecipe"
+	"github.com/WaylonWalker/markata/pkg/themes"
 )
 
 func TestAestheticCSSPlugin_VariablesAreCanonical(t *testing.T) {
@@ -258,6 +258,22 @@ func TestAestheticCSSPlugin_InvalidTextureStillRejected(t *testing.T) {
 
 	if _, err := compileMotifBundle(config); err == nil {
 		t.Fatal("unsupported texture kind must be rejected")
+	}
+}
+
+func TestAestheticCSSPlugin_NonBrushUnsupportedMotifFallsBackToLegacy(t *testing.T) {
+	config := lifecycle.NewConfig()
+	theme := models.NewThemeConfig()
+	theme.Fontpack = "editorial"
+	theme.Motif.Kind = "letter"
+	config.Extra = map[string]interface{}{"models_config": &models.Config{Theme: theme}}
+
+	bundle, err := compileMotifBundle(config)
+	if err != nil {
+		t.Fatalf("non-brush fontpack with unsupported motif kind should fall back to legacy projection, got error: %v", err)
+	}
+	if len(bundle.Assets) != 0 {
+		t.Fatalf("expected empty bundle on legacy fallback, got assets: %v", bundle.Assets)
 	}
 }
 

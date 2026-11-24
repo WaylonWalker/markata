@@ -181,7 +181,7 @@ The plugin MUST implement:
 ```toml
 [markata-go.mermaid]
 enabled = true
-mode = "client"                         # "client", "cli", or "chromium"
+mode = "go"                             # default native SVG; alternatives: "client", "cli", "chromium"
 cdn_url = "/assets/vendor/mermaid/mermaid.min.js"  # vendored UMD bundle; .mjs URLs are ES-module imported
 theme = "default"                       # default, dark, forest, neutral
 use_css_variables = true                # Use site palette CSS variables for diagram theming
@@ -216,6 +216,16 @@ max_concurrent = 4                      # Maximum concurrent diagram renderings
 | `chromium.browser_path` | string | `""` | Path to browser executable (Chromium mode). If empty, searches common installation paths. |
 | `chromium.timeout` | int | `30` | Timeout in seconds for rendering each diagram. |
 | `chromium.max_concurrent` | int | `4` | Maximum number of diagrams to render concurrently. |
+
+When `use_css_variables` is enabled, Mermaid MUST use `--color-surface` for node
+fills and edge-label backgrounds, `--color-text` for diagram text, and
+`--color-border` (falling back to `--color-primary`) for borders and edges.
+Cluster fills MUST use `--color-background`. Client mode MUST retain the source
+of each diagram and rerender it on the site's `theme-change`, `palette-change`,
+and `color-mode-change` events so an open page follows the active palette.
+Chromium mode MUST use the same palette variables when it pre-renders SVGs. CLI
+mode follows the Mermaid CLI theme and configuration because it does not use
+the site's CSS variables.
 
 **Rendering Modes:**
 
@@ -367,6 +377,7 @@ The plugin MUST implement:
 enabled = true
 cdn_url = "https://cdn.jsdelivr.net/npm/chart.js"
 container_class = "chartjs-container"
+data_display = "open" # "open" (default) or "collapsed"
 ```
 
 **Syntax:**
@@ -393,6 +404,29 @@ container_class = "chartjs-container"
 2. Parse JSON content
 3. Replace with canvas element and initialization script
 4. Inject Chart.js script (once per page)
+
+Optional top-level JSON keys `title` and `caption` (plain strings) create a
+`figure.chartjs-figure` containing a left-aligned `figcaption` and the existing
+chart container. The title is not a heading and does not enter the TOC. Canvas
+labels use the title when present and reference the figcaption by a unique ID.
+Short horizontal bar figures (at most four labels, `options.indexAxis: "y"`)
+use a compact canvas. Other chart figures retain Chart.js sizing.
+
+The top-level JSON key `data_display` overrides the site setting with `"open"`
+or `"collapsed"`. These three authoring keys are removed before passing JSON to
+Chart.js or rendering configuration fallbacks. Invalid metadata produces an
+escaped chart error; invalid site `data_display` fails configuration.
+JSON metadata is used because the stock Markdown renderer keeps only the
+language from fence info; unlike CSV's legacy HTML option matcher, it reliably
+survives Markdown rendering without changes to the shared renderer.
+
+Without metadata and with default site settings, emitted HTML remains unchanged.
+Data/configuration details start open by default, including without JavaScript.
+Collapsed details remain keyboard-accessible without JavaScript. For opted-in
+charts, successful Chart.js initialization collapses the details element itself
+(not its wrapper); failed initialization leaves the configured state intact.
+Legacy scripts are unchanged, including their ineffective attempt to collapse
+the wrapper div.
 
 **Output:**
 
@@ -1007,8 +1041,10 @@ cwebp_path = ""                   # Optional explicit path
 2. Skip external URLs, protocol-relative URLs, and data URIs.
 3. Rewrite each qualifying `<img>` into a `<picture>` element with `source` tags, using `srcset` and `sizes` when widths are configured.
 4. During write, generate requested formats and responsive width variants next to the original output image.
-5. Use cache metadata to skip re-encoding unchanged inputs.
+5. Use a SHA-256 source-content digest and cache metadata to skip re-encoding unchanged inputs. Compute the digest once per deduplicated source target in each build; a source timestamp change alone must not invalidate the cache.
 6. If an encoder is missing, warn and skip that format without failing the build.
+7. Keep every qualifying HTML image reference, but process each resolved output path once per build using the union of its requested responsive widths.
+8. Report image target occurrences and unique target candidates after deduplication. Count each candidate once in `unique_targets`, including candidates whose paths cannot be resolved or whose source files are missing; also include those candidates in `missing_sources`. Report `duplicate_targets` as occurrences removed by deduplication so repeated references remain visible without implying repeated encoding.
 
 **Output Files:**
 
@@ -1218,3 +1254,12 @@ The plugin MUST implement:
 - [DEFAULT_PLUGINS.md](./DEFAULT_PLUGINS.md) - Default plugins
 - [CONFIG.md](./CONFIG.md) - Plugin configuration
 - [THEMES.md](./THEMES.md) - Styling for plugin output
+
+### Default horizontal bar styling
+
+For a `bar` chart with an effective `indexAxis: "y"`, one dataset, and one to five labels, the Chart.js plugin supplies compact styling when the author has not specified bar geometry: bars at most 14 pixels thick, a 7-pixel radius, and rounded ends. It supplies an aspect ratio of 3 when neither `aspectRatio` nor `maintainAspectRatio` is specified. Explicit bar geometry at the dataset, `options`, `options.datasets.bar`, or `options.elements.bar` level prevents geometry defaults; explicit sizing options are preserved. Other chart types, multi-dataset charts, and charts with more than five labels retain Chart.js defaults. The accessible fallback retains the authored configuration for irregular data.
+
+The effective index axis follows Chart.js precedence: dataset `indexAxis`, then `options.datasets.bar.indexAxis`, then `options.indexAxis`.
+The default axis is `x`. Vertical overrides MUST prevent compact geometry and sizing defaults.
+
+Default bar thickness MUST shrink to fit narrow viewports without overlapping adjacent categories.

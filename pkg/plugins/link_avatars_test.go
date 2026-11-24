@@ -8,9 +8,30 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
+
+func TestLinkAvatarsRequiresBuildTimeRender(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		extra map[string]interface{}
+		want  bool
+	}{
+		{name: "unset uses browser mode"},
+		{name: "browser mode", extra: map[string]interface{}{"link_avatars": map[string]any{"enabled": true, "mode": "js"}}},
+		{name: "disabled local mode", extra: map[string]interface{}{"link_avatars": map[string]any{"enabled": false, "mode": "local"}}},
+		{name: "local mode", extra: map[string]interface{}{"link_avatars": map[string]any{"enabled": true, "mode": "local"}}, want: true},
+		{name: "nested local mode", extra: map[string]interface{}{"markata-go": map[string]any{"link_avatars": map[string]any{"enabled": true, "mode": "local"}}}, want: true},
+		{name: "hosted mode", extra: map[string]interface{}{"link_avatars": map[string]any{"enabled": true, "mode": "hosted"}}, want: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := LinkAvatarsRequiresBuildTimeRender(tc.extra); got != tc.want {
+				t.Fatalf("LinkAvatarsRequiresBuildTimeRender()=%t, want %t", got, tc.want)
+			}
+		})
+	}
+}
 
 func TestLinkAvatars_Render_LocalModeInjectsAndCaches(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {

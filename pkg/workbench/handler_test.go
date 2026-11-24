@@ -1,0 +1,603 @@
+package workbench
+
+import (
+	"bytes"
+	"context"
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
+	"image/png"
+	"io/fs"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"strings"
+	"sync"
+	"testing"
+	"time"
+
+	"github.com/WaylonWalker/markata/pkg/editorworkspace"
+	"github.com/WaylonWalker/markata/pkg/lsp"
+	"github.com/WaylonWalker/markata/pkg/visualizations"
+
+	"golang.org/x/net/html"
+)
+
+type previewWithoutIndexWorkspace struct {
+	workspaceSource
+	filesCalled bool
+}
+
+func (w *previewWithoutIndexWorkspace) Snapshot() (index *lsp.Index, revision uint64) {
+	return nil, 0
+}
+func (w *previewWithoutIndexWorkspace) Files() ([]editorworkspace.File, error) {
+	w.filesCalled = true
+	return nil, nil
+}
+
+func TestHandler_FirstPreviewDoesNotWaitForSiteIndex(t *testing.T) {
+	h := newHandler(t)
+	workspace := &previewWithoutIndexWorkspace{workspaceSource: h.workspace}
+	h.workspace = workspace
+	response := request(h, `{"markdown":"# Write now","include_document":true}`)
+	if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), "Write now") {
+		t.Fatalf("preview before index: %d %s", response.Code, response.Body.String())
+	}
+	if workspace.filesCalled {
+		t.Fatal("preview synchronously loaded site metadata")
+	}
+}
+
+func TestHandler_InlineGalleryImagesServeContainedWorkspaceFiles(t *testing.T) {
+	h := newHandler(t)
+	root := t.TempDir()
+	imageDir := filepath.Join(root, "static", "images")
+	if err := os.MkdirAll(imageDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(imageDir, "shared.png"), testPastePNG, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	workspace, err := editorworkspace.New(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	h.workspace = workspace
+	for _, tc := range []struct {
+		path string
+		want int
+	}{
+		{"/images/shared.png", http.StatusOK},
+		{"/images/unknown.png", http.StatusNotFound},
+		{"/images/../secret.png", http.StatusNotFound},
+	} {
+		response := httptest.NewRecorder()
+		req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost"+tc.path, http.NoBody)
+		h.ServeHTTP(response, req)
+		if response.Code != tc.want {
+			t.Fatalf("GET %s returned %d (want %d)", tc.path, response.Code, tc.want)
+		}
+		if tc.want == http.StatusOK {
+			if response.Header().Get("Content-Type") != pwaImageType || !bytes.Equal(response.Body.Bytes(), testPastePNG) {
+				t.Fatalf("inline gallery image was not served intact")
+			}
+		}
+	}
+}
+
+func TestHandler_CMSShellAssetsServed(t *testing.T) {
+	h := newHandler(t)
+	page := httptest.NewRecorder()
+	h.ServeHTTP(page, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost/", http.NoBody))
+	if page.Code != http.StatusOK {
+		t.Fatalf("GET / returned %d", page.Code)
+	}
+	body := page.Body.String()
+	for _, want := range []string{
+		`/editor/cms-shell.css`,
+		`/editor/cms-shell.js`,
+		`id="mobile-nav"`,
+		`id="mobile-editing-toolbar"`,
+		`id="header-commands"`,
+		`class="header-modes"`,
+		`id="header-new-post"`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("workbench index missing %q", want)
+		}
+	}
+	for _, asset := range []string{"/editor/cms-shell.css", "/editor/cms-shell.js", "/editor/cms-flows.js"} {
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost"+asset, http.NoBody))
+		if rec.Code != http.StatusOK || rec.Body.Len() == 0 {
+			t.Fatalf("GET %s returned %d (%d bytes)", asset, rec.Code, rec.Body.Len())
+		}
+	}
+}
+
+func TestHandler_PWAManifestAndFlowsServed(t *testing.T) {
+	h := newHandler(t)
+	manifestRec := httptest.NewRecorder()
+	h.ServeHTTP(manifestRec, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost/manifest.webmanifest", http.NoBody))
+	if manifestRec.Code != http.StatusOK {
+		t.Fatalf("GET /manifest.webmanifest returned %d", manifestRec.Code)
+	}
+	var manifest map[string]any
+	if err := json.Unmarshal(manifestRec.Body.Bytes(), &manifest); err != nil {
+		t.Fatalf("invalid manifest JSON: %v", err)
+	}
+	if manifest["display"] != "standalone" {
+		t.Fatalf("manifest display = %v, want standalone", manifest["display"])
+	}
+	target, ok := manifest["share_target"].(map[string]any)
+	if !ok {
+		t.Fatal("manifest missing share_target")
+	}
+	if target["action"] != "/share-target" || target["method"] != "POST" || target["enctype"] != "multipart/form-data" {
+		t.Fatalf("share target must be a multipart POST: %#v", target)
+	}
+	files, ok := target["files"].([]any)
+	if !ok || len(files) != 1 {
+		t.Fatalf("share target must accept one image collection: %#v", target["files"])
+	}
+	fields, isMap := files[0].(map[string]any)
+	if !isMap {
+		t.Fatalf("share target file entry must be an object: %#v", files[0])
+	}
+	if fields["name"] != pwaSharePhotosField {
+		t.Fatalf("wrong share field: %#v", fields)
+	}
+	for _, route := range []string{"/sw.js", "/pwa-icon.svg", "/pwa-icon-192.png", rasterLargeIconPath} {
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost"+route, http.NoBody))
+		if rec.Code != http.StatusOK || rec.Body.Len() == 0 {
+			t.Fatalf("GET %s returned %d (%d bytes)", route, rec.Code, rec.Body.Len())
+		}
+	}
+	for _, tc := range []struct {
+		path string
+		size int
+	}{
+		{"/pwa-icon-192.png", 192},
+		{rasterLargeIconPath, 512},
+	} {
+		response := httptest.NewRecorder()
+		h.ServeHTTP(response, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost"+tc.path, http.NoBody))
+		if response.Code != http.StatusOK || response.Header().Get("Content-Type") != pwaImageType {
+			t.Fatalf("raster icon %s returned HTTP %d", tc.path, response.Code)
+		}
+		icon, err := png.DecodeConfig(bytes.NewReader(response.Body.Bytes()))
+		if err != nil || icon.Width != tc.size || icon.Height != tc.size {
+			t.Fatalf("raster icon %s dimensions: %+v, %v", tc.path, icon, err)
+		}
+	}
+}
+
+func TestHandler_ExcalidrawArtifactsUseLocalFingerprintedFonts(t *testing.T) {
+	h := newHandler(t)
+	page := httptest.NewRecorder()
+	h.ServeHTTP(page, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost/", http.NoBody))
+	if page.Code != http.StatusOK || !strings.Contains(page.Body.String(), "MARKATA_EXCALIDRAW_RENDERER_VERSION") || !strings.Contains(page.Body.String(), `MARKATA_EXCALIDRAW_EXPORT_THEME="dark"`) {
+		t.Fatalf("workbench page did not provide the artifact renderer fingerprint and theme: %d", page.Code)
+	}
+	manifest := httptest.NewRecorder()
+	h.ServeHTTP(manifest, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost/editor/excalidraw-fonts/manifest.json", http.NoBody))
+	if manifest.Code != http.StatusOK || !strings.Contains(manifest.Body.String(), `"renderer_version": "excalidraw-0.18.1-static-svg-v2"`) {
+		t.Fatalf("local font manifest returned %d: %s", manifest.Code, manifest.Body.String())
+	}
+}
+
+func TestHandler_ExcalidrawFontAssetsSupportUpstreamFontsPrefix(t *testing.T) {
+	h := newHandler(t)
+	font := "Excalifont/Excalifont-Regular-a88b72a24fb54c9f94e3b5fdaa7481c9.woff2"
+	want, err := visualizations.ReadExcalidrawAsset("excalidraw-fonts/" + font)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, path := range []string{
+		"/editor/excalidraw-fonts/" + font,
+		"/editor/excalidraw-fonts/fonts/" + font,
+	} {
+		response := httptest.NewRecorder()
+		request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost"+path, http.NoBody)
+		h.ServeHTTP(response, request)
+		if response.Code != http.StatusOK {
+			t.Fatalf("font route %q returned %d: %s", path, response.Code, response.Body.String())
+		}
+		if response.Header().Get("Content-Type") != "font/woff2" {
+			t.Errorf("font route %q content type = %q, want font/woff2", path, response.Header().Get("Content-Type"))
+		}
+		if !bytes.Equal(response.Body.Bytes(), want) {
+			t.Errorf("font route %q did not return the bundled font bytes", path)
+		}
+	}
+}
+
+func TestHandler_ExcalidrawEditorServesSplitChunks(t *testing.T) {
+	assets, err := visualizations.ExcalidrawAssetFS()
+	if err != nil {
+		t.Fatal(err)
+	}
+	chunks, err := fs.Glob(assets, "excalidraw-editor-chunks/*.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(chunks) == 0 {
+		t.Fatal("the bundled Excalidraw editor has no split JavaScript chunks")
+	}
+	want, err := fs.ReadFile(assets, chunks[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := newHandler(t)
+	response := httptest.NewRecorder()
+	url := "http://localhost/editor/" + chunks[0]
+	h.ServeHTTP(response, httptest.NewRequestWithContext(context.Background(), http.MethodGet, url, http.NoBody))
+	if response.Code != http.StatusOK {
+		t.Fatalf("editor chunk returned %d: %s", response.Code, response.Body.String())
+	}
+	if !bytes.Equal(response.Body.Bytes(), want) {
+		t.Fatal("editor chunk response does not match the embedded asset")
+	}
+}
+
+func newHandler(t testing.TB) *Handler {
+	t.Helper()
+	h, err := New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = h.Close() })
+	return h
+}
+func request(h *Handler, body string) *httptest.ResponseRecorder {
+	r := httptest.NewRequest(http.MethodPost, "http://localhost/render", strings.NewReader(body))
+	r.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, r)
+	return w
+}
+
+func TestHandler_RenderAndAssets(t *testing.T) {
+	h := newHandler(t)
+	source := "# Hello :lucide-house:\n\n!!! note\n    Local preview.\n\n```go\nfmt.Println(42)\n```\n\n```mermaid\ngraph LR\nA-->B\n```\n\n```chartjs\n{\"type\":\"bar\",\"data\":{\"labels\":[\"A\"],\"datasets\":[{\"data\":[1]}]}}\n```"
+	body, err := json.Marshal(map[string]any{"markdown": source, "appearance": map[string]string{"data-theme": "light"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var firstDocument string
+	for i := 0; i < 2; i++ {
+		w := request(h, string(body))
+		if w.Code != 200 {
+			t.Fatalf("%d: %s", w.Code, w.Body)
+		}
+		var response struct {
+			Document      string `json:"document"`
+			Cached        bool   `json:"cached"`
+			InputBytes    int    `json:"input_bytes"`
+			DocumentBytes int    `json:"document_bytes"`
+		}
+		if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
+			t.Fatal(err)
+		}
+		documentBytes := len(response.Document)
+		if response.Cached != (i == 1) || response.InputBytes != len(source) || response.DocumentBytes != documentBytes {
+			t.Fatalf("invalid metrics: cached=%t want %t, input=%d want %d, document=%d actual=%d", response.Cached, i == 1, response.InputBytes, len(source), response.DocumentBytes, documentBytes)
+		}
+		for _, part := range []string{`data-theme="light"`, `data-palette="default-light"`, `class="post h-entry"`, `<svg`, `mermaid`, `chart`} {
+			if !strings.Contains(response.Document, part) {
+				t.Errorf("missing %s", part)
+			}
+		}
+		if i == 1 && firstDocument != response.Document {
+			t.Error("cached render changed document")
+		}
+		firstDocument = response.Document
+		z := html.NewTokenizer(strings.NewReader(response.Document))
+		for {
+			kind := z.Next()
+			if kind == html.ErrorToken {
+				break
+			}
+			if kind != html.StartTagToken {
+				continue
+			}
+			tag := z.Token()
+			if tag.Data != "link" && tag.Data != "script" {
+				continue
+			}
+			for _, a := range tag.Attr {
+				if a.Key != "src" && a.Key != "href" {
+					continue
+				}
+				if strings.HasPrefix(a.Val, "data:text/css;base64,") {
+					encoded := strings.TrimPrefix(a.Val, "data:text/css;base64,")
+					css, err := base64.StdEncoding.DecodeString(encoded)
+					if err != nil || len(css) == 0 {
+						t.Fatalf("invalid embedded stylesheet: %v", err)
+					}
+					continue
+				}
+				if !strings.HasPrefix(a.Val, "/appearance/") {
+					t.Fatalf("unexpected asset %s", a.Val)
+				}
+				asset := httptest.NewRecorder()
+				h.ServeHTTP(asset, httptest.NewRequest("GET", a.Val, http.NoBody))
+				if asset.Code != 200 || asset.Body.Len() == 0 {
+					t.Fatalf("missing asset %s: %d", a.Val, asset.Code)
+				}
+				if asset.Header().Get("Access-Control-Allow-Origin") != "*" {
+					t.Error("sandbox asset lacks CORS")
+				}
+			}
+		}
+	}
+}
+
+func TestHandler_Favicon(t *testing.T) {
+	h := newHandler(t)
+	icon, err := web.ReadFile("web/favicon.ico")
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost/favicon.ico", http.NoBody))
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /favicon.ico returned %d", w.Code)
+	}
+	if !strings.HasPrefix(w.Header().Get("Content-Type"), "image/") {
+		t.Fatalf("favicon content type = %q", w.Header().Get("Content-Type"))
+	}
+	if !bytes.Equal(w.Body.Bytes(), icon) {
+		t.Fatal("favicon route did not return the bundled Markata icon")
+	}
+
+	page := httptest.NewRecorder()
+	h.ServeHTTP(page, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost/", http.NoBody))
+	if !strings.Contains(page.Body.String(), `<link rel="icon" href="/favicon.ico">`) {
+		t.Fatal("workbench page does not link its favicon")
+	}
+}
+
+func TestHandler_RenderMarksContainerSourceLines(t *testing.T) {
+	h := newHandler(t)
+	source := "::: md-section\n\nA section paragraph.\n\n:::"
+	body, err := json.Marshal(map[string]string{"markdown": source})
+	if err != nil {
+		t.Fatal(err)
+	}
+	response := request(h, string(body))
+	if response.Code != http.StatusOK {
+		t.Fatalf("render returned %d: %s", response.Code, response.Body)
+	}
+	var result renderResponse
+	if err := json.Unmarshal(response.Body.Bytes(), &result); err != nil {
+		t.Fatal(err)
+	}
+	for _, marker := range []string{`data-markata-source-line="0"`, `data-markata-source-end-line="4"`} {
+		if !strings.Contains(result.HTML, marker) {
+			t.Fatalf("rendered container has no workbench marker %s: %s", marker, result.HTML)
+		}
+	}
+	if len(result.SourceAnchors) != 2 || result.SourceAnchors[0] != 0 || result.SourceAnchors[1] != 4 {
+		t.Fatalf("source anchors = %v, want [0 4]", result.SourceAnchors)
+	}
+}
+
+func TestHandler_RequestContract(t *testing.T) {
+	h := newHandler(t)
+	cases := []struct {
+		name, body string
+		status     int
+	}{
+		{"missing", `{}`, 400}, {"null", `{"markdown":null}`, 400}, {"wrong type", `{"markdown":42}`, 400}, {"invalid", `{`, 400}, {"trailing", `{"markdown":"ok"} {}`, 400}, {"unknown", `{"markdown":"ok","unknown":true}`, 400},
+		{"bad appearance", `{"markdown":"ok","appearance":{"data-theme":"evil"}}`, 400}, {"unknown appearance", `{"markdown":"ok","appearance":{"onclick":"evil"}}`, 400},
+		{"source bytes", `{"markdown":"` + strings.Repeat("é", 100001) + `"}`, 413}, {"body bytes", `{"markdown":"` + strings.Repeat("a", 1<<20) + `"}`, 413},
+		{"trailing oversize", `{"markdown":"ok"}` + strings.Repeat(" ", 1<<20), 413},
+		{"empty", `{"markdown":""}`, 200}, {"limit", `{"markdown":"` + strings.Repeat("a", maxSource) + `"}`, 200},
+	}
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			w := request(h, tt.body)
+			if w.Code != tt.status {
+				t.Fatalf("got %d want %d: %.200s", w.Code, tt.status, w.Body.String())
+			}
+		})
+	}
+	for _, test := range []struct {
+		method, path, origin, contentType string
+		code                              int
+	}{
+		{"GET", "/render", "", "", 405}, {"POST", "/", "", "", 405}, {"POST", "/render", "https://other.test", "application/json", 403}, {"POST", "/render", "null", "application/json", 403}, {"POST", "/render", "", "text/plain", 415},
+		{"GET", "/appearance/missing.css", "", "", 404}, {"GET", "/editor/../handler.go", "", "", 404}, {"GET", "/missing", "", "", 404}, {"GET", "/", "", "", 200}, {"HEAD", "/", "", "", 200}, {"GET", "/editor/app.js", "", "", 200}, {"GET", "/editor/codemirror/lib/codemirror.js", "", "", 200},
+	} {
+		t.Run(fmt.Sprintf("%s %s %s", test.method, test.path, test.origin), func(t *testing.T) {
+			r := httptest.NewRequest(test.method, "http://localhost"+test.path, strings.NewReader(`{"markdown":"hi"}`))
+			r.Header.Set("Origin", test.origin)
+			r.Header.Set("Content-Type", test.contentType)
+			w := httptest.NewRecorder()
+			h.ServeHTTP(w, r)
+			if w.Code != test.code {
+				t.Fatalf("got %d want %d", w.Code, test.code)
+			}
+		})
+	}
+}
+
+func TestHandler_CancellationAndConcurrency(t *testing.T) {
+	h := newHandler(t)
+	h.gate <- struct{}{}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	r := httptest.NewRequest("POST", "http://localhost/render", strings.NewReader(`{"markdown":"hello"}`)).WithContext(ctx)
+	r.Header.Set("Content-Type", "application/json")
+	done := make(chan struct{})
+	go func() { h.ServeHTTP(httptest.NewRecorder(), r); close(done) }()
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("canceled request blocked")
+	}
+	<-h.gate
+	var wg sync.WaitGroup
+	for i := 0; i < 8; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			for j := 0; j < 3; j++ {
+				w := request(h, fmt.Sprintf(`{"markdown":"# Document %d %d"}`, i, j))
+				if w.Code != 200 {
+					t.Errorf("render: %d", w.Code)
+				}
+				h.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/appearance/css/main.css", http.NoBody))
+			}
+		}(i)
+	}
+	wg.Wait()
+}
+
+func TestHandler_ConditionalAsset(t *testing.T) {
+	h := newHandler(t)
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, httptest.NewRequest("GET", "/editor/app.js", http.NoBody))
+	r := httptest.NewRequest("GET", "/editor/app.js", http.NoBody)
+	r.Header.Set("If-None-Match", w.Header().Get("ETag"))
+	cached := httptest.NewRecorder()
+	h.ServeHTTP(cached, r)
+	if cached.Code != 304 {
+		t.Fatalf("got %d", cached.Code)
+	}
+}
+
+func BenchmarkHandler_Render(b *testing.B) {
+	h := newHandler(b)
+	source := strings.Repeat("## A heading\n\nSome **Markdown** with a [link](https://example.com).\n\n", 100)
+	body, err := json.Marshal(map[string]string{"markdown": source})
+	if err != nil {
+		b.Fatal(err)
+	}
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		h.lastResult = nil
+		w := request(h, string(body))
+		if w.Code != 200 {
+			b.Fatal(w.Code)
+		}
+	}
+}
+func BenchmarkHandler_Cached(b *testing.B) {
+	h := newHandler(b)
+	body := `{"markdown":"# Hello\n\nA repeated draft."}`
+	request(h, body)
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		w := request(h, body)
+		if !bytes.Contains(w.Body.Bytes(), []byte(`"cached":true`)) {
+			b.Fatal("cache miss")
+		}
+	}
+}
+
+// blockedWriter models a client that has stopped reading the response.
+type blockedWriter struct {
+	*httptest.ResponseRecorder
+	entered, release chan struct{}
+}
+
+func (w *blockedWriter) Write(data []byte) (int, error) {
+	close(w.entered)
+	<-w.release
+	return w.ResponseRecorder.Write(data)
+}
+func TestHandler_SlowResponseDoesNotHoldRenderGate(t *testing.T) {
+	h := newHandler(t)
+	w := &blockedWriter{httptest.NewRecorder(), make(chan struct{}), make(chan struct{})}
+	r := httptest.NewRequest("POST", "http://localhost/render", strings.NewReader(`{"markdown":"# Slow reader"}`))
+	r.Header.Set("Content-Type", "application/json")
+	done := make(chan struct{})
+	go func() { h.ServeHTTP(w, r); close(done) }()
+	<-w.entered
+	defer func() { close(w.release); <-done }()
+	select {
+	case h.gate <- struct{}{}:
+		<-h.gate
+	case <-time.After(time.Second):
+		t.Fatal("response encoding holds render gate")
+	}
+}
+
+func TestHandler_FragmentUpdatesOmitSharedCSS(t *testing.T) {
+	h := newHandler(t)
+	source := "# Update\n\n```go\nfmt.Println(1)\n```\n\n!!! note\n    Conditional styles."
+	var first renderResponse
+	for _, include := range []bool{true, false, false} {
+		body, err := json.Marshal(map[string]any{"markdown": source, "include_document": include})
+		if err != nil {
+			t.Fatal(err)
+		}
+		w := request(h, string(body))
+		if w.Code != http.StatusOK {
+			t.Fatalf("status %d: %s", w.Code, w.Body)
+		}
+		var result renderResponse
+		if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
+			t.Fatal(err)
+		}
+		if result.HTMLBytes != len(result.HTML) || result.InputBytes != len(source) {
+			t.Fatal("incorrect fragment byte counts")
+		}
+		if include && result.Document == nil {
+			t.Fatal("initial document missing")
+		}
+		for _, name := range h.appearance.Styles {
+			if strings.Contains(result.FeatureHeadHTML, name) {
+				t.Errorf("fragment repeats shared style %s", name)
+			}
+			if include {
+				if name == "css/fonts.css" {
+					if strings.Count(*result.Document, `id="markata-preview-fonts"`) != 1 {
+						t.Errorf("document must include %s exactly once", name)
+					}
+				} else if strings.Count(*result.Document, dataStylesheetLink(h.assets[name])) != 1 {
+					t.Errorf("document must embed %s exactly once", name)
+				}
+			}
+		}
+		codeCSS := "data:text/css;base64," + base64.StdEncoding.EncodeToString(h.assets["css/code.css"])
+		if !strings.Contains(result.FeatureHeadHTML, `data-markata-render-head="true"`) || !strings.Contains(result.FeatureHeadHTML, codeCSS) {
+			t.Fatal("missing marked conditional styles")
+		}
+		if include {
+			if result.Document == nil {
+				t.Fatal("initial document missing")
+			}
+			first = result
+			continue
+		}
+		if result.Document != nil || result.DocumentBytes != 0 {
+			t.Fatal("fragment includes document shell")
+		}
+		if !result.Cached || result.HTML != first.HTML || result.FeatureHeadHTML != first.FeatureHeadHTML || result.BodyEndHTML != first.BodyEndHTML {
+			t.Fatalf("cached fragment differs: cached=%t html=%t featureHead=%t bodyEnd=%t", result.Cached, result.HTML == first.HTML, result.FeatureHeadHTML == first.FeatureHeadHTML, result.BodyEndHTML == first.BodyEndHTML)
+		}
+		if strings.Contains(w.Body.String(), "palette.css") || strings.Contains(w.Body.String(), "fontpack-manifest") {
+			t.Fatal("fragment contains shared appearance CSS")
+		}
+	}
+	w := request(h, `{"markdown":"# Plain","include_document":false}`)
+	var plain renderResponse
+	if err := json.Unmarshal(w.Body.Bytes(), &plain); err != nil {
+		t.Fatal(err)
+	}
+	if plain.FeatureHeadHTML != "" || plain.BodyEndHTML != "" {
+		t.Fatal("plain fragment keeps unused feature assets")
+	}
+	invalid := request(h, `{"markdown":"# Invalid","include_document":"false"}`)
+	if invalid.Code != http.StatusBadRequest {
+		t.Fatalf("invalid option: %d", invalid.Code)
+	}
+}

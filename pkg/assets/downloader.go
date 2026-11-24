@@ -20,7 +20,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/runtimeenv"
+	"github.com/WaylonWalker/markata/pkg/runtimeenv"
 )
 
 const maxArchiveExtractBytes = 64 << 20

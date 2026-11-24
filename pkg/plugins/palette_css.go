@@ -11,12 +11,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/logging"
-	"github.com/WaylonWalker/markata-go/pkg/models"
-	"github.com/WaylonWalker/markata-go/pkg/palettes"
-	"github.com/WaylonWalker/markata-go/pkg/renderingcontract"
-	"github.com/WaylonWalker/markata-go/pkg/templates"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/logging"
+	"github.com/WaylonWalker/markata/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/palettes"
+	"github.com/WaylonWalker/markata/pkg/renderingcontract"
+	"github.com/WaylonWalker/markata/pkg/templates"
 )
 
 var paletteCSSLog = logging.Component("palette_css")
@@ -108,7 +108,7 @@ func (p *PaletteCSSPlugin) Configure(m *lifecycle.Manager) error {
 	}
 	css += p.generateContractPaletteCSS(config)
 	if core, ok := config.Extra["palette_core_css"].(string); ok && switcherEnabled {
-		core += p.generateContractPaletteCSS(config)
+		core += p.generateContractPaletteCSS(config, normalizePaletteName(effectiveLight), normalizePaletteName(effectiveDark))
 		config.Extra["palette_core_css"] = core
 		coreHash := fmt.Sprintf("%x", sha256.Sum256([]byte(core)))[:8]
 		m.SetAssetHash("css/palette-core.css", coreHash)
@@ -194,7 +194,7 @@ func (p *PaletteCSSPlugin) Write(m *lifecycle.Manager) error {
 	}
 	css += p.generateContractPaletteCSS(config)
 	if core, ok := config.Extra["palette_core_css"].(string); ok && switcherEnabled {
-		core += p.generateContractPaletteCSS(config)
+		core += p.generateContractPaletteCSS(config, normalizePaletteName(effectiveLight), normalizePaletteName(effectiveDark))
 		if err := writePaletteCoreCSS(outputDir, core, m.GetAssetHash("css/palette-core.css")); err != nil {
 			return err
 		}
@@ -260,7 +260,7 @@ func canonicalPaletteName(name string) string {
 }
 
 //nolint:gocyclo // Palette projection has separate fallback and variant branches.
-func (p *PaletteCSSPlugin) generateContractPaletteCSS(config *lifecycle.Config) string {
+func (p *PaletteCSSPlugin) generateContractPaletteCSS(config *lifecycle.Config, paletteIDs ...string) string {
 	modelsConfig, ok := config.Extra["models_config"].(*models.Config)
 	if !ok {
 		return ""
@@ -354,6 +354,15 @@ func (p *PaletteCSSPlugin) generateContractPaletteCSS(config *lifecycle.Config) 
 		builder.WriteString("}\n")
 	}
 	for _, palette := range contract.Palettes {
+		if len(paletteIDs) > 0 {
+			include := false
+			for _, id := range paletteIDs {
+				include = include || palette.ID == resolve(id)
+			}
+			if !include {
+				continue
+			}
+		}
 		fmt.Fprintf(&builder, "[data-palette=%q], :root[data-palette=%q] {\n", palette.ID, palette.ID)
 		write(&builder, &palette)
 		builder.WriteString("}\n")
@@ -488,6 +497,7 @@ func (p *PaletteCSSPlugin) generateMultiPaletteCSS(loader *palettes.Loader, extr
 	var blocks bytes.Buffer
 	var coreBlocks bytes.Buffer
 	manifest := make([]PaletteManifestEntry, 0, len(candidates))
+	coreManifest := make([]PaletteManifestEntry, 0, 2)
 	for _, entry := range candidates {
 		palette, err := loader.Load(entry.loadName)
 		if err != nil && entry.loadName != entry.Name {
@@ -501,6 +511,7 @@ func (p *PaletteCSSPlugin) generateMultiPaletteCSS(loader *palettes.Loader, extr
 		p.writePaletteVariablesIndented(&blocks, palette, "  ")
 		blocks.WriteString("}\n\n")
 		if entry.Name == normalizePaletteName(lightName) || entry.Name == normalizePaletteName(darkName) {
+			coreManifest = append(coreManifest, entry)
 			fmt.Fprintf(&coreBlocks, "[data-palette=%q], :root[data-palette=%q] {\n", entry.Name, entry.Name)
 			p.writePaletteVariablesIndented(&coreBlocks, palette, "  ")
 			coreBlocks.WriteString("}\n\n")
@@ -508,6 +519,10 @@ func (p *PaletteCSSPlugin) generateMultiPaletteCSS(loader *palettes.Loader, extr
 		manifest = append(manifest, entry)
 	}
 	manifest = linkCounterparts(manifest)
+	coreManifest = linkCounterparts(coreManifest)
+	if len(coreManifest) == 0 {
+		coreManifest = manifest
+	}
 	if extra != nil {
 		extra["palette_seasonal_json"] = seasonalScheduleJSON(manifest, time.Now())
 	}
@@ -518,12 +533,8 @@ func (p *PaletteCSSPlugin) generateMultiPaletteCSS(loader *palettes.Loader, extr
 	buf.WriteString(fmt.Sprintf("/* Default: Light=%s, Dark=%s */\n\n", lightName, darkName))
 
 	// Generate palette manifest for JavaScript
-	manifestJSON, err := json.Marshal(manifest)
-	if err != nil {
-		manifestJSON = []byte("[]")
-	}
-	// Escape single quotes in the JSON for CSS single-quoted string
-	escapedManifest := strings.ReplaceAll(string(manifestJSON), "'", "\\'")
+	escapedManifest := paletteManifestCSS(manifest)
+	coreManifestCSS := paletteManifestCSS(coreManifest)
 
 	// Write non-color variables and palette manifest in :root
 	buf.WriteString("/* Global configuration and non-color variables */\n")
@@ -584,15 +595,25 @@ func (p *PaletteCSSPlugin) generateMultiPaletteCSS(loader *palettes.Loader, extr
 
 	buf.WriteString("}\n\n")
 	p.writeThemeOverrides(&buf, overrides)
-	setPaletteCoreCSS(extra, buf.String(), blocks.String(), coreBlocks.String())
+	setPaletteCoreCSS(extra, buf.String(), blocks.String(), coreBlocks.String(), escapedManifest, coreManifestCSS)
 
 	return buf.String()
 }
 
+// paletteManifestCSS escapes catalog metadata for a single-quoted CSS value.
+func paletteManifestCSS(manifest []PaletteManifestEntry) string {
+	encoded, err := json.Marshal(manifest)
+	if err != nil {
+		return "[]"
+	}
+	return strings.ReplaceAll(string(encoded), "'", "\\'")
+}
+
 // setPaletteCoreCSS substitutes the configured pair for the full pickable set.
-func setPaletteCoreCSS(extra map[string]interface{}, fullCSS, paletteBlocks, coreBlocks string) {
+func setPaletteCoreCSS(extra map[string]interface{}, fullCSS, paletteBlocks, coreBlocks, manifest, coreManifest string) {
 	if extra != nil && paletteBlocks != "" {
-		extra["palette_core_css"] = strings.Replace(fullCSS, paletteBlocks, coreBlocks, 1)
+		core := strings.Replace(fullCSS, paletteBlocks, coreBlocks, 1)
+		extra["palette_core_css"] = strings.Replace(core, "--palette-manifest: '"+manifest+"';", "--palette-manifest: '"+coreManifest+"';", 1)
 	}
 }
 

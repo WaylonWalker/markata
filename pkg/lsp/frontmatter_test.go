@@ -180,14 +180,14 @@ func TestGetFrontmatterContext(t *testing.T) {
 			wantPrefix:       "tr",
 		},
 		{
-			name:     "in list item",
-			content:  "---\ntags:\n  - tag1\n---",
-			line:     2,
-			col:      8,
-			wantInFM: true,
-			// List items don't trigger field name completion
-			wantIsFieldName:  false,
-			wantIsFieldValue: false,
+			name:             "in list item",
+			content:          "---\ntags:\n  - goals\n---",
+			line:             2,
+			col:              9,
+			wantInFM:         true,
+			wantIsFieldValue: true,
+			wantCurrentField: "tags",
+			wantPrefix:       "goals",
 		},
 	}
 
@@ -209,6 +209,9 @@ func TestGetFrontmatterContext(t *testing.T) {
 			}
 			if ctx.Prefix != tt.wantPrefix {
 				t.Errorf("Prefix = %q, want %q", ctx.Prefix, tt.wantPrefix)
+			}
+			if tt.name == "in list item" && ctx.StartCol != 4 {
+				t.Errorf("StartCol = %d, want 4", ctx.StartCol)
 			}
 		})
 	}

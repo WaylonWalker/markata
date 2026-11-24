@@ -8,7 +8,6 @@ tags:
   - development
 ---
 
-# Serve Control Center design
 
 ## Existing Builder Admin
 

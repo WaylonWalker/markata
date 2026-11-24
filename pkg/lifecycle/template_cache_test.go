@@ -3,7 +3,7 @@ package lifecycle
 import (
 	"testing"
 
-	"github.com/WaylonWalker/markata-go/pkg/diagnostics"
+	"github.com/WaylonWalker/markata/pkg/diagnostics"
 )
 
 func TestManagerTemplateCacheSurvivesRunToAndClearsOnReset(t *testing.T) {

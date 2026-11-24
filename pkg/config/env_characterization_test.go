@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 // TestApplyEnvOverride_Characterization captures every key accepted by the

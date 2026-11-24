@@ -5,7 +5,6 @@ published: true
 tags: [performance, css, posts]
 ---
 
-# Progressive article styles
 
 Markata-go avoids loading the feed-card stylesheet on an ordinary `post.html`
 reading page when its article has no embedded feed or card markup.

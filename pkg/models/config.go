@@ -1564,8 +1564,8 @@ type MermaidConfig struct {
 	// Enabled controls whether mermaid processing is active (default: true)
 	Enabled bool `json:"enabled" yaml:"enabled" toml:"enabled"`
 
-	// Mode specifies how to render diagrams: "client" (browser), "cli" (mmdc), or "chromium" (Chrome/Chromium)
-	// Default: "client"
+	// Mode specifies how to render diagrams: "client" (browser), "go" (native SVG), "cli" (mmdc), or "chromium" (Chrome/Chromium)
+	// Default: "go" (native SVG on supported builds; WASM hosts use client mode)
 	Mode string `json:"mode" yaml:"mode" toml:"mode"`
 
 	// CDNURL is the URL for the Mermaid.js library (client mode only)
@@ -1586,8 +1586,24 @@ type MermaidConfig struct {
 	// CLIConfig contains settings for CLI mode (npm mmdc)
 	CLIConfig *CLIRendererConfig `json:"cli" yaml:"cli" toml:"cli"`
 
-	// ChromiumConfig contains settings for Chromium mode (mermaidcdp)
+	// GoConfig contains layout and typography controls for native SVG mode.
+	GoConfig *GoMermaidRendererConfig `json:"go" yaml:"go" toml:"go"`
+
+	// ChromiumConfig contains settings for Chromium mode.
 	ChromiumConfig *ChromiumRendererConfig `json:"chromium" yaml:"chromium" toml:"chromium"`
+}
+
+// GoMermaidRendererConfig configures native SVG generation without a browser.
+// The font family is emitted into SVG. Custom font glyph widths are currently
+// approximated by go-mermaid and must be visually tested for clipping.
+type GoMermaidRendererConfig struct {
+	FontFamily            string  `json:"font_family" yaml:"font_family" toml:"font_family"`
+	FontSize              float64 `json:"font_size" yaml:"font_size" toml:"font_size"`
+	NodeSpacing           float64 `json:"node_spacing" yaml:"node_spacing" toml:"node_spacing"`
+	RankSpacing           float64 `json:"rank_spacing" yaml:"rank_spacing" toml:"rank_spacing"`
+	Padding               float64 `json:"padding" yaml:"padding" toml:"padding"`
+	CurvedEdges           bool    `json:"curved_edges" yaml:"curved_edges" toml:"curved_edges"`
+	TransparentBackground bool    `json:"transparent_background" yaml:"transparent_background" toml:"transparent_background"`
 }
 
 // CLIRendererConfig configures the CLI-based renderer (npm mmdc)
@@ -1599,7 +1615,7 @@ type CLIRendererConfig struct {
 	ExtraArgs string `json:"extra_args" yaml:"extra_args" toml:"extra_args"`
 }
 
-// ChromiumRendererConfig configures the Chromium-based renderer (mermaidcdp)
+// ChromiumRendererConfig configures the Chromium-based renderer.
 type ChromiumRendererConfig struct {
 	// BrowserPath is the path to the Chrome/Chromium binary. If empty, auto-detects.
 	BrowserPath string `json:"browser_path" yaml:"browser_path" toml:"browser_path"`
@@ -1618,12 +1634,13 @@ type ChromiumRendererConfig struct {
 func NewMermaidConfig() MermaidConfig {
 	return MermaidConfig{
 		Enabled:          true,
-		Mode:             "client",
+		Mode:             "go",
 		CDNURL:           "/assets/vendor/mermaid/mermaid.min.js",
 		Theme:            "default",
 		UseCSSVariables:  true,
 		Lightbox:         true,
 		LightboxSelector: ".glightbox-mermaid",
+		GoConfig:         &GoMermaidRendererConfig{FontFamily: "sans-serif", FontSize: 16, NodeSpacing: 50, RankSpacing: 50, Padding: 16},
 		CLIConfig: &CLIRendererConfig{
 			MMDCPath:  "",
 			ExtraArgs: "",
@@ -1650,8 +1667,8 @@ type MDVideoConfig struct {
 	// Controls shows video controls (default: true)
 	Controls bool `json:"controls" yaml:"controls" toml:"controls"`
 
-	// Autoplay records authored playback intent; the client loading policy decides
-	// whether unrequested video may start automatically (default: false).
+	// Autoplay records Markdown video playback intent (default: true).
+	// The client plays marked videos only when visible and allowed by data/motion settings.
 	Autoplay bool `json:"autoplay" yaml:"autoplay" toml:"autoplay"`
 
 	// Loop repeats the video (default: true for GIF-like behavior)
@@ -1668,14 +1685,15 @@ type MDVideoConfig struct {
 }
 
 // NewMDVideoConfig creates a new MDVideoConfig with sensible defaults.
-// Videos show their poster and begin loading only after playback is requested.
+// Markdown video starts when visible unless data or motion preferences suppress autoplay.
+// Preview cards remain poster-only until a reader interacts with them.
 func NewMDVideoConfig() MDVideoConfig {
 	return MDVideoConfig{
 		Enabled:         true,
 		VideoExtensions: []string{".mp4", ".webm", ".ogg", ".ogv", ".mov", ".m4v", ".avi", ".mkv"},
 		VideoClass:      "md-video",
 		Controls:        true,
-		Autoplay:        false,
+		Autoplay:        true,
 		Loop:            true,
 		Muted:           true,
 		Playsinline:     true,
@@ -1693,6 +1711,10 @@ type ChartJSConfig struct {
 
 	// ContainerClass is the CSS class for the chart container div (default: "chartjs-container")
 	ContainerClass string `json:"container_class" yaml:"container_class" toml:"container_class"`
+
+	// DataDisplay sets the initial disclosure state: "open" (default) or "collapsed".
+	// An empty value also means open, preserving programmatic zero-value configs.
+	DataDisplay string `json:"data_display" yaml:"data_display" toml:"data_display"`
 }
 
 // NewChartJSConfig creates a new ChartJSConfig with default values.
@@ -1701,6 +1723,7 @@ func NewChartJSConfig() ChartJSConfig {
 		Enabled:        true,
 		CDNURL:         "/assets/vendor/chartjs/chart.min.js",
 		ContainerClass: "chartjs-container",
+		DataDisplay:    "open",
 	}
 }
 
@@ -2036,7 +2059,7 @@ func NewWebMentionsConfig() WebMentionsConfig {
 	return WebMentionsConfig{
 		Enabled:            false,
 		Outgoing:           true,
-		UserAgent:          "markata-go/1.0 (WebMention Sender; +https://github.com/WaylonWalker/markata-go)",
+		UserAgent:          "markata-go/1.0 (WebMention Sender; +https://github.com/WaylonWalker/markata)",
 		Timeout:            "30s",
 		CacheDir:           ".cache/webmentions",
 		ConcurrentRequests: 5,
@@ -2852,6 +2875,15 @@ type ContentTemplatesConfig struct {
 	// Placement maps template names to output directories
 	Placement map[string]string `json:"placement" yaml:"placement" toml:"placement"`
 
+	// FilenameMode maps template names to "title" or "numbered" filenames.
+	FilenameMode map[string]string `json:"filename_mode" yaml:"filename_mode" toml:"filename_mode"`
+
+	// ImageUpload selects the upload provider. Valid values are "auto", "local", and "dropper".
+	ImageUpload string `json:"image_upload" yaml:"image_upload" toml:"image_upload"`
+
+	// DropperUploadURL overrides the default Dropper JSON upload endpoint.
+	DropperUploadURL string `json:"dropper_upload_url" yaml:"dropper_upload_url" toml:"dropper_upload_url"`
+
 	// Templates is a list of custom template configurations
 	Templates []ContentTemplateConfig `json:"templates,omitempty" yaml:"templates,omitempty" toml:"templates,omitempty"`
 }
@@ -2865,7 +2897,9 @@ func NewContentTemplatesConfig() ContentTemplatesConfig {
 			"page": "pages",
 			"docs": "docs",
 		},
-		Templates: []ContentTemplateConfig{},
+		FilenameMode: map[string]string{},
+		ImageUpload:  "auto",
+		Templates:    []ContentTemplateConfig{},
 	}
 }
 
@@ -3129,6 +3163,10 @@ type ImagesConfig struct {
 	// enabling it makes every supported asset centrally enumerable. The default,
 	// including a nil configuration value, is false.
 	IncludeUnreferenced *bool `json:"include_unreferenced,omitempty" yaml:"include_unreferenced,omitempty" toml:"include_unreferenced,omitempty"`
+
+	// PageSize opts into server-rendered pagination of the image library.
+	// Zero retains the historical complete-page behavior.
+	PageSize int `json:"page_size,omitempty" yaml:"page_size,omitempty" toml:"page_size,omitempty"`
 }
 
 // NewImagesConfig returns the default image-library configuration.

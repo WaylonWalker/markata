@@ -61,7 +61,7 @@ header appears. Therefore, keep `custom_css` in the theme table, not in
 contract_version = 1
 palette = "ayu-dark"
 aesthetic = "minimal"
-fontpack = "brush-poster"
+fontpack = "system"
 custom_css = "custom.css"
 text_size = "large"
 show_text_size_control = true
@@ -150,8 +150,10 @@ picked them). It edits whichever config file already holds the
 theme table (including `include`d files such as `config/theme.toml`), keeps
 comments, and triggers a rebuild. When a user says "use the look I picked",
 have them click Bake in `serve`, then review the diff of the named file. The
-default fontpack is `brush` (Knewave headings, Space Grotesk body, DM Mono
-code). Sites are dark by default (`fallback_mode = "dark"`).
+default fontpack is the zero-download `system` pack (native system-ui
+body/headings and native monospace code). `brush` and `brush-poster` remain
+explicit opt-ins for branded poster headings. Sites are dark by default
+(`fallback_mode = "dark"`).
 Builds with no config file (such as `markata-go build post.md`) use the
 contract defaults (`ayu-dark`, `minimal`). The motif is off by default; set
 `[markata-go.theme.motif] kind = "block-w"` only when the site wants it.

@@ -3,7 +3,7 @@ package sidebar
 import (
 	"testing"
 
-	"github.com/WaylonWalker/markata-go/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 func boolPtr(v bool) *bool {

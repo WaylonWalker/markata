@@ -317,6 +317,15 @@ func DefaultPreservePatterns() []string {
 		"mermaid-pz*",
 		"svg-pan-zoom*",
 
+		// Article code-copy controls are inserted after HTML generation by
+		// code-chrome.js.  They do not exist in the build-time HTML scan;
+		// without this safeguard CSS purge strips their positioning and focus
+		// styles, causing the Copy button to overlap code in production.
+		"md-code-*",
+
+		// Roads (including road-entry-icon and road-entry-revealed added by roads.js)
+		"road-*",
+
 		// Common state classes (often added by JS)
 		"active",
 		"inactive",
@@ -345,6 +354,13 @@ func DefaultPreservePatterns() []string {
 		"theme-*",
 		"palette-*",
 
+		// Sidebar drawer state is applied only after user interaction.
+		// Without these, CSS purge can leave the toggle working while the
+		// closed drawer stays visibility:hidden and translated off-screen.
+		"sidebar--pinned",
+		"sidebar--no-motion",
+		"feed-sidebar--expanded",
+
 		// Animation classes
 		"fade-*",
 		"slide-*",
@@ -371,5 +387,9 @@ func DefaultPreserveAttributes() []string {
 		"data-text-size",
 		"data-mode",
 		"data-color-scheme",
+
+		// Road styles are selected by roads.js at runtime
+		"data-road",
+		"data-road-ready",
 	}
 }

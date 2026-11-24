@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/WaylonWalker/markata-go/pkg/themes"
+	"github.com/WaylonWalker/markata/pkg/themes"
 )
 
 // Built-in presets feed the generated stylesheet; the embedded default CSS is

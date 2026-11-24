@@ -1,4 +1,12 @@
-# Build DAG plugin ownership inventory
+---
+title: "Build DAG plugin ownership inventory"
+description: "This document is the conservative ownership audit for the feature-flagged DAG executor. It follows the resource vocabulary in pkg/builddag: site, files,..."
+date: 2026-09-30
+published: true
+tags:
+  - documentation
+---
+
 
 This document is the conservative ownership audit for the feature-flagged DAG executor. It follows the resource vocabulary in `pkg/builddag`: `site`, `files`, `post`, `feed`, `cache`, `output`, `template`, `external`, and `plugin`.
 

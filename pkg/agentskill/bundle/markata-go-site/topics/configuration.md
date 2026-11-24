@@ -39,7 +39,7 @@ Bare `markata-go config` behaves like `markata-go config show`.
 
 ## Navigation previews
 
-For a header or footer nav link that should show the default theme's hover preview, use the local URL of a generated feed or published post, such as `/blog/` or `/about/`. Set a feed's `description` in `[[markata-go.feeds]]`; set a post's `description` and `tags` in frontmatter. Enabled Reader, Blogroll, and Random routes also receive previews. The preview draws public counts and available reading statistics from the build. External links and unmatched paths render as ordinary links. Check the generated URL and plugin enablement when a preview is missing.
+To show the default theme's hover preview, use a local route such as `/blog/` or `/about/` in the header or footer. Set a feed's `description` in `[[markata-go.feeds]]`. Set a post's `description` and `tags` in frontmatter. Enabled Reader, Blogroll, and Random routes also have previews. Random uses a fixed description so changes to the draw keep the shared preview in cache. External and unmatched routes use ordinary links. If a preview is missing, check the route and whether the plugin is enabled.
 
 Post body links and wikilinks to public posts or feeds show the same metadata on hover and keyboard focus. A configured-site URL or absolute localhost URL resolves by its path during local development. Post tag links show feed counts and publication rhythm when a public `/tags/<slug>/` feed exists. Keep descriptions and dates in frontmatter so these previews have useful content.
 
@@ -62,6 +62,18 @@ these settings when a feature appears to ignore the site config:
 Use `markata-go config show` or `markata-go config get <key>` to inspect the
 resolved typed values. Explicit `false` values are valid settings and must not
 be replaced by defaults.
+For feed output, set a key such as `[markata-go.feeds.formats] sitemap = false`
+when one feed must disable a default format. Other omitted feed format keys
+continue to inherit from `[markata-go.feed_defaults.formats]`.
+
+Full-site builds automatically write `/llms.txt` from the site description
+and a short list of published, indexable pages. Configure it via
+`[markata-go.llms_txt]` (`enabled = true`, `max_pages = 30` by default).
+Prefer a published `llms.md` with `slug: llms` or a project
+`static/llms.txt` when you need a hand-curated index; those override the
+built-in generator. This file helps agents discover content; it is not an
+AI training/crawling policy. Do not include draft, skipped, unpublished,
+noindex, or private posts in publicly distributed indexes.
 
 The optional Content Index is enabled with `[markata-go.content_index]`. It
 writes resolved metadata and feed membership, including safe metadata-only
@@ -178,6 +190,10 @@ patterns = ["docs/**/*.md"]
 [markata-go.layout]
 name = "docs"
 ```
+
+The default theme includes the docs page template and navigation sidebar.
+Use `layout.name = "docs"` without copying a site template; add
+`templates/layouts/docs.html` only when the site needs different markup.
 
 For feed-specific patterns, read `../reference/feed-patterns.md`.
 

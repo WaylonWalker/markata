@@ -1,0 +1,281 @@
+package editorworkspace
+
+import (
+	"context"
+	"errors"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+	"time"
+)
+
+func storeFixture(t *testing.T) (store *Store, root string) {
+	t.Helper()
+	root = t.TempDir()
+	writeStoreFile(t, root, "markata-go.toml", "[markata-go.glob]\npatterns=['*.md']\nuse_gitignore=true\n")
+	writeStoreFile(t, root, "one.md", "---\ntitle: One\n---\n# First")
+	writeStoreFile(t, root, "two.md", "---\ntitle: Two\n---\n# Second")
+	store, err := Open(context.Background(), root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := store.Close(); err != nil {
+			t.Error(err)
+		}
+	})
+	return store, root
+}
+func writeStoreFile(t *testing.T, root, path, source string) {
+	t.Helper()
+	if err := os.WriteFile(filepath.Join(root, path), []byte(source), 0o600); err != nil {
+		t.Fatal(err)
+	}
+}
+func waitStore(t *testing.T, condition func() bool) {
+	t.Helper()
+	deadline := time.Now().Add(5 * time.Second)
+	for !condition() {
+		if time.Now().After(deadline) {
+			t.Fatal("workspace update did not arrive")
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+}
+
+func TestStore_IndexStatusDoesNotTriggerMetadataLoad(t *testing.T) {
+	store, _ := storeFixture(t)
+	before := store.Stats()
+	status := store.IndexStatus()
+	if status.Ready || status.Phase != "queued" || status.Files != 2 {
+		t.Fatalf("unloaded workspace status = %+v", status)
+	}
+	if after := store.Stats(); after.MetadataLoads != before.MetadataLoads {
+		t.Fatalf("read-only status unexpectedly loaded metadata: %+v -> %+v", before, after)
+	}
+	if _, err := store.Files(); err != nil {
+		t.Fatal(err)
+	}
+	ready := store.IndexStatus()
+	if !ready.Ready || ready.Phase != "ready" || ready.Files != 2 || ready.Indexed != 2 || ready.Pending != 0 {
+		t.Fatalf("loaded workspace status = %+v", ready)
+	}
+	if ready.GlobScans == 0 || ready.MetadataLoads != 2 || ready.ElapsedMS < 0 || ready.LastLoadMS < 0 {
+		t.Fatalf("missing measured index telemetry: %+v", ready)
+	}
+}
+
+func TestStore_ReusesDiscoveryAndMetadata(t *testing.T) {
+	store, _ := storeFixture(t)
+	if _, err := store.Files(); err != nil {
+		t.Fatal(err)
+	}
+	before := store.Stats()
+	for i := 0; i < 10; i++ {
+		if _, err := store.Paths(); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := store.Files(); err != nil {
+			t.Fatal(err)
+		}
+		source, err := store.Read("one.md")
+		if err != nil || !strings.Contains(source, "# First") {
+			t.Fatalf("source=%q err=%v", source, err)
+		}
+	}
+	after := store.Stats()
+	if after.GlobScans != before.GlobScans || after.MetadataLoads != before.MetadataLoads {
+		t.Fatalf("cached reads repeated work: before=%+v after=%+v", before, after)
+	}
+	if after.SourceReads-before.SourceReads != 10 {
+		t.Fatal("source reads were not counted")
+	}
+}
+
+func TestStore_CreateRefreshesPathsImmediately(t *testing.T) {
+	store, _ := storeFixture(t)
+	if err := store.Create("three.md", "---\ntitle: Three\n---\n# Third"); err != nil {
+		t.Fatal(err)
+	}
+	files, err := store.Paths()
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, file := range files {
+		found = found || file.Path == "three.md"
+	}
+	if len(files) != 3 || !found {
+		t.Fatalf("paths after create = %+v, want three files including three.md", files)
+	}
+	source, err := store.Read("three.md")
+	if err != nil || !strings.Contains(source, "# Third") {
+		t.Fatalf("created source = %q err=%v", source, err)
+	}
+}
+
+func TestStore_UpdatesOnlyChangedMetadata(t *testing.T) {
+	store, root := storeFixture(t)
+	if _, err := store.Files(); err != nil {
+		t.Fatal(err)
+	}
+	store.mu.RLock()
+	unchanged := store.entries["two.md"].info
+	store.mu.RUnlock()
+	writeStoreFile(t, root, "one.md", "---\ntitle: Updated one\n---\n# Changed")
+	waitStore(t, func() bool {
+		files, err := store.Files()
+		return err == nil && len(files) == 2 && files[0].Title != nil && *files[0].Title == "Updated one"
+	})
+	store.mu.RLock()
+	same := store.entries["two.md"].info == unchanged
+	store.mu.RUnlock()
+	if !same {
+		t.Fatal("unchanged post was reparsed")
+	}
+	index, _ := store.Snapshot()
+	if post := index.GetBySlug("one"); post == nil || post.Title != "Updated one" {
+		t.Fatal("shared LSP index was not updated")
+	}
+	writeStoreFile(t, root, "three.md", "# Third")
+	waitStore(t, func() bool { files, err := store.Paths(); return err == nil && len(files) == 3 })
+	if err := os.Remove(filepath.Join(root, "one.md")); err != nil {
+		t.Fatal(err)
+	}
+	waitStore(t, func() bool { files, err := store.Paths(); return err == nil && len(files) == 2 })
+	if _, err := store.Read("one.md"); err == nil {
+		t.Fatal("removed source remained readable")
+	}
+}
+
+func TestStore_ConfigAndIgnoreInvalidation(t *testing.T) {
+	store, root := storeFixture(t)
+	revision := store.ConfigRevision()
+	writeStoreFile(t, root, ".gitignore", "two.md\n")
+	waitStore(t, func() bool { files, err := store.Paths(); return err == nil && len(files) == 1 })
+	if _, err := store.Read("two.md"); err == nil {
+		t.Fatal("ignored source remained readable")
+	}
+	writeStoreFile(t, root, "markata-go.toml", "[markata-go.glob]\npatterns=['two.md']\nuse_gitignore=false\n[markata-go.theme]\ntext_size='small'\n")
+	waitStore(t, func() bool { return store.ConfigRevision() > revision })
+	files, err := store.Paths()
+	if err != nil || len(files) != 1 || files[0].Path != "two.md" {
+		t.Fatalf("paths=%+v error=%v", files, err)
+	}
+}
+
+func TestStore_CloseStopsWatcher(t *testing.T) {
+	store, _ := storeFixture(t)
+	if err := store.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.Paths(); !errors.Is(err, context.Canceled) {
+		t.Fatalf("closed paths error=%v", err)
+	}
+	if _, err := store.Read("one.md"); !errors.Is(err, context.Canceled) {
+		t.Fatalf("closed read error=%v", err)
+	}
+}
+
+func TestStore_WatchesNestedAppearanceAndConfig(t *testing.T) {
+	store, root := storeFixture(t)
+	if err := os.Mkdir(filepath.Join(root, "config"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	writeStoreFile(t, root, "config/theme.toml", "[markata-go.theme]\ntext_size='small'\n")
+	writeStoreFile(t, root, "markata-go.toml", "[markata-go]\ninclude=['config/theme.toml']\n[markata-go.glob]\npatterns=['*.md']\n")
+	waitStore(t, func() bool {
+		cfg, err := store.Config()
+		return err == nil && cfg != nil && cfg.Theme.TextSize == "small"
+	})
+	revision := store.ConfigRevision()
+	writeStoreFile(t, root, "config/theme.toml", "[markata-go.theme]\ntext_size='large'\n")
+	waitStore(t, func() bool {
+		cfg, err := store.Config()
+		return err == nil && store.ConfigRevision() > revision && cfg != nil && cfg.Theme.TextSize == "large"
+	})
+}
+
+func TestWorkspaceWatchDirectories_RespectsConfiguredGitignore(t *testing.T) {
+	root := t.TempDir()
+	writeStoreFile(t, root, "markata-go.toml", "[markata-go.glob]\npatterns=['pages/**/*.md']\nuse_gitignore=true\n")
+	writeStoreFile(t, root, ".gitignore", "public/\n")
+	if err := os.MkdirAll(filepath.Join(root, "pages", "blog"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	writeStoreFile(t, root, "pages/blog/post.md", "# Post")
+	for _, dir := range []string{".git/objects", "public/.build-work/components/sidebar/index.md"} {
+		if err := os.MkdirAll(filepath.Join(root, dir), 0o700); err != nil {
+			t.Fatal(err)
+		}
+	}
+	workspace, err := New(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, isIgnoredPath, err := workspace.managerWithIgnoreRules()
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, ignored, err := workspaceWatchDirectories(root, isIgnoredPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := map[string]bool{
+		root:                                 false,
+		filepath.Join(root, "pages"):         false,
+		filepath.Join(root, "pages", "blog"): false,
+	}
+	for _, dir := range got {
+		if dir == filepath.Join(root, "public") || strings.HasPrefix(dir, filepath.Join(root, "public")+string(filepath.Separator)) {
+			t.Fatalf("watch directories include gitignored path %q: %v", dir, got)
+		}
+		if _, ok := want[dir]; !ok {
+			t.Fatalf("unexpected watch directory %q: %v", dir, got)
+		}
+		want[dir] = true
+	}
+	if len(ignored) != 2 || ignored[0] != filepath.Join(root, ".git") || ignored[1] != filepath.Join(root, "public") {
+		t.Fatalf("ignored watcher directories = %v, want .git and public", ignored)
+	}
+	for dir, found := range want {
+		if !found {
+			t.Fatalf("expected watcher for %q; got %v", dir, got)
+		}
+	}
+	if isIgnoredPath("public") != true {
+		t.Fatal("configured .gitignore rule was not applied to public")
+	}
+}
+
+func TestStore_DeleteRefreshesPathsImmediately(t *testing.T) {
+	store, root := storeFixture(t)
+	source := "# New source"
+	if err := store.Create("new.md", source); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.Delete("new.md", SourceVersion("stale")); err == nil {
+		t.Fatal("accepted a stale source version")
+	}
+	if err := store.Delete("new.md", SourceVersion(source)); err != nil {
+		t.Fatal(err)
+	}
+	for _, file := range func() []File {
+		paths, err := store.Paths()
+		if err != nil {
+			t.Fatal(err)
+		}
+		return paths
+	}() {
+		if file.Path == "new.md" {
+			t.Fatal("deleted file remained in cached paths")
+		}
+	}
+	if _, err := os.Stat(filepath.Join(root, "new.md")); !os.IsNotExist(err) {
+		t.Fatalf("deleted file still on disk: %v", err)
+	}
+	if _, err := store.Read("new.md"); err == nil {
+		t.Fatal("deleted file remains readable")
+	}
+}

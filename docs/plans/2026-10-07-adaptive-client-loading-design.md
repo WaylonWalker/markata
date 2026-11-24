@@ -8,7 +8,7 @@ tags:
   - design
 ---
 
-# Adaptive Client Loading
+## Adaptive Client Loading
 
 Issue: #1524
 

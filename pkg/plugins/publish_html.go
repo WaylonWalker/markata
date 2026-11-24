@@ -8,14 +8,15 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/buildcache"
-	"github.com/WaylonWalker/markata-go/pkg/diagnostics"
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/logging"
-	"github.com/WaylonWalker/markata-go/pkg/models"
-	"github.com/WaylonWalker/markata-go/pkg/palettes"
-	"github.com/WaylonWalker/markata-go/pkg/templates"
+	"github.com/WaylonWalker/markata/pkg/buildcache"
+	"github.com/WaylonWalker/markata/pkg/diagnostics"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/logging"
+	"github.com/WaylonWalker/markata/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/palettes"
+	"github.com/WaylonWalker/markata/pkg/templates"
 )
 
 var publishHTMLLog = logging.Component("publish_html").Phase("write")
@@ -78,6 +79,7 @@ func getPostExtraString(post *models.Post, keys ...string) string {
 // It supports multiple output formats: HTML, Markdown source, and OG card HTML.
 type PublishHTMLPlugin struct {
 	templatesPlugin *TemplatesPlugin
+	ioRecorder      *diagnostics.PublishIORecorder
 }
 
 // NewPublishHTMLPlugin creates a new PublishHTMLPlugin.
@@ -90,8 +92,33 @@ func (p *PublishHTMLPlugin) Name() string {
 	return "publish_html"
 }
 
+// writeMeasuredFile leaves an identical regular file untouched. For changed
+// output it captures only the WriteFile syscall, excluding comparison,
+// rendering, and directory setup. Its nil recorder path supports direct tests.
+func (p *PublishHTMLPlugin) writeMeasuredFile(path string, content []byte) error {
+	if info, err := os.Lstat(path); err == nil && info.Mode().IsRegular() {
+		if existing, readErr := os.ReadFile(path); readErr == nil && bytes.Equal(existing, content) {
+			p.ioRecorder.FileUnchanged()
+			return nil
+		}
+	}
+
+	start := time.Now()
+	//nolint:gosec // G306: published files must be world-readable by the web server
+	err := os.WriteFile(path, content, 0o644)
+	p.ioRecorder.RecordWrite(len(content), time.Since(start), err)
+	return err
+}
+
 // Write outputs each post to the configured output directory in enabled formats.
 func (p *PublishHTMLPlugin) Write(m *lifecycle.Manager) error {
+	stats := &diagnostics.PublishIORecorder{}
+	p.ioRecorder = stats
+	defer func() {
+		m.ContentLedger().SetPublishIO(p.Name(), stats.Snapshot())
+		p.ioRecorder = nil
+	}()
+
 	config := m.Config()
 	outputDir := config.OutputDir
 
@@ -134,6 +161,7 @@ func (p *PublishHTMLPlugin) Write(m *lifecycle.Manager) error {
 		if post.Skip || post.Draft {
 			return false
 		}
+		stats.Consider(1)
 		if affected[post.Path] {
 			return true
 		}
@@ -141,8 +169,9 @@ func (p *PublishHTMLPlugin) Write(m *lifecycle.Manager) error {
 		// For incremental builds, check if we can skip this post
 		if cache != nil && post.InputHash != "" {
 			if !cache.ShouldRebuildWithSlug(post.Path, post.Slug, post.InputHash, post.Template) {
-				if p.expectedPostOutputsExist(post, config) {
+				if p.expectedPostOutputsExist(post, config) && !projectStaticShadowsPost(post, config) {
 					cache.MarkSkipped()
+					stats.Skip()
 					m.ContentLedger().MarkEmitted(post.Path)
 					return false
 				}
@@ -161,8 +190,22 @@ func (p *PublishHTMLPlugin) Write(m *lifecycle.Manager) error {
 		if p.postOutputExists(post, config) {
 			m.ContentLedger().MarkEmitted(post.Path)
 		}
+		stats.OutputWritten()
 		return nil
 	})
+}
+
+// projectStaticShadowsPost prevents a warm build from letting the static
+// copier replace an authored page that won the same path on a cold build.
+// Ordinary cached posts remain skippable; only a conflicting page is rewritten.
+func projectStaticShadowsPost(post *models.Post, config *lifecycle.Config) bool {
+	if post == nil || config == nil {
+		return false
+	}
+	staticDir := NewStaticAssetsPlugin().projectStaticDir(config)
+	name := filepath.Join(staticDir, filepath.FromSlash(strings.Trim(post.Slug, "/")), "index.html")
+	info, err := os.Stat(name)
+	return err == nil && info.Mode().IsRegular()
 }
 
 func (p *PublishHTMLPlugin) recordDraftInputs(posts []*models.Post, cache *buildcache.Cache) {
@@ -176,6 +219,25 @@ func (p *PublishHTMLPlugin) recordDraftInputs(posts []*models.Post, cache *build
 	}
 }
 
+// postFormatContentPath matches writeReversedFormatOutput: the homepage has
+// /index.<ext>, while other posts have /<slug>.<ext>.
+func postFormatContentPath(outputDir, slug, ext string) string {
+	if slug == "" {
+		return filepath.Join(outputDir, "index."+ext)
+	}
+	return filepath.Join(outputDir, slug+"."+ext)
+}
+
+// appendExpectedFormatOutputs tracks the canonical format file and the
+// non-root redirect page emitted for that format.
+func appendExpectedFormatOutputs(paths []string, outputDir, slug, ext string) []string {
+	paths = append(paths, postFormatContentPath(outputDir, slug, ext))
+	if slug != "" {
+		paths = append(paths, filepath.Join(outputDir, slug, "index."+ext, "index.html"))
+	}
+	return paths
+}
+
 func (p *PublishHTMLPlugin) expectedPostOutputsExist(post *models.Post, config *lifecycle.Config) bool {
 	formats := resolvePostFormats(post, config)
 	expected := make([]string, 0, 5)
@@ -184,26 +246,17 @@ func (p *PublishHTMLPlugin) expectedPostOutputsExist(post *models.Post, config *
 	}
 	if !post.Private {
 		hasReversedFormat := formats.Markdown || formats.Text || formats.ANSI
-		if !formats.IsHTMLEnabled() && hasReversedFormat {
+		if !formats.IsHTMLEnabled() && hasReversedFormat && post.Slug != "" {
 			expected = append(expected, filepath.Join(config.OutputDir, post.Slug, "index.html"))
 		}
 		if formats.Markdown {
-			expected = append(expected,
-				filepath.Join(config.OutputDir, post.Slug+".md"),
-				filepath.Join(config.OutputDir, post.Slug, "index.md", "index.html"),
-			)
+			expected = appendExpectedFormatOutputs(expected, config.OutputDir, post.Slug, "md")
 		}
 		if formats.Text {
-			expected = append(expected,
-				filepath.Join(config.OutputDir, post.Slug+".txt"),
-				filepath.Join(config.OutputDir, post.Slug, "index.txt", "index.html"),
-			)
+			expected = appendExpectedFormatOutputs(expected, config.OutputDir, post.Slug, "txt")
 		}
 		if formats.ANSI {
-			expected = append(expected,
-				filepath.Join(config.OutputDir, post.Slug+".ansi"),
-				filepath.Join(config.OutputDir, post.Slug, "index.ansi", "index.html"),
-			)
+			expected = appendExpectedFormatOutputs(expected, config.OutputDir, post.Slug, "ansi")
 		}
 		if formats.OG {
 			expected = append(expected, filepath.Join(config.OutputDir, post.Slug, "og", "index.html"))
@@ -231,13 +284,13 @@ func (p *PublishHTMLPlugin) postOutputExists(post *models.Post, config *lifecycl
 	}
 	if !post.Private {
 		if formats.Markdown {
-			paths = append(paths, filepath.Join(config.OutputDir, post.Slug+".md"))
+			paths = append(paths, postFormatContentPath(config.OutputDir, post.Slug, "md"))
 		}
 		if formats.Text {
-			paths = append(paths, filepath.Join(config.OutputDir, post.Slug+".txt"))
+			paths = append(paths, postFormatContentPath(config.OutputDir, post.Slug, "txt"))
 		}
 		if formats.ANSI {
-			paths = append(paths, filepath.Join(config.OutputDir, post.Slug+".ansi"))
+			paths = append(paths, postFormatContentPath(config.OutputDir, post.Slug, "ansi"))
 		}
 		if formats.OG {
 			paths = append(paths, filepath.Join(config.OutputDir, post.Slug, "og", "index.html"))
@@ -276,6 +329,11 @@ func (p *PublishHTMLPlugin) markChangedPosts(cache *buildcache.Cache, m *lifecyc
 	changed := cache.ShouldRebuildBatch(batch)
 	for path := range changed {
 		slug := slugByPath[path]
+		// An explicit slug rename invalidates links and backlinks pointing at
+		// both the old and the new route. Invalidate before updating the graph.
+		if oldSlug := cache.Graph.SlugForPath(path); oldSlug != "" && oldSlug != slug {
+			cache.MarkSlugChanged(oldSlug)
+		}
 		cache.MarkSlugChanged(slug)
 	}
 	for _, removedPath := range removed {
@@ -477,7 +535,23 @@ func cachedOutputSlug(outputDir, outputPath string) string {
 		return ""
 	}
 	relative, err := filepath.Rel(root, target)
-	if err != nil || relative == "." || relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) || filepath.Base(relative) != "index.html" {
+	if err != nil || relative == "." || relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
+		// Clean builds render into a sibling staging directory, and the cache
+		// records that temporary output path. Recover its route only when the
+		// stage is an adjacent Markata build directory for this exact output.
+		parent := filepath.Dir(root)
+		stagedRelative, stagedErr := filepath.Rel(parent, target)
+		if stagedErr != nil || stagedRelative == ".." || strings.HasPrefix(stagedRelative, ".."+string(filepath.Separator)) {
+			return ""
+		}
+		parts := strings.Split(filepath.Clean(stagedRelative), string(filepath.Separator))
+		stagePrefix := "." + filepath.Base(root) + ".markata-build-"
+		if len(parts) < 3 || !strings.HasPrefix(parts[0], stagePrefix) {
+			return ""
+		}
+		relative = filepath.Join(parts[1:]...)
+	}
+	if filepath.Base(relative) != "index.html" {
 		return ""
 	}
 	slug := filepath.Dir(relative)
@@ -623,8 +697,7 @@ func (p *PublishHTMLPlugin) writeHTMLFormat(post *models.Post, config *lifecycle
 	// Write index.html
 	outputPath := filepath.Join(postDir, "index.html")
 
-	//nolint:gosec // G306: HTML output files need 0644 for web serving
-	if err := os.WriteFile(outputPath, []byte(htmlContent), 0o644); err != nil {
+	if err := p.writeMeasuredFile(outputPath, []byte(htmlContent)); err != nil {
 		return "", fmt.Errorf("writing %s: %w", outputPath, err)
 	}
 
@@ -830,7 +903,7 @@ func inferPaletteVariant(paletteName string) palettes.Variant {
 // If skipSlugRedirect is true, the /slug/index.html redirect is skipped
 // (used when HTML format is also enabled, since /slug/index.html has the main HTML content).
 //
-// Fixes: https://github.com/WaylonWalker/markata-go/issues/465
+// Fixes: https://github.com/WaylonWalker/markata/issues/465
 func (p *PublishHTMLPlugin) writeReversedFormatOutput(slug, ext, content, outputDir string, skipSlugRedirect bool) error {
 	// The homepage (empty slug) lives at the output root, so its alternate
 	// formats are /index.<ext>. There is no /<slug>.<ext> location or redirect
@@ -840,8 +913,7 @@ func (p *PublishHTMLPlugin) writeReversedFormatOutput(slug, ext, content, output
 		if err := removeLegacyRootFormatRedirect(contentPath, ext); err != nil {
 			return err
 		}
-		//nolint:gosec // G306: Output files need 0644 for web serving
-		if err := os.WriteFile(contentPath, []byte(content), 0o644); err != nil {
+		if err := p.writeMeasuredFile(contentPath, []byte(content)); err != nil {
 			return fmt.Errorf("writing %s: %w", contentPath, err)
 		}
 		return nil
@@ -911,8 +983,7 @@ func removeLegacyRootFormatRedirect(path, ext string) error {
 func (p *PublishHTMLPlugin) writeSpecialFileOutput(slug, ext, content, outputDir string, skipSlugRedirect bool) error {
 	// Write actual content at /slug.<ext> (e.g., /robots.txt)
 	contentPath := filepath.Join(outputDir, slug+"."+ext)
-	//nolint:gosec // G306: Output files need 0644 for web serving
-	if err := os.WriteFile(contentPath, []byte(content), 0o644); err != nil {
+	if err := p.writeMeasuredFile(contentPath, []byte(content)); err != nil {
 		return fmt.Errorf("writing %s: %w", contentPath, err)
 	}
 
@@ -945,16 +1016,14 @@ func (p *PublishHTMLPlugin) writeSpecialFileOutput(slug, ext, content, outputDir
 	}
 
 	extRedirectPath := filepath.Join(extRedirectDir, "index.html")
-	//nolint:gosec // G306: Output files need 0644 for web serving
-	if err := os.WriteFile(extRedirectPath, []byte(redirectHTML), 0o644); err != nil {
+	if err := p.writeMeasuredFile(extRedirectPath, []byte(redirectHTML)); err != nil {
 		return fmt.Errorf("writing format redirect %s: %w", extRedirectPath, err)
 	}
 
 	// Create HTML redirect at /slug/index.html if HTML is not enabled
 	if !skipSlugRedirect {
 		htmlRedirectPath := filepath.Join(slugDir, "index.html")
-		//nolint:gosec // G306: Output files need 0644 for web serving
-		if err := os.WriteFile(htmlRedirectPath, []byte(redirectHTML), 0o644); err != nil {
+		if err := p.writeMeasuredFile(htmlRedirectPath, []byte(redirectHTML)); err != nil {
 			return fmt.Errorf("writing HTML redirect %s: %w", htmlRedirectPath, err)
 		}
 	}
@@ -967,8 +1036,7 @@ func (p *PublishHTMLPlugin) writeSpecialFileOutput(slug, ext, content, outputDir
 func (p *PublishHTMLPlugin) writeRegularFormatOutput(slug, ext, content, outputDir string, skipSlugRedirect bool) error {
 	// Write actual content at /slug.<ext> (e.g., /test.txt)
 	contentPath := filepath.Join(outputDir, slug+"."+ext)
-	//nolint:gosec // G306: Output files need 0644 for web serving
-	if err := os.WriteFile(contentPath, []byte(content), 0o644); err != nil {
+	if err := p.writeMeasuredFile(contentPath, []byte(content)); err != nil {
 		return fmt.Errorf("writing %s: %w", contentPath, err)
 	}
 
@@ -996,8 +1064,7 @@ func (p *PublishHTMLPlugin) writeRegularFormatOutput(slug, ext, content, outputD
 		}
 
 		redirectPath := filepath.Join(slugDir, "index.html")
-		//nolint:gosec // G306: Output files need 0644 for web serving
-		if err := os.WriteFile(redirectPath, []byte(redirectHTML), 0o644); err != nil {
+		if err := p.writeMeasuredFile(redirectPath, []byte(redirectHTML)); err != nil {
 			return fmt.Errorf("writing redirect %s: %w", redirectPath, err)
 		}
 	}
@@ -1009,8 +1076,7 @@ func (p *PublishHTMLPlugin) writeRegularFormatOutput(slug, ext, content, outputD
 	}
 
 	slugExtRedirectPath := filepath.Join(slugExtRedirectDir, "index.html")
-	//nolint:gosec // G306: Output files need 0644 for web serving
-	if err := os.WriteFile(slugExtRedirectPath, []byte(redirectHTML), 0o644); err != nil {
+	if err := p.writeMeasuredFile(slugExtRedirectPath, []byte(redirectHTML)); err != nil {
 		return fmt.Errorf("writing slug index redirect %s: %w", slugExtRedirectPath, err)
 	}
 
@@ -1030,8 +1096,7 @@ func (p *PublishHTMLPlugin) writeOGFormat(post *models.Post, config *lifecycle.C
 
 	// Write og/index.html
 	outputPath := filepath.Join(ogDir, "index.html")
-	//nolint:gosec // G306: HTML output files need 0644 for web serving
-	if err := os.WriteFile(outputPath, []byte(ogHTML), 0o644); err != nil {
+	if err := p.writeMeasuredFile(outputPath, []byte(ogHTML)); err != nil {
 		return fmt.Errorf("writing %s: %w", outputPath, err)
 	}
 

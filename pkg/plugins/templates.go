@@ -11,12 +11,13 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/WaylonWalker/markata-go/pkg/buildcache"
-	"github.com/WaylonWalker/markata-go/pkg/diagnostics"
-	"github.com/WaylonWalker/markata-go/pkg/lifecycle"
-	"github.com/WaylonWalker/markata-go/pkg/logging"
-	"github.com/WaylonWalker/markata-go/pkg/models"
-	"github.com/WaylonWalker/markata-go/pkg/templates"
+	"github.com/WaylonWalker/markata/pkg/buildcache"
+	"github.com/WaylonWalker/markata/pkg/diagnostics"
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/logging"
+	"github.com/WaylonWalker/markata/pkg/models"
+	"github.com/WaylonWalker/markata/pkg/sidebar"
+	"github.com/WaylonWalker/markata/pkg/templates"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
@@ -51,6 +52,7 @@ type TemplatesPlugin struct {
 	config        *lifecycle.Config
 	localPreviews map[string]string
 	siteURL       string
+	sidebar       *sidebar.Builder
 	sidebarPostMu sync.RWMutex
 	sidebarPosts  map[sidebarPostKey]sidebarPostJSON
 }
@@ -356,7 +358,13 @@ func (p *TemplatesPlugin) Render(m *lifecycle.Manager) error {
 		}
 	}
 	navFeeds = previewFeeds(config, m.Posts(), navFeeds)
-	navPreviews := buildNavPreviews(ToModelsConfig(config), m.Posts(), navFeeds, getBlogrollConfig(config), parseRandomPostConfig(config))
+	modelsConfig := ToModelsConfig(config)
+	navPreviews := buildNavPreviews(modelsConfig, m.Posts(), navFeeds, getBlogrollConfig(config), parseRandomPostConfig(config))
+	feedMap := make(map[string]*models.FeedConfig, len(navFeeds))
+	for i := range navFeeds {
+		feedMap[navFeeds[i].Slug] = &navFeeds[i]
+	}
+	p.sidebar = sidebar.NewBuilder(modelsConfig, feedMap, m.Posts())
 	m.Cache().Set("nav_previews", navPreviews)
 	p.localPreviews = encodeLocalPreviews(buildLocalPreviews(m.Posts(), navFeeds))
 	p.siteURL = ToModelsConfig(config).URL
@@ -706,6 +714,10 @@ func (p *TemplatesPlugin) renderPost(post *models.Post, config *lifecycle.Config
 	modelsConfig := applyPostFormatsToConfig(ToModelsConfig(config), resolvePostFormats(post, config))
 	articleHTML := annotateLocalPreviewLinks(post.ArticleHTML, post.Href, p.siteURL, p.localPreviews)
 	ctx := templates.NewContext(post, articleHTML, modelsConfig)
+	if p.sidebar != nil {
+		items, title := p.sidebar.ResolveForPost(post)
+		ctx = ctx.WithSidebar(items, title)
+	}
 	tagPreviews := make(map[string]string, len(post.Tags))
 	for _, tag := range post.Tags {
 		if preview := localPreviewForTag(tag, p.localPreviews); preview != "" {
@@ -1709,7 +1721,19 @@ func sidebarChunkBase(fc *models.FeedConfig, posts []*models.Post, m *lifecycle.
 			return ""
 		}
 		for j := range posts {
-			if posts[j] == nil || published[j] == nil || posts[j].Slug != published[j].Slug {
+			if posts[j] == nil || published[j] == nil {
+				return ""
+			}
+			// Most feeds share the same immutable Post pointers. Avoid
+			// recomputing display titles for these common matches.
+			if posts[j] == published[j] {
+				continue
+			}
+			// The slug alone is insufficient: synthetic/sidebar copies can
+			// differ from what the publisher emitted at the same position.
+			// Never discard embedded navigation in favor of stale URLs or
+			// titles from a chunk that no longer represents this feed.
+			if sidebarKey(posts[j], fc.Slug) != sidebarKey(published[j], candidate.Slug) {
 				return ""
 			}
 		}
@@ -1957,6 +1981,11 @@ func toModelsConfigUncached(config *lifecycle.Config) *models.Config {
 
 	// Copy feeds page config if available
 	modelsConfig.FeedsPage = feedsPageConfigFromExtra(config.Extra["feeds_page"])
+
+	// Copy configured feeds so default templates can surface primary/sidebar feed surfing
+	if feeds, ok := config.Extra["feeds"].([]models.FeedConfig); ok {
+		modelsConfig.Feeds = feeds
+	}
 
 	// Copy SEO config if available
 	switch seoVal := config.Extra["seo"].(type) {

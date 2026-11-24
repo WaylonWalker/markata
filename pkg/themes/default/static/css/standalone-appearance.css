@@ -1,0 +1,7 @@
+/* Shared presentation defaults for applications using standalone documents. */
+html { color-scheme: light; }
+html[data-theme="dark"] { color-scheme: dark; }
+* { scrollbar-width: thin; scrollbar-color: var(--color-text-muted) var(--color-background); }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: var(--color-background); }
+::-webkit-scrollbar-thumb { background: var(--color-text-muted); border: 2px solid var(--color-background); border-radius: 8px; }

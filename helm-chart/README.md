@@ -24,7 +24,9 @@ This chart deploys a reusable markata-go notes workload that:
 - If your new namespace does not already have `aws-default`, enable `aws.sealedSecret` and provide sealed credentials in values.
 - By default the chart reuses a shared `markata-go-encryption` Secret name for `MARKATA_GO_ENCRYPTION_KEY_DEFAULT`; override `markataEncryption.secretName` only if your established secret uses a different name.
 - If your notes contain private content, provide that Secret externally in the namespace or enable `markataEncryption.sealedSecret`.
+- Hosted editor deployments can enable `builderAdmin.editor.dropperUploader` to add Dropper image uploads. The chart mounts its token Secret only into a restricted uploader sidecar; the editor receives access to that sidecar over a Unix socket.
 - The nginx site adds `Access-Control-Allow-Origin: *` to all public file responses by default. Set `site.cors.enabled` to `false` to disable this header. Protected release previews never receive it.
+- Public HTML is `no-cache` by default. Set `site.cacheHtmlAtEdge: true` for a 60-second shared-cache TTL while browsers continue to revalidate each visit. Protected release previews never receive this policy.
 - `site.contentIndexPath` keeps the Content Index on an exact nginx location. This location returns `404` instead of the HTML fallback when the artifact is missing.
 - Set `site.contentIndexPath` to an empty string to disable the exact Content Index location. This setting does not disable site-wide CORS.
 - Set `site.healthPath` when the published site does not serve a successful response at `/`. The path must be public and stable.
@@ -82,6 +84,8 @@ just push
   auth origin.
 - Use `build.extraEnv` for host-specific `MARKATA_GO_*` overrides such as `MARKATA_GO_URL` or `MARKATA_GO_SEARCH_ENDPOINT`.
 - `storage.source.mode` and `storage.site.mode` default to `pvc` and can be set to `hostPath` for node-local content.
+- Set `storage.site.existingClaimName` to reuse a pre-existing site PVC; Helm then mounts that claim without creating or pruning it.
+- Set `namespaceOverride` when an existing workload's resources must stay in a namespace that does not follow `<project_identifier>-notes`.
 - Use `nodeSelector` when hostPath-backed content exists only on a specific node.
 - `build.cacheDir` defaults to `/data/site/.cache/xdg` so tool caches survive between builds on the site volume.
 - Enable `storage.cache` when you want a dedicated PVC for build caches. The build CronJob recreates `.markata` and `.markata-cache` in the source tree as symlinks into that cache volume, which keeps incremental state out of source sync paths.
@@ -104,6 +108,29 @@ offline:
 ```
 
 ## Host-specific build overrides
+
+### Git-backed Builder Admin source
+
+Builder Admin can seed a persistent source volume from a public Git repository before it starts.
+The source checkout is refreshed to the configured branch on pod startup. Enable signed webhooks
+to pull and build changes between restarts:
+
+```yaml
+builderAdmin:
+  sourceGit:
+    enabled: true
+    repository: https://github.com/WaylonWalker/markata.git
+    branch: main
+    depth: 1
+  webhook:
+    enabled: true
+    branch: main
+    existingSecretName: markata-docs-builder-webhook
+    existingSecretKey: webhook-secret
+```
+
+The source directory must be empty or already contain a Git checkout. The initializer fails safely
+if it finds unrelated files in the directory.
 
 Use `build.extraEnv` when the same content repo needs a different deploy hostname or search endpoint in one environment.
 
