@@ -31,7 +31,9 @@ function parseArgs(argv) {
 
 function isScriptResource(item) {
   if (!item || !item.name) return false;
-  try { return /\.m?js$/.test(new URL(item.name).pathname); }
+  // Extensionless script endpoints are common on CDNs. Retain extension
+  // detection as well for module loads reported with a different initiator.
+  try { return item.initiatorType === 'script' || /\.m?js$/i.test(new URL(item.name).pathname); }
   catch (_) { return false; }
 }
 
@@ -86,7 +88,10 @@ function playwrightChromium() {
 }
 
 async function measure(page, url, waitMs) {
-  await page.goto(url, {waitUntil: 'load', timeout: 45000});
+  const response = await page.goto(url, {waitUntil: 'load', timeout: 45000});
+  if (!response || !response.ok()) {
+    throw new Error('Page navigation failed: ' + (response ? response.status() : 'no response') + ' ' + url);
+  }
   if (waitMs) await page.waitForTimeout(waitMs);
   const snapshot = await page.evaluate(() => {
     const inline = Array.from(document.scripts)

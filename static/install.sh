@@ -1,186 +1,452 @@
 #!/bin/bash
-# Install markata-go
-# Usage: curl -sSL https://waylonwalker.github.io/markata-go/install.sh | bash
+#
+# Markata installer (supports legacy markata-go releases)
+# https://github.com/WaylonWalker/markata
+#
+# Usage:
+#   curl -sSL https://markata.dev/install.sh | bash
 #
 # Environment variables:
-#   INSTALL_DIR - Installation directory (default: /usr/local/bin or ~/.local/bin)
-#   VERSION     - Specific version to install (default: latest)
+#   MARKATA_INSTALL_DIR    - Custom install directory (legacy: MARKATA_GO_INSTALL_DIR)
+#   MARKATA_VERSION        - Specific version (legacy: MARKATA_GO_VERSION)
+#
+# This script:
+#   1. Detects OS (Linux, macOS, Windows/WSL) and architecture (amd64, arm64)
+#   2. Downloads the latest release from GitHub
+#   3. Installs to appropriate directory
+#   4. Verifies the installation
 
 set -e
 
-REPO="WaylonWalker/markata-go"
-BINARY_NAME="markata-go"
+# Configuration
+REPO="WaylonWalker/markata"
+BINARY_NAME="markata"
+GITHUB_API="https://api.github.com/repos/${REPO}"
+GITHUB_RELEASES="https://github.com/${REPO}/releases"
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+# Colors (disabled if not a terminal)
+if [ -t 1 ]; then
+    RED='\033[0;31m'
+    GREEN='\033[0;32m'
+    YELLOW='\033[0;33m'
+    BLUE='\033[0;34m'
+    NC='\033[0m' # No Color
+else
+    RED=''
+    GREEN=''
+    YELLOW=''
+    BLUE=''
+    NC=''
+fi
 
-info() {
-    echo -e "${GREEN}==>${NC} $1"
+# Logging functions
+log_info() {
+    echo -e "${BLUE}[INFO]${NC} $1"
 }
 
-warn() {
-    echo -e "${YELLOW}Warning:${NC} $1"
+log_success() {
+    echo -e "${GREEN}[OK]${NC} $1"
 }
 
-error() {
-    echo -e "${RED}Error:${NC} $1" >&2
-    exit 1
+log_warn() {
+    echo -e "${YELLOW}[WARN]${NC} $1"
+}
+
+log_error() {
+    echo -e "${RED}[ERROR]${NC} $1" >&2
+}
+
+# Check if a command exists
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
 }
 
 # Detect OS
 detect_os() {
-    OS=$(uname -s | tr '[:upper:]' '[:lower:]')
-    case "$OS" in
-        linux) OS="linux" ;;
-        darwin) OS="darwin" ;;
-        freebsd) OS="freebsd" ;;
-        mingw*|msys*|cygwin*) OS="windows" ;;
-        *) error "Unsupported operating system: $OS" ;;
+    local os
+    os="$(uname -s)"
+
+    case "${os}" in
+        Linux*)
+            # Check for Android (Termux)
+            if [ -n "${ANDROID_DATA}" ] || [ -n "${PREFIX}" ] && [ -d "${PREFIX}/bin" ]; then
+                echo "android"
+            else
+                echo "linux"
+            fi
+            ;;
+        Darwin*)
+            echo "darwin"
+            ;;
+        CYGWIN*|MINGW*|MSYS*)
+            echo "windows"
+            ;;
+        FreeBSD*)
+            echo "freebsd"
+            ;;
+        *)
+            log_error "Unsupported operating system: ${os}"
+            exit 1
+            ;;
     esac
-    echo "$OS"
 }
 
 # Detect architecture
 detect_arch() {
-    ARCH=$(uname -m)
-    case "$ARCH" in
-        x86_64|amd64) ARCH="amd64" ;;
-        aarch64|arm64) ARCH="arm64" ;;
-        armv7l|armv7) ARCH="armv7" ;;
-        *) error "Unsupported architecture: $ARCH" ;;
+    local arch
+    arch="$(uname -m)"
+
+    case "${arch}" in
+        x86_64|amd64)
+            echo "x86_64"
+            ;;
+        aarch64|arm64)
+            echo "arm64"
+            ;;
+        armv7l|armv7)
+            echo "armv7"
+            ;;
+        *)
+            log_error "Unsupported architecture: ${arch}"
+            exit 1
+            ;;
     esac
-    echo "$ARCH"
 }
 
-# Determine install directory
-get_install_dir() {
-    if [ -n "$INSTALL_DIR" ]; then
-        echo "$INSTALL_DIR"
-        return
-    fi
-
-    # Try /usr/local/bin first if we have write access
-    if [ -w "/usr/local/bin" ]; then
-        echo "/usr/local/bin"
-    elif [ -d "$HOME/.local/bin" ] || mkdir -p "$HOME/.local/bin" 2>/dev/null; then
-        echo "$HOME/.local/bin"
-    else
-        error "Cannot determine install directory. Set INSTALL_DIR environment variable."
-    fi
-}
-
-# Get the latest release version from GitHub
+# Get the latest version from GitHub API
 get_latest_version() {
-    if [ -n "$VERSION" ]; then
-        echo "$VERSION"
+    local version
+
+    if command_exists curl; then
+        version=$(curl -sS "${GITHUB_API}/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+    elif command_exists wget; then
+        version=$(wget -qO- "${GITHUB_API}/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+    else
+        log_error "Neither curl nor wget found. Please install one of them."
+        exit 1
+    fi
+
+    if [ -z "${version}" ]; then
+        log_error "Failed to fetch latest version from GitHub API"
+        exit 1
+    fi
+
+    echo "${version}"
+}
+
+# Determine the install directory
+get_install_dir() {
+    # Use custom install dir if specified
+    if [ -n "${MARKATA_INSTALL_DIR:-${MARKATA_GO_INSTALL_DIR:-}}" ]; then
+        echo "${MARKATA_INSTALL_DIR:-${MARKATA_GO_INSTALL_DIR}}"
         return
     fi
 
-    # Try to get the latest release tag
-    local version
-    if command -v curl &> /dev/null; then
-        version=$(curl -sL "https://api.github.com/repos/$REPO/releases/latest" | grep '"tag_name"' | head -1 | cut -d'"' -f4)
-    elif command -v wget &> /dev/null; then
-        version=$(wget -qO- "https://api.github.com/repos/$REPO/releases/latest" | grep '"tag_name"' | head -1 | cut -d'"' -f4)
+    # Check if running as root
+    if [ "$(id -u)" -eq 0 ]; then
+        echo "/usr/local/bin"
     else
-        error "Neither curl nor wget found. Please install one of them."
+        # Try /usr/local/bin first if writable
+        if [ -w "/usr/local/bin" ]; then
+            echo "/usr/local/bin"
+        else
+            # Fall back to user's local bin
+            echo "${HOME}/.local/bin"
+        fi
     fi
-
-    if [ -z "$version" ]; then
-        error "Could not determine latest version. Please set VERSION environment variable."
-    fi
-
-    echo "$version"
 }
 
-# Download and install
-install() {
-    local os=$(detect_os)
-    local arch=$(detect_arch)
-    local install_dir=$(get_install_dir)
-    local version=$(get_latest_version)
+# Ensure the install directory exists
+ensure_install_dir() {
+    local dir="$1"
 
-    # Remove 'v' prefix for archive name if present
+    if [ ! -d "${dir}" ]; then
+        log_info "Creating install directory: ${dir}"
+        mkdir -p "${dir}"
+    fi
+
+    if [ ! -w "${dir}" ]; then
+        log_error "Install directory is not writable: ${dir}"
+        log_error "Try running with sudo or set MARKATA_INSTALL_DIR (legacy: MARKATA_GO_INSTALL_DIR) to a writable path"
+        exit 1
+    fi
+}
+
+# Validate an archive against the SHA-256 manifest published in the release.
+verify_archive() {
+    local archive="$1" manifest="$2" filename="$3" expected actual
+    expected=$(awk -v name="$filename" '$2 == name || $2 == "*" name {print $1}' "$manifest")
+    if ! [[ "$expected" =~ ^[a-fA-F0-9]{64}$ ]]; then
+        log_error "Missing or malformed checksum for $filename"
+        return 1
+    fi
+    if command_exists sha256sum; then
+        actual=$(sha256sum "$archive" | awk '{print $1}')
+    elif command_exists shasum; then
+        actual=$(shasum -a 256 "$archive" | awk '{print $1}')
+    else
+        log_error "SHA-256 verification requires sha256sum or shasum"
+        return 1
+    fi
+    # macOS ships Bash 3.2, which lacks the Bash 4 ${value,,} expansion.
+    # Use portable tr for the hex-only values verified above.
+    actual=$(printf '%s' "${actual}" | tr 'A-F' 'a-f')
+    expected=$(printf '%s' "${expected}" | tr 'A-F' 'a-f')
+    if [ "${actual}" != "${expected}" ]; then
+        log_error "SHA-256 mismatch for $filename"
+        return 1
+    fi
+    log_success "Verified SHA-256 checksum"
+}
+
+# Download the preferred Markata artifact, falling back to historical releases.
+# Both executable names are installed so existing scripts keep working.
+download_and_install() {
+    local os="$1"
+    local arch="$2"
+    local version="$3"
+    local install_dir="$4"
     local version_num="${version#v}"
-
-    info "Installing $BINARY_NAME $version for $os/$arch"
-
-    # Construct download URL
-    # GoReleaser uses format: markata-go_0.1.0_linux_amd64.tar.gz
-    local archive_ext="tar.gz"
-    if [ "$os" = "windows" ]; then
-        archive_ext="zip"
+    local ext="tar.gz"
+    if [ "${os}" = "windows" ]; then
+        ext="zip"
     fi
 
-    local archive_name="${BINARY_NAME}_${version_num}_${os}_${arch}.${archive_ext}"
-    local url="https://github.com/$REPO/releases/download/${version}/${archive_name}"
+    local tmp_dir
+    tmp_dir=$(mktemp -d)
+    trap "rm -rf -- '${tmp_dir}'" EXIT
 
-    info "Downloading from $url"
+    local variant archive_name archive_path download_url=""
+    for variant in markata markata-go; do
+        archive_name="${variant}_${version_num}_${os}_${arch}.${ext}"
+        archive_path="${tmp_dir}/${archive_name}"
+        download_url="${GITHUB_RELEASES}/download/${version}/${archive_name}"
+        log_info "Trying ${archive_name}..."
+        if command_exists curl; then
+            if curl -fsSL "${download_url}" -o "${archive_path}"; then
+                break
+            fi
+        elif command_exists wget; then
+            if wget -q "${download_url}" -O "${archive_path}"; then
+                break
+            fi
+        else
+            log_error "Neither curl nor wget found."
+            exit 1
+        fi
+        archive_path=""
+    done
 
-    # Create temp directory
-    local tmp_dir=$(mktemp -d)
-    trap "rm -rf $tmp_dir" EXIT
-
-    # Download
-    if command -v curl &> /dev/null; then
-        curl -sL "$url" -o "$tmp_dir/$archive_name" || error "Download failed. Check if the version exists."
-    elif command -v wget &> /dev/null; then
-        wget -q "$url" -O "$tmp_dir/$archive_name" || error "Download failed. Check if the version exists."
+    if [ -z "${archive_path}" ]; then
+        log_error "Could not download either Markata or legacy markata-go archive for ${version} (${os}/${arch})."
+        log_error "Browse available releases at ${GITHUB_RELEASES}"
+        exit 1
     fi
 
-    # Verify download succeeded
-    if [ ! -f "$tmp_dir/$archive_name" ]; then
-        error "Download failed"
-    fi
-
-    # Extract
-    info "Extracting archive"
-    cd "$tmp_dir"
-    if [ "$archive_ext" = "zip" ]; then
-        unzip -q "$archive_name" || error "Extraction failed"
+    local checksums="${tmp_dir}/checksums.txt"
+    local checksums_url="${GITHUB_RELEASES}/download/${version}/checksums.txt"
+    log_info "Checking release SHA-256 checksum..."
+    if command_exists curl; then
+        curl -fsSL "${checksums_url}" -o "${checksums}" || { log_error "Failed to download release checksums"; exit 1; }
     else
-        tar xzf "$archive_name" || error "Extraction failed"
+        wget -q "${checksums_url}" -O "${checksums}" || { log_error "Failed to download release checksums"; exit 1; }
+    fi
+    verify_archive "${archive_path}" "${checksums}" "${archive_name}" || exit 1
+    log_success "Downloaded ${archive_name}"
+    if [ "${ext}" = "tar.gz" ]; then
+        tar -xzf "${archive_path}" -C "${tmp_dir}"
+    elif command_exists unzip; then
+        unzip -q "${archive_path}" -d "${tmp_dir}"
+    else
+        log_error "unzip command not found."
+        exit 1
     fi
 
-    # Find the binary (it might be in the root or a subdirectory)
-    local binary_path
-    if [ -f "$BINARY_NAME" ]; then
-        binary_path="$BINARY_NAME"
-    elif [ -f "${BINARY_NAME}.exe" ]; then
-        binary_path="${BINARY_NAME}.exe"
-    else
-        error "Binary not found in archive"
+    local suffix=""
+    if [ "${os}" = "windows" ]; then
+        suffix=".exe"
+    fi
+    local binary_path="${tmp_dir}/${variant}${suffix}"
+    if [ ! -f "${binary_path}" ]; then
+        log_error "Expected ${variant}${suffix} inside ${archive_name}."
+        exit 1
     fi
 
-    # Install
-    info "Installing to $install_dir"
-    if [ -w "$install_dir" ]; then
-        mv "$binary_path" "$install_dir/"
-        chmod +x "$install_dir/$BINARY_NAME"
+    local canonical="${install_dir}/markata${suffix}"
+    local legacy="${install_dir}/markata-go${suffix}"
+
+    # The old Python distribution also owns a `markata` command. Never
+    # silently overwrite it (or another unrelated executable).
+    local target
+    for target in "${canonical}" "${legacy}"; do
+        if [ -e "${target}" ] || [ -L "${target}" ]; then
+            if ! "${target}" version 2>/dev/null | grep -q '^  go:'; then
+                log_error "Refusing to overwrite non-Go executable: ${target}"
+                log_error "Move or uninstall the conflicting command before installing Markata."
+                exit 1
+            fi
+        fi
+    done
+
+    # Stage and rename each command to avoid truncating a running executable.
+    # A copy (rather than a symlink) also supports Windows-compatible shells.
+    local canonical_tmp="${install_dir}/.markata-install-$${suffix}"
+    local legacy_tmp="${install_dir}/.markata-go-install-$${suffix}"
+    cp "${binary_path}" "${canonical_tmp}"
+    chmod +x "${canonical_tmp}"
+    cp "${canonical_tmp}" "${legacy_tmp}"
+    chmod +x "${legacy_tmp}"
+    mv -f "${canonical_tmp}" "${canonical}"
+    mv -f "${legacy_tmp}" "${legacy}"
+    log_success "Installed ${canonical} and compatibility command ${legacy}"
+}
+
+# Check if install dir is in PATH
+check_path() {
+    local install_dir="$1"
+
+    case ":${PATH}:" in
+        *":${install_dir}:"*)
+            return 0
+            ;;
+    esac
+
+    return 1
+}
+
+# Suggest PATH setup
+suggest_path_setup() {
+    local install_dir="$1"
+
+    log_warn "${install_dir} is not in your PATH"
+    echo ""
+    echo "Add it to your PATH by adding this line to your shell config:"
+    echo ""
+
+    local shell_name
+    shell_name=$(basename "${SHELL}")
+
+    case "${shell_name}" in
+        bash)
+            echo "  echo 'export PATH=\"${install_dir}:\$PATH\"' >> ~/.bashrc"
+            echo ""
+            echo "Then reload your shell:"
+            echo "  source ~/.bashrc"
+            ;;
+        zsh)
+            echo "  echo 'export PATH=\"${install_dir}:\$PATH\"' >> ~/.zshrc"
+            echo ""
+            echo "Then reload your shell:"
+            echo "  source ~/.zshrc"
+            ;;
+        fish)
+            echo "  fish_add_path ${install_dir}"
+            ;;
+        *)
+            echo "  export PATH=\"${install_dir}:\$PATH\""
+            ;;
+    esac
+    echo ""
+}
+
+# Verify the installation
+verify_installation() {
+    local install_dir="$1"
+    local binary_path="${install_dir}/${BINARY_NAME}"
+
+    if [ ! -x "${binary_path}" ]; then
+        log_error "Installation verification failed: binary not found or not executable"
+        exit 1
+    fi
+
+    # Try to run the binary
+    local version_output
+    if version_output=$("${binary_path}" version --short 2>&1); then
+        log_success "Verified installation: ${BINARY_NAME} ${version_output}"
     else
-        warn "Need elevated permissions to install to $install_dir"
-        sudo mv "$binary_path" "$install_dir/"
-        sudo chmod +x "$install_dir/$BINARY_NAME"
+        log_warn "Binary installed but verification failed. You may need to add ${install_dir} to your PATH."
+    fi
+}
+
+# Main installation function
+main() {
+    echo ""
+    printf '%s\n' '  __  __            _         _'
+    printf '%s\n' ' |  \/  | __ _ _ __| | ____ _| |_ __ _'
+    printf '%s\n' ' | |\/| |/ _` | __| |/ / _` | __/ _` |'
+    printf '%s\n' ' | |  | | (_| | |  |   < (_| | || (_| |'
+    printf '%s\n' ' |_|  |_|\__,_|_|  |_|\_\__,_|\__\__,_|'
+    printf '%s\n' ' Write Markdown. Publish more than pages.'
+    echo ""
+
+    # Detect platform
+    local os arch
+    os=$(detect_os)
+    arch=$(detect_arch)
+
+    log_info "Detected platform: ${os}/${arch}"
+
+    # Check for Android-specific limitations
+    if [ "${os}" = "android" ] && [ "${arch}" != "arm64" ]; then
+        log_error "Only arm64 architecture is supported on Android"
+        exit 1
+    fi
+
+    # Get version to install
+    local version
+    if [ -n "${MARKATA_VERSION:-${MARKATA_GO_VERSION:-}}" ]; then
+        version="${MARKATA_VERSION:-${MARKATA_GO_VERSION}}"
+        # Add 'v' prefix if missing
+        if [[ "${version}" != v* ]]; then
+            version="v${version}"
+        fi
+        log_info "Installing requested version: ${version}"
+    else
+        log_info "Fetching latest version..."
+        version=$(get_latest_version)
+        log_info "Latest version: ${version}"
+    fi
+
+    # Determine install directory
+    local install_dir
+    install_dir=$(get_install_dir)
+    log_info "Install directory: ${install_dir}"
+
+    # Ensure install directory exists and is writable
+    ensure_install_dir "${install_dir}"
+
+    # Download and install
+    download_and_install "${os}" "${arch}" "${version}" "${install_dir}"
+
+    # Check PATH
+    if ! check_path "${install_dir}"; then
+        suggest_path_setup "${install_dir}"
     fi
 
     # Verify installation
-    if command -v "$BINARY_NAME" &> /dev/null; then
-        info "Successfully installed $BINARY_NAME"
-        echo ""
-        "$BINARY_NAME" version
+    verify_installation "${install_dir}"
+
+    echo ""
+    log_success "Installation complete!"
+    echo ""
+    echo "Give your agent setup instructions:"
+    if "${install_dir}/${BINARY_NAME}" --help 2>/dev/null | grep -q -- '--skill'; then
+        echo "  ${BINARY_NAME} --skill"
     else
-        warn "Installation complete, but $BINARY_NAME is not in PATH"
-        echo ""
-        echo "Add $install_dir to your PATH:"
-        echo "  export PATH=\"\$PATH:$install_dir\""
-        echo ""
-        echo "Then verify with:"
-        echo "  $BINARY_NAME version"
+        echo "  ${BINARY_NAME} agent install --help"
+        echo "  (Your installed release predates the --skill handoff.)"
     fi
+    echo ""
+    echo "Or start manually:"
+    echo "  mkdir my-site && cd my-site"
+    echo "  ${BINARY_NAME} config init"
+    echo "  ${BINARY_NAME} new \"My First Post\""
+    echo "  ${BINARY_NAME} build"
+    echo "  ${BINARY_NAME} serve"
+    echo "  Docs: https://markata.dev/docs/quickstart/"
+    echo "  markata-go build   # Backward-compatible alias"
+    echo ""
 }
 
-# Run installation
-install
+# Run main
+main

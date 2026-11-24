@@ -19,13 +19,14 @@ import (
 )
 
 var (
-	editorWorkspace          = "."
-	editorPort               int
-	editorListen             = "127.0.0.1:8766"
-	editorPublicOrigin       string
-	editorTrustedProxyCIDRs  []string
-	editorRequiredScope      string
-	editorGitPublisherSocket string
+	editorWorkspace             = "."
+	editorPort                  int
+	editorListen                = "127.0.0.1:8766"
+	editorPublicOrigin          string
+	editorTrustedProxyCIDRs     []string
+	editorRequiredScope         string
+	editorGitPublisherSocket    string
+	editorDropperUploaderSocket string
 )
 
 var editorCmd = &cobra.Command{
@@ -47,6 +48,7 @@ func init() {
 	editorCmd.Flags().StringSliceVar(&editorTrustedProxyCIDRs, "trusted-proxy-cidr", nil, "trusted reverse-proxy source CIDR (repeatable)")
 	editorCmd.Flags().StringVar(&editorRequiredScope, "required-scope", "", "app-specific Hlab writer scope required for every request")
 	editorCmd.Flags().StringVar(&editorGitPublisherSocket, "git-publisher-socket", "", "delegate hosted Git remote checks and pushes to a local Unix-socket publisher")
+	editorCmd.Flags().StringVar(&editorDropperUploaderSocket, "dropper-uploader-socket", "", "delegate hosted Dropper image uploads to a local Unix-socket uploader")
 }
 
 func runEditorCommand(cmd *cobra.Command, _ []string) error {
@@ -82,7 +84,11 @@ func runEditorCommand(cmd *cobra.Command, _ []string) error {
 	if editorGitPublisherSocket != "" {
 		publisher = workbench.NewUnixGitPublisher(editorGitPublisherSocket)
 	}
-	handler, err := workbench.NewWithWorkspaceAndGitPublisher(ctx, editorWorkspace, publisher)
+	var uploader workbench.DropperUploader
+	if editorDropperUploaderSocket != "" {
+		uploader = workbench.NewUnixDropperUploader(editorDropperUploaderSocket)
+	}
+	handler, err := workbench.NewWithWorkspaceAndGitPublisherAndDropperUploader(ctx, editorWorkspace, publisher, uploader)
 	if err != nil {
 		return err
 	}
@@ -100,7 +106,11 @@ func runEditorCommand(cmd *cobra.Command, _ []string) error {
 		_ = listener.Close()
 		return fmt.Errorf("write editor address: %w", err)
 	}
-	return serveEditor(ctx, listener, handler, cmd.ErrOrStderr())
+	var serving http.Handler = handler
+	if !hosted {
+		serving = withUpIdentity(serving, upServiceEditor, editorWorkspace)
+	}
+	return serveEditor(ctx, listener, serving, cmd.ErrOrStderr())
 }
 
 func validateEditorListenAddress(address string) error {

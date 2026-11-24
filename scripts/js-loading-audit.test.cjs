@@ -15,6 +15,9 @@ test('CLI accepts multiple routes and validates input', () => {
 test('identifies JavaScript resources but excludes stylesheets', () => {
   assert.ok(isScriptResource({name: 'https://a.test/js/script.abcdef12.js', initiatorType: 'script'}));
   assert.ok(isScriptResource({name: 'https://a.test/js/core.mjs?v=2', initiatorType: 'script'}));
+  assert.ok(isScriptResource({name: 'https://a.test/assets/runtime', initiatorType: 'script'}));
+  assert.ok(isScriptResource({name: 'https://a.test/assets/RUNTIME.JS', initiatorType: 'other'}));
+  assert.equal(isScriptResource({name: 'https://a.test/assets/data', initiatorType: 'fetch'}), false);
   assert.equal(isScriptResource({name: 'https://a.test/css/style.css', initiatorType: 'link'}), false);
 });
 

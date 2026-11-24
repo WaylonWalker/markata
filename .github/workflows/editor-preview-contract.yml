@@ -1,0 +1,31 @@
+name: Editor preview contract
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/editor-preview-contract.yml'
+      - 'pkg/workbench/web/preview-contract.js'
+      - 'pkg/workbench/web/preview-contract.test.cjs'
+      - 'pkg/workbench/web/app.js'
+      - 'pkg/workbench/web/index.html'
+      - 'pkg/workbench/handler.go'
+      - 'pkg/workbench/preview_contract_test.go'
+      - 'cmd/markata-wasm/main.go'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  preview-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - name: Check browser script and test syntax
+        run: |
+          node --check pkg/workbench/web/preview-contract.js
+          node --check pkg/workbench/web/app.js
+          node --check pkg/workbench/web/preview-contract.test.cjs
+      - name: Verify source mappings, parity gate, and fallback
+        run: node --test pkg/workbench/web/preview-contract.test.cjs

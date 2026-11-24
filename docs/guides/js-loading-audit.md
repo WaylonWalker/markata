@@ -26,7 +26,7 @@ For each URL it opens a fresh browser context, records a cold **full page naviga
 ## What it does not claim
 
 - **0 bytes transferred does not prove a cache hit.** Cross-origin resources lacking Timing-Allow-Origin can report zero sizes. The report explicitly counts zero-transfer entries rather than categorizing them as cached.
-- Resource Timing counts are not equivalent to total network bytes or JavaScript parse/evaluation CPU time.
+- Resource Timing counts are not equivalent to total network bytes or JavaScript parse/evaluation CPU time. Script initiators and `.js`/`.mjs` paths are included, but extensionless fetch/module resources without a script initiator may be missed. Failed HTTP page navigations abort the audit instead of measuring an error page.
 - Full-page repeat navigation does not measure Markata's custom SPA View Transitions. Add a separate interaction/navigation test for that.
 - Scripts loaded after hovering, opening a theme menu, expanding search, or opening a graph are not measured unless triggered in the settle window.
 - Bytes published to disk are not automatically downloaded by readers.

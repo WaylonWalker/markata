@@ -141,7 +141,6 @@ func TestEditorialArchiveDefersOnlyNonCriticalSearchCSS(t *testing.T) {
 	}
 	s := strings.ReplaceAll(string(base), "\r\n", "\n")
 	for _, want := range []string{
-		`{% if feed_presentation == "editorial" %}`,
 		`'css/search.css' | theme_asset_hashed }}" media="print" onload="this.media='all'"`,
 		`<noscript><link rel="stylesheet" href="{{ 'css/search.css' | theme_asset_hashed }}"></noscript>`,
 		`'css/cards.css' | theme_asset_hashed`,

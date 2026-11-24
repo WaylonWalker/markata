@@ -75,6 +75,45 @@ grep -q -- '- "__Host-hlab-app-session"' "$tmp_dir/all.yaml" || fail "editor mid
 grep -q 'router.middlewares:' "$tmp_dir/all.yaml" || fail "editor ingress does not attach ForwardAuth"
 grep -q 'port: 8766' "$tmp_dir/all.yaml" || fail "editor network policy does not allow Traefik to the editor port"
 
+helm template editor-test "$chart" "${common[@]}" \
+  --set builderAdmin.editor.dropperUploader.enabled=true \
+  --set-string builderAdmin.editor.dropperUploader.existingSecretName=editor-dropper \
+  --set-string builderAdmin.editor.dropperUploader.tokenKey=token \
+  >"$tmp_dir/with-dropper.yaml"
+grep -q 'install -m 0400 /run/markata-git-secret/id_ed25519 /run/markata-git/id_ed25519 && chown 65534:1000 /run/markata-git/id_ed25519 && chmod 0770 /run/markata-dropper && chown 65534:1000 /run/markata-dropper' "$tmp_dir/with-dropper.yaml" || fail "uploader socket permissions must be set before its ownership changes"
+dropper_uploader="$(sed -n '/^[[:space:]]*- name: "editor-test-notes-editor-dropper-uploader"$/,/readinessProbe:/p' "$tmp_dir/with-dropper.yaml")"
+dropper_editor="$(sed -n '/^[[:space:]]*- name: "editor-test-notes-editor"$/,/readinessProbe:/p' "$tmp_dir/with-dropper.yaml")"
+grep -q 'name: DROPPER_TOKEN' <<<"$dropper_uploader" || fail "Dropper uploader does not receive the token"
+grep -q 'secretKeyRef:' <<<"$dropper_uploader" || fail "Dropper uploader token is not read from a Secret"
+grep -q 'editor-dropper' <<<"$dropper_uploader" || fail "Dropper uploader Secret reference is missing"
+grep -q -- 'https://dropper.waylonwalker.com/api/upload?format=json' <<<"$dropper_uploader" || fail "Dropper endpoint is not fixed in uploader config"
+grep -q 'editor-dropper-uploader-socket' <<<"$dropper_uploader" || fail "Dropper uploader socket volume is missing"
+if grep -q 'ports:' <<<"$dropper_uploader"; then
+  fail "Dropper uploader must not expose a network port"
+fi
+if grep -Eq 'name: DROPPER_TOKEN|secretKeyRef:' <<<"$dropper_editor"; then
+  fail "editor container has direct Dropper credential access"
+fi
+if grep -Eq 'mountPath: /data/source|editor-git-publish|editor-ssh-known-hosts' <<<"$dropper_uploader"; then
+  fail "Dropper uploader has source or Git credential access"
+fi
+grep -q -- '--dropper-uploader-socket' <<<"$dropper_editor" || fail "editor does not use the credential-isolated uploader"
+grep -q 'runAsUser: 65534' <<<"$dropper_uploader" || fail "Dropper uploader must run as nobody"
+grep -q 'readOnlyRootFilesystem: true' <<<"$dropper_uploader" || fail "Dropper uploader root filesystem must be read-only"
+
+if helm template editor-test "$chart" "${common[@]}" \
+  --set builderAdmin.editor.dropperUploader.enabled=true \
+  >/dev/null 2>&1; then
+  fail "Dropper uploader rendered without a Secret reference"
+fi
+
+if helm template editor-test "$chart" "${common[@]}" \
+  --set-string 'builderAdmin.editor.extraEnv[0].name=DROPPER_TOKEN' \
+  --set-string 'builderAdmin.editor.extraEnv[0].value=must-not-leak' \
+  >/dev/null 2>&1; then
+  fail "editor accepted a direct Dropper token environment variable"
+fi
+
 if helm template editor-test "$chart" "${common[@]}" \
   --set-string builderAdmin.editor.requiredScope=markata-editor:read \
   >/dev/null 2>&1; then

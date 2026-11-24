@@ -12,7 +12,7 @@
       {% endwith %}
       {% endwith %}
       {% else %}
-      <img src="{{ post.image | with_size:"120,80" }}" alt="" class="u-photo" width="120" height="80" loading="lazy">
+      <img src="{{ post.image | with_size:"120,80" }}" alt="" class="u-photo" width="120" height="80" loading="lazy" decoding="async">
       {% endif %}
     </div>
     {% endif %}
@@ -30,7 +30,7 @@
   </header>
 
   <div class="card-body">
-    <div class="card-excerpt p-summary">{{ post.article_html|summary:1200 | default:post.description }}</div>
+    <div class="card-excerpt p-summary">{% if feed_presentation == "editorial" %}{{ post.article_html|summary:320 | default:post.description }}{% else %}{{ post.article_html|summary:1200 | default:post.description }}{% endif %}</div>
   </div>
 
   <footer class="card-meta">

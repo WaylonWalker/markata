@@ -77,6 +77,13 @@ def main():
         return
     files = changed(opt.base)
     if not files:
+        # The checked-out PR merge can legitimately have the same tree as its
+        # base (e.g. its changes landed independently). A formatting-only
+        # check has nothing to format; the separate CI Go suite still runs.
+        # Keep the full local merge preflight fail-closed.
+        if opt.only_format:
+            print("No changed paths to format against " + opt.base)
+            return
         raise RuntimeError("no changed paths against " + opt.base)
     editor = affected(files, EDITORS, ("scripts/wasm-workbench.py", "examples/fastapi_editor.py"))
     config = affected(files, ("pkg/config/", "internal/configdocs/"))

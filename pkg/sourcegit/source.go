@@ -4,12 +4,16 @@ package sourcegit
 import (
 	"context"
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
+
+	"github.com/WaylonWalker/markata/internal/fileidentity"
 )
 
 // State describes the checked-out source tree. Dirty is nil when Git state is
@@ -28,6 +32,10 @@ type State struct {
 // enabled.
 type ReadOptions struct {
 	IncludeIgnoredContent bool
+	// IgnoredPathFilter reports whether an ignored path is excluded by the
+	// caller's build input rules. It is used only by the filtered metadata path
+	// to reject Git-only excludes that could hide build inputs.
+	IgnoredPathFilter func(path string) (bool, error)
 }
 
 // Command creates a Git command rooted at sourceDir using the same safe
@@ -46,6 +54,189 @@ func Read(ctx context.Context, sourceDir string) (State, error) {
 // ReadWithOptions returns the source state using the requested ignored-file
 // policy.
 func ReadWithOptions(ctx context.Context, sourceDir string, options ReadOptions) (State, error) {
+	return read(ctx, sourceDir, options, false)
+}
+
+// ReadMetadataWithOptions returns a file-identity fingerprint for changed
+// files instead of reading their contents. Callers must use this only when
+// fileidentity.Available is true and the build environment keeps source files
+// on a filesystem whose inode and change-time metadata updates on writes.
+//
+// This is intended for fast, local equivalence checks. It is not a replacement
+// for ReadWithOptions when a content-addressed fingerprint is required.
+func ReadMetadataWithOptions(ctx context.Context, sourceDir string, options ReadOptions) (State, error) {
+	if !fileidentity.Available {
+		return State{}, fmt.Errorf("file identity metadata is unavailable")
+	}
+	if !options.IncludeIgnoredContent {
+		return readFilteredMetadata(ctx, sourceDir, options)
+	}
+	return read(ctx, sourceDir, options, true)
+}
+
+func readFilteredMetadata(ctx context.Context, sourceDir string, options ReadOptions) (State, error) {
+	commit, err := Head(ctx, sourceDir)
+	if err != nil {
+		return State{}, err
+	}
+	if err := rejectNoOpIndexFlags(ctx, sourceDir); err != nil {
+		return State{}, err
+	}
+	if err := rejectUnsafeGitStatConfig(ctx, sourceDir); err != nil {
+		return State{}, err
+	}
+	status, err := Command(ctx, sourceDir, "status", "--porcelain=v1", "-z", "--ignored=matching", "--untracked-files=all").Output()
+	if err != nil {
+		return State{}, fmt.Errorf("read Git source status: %w", err)
+	}
+	if err := rejectUnfilteredIgnoredPaths(status, options.IgnoredPathFilter); err != nil {
+		return State{}, err
+	}
+	statusOutput, sourcePaths := filteredMetadataStatus(status)
+	ignoredSources := ignoredMarkdownFiles(status)
+	fingerprint, err := metadataSnapshotFingerprint(ctx, sourceDir, statusOutput, sourcePaths, ignoredSources)
+	if err != nil {
+		return State{}, err
+	}
+	currentCommit, err := Head(ctx, sourceDir)
+	if err != nil {
+		return State{}, err
+	}
+	if currentCommit != commit {
+		return State{}, fmt.Errorf("git HEAD changed during source snapshot: %s -> %s", commit, currentCommit)
+	}
+	dirty := len(statusOutput) > 0 || len(ignoredSources) > 0
+	return State{Commit: commit, Dirty: &dirty, fingerprint: fingerprint}, nil
+}
+
+func rejectUnsafeGitStatConfig(ctx context.Context, sourceDir string) error {
+	trustCtime, present, err := readGitConfig(ctx, sourceDir, "core.trustctime")
+	if err != nil {
+		return err
+	}
+	if present {
+		value, err := strconv.ParseBool(trustCtime)
+		if err != nil || !value {
+			return fmt.Errorf("unsupported core.trustctime setting %q", trustCtime)
+		}
+	}
+
+	checkStat, present, err := readGitConfig(ctx, sourceDir, "core.checkStat")
+	if err != nil {
+		return err
+	}
+	if present && checkStat != "default" && checkStat != "full" {
+		return fmt.Errorf("unsupported core.checkStat setting %q", checkStat)
+	}
+	fsmonitor, present, err := readGitConfig(ctx, sourceDir, "core.fsmonitor")
+	if err != nil {
+		return err
+	}
+	if present && fsmonitor != "false" && fsmonitor != "0" && !strings.EqualFold(fsmonitor, "off") {
+		return fmt.Errorf("unsupported core.fsmonitor setting %q", fsmonitor)
+	}
+	return nil
+}
+
+func readGitConfig(ctx context.Context, sourceDir, key string) (value string, present bool, err error) {
+	output, err := Command(ctx, sourceDir, "config", "--get", key).Output()
+	if err == nil {
+		return strings.TrimSpace(string(output)), true, nil
+	}
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 {
+		return "", false, nil
+	}
+	return "", false, fmt.Errorf("read Git config %s: %w", key, err)
+}
+
+func rejectUnfilteredIgnoredPaths(status []byte, filter func(string) (bool, error)) error {
+	if filter == nil {
+		return nil
+	}
+	for _, record := range splitNUL(status) {
+		if !strings.HasPrefix(record, "!! ") {
+			continue
+		}
+		path := strings.TrimPrefix(record, "!! ")
+		ignoredByBuild, err := filter(path)
+		if err != nil {
+			return fmt.Errorf("check ignored source path %q: %w", path, err)
+		}
+		if !ignoredByBuild {
+			return fmt.Errorf("git excludes %q but the build input rules do not", path)
+		}
+	}
+	return nil
+}
+
+func rejectNoOpIndexFlags(ctx context.Context, sourceDir string) error {
+	output, err := Command(ctx, sourceDir, "ls-files", "-v", "-z").Output()
+	if err != nil {
+		return fmt.Errorf("inspect Git index flags: %w", err)
+	}
+	for _, record := range splitNUL(output) {
+		if len(record) < 3 || record[0] != 'H' || record[1] != ' ' {
+			return fmt.Errorf("unsupported Git index flag in source snapshot")
+		}
+	}
+	return nil
+}
+
+type metadataSourcePath struct {
+	name string
+	kind string
+}
+
+func filteredMetadataStatus(status []byte) ([]byte, []metadataSourcePath) {
+	records := splitNUL(status)
+	filtered := make([]byte, 0, len(status))
+	paths := make([]metadataSourcePath, 0, len(records))
+	for index := 0; index < len(records); index++ {
+		record := records[index]
+		if len(record) < 3 {
+			continue
+		}
+		code := record[:2]
+		if code == "!!" {
+			continue
+		}
+		name := record[3:]
+		filtered = append(filtered, record...)
+		filtered = append(filtered, 0)
+		kind := "tracked"
+		if code == "??" {
+			kind = "untracked"
+		}
+		paths = append(paths, metadataSourcePath{name: name, kind: kind})
+		if strings.ContainsAny(code, "RC") && index+1 < len(records) {
+			index++
+			oldName := records[index]
+			filtered = append(filtered, records[index]...)
+			filtered = append(filtered, 0)
+			paths = append(paths, metadataSourcePath{name: oldName, kind: "tracked"})
+		}
+	}
+	return filtered, paths
+}
+
+func metadataSnapshotFingerprint(ctx context.Context, sourceDir string, statusOutput []byte, sourcePaths []metadataSourcePath, ignoredSources []string) (string, error) {
+	hash := sha256.New()
+	_, _ = hash.Write(statusOutput)
+	for _, sourcePath := range sourcePaths {
+		if err := hashSourceMetadata(ctx, hash, sourceDir, sourcePath.name, sourcePath.kind, ReadOptions{}); err != nil {
+			return "", err
+		}
+	}
+	for _, sourcePath := range ignoredSources {
+		if err := hashSourceMetadata(ctx, hash, sourceDir, sourcePath, "ignored", ReadOptions{}); err != nil {
+			return "", err
+		}
+	}
+	return fmt.Sprintf("%x", hash.Sum(nil)), nil
+}
+
+func read(ctx context.Context, sourceDir string, options ReadOptions, metadataOnly bool) (State, error) {
 	commit, err := Head(ctx, sourceDir)
 	if err != nil {
 		return State{}, err
@@ -74,7 +265,7 @@ func ReadWithOptions(ctx context.Context, sourceDir string, options ReadOptions)
 		// remain visible so the source contract can still report them.
 		dirty = true
 	}
-	fingerprint, err := snapshotFingerprint(ctx, sourceDir, statusOutput, ignoredSources, options)
+	fingerprint, err := snapshotFingerprint(ctx, sourceDir, statusOutput, ignoredSources, options, metadataOnly)
 	if err != nil {
 		return State{}, err
 	}
@@ -102,6 +293,13 @@ func (s State) Equal(other State) bool {
 	return *s.Dirty == *other.Dirty
 }
 
+// Fingerprint returns the source fingerprint. ReadWithOptions fingerprints
+// changed file contents; ReadMetadataWithOptions fingerprints file identities
+// and requires filesystem change-time guarantees.
+func (s State) Fingerprint() string {
+	return s.fingerprint
+}
+
 func ignoredMarkdownFiles(status []byte) []string {
 	var result []string
 	for _, record := range splitNUL(status) {
@@ -119,7 +317,7 @@ func ignoredMarkdownFiles(status []byte) []string {
 	return result
 }
 
-func snapshotFingerprint(ctx context.Context, sourceDir string, statusOutput []byte, ignoredSources []string, options ReadOptions) (string, error) {
+func snapshotFingerprint(ctx context.Context, sourceDir string, statusOutput []byte, ignoredSources []string, options ReadOptions, metadataOnly bool) (string, error) {
 	hash := sha256.New()
 	_, _ = hash.Write(statusOutput)
 	// Hash the changed paths and their current bytes instead of asking Git to
@@ -139,7 +337,7 @@ func snapshotFingerprint(ctx context.Context, sourceDir string, statusOutput []b
 		if name == "" {
 			continue
 		}
-		if err := hashSourceFile(ctx, hash, sourceDir, name, "tracked", options); err != nil {
+		if err := hashSourceInput(ctx, hash, sourceDir, name, "tracked", options, metadataOnly); err != nil {
 			return "", err
 		}
 	}
@@ -151,16 +349,83 @@ func snapshotFingerprint(ctx context.Context, sourceDir string, statusOutput []b
 		if name == "" {
 			continue
 		}
-		if err := hashSourceFile(ctx, hash, sourceDir, name, "untracked", options); err != nil {
+		if err := hashSourceInput(ctx, hash, sourceDir, name, "untracked", options, metadataOnly); err != nil {
 			return "", err
 		}
 	}
 	for _, path := range ignoredSources {
-		if err := hashSourceFile(ctx, hash, sourceDir, path, "ignored", options); err != nil {
+		if err := hashSourceInput(ctx, hash, sourceDir, path, "ignored", options, metadataOnly); err != nil {
 			return "", err
 		}
 	}
 	return fmt.Sprintf("%x", hash.Sum(nil)), nil
+}
+
+func hashSourceInput(ctx context.Context, hash io.Writer, sourceDir, name, kind string, options ReadOptions, metadataOnly bool) error {
+	if metadataOnly {
+		return hashSourceMetadata(ctx, hash, sourceDir, name, kind, options)
+	}
+	return hashSourceFile(ctx, hash, sourceDir, name, kind, options)
+}
+
+func hashSourceMetadata(ctx context.Context, hash io.Writer, sourceDir, name, kind string, options ReadOptions) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(hash, kind+"\x00"+name+"\x00"); err != nil {
+		return fmt.Errorf("hash %s source path %q: %w", kind, name, err)
+	}
+	path := filepath.Join(sourceDir, filepath.FromSlash(name))
+	info, err := os.Lstat(path)
+	if os.IsNotExist(err) {
+		if _, err := io.WriteString(hash, "missing\x00"); err != nil {
+			return fmt.Errorf("hash missing %s source path %q: %w", kind, name, err)
+		}
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("stat %s source file %q: %w", kind, name, err)
+	}
+	if info.IsDir() {
+		// Submodules have independent worktrees. Keep their existing content-aware
+		// handling until a metadata-only submodule snapshot is available.
+		return hashSubmodule(ctx, hash, path, name, options)
+	}
+	if err := hashFileIdentity(hash, info, path); err != nil {
+		return err
+	}
+	if info.Mode()&os.ModeSymlink != 0 {
+		target, err := os.Readlink(path)
+		if err != nil {
+			return fmt.Errorf("readlink %s source file %q: %w", kind, name, err)
+		}
+		if _, err := io.WriteString(hash, "symlink\x00"+target+"\x00"); err != nil {
+			return fmt.Errorf("hash %s source symlink %q: %w", kind, name, err)
+		}
+		targetInfo, err := os.Stat(path)
+		if err == nil && targetInfo.Mode().IsRegular() {
+			return hashFileIdentity(hash, targetInfo, path+" -> "+target)
+		}
+		if err != nil && !os.IsNotExist(err) {
+			return fmt.Errorf("stat %s source symlink target %q: %w", kind, name, err)
+		}
+		if err == nil && targetInfo.IsDir() {
+			return fmt.Errorf("metadata-only source snapshot does not support directory symlink %q", name)
+		}
+	}
+	return nil
+}
+
+func hashFileIdentity(hash io.Writer, info os.FileInfo, name string) error {
+	identity := fileidentity.Read(info)
+	if identity.Inode == 0 {
+		return fmt.Errorf("file identity unavailable for source input %q", name)
+	}
+	_, err := fmt.Fprintf(hash, "identity\x00%d\x00%d\x00%d\x00%d\x00%d\x00%d\x00", identity.Device, identity.Inode, identity.Size, identity.Mode, identity.Modified, identity.Changed)
+	if err != nil {
+		return fmt.Errorf("hash file identity for source input %q: %w", name, err)
+	}
+	return nil
 }
 
 func hashSourceFile(ctx context.Context, hash io.Writer, sourceDir, name, kind string, options ReadOptions) error {
