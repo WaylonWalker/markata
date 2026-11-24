@@ -908,6 +908,12 @@ function markPreviewReady() {
   if (!previewStarted || previewReady) return;
   previewReady = true;
   syncAppearance();
+  // Do not make the heavy WASM download compete with the first Go preview.
+  if (wasmPreviewOptIn) {
+    if (typeof requestIdleCallback === 'function')
+      requestIdleCallback(startOptionalWasmPreview, {timeout: 1500});
+    else setTimeout(startOptionalWasmPreview, 0);
+  }
   scrollSync.ready();
   if (previewFrameStartedAt !== null) {
     window.MarkataDiagnostics?.record('preview_feature_startup', performance.now() - previewFrameStartedAt);
@@ -1066,7 +1072,7 @@ async function certifyWasm(snapshot) {
   }
 }
 function startOptionalWasmPreview() {
-  if (!wasmPreviewOptIn || !window.MARKATA_WASM_VERSION || !window.MarkataWasmPreview) return;
+  if (wasmWorker || !wasmPreviewOptIn || !window.MARKATA_WASM_VERSION || !window.MarkataWasmPreview) return;
   const started = performance.now();
   try {
     const worker = window.MarkataWasmPreview.create(window.MARKATA_WASM_VERSION);
@@ -1286,7 +1292,6 @@ window.addEventListener('markata-site-index-ready', () => {
 workspaceReady.then(() => {
   ready = true;
   window.MarkataStartupStatus?.workspaceReady();
-  startOptionalWasmPreview();
   clearTimeout(timer);
   timer = setTimeout(render, 0);
 }).catch(error => {
