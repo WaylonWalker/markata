@@ -945,13 +945,15 @@ function finishPreview(version, patchTiming) {
   };
   const liveTime = Math.round(finishedAt-editAt);
   window.MarkataDiagnostics?.record('edit_to_preview',liveTime);
-  status.textContent = `Preview ${liveTime} ms`;
-  status.title = `${activeRender.mode} mode · Go ${data.render_ms.toFixed(1)} ms${data.cached ? ' (cached)' : ''} · queue ${(data.queue_ms ?? 0).toFixed(1)} ms · input ${(data.input_bytes/1024).toFixed(1)} KB · fragment ${((data.html_bytes)/1024).toFixed(1)} KB`;
+  status.textContent = `${activeRender.engine === 'wasm' ? 'Quick local preview' : 'Preview'} ${liveTime} ms`;
+  status.title = `${activeRender.mode} mode · ${activeRender.engine === 'wasm' ? 'WASM' : 'Go'} ${data.render_ms.toFixed(1)} ms${data.cached ? ' (cached)' : ''} · queue ${(data.queue_ms ?? 0).toFixed(1)} ms · input ${(data.input_bytes/1024).toFixed(1)} KB · fragment ${((data.html_bytes)/1024).toFixed(1)} KB`;
   if (!activeRender.pipelineRecorded) {
     activeRender.pipelineRecorded = true;
     try {
       window.MarkataDiagnostics?.recordPreviewPipeline(stages,{
-        request_ms:requestMS,queue_ms:queueMS,go_render_ms:renderMS,cached:data.cached,
+        request_ms:requestMS,queue_ms:queueMS,engine:activeRender.engine,
+        go_render_ms:activeRender.engine === 'go' ? renderMS : 0,
+        wasm_render_ms:activeRender.engine === 'wasm' ? renderMS : 0,cached:data.cached,
         input_bytes:data.input_bytes,html_bytes:data.html_bytes,mode:activeRender.mode,iframe:patchTiming||null,
         frame_content_ready_ms:activeRender.frameContentReadyMS ?? previewFrameContentReadyMS,
       });
@@ -1172,7 +1174,7 @@ async function render() {
       updatePreview(data, version);
     }
     if (rejectedImportRevision !== version) errorBox.hidden = true;
-    status.textContent = 'Updating preview…';
+    status.textContent = engine === 'wasm' ? 'Updating local preview…' : 'Updating preview…';
   } catch (error) {
     if (version !== revision) return;
     errorBox.textContent = error.name === 'AbortError' ? 'Preview timed out. Edit the Markdown or reload to retry.' : error.message;
@@ -1271,6 +1273,8 @@ requestAnimationFrame(() => {
 const workspaceReady = window.MarkataSiteTree.attach(editor, storageWarning, {saveToSite:true});
 window.addEventListener('markata-site-index-ready', () => {
   if (!ready) return;
+  wasmParity = null;
+  lastGoPreview = null;
   revision++;
   frame.contentWindow?.postMessage({type:'preview-invalidate',version:revision},'*');
   activeRenderController?.abort();
@@ -1282,6 +1286,7 @@ window.addEventListener('markata-site-index-ready', () => {
 workspaceReady.then(() => {
   ready = true;
   window.MarkataStartupStatus?.workspaceReady();
+  startOptionalWasmPreview();
   clearTimeout(timer);
   timer = setTimeout(render, 0);
 }).catch(error => {
