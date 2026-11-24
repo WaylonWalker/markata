@@ -1044,7 +1044,7 @@ cwebp_path = ""                   # Optional explicit path
 5. Use cache metadata to skip re-encoding unchanged inputs.
 6. If an encoder is missing, warn and skip that format without failing the build.
 7. Keep every qualifying HTML image reference, but process each resolved output path once per build using the union of its requested responsive widths.
-8. Report both image target occurrences and unique optimization targets (one per resolved output path) so repeated references are visible without implying repeated encoding.
+8. Report image target occurrences and unique target candidates after deduplication. Count each candidate once in `unique_targets`, including candidates whose paths cannot be resolved or whose source files are missing; also include those candidates in `missing_sources`. Report `duplicate_targets` as occurrences removed by deduplication so repeated references remain visible without implying repeated encoding.
 
 **Output Files:**
 
