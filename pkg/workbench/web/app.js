@@ -1077,15 +1077,11 @@ async function render() {
       body:JSON.stringify({markdown, frontmatter_source:frontmatter?.[0] || '', include_document:!previewStarted, appearance:Object.fromEntries(Object.entries(attributes()).filter(([,v])=>v))}),
       signal:controller.signal
     });
-    const data = await response.json();
+    const payload = await response.json();
     const responseAt = performance.now();
     if (version !== revision) return;
-    if (!response.ok) throw new Error(data.error || 'Rendering failed.');
-    if (sourceLineOffset) {
-      data.source_lines = data.source_lines.map(line => line + sourceLineOffset);
-      data.source_anchors = data.source_anchors.map(line => line + sourceLineOffset);
-    }
-    data.source_offset = sourceLineOffset;
+    if (!response.ok) throw new Error(payload.error || 'Rendering failed.');
+    const data = window.MarkataPreviewContract.fromGo(payload, sourceLineOffset, initialDocument);
     scrollSync.update(data.source_lines, false, sourceLineOffset, data.source_anchors);
     activeRender = {data, version, editAt, startedAt:started, responseAt, mode:renderMode, initialDocument};
     if (!previewStarted) {
