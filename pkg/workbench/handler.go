@@ -72,6 +72,10 @@ type workspaceSource interface {
 	ReadImage(string) ([]byte, error)
 }
 
+type workspaceMultiImageCreator interface {
+	CreateWithImages(string, string, string, []editorworkspace.UploadedImage) ([]string, error)
+}
+
 type contentTemplateDefaultsWriter interface {
 	SetContentTemplateDefaults(string, string, string) error
 }
@@ -309,6 +313,14 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 	case r.URL.Path == "/":
 		h.serveIndex(w, r)
+	case r.URL.Path == "/manifest.webmanifest":
+		h.handlePWAManifest(w, r)
+	case r.URL.Path == "/sw.js":
+		h.handlePWAServiceWorker(w, r)
+	case r.URL.Path == "/pwa-icon.svg":
+		h.handlePWAIcon(w, r)
+	case r.URL.Path == "/pwa-icon-192.png" || r.URL.Path == rasterLargeIconPath:
+		h.handlePWARasterIcon(w, r)
 	case r.URL.Path == "/favicon.ico":
 		data, err := web.ReadFile("web/favicon.ico")
 		if err != nil {
@@ -316,6 +328,22 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		serve(w, r, "favicon.ico", data)
+	case strings.HasPrefix(r.URL.Path, "/images/"):
+		// Inline gallery Markdown uses /images/... while the cover image is
+		// rendered through /workspace/image. Both must use the same contained
+		// workspace reader, never a raw filesystem path.
+		if h.workspace == nil {
+			http.NotFound(w, r)
+			return
+		}
+		name := strings.TrimPrefix(r.URL.Path, "/")
+		data, err := h.workspace.ReadImage(name)
+		if err != nil {
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Cache-Control", "no-store")
+		serve(w, r, name, data)
 	case strings.HasPrefix(r.URL.Path, "/appearance/"):
 		w.Header().Set("Cache-Control", "no-cache")
 		// The only mutation occurs under the render gate. Copy the slice header while
@@ -894,7 +922,7 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		const maxImageBytes = 15 << 20
-		r.Body = http.MaxBytesReader(w, r.Body, maxSource+maxImageBytes+(1<<20))
+		r.Body = http.MaxBytesReader(w, r.Body, maxSource+(48<<20)+(1<<20))
 		if err := r.ParseMultipartForm(1 << 20); err != nil {
 			fail(w, http.StatusBadRequest, "cannot read new post upload")
 			return
@@ -911,34 +939,55 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 			fail(w, http.StatusRequestEntityTooLarge, "document exceeds 200,000 bytes")
 			return
 		}
-		image, header, err := r.FormFile("image")
-		if err != nil {
-			fail(w, http.StatusBadRequest, "image upload is missing")
+		headers := r.MultipartForm.File["image"]
+		if len(headers) == 0 || len(headers) > 8 || len(r.MultipartForm.File) != 1 {
+			fail(w, http.StatusBadRequest, "provide 1 to 8 photos under the image field")
 			return
 		}
-		defer image.Close()
-		data, err := io.ReadAll(io.LimitReader(image, maxImageBytes+1))
-		if err != nil {
-			fail(w, http.StatusBadRequest, "cannot read image upload")
-			return
-		}
-		if len(data) > maxImageBytes {
-			fail(w, http.StatusRequestEntityTooLarge, "image exceeds 15 MiB")
-			return
-		}
-		if _, err := editorworkspace.ImageExtension(header.Header.Get("Content-Type"), data); err != nil {
-			fail(w, http.StatusUnprocessableEntity, err.Error())
-			return
+		uploads := make([]editorworkspace.UploadedImage, 0, len(headers))
+		total := 0
+		for _, header := range headers {
+			image, err := header.Open()
+			if err != nil {
+				fail(w, http.StatusBadRequest, "cannot open image")
+				return
+			}
+			data, readErr := io.ReadAll(io.LimitReader(image, maxImageBytes+1))
+			closeErr := image.Close()
+			if readErr != nil || closeErr != nil {
+				fail(w, http.StatusBadRequest, "cannot read image")
+				return
+			}
+			total += len(data)
+			if len(data) == 0 || len(data) > maxImageBytes || total > 48<<20 {
+				fail(w, http.StatusRequestEntityTooLarge, "photos must be 15 MiB each and 48 MiB total")
+				return
+			}
+			if _, err := editorworkspace.ImageExtension(header.Header.Get("Content-Type"), data); err != nil {
+				fail(w, http.StatusUnprocessableEntity, err.Error())
+				return
+			}
+			uploads = append(uploads, editorworkspace.UploadedImage{
+				ContentType: header.Header.Get("Content-Type"), Data: data,
+			})
 		}
 		h.workspaceWriteMu.Lock()
 		defer h.workspaceWriteMu.Unlock()
 		postPath := r.FormValue("path")
 		imageName := r.FormValue("image_name")
 		provider := h.imageUploadProvider()
-		var imageURL string
+		includeGallery := r.FormValue("include_gallery") == pwaGalleryFlagTrue
+		var images []string
 		var createErr error
+		storedSource := source
 		switch provider {
 		case imageUploadModeDropper:
+			// Dropper has no transactional delete API. Do not leak previous
+			// uploads when a later photo fails or the post is rejected.
+			if len(uploads) > 1 {
+				fail(w, http.StatusConflict, "multi-photo Dropper uploads require cleanup support; use local image storage")
+				return
+			}
 			checker, ok := h.workspace.(workspaceCreateChecker)
 			if !ok {
 				fail(w, http.StatusNotImplemented, "workspace cannot validate a new post path")
@@ -948,22 +997,64 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 				fail(w, http.StatusBadRequest, "image name must be a lowercase slug")
 				return
 			}
-			extension, extensionErr := editorworkspace.ImageExtension(header.Header.Get("Content-Type"), data)
-			if extensionErr != nil {
-				fail(w, http.StatusUnprocessableEntity, extensionErr.Error())
-				return
-			}
 			if checkErr := checker.CheckCreate(postPath); checkErr != nil {
 				fail(w, http.StatusUnprocessableEntity, checkErr.Error())
 				return
 			}
-			imageURL, createErr = h.uploadImageToDropper(r.Context(), imageName+"."+extension, header.Header.Get("Content-Type"), data)
+			for i, photo := range uploads {
+				extension, extensionErr := editorworkspace.ImageExtension(photo.ContentType, photo.Data)
+				if extensionErr != nil {
+					createErr = extensionErr
+					break
+				}
+				name := imageName
+				if len(uploads) > 1 {
+					name = fmt.Sprintf("%s-%d", imageName, i+1)
+				}
+				imageURL, err := h.uploadImageToDropper(r.Context(), name+"."+extension, photo.ContentType, photo.Data)
+				if err != nil {
+					createErr = err
+					break
+				}
+				images = append(images, imageURL)
+			}
 			if createErr == nil {
-				source = sourceWithImage(source, imageURL)
-				createErr = h.workspace.Create(postPath, source)
+				if len(images) > 1 || includeGallery {
+					storedSource = editorworkspace.SourceWithUploadedImages(source, images)
+				} else {
+					storedSource = sourceWithImage(source, images[0])
+				}
+				createErr = h.workspace.Create(postPath, storedSource)
 			}
 		case imageUploadModeLocal:
-			imageURL, createErr = h.workspace.CreateWithImage(postPath, source, imageName, header.Header.Get("Content-Type"), data)
+			if len(uploads) == 1 {
+				var uploadedURL string
+				singleSource := source
+				if includeGallery {
+					extension, extensionErr := editorworkspace.ImageExtension(uploads[0].ContentType, uploads[0].Data)
+					if extensionErr != nil {
+						fail(w, http.StatusUnprocessableEntity, extensionErr.Error())
+						return
+					}
+					localURL := "/images/" + imageName + "." + extension
+					singleSource = editorworkspace.SourceWithUploadedImages(source, []string{localURL})
+				}
+				uploadedURL, createErr = h.workspace.CreateWithImage(postPath, singleSource, imageName, uploads[0].ContentType, uploads[0].Data)
+				if createErr == nil {
+					images = []string{uploadedURL}
+					storedSource = sourceWithImage(singleSource, uploadedURL)
+				}
+			} else {
+				creator, ok := h.workspace.(workspaceMultiImageCreator)
+				if !ok {
+					fail(w, http.StatusNotImplemented, "workspace cannot create a multi-image post")
+					return
+				}
+				images, createErr = creator.CreateWithImages(postPath, source, imageName, uploads)
+				if createErr == nil {
+					storedSource = editorworkspace.SourceWithUploadedImages(source, images)
+				}
+			}
 		default:
 			createErr = fmt.Errorf("unsupported image upload provider %q", provider)
 		}
@@ -972,9 +1063,10 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		w.WriteHeader(http.StatusCreated)
-		if err := json.NewEncoder(w).Encode(map[string]string{
-			workspaceVersionKey: editorworkspace.SourceVersion(sourceWithImage(source, imageURL)),
-			"image":             imageURL,
+		if err := json.NewEncoder(w).Encode(map[string]any{
+			workspaceVersionKey: editorworkspace.SourceVersion(storedSource),
+			"image":             images[0],
+			pwaSharePhotosField: images,
 			"provider":          provider,
 		}); err != nil {
 			return
