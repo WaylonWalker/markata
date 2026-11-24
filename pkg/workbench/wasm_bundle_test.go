@@ -3,6 +3,7 @@ package workbench
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -15,7 +16,7 @@ import (
 func TestHandler_OptionalBundledWasmPreview(t *testing.T) {
 	h := newHandler(t)
 	index := httptest.NewRecorder()
-	h.ServeHTTP(index, httptest.NewRequest(http.MethodGet, "/", http.NoBody))
+	h.ServeHTTP(index, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/", http.NoBody))
 	if index.Code != http.StatusOK {
 		t.Fatalf("GET / returned %d", index.Code)
 	}
@@ -28,14 +29,14 @@ func TestHandler_OptionalBundledWasmPreview(t *testing.T) {
 	}
 
 	worker := httptest.NewRecorder()
-	h.ServeHTTP(worker, httptest.NewRequest(http.MethodGet, "/editor/wasm/worker.js", http.NoBody))
+	h.ServeHTTP(worker, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/editor/wasm/worker.js", http.NoBody))
 	if worker.Code != http.StatusOK || !strings.Contains(worker.Body.String(), "markata.wasm") {
 		t.Fatalf("bundled worker not served: %d", worker.Code)
 	}
 
 	_, bundled := web.ReadFile("web/wasm/markata.wasm")
 	response := httptest.NewRecorder()
-	h.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/editor/wasm/markata.wasm", http.NoBody))
+	h.ServeHTTP(response, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/editor/wasm/markata.wasm", http.NoBody))
 	if bundled == nil {
 		if response.Code != http.StatusOK || response.Header().Get("Content-Type") != "application/wasm" {
 			t.Fatalf("bundled WASM returned %d, MIME %q", response.Code, response.Header().Get("Content-Type"))
@@ -46,10 +47,8 @@ func TestHandler_OptionalBundledWasmPreview(t *testing.T) {
 		if strings.Contains(index.Body.String(), "MARKATA_WASM_VERSION=\"\";") {
 			t.Fatal("embedded WASM was not advertised")
 		}
-	} else {
-		if response.Code != http.StatusNotFound || !strings.Contains(index.Body.String(), "MARKATA_WASM_VERSION=\"\";") {
-			t.Fatalf("native-only build must safely disable WASM; status=%d", response.Code)
-		}
+	} else if response.Code != http.StatusNotFound || !strings.Contains(index.Body.String(), "MARKATA_WASM_VERSION=\"\";") {
+		t.Fatalf("native-only build must safely disable WASM; status=%d", response.Code)
 	}
 }
 
@@ -68,7 +67,7 @@ func TestHandler_HostedWasmAssetsKeepAuthBoundary(t *testing.T) {
 		"/editor/wasm/markata.wasm",
 	} {
 		t.Run(asset, func(t *testing.T) {
-			request := httptest.NewRequest(http.MethodGet, "https://edit.waylonwalker.com"+asset, http.NoBody)
+			request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "https://edit.waylonwalker.com"+asset, http.NoBody)
 			request.RemoteAddr = "10.42.0.12:8443"
 			denied := httptest.NewRecorder()
 			h.ServeHTTP(denied, request)
@@ -81,11 +80,9 @@ func TestHandler_HostedWasmAssetsKeepAuthBoundary(t *testing.T) {
 			allowed := httptest.NewRecorder()
 			h.ServeHTTP(allowed, request)
 			wantStatus := http.StatusOK
-			if asset != "/editor/wasm/worker.js" {
-				assetName := strings.TrimPrefix(asset, "/editor/")
-				if _, err := web.ReadFile("web/" + assetName); err != nil {
-					wantStatus = http.StatusNotFound
-				}
+			assetName := strings.TrimPrefix(asset, "/editor/")
+			if _, err := web.ReadFile("web/" + assetName); err != nil {
+				wantStatus = http.StatusNotFound
 			}
 			if allowed.Code != wantStatus || allowed.Header().Get("Cache-Control") != "private, no-store" ||
 				allowed.Header().Get("Access-Control-Allow-Origin") != "" {
@@ -107,7 +104,7 @@ func TestHandler_WasmPrecompressedResponse(t *testing.T) {
 		t.Skip("build did not include the optional precompressed WASM")
 	}
 	h := newHandler(t)
-	request := httptest.NewRequest(http.MethodGet, "/editor/wasm/markata.wasm", http.NoBody)
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/editor/wasm/markata.wasm", http.NoBody)
 	request.Header.Set("Accept-Encoding", "gzip, deflate")
 	response := httptest.NewRecorder()
 	h.ServeHTTP(response, request)
