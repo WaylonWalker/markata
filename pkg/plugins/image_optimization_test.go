@@ -77,6 +77,33 @@ func TestImageOptimization_StatsCountMissingSource(t *testing.T) {
 	}
 }
 
+func TestImageOptimization_StatsCountDeduplicatedMissingCandidates(t *testing.T) {
+	outputDir := t.TempDir()
+	manager := lifecycle.NewManager()
+	manager.Config().OutputDir = outputDir
+	post := models.NewPost("post.md")
+	post.Extra = map[string]any{
+		"image_optimization": []imageOptimizationTarget{
+			{Src: "/images/missing.jpg"},
+			{Src: "/images/missing.jpg"},
+			{Src: "/../escape.jpg"},
+			{Src: "/../escape.jpg"},
+		},
+	}
+	manager.SetPosts([]*models.Post{post})
+
+	plugin := NewImageOptimizationPlugin()
+	plugin.config = defaultImageOptimizationConfig()
+	plugin.config.CacheDir = filepath.Join(t.TempDir(), "image-cache")
+	plugin.availableFormats = []string{formatWebP}
+	if err := plugin.Write(manager); err != nil {
+		t.Fatalf("Write() error = %v", err)
+	}
+	if plugin.stats.targetOccurrences != 4 || plugin.stats.uniqueTargets != 2 || plugin.stats.missingSources != 2 {
+		t.Fatalf("unexpected image stats: %+v; want 4 occurrences, 2 unique candidates, and 2 missing sources", plugin.stats)
+	}
+}
+
 func TestDeduplicateImageOptimizationTargetsByOutputPath(t *testing.T) {
 	targets := []imageOptimizationTarget{
 		{Src: "/avatar.png", PostSlug: "first", Widths: []int{480, 768}},

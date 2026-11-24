@@ -187,6 +187,8 @@ func (p *ImageOptimizationPlugin) Write(m *lifecycle.Manager) error {
 }
 
 func (p *ImageOptimizationPlugin) optimizeTarget(outputDir, cacheDir string, target imageOptimizationTarget) error {
+	// Count the deduplicated candidate before resolution so invalid and missing
+	// sources are represented once in uniqueTargets and separately in missingSources.
 	p.stats.uniqueTargets++
 	outputPath, err := resolveImageOutputPath(outputDir, target)
 	if err != nil {
