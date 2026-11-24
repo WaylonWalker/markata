@@ -71,5 +71,22 @@
       },
     };
   }
-  window.MarkataWasmPreview = Object.freeze({create});
+  // A deliberately small fast-path grammar. Site-specific syntax, assets and
+  // formatting stay on Go. This is not a general Markdown feature detector.
+  function simpleTextOnly(source) {
+    if (typeof source !== 'string') return false;
+    return !/(?:^---\\s*$|^\\s*(?:```|~~~|:::|!!!|@@|\\|)|^ {4}\\S|\\[\\[|!\\[|\\[[^\\]]+\\]\\(|:lucide-|<|\\{\\{|\\{%|^\\s*\\||^\\s*[-*+] \\[[xX ]\\])/m.test(source);
+  }
+  function compareParity(goPayload, wasmPayload, sourceOffset = 0) {
+    if (!goPayload || !wasmPayload || !Array.isArray(goPayload.source_lines) ||
+        !Array.isArray(wasmPayload.source_lines) ||
+        (goPayload.source_anchors || []).length !== 0) return null;
+    if (!goPayload.html.endsWith(wasmPayload.html)) return null;
+    if (goPayload.source_lines.length !== wasmPayload.source_lines.length) return null;
+    for (let i = 0; i < wasmPayload.source_lines.length; i++) {
+      if (goPayload.source_lines[i] !== wasmPayload.source_lines[i] + sourceOffset) return null;
+    }
+    return {prefix: goPayload.html.slice(0, goPayload.html.length - wasmPayload.html.length)};
+  }
+  window.MarkataWasmPreview = Object.freeze({create, simpleTextOnly, compareParity});
 })();
