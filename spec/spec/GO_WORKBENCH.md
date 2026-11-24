@@ -12,8 +12,11 @@ runs at a time per handler; queue admission observes request cancellation.
 
 Responses contain `document`, `html`, `feature_head_html`, `body_end_html`,
 `source_lines`, `source_anchors`, `render_ms`, `input_bytes`, `html_bytes`,
-`document_bytes`, and `cached`. `source_lines` maps top-level rendered blocks;
+`document_bytes`, `cached`, and `renderer_fingerprint`. `source_lines` maps top-level rendered blocks;
 `source_anchors` maps nested container starts and ends to editor lines.
+`renderer_fingerprint` identifies a Go/WASM-compatible default renderer only
+when no site configuration is active and the matching WASM bundle is present.
+Otherwise it is empty, and the hosted editor MUST keep preview rendering on Go.
 The optional `include_document` boolean defaults to true for API compatibility.
 With false, `document` is null and `document_bytes` is zero. Fragment responses
 contain no shared appearance CSS or document shell.
@@ -38,7 +41,14 @@ Reloading the editor applies changes to authored scripts.
 The preview uses the shared standalone appearance assets and ordered renderer
 assets. The handler permits raw authored HTML for local trusted editing. The
 browser isolates preview scripts in an opaque-origin iframe sandbox. All assets
-are served locally. Authored images and links may access external networks.
+are served locally. In hosted mode, the initial document MUST carry its
+appearance styles and the selected font files into the opaque-origin frame;
+preview rendering MUST NOT rely on authenticated subresource requests from that
+frame. Later font-pack changes MUST use an authenticated request from the parent
+workbench and update the isolated frame without granting it same-origin access.
+The workbench MUST NOT make workspace-derived appearance assets public to avoid
+the authentication boundary. Authored images and links may access external
+networks.
 `GET /favicon.ico` serves the bundled Markata favicon so browsers do not report
 a missing icon for the workbench origin.
 
@@ -87,7 +97,11 @@ behavior. `Ctrl+V` MUST retain Vim's blockwise visual-selection behavior.
 for same-origin loopback workspace requests. It MUST enforce the existing
 15 MiB limit and verify that the declared MIME type matches PNG, JPEG, GIF, or
 WebP image data before contacting Dropper. Dropper credentials MUST remain
-server-side. Uploads MUST be disabled when the effective
+outside the browser and the hosted workbench process. A hosted workbench MAY
+delegate uploads to a credential-bearing broker over a Unix domain socket; the
+broker MUST accept only validated image uploads and MUST use one configured
+Dropper upload endpoint. Local workbenches MAY use a server-side
+`DROPPER_TOKEN`. Uploads MUST be disabled when the effective
 `content_templates.image_upload` provider is `local`. A successful response
 MUST return the validated Dropper image URL. It MUST NOT write a workspace file.
 

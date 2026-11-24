@@ -198,3 +198,34 @@ message and revision, and MUST NOT use a developer site or production remote.
 
 The code is intentionally marked experimental until the exact Git workflow,
 bundled asset, Playwright and deployment recovery paths are verified.
+
+## Hosted Git credential isolation
+
+Hosted deployments MUST mount the Git SSH Secret only into a short-lived init
+container, which copies it to an ephemeral volume with owner-only permissions
+for the dedicated Git publisher process. The publisher runtime UID MUST resolve
+to a passwd entry for OpenSSH, and the private key MUST be owned by that UID.
+The editor MUST NOT receive either key volume, `GIT_SSH_COMMAND`, or an SSH
+agent socket. It may request remote readiness and push only through the
+publisher's local Unix socket.
+
+The publisher MUST use an operator-configured HTTPS GitHub origin and branch,
+and MUST reject any checkout whose configured fetch origin differs from those
+values. Network commands MUST use the fixed allowlisted SSH URL, regardless of
+mutable checkout push settings. Readiness MUST verify that the requested local
+HEAD and branch still match the checkout before reading the remote branch. The
+push source MUST be the reviewed commit hash, not a mutable local branch name.
+A push MUST be a non-forced fast-forward of exactly one commit whose sole
+changed path is a regular Markdown blob; the remote branch MUST equal that
+commit's parent. The publisher MUST verify the remote points to the requested
+commit after pushing.
+
+The Unix socket MUST remain private to the pod and MUST NOT be exposed through
+an HTTP or Kubernetes Service. Hlab Auth continues to authorize editor
+requests. The publisher is a credential boundary, not an alternate browser
+authentication path; a request to publish is accepted only through the editor's
+existing authenticated review, commit, and push flow.
+
+Hosted editor startup probes MUST allow at least ten minutes for initial
+workspace discovery and filesystem watcher registration before restarting the
+container. Readiness probes remain short after the HTTP listener starts.

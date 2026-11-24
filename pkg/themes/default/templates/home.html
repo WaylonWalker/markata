@@ -10,12 +10,47 @@
 {% block meta %}
 {{ block.Super() }}
 <link rel="canonical" href="{{ config.url }}/">
+<meta property="og:site_name" content="{{ config.title }}">
 <meta property="og:title" content="{{ config.title }}">
 <meta property="og:type" content="website">
 <meta property="og:url" content="{{ config.url }}/">
-{% if config.description %}
-<meta property="og:description" content="{{ config.description }}">
+{% with post.description|default:config.description as home_desc %}
+{% if home_desc %}
+<meta property="og:description" content="{{ home_desc }}">
 {% endif %}
+{% with config.seo.default_image|default:post.hero_avatar|default:config.seo.author_image as home_og_image %}
+{% if home_og_image %}
+{% with home_og_image|media_url as resolved_home_image %}
+<meta property="og:image" content="{% if resolved_home_image | startswith:'http' %}{{ resolved_home_image }}{% else %}{{ config.url }}{{ resolved_home_image }}{% endif %}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="{% if resolved_home_image | startswith:'http' %}{{ resolved_home_image }}{% else %}{{ config.url }}{{ resolved_home_image }}{% endif %}">
+{% endwith %}
+{% else %}
+<meta name="twitter:card" content="summary">
+{% endif %}
+{% endwith %}
+{% if config.seo.twitter_handle %}
+<meta name="twitter:site" content="@{{ config.seo.twitter_handle }}">
+{% endif %}
+<meta name="twitter:title" content="{{ config.title }}">
+{% if home_desc %}
+<meta name="twitter:description" content="{{ home_desc }}">
+{% endif %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "{{ config.title | escapejs }}",
+  "url": "{{ config.url }}/"{% if home_desc %},
+  "description": "{{ home_desc | escapejs }}"{% endif %}{% if config.author %},
+  "author": {
+    "@type": "Person",
+    "name": "{{ config.author | escapejs }}",
+    "url": "{{ config.url }}/"
+  }{% endif %}
+}
+</script>
+{% endwith %}
 {% endblock %}
 
 {% block head %}
@@ -41,14 +76,14 @@
       <div class="home-hero__inner">
         {% with post.hero_avatar|default:config.seo.author_image|default:config.seo.logo_url as avatar_src %}
         {% if avatar_src %}
-        <img class="home-hero__avatar" src="{{ avatar_src }}" alt="{{ post.hero_first_name | default:'' }} {{ post.hero_last_name | default:'' }}" width="160" height="160" loading="eager">
+        <img class="home-hero__avatar" src="{{ avatar_src }}" alt="{{ post.hero_first_name | default:'' }} {{ post.hero_last_name | default:'' }}" width="160" height="160" loading="eager" fetchpriority="high" decoding="async">
         {% endif %}
         {% endwith %}
         <div class="home-hero__text">
           {% if post.hero_first_name or post.hero_last_name %}
-          <h1 class="home-hero__name">{{ post.hero_first_name | default:'' }} <span class="home-hero__accent">{{ post.hero_last_name | default:'' }}</span></h1>
+          <h1 class="home-hero__name"><span class="heading-wear-glyph">{{ post.hero_first_name | default:'' }}</span> <span class="home-hero__accent heading-wear-glyph">{{ post.hero_last_name | default:'' }}</span></h1>
           {% else %}
-          <h1 class="home-hero__name">{{ config.author | default:config.title | default:'Home' }}</h1>
+          <h1 class="home-hero__name"><span class="heading-wear-glyph">{{ config.author | default:config.title | default:'Home' }}</span></h1>
           {% endif %}
           {% with post.hero_tagline|default:config.description as tagline %}
           {% if tagline %}
@@ -70,6 +105,19 @@
           {% endif %}
         </div>
       </div>
+      {% if config.primary_feeds %}
+      <nav class="home-feed-strip" aria-label="Browse feeds">
+        <span class="home-feed-strip__label">Browse</span>
+        <div class="home-feed-strip__links">
+          {% for pf in config.primary_feeds %}
+          <a href="{{ pf.href }}" class="home-feed-strip__pill">{{ pf.title }}</a>
+          {% endfor %}
+          {% if config.feeds_page.enabled %}
+          <a href="/{{ config.feeds_page.slug_prefix | default:'feeds' }}/" class="home-feed-strip__pill home-feed-strip__pill--all">All feeds &rarr;</a>
+          {% endif %}
+        </div>
+      </nav>
+      {% endif %}
     </div>
   </section>
 

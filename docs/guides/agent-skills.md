@@ -11,6 +11,16 @@ Let's be honest: a lot of websites get built alongside coding agents. **Give the
 
 The skill is bundled with the **Go binary**; you don't need a separate installer or a proprietary cloud service.
 
+## Start without installing an agent integration
+
+```sh
+markata --skill
+```
+
+This prints the **self-contained, release-matched first-run guide** bundled with the CLI. Paste its output into Amp, Codex, Claude Code, or any agent of your choice. The guide asks the agent to inspect your existing site, clarify where you want to publish, prefer native config and templates before plugins, then verify a full build before deployment. No files are written and no provider is selected automatically.
+
+To give your agent the complete topic-based skill (custom templates, plugins, builds, performance, deployments), continue below.
+
 ## 1. Open your site repository
 
 ```bash

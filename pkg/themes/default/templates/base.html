@@ -99,15 +99,10 @@
   <!-- Palette Switcher CSS (when enabled) -->
   {% include "partials/palette-switcher-styles.html" %}
 
-  <!-- Search CSS: layout styles load eagerly, pagefind UI loads on interaction -->
+  <!-- Search CSS: closed interaction surface, do not block initial paint -->
   {% if config.search.enabled %}
-  {% if feed_presentation == "editorial" %}
-  {# Search is a closed interaction surface on the archive; do not block the initial article paint. #}
   <link rel="stylesheet" href="{{ 'css/search.css' | theme_asset_hashed }}" media="print" onload="this.media='all'">
   <noscript><link rel="stylesheet" href="{{ 'css/search.css' | theme_asset_hashed }}"></noscript>
-  {% else %}
-  <link rel="stylesheet" href="{{ 'css/search.css' | theme_asset_hashed }}">
-  {% endif %}
   {% endif %}
 
 
@@ -865,7 +860,6 @@
    {% if feed_presentation != "editorial" %}
    <script src="{{ 'js/heading-highlights.js' | theme_asset_hashed }}" defer></script>
    {% endif %}
-   <script src="{{ 'js/fit-post-titles.js' | theme_asset_hashed }}" defer></script>
    {# Always loaded: view transitions can reach TOC/wikilink pages from pages without them. #}
    <script src="{{ 'js/scroll-spy.js' | theme_asset_hashed }}" defer></script>
    <script src="{{ 'js/tooltips.js' | theme_asset_hashed }}" defer></script>

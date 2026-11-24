@@ -154,6 +154,10 @@ builderAdmin:
       existingSecretName: ""
       privateKeyKey: ssh-privatekey
       knownHosts: ""
+      # The publisher's fixed remote allowlist. repository defaults to
+      # builderAdmin.sourceGit.repository when that source is configured.
+      repository: ""
+      branch: ""
     extraEnv: []
     resources:
       requests:
@@ -163,6 +167,24 @@ builderAdmin:
       limits:
         memory: 2Gi
         ephemeral-storage: 2Gi
+    publisherResources:
+      requests:
+        cpu: 10m
+        memory: 32Mi
+      limits:
+        memory: 128Mi
+    dropperUploader:
+      # A credential-isolated sidecar for hosted editor media uploads.
+      enabled: false
+      existingSecretName: ""
+      tokenKey: token
+      endpoint: https://dropper.waylonwalker.com/api/upload?format=json
+      resources:
+        requests:
+          cpu: 10m
+          memory: 32Mi
+        limits:
+          memory: 128Mi
   # Builder admin is fail-closed: only source addresses in this list may supply
   # the identity headers injected by the protected Traefik route.
   auth:

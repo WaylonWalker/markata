@@ -142,7 +142,6 @@ func TestEditorialArchiveDefersOnlyNonCriticalSearchCSS(t *testing.T) {
 	}
 	s := strings.ReplaceAll(string(base), "\r\n", "\n")
 	for _, want := range []string{
-		`{% if feed_presentation == "editorial" %}`,
 		`'css/search.css' | theme_asset_hashed }}" media="print" onload="this.media='all'"`,
 		`<noscript><link rel="stylesheet" href="{{ 'css/search.css' | theme_asset_hashed }}"></noscript>`,
 		`'css/cards.css' | theme_asset_hashed`,
@@ -208,13 +207,11 @@ func TestEditorialLinkCardsUseCompactThumbnails(t *testing.T) {
 	}
 	css := string(raw)
 	for _, want := range []string{
-		"width: clamp(96px, 12vw, 144px);",
-		"width: clamp(96px, 22vw, 112px);",
-		"width: clamp(88px, 24vw, 112px);",
-		"width: min(26%, 156px);",
-		"width: min(26%, 112px);",
-		"width: min(28%, 104px);",
-		".editorial-entry--lead .card-link .card-excerpt",
+		"flex: 0 0 116px;",
+		"flex: 0 0 132px;",
+		"flex: 0 0 84px;",
+		"flex-direction: row-reverse;",
+		".editorial-entry--lead article.card-link .card-excerpt",
 	} {
 		if !strings.Contains(css, want) {
 			t.Errorf("missing compact link-card styling %q", want)
@@ -248,7 +245,7 @@ func TestEditorialLinkCardsUseCompactThumbnails(t *testing.T) {
 		for _, want := range []string{
 			`responsive_srcset:"96,128,160,240,320"`,
 			`with_size:"240,160"`,
-			`sizes="(max-width: 760px) 112px, 156px"`,
+			`sizes="(max-width: 520px) 84px, {% if item.Lead %}132px{% else %}116px{% endif %}"`,
 			`loading="lazy" decoding="async"`,
 		} {
 			if !strings.Contains(markup, want) {

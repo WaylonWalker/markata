@@ -91,9 +91,14 @@ func (w *Workspace) Config() (*models.Config, error) {
 }
 
 func (w *Workspace) manager() (*lifecycle.Manager, error) {
+	m, _, err := w.managerWithIgnoreRules()
+	return m, err
+}
+
+func (w *Workspace) managerWithIgnoreRules() (*lifecycle.Manager, func(string) bool, error) {
 	cfg, err := w.Config()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if cfg == nil {
 		cfg = models.NewConfig()
@@ -107,10 +112,10 @@ func (w *Workspace) manager() (*lifecycle.Manager, error) {
 	m.SetConfig(lc)
 	glob := plugins.NewGlobPlugin()
 	if err := glob.Configure(m); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if err := glob.Glob(m); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	safe := []string{}
 	for _, path := range m.Files() {
@@ -119,7 +124,7 @@ func (w *Workspace) manager() (*lifecycle.Manager, error) {
 		}
 	}
 	m.SetFiles(safe)
-	return m, nil
+	return m, glob.IsIgnoredPath, nil
 }
 
 func (w *Workspace) resolve(path string) (string, error) {
@@ -336,6 +341,123 @@ func (w *Workspace) CheckCreate(path string) error {
 		return err
 	}
 	return requireNewFile(filepath.Join(parent, filepath.Base(local)))
+}
+
+// UploadedImage is a validated photo supplied alongside a new Markdown post.
+// Filename is intentionally not used for paths: the server generates safe slugs.
+type UploadedImage struct {
+	ContentType string
+	Data        []byte
+}
+
+// SourceWithUploadedImages adds a cover image and an explicit Markdown gallery.
+// Only server-generated image URLs should be passed to this function.
+func SourceWithUploadedImages(source string, urls []string) string {
+	if len(urls) == 0 {
+		return source
+	}
+	result := sourceWithImage(source, urls[0])
+	for i, imageURL := range urls {
+		result += fmt.Sprintf("\n\n![Shared photo %d](%s)", i+1, imageURL)
+	}
+	return result + "\n"
+}
+
+// CreateWithImages creates a Markdown file and 2-8 local photos as one
+// rollback-safe transaction. Existing files are never overwritten.
+func (w *Workspace) CreateWithImages(path, source, imageName string, images []UploadedImage) ([]string, error) {
+	if len(images) < 2 || len(images) > 8 {
+		return nil, fmt.Errorf("provide 2 to 8 images")
+	}
+	if len(source) > 200000 || !validUploadName(imageName) {
+		return nil, fmt.Errorf("invalid Markdown source or image slug")
+	}
+	local := filepath.Clean(filepath.FromSlash(path))
+	if !filepath.IsLocal(local) || !isMarkdownSource(local) {
+		return nil, fmt.Errorf("new workspace path must be a local Markdown file")
+	}
+	sourceParent, err := w.ensureDirectory(filepath.Dir(local))
+	if err != nil {
+		return nil, err
+	}
+	imageParent, err := w.ensureDirectory(filepath.Join("static", "images"))
+	if err != nil {
+		return nil, err
+	}
+	sourceTarget := filepath.Join(sourceParent, filepath.Base(local))
+	if err := requireNewFile(sourceTarget); err != nil {
+		return nil, err
+	}
+
+	urls := make([]string, 0, len(images))
+	targets := make([]string, 0, len(images))
+	temps := make([]string, 0, len(images))
+	defer func() {
+		for _, tmp := range temps {
+			_ = os.Remove(tmp)
+		}
+	}()
+	if err := prepareMultiImageFiles(imageParent, imageName, images, &urls, &targets, &temps); err != nil {
+		return nil, err
+	}
+	finalSource := SourceWithUploadedImages(source, urls)
+	if len(finalSource) > 200000 {
+		return nil, fmt.Errorf("source exceeds 200,000 bytes")
+	}
+	sourceTemp, err := writeTempBytes(sourceParent, ".markata-editor-*", []byte(finalSource))
+	if err != nil {
+		return nil, err
+	}
+	temps = append(temps, sourceTemp)
+	linked := make([]string, 0, len(images))
+	completed := false
+	defer func() {
+		if !completed {
+			for _, target := range linked {
+				_ = os.Remove(target)
+			}
+		}
+	}()
+	for i, target := range targets {
+		if err := os.Link(temps[i], target); err != nil {
+			return nil, fmt.Errorf("create workspace image: %w", err)
+		}
+		linked = append(linked, target)
+	}
+	if err := os.Link(sourceTemp, sourceTarget); err != nil {
+		return nil, fmt.Errorf("create workspace source: %w", err)
+	}
+	completed = true
+	return urls, nil
+}
+
+// prepareMultiImageFiles validates and stages every photo. The caller owns
+// cleaning up temps on failure and atomically linking the staged files.
+func prepareMultiImageFiles(imageParent, imageName string, images []UploadedImage, urls, targets, temps *[]string) error {
+	total := 0
+	for i, photo := range images {
+		total += len(photo.Data)
+		if len(photo.Data) == 0 || len(photo.Data) > 15<<20 || total > 48<<20 {
+			return fmt.Errorf("photos must be nonempty, at most 15 MiB each and 48 MiB total")
+		}
+		extension, err := ImageExtension(photo.ContentType, photo.Data)
+		if err != nil {
+			return err
+		}
+		filename := fmt.Sprintf("%s-%d.%s", imageName, i+1, extension)
+		target := filepath.Join(imageParent, filename)
+		if err := requireNewFile(target); err != nil {
+			return err
+		}
+		tmp, err := writeTempBytes(imageParent, ".markata-image-*", photo.Data)
+		if err != nil {
+			return err
+		}
+		*temps = append(*temps, tmp)
+		*targets = append(*targets, target)
+		*urls = append(*urls, "/images/"+filename)
+	}
+	return nil
 }
 
 // CreateWithImage atomically creates a Markdown file and a local static image.

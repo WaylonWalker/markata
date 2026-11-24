@@ -20,6 +20,10 @@ Refs #1977 and #1903. The workspace includes the publishing and Changes flow in 
   reachable through the command registry. Disabled views MUST not claim success.
 - Focus MUST return sensibly after closing settings/pickers. Mobile settings MUST
   fit the viewport. Shortcut recording MUST work within the unified window.
+- Choosing a Link starter MUST focus its source URL field in the New Post details
+  dialog. Choosing a photo or shot starter MUST focus its image URL field so the
+  author can paste a URL or clipboard image immediately. Other starters MUST
+  continue to focus the title field.
 - Workspace controls MUST preserve guarded publishing, read-only conflict comparison, and Changes review.
 - The first local preview MUST NOT wait for workspace metadata indexing. It MAY show unresolved
   workspace links and embeds while the index loads, then MUST refresh from the current source
@@ -51,6 +55,11 @@ in [EXCALIDRAW.md](EXCALIDRAW.md). Editing a scene MUST update only its fenced
 JSON body in one normal editor transaction. Applying a new scene MUST insert
 its fence only after the author applies it. Canceling MUST leave the source
 unchanged.
+
+Workspace filesystem watchers MUST prune directories ignored by the configured
+Git ignore rules. They MUST retain the workspace root and watches for discovered
+content directories so new content can be discovered after filesystem events.
+Ignored build and cache trees MUST NOT delay editor startup or receive watchers.
 
 ## Hosted editor access
 
