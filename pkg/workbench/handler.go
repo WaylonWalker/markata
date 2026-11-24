@@ -219,8 +219,15 @@ func buildPresentation(root string, workspace workspaceSource, config lsp.Browse
 	if err != nil {
 		return nil, err
 	}
+	// Only Docker (or another packaging step) supplies the version-matched
+	// WASM bytes. Bare Go builds must remain fully functional without them.
+	wasmVersion := ""
+	if wasm, err := web.ReadFile("web/wasm/markata.wasm"); err == nil {
+		hash := sha256.Sum256(wasm)
+		wasmVersion = fmt.Sprintf("%x", hash[:8])
+	}
 	// Editor CSS precedes theme overrides. Site article layout belongs in the iframe.
-	editorHead := fmt.Sprintf(`<script>window.MARKATA_EXCALIDRAW_RENDERER_VERSION=%q;window.MARKATA_EXCALIDRAW_EXPORT_THEME=%q;</script><link rel="stylesheet" href="/editor/codemirror/lib/codemirror.css"><link rel="stylesheet" href="/editor/codemirror/addon/hint/show-hint.css"><link rel="stylesheet" href="/editor/codemirror/addon/dialog/dialog.css"><link rel="stylesheet" href="/editor/lsp.css"><script src="/editor/lsp.js"></script>`, excalidrawVersion, excalidrawTheme)
+	editorHead := fmt.Sprintf(`<script>window.MARKATA_EXCALIDRAW_RENDERER_VERSION=%q;window.MARKATA_EXCALIDRAW_EXPORT_THEME=%q;window.MARKATA_WASM_VERSION=%q;</script><link rel="stylesheet" href="/editor/codemirror/lib/codemirror.css"><link rel="stylesheet" href="/editor/codemirror/addon/hint/show-hint.css"><link rel="stylesheet" href="/editor/codemirror/addon/dialog/dialog.css"><link rel="stylesheet" href="/editor/lsp.css"><script src="/editor/lsp.js"></script>`, excalidrawVersion, excalidrawTheme, wasmVersion)
 	for _, name := range []string{"lib/codemirror", "mode/xml/xml", "mode/markdown/markdown", "mode/gfm/gfm", "mode/javascript/javascript", "mode/python/python", "mode/css/css", "mode/htmlmixed/htmlmixed", "addon/mode/overlay", "addon/edit/matchbrackets", "addon/hint/show-hint", "addon/search/searchcursor", "addon/dialog/dialog", "keymap/vim", "keymap/emacs", "keymap/sublime"} {
 		editorHead += `<script src="/editor/codemirror/` + name + `.js"></script>`
 	}
@@ -384,6 +391,8 @@ func serve(w http.ResponseWriter, r *http.Request, name string, data []byte) {
 	contentType := mime.TypeByExtension(path.Ext(name))
 	if strings.EqualFold(path.Ext(name), ".woff2") {
 		contentType = "font/woff2"
+	} else if strings.EqualFold(path.Ext(name), ".wasm") {
+		contentType = "application/wasm"
 	}
 	w.Header().Set("Content-Type", contentType)
 	w.Header().Set("ETag", fmt.Sprintf(`"%x"`, sha256.Sum256(data)))
