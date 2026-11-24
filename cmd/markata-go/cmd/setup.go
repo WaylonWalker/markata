@@ -58,7 +58,10 @@ func runSetupCommand(cmd *cobra.Command, args []string) error {
 	existing := ""
 	for _, name := range configNames {
 		candidate := filepath.Join(abs, name)
-		if _, err := os.Stat(candidate); err == nil {
+		if info, err := os.Stat(candidate); err == nil {
+			if !info.Mode().IsRegular() {
+				return fmt.Errorf("configuration is not a regular file: %s", candidate)
+			}
 			existing = name
 			break
 		} else if !os.IsNotExist(err) {
@@ -84,7 +87,7 @@ func runSetupCommand(cmd *cobra.Command, args []string) error {
 	} else {
 		fmt.Fprintf(cmd.OutOrStdout(), "Found existing configuration: %s\n", filepath.Join(abs, existing))
 	}
-	fmt.Fprintf(cmd.OutOrStdout(), "\nWorkspace ready: %s\n\nNext:\n  cd %q\n  markata editor\n\nBuild and preview your site:\n  markata serve\n", abs, abs)
+	fmt.Fprintf(cmd.OutOrStdout(), "\nWorkspace ready: %s\n\nNext:\n  cd %q\n  markata up\n\nOr run services separately:\n  markata editor\n  markata serve\n", abs, abs)
 	return nil
 }
 

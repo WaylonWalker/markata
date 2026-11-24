@@ -23,6 +23,39 @@ The Go server calls Markata's standalone renderer directly. It starts no Python 
 It uses the same Markdown renderer as the [Python API](./python-renderer/) and [FastAPI editor](./fastapi-editor/).
 The preview does not build a site. The language service indexes Markdown and reads workspace configuration for existing mention support.
 
+### Experimental browser-local WASM preview
+
+When built using the repository's Dockerfile, the Go editor also embeds a
+release-matched browser WASM renderer and its Go JavaScript runtime. Ordinary
+local Go builds work without those assets and continue using native Go preview.
+
+The WASM fast path is **opt-in** for controlled testing. Add ?wasm-preview=1
+to the editor URL (including the authenticated HTTPS editor URL when hosted).
+Typing and the first site-aware preview still use the existing Go path while
+the worker initializes. For a plain Markdown document, the worker's HTML and
+source-line mapping must first match a native Go render exactly. Subsequent
+edits in the supported plain-Markdown subset can then render in the browser,
+without a /render request. The editor identifies these as **Quick local
+preview** in the status and diagnostics panel.
+The diagnostics report the worker's WebAssembly linear-memory high-water mark
+for the current editor session.
+
+The worker starts only when the browser reports more than 4 GiB of device
+memory and more than four logical processors. It stays off when reduced data
+use is enabled, the connection reports 2G or slow-2G, or the browser does not
+support Web Workers and WebAssembly.
+The editor also keeps this path disabled when a site configuration is active,
+because the worker does not load site-specific Markdown settings. In these
+cases, the same editor continues to use Go.
+
+Wikilinks, embeddings, code fences, tables, rich plugins, HTML and changed
+frontmatter stay on Go. Any worker error, unavailable assets, missing proof of
+parity, or unsupported dependency falls back to Go; publishing is always
+authoritative server-side. The existing opaque iframe sandbox is preserved.
+This feature does not enable offline publishing or caching of private site
+content. WASM performance and parity must be measured on the real hosted
+deployment before considering default-on behavior.
+
 ### Run behind Hlab Auth
 
 The editor binds to loopback by default. Keep that setting for local work.
@@ -484,6 +517,9 @@ template defaults. The slug field stays empty when using the suggestion; its
 ghost text and the destination path update as the title changes. Enter a custom
 slug only when you want to override the title-derived filename. Creating the
 post opens the new file in the editor, where later edits autosave to the site.
+The Link starter opens with focus in its source URL field. Photo and Shot
+starters open with focus in the image URL field, ready for a pasted URL or
+clipboard image. Other starters open with the title selected.
 The built-in **Link** starter accepts a source URL and can fill in the title,
 description, and preview image from the same configured oEmbed and Open Graph
 providers used by [external embeds](./embeds/). It also imports available site,
@@ -672,3 +708,19 @@ This verification identifies the release's **source Git revision**, not
 its byte-for-byte rendered output, CDN cache rollout, or availability at
 every public edge. Site URL health checks and other deployment providers
 need dedicated follow-up adapters.
+
+
+### Credential-bearing Dropper uploader platform support
+
+A hosted Markata editor can delegate photo uploads to a **separate local
+Dropper uploader process**, so the editor and browser never receive the
+upstream upload token. That capability currently relies on a Unix-domain
+socket with POSIX owner/group permissions (mode `0660`). It is supported
+only on operating systems where those permission bits are enforceable.
+
+On Windows, the credential-bearing Unix-socket uploader **fails closed** with
+an unsupported-platform error. Windows may report `0666` for Unix sockets
+even after `chmod 0660`; a successful chmod call is not evidence of a
+restricted Windows ACL. Use a secure Linux/macOS uploader backend or wait for
+a Windows ACL-based transport to be implemented and tested. This restriction
+does **not** disable the standard local editor or Markdown site builder.

@@ -36,7 +36,7 @@ func TestSetupCreatesConfigAndIsIdempotent(t *testing.T) {
 	if !bytes.Equal(original, after) {
 		t.Fatal("setup modified an existing configuration")
 	}
-	if !strings.Contains(output.String(), "markata editor") {
+	if !strings.Contains(output.String(), "markata up") || !strings.Contains(output.String(), "markata editor") {
 		t.Fatal("setup did not provide next steps")
 	}
 }
@@ -57,6 +57,16 @@ func TestSetupPreservesExistingAlternativeConfig(t *testing.T) {
 	contents, err := os.ReadFile(path)
 	if err != nil || string(contents) != "title: Existing\n" {
 		t.Fatalf("existing config changed: %v, %q", err, contents)
+	}
+}
+
+func TestSetupRejectsDirectoryAsConfig(t *testing.T) {
+	workspace := t.TempDir()
+	if err := os.Mkdir(filepath.Join(workspace, defaultConfigFilename), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := runSetupCommand(&cobra.Command{}, []string{workspace}); err == nil || !strings.Contains(err.Error(), "not a regular file") {
+		t.Fatalf("expected invalid configuration error, got %v", err)
 	}
 }
 

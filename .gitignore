@@ -982,6 +982,8 @@ cache
 output
 output-rendering-contract
 .markata
+docs-site/_site/
+static/.icons/
 
 # Test-generated artifacts (tailwind rebuilds on every test run)
 tests/static/markata-tailwind.css

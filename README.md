@@ -10,7 +10,7 @@ Markata builds static sites from Markdown. Define feeds to filter, sort, and pag
 
 ```sh
 # curl (Linux / macOS)
-curl -fsSL https://raw.githubusercontent.com/WaylonWalker/markata/main/install.sh | bash
+curl -fsSL https://markata.dev/install.sh | bash
 
 # mise
 mise use -g github:WaylonWalker/markata

@@ -6,12 +6,15 @@
     '.publish-mode-tabs', '.publish-side-tabs', '.publish-pierre-actions',
     '.fm-field', '.fm-tag-chip', '.fm-nested-item', '.fm-add-nested',
     '.template-choice', '.settings-body nav', '.recent-files-item', '.CodeMirror',
+    '.header-modes', '#mobile-nav', '#header-doc', '#mobile-editing-toolbar',
+    '#publish-menu', '#publish-menu-toggle', '#cms-publish-toast',
+    '#cms-quick-actions', '.cms-flow-dialog',
     '[role="tab"]', '[role="option"]',
   ].join(',');
-  const PRIMARY = '#publish-open,#publish-confirm,#fm-add,#fm-add-custom,#create-form [type="submit"]';
+  const PRIMARY = '#publish-open,#publish-commit-and-push,#fm-add,#fm-add-custom,#create-form [type="submit"]';
   const DANGER = '#publish-discard-accept';
-  const SUBTLE = '.editor-toolbar > button,#frontmatter-raw,#fm-add-toggle,#fm-more,#preview-focus-editor,#site-sidebar .files-open';
-  const GHOST = '#commands,#publish-review-open,#settings-open,#theme-picker-toggle,#palette-mode-toggle,#diagnostics-toggle,#problems-toggle,.theme-switcher button';
+  const SUBTLE = '.editor-toolbar > button,#frontmatter-raw,#fm-add-toggle,#fm-more,#preview-focus-editor,#site-sidebar .files-open,#header-new-post,#publish-confirm';
+  const GHOST = '#commands,#header-commands,#publish-review-open,#settings-open,#sidebar-toggle,#theme-picker-toggle,#palette-mode-toggle,#diagnostics-toggle,#problems-toggle,.theme-switcher button';
   const SMALL = '#preview-focus-editor,#diagnostics-toggle,#problems-toggle,#workspace-conflict-review,#fm-add-toggle';
   const KBD = {
     'publish-open': 'Ctrl+S',
@@ -22,7 +25,7 @@
   const isClose = (button) => /(^|-)close$/.test(button.id)
     || /(^|\s)[\w-]*-close(\s|$)/.test(button.className.toString())
     || /^close\b/i.test(button.getAttribute('aria-label') || '');
-  const isIcon = (button) => isClose(button) || button.id === 'settings-open';
+  const isIcon = (button) => isClose(button) || button.id === 'settings-open' || button.id === 'sidebar-toggle' || button.id === 'header-commands';
 
   function style(button) {
     if (button.matches(SKIP) || button.closest(SKIP)) return;

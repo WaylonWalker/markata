@@ -403,6 +403,16 @@ The artifact is enabled by default and does not require a configuration entry.
 It is part of the generated output, so Builder Admin carries it into each
 successful release automatically.
 
+`markata-go.diagnostics_artifact.compression` optionally selects the on-disk
+encoding. The default `none` writes the path above. The value `gzip` writes the
+same complete version-1 JSON bytes losslessly to
+`<output_dir>/.markata/diagnostics.json.gz` and removes the stale counterpart
+only after successful publication. Builder Admin builds MUST select `gzip` so
+large diagnostic entries do not dominate release publication. Builder Admin
+readers MUST apply size limits to the uncompressed artifact and MUST be able to
+read generator and source revisions from the bounded artifact header without
+inflating the entry array. Unsupported compression values MUST fail cleanup.
+
 ### Versioned wire format
 
 The artifact uses this top-level shape:

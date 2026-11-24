@@ -78,6 +78,50 @@ topic-based skill, use `markata agent install` followed by
 `markata agent doctor`. See [Agent Skills](/docs/guides/agent-skills/).
 This root-level flag does not take a Markdown filename argument.
 
+## Local editor and preview: `up`
+
+`markata up` supervises a local Markdown editor and static-site builder
+using the existing Go services. It binds both components to loopback and
+stops only processes started by this invocation. A builder failure does not
+prevent editing; saving a draft never publishes your site.
+
+```sh
+markata up
+markata up --editor-port 8767 --preview-port 8001
+markata up --editor-only
+markata up --builder-only
+markata up --strict-ports        # fail rather than move default ports
+```
+
+By default, an occupied editor/preview port triggers a search for a free
+loopback port, and Markata prints the actual URL. The command reuses any
+existing same-workspace Markata editor/preview it recognizes through its
+local-only identity endpoint. Explicit `--editor-port` and `--preview-port`
+are never silently changed; `--strict-ports` also fixes defaults.
+An unknown listener is never stopped or adopted.
+
+The URLs shown at startup are expected addresses, not verified readiness.
+Ctrl+C requests shutdown; Windows may require forcefully terminating owned
+children. This optional foreground convenience does not configure hosting or
+pairing. See [Workspace Up](/docs/guides/workspace-up/).
+
+## Optional workspace bootstrap: `setup`
+
+`markata setup [workspace]` creates a default site configuration in a new
+workspace without overwriting an existing config. It works noninteractively
+and preserves supported legacy configuration names.
+
+```sh
+markata setup my-site
+cd my-site
+markata up
+```
+
+Use `markata editor` and `markata serve` instead when independent services are
+preferred. This optional command does not install an agent, choose a hosting
+provider, start a background service, or publish. For primary agent-first
+onboarding, use `markata --skill`.
+
 ## Agent-assisted troubleshooting: `triage`
 
 `markata triage` collects a small, privacy-conscious diagnostic summary and passes a troubleshooting prompt to an interactive coding agent, clipboard, or stdout. The default is a fuzzy picker of **detected installed** coding agents plus clipboard and stdout. When either terminal stream is redirected or `--no-input` is used, it prints **only the Markdown prompt** to stdout.
@@ -2622,21 +2666,3 @@ See the [workspace file tree guide](/docs/guides/renderer-site-tree/).
 Use `markata workspace --paths --workspace PATH` to list discovered source paths
 without loading document metadata. The editor uses this fast path on startup and
 loads titles and tags in the background.
-
-
-## Optional workspace bootstrap: `setup`
-
-`markata setup [workspace]` creates a default site configuration in a new
-workspace without overwriting an existing config. It works noninteractively
-and preserves supported legacy configuration names.
-
-```sh
-markata setup my-site
-cd my-site
-markata editor
-markata serve
-```
-
-This optional command does not install an agent, choose a hosting provider,
-start a background service, or publish. For the primary agent-first onboarding,
-use `markata --skill`.

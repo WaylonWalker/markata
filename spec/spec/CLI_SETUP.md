@@ -17,8 +17,9 @@ identity, template-selection, or deployment wizard. For agent-chosen setup use
   never silently create a competing config that Markata itself cannot discover.
 - In a new empty workspace, create the built-in default TOML file atomically
   with exclusive creation; never overwrite a concurrent or existing file.
-- Print the workspace path and immediate `markata editor` and `markata serve`
-  commands. Do not claim `markata up` is available until it is shipped.
+- Print the workspace path and recommend `markata up` for local authoring,
+  with `markata editor` and `markata serve` as independent alternatives.
+- Reject a directory or other non-regular file at a supported config path.
 - No public publish/deploy, agent installation, network access or credential
   changes. Run without a TUI and in noninteractive agent environments.
 
