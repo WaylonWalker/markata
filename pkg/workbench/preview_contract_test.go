@@ -11,7 +11,7 @@ import (
 func TestHandler_PreviewContractV1(t *testing.T) {
 	h := newHandler(t)
 	for _, tc := range []struct {
-		name, body string
+		name, body   string
 		wantDocument bool
 	}{
 		{"first frame", `{"markdown":"# First\n\nSecond paragraph","include_document":true}`, true},
