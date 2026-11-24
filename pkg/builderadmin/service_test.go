@@ -414,6 +414,8 @@ func TestHandleIndex_RendersOperationalSummary(t *testing.T) {
 		`data-capabilities=`, `sourceMutation&#34;:false`, `enqueueBuild&#34;:true`,
 		`const capabilities = JSON.parse(document.body.dataset.capabilities || '{}')`,
 		`data-capability="enqueueBuild"`,
+		`Build if changed`,
+		`Force full build`,
 		`id="active-work-detail"`,
 		`let buildsFingerprint = ''`,
 		`let refreshFingerprint = ''`,

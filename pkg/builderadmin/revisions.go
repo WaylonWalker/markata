@@ -55,7 +55,7 @@ func compareBuilderRevisions(current string, state State, publishedCommit string
 	var latest *BuildRecord
 	for i := range state.Builds {
 		record := &state.Builds[i]
-		if record.Kind == "rollback" || record.RollbackRelease != "" || record.Status != "success" {
+		if record.Kind == "rollback" || record.RollbackRelease != "" || record.Result == "unchanged" || record.Status != "success" {
 			continue
 		}
 		if latest == nil || record.FinishedAt.After(latest.FinishedAt) {
@@ -97,7 +97,7 @@ func startupRevisionBuildReason(current string, state State, publishedCommit str
 	var latest *BuildRecord
 	for i := range state.Builds {
 		record := &state.Builds[i]
-		if record.Status != "success" || record.Kind == "rollback" || record.RollbackRelease != "" {
+		if record.Status != "success" || record.Result == "unchanged" || record.Kind == "rollback" || record.RollbackRelease != "" {
 			continue
 		}
 		if latest == nil || record.FinishedAt.After(latest.FinishedAt) {
