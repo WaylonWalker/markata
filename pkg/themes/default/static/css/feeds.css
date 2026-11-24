@@ -1,6 +1,8 @@
 /* Photo grids manage their own responsive main-content width and pinned drawer offsets. */
-/* Give feed pages a calm opaque reading surface matching article.post. */
-.feed.h-feed {
+/* Give standalone feed pages a calm opaque reading surface matching article.post.
+ * Scoped to direct children of .main-content so embedded render_feed() widgets on
+ * homepages or inside posts do not get double-boxed. */
+.main-content > .feed.h-feed {
   background: var(--article-bg, var(--color-background));
   border: 1px solid var(--color-border-soft, var(--color-border));
   border-radius: var(--article-radius, var(--radius-lg, 12px));
