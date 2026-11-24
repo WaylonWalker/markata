@@ -495,7 +495,7 @@ func (h *Handler) prepareRender(r *http.Request, req *renderRequest) (*renderRes
 	if fontpack == "" {
 		fontpack = h.appearance.Defaults[workbenchFontpackAttribute]
 	}
-	response := &renderResponse{HTML: previewResult.HTML, SourceLines: h.renderer.SourceLines(markdown), SourceAnchors: sourceAnchors, FeatureHeadHTML: h.featureHead(result, fontpack), BodyEndHTML: result.BodyEndHTML, InputBytes: len(*req.Markdown), HTMLBytes: len(previewResult.HTML), Cached: cached}
+	response := &renderResponse{SchemaVersion: 1, HTML: previewResult.HTML, SourceLines: h.renderer.SourceLines(markdown), SourceAnchors: sourceAnchors, FeatureHeadHTML: h.featureHead(result, fontpack), BodyEndHTML: result.BodyEndHTML, InputBytes: len(*req.Markdown), HTMLBytes: len(previewResult.HTML), Cached: cached}
 	if req.IncludeDocument == nil || *req.IncludeDocument {
 		document := h.document(&previewResult, req.Appearance)
 		response.Document, response.DocumentBytes = &document, len(document)
@@ -519,6 +519,7 @@ type renderRequest struct {
 
 // renderResponse matches the Python reference's full-document/fragment contract.
 type renderResponse struct {
+	SchemaVersion   int     `json:"schema_version"`
 	Document        *string `json:"document"`
 	HTML            string  `json:"html"`
 	SourceLines     []int   `json:"source_lines"`
