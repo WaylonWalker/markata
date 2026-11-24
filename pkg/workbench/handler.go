@@ -362,6 +362,19 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.NotFound(w, r)
 			return
 		}
+		if name == "wasm/markata.wasm" {
+			// The authenticated worker is served with the same authorization
+			// boundary as /editor/. Content-encoding saves the large cold
+			// download without compressing at runtime or caching private data.
+			w.Header().Set("Vary", "Accept-Encoding")
+			if strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
+				if compressed, err := web.ReadFile("web/wasm/markata.wasm.gz"); err == nil {
+					w.Header().Set("Content-Encoding", "gzip")
+					serve(w, r, name, compressed)
+					return
+				}
+			}
+		}
 		serve(w, r, name, data)
 	default:
 		http.NotFound(w, r)
