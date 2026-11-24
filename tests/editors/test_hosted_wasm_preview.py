@@ -128,9 +128,11 @@ def main():
                 browser = driver.chromium.launch(headless=True)
                 try:
                     context = browser.new_context()
-                    # Headless Chromium omits deviceMemory. Simulate a capable
-                    # device so this test exercises the worker path itself.
-                    context.add_init_script("Object.defineProperty(navigator, 'deviceMemory', {get: () => 8})")
+                    # Headless Chromium omits deviceMemory and reports the
+                    # container CPU limit. Simulate a capable device so this
+                    # test exercises the worker path.
+                    context.add_init_script("""Object.defineProperty(navigator, 'deviceMemory', {get: () => 8});
+                      Object.defineProperty(navigator, 'hardwareConcurrency', {get: () => 8});""")
                     page = context.new_page()
                     rendered_requests = []
                     errors = []
