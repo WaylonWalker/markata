@@ -135,6 +135,9 @@ func TestNoOpRejectsCurrentReleaseOutsideReleaseRoot(t *testing.T) {
 }
 
 func TestNoOpBuilderFingerprintDetectsExecutableRewrite(t *testing.T) {
+	if !fileidentity.Available {
+		t.Skip("verified no-op requires Linux file identity")
+	}
 	svc := &Service{executable: filepath.Join(t.TempDir(), "builder")}
 	if err := os.WriteFile(svc.executable, []byte("first"), 0o700); err != nil {
 		t.Fatal(err)
