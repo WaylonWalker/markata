@@ -163,6 +163,48 @@ func TestImageOptimizationWriteOptimizesRepeatedTargetsOnce(t *testing.T) {
 	}
 }
 
+func TestImageOptimizationWritePreservesRepeatedPictureMarkup(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("test fake encoder requires a POSIX shell")
+	}
+
+	outputDir := t.TempDir()
+	cacheDir := filepath.Join(t.TempDir(), "image-cache")
+	if err := os.WriteFile(filepath.Join(outputDir, "avatar.png"), []byte("source image"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	encoder := filepath.Join(t.TempDir(), "fake-cwebp")
+	script := "#!/bin/sh\nwhile [ \"$#\" -gt 1 ]; do shift; done\nprintf 'webp' > \"$1\"\n"
+	if err := os.WriteFile(encoder, []byte(script), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(encoder, 0o700); err != nil {
+		t.Fatal(err)
+	}
+
+	manager := lifecycle.NewManager()
+	manager.Config().OutputDir = outputDir
+	post := models.NewPost("post.md")
+	post.HTML = `<p><img src="/avatar.png" alt="First"></p><p><img src="/avatar.png" alt="Second"></p>`
+	manager.SetPosts([]*models.Post{post})
+
+	plugin := NewImageOptimizationPlugin()
+	plugin.config = defaultImageOptimizationConfig()
+	plugin.config.CacheDir = cacheDir
+	plugin.config.Widths = []int{480}
+	plugin.availableFormats = []string{formatWebP}
+	plugin.cwebpPath = encoder
+	if err := plugin.Write(manager); err != nil {
+		t.Fatalf("Write() error = %v", err)
+	}
+	if got := strings.Count(post.HTML, "<picture>"); got != 2 {
+		t.Fatalf("picture markup count = %d, want 2: %s", got, post.HTML)
+	}
+	if plugin.stats.targetOccurrences != 2 || plugin.stats.uniqueTargets != 1 || plugin.stats.encoderCalls != 1 {
+		t.Fatalf("image optimization stats = %+v, want two occurrences and one encode", plugin.stats)
+	}
+}
+
 func TestImageOptimization_StatsCountEncoderCallsAndCacheHits(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("test fake encoder requires a POSIX shell")
