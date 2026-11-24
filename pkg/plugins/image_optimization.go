@@ -43,7 +43,7 @@ type ImageOptimizationPlugin struct {
 }
 
 type imageOptimizationStats struct {
-	targets, missingSources, variantsChecked, cacheHits, cacheMisses, encoderCalls, encoderFailures int
+	targetOccurrences, uniqueTargets, missingSources, variantsChecked, cacheHits, cacheMisses, encoderCalls, encoderFailures int
 }
 
 // ImageOptimizationConfig holds configuration for image optimization.
@@ -159,10 +159,14 @@ func (p *ImageOptimizationPlugin) Write(m *lifecycle.Manager) error {
 	}
 
 	targets := p.collectTargets(m)
+	p.stats.targetOccurrences = len(targets)
 	if len(targets) == 0 {
 		p.logSummary()
 		return nil
 	}
+
+	outputDir := m.Config().OutputDir
+	targets = deduplicateImageOptimizationTargets(outputDir, targets, p.config.Widths)
 
 	cacheDir := p.config.CacheDir
 	if cacheDir == "" {
@@ -172,7 +176,6 @@ func (p *ImageOptimizationPlugin) Write(m *lifecycle.Manager) error {
 		return fmt.Errorf("create image cache dir: %w", err)
 	}
 
-	outputDir := m.Config().OutputDir
 	for _, target := range targets {
 		if err := p.optimizeTarget(outputDir, cacheDir, target); err != nil {
 			return err
@@ -184,7 +187,7 @@ func (p *ImageOptimizationPlugin) Write(m *lifecycle.Manager) error {
 }
 
 func (p *ImageOptimizationPlugin) optimizeTarget(outputDir, cacheDir string, target imageOptimizationTarget) error {
-	p.stats.targets++
+	p.stats.uniqueTargets++
 	outputPath, err := resolveImageOutputPath(outputDir, target)
 	if err != nil {
 		p.stats.missingSources++
@@ -212,8 +215,12 @@ func (p *ImageOptimizationPlugin) optimizeTarget(outputDir, cacheDir string, tar
 }
 
 func (p *ImageOptimizationPlugin) logSummary() {
-	imageOptimizationLog.Printf("targets=%d missing_sources=%d variants=%d cache_hits=%d cache_misses=%d encoder_calls=%d encoder_failures=%d",
-		p.stats.targets, p.stats.missingSources, p.stats.variantsChecked, p.stats.cacheHits,
+	targetOccurrences := p.stats.targetOccurrences
+	if targetOccurrences < p.stats.uniqueTargets {
+		targetOccurrences = p.stats.uniqueTargets
+	}
+	imageOptimizationLog.Printf("targets=%d unique_targets=%d duplicate_targets=%d missing_sources=%d variants=%d cache_hits=%d cache_misses=%d encoder_calls=%d encoder_failures=%d",
+		targetOccurrences, p.stats.uniqueTargets, targetOccurrences-p.stats.uniqueTargets, p.stats.missingSources, p.stats.variantsChecked, p.stats.cacheHits,
 		p.stats.cacheMisses, p.stats.encoderCalls, p.stats.encoderFailures)
 }
 
@@ -718,6 +725,51 @@ func (p *ImageOptimizationPlugin) collectTargets(m *lifecycle.Manager) []imageOp
 		}
 	}
 	return targets
+}
+
+type imageOptimizationTargetKey struct {
+	outputPath  string
+	invalidSrc  string
+	invalidSlug string
+}
+
+// deduplicateImageOptimizationTargets keeps every HTML reference intact while
+// scheduling work once per output file with the union of its requested widths.
+func deduplicateImageOptimizationTargets(outputDir string, targets []imageOptimizationTarget, defaultWidths []int) []imageOptimizationTarget {
+	if len(targets) < 2 {
+		return targets
+	}
+
+	unique := make([]imageOptimizationTarget, 0, len(targets))
+	indexes := make(map[imageOptimizationTargetKey]int, len(targets))
+	for _, target := range targets {
+		key := imageOptimizationTargetKey{}
+		widths := target.Widths
+		if len(widths) == 0 {
+			widths = defaultWidths
+		}
+		widths = normalizeWidths(widths)
+
+		if outputPath, err := resolveImageOutputPath(outputDir, target); err == nil {
+			key.outputPath = outputPath
+		} else {
+			key.invalidSrc = target.Src
+			key.invalidSlug = target.PostSlug
+		}
+
+		if index, exists := indexes[key]; exists {
+			if key.outputPath != "" {
+				unique[index].Widths = normalizeWidths(append(unique[index].Widths, widths...))
+			}
+			continue
+		}
+		indexes[key] = len(unique)
+		if key.outputPath != "" {
+			target.Widths = widths
+		}
+		unique = append(unique, target)
+	}
+	return unique
 }
 
 func isLocalImageSrc(src string) bool {

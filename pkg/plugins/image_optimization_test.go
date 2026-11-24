@@ -72,8 +72,136 @@ func TestImageOptimization_StatsCountMissingSource(t *testing.T) {
 	if err := plugin.optimizeTarget(t.TempDir(), t.TempDir(), imageOptimizationTarget{Src: "/images/missing.jpg"}); err != nil {
 		t.Fatalf("optimizeTarget error: %v", err)
 	}
-	if plugin.stats.targets != 1 || plugin.stats.missingSources != 1 {
+	if plugin.stats.uniqueTargets != 1 || plugin.stats.missingSources != 1 {
 		t.Fatalf("unexpected image stats: %+v", plugin.stats)
+	}
+}
+
+func TestDeduplicateImageOptimizationTargetsByOutputPath(t *testing.T) {
+	targets := []imageOptimizationTarget{
+		{Src: "/avatar.png", PostSlug: "first", Widths: []int{480, 768}},
+		{Src: "/avatar.png", PostSlug: "second", Widths: []int{480, 768, 1200}},
+		{Src: "/avatar.png", PostSlug: "third", Widths: []int{160}},
+		{Src: "images/cat.png", PostSlug: "first"},
+		{Src: "images/cat.png", PostSlug: "first", Widths: []int{480, 160}},
+		{Src: "images/cat.png", PostSlug: "second"},
+		{Src: "/../escape.png", Widths: []int{160}},
+		{Src: "/../escape.png", Widths: []int{160}},
+	}
+
+	unique := deduplicateImageOptimizationTargets("output", targets, []int{160, 480})
+	if len(unique) != 4 {
+		t.Fatalf("deduplicated targets = %d, want 4: %#v", len(unique), unique)
+	}
+
+	wantSources := []string{"/avatar.png", "images/cat.png", "images/cat.png", "/../escape.png"}
+	for i, want := range wantSources {
+		if unique[i].Src != want {
+			t.Errorf("unique[%d].Src = %q, want %q", i, unique[i].Src, want)
+		}
+	}
+	if !reflect.DeepEqual(unique[0].Widths, []int{160, 480, 768, 1200}) {
+		t.Fatalf("deduplication did not union requested responsive widths: %#v", unique[0].Widths)
+	}
+	if !reflect.DeepEqual(unique[1].Widths, []int{160, 480}) {
+		t.Fatalf("deduplication did not apply default responsive widths: %#v", unique[1].Widths)
+	}
+}
+
+func TestImageOptimizationWriteOptimizesRepeatedTargetsOnce(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("test fake encoder requires a POSIX shell")
+	}
+
+	outputDir := t.TempDir()
+	cacheDir := filepath.Join(t.TempDir(), "image-cache")
+	if err := os.WriteFile(filepath.Join(outputDir, "avatar.png"), []byte("source image"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	encoder := filepath.Join(t.TempDir(), "fake-cwebp")
+	script := "#!/bin/sh\nwhile [ \"$#\" -gt 1 ]; do shift; done\nprintf 'webp' > \"$1\"\n"
+	if err := os.WriteFile(encoder, []byte(script), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(encoder, 0o700); err != nil {
+		t.Fatal(err)
+	}
+
+	manager := lifecycle.NewManager()
+	manager.Config().OutputDir = outputDir
+	post := models.NewPost("post.md")
+	post.Extra = map[string]any{
+		"image_optimization": []imageOptimizationTarget{
+			{Src: "/avatar.png", PostSlug: "first", Widths: []int{320, 480}},
+			{Src: "/avatar.png", PostSlug: "second", Widths: []int{480, 768}},
+		},
+	}
+	manager.SetPosts([]*models.Post{post})
+
+	plugin := NewImageOptimizationPlugin()
+	plugin.config = defaultImageOptimizationConfig()
+	plugin.config.CacheDir = cacheDir
+	plugin.availableFormats = []string{formatWebP}
+	plugin.cwebpPath = encoder
+
+	for run := 0; run < 2; run++ {
+		if err := plugin.Write(manager); err != nil {
+			t.Fatalf("Write() run %d error = %v", run+1, err)
+		}
+		if plugin.stats.targetOccurrences != 2 || plugin.stats.uniqueTargets != 1 {
+			t.Fatalf("run %d target counts = (%d, %d), want (2 occurrences, 1 unique)", run+1, plugin.stats.targetOccurrences, plugin.stats.uniqueTargets)
+		}
+		if plugin.stats.variantsChecked != 3 {
+			t.Errorf("run %d variants checked = %d, want 3 unique widths", run+1, plugin.stats.variantsChecked)
+		}
+		if run == 0 && (plugin.stats.encoderCalls != 3 || plugin.stats.cacheHits != 0) {
+			t.Errorf("first run stats = %+v, want three encodes and no cache hit", plugin.stats)
+		}
+		if run == 1 && (plugin.stats.encoderCalls != 0 || plugin.stats.cacheHits != 3) {
+			t.Errorf("second run stats = %+v, want three cache hits and no encode", plugin.stats)
+		}
+	}
+}
+
+func TestImageOptimizationWritePreservesRepeatedPictureMarkup(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("test fake encoder requires a POSIX shell")
+	}
+
+	outputDir := t.TempDir()
+	cacheDir := filepath.Join(t.TempDir(), "image-cache")
+	if err := os.WriteFile(filepath.Join(outputDir, "avatar.png"), []byte("source image"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	encoder := filepath.Join(t.TempDir(), "fake-cwebp")
+	script := "#!/bin/sh\nwhile [ \"$#\" -gt 1 ]; do shift; done\nprintf 'webp' > \"$1\"\n"
+	if err := os.WriteFile(encoder, []byte(script), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(encoder, 0o700); err != nil {
+		t.Fatal(err)
+	}
+
+	manager := lifecycle.NewManager()
+	manager.Config().OutputDir = outputDir
+	post := models.NewPost("post.md")
+	post.HTML = `<p><img src="/avatar.png" alt="First"></p><p><img src="/avatar.png" alt="Second"></p>`
+	manager.SetPosts([]*models.Post{post})
+
+	plugin := NewImageOptimizationPlugin()
+	plugin.config = defaultImageOptimizationConfig()
+	plugin.config.CacheDir = cacheDir
+	plugin.config.Widths = []int{480}
+	plugin.availableFormats = []string{formatWebP}
+	plugin.cwebpPath = encoder
+	if err := plugin.Write(manager); err != nil {
+		t.Fatalf("Write() error = %v", err)
+	}
+	if got := strings.Count(post.HTML, "<picture>"); got != 2 {
+		t.Fatalf("picture markup count = %d, want 2: %s", got, post.HTML)
+	}
+	if plugin.stats.targetOccurrences != 2 || plugin.stats.uniqueTargets != 1 || plugin.stats.encoderCalls != 1 {
+		t.Fatalf("image optimization stats = %+v, want two occurrences and one encode", plugin.stats)
 	}
 }
 
