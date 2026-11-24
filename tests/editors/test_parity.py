@@ -56,7 +56,13 @@ def check_excalidraw_fence_controls(page):
     canvas = page.locator('#excalidraw-canvas .excalidraw')
     expect(canvas).to_be_visible(timeout=30000)
     expect(canvas).to_have_class(re.compile(r'\btheme--dark\b'))
+    page.evaluate("""() => {
+      const dialog = document.querySelector('#excalidraw-dialog');
+      window.__excalidrawDialogClosed = new Promise(resolve =>
+        dialog.addEventListener('close', resolve, {once:true}));
+    }""")
     page.locator('#excalidraw-cancel').click()
+    page.evaluate('() => window.__excalidrawDialogClosed')
     expect(dialog).not_to_be_visible()
     show = page.locator('.excalidraw-fence-controls').get_by_role('button', name='Show Excalidraw JSON')
     expect(show).to_be_visible()
