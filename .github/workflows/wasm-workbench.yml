@@ -14,6 +14,13 @@ on:
       - 'scripts/wasm-assets/**'
       - 'scripts/wasm-workbench.py'
       - 'tests/wasm/**'
+      - 'pkg/workbench/web/wasm-preview.js'
+      - 'pkg/workbench/web/wasm-preview.test.cjs'
+      - 'pkg/workbench/web/wasm/worker.js'
+      - 'pkg/workbench/handler.go'
+      - 'pkg/workbench/wasm_bundle_test.go'
+      - 'tests/editors/test_hosted_wasm_preview.py'
+      - 'Dockerfile'
       - 'go.mod'
       - 'go.sum'
   workflow_dispatch:
@@ -42,3 +49,37 @@ jobs:
           name: markata-wasm-workbench
           path: .wasm-workbench/
           include-hidden-files: true
+  hosted-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version: '1.27'
+          cache: true
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - name: Validate browser code and preview decision tests
+        run: |
+          node --check pkg/workbench/web/wasm-preview.js
+          node --check pkg/workbench/web/wasm/worker.js
+          node --check pkg/workbench/web/app.js
+          node --test pkg/workbench/web/preview-contract.test.cjs pkg/workbench/web/wasm-preview.test.cjs
+      - name: Build release-matched WASM assets and native editor
+        run: |
+          GOOS=js GOARCH=wasm CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o pkg/workbench/web/wasm/markata.wasm ./cmd/markata-wasm
+          cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" pkg/workbench/web/wasm/wasm_exec.js
+          go build -o /tmp/markata-editor ./cmd/markata-go
+      - name: Verify bundle routing and MIME
+        run: go test ./pkg/workbench -run 'TestHandler_OptionalBundledWasmPreview|TestHandler_PreviewContractV1' -count=1
+      - name: Install browser runner
+        run: |
+          python -m pip install playwright==1.64.1
+          python -m playwright install --with-deps chromium
+      - name: Exercise local preview and native fallback
+        run: python tests/editors/test_hosted_wasm_preview.py --go-binary /tmp/markata-editor
