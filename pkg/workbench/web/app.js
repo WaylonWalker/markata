@@ -1123,18 +1123,44 @@ async function render() {
   const editAt = lastEditAt;
   const renderMode = activePreviewMode();
   try {
-    const response = await fetch('/render', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({markdown, frontmatter_source:frontmatter?.[0] || '', include_document:!previewStarted, appearance:Object.fromEntries(Object.entries(attributes()).filter(([,v])=>v))}),
-      signal:controller.signal
-    });
-    const payload = await response.json();
-    const responseAt = performance.now();
-    if (version !== revision) return;
-    if (!response.ok) throw new Error(payload.error || 'Rendering failed.');
-    const data = window.MarkataPreviewContract.fromGo(payload, sourceLineOffset, initialDocument);
+    let data, responseAt, engine = 'go';
+    if (canUseWasmPreview(markdown, frontmatter?.[0], sourceLineOffset)) {
+      try {
+        const reply = await wasmWorker.render(markdown);
+        if (version !== revision) return;
+        const local = window.MarkataPreviewContract.fromWasm(reply.result,
+          {render_ms: reply.render_ms, input_bytes: bytes});
+        const html = wasmParity.prefix + local.html;
+        data = {...local, html,
+          source_lines: local.source_lines.map(line => line + sourceLineOffset),
+          source_offset: sourceLineOffset,
+          html_bytes: new TextEncoder().encode(html).length};
+        responseAt = performance.now();
+        engine = 'wasm';
+      } catch (error) {
+        // Retain the last valid frame. Retry through the authoritative Go path.
+        wasmParity = null;
+        console.warn('Local preview fell back to Go:', error);
+      }
+    }
+    if (!data) {
+      const response = await fetch('/render', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({markdown, frontmatter_source:frontmatter?.[0] || '', include_document:!previewStarted, appearance:Object.fromEntries(Object.entries(attributes()).filter(([,v])=>v))}),
+        signal:controller.signal
+      });
+      const payload = await response.json();
+      responseAt = performance.now();
+      if (version !== revision) return;
+      if (!response.ok) throw new Error(payload.error || 'Rendering failed.');
+      data = window.MarkataPreviewContract.fromGo(payload, sourceLineOffset, initialDocument);
+      lastGoPreview = {data, markdown, sourceLineOffset, version,
+        documentId: previewDocumentIdentity(), frontmatter: frontmatter?.[0] || ''};
+      if (wasmReady) queueMicrotask(() => void certifyWasm(lastGoPreview));
+    }
     scrollSync.update(data.source_lines, false, sourceLineOffset, data.source_anchors);
-    activeRender = {data, version, editAt, startedAt:started, responseAt, mode:renderMode, initialDocument};
+    activeRender = {data, version, editAt, startedAt:started, responseAt,
+      mode:renderMode, engine, initialDocument};
     if (!previewStarted) {
       previewStarted = true;
       frame.onload = markPreviewLoadComplete;
