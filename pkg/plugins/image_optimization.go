@@ -72,13 +72,13 @@ type imageOptimizationVariant struct {
 }
 
 type imageOptimizationCacheEntry struct {
-	SourcePath    string `json:"source_path"`
-	SourceSize    int64  `json:"source_size"`
-	SourceModTime int64  `json:"source_mod_time"`
-	Format        string `json:"format"`
-	Width         int    `json:"width"`
-	Quality       int    `json:"quality"`
-	Encoder       string `json:"encoder"`
+	SourcePath string `json:"source_path"`
+	SourceSize int64  `json:"source_size"`
+	SourceHash string `json:"source_hash"`
+	Format     string `json:"format"`
+	Width      int    `json:"width"`
+	Quality    int    `json:"quality"`
+	Encoder    string `json:"encoder"`
 }
 
 var responsiveRemoteImageWidths = []int{32, 48, 64, 88, 96, 120, 160, 240, 320, 480, 600, 800, 960, 1200, 1600}
@@ -207,13 +207,17 @@ func (p *ImageOptimizationPlugin) optimizeTarget(outputDir, cacheDir string, tar
 		imageOptimizationLog.Warnf("source image not found: %s", outputPath)
 		return nil
 	}
+	sourceHash, err := hashImageSource(outputPath)
+	if err != nil {
+		return fmt.Errorf("hash source image %s: %w", outputPath, err)
+	}
 
 	widths := target.Widths
 	if len(widths) == 0 {
 		widths = p.config.Widths
 	}
 	for _, format := range p.availableFormats {
-		if err := p.optimizeImageFormat(outputPath, cacheDir, info, format, widths); err != nil {
+		if err := p.optimizeImageFormat(outputPath, cacheDir, info, sourceHash, format, widths); err != nil {
 			return err
 		}
 	}
@@ -230,7 +234,7 @@ func (p *ImageOptimizationPlugin) logSummary() {
 		p.stats.cacheMisses, p.stats.encoderCalls, p.stats.encoderFailures)
 }
 
-func (p *ImageOptimizationPlugin) optimizeImageFormat(outputPath, cacheDir string, info os.FileInfo, format string, widths []int) error {
+func (p *ImageOptimizationPlugin) optimizeImageFormat(outputPath, cacheDir string, info os.FileInfo, sourceHash, format string, widths []int) error {
 	if shouldSkipFormat(outputPath, format) {
 		return nil
 	}
@@ -251,7 +255,7 @@ func (p *ImageOptimizationPlugin) optimizeImageFormat(outputPath, cacheDir strin
 
 		cachePath := imageOptimizationCachePath(cacheDir, outputPath, format, variant.Width, quality, encoder)
 		p.stats.variantsChecked++
-		if isImageCacheValid(cachePath, outputPath, info, format, variant.Width, quality, encoder, variant.Path) {
+		if isImageCacheValid(cachePath, outputPath, info, sourceHash, format, variant.Width, quality, encoder, variant.Path) {
 			p.stats.cacheHits++
 			continue
 		}
@@ -261,7 +265,7 @@ func (p *ImageOptimizationPlugin) optimizeImageFormat(outputPath, cacheDir strin
 			imageOptimizationLog.Warnf("%v", err)
 			continue
 		}
-		if err := writeImageCache(cachePath, outputPath, info, format, variant.Width, quality, encoder); err != nil {
+		if err := writeImageCache(cachePath, outputPath, info, sourceHash, format, variant.Width, quality, encoder); err != nil {
 			imageOptimizationLog.Warnf("cache write failed: %v", err)
 		}
 	}
@@ -1019,7 +1023,23 @@ func imageOptimizationCachePath(cacheDir, sourcePath, format string, width, qual
 	return filepath.Join(cacheDir, hex.EncodeToString(hasher.Sum(nil))+".json")
 }
 
-func isImageCacheValid(cachePath, sourcePath string, info os.FileInfo, format string, width, quality int, encoder, destPath string) bool {
+// hashImageSource gives the image cache a stable content identity even when a
+// build recopies the same asset and changes only its output-file timestamp.
+func hashImageSource(sourcePath string) (string, error) {
+	file, err := os.Open(sourcePath)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	hasher := sha256.New()
+	if _, err := io.Copy(hasher, file); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(hasher.Sum(nil)), nil
+}
+
+func isImageCacheValid(cachePath, sourcePath string, info os.FileInfo, sourceHash, format string, width, quality int, encoder, destPath string) bool {
 	if _, err := os.Stat(destPath); err != nil {
 		return false
 	}
@@ -1035,21 +1055,21 @@ func isImageCacheValid(cachePath, sourcePath string, info os.FileInfo, format st
 	if entry.SourcePath != sourcePath || entry.Format != format || entry.Width != width || entry.Quality != quality || entry.Encoder != encoder {
 		return false
 	}
-	if entry.SourceSize != info.Size() || entry.SourceModTime != info.ModTime().UnixNano() {
+	if entry.SourceSize != info.Size() || entry.SourceHash != sourceHash {
 		return false
 	}
 	return true
 }
 
-func writeImageCache(cachePath, sourcePath string, info os.FileInfo, format string, width, quality int, encoder string) error {
+func writeImageCache(cachePath, sourcePath string, info os.FileInfo, sourceHash, format string, width, quality int, encoder string) error {
 	entry := imageOptimizationCacheEntry{
-		SourcePath:    sourcePath,
-		SourceSize:    info.Size(),
-		SourceModTime: info.ModTime().UnixNano(),
-		Format:        format,
-		Width:         width,
-		Quality:       quality,
-		Encoder:       encoder,
+		SourcePath: sourcePath,
+		SourceSize: info.Size(),
+		SourceHash: sourceHash,
+		Format:     format,
+		Width:      width,
+		Quality:    quality,
+		Encoder:    encoder,
 	}
 	data, err := json.Marshal(entry)
 	if err != nil {
