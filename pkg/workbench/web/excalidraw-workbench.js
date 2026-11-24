@@ -340,6 +340,8 @@
     }
 
     function wireFenceControls(root, record, expanded) {
+      // Identify the live control even if CodeMirror replaces its widget DOM.
+      root.dataset.excalidrawFenceId = String(record.id);
       const label = document.createElement('span');
       label.className = 'excalidraw-fence-controls__label';
       label.textContent = `Excalidraw · ${record.summary}`;
@@ -357,15 +359,24 @@
       edit.textContent = 'Edit drawing';
       edit.disabled = !!editor.getOption('readOnly');
       edit.addEventListener('click', () => {
-        if (!editor.getOption('readOnly')) openExisting(record.fence);
+        if (!editor.getOption('readOnly')) openExisting(record.fence,record);
       });
       toggle.addEventListener('click', () => {
         record.collapsed = !record.collapsed;
         renderFence(record,record.fence);
         window.requestAnimationFrame(() => record.toggleButton?.focus());
       });
-      // Native button activation handles Enter and Space. Synthesizing a click
-      // on keydown replaces the focused button before the key is released.
+      // CodeMirror fence widgets can lose button focus between Space down and
+      // Space up. Activate on keydown and cancel the native key action so no
+      // space is inserted into the Markdown or a second click is dispatched.
+      root.setAttribute('cm-ignore-events','true');
+      toggle.addEventListener('keydown', event => {
+        if (event.key !== ' ' && event.code !== 'Space') return;
+        event.preventDefault();
+        event.stopPropagation();
+        if (event.repeat) return;
+        toggle.click();
+      });
       root.addEventListener('mousedown',event => event.stopPropagation());
       root.addEventListener('click',event => event.stopPropagation());
       root.addEventListener('keydown',event => event.stopPropagation());
@@ -481,8 +492,11 @@
         : 'Create an Excalidraw scene at the cursor';
     }
 
-    function openDialog(mode, scene, target) {
-      active = {mode,target};
+    function openDialog(mode, scene, target, launcherRecord = null) {
+      // CodeMirror may replace the actual launcher while the modal is open.
+      // Keep its fence record so the current button can be found on close.
+      const opener = document.activeElement === document.body ? button : document.activeElement;
+      active = {mode,target,opener,launcherRecord};
       title.textContent = mode === 'edit' ? 'Edit drawing' : 'New drawing';
       hint.textContent = mode === 'edit'
         ? 'Changes stay in this draft until you apply.'
@@ -497,6 +511,7 @@
       applyButton.disabled = true;
       applyAsButton.hidden = mode !== 'edit';
       applyAsButton.disabled = true;
+      dialog.returnValue = '';
       dialog.showModal();
 
       window.EXCALIDRAW_ASSET_PATH = '/editor/excalidraw-fonts/';
@@ -523,7 +538,7 @@
       });
     }
 
-    function openExisting(fence) {
+    function openExisting(fence, launcherRecord = null) {
       if (editor.getOption('readOnly')) return;
       if (fence.closeLine == null) {
         showError('Close this Excalidraw fence before editing it. The source has not changed.');
@@ -533,7 +548,7 @@
       const to = {line:fence.closeLine,ch:0};
       const body = editor.getRange(from,to).replace(/\r?\n$/,'');
       try {
-        openDialog('edit',parseScene(body),fence);
+        openDialog('edit',parseScene(body),fence,launcherRecord);
       } catch (cause) {
         showError(cause.message);
       }
@@ -623,6 +638,9 @@
     applyButton.addEventListener('click',() => apply(false));
     applyAsButton.addEventListener('click',() => apply(true));
     dialog.addEventListener('close',() => {
+      const opener = active?.opener;
+      const launcherRecord = active?.launcherRecord;
+      const applied = dialog.returnValue === 'apply';
       canvas?.destroy();
       canvas = null;
       active = null;
@@ -634,10 +652,27 @@
       applyAsButton.hidden = true;
       applyButton.disabled = false;
       applyAsButton.disabled = false;
-      // Closing a modal restores its opener natively. Do not steal focus
-      // from a fence control after Cancel (the close event is asynchronous).
-      if (dialog.returnValue === 'apply') editor.focus();
-      editor.refresh();
+      // On Cancel, return to the *current* fence control, not a detached
+      // element retained before CodeMirror redrew the collapsed marker.
+      // On Apply, return to the Markdown editor with the new drawing.
+      if (applied) {
+        editor.refresh();
+        editor.focus();
+      } else {
+        window.requestAnimationFrame(() => {
+          let launcher = opener;
+          if (launcherRecord) {
+            const currentRecord = fenceRecords.get(launcherRecord.id) ||
+              [...fenceRecords.values()].find(record => record.fence.line === launcherRecord.fence.line);
+            const liveButton = currentRecord && document.querySelector(
+              `[data-excalidraw-fence-id="${currentRecord.id}"] .excalidraw-fence-controls__button--edit`
+            );
+            launcher = liveButton || currentRecord?.editButton || opener;
+          }
+          if (launcher?.isConnected && !launcher.disabled) launcher.focus({preventScroll:true});
+          else if (!button.disabled) button.focus({preventScroll:true});
+        });
+      }
       updateButton();
     });
     editor.on('cursorActivity',updateButton);

@@ -106,7 +106,11 @@ func runEditorCommand(cmd *cobra.Command, _ []string) error {
 		_ = listener.Close()
 		return fmt.Errorf("write editor address: %w", err)
 	}
-	return serveEditor(ctx, listener, handler, cmd.ErrOrStderr())
+	var serving http.Handler = handler
+	if !hosted {
+		serving = withUpIdentity(serving, upServiceEditor, editorWorkspace)
+	}
+	return serveEditor(ctx, listener, serving, cmd.ErrOrStderr())
 }
 
 func validateEditorListenAddress(address string) error {
