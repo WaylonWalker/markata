@@ -104,6 +104,43 @@ func TestImageOptimization_StatsCountDeduplicatedMissingCandidates(t *testing.T)
 	}
 }
 
+func TestImageOptimizationStatsIncludeTargetsWithoutEncoders(t *testing.T) {
+	outputDir := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(outputDir, "images"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(outputDir, "images", "photo.jpg"), []byte("source"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	manager := lifecycle.NewManager()
+	manager.Config().OutputDir = outputDir
+	post := models.NewPost("post.md")
+	post.HTML = `<p><img src="/images/photo.jpg"></p>`
+	post.Extra = map[string]any{
+		"image_optimization": []imageOptimizationTarget{
+			{Src: "/images/photo.jpg"},
+			{Src: "/images/photo.jpg"},
+			{Src: "/images/missing.jpg"},
+			{Src: "/images/missing.jpg"},
+		},
+	}
+	manager.SetPosts([]*models.Post{post})
+
+	plugin := NewImageOptimizationPlugin()
+	plugin.config = defaultImageOptimizationConfig()
+	plugin.availableFormats = nil
+	if err := plugin.Write(manager); err != nil {
+		t.Fatalf("Write() without encoders error = %v", err)
+	}
+	if plugin.stats.targetOccurrences != 4 || plugin.stats.uniqueTargets != 2 || plugin.stats.missingSources != 1 {
+		t.Fatalf("target stats without encoders = %+v; want 4 occurrences, 2 unique candidates, and 1 missing source", plugin.stats)
+	}
+	if plugin.stats.variantsChecked != 0 || plugin.stats.cacheHits != 0 || plugin.stats.cacheMisses != 0 || plugin.stats.encoderCalls != 0 {
+		t.Fatalf("optimization stats without encoders = %+v; want no cache or encoder work", plugin.stats)
+	}
+}
+
 func TestDeduplicateImageOptimizationTargetsByOutputPath(t *testing.T) {
 	targets := []imageOptimizationTarget{
 		{Src: "/avatar.png", PostSlug: "first", Widths: []int{480, 768}},

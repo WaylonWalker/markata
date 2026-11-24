@@ -152,12 +152,6 @@ func (p *ImageOptimizationPlugin) Write(m *lifecycle.Manager) error {
 	if err := m.ProcessPostsSliceConcurrently(posts, p.processRenderedHTML); err != nil {
 		return err
 	}
-	if len(p.availableFormats) == 0 {
-		// Even a build without encoders should report its cache activity.
-		p.logSummary()
-		return nil
-	}
-
 	targets := p.collectTargets(m)
 	p.stats.targetOccurrences = len(targets)
 	if len(targets) == 0 {
@@ -167,6 +161,16 @@ func (p *ImageOptimizationPlugin) Write(m *lifecycle.Manager) error {
 
 	outputDir := m.Config().OutputDir
 	targets = deduplicateImageOptimizationTargets(outputDir, targets, p.config.Widths)
+	if len(p.availableFormats) == 0 {
+		// Count candidates and missing sources even when no encoder can produce variants.
+		for _, target := range targets {
+			if err := p.optimizeTarget(outputDir, "", target); err != nil {
+				return err
+			}
+		}
+		p.logSummary()
+		return nil
+	}
 
 	cacheDir := p.config.CacheDir
 	if cacheDir == "" {
