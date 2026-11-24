@@ -23,6 +23,29 @@ The Go server calls Markata's standalone renderer directly. It starts no Python 
 It uses the same Markdown renderer as the [Python API](./python-renderer/) and [FastAPI editor](./fastapi-editor/).
 The preview does not build a site. The language service indexes Markdown and reads workspace configuration for existing mention support.
 
+### Experimental browser-local WASM preview
+
+When built using the repository's Dockerfile, the Go editor also embeds a
+release-matched browser WASM renderer and its Go JavaScript runtime. Ordinary
+local Go builds work without those assets and continue using native Go preview.
+
+The WASM fast path is **opt-in** for controlled testing. Add ?wasm-preview=1
+to the editor URL (including the authenticated HTTPS editor URL when hosted).
+Typing and the first site-aware preview still use the existing Go path while
+the worker initializes. For a plain Markdown document, the worker's HTML and
+source-line mapping must first match a native Go render exactly. Subsequent
+edits in the supported plain-Markdown subset can then render in the browser,
+without a /render request. The editor identifies these as **Quick local
+preview** in the status and diagnostics panel.
+
+Wikilinks, embeddings, code fences, tables, rich plugins, HTML and changed
+frontmatter stay on Go. Any worker error, unavailable assets, missing proof of
+parity, or unsupported dependency falls back to Go; publishing is always
+authoritative server-side. The existing opaque iframe sandbox is preserved.
+This feature does not enable offline publishing or caching of private site
+content. WASM performance and parity must be measured on the real hosted
+deployment before considering default-on behavior.
+
 ### Run behind Hlab Auth
 
 The editor binds to loopback by default. Keep that setting for local work.
