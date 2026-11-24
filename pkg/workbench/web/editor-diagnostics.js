@@ -42,7 +42,7 @@
       item.append(swatch,name,amount);return item;
     });
     const rendering=host.querySelector('.pipeline-render-detail');
-    rendering.textContent=`${details.mode||'Normal'} mode · server queue ${details.queue_ms.toFixed(1)} ms · Go render ${details.go_render_ms.toFixed(1)} ms${details.cached?' · cached':''}`;
+    rendering.textContent=details.engine==='wasm' ? `${details.mode||'Normal'} mode · local WASM ${details.wasm_render_ms.toFixed(1)} ms · no render HTTP request` : `${details.mode||'Normal'} mode · server queue ${details.queue_ms.toFixed(1)} ms · Go render ${details.go_render_ms.toFixed(1)} ms${details.cached?' · cached':''}`;
     const iframe=details.iframe;
     const display=host.querySelector('.pipeline-display-detail');
     display.textContent=iframe?`Iframe ${iframe.total_ms.toFixed(1)} ms · HTML parse ${iframe.html_parse_ms.toFixed(1)} ms · DOM patch ${iframe.dom_patch_ms.toFixed(1)} ms · features ${iframe.features_ms.toFixed(1)} ms`:Number.isFinite(details.frame_content_ready_ms)?`Initial frame content ${details.frame_content_ready_ms.toFixed(1)} ms · feature startup continues separately`: 'Iframe stage detail unavailable';
