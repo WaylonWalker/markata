@@ -35,10 +35,14 @@ test('Version skew and missing initial shell fail before iframe update', () => {
   assert.throws(() => fromGo(go(), -1), /offset/);
 });
 
-test('WASM source maps adapt an asset-free standalone fragment', () => {
+test('WASM source maps adapt a base-style standalone fragment', () => {
   const normalized = fromWasm({
     schema_version: 1, html: '<h1>Hello</h1>', source_lines: [0, 2],
-    features: {}, assets: [],
+    features: {}, assets: [
+      {id: 'css/variables.css', kind: 'style', content: ''},
+      {id: 'css/main.css', kind: 'style', content: ''},
+      {id: 'css/components.css', kind: 'style', content: ''},
+    ],
   }, {render_ms: 4.8, input_bytes: 18});
   assert.equal(normalized.document, null);
   assert.deepEqual(Array.from(normalized.source_lines), [0, 2]);
