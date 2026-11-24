@@ -178,10 +178,24 @@ func (s *Service) verifyNoOpState(ctx context.Context, record *BuildRecord) (noO
 	if err != nil || confirmReleasePath != releasePath {
 		return noOpVerification{}, "live_release_changed_during_verification"
 	}
+	if reason := noOpCompletionReason(ctx, baseline.ExpiresAt, time.Now()); reason != "" {
+		return noOpVerification{}, reason
+	}
 	snapshot.SourceMS += confirm.SourceMS
 	snapshot.InputsMS += confirm.InputsMS
 	snapshot.InputEntries += confirm.InputEntries
 	return noOpVerification{releaseID: current, releasePath: releasePath, snapshot: snapshot}, ""
+}
+
+// A baseline may expire or the build may be canceled during verification.
+func noOpCompletionReason(ctx context.Context, expiresAt, now time.Time) string {
+	if ctx.Err() != nil {
+		return "verification_canceled"
+	}
+	if !now.Before(expiresAt) {
+		return "baseline_expired_during_verification"
+	}
+	return ""
 }
 
 func (s *Service) currentNoOpBaseline(record *BuildRecord) (noOpBaseline, string, string) {

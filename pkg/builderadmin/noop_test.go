@@ -19,6 +19,22 @@ import (
 	"github.com/WaylonWalker/markata/pkg/models"
 )
 
+func TestNoOpCompletionRejectsExpiredOrCanceledVerification(t *testing.T) {
+	now := time.Unix(1700000000, 0)
+	ctx := context.Background()
+	if reason := noOpCompletionReason(ctx, now.Add(time.Second), now); reason != "" {
+		t.Fatalf("valid baseline rejected: %s", reason)
+	}
+	if reason := noOpCompletionReason(ctx, now, now); reason != "baseline_expired_during_verification" {
+		t.Fatalf("expired baseline accepted: %q", reason)
+	}
+	canceled, cancel := context.WithCancel(ctx)
+	cancel()
+	if reason := noOpCompletionReason(canceled, now.Add(time.Second), now); reason != "verification_canceled" {
+		t.Fatalf("canceled verification accepted: %q", reason)
+	}
+}
+
 func TestVerifiedNoOpLeavesCurrentReleaseAndWorkspaceUntouched(t *testing.T) {
 	if !fileidentity.Available {
 		t.Skip("verified no-op requires Linux file identity")
