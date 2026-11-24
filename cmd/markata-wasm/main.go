@@ -40,7 +40,14 @@ func main() {
 			}
 			asset.Content = ""
 		}
-		data, err := json.Marshal(result)
+		// Source-line mapping uses the same parser as the native renderer.
+		// The standalone demo ignores this additive field; the hosted editor
+		// needs it for source/preview scrolling before enabling a WASM path.
+		payload := struct {
+			*plugins.StandaloneResult
+			SourceLines []int `json:"source_lines"`
+		}{StandaloneResult: result, SourceLines: renderer.SourceLines(source)}
+		data, err := json.Marshal(payload)
 		if err != nil {
 			return errorJSON(err.Error())
 		}
