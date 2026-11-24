@@ -74,9 +74,10 @@ jobs:
         run: |
           GOOS=js GOARCH=wasm CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o pkg/workbench/web/wasm/markata.wasm ./cmd/markata-wasm
           cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" pkg/workbench/web/wasm/wasm_exec.js
+          gzip -n -9 -c pkg/workbench/web/wasm/markata.wasm > pkg/workbench/web/wasm/markata.wasm.gz
           go build -o /tmp/markata-editor ./cmd/markata-go
       - name: Verify bundle routing and MIME
-        run: go test ./pkg/workbench -run 'TestHandler_OptionalBundledWasmPreview|TestHandler_PreviewContractV1|TestHandler_HostedWasmAssetsKeepAuthBoundary' -count=1
+        run: go test ./pkg/workbench -run 'TestHandler_OptionalBundledWasmPreview|TestHandler_PreviewContractV1|TestHandler_HostedWasmAssetsKeepAuthBoundary|TestHandler_WasmPrecompressedResponse' -count=1
       - name: Install browser runner
         run: |
           python -m pip install playwright==1.64.1
