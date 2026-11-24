@@ -1,6 +1,9 @@
 package workbench
 
 import (
+	"bytes"
+	"compress/gzip"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -82,5 +85,53 @@ func TestHandler_HostedWasmAssetsKeepAuthBoundary(t *testing.T) {
 					allowed.Header().Get("Access-Control-Allow-Origin"))
 			}
 		})
+	}
+}
+
+func TestHandler_WasmPrecompressedResponse(t *testing.T) {
+	raw, err := web.ReadFile("web/wasm/markata.wasm")
+	if err != nil {
+		t.Skip("native-only build; no bundled WASM")
+	}
+	compressed, err := web.ReadFile("web/wasm/markata.wasm.gz")
+	if err != nil {
+		t.Skip("build did not include the optional precompressed WASM")
+	}
+	h := newHandler(t)
+	request := httptest.NewRequest(http.MethodGet, "/editor/wasm/markata.wasm", http.NoBody)
+	request.Header.Set("Accept-Encoding", "gzip, deflate")
+	response := httptest.NewRecorder()
+	h.ServeHTTP(response, request)
+	if response.Code != http.StatusOK || response.Header().Get("Content-Encoding") != "gzip" ||
+		response.Header().Get("Vary") != "Accept-Encoding" ||
+		response.Header().Get("Content-Type") != "application/wasm" {
+		t.Fatalf("WASM gzip status=%d encoding=%q vary=%q type=%q",
+			response.Code, response.Header().Get("Content-Encoding"),
+			response.Header().Get("Vary"), response.Header().Get("Content-Type"))
+	}
+	if !bytes.Equal(response.Body.Bytes(), compressed) {
+		t.Fatal("compressed WASM response does not match build artifact")
+	}
+	reader, err := gzip.NewReader(bytes.NewReader(response.Body.Bytes()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	decoded, err := io.ReadAll(reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := reader.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(decoded, raw) {
+		t.Fatal("gzip response did not decode to the release-matched WASM runtime")
+	}
+	request.Header.Set("Accept-Encoding", "identity")
+	plain := httptest.NewRecorder()
+	h.ServeHTTP(plain, request)
+	if plain.Code != http.StatusOK || plain.Header().Get("Content-Encoding") != "" ||
+		!bytes.Equal(plain.Body.Bytes(), raw) {
+		t.Fatalf("WASM identity fallback returned status=%d encoding=%q",
+			plain.Code, plain.Header().Get("Content-Encoding"))
 	}
 }
