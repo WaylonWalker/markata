@@ -51,7 +51,7 @@ Output HTML:
 
 The generated `.avif` and `.webp` files are written next to the original image in the output folder.
 
-The optimizer reuses the image cache in `.markata/image-cache` and validates source bytes with SHA-256, so a file timestamp change alone does not trigger re-encoding. It hashes each unique source once per build. Within one build, repeated references to the same local output image share one optimization pass that generates the union of their requested widths. Each image occurrence still keeps its own `<picture>` markup.
+The optimizer reuses the image cache in `.markata/image-cache` and validates source bytes with SHA-256, so a file timestamp change alone does not trigger re-encoding. It hashes each unique source once per build, and the hashing work scales with the total bytes in those images. Within one build, repeated references to the same local output image share one optimization pass that generates the union of their requested widths. Each image occurrence still keeps its own `<picture>` markup.
 
 Each build logs target occurrences and unique target candidates after deduplication. A candidate counts once in `unique_targets` even if its path cannot be resolved or its source file is missing; those candidates are also counted in `missing_sources`. `duplicate_targets` is the number of occurrences removed by deduplication. The summary also reports variants checked, cache hits and misses, and encoder calls and failures.
 

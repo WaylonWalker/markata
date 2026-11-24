@@ -207,6 +207,20 @@ func (p *ImageOptimizationPlugin) optimizeTarget(outputDir, cacheDir string, tar
 		imageOptimizationLog.Warnf("source image not found: %s", outputPath)
 		return nil
 	}
+	needsSourceHash := false
+	for _, format := range p.availableFormats {
+		if shouldSkipFormat(outputPath, format) {
+			continue
+		}
+		if p.encoderPathForFormat(format) == "" {
+			p.warnMissingEncoder(format)
+			continue
+		}
+		needsSourceHash = true
+	}
+	if !needsSourceHash {
+		return nil
+	}
 	sourceHash, err := hashImageSource(outputPath)
 	if err != nil {
 		return fmt.Errorf("hash source image %s: %w", outputPath, err)

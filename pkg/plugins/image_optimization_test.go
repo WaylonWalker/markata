@@ -79,6 +79,22 @@ func TestImageOptimization_StatsCountMissingSource(t *testing.T) {
 	}
 }
 
+func TestImageOptimizationMissingEncoderDoesNotHashSource(t *testing.T) {
+	outputDir := t.TempDir()
+	if err := os.Mkdir(filepath.Join(outputDir, "photo.png"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	plugin := NewImageOptimizationPlugin()
+	plugin.config = defaultImageOptimizationConfig()
+	plugin.availableFormats = []string{formatWebP}
+	if err := plugin.optimizeTarget(outputDir, t.TempDir(), imageOptimizationTarget{Src: "/photo.png"}); err != nil {
+		t.Fatalf("optimizeTarget() error without encoder = %v, want nil", err)
+	}
+	if plugin.stats.encoderCalls != 0 || plugin.stats.cacheMisses != 0 {
+		t.Fatalf("stats without encoder = %+v, want no cache work or encoding", plugin.stats)
+	}
+}
+
 func TestImageOptimization_StatsCountDeduplicatedMissingCandidates(t *testing.T) {
 	outputDir := t.TempDir()
 	manager := lifecycle.NewManager()

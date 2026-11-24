@@ -58,7 +58,10 @@ func TestImageOptimizationProductionShapeDeduplicatesDiskWorkAndKeepsContentCach
 }
 
 func BenchmarkImageOptimizationRepeatedTargetDiskWork(b *testing.B) {
-	for _, mode := range []string{"before-deduplication", "after-deduplication"} {
+	// Both cases use the current content-addressed cache. This compares repeated
+	// and deduplicated target work in the current implementation; it is not a
+	// historical before/after benchmark.
+	for _, mode := range []string{"without-deduplication", "with-deduplication"} {
 		b.Run(mode, func(b *testing.B) {
 			plugin, manager, targets := newRepeatedImageOptimizationFixture(b)
 			outputDir := manager.Config().OutputDir
@@ -67,16 +70,14 @@ func BenchmarkImageOptimizationRepeatedTargetDiskWork(b *testing.B) {
 			b.ResetTimer()
 			for range b.N {
 				plugin.stats = imageOptimizationStats{}
-				if mode == "before-deduplication" {
-					for _, target := range targets {
-						if err := plugin.optimizeTarget(outputDir, cacheDir, target); err != nil {
-							b.Fatal(err)
-						}
-					}
-					continue
+				targetsToOptimize := targets
+				if mode == "with-deduplication" {
+					targetsToOptimize = deduplicateImageOptimizationTargets(outputDir, targets, plugin.config.Widths)
 				}
-				if err := plugin.Write(manager); err != nil {
-					b.Fatal(err)
+				for _, target := range targetsToOptimize {
+					if err := plugin.optimizeTarget(outputDir, cacheDir, target); err != nil {
+						b.Fatal(err)
+					}
 				}
 			}
 		})
