@@ -546,6 +546,13 @@ func (s *Store) refresh(events map[string]bool, forceConfig bool) error {
 			paths[filepath.ToSlash(path)] = sourceStamp{Modified: info.ModTime().UnixNano(), Size: info.Size()}
 		}
 	}
+	// Install watches for newly included config and appearance directories
+	// before publishing the corresponding config snapshot. Otherwise a caller
+	// can observe the new config and edit a nested file before its directory is
+	// watched, losing that update.
+	if err := s.addWatches(isIgnoredPath); err != nil {
+		return err
+	}
 	s.mu.Lock()
 	s.stats.GlobScans++
 	configChanged := s.configRevision == 0 || forceConfig || !reflect.DeepEqual(s.cfg, authored)
@@ -577,7 +584,7 @@ func (s *Store) refresh(events map[string]bool, forceConfig bool) error {
 		s.indexPending = len(paths) - len(s.entries)
 	}
 	s.mu.Unlock()
-	return s.addWatches(isIgnoredPath)
+	return nil
 }
 
 func (s *Store) addWatches(isIgnoredPath func(string) bool) error {
