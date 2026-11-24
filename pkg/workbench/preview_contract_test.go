@@ -35,9 +35,6 @@ func TestHandler_PreviewContractV1(t *testing.T) {
 			if len(payload.SourceLines) != 2 || payload.SourceLines[0] != 0 || payload.SourceLines[1] != 2 {
 				t.Errorf("source lines = %v, want [0, 2]", payload.SourceLines)
 			}
-			if payload.FeatureHeadHTML == "" && payload.BodyEndHTML == "" {
-				// Both can be empty on a plain Markdown document; that's valid.
-			}
 		})
 	}
 }
